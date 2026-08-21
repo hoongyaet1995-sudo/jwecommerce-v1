@@ -1,0 +1,6 @@
+{
+  "name": "JW Studio",
+  "description": "JW Studio enterprise omnichannel commerce and operations administration platform featuring Omnichannel Inbox, Store Setting Hub with custom company logo uploading, marketplace OMS & WMS sync, Malaysia logistics engine, and customizable multi-channel management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,35 @@
+{
+  "unsafe": [
+    "https://faß.de/a.jpg",
+    "https://fa%C3%9F.de/a.jpg",
+    "https://fa%73s.de/a.jpg",
+    "https://good..com/a.jpg",
+    "https://good.-bad.com/a.jpg",
+    "https://@good.com/a.jpg",
+    "https://:@good.com/a.jpg",
+    "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.com/a.jpg",
+    "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd/a.jpg",
+    "https://134744072/a.jpg",
+    "https://0x08080808/a.jpg",
+    "https://010.010.010.010/a.jpg",
+    "https://0x8.0x8.0x8.0x8/a.jpg",
+    "https://8.8/a.jpg",
+    "https://198.51.100.1/a.jpg",
+    "https://[2001:db8::1]/a.jpg"
+  ],
+  "safe": [
+    "https://xn--fa-hia.de/a.jpg",
+    "https://good-domain.com/a.jpg",
+    "https://good.com../a.jpg",
+    "https://8.8.8.8/a.jpg",
+    "https://192.0.1.1/a.jpg",
+    "https://203.0.1.1/a.jpg",
+    "https://198.51.0.1/a.jpg",
+    "https://198.51.99.1/a.jpg",
+    "https://198.51.101.1/a.jpg",
+    "https://[2001:db80::1]/a.jpg",
+    "https://[2001:db8a::1]/a.jpg",
+    "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd/a.jpg",
+    "https://[2606:4700:4700::1111]/a.jpg"
+  ]
+}

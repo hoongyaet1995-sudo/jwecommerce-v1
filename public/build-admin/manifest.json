@@ -1,0 +1,31 @@
+{
+  "_index-DMM6qw8r.js": {
+    "file": "assets/index-DMM6qw8r.js",
+    "name": "index",
+    "css": [
+      "assets/index-GP4hgojt.css"
+    ]
+  },
+  "_index-GP4hgojt.css": {
+    "file": "assets/index-GP4hgojt.css",
+    "src": "_index-GP4hgojt.css"
+  },
+  "src/main.tsx": {
+    "file": "assets/main-CsC0nW9c.js",
+    "name": "main",
+    "src": "src/main.tsx",
+    "isEntry": true,
+    "imports": [
+      "_index-DMM6qw8r.js"
+    ]
+  },
+  "src/public-page.tsx": {
+    "file": "assets/public-page-rrfwzh-Y.js",
+    "name": "public-page",
+    "src": "src/public-page.tsx",
+    "isEntry": true,
+    "imports": [
+      "_index-DMM6qw8r.js"
+    ]
+  }
+}
