@@ -22,6 +22,7 @@
 /resources/admin/node_modules
 /resources/admin/.playwright-cli
 /.codex-temp
+/.worktrees
 /.playwright-cli
 /.superpowers
 /test-results
