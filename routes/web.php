@@ -65,6 +65,7 @@ Route::middleware('guest:customer')->prefix('account')->name('customer.')->group
 });
 Route::middleware(['auth:customer', 'customer'])->prefix('account')->name('customer.')->group(function (): void {
     Route::get('/', [CustomerAccountController::class, 'show'])->name('account');
+    Route::get('/preview/original-account', [CustomerAccountController::class, 'originalPreview'])->name('account.original-preview');
     Route::patch('/profile', [CustomerAccountController::class, 'updateProfile'])->name('profile.update');
     Route::post('/addresses', [CustomerAccountController::class, 'storeAddress'])->name('addresses.store');
     Route::post('/wishlist/{product}', [CustomerAccountController::class, 'storeWishlist'])->name('wishlist.store');
