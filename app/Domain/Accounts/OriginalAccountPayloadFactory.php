@@ -25,7 +25,9 @@ class OriginalAccountPayloadFactory
         $customer->loadMissing([
             'user',
             'orders.items.reviews',
+            'orders.items.productVariant.product',
             'orders.addresses',
+            'orders.payments',
             'addresses',
             'wishlistItems.product.images',
             'wishlistItems.product.variants',
@@ -79,6 +81,8 @@ class OriginalAccountPayloadFactory
                 'shippedAt' => $order->shipped_at?->toIso8601String(),
                 'items' => $order->items->map(fn (OrderItem $item) => [
                     'id' => $item->id,
+                    'productVariantId' => $item->product_variant_id,
+                    'productId' => $item->productVariant?->product_id,
                     'sku' => $item->sku,
                     'title' => $item->title,
                     'variantTitle' => $item->variant_title,
@@ -91,6 +95,14 @@ class OriginalAccountPayloadFactory
                         'status' => $review->status,
                         'attemptNumber' => $review->attempt_number,
                     ])->values()->all(),
+                ])->values()->all(),
+                'payments' => $order->payments->map(fn ($payment) => [
+                    'id' => $payment->id,
+                    'gateway' => $payment->gateway,
+                    'gatewayStatus' => $payment->status,
+                    'transactionId' => $payment->reference,
+                    'paymentMethod' => data_get($payment->payload, 'payment_method') ?: $payment->gateway,
+                    'lastFour' => data_get($payment->payload, 'last_four'),
                 ])->values()->all(),
                 'addresses' => $order->addresses->map(fn ($address) => [
                     'type' => $address->type,
