@@ -158,6 +158,7 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
 
         $response->assertOk()
             ->assertSee('data-cart-drawer-open', false)
+            ->assertSee('data-cart-count-badge', false)
             ->assertSee('id="cart-drawer"', false)
             ->assertSee('data-cart-count="2"', false)
             ->assertSee('mobileExpandedLayer2', false)
@@ -170,7 +171,9 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
             ->assertSee('data-order-item-id="'.$item->id.'"', false)
             ->assertSee('accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"', false)
             ->assertSee('Profile preferences saved successfully!')
+            ->assertSee('flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-4 py-2.5 rounded-xl border border-emerald-500/20', false)
             ->assertSee('New address saved to studio address book.')
+            ->assertSee('text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 p-3.5 rounded-2xl border border-emerald-500/20 flex items-center gap-2', false)
             ->assertSee('Password successfully changed and updated!')
             ->assertSee('VISA')
             ->assertSee('4242')
@@ -187,6 +190,63 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
             '/data-latest-logistics-estimate[^>]*>\s*—\s*</',
             $response->getContent(),
         );
+
+        $response->assertDontSee('LATEST DISPATCH DELIVERED')
+            ->assertDontSee('Final Delivery & Signature Verification', false)
+            ->assertDontSee('IN TRANSIT (ON SCHEDULE)');
+    }
+
+    public function test_shipped_order_without_concrete_tracking_does_not_claim_a_tracking_state_or_schedule(): void
+    {
+        [$owner] = $this->customerWithOrder('shipped');
+
+        $this->actingAs($owner->user, 'customer')
+            ->get(route('customer.account.original-preview'))
+            ->assertOk()
+            ->assertSee('LATEST ORDER')
+            ->assertSee('>SHIPPED<', false)
+            ->assertDontSee('LATEST DISPATCH IN TRANSIT')
+            ->assertDontSee('IN TRANSIT (ON SCHEDULE)')
+            ->assertDontSee('Handed Over to Courier');
+    }
+
+    public function test_shipped_order_with_concrete_tracking_uses_real_carrier_number_and_timestamp_without_schedule_promise(): void
+    {
+        [$owner, $order] = $this->customerWithOrder('shipped');
+        $order->forceFill([
+            'tracking_carrier' => 'FedEx International Priority',
+            'tracking_number' => 'FX-REAL-2048',
+            'shipped_at' => '2026-08-22 14:30:00',
+        ])->save();
+
+        $this->actingAs($owner->user, 'customer')
+            ->get(route('customer.account.original-preview'))
+            ->assertOk()
+            ->assertSee('LATEST DISPATCH IN TRANSIT')
+            ->assertSee('Handed Over to FedEx International Priority')
+            ->assertSee('FX-REAL-2048')
+            ->assertSee('Aug 22, 02:30 PM')
+            ->assertDontSee('IN TRANSIT (ON SCHEDULE)')
+            ->assertDontSee('Final Delivery & Signature Verification', false);
+    }
+
+    public function test_pending_payment_is_never_described_as_paid(): void
+    {
+        [$owner, $order] = $this->customerWithOrder('pending_payment');
+        $order->payments()->create([
+            'gateway' => 'stripe',
+            'status' => 'pending',
+            'reference' => 'pi_account_pending_1001',
+            'payload' => ['payment_method' => 'Visa', 'last_four' => '1001'],
+        ]);
+
+        $this->actingAs($owner->user, 'customer')
+            ->get(route('customer.account.original-preview'))
+            ->assertOk()
+            ->assertSee('Payment: PENDING via VISA')
+            ->assertSee('Payment Status: PENDING')
+            ->assertDontSee('Paid via VISA')
+            ->assertDontSee('Total Paid:');
     }
 
     private function customerUser(): User

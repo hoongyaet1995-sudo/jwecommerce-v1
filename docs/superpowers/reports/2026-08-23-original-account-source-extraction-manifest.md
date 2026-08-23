@@ -85,3 +85,11 @@ The official route remains `GET /account`, named `customer.account`, inside the 
 3. Read and mutate only customer-owned profile, addresses, cart, orders, reviews, and logout state through existing approved interfaces.
 4. Keep password, vouchers, two-factor, sessions, points, tier, benefits, and unsupported address operations visibly non-operational rather than inventing backend behavior.
 5. Do not alter the official `/account` route without explicit approval after preview acceptance.
+
+## Task 3 runtime prerequisite and accepted mock ruling
+
+The embedded Purchase History review adapter depends on the separately owned buyer-review operational-closure work that is currently present but intentionally uncommitted in the shared XAMPP worktree. Task 3 does not introduce or own that runtime. At minimum, the dependency includes the `OrderItem::reviews` and product-variant relations, the `ProductReview` domain models/table, the customer-scoped `customer.reviews.store` route, `CustomerProductReviewController`, and `ProductReviewSubmissionService`. A clean checkout containing only the Task 3 commits cannot boot the preview or its focused test until that prerequisite work is merged.
+
+Current-runtime mitigation evidence: on 2026-08-23, the customer-guard preview rendered successfully at `http://127.0.0.1:8000/account/preview/original-account` with the prerequisite worktree present, and the existing cart drawer opened from the restored source header. This proves only the shared XAMPP runtime, not clean-checkout independence.
+
+Acceptance item 4 above is superseded for visible source fidelity by the explicit review ruling: password, voucher, two-factor, session, points, tier, and benefits surfaces preserve the exact original source mock visual copy and local interaction. Task 3 adds no Laravel persistence for those capabilities; unsupported capability truth remains documented in this manifest and the Task 3 evidence report rather than through self-authored visible disclaimers.
