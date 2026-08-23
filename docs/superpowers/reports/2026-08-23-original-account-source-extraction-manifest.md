@@ -9,7 +9,7 @@
 
 ## Archive provenance
 
-The plan refers to `(7).zip`. The local candidate named `C:\Users\User\Downloads\jw-ecommerce-dashboard (7).zip` has SHA-256 `79C415B135E66B5F64F525B58476BD2D97539BC8E701E033F07A9096BFFA3D0A`, but its archive entries do not contain `AccountPage.tsx`, `AccountSidebar.tsx`, or the seven account tabs. It is therefore excluded from this source contract. No archive containing the selected raw v7 tree is available at the supplied source root. The file hashes below are the binding evidence for the selected raw tree until the matching archive is supplied.
+The selected archive is `C:\Users\User\Downloads\universal-e-commerce-system-&-schema-suite (7).zip`, SHA-256 `0D41E70204113FB9409D86FF6A26F6F9959575C96E0F01FF7ABDDB8BD0D914D3`. Its entries contain all selected Account, direct shell, data, type, and logo files below, and the SHA-256 of every one matches the selected raw v7 tree. This archive and the per-file inventory together are the binding source contract.
 
 ## Binding source inventory
 
