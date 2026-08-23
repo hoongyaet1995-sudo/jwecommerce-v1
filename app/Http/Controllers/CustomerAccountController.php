@@ -23,7 +23,7 @@ class CustomerAccountController extends Controller
         $customer = $request->user('customer')->customer;
         abort_unless($customer !== null, 403);
 
-        return view('storefront.account', [
+        return view('storefront.account-original-preview', [
             'customer' => $customer,
             'accountPayload' => $factory->for($customer),
         ]);
