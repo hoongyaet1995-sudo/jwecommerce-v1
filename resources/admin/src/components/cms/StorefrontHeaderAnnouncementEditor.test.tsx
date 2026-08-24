@@ -46,15 +46,15 @@ describe('StorefrontHeaderAnnouncementEditor persistence boundary', () => {
     admin.settings = shell();
   });
 
-  it('round-trips each persisted zone enabled flag without deriving it from text', async () => {
+  it('publishes populated source-owned notice zones without exposing extra zone toggles', async () => {
     const editor = await import('./StorefrontHeaderAnnouncementEditor');
     const persisted = shell();
     const draft = editor.announcementDraftFromSettings(persisted);
     const rebuilt = editor.storefrontShellSettingsFromDraft(persisted, draft, 'atelier');
 
-    expect(rebuilt.zones.left.enabled).toBe(false);
+    expect(rebuilt.zones.left.enabled).toBe(true);
     expect(rebuilt.zones.center.enabled).toBe(true);
-    expect(rebuilt.zones.right.enabled).toBe(false);
+    expect(rebuilt.zones.right.enabled).toBe(true);
   });
 
   it('renders Save Live Changes disabled and does not invoke persistence for a preview-only layout', async () => {

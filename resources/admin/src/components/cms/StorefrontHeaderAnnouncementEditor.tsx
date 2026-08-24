@@ -159,19 +159,19 @@ export const storefrontShellSettingsFromDraft = (
   },
   zones: {
     left: {
-      enabled: formData.leftEnabled,
+      enabled: nullable(formData.leftText) !== null,
       text: formData.leftText,
       badge: formData.leftBadge ?? '',
       linkUrl: nullable(formData.leftLink),
     },
     center: {
-      enabled: formData.centerEnabled,
+      enabled: nullable(formData.centerText) !== null,
       text: formData.centerText,
       couponCode: formData.centerHighlightText ?? '',
       linkUrl: nullable(formData.centerLink),
     },
     right: {
-      enabled: formData.rightEnabled,
+      enabled: nullable(formData.rightText) !== null,
       helperText: formData.rightText,
       trackingEnabled: formData.showLogisticsTracker,
       trackingLabel: persisted.zones.right.trackingLabel || 'Track order',
