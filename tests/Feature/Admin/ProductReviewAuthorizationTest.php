@@ -135,6 +135,7 @@ class ProductReviewAuthorizationTest extends TestCase
 
         $this->assertSame(route('admin.api.reviews.index'), $bootstrap['reviewsUrl'] ?? null);
         $this->assertSame(route('admin.api.reviews.bulk-moderate'), $bootstrap['reviewBulkModerateUrl'] ?? null);
+        $this->assertSame(['reviews.view', 'reviews.bulk_moderate'], $bootstrap['reviewPermissions'] ?? null);
         $this->assertSame(['reviews.view', 'reviews.bulk_moderate'], $bootstrap['user']['reviewPermissions'] ?? null);
     }
 
