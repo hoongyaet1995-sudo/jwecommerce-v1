@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\PageApiController;
 use App\Http\Controllers\Admin\PagePreviewController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SearchController;
+use App\Http\Controllers\Admin\StorefrontShellSettingsApiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
@@ -114,6 +115,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/api/catalog/products/{product}', [CatalogApiController::class, 'destroyProduct']);
     Route::get('/api/menus', [MenuApiController::class, 'index'])->name('api.menus.index');
     Route::put('/api/menus/{key}', [MenuApiController::class, 'update'])->whereIn('key', ['header', 'footer']);
+    Route::get('/api/storefront-shell-settings', [StorefrontShellSettingsApiController::class, 'show'])->name('api.storefront-shell-settings.show');
+    Route::put('/api/storefront-shell-settings', [StorefrontShellSettingsApiController::class, 'update'])->name('api.storefront-shell-settings.update');
     Route::get('/api/orders', [OrderApiController::class, 'index'])->name('api.orders.index');
     Route::patch('/api/orders/{order}/status', [OrderApiController::class, 'updateStatus']);
     Route::patch('/api/orders/{order}/tracking', [OrderApiController::class, 'tracking']);
