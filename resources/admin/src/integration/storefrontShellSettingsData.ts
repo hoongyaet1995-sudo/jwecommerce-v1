@@ -1,5 +1,4 @@
 import type { LaravelAdminBootstrap, StorefrontShellSettings } from '../types';
-import { DEFAULT_STOREFRONT_SHELL_SETTINGS } from '../types';
 
 type ShellSettingsRequest = (
   input: RequestInfo | URL,
@@ -50,7 +49,7 @@ export const loadStorefrontShellSettings = async (
   request: ShellSettingsRequest = window.fetch.bind(window),
 ): Promise<StorefrontShellSettings> => {
   if (!bootstrap.storefrontShellSettingsUrl) {
-    return DEFAULT_STOREFRONT_SHELL_SETTINGS;
+    throw new Error('Storefront shell settings API is unavailable.');
   }
 
   const response = await request(bootstrap.storefrontShellSettingsUrl, {

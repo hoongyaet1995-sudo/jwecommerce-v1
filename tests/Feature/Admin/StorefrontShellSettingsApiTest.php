@@ -12,6 +12,21 @@ final class StorefrontShellSettingsApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_app_bootstrap_exposes_the_protected_shell_settings_url(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->get('/admin')
+            ->assertOk();
+
+        preg_match('/window\.__JW_ADMIN__\s*=\s*(\{.*\});/sU', $response->getContent(), $matches);
+        $bootstrap = json_decode($matches[1] ?? '{}', true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertSame(
+            route('admin.api.storefront-shell-settings.show'),
+            $bootstrap['storefrontShellSettingsUrl'] ?? null,
+        );
+    }
+
     public function test_show_returns_the_default_live_shell_shape_when_nothing_is_saved(): void
     {
         $this->actingAs($this->admin())

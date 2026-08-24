@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import type { StorefrontShellSettings } from '../types';
 
 const bootstrap = {
   user: { name: 'Julian Admin', email: 'julian@example.test', avatar: null },
@@ -9,7 +10,7 @@ const bootstrap = {
   storefrontShellSettingsUrl: '/admin/api/storefront-shell-settings',
 };
 
-const payload = {
+const payload: StorefrontShellSettings = {
   enabled: false,
   layout: 'atelier',
   theme: 'midnight-obsidian',
@@ -64,6 +65,49 @@ describe('Laravel storefront shell settings adapter', () => {
       credentials: 'same-origin',
       headers: { Accept: 'application/json' },
     });
+  });
+
+  it('fails explicitly when the Laravel bootstrap omits the protected API URL', async () => {
+    const module = await import('./storefrontShellSettingsData');
+    const request = vi.fn();
+
+    await expect(module.loadStorefrontShellSettings({
+      user: bootstrap.user,
+      csrfToken: bootstrap.csrfToken,
+      logoutUrl: bootstrap.logoutUrl,
+    }, request)).rejects.toThrow('Storefront shell settings API is unavailable.');
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('sends disabled zone flags to Laravel without reconstructing them from their copy', async () => {
+    const module = await import('./storefrontShellSettingsData');
+    const settings = {
+      ...payload,
+      enabled: true,
+      zones: {
+        left: { ...payload.zones.left, enabled: false, text: 'Retained hidden left copy' },
+        center: { ...payload.zones.center, enabled: false, text: 'Retained hidden center copy' },
+        right: {
+          ...payload.zones.right,
+          enabled: false,
+          helperText: 'Retained hidden utility copy',
+          trackingEnabled: false,
+          whatsappEnabled: false,
+        },
+      },
+    };
+    const request = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => settings,
+    });
+
+    await module.saveStorefrontShellSettingsData(bootstrap, settings, request);
+
+    const init = request.mock.calls[0]?.[1] as RequestInit;
+    const sent = JSON.parse(String(init.body));
+    expect(sent.zones.left.enabled).toBe(false);
+    expect(sent.zones.center.enabled).toBe(false);
+    expect(sent.zones.right.enabled).toBe(false);
   });
 
   it('wires the new Header & Announcement admin route into the app shell', () => {

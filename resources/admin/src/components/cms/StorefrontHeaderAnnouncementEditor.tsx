@@ -58,12 +58,15 @@ type AnnouncementBarTheme =
 
 interface AnnouncementBarConfig {
   enabled: boolean;
+  leftEnabled: boolean;
   leftText: string;
   leftLink?: string;
   leftBadge?: string;
+  centerEnabled: boolean;
   centerText: string;
   centerHighlightText?: string;
   centerLink?: string;
+  rightEnabled: boolean;
   rightText: string;
   rightLink?: string;
   showCurrencySelector: boolean;
@@ -121,14 +124,17 @@ const whatsAppUrl = (number: string | undefined, current: string | null): string
   return digits === '' ? current : `https://wa.me/${digits}`;
 };
 
-const announcementFromSettings = (settings: StorefrontShellSettings): AnnouncementBarConfig => ({
+export const announcementDraftFromSettings = (settings: StorefrontShellSettings): AnnouncementBarConfig => ({
   enabled: settings.enabled,
+  leftEnabled: settings.zones.left.enabled,
   leftText: settings.zones.left.text,
   leftBadge: settings.zones.left.badge,
   leftLink: settings.zones.left.linkUrl ?? '',
+  centerEnabled: settings.zones.center.enabled,
   centerText: settings.zones.center.text,
   centerHighlightText: settings.zones.center.couponCode,
   centerLink: settings.zones.center.linkUrl ?? '',
+  rightEnabled: settings.zones.right.enabled,
   rightText: settings.zones.right.helperText,
   rightLink: settings.zones.right.trackingUrl ?? '',
   showCurrencySelector: true,
@@ -142,7 +148,7 @@ const announcementFromSettings = (settings: StorefrontShellSettings): Announceme
   isDismissible: true,
 });
 
-const settingsFromDraft = (
+export const storefrontShellSettingsFromDraft = (
   persisted: StorefrontShellSettings,
   formData: AnnouncementBarConfig,
   layout: StorefrontShellLayout,
@@ -157,19 +163,19 @@ const settingsFromDraft = (
   },
   zones: {
     left: {
-      enabled: formData.enabled && formData.leftText.trim() !== '',
+      enabled: formData.leftEnabled,
       text: formData.leftText,
       badge: formData.leftBadge ?? '',
       linkUrl: nullable(formData.leftLink),
     },
     center: {
-      enabled: formData.enabled && formData.centerText.trim() !== '',
+      enabled: formData.centerEnabled,
       text: formData.centerText,
       couponCode: formData.centerHighlightText ?? '',
       linkUrl: nullable(formData.centerLink),
     },
     right: {
-      enabled: formData.enabled && (formData.rightText.trim() !== '' || formData.showLogisticsTracker || formData.showWhatsAppHotline),
+      enabled: formData.rightEnabled,
       helperText: formData.rightText,
       trackingEnabled: formData.showLogisticsTracker,
       trackingLabel: persisted.zones.right.trackingLabel || 'Track order',
@@ -184,6 +190,14 @@ const settingsFromDraft = (
 });
 
 export const canSaveStorefrontShellLayout = (layout: StorefrontShellLayout): boolean => layout === 'atelier';
+
+export const persistStorefrontShellDraft = async (
+  settings: StorefrontShellSettings,
+  save: (settings: StorefrontShellSettings) => Promise<StorefrontShellSettings | null>,
+): Promise<StorefrontShellSettings | null> => {
+  if (!canSaveStorefrontShellLayout(settings.layout)) return null;
+  return save(settings);
+};
 
 const PRESET_THEMES: {
   id: AnnouncementBarTheme;
@@ -302,7 +316,7 @@ export const StorefrontHeaderAnnouncementEditor: React.FC = () => {
   } = useAdmin();
 
   // Local draft state for smooth editing and batch save
-  const [formData, setFormData] = useState<AnnouncementBarConfig>(() => announcementFromSettings(storefrontShellSettings));
+  const [formData, setFormData] = useState<AnnouncementBarConfig>(() => announcementDraftFromSettings(storefrontShellSettings));
 
   const [headerSettings, setHeaderSettings] = useState<{
     template: HeaderLayoutTemplate;
@@ -332,7 +346,7 @@ export const StorefrontHeaderAnnouncementEditor: React.FC = () => {
   const [previewViewport, setPreviewViewport] = useState<'desktop' | 'mobile'>('desktop');
 
   useEffect(() => {
-    setFormData(announcementFromSettings(storefrontShellSettings));
+    setFormData(announcementDraftFromSettings(storefrontShellSettings));
     setHeaderSettings(prev => ({
       ...prev,
       template: SHELL_LAYOUT_TO_LEGACY[storefrontShellSettings.layout],
@@ -341,7 +355,7 @@ export const StorefrontHeaderAnnouncementEditor: React.FC = () => {
 
   const selectedLayout = LEGACY_LAYOUT_TO_SHELL[headerSettings.template];
   const canSaveLive = canSaveStorefrontShellLayout(selectedLayout);
-  const draftSettings = settingsFromDraft(storefrontShellSettings, formData, selectedLayout);
+  const draftSettings = storefrontShellSettingsFromDraft(storefrontShellSettings, formData, selectedLayout);
   const previewUtilityState: StorefrontHeaderPreviewUtilityState = {
     showSearch: headerSettings.showSearch,
     showThemeToggle: headerSettings.showThemeToggle,
@@ -358,6 +372,9 @@ export const StorefrontHeaderAnnouncementEditor: React.FC = () => {
       setFormData(prev => ({
         ...prev,
         enabled: true,
+        leftEnabled: true,
+        centerEnabled: true,
+        rightEnabled: true,
         leftText: '⚡ Official Flagship Store • 100% Authentic Guaranteed',
         leftBadge: 'OFFICIAL',
         leftLink: '/about',
@@ -375,6 +392,9 @@ export const StorefrontHeaderAnnouncementEditor: React.FC = () => {
       setFormData(prev => ({
         ...prev,
         enabled: true,
+        leftEnabled: true,
+        centerEnabled: true,
+        rightEnabled: true,
         leftText: '🔥 8.8 Mega Super Sale is Live Now!',
         leftBadge: 'FLASH SALE',
         leftLink: '/collections/sale',
@@ -392,6 +412,9 @@ export const StorefrontHeaderAnnouncementEditor: React.FC = () => {
       setFormData(prev => ({
         ...prev,
         enabled: true,
+        leftEnabled: true,
+        centerEnabled: true,
+        rightEnabled: true,
         leftText: '🛡️ 100% Direct Official Import • 2-Year Authorized Local Warranty',
         leftBadge: 'CERTIFIED',
         leftLink: '/warranty',
@@ -409,6 +432,9 @@ export const StorefrontHeaderAnnouncementEditor: React.FC = () => {
       setFormData(prev => ({
         ...prev,
         enabled: true,
+        leftEnabled: true,
+        centerEnabled: true,
+        rightEnabled: true,
         leftText: '💬 Customer Care & WhatsApp Hotline: +60 14-224 4200 (9am - 10pm)',
         leftBadge: 'HOTLINE',
         leftLink: 'https://wa.me/60142244200',
@@ -430,7 +456,7 @@ export const StorefrontHeaderAnnouncementEditor: React.FC = () => {
     if (!canSaveLive || isSaving) return;
 
     setIsSaving(true);
-    const saved = await saveStorefrontShellSettings(draftSettings);
+    const saved = await persistStorefrontShellDraft(draftSettings, saveStorefrontShellSettings);
     setIsSaving(false);
 
     if (saved) {
@@ -441,7 +467,7 @@ export const StorefrontHeaderAnnouncementEditor: React.FC = () => {
 
   const handleResetToDefaults = () => {
     if (window.confirm('Reset Storefront Header & Announcement Bar to factory presets?')) {
-      setFormData(announcementFromSettings(DEFAULT_STOREFRONT_SHELL_SETTINGS));
+      setFormData(announcementDraftFromSettings(DEFAULT_STOREFRONT_SHELL_SETTINGS));
       setHeaderSettings({
         template: 'modern_minimalist',
         colorTheme: 'dark',
