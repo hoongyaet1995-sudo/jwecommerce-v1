@@ -6,6 +6,14 @@
 - Verification: complete.
 - Commit: partial Task 2 commit created only from separable hunks; overlapping shared-header files remain unstaged by design.
 
+## Review Resolution
+
+- P1: not a defect.
+  - The approved Google AI Studio `Navbar.tsx` itself uses `hidden sm:flex` for the left announcement zone and `hidden md:flex` for the right announcement zone.
+  - Source fidelity governs here, so those exact responsive visibility states remain correct even though the earlier task brief wording was broader.
+- P2: fixed in test coverage.
+  - Added a shared-header public-route regression that seeds an enabled live shell configuration and verifies announcement content across the customer-visible shared-header route matrix.
+
 ## Root Cause
 
 The shared storefront nav still hardcoded the announcement bar copy inside `resources/views/components/storefront/nav.blade.php`, so saved `StorefrontShellSettingsService::live()` data never reached storefront routes.
@@ -19,6 +27,13 @@ The shared storefront nav still hardcoded the announcement bar copy inside `reso
 - Green command:
   - `C:\xampp\php\php.exe artisan test tests/Feature/StorefrontAnnouncementBarTest.php tests/Feature/StorefrontCanonicalHeaderTest.php`
   - Result after implementation: `PASS` with `7 passed (213 assertions)`.
+- Review-fix red command:
+  - `C:\xampp\php\php.exe artisan test tests/Feature/StorefrontAnnouncementBarTest.php`
+  - Result before the safe route provider/fixture setup: `FAIL`
+  - Failure reason: the new cross-route regression hit `404` because product/order/CMS fixtures for the full shared-header route matrix were not seeded yet.
+- Review-fix green command:
+  - `C:\xampp\php\php.exe artisan test tests/Feature/StorefrontAnnouncementBarTest.php`
+  - Result after adding the safe route provider/fixtures: `PASS` with `3 passed (123 assertions)`.
 
 ## Working-Tree Changes
 
@@ -36,6 +51,7 @@ The shared storefront nav still hardcoded the announcement bar copy inside `reso
   - right zone shows helper text and optional tracking / WhatsApp links
 - Hidden zones and globally disabled shell state now suppress the synthetic announcement copy instead of rendering fallback text.
 - Updated the canonical header regression to match the approved contract: absent announcement settings should not force synthetic copy.
+- Added shared-header announcement route coverage in `tests/Feature/StorefrontAnnouncementBarTest.php` using seeded product, order, CMS page, and header-menu fixtures so the saved shell config is asserted across Home, Shop, PDP, Cart, Checkout, Success, Login, and public CMS routes.
 
 ## Commit Isolation Decision
 
