@@ -12,7 +12,7 @@
                 <p class="mt-1 text-xs text-neutral-400">Sign in to access Universal Ecommerce administration.</p>
             </header>
 
-            <form method="POST" action="{{ route('login.store') }}" class="space-y-4">
+            <form method="POST" action="{{ $loginAction }}" class="space-y-4">
                 @csrf
                 <div>
                     <label for="email" class="mb-1.5 block text-xs font-semibold text-neutral-300">Admin Work Email</label>

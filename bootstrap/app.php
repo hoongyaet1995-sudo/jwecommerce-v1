@@ -23,6 +23,17 @@ return Application::configure(basePath: dirname(__DIR__))
                 ? route('customer.login')
                 : route('admin.login'),
         );
+        $middleware->redirectUsersTo(static function (\Illuminate\Http\Request $request): string {
+            if ($request->user()?->is_admin) {
+                return route('admin.dashboard');
+            }
+
+            if ($request->user('customer')) {
+                return route('customer.account');
+            }
+
+            return route('storefront.home');
+        });
 
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdmin::class,

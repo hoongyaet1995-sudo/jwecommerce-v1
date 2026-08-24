@@ -9,9 +9,13 @@ use Illuminate\View\View;
 
 class AuthController extends Controller
 {
-    public function create(): View
+    public function create(Request $request): View
     {
-        return view('auth.login');
+        return view('auth.login', [
+            'loginAction' => $request->routeIs('admin.login')
+                ? route('admin.login.store')
+                : route('login.store'),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
