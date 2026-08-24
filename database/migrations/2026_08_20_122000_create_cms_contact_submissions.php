@@ -22,8 +22,8 @@ return new class extends Migration
             $table->text('message');
             $table->timestamps();
 
-            $table->index(['page_id', 'document_stage', 'section_id']);
-            $table->index(['page_id_snapshot', 'document_stage', 'section_id']);
+            $table->index(['page_id', 'document_stage', 'section_id'], 'cms_contact_page_stage_section_idx');
+            $table->index(['page_id_snapshot', 'document_stage', 'section_id'], 'cms_contact_snapshot_stage_section_idx');
         });
     }
 

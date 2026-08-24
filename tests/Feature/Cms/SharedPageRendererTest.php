@@ -4,7 +4,8 @@ namespace Tests\Feature\Cms;
 
 use App\Domain\Cms\PageDocumentContract;
 use App\Domain\Cms\PageDocumentHasher;
-use App\Http\Controllers\StorefrontController;
+use App\Domain\Cms\PageDraftService;
+use App\Domain\Cms\PagePublicationService;
 use App\Http\Controllers\StorefrontPageController;
 use App\Models\Page;
 use App\Models\PageDocument;
@@ -78,7 +79,7 @@ class SharedPageRendererTest extends TestCase
         }
     }
 
-    public function test_saved_preview_and_canary_embed_the_saved_draft_with_real_shell_and_no_hidden_sections(): void
+    public function test_saved_preview_embeds_the_saved_draft_with_real_shell_and_no_hidden_sections(): void
     {
         $product = $this->product('saved-product', [
             'brand' => 'Saved Brand',
@@ -98,27 +99,56 @@ class SharedPageRendererTest extends TestCase
         );
         $admin = User::factory()->create(['is_admin' => true]);
 
-        foreach ([
-            "/admin/pages/{$page->id}/preview",
-            "/admin/cms-canary/pages/{$page->id}",
-        ] as $url) {
-            $response = $this->actingAs($admin)->get($url)->assertOk();
-            $response->assertSee('Page content is unavailable.')
-                ->assertDontSee('Page preview unavailable.');
-            $payload = $this->runtimePayload($response);
+        $response = $this->actingAs($admin)
+            ->get("/admin/pages/{$page->id}/preview")
+            ->assertOk();
+        $response->assertSee('Page content is unavailable.')
+            ->assertDontSee('Page preview unavailable.');
+        $payload = $this->runtimePayload($response);
 
-            $this->assertSame('Saved draft title', $payload['page']['document']['title']);
-            $this->assertSame('draft', $payload['page']['stage']);
-            $this->assertSame('preview', $payload['context']['mode']);
-            $this->assertSame(['visible-products'], array_column($payload['page']['document']['sections'], 'id'));
-            $this->assertSame([
-                'id', 'title', 'slug', 'brand', 'summary', 'images', 'tags', 'basePrice', 'baseCompareAtPrice',
-            ], array_keys($payload['catalog']['products'][0]));
-            $this->assertStringNotContainsString('HIDDEN DRAFT SECRET', $response->getContent());
-            $this->assertStringNotContainsString('OLD PUBLISHED COPY', $response->getContent());
-            $response->assertSee('data-mega-nav', false)
-                ->assertSee('ATELIER Design Studio Inc.', false)
-                ->assertDontSee('AURORA COMMERCE', false);
+        $this->assertSame('Saved draft title', $payload['page']['document']['title']);
+        $this->assertSame('draft', $payload['page']['stage']);
+        $this->assertSame('preview', $payload['context']['mode']);
+        $this->assertSame(['visible-products'], array_column($payload['page']['document']['sections'], 'id'));
+        $this->assertSame([
+            'id', 'title', 'slug', 'brand', 'summary', 'images', 'tags', 'basePrice', 'baseCompareAtPrice',
+        ], array_keys($payload['catalog']['products'][0]));
+        $this->assertStringNotContainsString('HIDDEN DRAFT SECRET', $response->getContent());
+        $this->assertStringNotContainsString('OLD PUBLISHED COPY', $response->getContent());
+        $response->assertSee('data-mega-nav', false)
+            ->assertSee('ATELIER Design Studio Inc.', false)
+            ->assertDontSee('AURORA COMMERCE', false);
+    }
+
+    public function test_protected_canary_uses_only_the_published_snapshot_and_enforces_publication_status(): void
+    {
+        $page = $this->pageWithDocuments(
+            status: 'published',
+            draft: $this->document('Later draft title', 'later-draft', [
+                $this->richText('draft-copy', 'LATER DRAFT COPY'),
+            ]),
+            published: $this->document('Published canary title', 'published-canary', [
+                $this->richText('published-copy', 'PUBLISHED CANARY COPY'),
+            ]),
+        );
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $response = $this->actingAs($admin)
+            ->get("/admin/cms-canary/pages/{$page->id}")
+            ->assertOk();
+        $payload = $this->runtimePayload($response);
+
+        $this->assertSame('Published canary title', $payload['page']['document']['title']);
+        $this->assertSame('published', $payload['page']['stage']);
+        $this->assertSame('public', $payload['context']['mode']);
+        $response->assertSee('PUBLISHED CANARY COPY', false)
+            ->assertDontSee('LATER DRAFT COPY', false);
+
+        foreach (['draft', 'archived'] as $status) {
+            $page->forceFill(['status' => $status])->saveOrFail();
+            $this->actingAs($admin)
+                ->get("/admin/cms-canary/pages/{$page->id}")
+                ->assertNotFound();
         }
     }
 
@@ -135,7 +165,7 @@ class SharedPageRendererTest extends TestCase
             ]),
         );
 
-        $response = TestResponse::fromBaseResponse(app(StorefrontPageController::class)($page));
+        $response = TestResponse::fromBaseResponse(app(StorefrontPageController::class)->forPublished($page));
         $response->assertOk();
         $payload = $this->runtimePayload($response);
 
@@ -146,6 +176,58 @@ class SharedPageRendererTest extends TestCase
         $response->assertSee('PUBLIC SNAPSHOT COPY', false)
             ->assertDontSee('NEW DRAFT SECRET', false)
             ->assertDontSee('HIDDEN PUBLIC SECRET', false);
+    }
+
+    public function test_official_public_route_resolves_the_canonical_published_slug_until_publish_changes_moves_it(): void
+    {
+        $page = $this->pageWithDocuments(
+            status: 'published',
+            draft: $this->document('Published first', 'canonical-old', [
+                $this->richText('draft-copy', 'FIRST COPY'),
+            ]),
+            published: $this->document('Published first', 'canonical-old', [
+                $this->richText('published-copy', 'FIRST COPY'),
+            ]),
+        );
+        $page->forceFill(['slug' => 'legacy-row-do-not-use', 'is_published' => false])->saveOrFail();
+
+        $this->get('/pages/canonical-old')
+            ->assertOk()
+            ->assertSee('FIRST COPY', false);
+
+        $draft = $page->fresh()->draftDocument;
+        $changed = $draft->document;
+        $changed['slug'] = 'canonical-new';
+        $changed['title'] = 'Draft changed';
+        $changed['sections'][0]['title'] = 'DRAFT ONLY COPY';
+        $changed['sections'][0]['content'] = 'DRAFT ONLY COPY';
+        app(PageDraftService::class)->save($page, $changed, $draft->lock_version);
+
+        $this->get('/pages/canonical-old')
+            ->assertOk()
+            ->assertSee('FIRST COPY', false)
+            ->assertDontSee('DRAFT ONLY COPY', false);
+        $this->get('/pages/canonical-new')->assertNotFound();
+
+        $savedDraft = $page->fresh()->draftDocument;
+        app(PagePublicationService::class)->publish($page, $savedDraft->lock_version);
+
+        $this->get('/pages/canonical-old')->assertNotFound();
+        $this->get('/pages/canonical-new')
+            ->assertOk()
+            ->assertSee('DRAFT ONLY COPY', false);
+    }
+
+    public function test_unrouted_official_action_returns_not_found_for_draft_archived_and_missing_published_snapshot(): void
+    {
+        foreach (['draft', 'archived'] as $status) {
+            $page = $this->pageWithDocuments(status: $status);
+            $this->get('/pages/'.$page->publishedDocument->slug)->assertNotFound();
+        }
+
+        $missing = $this->pageWithDocuments(status: 'published', published: null);
+        $this->get('/pages/'.$missing->draftDocument->slug)->assertNotFound();
+        $this->get('/pages/canonical-missing')->assertNotFound();
     }
 
     public function test_preview_serializes_empty_form_contract_maps_as_json_objects(): void
@@ -171,7 +253,7 @@ class SharedPageRendererTest extends TestCase
             $page = $this->pageWithDocuments(status: $status);
 
             try {
-                app(StorefrontPageController::class)($page);
+                app(StorefrontPageController::class)->forPublished($page);
                 $this->fail("Expected {$status} page to be unavailable.");
             } catch (NotFoundHttpException $exception) {
                 $this->assertSame(404, $exception->getStatusCode());
@@ -180,7 +262,7 @@ class SharedPageRendererTest extends TestCase
 
         $missing = $this->pageWithDocuments(status: 'published', published: null);
         $this->expectException(NotFoundHttpException::class);
-        app(StorefrontPageController::class)($missing);
+        app(StorefrontPageController::class)->forPublished($missing);
     }
 
     public function test_invalid_runtime_reference_is_stable_and_corrupt_contract_data_never_leaks_raw_content(): void
@@ -409,13 +491,17 @@ class SharedPageRendererTest extends TestCase
         ], $resolver->resolve('src/public-page.tsx'));
     }
 
-    public function test_official_public_route_is_unchanged_and_no_unauthenticated_canary_route_exists(): void
+    public function test_official_public_route_uses_the_canonical_published_renderer_and_no_unauthenticated_canary_route_exists(): void
     {
         $route = Route::getRoutes()->getByName('storefront.pages.show');
 
         $this->assertNotNull($route);
-        $this->assertSame('pages/{page}', $route->uri());
-        $this->assertSame(StorefrontController::class.'@page', $route->getActionName());
+        $this->assertSame('pages/{slug}', $route->uri());
+        $this->assertSame(StorefrontPageController::class, $route->getActionName());
+        $this->assertSame(
+            StorefrontPageController::class.'@forPublished',
+            Route::getRoutes()->getByName('admin.cms-canary.pages.show')?->getActionName(),
+        );
         $this->assertNull(Route::getRoutes()->getByName('storefront.cms-canary.pages.show'));
         $this->get('/cms-canary/pages/example')->assertNotFound();
     }
@@ -435,6 +521,16 @@ class SharedPageRendererTest extends TestCase
         $this->assertIsObject($wirePayload->runtime->errors, 'Runtime errors must be a JSON object map.');
 
         return json_decode($matches[1], true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    private function assertOfficialActionNotFound(string $slug): void
+    {
+        try {
+            app(StorefrontPageController::class)($slug);
+            $this->fail("Expected canonical published slug {$slug} to be unavailable.");
+        } catch (NotFoundHttpException $exception) {
+            $this->assertSame(404, $exception->getStatusCode());
+        }
     }
 
     private function pageWithDocuments(

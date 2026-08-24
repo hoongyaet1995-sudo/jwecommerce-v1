@@ -434,7 +434,7 @@ final class PageRuntimePayloadTest extends TestCase
         $factory = app(PageRuntimePayloadFactory::class);
 
         $preview = $factory->forDraft($page->fresh());
-        $public = $factory->forPublished($page->fresh());
+        $public = $factory->forCanary($page->fresh());
 
         $this->assertSame(array_keys($preview), array_keys($public));
         $this->assertSame(array_keys($preview['page']), array_keys($public['page']));
@@ -455,7 +455,7 @@ final class PageRuntimePayloadTest extends TestCase
         $this->storeDocument($page, 'published', $this->document([], slug: 'guarded-public'));
 
         try {
-            app(PageRuntimePayloadFactory::class)->forPublished($page->fresh());
+            app(PageRuntimePayloadFactory::class)->forCanary($page->fresh());
             $this->fail('Expected a draft page to be unavailable publicly.');
         } catch (NotFoundHttpException $exception) {
             $this->assertSame(404, $exception->getStatusCode());
@@ -464,7 +464,7 @@ final class PageRuntimePayloadTest extends TestCase
         $pageWithoutSnapshot = Page::query()->create(['status' => 'published']);
 
         $this->expectException(NotFoundHttpException::class);
-        app(PageRuntimePayloadFactory::class)->forPublished($pageWithoutSnapshot);
+        app(PageRuntimePayloadFactory::class)->forCanary($pageWithoutSnapshot);
     }
 
     public function test_draft_payload_requires_a_draft_snapshot(): void

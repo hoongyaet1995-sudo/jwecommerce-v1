@@ -12,6 +12,7 @@ final class PageRuntimePayloadFactory
         private readonly RuntimeAdapterRegistry $adapters,
         private readonly PageDocumentContract $contract,
         private readonly CmsFormSubmissionContracts $formContracts,
+        private readonly CanonicalPublishedPagePolicy $publishedPages,
     ) {}
 
     /** @return array<string, mixed> */
@@ -21,21 +22,28 @@ final class PageRuntimePayloadFactory
 
         abort_if($document === null, 404);
 
-        return $this->build($page, $document, 'preview');
+        return $this->build($page, $document, 'preview', PageRuntimeAudience::PREVIEW);
     }
 
     /** @return array<string, mixed> */
-    public function forPublished(Page $page): array
+    public function forCanary(Page $page): array
     {
-        $document = $page->publishedDocument;
+        $document = $this->publishedPages->publishedDocument($page);
 
-        abort_unless($page->status === 'published' && $document !== null, 404);
-
-        return $this->build($page, $document, 'public');
+        return $this->build($page, $document, 'public', PageRuntimeAudience::CANARY);
     }
 
     /** @return array<string, mixed> */
-    private function build(Page $page, PageDocument $pageDocument, string $mode): array
+    public function forOfficialPublishedSlug(string $slug): array
+    {
+        $page = $this->publishedPages->resolveBySlug($slug);
+        $document = $page->getRelation('publishedDocument');
+
+        return $this->build($page, $document, 'public', PageRuntimeAudience::PUBLIC);
+    }
+
+    /** @return array<string, mixed> */
+    private function build(Page $page, PageDocument $pageDocument, string $mode, string $audience): array
     {
         $document = $this->contract->validate($pageDocument->document);
         $facts = $this->adapters->factsFor($document);
@@ -52,7 +60,7 @@ final class PageRuntimePayloadFactory
             ],
             'catalog' => $facts['catalog'],
             'forms' => [
-                ...$this->formContracts->forDocument($page, $pageDocument, $document),
+                ...$this->formContracts->forDocument($page, $pageDocument, $document, $audience),
             ],
             'links' => new stdClass,
             'runtime' => [

@@ -63,6 +63,58 @@ final class StorefrontAnnouncementBarTest extends TestCase
             ->assertSee('https://wa.me/60123456789', false);
     }
 
+    public function test_saved_announcement_theme_and_custom_palette_are_consumed_by_the_shared_storefront_header(): void
+    {
+        foreach ([
+            'midnight-obsidian' => ['#0f172a', '#f8fafc'],
+            'aurora-indigo' => ['#312e81', '#e0e7ff'],
+            'emerald-logistics' => ['#064e3b', '#a7f3d0'],
+            'amber-flash' => ['#78350f', '#fde68a'],
+            'crimson-campaign' => ['#881337', '#ffe4e6'],
+        ] as $theme => [$background, $text]) {
+            $this->saveLiveShell([
+                'enabled' => true,
+                'theme' => $theme,
+                'zones' => [
+                    'center' => [
+                        'enabled' => true,
+                        'text' => 'Preset theme acceptance',
+                        'couponCode' => 'PRESET',
+                    ],
+                ],
+            ]);
+
+            $this->get('/shop')
+                ->assertOk()
+                ->assertSee(sprintf('data-storefront-announcement-theme="%s"', $theme), false)
+                ->assertSee(sprintf('--storefront-announcement-background: %s;', $background), false)
+                ->assertSee(sprintf('--storefront-announcement-text: %s;', $text), false);
+        }
+
+        $this->saveLiveShell([
+            'enabled' => true,
+            'theme' => 'custom',
+            'customPalette' => [
+                'background' => '#123456',
+                'text' => '#fedcba',
+                'accent' => null,
+            ],
+            'zones' => [
+                'center' => [
+                    'enabled' => true,
+                    'text' => 'Custom theme acceptance',
+                    'couponCode' => 'CUSTOM',
+                ],
+            ],
+        ]);
+
+        $this->get('/shop')
+            ->assertOk()
+            ->assertSee('data-storefront-announcement-theme="custom"', false)
+            ->assertSee('--storefront-announcement-background: #123456;', false)
+            ->assertSee('--storefront-announcement-text: #fedcba;', false);
+    }
+
     public function test_disabled_or_missing_zone_is_not_rendered(): void
     {
         $this->saveLiveShell([

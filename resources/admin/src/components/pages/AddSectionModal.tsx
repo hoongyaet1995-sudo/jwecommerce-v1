@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { PageSection, PageSectionType } from '../../types';
+import { Category, Collection, PageSection, PageSectionType } from '../../types';
+import { createCollectionTabMappings } from '../../cms/collectionTabMappings';
+import { createSectionColorDefaults } from '../../cms/sectionColorDefaults';
 import {
   X,
   Sparkles,
@@ -35,6 +37,8 @@ interface AddSectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (newSection: PageSection) => void;
+  categories: Category[];
+  collections: Collection[];
 }
 
 export interface SectionTemplateOption {
@@ -47,7 +51,7 @@ export interface SectionTemplateOption {
   defaultData: Omit<PageSection, 'id'>;
 }
 
-export const SECTION_TEMPLATES: SectionTemplateOption[] = [
+const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
   // --- 1. HEADER & INTRO ---
   {
     type: 'hero_banner',
@@ -1016,17 +1020,27 @@ export const SECTION_TEMPLATES: SectionTemplateOption[] = [
   }
 ];
 
+export const SECTION_TEMPLATES: SectionTemplateOption[] = SOURCE_SECTION_TEMPLATES.map(template => ({
+  ...template,
+  defaultData: {
+    ...template.defaultData,
+    customColors: createSectionColorDefaults(),
+  },
+}));
+
 export const AddSectionModal: React.FC<AddSectionModalProps> = ({
   isOpen,
   onClose,
-  onAdd
+  onAdd,
+  categories,
+  collections,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   if (!isOpen) return null;
 
-  const categories = [
+  const templateCategories = [
     'All',
     'Header & Intro',
     'Storytelling & Narrative',
@@ -1049,8 +1063,15 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
   });
 
   const handleSelectTemplate = (template: SectionTemplateOption) => {
+    const collectionTabs = template.type === 'collection_tabs'
+      ? createCollectionTabMappings(categories, collections)
+      : null;
     const newSection: PageSection = {
       ...template.defaultData,
+      ...(collectionTabs ? {
+        tabs: collectionTabs,
+        tabCategories: collectionTabs.map(tab => tab.label),
+      } : {}),
       id: 'sec-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7)
     };
     onAdd(newSection);
@@ -1115,7 +1136,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
 
           {/* Quick Category Selector */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-            {categories.map(cat => {
+            {templateCategories.map(cat => {
               const isActive = selectedCategory === cat;
               return (
                 <button

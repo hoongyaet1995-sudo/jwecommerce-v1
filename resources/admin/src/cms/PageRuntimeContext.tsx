@@ -51,6 +51,7 @@ export interface CmsFormSubmissionContract {
   lockVersion: number;
   sectionId: string;
   sectionType: 'contact_form' | 'newsletter_signup';
+  audience: 'admin-preview' | 'protected-canary' | 'public-storefront';
 }
 
 export interface PageRuntimeForms {
@@ -137,7 +138,7 @@ const isFiniteNumber = (value: unknown): value is number => (
   typeof value === 'number' && Number.isFinite(value)
 );
 
-const formContractFields = ['endpoint', 'pageId', 'stage', 'documentHash', 'lockVersion', 'sectionId', 'sectionType'];
+const formContractFields = ['endpoint', 'pageId', 'stage', 'documentHash', 'lockVersion', 'sectionId', 'sectionType', 'audience'];
 
 const isExactContractEndpoint = (endpoint: string, contract: Record<string, unknown>): boolean => {
   if (!endpoint.startsWith('/') || endpoint.startsWith('//')) return false;
@@ -147,11 +148,12 @@ const isExactContractEndpoint = (endpoint: string, contract: Record<string, unkn
     const kind = contract.sectionType === 'contact_form' ? 'contact' : 'newsletter';
     if (parsed.pathname !== `/cms/forms/${kind}/${contract.pageId}/${contract.stage}/${encodeURIComponent(String(contract.sectionId))}`) return false;
     const keys = [...parsed.searchParams.keys()];
-    if (keys.length !== 5 || new Set(keys).size !== keys.length || !keys.every(key => ['expires', 'hash', 'version', 'type', 'signature'].includes(key))) return false;
+    if (keys.length !== 6 || new Set(keys).size !== keys.length || !keys.every(key => ['expires', 'hash', 'version', 'type', 'audience', 'signature'].includes(key))) return false;
     return /^\d+$/.test(parsed.searchParams.get('expires') ?? '')
       && parsed.searchParams.get('hash') === contract.documentHash
       && parsed.searchParams.get('version') === String(contract.lockVersion)
       && parsed.searchParams.get('type') === contract.sectionType
+      && parsed.searchParams.get('audience') === contract.audience
       && /^[a-f0-9]{40,128}$/i.test(parsed.searchParams.get('signature') ?? '');
   } catch {
     return false;
@@ -173,6 +175,7 @@ export const isCmsFormSubmissionContract = (
   && value.sectionId === section.id
   && value.sectionType === section.type
   && (value.sectionType === 'contact_form' || value.sectionType === 'newsletter_signup')
+  && (value.audience === 'admin-preview' || value.audience === 'protected-canary' || value.audience === 'public-storefront')
   && isExactContractEndpoint(value.endpoint, value)
 );
 
@@ -491,7 +494,7 @@ const projectProduct = (product: Product): PageRuntimeProduct => ({
   slug: product.slug,
   brand: product.brand ?? '',
   summary: product.summary ?? '',
-  images: [...(product.images ?? [])],
+  images: (product.images ?? []).map((image) => typeof image === 'string' ? image : image.path),
   tags: [...(product.tags ?? [])],
   basePrice: product.basePrice,
   baseCompareAtPrice: product.baseCompareAtPrice ?? null,

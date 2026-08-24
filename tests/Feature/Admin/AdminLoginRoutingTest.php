@@ -40,4 +40,14 @@ final class AdminLoginRoutingTest extends TestCase
             ->get('/account/login')
             ->assertRedirect('/account');
     }
+
+    public function test_authenticated_admin_can_open_the_header_announcement_spa_deep_link(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $this->actingAs($admin)
+            ->get('/admin/storefront/header-announcement')
+            ->assertOk()
+            ->assertSee('window.__JW_ADMIN__', false);
+    }
 }

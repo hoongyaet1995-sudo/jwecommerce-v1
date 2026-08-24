@@ -21,8 +21,8 @@ return new class extends Migration
             $table->string('email', 254)->unique();
             $table->timestamps();
 
-            $table->index(['page_id', 'document_stage', 'section_id']);
-            $table->index(['page_id_snapshot', 'document_stage', 'section_id']);
+            $table->index(['page_id', 'document_stage', 'section_id'], 'newsletter_page_stage_section_idx');
+            $table->index(['page_id_snapshot', 'document_stage', 'section_id'], 'newsletter_snapshot_stage_section_idx');
         });
     }
 

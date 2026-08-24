@@ -157,16 +157,13 @@ final class PageDocumentContractTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function test_visible_sections_without_a_public_renderer_fail_publication(): void
+    public function test_all_visible_fixture_section_types_can_publish_when_runtime_facts_are_valid(): void
     {
         $input = $this->fixture();
-        $this->hideSectionsWithoutCurrentRenderer($input, [1]);
 
-        $exception = $this->validationException(fn () => app(PageDocumentContract::class)->assertPublishable($input, []));
+        app(PageDocumentContract::class)->assertPublishable($input, $this->fixtureRuntimeFacts());
 
-        $this->assertSame([
-            'This visible section type cannot be rendered.',
-        ], $exception->errors()['sections.1.type']);
+        $this->assertTrue(true);
     }
 
     public function test_hidden_sections_without_a_public_renderer_do_not_block_publication(): void

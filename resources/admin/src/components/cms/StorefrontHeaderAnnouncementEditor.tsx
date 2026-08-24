@@ -72,7 +72,6 @@ interface AnnouncementBarConfig {
   theme: AnnouncementBarTheme;
   customBgColor?: string;
   customTextColor?: string;
-  enableMarquee: boolean;
   isDismissible: boolean;
 }
 
@@ -140,7 +139,6 @@ export const announcementDraftFromSettings = (settings: StorefrontShellSettings)
   theme: SHELL_THEME_TO_LEGACY[settings.theme],
   customBgColor: settings.customPalette.background ?? '#0f172a',
   customTextColor: settings.customPalette.text ?? '#ffffff',
-  enableMarquee: false,
   isDismissible: true,
 });
 
@@ -995,16 +993,6 @@ export const StorefrontHeaderAnnouncementEditor: React.FC<StorefrontHeaderAnnoun
 
               {/* Behavior Settings */}
               <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800 space-y-2">
-                <label className="flex items-center justify-between text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer">
-                  <span>Enable Marquee Scrolling (Mobile)</span>
-                  <input
-                    type="checkbox"
-                    checked={formData.enableMarquee}
-                    onChange={e => setFormData(prev => ({ ...prev, enableMarquee: e.target.checked }))}
-                    className="rounded accent-indigo-600"
-                  />
-                </label>
-
                 <label className="flex items-center justify-between text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer">
                   <span>Allow Buyer to Dismiss (Close button)</span>
                   <input

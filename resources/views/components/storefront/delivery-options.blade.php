@@ -10,7 +10,7 @@
         @foreach($options as $value => $option)
             <label data-delivery-option data-delivery-shipping="{{ $option['shipping'] }}" @class(['flex cursor-pointer items-center justify-between rounded-xl border p-4 transition', 'border-amber-400 bg-amber-400/10 ring-1 ring-amber-400/30' => $selected === $value, 'border-zinc-200 bg-zinc-50 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950/60 dark:hover:border-zinc-700' => $selected !== $value])>
                 <span><input type="radio" name="delivery" value="{{ $value }}" class="mr-3 accent-amber-400" @checked($selected === $value) /><span class="text-sm font-bold text-zinc-900 dark:text-white">{{ $option['label'] }}</span><span class="mt-1 block pl-6 text-xs text-zinc-500 dark:text-zinc-400">{{ $option['detail'] }}</span></span>
-                <strong class="font-mono text-xs {{ $option['price'] === 'FREE' ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-800 dark:text-zinc-100' }}">{{ $option['price'] }}</strong>
+                <strong class="font-mono text-xs {{ $option['shipping'] === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-800 dark:text-zinc-100' }}">{{ $option['shipping'] === 0 ? 'FREE' : app(\App\Support\StorefrontCurrencyContext::class)->format($option['shipping']) }}</strong>
             </label>
         @endforeach
     </div>

@@ -48,7 +48,7 @@ class PageApiTest extends TestCase
             ->assertJsonPath('data.hasPublishedSnapshot', true)
             ->assertJsonPath('data.hasUnpublishedChanges', false);
 
-        $runtime = app(PageRuntimePayloadFactory::class)->forPublished($page->fresh());
+        $runtime = app(PageRuntimePayloadFactory::class)->forCanary($page->fresh());
         $this->assertSame('A story stored in MySQL', $runtime['page']['document']['sections'][0]['title']);
         $this->assertSame(PageDocument::STAGE_PUBLISHED, $runtime['page']['stage']);
 
@@ -59,10 +59,10 @@ class PageApiTest extends TestCase
             ->assertJsonPath('data.hasPublishedSnapshot', true);
 
         $this->expectException(NotFoundHttpException::class);
-        app(PageRuntimePayloadFactory::class)->forPublished($page->fresh());
+        app(PageRuntimePayloadFactory::class)->forCanary($page->fresh());
     }
 
-    public function test_admin_cannot_publish_a_visible_section_without_a_renderer_capability(): void
+    public function test_admin_can_publish_a_visible_split_hero_now_that_its_renderer_is_capable(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
         $payload = $this->pagePayload();
@@ -72,23 +72,19 @@ class PageApiTest extends TestCase
             ->postJson(route('admin.api.pages.store'), $payload)
             ->assertCreated();
 
-        $response = $this->actingAs($admin)
+        $this->actingAs($admin)
             ->postJson(route('admin.api.pages.publish', $created->json('data.id')), [
                 'lockVersion' => $created->json('data.lockVersion'),
             ])
-            ->assertUnprocessable()
-            ->assertJsonPath('code', 'cms_publication_blocked');
-
-        $this->assertSame(
-            ['This visible section type cannot be rendered.'],
-            $response->json('errors')['sections.0.type'],
-        );
+            ->assertOk()
+            ->assertJsonPath('data.status', 'published')
+            ->assertJsonPath('data.hasPublishedSnapshot', true);
 
         $this->assertDatabaseHas('pages', [
             'id' => $created->json('data.id'),
-            'status' => 'draft',
+            'status' => 'published',
         ]);
-        $this->assertDatabaseMissing('page_documents', [
+        $this->assertDatabaseHas('page_documents', [
             'page_id' => $created->json('data.id'),
             'stage' => PageDocument::STAGE_PUBLISHED,
         ]);

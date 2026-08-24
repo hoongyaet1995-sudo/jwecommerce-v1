@@ -1012,12 +1012,13 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                       </span>
                     )}
                   </div>
-                  <button
+                  <a
+                    href={`/products/${prod.slug}`}
                     onClick={e => isEditingMode && e.preventDefault()}
                     className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md transition-colors"
                   >
                     View Details
-                  </button>
+                  </a>
                 </div>
               </div>
             </div>
@@ -1116,8 +1117,10 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         <div className={`grid ${getGridColsClass(cols)} gap-6 pt-4`}>
           {tabProducts.length > 0 ? (
             tabProducts.map((prod, idx) => (
-              <div
+              <a
                 key={prod.id + idx}
+                href={`/products/${prod.slug}`}
+                onClick={e => isEditingMode && e.preventDefault()}
                 className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-indigo-500/40 transition-all flex items-center gap-4"
               >
                 <img
@@ -1134,7 +1137,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                   <p style={getContentStyle()} className="text-xs text-neutral-400 line-clamp-1">{prod.summary}</p>
                   <div style={getTitleStyle()} className="mt-1 font-bold text-white text-sm">${prod.basePrice}</div>
                 </div>
-              </div>
+              </a>
             ))
           ) : (
             <div className="col-span-full py-10 px-4 text-center rounded-2xl bg-white/5 border border-white/10 text-neutral-400">

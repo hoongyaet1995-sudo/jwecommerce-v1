@@ -2,6 +2,7 @@
 
 namespace App\Domain\Cms;
 
+use App\Domain\Media\ManagedMediaOrphanState;
 use App\Models\CmsMediaAsset;
 use App\Models\CmsMediaReference;
 use App\Models\Page;
@@ -178,26 +179,7 @@ final class MediaReferenceSynchronizer
     /** @param Collection<int, CmsMediaAsset> $assets */
     private function refreshOrphanState(Collection $assets): void
     {
-        if ($assets->isEmpty()) {
-            return;
-        }
-
-        $assetIds = $assets->modelKeys();
-        $referencedIds = CmsMediaReference::query()
-            ->whereIn('asset_id', $assetIds)
-            ->distinct()
-            ->pluck('asset_id')
-            ->mapWithKeys(static fn (string $id): array => [$id => true]);
-
-        foreach ($assets as $asset) {
-            $isReferenced = $referencedIds->has((string) $asset->getKey());
-
-            if ($isReferenced && $asset->orphaned_at !== null) {
-                $asset->forceFill(['orphaned_at' => null])->saveOrFail();
-            } elseif (! $isReferenced && $asset->orphaned_at === null) {
-                $asset->forceFill(['orphaned_at' => now()])->saveOrFail();
-            }
-        }
+        app(ManagedMediaOrphanState::class)->refresh($assets);
     }
 
     /**

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAdmin } from '../../context/AdminContext';
+import { primaryProductImage } from '../../catalogMedia';
 import {
   Search,
   Package,
@@ -394,7 +395,7 @@ export const CommandPalette: React.FC = () => {
                     className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-left text-xs font-medium text-neutral-800 dark:text-neutral-200 transition-colors"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <img src={p.images[0]} alt={p.title} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
+                      <img src={primaryProductImage(p)} alt={p.title} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
                       <div className="truncate">
                         <div className="truncate font-semibold">{p.title}</div>
                         <div className="text-[10px] text-neutral-500">{p.brand} • ${p.basePrice} • {p.variants.length} Variants</div>

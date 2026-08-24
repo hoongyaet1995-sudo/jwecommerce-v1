@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { Product } from '../../types';
 import { ProductEditorModal } from './ProductEditorModal';
+import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 import {
   Package,
   Plus,
@@ -32,6 +33,7 @@ export const ProductAdmin: React.FC = () => {
   // Editor Modal State
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [pendingDeletion, setPendingDeletion] = useState<Product | null>(null);
 
   // Filter products
   const filteredProducts = products.filter(p => {
@@ -178,6 +180,9 @@ export const ProductAdmin: React.FC = () => {
               {filteredProducts.map((prod) => {
                 const category = categories.find(c => c.id === prod.categoryId);
                 const isLowStock = prod.totalInventory < 50;
+                const primaryImage = typeof prod.images[0] === 'string'
+                  ? prod.images[0]
+                  : prod.images[0]?.path;
 
                 return (
                   <tr key={prod.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-800/50 transition-colors">
@@ -185,7 +190,7 @@ export const ProductAdmin: React.FC = () => {
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3.5">
                         <img
-                          src={prod.images[0]}
+                          src={primaryImage}
                           alt={prod.title}
                           className="w-11 h-11 rounded-xl object-cover ring-1 ring-neutral-200 dark:ring-neutral-700 flex-shrink-0"
                         />
@@ -228,13 +233,44 @@ export const ProductAdmin: React.FC = () => {
 
                     {/* Variant Matrix Summary */}
                     <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold font-mono text-[11px]">
-                          {prod.variants.length} SKUs
-                        </span>
-                        <span className="text-[10px] text-neutral-400">
-                          ({prod.options.map(o => o.name).join(' × ') || 'Single'})
-                        </span>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold font-mono text-[11px]">
+                            {prod.variants.length} SKUs
+                          </span>
+                          <span className="text-[10px] text-neutral-400">
+                            ({prod.options.map(o => o.name).join(' × ') || 'Single'})
+                          </span>
+                        </div>
+
+                        {/* Visual Swatches Preview */}
+                        {prod.variants.some(v => v.colorCode || v.optionImage) && (
+                          <div className="flex items-center gap-1 pt-0.5">
+                            {(Array.from(new Set(prod.variants.map(v => v.colorCode || v.optionImage).filter(Boolean))) as string[]).slice(0, 5).map((visualVal, idx) => {
+                              const isHex = visualVal.startsWith('#');
+                              return isHex ? (
+                                <span
+                                  key={idx}
+                                  className="w-3 h-3 rounded-full border border-white/60 dark:border-neutral-700 shadow-2xs shrink-0"
+                                  style={{ backgroundColor: visualVal }}
+                                  title={visualVal}
+                                />
+                              ) : (
+                                <img
+                                  key={idx}
+                                  src={visualVal}
+                                  alt="Swatch"
+                                  className="w-3 h-3 rounded-xs object-cover border border-neutral-300 dark:border-neutral-600 shrink-0"
+                                />
+                              );
+                            })}
+                            {new Set(prod.variants.map(v => v.colorCode || v.optionImage).filter(Boolean)).size > 5 && (
+                              <span className="text-[9px] text-neutral-400 font-mono">
+                                +{new Set(prod.variants.map(v => v.colorCode || v.optionImage).filter(Boolean)).size - 5}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </td>
 
@@ -289,7 +325,7 @@ export const ProductAdmin: React.FC = () => {
                         </button>
 
                         <button
-                          onClick={() => deleteProduct(prod.id)}
+                          onClick={() => setPendingDeletion(prod)}
                           className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                           title="Delete Product"
                         >
@@ -311,6 +347,21 @@ export const ProductAdmin: React.FC = () => {
         isOpen={isEditorOpen}
         onClose={() => setIsEditorOpen(false)}
       />
+      {pendingDeletion && <DeleteConfirmationModal
+        isOpen
+        itemType="Product"
+        itemName={pendingDeletion.title}
+        itemDetails={`${pendingDeletion.variants.length} SKU${pendingDeletion.variants.length === 1 ? '' : 's'} • $${pendingDeletion.basePrice.toFixed(2)}`}
+        warningMessage="Archiving this product removes it from active storefront listings while retaining its order history."
+        impactItems={[
+          `${pendingDeletion.variants.length} SKU variant${pendingDeletion.variants.length === 1 ? '' : 's'} will no longer be available for new purchases.`,
+          'The product will be removed from active catalog and storefront listings.',
+          'Existing order history remains intact.',
+        ]}
+        confirmButtonText="Yes, Archive Product"
+        onClose={() => setPendingDeletion(null)}
+        onConfirm={async () => { await deleteProduct(pendingDeletion.id); setPendingDeletion(null); }}
+      />}
     </div>
   );
 };

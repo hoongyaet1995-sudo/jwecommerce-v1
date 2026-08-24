@@ -217,12 +217,12 @@ describe('PageRuntimeContext', () => {
     const valid = structuredClone(payload()) as unknown as Record<string, any>;
     valid.page.document.sections = [{id: 'contact-form', type: 'contact_form', title: 'Contact', isVisible: true}];
     valid.runtime.sections = {};
-    const endpoint = '/cms/forms/contact/7/published/contact-form?expires=1893456000&hash=saved-hash&version=3&type=contact_form&signature=' + 'a'.repeat(64);
+    const endpoint = '/cms/forms/contact/7/published/contact-form?expires=1893456000&hash=saved-hash&version=3&type=contact_form&audience=public-storefront&signature=' + 'a'.repeat(64);
     valid.forms.contact = {
       'contact-form': {
         endpoint,
         pageId: '7', stage: 'published', documentHash: 'saved-hash', lockVersion: 3,
-        sectionId: 'contact-form', sectionType: 'contact_form',
+        sectionId: 'contact-form', sectionType: 'contact_form', audience: 'public-storefront',
       },
     };
     expect(readBootstrapValue(valid)).not.toBeNull();
@@ -237,6 +237,15 @@ describe('PageRuntimeContext', () => {
       adversary.forms.contact['contact-form'].endpoint = invalidEndpoint;
       expect(readBootstrapValue(adversary)).toBeNull();
     }
+
+    const audienceMismatch = structuredClone(valid);
+    audienceMismatch.forms.contact['contact-form'].audience = 'protected-canary';
+    expect(readBootstrapValue(audienceMismatch)).toBeNull();
+
+    const unknownAudience = structuredClone(valid);
+    unknownAudience.forms.contact['contact-form'].audience = 'public-before-cutover';
+    unknownAudience.forms.contact['contact-form'].endpoint = endpoint.replace('public-storefront', 'public-before-cutover');
+    expect(readBootstrapValue(unknownAudience)).toBeNull();
   });
 
   it('accepts the exact PHP collection-tab fact list and rejects extra nested runtime keys', () => {

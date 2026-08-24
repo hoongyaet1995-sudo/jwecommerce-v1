@@ -12,11 +12,13 @@ import {
 import { PageDraftAutosave, PageDraftAutosaveState } from '../../cms/pageDraftAutosave';
 import { hasOwnContractField } from '../../cms/pageContract';
 import { parseDraftImport } from '../../cms/pageImport';
+import { repairLegacyCollectionTabs } from '../../cms/collectionTabMappings';
 import { createAdminPageRuntimePayload, PageRuntimeProvider } from '../../cms/PageRuntimeContext';
 import { SectionRenderer } from './SectionRenderer';
 import { SectionInspector } from './SectionInspector';
 import { AddSectionModal } from './AddSectionModal';
 import { PagePreviewModal } from './PagePreviewModal';
+import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 import {
   LayoutTemplate,
   Plus,
@@ -89,6 +91,8 @@ export const PageAdmin: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'archived'>('all');
   const [isJsonModalOpen, setIsJsonModalOpen] = useState(false);
   const [jsonText, setJsonText] = useState('');
+  const [pageToDelete, setPageToDelete] = useState<CmsPage | null>(null);
+  const [sectionToDelete, setSectionToDelete] = useState<{ id: string; title: string; type: string } | null>(null);
   const autosaveRef = useRef<PageDraftAutosave<PageDocument> | null>(null);
   const autosavePageIdRef = useRef<string | null>(null);
   const autosaveUnsubscribeRef = useRef<(() => void) | null>(null);
@@ -496,6 +500,15 @@ export const PageAdmin: React.FC = () => {
     }
   };
 
+  const requestDeleteSection = (sectionId: string) => {
+    const target = currentPage?.sections.find(section => section.id === sectionId);
+    setSectionToDelete({
+      id: sectionId,
+      title: target?.title || target?.type.replaceAll('_', ' ').toUpperCase() || 'Selected Section',
+      type: target?.type || 'Section',
+    });
+  };
+
   const handleMoveSection = (index: number, direction: 'up' | 'down') => {
     if (!currentPage) return;
     const updatedPage = updatePageLocal(currentPage.id, latest => {
@@ -591,8 +604,31 @@ export const PageAdmin: React.FC = () => {
     if (updated) schedulePage(updated);
   };
 
+  const repairLegacyCollectionTabsBeforePublish = (): void => {
+    if (!currentPage) return;
+
+    let repaired = false;
+    const updated = updatePageLocal(currentPage.id, latest => {
+      const sections = latest.sections.map(section => {
+        const resolved = repairLegacyCollectionTabs(section, categories, collections);
+        repaired ||= resolved !== section;
+        return resolved;
+      });
+
+      return repaired ? {
+        ...latest,
+        sections,
+        updatedAt: new Date().toISOString().split('T')[0],
+      } : latest;
+    });
+
+    if (repaired && updated) schedulePage(updated);
+  };
+
   const publishCurrentPage = async (): Promise<boolean> => {
-    if (!currentPage || !await flushCurrentPage()) return false;
+    if (!currentPage) return false;
+    repairLegacyCollectionTabsBeforePublish();
+    if (!await flushCurrentPage()) return false;
     const controller = autosaveRef.current;
     if (!controller) return false;
 
@@ -865,7 +901,7 @@ export const PageAdmin: React.FC = () => {
                       <Copy className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => deletePage(page.id)}
+                      onClick={() => setPageToDelete(page)}
                       className="p-2 rounded-xl text-neutral-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
                       title="Delete Page"
                     >
@@ -1143,7 +1179,7 @@ export const PageAdmin: React.FC = () => {
                         <button
                           onClick={e => {
                             e.stopPropagation();
-                            handleDeleteSection(section.id);
+                            requestDeleteSection(section.id);
                           }}
                           className="p-1 rounded hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-500"
                           title="Delete Section"
@@ -1273,7 +1309,7 @@ export const PageAdmin: React.FC = () => {
                     if (updated) schedulePage(updated);
                   });
               }}
-              onDelete={handleDeleteSection}
+              onDelete={requestDeleteSection}
               onClose={() => setActiveSectionId(null)}
               onToggleCollapse={() => setIsInspectorCollapsed(true)}
             />
@@ -1308,11 +1344,56 @@ export const PageAdmin: React.FC = () => {
         )}
       </div>
 
+      {/* Delete CMS Page Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={!!pageToDelete}
+        itemType="CMS Page"
+        itemName={pageToDelete?.title}
+        itemDetails={`Path: /pages/${pageToDelete?.slug} • Template: ${pageToDelete?.template} • Sections: ${pageToDelete?.sections.length || 0} blocks`}
+        warningMessage={`Deleting "${pageToDelete?.title}" removes its editable document and published snapshot.`}
+        impactItems={[
+          'The page document and all of its configured sections will be removed.',
+          'Any links pointing to this storefront path may become unavailable.',
+          'This operation cannot be automatically reversed.',
+        ]}
+        confirmButtonText="Delete CMS Page"
+        onConfirm={() => {
+          if (pageToDelete) {
+            deletePage(pageToDelete.id);
+            setPageToDelete(null);
+          }
+        }}
+        onClose={() => setPageToDelete(null)}
+      />
+
+      {/* Delete CMS Page Section Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={!!sectionToDelete}
+        itemType="Page Section Block"
+        itemName={sectionToDelete?.title}
+        itemDetails={`Block Type: ${sectionToDelete?.type} • Target ID: #${sectionToDelete?.id}`}
+        warningMessage={`Removing "${sectionToDelete?.title}" deletes it from this page draft when autosave completes.`}
+        impactItems={[
+          'This section will no longer appear in page Preview or the published storefront after the next publish.',
+          'Its section-specific content and configuration will be removed from this draft.',
+        ]}
+        confirmButtonText="Remove Section Block"
+        onConfirm={() => {
+          if (sectionToDelete) {
+            handleDeleteSection(sectionToDelete.id);
+            setSectionToDelete(null);
+          }
+        }}
+        onClose={() => setSectionToDelete(null)}
+      />
+
       {/* Add Section Template Modal */}
       <AddSectionModal
         isOpen={isAddSectionOpen}
         onClose={() => setIsAddSectionOpen(false)}
         onAdd={handleAddSection}
+        categories={categories}
+        collections={collections}
       />
 
       {/* Full Live Preview Modal */}

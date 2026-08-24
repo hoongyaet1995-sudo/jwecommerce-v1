@@ -26,6 +26,7 @@ import {
   PostageCalculationMode, 
   CourierCode 
 } from '../../types/shipping';
+import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 
 interface ShippingRatesTabProps {
   onOpenInsertModal: () => void;
@@ -48,6 +49,7 @@ export const ShippingRatesTab: React.FC<ShippingRatesTabProps> = ({
   const [selectedModeFilter, setSelectedModeFilter] = useState<'all' | PostageCalculationMode>('all');
   const [selectedRegionFilter, setSelectedRegionFilter] = useState<'all' | 'peninsular' | 'east_malaysia'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [rateToDelete, setRateToDelete] = useState<GeneralShippingRate | null>(null);
 
   // Interactive Live Calculator State
   const [testRegion, setTestRegion] = useState<'peninsular' | 'east_malaysia'>('peninsular');
@@ -492,7 +494,7 @@ export const ShippingRatesTab: React.FC<ShippingRatesTabProps> = ({
                   </button>
 
                   <button
-                    onClick={() => deleteShippingRate(rate.id)}
+                    onClick={() => setRateToDelete(rate)}
                     className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
                     title="Delete rate rule"
                   >
@@ -524,6 +526,7 @@ export const ShippingRatesTab: React.FC<ShippingRatesTabProps> = ({
         </div>
       )}
 
+      <DeleteConfirmationModal isOpen={!!rateToDelete} itemType="Shipping Rate Rule" itemName={rateToDelete?.name} itemDetails={rateToDelete ? `Mode: ${rateToDelete.calculationMode.toUpperCase()} • Region: ${rateToDelete.zoneRegion} • Base: RM ${(rateToDelete.flatRateCost ?? rateToDelete.tiers[0]?.cost ?? 0).toFixed(2)}` : undefined} warningMessage={`Deleting "${rateToDelete?.name}" removes this postage calculation tier.`} impactItems={['Checkout will no longer calculate shipping from this rate.', 'Existing order shipping snapshots remain unchanged.']} confirmButtonText="Delete Shipping Rate" onConfirm={() => { if (rateToDelete) { deleteShippingRate(rateToDelete.id); setRateToDelete(null); } }} onClose={() => setRateToDelete(null)} />
     </div>
   );
 };

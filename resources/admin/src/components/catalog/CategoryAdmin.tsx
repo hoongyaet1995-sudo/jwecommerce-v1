@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
+import { CatalogImageUploadField } from './CatalogImageUploadField';
+import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 import { Category } from '../../types';
 import {
   FolderTree,
@@ -39,6 +41,7 @@ export const CategoryAdmin: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pendingDeletion, setPendingDeletion] = useState<Category | null>(null);
 
   const filteredCategories = categories.filter(c =>
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -67,11 +70,9 @@ export const CategoryAdmin: React.FC = () => {
 
   const handleNameChange = (name: string) => {
     if (!editingCategory) return;
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     setEditingCategory({
       ...editingCategory,
       name,
-      slug: editingCategory.slug ? editingCategory.slug : slug,
       seoTitle: editingCategory.seoTitle ? editingCategory.seoTitle : `${name} | Shop Online at Aurora`
     });
   };
@@ -219,7 +220,7 @@ export const CategoryAdmin: React.FC = () => {
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => deleteCategory(cat.id)}
+                          onClick={() => setPendingDeletion(cat)}
                           className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -270,14 +271,17 @@ export const CategoryAdmin: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">URL Slug</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="smart-wearables"
-                    value={editingCategory.slug}
-                    onChange={(e) => setEditingCategory({ ...editingCategory, slug: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white font-mono"
-                  />
+                  <div className="flex rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500">
+                    <span className="inline-flex items-center px-3 text-xs font-mono text-neutral-500 dark:text-neutral-400 border-r border-neutral-200 dark:border-neutral-700 whitespace-nowrap">/categories/</span>
+                    <input
+                      type="text"
+                      placeholder="auto-generated-from-category-name"
+                      value={editingCategory.slug}
+                      onChange={(e) => setEditingCategory({ ...editingCategory, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
+                      className="min-w-0 flex-1 px-3 py-2 text-xs font-mono bg-transparent text-neutral-900 dark:text-white outline-none"
+                    />
+                  </div>
+                  <p className="mt-1 text-[10px] text-neutral-500 dark:text-neutral-400">Leave blank to generate a unique URL slug from the category name.</p>
                 </div>
               </div>
 
@@ -322,16 +326,7 @@ export const CategoryAdmin: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Image URL</label>
-                <input
-                  type="text"
-                  placeholder="https://images.unsplash.com/..."
-                  value={editingCategory.image || ''}
-                  onChange={(e) => setEditingCategory({ ...editingCategory, image: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
-                />
-              </div>
+              <CatalogImageUploadField label="Image URL" value={editingCategory.image || ''} onChange={(image) => setEditingCategory({ ...editingCategory, image })} />
 
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Category Description</label>
@@ -413,6 +408,20 @@ export const CategoryAdmin: React.FC = () => {
           </div>
         </div>
       )}
+      {pendingDeletion && <DeleteConfirmationModal
+        isOpen
+        itemType="Category"
+        itemName={pendingDeletion.name}
+        itemDetails={`${pendingDeletion.productCount} linked product${pendingDeletion.productCount === 1 ? '' : 's'}`}
+        warningMessage="Deleting this category removes its taxonomy node from the catalog. Linked products must be reassigned before they can remain categorized."
+        impactItems={[
+          `${pendingDeletion.productCount} linked product${pendingDeletion.productCount === 1 ? '' : 's'} may no longer have this category assignment.`,
+          'Storefront menus or page sections linked to this category may no longer resolve.',
+          'This action cannot be automatically reversed.',
+        ]}
+        onClose={() => setPendingDeletion(null)}
+        onConfirm={async () => { await deleteCategory(pendingDeletion.id); setPendingDeletion(null); }}
+      />}
     </div>
   );
 };

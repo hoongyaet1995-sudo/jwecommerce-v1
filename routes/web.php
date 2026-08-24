@@ -3,6 +3,8 @@
 use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AdminAppController;
 use App\Http\Controllers\Admin\CatalogApiController;
+use App\Http\Controllers\Admin\ProductReviewApiController;
+use App\Http\Controllers\Admin\StaffReviewPermissionController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CmsFormContractsController;
 use App\Http\Controllers\Admin\CmsMediaAssetController;
@@ -27,15 +29,21 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CustomerAccountController;
 use App\Http\Controllers\CustomerAuthController;
+use App\Http\Controllers\CustomerProductReviewController;
+use App\Http\Controllers\ProductReviewMediaController;
 use App\Http\Controllers\Storefront\CmsContactSubmissionController;
 use App\Http\Controllers\Storefront\NewsletterSubscriptionController;
+use App\Http\Controllers\StorefrontCurrencyController;
 use App\Http\Controllers\StorefrontController;
+use App\Http\Controllers\StorefrontPageController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StorefrontController::class, 'home'])->name('storefront.home');
 Route::get('/shop', [StorefrontController::class, 'index'])->name('storefront.index');
+Route::get('/categories/{category:slug}', [StorefrontController::class, 'category'])->name('storefront.categories.show');
 Route::get('/collections/{collection:slug}', [StorefrontController::class, 'collection'])->name('storefront.collections.show');
-Route::get('/products/{product:handle}', [StorefrontController::class, 'show'])->name('storefront.products.show');
+Route::get('/products/{handle}', [StorefrontController::class, 'show'])->name('storefront.products.show');
+Route::post('/currency', StorefrontCurrencyController::class)->name('storefront.currency.update');
 Route::get('/cart', [CartController::class, 'show'])->name('cart.show');
 Route::get('/cart/drawer', [CartController::class, 'drawer'])->name('cart.drawer');
 Route::post('/cart/items', [CartController::class, 'store'])->name('cart.items.store');
@@ -46,7 +54,7 @@ Route::delete('/cart/coupon', [CartController::class, 'removeCoupon'])->name('ca
 Route::get('/checkout', [CheckoutController::class, 'create'])->name('checkout.create');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 Route::get('/order/success', [CheckoutController::class, 'success'])->name('checkout.success');
-Route::get('/pages/{page:slug}', [StorefrontController::class, 'page'])->name('storefront.pages.show');
+Route::get('/pages/{slug}', StorefrontPageController::class)->name('storefront.pages.show');
 Route::post('/cms/forms/contact/{page}/{stage}/{section}', CmsContactSubmissionController::class)
     ->whereIn('stage', ['draft', 'published'])
     ->middleware(['signed:relative', 'throttle:cms-contact'])
@@ -66,11 +74,13 @@ Route::middleware('guest:customer')->prefix('account')->name('customer.')->group
 });
 Route::middleware(['auth:customer', 'customer'])->prefix('account')->name('customer.')->group(function (): void {
     Route::get('/', [CustomerAccountController::class, 'show'])->name('account');
-    Route::get('/preview/original-account', [CustomerAccountController::class, 'originalPreview'])->name('account.original-preview');
     Route::patch('/profile', [CustomerAccountController::class, 'updateProfile'])->name('profile.update');
     Route::post('/addresses', [CustomerAccountController::class, 'storeAddress'])->name('addresses.store');
     Route::post('/wishlist/{product}', [CustomerAccountController::class, 'storeWishlist'])->name('wishlist.store');
     Route::delete('/wishlist/{product}', [CustomerAccountController::class, 'destroyWishlist'])->name('wishlist.destroy');
+    Route::get('/reviews/media/{media}', [ProductReviewMediaController::class, 'showForCustomer'])->name('reviews.media.show');
+    Route::post('/reviews', [CustomerProductReviewController::class, 'store'])->name('reviews.store');
+    Route::get('/preview/reviews', [CustomerProductReviewController::class, 'preview'])->name('reviews.preview');
     Route::post('/logout', [CustomerAuthController::class, 'destroy'])->name('logout');
 });
 
@@ -86,6 +96,13 @@ Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/api/dashboard', DashboardDataController::class)->name('api.dashboard');
     Route::get('/api/customers', [CustomerDirectoryDataController::class, 'index'])->name('api.customers');
+    Route::get('/api/staff/review-permissions', [StaffReviewPermissionController::class, 'index'])->name('api.staff.review-permissions.index');
+    Route::put('/api/staff/{staff}/review-permissions', [StaffReviewPermissionController::class, 'update'])->name('api.staff.review-permissions.update');
+    Route::get('/api/reviews', [ProductReviewApiController::class, 'index'])->name('api.reviews.index');
+    Route::get('/api/reviews/media/{media}', [ProductReviewMediaController::class, 'showForAdmin'])->name('api.reviews.media.show');
+    Route::get('/api/reviews/{review}/audit', [ProductReviewApiController::class, 'audit'])->name('api.reviews.audit');
+    Route::post('/api/reviews/{review}/moderate', [ProductReviewApiController::class, 'moderate'])->name('api.reviews.moderate');
+    Route::post('/api/reviews/bulk-moderate', [ProductReviewApiController::class, 'bulkModerate'])->name('api.reviews.bulk-moderate');
     Route::post('/api/customers', [CustomerDirectoryDataController::class, 'store']);
     Route::patch('/api/customers/{customer}', [CustomerDirectoryDataController::class, 'update']);
     Route::delete('/api/customers/{customer}', [CustomerDirectoryDataController::class, 'destroy']);
@@ -102,7 +119,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/pages/{page}/unpublish', [PageApiController::class, 'unpublish'])->name('api.pages.unpublish');
     Route::post('/api/pages/{page}/archive', [PageApiController::class, 'archive'])->name('api.pages.archive');
     Route::get('/pages/{page}/preview', PagePreviewController::class)->name('pages.preview');
-    Route::get('/cms-canary/pages/{page}', PagePreviewController::class)->name('cms-canary.pages.show');
+    Route::get('/cms-canary/pages/{page}', [StorefrontPageController::class, 'forPublished'])->name('cms-canary.pages.show');
     Route::get('/api/catalog', [CatalogApiController::class, 'index'])->name('api.catalog.index');
     Route::post('/api/catalog/categories', [CatalogApiController::class, 'storeCategory']);
     Route::patch('/api/catalog/categories/{category}', [CatalogApiController::class, 'updateCategory']);
@@ -143,6 +160,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/marketplace/inventory', AdminAppController::class)->name('marketplace.inventory');
     Route::get('/marketplace/sync', AdminAppController::class)->name('marketplace.sync');
     Route::get('/storefront', AdminAppController::class)->name('storefront');
+    Route::get('/storefront/header-announcement', AdminAppController::class)->name('storefront.header-announcement');
     Route::get('/pages', AdminAppController::class)->name('pages.index');
     Route::get('/menus/header', AdminAppController::class)->name('menus.index');
     Route::get('/menus/footer', AdminAppController::class)->name('ui.menus.footer');

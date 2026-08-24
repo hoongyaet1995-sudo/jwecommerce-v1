@@ -48,11 +48,17 @@ class CmsMediaAsset extends Model
         return $this->hasMany(CmsMediaReference::class, 'asset_id');
     }
 
+    public function catalogReferences(): HasMany
+    {
+        return $this->hasMany(CatalogMediaReference::class, 'asset_id');
+    }
+
     public function scopeCleanupEligible(Builder $query): Builder
     {
         return $query
             ->whereNotNull('orphaned_at')
             ->where('orphaned_at', '<=', now()->subDays(30))
-            ->whereDoesntHave('references');
+            ->whereDoesntHave('references')
+            ->whereDoesntHave('catalogReferences');
     }
 }

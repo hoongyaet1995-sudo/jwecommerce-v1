@@ -4,7 +4,7 @@
 
 - Selected private source root: `C:\tmp\jw-review-ui-source-20260823-v7`.
 - Raw source remains outside this repository and is not copied here.
-- Official `/account` cutover: not authorized.
+- Official `/account` cutover: user-authorized and completed on 2026-08-23.
 - Preview route creation and UI porting are outside this contract-lock task.
 
 ## Archive provenance
@@ -74,22 +74,33 @@ Each listed source field is either an available adapter, mock retained, or backe
 | Footer: logo asset, static copy, trust statements, local navigation | mock retained | Copy, layout, and visual interactions remain source-faithful. |
 | Footer newsletter email and join action | backend contract gap | Newsletter subscription must use an already-approved endpoint only after a source-faithful adapter task; no new account route or form contract is introduced here. |
 
-## Route isolation evidence
+## Official route and preview regression evidence
 
-The official route remains `GET /account`, named `customer.account`, inside the existing `auth:customer` and `customer` middleware group. Its controller action remains `CustomerAccountController::show`, rendering `storefront.account`. The dedicated test signs in through the `customer` guard, requests the named official route, expects HTTP 200, and confirms the preview marker is absent. No preview route, controller action, or view exists in this task.
+The official route remains `GET /account`, named `customer.account`, inside the existing `auth:customer` and `customer` middleware group. Following explicit user authorization, `CustomerAccountController::show` now resolves only the signed-in `customer`-guard user, rejects a missing customer relation, builds the existing customer-scoped `OriginalAccountPayloadFactory` payload, and renders the accepted `storefront.account-original-preview` adapter. The official-route feature test signs in through the customer guard and confirms HTTP 200, the adapter view, its payload, and the untouched `data-original-account-workspace` source marker.
+
+The customer-guard route `GET /account/preview/original-account`, named `customer.account.original-preview`, remains rendered by `CustomerAccountController::originalPreview` through the same accepted adapter and payload factory. It is retained as an isolated regression and acceptance surface, not a separate implementation.
 
 ## Acceptance boundary for later tasks
 
 1. Keep the raw source private and retain all listed source DOM, classes, copy, responsive behavior, and local interactions.
-2. Mount any future preview only under a separately named customer-guard route.
+2. Retain `/account/preview/original-account` as the separately named customer-guard regression route; the authorized official `/account` route uses the same accepted adapter.
 3. Read and mutate only customer-owned profile, addresses, cart, orders, reviews, and logout state through existing approved interfaces.
 4. Keep password, vouchers, two-factor, sessions, points, tier, benefits, and unsupported address operations visibly non-operational rather than inventing backend behavior.
-5. Do not alter the official `/account` route without explicit approval after preview acceptance.
+5. The 2026-08-23 authorization covers only the official `/account` adapter cutover; do not broaden it to other routes or backend capabilities without separate approval.
 
 ## Task 3 runtime prerequisite and accepted mock ruling
 
 The embedded Purchase History review adapter depends on the separately owned buyer-review operational-closure work that is currently present but intentionally uncommitted in the shared XAMPP worktree. Task 3 does not introduce or own that runtime. At minimum, the dependency includes the `OrderItem::reviews` and product-variant relations, the `ProductReview` domain models/table, the customer-scoped `customer.reviews.store` route, `CustomerProductReviewController`, and `ProductReviewSubmissionService`. A clean checkout containing only the Task 3 commits cannot boot the preview or its focused test until that prerequisite work is merged.
 
-Current-runtime mitigation evidence: on 2026-08-23, the customer-guard preview rendered successfully at `http://127.0.0.1:8000/account/preview/original-account` with the prerequisite worktree present, and the existing cart drawer opened from the restored source header. This proves only the shared XAMPP runtime, not clean-checkout independence.
+Current-runtime mitigation evidence: on 2026-08-23, the customer-guard preview rendered successfully at `http://127.0.0.1:8500/account/preview/original-account` with the prerequisite worktree present, and the existing cart drawer opened from the restored source header. This proves only the shared XAMPP runtime, not clean-checkout independence.
 
 Acceptance item 4 above is superseded for visible source fidelity by the explicit review ruling: password, voucher, two-factor, session, points, tier, and benefits surfaces preserve the exact original source mock visual copy and local interaction. Task 3 adds no Laravel persistence for those capabilities; unsupported capability truth remains documented in this manifest and the Task 3 evidence report rather than through self-authored visible disclaimers.
+
+## Final browser acceptance — 2026-08-23
+
+- Desktop `1440×1000`: `document.body.scrollWidth=1425` and `document.documentElement.scrollWidth=1425`; no horizontal overflow.
+- Mobile `390×844`: `document.body.scrollWidth=375` and `document.documentElement.scrollWidth=375`; no horizontal overflow.
+- Real authenticated Chrome checks confirmed the original account workspace tabs, the customer-owned delivered-order review action, and the review modal including its source Photos field.
+- Review submission now transitions only after a non-redirect JSON `pending` / `pending_approval` response; the modal closes after the source success state and cannot reopen for pending or published items.
+- Profile and address mutations do not report followed Laravel redirects, HTML responses, validation responses, or network failures as success; successful address mutations reload the customer-scoped preview data.
+- Final combined regression: 25 tests passed, 154 assertions. A post-fix independent review approved the scoped implementation. The browser screenshots were emitted in this task conversation for the final visual comparison.

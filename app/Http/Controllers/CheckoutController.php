@@ -10,6 +10,7 @@ use App\Services\CartPricingService;
 use App\Services\CheckoutService;
 use App\Services\PaymentConfigurationService;
 use App\Services\ShippingConfigurationService;
+use App\Support\StorefrontCurrencyContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -44,13 +45,13 @@ class CheckoutController extends Controller
         ]);
     }
 
-    public function store(Request $request, CheckoutService $checkout): RedirectResponse
+    public function store(Request $request, CheckoutService $checkout, StorefrontCurrencyContext $currency): RedirectResponse
     {
         $data = $request->validate(['email' => ['required', 'email'], 'first_name' => ['required', 'string', 'max:255'], 'last_name' => ['required', 'string', 'max:255'], 'phone' => ['nullable', 'string', 'max:50'], 'line_1' => ['required', 'string', 'max:255'], 'line_2' => ['nullable', 'string', 'max:255'], 'city' => ['required', 'string', 'max:255'], 'state' => ['nullable', 'string', 'max:255'], 'postal_code' => ['required', 'string', 'max:50'], 'country' => ['required', 'string', 'size:2'], 'delivery' => ['nullable', 'in:standard,express,white_glove'], 'payment_method' => ['nullable', 'in:simulated_card,apple_pay,paypal,klarna,crypto']]); $items = $this->items($request);
         if ($items->isEmpty()) return redirect()->route('storefront.index');
         $coupon = Coupon::query()->currentlyValid()->where('code', $request->session()->get('coupon_code'))->first();
         if ($request->user() && ! $request->user()->is_admin) $data['email'] = $request->user()->email;
-        $order = $checkout->checkout($data['email'], $items, $coupon, collect($data)->except(['email', 'payment_method', 'delivery'])->all(), $data['payment_method'] ?? 'simulated_card', $data['delivery'] ?? 'standard');
+        $order = $checkout->checkout($data['email'], $items, $coupon, collect($data)->except(['email', 'payment_method', 'delivery'])->all(), $data['payment_method'] ?? 'simulated_card', $data['delivery'] ?? 'standard', $currency->snapshot());
         $request->session()->forget(['cart', 'coupon_code']); $request->session()->put('last_order_id', $order->id);
         return redirect()->route('checkout.success');
     }

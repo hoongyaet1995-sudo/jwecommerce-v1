@@ -26,6 +26,7 @@ import {
   Code2
 } from 'lucide-react';
 import { Promotion, PromotionType, StackingGroup } from '../../types/promotions';
+import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 
 interface Props {
   promotions: Promotion[];
@@ -48,6 +49,7 @@ export const PromotionsListTab: React.FC<Props> = ({
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [promoToDelete, setPromoToDelete] = useState<Promotion | null>(null);
 
   const handleCopy = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -336,7 +338,7 @@ export const PromotionsListTab: React.FC<Props> = ({
 
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => onDeletePromotion(promo.id)}
+                    onClick={() => setPromoToDelete(promo)}
                     className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                     title="Delete promotion"
                   >
@@ -348,6 +350,28 @@ export const PromotionsListTab: React.FC<Props> = ({
           );
         })}
       </div>
+
+      {/* Delete Promotion Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={!!promoToDelete}
+        itemType="Promotion Campaign"
+        itemName={promoToDelete?.name}
+        itemDetails={`Promo Code: ${promoToDelete?.coupons?.[0]?.code || 'Automatic Rule'} • Type: ${promoToDelete?.promotionType} • Total Redemptions: ${promoToDelete?.totalUsageCount || 0}/${promoToDelete?.totalUsageLimit || '∞'}`}
+        warningMessage={`Deleting "${promoToDelete?.name}" immediately removes its checkout discount eligibility.`}
+        impactItems={[
+          'Active checkout discounts will no longer use this promotion.',
+          'Existing order discount snapshots remain unchanged.',
+          'This promotion and its configured rules cannot be restored automatically.',
+        ]}
+        confirmButtonText="Delete Promotion Rule"
+        onConfirm={() => {
+          if (promoToDelete) {
+            onDeletePromotion(promoToDelete.id);
+            setPromoToDelete(null);
+          }
+        }}
+        onClose={() => setPromoToDelete(null)}
+      />
 
       {filteredPromotions.length === 0 && (
         <div className="text-center py-12 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800">

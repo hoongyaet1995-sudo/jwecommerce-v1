@@ -89,4 +89,11 @@ describe('StorefrontHeaderAnnouncementEditor persistence boundary', () => {
     expect(html).toContain('max-w-md');
     expect(html).toContain('Live Storefront Customer Simulation Viewport');
   });
+
+  it('does not expose the removed non-persistent mobile marquee control', async () => {
+    const source = readFileSync(resolve(process.cwd(), 'src/components/cms/StorefrontHeaderAnnouncementEditor.tsx'), 'utf8');
+
+    expect(source).not.toContain('Enable Marquee Scrolling (Mobile)');
+    expect(source).not.toContain('enableMarquee');
+  });
 });

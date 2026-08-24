@@ -18,10 +18,21 @@ final class StorefrontPageController extends Controller
         private readonly ViteManifestEntry $manifest,
     ) {}
 
-    public function __invoke(Page $page): Response
+    public function __invoke(string $slug): Response
+    {
+        return $this->render(fn (): array => $this->payloads->forOfficialPublishedSlug($slug));
+    }
+
+    public function forPublished(Page $page): Response
+    {
+        return $this->render(fn (): array => $this->payloads->forCanary($page));
+    }
+
+    /** @param callable(): array<string, mixed> $payload */
+    private function render(callable $payload): Response
     {
         try {
-            $payload = $this->visiblePayload->filter($this->payloads->forPublished($page));
+            $payload = $this->visiblePayload->filter($payload());
         } catch (Throwable $exception) {
             if ($exception instanceof HttpExceptionInterface) {
                 throw $exception;

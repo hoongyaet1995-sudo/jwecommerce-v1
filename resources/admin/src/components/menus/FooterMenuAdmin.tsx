@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { FooterMenuL1, FooterMenuL2, MenuLinkType } from '../../types';
+import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
+import { MenuLinkTargetPicker } from './MenuLinkTargetPicker';
+import { MenuBadgeEditor } from './MenuBadgeEditor';
+import { changeMenuLinkType } from '../../integration/menuLinkTargets';
 import {
   PanelBottom,
   Plus,
@@ -21,7 +25,10 @@ export const FooterMenuAdmin: React.FC = () => {
     saveFooterMenuL1,
     deleteFooterMenuL1,
     saveFooterMenuL2,
-    deleteFooterMenuL2
+    deleteFooterMenuL2,
+    categories,
+    collections,
+    pages
   } = useAdmin();
 
   const [showFooterSimulator, setShowFooterSimulator] = useState(true);
@@ -32,6 +39,8 @@ export const FooterMenuAdmin: React.FC = () => {
 
   const [editingL2, setEditingL2] = useState<{ l1Id: string; item: FooterMenuL2 } | null>(null);
   const [isL2ModalOpen, setIsL2ModalOpen] = useState(false);
+  const [l1ToDelete, setL1ToDelete] = useState<FooterMenuL1 | null>(null);
+  const [l2ToDelete, setL2ToDelete] = useState<{ l1Id: string; item: FooterMenuL2 } | null>(null);
 
   const openNewL1Modal = () => {
     const newItem: FooterMenuL1 = {
@@ -49,7 +58,7 @@ export const FooterMenuAdmin: React.FC = () => {
     const newItem: FooterMenuL2 = {
       id: 'ftl-' + Date.now(),
       title: '',
-      url: '/page',
+      url: '',
       linkType: 'page',
       isActive: true,
       sortOrder: 1
@@ -194,7 +203,7 @@ export const FooterMenuAdmin: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => deleteFooterMenuL1(sec.id)}
+                  onClick={() => setL1ToDelete(sec)}
                   className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -239,7 +248,7 @@ export const FooterMenuAdmin: React.FC = () => {
                       <Edit2 className="w-3 h-3" />
                     </button>
                     <button
-                      onClick={() => deleteFooterMenuL2(sec.id, link.id)}
+                      onClick={() => setL2ToDelete({ l1Id: sec.id, item: link })}
                       className="p-1 text-rose-400 hover:text-rose-600"
                     >
                       <Trash2 className="w-3 h-3" />
@@ -344,24 +353,12 @@ export const FooterMenuAdmin: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">URL Path / Target</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="/orders/track or https://..."
-                  value={editingL2.item.url}
-                  onChange={(e) => setEditingL2({ ...editingL2, item: { ...editingL2.item, url: e.target.value } })}
-                  className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white font-mono"
-                />
-              </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Link Type</label>
                   <select
                     value={editingL2.item.linkType}
-                    onChange={(e) => setEditingL2({ ...editingL2, item: { ...editingL2.item, linkType: e.target.value as MenuLinkType } })}
+                    onChange={(e) => setEditingL2({ ...editingL2, item: changeMenuLinkType(editingL2.item, e.target.value as MenuLinkType) })}
                     className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
                   >
                     <option value="page">Store Page</option>
@@ -370,18 +367,25 @@ export const FooterMenuAdmin: React.FC = () => {
                     <option value="collection">Collection</option>
                   </select>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Badge (Optional)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 24/7, v2.4"
-                    value={editingL2.item.badge || ''}
-                    onChange={(e) => setEditingL2({ ...editingL2, item: { ...editingL2.item, badge: e.target.value || undefined } })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
-                  />
-                </div>
+                <MenuBadgeEditor
+                  badge={editingL2.item.badge}
+                  badgeColor={editingL2.item.badgeColor}
+                  onChange={({ badge, badgeColor }) =>
+                    setEditingL2({ ...editingL2, item: { ...editingL2.item, badge, badgeColor } })
+                  }
+                />
               </div>
+
+              <MenuLinkTargetPicker
+                linkType={editingL2.item.linkType}
+                targetId={editingL2.item.targetId}
+                url={editingL2.item.url}
+                categories={categories}
+                collections={collections}
+                pages={pages}
+                onTargetChange={(targetId, url) => setEditingL2({ ...editingL2, item: { ...editingL2.item, targetId, url } })}
+              />
+
 
               <div className="flex items-center gap-2">
                 <input
@@ -415,6 +419,8 @@ export const FooterMenuAdmin: React.FC = () => {
           </div>
         </div>
       )}
+      <DeleteConfirmationModal isOpen={!!l1ToDelete} itemType="Footer Column Section" itemName={l1ToDelete?.sectionTitle} itemDetails={l1ToDelete ? `Child Links: ${l1ToDelete.links.length} items` : undefined} warningMessage={`Deleting "${l1ToDelete?.sectionTitle}" removes this entire footer column.`} impactItems={['All links inside this footer column will be removed.', 'Other footer columns remain unchanged.']} confirmButtonText="Delete Footer Column" onConfirm={() => { if (l1ToDelete) { deleteFooterMenuL1(l1ToDelete.id); setL1ToDelete(null); } }} onClose={() => setL1ToDelete(null)} />
+      <DeleteConfirmationModal isOpen={!!l2ToDelete} itemType="Footer Link" itemName={l2ToDelete?.item.title} itemDetails={l2ToDelete ? `Target URL: ${l2ToDelete.item.url}` : undefined} warningMessage={`Removing "${l2ToDelete?.item.title}" removes this footer navigation link.`} impactItems={['Customers will no longer see this link in the footer.', 'The parent footer column remains unchanged.']} confirmButtonText="Remove Link" onConfirm={() => { if (l2ToDelete) { deleteFooterMenuL2(l2ToDelete.l1Id, l2ToDelete.item.id); setL2ToDelete(null); } }} onClose={() => setL2ToDelete(null)} />
     </div>
   );
 };

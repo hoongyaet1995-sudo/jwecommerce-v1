@@ -30,7 +30,6 @@ class ShippingConfigurationService
                 'label' => (string) ($rate['name'] ?? $this->pricing->deliveryLabel($code)),
                 'detail' => 'Atelier dispatch'.($days !== '' ? ' • Estimated '.$days : ''),
                 'shipping' => $shipping,
-                'price' => $shipping > 0 ? '$'.number_format($shipping / 100, 2) : 'FREE',
             ];
         }
 

@@ -37,10 +37,13 @@ class CheckoutService
     }
 
     /** @param Collection<int, array{variant: ProductVariant, quantity: int}> $items */
-    public function checkout(string $email, Collection $items, ?Coupon $coupon = null, ?array $shippingAddress = null, string $gateway = 'simulated_card', string $delivery = 'standard'): Order
+    /** @param array{code?: string, exchange_rate?: float}|null $currencySnapshot */
+    public function checkout(string $email, Collection $items, ?Coupon $coupon = null, ?array $shippingAddress = null, string $gateway = 'simulated_card', string $delivery = 'standard', ?array $currencySnapshot = null): Order
     {
         if (! $this->paymentConfiguration->isEnabled($gateway)) throw ValidationException::withMessages(['payment_method' => 'This payment method is not currently enabled.']);
-        return DB::transaction(function () use ($email, $items, $coupon, $shippingAddress, $gateway, $delivery): Order {
+        $currencySnapshot ??= app(\App\Support\StorefrontCurrencyContext::class)->snapshot();
+
+        return DB::transaction(function () use ($email, $items, $coupon, $shippingAddress, $gateway, $delivery, $currencySnapshot): Order {
             $customer = Customer::query()->firstOrCreate(['email' => $email]);
             $lockedCoupon = null;
             if ($coupon) {
@@ -57,7 +60,7 @@ class CheckoutService
                 return ['variant' => $variant, 'quantity' => $item['quantity'], 'line_total' => $variant->price * $item['quantity']];
             });
             $summary = app(CartPricingService::class)->summarize($lines->map(fn (array $line) => ['variant' => $line['variant'], 'quantity' => $line['quantity']]), $lockedCoupon, $delivery, $shippingAddress);
-            $order = Order::query()->create(['number' => 'JW-'.now()->format('YmdHis').'-'.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT), 'customer_id' => $customer->id, 'coupon_id' => $lockedCoupon?->id, 'coupon_code' => $lockedCoupon?->code, 'email' => $email, 'status' => 'pending_payment', 'shipping_method' => $delivery, 'shipping_label' => app(CartPricingService::class)->deliveryLabel($delivery), 'subtotal' => $summary['subtotal'], 'discount_amount' => $summary['discount'], 'shipping_amount' => $summary['shipping'], 'tax_amount' => $summary['tax'], 'total' => $summary['total']]);
+            $order = Order::query()->create(['number' => 'JW-'.now()->format('YmdHis').'-'.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT), 'customer_id' => $customer->id, 'coupon_id' => $lockedCoupon?->id, 'coupon_code' => $lockedCoupon?->code, 'email' => $email, 'currency' => $currencySnapshot['code'] ?? 'USD', 'currency_exchange_rate' => $currencySnapshot['exchange_rate'] ?? 1, 'status' => 'pending_payment', 'shipping_method' => $delivery, 'shipping_label' => app(CartPricingService::class)->deliveryLabel($delivery), 'subtotal' => $summary['subtotal'], 'discount_amount' => $summary['discount'], 'shipping_amount' => $summary['shipping'], 'tax_amount' => $summary['tax'], 'total' => $summary['total']]);
             foreach ($lines as $line) {
                 $variant = $line['variant'];
                 $product = $variant->product()->with('images')->firstOrFail();

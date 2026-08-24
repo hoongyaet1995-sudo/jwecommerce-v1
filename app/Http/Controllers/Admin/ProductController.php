@@ -35,16 +35,6 @@ class ProductController extends Controller
         };
 
         $products = $products->get();
-        $products->each(function (Product $product): void {
-            if ($product->images->isEmpty()) {
-                $product->images()->create([
-                    'path' => '/images/catalog/aether-1.jpg',
-                    'alt' => $product->title,
-                    'position' => 0,
-                ]);
-                $product->load('images');
-            }
-        });
 
         return view('admin.products', ['products' => $products, 'categories' => Category::query()->orderBy('name')->get(), 'filters' => $filters]);
     }

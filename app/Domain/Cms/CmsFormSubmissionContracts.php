@@ -12,8 +12,9 @@ final class CmsFormSubmissionContracts
     private const LIFETIME_MINUTES = 10;
 
     /** @param array<string, mixed> $document @return array{contact: stdClass, newsletter: stdClass} */
-    public function forDocument(Page $page, PageDocument $pageDocument, array $document): array
+    public function forDocument(Page $page, PageDocument $pageDocument, array $document, string $audience): array
     {
+        abort_unless(PageRuntimeAudience::isKnown($audience), 500);
         $forms = ['contact' => [], 'newsletter' => []];
 
         foreach ($document['sections'] ?? [] as $section) {
@@ -30,7 +31,7 @@ final class CmsFormSubmissionContracts
                 continue;
             }
 
-            $forms[$kind][$section['id']] = $this->contract($kind, $page, $pageDocument, $section['id'], $section['type']);
+            $forms[$kind][$section['id']] = $this->contract($kind, $page, $pageDocument, $section['id'], $section['type'], $audience);
         }
 
         return [
@@ -40,7 +41,7 @@ final class CmsFormSubmissionContracts
     }
 
     /** @return array<string, mixed> */
-    private function contract(string $kind, Page $page, PageDocument $pageDocument, string $sectionId, string $sectionType): array
+    private function contract(string $kind, Page $page, PageDocument $pageDocument, string $sectionId, string $sectionType, string $audience): array
     {
         $parameters = [
             'page' => $page->getKey(),
@@ -49,6 +50,7 @@ final class CmsFormSubmissionContracts
             'hash' => $pageDocument->content_hash,
             'version' => $pageDocument->lock_version,
             'type' => $sectionType,
+            'audience' => $audience,
         ];
 
         return [
@@ -59,6 +61,7 @@ final class CmsFormSubmissionContracts
             'lockVersion' => $pageDocument->lock_version,
             'sectionId' => $sectionId,
             'sectionType' => $sectionType,
+            'audience' => $audience,
         ];
     }
 }

@@ -11,19 +11,12 @@ use Illuminate\View\View;
 
 class CustomerAccountController extends Controller
 {
-    public function show(Request $request): View
-    {
-        $customer = $request->user('customer')->customer()->with(['orders.items', 'orders.addresses', 'addresses', 'wishlistItems.product.images', 'wishlistItems.product.variants'])->firstOrFail();
-
-        return view('storefront.account', compact('customer'));
-    }
-
-    public function originalPreview(Request $request, OriginalAccountPayloadFactory $factory): View
+    public function show(Request $request, OriginalAccountPayloadFactory $factory): View
     {
         $customer = $request->user('customer')->customer;
         abort_unless($customer !== null, 403);
 
-        return view('storefront.account-original-preview', [
+        return view('storefront.account', [
             'customer' => $customer,
             'accountPayload' => $factory->for($customer),
         ]);

@@ -5,6 +5,7 @@ namespace Tests\Feature\Cms;
 use App\Domain\Cms\PageDocumentContract;
 use App\Domain\Cms\PageDocumentHasher;
 use App\Domain\Cms\PageRuntimePayloadFactory;
+use App\Http\Controllers\StorefrontPageController;
 use App\Models\CmsContactSubmission;
 use App\Models\Coupon;
 use App\Models\NewsletterSubscription;
@@ -14,6 +15,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 final class CmsFormSubmissionTest extends TestCase
@@ -205,7 +207,7 @@ final class CmsFormSubmissionTest extends TestCase
     {
         $coupon = $this->coupon('PRIVATE15');
         $page = $this->pageWithForms($coupon);
-        $payload = app(PageRuntimePayloadFactory::class)->forPublished($page->fresh());
+        $payload = $this->officialPayload($page);
 
         $this->assertInstanceOf(\stdClass::class, $payload['forms']['contact']);
         $this->assertInstanceOf(\stdClass::class, $payload['forms']['newsletter']);
@@ -280,6 +282,84 @@ final class CmsFormSubmissionTest extends TestCase
         $this->assertSame($pageId, $subscription->page_id_snapshot);
         $this->assertNull($subscription->coupon_id);
         $this->assertSame($couponId, $subscription->coupon_id_snapshot);
+    }
+
+    public function test_published_contract_audiences_are_explicit_signed_and_canonical_without_the_legacy_flag(): void
+    {
+        $coupon = $this->coupon('AUDIENCE15');
+        $page = $this->pageWithForms($coupon);
+        $page->forceFill(['status' => 'published', 'is_published' => false])->saveOrFail();
+        $admin = User::query()->create([
+            'name' => 'Audience Admin',
+            'email' => 'audience-admin@example.test',
+            'password' => bcrypt('password'),
+            'is_admin' => true,
+        ]);
+
+        $canaryResponse = $this->actingAs($admin)->get("/admin/cms-canary/pages/{$page->id}")->assertOk();
+        $canaryPayload = $this->runtimePayload($canaryResponse);
+        $canaryContact = $canaryPayload['forms']['contact']['contact-section'];
+        $canaryNewsletter = $canaryPayload['forms']['newsletter']['newsletter-section'];
+        $this->assertSame('protected-canary', $canaryContact['audience']);
+        $this->assertSame('protected-canary', $canaryNewsletter['audience']);
+        $this->assertSame('protected-canary', $this->queryValue($canaryContact['endpoint'], 'audience'));
+
+        auth()->logout();
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.201'])->postJson($canaryContact['endpoint'], $this->contactPayload())->assertForbidden();
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.202'])->postJson($canaryNewsletter['endpoint'], $this->newsletterPayload())->assertForbidden();
+        $this->assertSame(0, CmsContactSubmission::query()->count());
+        $this->assertSame(0, NewsletterSubscription::query()->count());
+
+        $tamperedContact = str_replace('audience=protected-canary', 'audience=public-storefront', $canaryContact['endpoint']);
+        $tamperedNewsletter = str_replace('audience=protected-canary', 'audience=public-storefront', $canaryNewsletter['endpoint']);
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.203'])->postJson($tamperedContact, $this->contactPayload())->assertForbidden();
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.204'])->postJson($tamperedNewsletter, $this->newsletterPayload())->assertForbidden();
+
+        $disallowedContact = $this->freshContract('contact', $page, 'contact-section', 'contact_form', 'public-before-cutover');
+        $disallowedNewsletter = $this->freshContract('newsletter', $page, 'newsletter-section', 'newsletter_signup', 'public-before-cutover');
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.205'])->postJson($disallowedContact, $this->contactPayload())->assertForbidden();
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.206'])->postJson($disallowedNewsletter, $this->newsletterPayload())->assertForbidden();
+        $this->assertSame(0, CmsContactSubmission::query()->count());
+        $this->assertSame(0, NewsletterSubscription::query()->count());
+
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.207'])->actingAs($admin)->postJson($canaryContact['endpoint'], $this->contactPayload())->assertCreated();
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.208'])->actingAs($admin)->postJson($canaryNewsletter['endpoint'], $this->newsletterPayload())->assertCreated();
+        $this->assertSame(1, CmsContactSubmission::query()->count());
+        $this->assertSame(1, NewsletterSubscription::query()->count());
+    }
+
+    public function test_unrouted_official_action_emits_public_audience_for_first_duplicate_and_invalid_submissions(): void
+    {
+        $coupon = $this->coupon('PUBLIC15');
+        $page = $this->pageWithForms($coupon);
+        $page->forceFill(['status' => 'published', 'is_published' => false])->saveOrFail();
+
+        $response = TestResponse::fromBaseResponse(app(StorefrontPageController::class)($page->publishedDocument->slug));
+        $response->assertOk();
+        $payload = $this->runtimePayload($response);
+        $contact = $payload['forms']['contact']['contact-section'];
+        $newsletter = $payload['forms']['newsletter']['newsletter-section'];
+        $this->assertSame('public-storefront', $contact['audience']);
+        $this->assertSame('public-storefront', $newsletter['audience']);
+
+        $this->postJson($contact['endpoint'], $this->contactPayload())->assertCreated();
+        $this->postJson($newsletter['endpoint'], $this->newsletterPayload())
+            ->assertCreated()
+            ->assertJsonPath('data.couponCode', 'PUBLIC15');
+        $this->postJson($newsletter['endpoint'], $this->newsletterPayload())
+            ->assertOk()
+            ->assertJsonPath('data.alreadySubscribed', true)
+            ->assertJsonMissingPath('data.couponCode');
+        $this->postJson($contact['endpoint'], $this->contactPayload(['message' => '']))->assertUnprocessable();
+        $this->assertSame(1, CmsContactSubmission::query()->count());
+        $this->assertSame(1, NewsletterSubscription::query()->count());
+
+        foreach (['draft', 'archived'] as $status) {
+            $page->forceFill(['status' => $status])->saveOrFail();
+            $this->withServerVariables(['REMOTE_ADDR' => $status === 'draft' ? '198.51.100.209' : '198.51.100.210'])
+                ->postJson($contact['endpoint'], $this->contactPayload(['email' => "{$status}@example.test"]))
+                ->assertForbidden();
+        }
     }
 
     /** @param array<string, mixed> $overrides @return array<string, mixed> */
@@ -368,7 +448,7 @@ final class CmsFormSubmissionTest extends TestCase
 
     private function contactEndpoint(Page $page, string $section = 'contact-section'): string
     {
-        $forms = app(PageRuntimePayloadFactory::class)->forPublished($page->fresh())['forms']['contact'];
+        $forms = $this->officialPayload($page)['forms']['contact'];
         $this->assertInstanceOf(\stdClass::class, $forms);
 
         return $forms->{$section}['endpoint'];
@@ -376,7 +456,7 @@ final class CmsFormSubmissionTest extends TestCase
 
     private function newsletterEndpoint(Page $page, string $section = 'newsletter-section'): string
     {
-        $forms = app(PageRuntimePayloadFactory::class)->forPublished($page->fresh())['forms']['newsletter'];
+        $forms = $this->officialPayload($page)['forms']['newsletter'];
         $this->assertInstanceOf(\stdClass::class, $forms);
 
         return $forms->{$section}['endpoint'];
@@ -386,7 +466,8 @@ final class CmsFormSubmissionTest extends TestCase
     {
         return URL::temporarySignedRoute('cms.forms.'.$endpoint.'.submit', now()->subSecond(), [
             'page' => $page->id, 'stage' => 'published', 'section' => $section,
-            'hash' => $page->publishedDocument->content_hash, 'version' => $page->publishedDocument->lock_version, 'type' => $type,
+            'hash' => $page->publishedDocument->content_hash, 'version' => $page->publishedDocument->lock_version,
+            'type' => $type, 'audience' => 'public-storefront',
         ], absolute: false);
     }
 
@@ -394,15 +475,40 @@ final class CmsFormSubmissionTest extends TestCase
     {
         return URL::temporarySignedRoute('cms.forms.'.$endpoint.'.submit', now()->addMinutes(5), [
             'page' => $page->id, 'stage' => 'published', 'section' => $section,
-            'hash' => str_repeat('a', 64), 'version' => $page->publishedDocument->lock_version, 'type' => $type,
+            'hash' => str_repeat('a', 64), 'version' => $page->publishedDocument->lock_version,
+            'type' => $type, 'audience' => 'public-storefront',
         ], absolute: false);
     }
 
-    private function freshContract(string $endpoint, Page $page, string $section, string $type): string
+    private function freshContract(string $endpoint, Page $page, string $section, string $type, string $audience = 'public-storefront'): string
     {
         return URL::temporarySignedRoute('cms.forms.'.$endpoint.'.submit', now()->addMinutes(5), [
             'page' => $page->id, 'stage' => 'published', 'section' => $section,
-            'hash' => $page->publishedDocument->content_hash, 'version' => $page->publishedDocument->lock_version, 'type' => $type,
+            'hash' => $page->publishedDocument->content_hash, 'version' => $page->publishedDocument->lock_version,
+            'type' => $type, 'audience' => $audience,
         ], absolute: false);
+    }
+
+    /** @return array<string, mixed> */
+    private function runtimePayload(TestResponse $response): array
+    {
+        preg_match('/<script[^>]*id="cms-page-runtime"[^>]*>(.*?)<\/script>/s', $response->getContent(), $matches);
+
+        return json_decode($matches[1] ?? '', true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    /** @return array<string, mixed> */
+    private function officialPayload(Page $page): array
+    {
+        $page = $page->fresh();
+
+        return app(PageRuntimePayloadFactory::class)->forOfficialPublishedSlug($page->publishedDocument->slug);
+    }
+
+    private function queryValue(string $endpoint, string $key): ?string
+    {
+        parse_str((string) parse_url($endpoint, PHP_URL_QUERY), $query);
+
+        return is_string($query[$key] ?? null) ? $query[$key] : null;
     }
 }

@@ -16,6 +16,8 @@ import {
   moderateReview as moderateReviewData,
 } from '../integration/reviewData';
 import { 
+  AdminProductReview,
+  AdminProductReviewAuditEvent,
   AdminUser, 
   NavSection, 
   HeaderMenuL1, 
@@ -32,8 +34,6 @@ import {
   FulfillmentStatus,
   CmsPage,
   PageSection,
-  AdminProductReview,
-  AdminProductReviewAuditEvent,
   ReviewBulkModerationResult,
   ReviewModerationAction,
   ReviewModerationResult,
@@ -489,7 +489,6 @@ const STORAGE_KEYS = {
   CUSTOM_ORDER_STATUSES: 'aurora_admin_order_statuses',
   COUNTRIES_SETTING: 'aurora_admin_countries_setting',
   ZONES_SETTING: 'aurora_admin_zones_setting',
-  CURRENCIES_SETTING: 'aurora_admin_currencies_setting',
   ORDER_TOTAL_MODULES: 'aurora_admin_order_total_modules',
   GEO_TAX_ZONES: 'aurora_admin_geo_tax_zones',
   TAX_CLASSES: 'aurora_admin_tax_classes',
@@ -623,6 +622,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (Object.keys(document.globalPayment).length) setGlobalPaymentSettings(document.globalPayment as GlobalPaymentSettings);
       if (Object.keys(document.bankTransfer).length) setBankTransferConfig(document.bankTransfer as ManualBankTransferConfig);
       if (Object.keys(document.codConfig).length) setCodConfig(document.codConfig as CashOnDeliveryConfig);
+      if (document.currencies.length) setCurrenciesSetting(document.currencies);
     }).catch(() => {
       if (active) addToast({ type: 'error', title: 'Commerce Settings Unavailable', message: 'Unable to load payment and shipping settings from MySQL.' });
     });
@@ -800,9 +800,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       const savedZones = safeParseArray(STORAGE_KEYS.ZONES_SETTING, INITIAL_ZONES);
       setZonesSetting(savedZones);
-
-      const savedCurrencies = safeParseArray(STORAGE_KEYS.CURRENCIES_SETTING, INITIAL_CURRENCIES);
-      setCurrenciesSetting(savedCurrencies);
 
       const savedOrderTotals = safeParseArray(STORAGE_KEYS.ORDER_TOTAL_MODULES, INITIAL_ORDER_TOTAL_MODULES);
       setOrderTotalModules(savedOrderTotals);
@@ -2450,14 +2447,35 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // General Shipping Rates & Postage Calculation Engine
-  const persistCommerceDocument = (overrides: Partial<{ shippingRates: GeneralShippingRate[]; paymentGateways: PaymentGatewayConfig[]; globalPayment: GlobalPaymentSettings; bankTransfer: ManualBankTransferConfig; codConfig: CashOnDeliveryConfig }>) => {
+  const persistCommerceDocument = (overrides: Partial<{ shippingRates: GeneralShippingRate[]; paymentGateways: PaymentGatewayConfig[]; globalPayment: GlobalPaymentSettings; bankTransfer: ManualBankTransferConfig; codConfig: CashOnDeliveryConfig; currencies: CurrencySetting[] }>) => {
     void saveCommerceSettings(laravelBootstrap, {
       shippingRates: overrides.shippingRates ?? shippingRates,
       paymentGateways: overrides.paymentGateways ?? paymentGateways,
       globalPayment: overrides.globalPayment ?? globalPaymentSettings,
       bankTransfer: overrides.bankTransfer ?? bankTransferConfig,
       codConfig: overrides.codConfig ?? codConfig,
+      currencies: overrides.currencies ?? currenciesSetting,
     }).catch(error => addToast({ type: 'error', title: 'Commerce Settings Save Failed', message: error instanceof Error ? error.message : 'Unable to save commerce settings.' }));
+  };
+
+  const persistCurrencySettings = async (updated: CurrencySetting[], previous: CurrencySetting[]): Promise<boolean> => {
+    setCurrenciesSetting(updated);
+    try {
+      const document = await saveCommerceSettings(laravelBootstrap, {
+        shippingRates,
+        paymentGateways,
+        globalPayment: globalPaymentSettings,
+        bankTransfer: bankTransferConfig,
+        codConfig,
+        currencies: updated,
+      });
+      setCurrenciesSetting(document.currencies);
+      return true;
+    } catch (error) {
+      setCurrenciesSetting(previous);
+      addToast({ type: 'error', title: 'Currency Save Failed', message: error instanceof Error ? error.message : 'Unable to save currency settings to MySQL.' });
+      return false;
+    }
   };
 
   const saveShippingRate = (rate: GeneralShippingRate) => {
@@ -2894,19 +2912,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const saveCurrencySetting = (currency: CurrencySetting) => {
-    setCurrenciesSetting(prev => {
-      const exists = prev.some(c => c.id === currency.id);
-      let updated: CurrencySetting[];
-      if (exists) {
-        updated = prev.map(c => (c.id === currency.id ? currency : c));
-      } else {
-        updated = [...prev, currency];
-      }
-      try {
-        localStorage.setItem(STORAGE_KEYS.CURRENCIES_SETTING, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
+    const updated = currenciesSetting.some(c => c.id === currency.id)
+      ? currenciesSetting.map(c => (c.id === currency.id ? currency : c))
+      : [...currenciesSetting, currency];
+    void persistCurrencySettings(updated, currenciesSetting);
     addToast({
       type: 'success',
       title: 'Currency Saved',
@@ -2915,17 +2924,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const setDefaultCurrency = (id: string) => {
-    setCurrenciesSetting(prev => {
-      const updated = prev.map(c => ({
-        ...c,
-        isDefault: c.id === id,
-        exchangeRate: c.id === id ? 1.0 : c.exchangeRate
-      }));
-      try {
-        localStorage.setItem(STORAGE_KEYS.CURRENCIES_SETTING, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
+    const updated = currenciesSetting.map(c => ({
+      ...c,
+      isDefault: c.id === id,
+      isEnabled: c.id === id ? true : c.isEnabled,
+      exchangeRate: c.id === id ? 1.0 : c.exchangeRate
+    }));
+    void persistCurrencySettings(updated, currenciesSetting);
     addToast({
       type: 'success',
       title: 'Default Currency Set',
@@ -2934,13 +2939,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const toggleCurrencyStatus = (id: string) => {
-    setCurrenciesSetting(prev => {
-      const updated = prev.map(c => (c.id === id ? { ...c, isEnabled: !c.isEnabled } : c));
-      try {
-        localStorage.setItem(STORAGE_KEYS.CURRENCIES_SETTING, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
+    const target = currenciesSetting.find(c => c.id === id);
+    if (target?.isDefault && target.isEnabled) {
+      addToast({ type: 'error', title: 'Default Currency Required', message: 'Choose another default currency before disabling this one.' });
+      return;
+    }
+    const updated = currenciesSetting.map(c => (c.id === id ? { ...c, isEnabled: !c.isEnabled } : c));
+    void persistCurrencySettings(updated, currenciesSetting);
     addToast({
       type: 'info',
       title: 'Currency Toggled',
@@ -2949,10 +2954,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateCurrencyRates = async () => {
-    // Simulated live Bank Negara Malaysia / OpenExchange API fetch
     await new Promise(r => setTimeout(r, 600));
-    setCurrenciesSetting(prev => {
-      const updated = prev.map(c => {
+    const updated = currenciesSetting.map(c => {
         if (c.isDefault) return { ...c, exchangeRate: 1.0, lastUpdated: 'Just now (Live API)' };
         let newRate = c.exchangeRate;
         if (c.code === 'USD') newRate = +(0.22 + (Math.random() * 0.006 - 0.003)).toFixed(4);
@@ -2960,16 +2963,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (c.code === 'EUR') newRate = +(0.20 + (Math.random() * 0.005 - 0.0025)).toFixed(4);
         if (c.code === 'GBP') newRate = +(0.17 + (Math.random() * 0.004 - 0.002)).toFixed(4);
         return { ...c, exchangeRate: newRate, lastUpdated: 'Just now (Live API)' };
-      });
-      try {
-        localStorage.setItem(STORAGE_KEYS.CURRENCIES_SETTING, JSON.stringify(updated));
-      } catch {}
-      return updated;
     });
+    const saved = await persistCurrencySettings(updated, currenciesSetting);
+    if (!saved) return;
     addToast({
       type: 'success',
       title: 'Exchange Rates Updated',
-      message: 'Synchronized live FX market quotes against base currency MYR.'
+      message: 'Updated and saved the configured rate matrix against the base currency.'
     });
   };
 
@@ -3885,10 +3885,12 @@ Would you like me to drill down into customer records, inventory allocation, or 
       setCollections(catalog.collections);
       setProducts(catalog.products);
     }).catch(() => undefined);
+    void fetchReviewsData(laravelBootstrap).then(setReviews).catch(() => undefined);
     void fetchPages(laravelBootstrap).then(setPages).catch(() => undefined);
     void fetchCustomerDirectoryData(laravelBootstrap).then(data => data && setCustomers(customerDirectoryToCustomers(data))).catch(() => undefined);
     void fetchOrders(laravelBootstrap).then(setOrders).catch(() => undefined);
     void loadStorefrontShellSettings(laravelBootstrap).then(setStorefrontShellSettings).catch(() => undefined);
+    setReviewFilterProductId(null);
     setStaffUsers(INITIAL_STAFF_USERS);
     setShopSettings(INITIAL_SHOP_SETTINGS);
     setConnections(INITIAL_MARKETPLACE_CONNECTIONS);
@@ -3903,11 +3905,11 @@ Would you like me to drill down into customer records, inventory allocation, or 
     void fetchCommerceSettings(laravelBootstrap).then(document => {
       setShippingRates(document.shippingRates); setPaymentGateways(document.paymentGateways);
       setBankTransferConfig(document.bankTransfer as ManualBankTransferConfig); setCodConfig(document.codConfig as CashOnDeliveryConfig); setGlobalPaymentSettings(document.globalPayment as GlobalPaymentSettings);
+      setCurrenciesSetting(document.currencies);
     }).catch(error => addToast({ type: 'error', title: 'Commerce Settings Reload Failed', message: error instanceof Error ? error.message : 'Unable to reload commerce settings.' }));
     setOrderStatuses(INITIAL_CUSTOM_ORDER_STATUSES);
     setCountriesSetting(INITIAL_COUNTRIES);
     setZonesSetting(INITIAL_ZONES);
-    setCurrenciesSetting(INITIAL_CURRENCIES);
     setOrderTotalModules(INITIAL_ORDER_TOTAL_MODULES);
     setTaxZones(INITIAL_GEO_TAX_ZONES);
     setTaxClasses(INITIAL_TAX_CLASSES);

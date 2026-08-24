@@ -11,10 +11,12 @@ import {
   Promotion,
 } from '../../types';
 import { useAdmin } from '../../context/AdminContext';
+import { primaryProductImage } from '../../catalogMedia';
 import { readAdminBootstrap } from '../../integration/adminBootstrap';
 import { uploadMediaAsset } from '../../integration/pageData';
 import { fetchCoupons } from '../../integration/couponData';
 import { hasOwnContractField } from '../../cms/pageContract';
+import { createSectionColorDefaults, mergeSectionColorDefaults } from '../../cms/sectionColorDefaults';
 import {
   X,
   Trash2,
@@ -1427,7 +1429,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
 
   const updateColorField = (key: keyof SectionColorConfig, val: string) => {
     const nextColors = {
-      ...(sectionColors || {}),
+      ...mergeSectionColorDefaults(sectionColors || undefined),
       [key]: val
     };
     updateField('customColors', nextColors);
@@ -1458,9 +1460,9 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
   };
 
   const resetColorsToDefault = () => {
-    const { customColors: _removedColors, ...sectionWithoutColors } = section;
     onChange({
-      ...sectionWithoutColors
+      ...section,
+      customColors: createSectionColorDefaults(),
     });
   };
 
@@ -1792,7 +1794,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                       className="rounded accent-indigo-600"
                     />
                     <img
-                      src={p.images[0]}
+                      src={primaryProductImage(p)}
                       alt={p.title}
                       className="w-7 h-7 rounded object-cover bg-neutral-800 shrink-0"
                     />

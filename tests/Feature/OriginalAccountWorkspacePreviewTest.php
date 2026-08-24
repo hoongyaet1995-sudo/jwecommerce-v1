@@ -3,34 +3,55 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
+use App\Models\Menu;
+use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductReview;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Js;
 use Tests\TestCase;
 
 class OriginalAccountWorkspacePreviewTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_original_account_preview_does_not_replace_official_account_route(): void
+    public function test_official_account_route_renders_the_canonical_account_adapter(): void
     {
         $this->actingAs($this->customerUser(), 'customer')
             ->get(route('customer.account'))
             ->assertOk()
             ->assertViewIs('storefront.account')
-            ->assertViewHas('customer')
-            ->assertViewMissing('accountPayload')
-            ->assertDontSee('data-original-account-workspace', false);
+            ->assertViewHas('accountPayload')
+            ->assertSee('data-original-account-workspace', false);
     }
 
-    public function test_preview_renders_every_original_account_tab(): void
+    public function test_original_account_preview_route_is_not_registered(): void
     {
         $this->actingAs($this->customerUser(), 'customer')
-            ->get(route('customer.account.original-preview'))
+            ->get('/account/preview/original-account')
+            ->assertNotFound();
+    }
+
+    public function test_canonical_account_uses_the_shared_storefront_shell_and_theme_root(): void
+    {
+        $accountView = file_get_contents(resource_path('views/storefront/account.blade.php'));
+
+        self::assertIsString($accountView);
+        self::assertStringContainsString('<x-layouts.app title="Member Account | ATELIER">', $accountView);
+        self::assertStringContainsString('<x-storefront.nav active="account" />', $accountView);
+        self::assertStringContainsString('<x-storefront.footer />', $accountView);
+        self::assertStringNotContainsString('<footer', $accountView);
+        self::assertStringNotContainsString('class="min-h-screen dark bg-zinc-950 text-zinc-100', $accountView);
+    }
+
+    public function test_official_account_renders_every_original_account_tab(): void
+    {
+        $this->actingAs($this->customerUser(), 'customer')
+            ->get(route('customer.account'))
             ->assertOk()
-            ->assertViewIs('storefront.account-original-preview')
+            ->assertViewIs('storefront.account')
             ->assertSee('Dashboard')
             ->assertSee('Profile Setting')
             ->assertSee('Change Password')
@@ -41,13 +62,53 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
             ->assertSee('data-original-account-workspace', false);
     }
 
-    public function test_original_account_preview_is_protected_by_the_customer_guard(): void
+    public function test_canonical_header_is_rendered_once_on_the_official_account_route(): void
     {
-        $this->get(route('customer.account.original-preview'))
-            ->assertRedirect(route('customer.login'));
+        $user = $this->customerUser();
+        $accountView = file_get_contents(resource_path('views/storefront/account.blade.php'));
+
+        self::assertIsString($accountView);
+        self::assertStringContainsString('<x-storefront.nav active="account" />', $accountView);
+        self::assertStringNotContainsString('<header @mouseleave="activeMenuId = null"', $accountView);
+
+        $response = $this->actingAs($user, 'customer')
+            ->get(route('customer.account'))
+            ->assertOk()
+            ->assertViewIs('storefront.account');
+
+        self::assertSame(1, substr_count($response->getContent(), 'data-original-account-workspace'));
+        self::assertSame(1, substr_count($response->getContent(), 'COMPLIMENTARY SHIPPING'));
     }
 
-    public function test_original_account_preview_receives_complete_owner_scoped_payload_and_nested_mappings(): void
+    public function test_account_adapter_refreshes_mutations_on_its_current_entrypoint(): void
+    {
+        $user = $this->customerUser();
+
+        $official = $this->actingAs($user, 'customer')
+            ->get(route('customer.account'));
+        $official->assertOk()
+            ->assertSee('accountRefreshUrl: '.Js::from(route('customer.account')).',', false)
+            ->assertSee("window.location.assign(this.accountRefreshUrl + (kind === 'address' ? '#addresses' : '#profile'));", false)
+            ->assertSee("window.location.assign(this.accountRefreshUrl + '#addresses');", false);
+    }
+
+    public function test_account_served_css_contains_the_source_desktop_layout_utilities(): void
+    {
+        $manifest = json_decode(
+            file_get_contents(public_path('build/manifest.json')),
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        );
+        $cssPath = public_path('build/'.$manifest['resources/css/app.css']['file']);
+        $css = file_get_contents($cssPath);
+
+        self::assertStringContainsString('.lg\\:w-72{', $css);
+        self::assertStringContainsString('.lg\\:col-span-4{', $css);
+        self::assertStringContainsString('.w-13{', $css);
+        self::assertStringContainsString('.h-13{', $css);
+    }
+
+    public function test_official_account_receives_complete_owner_scoped_payload_and_nested_mappings(): void
     {
         [$owner, $ownerOrder] = $this->customerWithOrder('delivered');
         [, $otherOrder] = $this->customerWithOrder('processing');
@@ -90,9 +151,9 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
         ));
 
         $this->actingAs($owner->user, 'customer')
-            ->get(route('customer.account.original-preview'))
+            ->get(route('customer.account'))
             ->assertOk()
-            ->assertViewIs('storefront.account-original-preview')
+            ->assertViewIs('storefront.account')
             ->assertViewHas('accountPayload', function (array $payload) use ($owner, $ownerOrder, $ownerAddress, $ownerItem, $ownerOrderAddress, $ownerPayment, $ownerReview, $otherReview): bool {
                 self::assertSame(['user', 'orders', 'addresses', 'wishlist', 'dashboard', 'gaps'], array_keys($payload));
                 self::assertSame($owner->user_id, data_get($payload, 'user.id'));
@@ -117,13 +178,13 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
             });
     }
 
-    public function test_original_account_preview_contains_only_signed_in_customer_orders(): void
+    public function test_official_account_contains_only_signed_in_customer_orders(): void
     {
         [$owner, $ownerOrder] = $this->customerWithOrder('delivered');
         [, $otherOrder] = $this->customerWithOrder('processing');
 
         $this->actingAs($owner->user, 'customer')
-            ->get(route('customer.account.original-preview'))
+            ->get(route('customer.account'))
             ->assertOk()
             ->assertSee($ownerOrder->number)
             ->assertDontSee($otherOrder->number);
@@ -151,10 +212,11 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
             'reference' => 'pi_account_preview_4242',
             'payload' => ['payment_method' => 'Visa', 'last_four' => '4242'],
         ]);
+        $this->activeHeaderMenu();
 
         $response = $this->actingAs($owner->user, 'customer')
             ->withSession(['cart' => [$variant->id => 2]])
-            ->get(route('customer.account.original-preview'));
+            ->get(route('customer.account'));
 
         $response->assertOk()
             ->assertSee('data-cart-drawer-open', false)
@@ -164,7 +226,9 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
             ->assertSee('mobileExpandedLayer2', false)
             ->assertSee('class="px-3 pb-3 space-y-2 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 pt-2.5"', false)
             ->assertSee('class="p-2 space-y-1 bg-zinc-50 dark:bg-zinc-950"', false)
-            ->assertSee('Flagship Acoustic')
+            ->assertSee('Account Header Root')
+            ->assertSee('Account Header Column')
+            ->assertSee('Account Header Leaf')
             ->assertSee('Review this product')
             ->assertSee('data-review-form', false)
             ->assertSee('data-review-endpoint="'.route('customer.reviews.store').'"', false)
@@ -196,12 +260,44 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
             ->assertDontSee('IN TRANSIT (ON SCHEDULE)');
     }
 
+    public function test_preview_client_adapter_reloads_redirected_account_mutations_and_transitions_reviews_only_from_json(): void
+    {
+        [$owner, $order] = $this->customerWithOrder('delivered');
+        $product = Product::query()->create([
+            'handle' => 'client-state-review-item',
+            'title' => 'Client-state review item',
+            'base_price' => 12000,
+            'status' => 'active',
+        ]);
+        $variant = $product->variants()->create([
+            'sku' => 'CLIENT-STATE-REVIEW-SKU',
+            'title' => 'Obsidian / Studio Edition',
+            'price' => 12000,
+            'stock' => 8,
+        ]);
+        $item = $order->items()->create($this->itemAttributes('CLIENT-STATE-REVIEW-SKU', 'Client-state review item', $variant->id));
+
+        $response = $this->actingAs($owner->user, 'customer')
+            ->get(route('customer.account'));
+
+        $response->assertOk()
+            ->assertSee('reviewStatuses:', false)
+            ->assertSee('response.redirected', false)
+            ->assertSee("! contentType.includes('application/json')", false)
+            ->assertSee("this.reviewStatuses = {...this.reviewStatuses, [targetId]: 'pending_approval'};", false)
+            ->assertSee('setTimeout(() => this.closeReview(), 1600);', false)
+            ->assertSee("window.location.assign(this.accountRefreshUrl + (kind === 'address' ? '#addresses' : '#profile'));", false)
+            ->assertSee("['pending_approval', 'pending'].includes(reviewStatuses[", false)
+            ->assertDontSee('form.submit();', false)
+            ->assertSee('data-order-item-id="'.$item->id.'"', false);
+    }
+
     public function test_shipped_order_without_concrete_tracking_does_not_claim_a_tracking_state_or_schedule(): void
     {
         [$owner] = $this->customerWithOrder('shipped');
 
         $this->actingAs($owner->user, 'customer')
-            ->get(route('customer.account.original-preview'))
+            ->get(route('customer.account'))
             ->assertOk()
             ->assertSee('LATEST ORDER')
             ->assertSee('>SHIPPED<', false)
@@ -220,7 +316,7 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
         ])->save();
 
         $this->actingAs($owner->user, 'customer')
-            ->get(route('customer.account.original-preview'))
+            ->get(route('customer.account'))
             ->assertOk()
             ->assertSee('LATEST DISPATCH IN TRANSIT')
             ->assertSee('Handed Over to FedEx International Priority')
@@ -241,7 +337,7 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
         ]);
 
         $this->actingAs($owner->user, 'customer')
-            ->get(route('customer.account.original-preview'))
+            ->get(route('customer.account'))
             ->assertOk()
             ->assertSee('Payment: PENDING via VISA')
             ->assertSee('Payment Status: PENDING')
@@ -261,6 +357,34 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
         ]);
 
         return $user;
+    }
+
+    private function activeHeaderMenu(): void
+    {
+        $header = Menu::query()->create(['key' => 'header', 'name' => 'Account Header']);
+        $root = MenuItem::query()->create([
+            'menu_id' => $header->id,
+            'label' => 'Account Header Root',
+            'url' => '/shop?account-header=root',
+            'position' => 1,
+            'is_active' => true,
+        ]);
+        $column = MenuItem::query()->create([
+            'menu_id' => $header->id,
+            'parent_id' => $root->id,
+            'label' => 'Account Header Column',
+            'url' => '/shop?account-header=column',
+            'position' => 1,
+            'is_active' => true,
+        ]);
+        MenuItem::query()->create([
+            'menu_id' => $header->id,
+            'parent_id' => $column->id,
+            'label' => 'Account Header Leaf',
+            'url' => '/shop?account-header=leaf',
+            'position' => 1,
+            'is_active' => true,
+        ]);
     }
 
     /**

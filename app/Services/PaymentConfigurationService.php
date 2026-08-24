@@ -10,7 +10,7 @@ class PaymentConfigurationService
         'simulated_card' => 'Credit Card',
         'apple_pay' => 'Apple Pay',
         'paypal' => 'PayPal',
-        'klarna' => 'Klarna (4x)',
+        'klarna' => 'Atome (3x)',
         'crypto' => 'Crypto (USDC)',
     ];
 
@@ -22,6 +22,24 @@ class PaymentConfigurationService
             fn (string $label, string $method): bool => $this->isEnabled($method),
             ARRAY_FILTER_USE_BOTH,
         );
+    }
+
+    /**
+     * PDPs may only name methods that an operator has explicitly configured.
+     * Checkout keeps its legacy fallback until the payment setup is first saved.
+     *
+     * @return array<string, string>
+     */
+    public function configuredStorefrontMethods(): array
+    {
+        $document = StoreSetting::query()->where('key', 'payment_gateways')->value('value');
+        $gateways = data_get($document, 'data');
+
+        if (! is_array($gateways) || $gateways === []) {
+            return [];
+        }
+
+        return $this->enabledStorefrontMethods();
     }
 
     public function isEnabled(string $method): bool

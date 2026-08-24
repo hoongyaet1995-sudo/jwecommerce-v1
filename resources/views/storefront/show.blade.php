@@ -1,4 +1,4 @@
-<x-layouts.app title="{{ $product->title }} | JW Atelier">
+<x-layouts.app title="{{ $product->title }}{{ filled($pdpBrand) ? ' | '.$pdpBrand : '' }}">
     @php
         $cartEnabled = $selectedVariant && $selectedVariant->stock > 0;
         $productUrl = route('storefront.products.show', ['handle' => $product->handle]);
@@ -14,10 +14,11 @@
             ->values();
         $pdpShipping = $pdpContent && !$pdpContent->use_store_default_shipping ? ($pdpContent->shipping_policy ?? []) : [];
         $showShippingNotice = filled($pdpShipping['shippingBadgeText'] ?? null) || filled($pdpShipping['leadTimeText'] ?? null);
-        $showShippingPolicy = filled($pdpShipping['policyTitle'] ?? null) || filled($pdpShipping['policyContentHtml'] ?? null);
+        $showShippingPolicy = filled($pdpShipping['policyTitle'] ?? null);
         $pdpReviews = $product->reviews;
         $pdpReviewCount = $pdpReviews->count();
         $pdpRating = $pdpReviewCount > 0 ? round((float) $pdpReviews->avg('rating'), 1) : null;
+        $pdpFilledStars = min(5, max(0, (int) round($pdpRating ?? 0)));
         $showRating = $pdpReviewCount > 0;
         $pdpCustomAccordions = collect($pdpContent?->custom_accordions ?? [])
             ->filter(fn ($accordion) => is_array($accordion) && filled($accordion['title'] ?? null) && filled($accordion['content'] ?? null))
@@ -40,7 +41,7 @@
                     <span>/</span>
                     <span class="max-w-xs truncate font-medium text-zinc-900 dark:text-zinc-200">{{ $product->title }}</span>
                 </div>
-                <span class="hidden font-mono text-[11px] text-zinc-500 sm:block">In-Stock • Dispatches Today</span>
+                @if($selectedVariant)<span data-pdp-breadcrumb-availability class="hidden font-mono text-[11px] text-zinc-500 sm:block">{{ $selectedVariant->stock > 0 ? 'In Stock ('.$selectedVariant->stock.' units)' : 'Out of Stock' }}</span>@endif
             </div>
         </div>
 
@@ -50,7 +51,7 @@
                 <div class="space-y-4 lg:col-span-7">
                     <div class="group relative aspect-[4/3] overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
                         <img data-pdp-hero-image src="{{ $selectedImage?->path ?: $fallbackImage }}" alt="{{ $selectedImage?->alt ?: $product->title }}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                        <span class="absolute left-4 top-4 rounded-full border border-zinc-200/80 bg-white/90 px-3 py-1 font-mono text-xs text-amber-600 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/80 dark:text-amber-300">{{ strtoupper($product->brand ?: 'JW Atelier') }}</span>
+                        @if(filled($pdpBrand))<span class="absolute left-4 top-4 rounded-full border border-zinc-200/80 bg-white/90 px-3 py-1 font-mono text-xs text-amber-600 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/80 dark:text-amber-300">{{ strtoupper($pdpBrand) }}</span>@endif
                         <div class="absolute right-4 top-4 flex items-center gap-2">
                             @if(auth()->check() && auth()->user()->customer)
                                 <form method="POST" action="{{ route('customer.wishlist.store', $product) }}">
@@ -65,7 +66,7 @@
                     @if($images->isNotEmpty())
                         <div class="mt-4 grid grid-cols-4 gap-3">
                             @foreach($images as $imageIndex => $image)
-                                <a data-pdp-thumbnail data-pdp-image-path="{{ $image->path }}" href="{{ $productUrl }}?variant={{ $selectedVariant?->id }}&amp;image={{ $imageIndex }}" class="relative aspect-square overflow-hidden rounded-xl border bg-zinc-100 transition-all dark:bg-zinc-900 {{ $selectedImage?->id === $image->id ? 'border-amber-500 ring-2 ring-amber-500/40 dark:border-amber-400 dark:ring-amber-400/40 shadow-sm' : 'border-zinc-200 opacity-70 hover:opacity-100 dark:border-zinc-800' }}">
+                                <a data-pdp-thumbnail data-pdp-thumbnail-switch data-pdp-image-path="{{ $image->path }}" data-pdp-image-alt="{{ $image->alt ?: $product->title }}" href="{{ $productUrl }}?variant={{ $selectedVariant?->id }}&amp;image={{ $imageIndex }}" class="relative aspect-square overflow-hidden rounded-xl border bg-zinc-100 transition-all dark:bg-zinc-900 {{ $selectedImage?->id === $image->id ? 'border-amber-500 ring-2 ring-amber-500/40 dark:border-amber-400 dark:ring-amber-400/40 shadow-sm' : 'border-zinc-200 opacity-70 hover:opacity-100 dark:border-zinc-800' }}">
                                     <img src="{{ $image->path }}" alt="{{ $image->alt ?: $product->title }}" class="aspect-square w-full object-cover" />
                                 </a>
                             @endforeach
@@ -87,13 +88,13 @@
                     <div>
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="font-mono text-xs font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400">{{ $product->brand ?: 'JW Atelier' }}</p>
+                            @if(filled($pdpBrand))<p class="font-mono text-xs font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400">{{ $pdpBrand }}</p>@endif
                         </div>
                         @if($selectedVariant)<span data-pdp-sku class="rounded-full border border-zinc-200 bg-zinc-100 px-2.5 py-1 font-mono text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">{{ $selectedVariant->sku }}</span>@endif
                     </div>
                     <h1 class="mt-1 font-serif text-2xl font-bold text-zinc-900 sm:text-3xl dark:text-white">{{ $product->title }}</h1>
                     <p class="mt-1 text-xs text-zinc-600 sm:text-sm dark:text-zinc-400">{{ $product->subtitle }}</p>
-                    @if($showRating)<div class="mt-3 flex items-center gap-3"><span class="flex items-center gap-1 text-amber-500 dark:text-amber-400">@for($star = 0; $star < 5; $star++)<i data-lucide="star" class="h-3.5 w-3.5 fill-current"></i>@endfor</span>@if($pdpRating !== null)<span class="font-mono text-xs font-bold text-zinc-800 dark:text-zinc-300">{{ number_format((float) $pdpRating, 1) }}</span>@endif@if($pdpRating !== null && $pdpReviewCount > 0)<span class="text-xs text-zinc-400">•</span>@endif@if($pdpReviewCount > 0)<span class="cursor-pointer text-xs text-zinc-500 underline dark:text-zinc-400">{{ $pdpReviewCount }} Verified Studio Reviews</span>@endif</div>@endif
+                    @if($showRating)<div class="mt-3 flex items-center gap-3"><span class="flex items-center gap-1 text-amber-500 dark:text-amber-400">@for($star = 1; $star <= 5; $star++)<i data-pdp-rating-star="{{ $star <= $pdpFilledStars ? 'filled' : 'empty' }}" data-lucide="star" class="h-3.5 w-3.5 {{ $star <= $pdpFilledStars ? 'fill-current' : '' }}"></i>@endfor</span>@if($pdpRating !== null)<span class="font-mono text-xs font-bold text-zinc-800 dark:text-zinc-300">{{ number_format((float) $pdpRating, 1) }}</span>@endif@if($pdpRating !== null && $pdpReviewCount > 0)<span class="text-xs text-zinc-400">•</span>@endif@if($pdpReviewCount > 0)<span class="cursor-pointer text-xs text-zinc-500 underline dark:text-zinc-400">{{ $pdpReviewCount }} Verified Studio Reviews</span>@endif</div>@endif
                     </div>
 
                     <div class="space-y-2 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/90">
@@ -101,17 +102,13 @@
                             <strong data-pdp-price class="font-serif text-3xl font-bold text-zinc-900 dark:text-white">@storefrontMoney($price)</strong>
                             @if($compareAt)<del data-pdp-compare-at class="text-sm text-zinc-400 dark:text-zinc-500">@storefrontMoney($compareAt)</del><span data-pdp-save class="rounded bg-amber-400 px-2 py-0.5 text-xs font-bold uppercase text-zinc-950">SAVE @storefrontMoney($compareAt - $price)</span>@else <del data-pdp-compare-at class="hidden text-sm text-zinc-400 dark:text-zinc-500"></del><span data-pdp-save class="hidden rounded bg-amber-400 px-2 py-0.5 text-xs font-bold uppercase text-zinc-950"></span>@endif
                         </div>
-                        <p class="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400"><i data-lucide="zap" class="h-3.5 w-3.5 text-amber-500 dark:text-amber-400"></i>Or 4 interest-free payments of <strong data-pdp-installment>@storefrontMoney($price / 4)</strong> with Klarna or Apple Pay.</p>
+                        @if($pdpPaymentMethods !== [])<p class="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400"><i data-lucide="zap" class="h-3.5 w-3.5 text-amber-500 dark:text-amber-400"></i>Payment methods available at checkout: <strong>{{ implode(' · ', $pdpPaymentMethods) }}</strong>.</p>@endif
                     </div>
 
                     <form method="POST" action="{{ route('cart.items.store') }}">
                         @csrf
                         <input data-pdp-variant-input type="hidden" name="variant_id" value="{{ $selectedVariant?->id }}" />
                         <x-storefront.variant-selector :product="$product" :variants="$product->variants" :images="$images" :selected-variant="$selectedVariant" />
-                        @if(filled($selectedVariant?->material))
-                            <p class="mt-6 font-mono text-sm font-bold uppercase tracking-wide text-zinc-800 dark:text-white">Configuration</p>
-                            <span class="mt-3 inline-block rounded-lg border border-zinc-200 bg-zinc-100 px-4 py-2 font-mono text-sm text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">{{ $selectedVariant->material }}</span>
-                        @endif
                         <div class="mt-8 flex gap-3">
                             <input name="quantity" type="number" value="1" min="1" max="{{ max(1, $selectedVariant?->stock ?? 1) }}" class="w-28 rounded-xl border border-zinc-200 bg-white px-4 py-4 text-center font-mono text-zinc-900 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-white" />
                             <button data-pdp-add-to-cart @disabled(!$cartEnabled) class="flex-1 rounded-xl bg-zinc-900 px-5 py-4 text-base font-black text-white transition hover:bg-amber-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-amber-400">{{ $cartEnabled ? 'Add to Cart · '.app(\App\Support\StorefrontCurrencyContext::class)->format($price) : 'Sold out' }}</button>
@@ -138,7 +135,7 @@
                         </div>
                     </details>@endif
                     @if($showShippingPolicy)<details class="mt-3 rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
-                        <summary class="flex cursor-pointer items-center justify-between px-5 py-5 text-xs font-semibold uppercase tracking-wider text-zinc-800 dark:text-zinc-200">{{ $pdpShipping['policyTitle'] ?? 'Shipping & 30-Day Return Guarantee' }} <i data-lucide="chevron-down" class="h-4 w-4"></i></summary>
+                        <summary class="flex cursor-pointer items-center justify-between px-5 py-5 text-xs font-semibold uppercase tracking-wider text-zinc-800 dark:text-zinc-200">{{ $pdpShipping['policyTitle'] }} <i data-lucide="chevron-down" class="h-4 w-4"></i></summary>
                         <div class="space-y-2 border-t border-zinc-200 p-5 pt-4 text-xs text-zinc-700 dark:border-zinc-800/80 dark:text-zinc-300">@if(filled($pdpShipping['policyContentHtml'] ?? null))<p>{{ $pdpShipping['policyContentHtml'] }}</p>@endif</div>
                     </details>@endif
                     @foreach($pdpCustomAccordions as $accordion)
@@ -173,7 +170,7 @@
     </div>
     <div data-pdp-sticky-purchase class="fixed bottom-0 left-0 right-0 z-30 border-t border-zinc-200 bg-white/95 px-4 py-3 shadow-2xl backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/95 sm:px-6">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
-            <div class="flex min-w-0 items-center gap-3"><img data-pdp-sticky-image src="{{ $selectedImage?->path ?: $fallbackImage }}" alt="" class="hidden h-10 w-10 shrink-0 rounded-lg object-cover sm:block"><div class="min-w-0"><p class="truncate text-xs font-bold text-zinc-900 dark:text-white">{{ $product->title }}</p><p class="truncate text-[11px] text-zinc-500 dark:text-zinc-400">Selected: <strong data-pdp-sticky-label class="text-amber-600 dark:text-amber-300">{{ $selectedVariant?->color_name ?: 'Studio standard' }}</strong> • SKU: <span data-pdp-sticky-sku>{{ $selectedVariant?->sku }}</span></p></div></div>
+            <div class="flex min-w-0 items-center gap-3"><img data-pdp-sticky-image src="{{ $selectedImage?->path ?: $fallbackImage }}" alt="" class="hidden h-10 w-10 shrink-0 rounded-lg object-cover sm:block"><div class="min-w-0"><p class="truncate text-xs font-bold text-zinc-900 dark:text-white">{{ $product->title }}</p><p class="truncate text-[11px] text-zinc-500 dark:text-zinc-400">Selected: <strong data-pdp-sticky-label class="text-amber-600 dark:text-amber-300">{{ $selectedVariant?->color_name ?: $selectedVariant?->title }}</strong> • SKU: <span data-pdp-sticky-sku>{{ $selectedVariant?->sku }}</span></p></div></div>
             <div class="flex shrink-0 items-center gap-3"><div class="text-right"><p data-pdp-sticky-price class="text-sm font-bold text-zinc-900 dark:text-white">@storefrontMoney($price)</p></div><form method="POST" action="{{ route('cart.items.store') }}">@csrf<input data-pdp-variant-input type="hidden" name="variant_id" value="{{ $selectedVariant?->id }}"><input type="hidden" name="quantity" value="1"><button data-pdp-sticky-add @disabled(!$cartEnabled) class="flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white shadow-md transition-all hover:bg-amber-400 hover:text-zinc-950 disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-amber-400 sm:px-6 sm:text-sm"><i data-lucide="shopping-bag" class="h-4 w-4"></i>Add to Cart</button></form></div>
         </div>
     </div>

@@ -27,6 +27,10 @@ describe('Task 11 source-faithful CMS partials', () => {
     expect(rendererSource).toContain('runtimeSection.tabs?.[activeTabIndex]?.products');
   });
 
+  it('uses the catalog runtime slug for every CMS product-card destination', () => {
+    expect(rendererSource).toContain('href={`/products/${prod.slug}`}');
+  });
+
   it('preserves the ZIP5 Contact form fields, repeatable categories, responsive DOM, and operational submit ownership', () => {
     for (const marker of [
       "subjectPlaceholder: 'e.g. Custom Engraving / Setup Inquiry'",

@@ -1,6 +1,7 @@
 import type { LaravelAdminBootstrap } from '../types';
 import type { GeneralShippingRate } from '../types/shipping';
 import type { CashOnDeliveryConfig, GlobalPaymentSettings, ManualBankTransferConfig, PaymentGatewayConfig } from '../types/payment';
+import type { CurrencySetting } from '../types';
 
 export interface CommerceSettingsDocument {
   shippingRates: GeneralShippingRate[];
@@ -8,6 +9,7 @@ export interface CommerceSettingsDocument {
   globalPayment: GlobalPaymentSettings | Record<string, never>;
   bankTransfer: ManualBankTransferConfig | Record<string, never>;
   codConfig: CashOnDeliveryConfig | Record<string, never>;
+  currencies: CurrencySetting[];
 }
 
 type ResponsePayload = { data: CommerceSettingsDocument; message?: string; errors?: Record<string, string[]> };

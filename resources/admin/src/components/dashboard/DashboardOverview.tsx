@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAdmin } from '../../context/AdminContext';
+import { primaryProductImage } from '../../catalogMedia';
 import {
   TrendingUp,
   ShoppingBag,
@@ -118,7 +119,7 @@ export const DashboardOverview: React.FC = () => {
         variantTitle: v.title,
         sku: v.sku,
         stock: v.inventoryQuantity,
-        image: v.image || p.images[0]
+        image: v.image || primaryProductImage(p)
       }))
     );
 

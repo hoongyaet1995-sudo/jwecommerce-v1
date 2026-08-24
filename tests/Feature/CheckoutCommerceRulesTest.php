@@ -60,6 +60,24 @@ class CheckoutCommerceRulesTest extends TestCase
             ->assertSee('Credit Card')->assertSee('PayPal')->assertDontSee('Crypto (USDC)');
     }
 
+    public function test_checkout_snapshots_the_shoppers_selected_currency_and_fx_rate(): void
+    {
+        $variant = $this->variant();
+        StoreSetting::query()->updateOrCreate(['key' => 'currencies'], ['value' => ['data' => [
+            ['id' => 'MYR', 'code' => 'MYR', 'title' => 'Malaysian Ringgit', 'symbolLeft' => 'RM ', 'symbolRight' => '', 'decimalPlaces' => 2, 'exchangeRate' => 1, 'isDefault' => true, 'isEnabled' => true],
+            ['id' => 'USD', 'code' => 'USD', 'title' => 'US Dollar', 'symbolLeft' => '$', 'symbolRight' => '', 'decimalPlaces' => 2, 'exchangeRate' => 0.2245, 'isDefault' => false, 'isEnabled' => true],
+        ]]]);
+
+        $this->withSession(['cart' => [$variant->id => 1], 'storefront_currency' => 'USD'])
+            ->post('/checkout', $this->checkoutData())
+            ->assertRedirect('/order/success');
+
+        $this->assertDatabaseHas('orders', [
+            'currency' => 'USD',
+            'currency_exchange_rate' => 0.2245,
+        ]);
+    }
+
     private function checkoutData(): array
     {
         return ['email'=>'buyer@example.com','first_name'=>'Alex','last_name'=>'Buyer','line_1'=>'10 Studio Road','city'=>'Kuala Lumpur','postal_code'=>'50000','country'=>'MY','delivery'=>'standard','payment_method'=>'paypal'];

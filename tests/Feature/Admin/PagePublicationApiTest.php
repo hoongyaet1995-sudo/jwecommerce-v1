@@ -61,7 +61,7 @@ final class PagePublicationApiTest extends TestCase
             ->assertJsonPath('data.document.title', 'Unpublished draft title');
 
         $fresh = $page->fresh();
-        $public = app(PageRuntimePayloadFactory::class)->forPublished($fresh);
+        $public = app(PageRuntimePayloadFactory::class)->forCanary($fresh);
 
         $this->assertSame('Published title', $public['page']['document']['title']);
         $this->assertSame('published-edit', $public['page']['document']['slug']);
@@ -97,7 +97,7 @@ final class PagePublicationApiTest extends TestCase
             ? $fresh->draftDocument->content_hash
             : null);
 
-        $public = app(PageRuntimePayloadFactory::class)->forPublished($fresh);
+        $public = app(PageRuntimePayloadFactory::class)->forCanary($fresh);
         $this->assertSame($draftBefore->document, $public['page']['document']);
         $this->assertSame($draftBefore->content_hash, $public['page']['contentHash']);
     }
@@ -109,7 +109,7 @@ final class PagePublicationApiTest extends TestCase
         $draftBefore = $page->draftDocument->only(['slug', 'content_hash', 'document']);
         $publishedBefore = $page->publishedDocument->only(['slug', 'content_hash', 'document']);
 
-        app(PageRuntimePayloadFactory::class)->forPublished($page);
+        app(PageRuntimePayloadFactory::class)->forCanary($page);
 
         $this->actingAs($this->admin())
             ->postJson(route('admin.api.pages.unpublish', $page))
@@ -166,7 +166,7 @@ final class PagePublicationApiTest extends TestCase
         $this->assertSame('Current draft title', $fresh->publishedDocument->document['title']);
         $this->assertSame(4, $fresh->publishedDocument->lock_version);
         $this->assertSame('Current draft title', app(PageRuntimePayloadFactory::class)
-            ->forPublished($fresh)['page']['document']['title']);
+            ->forCanary($fresh)['page']['document']['title']);
     }
 
     public function test_first_publish_slug_collision_returns_stable_422_without_mutating_either_page(): void
@@ -606,15 +606,9 @@ final class PagePublicationApiTest extends TestCase
         $this->assertSame($document, $page->fresh()->draftDocument->document);
     }
 
-    public function test_visible_renderer_and_required_field_failures_use_publication_blocked_code_and_exact_paths(): void
+    public function test_visible_required_field_failures_use_publication_blocked_code_and_exact_paths(): void
     {
         $document = $this->document('publication-blocked', 'Publication blocked', [
-            [
-                'id' => 'unsupported-visible',
-                'type' => 'split_hero',
-                'title' => 'Unsupported renderer',
-                'isVisible' => true,
-            ],
             $this->heroSection('missing-required-title', ''),
         ]);
         $page = $this->canonicalPage($document);
@@ -626,12 +620,8 @@ final class PagePublicationApiTest extends TestCase
             ->assertJsonPath('code', 'cms_publication_blocked');
 
         $this->assertSame(
-            ['This visible section type cannot be rendered.'],
-            $response->json('errors')['sections.0.type'],
-        );
-        $this->assertSame(
             ['This visible section field is required to publish.'],
-            $response->json('errors')['sections.1.title'],
+            $response->json('errors')['sections.0.title'],
         );
 
         $this->assertSame('draft', $page->fresh()->status);
@@ -886,7 +876,7 @@ final class PagePublicationApiTest extends TestCase
     private function assertPublishedUnavailable(Page $page): void
     {
         try {
-            app(PageRuntimePayloadFactory::class)->forPublished($page);
+            app(PageRuntimePayloadFactory::class)->forCanary($page);
             $this->fail('Expected the non-published lifecycle to return runtime 404.');
         } catch (NotFoundHttpException $exception) {
             $this->assertSame(404, $exception->getStatusCode());

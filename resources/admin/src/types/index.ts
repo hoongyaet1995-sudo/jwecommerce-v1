@@ -55,6 +55,7 @@ export interface HeaderMenuL3 {
   linkType: MenuLinkType;
   targetId?: string; // categoryId or collectionId
   badge?: string;
+  badgeColor?: string;
   isExternal?: boolean;
   isActive: boolean;
   sortOrder: number;
@@ -69,6 +70,7 @@ export interface HeaderMenuL2 {
   icon?: string;
   description?: string;
   badge?: string;
+  badgeColor?: string;
   isActive: boolean;
   sortOrder: number;
   featuredImage?: string;
@@ -83,6 +85,7 @@ export interface HeaderMenuL1 {
   targetId?: string;
   icon?: string;
   badge?: string;
+  badgeColor?: string;
   isHighlighted?: boolean;
   displayStyle: 'dropdown' | 'megamenu' | 'simple_link';
   isActive: boolean;
@@ -103,6 +106,7 @@ export interface FooterMenuL2 {
   linkType: MenuLinkType;
   targetId?: string;
   badge?: string;
+  badgeColor?: string;
   isExternal?: boolean;
   isActive: boolean;
   sortOrder: number;
@@ -162,10 +166,21 @@ export interface Collection {
   createdAt: string;
 }
 
+export type VariantVisualType = 'color' | 'image' | 'none';
+export type ProductOptionDisplayType = 'color_palette' | 'option_image' | 'pills' | 'dropdown';
+
+export interface VariantVisual {
+  visualType: VariantVisualType;
+  colorCode?: string;
+  optionImage?: string;
+}
+
 export interface ProductOption {
   id: string;
   name: string; // e.g. "Color", "Size", "Material"
   values: string[]; // e.g. ["Midnight Black", "Arctic White", "Sage Green"]
+  displayType?: ProductOptionDisplayType;
+  valueVisuals?: Record<string, VariantVisual>;
 }
 
 export interface ProductVariant {
@@ -180,7 +195,60 @@ export interface ProductVariant {
   weightGrams?: number;
   barcode?: string;
   image?: string;
+  visualType?: VariantVisualType;
+  colorCode?: string;
+  optionImage?: string;
   enabled: boolean;
+}
+
+export interface ProductMedia {
+  id?: string;
+  path: string;
+  alt: string;
+  position?: number;
+}
+
+export interface ProductHighlightItem {
+  id: string;
+  text: string;
+  badge?: string;
+  icon?: string;
+}
+
+export interface ProductSpecItem {
+  id: string;
+  label: string;
+  value: string;
+  group?: string;
+}
+
+export interface ProductShippingPolicy {
+  useStoreDefault: boolean;
+  shippingBadgeText?: string;
+  leadTimeText?: string;
+  policyTitle?: string;
+  policyContentHtml?: string;
+  freeShippingThreshold?: number;
+}
+
+export interface ProductCustomAccordion {
+  id: string;
+  title: string;
+  icon?: string;
+  content: string;
+  defaultOpen?: boolean;
+}
+
+export interface ProductSeedReview {
+  id: string;
+  author: string;
+  rating: number;
+  date?: string | null;
+  title: string;
+  comment: string;
+  verifiedBuyer?: boolean;
+  variantPurchased?: string;
+  helpfulCount?: number;
 }
 
 export type ReviewModerationStatus = 'pending' | 'published' | 'rejected';
@@ -250,7 +318,7 @@ export interface Product {
   collectionIds: string[];
   descriptionHtml: string;
   summary: string;
-  images: string[];
+  images: Array<ProductMedia | string>;
   status: 'active' | 'draft' | 'archived';
   hasVariants: boolean;
   basePrice: number;
@@ -262,6 +330,18 @@ export interface Product {
   featured: boolean;
   seoTitle?: string;
   seoDescription?: string;
+  pdpContent?: {
+    highlights: ProductHighlightItem[];
+    specifications: ProductSpecItem[];
+    useStoreDefaultShipping: boolean;
+    shippingPolicy?: Omit<ProductShippingPolicy, 'useStoreDefault'> | null;
+    customAccordions: ProductCustomAccordion[];
+    ratingScore?: number | null;
+    reviewCount: number;
+    configuratorLabel?: string | null;
+  };
+  crossSellProductIds?: string[];
+  reviews?: ProductSeedReview[];
   createdAt: string;
   updatedAt: string;
 }

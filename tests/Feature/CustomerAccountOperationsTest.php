@@ -26,7 +26,7 @@ class CustomerAccountOperationsTest extends TestCase
         $this->assertDatabaseHas('customers', ['id'=>$customer->id,'first_name'=>'Alex','last_name'=>'Buyer','phone'=>'0123456789']);
         $this->assertDatabaseHas('customer_addresses', ['customer_id'=>$customer->id,'line_1'=>'10 Studio Road','is_default'=>1]);
         $this->assertDatabaseHas('wishlist_items', ['customer_id'=>$customer->id,'product_id'=>$product->id]);
-        $this->actingAs($user, 'customer')->get('/account')->assertOk()->assertSee('Studio Headphones')->assertSee('10 Studio Road');
+        $this->actingAs($user, 'customer')->get('/account')->assertOk()->assertSee('data-original-account-workspace', false)->assertSee('10 Studio Road');
         $this->actingAs($user, 'customer')->delete('/account/wishlist/'.$product->id)->assertSessionHas('status');
         $this->assertDatabaseMissing('wishlist_items', ['customer_id'=>$customer->id,'product_id'=>$product->id]);
     }

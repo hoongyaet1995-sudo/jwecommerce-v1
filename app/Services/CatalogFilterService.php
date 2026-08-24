@@ -1,0 +1,191 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\ProductReview;
+use App\Models\ProductVariant;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
+
+/** The only storefront PLP filter authority: enabled variants and published reviews. */
+final class CatalogFilterService
+{
+    public function for(Request $request, Builder|Relation $base, ?string $forcedCategory = null): CatalogFilterResult
+    {
+        $filters = $this->normalize($request, $base, $forcedCategory);
+        $products = $this->applyFilters(clone $base, $filters)
+            ->with([
+                'category', 'images',
+                'variants' => $filters['variantFiltered']
+                    ? fn (HasMany $variants) => $this->applyVariantConstraints($variants, $filters)
+                    : fn (HasMany $variants) => $variants,
+            ])->paginate(12)->withQueryString();
+
+        return new CatalogFilterResult($filters, $products, $this->facets($base, $filters));
+    }
+
+    /** @return array{search:string,category:?string,sort:string,layout:string,minPrice:int,maxPrice:int,boundsMinPrice:int,boundsMaxPrice:int,inStock:bool,colors:list<string>,materials:list<string>,minRating:float,variantFiltered:bool} */
+    private function normalize(Request $request, Builder|Relation $base, ?string $forcedCategory): array
+    {
+        $bounds = $this->variantQuery($base)->where('enabled', true)
+            ->selectRaw('COALESCE(MIN(price), 0) as minimum_price, COALESCE(MAX(price), 0) as maximum_price')->first();
+        $minimum = max(0, (int) ($bounds?->minimum_price ?? 0));
+        $maximum = max($minimum, (int) ($bounds?->maximum_price ?? 0));
+        $minPrice = min(max($request->integer('min_price', $minimum), $minimum), $maximum);
+        $maxPrice = min(max($request->integer('max_price', $maximum), $minimum), $maximum);
+        if ($minPrice > $maxPrice) {
+            [$minPrice, $maxPrice] = [$maxPrice, $minPrice];
+        }
+
+        $filters = [
+            'search' => $request->string('search')->trim()->value(),
+            'category' => $forcedCategory ?? $this->activeCategory($request->string('category')->trim()->value(), $base),
+            'sort' => in_array($request->string('sort')->value(), ['price_asc', 'price_desc', 'rating', 'newest'], true) ? $request->string('sort')->value() : '',
+            'layout' => $request->string('layout')->value() === 'list' ? 'list' : 'grid',
+            'minPrice' => $minPrice, 'maxPrice' => $maxPrice,
+            'boundsMinPrice' => $minimum, 'boundsMaxPrice' => $maximum,
+            // Other filter controls submit the range values too. Keep intent
+            // separate so catalog bounds do not become a fake active chip.
+            'priceRequested' => $request->boolean('price_filter') || $minPrice !== $minimum || $maxPrice !== $maximum,
+            'inStock' => $request->boolean('in_stock'),
+            'colors' => $this->availableVariantValues($request, 'color', 'color_name', $base),
+            'materials' => $this->availableVariantValues($request, 'material', 'material', $base),
+            'minRating' => $this->normalizedRating($request),
+        ];
+        $filters['variantFiltered'] = $this->hasVariantConstraint($filters);
+
+        return $filters;
+    }
+
+    private function applyFilters(Builder|Relation $query, array $filters): Builder|Relation
+    {
+        $query
+            ->when($filters['search'] !== '', fn (Builder $products) => $products->where(fn (Builder $search) => $search
+                ->where('title', 'like', "%{$filters['search']}%")->orWhere('brand', 'like', "%{$filters['search']}%")))
+            ->when($filters['category'], fn (Builder $products, string $category) => $products->whereHas('category', fn (Builder $categories) => $categories->where('slug', $category)))
+            ->when($filters['minRating'] > 0, fn (Builder|Relation $products) => $products->whereIn('products.id', $this->ratedProductIds($filters['minRating'])))
+            ->when($filters['variantFiltered'], fn (Builder|Relation $products) => $products->whereHas('variants', fn (Builder $variants) => $this->applyVariantConstraints($variants, $filters)));
+
+        return match ($filters['sort']) {
+            'price_asc' => $query->orderBy('base_price'),
+            'price_desc' => $query->orderByDesc('base_price'),
+            'rating' => $query->orderByDesc($this->publishedAverageRatingSubquery()),
+            'newest' => $query->latest('products.created_at'),
+            default => $query,
+        };
+    }
+
+    private function applyVariantConstraints(Builder|HasMany $variants, array $filters): Builder|HasMany
+    {
+        return $variants->where('enabled', true)->whereBetween('price', [$filters['minPrice'], $filters['maxPrice']])
+            ->when($filters['inStock'], fn (Builder $query) => $query->where('stock', '>', 0))
+            ->when($filters['colors'] !== [], fn (Builder $query) => $query->whereIn('color_name', $filters['colors']))
+            ->when($filters['materials'] !== [], fn (Builder $query) => $query->whereIn('material', $filters['materials']));
+    }
+
+    /** @return array<string, mixed> */
+    private function facets(Builder|Relation $base, array $filters): array
+    {
+        $all = $this->applyFilters(clone $base, $filters)->count();
+        // A category's count must retain every other active constraint while
+        // removing only the category itself, just like the color/material facets.
+        $categoryBase = $filters;
+        $categoryBase['category'] = null;
+        $categoryCounts = $this->applyFilters(clone $base, $categoryBase)
+            ->selectRaw('category_id, COUNT(DISTINCT products.id) as aggregate_count')
+            ->groupBy('category_id')->pluck('aggregate_count', 'category_id')
+            ->map(fn ($count) => (int) $count)->all();
+        $ratingBase = $this->without($filters, ['rating']);
+        $ratingProductIds = $this->applyFilters(clone $base, $ratingBase)->select('products.id');
+        $ratingCounts = ProductReview::query()->published()->whereIn('product_id', $ratingProductIds)
+            ->selectRaw('product_id, AVG(rating) as average_rating')->groupBy('product_id')->get()->pluck('average_rating');
+
+        return [
+            'total' => $all,
+            'categoryCounts' => $categoryCounts,
+            'priceBounds' => ['min' => $filters['boundsMinPrice'], 'max' => $filters['boundsMaxPrice']],
+            'colors' => $this->variantFacet($base, $this->without($filters, ['colors']), 'color_name'),
+            'materials' => $this->variantFacet($base, $this->without($filters, ['materials']), 'material'),
+            'ratings' => collect([4.8, 4.5])->map(fn (float $minimum) => [
+                'value' => $minimum, 'label' => number_format($minimum, 1).' Stars & Up',
+                'count' => $ratingCounts->filter(fn ($average) => (float) $average >= $minimum)->count(),
+            ])->values()->all(),
+            'hasRatings' => $ratingCounts->isNotEmpty(),
+        ];
+    }
+
+    /** @return list<array{value:string,label:string,count:int,hex:?string}> */
+    private function variantFacet(Builder|Relation $base, array $filters, string $column): array
+    {
+        $productIds = $this->applyFilters(clone $base, $filters)->select('products.id');
+        $variants = ProductVariant::query()->whereIn('product_id', $productIds)->where('enabled', true);
+        $this->applyVariantConstraints($variants, $filters);
+
+        return $variants->whereNotNull($column)->where($column, '!=', '')
+            ->selectRaw($column.' as value, MIN(color_hex) as hex, COUNT(DISTINCT product_id) as aggregate_count')
+            ->groupBy($column)->orderBy($column)->get()->map(fn ($facet) => [
+                'value' => $facet->value, 'label' => $facet->value,
+                'count' => (int) $facet->aggregate_count,
+                'hex' => $column === 'color_name' ? $facet->hex : null,
+            ])->all();
+    }
+
+    /** @param list<string> $without */
+    private function without(array $filters, array $without): array
+    {
+        if (in_array('colors', $without, true)) $filters['colors'] = [];
+        if (in_array('materials', $without, true)) $filters['materials'] = [];
+        if (in_array('price', $without, true)) { $filters['minPrice'] = $filters['boundsMinPrice']; $filters['maxPrice'] = $filters['boundsMaxPrice']; $filters['priceRequested'] = false; }
+        if (in_array('rating', $without, true)) $filters['minRating'] = 0;
+        if (in_array('stock', $without, true)) $filters['inStock'] = false;
+        $filters['variantFiltered'] = $this->hasVariantConstraint($filters);
+        return $filters;
+    }
+
+    private function hasVariantConstraint(array $filters): bool
+    {
+        return $filters['priceRequested'] || $filters['minPrice'] !== $filters['boundsMinPrice'] || $filters['maxPrice'] !== $filters['boundsMaxPrice']
+            || $filters['inStock'] || $filters['colors'] !== [] || $filters['materials'] !== [];
+    }
+
+    private function normalizedRating(Request $request): float
+    {
+        $rating = (float) $request->input('min_rating', 0);
+        return in_array($rating, [4.5, 4.8], true) ? $rating : 0;
+    }
+
+    private function ratedProductIds(float $minimum): Builder
+    {
+        return ProductReview::query()->published()->select('product_id')->groupBy('product_id')
+            ->havingRaw('AVG(rating) * 10 >= ?', [(int) ceil($minimum * 10)]);
+    }
+
+    private function publishedAverageRatingSubquery(): Builder
+    {
+        return ProductReview::query()->published()->selectRaw('AVG(rating)')->whereColumn('product_reviews.product_id', 'products.id');
+    }
+
+    private function variantQuery(Builder|Relation $base): Builder
+    {
+        return ProductVariant::query()->whereIn('product_id', (clone $base)->select('products.id'));
+    }
+
+    private function activeCategory(string $category, Builder|Relation $base): ?string
+    {
+        if ($category === '') return null;
+        return (clone $base)->whereHas('category', fn (Builder $categories) => $categories->where('slug', $category)->where('is_active', true))->exists() ? $category : null;
+    }
+
+    /** @return list<string> */
+    private function availableVariantValues(Request $request, string $parameter, string $column, Builder|Relation $base): array
+    {
+        $requested = $request->input($parameter, []);
+        $requested = is_array($requested) ? $requested : [$requested];
+        $requested = array_values(array_unique(array_filter($requested, fn (mixed $value) => is_string($value) && $value !== '')));
+        if ($requested === []) return [];
+        return $this->variantQuery($base)->where('enabled', true)->whereNotNull($column)->whereIn($column, $requested)
+            ->pluck($column)->unique()->values()->all();
+    }
+}

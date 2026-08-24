@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
-import { Product, ProductOption, ProductVariant } from '../../types';
+import { Product, ProductOption, ProductVariant, VariantVisual } from '../../types';
+import { readAdminBootstrap } from '../../integration/adminBootstrap';
+import { ProductMediaManager } from './ProductMediaManager';
+import { ProductExtraInfoEditor } from './ProductExtraInfoEditor';
+import { guessColorCode, VariantVisualPickerModal } from './VariantVisualPickerModal';
+import { uploadMediaAsset } from '../../integration/pageData';
 import {
   X,
   Plus,
@@ -8,6 +13,7 @@ import {
   Sparkles,
   Layers,
   Image as ImageIcon,
+  Palette,
   DollarSign,
   Package,
   Wand2,
@@ -17,6 +23,7 @@ import {
   Upload,
   Copy,
   AlertCircle
+  , FileSpreadsheet
 } from 'lucide-react';
 
 interface ProductEditorModalProps {
@@ -30,9 +37,9 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   isOpen,
   onClose
 }) => {
-  const { categories, collections, saveProduct } = useAdmin();
+  const { categories, collections, products, saveProduct } = useAdmin();
 
-  const [activeTab, setActiveTab] = useState<'basic' | 'variants' | 'media' | 'seo'>('basic');
+  const [activeTab, setActiveTab] = useState<'basic' | 'variants' | 'media' | 'extra_info' | 'seo'>('basic');
   const [formData, setFormData] = useState<Product | null>(null);
 
   // New option tag input temporary states
@@ -43,10 +50,30 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   const [batchPrice, setBatchPrice] = useState<string>('');
   const [batchInventory, setBatchInventory] = useState<string>('');
   const [batchSkuPrefix, setBatchSkuPrefix] = useState<string>('');
+  const [visualTarget, setVisualTarget] = useState<{ optionName?: string; optionValue?: string; variantIndex?: number; preferredMode?: VariantVisual['visualType'] } | null>(null);
 
   useEffect(() => {
     if (product) {
-      setFormData(JSON.parse(JSON.stringify(product)));
+      const hydrated = JSON.parse(JSON.stringify(product)) as Product;
+      // Older catalog rows predate the persisted option-dimension document.
+      // Reconstruct only the editor projection from their existing variant facts;
+      // saving remains the point at which it becomes durable.
+      if (hydrated.options.length === 0 && hydrated.variants.length > 0) {
+        const valuesByName = new Map<string, string[]>();
+        hydrated.variants.forEach(variant => Object.entries(variant.options).forEach(([name, value]) => {
+          const values = valuesByName.get(name) || [];
+          const normalized = String(value);
+          if (!values.includes(normalized)) values.push(normalized);
+          valuesByName.set(name, values);
+        }));
+        hydrated.options = Array.from(valuesByName, ([name, values], index) => ({
+          id: `legacy-option-${index}`,
+          name,
+          values,
+          displayType: name.toLowerCase().includes('color') ? 'color_palette' : 'pills',
+        }));
+      }
+      setFormData(hydrated);
     } else {
       const defaultProd: Product = {
         id: 'prod-' + Date.now(),
@@ -57,9 +84,11 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
         collectionIds: [],
         summary: '',
         descriptionHtml: '<p>Engineered with precision for modern lifestyle and professional reliability.</p>',
-        images: [
-          'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80'
-        ],
+        images: [{
+          path: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80',
+          alt: 'Product - View #1',
+          position: 0,
+        }],
         status: 'active',
         hasVariants: true,
         basePrice: 199,
@@ -129,7 +158,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
         costPrice: Math.round(price * 0.4),
         inventoryQuantity: 40,
         weightGrams: 350,
-        image: formData?.images[0],
+        image: typeof formData?.images[0] === 'string' ? formData.images[0] : formData?.images[0]?.path,
         enabled: true
       };
     });
@@ -171,12 +200,18 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   const addOptionValue = (optId: string) => {
     const val = (newOptionValueInputs[optId] || '').trim();
     if (!val) return;
+    const guessed = guessColorCode(val);
+
     setFormData({
       ...formData,
       options: formData.options.map(o => {
         if (o.id !== optId) return o;
         if (o.values.includes(val)) return o;
-        return { ...o, values: [...o.values, val] };
+        const newVisuals = { ...(o.valueVisuals || {}) };
+        if (guessed && !newVisuals[val]) {
+          newVisuals[val] = { visualType: 'color', colorCode: guessed };
+        }
+        return { ...o, values: [...o.values, val], valueVisuals: newVisuals };
       })
     });
     setNewOptionValueInputs(prev => ({ ...prev, [optId]: '' }));
@@ -236,6 +271,43 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
       ...formData,
       variants: updated,
       totalInventory: totalStock
+    });
+  };
+
+  const updateOptionDisplayType = (optionId: string, displayType: ProductOption['displayType']) => {
+    setFormData({ ...formData, options: formData.options.map(option => option.id === optionId ? { ...option, displayType } : option) });
+  };
+
+  const applyOptionVisual = (optionName: string, optionValue: string, visual: VariantVisual, applyToAllMatching: boolean) => {
+    setFormData({
+      ...formData,
+      options: formData.options.map(option => option.name !== optionName ? option : {
+        ...option,
+        valueVisuals: { ...(option.valueVisuals || {}), [optionValue]: visual },
+      }),
+      variants: applyToAllMatching
+        ? formData.variants.map(variant => variant.options[optionName] === optionValue ? { ...variant, ...visual } : variant)
+        : formData.variants,
+    });
+  };
+
+  const applyVariantVisual = (variantIndex: number, visual: VariantVisual) => {
+    setFormData({ ...formData, variants: formData.variants.map((variant, index) => index === variantIndex ? { ...variant, ...visual } : variant) });
+  };
+
+  const autoDetectColors = () => {
+    setFormData({
+      ...formData,
+      options: formData.options.map(option => ({
+        ...option,
+        displayType: option.name.toLowerCase().includes('color') ? 'color_palette' : option.displayType || 'pills',
+        valueVisuals: Object.fromEntries(option.values.map(value => [value, guessColorCode(value) ? { visualType: 'color', colorCode: guessColorCode(value) } : option.valueVisuals?.[value] || { visualType: 'none' }])),
+      })),
+      variants: formData.variants.map(variant => {
+        const colorValue = Object.entries(variant.options).find(([name]) => name.toLowerCase().includes('color'))?.[1];
+        const colorCode = colorValue ? guessColorCode(String(colorValue)) : undefined;
+        return colorCode ? { ...variant, visualType: 'color', colorCode, optionImage: undefined } : variant;
+      }),
     });
   };
 
@@ -317,6 +389,21 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
           </button>
 
           <button
+            onClick={() => setActiveTab('extra_info')}
+            className={`py-3 px-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
+              activeTab === 'extra_info'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                : 'border-transparent text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+            }`}
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-500" />
+            <span>4. PDP Rich Content & Specs</span>
+            <span className="px-1.5 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[10px] font-mono font-bold">
+              {(formData.pdpContent?.highlights?.length || 0) + (formData.pdpContent?.specifications?.length || 0)}
+            </span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('seo')}
             className={`py-3 px-3 text-xs font-semibold border-b-2 transition-all ${
               activeTab === 'seo'
@@ -324,7 +411,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                 : 'border-transparent text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
             }`}
           >
-            4. SEO & Social Meta
+            5. SEO & Social Meta
           </button>
         </div>
 
@@ -368,6 +455,27 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                     onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                     className="w-full px-3.5 py-2.5 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+                    URL Slug
+                  </label>
+                  <div className="flex rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500">
+                    <span className="inline-flex items-center px-3.5 text-xs font-mono text-neutral-500 dark:text-neutral-400 border-r border-neutral-200 dark:border-neutral-700 whitespace-nowrap">
+                      /products/
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="auto-generated-from-product-title"
+                      value={formData.slug}
+                      onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
+                      className="min-w-0 flex-1 px-3.5 py-2.5 text-xs font-mono bg-transparent text-neutral-900 dark:text-white outline-none"
+                    />
+                  </div>
+                  <p className="mt-1 text-[10px] text-neutral-500 dark:text-neutral-400">Leave blank to generate a unique URL slug from the product title.</p>
                 </div>
               </div>
 
@@ -456,6 +564,14 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
             </div>
           )}
 
+          {activeTab === 'extra_info' && (
+            <ProductExtraInfoEditor
+              formData={formData}
+              onChange={setFormData}
+              allProducts={products}
+            />
+          )}
+
           {/* TAB 2: VARIANT MATRIX GENERATOR (CORE FOCUS) */}
           {activeTab === 'variants' && (
             <div className="space-y-6 animate-in fade-in duration-150">
@@ -471,75 +587,65 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleRegenerateMatrix}
-                    className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
-                  >
-                    <Wand2 className="w-3.5 h-3.5" />
-                    <span>Calculate Cartesian Matrix</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={autoDetectColors} className="px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/50 text-amber-700 dark:text-amber-300 hover:bg-amber-500 hover:text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5">
+                      <Wand2 className="w-3.5 h-3.5" /><span>Auto-Detect Colors</span>
+                    </button>
+                    <button type="button" onClick={handleRegenerateMatrix} className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5">
+                      <Wand2 className="w-3.5 h-3.5" /><span>Calculate Cartesian Matrix</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Dimensions List */}
                 <div className="space-y-3">
-                  {formData.options.map((opt) => (
-                    <div
-                      key={opt.id}
-                      className="p-3.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-neutral-900 dark:text-white w-24 flex-shrink-0">
-                          {opt.name}:
-                        </span>
-                        <div className="flex flex-wrap gap-1.5 items-center">
-                          {opt.values.map(val => (
-                            <span
-                              key={val}
-                              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-800 dark:text-neutral-200 border border-neutral-300 dark:border-neutral-700"
-                            >
-                              {val}
-                              <button
-                                type="button"
-                                onClick={() => removeOptionValue(opt.id, val)}
-                                className="text-neutral-400 hover:text-rose-500"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </span>
-                          ))}
-
-                          {/* Add value input inline */}
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="text"
-                              placeholder="+ Add value"
-                              value={newOptionValueInputs[opt.id] || ''}
-                              onChange={(e) => setNewOptionValueInputs({ ...newOptionValueInputs, [opt.id]: e.target.value })}
-                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOptionValue(opt.id); } }}
-                              className="px-2 py-0.5 text-xs rounded-lg border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 w-24"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => addOptionValue(opt.id)}
-                              className="p-1 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-xs hover:bg-neutral-300"
-                            >
-                              <Plus className="w-3 h-3" />
+                  {formData.options.map((opt) => {
+                    const isColorDim = opt.name.toLowerCase().includes('color') || opt.name.toLowerCase().includes('colour');
+                    return (
+                      <div key={opt.id} className="p-3.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 flex flex-col gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-100 dark:border-neutral-800 pb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-neutral-900 dark:text-white">{opt.name}</span>
+                            <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-[10px] text-neutral-500 font-mono">{opt.values.length} values</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] text-neutral-500">Display Mode:</span>
+                            <select value={opt.displayType || (isColorDim ? 'color_palette' : 'pills')} onChange={(event) => updateOptionDisplayType(opt.id, event.target.value as ProductOption['displayType'])} className="px-2 py-1 text-[11px] font-medium rounded-lg border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200">
+                              <option value="color_palette">🎨 Color Palette Swatches</option>
+                              <option value="option_image">🖼️ Option Images</option>
+                              <option value="pills">🏷️ Pill Buttons</option>
+                              <option value="dropdown">▼ Dropdown Select</option>
+                            </select>
+                            <button type="button" onClick={() => removeOptionDimension(opt.id)} className="text-xs text-rose-500 hover:text-rose-700 p-1 flex items-center gap-1" title="Remove Dimension">
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
+                        {/* Values with 2-choose-1 Visual Swatches */}
+                        <div className="flex flex-wrap gap-2 items-center">
+                          {opt.values.map(val => {
+                            const valVisual = opt.valueVisuals?.[val];
+                            const isColor = valVisual?.visualType === 'color' || (valVisual?.colorCode && !valVisual?.optionImage);
+                            const isImage = valVisual?.visualType === 'image' || valVisual?.optionImage;
+                            return (
+                              <div key={val} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-neutral-50 dark:bg-neutral-800/80 text-xs font-medium text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors group">
+                                <button type="button" onClick={() => setVisualTarget({ optionName: opt.name, optionValue: val, preferredMode: valVisual?.visualType || (isColorDim ? 'color' : 'none') })} className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity" title="Configure Visual Swatch (Color Code OR Option Image)">
+                                  {isColor && valVisual?.colorCode ? <span className="w-3.5 h-3.5 rounded-full border border-neutral-300 dark:border-neutral-600 shrink-0 shadow-2xs" style={{ backgroundColor: valVisual.colorCode }} /> : isImage && valVisual?.optionImage ? <img src={valVisual.optionImage} alt={val} className="w-3.5 h-3.5 rounded object-cover border border-neutral-300 dark:border-neutral-600 shrink-0" /> : <span className="w-3.5 h-3.5 rounded-full border border-dashed border-neutral-400 flex items-center justify-center text-[9px] text-neutral-400">+</span>}
+                                  <span>{val}</span>
+                                </button>
+                                {valVisual?.colorCode && <span className="text-[10px] font-mono text-neutral-400 uppercase">{valVisual.colorCode}</span>}
+                                <button type="button" onClick={() => removeOptionValue(opt.id, val)} className="text-neutral-400 hover:text-rose-500 ml-0.5" title="Remove Value"><X className="w-3 h-3" /></button>
+                              </div>
+                            );
+                          })}
+                          <div className="flex items-center gap-1">
+                            <input type="text" placeholder="+ Add value" value={newOptionValueInputs[opt.id] || ''} onChange={(e) => setNewOptionValueInputs({ ...newOptionValueInputs, [opt.id]: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOptionValue(opt.id); } }} className="px-2.5 py-1 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 w-28 text-neutral-900 dark:text-white" />
+                            <button type="button" onClick={() => addOptionValue(opt.id)} className="p-1.5 rounded-xl bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-xs hover:bg-neutral-300 dark:hover:bg-neutral-600" title="Add Value"><Plus className="w-3.5 h-3.5" /></button>
+                          </div>
+                        </div>
                       </div>
-
-                      <button
-                        type="button"
-                        onClick={() => removeOptionDimension(opt.id)}
-                        className="text-xs text-rose-500 hover:text-rose-700 p-1 flex items-center gap-1 self-end sm:self-auto"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Remove Dimension</span>
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {/* Add New Dimension Input */}
                   <div className="flex items-center gap-2 pt-1">
@@ -631,6 +737,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                     <thead>
                       <tr className="bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-800 text-[10px] uppercase font-bold text-neutral-500 tracking-wider">
                         <th className="py-2.5 px-3">Variant (Combination)</th>
+                        <th className="py-2.5 px-3">Visual Swatch (2 选 1)</th>
                         <th className="py-2.5 px-3">SKU Code</th>
                         <th className="py-2.5 px-3">Price ($)</th>
                         <th className="py-2.5 px-3">Compare At ($)</th>
@@ -647,6 +754,16 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                             <div className="flex items-center gap-2">
                               <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
                               <span>{variant.title}</span>
+                            </div>
+                          </td>
+
+                          <td className="py-2.5 px-3">
+                            <div className="flex items-center gap-1.5 min-w-34">
+                              {variant.visualType === 'color' && variant.colorCode && <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 font-mono text-[10px]"><span className="w-4 h-4 rounded-full border border-white/40" style={{ backgroundColor: variant.colorCode }} />{variant.colorCode}</span>}
+                              {variant.visualType === 'image' && variant.optionImage && <img src={variant.optionImage} className="w-8 h-8 rounded-lg object-cover border border-neutral-300 dark:border-neutral-700" alt="Variant swatch" />}
+                              {!variant.visualType || variant.visualType === 'none' ? <span className="text-[10px] text-neutral-500">None</span> : null}
+                              <button type="button" onClick={() => setVisualTarget({ variantIndex: vIdx, preferredMode: 'color' })} className="p-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700" aria-label={`Choose a color visual for ${variant.title}`}><Palette className="w-3.5 h-3.5" /></button>
+                              <button type="button" onClick={() => setVisualTarget({ variantIndex: vIdx, preferredMode: 'image' })} className="p-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:text-indigo-500" aria-label={`Choose an image visual for ${variant.title}`}><ImageIcon className="w-3.5 h-3.5" /></button>
                             </div>
                           </td>
 
@@ -728,62 +845,12 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
 
           {/* TAB 3: MEDIA GALLERY */}
           {activeTab === 'media' && (
-            <div className="space-y-4 animate-in fade-in duration-150">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Product Images & Media Assets</p>
-                <span className="text-[11px] text-neutral-400">First image will be used as primary thumbnail</span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {formData.images.map((img, idx) => (
-                  <div key={idx} className="group relative rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 aspect-square">
-                    <img src={img} alt="Product" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = formData.images.filter((_, i) => i !== idx);
-                          setFormData({ ...formData, images: updated });
-                        }}
-                        className="p-2 rounded-xl bg-rose-600 text-white"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    {idx === 0 && (
-                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-white text-[9px] font-bold">
-                        PRIMARY
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <div className="pt-2">
-                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Add Image URL</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="https://images.unsplash.com/..."
-                    id="input-new-img"
-                    className="flex-1 px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const input = document.getElementById('input-new-img') as HTMLInputElement;
-                      if (input && input.value.trim()) {
-                        setFormData({ ...formData, images: [...formData.images, input.value.trim()] });
-                        input.value = '';
-                      }
-                    }}
-                    className="px-4 py-2 rounded-xl bg-neutral-800 dark:bg-neutral-700 text-white text-xs font-semibold hover:bg-neutral-700"
-                  >
-                    Add Image
-                  </button>
-                </div>
-              </div>
-            </div>
+            <ProductMediaManager
+              images={formData.images.map((image, position) => typeof image === 'string' ? { path: image, alt: `${formData.title || 'Product'} - View #${position + 1}`, position } : image)}
+              onChange={(images) => setFormData({ ...formData, images })}
+              productTitle={formData.title}
+              bootstrap={readAdminBootstrap()}
+            />
           )}
 
           {/* TAB 4: SEO */}
@@ -864,6 +931,34 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
           </div>
         </div>
       </div>
+      {visualTarget && (
+        <VariantVisualPickerModal
+          isOpen
+          targetTitle={visualTarget.optionValue || formData.variants[visualTarget.variantIndex ?? 0]?.title || 'Variant'}
+          targetOptionName={visualTarget.optionName}
+          targetOptionValue={visualTarget.optionValue}
+          initialVisualType={visualTarget.preferredMode || (visualTarget.optionName && visualTarget.optionValue
+            ? formData.options.find(option => option.name === visualTarget.optionName)?.valueVisuals?.[visualTarget.optionValue]?.visualType
+            : formData.variants[visualTarget.variantIndex ?? 0]?.visualType)}
+          initialColorCode={visualTarget.optionName && visualTarget.optionValue
+            ? formData.options.find(option => option.name === visualTarget.optionName)?.valueVisuals?.[visualTarget.optionValue]?.colorCode
+            : formData.variants[visualTarget.variantIndex ?? 0]?.colorCode}
+          initialOptionImage={visualTarget.optionName && visualTarget.optionValue
+            ? formData.options.find(option => option.name === visualTarget.optionName)?.valueVisuals?.[visualTarget.optionValue]?.optionImage
+            : formData.variants[visualTarget.variantIndex ?? 0]?.optionImage}
+          availableProductImages={formData.images.map(image => typeof image === 'string' ? image : image.path)}
+          onUpload={(file) => uploadMediaAsset(readAdminBootstrap(), file)}
+          onClose={() => setVisualTarget(null)}
+          onSave={(visual) => {
+            if (visualTarget.optionName && visualTarget.optionValue) {
+              applyOptionVisual(visualTarget.optionName, visualTarget.optionValue, visual, Boolean(visual.applyToAllMatching));
+            } else if (visualTarget.variantIndex !== undefined) {
+              applyVariantVisual(visualTarget.variantIndex, visual);
+            }
+            setVisualTarget(null);
+          }}
+        />
+      )}
     </div>
   );
 };

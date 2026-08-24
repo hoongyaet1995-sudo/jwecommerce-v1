@@ -17,6 +17,7 @@ import {
   Clock
 } from 'lucide-react';
 import { SmartRoutingRule, CourierConfig, CourierCode } from '../../types/shipping';
+import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 
 interface SmartRoutingTabProps {
   rules: SmartRoutingRule[];
@@ -37,6 +38,7 @@ export const SmartRoutingTab: React.FC<SmartRoutingTabProps> = ({
   onOpenNewRuleModal,
   onOpenEditRuleModal
 }) => {
+  const [ruleToDelete, setRuleToDelete] = useState<SmartRoutingRule | null>(null);
   // Calculator state
   const [destPostcode, setDestPostcode] = useState('88400');
   const [destState, setDestState] = useState('Sabah');
@@ -253,7 +255,7 @@ export const SmartRoutingTab: React.FC<SmartRoutingTabProps> = ({
                     <Edit className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => onDeleteRule(rule.id)}
+                    onClick={() => setRuleToDelete(rule)}
                     className="p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -454,6 +456,7 @@ export const SmartRoutingTab: React.FC<SmartRoutingTabProps> = ({
           </table>
         </div>
       </div>
+      <DeleteConfirmationModal isOpen={!!ruleToDelete} itemType="Smart Routing Rule" itemName={ruleToDelete?.name} itemDetails={ruleToDelete ? `Priority Rank: #${ruleToDelete.priority} • Target Carrier: ${couriers.find(courier => courier.code === ruleToDelete.courierCode)?.name || ruleToDelete.courierCode}` : undefined} warningMessage={`Deleting "${ruleToDelete?.name}" stops this automated courier selection rule.`} impactItems={['Checkout will no longer use this routing decision.', 'Other routing rules continue in their configured priority order.']} confirmButtonText="Delete Routing Rule" onConfirm={() => { if (ruleToDelete) { onDeleteRule(ruleToDelete.id); setRuleToDelete(null); } }} onClose={() => setRuleToDelete(null)} />
     </div>
   );
 };

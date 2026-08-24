@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
+import { CatalogImageUploadField } from './CatalogImageUploadField';
+import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
+import { primaryProductImage } from '../../catalogMedia';
 import { Collection, DynamicRule, CollectionRuleField, CollectionRuleOperator } from '../../types';
 import {
   Sparkles,
@@ -19,6 +22,7 @@ export const CollectionAdmin: React.FC = () => {
   const { collections, saveCollection, deleteCollection, products } = useAdmin();
   const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pendingDeletion, setPendingDeletion] = useState<Collection | null>(null);
 
   const openCreateModal = () => {
     const newCol: Collection = {
@@ -184,7 +188,7 @@ export const CollectionAdmin: React.FC = () => {
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
                 <button
-                  onClick={() => deleteCollection(col.id)}
+                  onClick={() => setPendingDeletion(col)}
                   className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -226,8 +230,7 @@ export const CollectionAdmin: React.FC = () => {
                     value={editingCollection.title}
                     onChange={(e) => {
                       const title = e.target.value;
-                      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                      setEditingCollection({ ...editingCollection, title, slug: editingCollection.slug || slug });
+                      setEditingCollection({ ...editingCollection, title });
                     }}
                     className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white focus:ring-2 focus:ring-purple-500"
                   />
@@ -235,27 +238,21 @@ export const CollectionAdmin: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">URL Slug</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="summer-tech-essentials"
-                    value={editingCollection.slug}
-                    onChange={(e) => setEditingCollection({ ...editingCollection, slug: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white font-mono"
-                  />
+                  <div className="flex rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 overflow-hidden focus-within:ring-2 focus-within:ring-purple-500">
+                    <span className="inline-flex items-center px-3 text-xs font-mono text-neutral-500 dark:text-neutral-400 border-r border-neutral-200 dark:border-neutral-700 whitespace-nowrap">/collections/</span>
+                    <input
+                      type="text"
+                      placeholder="auto-generated-from-collection-title"
+                      value={editingCollection.slug}
+                      onChange={(e) => setEditingCollection({ ...editingCollection, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
+                      className="min-w-0 flex-1 px-3 py-2 text-xs font-mono bg-transparent text-neutral-900 dark:text-white outline-none"
+                    />
+                  </div>
+                  <p className="mt-1 text-[10px] text-neutral-500 dark:text-neutral-400">Leave blank to generate a unique URL slug from the collection title.</p>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Cover Image URL</label>
-                <input
-                  type="text"
-                  placeholder="https://images.unsplash.com/..."
-                  value={editingCollection.coverImage || ''}
-                  onChange={(e) => setEditingCollection({ ...editingCollection, coverImage: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
-                />
-              </div>
+              <CatalogImageUploadField label="Cover Image URL" value={editingCollection.coverImage || ''} onChange={(coverImage) => setEditingCollection({ ...editingCollection, coverImage })} />
 
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Description / Campaign Hook</label>
@@ -398,7 +395,7 @@ export const CollectionAdmin: React.FC = () => {
                             className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors text-xs ${isSelected ? 'bg-purple-50 dark:bg-purple-950/40 border border-purple-300 dark:border-purple-800' : 'hover:bg-neutral-50 dark:hover:bg-neutral-800'}`}
                           >
                             <div className="flex items-center gap-2">
-                              <img src={p.images[0]} alt={p.title} className="w-6 h-6 rounded-md object-cover" />
+                              <img src={primaryProductImage(p)} alt={p.title} className="w-6 h-6 rounded-md object-cover" />
                               <span className="font-medium text-neutral-900 dark:text-white truncate">{p.title}</span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -437,6 +434,20 @@ export const CollectionAdmin: React.FC = () => {
           </div>
         </div>
       )}
+      {pendingDeletion && <DeleteConfirmationModal
+        isOpen
+        itemType="Collection"
+        itemName={pendingDeletion.title}
+        itemDetails={`${pendingDeletion.productCount} linked product${pendingDeletion.productCount === 1 ? '' : 's'} • ${pendingDeletion.type} collection`}
+        warningMessage="Deleting this collection removes its curated grouping from the catalog and storefront references."
+        impactItems={[
+          `${pendingDeletion.productCount} product association${pendingDeletion.productCount === 1 ? '' : 's'} will be removed from this collection.`,
+          'Storefront menus or CMS sections linked to this collection may no longer resolve.',
+          'This action cannot be automatically reversed.',
+        ]}
+        onClose={() => setPendingDeletion(null)}
+        onConfirm={async () => { await deleteCollection(pendingDeletion.id); setPendingDeletion(null); }}
+      />}
     </div>
   );
 };

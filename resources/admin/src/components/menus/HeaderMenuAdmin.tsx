@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { HeaderMenuL1, HeaderMenuL2, HeaderMenuL3, MenuLinkType } from '../../types';
+import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
+import { MenuLinkTargetPicker } from './MenuLinkTargetPicker';
+import { MenuBadgeEditor } from './MenuBadgeEditor';
+import { changeMenuLinkType } from '../../integration/menuLinkTargets';
 import {
   MenuSquare,
   Plus,
@@ -30,7 +34,8 @@ export const HeaderMenuAdmin: React.FC = () => {
     saveHeaderMenuL3,
     deleteHeaderMenuL3,
     categories,
-    collections
+    collections,
+    pages
   } = useAdmin();
 
   // Active expanded nodes in tree
@@ -46,6 +51,9 @@ export const HeaderMenuAdmin: React.FC = () => {
 
   const [editingL3, setEditingL3] = useState<{ l1Id: string; l2Id: string; item: HeaderMenuL3 } | null>(null);
   const [isL3ModalOpen, setIsL3ModalOpen] = useState(false);
+  const [l1ToDelete, setL1ToDelete] = useState<HeaderMenuL1 | null>(null);
+  const [l2ToDelete, setL2ToDelete] = useState<{ l1Id: string; item: HeaderMenuL2 } | null>(null);
+  const [l3ToDelete, setL3ToDelete] = useState<{ l1Id: string; l2Id: string; item: HeaderMenuL3 } | null>(null);
 
   // Live Storefront Simulator Hover State
   const [previewActiveL1, setPreviewActiveL1] = useState<string | null>('l1-tech');
@@ -59,7 +67,7 @@ export const HeaderMenuAdmin: React.FC = () => {
     const newItem: HeaderMenuL1 = {
       id: 'l1-' + Date.now(),
       title: '',
-      url: '/categories/new',
+      url: '',
       linkType: 'category',
       displayStyle: 'megamenu',
       isActive: true,
@@ -75,7 +83,7 @@ export const HeaderMenuAdmin: React.FC = () => {
     const newItem: HeaderMenuL2 = {
       id: 'l2-' + Date.now(),
       title: '',
-      url: '/categories/sub',
+      url: '',
       linkType: 'category',
       isActive: true,
       sortOrder: 1,
@@ -90,7 +98,7 @@ export const HeaderMenuAdmin: React.FC = () => {
     const newItem: HeaderMenuL3 = {
       id: 'l3-' + Date.now(),
       title: '',
-      url: '/categories/item',
+      url: '',
       linkType: 'category',
       isActive: true,
       sortOrder: 1
@@ -327,7 +335,7 @@ export const HeaderMenuAdmin: React.FC = () => {
                     </button>
 
                     <button
-                      onClick={() => deleteHeaderMenuL1(l1.id)}
+                      onClick={() => setL1ToDelete(l1)}
                       className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
                       title="Delete Level 1 Menu"
                     >
@@ -403,7 +411,7 @@ export const HeaderMenuAdmin: React.FC = () => {
                               </button>
 
                               <button
-                                onClick={() => deleteHeaderMenuL2(l1.id, l2.id)}
+                                onClick={() => setL2ToDelete({ l1Id: l1.id, item: l2 })}
                                 className="p-1 rounded text-rose-400 hover:text-rose-600"
                               >
                                 <Trash2 className="w-3 h-3" />
@@ -447,7 +455,7 @@ export const HeaderMenuAdmin: React.FC = () => {
                                       <Edit2 className="w-2.5 h-2.5" />
                                     </button>
                                     <button
-                                      onClick={() => deleteHeaderMenuL3(l1.id, l2.id, l3.id)}
+                                      onClick={() => setL3ToDelete({ l1Id: l1.id, l2Id: l2.id, item: l3 })}
                                       className="p-1 text-rose-400 hover:text-rose-600"
                                     >
                                       <Trash2 className="w-2.5 h-2.5" />
@@ -507,19 +515,25 @@ export const HeaderMenuAdmin: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">URL Path</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="/categories/electronics"
-                  value={editingL1.url}
-                  onChange={(e) => setEditingL1({ ...editingL1, url: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white font-mono"
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Link Type</label>
+                  <select
+                    value={editingL1.linkType}
+                    onChange={(e) => setEditingL1(changeMenuLinkType(editingL1, e.target.value as MenuLinkType))}
+                    className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
+                  >
+                    <option value="category">Category</option>
+                    <option value="collection">Collection</option>
+                    <option value="page">Store Page</option>
+                    <option value="custom_url">External URL</option>
+                  </select>
+                </div>
+                <MenuBadgeEditor
+                  badge={editingL1.badge}
+                  badgeColor={editingL1.badgeColor}
+                  onChange={({ badge, badgeColor }) => setEditingL1({ ...editingL1, badge, badgeColor })}
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Display Style</label>
                   <select
@@ -532,18 +546,20 @@ export const HeaderMenuAdmin: React.FC = () => {
                     <option value="simple_link">Direct Link Only</option>
                   </select>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Badge Tag (Optional)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. HOT, NEW"
-                    value={editingL1.badge || ''}
-                    onChange={(e) => setEditingL1({ ...editingL1, badge: e.target.value || undefined })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
-                  />
-                </div>
               </div>
+
+              <MenuLinkTargetPicker
+                linkType={editingL1.linkType}
+                targetId={editingL1.targetId}
+                url={editingL1.url}
+                categories={categories}
+                collections={collections}
+                pages={pages}
+                manualLabel="URL Path"
+                manualPlaceholder="/shop or https://..."
+                onTargetChange={(targetId, url) => setEditingL1({ ...editingL1, targetId, url })}
+              />
+
 
               <div className="flex items-center justify-between py-2">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -610,24 +626,12 @@ export const HeaderMenuAdmin: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">URL Path</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="/categories/audio"
-                  value={editingL2.item.url}
-                  onChange={(e) => setEditingL2({ ...editingL2, item: { ...editingL2.item, url: e.target.value } })}
-                  className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white font-mono"
-                />
-              </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Link Type</label>
                   <select
                     value={editingL2.item.linkType}
-                    onChange={(e) => setEditingL2({ ...editingL2, item: { ...editingL2.item, linkType: e.target.value as MenuLinkType } })}
+                    onChange={(e) => setEditingL2({ ...editingL2, item: changeMenuLinkType(editingL2.item, e.target.value as MenuLinkType) })}
                     className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
                   >
                     <option value="category">Category</option>
@@ -636,18 +640,27 @@ export const HeaderMenuAdmin: React.FC = () => {
                     <option value="custom_url">Custom URL</option>
                   </select>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Badge Tag</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Popular"
-                    value={editingL2.item.badge || ''}
-                    onChange={(e) => setEditingL2({ ...editingL2, item: { ...editingL2.item, badge: e.target.value || undefined } })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
-                  />
-                </div>
+                <MenuBadgeEditor
+                  badge={editingL2.item.badge}
+                  badgeColor={editingL2.item.badgeColor}
+                  onChange={({ badge, badgeColor }) =>
+                    setEditingL2({ ...editingL2, item: { ...editingL2.item, badge, badgeColor } })
+                  }
+                />
               </div>
+
+              <MenuLinkTargetPicker
+                linkType={editingL2.item.linkType}
+                targetId={editingL2.item.targetId}
+                url={editingL2.item.url}
+                categories={categories}
+                collections={collections}
+                pages={pages}
+                manualLabel="URL Path"
+                manualPlaceholder="/categories/audio or https://..."
+                onTargetChange={(targetId, url) => setEditingL2({ ...editingL2, item: { ...editingL2.item, targetId, url } })}
+              />
+
 
               <div className="flex justify-end gap-2 pt-3 border-t border-neutral-100 dark:border-neutral-800">
                 <button
@@ -702,44 +715,42 @@ export const HeaderMenuAdmin: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Target URL</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="/categories/anc-headphones"
-                  value={editingL3.item.url}
-                  onChange={(e) => setEditingL3({ ...editingL3, item: { ...editingL3.item, url: e.target.value } })}
-                  className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white font-mono"
-                />
-              </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Link Type</label>
                   <select
                     value={editingL3.item.linkType}
-                    onChange={(e) => setEditingL3({ ...editingL3, item: { ...editingL3.item, linkType: e.target.value as MenuLinkType } })}
+                    onChange={(e) => setEditingL3({ ...editingL3, item: changeMenuLinkType(editingL3.item, e.target.value as MenuLinkType) })}
                     className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
                   >
                     <option value="category">Category</option>
                     <option value="collection">Collection</option>
+                    <option value="page">Store Page</option>
                     <option value="product">Product</option>
                     <option value="custom_url">External URL</option>
                   </select>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Badge (e.g. HOT)</label>
-                  <input
-                    type="text"
-                    placeholder="HOT, NEW"
-                    value={editingL3.item.badge || ''}
-                    onChange={(e) => setEditingL3({ ...editingL3, item: { ...editingL3.item, badge: e.target.value || undefined } })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
-                  />
-                </div>
+                <MenuBadgeEditor
+                  badge={editingL3.item.badge}
+                  badgeColor={editingL3.item.badgeColor}
+                  onChange={({ badge, badgeColor }) =>
+                    setEditingL3({ ...editingL3, item: { ...editingL3.item, badge, badgeColor } })
+                  }
+                />
               </div>
+
+              <MenuLinkTargetPicker
+                linkType={editingL3.item.linkType}
+                targetId={editingL3.item.targetId}
+                url={editingL3.item.url}
+                categories={categories}
+                collections={collections}
+                pages={pages}
+                manualLabel="Target URL"
+                manualPlaceholder="/products/product-handle or https://..."
+                onTargetChange={(targetId, url) => setEditingL3({ ...editingL3, item: { ...editingL3.item, targetId, url } })}
+              />
+
 
               <div className="flex justify-end gap-2 pt-3 border-t border-neutral-100 dark:border-neutral-800">
                 <button
@@ -760,6 +771,9 @@ export const HeaderMenuAdmin: React.FC = () => {
           </div>
         </div>
       )}
+      <DeleteConfirmationModal isOpen={!!l1ToDelete} itemType="Top-Level Navigation Menu" itemName={l1ToDelete?.title} itemDetails={l1ToDelete ? `URL: ${l1ToDelete.url} • Style: ${l1ToDelete.displayStyle.toUpperCase()} • Nested Columns: ${l1ToDelete.columns.length}` : undefined} warningMessage={`Deleting "${l1ToDelete?.title}" removes its entire mega-menu branch.`} impactItems={['All nested navigation columns and leaf links will be removed.', 'Storefront navigation will no longer expose this destination.']} confirmButtonText="Delete Top Menu" onConfirm={() => { if (l1ToDelete) { deleteHeaderMenuL1(l1ToDelete.id); setL1ToDelete(null); } }} onClose={() => setL1ToDelete(null)} />
+      <DeleteConfirmationModal isOpen={!!l2ToDelete} itemType="Navigation Column (L2)" itemName={l2ToDelete?.item.title} itemDetails={l2ToDelete ? `Parent L1: #${l2ToDelete.l1Id} • Leaf Links: ${l2ToDelete.item.items.length}` : undefined} warningMessage={`Deleting "${l2ToDelete?.item.title}" removes this menu column and its links.`} impactItems={['Its nested leaf links will be removed from the mega menu.', 'Other top-level navigation branches are not changed.']} confirmButtonText="Delete Column" onConfirm={() => { if (l2ToDelete) { deleteHeaderMenuL2(l2ToDelete.l1Id, l2ToDelete.item.id); setL2ToDelete(null); } }} onClose={() => setL2ToDelete(null)} />
+      <DeleteConfirmationModal isOpen={!!l3ToDelete} itemType="Navigation Link (L3)" itemName={l3ToDelete?.item.title} itemDetails={l3ToDelete ? `Target URL: ${l3ToDelete.item.url}` : undefined} warningMessage={`Removing "${l3ToDelete?.item.title}" removes this storefront navigation link.`} impactItems={['Customers will no longer be able to reach this target through the parent menu.', 'The parent column and other links remain unchanged.']} confirmButtonText="Remove Link" onConfirm={() => { if (l3ToDelete) { deleteHeaderMenuL3(l3ToDelete.l1Id, l3ToDelete.l2Id, l3ToDelete.item.id); setL3ToDelete(null); } }} onClose={() => setL3ToDelete(null)} />
     </div>
   );
 };

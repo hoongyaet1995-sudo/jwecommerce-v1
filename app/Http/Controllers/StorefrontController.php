@@ -8,12 +8,22 @@ use App\Models\Page;
 use App\Models\Product;
 use App\Models\ProductHandleRedirect;
 use App\Models\SocialLink;
+use App\Models\StoreSetting;
+use App\Services\CatalogFilterService;
+use App\Services\PaymentConfigurationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class StorefrontController extends Controller
 {
+    public function __construct(
+        private readonly CatalogFilterService $catalogFilters,
+        private readonly PaymentConfigurationService $paymentConfiguration,
+    )
+    {
+    }
+
     public function home(): View
     {
         $heroSection = Page::query()
@@ -45,25 +55,7 @@ class StorefrontController extends Controller
 
     private function listingData(Request $request, $query, ?string $forcedCategory = null): array
     {
-        $search = $request->string('search')->trim()->value();
-        $category = $forcedCategory ?? $request->string('category')->trim()->value();
-        $sort = $request->string('sort')->value();
-        $maxPrice = $request->integer('max_price') ?: null;
-        $inStock = $request->boolean('in_stock');
-        $color = $request->string('color')->trim()->value();
-        $layout = $request->string('layout')->value() === 'list' ? 'list' : 'grid';
-        $products = $query->with(['category', 'images', 'variants'])
-            ->when($search, fn ($query) => $query->where(fn ($nested) => $nested->where('title', 'like', "%{$search}%")->orWhere('brand', 'like', "%{$search}%")))
-            ->when($category, fn ($query) => $query->whereHas('category', fn ($nested) => $nested->where('slug', $category)))
-            ->when($maxPrice, fn ($query) => $query->where('base_price', '<=', $maxPrice))
-            ->when($inStock, fn ($query) => $query->whereHas('variants', fn ($nested) => $nested->where('stock', '>', 0)))
-            ->when($color, fn ($query) => $query->whereHas('variants', fn ($nested) => $nested->where('color_name', $color)))
-            ->when($sort === 'price_asc', fn ($query) => $query->orderBy('base_price'))
-            ->when($sort === 'price_desc', fn ($query) => $query->orderByDesc('base_price'))
-            ->get();
-        $colors = $products->flatMap(fn (Product $product) => $product->variants->pluck('color_name'))->filter()->unique()->sort()->values();
-
-        return compact('products', 'search', 'category', 'sort', 'maxPrice', 'inStock', 'color', 'colors', 'layout');
+        return $this->catalogFilters->for($request, $query, $forcedCategory)->toViewData();
     }
 
     public function show(Request $request, string $handle): View|RedirectResponse
@@ -95,12 +87,15 @@ class StorefrontController extends Controller
         $selectedImage = $images->get($request->integer('image'))
             ?? $images->firstWhere('product_variant_id', $selectedVariant?->id)
             ?? $images->first();
+        $shopName = trim((string) data_get(StoreSetting::query()->where('key', 'shop_name')->value('value'), 'data'));
 
         return view('storefront.show', [
             'product' => $product,
             'selectedVariant' => $selectedVariant,
             'selectedImage' => $selectedImage,
             'images' => $images,
+            'pdpBrand' => filled($product->brand) ? $product->brand : $shopName,
+            'pdpPaymentMethods' => $this->paymentConfiguration->configuredStorefrontMethods(),
             'companions' => $product->pdpRelatedProducts
                 ->map(fn ($relation) => $relation->relatedProduct)
                 ->filter(fn (?Product $relatedProduct) => $relatedProduct?->status === 'active')

@@ -263,7 +263,7 @@ const installStorefrontCartAdds = () => {
     document.addEventListener('submit', async (event) => {
         const form = event.target.closest('form[action$="/cart/items"]');
 
-        if (!form || form.matches('[data-cart-drawer-form]') || form.querySelector('input[name="checkout"]') || window.location.pathname === '/cart') {
+        if (!form || form.matches('[data-cart-drawer-form], [data-quick-add-form]') || form.querySelector('input[name="checkout"]') || window.location.pathname === '/cart') {
             return;
         }
 
@@ -346,10 +346,18 @@ const installAtelierTheme = () => {
         const isDark = theme === 'dark';
         root.classList.toggle('dark', isDark);
         root.dataset.atelierTheme = isDark ? 'dark' : 'light';
+        document.querySelectorAll('[data-atelier-currency]').forEach((select) => {
+            select.style.colorScheme = isDark ? 'dark' : 'light';
+        });
         document.querySelectorAll('[data-atelier-theme-toggle]').forEach((toggle) => {
             toggle.setAttribute('title', isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode');
             toggle.setAttribute('aria-label', isDark ? 'Toggle Dark or Light Mode' : 'Toggle Dark or Light Mode');
             toggle.querySelector('[data-atelier-theme-label]')?.replaceChildren(isDark ? 'Light Mode' : 'Dark Mode');
+            const icon = toggle.querySelector('[data-atelier-theme-icon]');
+
+            if (icon) {
+                icon.outerHTML = `<i data-atelier-theme-icon data-lucide="${isDark ? 'sun' : 'moon'}" class="h-4 w-4 ${isDark ? 'text-amber-400 hover:rotate-45' : 'text-zinc-700 hover:-rotate-12'} transition-transform duration-300"></i>`;
+            }
         });
         window.localStorage.setItem('atelier_theme', theme);
         renderIcons();
@@ -362,15 +370,103 @@ const installAtelierTheme = () => {
     });
 };
 
+const installAtelierMemberMenu = () => {
+    document.querySelectorAll('[data-atelier-member-menu]').forEach((menu) => {
+        const toggle = menu.querySelector('[data-atelier-member-menu-toggle]');
+        const panel = menu.querySelector('[data-atelier-member-menu-panel]');
+        const close = () => {
+            panel?.classList.add('invisible', 'translate-y-[-0.5rem]', 'opacity-0');
+            panel?.setAttribute('aria-hidden', 'true');
+            toggle?.setAttribute('aria-expanded', 'false');
+            toggle?.querySelector('[data-lucide="chevron-down"]')?.classList.remove('rotate-180');
+        };
+        const open = () => {
+            panel?.classList.remove('invisible', 'translate-y-[-0.5rem]', 'opacity-0');
+            panel?.setAttribute('aria-hidden', 'false');
+            toggle?.setAttribute('aria-expanded', 'true');
+            toggle?.querySelector('[data-lucide="chevron-down"]')?.classList.add('rotate-180');
+        };
+
+        toggle?.addEventListener('click', (event) => {
+            event.stopPropagation();
+
+            if (toggle.getAttribute('aria-expanded') === 'true') {
+                close();
+            } else {
+                document.querySelectorAll('[data-atelier-member-menu]').forEach((otherMenu) => {
+                    if (otherMenu !== menu) {
+                        otherMenu.querySelector('[data-atelier-member-menu-panel]')?.classList.add('invisible', 'translate-y-[-0.5rem]', 'opacity-0');
+                        otherMenu.querySelector('[data-atelier-member-menu-panel]')?.setAttribute('aria-hidden', 'true');
+                        otherMenu.querySelector('[data-atelier-member-menu-toggle]')?.setAttribute('aria-expanded', 'false');
+                    }
+                });
+                open();
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!menu.contains(event.target)) {
+                close();
+            }
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                close();
+            }
+        });
+    });
+};
+
 const installAtelierCurrency = () => {
-    const savedCurrency = window.localStorage.getItem('atelier_currency');
+    const optionsTemplate = document.querySelector('[data-atelier-currency-options]');
+    const endpoint = optionsTemplate?.dataset.atelierCurrencyEndpoint;
+    const selectedCurrency = optionsTemplate?.dataset.atelierCurrencyDefault || '';
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
     document.querySelectorAll('[data-atelier-currency]').forEach((select) => {
-        if (savedCurrency && [...select.options].some((option) => option.value === savedCurrency)) {
-            select.value = savedCurrency;
+        if (optionsTemplate instanceof HTMLTemplateElement) {
+            select.replaceChildren(optionsTemplate.content.cloneNode(true));
+            select.dataset.atelierCurrencyDefault = selectedCurrency;
+            select.style.colorScheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
         }
 
-        select.addEventListener('change', () => window.localStorage.setItem('atelier_currency', select.value));
+        if (select.dataset.atelierCurrencyDefault) {
+            select.value = select.dataset.atelierCurrencyDefault;
+        }
+
+        select.addEventListener('change', async () => {
+            const previous = selectedCurrency;
+
+            if (!endpoint || !csrfToken) {
+                select.value = previous;
+                return;
+            }
+
+            select.disabled = true;
+
+            try {
+                const response = await window.fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    body: JSON.stringify({ currency: select.value }),
+                });
+
+                if (!response.ok) {
+                    select.value = previous;
+                    return;
+                }
+
+                window.location.reload();
+            } catch (_) {
+                select.value = previous;
+            } finally {
+                select.disabled = false;
+            }
+        });
     });
 };
 
@@ -408,7 +504,7 @@ const installDeliveryMatrix = () => {
         const subtotal = Number(matrix.dataset.subtotal || 0);
         const discount = Number(matrix.dataset.discount || 0);
         const taxRate = Number(matrix.dataset.taxRate || 0);
-        const money = (amount) => `$${(amount / 100).toFixed(2)}`;
+        const money = (amount) => storefrontMoney(amount);
 
         const refresh = (radio) => {
             const option = radio.closest('[data-delivery-option]');
@@ -893,6 +989,458 @@ const installPdpWishlist = () => {
     });
 };
 
+const storefrontCurrency = () => {
+    const source = document.querySelector('[data-atelier-currency-options]');
+
+    return {
+        symbolLeft: source?.dataset.atelierCurrencySymbolLeft || '$',
+        symbolRight: source?.dataset.atelierCurrencySymbolRight || '',
+        decimals: Math.max(0, Number(source?.dataset.atelierCurrencyDecimals || 2)),
+        exchangeRate: Number(source?.dataset.atelierCurrencyRate || 1),
+    };
+};
+
+const storefrontMoney = (cents) => {
+    const currency = storefrontCurrency();
+    const amount = (Number(cents || 0) / 100) * currency.exchangeRate;
+    const formatted = amount.toLocaleString('en-US', {
+        minimumFractionDigits: currency.decimals,
+        maximumFractionDigits: currency.decimals,
+    });
+
+    return `${currency.symbolLeft}${formatted}${currency.symbolRight}`;
+};
+
+const parseStorefrontVariants = (element) => {
+    try {
+        const parsed = JSON.parse(element.dataset.variants || element.dataset.cardVariants || '[]');
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
+
+const parseStorefrontOptions = (element) => {
+    try {
+        const parsed = JSON.parse(element.dataset.options || '[]');
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
+
+const setPdpVisualImage = (image, alt = '') => {
+    if (!image) return;
+
+    document.querySelectorAll('[data-pdp-hero-image], [data-pdp-sticky-image]').forEach((target) => {
+        target.src = image;
+        if (alt) target.alt = alt;
+    });
+
+    document.querySelectorAll('[data-pdp-thumbnail]').forEach((thumbnail) => {
+        const selected = thumbnail.dataset.pdpImagePath === image;
+        ['border-amber-500', 'ring-2', 'ring-amber-500/40', 'dark:border-amber-400', 'dark:ring-amber-400/40', 'shadow-sm']
+            .forEach((className) => thumbnail.classList.toggle(className, selected));
+        ['border-zinc-200', 'dark:border-zinc-800', 'opacity-70', 'hover:opacity-100']
+            .forEach((className) => thumbnail.classList.toggle(className, !selected));
+        thumbnail.setAttribute('aria-current', String(selected));
+    });
+};
+
+const installPdpThumbnailSwitching = () => {
+    document.querySelectorAll('[data-pdp-thumbnail-switch]').forEach((thumbnail) => {
+        thumbnail.addEventListener('click', (event) => {
+            event.preventDefault();
+            setPdpVisualImage(thumbnail.dataset.pdpImagePath, thumbnail.dataset.pdpImageAlt);
+        });
+    });
+};
+
+const installStorefrontVariantSelectors = () => {
+    document.querySelectorAll('[data-storefront-variant-selector]').forEach((selector) => {
+        const variants = parseStorefrontVariants(selector);
+        const options = parseStorefrontOptions(selector);
+        if (!variants.length || !options.length) return;
+
+        const initial = variants.find((variant) => String(variant.id) === String(selector.dataset.selectedVariantId)) || variants[0];
+        const selectedValues = Object.fromEntries(options.map((option) => [option.name, initial.options?.[option.name] || option.values?.[0] || '']));
+
+        const matchesSelection = (variant, ignoredOption = null) => options.every((option) => {
+            if (option.name === ignoredOption) return true;
+            return String(variant.options?.[option.name] || '') === String(selectedValues[option.name] || '');
+        });
+
+        const resolveVariant = () => variants.find((variant) => matchesSelection(variant))
+            || variants.find((variant) => matchesSelection(variant) && variant.enabled !== false)
+            || variants[0];
+
+        const update = (variant) => {
+            const outOfStock = Number(variant.stock) < 1;
+            const enabled = variant.enabled !== false;
+            const label = variant.label || variant.title;
+            const availability = outOfStock
+                ? 'Out of Stock'
+                : Number(variant.stock) <= 5
+                    ? `Low Stock (Only ${variant.stock} remaining)`
+                    : `In Stock (${variant.stock} units)`;
+
+            selector.querySelector('[data-pdp-selected-label]')?.replaceChildren(label);
+            selector.querySelector('[data-pdp-availability-text]')?.replaceChildren(availability);
+            document.querySelectorAll('[data-pdp-breadcrumb-availability]').forEach((target) => target.replaceChildren(availability));
+            const availabilityWrap = selector.querySelector('[data-pdp-availability]');
+            availabilityWrap?.classList.toggle('text-rose-500', outOfStock);
+            availabilityWrap?.classList.toggle('text-amber-500', !outOfStock && Number(variant.stock) <= 5);
+            availabilityWrap?.classList.toggle('text-emerald-600', !outOfStock && Number(variant.stock) > 5);
+            const dot = selector.querySelector('[data-pdp-availability-dot]');
+            dot?.classList.toggle('bg-rose-500', outOfStock);
+            dot?.classList.toggle('bg-amber-400', !outOfStock && Number(variant.stock) <= 5);
+            dot?.classList.toggle('bg-emerald-400', !outOfStock && Number(variant.stock) > 5);
+
+            document.querySelectorAll('[data-pdp-variant-input]').forEach((input) => { input.value = variant.id; });
+            document.querySelectorAll('[data-pdp-sku], [data-pdp-sticky-sku]').forEach((target) => target.replaceChildren(variant.sku || ''));
+            document.querySelectorAll('[data-pdp-price], [data-pdp-sticky-price]').forEach((target) => target.replaceChildren(storefrontMoney(variant.price)));
+            document.querySelectorAll('[data-pdp-sticky-label]').forEach((target) => target.replaceChildren(label));
+            const compareAt = document.querySelector('[data-pdp-compare-at]');
+            const save = document.querySelector('[data-pdp-save]');
+            if (compareAt) {
+                compareAt.textContent = variant.compareAt ? storefrontMoney(variant.compareAt) : '';
+                compareAt.classList.toggle('hidden', !variant.compareAt);
+            }
+            if (save) {
+                save.textContent = variant.compareAt ? `SAVE ${storefrontMoney(Number(variant.compareAt) - Number(variant.price))}` : '';
+                save.classList.toggle('hidden', !variant.compareAt);
+            }
+
+            const specs = selector.querySelector('[data-pdp-specs]');
+            const specsValue = selector.querySelector('[data-pdp-specs-value]');
+            const specText = options.map((option) => variant.options?.[option.name]).filter(Boolean).join(' • ');
+            specs?.classList.toggle('hidden', !specText);
+            specs?.classList.toggle('flex', Boolean(specText));
+            if (specsValue) specsValue.textContent = specText;
+
+            const image = variant.optionImage || variant.image;
+            if (image) {
+                setPdpVisualImage(image);
+            }
+
+            document.querySelectorAll('[data-pdp-add-to-cart], [data-pdp-instant-buy], [data-pdp-sticky-add]').forEach((button) => {
+                button.disabled = outOfStock || !enabled;
+                if (button.matches('[data-pdp-add-to-cart]')) button.textContent = outOfStock || !enabled ? 'Sold out' : `Add to Cart · ${storefrontMoney(variant.price)}`;
+            });
+
+            selector.querySelectorAll('[data-pdp-option-value]').forEach((button) => {
+                const selected = String(button.dataset.pdpOptionValue) === String(selectedValues[button.dataset.pdpOptionName]);
+                // A value remains selectable if any SKU owns it. Selecting a
+                // correlated legacy combination will then promote the other
+                // dimensions to that SKU in select(), rather than trapping the
+                // customer on the initially selected diagonal combination.
+                const matches = variants.filter((candidate) => String(candidate.options?.[button.dataset.pdpOptionName] || '') === String(button.dataset.pdpOptionValue));
+                const unavailable = !matches.length || matches.every((candidate) => candidate.enabled === false);
+                const outOfStockValue = matches.length > 0 && matches.every((candidate) => Number(candidate.stock) < 1 || candidate.enabled === false);
+
+                button.disabled = unavailable;
+                button.setAttribute('aria-checked', String(selected));
+                button.setAttribute('aria-disabled', String(unavailable || outOfStockValue));
+                const visual = button.dataset.pdpOptionVisual || 'pill';
+                const activeClasses = {
+                    color: ['ring-2', 'ring-amber-500', 'dark:ring-amber-400', 'ring-offset-2', 'ring-offset-zinc-50', 'dark:ring-offset-zinc-950', 'border-2', 'border-zinc-900', 'dark:border-white', 'shadow-lg', 'scale-105'],
+                    image: ['border-amber-500', 'dark:border-amber-400', 'ring-2', 'ring-amber-500/40', 'dark:ring-amber-400/40', 'ring-offset-2', 'ring-offset-zinc-50', 'dark:ring-offset-zinc-950', 'shadow-md'],
+                    pill: ['border-amber-500', 'dark:border-amber-400', 'bg-amber-500/10', 'dark:bg-amber-400/10', 'text-zinc-950', 'dark:text-white', 'ring-1', 'ring-amber-500/40', 'shadow-sm', 'font-semibold'],
+                };
+                const inactiveClasses = {
+                    color: ['border-2', 'border-zinc-300', 'dark:border-zinc-700', 'hover:scale-105', 'hover:border-zinc-500', 'dark:hover:border-zinc-400', 'shadow-sm'],
+                    image: ['border-zinc-200', 'dark:border-zinc-800', 'hover:border-zinc-400', 'dark:hover:border-zinc-600'],
+                    pill: ['border-zinc-200', 'dark:border-zinc-800', 'bg-white', 'dark:bg-zinc-900/60', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-900', 'text-zinc-700', 'dark:text-zinc-300', 'hover:border-zinc-300', 'dark:hover:border-zinc-700'],
+                };
+                (activeClasses[visual] || activeClasses.pill).forEach((className) => button.classList.toggle(className, selected));
+                (inactiveClasses[visual] || inactiveClasses.pill).forEach((className) => button.classList.toggle(className, !selected));
+                button.classList.toggle('opacity-25', unavailable);
+                button.querySelectorAll('[data-pdp-option-check]').forEach((check) => check.classList.toggle('hidden', !selected));
+            });
+            selector.querySelectorAll('[data-pdp-option-dropdown]').forEach((dropdown) => {
+                dropdown.value = selectedValues[dropdown.dataset.pdpOptionName] || '';
+                Array.from(dropdown.options).forEach((optionElement) => {
+                    const matches = variants.filter((candidate) => String(candidate.options?.[dropdown.dataset.pdpOptionName] || '') === optionElement.value);
+                    optionElement.disabled = !matches.length || matches.every((candidate) => candidate.enabled === false);
+                });
+            });
+            const url = new URL(window.location.href);
+            url.searchParams.set('variant', variant.id);
+            window.history.replaceState({}, '', url);
+            renderIcons();
+        };
+
+        const select = (optionName, value) => {
+            selectedValues[optionName] = value;
+            let variant = resolveVariant();
+
+            if (!variant || String(variant.options?.[optionName] || '') !== String(value)) {
+                const replacement = variants.find((candidate) => candidate.enabled !== false && String(candidate.options?.[optionName] || '') === String(value))
+                    || variants.find((candidate) => String(candidate.options?.[optionName] || '') === String(value));
+                if (!replacement) return;
+                options.forEach((option) => {
+                    selectedValues[option.name] = replacement.options?.[option.name] || selectedValues[option.name];
+                });
+                variant = replacement;
+            }
+
+            update(variant);
+        };
+
+        selector.querySelectorAll('[data-pdp-option-value]').forEach((button) => {
+            button.addEventListener('click', () => select(button.dataset.pdpOptionName, button.dataset.pdpOptionValue));
+        });
+        selector.querySelectorAll('[data-pdp-option-dropdown]').forEach((dropdown) => {
+            dropdown.addEventListener('change', (event) => select(dropdown.dataset.pdpOptionName, event.target.value));
+        });
+
+        update(initial);
+    });
+};
+
+const installProductCardVariantPreviews = () => {
+    document.querySelectorAll('[data-card-image]').forEach((image) => {
+        if (!image.getAttribute('src')) image.src = '/images/image-not-found.png';
+    });
+
+    document.querySelectorAll('[data-product-card-variant-preview]').forEach((preview) => {
+        const variants = parseStorefrontVariants(preview);
+        const card = preview.closest('[data-storefront-product-card]');
+        if (!variants.length || !card) return;
+
+        preview.querySelectorAll('[data-card-variant-id]').forEach((button) => {
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const variant = variants.find((candidate) => String(candidate.id) === String(button.dataset.cardVariantId));
+                if (!variant || variant.enabled === false) return;
+                const outOfStock = Number(variant.stock) < 1;
+                card.querySelectorAll('[data-card-variant-input]').forEach((input) => { input.value = variant.id; });
+                card.querySelectorAll('[data-card-price]').forEach((target) => target.replaceChildren(storefrontMoney(variant.price)));
+                card.querySelectorAll('[data-card-compare-at]').forEach((target) => {
+                    target.textContent = variant.compareAt ? storefrontMoney(variant.compareAt) : '';
+                    target.classList.toggle('hidden', !variant.compareAt);
+                });
+                if (variant.optionImage) card.querySelectorAll('[data-card-image]').forEach((image) => { image.src = variant.optionImage; });
+                preview.querySelectorAll('[data-card-variant-id]').forEach((candidate) => {
+                    const selected = candidate === button;
+                    candidate.classList.toggle('ring-2', selected);
+                    candidate.classList.toggle('ring-amber-500', selected);
+                    candidate.classList.toggle('scale-110', selected);
+                    candidate.classList.toggle('opacity-40', !selected && Number(variants.find((item) => String(item.id) === String(candidate.dataset.cardVariantId))?.stock || 0) < 1);
+                });
+                card.querySelectorAll('form[action$="/cart/items"] button').forEach((cartButton) => { cartButton.disabled = outOfStock; });
+            });
+        });
+    });
+};
+
+const installQuickAddVariantModals = () => {
+    const drawer = document.getElementById('cart-drawer');
+    const modals = [...document.querySelectorAll('[data-quick-add-modal]')];
+    if (!modals.length) return;
+
+    const parse = (modal, name) => {
+        try {
+            const parsed = JSON.parse(modal.dataset[name] || '[]');
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
+        }
+    };
+
+    const setText = (root, selector, value) => root.querySelector(selector)?.replaceChildren(value ?? '');
+
+    modals.forEach((modal) => {
+        const variants = parse(modal, 'quickAddVariants');
+        const options = parse(modal, 'quickAddOptions');
+        if (!variants.length || !options.length) return;
+
+        let selected = variants[0];
+        let selectedValues = {};
+        let quantity = 1;
+        let opener = null;
+        const form = modal.querySelector('[data-quick-add-form]');
+        const variantInput = modal.querySelector('[data-quick-add-variant-input]');
+        const quantityInput = modal.querySelector('[data-quick-add-quantity-input]');
+        const close = (restoreFocus = true) => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('overflow-hidden');
+            if (restoreFocus) opener?.focus();
+        };
+        const isOutOfStock = (variant) => !variant || variant.enabled === false || Number(variant.stock || 0) < 1;
+        const availability = (variant) => {
+            if (isOutOfStock(variant)) return { text: 'Out of Stock', tone: 'rose', dot: 'bg-rose-500' };
+            if (Number(variant.stock) <= 5) return { text: `Low Stock (Only ${variant.stock} remaining)`, tone: 'amber', dot: 'bg-amber-400' };
+            return { text: `In Stock (${variant.stock} units)`, tone: 'emerald', dot: 'bg-emerald-400' };
+        };
+        const showError = (message = '') => {
+            const error = modal.querySelector('[data-quick-add-error]');
+            if (!error) return;
+            error.textContent = message;
+            error.classList.toggle('hidden', !message);
+        };
+        const setConfirmState = (state) => {
+            const confirm = modal.querySelector('[data-quick-add-confirm]');
+            if (!confirm) return;
+            const classes = {
+                default: ['bg-zinc-900', 'text-white', 'dark:bg-zinc-100', 'dark:text-zinc-950'],
+                loading: ['bg-zinc-900', 'text-white', 'dark:bg-zinc-100', 'dark:text-zinc-950'],
+                success: ['bg-emerald-600', 'text-white', 'ring-2', 'ring-emerald-500', 'scale-[0.99]'],
+                soldOut: ['bg-zinc-200', 'text-zinc-400', 'border', 'border-dashed', 'border-zinc-300', 'dark:bg-zinc-800', 'dark:text-zinc-600', 'dark:border-zinc-700'],
+            };
+            Object.values(classes).flat().forEach((className) => confirm.classList.remove(className));
+            confirm.classList.add(...classes[state]);
+            confirm.classList.toggle('cursor-not-allowed', state === 'soldOut');
+            confirm.disabled = state === 'loading' || state === 'success' || state === 'soldOut';
+            ['default', 'loading', 'success', 'sold-out'].forEach((name) => modal.querySelector(`[data-quick-add-confirm-${name}]`)?.classList.toggle('hidden', name !== (state === 'soldOut' ? 'sold-out' : state)));
+            ['default', 'loading', 'success', 'sold-out'].forEach((name) => modal.querySelector(`[data-quick-add-confirm-${name}]`)?.classList.toggle('flex', name === (state === 'soldOut' ? 'sold-out' : state)));
+        };
+        const setHeroImage = (image) => {
+            if (!image) return;
+            const hero = modal.querySelector('[data-quick-add-hero]');
+            if (hero) hero.src = image;
+            modal.querySelectorAll('[data-quick-add-thumbnail]').forEach((thumbnail) => {
+                const active = thumbnail.dataset.quickAddImage === image;
+                thumbnail.classList.toggle('scale-105', active);
+                thumbnail.classList.toggle('border-amber-500', active);
+                thumbnail.classList.toggle('ring-2', active);
+                thumbnail.classList.toggle('ring-amber-500/30', active);
+                thumbnail.classList.toggle('shadow-md', active);
+                thumbnail.classList.toggle('border-zinc-200', !active);
+                thumbnail.classList.toggle('opacity-70', !active);
+                thumbnail.classList.toggle('dark:border-zinc-800', !active);
+            });
+        };
+        const matches = (variant, ignored = null) => options.every((option) => option.name === ignored || String(variant.options?.[option.name] || '') === String(selectedValues[option.name] || ''));
+        const resolve = () => variants.find((variant) => matches(variant)) || variants[0];
+        const updateQuantity = () => {
+            const max = Math.max(1, Number(selected?.stock || 0));
+            quantity = Math.min(Math.max(1, quantity), max);
+            setText(modal, '[data-quick-add-quantity]', String(quantity));
+            if (quantityInput) quantityInput.value = String(quantity);
+            modal.querySelector('[data-quick-add-decrease]')?.toggleAttribute('disabled', quantity <= 1 || isOutOfStock(selected));
+            modal.querySelector('[data-quick-add-increase]')?.toggleAttribute('disabled', quantity >= max || isOutOfStock(selected));
+        };
+        const update = (variant) => {
+            selected = variant;
+            showError();
+            if (variantInput) variantInput.value = variant.id;
+            setText(modal, '[data-quick-add-selected-label]', variant.title || '');
+            setText(modal, '[data-quick-add-sku]', variant.sku || '');
+            setText(modal, '[data-quick-add-price]', storefrontMoney(variant.price));
+            const compare = modal.querySelector('[data-quick-add-compare]');
+            if (compare) {
+                compare.textContent = variant.compareAt ? storefrontMoney(variant.compareAt) : '';
+                compare.classList.toggle('hidden', !variant.compareAt);
+            }
+            const savings = Math.max(0, Number(variant.compareAt || 0) - Number(variant.price || 0));
+            ['[data-quick-add-save]', '[data-quick-add-saving]'].forEach((selector) => {
+                const target = modal.querySelector(selector);
+                if (!target) return;
+                const savingsPercent = variant.compareAt ? Math.round((savings / Number(variant.compareAt)) * 100) : 0;
+                target.textContent = savings ? (selector.includes('saving') ? `Save ${storefrontMoney(savings)} (${savingsPercent}% OFF)` : `SAVE ${storefrontMoney(savings)}`) : '';
+                target.classList.toggle('hidden', !savings);
+            });
+            const state = availability(variant);
+            const stateWrap = modal.querySelector('[data-quick-add-availability]');
+            stateWrap?.classList.remove('text-rose-500', 'text-amber-500', 'text-emerald-600', 'dark:text-emerald-400');
+            stateWrap?.classList.add(state.tone === 'rose' ? 'text-rose-500' : state.tone === 'amber' ? 'text-amber-500' : 'text-emerald-600', ...(state.tone === 'emerald' ? ['dark:text-emerald-400'] : []));
+            setText(modal, '[data-quick-add-availability-text]', state.text);
+            const dot = modal.querySelector('[data-quick-add-availability-dot]');
+            dot?.classList.remove('bg-rose-500', 'bg-amber-400', 'bg-emerald-400');
+            dot?.classList.add(state.dot);
+            setText(modal, '[data-quick-add-stock-note]', Number(variant.stock) > 0 ? `${variant.stock} units ready` : 'Zero stock');
+            setHeroImage(variant.optionImage || variant.image);
+            modal.querySelector('[data-quick-add-sold-out-overlay]')?.classList.toggle('hidden', !isOutOfStock(variant));
+            const confirmText = modal.querySelector('[data-quick-add-confirm-text]');
+            setConfirmState(isOutOfStock(variant) ? 'soldOut' : 'default');
+            if (confirmText) confirmText.textContent = isOutOfStock(variant) ? 'Sold Out • Join Restock List' : `Add ${quantity > 1 ? `${quantity} Items` : 'to Cart'} • ${storefrontMoney(Number(variant.price) * quantity)}`;
+            modal.querySelectorAll('[data-quick-add-option-value]').forEach((button) => {
+                const optionName = button.dataset.quickAddOptionName;
+                const value = button.dataset.quickAddOptionValue;
+                const selectedButton = String(selectedValues[optionName] || '') === String(value || '');
+                const candidates = variants.filter((candidate) => String(candidate.options?.[optionName] || '') === String(value || ''));
+                const out = candidates.length > 0 && candidates.every(isOutOfStock);
+                button.setAttribute('aria-checked', String(selectedButton));
+                button.setAttribute('aria-disabled', String(out || !candidates.length));
+                button.classList.toggle('ring-2', selectedButton);
+                button.classList.toggle('ring-amber-500', selectedButton);
+                button.classList.toggle('scale-105', selectedButton);
+                button.classList.toggle('opacity-40', out);
+                button.querySelectorAll('[data-quick-add-option-check]').forEach((check) => check.classList.toggle('hidden', !selectedButton));
+                button.querySelectorAll('[data-quick-add-option-sold-out]').forEach((soldOut) => soldOut.classList.toggle('hidden', !out));
+            });
+            modal.querySelectorAll('[data-quick-add-option-dropdown]').forEach((select) => { select.value = selectedValues[select.dataset.quickAddOptionName] || ''; });
+            updateQuantity();
+            const refreshedText = modal.querySelector('[data-quick-add-confirm-text]');
+            if (refreshedText && !isOutOfStock(variant)) refreshedText.textContent = `Add ${quantity > 1 ? `${quantity} Items` : 'to Cart'} • ${storefrontMoney(Number(variant.price) * quantity)}`;
+            renderIcons();
+        };
+        const choose = (name, value) => {
+            selectedValues[name] = value;
+            let next = resolve();
+            if (String(next.options?.[name] || '') !== String(value)) {
+                next = variants.find((candidate) => candidate.enabled !== false && String(candidate.options?.[name] || '') === String(value)) || variants.find((candidate) => String(candidate.options?.[name] || '') === String(value));
+                if (!next) return;
+                options.forEach((option) => { selectedValues[option.name] = next.options?.[option.name] || selectedValues[option.name]; });
+            }
+            update(next);
+        };
+        const open = (variantId, originatingTrigger) => {
+            opener = originatingTrigger;
+            selected = variants.find((variant) => String(variant.id) === String(variantId)) || variants[0];
+            selectedValues = Object.fromEntries(options.map((option) => [option.name, selected.options?.[option.name] || option.values?.[0] || '']));
+            quantity = 1;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('overflow-hidden');
+            update(selected);
+            modal.querySelector('[data-quick-add-close]')?.focus();
+        };
+
+        document.querySelectorAll(`[data-quick-add-trigger][data-quick-add-product-id="${modal.dataset.quickAddProductId}"]`).forEach((trigger) => trigger.addEventListener('click', (event) => {
+            event.preventDefault();
+            const card = trigger.closest('[data-storefront-product-card]');
+            open(card?.querySelector('[data-card-variant-input]')?.value || variants[0].id, trigger);
+        }));
+        modal.querySelectorAll('[data-quick-add-close], [data-quick-add-backdrop]').forEach((button) => button.addEventListener('click', close));
+        modal.querySelectorAll('[data-quick-add-thumbnail]').forEach((button) => button.addEventListener('click', () => {
+            setHeroImage(button.dataset.quickAddImage);
+        }));
+        modal.querySelectorAll('[data-quick-add-option-value]').forEach((button) => button.addEventListener('click', () => choose(button.dataset.quickAddOptionName, button.dataset.quickAddOptionValue)));
+        modal.querySelectorAll('[data-quick-add-option-dropdown]').forEach((select) => select.addEventListener('change', (event) => choose(select.dataset.quickAddOptionName, event.target.value)));
+        modal.querySelector('[data-quick-add-decrease]')?.addEventListener('click', () => { if (quantity > 1) { quantity -= 1; update(selected); } });
+        modal.querySelector('[data-quick-add-increase]')?.addEventListener('click', () => { if (quantity < Number(selected.stock || 0)) { quantity += 1; update(selected); } });
+        form?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (isOutOfStock(selected)) return;
+            const submitter = modal.querySelector('[data-quick-add-confirm]');
+            setConfirmState('loading');
+            try {
+                const response = await fetch(form.action, { method: form.method || 'POST', body: new FormData(form), headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+                if (!response.ok) {
+                    const payload = await response.json().catch(() => null);
+                    throw new Error(payload?.errors?.quantity?.[0] || payload?.errors?.variant_id?.[0] || 'Unable to add the item to the cart.');
+                }
+                setConfirmState('success');
+                await new Promise((resolve) => window.setTimeout(resolve, 700));
+                await refreshCartDrawer(drawer);
+                close(false);
+                openCartDrawer(drawer, opener || submitter);
+            } catch (error) {
+                update(selected);
+                showError(error instanceof Error ? error.message : 'Unable to add the item to the cart.');
+            }
+        });
+        document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !modal.classList.contains('hidden')) close(); });
+        update(selected);
+    });
+};
+
 const installCustomerAccountTabs = () => {
     document.querySelectorAll('[data-account]').forEach((account) => {
         const tabs = [...account.querySelectorAll('[data-account-tab]')];
@@ -925,12 +1473,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.documentElement.matches('[data-atelier-theme-root]')) {
         installAtelierTheme();
     }
-installAtelierCurrency();
+    installAtelierMemberMenu();
+    installAtelierCurrency();
 installMegaNavigation();
     installDeliveryMatrix();
     installAdminExperience();
     installAdminSidebarDrawer();
     installSuccessReceipt();
     installPdpWishlist();
+    installStorefrontVariantSelectors();
+    installPdpThumbnailSwitching();
+    installProductCardVariantPreviews();
+    installQuickAddVariantModals();
     installCustomerAccountTabs();
 });

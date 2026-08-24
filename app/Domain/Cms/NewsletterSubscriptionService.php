@@ -13,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 final class NewsletterSubscriptionService
 {
+    public function __construct(private readonly CanonicalPublishedPagePolicy $publishedPages) {}
+
     /** @return array{subscribed: true, alreadySubscribed?: true, couponCode?: string} */
     public function subscribe(Request $request, Page $boundPage, string $stage, string $sectionId, string $email): array
     {
@@ -60,11 +62,13 @@ final class NewsletterSubscriptionService
     /** @return array<string, mixed> */
     private function authoritativeSection(Request $request, Page $page, string $stage, string $sectionId): array
     {
-        abort_unless($this->mayUseStage($page, $stage), 403);
         $document = PageDocument::query()->where('page_id', $page->getKey())->where('stage', $stage)->lockForUpdate()->first();
         if ($document === null) {
             throw ValidationException::withMessages(['section' => ['The submitted page form is unavailable.']]);
         }
+        $audience = $request->query('audience');
+        abort_unless(PageRuntimeAudience::isKnown($audience), 403);
+        abort_unless($this->publishedPages->maySubmit($page, $document, $audience, $request->user()), 403);
         if ($request->query('hash') !== $document->content_hash || (string) $request->query('version') !== (string) $document->lock_version || $request->query('type') !== 'newsletter_signup') {
             throw ValidationException::withMessages(['contract' => ['The submitted form contract is stale.']]);
         }
@@ -74,15 +78,6 @@ final class NewsletterSubscriptionService
             }
         }
         throw ValidationException::withMessages(['section' => ['The submitted form does not match the current page section.']]);
-    }
-
-    private function mayUseStage(Page $page, string $stage): bool
-    {
-        if ($stage === PageDocument::STAGE_PUBLISHED) {
-            return $page->status === 'published' && $page->is_published;
-        }
-
-        return $stage === PageDocument::STAGE_DRAFT && auth()->user()?->is_admin === true;
     }
 
     private function canonicalCouponId(mixed $value): ?int

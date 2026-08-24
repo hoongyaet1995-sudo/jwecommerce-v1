@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductReview;
 use App\Models\ProductVariant;
+use App\Models\StoreSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -94,6 +95,67 @@ class StorefrontPdpRichContentTest extends TestCase
         $this->assertStringNotContainsString('Shipping & 30-Day Return Guarantee', $html);
         $this->assertStringNotContainsString('Verified Studio Reviews', $html);
         $this->assertStringNotContainsString('Frequently Paired With This Model', $html);
+    }
+
+    public function test_pdp_uses_real_variant_shop_and_payment_configuration_without_fixed_promises(): void
+    {
+        StoreSetting::query()->updateOrCreate(['key' => 'shop_name'], ['value' => ['data' => 'JW Studio']]);
+        StoreSetting::query()->updateOrCreate(['key' => 'payment_gateways'], ['value' => ['data' => [
+            ['id' => 'paypal', 'isEnabled' => true],
+            ['id' => 'stripe', 'isEnabled' => true, 'features' => ['supportsApplePay' => true]],
+        ]]]);
+
+        $product = $this->product('configured-pdp-product', 'This must not become PDP copy');
+        $variant = $product->variants()->firstOrFail();
+        $variant->update(['material' => 'Matte Titanium', 'stock' => 7]);
+        $this->publishedReviewFor($this->customer(), $product, 'Ava Chen', 'Accurate rating', 'Rating must not render as five full stars.', 3, 'JW-PDP-CONFIG-001');
+
+        $html = $this->get('/products/configured-pdp-product')->assertOk()->getContent();
+
+        $this->assertStringContainsString('JW Studio', $html);
+        $this->assertStringContainsString('In Stock (7 units)', $html);
+        $this->assertStringContainsString('Payment methods available at checkout:', $html);
+        $this->assertStringContainsString('Apple Pay', $html);
+        $this->assertStringContainsString('PayPal', $html);
+        $this->assertSame(3, substr_count($html, 'data-pdp-rating-star="filled"'));
+        $this->assertSame(2, substr_count($html, 'data-pdp-rating-star="empty"'));
+        $this->assertStringNotContainsString('Configuration', $html);
+        $this->assertStringNotContainsString('Dispatches Today', $html);
+        $this->assertStringNotContainsString('Backorder Available', $html);
+        $this->assertStringNotContainsString('interest-free', $html);
+        $this->assertStringNotContainsString('Klarna', $html);
+        $this->assertStringNotContainsString('Studio standard', $html);
+    }
+
+    public function test_pdp_hides_shipping_policy_when_the_operator_has_not_set_a_policy_title(): void
+    {
+        $product = $this->product('untitled-shipping-policy-product', 'No shipping fallback');
+        $product->pdpContent()->create([
+            'highlights' => [],
+            'specifications' => [],
+            'use_store_default_shipping' => false,
+            'shipping_policy' => ['policyContentHtml' => 'Actual policy content without a configured title.'],
+            'custom_accordions' => [],
+        ]);
+
+        $html = $this->get('/products/untitled-shipping-policy-product')->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('Shipping &amp; 30-Day Return Guarantee', $html);
+        $this->assertStringNotContainsString('Actual policy content without a configured title.', $html);
+    }
+
+    public function test_pdp_uses_the_configured_atome_payment_name_instead_of_a_klarna_alias(): void
+    {
+        StoreSetting::query()->updateOrCreate(['key' => 'payment_gateways'], ['value' => ['data' => [
+            ['id' => 'atome', 'isEnabled' => true],
+        ]]]);
+
+        $html = $this->get('/products/'.$this->product('atome-pdp-product', 'No payment fallback')->handle)
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('Atome (3x)', $html);
+        $this->assertStringNotContainsString('Klarna', $html);
     }
 
     private function product(string $handle, string $feature, string $status = 'active'): Product

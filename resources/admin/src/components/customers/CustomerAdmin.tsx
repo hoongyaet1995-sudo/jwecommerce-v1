@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { Customer } from '../../types';
+import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 import {
   Users,
   Search,
@@ -25,6 +26,7 @@ export const CustomerAdmin: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
   const filteredCustomers = customers.filter(c => {
     const matchesSearch =
@@ -206,9 +208,7 @@ export const CustomerAdmin: React.FC = () => {
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => {
-                          void deleteCustomer(cust.id);
-                        }}
+                        onClick={() => setCustomerToDelete(cust)}
                         className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -221,6 +221,28 @@ export const CustomerAdmin: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Delete Customer Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={!!customerToDelete}
+        itemType="Customer Account"
+        itemName={customerToDelete?.name}
+        itemDetails={`Email: ${customerToDelete?.email} • Total Orders: ${customerToDelete?.totalOrders} • Lifetime Spend: $${customerToDelete?.totalSpent.toFixed(2)}`}
+        warningMessage={`Are you sure you want to permanently delete the profile for "${customerToDelete?.name}"?`}
+        impactItems={[
+          'Customer login credentials and shipping address book will be removed.',
+          'Historical order references will retain anonymized transaction IDs.',
+          'VIP membership perks, loyalty points, and store credits will be revoked.',
+        ]}
+        confirmButtonText="Delete Customer Account"
+        onConfirm={async () => {
+          if (customerToDelete) {
+            await deleteCustomer(customerToDelete.id);
+            setCustomerToDelete(null);
+          }
+        }}
+        onClose={() => setCustomerToDelete(null)}
+      />
 
       {/* Customer Edit Modal */}
       {isModalOpen && editingCustomer && (

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Storefront;
 
+use App\Domain\Cms\CanonicalPublishedPagePolicy;
+use App\Domain\Cms\PageRuntimeAudience;
 use App\Http\Controllers\Controller;
 use App\Models\CmsContactSubmission;
 use App\Models\Page;
@@ -14,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 
 final class CmsContactSubmissionController extends Controller
 {
+    public function __construct(private readonly CanonicalPublishedPagePolicy $publishedPages) {}
+
     public function __invoke(Request $request, Page $page, string $stage, string $section): JsonResponse
     {
         try {
@@ -71,12 +75,13 @@ final class CmsContactSubmissionController extends Controller
     /** @return array<string, mixed> */
     private function authoritativeSection(Request $request, Page $page, string $stage, string $sectionId): array
     {
-        abort_unless($this->mayUseStage($page, $stage), 403);
-
         $document = PageDocument::query()->where('page_id', $page->getKey())->where('stage', $stage)->lockForUpdate()->first();
         if ($document === null) {
             throw ValidationException::withMessages(['section' => ['The submitted page form is unavailable.']]);
         }
+        $audience = $request->query('audience');
+        abort_unless(PageRuntimeAudience::isKnown($audience), 403);
+        abort_unless($this->publishedPages->maySubmit($page, $document, $audience, $request->user()), 403);
         if ($request->query('hash') !== $document->content_hash || (string) $request->query('version') !== (string) $document->lock_version || $request->query('type') !== 'contact_form') {
             throw ValidationException::withMessages(['contract' => ['The submitted form contract is stale.']]);
         }
@@ -104,15 +109,6 @@ final class CmsContactSubmissionController extends Controller
         if (! in_array($category, $labels, true)) {
             throw ValidationException::withMessages(['category' => ['The selected inquiry category is unavailable.']]);
         }
-    }
-
-    private function mayUseStage(Page $page, string $stage): bool
-    {
-        if ($stage === PageDocument::STAGE_PUBLISHED) {
-            return $page->status === 'published' && $page->is_published;
-        }
-
-        return $stage === PageDocument::STAGE_DRAFT && auth()->user()?->is_admin === true;
     }
 
     private function invalid(ValidationException $exception): JsonResponse
