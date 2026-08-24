@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\PaymentGateway;
+use App\Services\StorefrontShellSettingsService;
 use App\Services\SimulatedPaymentGateway;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\RateLimiter;
@@ -30,5 +31,8 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('cms-newsletter', fn (Request $request): Limit => Limit::perMinute(3)
             ->by('cms-newsletter:'.$request->ip()));
         View::composer('components.admin.shell', \App\View\Composers\AdminShellComposer::class);
+        View::composer('components.storefront.nav', function ($view): void {
+            $view->with('storefrontShell', app(StorefrontShellSettingsService::class)->live());
+        });
     }
 }
