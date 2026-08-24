@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Collection as ProductCollection;
-use App\Models\Product;
 use App\Models\Page;
+use App\Models\Product;
+use App\Models\ProductHandleRedirect;
 use App\Models\SocialLink;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -41,10 +43,10 @@ class StorefrontController extends Controller
         ]);
     }
 
-    private function listingData(Request $request, $query): array
+    private function listingData(Request $request, $query, ?string $forcedCategory = null): array
     {
         $search = $request->string('search')->trim()->value();
-        $category = $request->string('category')->trim()->value();
+        $category = $forcedCategory ?? $request->string('category')->trim()->value();
         $sort = $request->string('sort')->value();
         $maxPrice = $request->integer('max_price') ?: null;
         $inStock = $request->boolean('in_stock');
@@ -60,14 +62,32 @@ class StorefrontController extends Controller
             ->when($sort === 'price_desc', fn ($query) => $query->orderByDesc('base_price'))
             ->get();
         $colors = $products->flatMap(fn (Product $product) => $product->variants->pluck('color_name'))->filter()->unique()->sort()->values();
+
         return compact('products', 'search', 'category', 'sort', 'maxPrice', 'inStock', 'color', 'colors', 'layout');
     }
 
-    public function show(Request $request, Product $product): View
+    public function show(Request $request, string $handle): View|RedirectResponse
     {
+        $product = Product::query()->where('handle', $handle)->first();
+        if (! $product) {
+            $redirect = ProductHandleRedirect::query()->with('product')->where('from_handle', $handle)->first();
+            abort_unless($redirect?->product, 404);
+
+            return redirect()->route('storefront.products.show', ['handle' => $redirect->product->handle] + $request->query(), 301);
+        }
         abort_unless($product->status === 'active', 404);
 
-        $product->load(['category', 'images', 'variants']);
+        $product->load([
+            'category',
+            'images',
+            'variants',
+            'pdpContent',
+            'reviews' => fn ($query) => $query->published()
+                ->with(['media' => fn ($media) => $media->whereNotNull('published_at')])
+                ->oldest('published_at'),
+            'pdpRelatedProducts.relatedProduct.images',
+            'pdpRelatedProducts.relatedProduct.variants',
+        ]);
         $selectedVariant = $product->variants->firstWhere('id', $request->integer('variant'))
             ?? $product->variants->firstWhere('stock', '>', 0)
             ?? $product->variants->first();
@@ -81,13 +101,10 @@ class StorefrontController extends Controller
             'selectedVariant' => $selectedVariant,
             'selectedImage' => $selectedImage,
             'images' => $images,
-            'companions' => Product::query()
-                ->where('status', 'active')
-                ->whereKeyNot($product->id)
-                ->with(['images', 'variants'])
-                ->orderBy('title')
-                ->take(2)
-                ->get(),
+            'companions' => $product->pdpRelatedProducts
+                ->map(fn ($relation) => $relation->relatedProduct)
+                ->filter(fn (?Product $relatedProduct) => $relatedProduct?->status === 'active')
+                ->values(),
         ]);
     }
 
@@ -103,6 +120,22 @@ class StorefrontController extends Controller
         ]);
     }
 
+    public function category(Request $request, Category $category): View
+    {
+        abort_unless($category->is_active, 404);
+
+        return view('storefront.index', $this->listingData(
+            $request,
+            $category->products()->where('status', 'active'),
+            $category->slug,
+        ) + [
+            'collection' => null,
+            'categories' => Category::query()->where('is_active', true)->get(),
+            'listingRouteName' => 'storefront.categories.show',
+            'listingRouteParameters' => ['category' => $category],
+        ]);
+    }
+
     public function page(Page $page): View
     {
         abort_unless($page->is_published, 404);
@@ -112,5 +145,4 @@ class StorefrontController extends Controller
             'products' => Product::query()->where('status', 'active')->with(['images', 'variants'])->get(),
         ]);
     }
-
 }
