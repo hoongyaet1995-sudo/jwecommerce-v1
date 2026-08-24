@@ -7,10 +7,6 @@ import {
   type StorefrontShellTheme,
 } from '../../types';
 import {
-  StorefrontHeaderPreview,
-  type StorefrontHeaderPreviewUtilityState,
-} from '../menus/StorefrontHeaderPreview';
-import {
   Sparkles,
   SlidersHorizontal,
   Eye,
@@ -307,7 +303,15 @@ const TEMPLATE_PREVIEWS: Record<
   },
 };
 
-export const StorefrontHeaderAnnouncementEditor: React.FC = () => {
+interface StorefrontHeaderAnnouncementEditorProps {
+  initialTab?: 'announcement' | 'header_layout' | 'preview';
+  initialPreviewViewport?: 'desktop' | 'mobile';
+}
+
+export const StorefrontHeaderAnnouncementEditor: React.FC<StorefrontHeaderAnnouncementEditorProps> = ({
+  initialTab = 'announcement',
+  initialPreviewViewport = 'desktop',
+}) => {
   const {
     storefrontShellSettings,
     saveStorefrontShellSettings,
@@ -340,10 +344,10 @@ export const StorefrontHeaderAnnouncementEditor: React.FC = () => {
     stickyHeader: true,
   }));
 
-  const [activeTab, setActiveTab] = useState<'announcement' | 'header_layout' | 'preview'>('announcement');
+  const [activeTab, setActiveTab] = useState<'announcement' | 'header_layout' | 'preview'>(initialTab);
   const [isSavedRecently, setIsSavedRecently] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [previewViewport, setPreviewViewport] = useState<'desktop' | 'mobile'>('desktop');
+  const [previewViewport, setPreviewViewport] = useState<'desktop' | 'mobile'>(initialPreviewViewport);
 
   useEffect(() => {
     setFormData(announcementDraftFromSettings(storefrontShellSettings));
@@ -356,16 +360,6 @@ export const StorefrontHeaderAnnouncementEditor: React.FC = () => {
   const selectedLayout = LEGACY_LAYOUT_TO_SHELL[headerSettings.template];
   const canSaveLive = canSaveStorefrontShellLayout(selectedLayout);
   const draftSettings = storefrontShellSettingsFromDraft(storefrontShellSettings, formData, selectedLayout);
-  const previewUtilityState: StorefrontHeaderPreviewUtilityState = {
-    showSearch: headerSettings.showSearch,
-    showThemeToggle: headerSettings.showThemeToggle,
-    showCurrency: headerSettings.showCurrency,
-    showUserAccount: headerSettings.showUserAccount,
-    showCartBadge: headerSettings.showCartBadge,
-    selectedCurrency: headerSettings.selectedCurrency,
-    cartCount: 2,
-  };
-
   // Quick Preset Handlers
   const applyPromoTemplate = (type: 'freeship' | 'authenticity' | 'flash_sale' | 'support_hotline') => {
     if (type === 'freeship') {
@@ -1197,18 +1191,168 @@ export const StorefrontHeaderAnnouncementEditor: React.FC = () => {
       {/* TAB 3: COMPLETE REAL-TIME STOREFRONT SIMULATOR                             */}
       {/* ========================================================================= */}
       {activeTab === 'preview' && (
-        <StorefrontHeaderPreview
-          settings={draftSettings}
-          utilityState={previewUtilityState}
-          headerMenus={headerMenus}
-          onSelectLayout={(layout) => setHeaderSettings(prev => ({
-            ...prev,
-            template: SHELL_LAYOUT_TO_LEGACY[layout],
-          }))}
-          onUtilityChange={(updates) => setHeaderSettings(prev => ({ ...prev, ...updates }))}
-          onAnnouncementEnabledChange={(enabled) => setFormData(prev => ({ ...prev, enabled }))}
-          onEditAnnouncement={() => setActiveTab('announcement')}
-        />
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-xs font-bold text-neutral-900 dark:text-white">
+                Live Storefront Customer Simulation Viewport
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPreviewViewport('desktop')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer ${
+                  previewViewport === 'desktop'
+                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-xs'
+                    : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+              >
+                <Monitor className="w-3.5 h-3.5" />
+                <span>Desktop View</span>
+              </button>
+
+              <button
+                onClick={() => setPreviewViewport('mobile')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer ${
+                  previewViewport === 'mobile'
+                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-xs'
+                    : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+              >
+                <span>📱 Mobile View</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Viewport Frame */}
+          <div className={`mx-auto rounded-3xl bg-neutral-950 border border-neutral-800 shadow-2xl overflow-hidden transition-all duration-300 ${
+            previewViewport === 'mobile' ? 'max-w-md' : 'w-full'
+          }`}>
+            {/* Top Announcement Bar Render */}
+            {formData.enabled && (
+              <div
+                className="py-2.5 px-4 sm:px-6 text-xs transition-all border-b"
+                style={getBarThemeStyles()}
+              >
+                <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+                  {/* Left area */}
+                  {formData.leftEnabled && (
+                    <div className="hidden md:flex items-center gap-2 text-[11px]">
+                      {formData.leftBadge && (
+                        <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-[9px] font-bold tracking-wider">
+                          {formData.leftBadge}
+                        </span>
+                      )}
+                      <span className="font-medium opacity-90">{formData.leftText}</span>
+                    </div>
+                  )}
+
+                  {/* Center promo */}
+                  {formData.centerEnabled && (
+                    <div className="flex-1 text-center truncate flex items-center justify-center gap-2">
+                      <span className="font-semibold">{formData.centerText}</span>
+                      {formData.centerHighlightText && (
+                        <span className="px-2 py-0.5 rounded bg-amber-400 text-neutral-950 text-[10px] font-mono font-black tracking-wide shadow-xs">
+                          {formData.centerHighlightText}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Right area */}
+                  {formData.rightEnabled && (
+                    <div className="hidden lg:flex items-center gap-3 text-[11px]">
+                      {formData.showWhatsAppHotline && formData.whatsAppNumber && (
+                        <span className="font-mono flex items-center gap-1 opacity-90">
+                          <Phone className="w-3 h-3 text-emerald-400" />
+                          {formData.whatsAppNumber}
+                        </span>
+                      )}
+                      {formData.showLogisticsTracker && (
+                        <span className="flex items-center gap-1 hover:underline cursor-pointer opacity-90">
+                          <Truck className="w-3 h-3 text-cyan-400" />
+                          {formData.rightText}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Header Main Bar */}
+            <header className="px-6 h-18 flex items-center justify-between border-b border-neutral-800 bg-neutral-950 text-white">
+              <div className="flex items-center gap-8">
+                <div className="flex items-center gap-2.5 cursor-pointer">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center font-black text-sm text-white shadow-md shadow-indigo-600/30">
+                    <Zap className="w-4 h-4" />
+                  </div>
+                  <span className="font-black tracking-widest text-base text-white">AURORA</span>
+                </div>
+
+                <nav className="hidden md:flex items-center gap-1">
+                  {headerMenus.map(l1 => (
+                    <span
+                      key={l1.id}
+                      className="px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white rounded-xl cursor-pointer"
+                    >
+                      {l1.title}
+                    </span>
+                  ))}
+                </nav>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {headerSettings.showSearch && (
+                  <div className="p-2 text-neutral-300 hover:text-white cursor-pointer">
+                    <Search className="w-4 h-4" />
+                  </div>
+                )}
+                {headerSettings.showCurrency && (
+                  <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-xl bg-neutral-900 border border-neutral-800 text-xs text-neutral-300">
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>{headerSettings.selectedCurrency}</span>
+                  </div>
+                )}
+                {headerSettings.showUserAccount && (
+                  <div className="p-2 text-neutral-300 hover:text-white cursor-pointer">
+                    <User className="w-4 h-4" />
+                  </div>
+                )}
+                {headerSettings.showCartBadge && (
+                  <div className="p-2 bg-indigo-600 text-white rounded-xl flex items-center gap-1 text-xs font-bold shadow-md shadow-indigo-600/30 cursor-pointer">
+                    <ShoppingBag className="w-4 h-4" />
+                    <span>2</span>
+                  </div>
+                )}
+              </div>
+            </header>
+
+            {/* Mock Hero Content to represent storefront page context */}
+            <div className="p-8 sm:p-12 text-center bg-gradient-to-b from-neutral-900 to-neutral-950 text-white space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold border border-indigo-500/30">
+                <Sparkles className="w-3.5 h-3.5" />
+                Storefront Canvas Simulation
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+                Experience Acoustic Purity & Precision
+              </h2>
+              <p className="text-xs sm:text-sm text-neutral-400 max-w-lg mx-auto">
+                Explore hand-crafted audiophile acoustics, lossless planar drivers & bespoke accessories.
+              </p>
+              <div className="pt-2 flex justify-center gap-3">
+                <span className="px-5 py-2.5 rounded-2xl bg-white text-neutral-950 font-bold text-xs">
+                  Shop Collection
+                </span>
+                <span className="px-5 py-2.5 rounded-2xl bg-neutral-800 text-white font-bold text-xs border border-neutral-700">
+                  Explore Stories
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

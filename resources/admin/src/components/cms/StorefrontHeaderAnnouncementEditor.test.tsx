@@ -1,5 +1,7 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { StorefrontShellSettings } from '../../types';
 
@@ -65,5 +67,26 @@ describe('StorefrontHeaderAnnouncementEditor persistence boundary', () => {
 
     await editor.persistStorefrontShellDraft(previewOnly, admin.save);
     expect(admin.save).not.toHaveBeenCalled();
+  });
+
+  it('renders the ZIP-owned inline desktop/mobile simulator and retains its mobile frame contract', async () => {
+    const editor = await import('./StorefrontHeaderAnnouncementEditor');
+    const source = readFileSync(resolve(process.cwd(), 'src/components/cms/StorefrontHeaderAnnouncementEditor.tsx'), 'utf8');
+    const PreviewableEditor = editor.StorefrontHeaderAnnouncementEditor as React.ComponentType<{
+      initialTab: 'preview';
+      initialPreviewViewport: 'mobile';
+    }>;
+
+    const html = renderToStaticMarkup(
+      <PreviewableEditor initialTab="preview" initialPreviewViewport="mobile" />,
+    );
+
+    expect(source).toContain("setPreviewViewport('desktop')");
+    expect(source).toContain("setPreviewViewport('mobile')");
+    expect(source).toContain("previewViewport === 'mobile' ? 'max-w-md' : 'w-full'");
+    expect(html).toContain('Desktop View');
+    expect(html).toContain('Mobile View');
+    expect(html).toContain('max-w-md');
+    expect(html).toContain('Live Storefront Customer Simulation Viewport');
   });
 });
