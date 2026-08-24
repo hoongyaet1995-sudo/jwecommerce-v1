@@ -47,6 +47,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
     courierConfigs = [],
     paymentGateways = [],
     supportConversations = [],
+    reviews = [],
     shopSettings
   } = useAdmin();
 
@@ -57,6 +58,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
   const pendingAwbCount = safeShipmentParcels.filter(p => p.status === 'pending').length;
   const activeGatewaysCount = paymentGateways.filter(g => g.isEnabled).length;
   const unreadSupportCount = supportConversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+  const pendingReviewsCount = reviews.filter((review) => review.status === 'pending').length;
 
   const [expandedHubs, setExpandedHubs] = useState<{ [key: string]: boolean }>({
     marketplace: false,
@@ -116,6 +118,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
   const isCatalogActive =
     currentSection === 'catalog' ||
     currentSection === 'catalog-products' ||
+    currentSection === 'catalog-reviews' ||
     currentSection === 'catalog-categories' ||
     currentSection === 'catalog-collections';
 
@@ -173,11 +176,12 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
       label: 'Products & Catalog',
       icon: Package,
       isActive: isCatalogActive,
-      badge: `${products.length} Items`,
-      badgeVariant: 'default',
+      badge: pendingReviewsCount > 0 ? `${pendingReviewsCount} Review${pendingReviewsCount > 1 ? 's' : ''}` : `${products.length} Items`,
+      badgeVariant: pendingReviewsCount > 0 ? 'warning' : 'default',
       subItems: [
         { id: 'catalog' as NavSection, label: 'Overview Hub' },
         { id: 'catalog-products' as NavSection, label: 'Product Matrix' },
+        { id: 'catalog-reviews' as NavSection, label: 'Product Reviews' },
         { id: 'catalog-categories' as NavSection, label: 'Categories' },
         { id: 'catalog-collections' as NavSection, label: 'Collections' },
       ],
@@ -434,6 +438,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
                     <div className="ml-5 pl-2.5 py-1 space-y-0.5 border-l border-neutral-200 dark:border-neutral-800">
                       {item.subItems?.map((sub) => {
                         const isSubActive = currentSection === sub.id;
+                        const isReviewSubItem = sub.id === 'catalog-reviews';
                         return (
                           <button
                             key={sub.id}
@@ -446,7 +451,20 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
                             }`}
                           >
                             <span className="truncate">{sub.label}</span>
-                            {isSubActive && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              {isReviewSubItem && pendingReviewsCount > 0 && (
+                                <span
+                                  className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full ${
+                                    isSubActive
+                                      ? 'bg-white/20 text-white'
+                                      : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                                  }`}
+                                >
+                                  {pendingReviewsCount} Pending
+                                </span>
+                              )}
+                              {isSubActive && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                            </div>
                           </button>
                         );
                       })}

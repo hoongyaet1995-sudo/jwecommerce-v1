@@ -25,6 +25,7 @@ import { MarketplaceInventoryPage } from './components/marketplace/MarketplaceIn
 import { MarketplaceSyncPage } from './components/marketplace/MarketplaceSyncPage';
 import { StorefrontHub } from './components/cms/StorefrontHub';
 import { CatalogHub } from './components/catalog/CatalogHub';
+import { ProductReviewsAdmin } from './components/catalog/ProductReviewsAdmin';
 import { CommerceHub } from './components/orders/CommerceHub';
 import { ShippingDashboard } from './components/shipping/ShippingDashboard';
 import { CustomerSupportHub } from './components/support/CustomerSupportHub';
@@ -80,6 +81,8 @@ const AdminLayoutContent: React.FC = () => {
         return <CatalogHub />;
       case 'catalog-products':
         return <ProductAdmin />;
+      case 'catalog-reviews':
+        return <ProductReviewsAdmin />;
       case 'catalog-categories':
         return <CategoryAdmin />;
       case 'catalog-collections':

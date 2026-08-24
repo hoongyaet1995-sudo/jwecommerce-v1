@@ -1,28 +1,19 @@
 import React from 'react';
 import { useAdmin } from '../../context/AdminContext';
+import { catalogHubMetrics, LOW_STOCK_UNITS } from '../../catalogHubMetrics';
 import {
   Package,
   FolderTree,
   Sparkles,
   ArrowRight,
-  Boxes,
-  Plus,
-  TrendingUp,
-  Tag,
-  Layers,
-  Filter
+  Star,
 } from 'lucide-react';
 
 export const CatalogHub: React.FC = () => {
-  const { setCurrentSection, products = [], categories = [], collections = [] } = useAdmin();
+  const { setCurrentSection, products = [], categories = [], collections = [], reviews = [] } = useAdmin();
 
-  const safeProducts = products || [];
-  const safeCategories = categories || [];
-  const safeCollections = collections || [];
-
-  const inStockCount = safeProducts.filter((p) => p.status === 'active' && p.stock > 0).length;
-  const lowStockCount = safeProducts.filter((p) => p.stock > 0 && p.stock <= 5).length;
-  const dynamicCollectionsCount = safeCollections.filter((c) => c.type === 'dynamic').length;
+  const metrics = catalogHubMetrics(products, categories, collections);
+  const pendingReviewsCount = reviews.filter((review) => review.status === 'pending').length;
 
   const cards = [
     {
@@ -32,15 +23,32 @@ export const CatalogHub: React.FC = () => {
       description: 'Manage master product catalog, multi-attribute variants (colors, sizes), retail & cost pricing, barcode identifiers, and warehouse stock allocations.',
       icon: Package,
       iconBg: 'from-emerald-500 to-teal-600',
-      badge: `${safeProducts.length} Master SKUs`,
+      badge: `${metrics.productCount} Master Products`,
       badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
       highlights: [
-        `${inStockCount} In-Stock Active Products`,
-        `${lowStockCount} Low Stock Threshold Alerts`,
-        'Variant Combination Matrix Generator',
-        'Bulk CSV Import / Export',
+        `${metrics.activeSkuCount} Active SKUs`,
+        `${metrics.inStockActiveProductCount} In-Stock Active Products`,
+        `${metrics.soldOutActiveProductCount} Sold-Out Active Products`,
+        `${metrics.lowStockActiveProductCount} Low Stock (≤ ${LOW_STOCK_UNITS} Units)`,
       ],
       actionLabel: 'Manage Products',
+    },
+    {
+      id: 'catalog-reviews' as const,
+      title: 'Product Reviews',
+      shortName: 'Buyer Social Proof',
+      description: 'Moderate customer ratings, approve verified buyer unboxing photos, manage rejection audit trails, and publish authentic social proof to PDPs.',
+      icon: Star,
+      iconBg: 'from-amber-500 to-orange-600',
+      badge: pendingReviewsCount > 0 ? `${pendingReviewsCount} Pending Moderation` : `${reviews.length} Total Reviews`,
+      badgeColor: pendingReviewsCount > 0 ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+      highlights: [
+        `${pendingReviewsCount} Awaiting Publication`,
+        'Verified Order Badge Authentication',
+        'Buyer Unboxing Photo Proof',
+        'Rejection Reason Audit Logging',
+      ],
+      actionLabel: 'Moderate Reviews',
     },
     {
       id: 'catalog-categories' as const,
@@ -49,13 +57,13 @@ export const CatalogHub: React.FC = () => {
       description: 'Create multi-level parent and child category trees, customize SEO slugs, assign icons, and organize category storefront sorting order.',
       icon: FolderTree,
       iconBg: 'from-teal-500 to-cyan-600',
-      badge: `${safeCategories.length} Categories`,
+      badge: `${metrics.categoryCount} Categories`,
       badgeColor: 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/20',
       highlights: [
-        'Nested Sub-Category Hierarchy',
-        'SEO Meta Title & Keywords',
-        'Custom SVG / Lucide Icon Binding',
-        'Drag-and-Drop Sort Order',
+        `${metrics.activeCategoryCount} Active Storefront Categories`,
+        `${metrics.nestedCategoryCount} Nested Categories`,
+        `${metrics.seoConfiguredCategoryCount} SEO-Configured Categories`,
+        `${metrics.categoryImageCount} Category Images Assigned`,
       ],
       actionLabel: 'Manage Categories',
     },
@@ -66,13 +74,13 @@ export const CatalogHub: React.FC = () => {
       description: 'Build automated product groupings using smart conditional rules (by tag, price range, stock) or manually curated promotional lists.',
       icon: Sparkles,
       iconBg: 'from-cyan-500 to-blue-600',
-      badge: `${safeCollections.length} Collections`,
+      badge: `${metrics.collectionCount} Collections`,
       badgeColor: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/20',
       highlights: [
-        `${dynamicCollectionsCount} Dynamic Rule Collections`,
-        'Condition Matching (AND/OR Logic)',
-        'Custom Banner Cover Images',
-        'Scheduled Publishing Status',
+        `${metrics.dynamicCollectionCount} Dynamic Rule Collections`,
+        `${metrics.manualCollectionCount} Manual Curations`,
+        `${metrics.collectionRuleCount} Collection Rules`,
+        `${metrics.collectionCoverCount} Collection Covers Assigned`,
       ],
       actionLabel: 'Manage Collections',
     },
@@ -88,32 +96,37 @@ export const CatalogHub: React.FC = () => {
               <Package className="w-3.5 h-3.5 text-teal-400" />
               Catalog Central
             </span>
-            <span className="text-xs text-neutral-400">Products, Categories & Rules</span>
+            <span className="text-xs text-neutral-400">Products, Reviews, Categories & Rules</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             Catalog & Product Management
           </h1>
           <p className="text-sm text-neutral-300 leading-relaxed">
-            Central repository for your entire product catalog, nested category taxonomy, and automated smart collection groupings.
+            Central repository for your entire product catalog, buyer social proof moderation, nested category taxonomy, and automated smart collection groupings.
           </p>
         </div>
 
         {/* Quick KPI Bar */}
-        <div className="mt-6 pt-6 border-t border-neutral-800 grid grid-cols-3 gap-4">
+        <div className="mt-6 pt-6 border-t border-neutral-800 grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="p-3 rounded-xl bg-white/5 border border-white/5">
             <p className="text-[11px] font-medium text-neutral-400">Master Products</p>
-            <p className="text-xl font-bold text-white mt-0.5">{products.length}</p>
-            <span className="text-[10px] text-emerald-400">{inStockCount} active in stock</span>
+            <p className="text-xl font-bold text-white mt-0.5">{metrics.productCount}</p>
+            <span className="text-[10px] text-emerald-400">{metrics.inStockActiveProductCount} active in stock</span>
+          </div>
+          <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+            <p className="text-[11px] font-medium text-neutral-400">Product Reviews</p>
+            <p className="text-xl font-bold text-white mt-0.5">{reviews.length}</p>
+            <span className="text-[10px] text-amber-400">{pendingReviewsCount} awaiting review</span>
           </div>
           <div className="p-3 rounded-xl bg-white/5 border border-white/5">
             <p className="text-[11px] font-medium text-neutral-400">Category Taxonomy</p>
-            <p className="text-xl font-bold text-white mt-0.5">{categories.length}</p>
-            <span className="text-[10px] text-teal-400">Hierarchical structure</span>
+            <p className="text-xl font-bold text-white mt-0.5">{metrics.categoryCount}</p>
+            <span className="text-[10px] text-teal-400">{metrics.nestedCategoryCount} nested categories</span>
           </div>
           <div className="p-3 rounded-xl bg-white/5 border border-white/5">
             <p className="text-[11px] font-medium text-neutral-400">Collections</p>
-            <p className="text-xl font-bold text-white mt-0.5">{collections.length}</p>
-            <span className="text-[10px] text-cyan-400">{dynamicCollectionsCount} auto-rule powered</span>
+            <p className="text-xl font-bold text-white mt-0.5">{metrics.collectionCount}</p>
+            <span className="text-[10px] text-cyan-400">{metrics.dynamicCollectionCount} auto-rule powered</span>
           </div>
         </div>
       </div>
@@ -125,7 +138,7 @@ export const CatalogHub: React.FC = () => {
           <span className="text-xs text-neutral-500">Select a section to manage</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {cards.map((card) => {
             const Icon = card.icon;
             return (
