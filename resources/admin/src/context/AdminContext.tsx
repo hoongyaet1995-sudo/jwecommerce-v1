@@ -8,6 +8,12 @@ import { fetchMenus, saveMenuDocument } from '../integration/menuData';
 import { customerDirectoryToCustomers, deleteCustomerData, fetchCustomerDirectoryData, saveCustomerData } from '../integration/customerDirectoryData';
 import { fetchOrders, processOrderRefundData, updateOrderStatusData, updateOrderTrackingData } from '../integration/orderData';
 import { fetchCommerceSettings, saveCommerceSettings } from '../integration/commerceSettingsData';
+import {
+  bulkModerateReviews as bulkModerateReviewsData,
+  fetchReviewAudit as fetchReviewAuditData,
+  fetchReviews as fetchReviewsData,
+  moderateReview as moderateReviewData,
+} from '../integration/reviewData';
 import { 
   AdminUser, 
   NavSection, 
@@ -25,6 +31,11 @@ import {
   FulfillmentStatus,
   CmsPage,
   PageSection,
+  AdminProductReview,
+  AdminProductReviewAuditEvent,
+  ReviewBulkModerationResult,
+  ReviewModerationAction,
+  ReviewModerationResult,
   StaffUser,
   ShopGeneralSettings,
   MarketplacePlatform,
@@ -181,6 +192,16 @@ interface AdminContextType {
   saveProduct: (product: Product) => Promise<Product | null>;
   deleteProduct: (id: string) => Promise<void>;
   duplicateProduct: (id: string) => void;
+  reviews: AdminProductReview[];
+  reviewFilterProductId: string | null;
+  setReviewFilterProductId: (productId: string | null) => void;
+  refreshReviews: () => Promise<void>;
+  fetchReviewAudit: (reviewId: string) => Promise<AdminProductReviewAuditEvent[]>;
+  moderateReview: (reviewId: string, action: ReviewModerationAction, reason?: string) => Promise<ReviewModerationResult | null>;
+  bulkModerateReviews: (reviewIds: string[], action: ReviewModerationAction, reason?: string) => Promise<ReviewBulkModerationResult | null>;
+  canModerateReviews: boolean;
+  canBulkModerateReviews: boolean;
+  canViewReviewAudit: boolean;
 
   // CMS Page & Layout Builder
   pages: CmsPage[];
@@ -508,6 +529,18 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     let active = true;
+    void fetchReviewsData(laravelBootstrap).then((loadedReviews) => {
+      if (active) setReviews(loadedReviews);
+    }).catch(() => {
+      if (active) addToast({ type: 'error', title: 'Reviews Unavailable', message: 'Unable to load product reviews from Laravel.' });
+    });
+    return () => { active = false; };
+  // Laravel emits this immutable bootstrap once per admin app load.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let active = true;
     void fetchMenus(laravelBootstrap).then((menus) => {
       if (!active) return;
       setHeaderMenus(menus.headerMenus);
@@ -611,6 +644,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [categories, setCategories] = useState<Category[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [reviews, setReviews] = useState<AdminProductReview[]>([]);
   const [pages, setPages] = useState<CmsPage[]>([]);
   const pagesRef = useRef<CmsPage[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -667,6 +701,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
+  const [reviewFilterProductId, setReviewFilterProductId] = useState<string | null>(null);
+  const reviewPermissions = laravelBootstrap.user.reviewPermissions ?? [];
+  const canModerateReviews = reviewPermissions.includes('reviews.moderate');
+  const canBulkModerateReviews = reviewPermissions.includes('reviews.bulk_moderate');
+  const canViewReviewAudit = reviewPermissions.includes('reviews.audit.view');
 
   // Load from local storage
   useEffect(() => {
@@ -1054,6 +1093,63 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }))
     };
     saveProduct(duplicated);
+  };
+
+  const refreshReviews = async (): Promise<void> => {
+    try {
+      setReviews(await fetchReviewsData(laravelBootstrap));
+    } catch (error) {
+      addToast({ type: 'error', title: 'Reviews Refresh Failed', message: error instanceof Error ? error.message : 'Unable to refresh reviews.' });
+    }
+  };
+
+  const fetchReviewAudit = async (reviewId: string): Promise<AdminProductReviewAuditEvent[]> => {
+    try {
+      return await fetchReviewAuditData(laravelBootstrap, reviewId);
+    } catch (error) {
+      addToast({ type: 'error', title: 'Audit Unavailable', message: error instanceof Error ? error.message : 'Unable to load review audit history.' });
+      return [];
+    }
+  };
+
+  const moderateReview = async (
+    reviewId: string,
+    action: ReviewModerationAction,
+    reason?: string,
+  ): Promise<ReviewModerationResult | null> => {
+    try {
+      const result = await moderateReviewData(laravelBootstrap, reviewId, action, reason);
+      await refreshReviews();
+      addToast({
+        type: action === 'publish' ? 'success' : 'warning',
+        title: action === 'publish' ? 'Review Published' : 'Review Rejected',
+        message: `Review ${reviewId} was ${action === 'publish' ? 'published' : 'rejected'}.`,
+      });
+      return result;
+    } catch (error) {
+      addToast({ type: 'error', title: 'Review Moderation Failed', message: error instanceof Error ? error.message : 'Unable to moderate review.' });
+      return null;
+    }
+  };
+
+  const bulkModerateReviews = async (
+    reviewIds: string[],
+    action: ReviewModerationAction,
+    reason?: string,
+  ): Promise<ReviewBulkModerationResult | null> => {
+    try {
+      const result = await bulkModerateReviewsData(laravelBootstrap, reviewIds, action, reason);
+      await refreshReviews();
+      addToast({
+        type: action === 'publish' ? 'success' : 'warning',
+        title: action === 'publish' ? 'Reviews Published' : 'Reviews Rejected',
+        message: `${reviewIds.length} review${reviewIds.length === 1 ? '' : 's'} processed.`,
+      });
+      return result;
+    } catch (error) {
+      addToast({ type: 'error', title: 'Bulk Moderation Failed', message: error instanceof Error ? error.message : 'Unable to update selected reviews.' });
+      return null;
+    }
   };
 
   // CMS Page & Layout Builder CRUD
@@ -3816,6 +3912,16 @@ Would you like me to drill down into customer records, inventory allocation, or 
         saveProduct,
         deleteProduct,
         duplicateProduct,
+        reviews,
+        reviewFilterProductId,
+        setReviewFilterProductId,
+        refreshReviews,
+        fetchReviewAudit,
+        moderateReview,
+        bulkModerateReviews,
+        canModerateReviews,
+        canBulkModerateReviews,
+        canViewReviewAudit,
         pages,
         selectedPageId,
         setSelectedPageId,

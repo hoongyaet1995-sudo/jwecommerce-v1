@@ -10,6 +10,7 @@ export const ADMIN_PATH_BY_SECTION = {
   'catalog-products': '/admin/catalog/products',
   'catalog-categories': '/admin/catalog/categories',
   'catalog-collections': '/admin/catalog/collections',
+  'catalog-reviews': '/admin/catalog/reviews',
   promotions: '/admin/promotions',
   marketplace: '/admin/marketplace',
   'marketplace-auth': '/admin/marketplace/auth',

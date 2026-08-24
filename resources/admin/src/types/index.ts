@@ -11,14 +11,21 @@ export interface AdminUser {
 
 export interface LaravelAdminBootstrap {
   user: {
+    id?: string;
     name: string;
     email: string;
     avatar: string | null;
+    isSuperAdmin?: boolean;
+    reviewPermissions?: string[];
   };
+  reviewPermissions?: string[];
   csrfToken: string;
   logoutUrl: string;
   dashboardUrl?: string;
   customersUrl?: string;
+  reviewsUrl?: string;
+  reviewBulkModerateUrl?: string;
+  staffReviewPermissionsUrl?: string;
   pagesUrl?: string;
   mediaAssetsUrl?: string;
   catalogUrl?: string;
@@ -173,6 +180,64 @@ export interface ProductVariant {
   barcode?: string;
   image?: string;
   enabled: boolean;
+}
+
+export type ReviewModerationStatus = 'pending' | 'published' | 'rejected';
+export type ReviewModerationAction = 'publish' | 'reject';
+
+export interface AdminProductReviewPhoto {
+  id: string;
+  url: string;
+  mimeType: string;
+}
+
+export interface AdminProductReview {
+  id: string;
+  productId: string;
+  productTitle: string;
+  productThumbnail?: string | null;
+  productHandle?: string | null;
+  customerId: string;
+  buyerName: string;
+  customerEmail: string;
+  orderNumber: string;
+  variantTitle?: string | null;
+  rating: number;
+  title: string;
+  comment: string;
+  status: ReviewModerationStatus;
+  moderationNote?: string | null;
+  moderatedBy?: string | null;
+  submittedAt: string;
+  publishedAt?: string | null;
+  photos: AdminProductReviewPhoto[];
+}
+
+export interface AdminProductReviewAuditEvent {
+  id: string;
+  eventType: string;
+  fromStatus: ReviewModerationStatus | null;
+  toStatus: ReviewModerationStatus | null;
+  batchId: string | null;
+  metadata: Record<string, unknown>;
+  actorName: string | null;
+  occurredAt: string | null;
+}
+
+export interface ReviewModerationResult {
+  id: string;
+  status: ReviewModerationStatus;
+}
+
+export interface ReviewBulkModerationItemResult {
+  reviewId: string;
+  ok: boolean;
+  status?: ReviewModerationStatus;
+  reason?: string;
+}
+
+export interface ReviewBulkModerationResult {
+  results: ReviewBulkModerationItemResult[];
 }
 
 export interface Product {
@@ -728,6 +793,7 @@ export type NavSection =
   | 'catalog-categories'
   | 'catalog-collections'
   | 'catalog-products'
+  | 'catalog-reviews'
   | 'commerce'
   | 'customers'
   | 'orders'

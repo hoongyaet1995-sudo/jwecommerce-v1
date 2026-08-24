@@ -26,6 +26,7 @@ const ALL_ADMIN_SECTIONS = [
   'catalog-categories',
   'catalog-collections',
   'catalog-products',
+  'catalog-reviews',
   'commerce',
   'customers',
   'orders',
@@ -73,7 +74,9 @@ describe('Admin URL adapter', () => {
     expect(pathForSection('dashboard')).toBe('/admin');
     expect(pathForSection('marketplace-oms')).toBe('/admin/marketplace/oms');
     expect(pathForSection('settings-tax-zones')).toBe('/admin/settings/tax-zones');
+    expect(pathForSection('catalog-reviews')).toBe('/admin/catalog/reviews');
     expect(sectionFromPath('/admin/pages')).toBe('pages-builder');
+    expect(sectionFromPath('/admin/catalog/reviews')).toBe('catalog-reviews');
     expect(sectionFromPath('/admin/not-a-page')).toBeNull();
   });
 
