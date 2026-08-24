@@ -18,6 +18,7 @@ export const ADMIN_PATH_BY_SECTION = {
   'marketplace-inventory': '/admin/marketplace/inventory',
   'marketplace-sync': '/admin/marketplace/sync',
   storefront: '/admin/storefront',
+  'storefront-header-announcement': '/admin/storefront/header-announcement',
   'pages-builder': '/admin/pages',
   'menu-header': '/admin/menus/header',
   'menu-footer': '/admin/menus/footer',

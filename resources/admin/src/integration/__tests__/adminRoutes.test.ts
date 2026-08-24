@@ -19,6 +19,7 @@ const ALL_ADMIN_SECTIONS = [
   'marketplace-inventory',
   'marketplace-sync',
   'storefront',
+  'storefront-header-announcement',
   'menu-header',
   'menu-footer',
   'pages-builder',

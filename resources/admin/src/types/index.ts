@@ -33,6 +33,7 @@ export interface LaravelAdminBootstrap {
   ordersUrl?: string;
   couponsUrl?: string;
   commerceSettingsUrl?: string;
+  storefrontShellSettingsUrl?: string;
 }
 
 declare global {
@@ -534,6 +535,99 @@ export interface CmsPage {
   createdAt: string;
 }
 
+export type StorefrontShellLayout =
+  | 'atelier'
+  | 'centered-luxury'
+  | 'floating-pill'
+  | 'mega-catalog'
+  | 'editorial-drawer';
+
+export type StorefrontShellTheme =
+  | 'midnight-obsidian'
+  | 'aurora-indigo'
+  | 'emerald-logistics'
+  | 'amber-flash'
+  | 'crimson-campaign'
+  | 'custom';
+
+export interface StorefrontShellPalette {
+  background: string | null;
+  text: string | null;
+  accent: string | null;
+}
+
+export interface StorefrontShellLeftZone {
+  enabled: boolean;
+  text: string;
+  badge: string;
+  linkUrl: string | null;
+}
+
+export interface StorefrontShellCenterZone {
+  enabled: boolean;
+  text: string;
+  couponCode: string;
+  linkUrl: string | null;
+}
+
+export interface StorefrontShellRightZone {
+  enabled: boolean;
+  helperText: string;
+  trackingEnabled: boolean;
+  trackingLabel: string;
+  trackingUrl: string | null;
+  whatsappEnabled: boolean;
+  whatsappLabel: string;
+  whatsappUrl: string | null;
+}
+
+export interface StorefrontShellSettings {
+  enabled: boolean;
+  layout: StorefrontShellLayout;
+  theme: StorefrontShellTheme;
+  customPalette: StorefrontShellPalette;
+  zones: {
+    left: StorefrontShellLeftZone;
+    center: StorefrontShellCenterZone;
+    right: StorefrontShellRightZone;
+  };
+}
+
+export const DEFAULT_STOREFRONT_SHELL_SETTINGS: StorefrontShellSettings = {
+  enabled: false,
+  layout: 'atelier',
+  theme: 'midnight-obsidian',
+  customPalette: {
+    background: null,
+    text: null,
+    accent: null,
+  },
+  zones: {
+    left: {
+      enabled: false,
+      text: '',
+      badge: '',
+      linkUrl: null,
+    },
+    center: {
+      enabled: false,
+      text: '',
+      couponCode: '',
+      linkUrl: null,
+    },
+    right: {
+      enabled: false,
+      helperText: '',
+      trackingEnabled: false,
+      trackingLabel: '',
+      trackingUrl: null,
+      whatsappEnabled: false,
+      whatsappLabel: '',
+      whatsappUrl: null,
+    },
+  },
+};
+
 export type PageDocument = Pick<
   CmsPage,
   | 'title'
@@ -786,6 +880,7 @@ export type NavSection =
   | 'marketplace-inventory'
   | 'marketplace-sync'
   | 'storefront'
+  | 'storefront-header-announcement'
   | 'menu-header'
   | 'menu-footer'
   | 'pages-builder'

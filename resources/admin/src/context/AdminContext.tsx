@@ -8,6 +8,7 @@ import { fetchMenus, saveMenuDocument } from '../integration/menuData';
 import { customerDirectoryToCustomers, deleteCustomerData, fetchCustomerDirectoryData, saveCustomerData } from '../integration/customerDirectoryData';
 import { fetchOrders, processOrderRefundData, updateOrderStatusData, updateOrderTrackingData } from '../integration/orderData';
 import { fetchCommerceSettings, saveCommerceSettings } from '../integration/commerceSettingsData';
+import { loadStorefrontShellSettings, saveStorefrontShellSettingsData } from '../integration/storefrontShellSettingsData';
 import {
   bulkModerateReviews as bulkModerateReviewsData,
   fetchReviewAudit as fetchReviewAuditData,
@@ -38,6 +39,8 @@ import {
   ReviewModerationResult,
   StaffUser,
   ShopGeneralSettings,
+  StorefrontShellSettings,
+  DEFAULT_STOREFRONT_SHELL_SETTINGS,
   MarketplacePlatform,
   MarketplaceConnection,
   MarketplaceOrder,
@@ -192,6 +195,9 @@ interface AdminContextType {
   deleteFooterMenuL1: (id: string) => void;
   saveFooterMenuL2: (l1Id: string, item: FooterMenuL2) => void;
   deleteFooterMenuL2: (l1Id: string, l2Id: string) => void;
+  storefrontShellSettings: StorefrontShellSettings;
+  refreshStorefrontShellSettings: () => Promise<void>;
+  saveStorefrontShellSettings: (settings: StorefrontShellSettings) => Promise<StorefrontShellSettings | null>;
 
   // Catalog CRUD
   categories: Category[];
@@ -569,6 +575,18 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     let active = true;
+    void loadStorefrontShellSettings(laravelBootstrap).then((settings) => {
+      if (active) setStorefrontShellSettings(settings);
+    }).catch(() => {
+      if (active) addToast({ type: 'error', title: 'Storefront Shell Unavailable', message: 'Unable to load header and announcement settings from Laravel.' });
+    });
+    return () => { active = false; };
+  // Laravel emits this immutable bootstrap once per admin app load.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let active = true;
     void fetchCatalog(laravelBootstrap)
       .then((catalog) => {
         if (!active) return;
@@ -655,6 +673,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Entities
   const [headerMenus, setHeaderMenus] = useState<HeaderMenuL1[]>([]);
   const [footerMenus, setFooterMenus] = useState<FooterMenuL1[]>([]);
+  const [storefrontShellSettings, setStorefrontShellSettings] = useState<StorefrontShellSettings>(DEFAULT_STOREFRONT_SHELL_SETTINGS);
   const [categories, setCategories] = useState<Category[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -3829,6 +3848,33 @@ Would you like me to drill down into customer records, inventory allocation, or 
     });
   };
 
+  const refreshStorefrontShellSettings = async (): Promise<void> => {
+    const settings = await loadStorefrontShellSettings(laravelBootstrap);
+    setStorefrontShellSettings(settings);
+  };
+
+  const saveStorefrontShellSettings = async (
+    settings: StorefrontShellSettings,
+  ): Promise<StorefrontShellSettings | null> => {
+    try {
+      const saved = await saveStorefrontShellSettingsData(laravelBootstrap, settings);
+      setStorefrontShellSettings(saved);
+      addToast({
+        type: 'success',
+        title: 'Storefront Header Saved',
+        message: 'Header & announcement live settings updated.',
+      });
+      return saved;
+    } catch (error) {
+      addToast({
+        type: 'error',
+        title: 'Storefront Header Save Failed',
+        message: error instanceof Error ? error.message : 'Unable to save storefront header settings.',
+      });
+      return null;
+    }
+  };
+
   const resetToDefaults = () => {
     void fetchMenus(laravelBootstrap).then(menus => {
       setHeaderMenus(menus.headerMenus);
@@ -3842,6 +3888,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
     void fetchPages(laravelBootstrap).then(setPages).catch(() => undefined);
     void fetchCustomerDirectoryData(laravelBootstrap).then(data => data && setCustomers(customerDirectoryToCustomers(data))).catch(() => undefined);
     void fetchOrders(laravelBootstrap).then(setOrders).catch(() => undefined);
+    void loadStorefrontShellSettings(laravelBootstrap).then(setStorefrontShellSettings).catch(() => undefined);
     setStaffUsers(INITIAL_STAFF_USERS);
     setShopSettings(INITIAL_SHOP_SETTINGS);
     setConnections(INITIAL_MARKETPLACE_CONNECTIONS);
@@ -3911,6 +3958,9 @@ Would you like me to drill down into customer records, inventory allocation, or 
         deleteFooterMenuL1,
         saveFooterMenuL2,
         deleteFooterMenuL2,
+        storefrontShellSettings,
+        refreshStorefrontShellSettings,
+        saveStorefrontShellSettings,
         categories,
         saveCategory,
         deleteCategory,

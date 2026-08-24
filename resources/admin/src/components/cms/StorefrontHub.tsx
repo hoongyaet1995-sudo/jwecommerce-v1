@@ -6,21 +6,43 @@ import {
   PanelBottom,
   ArrowRight,
   Sparkles,
-  Layers,
-  Eye,
-  CheckCircle2,
-  SlidersHorizontal,
-  Compass
+  Megaphone,
 } from 'lucide-react';
 
 export const StorefrontHub: React.FC = () => {
-  const { setCurrentSection, pages = [], headerMenus = [], footerMenus = [] } = useAdmin();
+  const {
+    setCurrentSection,
+    pages = [],
+    headerMenus = [],
+    footerMenus = [],
+    storefrontShellSettings,
+  } = useAdmin();
 
-  const publishedPages = (pages || []).filter((p) => p.status === 'published').length;
-  const headerL1Count = (headerMenus || []).length;
-  const footerL1Count = (footerMenus || []).length;
+  const publishedPages = pages.filter((page) => page.status === 'published').length;
+  const headerL1Count = headerMenus.length;
+  const footerL1Count = footerMenus.length;
+  const announcementEnabled = storefrontShellSettings.enabled;
 
   const cards = [
+    {
+      id: 'storefront-header-announcement' as const,
+      title: 'Header & Announcement Bar',
+      shortName: 'Top Notice & Layout Studio',
+      description: 'Manage the top storefront notice bar (slogans, campaigns, free shipping thresholds, logistics tracking & WhatsApp hotline) and header layout templates.',
+      icon: Megaphone,
+      iconBg: 'from-amber-500 to-rose-600',
+      badge: announcementEnabled ? 'Active Live' : 'Disabled',
+      badgeColor: announcementEnabled
+        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
+        : 'bg-neutral-500/10 text-neutral-500 border-neutral-500/20',
+      highlights: [
+        '3-Zone Notices (Slogan, Promo Voucher, Logistics Tracker)',
+        'Preset Marketing Color Themes & Custom Hex Palettes',
+        'Direct WhatsApp Hotline & Order Tracking Integration',
+        '5 Header Layout Templates & Utility Controls',
+      ],
+      actionLabel: 'Edit Announcement & Header',
+    },
     {
       id: 'pages-builder' as const,
       title: 'Design Layout Pages (CMS)',
@@ -76,7 +98,6 @@ export const StorefrontHub: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Banner */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-neutral-900 via-purple-950 to-neutral-900 border border-neutral-800 p-6 sm:p-8 text-white shadow-lg">
         <div className="relative z-10 space-y-2 max-w-2xl">
           <div className="flex items-center gap-2">
@@ -94,34 +115,37 @@ export const StorefrontHub: React.FC = () => {
           </p>
         </div>
 
-        {/* Quick KPI Bar */}
-        <div className="mt-6 pt-6 border-t border-neutral-800 grid grid-cols-3 gap-4">
+        <div className="mt-6 pt-6 border-t border-neutral-800 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+            <p className="text-[11px] font-medium text-neutral-400">Announcement Bar</p>
+            <p className="text-xl font-bold text-white mt-0.5">{announcementEnabled ? 'Enabled' : 'Off'}</p>
+            <span className="text-[10px] text-amber-400">3-zone notice banner</span>
+          </div>
           <div className="p-3 rounded-xl bg-white/5 border border-white/5">
             <p className="text-[11px] font-medium text-neutral-400">Total CMS Pages</p>
             <p className="text-xl font-bold text-white mt-0.5">{pages.length}</p>
             <span className="text-[10px] text-emerald-400">{publishedPages} Published live</span>
           </div>
           <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-            <p className="text-[11px] font-medium text-neutral-400">Header Menu Structure</p>
+            <p className="text-[11px] font-medium text-neutral-400">Header Menu</p>
             <p className="text-xl font-bold text-white mt-0.5">3-Tier</p>
-            <span className="text-[10px] text-indigo-400">{headerL1Count} primary navigation pillars</span>
+            <span className="text-[10px] text-indigo-400">{headerL1Count} pillars</span>
           </div>
           <div className="p-3 rounded-xl bg-white/5 border border-white/5">
             <p className="text-[11px] font-medium text-neutral-400">Footer Columns</p>
-            <p className="text-xl font-bold text-white mt-0.5">{footerL1Count} Columns</p>
+            <p className="text-xl font-bold text-white mt-0.5">{footerL1Count} Cols</p>
             <span className="text-[10px] text-purple-400">Structured layout</span>
           </div>
         </div>
       </div>
 
-      {/* Feature Cards Grid */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Storefront Modules</h2>
           <span className="text-xs text-neutral-500">Select a module to edit layout</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-5">
           {cards.map((card) => {
             const Icon = card.icon;
             return (
@@ -132,9 +156,7 @@ export const StorefrontHub: React.FC = () => {
               >
                 <div>
                   <div className="flex items-start justify-between gap-3">
-                    <div
-                      className={`w-11 h-11 rounded-xl bg-gradient-to-tr ${card.iconBg} flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform`}
-                    >
+                    <div className={`w-11 h-11 rounded-xl bg-gradient-to-tr ${card.iconBg} flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform`}>
                       <Icon className="w-5 h-5" />
                     </div>
                     <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${card.badgeColor}`}>
@@ -154,10 +176,10 @@ export const StorefrontHub: React.FC = () => {
                   </p>
 
                   <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800/80 space-y-1.5">
-                    {card.highlights.map((h, i) => (
-                      <div key={i} className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                    {card.highlights.map((highlight) => (
+                      <div key={highlight} className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
                         <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
-                        <span className="truncate">{h}</span>
+                        <span className="truncate">{highlight}</span>
                       </div>
                     ))}
                   </div>

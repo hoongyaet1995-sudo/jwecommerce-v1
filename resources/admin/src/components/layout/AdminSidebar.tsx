@@ -111,6 +111,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
 
   const isStorefrontActive =
     currentSection === 'storefront' ||
+    currentSection === 'storefront-header-announcement' ||
     currentSection === 'pages-builder' ||
     currentSection === 'menu-header' ||
     currentSection === 'menu-footer';
@@ -221,6 +222,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
       badgeVariant: 'info',
       subItems: [
         { id: 'storefront' as NavSection, label: 'Overview Hub' },
+        { id: 'storefront-header-announcement' as NavSection, label: 'Header & Announcement' },
         { id: 'pages-builder' as NavSection, label: 'Page Builder' },
         { id: 'menu-header' as NavSection, label: 'Header Mega Menu' },
         { id: 'menu-footer' as NavSection, label: 'Footer Menu' },
