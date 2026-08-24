@@ -66,9 +66,11 @@ describe('catalogHubMetrics', () => {
     const appSource = readFileSync(new URL('./App.tsx', import.meta.url), 'utf8');
     const sidebarSource = readFileSync(new URL('./components/layout/AdminSidebar.tsx', import.meta.url), 'utf8');
     const catalogHubSource = readFileSync(new URL('./components/catalog/CatalogHub.tsx', import.meta.url), 'utf8');
+    const reviewAdminSource = readFileSync(new URL('./components/catalog/ProductReviewsAdmin.tsx', import.meta.url), 'utf8');
 
     expect(appSource).toContain("case 'catalog-reviews':");
     expect(sidebarSource).toContain("{ id: 'catalog-reviews' as NavSection, label: 'Product Reviews' }");
     expect(catalogHubSource).toContain('pendingReviewsCount');
+    expect(reviewAdminSource).not.toContain("if (publishedCount === 0) return '5.0'");
   });
 });
