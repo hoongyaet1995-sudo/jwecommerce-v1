@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Models\User;
 use App\Services\StorefrontShellSettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 final class StorefrontShellSettingsApiTest extends TestCase
@@ -142,6 +143,69 @@ final class StorefrontShellSettingsApiTest extends TestCase
             ->putJson('/admin/api/storefront-shell-settings', $payload)
             ->assertUnprocessable()
             ->assertJsonValidationErrors('zones.left.linkUrl');
+    }
+
+    public function test_enabled_zones_require_live_copy_and_utility_urls(): void
+    {
+        $cases = [
+            'left text' => function (array $payload): array {
+                $payload['zones']['left']['enabled'] = true;
+                $payload['zones']['left']['text'] = '';
+
+                return [$payload, 'zones.left.text'];
+            },
+            'center text' => function (array $payload): array {
+                $payload['zones']['center']['enabled'] = true;
+                $payload['zones']['center']['text'] = '';
+
+                return [$payload, 'zones.center.text'];
+            },
+            'tracking url' => function (array $payload): array {
+                $payload['zones']['right']['trackingEnabled'] = true;
+                $payload['zones']['right']['trackingUrl'] = null;
+
+                return [$payload, 'zones.right.trackingUrl'];
+            },
+            'whatsapp url' => function (array $payload): array {
+                $payload['zones']['right']['whatsappEnabled'] = true;
+                $payload['zones']['right']['whatsappUrl'] = null;
+
+                return [$payload, 'zones.right.whatsappUrl'];
+            },
+        ];
+
+        foreach ($cases as $label => $mutate) {
+            [$payload, $field] = $mutate($this->defaultPayload());
+
+            $this->actingAs($this->admin())
+                ->putJson('/admin/api/storefront-shell-settings', $payload)
+                ->assertUnprocessable($label)
+                ->assertJsonValidationErrors($field);
+        }
+    }
+
+    public function test_api_save_rebuilds_the_canonical_global_singleton_when_rogue_rows_exist(): void
+    {
+        DB::table('storefront_shell_settings')->insert([
+            'key' => 'rogue',
+            'payload' => json_encode(['enabled' => true], JSON_THROW_ON_ERROR),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $payload = $this->defaultPayload();
+        $payload['enabled'] = true;
+        $payload['zones']['left']['enabled'] = true;
+        $payload['zones']['left']['text'] = 'Canonical only';
+
+        $this->actingAs($this->admin())
+            ->putJson('/admin/api/storefront-shell-settings', $payload)
+            ->assertOk()
+            ->assertJsonPath('zones.left.text', 'Canonical only');
+
+        $this->assertDatabaseCount('storefront_shell_settings', 1);
+        $this->assertDatabaseHas('storefront_shell_settings', ['key' => 'global']);
+        $this->assertDatabaseMissing('storefront_shell_settings', ['key' => 'rogue']);
     }
 
     private function admin(): User

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Domain\Cms\MediaUrlPolicy;
 use App\Models\StorefrontShellSetting;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class StorefrontShellSettingsService
@@ -36,12 +37,12 @@ class StorefrontShellSettingsService
             'zones' => ['required', 'array'],
             'zones.left' => ['required', 'array'],
             'zones.left.enabled' => ['required', 'boolean'],
-            'zones.left.text' => ['nullable', 'string', 'max:255'],
+            'zones.left.text' => ['nullable', 'string', 'max:255', 'required_if:zones.left.enabled,true'],
             'zones.left.badge' => ['nullable', 'string', 'max:80'],
             'zones.left.linkUrl' => ['nullable', 'string', 'max:2048'],
             'zones.center' => ['required', 'array'],
             'zones.center.enabled' => ['required', 'boolean'],
-            'zones.center.text' => ['nullable', 'string', 'max:255'],
+            'zones.center.text' => ['nullable', 'string', 'max:255', 'required_if:zones.center.enabled,true'],
             'zones.center.couponCode' => ['nullable', 'string', 'max:80'],
             'zones.center.linkUrl' => ['nullable', 'string', 'max:2048'],
             'zones.right' => ['required', 'array'],
@@ -49,10 +50,10 @@ class StorefrontShellSettingsService
             'zones.right.helperText' => ['nullable', 'string', 'max:255'],
             'zones.right.trackingEnabled' => ['required', 'boolean'],
             'zones.right.trackingLabel' => ['nullable', 'string', 'max:80'],
-            'zones.right.trackingUrl' => ['nullable', 'string', 'max:2048'],
+            'zones.right.trackingUrl' => ['nullable', 'string', 'max:2048', 'required_if:zones.right.trackingEnabled,true'],
             'zones.right.whatsappEnabled' => ['required', 'boolean'],
             'zones.right.whatsappLabel' => ['nullable', 'string', 'max:80'],
-            'zones.right.whatsappUrl' => ['nullable', 'string', 'max:2048'],
+            'zones.right.whatsappUrl' => ['nullable', 'string', 'max:2048', 'required_if:zones.right.whatsappEnabled,true'],
         ]);
 
         $validator->after(function ($validator) use ($input): void {
@@ -64,10 +65,20 @@ class StorefrontShellSettingsService
 
         $validator->validate();
 
-        return StorefrontShellSetting::query()->updateOrCreate(
-            ['key' => self::GLOBAL_KEY],
-            ['payload' => $this->normalize($input)],
-        );
+        return DB::transaction(function () use ($input): StorefrontShellSetting {
+            StorefrontShellSetting::query()
+                ->where('key', '!=', self::GLOBAL_KEY)
+                ->delete();
+
+            $setting = StorefrontShellSetting::query()
+                ->where('key', self::GLOBAL_KEY)
+                ->first() ?? new StorefrontShellSetting();
+            $setting->key = self::GLOBAL_KEY;
+            $setting->payload = $this->normalize($input);
+            $setting->save();
+
+            return $setting->fresh();
+        });
     }
 
     /**
