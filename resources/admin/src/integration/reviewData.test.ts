@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { fetchReviewAuditForContext } from '../context/AdminContext';
 import type { LaravelAdminBootstrap } from '../types';
 import {
   bulkModerateReviews,
@@ -154,6 +155,24 @@ describe('Laravel review data adapter', () => {
         'X-CSRF-TOKEN': 'csrf-token',
       },
       body: JSON.stringify({ reviewIds: ['17'], action: 'publish', reason: undefined }),
+    });
+  });
+
+  it('rethrows audit fetch failures so context callers can distinguish request errors from empty history', async () => {
+    const request = vi.fn().mockResolvedValue(jsonResponse({
+      message: 'Review audit is temporarily unavailable.',
+    }, 503));
+    const addToast = vi.fn();
+    vi.stubGlobal('window', { fetch: request });
+
+    await expect(fetchReviewAuditForContext(bootstrap, '17', addToast)).rejects.toThrow(
+      'Review audit is temporarily unavailable.',
+    );
+
+    expect(addToast).toHaveBeenCalledWith({
+      type: 'error',
+      title: 'Audit Unavailable',
+      message: 'Review audit is temporarily unavailable.',
     });
   });
 });

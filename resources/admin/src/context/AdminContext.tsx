@@ -133,6 +133,20 @@ interface Toast {
   message: string;
 }
 
+export const fetchReviewAuditForContext = async (
+  laravelBootstrap: ReturnType<typeof readAdminBootstrap>,
+  reviewId: string,
+  addToast: (toast: Omit<Toast, 'id'>) => void,
+): Promise<AdminProductReviewAuditEvent[]> => {
+  try {
+    return await fetchReviewAuditData(laravelBootstrap, reviewId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to load review audit history.';
+    addToast({ type: 'error', title: 'Audit Unavailable', message });
+    throw error instanceof Error ? error : new Error(message);
+  }
+};
+
 interface AdminContextType {
   // Navigation & Theme
   currentSection: NavSection;
@@ -1104,12 +1118,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const fetchReviewAudit = async (reviewId: string): Promise<AdminProductReviewAuditEvent[]> => {
-    try {
-      return await fetchReviewAuditData(laravelBootstrap, reviewId);
-    } catch (error) {
-      addToast({ type: 'error', title: 'Audit Unavailable', message: error instanceof Error ? error.message : 'Unable to load review audit history.' });
-      return [];
-    }
+    return fetchReviewAuditForContext(laravelBootstrap, reviewId, addToast);
   };
 
   const moderateReview = async (
