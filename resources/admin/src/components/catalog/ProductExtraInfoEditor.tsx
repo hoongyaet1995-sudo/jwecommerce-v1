@@ -1046,10 +1046,12 @@ export const ProductExtraInfoEditor: React.FC<ProductExtraInfoEditorProps> = ({
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs font-bold text-neutral-900 dark:text-white">{rev.buyerName}</span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
-                        <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                        <span>Verified Buyer</span>
-                      </span>
+                      {rev.verifiedBuyer && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                          <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                          <span>Verified Buyer</span>
+                        </span>
+                      )}
                       <span className="text-[11px] text-neutral-400 font-mono">
                         Order: {rev.orderNumber}
                       </span>

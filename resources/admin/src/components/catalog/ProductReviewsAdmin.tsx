@@ -13,7 +13,6 @@ import {
   Maximize2,
   MessageSquare,
   Package,
-  RefreshCw,
   Search,
   ShieldCheck,
   ShoppingBag,
@@ -45,7 +44,6 @@ export const ProductReviewsAdmin: React.FC = () => {
   const {
     reviews = [],
     products = [],
-    refreshReviews,
     reviewFilterProductId,
     setReviewFilterProductId,
     moderateReview,
@@ -80,7 +78,7 @@ export const ProductReviewsAdmin: React.FC = () => {
   const totalCount = reviews.length;
 
   const avgPublishedRating = useMemo(() => {
-    if (publishedCount === 0) return '5.0';
+    if (publishedCount === 0) return '0.0';
     const totalRating = reviews
       .filter((review) => review.status === 'published')
       .reduce((sum, review) => sum + review.rating, 0);
@@ -262,14 +260,6 @@ export const ProductReviewsAdmin: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => void refreshReviews()}
-            className="px-3 py-2 text-xs font-semibold rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
-          >
-            <RefreshCw className="w-3.5 h-3.5 text-neutral-400" />
-            <span>Refresh Queue</span>
-          </button>
           <button
             type="button"
             onClick={() => setCurrentSection('catalog-products')}
@@ -925,9 +915,11 @@ export const ProductReviewsAdmin: React.FC = () => {
                     <ShieldCheck className="w-4 h-4 text-emerald-600" />
                     <span>Purchase Evidence & Order Metadata</span>
                   </h4>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold text-[10px]">
-                    ✓ Verified Buyer Match
-                  </span>
+                  {activeReviewForDrawer.verifiedBuyer && (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold text-[10px]">
+                      ✓ Verified Buyer Match
+                    </span>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-xs">

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const editor = readFileSync(fileURLToPath(new URL('./ProductEditorModal.tsx', import.meta.url)), 'utf8');
 const contentEditor = readFileSync(fileURLToPath(new URL('./ProductExtraInfoEditor.tsx', import.meta.url)), 'utf8');
+const reviewAdmin = readFileSync(fileURLToPath(new URL('./ProductReviewsAdmin.tsx', import.meta.url)), 'utf8');
 
 describe('Product PDP content editor source fidelity', () => {
   it('keeps the ZIP-owned Tab 4 hierarchy and defers storefront consumption', () => {
@@ -22,5 +23,11 @@ describe('Product PDP content editor source fidelity', () => {
     expect((contentEditor.match(/RefreshCw/g) ?? []).length).toBeGreaterThanOrEqual(4);
     expect(contentEditor).toContain('Select 1 to 4 complementary products');
     expect(contentEditor).not.toContain("from '../../storefront");
+  });
+
+  it('keeps verified buyer badges conditional and avoids ZIP-external review controls', () => {
+    expect(contentEditor).toContain('{rev.verifiedBuyer && (');
+    expect(reviewAdmin).toContain('{activeReviewForDrawer.verifiedBuyer && (');
+    expect(reviewAdmin).not.toContain('Refresh Queue');
   });
 });
