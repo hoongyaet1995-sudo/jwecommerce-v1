@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Reviews\ReviewPermission;
 use App\Http\Controllers\Controller;
 use App\Support\ViteManifestEntry;
 use Illuminate\Http\Request;
@@ -15,17 +16,29 @@ class AdminAppController extends Controller
     {
         $entry = $this->manifest->resolve('src/main.tsx');
         $user = $request->user();
+        $reviewPermissions = $user->is_super_admin
+            ? ReviewPermission::ALL
+            : collect(ReviewPermission::ALL)
+                ->filter(fn (string $permission): bool => $user->permissions()->where('permission', $permission)->exists())
+                ->values();
 
         $bootstrap = [
             'user' => [
+                'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'avatar' => null,
+                'isSuperAdmin' => $user->is_super_admin,
+                'reviewPermissions' => $reviewPermissions,
             ],
+            'reviewPermissions' => $reviewPermissions,
             'csrfToken' => csrf_token(),
             'logoutUrl' => route('logout'),
             'dashboardUrl' => route('admin.api.dashboard'),
             'customersUrl' => route('admin.api.customers'),
+            'reviewsUrl' => route('admin.api.reviews.index'),
+            'reviewBulkModerateUrl' => route('admin.api.reviews.bulk-moderate'),
+            'staffReviewPermissionsUrl' => route('admin.api.staff.review-permissions.index'),
             'pagesUrl' => route('admin.api.pages.index'),
             'mediaAssetsUrl' => route('admin.api.media-assets.store'),
             'catalogUrl' => route('admin.api.catalog.index'),
