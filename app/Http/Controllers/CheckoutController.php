@@ -28,6 +28,7 @@ class CheckoutController extends Controller
         CartPricingService $pricing,
         PaymentConfigurationService $payments,
         ShippingConfigurationService $shipping,
+        StorefrontCurrencyContext $currency,
     ): View|RedirectResponse
     {
         $items = $this->items($request);
@@ -35,11 +36,19 @@ class CheckoutController extends Controller
         $coupon = Coupon::query()->currentlyValid()->where('code', $request->session()->get('coupon_code'))->first();
         $user = $request->user();
 
+        $summary = $pricing->summarize($items, $coupon);
+        $paymentMethodModels = $payments->checkoutMethods([
+            'currency' => $currency->current()['code'],
+            'amount' => $summary['total'],
+            'address' => [],
+        ]);
+
         return view('storefront.checkout', [
             'items' => $items,
             'coupon' => $coupon,
-            'summary' => $pricing->summarize($items, $coupon),
-            'paymentMethods' => $payments->enabledStorefrontMethods(),
+            'summary' => $summary,
+            'paymentMethods' => collect($paymentMethodModels)->mapWithKeys(fn (array $method, string $id): array => [$id => $method['label']])->all(),
+            'paymentMethodModels' => $paymentMethodModels,
             'deliveryOptions' => $shipping->checkoutOptions($items, $coupon),
             'checkoutEmail' => $user?->customer ? $user->email : null,
         ]);

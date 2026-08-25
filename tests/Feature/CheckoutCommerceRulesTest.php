@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Coupon;
+use App\Models\PaymentGatewayCredential;
 use App\Models\Product;
 use App\Models\StoreSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,7 +19,7 @@ class CheckoutCommerceRulesTest extends TestCase
         $variant = $this->variant();
         $coupon = Coupon::query()->create(['code'=>'ONEUSE','name'=>'One use','discount_type'=>'percentage','value'=>10,'usage_limit'=>1,'usage_count'=>0,'per_customer_limit'=>1,'is_active'=>true]);
         StoreSetting::query()->updateOrCreate(['key'=>'shipping_rates'],['value'=>['data'=>[['id'=>'standard','name'=>'Standard Delivery','zoneRegion'=>'all','logisticType'=>'all','calculationMode'=>'per_order','rateType'=>'flat','tiers'=>[],'flatRateCost'=>12.5,'freeShippingThreshold'=>200,'isActive'=>true]]]]);
-        StoreSetting::query()->updateOrCreate(['key'=>'payment_gateways'],['value'=>['data'=>[['id'=>'paypal','isEnabled'=>true]]]]);
+        $this->configureGateway('paypal');
 
         $response = $this->withSession(['cart'=>[$variant->id=>1], 'coupon_code'=>'ONEUSE'])->post('/checkout', $this->checkoutData());
         $response->assertRedirect('/order/success');
@@ -47,7 +48,8 @@ class CheckoutCommerceRulesTest extends TestCase
             ['id'=>'sabah','name'=>'Standard Sabah','zoneRegion'=>'sabah','logisticType'=>'all','calculationMode'=>'per_order','rateType'=>'flat','tiers'=>[],'flatRateCost'=>20,'isActive'=>true],
             ['id'=>'peninsular','name'=>'Standard Peninsular','zoneRegion'=>'peninsular','logisticType'=>'all','calculationMode'=>'per_order','rateType'=>'flat','tiers'=>[],'flatRateCost'=>8,'isActive'=>true],
         ]]]);
-        $data = $this->checkoutData(); $data['state'] = 'Sabah'; $data['payment_method'] = 'simulated_card';
+        $this->configureGateway('paypal');
+        $data = $this->checkoutData(); $data['state'] = 'Sabah';
         $this->withSession(['cart'=>[$variant->id=>1]])->post('/checkout', $data)->assertRedirect('/order/success');
         $this->assertDatabaseHas('orders', ['shipping_amount'=>2000,'total'=>12000]);
     }
@@ -55,6 +57,8 @@ class CheckoutCommerceRulesTest extends TestCase
     public function test_checkout_only_renders_database_enabled_payment_and_delivery_methods(): void
     {
         $variant = $this->variant();
+        $this->configureGateway('stripe');
+        $this->configureGateway('paypal');
         $this->withSession(['cart'=>[$variant->id=>1]])->get('/checkout')->assertOk()
             ->assertSee('Standard Delivery')->assertDontSee('White-Glove VIP Same Day Courier')
             ->assertSee('Credit Card')->assertSee('PayPal')->assertDontSee('Crypto (USDC)');
@@ -63,6 +67,7 @@ class CheckoutCommerceRulesTest extends TestCase
     public function test_checkout_snapshots_the_shoppers_selected_currency_and_fx_rate(): void
     {
         $variant = $this->variant();
+        $this->configureGateway('paypal');
         StoreSetting::query()->updateOrCreate(['key' => 'currencies'], ['value' => ['data' => [
             ['id' => 'MYR', 'code' => 'MYR', 'title' => 'Malaysian Ringgit', 'symbolLeft' => 'RM ', 'symbolRight' => '', 'decimalPlaces' => 2, 'exchangeRate' => 1, 'isDefault' => true, 'isEnabled' => true],
             ['id' => 'USD', 'code' => 'USD', 'title' => 'US Dollar', 'symbolLeft' => '$', 'symbolRight' => '', 'decimalPlaces' => 2, 'exchangeRate' => 0.2245, 'isDefault' => false, 'isEnabled' => true],
@@ -88,5 +93,32 @@ class CheckoutCommerceRulesTest extends TestCase
         $category = Category::query()->create(['name'=>'Audio','slug'=>'audio','status'=>'active']);
         $product = Product::query()->create(['category_id'=>$category->id,'title'=>'Studio Headphones','handle'=>'studio-headphones','brand'=>'JW Studio','description'=>'Test','base_price'=>10000,'status'=>'active']);
         return $product->variants()->create(['sku'=>'STUDIO-1','title'=>'Default','price'=>10000,'stock'=>10,'enabled'=>true]);
+    }
+
+    private function configureGateway(string $gateway): void
+    {
+        $credentials = match ($gateway) {
+            'stripe' => ['publishableKey' => 'pk_test_public', 'secretKey' => 'sk_test_private', 'webhookSecret' => 'whsec_test_private'],
+            'paypal' => ['clientId' => 'paypal_test_client', 'clientSecret' => 'paypal_test_secret'],
+        };
+
+        $configured = data_get(StoreSetting::query()->where('key', 'payment_gateways')->value('value'), 'data', []);
+        $configured = collect(is_array($configured) ? $configured : [])
+            ->reject(fn (array $item): bool => ($item['id'] ?? null) === $gateway)
+            ->values()
+            ->all();
+        $configured[] = [
+            'id' => $gateway,
+            'name' => $gateway === 'stripe' ? 'Credit Card' : 'PayPal',
+            'isEnabled' => true,
+            'isSandbox' => true,
+            'supportedCurrencies' => ['MYR', 'USD'],
+            'limits' => [],
+        ];
+        StoreSetting::query()->updateOrCreate(['key' => 'payment_gateways'], ['value' => ['data' => $configured]]);
+        PaymentGatewayCredential::query()->updateOrCreate(
+            ['gateway_id' => $gateway, 'environment' => 'sandbox'],
+            ['credentials' => $credentials],
+        );
     }
 }
