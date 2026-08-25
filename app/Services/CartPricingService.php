@@ -9,7 +9,7 @@ use Illuminate\Support\Collection;
 class CartPricingService
 {
     /** @param Collection<int, array{variant: \App\Models\ProductVariant, quantity: int}> $items */
-    public function summarize(Collection $items, ?Coupon $coupon = null, string $delivery = 'standard', ?array $shippingAddress = null): array
+    public function summarize(Collection $items, ?Coupon $coupon = null, string $delivery = 'standard', ?array $shippingAddress = null, int $paymentSurcharge = 0): array
     {
         $subtotal = $items->sum(fn (array $item): int => $item['variant']->price * $item['quantity']);
         $discount = $this->discountFor($subtotal, $coupon);
@@ -26,11 +26,12 @@ class CartPricingService
             'white_glove' => $shippingRate > 0 ? $shippingRate : 3500,
             default => $standardShipping,
         };
-        $taxable = max(0, $subtotal - $discount + $shipping);
+        $paymentSurcharge = max(0, $paymentSurcharge);
+        $taxable = max(0, $subtotal - $discount + $shipping + $paymentSurcharge);
         $taxRate = $setting('tax_rate_percent') ?: $setting('tax_rate');
         $tax = (int) floor($taxable * min(100, max(0, $taxRate)) / 100);
 
-        return ['subtotal' => $subtotal, 'discount' => $discount, 'shipping' => $shipping, 'tax' => $tax, 'total' => max(0, $subtotal - $discount + $shipping + $tax)];
+        return ['subtotal' => $subtotal, 'discount' => $discount, 'shipping' => $shipping, 'payment_surcharge' => $paymentSurcharge, 'tax' => $tax, 'total' => max(0, $subtotal - $discount + $shipping + $paymentSurcharge + $tax)];
     }
 
     public function deliveryLabel(string $delivery): string
