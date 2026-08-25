@@ -133,6 +133,51 @@ class CheckoutSavedAddressTest extends TestCase
         $this->assertSame('Edited at checkout', $order->addresses->sole()->line_1);
     }
 
+    public function test_checkout_accepts_the_full_malaysia_country_name_saved_by_the_customer_address_form_for_cod(): void
+    {
+        [$user, $customer] = $this->customer();
+        $variant = $this->variant();
+        CustomerAddress::query()->create([
+            'customer_id' => $customer->id,
+            'label' => 'Home',
+            'is_default' => true,
+            'first_name' => 'Tee',
+            'last_name' => 'Qiao Jing',
+            'line_1' => 'No 1, Jalan 11/3',
+            'city' => 'Petaling Jaya',
+            'state' => 'Selangor',
+            'postal_code' => '45600',
+            'country' => 'MALAYSIA',
+        ]);
+        StoreSetting::query()->updateOrCreate(['key' => 'cod_config'], ['value' => ['data' => [
+            'isEnabled' => true,
+            'minOrderAmount' => 0,
+            'maxOrderAmount' => 0,
+            'allowedRegions' => 'all',
+            'surchargeType' => 'fixed',
+            'surchargeAmount' => 0,
+        ]]]);
+
+        $this->actingAs($user, 'customer')
+            ->withSession(['cart' => [$variant->id => 1]])
+            ->post('/checkout', [
+                'email' => $user->email,
+                'first_name' => 'Tee',
+                'last_name' => 'Qiao Jing',
+                'phone' => '0143233862',
+                'line_1' => 'No 1, Jalan 11/3',
+                'city' => 'Petaling Jaya',
+                'state' => 'Selangor',
+                'postal_code' => '45600',
+                'country' => 'MALAYSIA',
+                'delivery' => 'standard',
+                'payment_method' => 'cod',
+            ])
+            ->assertRedirect('/order/success');
+
+        $this->assertSame('MY', Order::query()->sole()->addresses()->sole()->country);
+    }
+
     /** @return array{User, Customer} */
     private function customer(): array
     {
