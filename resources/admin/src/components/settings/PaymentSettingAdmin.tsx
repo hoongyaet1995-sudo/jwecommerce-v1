@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import {
   PaymentGatewayConfig,
@@ -74,6 +74,18 @@ export const PaymentSettingAdmin: React.FC = () => {
   const [codForm, setCodForm] = useState({ ...codConfig });
   const [bankForm, setBankForm] = useState({ ...bankTransferConfig });
   const [rulesForm, setRulesForm] = useState({ ...globalPaymentSettings });
+
+  useEffect(() => {
+    setBankForm({ ...bankTransferConfig });
+  }, [bankTransferConfig]);
+
+  useEffect(() => {
+    setCodForm({ ...codConfig });
+  }, [codConfig]);
+
+  useEffect(() => {
+    setRulesForm({ ...globalPaymentSettings });
+  }, [globalPaymentSettings]);
 
   // Simulator state
   const [simCartTotal, setSimCartTotal] = useState<number>(185.00);
@@ -694,7 +706,7 @@ export const PaymentSettingAdmin: React.FC = () => {
                   <p className="text-[11px] text-neutral-500">Cap max COD value to prevent fraud and carrier risk</p>
                   <input
                     type="number"
-                    min="50"
+                    min="0"
                     value={codForm.maxOrderAmount}
                     onChange={e => setCodForm({ ...codForm, maxOrderAmount: parseFloat(e.target.value) || 0 })}
                     className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs font-bold"
