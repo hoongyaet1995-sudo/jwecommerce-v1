@@ -85,6 +85,8 @@ class PaymentMethodAvailabilityTest extends TestCase
         $this->withSession(['cart' => [$variant->id => 1]])->get('/checkout')
             ->assertOk()
             ->assertSee('Bank / DuitNow')
+            ->assertSee('Bank transfer instructions')
+            ->assertSee('Pending Verification')
             ->assertDontSee('Credit Card');
     }
 
