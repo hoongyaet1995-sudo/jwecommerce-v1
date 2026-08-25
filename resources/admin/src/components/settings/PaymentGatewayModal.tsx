@@ -20,7 +20,7 @@ interface PaymentGatewayModalProps {
   isOpen: boolean;
   onClose: () => void;
   gateway: PaymentGatewayConfig | null;
-  onSave: (config: PaymentGatewayConfig) => void;
+  onSave: (config: PaymentGatewayConfig) => Promise<boolean>;
   onPing: (id: PaymentGatewayConfig['id']) => Promise<number>;
 }
 
@@ -63,11 +63,11 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData) {
-      onSave(formData);
-      onClose();
+      const saved = await onSave(formData);
+      if (saved) onClose();
     }
   };
 
@@ -300,7 +300,7 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
                     <input
                       type="text"
                       value={formData.credentials.merchantId || formData.credentials.clientId || formData.credentials.partnerId || ''}
-                      onChange={e => updateCredential(formData.credentials.clientId ? 'clientId' : (formData.credentials.partnerId ? 'partnerId' : 'merchantId'), e.target.value)}
+                      onChange={e => updateCredential(formData.id === 'paypal' ? 'clientId' : (formData.credentials.clientId ? 'clientId' : (formData.credentials.partnerId ? 'partnerId' : 'merchantId')), e.target.value)}
                       placeholder="Merchant identifier"
                       className="w-full mt-1 px-3.5 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs font-mono"
                     />
@@ -310,7 +310,7 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
                     <input
                       type="password"
                       value={formData.credentials.secretKey || formData.credentials.clientSecret || formData.credentials.apiKey || ''}
-                      onChange={e => updateCredential(formData.credentials.clientSecret ? 'clientSecret' : (formData.credentials.apiKey ? 'apiKey' : 'secretKey'), e.target.value)}
+                      onChange={e => updateCredential(formData.id === 'paypal' ? 'clientSecret' : (formData.credentials.clientSecret ? 'clientSecret' : (formData.credentials.apiKey ? 'apiKey' : 'secretKey')), e.target.value)}
                       placeholder="Private key token"
                       className="w-full mt-1 px-3.5 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs font-mono"
                     />

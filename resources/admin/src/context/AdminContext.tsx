@@ -352,8 +352,8 @@ interface AdminContextType {
 
   // Payment Settings Module
   paymentGateways: PaymentGatewayConfig[];
-  savePaymentGateway: (config: PaymentGatewayConfig) => void;
-  togglePaymentGateway: (id: PaymentGatewayId, enabled: boolean) => void;
+  savePaymentGateway: (config: PaymentGatewayConfig) => Promise<boolean>;
+  togglePaymentGateway: (id: PaymentGatewayId, enabled: boolean) => Promise<void>;
   pingPaymentGateway: (id: PaymentGatewayId) => Promise<number>;
   bankTransferConfig: ManualBankTransferConfig;
   saveBankTransferConfig: (config: ManualBankTransferConfig) => void;
@@ -2648,27 +2648,43 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Payment Settings Handlers
-  const savePaymentGateway = (config: PaymentGatewayConfig) => {
+  const savePaymentGateway = async (config: PaymentGatewayConfig): Promise<boolean> => {
     const next = paymentGateways.map(gateway => gateway.id === config.id ? config : gateway);
-    setPaymentGateways(next);
-    persistCommerceDocument({ paymentGateways: next });
-    addToast({
-      type: 'success',
-      title: 'Payment Gateway Saved',
-      message: `${config.name} credentials and settings updated.`
-    });
+    try {
+      const document = await saveCommerceSettings(laravelBootstrap, {
+        shippingRates,
+        paymentGateways: next,
+        globalPayment: globalPaymentSettings,
+        bankTransfer: bankTransferConfig,
+        codConfig,
+        currencies: currenciesSetting,
+      });
+      setPaymentGateways(document.paymentGateways);
+      addToast({ type: 'success', title: 'Payment Gateway Saved', message: `${config.name} credentials and settings updated.` });
+      return true;
+    } catch (error) {
+      addToast({ type: 'error', title: 'Payment Gateway Save Failed', message: error instanceof Error ? error.message : 'Unable to save payment gateway.' });
+      return false;
+    }
   };
 
-  const togglePaymentGateway = (id: PaymentGatewayId, enabled: boolean) => {
+  const togglePaymentGateway = async (id: PaymentGatewayId, enabled: boolean): Promise<void> => {
     const next = paymentGateways.map(gateway => gateway.id === id ? { ...gateway, isEnabled: enabled } : gateway);
-    setPaymentGateways(next);
-    persistCommerceDocument({ paymentGateways: next });
     const gw = paymentGateways.find(g => g.id === id);
-    addToast({
-      type: enabled ? 'success' : 'info',
-      title: enabled ? 'Gateway Activated' : 'Gateway Deactivated',
-      message: `${gw?.name || id} is now ${enabled ? 'active for storefront checkouts' : 'disabled'}.`
-    });
+    try {
+      const document = await saveCommerceSettings(laravelBootstrap, {
+        shippingRates,
+        paymentGateways: next,
+        globalPayment: globalPaymentSettings,
+        bankTransfer: bankTransferConfig,
+        codConfig,
+        currencies: currenciesSetting,
+      });
+      setPaymentGateways(document.paymentGateways);
+      addToast({ type: enabled ? 'success' : 'info', title: enabled ? 'Gateway Activated' : 'Gateway Deactivated', message: `${gw?.name || id} is now ${enabled ? 'active for storefront checkouts' : 'disabled'}.` });
+    } catch (error) {
+      addToast({ type: 'error', title: 'Gateway Update Rejected', message: error instanceof Error ? error.message : 'Configure gateway credentials before enabling it.' });
+    }
   };
 
   const pingPaymentGateway = async (id: PaymentGatewayId): Promise<number> => {

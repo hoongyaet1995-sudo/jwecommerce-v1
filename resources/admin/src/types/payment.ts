@@ -56,6 +56,7 @@ export interface PaymentGatewayConfig {
     instantSettlement?: boolean;
   };
   webhookUrl: string;
+  credentialStatus?: 'configured' | 'missing' | 'not_required';
   lastTestedAt?: string;
   testStatus?: 'success' | 'failed' | 'untested';
   testMessage?: string;
