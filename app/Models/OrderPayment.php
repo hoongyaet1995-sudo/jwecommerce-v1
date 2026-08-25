@@ -6,6 +6,27 @@ use Illuminate\Database\Eloquent\Model;
 
 class OrderPayment extends Model
 {
-    protected $fillable = ['order_id', 'gateway', 'status', 'reference', 'payload'];
-    protected function casts(): array { return ['payload' => 'array']; }
+    protected $fillable = [
+        'order_id',
+        'gateway',
+        'provider',
+        'environment',
+        'status',
+        'reference',
+        'idempotency_key',
+        'amount',
+        'currency',
+        'payload',
+        'configuration_snapshot',
+        'expires_at',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'payload' => 'array',
+            'configuration_snapshot' => 'array',
+            'expires_at' => 'datetime',
+        ];
+    }
 }
