@@ -53,6 +53,7 @@ Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->name('cart.
 Route::delete('/cart/coupon', [CartController::class, 'removeCoupon'])->name('cart.coupon.remove');
 Route::get('/checkout', [CheckoutController::class, 'create'])->name('checkout.create');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+Route::get('/checkout/payment-return/{payment}', [CheckoutController::class, 'paymentReturn'])->name('checkout.payment-return');
 Route::get('/order/success', [CheckoutController::class, 'success'])->name('checkout.success');
 Route::get('/pages/{slug}', StorefrontPageController::class)->name('storefront.pages.show');
 Route::post('/cms/forms/contact/{page}/{stage}/{section}', CmsContactSubmissionController::class)

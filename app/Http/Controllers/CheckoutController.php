@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\OrderPayment;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Coupon;
@@ -32,6 +33,41 @@ class CheckoutController extends Controller
         StorefrontCurrencyContext $currency,
     ): View|RedirectResponse
     {
+        return $this->checkoutView($request, $pricing, $payments, $shipping, $currency);
+    }
+
+    public function paymentReturn(
+        Request $request,
+        OrderPayment $payment,
+        CartPricingService $pricing,
+        PaymentConfigurationService $payments,
+        ShippingConfigurationService $shipping,
+        StorefrontCurrencyContext $currency,
+    ): View|RedirectResponse {
+        abort_unless((int) $request->session()->get('pending_payment_id') === $payment->id, 403);
+        abort_unless(in_array($payment->gateway, ['stripe', 'paypal', 'billplz'], true), 404);
+
+        $requestedState = (string) $request->query('state', 'pending');
+        $state = in_array($requestedState, ['redirecting', 'cancelled', 'failed', 'pending'], true)
+            ? $requestedState
+            : 'pending';
+
+        return $this->checkoutView($request, $pricing, $payments, $shipping, $currency, [
+            'state' => $state,
+            'provider' => $this->providerLabel($payment->gateway),
+            'gateway' => $payment->gateway,
+            'reference' => $payment->order?->number ?? $payment->reference,
+        ]);
+    }
+
+    private function checkoutView(
+        Request $request,
+        CartPricingService $pricing,
+        PaymentConfigurationService $payments,
+        ShippingConfigurationService $shipping,
+        StorefrontCurrencyContext $currency,
+        ?array $hostedReturn = null,
+    ): View|RedirectResponse {
         $items = $this->items($request);
         if ($items->isEmpty()) return redirect()->route('storefront.index');
         $coupon = Coupon::query()->currentlyValid()->where('code', $request->session()->get('coupon_code'))->first();
@@ -52,7 +88,18 @@ class CheckoutController extends Controller
             'paymentMethodModels' => $paymentMethodModels,
             'deliveryOptions' => $shipping->checkoutOptions($items, $coupon),
             'checkoutEmail' => $user?->customer ? $user->email : null,
+            'hostedReturn' => $hostedReturn,
         ]);
+    }
+
+    private function providerLabel(string $gateway): string
+    {
+        return match ($gateway) {
+            'stripe' => 'Stripe',
+            'paypal' => 'PayPal',
+            'billplz' => 'Billplz',
+            default => $gateway,
+        };
     }
 
     public function store(Request $request, CheckoutService $checkout, StorefrontCurrencyContext $currency, HostedPaymentGatewayManager $hostedPayments): RedirectResponse
