@@ -87,7 +87,9 @@ class PaymentMethodAvailabilityTest extends TestCase
             ->assertSee('Bank / DuitNow')
             ->assertSee('Bank transfer instructions')
             ->assertSee('Pending Verification')
-            ->assertDontSee('Credit Card');
+            ->assertDontSee('Credit Card')
+            ->assertDontSee('Express 1-Click Checkout')
+            ->assertDontSee('Instant Token Authorization');
     }
 
     private function variant()

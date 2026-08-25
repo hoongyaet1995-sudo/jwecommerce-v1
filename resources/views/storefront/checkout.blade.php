@@ -8,13 +8,6 @@
         <form method="POST" action="{{ route('checkout.store') }}" enctype="multipart/form-data" class="mx-auto grid max-w-7xl gap-10 px-4 pb-16 pt-8 sm:px-6 lg:grid-cols-12 lg:px-8">
             @csrf
             <section class="space-y-8 lg:col-span-7">
-                <section class="space-y-3 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/70">
-                    <div class="flex items-center justify-between"><p class="font-mono text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Express 1-Click Checkout</p><span class="font-mono text-[11px] text-zinc-500 dark:text-zinc-400">Instant Token Authorization</span></div>
-                    <div class="grid grid-cols-3 gap-3">@if(isset($paymentMethods['apple_pay']))<button type="button" class="rounded-xl bg-zinc-900 py-3 text-xs font-bold text-white shadow transition-all hover:bg-black dark:bg-zinc-100 dark:text-zinc-950">Apple Pay</button>@endif @if(isset($paymentMethods['paypal']))<button type="button" class="rounded-xl bg-amber-400 py-3 text-xs font-bold text-zinc-950">PayPal</button>@endif</div>
-                    <div class="flex items-center gap-3 text-[10px] font-mono uppercase text-zinc-500 dark:text-zinc-400"><span class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></span>Or pay with shipping details<span class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></span></div>
-                    <p class="text-xs text-zinc-500 dark:text-zinc-400"><i data-lucide="lock-keyhole" class="mr-1 inline h-3.5 w-3.5"></i>Simulated local gateway: card numbers, expiry dates, and CVV are never requested or stored.</p>
-                </section>
-
                 <section class="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/70">
                     <div class="flex items-center gap-3 border-b border-zinc-200 pb-3 dark:border-zinc-800"><span class="grid h-7 w-7 place-items-center rounded-full bg-amber-400 text-xs font-black text-zinc-950">1</span><h1 class="font-serif text-sm font-bold text-zinc-900 dark:text-zinc-100">Contact &amp; Shipping Address</h1></div>
                     <div class="mt-5 grid gap-4 sm:grid-cols-2">
