@@ -6,6 +6,8 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\StoreSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class OfflineCheckoutTest extends TestCase
@@ -60,6 +62,27 @@ class OfflineCheckoutTest extends TestCase
         $this->assertDatabaseHas('order_payments', [
             'gateway' => 'cod', 'provider' => 'cod', 'status' => 'pending', 'amount' => 10500,
         ]);
+    }
+
+    public function test_bank_transfer_receipt_is_stored_only_when_operator_enabled_uploads(): void
+    {
+        Storage::fake('public');
+        $variant = $this->variant();
+        StoreSetting::query()->updateOrCreate(['key' => 'bank_transfer'], ['value' => ['data' => [
+            'isEnabled' => true, 'allowProofUpload' => true, 'paymentWindowHours' => 24,
+            'bankAccounts' => [[
+                'id' => 'maybank-primary', 'bankName' => 'Maybank', 'accountNumber' => '514000004432', 'isActive' => true,
+            ]],
+        ]]]);
+        $receipt = UploadedFile::fake()->create('receipt.png', 100, 'image/png');
+
+        $this->withSession(['cart' => [$variant->id => 1]])
+            ->post('/checkout', $this->checkoutData('bank_transfer') + ['payment_proof' => $receipt])
+            ->assertRedirect('/order/success');
+
+        $payment = \App\Models\OrderPayment::query()->firstOrFail();
+        $this->assertNotNull($payment->proof_path);
+        Storage::disk('public')->assertExists($payment->proof_path);
     }
 
     private function checkoutData(string $paymentMethod): array

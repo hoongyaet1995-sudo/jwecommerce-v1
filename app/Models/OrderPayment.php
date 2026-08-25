@@ -18,6 +18,8 @@ class OrderPayment extends Model
         'currency',
         'payload',
         'configuration_snapshot',
+        'proof_path',
+        'proof_uploaded_at',
         'expires_at',
     ];
 
@@ -27,6 +29,7 @@ class OrderPayment extends Model
             'payload' => 'array',
             'configuration_snapshot' => 'array',
             'expires_at' => 'datetime',
+            'proof_uploaded_at' => 'datetime',
         ];
     }
 }
