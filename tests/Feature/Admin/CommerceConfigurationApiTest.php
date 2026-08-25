@@ -3,7 +3,9 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Coupon;
+use App\Models\Category;
 use App\Models\PaymentGatewayCredential;
+use App\Models\Product;
 use App\Models\StoreSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,6 +35,8 @@ class CommerceConfigurationApiTest extends TestCase
     {
         $this->postJson('/admin/api/coupons', [])->assertUnauthorized();
         $this->putJson('/admin/api/commerce-settings', [])->assertUnauthorized();
+        $this->putJson('/admin/api/commerce-settings/bank-transfer', [])->assertUnauthorized();
+        $this->putJson('/admin/api/commerce-settings/cod', [])->assertUnauthorized();
     }
 
     public function test_enabled_online_gateway_requires_complete_environment_credentials(): void
@@ -67,6 +71,64 @@ class CommerceConfigurationApiTest extends TestCase
             ->assertJsonMissing(['secretKey' => 'sk_test_private']);
 
         $this->assertSame($credentials, PaymentGatewayCredential::forGateway('stripe', 'sandbox')?->credentials);
+    }
+
+    public function test_admin_can_persist_bank_transfer_even_when_an_enabled_online_gateway_lacks_credentials(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        StoreSetting::query()->updateOrCreate(['key' => 'payment_gateways'], ['value' => ['data' => [
+            $this->gateway('stripe', true, []),
+        ]]]);
+
+        $bankTransfer = [
+            'isEnabled' => true,
+            'allowProofUpload' => true,
+            'bankAccounts' => [[
+                'id' => 'maybank-primary', 'bankName' => 'Maybank', 'accountNumber' => '514000004432',
+                'accountHolderName' => 'JW Studio', 'isPrimary' => true, 'isActive' => true,
+            ]],
+        ];
+
+        $this->actingAs($admin)
+            ->putJson('/admin/api/commerce-settings/bank-transfer', ['bankTransfer' => $bankTransfer])
+            ->assertOk()
+            ->assertJsonPath('data.bankTransfer.isEnabled', true);
+
+        $this->assertSame($bankTransfer, data_get(StoreSetting::query()->where('key', 'bank_transfer')->sole()->value, 'data'));
+
+        $this->withSession(['cart' => [$this->variant()->id => 1]])
+            ->get('/checkout')
+            ->assertOk()
+            ->assertSee('Bank / DuitNow');
+    }
+
+    public function test_admin_can_persist_cod_even_when_an_enabled_online_gateway_lacks_credentials(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        StoreSetting::query()->updateOrCreate(['key' => 'payment_gateways'], ['value' => ['data' => [
+            $this->gateway('paypal', true, []),
+        ]]]);
+
+        $cod = [
+            'isEnabled' => true,
+            'minOrderAmount' => 0,
+            'maxOrderAmount' => 500,
+            'allowedRegions' => 'all',
+            'surchargeType' => 'fixed',
+            'surchargeAmount' => 0,
+        ];
+
+        $this->actingAs($admin)
+            ->putJson('/admin/api/commerce-settings/cod', ['codConfig' => $cod])
+            ->assertOk()
+            ->assertJsonPath('data.codConfig.isEnabled', true);
+
+        $this->assertSame($cod, data_get(StoreSetting::query()->where('key', 'cod_config')->sole()->value, 'data'));
+
+        $this->withSession(['cart' => [$this->variant()->id => 1]])
+            ->get('/checkout')
+            ->assertOk()
+            ->assertSee('Cash on Delivery');
     }
 
     private function commerceDocument(array $gateways): array
@@ -107,5 +169,27 @@ class CommerceConfigurationApiTest extends TestCase
             'features' => [],
             'webhookUrl' => 'https://merchant.test/payments/webhooks/'.$id,
         ];
+    }
+
+    private function variant()
+    {
+        $category = Category::query()->create(['name' => 'Audio', 'slug' => 'admin-payment-audio', 'status' => 'active']);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'title' => 'Admin Payment Headphones',
+            'handle' => 'admin-payment-headphones',
+            'brand' => 'JW Studio',
+            'description' => 'Test',
+            'base_price' => 10000,
+            'status' => 'active',
+        ]);
+
+        return $product->variants()->create([
+            'sku' => 'ADMIN-PAYMENT-1',
+            'title' => 'Default',
+            'price' => 10000,
+            'stock' => 10,
+            'enabled' => true,
+        ]);
     }
 }

@@ -7,7 +7,7 @@ import { deleteCatalogEntity, fetchCatalog, saveCatalogEntity } from '../integra
 import { fetchMenus, saveMenuDocument } from '../integration/menuData';
 import { customerDirectoryToCustomers, deleteCustomerData, fetchCustomerDirectoryData, saveCustomerData } from '../integration/customerDirectoryData';
 import { fetchOrders, processOrderRefundData, updateOrderStatusData, updateOrderTrackingData } from '../integration/orderData';
-import { fetchCommerceSettings, saveCommerceSettings } from '../integration/commerceSettingsData';
+import { fetchCommerceSettings, saveBankTransferConfiguration, saveCodConfiguration, saveCommerceSettings } from '../integration/commerceSettingsData';
 import { loadStorefrontShellSettings, saveStorefrontShellSettingsData } from '../integration/storefrontShellSettingsData';
 import {
   bulkModerateReviews as bulkModerateReviewsData,
@@ -356,12 +356,12 @@ interface AdminContextType {
   togglePaymentGateway: (id: PaymentGatewayId, enabled: boolean) => Promise<void>;
   pingPaymentGateway: (id: PaymentGatewayId) => Promise<number>;
   bankTransferConfig: ManualBankTransferConfig;
-  saveBankTransferConfig: (config: ManualBankTransferConfig) => void;
-  saveBankAccount: (account: BankAccountDetails) => void;
-  deleteBankAccount: (id: string) => void;
-  setPrimaryBankAccount: (id: string) => void;
+  saveBankTransferConfig: (config: ManualBankTransferConfig) => Promise<boolean>;
+  saveBankAccount: (account: BankAccountDetails) => Promise<boolean>;
+  deleteBankAccount: (id: string) => Promise<boolean>;
+  setPrimaryBankAccount: (id: string) => Promise<boolean>;
   codConfig: CashOnDeliveryConfig;
-  saveCodConfig: (config: CashOnDeliveryConfig) => void;
+  saveCodConfig: (config: CashOnDeliveryConfig) => Promise<boolean>;
   globalPaymentSettings: GlobalPaymentSettings;
   saveGlobalPaymentSettings: (settings: GlobalPaymentSettings) => void;
 
@@ -2717,59 +2717,48 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return latency;
   };
 
-  const saveBankTransferConfig = (config: ManualBankTransferConfig) => {
-    setBankTransferConfig(config);
-    persistCommerceDocument({ bankTransfer: config });
-    addToast({
-      type: 'success',
-      title: 'Bank Transfer Settings Saved',
-      message: 'Direct bank transfer and DuitNow QR options updated.'
-    });
+  const persistBankTransferConfiguration = async (config: ManualBankTransferConfig, title: string, message: string): Promise<boolean> => {
+    try {
+      const document = await saveBankTransferConfiguration(laravelBootstrap, config);
+      setBankTransferConfig(document.bankTransfer as ManualBankTransferConfig);
+      addToast({ type: 'success', title, message });
+      return true;
+    } catch (error) {
+      addToast({ type: 'error', title: 'Bank Transfer Save Failed', message: error instanceof Error ? error.message : 'Unable to save bank transfer settings.' });
+      return false;
+    }
   };
 
-  const saveBankAccount = (account: BankAccountDetails) => {
+  const saveBankTransferConfig = async (config: ManualBankTransferConfig): Promise<boolean> =>
+    persistBankTransferConfiguration(config, 'Bank Transfer Settings Saved', 'Direct bank transfer and DuitNow QR options updated.');
+
+  const saveBankAccount = async (account: BankAccountDetails): Promise<boolean> => {
     const exists = bankTransferConfig.bankAccounts.some(item => item.id === account.id);
     const updatedAccounts = exists ? bankTransferConfig.bankAccounts.map(item => item.id === account.id ? account : (account.isPrimary ? { ...item, isPrimary: false } : item)) : [...bankTransferConfig.bankAccounts.map(item => account.isPrimary ? { ...item, isPrimary: false } : item), account];
     const nextConfig = { ...bankTransferConfig, bankAccounts: updatedAccounts };
-    setBankTransferConfig(nextConfig);
-    persistCommerceDocument({ bankTransfer: nextConfig });
-    addToast({
-      type: 'success',
-      title: 'Bank Account Saved',
-      message: `${account.bankName} account details updated.`
-    });
+    return persistBankTransferConfiguration(nextConfig, 'Bank Account Saved', `${account.bankName} account details updated.`);
   };
 
-  const deleteBankAccount = (id: string) => {
+  const deleteBankAccount = async (id: string): Promise<boolean> => {
     const nextConfig = { ...bankTransferConfig, bankAccounts: bankTransferConfig.bankAccounts.filter(account => account.id !== id) };
-    setBankTransferConfig(nextConfig);
-    persistCommerceDocument({ bankTransfer: nextConfig });
-    addToast({
-      type: 'info',
-      title: 'Account Removed',
-      message: 'Bank account deleted from manual checkout options.'
-    });
+    return persistBankTransferConfiguration(nextConfig, 'Account Removed', 'Bank account deleted from manual checkout options.');
   };
 
-  const setPrimaryBankAccount = (id: string) => {
+  const setPrimaryBankAccount = async (id: string): Promise<boolean> => {
     const nextConfig = { ...bankTransferConfig, bankAccounts: bankTransferConfig.bankAccounts.map(account => ({ ...account, isPrimary: account.id === id })) };
-    setBankTransferConfig(nextConfig);
-    persistCommerceDocument({ bankTransfer: nextConfig });
-    addToast({
-      type: 'success',
-      title: 'Primary Account Set',
-      message: 'Default bank account updated for DuitNow transfers.'
-    });
+    return persistBankTransferConfiguration(nextConfig, 'Primary Account Set', 'Default bank account updated for DuitNow transfers.');
   };
 
-  const saveCodConfig = (config: CashOnDeliveryConfig) => {
-    setCodConfig(config);
-    persistCommerceDocument({ codConfig: config });
-    addToast({
-      type: 'success',
-      title: 'COD Settings Saved',
-      message: 'Cash on Delivery terms, limits, and surcharges updated.'
-    });
+  const saveCodConfig = async (config: CashOnDeliveryConfig): Promise<boolean> => {
+    try {
+      const document = await saveCodConfiguration(laravelBootstrap, config);
+      setCodConfig(document.codConfig as CashOnDeliveryConfig);
+      addToast({ type: 'success', title: 'COD Settings Saved', message: 'Cash on Delivery terms, limits, and surcharges updated.' });
+      return true;
+    } catch (error) {
+      addToast({ type: 'error', title: 'COD Save Failed', message: error instanceof Error ? error.message : 'Unable to save COD configuration.' });
+      return false;
+    }
   };
 
   const saveGlobalPaymentSettings = (settings: GlobalPaymentSettings) => {

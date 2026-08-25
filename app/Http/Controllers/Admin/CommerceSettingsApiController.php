@@ -76,6 +76,28 @@ class CommerceSettingsApiController extends Controller
         return response()->json(['data' => $this->document()]);
     }
 
+    public function updateBankTransfer(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'bankTransfer' => ['required', 'array'],
+        ]);
+
+        $this->put('bank_transfer', $data['bankTransfer']);
+
+        return response()->json(['data' => $this->document()]);
+    }
+
+    public function updateCod(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'codConfig' => ['required', 'array'],
+        ]);
+
+        $this->put('cod_config', $data['codConfig']);
+
+        return response()->json(['data' => $this->document()]);
+    }
+
     private function document(): array
     {
         $settings = StoreSetting::query()->whereIn('key', ['shipping_rates', 'payment_gateways', 'global_payment', 'bank_transfer', 'cod_config'])->pluck('value', 'key');

@@ -150,6 +150,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/api/coupons/{coupon}', [CouponApiController::class, 'destroy']);
     Route::get('/api/commerce-settings', [CommerceSettingsApiController::class, 'show'])->name('api.commerce-settings.show');
     Route::put('/api/commerce-settings', [CommerceSettingsApiController::class, 'update']);
+    Route::put('/api/commerce-settings/bank-transfer', [CommerceSettingsApiController::class, 'updateBankTransfer']);
+    Route::put('/api/commerce-settings/cod', [CommerceSettingsApiController::class, 'updateCod']);
     Route::get('/', AdminAppController::class)->name('dashboard');
     Route::get('/commerce', AdminAppController::class)->name('commerce');
     Route::get('/orders', AdminAppController::class)->name('orders.index');
