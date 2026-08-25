@@ -22,7 +22,9 @@ class PaymentAttemptService
             'order_id' => $order->id,
             'gateway' => $gateway,
             'provider' => $gateway,
-            'environment' => in_array($gateway, ['bank_transfer', 'cod'], true) ? 'offline' : null,
+            'environment' => in_array($gateway, ['bank_transfer', 'cod'], true)
+                ? 'offline'
+                : ((bool) data_get($method, 'gateway.isSandbox', false) ? 'sandbox' : 'live'),
             'status' => 'pending',
             'reference' => strtoupper(str_replace('_', '-', $gateway)).'-'.$order->number,
             'idempotency_key' => (string) Str::uuid(),
