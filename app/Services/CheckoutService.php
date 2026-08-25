@@ -42,11 +42,11 @@ class CheckoutService
 
     /** @param Collection<int, array{variant: ProductVariant, quantity: int}> $items */
     /** @param array{code?: string, exchange_rate?: float}|null $currencySnapshot */
-    public function checkout(string $email, Collection $items, ?Coupon $coupon = null, ?array $shippingAddress = null, string $gateway = 'simulated_card', string $delivery = 'standard', ?array $currencySnapshot = null, ?UploadedFile $paymentProof = null): Order
+    public function checkout(string $email, Collection $items, ?Coupon $coupon = null, ?array $shippingAddress = null, string $gateway = 'simulated_card', string $delivery = 'standard', ?array $currencySnapshot = null, ?UploadedFile $paymentProof = null, ?string $bankAccountId = null): Order
     {
         $currencySnapshot ??= app(\App\Support\StorefrontCurrencyContext::class)->snapshot();
 
-        return DB::transaction(function () use ($email, $items, $coupon, $shippingAddress, $gateway, $delivery, $currencySnapshot, $paymentProof): Order {
+        return DB::transaction(function () use ($email, $items, $coupon, $shippingAddress, $gateway, $delivery, $currencySnapshot, $paymentProof, $bankAccountId): Order {
             $customer = Customer::query()->firstOrCreate(['email' => $email]);
             $lockedCoupon = null;
             if ($coupon) {
@@ -81,7 +81,7 @@ class CheckoutService
                 $product = $variant->product()->with('images')->firstOrFail();
                 OrderItem::query()->create(['order_id' => $order->id, 'product_variant_id' => $variant->id, 'sku' => $variant->sku, 'title' => $product->title, 'variant_title' => $variant->title, 'image_url' => $product->images->sortBy('position')->first()?->path, 'unit_price' => $variant->price, 'quantity' => $line['quantity'], 'line_total' => $line['line_total']]);
             }
-            $payment = $this->paymentAttempts->createPendingPayment($order, $method, $order->currency);
+            $payment = $this->paymentAttempts->createPendingPayment($order, $method, $order->currency, $bankAccountId);
             if ($paymentProof) {
                 if ($gateway !== 'bank_transfer' || ! data_get($method, 'bankTransfer.allowProofUpload', false)) {
                     throw ValidationException::withMessages(['payment_proof' => 'Receipt uploads are not enabled for this payment method.']);

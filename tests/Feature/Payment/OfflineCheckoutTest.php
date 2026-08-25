@@ -85,6 +85,25 @@ class OfflineCheckoutTest extends TestCase
         Storage::disk('public')->assertExists($payment->proof_path);
     }
 
+    public function test_bank_transfer_snapshots_the_customer_selected_active_account(): void
+    {
+        $variant = $this->variant();
+        StoreSetting::query()->updateOrCreate(['key' => 'bank_transfer'], ['value' => ['data' => [
+            'isEnabled' => true,
+            'bankAccounts' => [
+                ['id' => 'maybank-primary', 'bankName' => 'Maybank', 'accountNumber' => '514000004432', 'isPrimary' => true, 'isActive' => true],
+                ['id' => 'cimb-secondary', 'bankName' => 'CIMB Bank', 'accountNumber' => '800900008871', 'isPrimary' => false, 'isActive' => true],
+            ],
+        ]]]);
+
+        $this->withSession(['cart' => [$variant->id => 1]])
+            ->post('/checkout', $this->checkoutData('bank_transfer') + ['bank_account_id' => 'cimb-secondary'])
+            ->assertRedirect('/order/success');
+
+        $payment = \App\Models\OrderPayment::query()->firstOrFail();
+        $this->assertSame('cimb-secondary', $payment->configuration_snapshot['bankAccount']['id']);
+    }
+
     private function checkoutData(string $paymentMethod): array
     {
         return [
