@@ -30,4 +30,18 @@ class HostedPaymentGatewayManager
 
         return $adapter->begin($payment, $order);
     }
+
+    public function captureApprovedPayPalOrder(OrderPayment $payment): void
+    {
+        if ($payment->gateway !== 'paypal') {
+            throw new InvalidArgumentException('Only PayPal hosted orders can be captured here.');
+        }
+
+        $adapter = $this->adapters['paypal'];
+        if (! $adapter instanceof PayPalOrdersAdapter) {
+            throw new InvalidArgumentException('The PayPal capture adapter is unavailable.');
+        }
+
+        $adapter->capture($payment);
+    }
 }

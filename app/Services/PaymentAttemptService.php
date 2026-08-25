@@ -35,6 +35,31 @@ class PaymentAttemptService
         ]);
     }
 
+    public function retryHostedPayment(OrderPayment $previous): OrderPayment
+    {
+        if (! in_array($previous->gateway, ['stripe', 'paypal', 'billplz'], true)) {
+            throw ValidationException::withMessages(['payment_method' => 'This payment method cannot be retried as a hosted payment.']);
+        }
+
+        $order = $previous->order()->firstOrFail();
+        if ($order->status !== 'pending_payment') {
+            throw ValidationException::withMessages(['payment_method' => 'This order is no longer awaiting payment.']);
+        }
+
+        return OrderPayment::query()->create([
+            'order_id' => $order->id,
+            'gateway' => $previous->gateway,
+            'provider' => $previous->provider,
+            'environment' => $previous->environment,
+            'status' => 'pending',
+            'reference' => strtoupper(str_replace('_', '-', $previous->gateway)).'-'.$order->number.'-'.strtoupper(Str::random(8)),
+            'idempotency_key' => (string) Str::uuid(),
+            'amount' => $previous->amount,
+            'currency' => $previous->currency,
+            'configuration_snapshot' => $previous->configuration_snapshot,
+        ]);
+    }
+
     /** @param array<string, mixed> $method @return array<string, mixed> */
     private function snapshotFor(array $method, ?string $bankAccountId): array
     {

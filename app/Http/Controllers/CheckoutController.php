@@ -10,6 +10,7 @@ use App\Models\Coupon;
 use App\Services\CartPricingService;
 use App\Services\CheckoutService;
 use App\Services\PaymentConfigurationService;
+use App\Services\PaymentAttemptService;
 use App\Services\ShippingConfigurationService;
 use App\Services\Payments\HostedPaymentGatewayManager;
 use App\Support\StorefrontCurrencyContext;
@@ -43,6 +44,7 @@ class CheckoutController extends Controller
         PaymentConfigurationService $payments,
         ShippingConfigurationService $shipping,
         StorefrontCurrencyContext $currency,
+        HostedPaymentGatewayManager $hostedPayments,
     ): View|RedirectResponse {
         abort_unless((int) $request->session()->get('pending_payment_id') === $payment->id, 403);
         abort_unless(in_array($payment->gateway, ['stripe', 'paypal', 'billplz'], true), 404);
@@ -52,12 +54,39 @@ class CheckoutController extends Controller
             ? $requestedState
             : 'pending';
 
+        if ($payment->gateway === 'paypal' && $state === 'pending' && $request->query('token') === $payment->reference) {
+            try {
+                $hostedPayments->captureApprovedPayPalOrder($payment);
+            } catch (\RuntimeException) {
+                $payment->update(['status' => 'failed']);
+
+                return redirect()->route('checkout.payment-return', ['payment' => $payment, 'state' => 'failed']);
+            }
+        }
+
         return $this->checkoutView($request, $pricing, $payments, $shipping, $currency, [
             'state' => $state,
             'provider' => $this->providerLabel($payment->gateway),
             'gateway' => $payment->gateway,
+            'payment' => $payment,
             'reference' => $payment->order?->number ?? $payment->reference,
         ]);
+    }
+
+    public function retryHostedPayment(Request $request, OrderPayment $payment, PaymentAttemptService $attempts, HostedPaymentGatewayManager $hostedPayments): RedirectResponse
+    {
+        abort_unless((int) $request->session()->get('pending_payment_id') === $payment->id, 403);
+
+        $retry = $attempts->retryHostedPayment($payment);
+        $request->session()->put('pending_payment_id', $retry->id);
+
+        try {
+            return redirect()->away($hostedPayments->begin($retry, $retry->order()->firstOrFail()));
+        } catch (\RuntimeException) {
+            $retry->update(['status' => 'failed']);
+
+            return redirect()->route('checkout.payment-return', ['payment' => $retry, 'state' => 'failed']);
+        }
     }
 
     private function checkoutView(
@@ -113,7 +142,13 @@ class CheckoutController extends Controller
             $payment = $order->payments()->latest('id')->firstOrFail();
             $request->session()->put('pending_payment_id', $payment->id);
 
-            return redirect()->away($hostedPayments->begin($payment, $order));
+            try {
+                return redirect()->away($hostedPayments->begin($payment, $order));
+            } catch (\RuntimeException) {
+                $payment->update(['status' => 'failed']);
+
+                return redirect()->route('checkout.payment-return', ['payment' => $payment, 'state' => 'failed']);
+            }
         }
         $request->session()->forget(['cart', 'coupon_code']); $request->session()->put('last_order_id', $order->id);
         return redirect()->route('checkout.success');

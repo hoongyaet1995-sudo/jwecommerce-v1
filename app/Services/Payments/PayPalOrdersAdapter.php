@@ -47,4 +47,26 @@ class PayPalOrdersAdapter implements HostedPaymentGatewayAdapter
 
         return (string) $approvalUrl;
     }
+
+    public function capture(OrderPayment $payment): void
+    {
+        $credentials = PaymentGatewayCredential::forGateway('paypal', $payment->environment ?? 'live')?->credentials ?? [];
+        $baseUrl = $payment->environment === 'sandbox' ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
+        $token = Http::asForm()
+            ->withBasicAuth((string) ($credentials['clientId'] ?? ''), (string) ($credentials['clientSecret'] ?? ''))
+            ->post($baseUrl.'/v1/oauth2/token', ['grant_type' => 'client_credentials']);
+        $accessToken = (string) $token->json('access_token');
+        if (! $token->successful() || $accessToken === '') {
+            throw new RuntimeException('PayPal could not obtain an access token for capture.');
+        }
+
+        $response = Http::withToken($accessToken)
+            ->withHeaders(['PayPal-Request-Id' => $payment->idempotency_key ?: 'jw-payment-'.$payment->id])
+            ->post($baseUrl.'/v2/checkout/orders/'.$payment->reference.'/capture');
+        if (! $response->successful()) {
+            throw new RuntimeException('PayPal could not capture the approved hosted order.');
+        }
+
+        $payment->update(['payload' => array_merge($payment->payload ?? [], ['paypal_capture' => $response->json()])]);
+    }
 }

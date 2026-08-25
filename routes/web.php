@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\StorefrontShellSettingsApiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\CustomerAccountController;
 use App\Http\Controllers\CustomerAuthController;
 use App\Http\Controllers\CustomerProductReviewController;
@@ -54,6 +55,10 @@ Route::delete('/cart/coupon', [CartController::class, 'removeCoupon'])->name('ca
 Route::get('/checkout', [CheckoutController::class, 'create'])->name('checkout.create');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 Route::get('/checkout/payment-return/{payment}', [CheckoutController::class, 'paymentReturn'])->name('checkout.payment-return');
+Route::post('/checkout/payment-retry/{payment}', [CheckoutController::class, 'retryHostedPayment'])->name('checkout.payment-retry');
+Route::post('/payments/webhooks/stripe', [PaymentWebhookController::class, 'stripe'])->name('payments.webhooks.stripe');
+Route::post('/payments/webhooks/billplz', [PaymentWebhookController::class, 'billplz'])->name('payments.webhooks.billplz');
+Route::post('/payments/webhooks/paypal', [PaymentWebhookController::class, 'paypal'])->name('payments.webhooks.paypal');
 Route::get('/order/success', [CheckoutController::class, 'success'])->name('checkout.success');
 Route::get('/pages/{slug}', StorefrontPageController::class)->name('storefront.pages.show');
 Route::post('/cms/forms/contact/{page}/{stage}/{section}', CmsContactSubmissionController::class)
