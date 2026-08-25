@@ -100,7 +100,32 @@ class CheckoutController extends Controller
         $items = $this->items($request);
         if ($items->isEmpty()) return redirect()->route('storefront.index');
         $coupon = Coupon::query()->currentlyValid()->where('code', $request->session()->get('coupon_code'))->first();
-        $user = $request->user();
+        $customerUser = $request->user('customer');
+        $customer = $customerUser?->customer;
+        $savedAddresses = $customer
+            ? $customer->addresses()
+                ->where('type', 'shipping')
+                ->orderByDesc('is_default')
+                ->orderBy('id')
+                ->get()
+                ->map(fn ($address): array => [
+                    'id' => (string) $address->id,
+                    'label' => $address->label,
+                    'isDefaultShipping' => $address->is_default,
+                    'firstName' => $address->first_name,
+                    'lastName' => $address->last_name,
+                    'email' => $customerUser->email,
+                    'phone' => $address->phone,
+                    'street' => $address->line_1,
+                    'apartment' => $address->line_2,
+                    'city' => $address->city,
+                    'state' => $address->state,
+                    'postalCode' => $address->postal_code,
+                    'country' => $address->country,
+                ])
+                ->values()
+                ->all()
+            : [];
 
         $summary = $pricing->summarize($items, $coupon);
         $paymentMethodModels = $payments->checkoutMethods([
@@ -116,7 +141,8 @@ class CheckoutController extends Controller
             'paymentMethods' => collect($paymentMethodModels)->mapWithKeys(fn (array $method, string $id): array => [$id => $method['label']])->all(),
             'paymentMethodModels' => $paymentMethodModels,
             'deliveryOptions' => $shipping->checkoutOptions($items, $coupon),
-            'checkoutEmail' => $user?->customer ? $user->email : null,
+            'checkoutEmail' => $customerUser?->email,
+            'savedAddresses' => $savedAddresses,
             'hostedReturn' => $hostedReturn,
         ]);
     }
@@ -136,7 +162,7 @@ class CheckoutController extends Controller
         $data = $request->validate(['email' => ['required', 'email'], 'first_name' => ['required', 'string', 'max:255'], 'last_name' => ['required', 'string', 'max:255'], 'phone' => ['nullable', 'string', 'max:50'], 'line_1' => ['required', 'string', 'max:255'], 'line_2' => ['nullable', 'string', 'max:255'], 'city' => ['required', 'string', 'max:255'], 'state' => ['nullable', 'string', 'max:255'], 'postal_code' => ['required', 'string', 'max:50'], 'country' => ['required', 'string', 'size:2'], 'delivery' => ['nullable', 'in:standard,express,white_glove'], 'payment_method' => ['required', 'string', 'max:50'], 'bank_account_id' => ['nullable', 'string', 'max:100'], 'payment_proof' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:10240']]); $items = $this->items($request);
         if ($items->isEmpty()) return redirect()->route('storefront.index');
         $coupon = Coupon::query()->currentlyValid()->where('code', $request->session()->get('coupon_code'))->first();
-        if ($request->user() && ! $request->user()->is_admin) $data['email'] = $request->user()->email;
+        if ($customerUser = $request->user('customer')) $data['email'] = $customerUser->email;
         $order = $checkout->checkout($data['email'], $items, $coupon, collect($data)->except(['email', 'payment_method', 'delivery', 'bank_account_id', 'payment_proof'])->all(), $data['payment_method'], $data['delivery'] ?? 'standard', $currency->snapshot(), $request->file('payment_proof'), $data['bank_account_id'] ?? null);
         if (in_array($data['payment_method'], ['stripe', 'paypal', 'billplz'], true)) {
             $payment = $order->payments()->latest('id')->firstOrFail();

@@ -1,5 +1,18 @@
 <x-layouts.app title="Checkout | JW Atelier">
-    @php($prefillEmail = auth()->user()?->email ?: $checkoutEmail)
+    @php($defaultSavedAddress = collect($savedAddresses)->firstWhere('isDefaultShipping', true) ?: ($savedAddresses[0] ?? null))
+    @php($selectedAddressId = old('selected_address_id', $defaultSavedAddress['id'] ?? 'custom'))
+    @php($checkoutAddress = [
+        'firstName' => old('first_name', $defaultSavedAddress['firstName'] ?? ''),
+        'lastName' => old('last_name', $defaultSavedAddress['lastName'] ?? ''),
+        'email' => old('email', $checkoutEmail ?? $defaultSavedAddress['email'] ?? ''),
+        'phone' => old('phone', $defaultSavedAddress['phone'] ?? ''),
+        'street' => old('line_1', $defaultSavedAddress['street'] ?? ''),
+        'apartment' => old('line_2', $defaultSavedAddress['apartment'] ?? ''),
+        'city' => old('city', $defaultSavedAddress['city'] ?? ''),
+        'state' => old('state', $defaultSavedAddress['state'] ?? ''),
+        'postalCode' => old('postal_code', $defaultSavedAddress['postalCode'] ?? ''),
+        'country' => old('country', $defaultSavedAddress['country'] ?? 'MY'),
+    ])
     <div class="min-h-screen bg-zinc-50 font-sans text-zinc-900 transition-colors duration-200 dark:bg-zinc-950 dark:text-zinc-100">
         <x-storefront.nav active="checkout" />
         <header class="border-b border-zinc-200 bg-white/80 px-4 py-4 backdrop-blur-sm dark:border-zinc-900 dark:bg-zinc-900/60 sm:px-6 lg:px-8">
@@ -8,16 +21,53 @@
         <form method="POST" action="{{ route('checkout.store') }}" enctype="multipart/form-data" class="mx-auto grid max-w-7xl gap-10 px-4 pb-16 pt-8 sm:px-6 lg:grid-cols-12 lg:px-8">
             @csrf
             <section class="space-y-8 lg:col-span-7">
-                <section class="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/70">
+                <section
+                    x-data="{
+                        savedAddresses: @js($savedAddresses),
+                        selectedAddressId: @js((string) $selectedAddressId),
+                        address: @js($checkoutAddress),
+                        defaultEmail: @js($checkoutEmail),
+                        selectSavedAddress(saved) {
+                            this.selectedAddressId = String(saved.id);
+                            this.address = {
+                                firstName: saved.firstName,
+                                lastName: saved.lastName,
+                                email: this.defaultEmail || saved.email || this.address.email,
+                                phone: saved.phone || '',
+                                street: saved.street,
+                                apartment: saved.apartment || '',
+                                city: saved.city,
+                                state: saved.state,
+                                postalCode: saved.postalCode,
+                                country: saved.country,
+                            };
+                        },
+                        selectCustomAddress() { this.selectedAddressId = 'custom'; }
+                    }"
+                    class="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/70"
+                >
                     <div class="flex items-center gap-3 border-b border-zinc-200 pb-3 dark:border-zinc-800"><span class="grid h-7 w-7 place-items-center rounded-full bg-amber-400 text-xs font-black text-zinc-950">1</span><h1 class="font-serif text-sm font-bold text-zinc-900 dark:text-zinc-100">Contact &amp; Shipping Address</h1></div>
-                    <div class="mt-5 grid gap-4 sm:grid-cols-2">
-                        @foreach ([['first_name', 'First Name', 'text', true], ['last_name', 'Last Name', 'text', true], ['email', 'Email Address (for order receipts & tracking)', 'email', true], ['line_1', 'Street Address', 'text', true], ['line_2', 'Apartment, suite, etc. (optional)', 'text', false]] as [$name, $label, $type, $required])
-                            <label @class(['space-y-1', 'sm:col-span-2' => in_array($name, ['email', 'line_1', 'line_2'])])><span class="text-xs text-zinc-600 dark:text-zinc-400">{{ $label }}</span><input name="{{ $name }}" type="{{ $type }}" value="{{ old($name) ?: ($name === 'email' ? $prefillEmail : null) }}" @required($required) class="w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3.5 py-2 text-xs text-zinc-900 outline-none focus:border-amber-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-amber-400" /></label>
-                        @endforeach
-                        <label class="space-y-1"><span class="text-xs text-zinc-600 dark:text-zinc-400">City</span><input name="city" value="{{ old('city') }}" required class="w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3.5 py-2 text-xs text-zinc-900 outline-none focus:border-amber-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-amber-400" /></label>
-                        <div class="grid grid-cols-2 gap-3"><label class="space-y-1"><span class="text-xs text-zinc-600 dark:text-zinc-400">State / Region</span><input name="state" value="{{ old('state') }}" class="w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 text-xs text-zinc-900 outline-none focus:border-amber-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-amber-400" /></label><label class="space-y-1"><span class="text-xs text-zinc-600 dark:text-zinc-400">Postal Code</span><input name="postal_code" value="{{ old('postal_code') }}" required class="w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 text-xs text-zinc-900 outline-none focus:border-amber-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-amber-400" /></label></div>
-                        <label class="space-y-1"><span class="text-xs text-zinc-600 dark:text-zinc-400">Country Code</span><input name="country" maxlength="2" value="{{ old('country', 'MY') }}" required class="w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3.5 py-2 text-xs uppercase text-zinc-900 outline-none focus:border-amber-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-amber-400" /></label>
-                        <label class="space-y-1"><span class="text-xs text-zinc-600 dark:text-zinc-400">Phone (optional)</span><input name="phone" value="{{ old('phone') }}" class="w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3.5 py-2 text-xs text-zinc-900 outline-none focus:border-amber-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-amber-400" /></label>
+                    @if($savedAddresses !== [])
+                        <div class="mt-5 space-y-3 pb-5 border-b border-zinc-200 dark:border-zinc-800">
+                            <div class="flex items-center justify-between"><div class="flex items-center gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400"></i><span class="text-xs font-bold text-zinc-900 dark:text-zinc-100">Saved delivery addresses</span></div><span class="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Select to prefill details</span></div>
+                            <div class="grid grid-cols-1 gap-2">
+                                @foreach($savedAddresses as $saved)
+                                    <div @click="selectSavedAddress(@js($saved))" :class="selectedAddressId === @js($saved['id']) ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/30 text-zinc-900 dark:text-zinc-100' : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-950/40 hover:bg-zinc-100 dark:hover:bg-zinc-950 text-zinc-700 dark:text-zinc-300'" class="p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-3"><div :class="selectedAddressId === @js($saved['id']) ? 'border-amber-500 bg-amber-500' : 'border-zinc-400 dark:border-zinc-600'" class="w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5"><div x-show="selectedAddressId === @js($saved['id'])" class="w-1.5 h-1.5 rounded-full bg-white dark:bg-zinc-950"></div></div><div class="flex-1 min-w-0 space-y-0.5"><div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs font-bold text-zinc-900 dark:text-zinc-100">{{ $saved['label'] ?: $saved['firstName']."'s Address" }}</span>@if($saved['isDefaultShipping'])<span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">Default</span>@endif</div>@if($saved['phone'])<span class="text-[11px] font-mono text-zinc-500 dark:text-zinc-400 shrink-0">{{ $saved['phone'] }}</span>@endif</div><div class="text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate">{{ $saved['firstName'] }} {{ $saved['lastName'] }}</div><p class="text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-1">{{ $saved['street'] }}{{ $saved['apartment'] ? ', '.$saved['apartment'] : '' }}, {{ $saved['city'] }}, {{ $saved['state'] }} {{ $saved['postalCode'] }}, {{ $saved['country'] }}</p></div></div>
+                                @endforeach
+                                <div @click="selectCustomAddress()" :class="selectedAddressId === 'custom' ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/30 text-zinc-900 dark:text-zinc-100' : 'border-dashed border-zinc-300 dark:border-zinc-700/80 bg-transparent hover:bg-zinc-100/60 dark:hover:bg-zinc-900/60 text-zinc-600 dark:text-zinc-400'" class="p-2.5 rounded-xl border transition-all cursor-pointer flex items-center gap-3"><div :class="selectedAddressId === 'custom' ? 'border-amber-500 bg-amber-500' : 'border-zinc-400 dark:border-zinc-600'" class="w-4 h-4 rounded-full border flex items-center justify-center shrink-0"><div x-show="selectedAddressId === 'custom'" class="w-1.5 h-1.5 rounded-full bg-white dark:bg-zinc-950"></div></div><div class="flex-1 min-w-0 flex items-center justify-between"><span class="text-xs font-medium text-zinc-800 dark:text-zinc-200">Use a different address / manual entry</span><span class="text-[11px] text-zinc-400 dark:text-zinc-500">Edit fields below</span></div></div>
+                            </div>
+                        </div>
+                    @endif
+                    <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-1"><label class="text-xs text-zinc-600 dark:text-zinc-400 font-medium">First Name</label><input name="first_name" type="text" x-model="address.firstName" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 dark:focus:border-amber-400" required /></div>
+                        <div class="space-y-1"><label class="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Last Name</label><input name="last_name" type="text" x-model="address.lastName" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 dark:focus:border-amber-400" required /></div>
+                        <div class="space-y-1 sm:col-span-2"><label class="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Email Address (for order receipts &amp; tracking)</label><input name="email" type="email" x-model="address.email" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 dark:focus:border-amber-400" required /></div>
+                        <div class="space-y-1 sm:col-span-2"><label class="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Street Address</label><input name="line_1" type="text" x-model="address.street" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 dark:focus:border-amber-400" required /></div>
+                        <div class="space-y-1 sm:col-span-2"><label class="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Apartment, suite, etc. (optional)</label><input name="line_2" type="text" x-model="address.apartment" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 dark:focus:border-amber-400" /></div>
+                        <div class="space-y-1"><label class="text-xs text-zinc-600 dark:text-zinc-400 font-medium">City</label><input name="city" type="text" x-model="address.city" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 dark:focus:border-amber-400" required /></div>
+                        <div class="grid grid-cols-2 gap-2"><div class="space-y-1"><label class="text-xs text-zinc-600 dark:text-zinc-400 font-medium">State / Region</label><input name="state" type="text" x-model="address.state" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 dark:focus:border-amber-400" /></div><div class="space-y-1"><label class="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Postal Code</label><input name="postal_code" type="text" x-model="address.postalCode" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 font-mono focus:outline-none focus:border-amber-500 dark:focus:border-amber-400" required /></div></div>
+                        <div class="space-y-1"><label class="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Country Code</label><input name="country" type="text" maxlength="2" x-model="address.country" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3.5 py-2 text-xs uppercase text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 dark:focus:border-amber-400" required /></div>
+                        <div class="space-y-1"><label class="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Phone (optional)</label><input name="phone" type="text" x-model="address.phone" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 dark:focus:border-amber-400" /></div>
                     </div>
                     @if($errors->any())<p class="mt-4 text-xs text-red-400">Please review the highlighted delivery details.</p>@endif
                 </section>
