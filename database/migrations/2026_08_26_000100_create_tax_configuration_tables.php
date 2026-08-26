@@ -113,7 +113,7 @@ return new class extends Migration
     private function dropTaxConfigurationSingletonConstraint(): void
     {
         if (DB::getDriverName() === 'mysql') {
-            DB::unprepared('ALTER TABLE tax_configurations DROP CHECK tax_configurations_singleton_key_check');
+            DB::unprepared('ALTER TABLE tax_configurations DROP CONSTRAINT tax_configurations_singleton_key_check');
 
             return;
         }
