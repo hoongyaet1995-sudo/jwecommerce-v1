@@ -8,6 +8,7 @@ import { fetchMenus, saveMenuDocument } from '../integration/menuData';
 import { customerDirectoryToCustomers, deleteCustomerData, fetchCustomerDirectoryData, saveCustomerData } from '../integration/customerDirectoryData';
 import { fetchOrders, processOrderRefundData, updateOrderStatusData, updateOrderTrackingData } from '../integration/orderData';
 import { fetchCommerceSettings, saveBankTransferConfiguration, saveCodConfiguration, saveCommerceSettings } from '../integration/commerceSettingsData';
+import { deleteTaxClass as deleteTaxClassData, deleteTaxRule as deleteTaxRuleData, deleteTaxZone as deleteTaxZoneData, fetchTaxSettings, globalTaxEngineFromConfiguration, saveTaxClass as saveTaxClassData, saveTaxConfiguration, saveTaxRule, saveTaxZone, type TaxSettingsDocument } from '../integration/taxSettingsData';
 import { loadStorefrontShellSettings, saveStorefrontShellSettingsData } from '../integration/storefrontShellSettingsData';
 import {
   bulkModerateReviews as bulkModerateReviewsData,
@@ -100,9 +101,6 @@ import {
   INITIAL_ZONES,
   INITIAL_CURRENCIES,
   INITIAL_ORDER_TOTAL_MODULES,
-  INITIAL_GEO_TAX_ZONES,
-  INITIAL_TAX_CLASSES,
-  INITIAL_TAX_RATES,
   INITIAL_GLOBAL_TAX_ENGINE
 } from '../data/oscommerceSettingsData';
 import {
@@ -490,10 +488,6 @@ const STORAGE_KEYS = {
   COUNTRIES_SETTING: 'aurora_admin_countries_setting',
   ZONES_SETTING: 'aurora_admin_zones_setting',
   ORDER_TOTAL_MODULES: 'aurora_admin_order_total_modules',
-  GEO_TAX_ZONES: 'aurora_admin_geo_tax_zones',
-  TAX_CLASSES: 'aurora_admin_tax_classes',
-  TAX_RATES: 'aurora_admin_tax_rates',
-  GLOBAL_TAX_ENGINE: 'aurora_admin_global_tax_engine',
   SUPPORT_CONVERSATIONS: 'aurora_admin_support_conversations',
   COPILOT_MESSAGES: 'aurora_admin_copilot_messages',
   AI_AUTO_REPLY_CONFIG: 'aurora_admin_ai_auto_reply_config',
@@ -717,10 +711,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [zonesSetting, setZonesSetting] = useState<ZoneSetting[]>(INITIAL_ZONES);
   const [currenciesSetting, setCurrenciesSetting] = useState<CurrencySetting[]>(INITIAL_CURRENCIES);
   const [orderTotalModules, setOrderTotalModules] = useState<OrderTotalModule[]>(INITIAL_ORDER_TOTAL_MODULES);
-  const [taxZones, setTaxZones] = useState<GeoTaxZone[]>(INITIAL_GEO_TAX_ZONES);
-  const [taxClasses, setTaxClasses] = useState<TaxClass[]>(INITIAL_TAX_CLASSES);
-  const [taxRates, setTaxRates] = useState<TaxRate[]>(INITIAL_TAX_RATES);
+  const [taxZones, setTaxZones] = useState<GeoTaxZone[]>([]);
+  const [taxClasses, setTaxClasses] = useState<TaxClass[]>([]);
+  const [taxRates, setTaxRates] = useState<TaxRate[]>([]);
   const [globalTaxEngine, setGlobalTaxEngine] = useState<GlobalTaxEngineSettings>(INITIAL_GLOBAL_TAX_ENGINE);
+  const [taxConfiguration, setTaxConfiguration] = useState<TaxSettingsDocument['configuration']>({
+    isEnabled: false, isPublished: false, pricesIncludeTax: false, addressBasis: 'shipping_address', merchantComplianceMetadata: {},
+  });
 
   // Customer Support Hub & AI Copilot State
   const [supportConversations, setSupportConversations] = useState<SupportConversation[]>(INITIAL_SUPPORT_CONVERSATIONS);
@@ -804,22 +801,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const savedOrderTotals = safeParseArray(STORAGE_KEYS.ORDER_TOTAL_MODULES, INITIAL_ORDER_TOTAL_MODULES);
       setOrderTotalModules(savedOrderTotals);
 
-      const savedTaxZones = safeParseArray(STORAGE_KEYS.GEO_TAX_ZONES, INITIAL_GEO_TAX_ZONES);
-      setTaxZones(savedTaxZones);
-
-      const savedTaxClasses = safeParseArray(STORAGE_KEYS.TAX_CLASSES, INITIAL_TAX_CLASSES);
-      setTaxClasses(savedTaxClasses);
-
-      const savedTaxRates = safeParseArray(STORAGE_KEYS.TAX_RATES, INITIAL_TAX_RATES);
-      setTaxRates(savedTaxRates);
-
-      const savedTaxEng = localStorage.getItem(STORAGE_KEYS.GLOBAL_TAX_ENGINE);
-      if (savedTaxEng) {
-        try {
-          const parsed = JSON.parse(savedTaxEng);
-          if (parsed && typeof parsed === 'object') setGlobalTaxEngine(parsed);
-        } catch {}
-      }
 
       const savedSupportConvs = safeParseArray(STORAGE_KEYS.SUPPORT_CONVERSATIONS, INITIAL_SUPPORT_CONVERSATIONS);
       setSupportConversations(savedSupportConvs);
@@ -931,6 +912,23 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void fetchTaxSettings(laravelBootstrap).then(document => {
+      if (!active) return;
+      setTaxZones(document.zones);
+      setTaxClasses(document.classes);
+      setTaxRates(document.rules);
+      setTaxConfiguration(document.configuration);
+      setGlobalTaxEngine(current => globalTaxEngineFromConfiguration(document.configuration, current));
+    }).catch(() => {
+      if (active) addToast({ type: 'error', title: 'Tax Settings Unavailable', message: 'Unable to load tax settings from MySQL.' });
+    });
+    return () => { active = false; };
+  // Laravel emits this immutable bootstrap once per admin app load.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Header Menu CRUD
@@ -3027,126 +3025,55 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const saveGeoTaxZone = (zone: GeoTaxZone) => {
-    setTaxZones(prev => {
-      const exists = prev.some(z => z.id === zone.id);
-      let updated: GeoTaxZone[];
-      if (exists) {
-        updated = prev.map(z => (z.id === zone.id ? zone : z));
-      } else {
-        updated = [...prev, zone];
-      }
-      try {
-        localStorage.setItem(STORAGE_KEYS.GEO_TAX_ZONES, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-    addToast({
-      type: 'success',
-      title: 'Tax Zone Saved',
-      message: `Tax Zone "${zone.name}" saved.`
-    });
+    void saveTaxZone(laravelBootstrap, zone).then(saved => {
+      setTaxZones(prev => prev.some(item => item.id === saved.id) ? prev.map(item => item.id === saved.id ? saved : item) : [...prev, saved]);
+      addToast({ type: 'success', title: 'Tax Zone Saved', message: `Tax Zone "${saved.name}" saved.` });
+    }).catch(error => addToast({ type: 'error', title: 'Tax Zone Save Failed', message: error instanceof Error ? error.message : 'Unable to save tax zone to MySQL.' }));
   };
 
   const deleteGeoTaxZone = (id: string) => {
-    setTaxZones(prev => {
-      const updated = prev.filter(z => z.id !== id);
-      try {
-        localStorage.setItem(STORAGE_KEYS.GEO_TAX_ZONES, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-    addToast({
-      type: 'info',
-      title: 'Tax Zone Removed',
-      message: 'Geographical tax jurisdiction removed.'
-    });
+    void deleteTaxZoneData(laravelBootstrap, id).then(() => {
+      setTaxZones(prev => prev.filter(zone => zone.id !== id));
+      addToast({ type: 'info', title: 'Tax Zone Removed', message: 'Geographical tax jurisdiction removed.' });
+    }).catch(error => addToast({ type: 'error', title: 'Tax Zone Delete Failed', message: error instanceof Error ? error.message : 'Unable to delete tax zone.' }));
   };
 
   const saveTaxClass = (taxClass: TaxClass) => {
-    setTaxClasses(prev => {
-      const exists = prev.some(t => t.id === taxClass.id);
-      let updated: TaxClass[];
-      if (exists) {
-        updated = prev.map(t => (t.id === taxClass.id ? taxClass : t));
-      } else {
-        updated = [...prev, taxClass];
-      }
-      try {
-        localStorage.setItem(STORAGE_KEYS.TAX_CLASSES, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-    addToast({
-      type: 'success',
-      title: 'Tax Class Saved',
-      message: `Tax Class "${taxClass.name}" updated.`
-    });
+    void saveTaxClassData(laravelBootstrap, taxClass).then(saved => {
+      setTaxClasses(prev => prev.some(item => item.id === saved.id) ? prev.map(item => item.id === saved.id ? saved : item) : [...prev, saved]);
+      addToast({ type: 'success', title: 'Tax Class Saved', message: `Tax Class "${saved.name}" updated.` });
+    }).catch(error => addToast({ type: 'error', title: 'Tax Class Save Failed', message: error instanceof Error ? error.message : 'Unable to save tax class to MySQL.' }));
   };
 
   const deleteTaxClass = (id: string) => {
-    setTaxClasses(prev => {
-      const updated = prev.filter(t => t.id !== id);
-      try {
-        localStorage.setItem(STORAGE_KEYS.TAX_CLASSES, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-    addToast({
-      type: 'info',
-      title: 'Tax Class Deleted',
-      message: 'Tax classification schedule removed.'
-    });
+    void deleteTaxClassData(laravelBootstrap, id).then(() => {
+      setTaxClasses(prev => prev.filter(taxClass => taxClass.id !== id));
+      addToast({ type: 'info', title: 'Tax Class Deleted', message: 'Tax classification schedule removed.' });
+    }).catch(error => addToast({ type: 'error', title: 'Tax Class Delete Failed', message: error instanceof Error ? error.message : 'Unable to delete tax class.' }));
   };
 
   const saveTaxRate = (taxRate: TaxRate) => {
-    setTaxRates(prev => {
-      const exists = prev.some(t => t.id === taxRate.id);
-      let updated: TaxRate[];
-      if (exists) {
-        updated = prev.map(t => (t.id === taxRate.id ? taxRate : t));
-      } else {
-        updated = [...prev, taxRate];
-      }
-      try {
-        localStorage.setItem(STORAGE_KEYS.TAX_RATES, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-    addToast({
-      type: 'success',
-      title: 'Tax Rate Saved',
-      message: `${taxRate.description} (${taxRate.ratePercent}%) rate rule updated.`
-    });
+    void saveTaxRule(laravelBootstrap, taxRate).then(saved => {
+      setTaxRates(prev => prev.some(item => item.id === saved.id) ? prev.map(item => item.id === saved.id ? saved : item) : [...prev, saved]);
+      addToast({ type: 'success', title: 'Tax Rate Saved', message: `${saved.description} (${saved.ratePercent}%) rate rule updated.` });
+    }).catch(error => addToast({ type: 'error', title: 'Tax Rate Save Failed', message: error instanceof Error ? error.message : 'Unable to save tax rule to MySQL.' }));
   };
 
   const deleteTaxRate = (id: string) => {
-    setTaxRates(prev => {
-      const updated = prev.filter(t => t.id !== id);
-      try {
-        localStorage.setItem(STORAGE_KEYS.TAX_RATES, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-    addToast({
-      type: 'info',
-      title: 'Tax Rate Removed',
-      message: 'Jurisdiction tax percentage rule removed.'
-    });
+    void deleteTaxRuleData(laravelBootstrap, id).then(() => {
+      setTaxRates(prev => prev.filter(taxRate => taxRate.id !== id));
+      addToast({ type: 'info', title: 'Tax Rate Removed', message: 'Jurisdiction tax percentage rule removed.' });
+    }).catch(error => addToast({ type: 'error', title: 'Tax Rate Delete Failed', message: error instanceof Error ? error.message : 'Unable to delete tax rule.' }));
   };
 
   const saveGlobalTaxEngine = (settings: Partial<GlobalTaxEngineSettings>) => {
-    setGlobalTaxEngine(prev => {
-      const updated = { ...prev, ...settings };
-      try {
-        localStorage.setItem(STORAGE_KEYS.GLOBAL_TAX_ENGINE, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-    addToast({
-      type: 'success',
-      title: 'Global Tax Engine Updated',
-      message: 'Storefront VAT / SST computation model updated.'
-    });
+    const updated = { ...globalTaxEngine, ...settings };
+    const nextConfiguration = { ...taxConfiguration, pricesIncludeTax: updated.pricesIncludeTax, addressBasis: updated.calculateTaxBasedOn };
+    void saveTaxConfiguration(laravelBootstrap, nextConfiguration).then(document => {
+      setTaxConfiguration(document.configuration);
+      setGlobalTaxEngine(current => globalTaxEngineFromConfiguration(document.configuration, { ...current, ...updated }));
+      addToast({ type: 'success', title: 'Global Tax Engine Updated', message: 'Storefront tax computation model updated.' });
+    }).catch(error => addToast({ type: 'error', title: 'Tax Engine Save Failed', message: error instanceof Error ? error.message : 'Unable to save tax configuration to MySQL.' }));
   };
 
   // ---------------------------

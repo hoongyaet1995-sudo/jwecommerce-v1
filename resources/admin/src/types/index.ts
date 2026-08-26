@@ -33,6 +33,7 @@ export interface LaravelAdminBootstrap {
   ordersUrl?: string;
   couponsUrl?: string;
   commerceSettingsUrl?: string;
+  taxSettingsUrl?: string;
   storefrontShellSettingsUrl?: string;
 }
 
