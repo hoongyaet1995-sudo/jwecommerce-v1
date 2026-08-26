@@ -8,6 +8,10 @@ use Illuminate\Support\Collection;
 
 class CartPricingService
 {
+    public function __construct(private readonly TaxQuoteService $taxQuoteService)
+    {
+    }
+
     /** @param Collection<int, array{variant: \App\Models\ProductVariant, quantity: int}> $items */
     public function summarize(Collection $items, ?Coupon $coupon = null, string $delivery = 'standard', ?array $shippingAddress = null, int $paymentSurcharge = 0): array
     {
@@ -27,11 +31,10 @@ class CartPricingService
             default => $standardShipping,
         };
         $paymentSurcharge = max(0, $paymentSurcharge);
-        $taxable = max(0, $subtotal - $discount + $shipping + $paymentSurcharge);
-        $taxRate = $setting('tax_rate_percent') ?: $setting('tax_rate');
-        $tax = (int) floor($taxable * min(100, max(0, $taxRate)) / 100);
+        $taxQuote = $this->taxQuoteService->quote($items, $shippingAddress, $shipping);
+        $tax = $taxQuote['tax'];
 
-        return ['subtotal' => $subtotal, 'discount' => $discount, 'shipping' => $shipping, 'payment_surcharge' => $paymentSurcharge, 'tax' => $tax, 'total' => max(0, $subtotal - $discount + $shipping + $paymentSurcharge + $tax)];
+        return ['subtotal' => $subtotal, 'discount' => $discount, 'shipping' => $shipping, 'payment_surcharge' => $paymentSurcharge, 'tax' => $tax, 'tax_amount' => $tax, 'tax_quote' => $taxQuote, 'total' => max(0, $subtotal - $discount + $shipping + $paymentSurcharge + $tax)];
     }
 
     public function deliveryLabel(string $delivery): string
