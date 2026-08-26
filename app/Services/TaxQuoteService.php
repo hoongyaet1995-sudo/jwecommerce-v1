@@ -44,6 +44,8 @@ class TaxQuoteService
                 'gross_amount' => $taxableAmount,
                 'rule' => $rule,
                 'tax_class_id' => $classId,
+                'variant_id' => $variant->getKey(),
+                'allocation_key' => $this->allocationKey($variant->getKey(), $product?->getKey(), $variant->sku, $classId, $taxableAmount),
             ];
         }
 
@@ -52,7 +54,7 @@ class TaxQuoteService
         foreach ($merchandise as $index => $item) {
             $rule = $item['rule'];
             $taxableAmount = max(0, $item['gross_amount'] - ($discounts[$index] ?? 0));
-            $lines[] = $this->line('merchandise', $taxableAmount, $rule, $item['tax_class_id'], $this->matchedStatus($rule));
+            $lines[] = $this->line('merchandise', $taxableAmount, $rule, $item['tax_class_id'], $this->matchedStatus($rule), $item['variant_id']);
         }
 
         if ($shippingAmount > 0) {
@@ -74,7 +76,7 @@ class TaxQuoteService
         ];
     }
 
-    /** @param list<array{gross_amount: int, rule: ?TaxRule, tax_class_id: ?int}> $merchandise @return array<int, int> */
+    /** @param list<array{gross_amount: int, rule: ?TaxRule, tax_class_id: ?int, variant_id: mixed, allocation_key: string}> $merchandise @return array<int, int> */
     private function allocateDiscount(array $merchandise, int $discount): array
     {
         $eligible = array_filter($merchandise, fn (array $item): bool => $item['gross_amount'] > 0);
@@ -99,8 +101,13 @@ class TaxQuoteService
             $allocated += $allocation;
         }
 
-        arsort($remainders, SORT_NUMERIC);
-        foreach (array_keys($remainders) as $index) {
+        $remainderIndexes = array_keys($remainders);
+        usort($remainderIndexes, function (int $left, int $right) use ($remainders, $merchandise): int {
+            $remainder = $remainders[$right] <=> $remainders[$left];
+
+            return $remainder !== 0 ? $remainder : strcmp($merchandise[$left]['allocation_key'], $merchandise[$right]['allocation_key']);
+        });
+        foreach ($remainderIndexes as $index) {
             if ($allocated >= $discount) {
                 break;
             }
@@ -119,6 +126,17 @@ class TaxQuoteService
         }
 
         return (string) $rule->rate_percent === '0.0000' ? 'matched_zero_rate' : 'chargeable';
+    }
+
+    private function allocationKey(mixed $variantId, mixed $productId, ?string $sku, ?int $classId, int $grossAmount): string
+    {
+        if (is_numeric($variantId) && (int) $variantId > 0) {
+            return 'variant:'.str_pad((string) $variantId, 20, '0', STR_PAD_LEFT);
+        }
+
+        // Unsaved variants have no database key. The deterministic tuple keeps distinct
+        // fallback inputs ordered; exact duplicate tuples are economically equivalent.
+        return sprintf('fallback:product:%020d|sku:%s|class:%020d|gross:%020d', (int) $productId, (string) $sku, (int) $classId, $grossAmount);
     }
 
     /** @param Collection<int, TaxRule> $rules */
@@ -160,12 +178,13 @@ class TaxQuoteService
     }
 
     /** @return array<string, mixed> */
-    private function line(string $kind, int $taxableAmount, ?TaxRule $rule, ?int $classId, string $status): array
+    private function line(string $kind, int $taxableAmount, ?TaxRule $rule, ?int $classId, string $status, mixed $variantId = null): array
     {
         $rate = $rule ? (string) $rule->rate_percent : '0.0000';
 
         return [
             'kind' => $kind,
+            'variant_id' => $variantId,
             'label' => $rule?->label ?? ($kind === 'shipping' ? 'Shipping' : 'Merchandise'),
             'rule_id' => $rule?->id,
             'tax_class_id' => $classId,

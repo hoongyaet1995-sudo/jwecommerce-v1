@@ -184,6 +184,31 @@ class TaxQuoteCartPricingTest extends TestCase
         $this->assertSame(800, $quote['tax']);
     }
 
+    public function test_equal_discount_remainders_are_invariant_when_cart_items_are_reversed(): void
+    {
+        $class = TaxClass::factory()->create();
+        $zone = TaxZone::factory()->create(['country' => 'MY', 'state' => 'Selangor', 'postcode' => '50000']);
+        $taxable = $this->product($class, 10)->variants->sole();
+        $classless = $this->product(null, 10)->variants->sole();
+        $this->publishConfiguration();
+        TaxRule::factory()->create(['tax_class_id' => $class->id, 'tax_zone_id' => $zone->id, 'rate_percent' => '10.0000', 'is_enabled' => true]);
+        $address = ['country' => 'MY', 'state' => 'Selangor', 'postal_code' => '50000'];
+
+        $forward = app(TaxQuoteService::class)->quote(collect([
+            ['variant' => $taxable, 'quantity' => 1],
+            ['variant' => $classless, 'quantity' => 1],
+        ]), $address, 0, 1);
+        $reversed = app(TaxQuoteService::class)->quote(collect([
+            ['variant' => $classless, 'quantity' => 1],
+            ['variant' => $taxable, 'quantity' => 1],
+        ]), $address, 0, 1);
+
+        $this->assertSame(0, $forward['tax']);
+        $this->assertSame($forward['tax'], $reversed['tax']);
+        $this->assertSame($this->amountsByVariant($forward), $this->amountsByVariant($reversed));
+        $this->assertSame([$taxable->id => 9, $classless->id => 10], $this->amountsByVariant($forward));
+    }
+
     private function publishConfiguration(): void
     {
         TaxConfiguration::factory()->create(['is_enabled' => true, 'is_published' => true]);
@@ -209,5 +234,15 @@ class TaxQuoteCartPricingTest extends TestCase
     private function cartForProduct(Product $product): Collection
     {
         return collect([['variant' => $product->variants->sole(), 'quantity' => 1]]);
+    }
+
+    /** @return array<int, int> */
+    private function amountsByVariant(array $quote): array
+    {
+        return collect($quote['lines'])
+            ->where('kind', 'merchandise')
+            ->mapWithKeys(fn (array $line): array => [$line['variant_id'] => $line['taxable_amount']])
+            ->sortKeys()
+            ->all();
     }
 }
