@@ -147,6 +147,43 @@ class TaxQuoteCartPricingTest extends TestCase
         $this->assertSame('matched_zero_rate', $quote['lines'][0]['status']);
     }
 
+    public function test_discount_is_first_allocated_across_taxable_and_classless_merchandise(): void
+    {
+        $class = TaxClass::factory()->create();
+        $zone = TaxZone::factory()->create(['country' => 'MY', 'state' => 'Selangor', 'postcode' => '50000']);
+        $items = collect([
+            ['variant' => $this->product($class, 10000)->variants->sole(), 'quantity' => 1],
+            ['variant' => $this->product(null, 10000)->variants->sole(), 'quantity' => 1],
+        ]);
+        $this->publishConfiguration();
+        TaxRule::factory()->create(['tax_class_id' => $class->id, 'tax_zone_id' => $zone->id, 'rate_percent' => '6.0000', 'is_enabled' => true]);
+
+        $quote = app(TaxQuoteService::class)->quote($items, ['country' => 'MY', 'state' => 'Selangor', 'postal_code' => '50000'], 0, 10000);
+
+        $this->assertSame([5000, 5000], array_column($quote['lines'], 'taxable_amount'));
+        $this->assertSame(300, $quote['tax']);
+    }
+
+    public function test_discount_allocation_keeps_each_tax_class_net_amount_for_its_own_rate(): void
+    {
+        $firstClass = TaxClass::factory()->create();
+        $secondClass = TaxClass::factory()->create();
+        $zone = TaxZone::factory()->create(['country' => 'MY', 'state' => 'Selangor', 'postcode' => '50000']);
+        $items = collect([
+            ['variant' => $this->product($firstClass, 10000)->variants->sole(), 'quantity' => 1],
+            ['variant' => $this->product($secondClass, 10000)->variants->sole(), 'quantity' => 1],
+        ]);
+        $this->publishConfiguration();
+        TaxRule::factory()->create(['tax_class_id' => $firstClass->id, 'tax_zone_id' => $zone->id, 'rate_percent' => '6.0000', 'is_enabled' => true]);
+        TaxRule::factory()->create(['tax_class_id' => $secondClass->id, 'tax_zone_id' => $zone->id, 'rate_percent' => '10.0000', 'is_enabled' => true]);
+
+        $quote = app(TaxQuoteService::class)->quote($items, ['country' => 'MY', 'state' => 'Selangor', 'postal_code' => '50000'], 0, 10000);
+
+        $this->assertSame([5000, 5000], array_column($quote['lines'], 'taxable_amount'));
+        $this->assertSame([300, 500], array_column($quote['lines'], 'tax_amount'));
+        $this->assertSame(800, $quote['tax']);
+    }
+
     private function publishConfiguration(): void
     {
         TaxConfiguration::factory()->create(['is_enabled' => true, 'is_published' => true]);

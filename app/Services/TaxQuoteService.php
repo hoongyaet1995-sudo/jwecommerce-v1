@@ -77,7 +77,7 @@ class TaxQuoteService
     /** @param list<array{gross_amount: int, rule: ?TaxRule, tax_class_id: ?int}> $merchandise @return array<int, int> */
     private function allocateDiscount(array $merchandise, int $discount): array
     {
-        $eligible = array_filter($merchandise, fn (array $item): bool => $item['rule'] !== null && $item['gross_amount'] > 0);
+        $eligible = array_filter($merchandise, fn (array $item): bool => $item['gross_amount'] > 0);
         $total = array_sum(array_column($eligible, 'gross_amount'));
         $discount = min(max(0, $discount), $total);
         if ($discount === 0 || $total === 0) {
@@ -88,7 +88,7 @@ class TaxQuoteService
         $remainders = [];
         $allocated = 0;
         foreach ($merchandise as $index => $item) {
-            if ($item['rule'] === null || $item['gross_amount'] <= 0) {
+            if ($item['gross_amount'] <= 0) {
                 continue;
             }
 
