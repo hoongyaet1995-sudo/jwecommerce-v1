@@ -31,7 +31,7 @@ class TaxCheckoutSnapshotTest extends TestCase
             'is_enabled' => true,
         ]);
 
-        $this->placeBankTransferOrder($variant->id);
+        $this->placeBankTransferOrder([$variant->id => 1]);
 
         $order = Order::query()->sole();
         $line = $order->taxLines()->sole();
@@ -59,7 +59,7 @@ class TaxCheckoutSnapshotTest extends TestCase
             'is_enabled' => true,
         ]);
 
-        $this->placeBankTransferOrder($variant->id);
+        $this->placeBankTransferOrder([$variant->id => 1]);
 
         $order = Order::query()->sole();
         $line = $order->taxLines()->sole();
@@ -80,7 +80,7 @@ class TaxCheckoutSnapshotTest extends TestCase
             'is_enabled' => true,
         ]);
 
-        $this->placeBankTransferOrder($variant->id);
+        $this->placeBankTransferOrder([$variant->id => 1]);
 
         $this->assertDatabaseHas('orders', ['tax_amount' => 0]);
         $this->assertDatabaseCount('order_tax_lines', 0);
@@ -98,7 +98,7 @@ class TaxCheckoutSnapshotTest extends TestCase
             'is_enabled' => true,
         ]);
 
-        $this->placeBankTransferOrder($variant->id);
+        $this->placeBankTransferOrder([$variant->id => 1]);
         $line = OrderTaxLine::query()->sole();
         $snapshot = $line->configuration_snapshot;
 
@@ -115,11 +115,34 @@ class TaxCheckoutSnapshotTest extends TestCase
         $this->assertSame('SST', $line->configuration_snapshot['tax_class']['code']);
     }
 
-    private function placeBankTransferOrder(int $variantId): void
+    public function test_checkout_persists_each_matched_merchandise_and_shipping_tax_line_once(): void
+    {
+        [$firstVariant, $class, $zone] = $this->taxableVariant();
+        $secondVariant = $firstVariant->product->variants()->create(['sku' => 'TAX-2', 'title' => 'Second', 'price' => 5000, 'stock' => 10, 'enabled' => true]);
+        TaxConfiguration::factory()->create(['is_enabled' => true, 'is_published' => true]);
+        TaxRule::factory()->create([
+            'tax_class_id' => $class->id,
+            'tax_zone_id' => $zone->id,
+            'rate_percent' => '6.0000',
+            'applies_to_shipping' => true,
+            'is_enabled' => true,
+        ]);
+
+        $this->placeBankTransferOrder([$firstVariant->id => 1, $secondVariant->id => 1], 10);
+
+        $order = Order::query()->sole();
+        $this->assertSame(960, $order->tax_amount);
+        $this->assertCount(3, $order->taxLines);
+        $this->assertSame($order->tax_amount, $order->taxLines->sum('tax_amount'));
+        $this->assertSame(['merchandise', 'merchandise', 'shipping'], $order->taxLines->pluck('configuration_snapshot')->map(fn (array $snapshot): string => $snapshot['quote_line']['kind'])->sort()->values()->all());
+    }
+
+    /** @param array<int, int> $cart */
+    private function placeBankTransferOrder(array $cart, int $shipping = 0): void
     {
         StoreSetting::query()->updateOrCreate(['key' => 'shipping_rates'], ['value' => ['data' => [[
             'id' => 'standard', 'name' => 'Standard Delivery', 'zoneRegion' => 'all', 'logisticType' => 'all',
-            'calculationMode' => 'per_order', 'rateType' => 'flat', 'tiers' => [], 'flatRateCost' => 0,
+            'calculationMode' => 'per_order', 'rateType' => 'flat', 'tiers' => [], 'flatRateCost' => $shipping,
             'freeShippingThreshold' => 0, 'isActive' => true,
         ]]]]);
         StoreSetting::query()->updateOrCreate(['key' => 'bank_transfer'], ['value' => ['data' => [
@@ -127,7 +150,7 @@ class TaxCheckoutSnapshotTest extends TestCase
             'bankAccounts' => [['id' => 'primary', 'bankName' => 'Test Bank', 'accountNumber' => '1234', 'isActive' => true]],
         ]]]);
 
-        $this->withSession(['cart' => [$variantId => 1]])
+        $this->withSession(['cart' => $cart])
             ->post('/checkout', [
                 'email' => 'tax-buyer@example.com', 'first_name' => 'Tax', 'last_name' => 'Buyer',
                 'line_1' => '10 Tax Street', 'city' => 'Kuala Lumpur', 'state' => 'Selangor',

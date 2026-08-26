@@ -80,12 +80,12 @@ class CheckoutService
             $summary = $this->pricing->summarize($checkoutItems, $lockedCoupon, $delivery, $shippingAddress, $surcharge);
             $order = Order::query()->create(['number' => 'JW-'.now()->format('YmdHis').'-'.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT), 'customer_id' => $customer->id, 'coupon_id' => $lockedCoupon?->id, 'coupon_code' => $lockedCoupon?->code, 'email' => $email, 'currency' => $currencySnapshot['code'] ?? 'USD', 'currency_exchange_rate' => $currencySnapshot['exchange_rate'] ?? 1, 'status' => 'pending_payment', 'shipping_method' => $delivery, 'shipping_label' => $this->pricing->deliveryLabel($delivery), 'subtotal' => $summary['subtotal'], 'discount_amount' => $summary['discount'], 'shipping_amount' => $summary['shipping'], 'payment_surcharge_amount' => $summary['payment_surcharge'], 'tax_amount' => $summary['tax'], 'total' => $summary['total']]);
             foreach ($lines as $line) {
-            $this->persistTaxSnapshot($order, $summary['tax_quote']);
                 $variant = $line['variant'];
                 $product = $variant->product()->with('images')->firstOrFail();
                 OrderItem::query()->create(['order_id' => $order->id, 'product_variant_id' => $variant->id, 'sku' => $variant->sku, 'title' => $product->title, 'variant_title' => $variant->title, 'image_url' => $product->images->sortBy('position')->first()?->path, 'unit_price' => $variant->price, 'quantity' => $line['quantity'], 'line_total' => $line['line_total']]);
             }
             $payment = $this->paymentAttempts->createPendingPayment($order, $method, $order->currency, $bankAccountId);
+            $this->persistTaxSnapshot($order, $summary['tax_quote']);
             if ($paymentProof) {
                 if ($gateway !== 'bank_transfer' || ! data_get($method, 'bankTransfer.allowProofUpload', false)) {
                     throw ValidationException::withMessages(['payment_proof' => 'Receipt uploads are not enabled for this payment method.']);
