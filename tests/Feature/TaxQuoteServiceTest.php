@@ -80,6 +80,13 @@ class TaxQuoteServiceTest extends TestCase
         TaxConfiguration::factory()->create();
     }
 
+    public function test_a_tax_configuration_rejects_a_non_canonical_singleton_key_at_the_database_boundary(): void
+    {
+        $this->expectException(QueryException::class);
+
+        TaxConfiguration::unguarded(fn () => TaxConfiguration::create(['singleton_key' => 2]));
+    }
+
     public function test_a_new_tax_rule_is_inert_until_a_concrete_rate_is_deliberately_configured(): void
     {
         $rule = TaxRule::factory()->make();
@@ -98,6 +105,18 @@ class TaxQuoteServiceTest extends TestCase
         $this->expectException(LogicException::class);
 
         $line->update(['tax_amount' => 700]);
+    }
+
+    public function test_an_order_tax_line_rejects_bulk_query_updates_at_the_database_boundary(): void
+    {
+        $line = OrderTaxLine::factory()->create([
+            'order_id' => Order::factory()->create()->id,
+            'tax_amount' => 600,
+        ]);
+
+        $this->expectException(QueryException::class);
+
+        OrderTaxLine::query()->whereKey($line)->update(['tax_amount' => 700]);
     }
 }
 
