@@ -31,7 +31,7 @@ class CartPricingService
             default => $standardShipping,
         };
         $paymentSurcharge = max(0, $paymentSurcharge);
-        $taxQuote = $this->taxQuoteService->quote($items, $shippingAddress, $shipping);
+        $taxQuote = $this->taxQuoteService->quote($items, $shippingAddress, $shipping, $discount);
         $tax = $taxQuote['tax'];
 
         return ['subtotal' => $subtotal, 'discount' => $discount, 'shipping' => $shipping, 'payment_surcharge' => $paymentSurcharge, 'tax' => $tax, 'tax_amount' => $tax, 'tax_quote' => $taxQuote, 'total' => max(0, $subtotal - $discount + $shipping + $paymentSurcharge + $tax)];

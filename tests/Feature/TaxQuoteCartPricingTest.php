@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\Coupon;
 use App\Models\Product;
 use App\Models\TaxClass;
 use App\Models\TaxConfiguration;
@@ -100,6 +101,50 @@ class TaxQuoteCartPricingTest extends TestCase
         $this->assertSame(600, $withoutShippingTax['tax']);
         $this->assertSame(660, $withShippingTax['tax']);
         $this->assertSame('shipping', $withShippingTax['lines'][1]['kind']);
+    }
+
+    public function test_cart_pricing_calculates_tax_after_a_fixed_merchandise_discount(): void
+    {
+        [$items, $class, $zone] = $this->taxableCart('MY', 'Selangor', '50000');
+        $this->publishConfiguration();
+        TaxRule::factory()->create(['tax_class_id' => $class->id, 'tax_zone_id' => $zone->id, 'rate_percent' => '6.0000', 'is_enabled' => true]);
+        $coupon = Coupon::query()->create(['code' => 'TENOFF', 'name' => 'Ten off', 'discount_type' => 'fixed_amount', 'value' => 1000, 'usage_limit' => 1, 'usage_count' => 0, 'per_customer_limit' => 1, 'is_active' => true]);
+
+        $summary = app(CartPricingService::class)->summarize($items, $coupon, 'standard', ['country' => 'MY', 'state' => 'Selangor', 'postal_code' => '50000']);
+
+        $this->assertSame(1000, $summary['discount']);
+        $this->assertSame(540, $summary['tax']);
+        $this->assertSame(9000, $summary['tax_quote']['lines'][0]['taxable_amount']);
+    }
+
+    public function test_discount_remainder_is_allocated_deterministically_across_taxable_merchandise_lines(): void
+    {
+        $class = TaxClass::factory()->create();
+        $zone = TaxZone::factory()->create(['country' => 'MY', 'state' => 'Selangor', 'postcode' => '50000']);
+        $items = collect([
+            ['variant' => $this->product($class, 10001)->variants->sole(), 'quantity' => 1],
+            ['variant' => $this->product($class, 10000)->variants->sole(), 'quantity' => 1],
+        ]);
+        $this->publishConfiguration();
+        TaxRule::factory()->create(['tax_class_id' => $class->id, 'tax_zone_id' => $zone->id, 'rate_percent' => '6.0000', 'is_enabled' => true]);
+
+        $quote = app(TaxQuoteService::class)->quote($items, ['country' => 'MY', 'state' => 'Selangor', 'postal_code' => '50000'], 0, 1);
+
+        $this->assertSame([10000, 10000], array_column($quote['lines'], 'taxable_amount'));
+        $this->assertSame(1200, $quote['tax']);
+    }
+
+    public function test_an_explicit_matching_zero_rate_rule_has_a_distinguishable_matched_status(): void
+    {
+        [$items, $class, $zone] = $this->taxableCart('MY', 'Selangor', '50000');
+        $this->publishConfiguration();
+        TaxRule::factory()->create(['tax_class_id' => $class->id, 'tax_zone_id' => $zone->id, 'rate_percent' => '0.0000', 'is_enabled' => true]);
+
+        $quote = app(TaxQuoteService::class)->quote($items, ['country' => 'MY', 'state' => 'Selangor', 'postal_code' => '50000']);
+
+        $this->assertSame(0, $quote['tax']);
+        $this->assertSame('matched_zero_rate', $quote['status']);
+        $this->assertSame('matched_zero_rate', $quote['lines'][0]['status']);
     }
 
     private function publishConfiguration(): void
