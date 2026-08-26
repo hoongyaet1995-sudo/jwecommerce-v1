@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -43,5 +44,10 @@ class OrderTaxLine extends Model
     public function taxClass(): BelongsTo
     {
         return $this->belongsTo(TaxClass::class);
+    }
+
+    protected function performUpdate(Builder $query)
+    {
+        throw new \LogicException('Order tax lines are immutable.');
     }
 }

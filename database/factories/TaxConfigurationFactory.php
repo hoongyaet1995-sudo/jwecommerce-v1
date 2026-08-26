@@ -13,6 +13,7 @@ class TaxConfigurationFactory extends Factory
     public function definition(): array
     {
         return [
+            'singleton_key' => 1,
             'is_enabled' => false,
             'is_published' => false,
             'prices_include_tax' => false,

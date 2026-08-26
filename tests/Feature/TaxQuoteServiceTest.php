@@ -6,10 +6,13 @@ use App\Models\Order;
 use App\Models\OrderTaxLine;
 use App\Models\Product;
 use App\Models\TaxClass;
+use App\Models\TaxConfiguration;
 use App\Models\TaxRule;
 use App\Models\TaxZone;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Database\QueryException;
+use LogicException;
 use Tests\TestCase;
 
 class TaxQuoteServiceTest extends TestCase
@@ -64,6 +67,37 @@ class TaxQuoteServiceTest extends TestCase
         $this->assertTrue($rule->isEffectiveAt($at));
         $this->assertFalse($rule->isEffectiveAt($at->subDays(2)));
         $this->assertFalse($rule->isEffectiveAt($at->addDays(2)));
+    }
+
+    public function test_only_one_canonical_tax_configuration_can_be_created(): void
+    {
+        $configuration = TaxConfiguration::factory()->create();
+
+        $this->assertSame(1, $configuration->singleton_key);
+
+        $this->expectException(QueryException::class);
+
+        TaxConfiguration::factory()->create();
+    }
+
+    public function test_a_new_tax_rule_is_inert_until_a_concrete_rate_is_deliberately_configured(): void
+    {
+        $rule = TaxRule::factory()->make();
+
+        $this->assertFalse($rule->is_enabled);
+        $this->assertSame('0.0000', $rule->rate_percent);
+    }
+
+    public function test_an_order_tax_line_cannot_be_updated_after_its_creation(): void
+    {
+        $line = OrderTaxLine::factory()->create([
+            'order_id' => Order::factory()->create()->id,
+            'tax_amount' => 600,
+        ]);
+
+        $this->expectException(LogicException::class);
+
+        $line->update(['tax_amount' => 700]);
     }
 }
 
@@ -123,7 +157,6 @@ class OrderFactory extends Factory
             'status' => 'pending_payment',
             'shipping_method' => 'standard',
             'shipping_label' => null,
-            'shipping_snapshot' => null,
             'tracking_carrier' => null,
             'tracking_number' => null,
             'customer_note' => null,

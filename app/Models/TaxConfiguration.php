@@ -9,6 +9,10 @@ class TaxConfiguration extends Model
 {
     use HasFactory;
 
+    protected $attributes = [
+        'singleton_key' => 1,
+    ];
+
     protected $fillable = [
         'is_enabled',
         'is_published',

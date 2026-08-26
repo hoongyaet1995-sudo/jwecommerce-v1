@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('tax_configurations', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedTinyInteger('singleton_key')->default(1)->unique();
             $table->boolean('is_enabled')->default(false);
             $table->boolean('is_published')->default(false);
             $table->boolean('prices_include_tax')->default(false);

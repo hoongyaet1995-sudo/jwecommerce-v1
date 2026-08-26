@@ -19,10 +19,10 @@ class TaxRuleFactory extends Factory
             'tax_zone_id' => TaxZone::factory(),
             'label' => fake()->words(3, true),
             'tax_type' => 'tax',
-            'rate_percent' => fake()->randomFloat(4, 0, 100),
+            'rate_percent' => '0.0000',
             'applies_to_shipping' => false,
             'priority' => 0,
-            'is_enabled' => true,
+            'is_enabled' => false,
             'effective_from' => null,
             'effective_until' => null,
         ];
