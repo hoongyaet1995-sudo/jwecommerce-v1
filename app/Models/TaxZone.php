@@ -10,7 +10,7 @@ class TaxZone extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['code', 'name', 'country', 'state', 'postcode', 'is_active'];
+    protected $fillable = ['code', 'name', 'description', 'country', 'state', 'postcode', 'is_active'];
 
     protected function casts(): array
     {

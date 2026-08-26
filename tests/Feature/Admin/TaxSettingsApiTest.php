@@ -34,7 +34,13 @@ class TaxSettingsApiTest extends TestCase
 
         $class = $this->actingAs($admin)->postJson('/admin/api/tax-settings/classes', [
             'name' => 'Standard goods', 'description' => 'Merchant configured', 'defaultRate' => 8,
+            'geoZoneId' => $zone['id'],
         ])->assertCreated()->json('data');
+
+        $this->assertDatabaseHas('tax_rules', [
+            'tax_class_id' => $class['id'], 'tax_zone_id' => $zone['id'],
+            'tax_type' => 'class_default', 'rate_percent' => '8.0000',
+        ]);
 
         $this->actingAs($admin)->postJson('/admin/api/tax-settings/rules', [
             'taxClassId' => $class['id'], 'geoZoneId' => $zone['id'], 'description' => 'Merchant SST',
@@ -43,7 +49,68 @@ class TaxSettingsApiTest extends TestCase
 
         $this->assertDatabaseHas('tax_rules', ['label' => 'Merchant SST', 'rate_percent' => '8.0000']);
         $this->actingAs($admin)->getJson('/admin/api/tax-settings')
-            ->assertOk()->assertJsonCount(1, 'data.zones')->assertJsonCount(1, 'data.classes')->assertJsonCount(1, 'data.rules');
+            ->assertOk()->assertJsonCount(1, 'data.zones')->assertJsonCount(1, 'data.classes')->assertJsonCount(2, 'data.rules');
+    }
+
+    public function test_tax_zone_description_is_persisted_and_returned_after_update(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $zone = $this->actingAs($admin)->postJson('/admin/api/tax-settings/zones', [
+            'name' => 'Malaysia domestic', 'description' => 'Initial jurisdiction description',
+            'countryIds' => ['MY'], 'zoneIds' => ['Selangor'], 'isActive' => true,
+        ])->assertCreated()->assertJsonPath('data.description', 'Initial jurisdiction description')->json('data');
+
+        $this->actingAs($admin)->patchJson("/admin/api/tax-settings/zones/{$zone['id']}", [
+            'name' => 'Malaysia domestic', 'description' => 'Updated jurisdiction description',
+            'countryIds' => ['MY'], 'zoneIds' => ['Selangor'], 'isActive' => true,
+        ])->assertOk()->assertJsonPath('data.description', 'Updated jurisdiction description');
+
+        $this->assertDatabaseHas('tax_zones', ['id' => $zone['id'], 'description' => 'Updated jurisdiction description']);
+        $this->actingAs($admin)->getJson('/admin/api/tax-settings')
+            ->assertOk()->assertJsonPath('data.zones.0.description', 'Updated jurisdiction description');
+    }
+
+    public function test_tax_class_default_rate_requires_an_explicit_tax_zone(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $this->actingAs($admin)->postJson('/admin/api/tax-settings/classes', [
+            'name' => 'Standard goods', 'defaultRate' => 8,
+        ])->assertUnprocessable()->assertJsonValidationErrors(['geoZoneId']);
+
+        $this->assertDatabaseMissing('tax_classes', ['name' => 'Standard goods']);
+    }
+
+    public function test_tax_class_default_rate_updates_only_its_managed_rule(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $firstZone = TaxZone::factory()->create();
+        $secondZone = TaxZone::factory()->create();
+
+        $class = $this->actingAs($admin)->postJson('/admin/api/tax-settings/classes', [
+            'name' => 'Standard goods', 'description' => 'Merchant configured',
+            'defaultRate' => 8, 'geoZoneId' => $firstZone->id,
+        ])->assertCreated()->assertJsonPath('data.defaultRate', 8)->json('data');
+
+        $manualRule = TaxRule::factory()->create([
+            'tax_class_id' => $class['id'], 'tax_zone_id' => $firstZone->id,
+            'tax_type' => 'standard', 'label' => 'Manual merchant rule', 'rate_percent' => 5,
+        ]);
+
+        $this->actingAs($admin)->patchJson("/admin/api/tax-settings/classes/{$class['id']}", [
+            'name' => 'Standard goods', 'description' => 'Updated merchant configuration',
+            'defaultRate' => 10, 'geoZoneId' => $secondZone->id,
+        ])->assertOk()->assertJsonPath('data.defaultRate', 10);
+
+        $this->assertDatabaseHas('tax_rules', [
+            'tax_class_id' => $class['id'], 'tax_zone_id' => $secondZone->id,
+            'tax_type' => 'class_default', 'rate_percent' => '10.0000',
+        ]);
+        $this->assertDatabaseHas('tax_rules', [
+            'id' => $manualRule->id, 'tax_zone_id' => $firstZone->id,
+            'tax_type' => 'standard', 'label' => 'Manual merchant rule', 'rate_percent' => '5.0000',
+        ]);
     }
 
     public function test_empty_tax_document_has_no_chargeable_mock_rule_or_rate(): void

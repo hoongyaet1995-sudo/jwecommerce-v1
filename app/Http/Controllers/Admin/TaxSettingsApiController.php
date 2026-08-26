@@ -9,6 +9,7 @@ use App\Models\TaxRule;
 use App\Models\TaxZone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -68,14 +69,24 @@ class TaxSettingsApiController extends Controller
 
     public function storeClass(Request $request): JsonResponse
     {
-        $class = TaxClass::query()->create($this->classData($request));
+        $payload = $this->classPayload($request);
+        $class = DB::transaction(function () use ($payload): TaxClass {
+            $class = TaxClass::query()->create($payload['attributes']);
+            $this->persistManagedDefaultRule($class, $payload);
+
+            return $class;
+        });
 
         return response()->json(['data' => $this->taxClass($class)], 201);
     }
 
     public function updateClass(Request $request, TaxClass $taxClass): JsonResponse
     {
-        $taxClass->update($this->classData($request, $taxClass));
+        $payload = $this->classPayload($request, $taxClass);
+        DB::transaction(function () use ($taxClass, $payload): void {
+            $taxClass->update($payload['attributes']);
+            $this->persistManagedDefaultRule($taxClass, $payload);
+        });
 
         return response()->json(['data' => $this->taxClass($taxClass->fresh())]);
     }
@@ -136,15 +147,69 @@ class TaxSettingsApiController extends Controller
         ];
     }
 
-    /** @return array<string, mixed> */
-    private function classData(Request $request, ?TaxClass $class = null): array
+    /** @return array{attributes: array<string, mixed>, defaultRate: float|null, geoZoneId: int|null} */
+    private function classPayload(Request $request, ?TaxClass $class = null): array
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'], 'description' => ['nullable', 'string', 'max:5000'],
             'defaultRate' => ['nullable', 'numeric', 'between:0,100'], 'isActive' => ['nullable', 'boolean'],
+            'geoZoneId' => ['nullable', 'integer', Rule::exists('tax_zones', 'id')],
         ]);
-        return ['code' => $this->uniqueCode('class', $data['name'], $class?->id), 'name' => trim($data['name']),
-            'description' => $data['description'] ?? null, 'is_active' => $data['isActive'] ?? true];
+        $defaultRate = $data['defaultRate'] ?? null;
+
+        if ($defaultRate !== null && empty($data['geoZoneId'])) {
+            throw ValidationException::withMessages([
+                'geoZoneId' => ['Select a tax zone before setting a default tax rate.'],
+            ]);
+        }
+
+        return [
+            'attributes' => [
+                'code' => $this->uniqueCode('class', $data['name'], $class?->id), 'name' => trim($data['name']),
+                'description' => $data['description'] ?? null, 'is_active' => $data['isActive'] ?? true,
+            ],
+            'defaultRate' => $defaultRate === null ? null : (float) $defaultRate,
+            'geoZoneId' => isset($data['geoZoneId']) ? (int) $data['geoZoneId'] : null,
+        ];
+    }
+
+    /** @param array{attributes: array<string, mixed>, defaultRate: float|null, geoZoneId: int|null} $payload */
+    private function persistManagedDefaultRule(TaxClass $class, array $payload): void
+    {
+        if ($payload['defaultRate'] === null) {
+            return;
+        }
+
+        $managedRules = TaxRule::query()
+            ->where('tax_class_id', $class->id)
+            ->where('tax_type', 'class_default')
+            ->lockForUpdate()
+            ->get();
+
+        if ($managedRules->count() > 1) {
+            throw ValidationException::withMessages([
+                'defaultRate' => ['This tax class has multiple managed default rate rules and must be repaired before it can be updated.'],
+            ]);
+        }
+
+        $attributes = [
+            'tax_zone_id' => $payload['geoZoneId'],
+            'label' => 'Default rate: '.$class->name,
+            'rate_percent' => $payload['defaultRate'],
+            'applies_to_shipping' => false,
+            'priority' => 0,
+            'is_enabled' => true,
+            'effective_from' => null,
+            'effective_until' => null,
+        ];
+
+        if ($managedRules->isNotEmpty()) {
+            $managedRules->first()->update($attributes);
+
+            return;
+        }
+
+        $class->rules()->create($attributes + ['tax_type' => 'class_default']);
     }
 
     /** @return array<string, mixed> */
@@ -204,7 +269,7 @@ class TaxSettingsApiController extends Controller
     /** @return array<string, mixed> */
     private function taxClass(TaxClass $class): array
     {
-        $defaultRate = $class->rules()->where('is_enabled', true)->orderBy('priority')->value('rate_percent');
+        $defaultRate = $class->rules()->where('tax_type', 'class_default')->value('rate_percent');
         return ['id' => (string) $class->id, 'name' => $class->name, 'description' => $class->description ?? '',
             'defaultRate' => (float) ($defaultRate ?? 0), 'productCount' => $class->products_count ?? $class->products()->count()];
     }
