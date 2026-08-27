@@ -39,4 +39,10 @@ describe('ProductEditorModal Variant Matrix source fidelity', () => {
     expect(addValue).toContain("newVisuals[val] = { visualType: 'color', colorCode: guessed }");
     expect(addValue).toContain('valueVisuals: newVisuals');
   });
+
+  it('preserves a typed zero package dimension for server-side validation', () => {
+    const packageInputs = source.slice(source.indexOf('placeholder="L"'), source.indexOf('checked={variant.enabled}'));
+
+    expect(packageInputs).toContain("packageDimensionValue(e.target.value)");
+  });
 });

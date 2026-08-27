@@ -117,6 +117,26 @@ class CatalogApiTest extends TestCase
             ->assertJsonPath('data.variants.0.packageHeightCm', null);
     }
 
+    public function test_catalog_rejects_package_dimensions_that_exceed_database_precision(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $category = $this->actingAs($admin)->postJson('/admin/api/catalog/categories', [
+            'name' => 'Precision catalog', 'slug' => 'precision-catalog', 'status' => 'active', 'sortOrder' => 1,
+        ])->assertCreated()->json('data');
+        $payload = $this->productPayload((string) $category['id'], []);
+        $payload['variants'][0]['packageLengthCm'] = 0.001;
+        $payload['variants'][0]['packageWidthCm'] = 12.345;
+        $payload['variants'][0]['packageHeightCm'] = 8.999;
+
+        $this->actingAs($admin)->postJson('/admin/api/catalog/products', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'variants.0.packageLengthCm',
+                'variants.0.packageWidthCm',
+                'variants.0.packageHeightCm',
+            ]);
+    }
+
     public function test_duplicate_sku_rejects_the_whole_product_transaction(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);

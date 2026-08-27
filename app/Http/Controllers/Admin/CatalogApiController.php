@@ -227,7 +227,7 @@ class CatalogApiController extends Controller
             'variants.*.options' => ['array'], 'variants.*.price' => ['required', 'numeric', 'min:0'], 'variants.*.compareAtPrice' => ['nullable', 'numeric', 'min:0'],
             'variants.*.costPrice' => ['nullable', 'numeric', 'min:0'], 'variants.*.inventoryQuantity' => ['required', 'integer', 'min:0'],
             'variants.*.weightGrams' => ['nullable', 'integer', 'min:0'],
-            'variants.*.packageLengthCm' => ['nullable', 'numeric', 'gt:0', 'max:9999'], 'variants.*.packageWidthCm' => ['nullable', 'numeric', 'gt:0', 'max:9999'], 'variants.*.packageHeightCm' => ['nullable', 'numeric', 'gt:0', 'max:9999'],
+            'variants.*.packageLengthCm' => ['nullable', 'numeric', 'decimal:0,2', 'gt:0', 'max:9999'], 'variants.*.packageWidthCm' => ['nullable', 'numeric', 'decimal:0,2', 'gt:0', 'max:9999'], 'variants.*.packageHeightCm' => ['nullable', 'numeric', 'decimal:0,2', 'gt:0', 'max:9999'],
             'variants.*.barcode' => ['nullable', 'string', 'max:255'],
             'variants.*.image' => ['nullable', 'string', 'max:2048'], 'variants.*.visualType' => ['nullable', Rule::in(['none', 'color', 'image'])],
             'variants.*.colorCode' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'], 'variants.*.optionImage' => ['nullable', 'string', 'max:2048'],

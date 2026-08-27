@@ -32,6 +32,8 @@ interface ProductEditorModalProps {
   onClose: () => void;
 }
 
+const packageDimensionValue = (value: string): number | undefined => value === '' ? undefined : parseFloat(value);
+
 export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   product,
   isOpen,
@@ -829,9 +831,9 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
 
                           <td className="py-2.5 px-3">
                             <div className="flex items-center gap-1 min-w-48">
-                              <input type="number" min="0.01" max="9999" step="0.01" placeholder="L" aria-label={`Package length in centimeters for ${variant.title}`} value={variant.packageLengthCm ?? ''} onChange={(e) => updateVariantRow(vIdx, 'packageLengthCm', parseFloat(e.target.value) || undefined)} className="w-14 px-2 py-1 text-xs rounded border bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 font-mono" />
-                              <input type="number" min="0.01" max="9999" step="0.01" placeholder="W" aria-label={`Package width in centimeters for ${variant.title}`} value={variant.packageWidthCm ?? ''} onChange={(e) => updateVariantRow(vIdx, 'packageWidthCm', parseFloat(e.target.value) || undefined)} className="w-14 px-2 py-1 text-xs rounded border bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 font-mono" />
-                              <input type="number" min="0.01" max="9999" step="0.01" placeholder="H" aria-label={`Package height in centimeters for ${variant.title}`} value={variant.packageHeightCm ?? ''} onChange={(e) => updateVariantRow(vIdx, 'packageHeightCm', parseFloat(e.target.value) || undefined)} className="w-14 px-2 py-1 text-xs rounded border bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 font-mono" />
+                              <input type="number" min="0.01" max="9999" step="0.01" placeholder="L" aria-label={`Package length in centimeters for ${variant.title}`} value={variant.packageLengthCm ?? ''} onChange={(e) => updateVariantRow(vIdx, 'packageLengthCm', packageDimensionValue(e.target.value))} className="w-14 px-2 py-1 text-xs rounded border bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 font-mono" />
+                              <input type="number" min="0.01" max="9999" step="0.01" placeholder="W" aria-label={`Package width in centimeters for ${variant.title}`} value={variant.packageWidthCm ?? ''} onChange={(e) => updateVariantRow(vIdx, 'packageWidthCm', packageDimensionValue(e.target.value))} className="w-14 px-2 py-1 text-xs rounded border bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 font-mono" />
+                              <input type="number" min="0.01" max="9999" step="0.01" placeholder="H" aria-label={`Package height in centimeters for ${variant.title}`} value={variant.packageHeightCm ?? ''} onChange={(e) => updateVariantRow(vIdx, 'packageHeightCm', packageDimensionValue(e.target.value))} className="w-14 px-2 py-1 text-xs rounded border bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 font-mono" />
                             </div>
                           </td>
 

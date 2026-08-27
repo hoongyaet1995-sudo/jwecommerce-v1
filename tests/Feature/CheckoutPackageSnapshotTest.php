@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\StoreSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use LogicException;
 use Tests\TestCase;
 
 class CheckoutPackageSnapshotTest extends TestCase
@@ -51,6 +52,31 @@ class CheckoutPackageSnapshotTest extends TestCase
             'width_cm' => null,
             'height_cm' => null,
         ], $order->items()->sole()->package_snapshot);
+    }
+
+    public function test_checkout_rejects_package_snapshot_mutation_after_creation(): void
+    {
+        $order = $this->checkoutVariant([
+            'weight_grams' => 420,
+            'package_length_cm' => 30.5,
+            'package_width_cm' => 12,
+            'package_height_cm' => 8,
+        ]);
+        $item = $order->items()->sole();
+
+        try {
+            $item->update([
+                'package_snapshot' => [
+                    'weight_grams' => 999,
+                    'length_cm' => 50,
+                    'width_cm' => 50,
+                    'height_cm' => 50,
+                ],
+            ]);
+            $this->fail('A created order item must not allow its package snapshot to change.');
+        } catch (LogicException) {
+            $this->assertSame(420, $item->fresh()->package_snapshot['weight_grams']);
+        }
     }
 
     /** @param array<string, int|float|null> $package */
