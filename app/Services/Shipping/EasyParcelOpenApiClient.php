@@ -8,11 +8,23 @@ use Throwable;
 
 final class EasyParcelOpenApiClient
 {
+    public const AUTHORIZATION_URL = 'https://api.easyparcel.com/oauth/login';
+
     public const API_VERSION = '2026-06';
 
     public const TOKEN_URL = 'https://api.easyparcel.com/oauth/token';
 
     public const WALLET_URL = 'https://api.easyparcel.com/open_api/'.self::API_VERSION.'/wallet';
+
+    public function authorizationUrl(string $clientId, string $redirectUri, string $state): string
+    {
+        return self::AUTHORIZATION_URL.'?'.http_build_query([
+            'client_id' => $clientId,
+            'redirect_uri' => $redirectUri,
+            'response_type' => 'code',
+            'state' => $state,
+        ], '', '&', PHP_QUERY_RFC3986);
+    }
 
     /**
      * @param  array{client_id: string, client_secret: string}  $credentials

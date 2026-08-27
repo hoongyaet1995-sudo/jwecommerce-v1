@@ -165,6 +165,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/shipping/shipments/{shipment}/events', [ShipmentApiController::class, 'appendEvent']);
     Route::get('/api/shipping/providers/easyparcel', [ShippingProviderApiController::class, 'show'])->name('api.shipping.providers.easyparcel.show');
     Route::put('/api/shipping/providers/easyparcel', [ShippingProviderApiController::class, 'update'])->name('api.shipping.providers.easyparcel.update');
+    Route::post('/api/shipping/providers/easyparcel/authorize', [ShippingProviderApiController::class, 'beginAuthorization'])->name('api.shipping.providers.easyparcel.authorize');
     Route::post('/api/shipping/providers/easyparcel/test-connection', [ShippingProviderApiController::class, 'testConnection'])->name('api.shipping.providers.easyparcel.test-connection');
     Route::post('/api/orders/{order}/refund', [OrderApiController::class, 'refund']);
     Route::get('/api/coupons', [CouponApiController::class, 'index'])->name('api.coupons.index');

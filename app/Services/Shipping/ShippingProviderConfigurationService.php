@@ -20,6 +20,19 @@ final class ShippingProviderConfigurationService
         return $this->dto($this->findProvider());
     }
 
+    public function authorizationUrl(string $state, string $redirectUri): ?string
+    {
+        $provider = $this->findProvider();
+        $credentials = $provider?->credential?->credentials ?? [];
+        $clientId = is_array($credentials) ? ($credentials['client_id'] ?? null) : null;
+
+        if (! is_string($clientId) || $clientId === '') {
+            return null;
+        }
+
+        return $this->client->authorizationUrl($clientId, $redirectUri, $state);
+    }
+
     /** @return array<string, bool|string|null> */
     public function save(string $clientId, string $clientSecret, bool $enabled): array
     {

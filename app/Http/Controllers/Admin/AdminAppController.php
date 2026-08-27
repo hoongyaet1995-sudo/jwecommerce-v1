@@ -46,6 +46,7 @@ class AdminAppController extends Controller
             'ordersUrl' => route('admin.api.orders.index'),
             'shipmentsUrl' => route('admin.api.shipping.shipments.index'),
             'easyParcelProviderUrl' => route('admin.api.shipping.providers.easyparcel.show'),
+            'easyParcelProviderAuthorizeUrl' => route('admin.api.shipping.providers.easyparcel.authorize'),
             'easyParcelProviderTestConnectionUrl' => route('admin.api.shipping.providers.easyparcel.test-connection'),
             'couponsUrl' => route('admin.api.coupons.index'),
             'commerceSettingsUrl' => route('admin.api.commerce-settings.show'),

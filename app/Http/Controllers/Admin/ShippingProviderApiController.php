@@ -12,6 +12,10 @@ use Throwable;
 
 class ShippingProviderApiController extends Controller
 {
+    private const AUTHORIZATION_TRANSACTION_SESSION_KEY = 'easyparcel.oauth.authorization';
+
+    private const AUTHORIZATION_TRANSACTION_TTL_SECONDS = 600;
+
     public function __construct(private readonly ShippingProviderConfigurationService $configuration) {}
 
     public function show(Request $request): JsonResponse
@@ -73,22 +77,52 @@ class ShippingProviderApiController extends Controller
         return response()->json(['data' => $result['status']]);
     }
 
+    public function beginAuthorization(Request $request): RedirectResponse
+    {
+        $this->authorizeAdmin($request);
+        $request->session()->forget(self::AUTHORIZATION_TRANSACTION_SESSION_KEY);
+
+        try {
+            $state = bin2hex(random_bytes(32));
+            $authorizationUrl = $this->configuration->authorizationUrl(
+                $state,
+                (string) config('services.easyparcel.redirect_uri'),
+            );
+        } catch (Throwable) {
+            return $this->callbackRedirect(false);
+        }
+
+        if ($authorizationUrl === null) {
+            return $this->callbackRedirect(false);
+        }
+
+        $request->session()->put(self::AUTHORIZATION_TRANSACTION_SESSION_KEY, [
+            'state_hash' => hash('sha256', $state),
+            'expires_at' => now()->addSeconds(self::AUTHORIZATION_TRANSACTION_TTL_SECONDS)->timestamp,
+            'available' => true,
+            'user_id' => $request->user()->id,
+        ]);
+
+        return redirect()->away($authorizationUrl);
+    }
+
     public function callback(Request $request): RedirectResponse
     {
-        $authorizationCode = $this->consumeCallbackCode($request);
+        $callback = $this->consumeCallbackRequest($request);
 
         abort_if($request->user() === null, 401);
         $this->authorizeAdmin($request);
 
-        if ($authorizationCode === null
-            || $authorizationCode === ''
-            || strlen($authorizationCode) > 4096) {
+        if (! $this->consumeAuthorizationTransaction($request, $callback['state'])
+            || $callback['code'] === null
+            || $callback['code'] === ''
+            || strlen($callback['code']) > 4096) {
             return $this->callbackRedirect(false);
         }
 
         try {
             $result = $this->configuration->testConnection(
-                $authorizationCode,
+                $callback['code'],
                 (string) config('services.easyparcel.redirect_uri'),
             );
         } catch (Throwable) {
@@ -98,16 +132,43 @@ class ShippingProviderApiController extends Controller
         return $this->callbackRedirect($result['verified']);
     }
 
-    private function consumeCallbackCode(Request $request): ?string
+    /** @return array{code: string|null, state: string|null} */
+    private function consumeCallbackRequest(Request $request): array
     {
         $authorizationCode = $request->query('code');
+        $state = $request->query('state');
         $safePath = $request->getPathInfo();
 
         $request->query->replace([]);
         $request->server->set('QUERY_STRING', '');
         $request->server->set('REQUEST_URI', $safePath);
 
-        return is_string($authorizationCode) ? $authorizationCode : null;
+        return [
+            'code' => is_string($authorizationCode) ? $authorizationCode : null,
+            'state' => is_string($state) ? $state : null,
+        ];
+    }
+
+    private function consumeAuthorizationTransaction(Request $request, ?string $state): bool
+    {
+        $transaction = $request->session()->pull(self::AUTHORIZATION_TRANSACTION_SESSION_KEY);
+        $providedState = $state !== null && strlen($state) <= 512 ? $state : '';
+        $expectedStateHash = is_array($transaction)
+            && is_string($transaction['state_hash'] ?? null)
+            && strlen($transaction['state_hash']) === 64
+                ? $transaction['state_hash']
+                : str_repeat('0', 64);
+        $stateMatches = hash_equals($expectedStateHash, hash('sha256', $providedState));
+
+        return is_array($transaction)
+            && $state !== null
+            && $state !== ''
+            && strlen($state) <= 512
+            && $stateMatches
+            && ($transaction['available'] ?? null) === true
+            && is_int($transaction['expires_at'] ?? null)
+            && $transaction['expires_at'] > now()->timestamp
+            && ($transaction['user_id'] ?? null) === $request->user()?->id;
     }
 
     private function authorizeAdmin(Request $request): void

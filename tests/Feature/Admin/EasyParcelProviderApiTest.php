@@ -8,9 +8,11 @@ use App\Models\User;
 use App\Services\Shipping\ShippingProviderConfigurationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Testing\TestResponse;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -56,6 +58,8 @@ class EasyParcelProviderApiTest extends TestCase
 
     public function test_only_super_admin_can_manage_easyparcel_provider_configuration(): void
     {
+        $this->postJson('/admin/api/shipping/providers/easyparcel/authorize')->assertUnauthorized();
+
         $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => false]);
 
         $this->actingAs($admin)->getJson('/admin/api/shipping/providers/easyparcel')->assertForbidden();
@@ -69,6 +73,9 @@ class EasyParcelProviderApiTest extends TestCase
             'authorizationCode' => 'denied-code',
             'redirectUri' => 'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback',
         ])->assertForbidden();
+        $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/providers/easyparcel/authorize')
+            ->assertForbidden();
 
         $this->assertDatabaseCount('shipping_providers', 0);
         $this->assertDatabaseCount('shipping_provider_credentials', 0);
@@ -126,6 +133,56 @@ class EasyParcelProviderApiTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_super_admin_starts_a_short_lived_session_bound_authorization_transaction(): void
+    {
+        $now = Carbon::parse('2026-08-27T12:00:00+08:00');
+        $this->travelTo($now);
+        $admin = $this->superAdmin();
+        $this->configureProvider($admin, 'start');
+        Http::fake();
+
+        $response = $this->post('/admin/api/shipping/providers/easyparcel/authorize');
+
+        $response->assertRedirect();
+        $location = (string) $response->headers->get('Location');
+        $this->assertSame('https', parse_url($location, PHP_URL_SCHEME));
+        $this->assertSame('api.easyparcel.com', parse_url($location, PHP_URL_HOST));
+        $this->assertSame('/oauth/login', parse_url($location, PHP_URL_PATH));
+
+        parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
+        $this->assertSame([
+            'client_id',
+            'redirect_uri',
+            'response_type',
+            'state',
+        ], array_keys($query));
+        $this->assertSame('start-client-id', $query['client_id']);
+        $this->assertSame(
+            'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback',
+            $query['redirect_uri'],
+        );
+        $this->assertSame('code', $query['response_type']);
+        $this->assertMatchesRegularExpression('/\A[a-f0-9]{64}\z/', $query['state']);
+
+        $transaction = session('easyparcel.oauth.authorization');
+        $this->assertSame([
+            'state_hash',
+            'expires_at',
+            'available',
+            'user_id',
+        ], array_keys($transaction));
+        $this->assertSame(hash('sha256', $query['state']), $transaction['state_hash']);
+        $this->assertSame($now->timestamp + 600, $transaction['expires_at']);
+        $this->assertTrue($transaction['available']);
+        $this->assertSame($admin->id, $transaction['user_id']);
+        $browserAndSessionSurface = $location
+            .$response->getContent()
+            .json_encode(session()->all(), JSON_THROW_ON_ERROR);
+        $this->assertStringNotContainsString('start-client-secret', $browserAndSessionSurface);
+        $this->assertStringNotContainsString($query['state'], json_encode(session()->all(), JSON_THROW_ON_ERROR));
+        Http::assertNothingSent();
+    }
+
     public function test_oauth_callback_rejects_unauthenticated_and_non_super_admin_sessions(): void
     {
         Http::fake();
@@ -146,12 +203,8 @@ class EasyParcelProviderApiTest extends TestCase
     public function test_super_admin_oauth_callback_verifies_server_side_and_redirects_without_leaking_code(): void
     {
         $admin = $this->superAdmin();
-        $this->actingAs($admin)->putJson('/admin/api/shipping/providers/easyparcel', [
-            'environment' => 'sandbox',
-            'clientId' => 'callback-client-id',
-            'clientSecret' => 'callback-client-secret',
-            'enabled' => false,
-        ])->assertOk();
+        $this->configureProvider($admin, 'callback');
+        $state = $this->startAuthorizationState();
 
         Http::fake([
             'https://api.easyparcel.com/oauth/token' => Http::response([
@@ -171,7 +224,7 @@ class EasyParcelProviderApiTest extends TestCase
         ]);
 
         $authorizationCode = 'callback-one-time-code-marker';
-        $response = $this->get('/admin/shipping/easyparcel/callback?code='.$authorizationCode);
+        $response = $this->get('/admin/shipping/easyparcel/callback?code='.$authorizationCode.'&state='.$state);
 
         $response->assertRedirect('/admin/shipping')
             ->assertSessionHas('easyparcelConnection', [
@@ -185,6 +238,7 @@ class EasyParcelProviderApiTest extends TestCase
             $authorizationCode,
             json_encode(session()->all(), JSON_THROW_ON_ERROR),
         );
+        $response->assertSessionMissing('easyparcel.oauth.authorization');
         $this->assertSame('connected', ShippingProvider::query()->sole()->connection_state);
 
         Http::assertSent(function (Request $request) use ($authorizationCode): bool {
@@ -192,6 +246,85 @@ class EasyParcelProviderApiTest extends TestCase
                 && $request['redirect_uri'] === 'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback'
                 && $request['code'] === $authorizationCode;
         });
+    }
+
+    public function test_callback_missing_state_does_not_call_provider_or_mutate_configuration(): void
+    {
+        $admin = $this->superAdmin();
+        $this->configureProvider($admin, 'missing-state');
+        $this->startAuthorizationState();
+        $before = $this->providerStorageSnapshot();
+        Http::fake();
+
+        $response = $this->get('/admin/shipping/easyparcel/callback?code=missing-state-code');
+
+        $this->assertSafeCallbackFailure($response);
+        $response->assertSessionMissing('easyparcel.oauth.authorization');
+        Http::assertNothingSent();
+        $this->assertSame($before, $this->providerStorageSnapshot());
+    }
+
+    public function test_callback_mismatched_state_does_not_call_provider_or_mutate_configuration(): void
+    {
+        $admin = $this->superAdmin();
+        $this->configureProvider($admin, 'mismatched-state');
+        $state = $this->startAuthorizationState();
+        $mismatchedState = ($state[0] === 'a' ? 'b' : 'a').substr($state, 1);
+        $before = $this->providerStorageSnapshot();
+        Http::fake();
+
+        $response = $this->get(
+            '/admin/shipping/easyparcel/callback?code=mismatched-state-code&state='.$mismatchedState,
+        );
+
+        $this->assertSafeCallbackFailure($response);
+        $response->assertSessionMissing('easyparcel.oauth.authorization');
+        Http::assertNothingSent();
+        $this->assertSame($before, $this->providerStorageSnapshot());
+    }
+
+    public function test_callback_expired_state_does_not_call_provider_or_mutate_configuration(): void
+    {
+        $this->travelTo(Carbon::parse('2026-08-27T12:00:00+08:00'));
+        $admin = $this->superAdmin();
+        $this->configureProvider($admin, 'expired-state');
+        $state = $this->startAuthorizationState();
+        $before = $this->providerStorageSnapshot();
+        $this->travel(11)->minutes();
+        Http::fake();
+
+        $response = $this->get('/admin/shipping/easyparcel/callback?code=expired-state-code&state='.$state);
+
+        $this->assertSafeCallbackFailure($response);
+        $response->assertSessionMissing('easyparcel.oauth.authorization');
+        Http::assertNothingSent();
+        $this->assertSame($before, $this->providerStorageSnapshot());
+    }
+
+    public function test_valid_callback_state_is_one_time_and_replay_cannot_disable_connected_provider(): void
+    {
+        $admin = $this->superAdmin();
+        $this->configureProvider($admin, 'replay');
+        $state = $this->startAuthorizationState();
+        $authorizationCode = 'replay-one-time-code';
+        $this->fakeSuccessfulVerification('replay');
+
+        $this->get('/admin/shipping/easyparcel/callback?code='.$authorizationCode.'&state='.$state)
+            ->assertRedirect('/admin/shipping')
+            ->assertSessionHas('easyparcelConnection.state', 'connected')
+            ->assertSessionMissing('easyparcel.oauth.authorization');
+
+        $connected = $this->providerStorageSnapshot();
+        $this->assertSame('connected', ShippingProvider::query()->sole()->connection_state);
+        Http::fake();
+
+        $replay = $this->get('/admin/shipping/easyparcel/callback?code='.$authorizationCode.'&state='.$state);
+
+        $this->assertSafeCallbackFailure($replay);
+        Http::assertNothingSent();
+        $this->assertSame($connected, $this->providerStorageSnapshot());
+        $this->assertSame('connected', ShippingProvider::query()->sole()->connection_state);
+        $this->assertTrue(ShippingProvider::query()->sole()->enabled);
     }
 
     public function test_oauth_callback_failure_redirects_with_only_a_bounded_safe_result(): void
@@ -613,6 +746,7 @@ class EasyParcelProviderApiTest extends TestCase
             ->get('/admin/settings/couriers')
             ->assertOk()
             ->assertSee('easyParcelProviderUrl', false)
+            ->assertSee('easyParcelProviderAuthorizeUrl', false)
             ->assertSee('easyParcelProviderTestConnectionUrl', false)
             ->assertDontSee('clientSecret', false)
             ->assertDontSee('access_token', false);
@@ -621,6 +755,65 @@ class EasyParcelProviderApiTest extends TestCase
     private function superAdmin(): User
     {
         return User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+    }
+
+    private function configureProvider(User $admin, string $prefix): void
+    {
+        $this->actingAs($admin)->putJson('/admin/api/shipping/providers/easyparcel', [
+            'environment' => 'sandbox',
+            'clientId' => $prefix.'-client-id',
+            'clientSecret' => $prefix.'-client-secret',
+            'enabled' => false,
+        ])->assertOk();
+    }
+
+    private function startAuthorizationState(): string
+    {
+        $response = $this->post('/admin/api/shipping/providers/easyparcel/authorize');
+        $response->assertRedirect();
+        parse_str((string) parse_url((string) $response->headers->get('Location'), PHP_URL_QUERY), $query);
+
+        $this->assertIsString($query['state'] ?? null);
+
+        return $query['state'];
+    }
+
+    private function fakeSuccessfulVerification(string $prefix): void
+    {
+        Http::fake([
+            'https://api.easyparcel.com/oauth/token' => Http::response([
+                'token_type' => 'Bearer',
+                'expires_in' => 36000,
+                'access_token' => $prefix.'-access-token',
+                'refresh_token' => $prefix.'-refresh-token',
+            ]),
+            'https://api.easyparcel.com/open_api/2026-06/wallet' => Http::response([
+                'status_code' => 200,
+                'message' => 'Success',
+                'data' => [
+                    'wallet' => [['balance' => 1000.00, 'currency' => 'MYR']],
+                    'free_credit_wallet' => [['balance' => 0, 'currency' => 'MYR']],
+                ],
+            ]),
+        ]);
+    }
+
+    /** @return array{provider: array<string, mixed>, credentials: string} */
+    private function providerStorageSnapshot(): array
+    {
+        return [
+            'provider' => (array) DB::table('shipping_providers')->first(),
+            'credentials' => (string) DB::table('shipping_provider_credentials')->value('credentials'),
+        ];
+    }
+
+    private function assertSafeCallbackFailure(TestResponse $response): void
+    {
+        $response->assertRedirect('/admin/shipping')
+            ->assertSessionHas('easyparcelConnection', [
+                'state' => 'failed',
+                'message' => 'EasyParcel connection could not be verified.',
+            ]);
     }
 
     private function assertSafeResponse(string $content): void
