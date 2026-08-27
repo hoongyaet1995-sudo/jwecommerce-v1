@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\PagePreviewController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SearchController;
 use App\Http\Controllers\Admin\ShipmentApiController;
+use App\Http\Controllers\Admin\ShippingProviderApiController;
 use App\Http\Controllers\Admin\StorefrontShellSettingsApiController;
 use App\Http\Controllers\Admin\TaxSettingsApiController;
 use App\Http\Controllers\Admin\TaxClassApiController;
@@ -159,6 +160,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/shipping/orders/{order}/dispatch', [ShipmentApiController::class, 'dispatch']);
     Route::get('/api/shipping/shipments', [ShipmentApiController::class, 'index'])->name('api.shipping.shipments.index');
     Route::post('/api/shipping/shipments/{shipment}/events', [ShipmentApiController::class, 'appendEvent']);
+    Route::get('/api/shipping/providers/easyparcel', [ShippingProviderApiController::class, 'show'])->name('api.shipping.providers.easyparcel.show');
+    Route::put('/api/shipping/providers/easyparcel', [ShippingProviderApiController::class, 'update'])->name('api.shipping.providers.easyparcel.update');
+    Route::post('/api/shipping/providers/easyparcel/test-connection', [ShippingProviderApiController::class, 'testConnection'])->name('api.shipping.providers.easyparcel.test-connection');
     Route::post('/api/orders/{order}/refund', [OrderApiController::class, 'refund']);
     Route::get('/api/coupons', [CouponApiController::class, 'index'])->name('api.coupons.index');
     Route::post('/api/coupons', [CouponApiController::class, 'store']);
