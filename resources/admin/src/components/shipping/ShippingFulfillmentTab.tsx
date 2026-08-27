@@ -59,15 +59,6 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
       }
     }
 
-    // Region
-    if (regionFilter === 'peninsular' && p.recipientAddress?.region !== 'peninsular') return false;
-    if (regionFilter === 'east_malaysia' && (
-      p.recipientAddress?.region !== 'sabah' && 
-      p.recipientAddress?.region !== 'sarawak' && 
-      !p.recipientAddress?.state?.toLowerCase().includes('sabah') && 
-      !p.recipientAddress?.state?.toLowerCase().includes('sarawak')
-    )) return false;
-
     // Courier
     if (courierFilter !== 'all' && p.courier !== courierFilter) return false;
 
@@ -75,10 +66,9 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchOrder = (p.orderNumber || '').toLowerCase().includes(q);
-      const matchCustomer = (p.customerName || '').toLowerCase().includes(q) || (p.customerPhone || '').includes(q);
+      const matchCustomer = (p.customerName || '').toLowerCase().includes(q);
       const matchTracking = (p.trackingNumber || '').toLowerCase().includes(q);
-      const matchPostcode = (p.recipientAddress?.postcode || '').includes(q) || (p.recipientAddress?.city || '').toLowerCase().includes(q);
-      if (!matchOrder && !matchCustomer && !matchTracking && !matchPostcode) return false;
+      if (!matchOrder && !matchCustomer && !matchTracking) return false;
     }
 
     return true;
@@ -180,7 +170,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search Order #, Tracking, Buyer, Postcode..."
+              placeholder="Search Order #, Tracking, Buyer..."
               className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -190,9 +180,11 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
             <select
               value={regionFilter}
               onChange={(e) => setRegionFilter(e.target.value as any)}
+              disabled
+              title="Recipient region is restricted in shipment-list responses"
               className="px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
             >
-              <option value="all">Region: All Malaysia</option>
+              <option value="all">Region: Restricted in list</option>
               <option value="peninsular">Region: Peninsular (West MY)</option>
               <option value="east_malaysia">Region: East MY (Sabah & Sarawak)</option>
             </select>
@@ -287,7 +279,6 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                 </tr>
               ) : (
                 filteredParcels.map((parcel) => {
-                  const isEast = parcel.recipientAddress.region === 'sabah' || parcel.recipientAddress.region === 'sarawak';
                   const isSelected = selectedParcelIds.includes(parcel.id);
 
                   return (
@@ -316,7 +307,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                           {parcel.customerName}
                         </div>
                         <div className="text-[10px] text-neutral-400 font-mono">
-                          {parcel.customerPhone} • {parcel.items.length} items
+                          Contact restricted • {parcel.items.length} items
                         </div>
                       </td>
 
@@ -324,20 +315,15 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                       <td className="p-3.5">
                         <div className="flex items-center gap-1.5">
                           <span className="font-bold font-mono text-neutral-900 dark:text-neutral-100">
-                            {parcel.recipientAddress.postcode}
-                          </span>
-                          <span className="text-neutral-600 dark:text-neutral-300 font-medium">
-                            {parcel.recipientAddress.city}
+                            Recipient details restricted
                           </span>
                         </div>
                         <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5 truncate max-w-[200px]">
-                          {parcel.recipientAddress.state}
+                          Open the authorized order workflow for delivery details.
                         </div>
                         <div className="mt-1 flex items-center gap-1">
-                          <span className={`px-1.5 py-0.2 text-[9px] font-bold rounded uppercase ${
-                            isEast ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
-                          }`}>
-                            {isEast ? 'East MY (Air)' : 'Peninsular'}
+                          <span className="px-1.5 py-0.2 text-[9px] font-bold rounded uppercase bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                            Region restricted
                           </span>
                           {parcel.postcodeValidationStatus === 'valid' && (
                             <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium">✓ Valid Postcode</span>

@@ -34,10 +34,7 @@ export const ThermalAWBModal: React.FC<ThermalAWBModalProps> = ({
 
   if (!parcel) return null;
 
-  const isEastMalaysia = parcel.recipientAddress?.region === 'sabah' || 
-    parcel.recipientAddress?.region === 'sarawak' || 
-    parcel.recipientAddress?.state?.toLowerCase().includes('sabah') || 
-    parcel.recipientAddress?.state?.toLowerCase().includes('sarawak');
+  const isEastMalaysia = parcel.isEastMalaysiaAirRestricted;
   const isCOD = parcel.paymentMode === 'cod';
 
   const handlePrint = () => {
@@ -142,14 +139,14 @@ export const ThermalAWBModal: React.FC<ThermalAWBModalProps> = ({
               <div>
                 <div className="text-[9px] uppercase tracking-wider font-bold text-gray-600">DESTINATION POSTCODE & STATE</div>
                 <div className="text-lg font-black font-mono text-black">
-                  {parcel.recipientAddress?.postcode || ''} - {(parcel.recipientAddress?.state || 'MALAYSIA').toUpperCase()}
+                  RECIPIENT DETAILS RESTRICTED
                 </div>
               </div>
               <div className="text-right">
                 <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded ${
                   isEastMalaysia ? 'bg-purple-900 text-white' : 'bg-black text-white'
                 }`}>
-                  {isEastMalaysia ? 'EAST MALAYSIA (AIR)' : 'PENINSULAR (WEST)'}
+                  {isEastMalaysia ? 'AIR RESTRICTION FLAGGED' : 'REGION RESTRICTED'}
                 </span>
                 {isCOD && (
                   <div className="mt-1 text-xs font-black text-red-600 bg-red-100 border border-red-500 px-1 py-0.5 rounded text-center">
@@ -198,12 +195,12 @@ export const ThermalAWBModal: React.FC<ThermalAWBModalProps> = ({
                 </div>
                 <div className="font-black text-black text-[11px]">{parcel.customerName}</div>
                 <div className="text-gray-800 text-[10px] mt-0.5 leading-snug font-medium">
-                  {parcel.recipientAddress?.street || 'Subang Jaya'}, {parcel.recipientAddress?.city || 'Klang Valley'}
+                  Recipient address restricted in shipment list
                 </div>
                 <div className="font-black font-mono text-[11px] text-black mt-0.5">
-                  {parcel.recipientAddress?.postcode || ''} {parcel.recipientAddress?.state || ''}
+                  Open the authorized order workflow for delivery details
                 </div>
-                <div className="text-[10px] font-mono font-bold text-black mt-1">Tel: {parcel.customerPhone}</div>
+                <div className="text-[10px] font-mono font-bold text-black mt-1">Tel: Restricted</div>
               </div>
             </div>
 

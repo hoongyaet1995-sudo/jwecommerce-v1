@@ -37,12 +37,7 @@ export const ShippingOverviewTab: React.FC<ShippingOverviewTabProps> = ({
   const delivered = parcels.filter(p => p.status === 'delivered');
   const exceptions = parcels.filter(p => p.status === 'failed_delivery');
 
-  const eastMalaysiaCount = parcels.filter(p => 
-    p.recipientAddress?.region === 'sabah' || 
-    p.recipientAddress?.region === 'sarawak' ||
-    p.recipientAddress?.state?.toLowerCase().includes('sabah') ||
-    p.recipientAddress?.state?.toLowerCase().includes('sarawak')
-  ).length;
+  const eastMalaysiaCount = parcels.filter(p => p.isEastMalaysiaAirRestricted).length;
   const codCount = parcels.filter(p => p.paymentMode === 'cod').length;
   const totalCodAmount = parcels.filter(p => p.paymentMode === 'cod').reduce((sum, p) => sum + (p.codAmount || 0), 0);
 

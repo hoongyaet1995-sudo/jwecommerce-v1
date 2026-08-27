@@ -39,7 +39,6 @@ export const ParcelTrackingModal: React.FC<ParcelTrackingModalProps> = ({
 
   if (!parcel) return null;
 
-  const isEastMalaysia = parcel.recipientAddress.region === 'sabah' || parcel.recipientAddress.region === 'sarawak';
   const isFailed = parcel.status === 'failed_delivery';
 
   const getStatusBadge = (status: ShipmentParcel['status']) => {
@@ -72,16 +71,6 @@ export const ParcelTrackingModal: React.FC<ParcelTrackingModalProps> = ({
       case 'dhl': return 'DHL eCommerce MY';
       default: return (code || '').toUpperCase();
     }
-  };
-
-  const handleWhatsAppContact = () => {
-    const text = encodeURIComponent(
-      `Hello ${parcel.customerName}, regarding your order #${parcel.orderNumber} with tracking number ${parcel.trackingNumber} via ${getCourierName(parcel.courier)}: ${
-        isFailed ? 'The courier attempted delivery today but could not reach you. Would you like us to arrange re-delivery?' : 'Your parcel is on the way! Track here.'
-      }`
-    );
-    const cleanPhone = parcel.customerPhone.replace(/[^0-9]/g, '');
-    window.open(`https://wa.me/${cleanPhone}?text=${text}`, '_blank');
   };
 
   return (
@@ -174,17 +163,18 @@ export const ParcelTrackingModal: React.FC<ParcelTrackingModalProps> = ({
                     Delivery Exception: {parcel.exceptionReason || 'Notice of Incomplete Delivery (NITC)'}
                   </div>
                   <div className="text-[11px] text-rose-700 dark:text-rose-300 mt-0.5">
-                    Customer was unavailable during first delivery attempt. Contact buyer via WhatsApp or trigger immediate automated re-delivery.
+                    Recipient contact details are restricted in this shipment list. Trigger re-delivery through the available workflow.
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <button
-                  onClick={handleWhatsAppContact}
+                  disabled
+                  title="Recipient contact is restricted in shipment-list responses"
                   className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
                 >
                   <MessageCircle className="w-3.5 h-3.5" />
-                  WhatsApp Buyer
+                  Recipient contact restricted
                 </button>
                 {onRedeliver && (
                   <button
@@ -279,10 +269,8 @@ export const ParcelTrackingModal: React.FC<ParcelTrackingModalProps> = ({
               <div className="p-3.5 bg-neutral-50 dark:bg-neutral-800/40 rounded-xl border border-neutral-200 dark:border-neutral-800 space-y-2">
                 <div className="font-semibold text-neutral-800 dark:text-neutral-200 flex items-center justify-between">
                   <span>Recipient & Delivery Address</span>
-                  <span className={`px-2 py-0.5 text-[10px] uppercase font-bold rounded ${
-                    isEastMalaysia ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
-                  }`}>
-                    {isEastMalaysia ? 'East Malaysia (Air)' : 'Peninsular Malaysia'}
+                  <span className="px-2 py-0.5 text-[10px] uppercase font-bold rounded bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                    Region restricted
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-neutral-600 dark:text-neutral-300">
@@ -292,13 +280,13 @@ export const ParcelTrackingModal: React.FC<ParcelTrackingModalProps> = ({
                   </div>
                   <div>
                     <span className="text-neutral-400 block text-[10px]">Contact Phone</span>
-                    <span className="font-mono text-neutral-900 dark:text-neutral-100">{parcel.customerPhone}</span>
+                    <span className="font-mono text-neutral-900 dark:text-neutral-100">Restricted in shipment list</span>
                   </div>
                 </div>
                 <div>
                   <span className="text-neutral-400 block text-[10px]">Full Address</span>
                   <span className="text-neutral-800 dark:text-neutral-200">
-                    {parcel.recipientAddress.street}, {parcel.recipientAddress.city}, {parcel.recipientAddress.postcode} {parcel.recipientAddress.state}
+                    Recipient address restricted in shipment list
                   </span>
                 </div>
               </div>
@@ -354,11 +342,12 @@ export const ParcelTrackingModal: React.FC<ParcelTrackingModalProps> = ({
         {/* Footer */}
         <div className="px-6 py-3.5 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 flex items-center justify-between">
           <button
-            onClick={handleWhatsAppContact}
+            disabled
+            title="Recipient contact is restricted in shipment-list responses"
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors border border-emerald-200 dark:border-emerald-800 cursor-pointer"
           >
             <MessageCircle className="w-3.5 h-3.5" />
-            Contact Recipient on WhatsApp
+            Recipient contact restricted
           </button>
           <button
             onClick={onClose}

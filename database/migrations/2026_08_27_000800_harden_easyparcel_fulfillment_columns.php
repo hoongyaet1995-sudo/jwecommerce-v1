@@ -19,12 +19,9 @@ return new class extends Migration
 
     public function down(): void
     {
+        // Keep label_path widened: accepted 256-2048 character URLs cannot be narrowed safely on rollback.
         Schema::table('shipment_quotes', function (Blueprint $table): void {
             $table->renameColumn('reconciliation_reference', 'idempotency_reference');
-        });
-
-        Schema::table('shipments', function (Blueprint $table): void {
-            $table->string('label_path')->nullable()->change();
         });
     }
 };

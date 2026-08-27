@@ -118,18 +118,6 @@ export interface ShipmentParcel {
   orderId: string;
   orderNumber: string;
   customerName: string;
-  customerPhone: string;
-  customerEmail: string;
-  recipientAddress: {
-    street: string;
-    city: string;
-    state: string;
-    postcode: string;
-    country: string;
-    region: MalaysiaRegion;
-    lat?: number;
-    lng?: number;
-  };
   items: {
     sku: string;
     name: string;

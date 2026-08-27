@@ -7,13 +7,45 @@ type ErrorResponse = { message?: string; errors?: Record<string, string[]> };
 const errorMessage = (payload: ErrorResponse | null, fallback: string): string =>
   payload?.errors ? Object.values(payload.errors).flat().join(' ') : payload?.message ?? fallback;
 
+const shipmentListParcel = (row: ShipmentParcel): ShipmentParcel => ({
+  id: row.id,
+  orderId: row.orderId,
+  orderNumber: row.orderNumber,
+  customerName: row.customerName,
+  items: row.items,
+  totalWeightKg: row.totalWeightKg,
+  volumetricWeightKg: row.volumetricWeightKg,
+  dimensionsCm: row.dimensionsCm,
+  courier: row.courier,
+  serviceType: row.serviceType,
+  trackingNumber: row.trackingNumber,
+  routingSortCode: row.routingSortCode,
+  status: row.status,
+  paymentMode: row.paymentMode,
+  codAmount: row.codAmount,
+  isEastMalaysiaAirRestricted: row.isEastMalaysiaAirRestricted,
+  postcodeValidationStatus: row.postcodeValidationStatus,
+  createdAt: row.createdAt,
+  awbGeneratedAt: row.awbGeneratedAt,
+  dispatchedAt: row.dispatchedAt,
+  estimatedDeliveryDate: row.estimatedDeliveryDate,
+  deliveredAt: row.deliveredAt,
+  actualCourierCharge: row.actualCourierCharge,
+  systemQuotedCharge: row.systemQuotedCharge,
+  isWeightDiscrepancy: row.isWeightDiscrepancy,
+  exceptionReason: row.exceptionReason,
+  exceptionAttempts: row.exceptionAttempts,
+  pickupRequestId: row.pickupRequestId,
+  trackingEvents: row.trackingEvents,
+});
+
 export const fetchShipments = async (bootstrap: LaravelAdminBootstrap): Promise<ShipmentParcel[]> => {
   if (!bootstrap.shipmentsUrl) throw new Error('Shipment API is unavailable.');
   const response = await window.fetch(bootstrap.shipmentsUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
   if (!response.ok) throw new Error('Shipment data request failed.');
   const payload = await response.json() as ShipmentResponse;
   if (!Array.isArray(payload.data)) throw new Error('Invalid shipment data response.');
-  return payload.data;
+  return payload.data.map(shipmentListParcel);
 };
 
 export const appendShipmentEvent = async (

@@ -334,18 +334,6 @@ export const INITIAL_SHIPMENT_PARCELS: ShipmentParcel[] = [
     orderId: 'ord_101',
     orderNumber: 'ORD-2026-9041',
     customerName: 'Nurul Ain Binti Yusof',
-    customerPhone: '+60 18-912 3847',
-    customerEmail: 'nurul.ain@gmail.com',
-    recipientAddress: {
-      street: 'No. 24, Jalan USJ 11/3C, Subang Jaya',
-      city: 'Subang Jaya',
-      state: 'Selangor',
-      postcode: '47600',
-      country: 'Malaysia',
-      region: 'peninsular',
-      lat: 3.0456,
-      lng: 101.5833
-    },
     items: [
       { sku: 'LUM-SER-01', name: 'Luminance Silk Hydration Serum (50ml)', qty: 2, unitPrice: 89.00, weightKg: 0.25, isHazardousLiquidBattery: false },
       { sku: 'LUM-CRM-02', name: 'Barrier Restoring Peptide Cream (30g)', qty: 1, unitPrice: 120.00, weightKg: 0.15, isHazardousLiquidBattery: false }
@@ -380,18 +368,6 @@ export const INITIAL_SHIPMENT_PARCELS: ShipmentParcel[] = [
     orderId: 'ord_102',
     orderNumber: 'ORD-2026-9042',
     customerName: 'Lim Wei Jian',
-    customerPhone: '+60 12-441 9028',
-    customerEmail: 'lim.weijian@outlook.my',
-    recipientAddress: {
-      street: 'Block B-12-08, The Peak Condominium, Jalan Signal Hill',
-      city: 'Kota Kinabalu',
-      state: 'Sabah',
-      postcode: '88000',
-      country: 'Malaysia',
-      region: 'east_malaysia',
-      lat: 5.9804,
-      lng: 116.0735
-    },
     items: [
       { sku: 'AUD-HD-99', name: 'Acoustic Studio ANC Wireless Headphones', qty: 1, unitPrice: 380.00, weightKg: 0.85, isHazardousLiquidBattery: true }
     ],
@@ -424,16 +400,6 @@ export const INITIAL_SHIPMENT_PARCELS: ShipmentParcel[] = [
     orderId: 'ord_103',
     orderNumber: 'ORD-2026-9043',
     customerName: 'Muhammad Hafizuddin',
-    customerPhone: '+60 17-681 0293',
-    customerEmail: 'hafiz.din@yahoo.com',
-    recipientAddress: {
-      street: 'No. 55, Jalan Pulai Jaya 9, Bandar Pulai Jaya',
-      city: 'Johor Bahru',
-      state: 'Johor',
-      postcode: '80000',
-      country: 'Malaysia',
-      region: 'peninsular'
-    },
     items: [
       { sku: 'TEE-OVER-BLK', name: 'Heavyweight Minimalist Graphic Tee (Black - XL)', qty: 3, unitPrice: 65.00, weightKg: 0.90, isHazardousLiquidBattery: false }
     ],
@@ -468,16 +434,6 @@ export const INITIAL_SHIPMENT_PARCELS: ShipmentParcel[] = [
     orderId: 'ord_104',
     orderNumber: 'ORD-2026-9044',
     customerName: 'Tan Siew Ling',
-    customerPhone: '+60 19-823 4410',
-    customerEmail: 'siewling.tan@gmail.com',
-    recipientAddress: {
-      street: '78A, Jalan Burma, Pulau Tikus',
-      city: 'George Town',
-      state: 'Penang',
-      postcode: '10100',
-      country: 'Malaysia',
-      region: 'peninsular'
-    },
     items: [
       { sku: 'BOT-CER-500', name: 'Double-wall Vacuum Thermal Flask 500ml', qty: 1, unitPrice: 79.00, weightKg: 0.45, isHazardousLiquidBattery: false }
     ],
@@ -511,16 +467,6 @@ export const INITIAL_SHIPMENT_PARCELS: ShipmentParcel[] = [
     orderId: 'ord_105',
     orderNumber: 'ORD-2026-9045',
     customerName: 'Chong Chee Keong',
-    customerPhone: '+60 14-772 1928',
-    customerEmail: 'keong.chong@gmail.com',
-    recipientAddress: {
-      street: 'Lot 192, Lorong Seladah 4, Tabuan Heights',
-      city: 'Kuching',
-      state: 'Sarawak',
-      postcode: '93050',
-      country: 'Malaysia',
-      region: 'east_malaysia'
-    },
     items: [
       { sku: 'LUM-SET-03', name: 'Complete Hydration Skincare Routine Bundle', qty: 1, unitPrice: 249.00, weightKg: 0.85, isHazardousLiquidBattery: false }
     ],
@@ -548,16 +494,6 @@ export const INITIAL_SHIPMENT_PARCELS: ShipmentParcel[] = [
     orderId: 'ord_106',
     orderNumber: 'ORD-2026-9046',
     customerName: 'Farah Diana Binti Razak',
-    customerPhone: '+60 13-339 0182',
-    customerEmail: 'farah.diana@gmail.com',
-    recipientAddress: {
-      street: 'No. 12, Jalan Teluk Sisek, Taman Sri Kuantan',
-      city: 'Kuantan',
-      state: 'Pahang',
-      postcode: '25000',
-      country: 'Malaysia',
-      region: 'peninsular'
-    },
     items: [
       { sku: 'LUM-SER-01', name: 'Luminance Silk Hydration Serum (50ml)', qty: 1, unitPrice: 89.00, weightKg: 0.25, isHazardousLiquidBattery: false }
     ],

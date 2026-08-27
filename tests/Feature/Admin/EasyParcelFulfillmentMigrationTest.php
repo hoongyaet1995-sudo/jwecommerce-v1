@@ -15,7 +15,7 @@ class EasyParcelFulfillmentMigrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_fulfillment_schema_upgrade_preserves_existing_references_and_accepts_full_length_label(): void
+    public function test_fulfillment_schema_upgrade_and_safe_rollback_preserve_references_and_full_length_label(): void
     {
         $upgradePath = database_path('migrations/2026_08_27_000800_harden_easyparcel_fulfillment_columns.php');
         $this->assertFileExists($upgradePath);
@@ -89,6 +89,34 @@ class EasyParcelFulfillmentMigrationTest extends TestCase
         $longLabel = $prefix.str_repeat('a', 2048 - strlen($prefix));
         DB::table('shipments')->where('id', $shipmentId)->update(['label_path' => $longLabel]);
 
+        $this->assertSame($longLabel, DB::table('shipments')->where('id', $shipmentId)->value('label_path'));
+
+        $rollbackQueries = [];
+        DB::listen(function ($query) use (&$rollbackQueries): void {
+            $rollbackQueries[] = $query->sql;
+        });
+
+        $upgradeMigration->down();
+
+        $this->assertFalse(collect($rollbackQueries)->contains(
+            fn (string $query): bool => str_contains(strtolower($query), 'shipments'),
+        ), 'Rollback must not rebuild or narrow the shipments table after accepting a long label URL.');
+        $this->assertTrue(Schema::hasColumn('shipment_quotes', 'idempotency_reference'));
+        $this->assertFalse(Schema::hasColumn('shipment_quotes', 'reconciliation_reference'));
+        $this->assertSame(
+            'JWEP-LEGACY-REFERENCE',
+            DB::table('shipment_quotes')->where('order_id', $order->id)->value('idempotency_reference'),
+        );
+        $this->assertSame($longLabel, DB::table('shipments')->where('id', $shipmentId)->value('label_path'));
+
+        $upgradeMigration->up();
+
+        $this->assertFalse(Schema::hasColumn('shipment_quotes', 'idempotency_reference'));
+        $this->assertTrue(Schema::hasColumn('shipment_quotes', 'reconciliation_reference'));
+        $this->assertSame(
+            'JWEP-LEGACY-REFERENCE',
+            DB::table('shipment_quotes')->where('order_id', $order->id)->value('reconciliation_reference'),
+        );
         $this->assertSame($longLabel, DB::table('shipments')->where('id', $shipmentId)->value('label_path'));
     }
 }
