@@ -36,8 +36,12 @@ export const ThermalAWBModal: React.FC<ThermalAWBModalProps> = ({
 
   const isEastMalaysia = parcel.isEastMalaysiaAirRestricted;
   const isCOD = parcel.paymentMode === 'cod';
+  // ShipmentParcel is the redacted collection DTO. A separately authorized label/detail workflow is out of scope.
+  const canPrint = false;
 
   const handlePrint = () => {
+    if (!canPrint) return;
+
     setIsPrinting(true);
     setTimeout(() => {
       setIsPrinting(false);
@@ -94,7 +98,8 @@ export const ThermalAWBModal: React.FC<ThermalAWBModalProps> = ({
             </label>
             <button
               onClick={handlePrint}
-              disabled={isPrinting}
+              disabled={isPrinting || !canPrint}
+              title="Authorized recipient and label details are required before printing"
               className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
@@ -286,7 +291,7 @@ export const ThermalAWBModal: React.FC<ThermalAWBModalProps> = ({
         {/* Footer Actions */}
         <div className="px-6 py-3.5 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex items-center justify-between">
           <div className="text-xs text-neutral-500 dark:text-neutral-400">
-            Format: Standard 4x6" (100x150mm) Thermal Label with 203 DPI Barcode
+            Printing unavailable: authorized recipient and label details are not included in shipment-list responses.
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -297,7 +302,8 @@ export const ThermalAWBModal: React.FC<ThermalAWBModalProps> = ({
             </button>
             <button
               onClick={handlePrint}
-              disabled={isPrinting}
+              disabled={isPrinting || !canPrint}
+              title="Authorized recipient and label details are required before printing"
               className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
