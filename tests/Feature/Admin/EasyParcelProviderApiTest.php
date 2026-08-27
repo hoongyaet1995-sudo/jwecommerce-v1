@@ -8,7 +8,9 @@ use App\Models\ShippingProviderCredential;
 use App\Models\User;
 use App\Services\Shipping\EasyParcelOAuthAuthorizationService;
 use App\Services\Shipping\ShippingProviderConfigurationService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +22,14 @@ use Tests\TestCase;
 
 class EasyParcelProviderApiTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseMigrations;
+
+    public function runDatabaseMigrations(): void
+    {
+        $this->artisan('migrate:fresh', $this->migrateFreshUsing());
+        $this->app[Kernel::class]->setArtisan(null);
+        RefreshDatabaseState::$migrated = false;
+    }
 
     public function test_credentials_are_encrypted_at_rest_and_browser_dtos_are_safe(): void
     {
@@ -300,6 +309,42 @@ class EasyParcelProviderApiTest extends TestCase
                 && $request['code'] === $authorizationCode;
         });
         Http::assertSentCount(2);
+    }
+
+    public function test_callback_fails_closed_inside_an_ambient_transaction_before_consumption_or_exchange(): void
+    {
+        $admin = $this->superAdmin();
+        $this->configureProvider($admin, 'ambient-transaction');
+        $state = $this->startAuthorizationState();
+        $beforeProvider = $this->providerStorageSnapshot();
+        $beforeAuthorization = (array) DB::table('shipping_provider_authorization_transactions')->sole();
+        $this->fakeSuccessfulVerification('ambient-transaction');
+        $this->assertSame(0, DB::connection()->transactionLevel());
+
+        DB::beginTransaction();
+
+        try {
+            $this->assertSame(1, DB::connection()->transactionLevel());
+            $response = $this->get(
+                '/admin/shipping/easyparcel/callback'
+                    .'?code=ambient-transaction-one-time-code&state='.$state,
+            );
+            $insideProvider = $this->providerStorageSnapshot();
+            $insideAuthorization = (array) DB::table('shipping_provider_authorization_transactions')->sole();
+        } finally {
+            DB::rollBack();
+        }
+
+        $this->assertSame(0, DB::connection()->transactionLevel());
+        $this->assertSafeCallbackFailure($response);
+        Http::assertNothingSent();
+        $this->assertSame($beforeProvider, $insideProvider);
+        $this->assertSame($beforeAuthorization, $insideAuthorization);
+        $this->assertSame($beforeProvider, $this->providerStorageSnapshot());
+        $this->assertSame(
+            $beforeAuthorization,
+            (array) DB::table('shipping_provider_authorization_transactions')->sole(),
+        );
     }
 
     public function test_callback_missing_state_does_not_call_provider_or_mutate_configuration(): void

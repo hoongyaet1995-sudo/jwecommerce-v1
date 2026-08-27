@@ -107,6 +107,10 @@ final class EasyParcelOAuthAuthorizationService
 
     public function consume(int $userId, string $sessionBinding, ?string $state): ?int
     {
+        if (DB::connection()->transactionLevel() !== 0) {
+            return null;
+        }
+
         $sessionFingerprint = $this->sessionFingerprint($sessionBinding);
         if ($userId < 1
             || $sessionFingerprint === null
