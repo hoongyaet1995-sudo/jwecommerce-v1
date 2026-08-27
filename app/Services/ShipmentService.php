@@ -6,7 +6,9 @@ use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\Shipment;
 use App\Models\ShipmentEvent;
+use App\Models\ShipmentQuote;
 use App\Models\User;
+use App\Services\Shipping\ShippingProviderConfigurationService;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -21,9 +23,20 @@ class ShipmentService
                 throw new InvalidArgumentException('Only processing orders can be dispatched.');
             }
 
+            if (Shipment::query()
+                ->where('order_id', $lockedOrder->id)
+                ->where('source', ShippingProviderConfigurationService::PROVIDER)
+                ->exists()
+                || ShipmentQuote::query()
+                    ->where('order_id', $lockedOrder->id)
+                    ->whereNotNull('booking_claim_key')
+                    ->exists()) {
+                throw new InvalidArgumentException('This order already has an EasyParcel booking or unresolved booking attempt.');
+            }
+
             $shipment = Shipment::query()
                 ->where('order_id', $lockedOrder->id)
-                ->where('sequence', 1)
+                ->where('source', 'manual')
                 ->lockForUpdate()
                 ->first();
 

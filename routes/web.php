@@ -163,6 +163,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/api/orders/{order}/status', [OrderApiController::class, 'updateStatus']);
     Route::patch('/api/orders/{order}/tracking', [OrderApiController::class, 'tracking']);
     Route::post('/api/shipping/orders/{order}/dispatch', [ShipmentApiController::class, 'dispatch']);
+    Route::post('/api/shipping/orders/{order}/easyparcel/quotes', [ShipmentApiController::class, 'quoteEasyParcel'])
+        ->name('api.shipping.easyparcel.quotes.store');
+    Route::post('/api/shipping/orders/{order}/easyparcel/bookings', [ShipmentApiController::class, 'bookEasyParcel'])
+        ->name('api.shipping.easyparcel.bookings.store');
     Route::get('/api/shipping/shipments', [ShipmentApiController::class, 'index'])->name('api.shipping.shipments.index');
     Route::post('/api/shipping/shipments/{shipment}/events', [ShipmentApiController::class, 'appendEvent']);
     Route::get('/api/shipping/providers/easyparcel', [ShippingProviderApiController::class, 'show'])->name('api.shipping.providers.easyparcel.show');

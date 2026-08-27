@@ -6,12 +6,16 @@ use App\Domain\Shipping\ShippingPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Shipment;
-use App\Services\ShipmentService;
+use App\Models\ShipmentQuote;
 use App\Services\Admin\ShipmentDataService;
+use App\Services\ShipmentService;
+use App\Services\Shipping\EasyParcelFulfillmentService;
+use App\Services\Shipping\PackageSpec;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
+use Throwable;
 
 class ShipmentApiController extends Controller
 {
@@ -40,6 +44,66 @@ class ShipmentApiController extends Controller
         return response()->json(['data' => ['id' => (string) $shipment->id]], 201);
     }
 
+    public function quoteEasyParcel(
+        Request $request,
+        Order $order,
+        EasyParcelFulfillmentService $fulfillment,
+    ): JsonResponse {
+        abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::DISPATCH), 403);
+
+        $validated = $request->validate([
+            'package' => ['required', 'array'],
+            'package.weightKg' => ['required', 'numeric', 'gt:0', 'max:999999.99', 'decimal:0,2'],
+            'package.lengthCm' => ['required', 'numeric', 'gt:0', 'max:999999.99', 'decimal:0,2'],
+            'package.widthCm' => ['required', 'numeric', 'gt:0', 'max:999999.99', 'decimal:0,2'],
+            'package.heightCm' => ['required', 'numeric', 'gt:0', 'max:999999.99', 'decimal:0,2'],
+        ]);
+
+        try {
+            $package = new PackageSpec(
+                (float) $validated['package']['weightKg'],
+                (float) $validated['package']['lengthCm'],
+                (float) $validated['package']['widthCm'],
+                (float) $validated['package']['heightCm'],
+            );
+            $quote = $fulfillment->quote($order, $package, $request->user());
+        } catch (InvalidArgumentException $exception) {
+            throw ValidationException::withMessages(['fulfillment' => $exception->getMessage()]);
+        } catch (Throwable) {
+            return response()->json(['message' => 'EasyParcel fulfillment is temporarily unavailable.'], 503);
+        }
+
+        return response()->json(['data' => $this->quoteData($quote)], 201);
+    }
+
+    public function bookEasyParcel(
+        Request $request,
+        Order $order,
+        EasyParcelFulfillmentService $fulfillment,
+    ): JsonResponse {
+        abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::DISPATCH), 403);
+
+        $validated = $request->validate([
+            'quoteId' => ['required', 'integer', 'min:1'],
+            'serviceCode' => ['required', 'string', 'max:10'],
+        ]);
+        $quote = ShipmentQuote::query()->find($validated['quoteId']);
+
+        if ($quote === null) {
+            throw ValidationException::withMessages(['quoteId' => 'The selected quote is unavailable.']);
+        }
+
+        try {
+            $shipment = $fulfillment->book($order, $quote, $validated['serviceCode'], $request->user());
+        } catch (InvalidArgumentException $exception) {
+            throw ValidationException::withMessages(['fulfillment' => $exception->getMessage()]);
+        } catch (Throwable) {
+            return response()->json(['message' => 'EasyParcel fulfillment is temporarily unavailable.'], 503);
+        }
+
+        return response()->json(['data' => $this->bookingData($shipment)]);
+    }
+
     public function appendEvent(Request $request, Shipment $shipment, ShipmentService $shipments): JsonResponse
     {
         abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::UPDATE_STATUS), 403);
@@ -57,5 +121,57 @@ class ShipmentApiController extends Controller
         }
 
         return response()->json(['data' => ['id' => (string) $event->id, 'status' => $event->status]], 201);
+    }
+
+    /** @return array<string, mixed> */
+    private function quoteData(ShipmentQuote $quote): array
+    {
+        $services = data_get($quote->response_snapshot, 'services', []);
+
+        return [
+            'id' => (string) $quote->id,
+            'orderId' => (string) $quote->order_id,
+            'provider' => $quote->provider,
+            'environment' => $quote->environment,
+            'expiresAt' => $quote->expires_at?->toIso8601String(),
+            'package' => [
+                'weightKg' => data_get($quote->package_snapshot, 'weight_kg'),
+                'lengthCm' => data_get($quote->package_snapshot, 'length_cm'),
+                'widthCm' => data_get($quote->package_snapshot, 'width_cm'),
+                'heightCm' => data_get($quote->package_snapshot, 'height_cm'),
+            ],
+            'services' => collect(is_array($services) ? $services : [])->map(fn (array $service): array => [
+                'serviceCode' => $service['service_code'],
+                'serviceName' => $service['service_name'],
+                'courierCode' => $service['courier_code'],
+                'courierName' => $service['courier_name'],
+                'deliveryDuration' => $service['delivery_duration'],
+                'isPickup' => $service['is_pickup'],
+                'isDropoff' => $service['is_dropoff'],
+                'supportsCod' => $service['supports_cod'],
+                'currency' => $service['currency'],
+                'amount' => $service['amount_minor'] / 100,
+            ])->values(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function bookingData(Shipment $shipment): array
+    {
+        return [
+            'id' => (string) $shipment->id,
+            'orderId' => (string) $shipment->order_id,
+            'quoteId' => (string) $shipment->shipment_quote_id,
+            'provider' => $shipment->source,
+            'fulfillmentStatus' => 'ready_to_ship',
+            'courierCode' => $shipment->carrier_code,
+            'courierName' => $shipment->carrier_name,
+            'serviceCode' => $shipment->service_code,
+            'serviceName' => $shipment->service_name,
+            'trackingNumber' => $shipment->tracking_number,
+            'hasLabel' => filled($shipment->label_path),
+            'currency' => $shipment->currency,
+            'amount' => $shipment->shipping_cost === null ? null : $shipment->shipping_cost / 100,
+        ];
     }
 }

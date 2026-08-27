@@ -37,6 +37,19 @@ return [
 
     'easyparcel' => [
         'redirect_uri' => 'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback',
+        'sender' => [
+            'name' => env('EASYPARCEL_SENDER_NAME'),
+            'company' => env('EASYPARCEL_SENDER_COMPANY'),
+            'phone_number_country_code' => env('EASYPARCEL_SENDER_PHONE_COUNTRY_CODE', 'MY'),
+            'phone_number' => env('EASYPARCEL_SENDER_PHONE'),
+            'email' => env('EASYPARCEL_SENDER_EMAIL'),
+            'address_1' => env('EASYPARCEL_SENDER_ADDRESS_1'),
+            'address_2' => env('EASYPARCEL_SENDER_ADDRESS_2'),
+            'postcode' => env('EASYPARCEL_SENDER_POSTCODE'),
+            'city' => env('EASYPARCEL_SENDER_CITY'),
+            'subdivision_code' => env('EASYPARCEL_SENDER_SUBDIVISION_CODE'),
+            'country_code' => env('EASYPARCEL_SENDER_COUNTRY_CODE', 'MY'),
+        ],
     ],
 
 ];
