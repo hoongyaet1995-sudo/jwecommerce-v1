@@ -14,7 +14,6 @@ return new class extends Migration
             $table->string('environment');
             $table->boolean('enabled')->default(false);
             $table->string('connection_state')->default('unverified');
-            $table->unsignedBigInteger('configuration_version')->default(0);
             $table->json('public_metadata')->nullable();
             $table->timestamp('last_verified_at')->nullable();
             $table->string('last_error')->nullable();

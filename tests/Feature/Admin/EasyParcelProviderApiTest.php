@@ -126,6 +126,95 @@ class EasyParcelProviderApiTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_oauth_callback_rejects_unauthenticated_and_non_super_admin_sessions(): void
+    {
+        Http::fake();
+
+        $guestResponse = $this->get('/admin/shipping/easyparcel/callback?code=guest-code');
+        $guestResponse->assertUnauthorized();
+        $this->assertStringNotContainsString('guest-code', $guestResponse->getContent());
+        $this->assertStringNotContainsString('guest-code', json_encode(session()->all(), JSON_THROW_ON_ERROR));
+
+        $adminResponse = $this->actingAs(User::factory()->create(['is_admin' => true, 'is_super_admin' => false]))
+            ->get('/admin/shipping/easyparcel/callback?code=ordinary-admin-code');
+        $adminResponse->assertForbidden();
+        $this->assertStringNotContainsString('ordinary-admin-code', $adminResponse->getContent());
+
+        Http::assertNothingSent();
+    }
+
+    public function test_super_admin_oauth_callback_verifies_server_side_and_redirects_without_leaking_code(): void
+    {
+        $admin = $this->superAdmin();
+        $this->actingAs($admin)->putJson('/admin/api/shipping/providers/easyparcel', [
+            'environment' => 'sandbox',
+            'clientId' => 'callback-client-id',
+            'clientSecret' => 'callback-client-secret',
+            'enabled' => false,
+        ])->assertOk();
+
+        Http::fake([
+            'https://api.easyparcel.com/oauth/token' => Http::response([
+                'token_type' => 'Bearer',
+                'expires_in' => 36000,
+                'access_token' => 'callback-access-token',
+                'refresh_token' => 'callback-refresh-token',
+            ]),
+            'https://api.easyparcel.com/open_api/2026-06/wallet' => Http::response([
+                'status_code' => 200,
+                'message' => 'Success',
+                'data' => [
+                    'wallet' => [['balance' => 1000.00, 'currency' => 'MYR']],
+                    'free_credit_wallet' => [['balance' => 0, 'currency' => 'MYR']],
+                ],
+            ]),
+        ]);
+
+        $authorizationCode = 'callback-one-time-code-marker';
+        $response = $this->get('/admin/shipping/easyparcel/callback?code='.$authorizationCode);
+
+        $response->assertRedirect('/admin/shipping')
+            ->assertSessionHas('easyparcelConnection', [
+                'state' => 'connected',
+                'message' => 'EasyParcel connection verified.',
+            ])
+            ->assertSessionMissing('_old_input.code');
+        $this->assertStringNotContainsString($authorizationCode, (string) $response->headers->get('Location'));
+        $this->assertStringNotContainsString($authorizationCode, $response->getContent());
+        $this->assertStringNotContainsString(
+            $authorizationCode,
+            json_encode(session()->all(), JSON_THROW_ON_ERROR),
+        );
+        $this->assertSame('connected', ShippingProvider::query()->sole()->connection_state);
+
+        Http::assertSent(function (Request $request) use ($authorizationCode): bool {
+            return $request->url() === 'https://api.easyparcel.com/oauth/token'
+                && $request['redirect_uri'] === 'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback'
+                && $request['code'] === $authorizationCode;
+        });
+    }
+
+    public function test_oauth_callback_failure_redirects_with_only_a_bounded_safe_result(): void
+    {
+        Http::fake();
+        $rawProviderMarker = 'raw-provider-callback-marker';
+
+        $response = $this->actingAs($this->superAdmin())
+            ->get('/admin/shipping/easyparcel/callback?error=access_denied&error_description='.$rawProviderMarker);
+
+        $response->assertRedirect('/admin/shipping')
+            ->assertSessionHas('easyparcelConnection', [
+                'state' => 'failed',
+                'message' => 'EasyParcel connection could not be verified.',
+            ]);
+
+        $safeBrowserSurface = $response->getContent()
+            .(string) $response->headers->get('Location')
+            .json_encode(session()->all(), JSON_THROW_ON_ERROR);
+        $this->assertStringNotContainsString($rawProviderMarker, $safeBrowserSurface);
+        Http::assertNothingSent();
+    }
+
     public function test_sensitive_provider_inputs_are_never_flashed_after_non_json_validation(): void
     {
         $admin = $this->superAdmin();

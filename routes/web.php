@@ -113,6 +113,9 @@ Route::middleware('guest')->group(function (): void {
 
 Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->name('logout');
 
+Route::get('/admin/shipping/easyparcel/callback', [ShippingProviderApiController::class, 'callback'])
+    ->name('admin.shipping.easyparcel.callback');
+
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/api/dashboard', DashboardDataController::class)->name('api.dashboard');
     Route::get('/api/customers', [CustomerDirectoryDataController::class, 'index'])->name('api.customers');
