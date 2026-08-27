@@ -1,4 +1,4 @@
-<x-layouts.app :title="$collection->title.' | JW Atelier'">
+<x-layouts.app :title="$collection->title.' | '.$shopBrandName">
     <x-storefront.nav active="plp" :pdp-url="$products->first() ? route('storefront.products.show', ['handle' => $products->first()->handle]) : null" />
     <main class="source-collection-page">
         <header class="source-collection-hero">

@@ -6,13 +6,14 @@ use App\Models\Order;
 use App\Models\OrderRefund;
 use App\Models\OrderStatusHistory;
 use App\Services\CheckoutService;
+use App\Services\ShipmentService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class OrderOperationsService
 {
-    public function __construct(private readonly CheckoutService $checkout) {}
+    public function __construct(private readonly CheckoutService $checkout, private readonly ShipmentService $shipments) {}
 
     public function updateStatus(Order $order, ?string $paymentStatus, ?string $fulfillmentStatus, int $userId, ?string $note): Order
     {
@@ -46,7 +47,9 @@ class OrderOperationsService
     public function dispatch(Order $order, string $carrier, string $trackingNumber, int $userId): Order
     {
         try {
-            return $this->checkout->dispatch($order, $carrier, $trackingNumber, $userId)->fresh();
+            $actor = \App\Models\User::query()->findOrFail($userId);
+            $this->shipments->dispatchManually($order, $actor, $carrier, $trackingNumber);
+            return $order->fresh();
         } catch (InvalidArgumentException $exception) {
             throw ValidationException::withMessages(['trackingNumber' => $exception->getMessage()]);
         }

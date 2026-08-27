@@ -10,16 +10,17 @@ class OrderDataService
 {
     public function collection(): Collection
     {
-        return Order::query()->with(['customer', 'items', 'addresses', 'payments', 'statusHistory', 'refunds'])->latest()->get()->map(fn (Order $order): array => $this->data($order));
+        return Order::query()->with(['customer', 'items', 'addresses', 'payments', 'statusHistory', 'refunds', 'taxLines'])->latest()->get()->map(fn (Order $order): array => $this->data($order));
     }
 
     public function data(Order $order): array
     {
-        $order->loadMissing(['customer', 'items', 'addresses', 'payments', 'statusHistory', 'refunds']);
+        $order->loadMissing(['customer', 'items', 'addresses', 'payments', 'statusHistory', 'refunds', 'taxLines']);
         $payment = $order->payments->sortByDesc('id')->first();
         $shipping = $order->addresses->firstWhere('type', 'shipping') ?? $order->addresses->first();
         $billing = $order->addresses->firstWhere('type', 'billing') ?? $shipping;
         $customerName = trim(($order->customer?->first_name ?? '').' '.($order->customer?->last_name ?? ''));
+        $refundedAmount = (int) $order->refunds->where('status', 'completed')->sum('amount');
 
         $history = $order->statusHistory->map(function ($event): array {
             $type = match ($event->to_status) {
@@ -49,6 +50,33 @@ class OrderDataService
             'shippingAmount' => $order->shipping_amount / 100,
             'discountAmount' => $order->discount_amount / 100,
             'totalAmount' => $order->total / 100,
+            'refundedAmount' => $refundedAmount / 100,
+            'remainingRefundableAmount' => max(0, ((int) $order->total - $refundedAmount)) / 100,
+            'refunds' => $order->refunds->sortByDesc('id')->map(fn ($refund): array => [
+                'id' => (string) $refund->id,
+                'amount' => $refund->amount / 100,
+                'reason' => $refund->reason,
+                'status' => $refund->status,
+                'createdAt' => $refund->created_at?->toIso8601String(),
+            ])->values(),
+            'taxLines' => $order->taxLines->sortBy('id')->map(function ($line): array {
+                $snapshot = $line->configuration_snapshot ?? [];
+
+                return [
+                    'id' => (string) $line->id,
+                    'kind' => data_get($snapshot, 'quote_line.kind', 'merchandise'),
+                    'label' => $line->label,
+                    'taxType' => $line->tax_type,
+                    'ratePercent' => (float) $line->rate_percent,
+                    'taxableAmount' => $line->taxable_amount / 100,
+                    'taxAmount' => $line->tax_amount / 100,
+                    'quotedAt' => data_get($snapshot, 'quoted_at'),
+                    'taxClassName' => data_get($snapshot, 'tax_class.name'),
+                    'taxClassCode' => data_get($snapshot, 'tax_class.code'),
+                    'taxZoneName' => data_get($snapshot, 'tax_zone.name'),
+                    'taxZoneCode' => data_get($snapshot, 'tax_zone.code'),
+                ];
+            })->values(),
             'trackingNumber' => $order->tracking_number,
             'trackingCarrier' => $order->tracking_carrier,
             'shippingAddress' => $this->address($shipping, 'shipping'),

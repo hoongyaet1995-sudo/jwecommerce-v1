@@ -169,7 +169,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
       label: 'Shipping & Logistics',
       icon: Truck,
       isActive: isShippingActive,
-      badge: pendingAwbCount > 0 ? `${pendingAwbCount} AWB` : '6 Couriers',
+      badge: pendingAwbCount > 0 ? `${pendingAwbCount} AWB` : 'Manual',
       badgeVariant: pendingAwbCount > 0 ? 'warning' : 'success',
     },
     {

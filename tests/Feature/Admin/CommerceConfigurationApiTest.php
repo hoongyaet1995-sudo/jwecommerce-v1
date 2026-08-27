@@ -37,6 +37,7 @@ class CommerceConfigurationApiTest extends TestCase
         $this->putJson('/admin/api/commerce-settings', [])->assertUnauthorized();
         $this->putJson('/admin/api/commerce-settings/bank-transfer', [])->assertUnauthorized();
         $this->putJson('/admin/api/commerce-settings/cod', [])->assertUnauthorized();
+        $this->putJson('/admin/api/commerce-settings/shipping', [])->assertUnauthorized();
     }
 
     public function test_enabled_online_gateway_requires_complete_environment_credentials(): void
@@ -129,6 +130,31 @@ class CommerceConfigurationApiTest extends TestCase
             ->get('/checkout')
             ->assertOk()
             ->assertSee('Cash on Delivery');
+    }
+
+    public function test_admin_can_persist_shipping_rates_even_when_an_enabled_online_gateway_lacks_credentials(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        StoreSetting::query()->updateOrCreate(['key' => 'payment_gateways'], ['value' => ['data' => [
+            $this->gateway('stripe', true, []),
+        ]]]);
+
+        $shipping = [[
+            'id' => 'independent-global', 'name' => 'Independent Global Delivery', 'zoneRegion' => 'all',
+            'logisticType' => 'all', 'calculationMode' => 'per_order', 'rateType' => 'flat',
+            'tiers' => [], 'flatRateCost' => 18, 'freeShippingThreshold' => 0, 'isActive' => true,
+        ]];
+
+        $this->actingAs($admin)
+            ->putJson('/admin/api/commerce-settings/shipping', ['shippingRates' => $shipping])
+            ->assertOk()
+            ->assertJsonPath('data.shippingRates.0.id', 'independent-global');
+
+        $this->assertSame($shipping, data_get(StoreSetting::query()->where('key', 'shipping_rates')->sole()->value, 'data'));
+        $this->withSession(['cart' => [$this->variant()->id => 1]])
+            ->get('/checkout')
+            ->assertOk()
+            ->assertSee('Independent Global Delivery');
     }
 
     private function commerceDocument(array $gateways): array

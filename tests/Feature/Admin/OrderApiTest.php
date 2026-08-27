@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\Shipment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -14,7 +15,7 @@ class OrderApiTest extends TestCase
 
     public function test_admin_can_progress_dispatch_and_refund_order_with_audited_records(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
         $order = $this->pendingOrder();
 
         $this->actingAs($admin)->getJson('/admin/api/orders')->assertOk()
@@ -28,6 +29,12 @@ class OrderApiTest extends TestCase
         $this->actingAs($admin)->patchJson('/admin/api/orders/'.$order->id.'/tracking', [
             'carrier' => 'DHL Express', 'trackingNumber' => 'DHL-TRACK-1001',
         ])->assertOk()->assertJsonPath('data.fulfillmentStatus', 'shipped')->assertJsonPath('data.trackingNumber', 'DHL-TRACK-1001');
+
+        $this->assertDatabaseHas('shipments', [
+            'order_id' => $order->id,
+            'tracking_number' => 'DHL-TRACK-1001',
+            'status' => 'shipped',
+        ]);
 
         $this->actingAs($admin)->postJson('/admin/api/orders/'.$order->id.'/refund', [
             'amount' => 50, 'reason' => 'Customer goodwill adjustment.',
@@ -51,6 +58,37 @@ class OrderApiTest extends TestCase
         $this->actingAs($admin)->postJson('/admin/api/orders/'.$order->id.'/refund', ['amount' => 101, 'reason' => 'Invalid over-refund'])
             ->assertUnprocessable()->assertJsonValidationErrors('amount');
         $this->assertDatabaseCount('order_refunds', 0);
+    }
+
+    public function test_admin_order_payload_exposes_immutable_tax_evidence_and_refund_balances(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $order = $this->pendingOrder();
+        $order->update(['tax_amount' => 600, 'total' => 10600]);
+        $line = $order->taxLines()->create([
+            'label' => 'Sales Tax 6%',
+            'tax_type' => 'standard',
+            'rate_percent' => '6.0000',
+            'taxable_amount' => 10000,
+            'tax_amount' => 600,
+            'configuration_snapshot' => [
+                'quoted_at' => '2026-08-26T12:00:00+08:00',
+                'quote_line' => ['kind' => 'merchandise'],
+                'tax_class' => ['id' => 7, 'code' => 'standard-goods', 'name' => 'Standard Goods'],
+                'tax_zone' => ['id' => 9, 'code' => 'my', 'name' => 'Malaysia'],
+            ],
+        ]);
+
+        $this->actingAs($admin)->getJson('/admin/api/orders')->assertOk()
+            ->assertJsonPath('orders.0.taxLines.0.id', (string) $line->id)
+            ->assertJsonPath('orders.0.taxLines.0.kind', 'merchandise')
+            ->assertJsonPath('orders.0.taxLines.0.label', 'Sales Tax 6%')
+            ->assertJsonPath('orders.0.taxLines.0.taxClassName', 'Standard Goods')
+            ->assertJsonPath('orders.0.taxLines.0.taxZoneName', 'Malaysia')
+            ->assertJsonPath('orders.0.taxLines.0.taxableAmount', 100)
+            ->assertJsonPath('orders.0.taxLines.0.taxAmount', 6)
+            ->assertJsonPath('orders.0.refundedAmount', 0)
+            ->assertJsonPath('orders.0.remainingRefundableAmount', 106);
     }
 
     public function test_order_mutation_requires_admin_authentication(): void

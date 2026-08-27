@@ -1,4 +1,4 @@
-<x-layouts.app :title="$page->title.' | JW Atelier'">
+<x-layouts.app :title="$page->title.' | '.$shopBrandName">
     <div class="min-h-screen bg-zinc-950 text-zinc-100">
         <x-storefront.nav active="landing" />
         <main>

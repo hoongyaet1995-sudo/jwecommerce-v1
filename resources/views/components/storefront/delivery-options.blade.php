@@ -1,10 +1,10 @@
-@props(['summary', 'options'])
+@props(['summary', 'options', 'selected' => null, 'quoteUrl' => null])
 
 @php
-    $selected = old('delivery', 'standard');
+    $selected = old('delivery', $selected ?? array_key_first($options) ?? '');
 @endphp
 
-<section class="space-y-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/70" data-delivery-matrix data-subtotal="{{ $summary['subtotal'] }}" data-discount="{{ $summary['discount'] }}" data-tax-rate="{{ data_get(\App\Models\StoreSetting::query()->where('key', 'tax_rate_percent')->value('value'), 'data', 0) }}">
+<section class="space-y-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/70" data-delivery-matrix @if($quoteUrl) data-delivery-quote-url="{{ $quoteUrl }}" @endif data-subtotal="{{ $summary['subtotal'] }}" data-discount="{{ $summary['discount'] }}" data-tax="{{ $summary['tax'] }}" data-tax-quote='@json($summary['tax_quote'] ?? [])'>
     <div class="flex items-center gap-3 border-b border-zinc-200 pb-3 dark:border-zinc-800"><span class="grid h-7 w-7 place-items-center rounded-full bg-amber-400 text-xs font-black text-zinc-950">2</span><h2 class="font-serif text-sm font-bold text-zinc-900 dark:text-zinc-100">Delivery Method &amp; Logistics Matrix</h2></div>
     <div class="space-y-2.5">
         @foreach($options as $value => $option)

@@ -1,4 +1,4 @@
-<x-layouts.app title="ATELIER | JW Studio">
+<x-layouts.app :title="$shopBrandName">
     @php
         $heroProduct = $products->first();
         $orderedCollections = $collections->sortBy(fn ($collection) => array_search($collection->slug, ['atelier-2026', 'studio-noir', 'sustainable-craft'], true));

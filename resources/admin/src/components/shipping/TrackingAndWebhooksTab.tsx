@@ -58,30 +58,30 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
         <div>
           <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
             <Radio className="w-4 h-4 text-purple-600 animate-pulse" />
-            Live Courier Webhooks & Tracking Event Pipeline
+            Shipment Event Audit Trail
           </h3>
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-            Real-time ingestion of courier milestone telemetry: Picked Up, Sorting Center Transit, Out for Delivery, NITC Exceptions, and Signed Proof of Delivery.
+            Record authorized warehouse milestones now; provider webhooks remain unavailable until an EasyParcel integration is configured.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <span className="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-semibold border border-purple-200 dark:border-purple-800">
-            HTTP 200 Ingress Active
+            Manual audit mode
           </span>
         </div>
       </div>
 
       {/* Grid: Webhook Ingest Simulator & Live Event Stream */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Webhook Ingestion Simulator Form */}
+        {/* Manual tracking event form */}
         <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-1.5">
               <Zap className="w-4 h-4 text-amber-500" />
-              Webhook Test Simulator
+              Manual Event Entry
             </h4>
-            <span className="text-[10px] text-neutral-400 font-mono">POST /api/webhooks</span>
+            <span className="text-[10px] text-neutral-400 font-mono">append-only audit</span>
           </div>
 
           <form onSubmit={handleSimulate} className="space-y-3">
@@ -104,7 +104,7 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
 
             <div>
               <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                Webhook Event Type
+                Shipment Event Type
               </label>
               <select
                 value={customEvent}
@@ -167,7 +167,7 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
                 className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
-                Dispatch Ingress Webhook Event
+                Record Shipment Event
               </button>
             </div>
           </form>
@@ -175,7 +175,7 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
           {/* Quick preset chips */}
           <div className="pt-3 border-t border-neutral-200 dark:border-neutral-800">
             <span className="text-[10px] text-neutral-400 font-semibold uppercase block mb-1.5">
-              1-Click Instant Ingest
+              Quick event presets
             </span>
             <div className="flex flex-wrap gap-1.5">
               <button
@@ -200,7 +200,7 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-sm font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
                 <Clock className="w-4 h-4 text-blue-600" />
-                Real-Time Telemetry Event Log
+                Shipment Event Audit Log
               </h4>
               <span className="text-xs text-neutral-400">
                 {allEvents.length} events logged
@@ -210,7 +210,7 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
               {allEvents.length === 0 ? (
                 <div className="p-8 text-center text-xs text-neutral-400">
-                  No tracking events ingested yet. Dispatch a test event on the left.
+                  No shipment events have been recorded yet. Record an authorized warehouse milestone on the left.
                 </div>
               ) : (
                 allEvents.map((evt, idx) => (
@@ -268,8 +268,8 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
           </div>
 
           <div className="mt-4 pt-3 border-t border-neutral-200 dark:border-neutral-800 text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center justify-between">
-            <span>Webhook signature validation: <strong>HMAC-SHA256 & MD5 Verified</strong></span>
-            <span className="font-mono">Payload format: JSON v2</span>
+            <span>Provider webhook validation: <strong>Not connected</strong></span>
+            <span className="font-mono">Source: manual warehouse audit</span>
           </div>
         </div>
       </div>

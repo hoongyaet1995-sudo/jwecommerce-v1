@@ -1,4 +1,4 @@
-<x-layouts.app :title="($mode === 'register' ? 'Register' : ($mode === 'forgot' ? 'Reset Password' : 'Sign In')).' | ATELIER'">
+<x-layouts.app :title="($mode === 'register' ? 'Register' : ($mode === 'forgot' ? 'Reset Password' : 'Sign In')).' | '.$shopBrandName">
     <div class="min-h-screen bg-zinc-50 font-sans text-zinc-900 transition-colors duration-200 dark:bg-zinc-950 dark:text-zinc-100">
         <x-storefront.nav active="account" />
         <main class="flex min-h-[85vh] items-center justify-center px-4 py-12 sm:px-6 sm:py-20 lg:px-8">

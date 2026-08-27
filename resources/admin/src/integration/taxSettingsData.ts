@@ -50,7 +50,12 @@ export const fetchTaxSettings = (bootstrap: LaravelAdminBootstrap): Promise<TaxS
 export const saveTaxConfiguration = (bootstrap: LaravelAdminBootstrap, configuration: TaxSettingsDocument['configuration']): Promise<TaxSettingsDocument> => request<TaxSettingsDocument>(bootstrap, '/configuration', 'PUT', configuration);
 export const saveTaxZone = (bootstrap: LaravelAdminBootstrap, zone: GeoTaxZone): Promise<GeoTaxZone> => request<GeoTaxZone>(bootstrap, `/zones${/^\d+$/.test(zone.id) ? `/${zone.id}` : ''}`, /^\d+$/.test(zone.id) ? 'PATCH' : 'POST', zone);
 export const deleteTaxZone = (bootstrap: LaravelAdminBootstrap, id: string): Promise<void> => destroy(bootstrap, `/zones/${id}`);
-export const saveTaxClass = (bootstrap: LaravelAdminBootstrap, taxClass: TaxClass): Promise<TaxClass> => request<TaxClass>(bootstrap, `/classes${/^\d+$/.test(taxClass.id) ? `/${taxClass.id}` : ''}`, /^\d+$/.test(taxClass.id) ? 'PATCH' : 'POST', taxClass);
+export const saveTaxClass = (bootstrap: LaravelAdminBootstrap, taxClass: TaxClass): Promise<TaxClass> => {
+  const { id, name, description } = taxClass;
+  const path = `/classes${/^\d+$/.test(id) ? `/${id}` : ''}`;
+
+  return request<TaxClass>(bootstrap, path, /^\d+$/.test(id) ? 'PATCH' : 'POST', { name, description });
+};
 export const deleteTaxClass = (bootstrap: LaravelAdminBootstrap, id: string): Promise<void> => destroy(bootstrap, `/classes/${id}`);
 export const saveTaxRule = (bootstrap: LaravelAdminBootstrap, rule: TaxRate): Promise<TaxRate> => request<TaxRate>(bootstrap, `/rules${/^\d+$/.test(rule.id) ? `/${rule.id}` : ''}`, /^\d+$/.test(rule.id) ? 'PATCH' : 'POST', rule);
 export const deleteTaxRule = (bootstrap: LaravelAdminBootstrap, id: string): Promise<void> => destroy(bootstrap, `/rules/${id}`);

@@ -1,4 +1,4 @@
-<x-layouts.app title="Review preview | ATELIER">
+<x-layouts.app :title="'Review preview | '.$shopBrandName">
     <div class="min-h-screen bg-zinc-50 font-sans text-zinc-900 transition-colors duration-200 dark:bg-zinc-950 dark:text-zinc-100">
         <x-storefront.nav active="account" />
         <main class="px-4 py-10 sm:px-6 sm:py-16 lg:px-8">

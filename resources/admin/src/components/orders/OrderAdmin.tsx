@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 export const OrderAdmin: React.FC = () => {
-  const { orders, updateOrderStatus, orderStatuses, setCurrentSection } = useAdmin();
+  const { orders, updateOrderStatus, updateOrderTracking, orderStatuses, setCurrentSection } = useAdmin();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -38,6 +38,13 @@ export const OrderAdmin: React.FC = () => {
   const [chosenStatusId, setChosenStatusId] = useState<string>('');
   const [notifyCustomerCheck, setNotifyCustomerCheck] = useState<boolean>(true);
   const [customerCommentInput, setCustomerCommentInput] = useState<string>('');
+
+  // Manual Fulfillment State
+  const [manualCarrier, setManualCarrier] = useState('');
+  const [manualTracking, setManualTracking] = useState('');
+  const [carrierError, setCarrierError] = useState('');
+  const [trackingError, setTrackingError] = useState('');
+  const [isDispatched, setIsDispatched] = useState(false);
 
   // Tracking Number Input state
   const [trackingNumberInput, setTrackingNumberInput] = useState('');
@@ -59,6 +66,11 @@ export const OrderAdmin: React.FC = () => {
   const handleOpenDetail = (order: Order) => {
     setSelectedOrder(order);
     setTrackingNumberInput(order.trackingNumber || '');
+    setManualCarrier(order.trackingCarrier || '');
+    setManualTracking(order.trackingNumber || '');
+    setCarrierError('');
+    setTrackingError('');
+    setIsDispatched(Boolean(order.trackingCarrier && order.trackingNumber));
 
     // Set initial chosen status
     const currentStatusObj = orderStatuses.find(
@@ -76,6 +88,35 @@ export const OrderAdmin: React.FC = () => {
     const targetStatus = orderStatuses.find(s => s.id === statusId);
     if (targetStatus) {
       setNotifyCustomerCheck(Boolean(targetStatus.notifyCustomer));
+    }
+  };
+
+  const handleRecordDispatch = async () => {
+    let hasError = false;
+    if (!manualCarrier.trim()) {
+      setCarrierError('Carrier / hand-off partner is required');
+      hasError = true;
+    } else {
+      setCarrierError('');
+    }
+
+    if (!manualTracking.trim()) {
+      setTrackingError('Tracking reference is required');
+      hasError = true;
+    } else {
+      setTrackingError('');
+    }
+
+    if (hasError || !selectedOrder) return;
+
+    const carrier = manualCarrier.trim();
+    const tracking = manualTracking.trim();
+    const saved = await updateOrderTracking(selectedOrder.id, carrier, tracking);
+    if (saved) {
+      setSelectedOrder(saved);
+      setManualCarrier(saved.trackingCarrier || carrier);
+      setManualTracking(saved.trackingNumber || tracking);
+      setIsDispatched(true);
     }
   };
 
@@ -340,6 +381,100 @@ export const OrderAdmin: React.FC = () => {
                   </button>
                 </div>
               </div>
+
+              {/* Compact Manual Fulfillment Subsection (Processing Orders Only) */}
+              {(selectedOrder.fulfillmentStatus === 'processing' || isDispatched) && (
+                <div className="pt-2.5 pb-1 border-t border-indigo-200/70 dark:border-indigo-900/60 space-y-2">
+                  {!isDispatched && !selectedOrder.trackingNumber ? (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-start">
+                        <div className="sm:col-span-4 space-y-1">
+                          <label className="text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">
+                            Carrier / hand-off partner
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. DHL Express, J&T Express, Ninja Van"
+                            value={manualCarrier}
+                            onChange={e => {
+                              setManualCarrier(e.target.value);
+                              if (carrierError && e.target.value.trim()) setCarrierError('');
+                            }}
+                            className={`w-full px-3 py-2 text-xs rounded-xl border bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white transition-colors ${
+                              carrierError
+                                ? 'border-rose-500 dark:border-rose-500 focus:ring-1 focus:ring-rose-500'
+                                : 'border-neutral-300 dark:border-neutral-700'
+                            }`}
+                          />
+                          {carrierError && (
+                            <p className="text-[10px] text-rose-500 dark:text-rose-400 font-medium">
+                              {carrierError}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="sm:col-span-5 space-y-1">
+                          <label className="text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">
+                            Tracking reference
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. TRK-892410294MY"
+                            value={manualTracking}
+                            onChange={e => {
+                              setManualTracking(e.target.value);
+                              if (trackingError && e.target.value.trim()) setTrackingError('');
+                            }}
+                            className={`w-full px-3 py-2 text-xs rounded-xl border bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white transition-colors ${
+                              trackingError
+                                ? 'border-rose-500 dark:border-rose-500 focus:ring-1 focus:ring-rose-500'
+                                : 'border-neutral-300 dark:border-neutral-700'
+                            }`}
+                          />
+                          {trackingError && (
+                            <p className="text-[10px] text-rose-500 dark:text-rose-400 font-medium">
+                              {trackingError}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="sm:col-span-3 sm:pt-[21px]">
+                          <button
+                            type="button"
+                            onClick={handleRecordDispatch}
+                            className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer"
+                          >
+                            <Truck className="w-3.5 h-3.5" />
+                            <span>Record dispatch</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                        Records a manual shipment and append-only dispatch event. No courier label is purchased.
+                      </p>
+                    </>
+                  ) : (
+                    <div className="p-2.5 px-3 rounded-xl bg-white/80 dark:bg-neutral-800/80 border border-emerald-200 dark:border-emerald-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                          <CheckCircle2 className="w-2.5 h-2.5" /> Dispatched
+                        </span>
+                        <span className="text-neutral-700 dark:text-neutral-300">
+                          Carrier: <strong className="text-neutral-900 dark:text-white font-mono">{selectedOrder.trackingCarrier || manualCarrier}</strong>
+                        </span>
+                        <span className="text-neutral-300 dark:text-neutral-700 hidden sm:inline">•</span>
+                        <span className="text-neutral-700 dark:text-neutral-300">
+                          Tracking: <strong className="text-indigo-600 dark:text-indigo-400 font-mono">{selectedOrder.trackingNumber || manualTracking}</strong>
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-neutral-400 font-mono">
+                        Manual Dispatch Recorded
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex items-center gap-4 pt-1 text-xs">
                 <label className="flex items-center gap-1.5 cursor-pointer text-neutral-700 dark:text-neutral-300 font-semibold">

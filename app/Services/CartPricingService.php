@@ -81,13 +81,27 @@ class CartPricingService
     {
         $rates = data_get($document, 'data', []);
         if (! is_array($rates)) return null;
-        $matches = fn (array $rate): bool => match ($delivery) {
+        $eligible = collect($rates)
+            ->filter(fn ($rate): bool => is_array($rate) && ($rate['isActive'] ?? false) && $this->matchesZone($rate, $shippingAddress))
+            ->values();
+
+        $exactRate = $eligible->first(fn (array $rate): bool => (string) ($rate['id'] ?? '') === $delivery);
+        if (is_array($exactRate)) return $exactRate;
+
+        if (! in_array($delivery, ['standard', 'express', 'white_glove'], true)) return null;
+
+        $matchesLegacyDelivery = fn (array $rate): bool => match ($delivery) {
             'express' => str_contains(strtolower((string) ($rate['name'] ?? '')), 'express'),
             'white_glove' => str_contains(strtolower((string) ($rate['name'] ?? '')), 'white'),
             default => ! str_contains(strtolower((string) ($rate['name'] ?? '')), 'express') && ! str_contains(strtolower((string) ($rate['name'] ?? '')), 'white'),
         };
-        foreach ($rates as $rate) if (is_array($rate) && ($rate['isActive'] ?? false) && $matches($rate) && $this->matchesZone($rate, $shippingAddress)) return $rate;
-        return null;
+
+        return $eligible->first($matchesLegacyDelivery);
+    }
+
+    public function rateMatchesAddress(array $rate, ?array $address): bool
+    {
+        return $this->matchesZone($rate, $address);
     }
 
     private function matchesZone(array $rate, ?array $address): bool

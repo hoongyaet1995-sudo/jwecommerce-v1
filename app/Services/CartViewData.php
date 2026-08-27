@@ -9,12 +9,15 @@ use Illuminate\Http\Request;
 
 class CartViewData
 {
-    public function __construct(private readonly CartPricingService $pricing)
+    public function __construct(
+        private readonly CartPricingService $pricing,
+        private readonly ShippingConfigurationService $shipping,
+    )
     {
     }
 
     /**
-     * @return array{items: \Illuminate\Support\Collection<int, array{variant: ProductVariant, quantity: int}>, coupon: ?Coupon, summary: array{subtotal: int, discount: int, shipping: int, tax: int, total: int}, addons: \Illuminate\Support\Collection<int, Product>}
+     * @return array{items: \Illuminate\Support\Collection<int, array{variant: ProductVariant, quantity: int}>, coupon: ?Coupon, summary: array{subtotal: int, discount: int, shipping: int, tax: int, total: int}, shippingEstimateAvailable: bool, shippingOption: ?array, shippingProgressThreshold: ?int, addons: \Illuminate\Support\Collection<int, Product>}
      */
     public function for(Request $request): array
     {
@@ -32,10 +35,17 @@ class CartViewData
             ->where('code', $request->session()->get('coupon_code'))
             ->first();
 
+        $deliveryOptions = $this->shipping->checkoutOptions($items, $coupon);
+        $shippingOption = count($deliveryOptions) === 1 ? reset($deliveryOptions) : null;
+        $selectedDelivery = $shippingOption['id'] ?? 'standard';
+
         return [
             'items' => $items,
             'coupon' => $coupon,
-            'summary' => $this->pricing->summarize($items, $coupon),
+            'summary' => $this->pricing->summarize($items, $coupon, $selectedDelivery),
+            'shippingEstimateAvailable' => $shippingOption !== null,
+            'shippingOption' => $shippingOption,
+            'shippingProgressThreshold' => $this->shipping->cartFreeShippingThreshold(),
             'addons' => Product::query()
                 ->where('status', 'active')
                 ->whereNotIn('id', $variants->pluck('product_id'))

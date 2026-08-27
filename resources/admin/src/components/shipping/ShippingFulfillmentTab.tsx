@@ -112,7 +112,8 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
       case 'posmalaysia': return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">POS LAJU</span>;
       case 'flashexpress': return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">FLASH EXP</span>;
       case 'easyparcel': return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300">EASYPARCEL</span>;
-      default: return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">DHL ECOM</span>;
+      case 'dhl': return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">DHL ECOM</span>;
+      default: return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">MANUAL</span>;
     }
   };
 
@@ -122,6 +123,8 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
         return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">Pending AWB</span>;
       case 'ready_to_ship':
         return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">Ready to Ship</span>;
+      case 'shipped':
+        return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300">Dispatched</span>;
       case 'picked_up':
       case 'in_transit':
         return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300">In Transit</span>;
@@ -348,7 +351,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                           {getCourierBadge(parcel.courier)}
                         </div>
                         <div className="text-[11px] font-mono font-bold text-neutral-700 dark:text-neutral-300 mt-1">
-                          Sort Hub: {parcel.routingSortCode || 'KUL-01'}
+                          {parcel.routingSortCode ? `Sort Hub: ${parcel.routingSortCode}` : 'Route not assigned'}
                         </div>
                         <div className="text-[10px] text-neutral-400">
                           {parcel.serviceType}
@@ -358,13 +361,13 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                       {/* Specs & Weight */}
                       <td className="p-3.5">
                         <div className="font-mono font-semibold text-neutral-800 dark:text-neutral-200">
-                          {parcel.totalWeightKg} kg <span className="text-neutral-400 font-normal">actual</span>
+                          {parcel.totalWeightKg === null ? 'Not configured' : `${parcel.totalWeightKg} kg`} <span className="text-neutral-400 font-normal">actual</span>
                         </div>
                         <div className="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono">
-                          Vol: {parcel.volumetricWeightKg} kg
+                          Vol: {parcel.volumetricWeightKg === null ? '—' : `${parcel.volumetricWeightKg} kg`}
                         </div>
                         <div className="text-[10px] text-neutral-400 font-mono">
-                          {parcel.dimensionsCm.length}x{parcel.dimensionsCm.width}x{parcel.dimensionsCm.height}cm
+                          {parcel.dimensionsCm ? `${parcel.dimensionsCm.length}x${parcel.dimensionsCm.width}x${parcel.dimensionsCm.height}cm` : 'Dimensions not configured'}
                         </div>
                       </td>
 
@@ -450,8 +453,8 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
             Showing <strong>{filteredParcels.length}</strong> of <strong>{parcels.length}</strong> shipments
           </div>
           <div className="flex items-center gap-4">
-            <span>Thermal Format: <strong>4x6" (100x150mm)</strong></span>
-            <span>Postcode API: <strong>Pos Malaysia Validated</strong></span>
+            <span>Manual dispatch records do not create a provider waybill.</span>
+            <span>Postcode API: <strong>Not connected</strong></span>
           </div>
         </div>
       </div>

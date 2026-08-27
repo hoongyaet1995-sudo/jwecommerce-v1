@@ -166,9 +166,9 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
             <div class="flex items-center gap-3">
-                <a href="{{ route('storefront.home') }}" class="group cursor-pointer flex items-center gap-2.5 p-1 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all" title="JW Studio Atelier" aria-label="Home Logo">
+                <a href="{{ route('storefront.home') }}" class="group cursor-pointer flex items-center gap-2.5 p-1 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all" title="{{ $shopBrandName }}" aria-label="{{ $shopBrandName }} home">
                     <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden bg-black flex items-center justify-center shadow-md ring-1 ring-zinc-200 dark:ring-zinc-800 group-hover:ring-amber-500/50 group-hover:shadow-amber-500/20 group-hover:shadow-lg transition-all duration-300"><img src="{{ asset('images/source/jwstudio_logo_1786766390670.jpg') }}" alt="JW Studio Logo" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" referrerpolicy="no-referrer"></div>
-                    <div class="hidden xl:flex flex-col text-left"><span class="font-serif font-black tracking-widest text-sm text-zinc-950 dark:text-white uppercase">ATELIER</span><span class="text-[9px] tracking-widest text-zinc-400 dark:text-zinc-500 font-mono -mt-0.5">EST. 2026</span></div>
+                    <div class="hidden xl:flex flex-col text-left"><span class="font-serif font-black tracking-widest text-sm text-zinc-950 dark:text-white uppercase">{{ $shopBrandName }}</span><span class="text-[9px] tracking-widest text-zinc-400 dark:text-zinc-500 font-mono -mt-0.5">EST. 2026</span></div>
                 </a>
             </div>
             <nav class="hidden lg:flex items-center gap-1">

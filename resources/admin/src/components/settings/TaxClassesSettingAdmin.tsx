@@ -294,13 +294,8 @@ export const TaxClassesSettingAdmin: React.FC = () => {
                             <Percent className="w-4 h-4" />
                           </div>
                           <div>
-                            <div className="font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
+                            <div className="font-semibold text-neutral-900 dark:text-white">
                               <span>{tc.name}</span>
-                              {isActive && (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
-                                  Default Active
-                                </span>
-                              )}
                             </div>
                             <div className="text-[11px] text-neutral-400 dark:text-neutral-500">
                               Store-wide tax rate: {formatRate(tc.ratePercent)}

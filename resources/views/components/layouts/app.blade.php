@@ -1,14 +1,14 @@
-@props(['title' => 'JW Atelier', 'description' => null])
+@props(['title' => null, 'description' => null])
 <!doctype html>
 @php($isCmsStorefrontPreview = request()->routeIs('admin.pages.preview', 'admin.cms-canary.pages.show'))
-@php($isStorefront = request()->routeIs('storefront.*', 'cart.*', 'checkout.*', 'customer.*') || $isCmsStorefrontPreview)
+@php($isStorefront = request()->routeIs('storefront.*', 'cart.*', 'checkout.*', 'customer.*', 'order-tracking.*') || $isCmsStorefrontPreview)
 @php($isAdmin = request()->routeIs('admin.*') && ! $isCmsStorefrontPreview)
 <html lang="en" @if($isStorefront) class="dark" data-atelier-theme-root data-atelier-theme="dark" @elseif($isAdmin) data-admin-root @endif>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title }}</title>
+    <title>{{ $title ?: $shopBrandName }}</title>
     @if($description)<meta name="description" content="{{ $description }}">@endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <livewire:styles />

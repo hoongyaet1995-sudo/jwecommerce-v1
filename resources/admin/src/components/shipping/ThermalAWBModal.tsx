@@ -212,15 +212,15 @@ export const ThermalAWBModal: React.FC<ThermalAWBModalProps> = ({
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="text-gray-600">Weight:</span>
-                  <span className="font-bold font-mono text-black">{parcel.totalWeightKg} kg</span>
+                  <span className="font-bold font-mono text-black">{parcel.totalWeightKg === null ? 'Not configured' : `${parcel.totalWeightKg} kg`}</span>
                   <span className="text-gray-400">|</span>
                   <span className="text-gray-600">Vol:</span>
-                  <span className="font-bold font-mono text-black">{parcel.volumetricWeightKg} kg</span>
+                  <span className="font-bold font-mono text-black">{parcel.volumetricWeightKg === null ? 'Not configured' : `${parcel.volumetricWeightKg} kg`}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-gray-600">Dim:</span>
                   <span className="font-mono text-black">
-                    {parcel.dimensionsCm?.length || 10}x{parcel.dimensionsCm?.width || 10}x{parcel.dimensionsCm?.height || 10} cm
+                    {parcel.dimensionsCm ? `${parcel.dimensionsCm.length}x${parcel.dimensionsCm.width}x${parcel.dimensionsCm.height} cm` : 'Not configured'}
                   </span>
                 </div>
                 <div className="text-[9px] text-gray-500">
@@ -242,7 +242,7 @@ export const ThermalAWBModal: React.FC<ThermalAWBModalProps> = ({
                   EAST MALAYSIA AIR FREIGHT / CUSTOMS DECLARATION (CN22)
                 </div>
                 <div className="text-gray-700 leading-tight">
-                  Contents: General Consumer Goods (No hazardous battery, aerosol, or restricted liquids). Declared Value: RM {(parcel.systemQuotedCharge * 12).toFixed(2)}. Certified compliant with CAAM aviation safety.
+                  Contents and declared value must be confirmed before a courier label is issued.
                 </div>
               </div>
             )}

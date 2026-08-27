@@ -31,8 +31,8 @@ export const saveCommerceSettings = async (bootstrap: LaravelAdminBootstrap, doc
 
 const saveOfflinePaymentSetting = async (
   bootstrap: LaravelAdminBootstrap,
-  suffix: 'bank-transfer' | 'cod',
-  document: Partial<Pick<CommerceSettingsDocument, 'bankTransfer' | 'codConfig'>>,
+  suffix: 'bank-transfer' | 'cod' | 'shipping',
+  document: Partial<Pick<CommerceSettingsDocument, 'bankTransfer' | 'codConfig' | 'shippingRates'>>,
 ): Promise<CommerceSettingsDocument> => {
   if (!bootstrap.commerceSettingsUrl) throw new Error('Commerce settings API is unavailable.');
   const response = await window.fetch(`${bootstrap.commerceSettingsUrl}/${suffix}`, {
@@ -55,3 +55,8 @@ export const saveCodConfiguration = async (
   bootstrap: LaravelAdminBootstrap,
   codConfig: CashOnDeliveryConfig,
 ): Promise<CommerceSettingsDocument> => saveOfflinePaymentSetting(bootstrap, 'cod', { codConfig });
+
+export const saveShippingConfiguration = async (
+  bootstrap: LaravelAdminBootstrap,
+  shippingRates: GeneralShippingRate[],
+): Promise<CommerceSettingsDocument> => saveOfflinePaymentSetting(bootstrap, 'shipping', { shippingRates });

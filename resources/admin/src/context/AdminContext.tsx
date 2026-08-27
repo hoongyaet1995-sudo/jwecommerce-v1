@@ -9,7 +9,7 @@ import { customerDirectoryToCustomers, deleteCustomerData, fetchCustomerDirector
 import { fetchOrders, processOrderRefundData, updateOrderStatusData, updateOrderTrackingData } from '../integration/orderData';
 import { appendShipmentEvent, fetchShipments } from '../integration/shipmentData';
 import { fetchCommerceSettings, saveBankTransferConfiguration, saveCodConfiguration, saveCommerceSettings, saveShippingConfiguration } from '../integration/commerceSettingsData';
-import { deleteTaxRule as deleteTaxRuleData, deleteTaxZone as deleteTaxZoneData, fetchTaxSettings, globalTaxEngineFromConfiguration, saveTaxConfiguration, saveTaxRule, saveTaxZone, type TaxSettingsDocument } from '../integration/taxSettingsData';
+import { deleteTaxRule as deleteTaxRuleData, deleteTaxZone as deleteTaxZoneData, globalTaxEngineFromConfiguration, saveTaxConfiguration, saveTaxRule, saveTaxZone, type TaxSettingsDocument } from '../integration/taxSettingsData';
 import { activateTaxClass as activateTaxClassData, createTaxClass, deactivateTaxClass as deactivateTaxClassData, deleteTaxClass as deleteSimpleTaxClassData, fetchTaxClasses, updateTaxClass } from '../integration/taxClassData';
 import { loadStorefrontShellSettings, saveStorefrontShellSettingsData } from '../integration/storefrontShellSettingsData';
 import {
@@ -911,22 +911,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    void fetchTaxSettings(laravelBootstrap).then(document => {
-      if (!active) return;
-      setTaxZones(document.zones);
-      setTaxRates(document.rules);
-      setTaxConfiguration(document.configuration);
-      setGlobalTaxEngine(current => globalTaxEngineFromConfiguration(document.configuration, current));
-    }).catch(() => {
-      if (active) addToast({ type: 'error', title: 'Tax Settings Unavailable', message: 'Unable to load tax settings from MySQL.' });
-    });
-    return () => { active = false; };
-  // Laravel emits this immutable bootstrap once per admin app load.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Header Menu CRUD
@@ -3570,11 +3554,6 @@ Would you like me to drill down into customer records, inventory allocation, or 
       setBankTransferConfig(document.bankTransfer as ManualBankTransferConfig); setCodConfig(document.codConfig as CashOnDeliveryConfig); setGlobalPaymentSettings(document.globalPayment as GlobalPaymentSettings);
       setCurrenciesSetting(document.currencies);
     }).catch(error => addToast({ type: 'error', title: 'Commerce Settings Reload Failed', message: error instanceof Error ? error.message : 'Unable to reload commerce settings.' }));
-    void fetchTaxSettings(laravelBootstrap).then(document => {
-      setTaxZones(document.zones); setTaxRates(document.rules);
-      setTaxConfiguration(document.configuration);
-      setGlobalTaxEngine(current => globalTaxEngineFromConfiguration(document.configuration, current));
-    }).catch(error => addToast({ type: 'error', title: 'Tax Settings Reload Failed', message: error instanceof Error ? error.message : 'Unable to reload tax settings.' }));
     setOrderStatuses(INITIAL_CUSTOM_ORDER_STATUSES);
     setCountriesSetting(INITIAL_COUNTRIES);
     setZonesSetting(INITIAL_ZONES);

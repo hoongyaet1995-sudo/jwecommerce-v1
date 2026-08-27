@@ -1,8 +1,9 @@
 @php
     $itemCount = $items->sum('quantity');
-    $shippingThreshold = 15000;
-    $amountToFreeShipping = max(0, $shippingThreshold - $summary['subtotal']);
-    $shippingProgress = min(100, (int) round(($summary['subtotal'] / $shippingThreshold) * 100));
+    $shippingThreshold = (int) ($shippingProgressThreshold ?? 0);
+    $hasShippingProgress = $shippingThreshold > 0;
+    $amountToFreeShipping = $hasShippingProgress ? max(0, $shippingThreshold - $summary['subtotal']) : 0;
+    $shippingProgress = $hasShippingProgress ? min(100, (int) round(($summary['subtotal'] / $shippingThreshold) * 100)) : 0;
 @endphp
 
 <section id="cart-drawer-content" data-cart-count="{{ $itemCount }}" class="flex h-full flex-col bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">
@@ -20,15 +21,20 @@
         <div class="flex items-center justify-between gap-3 text-xs">
             <p class="flex items-center gap-1.5 font-medium text-zinc-700 dark:text-zinc-200">
                 <i data-lucide="truck" class="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"></i>
-                @if($amountToFreeShipping === 0)
-                    <span class="font-bold text-emerald-600 dark:text-emerald-400">You unlocked Complimentary Express Shipping!</span>
-                @else
+                @if($hasShippingProgress && $amountToFreeShipping === 0)
+                    <span class="font-bold text-emerald-600 dark:text-emerald-400">You unlocked complimentary shipping!</span>
+                @elseif($hasShippingProgress)
                     <span>Add <strong class="text-amber-600 dark:text-amber-300">@storefrontMoney($amountToFreeShipping)</strong> more for Free Shipping</span>
+                @elseif(! $shippingEstimateAvailable)
+                    <span>Shipping calculated at checkout</span>
+                @else
+                    <span>Shipping estimate ready</span>
                 @endif
             </p>
-            <span class="shrink-0 font-mono text-[11px] text-zinc-500 dark:text-zinc-400">{{ $shippingProgress }}%</span>
+            @if($hasShippingProgress)<span class="shrink-0 font-mono text-[11px] text-zinc-500 dark:text-zinc-400">{{ $shippingProgress }}%</span>@endif
         </div>
-        <div class="h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"><div class="h-full rounded-full bg-gradient-to-r from-amber-500 to-emerald-500 transition-all duration-500" style="width: {{ $shippingProgress }}%"></div></div>
+        @if($hasShippingProgress)<div class="h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"><div class="h-full rounded-full bg-gradient-to-r from-amber-500 to-emerald-500 transition-all duration-500" style="width: {{ $shippingProgress }}%"></div></div>@endif
+        @if($hasShippingProgress)<p class="text-[10px] text-zinc-500 dark:text-zinc-400">Free shipping applies to eligible delivery regions.</p>@endif
     </div>
 
     <div class="flex-1 space-y-4 overflow-y-auto p-5">
@@ -101,7 +107,11 @@
                 @if(session('coupon_error'))<p class="flex items-center gap-1 text-[11px] text-rose-600 dark:text-rose-400"><i data-lucide="circle-alert" class="h-3 w-3"></i>{{ session('coupon_error') }}</p>@endif
             </form>
             @if($coupon)<div class="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-xs text-emerald-800 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300"><span class="flex items-center gap-1.5"><i data-lucide="check" class="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400"></i><b class="font-mono">{{ $coupon->code }}</b> applied</span><form method="POST" action="{{ route('cart.coupon.remove') }}" data-cart-drawer-form>@csrf @method('DELETE')<button type="submit" class="text-zinc-500 underline transition hover:text-rose-500 dark:text-zinc-400 dark:hover:text-rose-400">Remove</button></form></div>@endif
-            <dl class="space-y-1.5 border-t border-zinc-200 pt-2 font-mono text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400"><div class="flex justify-between"><dt>Subtotal</dt><dd class="text-zinc-800 dark:text-zinc-200">@storefrontMoney($summary['subtotal'])</dd></div>@if($coupon)<div class="flex justify-between text-emerald-600 dark:text-emerald-400"><dt>Coupon Discount</dt><dd>-@storefrontMoney($summary['discount'])</dd></div>@endif<div class="flex justify-between"><dt>Estimated Shipping</dt><dd class="{{ $summary['shipping'] === 0 ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'text-zinc-800 dark:text-zinc-200' }}">{{ $summary['shipping'] === 0 ? 'FREE' : app(\App\Support\StorefrontCurrencyContext::class)->format($summary['shipping']) }}</dd></div><div class="flex justify-between"><dt>Estimated Tax</dt><dd class="text-zinc-800 dark:text-zinc-200">@storefrontMoney($summary['tax'])</dd></div><div class="flex justify-between border-t border-zinc-200 pt-2 text-sm font-bold text-zinc-900 dark:border-zinc-800 dark:text-white"><dt>Estimated Total</dt><dd class="font-serif text-base text-amber-600 dark:text-amber-400">@storefrontMoney($summary['total'])</dd></div></dl>
+            @php($taxQuote = $summary['tax_quote'] ?? [])
+            @php($taxRowVisible = ($taxQuote['status'] ?? 'not_configured') !== 'not_configured')
+            @php($taxRate = rtrim(rtrim(number_format((float) ($taxQuote['rate_percent'] ?? 0), 4, '.', ''), '0'), '.'))
+            @php($taxLabel = ($taxQuote['label'] ?? 'Tax').' ('.($taxRate === '' ? '0' : $taxRate).'%)')
+            <dl class="space-y-1.5 border-t border-zinc-200 pt-2 font-mono text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400"><div class="flex justify-between"><dt>Subtotal</dt><dd class="text-zinc-800 dark:text-zinc-200">@storefrontMoney($summary['subtotal'])</dd></div>@if($coupon)<div class="flex justify-between text-emerald-600 dark:text-emerald-400"><dt>Coupon Discount</dt><dd>-@storefrontMoney($summary['discount'])</dd></div>@endif<div class="flex justify-between"><dt>Estimated Shipping</dt><dd class="{{ $shippingEstimateAvailable && $summary['shipping'] === 0 ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'text-zinc-800 dark:text-zinc-200' }}">{{ ! $shippingEstimateAvailable ? 'Shipping calculated at checkout' : ($summary['shipping'] === 0 ? 'FREE' : app(\App\Support\StorefrontCurrencyContext::class)->format($summary['shipping'])) }}</dd></div>@if($taxRowVisible)<div class="flex justify-between" data-store-tax-row><dt data-store-tax-label>{{ $taxLabel }}</dt><dd data-store-tax-amount class="text-zinc-800 dark:text-zinc-200">@storefrontMoney($summary['tax'])</dd></div>@endif<div class="flex justify-between border-t border-zinc-200 pt-2 text-sm font-bold text-zinc-900 dark:border-zinc-800 dark:text-white"><dt>Estimated Total</dt><dd class="font-serif text-base text-amber-600 dark:text-amber-400">@storefrontMoney($summary['total'])</dd></div></dl>
             <a href="{{ route('checkout.create') }}" class="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 py-3.5 text-xs font-bold text-white shadow-lg transition hover:bg-amber-400 hover:text-zinc-950 dark:bg-zinc-100 dark:text-zinc-950 sm:text-sm"><span>Proceed to Checkout</span><i data-lucide="arrow-right" class="h-4 w-4"></i></a>
             <p class="flex items-center justify-center gap-3 font-mono text-[10px] text-zinc-500 dark:text-zinc-400"><span class="flex items-center gap-1"><i data-lucide="lock-keyhole" class="h-3 w-3 text-amber-600 dark:text-amber-400"></i>256-Bit Encrypted</span><span>•</span><span>30-Day Money-Back Guarantee</span></p>
         </footer>

@@ -49,7 +49,12 @@ class CheckoutService
         $currencySnapshot ??= app(\App\Support\StorefrontCurrencyContext::class)->snapshot();
 
         return DB::transaction(function () use ($email, $items, $coupon, $shippingAddress, $gateway, $delivery, $currencySnapshot, $paymentProof, $bankAccountId): Order {
-            $customer = Customer::query()->firstOrCreate(['email' => $email]);
+            $normalizedEmail = strtolower(trim($email));
+            $customer = Customer::query()
+                ->whereRaw('lower(email) = ?', [$normalizedEmail])
+                ->lockForUpdate()
+                ->first()
+                ?? Customer::query()->firstOrCreate(['email' => $normalizedEmail]);
             $lockedCoupon = null;
             if ($coupon) {
                 $lockedCoupon = Coupon::query()->lockForUpdate()->find($coupon->id);

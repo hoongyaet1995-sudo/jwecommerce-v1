@@ -1,6 +1,6 @@
 @php
     $collectionTitle = $collection?->title;
-    $listingTitle = $collectionTitle ?? ($category ? ($categories->firstWhere('slug', $category)?->name ?? 'Category Collection') : 'All Atelier Collections');
+    $listingTitle = $collectionTitle ?? ($category ? ($categories->firstWhere('slug', $category)?->name ?? 'Category Collection') : 'All '.$shopBrandName.' Collections');
     $listingEyebrow = 'Catalog & Product Listing'
         . ($collection ? ' • ' . ($collection->badge ?: $collection->title) : '')
         . ' • ' . $products->total() . ' Items Found';

@@ -106,7 +106,7 @@
         return sprintf('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-%s %s" aria-hidden="true">%s</svg>', e($name), e($class), $nodes[$name]);
     };
 @endphp
-<x-layouts.app title="Member Account | ATELIER">
+<x-layouts.app :title="'Member Account | '.$shopBrandName">
 <div
     data-original-account-workspace
     class="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans selection:bg-amber-400 selection:text-zinc-950 transition-colors duration-200"

@@ -47,7 +47,7 @@ final class StorefrontPageController extends Controller
         return response()->view('storefront.cms-page-react', [
             'entry' => $entry,
             'payload' => $payload,
-            'title' => (($document['seoTitle'] ?? null) ?: ($document['title'] ?? 'Page')).' | JW Atelier',
+            'title' => (($document['seoTitle'] ?? null) ?: ($document['title'] ?? 'Page')).' | '.app(\App\Support\ShopBrand::class)->name(),
             'description' => ($document['seoDescription'] ?? null) ?: ($document['description'] ?? null),
         ], $entry === null ? 503 : 200);
     }

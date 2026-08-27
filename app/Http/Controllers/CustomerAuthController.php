@@ -7,8 +7,10 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CustomerAuthController extends Controller
@@ -64,8 +66,37 @@ class CustomerAuthController extends Controller
             'terms' => ['accepted'],
         ]);
         [$firstName, $lastName] = array_pad(explode(' ', $data['name'], 2), 2, null);
-        $user = User::query()->create(['name' => $data['name'], 'email' => $data['email'], 'password' => $data['password'], 'is_admin' => false]);
-        Customer::query()->create(['user_id' => $user->id, 'email' => $user->email, 'first_name' => $firstName, 'last_name' => $lastName]);
+        $user = DB::transaction(function () use ($data, $firstName, $lastName): User {
+            $user = User::query()->create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+                'is_admin' => false,
+            ]);
+            $customer = Customer::query()
+                ->whereRaw('lower(email) = ?', [strtolower($data['email'])])
+                ->lockForUpdate()
+                ->first();
+
+            if ($customer?->user_id) {
+                throw ValidationException::withMessages([
+                    'email' => 'This email is already connected to a customer account.',
+                ]);
+            }
+
+            if ($customer) {
+                $customer->update(['user_id' => $user->id]);
+            } else {
+                Customer::query()->create([
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'first_name' => $firstName,
+                    'last_name' => $lastName,
+                ]);
+            }
+
+            return $user;
+        });
         Auth::guard('customer')->login($user);
         $request->session()->regenerate();
 

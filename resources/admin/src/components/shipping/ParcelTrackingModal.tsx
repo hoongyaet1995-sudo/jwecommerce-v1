@@ -55,6 +55,8 @@ export const ParcelTrackingModal: React.FC<ParcelTrackingModalProps> = ({
         return <span className="px-2.5 py-1 text-xs font-semibold rounded-md bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300">Delivery Exception (NITC)</span>;
       case 'ready_to_ship':
         return <span className="px-2.5 py-1 text-xs font-semibold rounded-md bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">Ready to Ship (AWB Printed)</span>;
+      case 'shipped':
+        return <span className="px-2.5 py-1 text-xs font-semibold rounded-md bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">Dispatched</span>;
       default:
         return <span className="px-2.5 py-1 text-xs font-semibold rounded-md bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-300">Pending AWB</span>;
     }
@@ -307,16 +309,16 @@ export const ParcelTrackingModal: React.FC<ParcelTrackingModalProps> = ({
                   <div className="font-semibold text-neutral-800 dark:text-neutral-200">Weights & Dimensions</div>
                   <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
                     <span>Actual Gross Weight:</span>
-                    <span className="font-bold text-neutral-900 dark:text-neutral-100 font-mono">{parcel.totalWeightKg} kg</span>
+                    <span className="font-bold text-neutral-900 dark:text-neutral-100 font-mono">{parcel.totalWeightKg === null ? 'Not configured' : `${parcel.totalWeightKg} kg`}</span>
                   </div>
                   <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
                     <span>Volumetric Weight:</span>
-                    <span className="font-bold text-neutral-900 dark:text-neutral-100 font-mono">{parcel.volumetricWeightKg} kg</span>
+                    <span className="font-bold text-neutral-900 dark:text-neutral-100 font-mono">{parcel.volumetricWeightKg === null ? 'Not configured' : `${parcel.volumetricWeightKg} kg`}</span>
                   </div>
                   <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
                     <span>Box Dimensions:</span>
                     <span className="font-mono text-neutral-900 dark:text-neutral-100">
-                      {parcel.dimensionsCm.length}x{parcel.dimensionsCm.width}x{parcel.dimensionsCm.height} cm
+                      {parcel.dimensionsCm ? `${parcel.dimensionsCm.length}x${parcel.dimensionsCm.width}x${parcel.dimensionsCm.height} cm` : 'Not configured'}
                     </span>
                   </div>
                 </div>
@@ -335,7 +337,7 @@ export const ParcelTrackingModal: React.FC<ParcelTrackingModalProps> = ({
                   )}
                   <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
                     <span>Courier Quoted Fee:</span>
-                    <span className="font-bold text-neutral-900 dark:text-neutral-100 font-mono">RM {parcel.systemQuotedCharge.toFixed(2)}</span>
+                    <span className="font-bold text-neutral-900 dark:text-neutral-100 font-mono">{parcel.systemQuotedCharge === null ? 'Not configured' : `RM ${parcel.systemQuotedCharge.toFixed(2)}`}</span>
                   </div>
                 </div>
               </div>

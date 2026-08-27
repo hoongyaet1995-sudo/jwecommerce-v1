@@ -33,6 +33,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\CustomerAccountController;
 use App\Http\Controllers\CustomerAuthController;
+use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\CustomerProductReviewController;
 use App\Http\Controllers\ProductReviewMediaController;
 use App\Http\Controllers\Storefront\CmsContactSubmissionController;
@@ -64,6 +65,14 @@ Route::post('/payments/webhooks/stripe', [PaymentWebhookController::class, 'stri
 Route::post('/payments/webhooks/billplz', [PaymentWebhookController::class, 'billplz'])->name('payments.webhooks.billplz');
 Route::post('/payments/webhooks/paypal', [PaymentWebhookController::class, 'paypal'])->name('payments.webhooks.paypal');
 Route::get('/order/success', [CheckoutController::class, 'success'])->name('checkout.success');
+Route::get('/order-tracking', [OrderTrackingController::class, 'preview'])->name('order-tracking.show');
+Route::redirect('/order-tracking/preview', '/order-tracking');
+Route::post('/order-tracking/request', [OrderTrackingController::class, 'requestCode'])
+    ->middleware('throttle:order-tracking')->name('order-tracking.request');
+Route::post('/order-tracking/verify', [OrderTrackingController::class, 'verify'])
+    ->middleware('throttle:order-tracking')->name('order-tracking.verify');
+Route::post('/order-tracking/resend', [OrderTrackingController::class, 'resend'])
+    ->middleware('throttle:order-tracking')->name('order-tracking.resend');
 Route::get('/pages/{slug}', StorefrontPageController::class)->name('storefront.pages.show');
 Route::post('/cms/forms/contact/{page}/{stage}/{section}', CmsContactSubmissionController::class)
     ->whereIn('stage', ['draft', 'published'])
@@ -166,18 +175,18 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/tax-classes/{taxClass}/activate', [TaxClassApiController::class, 'activate'])->name('api.tax-classes.activate');
     Route::post('/api/tax-classes/{taxClass}/deactivate', [TaxClassApiController::class, 'deactivate'])->name('api.tax-classes.deactivate');
     Route::delete('/api/tax-classes/{taxClass}', [TaxClassApiController::class, 'destroy'])->name('api.tax-classes.destroy');
-    Route::get('/api/tax-settings', [TaxSettingsApiController::class, 'index'])->name('api.tax-settings.index');
-    Route::post('/api/tax-settings/preview', [TaxSettingsApiController::class, 'preview'])->name('api.tax-settings.preview');
-    Route::put('/api/tax-settings/configuration', [TaxSettingsApiController::class, 'updateConfiguration'])->name('api.tax-settings.configuration.update');
-    Route::post('/api/tax-settings/zones', [TaxSettingsApiController::class, 'storeZone'])->name('api.tax-settings.zones.store');
-    Route::patch('/api/tax-settings/zones/{taxZone}', [TaxSettingsApiController::class, 'updateZone'])->name('api.tax-settings.zones.update');
-    Route::delete('/api/tax-settings/zones/{taxZone}', [TaxSettingsApiController::class, 'destroyZone'])->name('api.tax-settings.zones.destroy');
-    Route::post('/api/tax-settings/classes', [TaxSettingsApiController::class, 'storeClass'])->name('api.tax-settings.classes.store');
-    Route::patch('/api/tax-settings/classes/{taxClass}', [TaxSettingsApiController::class, 'updateClass'])->name('api.tax-settings.classes.update');
-    Route::delete('/api/tax-settings/classes/{taxClass}', [TaxSettingsApiController::class, 'destroyClass'])->name('api.tax-settings.classes.destroy');
-    Route::post('/api/tax-settings/rules', [TaxSettingsApiController::class, 'storeRule'])->name('api.tax-settings.rules.store');
-    Route::patch('/api/tax-settings/rules/{taxRule}', [TaxSettingsApiController::class, 'updateRule'])->name('api.tax-settings.rules.update');
-    Route::delete('/api/tax-settings/rules/{taxRule}', [TaxSettingsApiController::class, 'destroyRule'])->name('api.tax-settings.rules.destroy');
+    Route::get('/api/tax-settings', [TaxSettingsApiController::class, 'retired'])->name('api.tax-settings.index');
+    Route::post('/api/tax-settings/preview', [TaxSettingsApiController::class, 'retired'])->name('api.tax-settings.preview');
+    Route::put('/api/tax-settings/configuration', [TaxSettingsApiController::class, 'retired'])->name('api.tax-settings.configuration.update');
+    Route::post('/api/tax-settings/zones', [TaxSettingsApiController::class, 'retired'])->name('api.tax-settings.zones.store');
+    Route::patch('/api/tax-settings/zones/{taxZone}', [TaxSettingsApiController::class, 'retired'])->name('api.tax-settings.zones.update');
+    Route::delete('/api/tax-settings/zones/{taxZone}', [TaxSettingsApiController::class, 'retired'])->name('api.tax-settings.zones.destroy');
+    Route::post('/api/tax-settings/classes', [TaxSettingsApiController::class, 'retired'])->name('api.tax-settings.classes.store');
+    Route::patch('/api/tax-settings/classes/{taxClass}', [TaxSettingsApiController::class, 'retired'])->name('api.tax-settings.classes.update');
+    Route::delete('/api/tax-settings/classes/{taxClass}', [TaxSettingsApiController::class, 'retired'])->name('api.tax-settings.classes.destroy');
+    Route::post('/api/tax-settings/rules', [TaxSettingsApiController::class, 'retired'])->name('api.tax-settings.rules.store');
+    Route::patch('/api/tax-settings/rules/{taxRule}', [TaxSettingsApiController::class, 'retired'])->name('api.tax-settings.rules.update');
+    Route::delete('/api/tax-settings/rules/{taxRule}', [TaxSettingsApiController::class, 'retired'])->name('api.tax-settings.rules.destroy');
     Route::get('/', AdminAppController::class)->name('dashboard');
     Route::get('/commerce', AdminAppController::class)->name('commerce');
     Route::get('/orders', AdminAppController::class)->name('orders.index');

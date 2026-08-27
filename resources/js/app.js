@@ -12,6 +12,9 @@ import {
     Compass,
     CreditCard,
     FileText,
+    HelpCircle,
+    Inbox,
+    Info,
     Globe,
     Glasses,
     Grid,
@@ -26,12 +29,15 @@ import {
     Mail,
     Menu,
     MapPin,
+    MessageSquare,
     KeyRound,
     Minus,
     Moon,
     Plus,
     Package,
+    Phone,
     Search,
+    Send,
     Headphones,
     Heart,
     ShoppingBag,
@@ -43,6 +49,8 @@ import {
     Tag,
     Trash2,
     Truck,
+    UserCheck,
+    Clock,
     RotateCcw,
     Watch,
     X,
@@ -67,6 +75,9 @@ const renderIcons = () => {
             Compass,
             CreditCard,
             FileText,
+            HelpCircle,
+            Inbox,
+            Info,
             Globe,
             Glasses,
             Grid,
@@ -81,12 +92,15 @@ const renderIcons = () => {
             Mail,
             Menu,
             MapPin,
+            MessageSquare,
             KeyRound,
             Minus,
             Moon,
             Plus,
             Package,
+            Phone,
             Search,
+            Send,
             Headphones,
             Heart,
             ShoppingBag,
@@ -98,6 +112,8 @@ const renderIcons = () => {
             Tag,
             Trash2,
             Truck,
+            UserCheck,
+            Clock,
             RotateCcw,
             Watch,
             X,
@@ -500,20 +516,26 @@ const installMegaNavigation = () => {
 
 const installDeliveryMatrix = () => {
     document.querySelectorAll('[data-delivery-matrix]').forEach((matrix) => {
+        if (matrix.dataset.deliveryMatrixBound === 'true') return;
+        matrix.dataset.deliveryMatrixBound = 'true';
         const form = matrix.closest('form');
         const subtotal = Number(matrix.dataset.subtotal || 0);
         const discount = Number(matrix.dataset.discount || 0);
-        const taxRate = Number(matrix.dataset.taxRate || 0);
+        const quotedTax = Number(matrix.dataset.tax || 0);
+        let taxQuote = {};
+        try { taxQuote = JSON.parse(matrix.dataset.taxQuote || '{}'); } catch (_) { taxQuote = {}; }
         const money = (amount) => storefrontMoney(amount);
 
         const refresh = (radio) => {
             const option = radio.closest('[data-delivery-option]');
             const shipping = Number(option?.dataset.deliveryShipping || 0);
-            const tax = Math.floor(Math.max(0, subtotal - discount + shipping) * taxRate / 100);
+            // Tax is resolved server-side by TaxQuoteService; this browser only
+            // displays the returned store-wide Tax Class quote.
+            const tax = quotedTax;
             const total = Math.max(0, subtotal - discount + shipping + tax);
             const definitionFor = (label) => [...(form?.querySelectorAll('dt') || [])].find((term) => term.textContent.trim() === label)?.nextElementSibling;
             const shippingDefinition = definitionFor('Shipping');
-            const taxDefinition = definitionFor('Estimated Tax');
+            const taxDefinition = form?.querySelector('[data-store-tax-amount]');
             const totalDefinition = definitionFor('Grand Total');
 
             if (shippingDefinition) shippingDefinition.textContent = shipping ? money(shipping) : 'FREE';
@@ -531,6 +553,45 @@ const installDeliveryMatrix = () => {
         matrix.querySelectorAll('input[name="delivery"]').forEach((radio) => {
             radio.addEventListener('change', () => refresh(radio));
         });
+    });
+};
+
+const installCheckoutShippingQuotes = () => {
+    document.querySelectorAll('form[data-checkout-shipping-quote-url]').forEach((form) => {
+        if (form.dataset.checkoutShippingQuoteBound === 'true') return;
+        form.dataset.checkoutShippingQuoteBound = 'true';
+        const quoteUrl = form.dataset.checkoutShippingQuoteUrl;
+        let quoteTimer;
+        let requestId = 0;
+        const input = (name) => form.querySelector(`[name="${name}"]`);
+        const quote = async () => {
+            const country = input('country')?.value?.trim();
+            const state = input('state')?.value?.trim() || '';
+            const postalCode = input('postal_code')?.value?.trim();
+            if (!quoteUrl || !country || country.length < 2 || !postalCode) return;
+            const selected = form.querySelector('input[name="delivery"]:checked')?.value || '';
+            const token = ++requestId;
+            try {
+                const response = await fetch(quoteUrl, {
+                    method: 'POST', credentials: 'same-origin',
+                    headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
+                    body: JSON.stringify({ country, state, postal_code: postalCode, delivery: selected }),
+                });
+                const payload = await response.json();
+                if (!response.ok || token !== requestId || !payload?.data?.html) return;
+                const matrix = form.querySelector('[data-delivery-matrix]');
+                if (!matrix) return;
+                matrix.outerHTML = payload.data.html;
+                installDeliveryMatrix();
+                form.querySelector('input[name="delivery"]:checked')?.dispatchEvent(new Event('change'));
+            } catch (_) {
+                // Authorization still revalidates shipping server-side; the existing form remains usable on a transient quote failure.
+            }
+        };
+        const scheduleQuote = () => { window.clearTimeout(quoteTimer); quoteTimer = window.setTimeout(quote, 220); };
+        ['country', 'state', 'postal_code'].forEach((name) => input(name)?.addEventListener('input', scheduleQuote));
+        window.addEventListener('checkout-address-changed', scheduleQuote);
+        if (form.dataset.checkoutInitialShippingQuote === 'true') scheduleQuote();
     });
 };
 
@@ -1464,6 +1525,50 @@ const installCustomerAccountTabs = () => {
     });
 };
 
+const installOrderTracking = () => {
+    document.querySelectorAll('[data-order-tracking-verify]').forEach((form) => {
+        const cells = [...form.querySelectorAll('[data-order-tracking-code-cell]')];
+        const code = form.querySelector('[data-order-tracking-code]');
+        const countdown = form.querySelector('[data-order-tracking-resend-countdown]');
+        const resendWrap = form.querySelector('[data-order-tracking-resend-wrap]');
+        const resendForm = form.querySelector('[data-order-tracking-resend-form]');
+        if (!cells.length || !code) return;
+
+        const sync = () => { code.value = cells.map((cell) => cell.value.replace(/\D/g, '').slice(0, 1)).join(''); };
+        cells.forEach((cell, index) => {
+            cell.addEventListener('input', () => {
+                cell.value = cell.value.replace(/\D/g, '').slice(0, 1);
+                sync();
+                if (cell.value && index < cells.length - 1) cells[index + 1].focus();
+            });
+            cell.addEventListener('keydown', (event) => {
+                if (event.key === 'Backspace' && !cell.value && index > 0) cells[index - 1].focus();
+                if (event.key === 'ArrowLeft' && index > 0) cells[index - 1].focus();
+                if (event.key === 'ArrowRight' && index < cells.length - 1) cells[index + 1].focus();
+            });
+            cell.addEventListener('paste', (event) => {
+                event.preventDefault();
+                const digits = event.clipboardData?.getData('text').replace(/\D/g, '').slice(0, cells.length) || '';
+                [...digits].forEach((digit, offset) => { if (cells[index + offset]) cells[index + offset].value = digit; });
+                sync();
+                cells[Math.min(index + digits.length, cells.length - 1)]?.focus();
+            });
+        });
+        let remaining = 42;
+        const timer = window.setInterval(() => {
+            remaining -= 1;
+            if (remaining <= 0) {
+                window.clearInterval(timer);
+                resendWrap?.classList.add('hidden');
+                resendForm?.classList.remove('hidden');
+                return;
+            }
+            if (countdown) countdown.textContent = `Resend code in 00:${String(remaining).padStart(2, '0')}`;
+        }, 1000);
+        cells[0]?.focus();
+    });
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     renderIcons();
     installCartDrawer();
@@ -1475,8 +1580,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     installAtelierMemberMenu();
     installAtelierCurrency();
-installMegaNavigation();
+    installMegaNavigation();
     installDeliveryMatrix();
+    installCheckoutShippingQuotes();
     installAdminExperience();
     installAdminSidebarDrawer();
     installSuccessReceipt();
@@ -1486,4 +1592,5 @@ installMegaNavigation();
     installProductCardVariantPreviews();
     installQuickAddVariantModals();
     installCustomerAccountTabs();
+    installOrderTracking();
 });

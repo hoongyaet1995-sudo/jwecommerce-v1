@@ -68,6 +68,25 @@ class TaxCheckoutSnapshotTest extends TestCase
         $this->assertSame('matched_zero_rate', $line->configuration_snapshot['quote_line']['status']);
     }
 
+    public function test_order_success_uses_the_frozen_tax_class_label(): void
+    {
+        TaxClass::query()->create([
+            'code' => 'sst',
+            'name' => 'SST',
+            'rate_percent' => '8.0000',
+            'is_active' => true,
+            'active_slot' => 1,
+        ]);
+
+        $this->placeBankTransferOrder($this->variant()->id);
+        $order = Order::query()->sole();
+
+        $this->withSession(['last_order_id' => $order->id])
+            ->get('/order/success')
+            ->assertOk()
+            ->assertSee('SST (8%)');
+    }
+
     private function variant(): \App\Models\ProductVariant
     {
         $category = Category::query()->create(['name' => 'Tax Category '.str()->random(8), 'slug' => str()->random(12), 'status' => 'active']);

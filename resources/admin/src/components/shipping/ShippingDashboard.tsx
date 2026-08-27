@@ -77,6 +77,7 @@ export const ShippingDashboard: React.FC = () => {
     resolveBillingDispute,
     shippingRates = [],
     saveShippingRate,
+    addToast,
   } = useAdmin();
 
   const [activeTab, setActiveTab] = useState<ShippingTabType>('overview');
@@ -136,6 +137,10 @@ export const ShippingDashboard: React.FC = () => {
     setEditingCourier(null);
   };
 
+  const explainPickupUnavailable = () => {
+    addToast({ type: 'error', title: 'Pickup scheduling unavailable', message: 'EasyParcel provider booking is not connected yet, so no pickup has been created.' });
+  };
+
   return (
     <div className="space-y-6 pb-12">
       {/* Top Header & Breadcrumb */}
@@ -151,14 +156,14 @@ export const ShippingDashboard: React.FC = () => {
             Malaysia Shipping & Multi-Carrier Logistics Center
           </h1>
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 max-w-3xl">
-            Unified multi-courier orchestration covering Pos Malaysia, Ninja Van, J&T Express, Flash Express, DHL eCommerce, and EasyParcel. Smart Peninsular/East Malaysia routing, 100×150mm thermal waybill generation, batch driver dispatch, live webhook telemetry, and automated SST weight billing reconciliation.
+            Dispatch processing orders manually with carrier and tracking details, then retain an append-only shipment event audit. Carrier APIs, pickup booking, webhooks, labels, and billing reconciliation activate only after their provider integration is configured.
           </p>
         </div>
 
         {/* Global Quick Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => setIsPickupModalOpen(true)}
+            onClick={explainPickupUnavailable}
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer shadow-sm"
           >
             <Truck className="w-3.5 h-3.5" />
@@ -311,8 +316,7 @@ export const ShippingDashboard: React.FC = () => {
               else if (tab === 'couriers') setActiveTab('couriers');
               else if (tab === 'tracking') setActiveTab('tracking');
             }}
-            onOpenPickupModal={() => setIsPickupModalOpen(true)}
-            onTopUpEasyParcel={topUpEasyParcelWallet}
+            onOpenPickupModal={explainPickupUnavailable}
           />
         )}
 
@@ -330,7 +334,7 @@ export const ShippingDashboard: React.FC = () => {
             onBatchGenerateAWB={batchGenerateAWB}
             onOpenAWBModal={(parcel) => setActiveAWBParcel(parcel)}
             onOpenTrackingModal={(parcel) => setActiveTrackingParcel(parcel)}
-            onOpenPickupModal={() => setIsPickupModalOpen(true)}
+            onOpenPickupModal={explainPickupUnavailable}
             onUpdateStatus={updateShipmentStatus}
           />
         )}

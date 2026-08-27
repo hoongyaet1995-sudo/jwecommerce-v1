@@ -6,6 +6,7 @@ use App\Contracts\PaymentGateway;
 use App\Services\StorefrontShellSettingsService;
 use App\Services\SimulatedPaymentGateway;
 use App\Support\StorefrontCurrencyContext;
+use App\Support\ShopBrand;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\RateLimiter;
@@ -23,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(PaymentGateway::class, SimulatedPaymentGateway::class);
         $this->app->scoped(StorefrontCurrencyContext::class);
+        $this->app->scoped(ShopBrand::class);
     }
 
     /**
@@ -36,9 +38,14 @@ class AppServiceProvider extends ServiceProvider
             ->by('cms-contact:'.$request->ip()));
         RateLimiter::for('cms-newsletter', fn (Request $request): Limit => Limit::perMinute(3)
             ->by('cms-newsletter:'.$request->ip()));
+        RateLimiter::for('order-tracking', fn (Request $request): Limit => Limit::perMinute(5)
+            ->by('order-tracking:'.$request->ip()));
         View::composer('components.admin.shell', \App\View\Composers\AdminShellComposer::class);
         View::composer('components.storefront.nav', function ($view): void {
             $view->with('storefrontShell', app(StorefrontShellSettingsService::class)->live());
+        });
+        View::composer('*', function ($view): void {
+            $view->with('shopBrandName', app(ShopBrand::class)->name());
         });
     }
 }

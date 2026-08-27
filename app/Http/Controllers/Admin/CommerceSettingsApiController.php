@@ -98,6 +98,17 @@ class CommerceSettingsApiController extends Controller
         return response()->json(['data' => $this->document()]);
     }
 
+    public function updateShipping(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'shippingRates' => ['required', 'array', 'max:100'],
+        ]);
+
+        $this->put('shipping_rates', $data['shippingRates']);
+
+        return response()->json(['data' => $this->document()]);
+    }
+
     private function document(): array
     {
         $settings = StoreSetting::query()->whereIn('key', ['shipping_rates', 'payment_gateways', 'global_payment', 'bank_transfer', 'cod_config'])->pluck('value', 'key');

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Shipping\ShippingPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\Admin\OrderDataService;
@@ -30,6 +31,7 @@ class OrderApiController extends Controller
 
     public function tracking(Request $request, Order $order, OrderOperationsService $operations, OrderDataService $data): JsonResponse
     {
+        abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::DISPATCH), 403);
         $validated = $request->validate(['carrier' => ['required', 'string', 'max:120'], 'trackingNumber' => ['required', 'string', 'max:120']]);
         $saved = $operations->dispatch($order, $validated['carrier'], $validated['trackingNumber'], (int) $request->user()->id);
         return response()->json(['data' => $data->data($saved)]);

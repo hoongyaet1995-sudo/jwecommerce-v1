@@ -15,6 +15,7 @@ use App\Services\ShippingConfigurationService;
 use App\Services\Payments\HostedPaymentGatewayManager;
 use App\Support\StorefrontCurrencyContext;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -127,7 +128,15 @@ class CheckoutController extends Controller
                 ->all()
             : [];
 
-        $summary = $pricing->summarize($items, $coupon);
+        $defaultAddress = collect($savedAddresses)->firstWhere('isDefaultShipping', true) ?: ($savedAddresses[0] ?? null);
+        $shippingAddress = $defaultAddress ? [
+            'country' => $this->normalizeCountryCode((string) ($defaultAddress['country'] ?? 'MY')),
+            'state' => $defaultAddress['state'] ?? '',
+            'postal_code' => $defaultAddress['postalCode'] ?? '',
+        ] : null;
+        $deliveryOptions = $shipping->checkoutOptions($items, $coupon, $shippingAddress);
+        $selectedDelivery = (string) old('delivery', array_key_first($deliveryOptions) ?? 'standard');
+        $summary = $pricing->summarize($items, $coupon, $selectedDelivery, $shippingAddress);
         $paymentMethodModels = $payments->checkoutMethods([
             'currency' => $currency->current()['code'],
             'amount' => $summary['total'],
@@ -140,11 +149,52 @@ class CheckoutController extends Controller
             'summary' => $summary,
             'paymentMethods' => collect($paymentMethodModels)->mapWithKeys(fn (array $method, string $id): array => [$id => $method['label']])->all(),
             'paymentMethodModels' => $paymentMethodModels,
-            'deliveryOptions' => $shipping->checkoutOptions($items, $coupon),
+            'deliveryOptions' => $deliveryOptions,
+            'selectedDelivery' => $selectedDelivery,
+            'shippingEstimateAvailable' => $deliveryOptions !== [],
             'checkoutEmail' => $customerUser?->email,
             'savedAddresses' => $savedAddresses,
             'hostedReturn' => $hostedReturn,
         ]);
+    }
+
+    public function shippingQuote(Request $request, CartPricingService $pricing, ShippingConfigurationService $shipping): JsonResponse
+    {
+        $items = $this->items($request);
+        if ($items->isEmpty()) {
+            return response()->json(['data' => ['options' => [], 'summary' => null, 'html' => '']], 422);
+        }
+
+        $data = $request->validate([
+            'country' => ['required', 'string', 'max:255'],
+            'state' => ['nullable', 'string', 'max:255'],
+            'postal_code' => ['required', 'string', 'max:50'],
+            'delivery' => ['nullable', 'string', 'max:100'],
+        ]);
+        $address = [
+            'country' => $this->normalizeCountryCode((string) $data['country']),
+            'state' => $data['state'] ?? '',
+            'postal_code' => $data['postal_code'],
+        ];
+        $coupon = Coupon::query()->currentlyValid()->where('code', $request->session()->get('coupon_code'))->first();
+        $options = $shipping->checkoutOptions($items, $coupon, $address);
+        $selected = isset($options[$data['delivery'] ?? ''])
+            ? (string) $data['delivery']
+            : (string) (array_key_first($options) ?? '');
+        $summary = $selected !== ''
+            ? $pricing->summarize($items, $coupon, $selected, $address)
+            : null;
+
+        return response()->json(['data' => [
+            'options' => array_values($options),
+            'summary' => $summary,
+            'html' => view('components.storefront.delivery-options', [
+                'summary' => $summary ?? $pricing->summarize($items, $coupon),
+                'options' => $options,
+                'selected' => $selected,
+                'quoteUrl' => route('checkout.shipping-quote'),
+            ])->render(),
+        ]]);
     }
 
     private function providerLabel(string $gateway): string
@@ -163,11 +213,11 @@ class CheckoutController extends Controller
             'country' => $this->normalizeCountryCode((string) $request->input('country', '')),
         ]);
 
-        $data = $request->validate(['email' => ['required', 'email'], 'first_name' => ['required', 'string', 'max:255'], 'last_name' => ['required', 'string', 'max:255'], 'phone' => ['nullable', 'string', 'max:50'], 'line_1' => ['required', 'string', 'max:255'], 'line_2' => ['nullable', 'string', 'max:255'], 'city' => ['required', 'string', 'max:255'], 'state' => ['nullable', 'string', 'max:255'], 'postal_code' => ['required', 'string', 'max:50'], 'country' => ['required', 'string', 'size:2'], 'delivery' => ['nullable', 'in:standard,express,white_glove'], 'payment_method' => ['required', 'string', 'max:50'], 'bank_account_id' => ['nullable', 'string', 'max:100'], 'payment_proof' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:10240']]); $items = $this->items($request);
+        $data = $request->validate(['email' => ['required', 'email'], 'first_name' => ['required', 'string', 'max:255'], 'last_name' => ['required', 'string', 'max:255'], 'phone' => ['nullable', 'string', 'max:50'], 'line_1' => ['required', 'string', 'max:255'], 'line_2' => ['nullable', 'string', 'max:255'], 'city' => ['required', 'string', 'max:255'], 'state' => ['nullable', 'string', 'max:255'], 'postal_code' => ['required', 'string', 'max:50'], 'country' => ['required', 'string', 'size:2'], 'delivery' => ['required', 'string', 'max:100'], 'payment_method' => ['required', 'string', 'max:50'], 'bank_account_id' => ['nullable', 'string', 'max:100'], 'payment_proof' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:10240']]); $items = $this->items($request);
         if ($items->isEmpty()) return redirect()->route('storefront.index');
         $coupon = Coupon::query()->currentlyValid()->where('code', $request->session()->get('coupon_code'))->first();
         if ($customerUser = $request->user('customer')) $data['email'] = $customerUser->email;
-        $order = $checkout->checkout($data['email'], $items, $coupon, collect($data)->except(['email', 'payment_method', 'delivery', 'bank_account_id', 'payment_proof'])->all(), $data['payment_method'], $data['delivery'] ?? 'standard', $currency->snapshot(), $request->file('payment_proof'), $data['bank_account_id'] ?? null);
+        $order = $checkout->checkout($data['email'], $items, $coupon, collect($data)->except(['email', 'payment_method', 'delivery', 'bank_account_id', 'payment_proof'])->all(), $data['payment_method'], $data['delivery'], $currency->snapshot(), $request->file('payment_proof'), $data['bank_account_id'] ?? null);
         if (in_array($data['payment_method'], ['stripe', 'paypal', 'billplz'], true)) {
             $payment = $order->payments()->latest('id')->firstOrFail();
             $request->session()->put('pending_payment_id', $payment->id);
@@ -186,10 +236,11 @@ class CheckoutController extends Controller
 
     public function success(Request $request): View|RedirectResponse
     {
-        $order = Order::query()->with(['items', 'addresses', 'payments'])->find($request->session()->get('last_order_id'));
+        $order = Order::query()->with(['items', 'addresses', 'payments', 'taxLines'])->find($request->session()->get('last_order_id'));
         if (! $order) return redirect()->route('storefront.index');
         return view('storefront.success', [
             'order' => $order,
+            'taxLine' => $order->taxLines->sortBy('id')->first(),
             'recommendations' => Product::query()
                 ->where('status', 'active')
                 ->whereNotIn('id', ProductVariant::query()->whereIn('id', $order->items->pluck('product_variant_id')->filter())->pluck('product_id'))

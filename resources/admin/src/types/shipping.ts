@@ -5,9 +5,11 @@ export type CourierCode =
   | 'flashexpress' 
   | 'dhlecommerce' 
   | 'easyparcel' 
-  | 'delyva';
+  | 'delyva'
+  | 'dhl'
+  | 'manual';
 
-export type MalaysiaRegion = 'peninsular' | 'east_malaysia';
+export type MalaysiaRegion = 'peninsular' | 'east_malaysia' | 'sabah' | 'sarawak';
 
 export type MalaysiaState = 
   | 'kuala_lumpur'
@@ -93,6 +95,7 @@ export interface SmartRoutingRule {
 }
 
 export type ShipmentStatus = 
+  | 'shipped'
   | 'pending'
   | 'ready_to_ship'
   | 'picked_up'
@@ -132,16 +135,16 @@ export interface ShipmentParcel {
     name: string;
     qty: number;
     unitPrice: number;
-    weightKg: number;
+    weightKg: number | null;
     isHazardousLiquidBattery?: boolean;
   }[];
-  totalWeightKg: number;
-  volumetricWeightKg: number; // (L x W x H) / 5000
+  totalWeightKg: number | null;
+  volumetricWeightKg: number | null; // (L x W x H) / 5000
   dimensionsCm: {
     length: number;
     width: number;
     height: number;
-  };
+  } | null;
   courier: CourierCode;
   serviceType: string;
   trackingNumber: string;
@@ -150,14 +153,14 @@ export interface ShipmentParcel {
   paymentMode: 'prepaid' | 'cod';
   codAmount?: number;
   isEastMalaysiaAirRestricted: boolean;
-  postcodeValidationStatus: 'valid' | 'warning_mismatch' | 'invalid';
+  postcodeValidationStatus: 'valid' | 'warning_mismatch' | 'invalid' | 'unknown';
   createdAt: string;
   awbGeneratedAt?: string;
   dispatchedAt?: string;
   estimatedDeliveryDate?: string;
   deliveredAt?: string;
   actualCourierCharge?: number;
-  systemQuotedCharge: number;
+  systemQuotedCharge: number | null;
   isWeightDiscrepancy: boolean;
   exceptionReason?: string; // e.g. "NITC - Recipient unreachable", "Incorrect Postcode", "Address not found"
   exceptionAttempts?: number;
