@@ -10,8 +10,6 @@ use App\Models\OrderStatusHistory;
 use App\Models\OrderTaxLine;
 use App\Models\ProductVariant;
 use App\Models\Coupon;
-use App\Models\TaxConfiguration;
-use App\Models\TaxRule;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
@@ -34,6 +32,7 @@ class CheckoutService
         private readonly PaymentMethodAvailabilityService $paymentMethods,
         private readonly PaymentAttemptService $paymentAttempts,
         private readonly CartPricingService $pricing,
+        private readonly ShippingConfigurationService $shipping,
     )
     {
     }
@@ -66,6 +65,10 @@ class CheckoutService
                 return ['variant' => $variant, 'quantity' => $item['quantity'], 'line_total' => $variant->price * $item['quantity']];
             });
             $checkoutItems = $lines->map(fn (array $line) => ['variant' => $line['variant'], 'quantity' => $line['quantity']]);
+            $shippingOption = $this->shipping->optionFor($checkoutItems, $lockedCoupon, $delivery, $shippingAddress);
+            if (! $shippingOption) {
+                throw ValidationException::withMessages(['delivery' => 'The selected delivery option is no longer available for this address.']);
+            }
             $baseSummary = $this->pricing->summarize($checkoutItems, $lockedCoupon, $delivery, $shippingAddress);
             $availableMethods = $this->paymentMethods->checkoutMethods([
                 'currency' => $currencySnapshot['code'] ?? 'MYR',
@@ -78,14 +81,16 @@ class CheckoutService
             }
             $surcharge = (int) data_get($method, 'cod.surchargeCents', 0);
             $summary = $this->pricing->summarize($checkoutItems, $lockedCoupon, $delivery, $shippingAddress, $surcharge);
-            $order = Order::query()->create(['number' => 'JW-'.now()->format('YmdHis').'-'.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT), 'customer_id' => $customer->id, 'coupon_id' => $lockedCoupon?->id, 'coupon_code' => $lockedCoupon?->code, 'email' => $email, 'currency' => $currencySnapshot['code'] ?? 'USD', 'currency_exchange_rate' => $currencySnapshot['exchange_rate'] ?? 1, 'status' => 'pending_payment', 'shipping_method' => $delivery, 'shipping_label' => $this->pricing->deliveryLabel($delivery), 'subtotal' => $summary['subtotal'], 'discount_amount' => $summary['discount'], 'shipping_amount' => $summary['shipping'], 'payment_surcharge_amount' => $summary['payment_surcharge'], 'tax_amount' => $summary['tax'], 'total' => $summary['total']]);
+            $snapshot = $shippingOption['snapshot'];
+            $snapshot['shipping_amount'] = $summary['shipping'];
+            $order = Order::query()->create(['number' => 'JW-'.now()->format('YmdHis').'-'.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT), 'customer_id' => $customer->id, 'coupon_id' => $lockedCoupon?->id, 'coupon_code' => $lockedCoupon?->code, 'email' => $email, 'currency' => $currencySnapshot['code'] ?? 'USD', 'currency_exchange_rate' => $currencySnapshot['exchange_rate'] ?? 1, 'status' => 'pending_payment', 'shipping_method' => $shippingOption['id'], 'shipping_label' => $shippingOption['label'], 'shipping_snapshot' => $snapshot, 'subtotal' => $summary['subtotal'], 'discount_amount' => $summary['discount'], 'shipping_amount' => $summary['shipping'], 'payment_surcharge_amount' => $summary['payment_surcharge'], 'tax_amount' => $summary['tax'], 'total' => $summary['total']]);
             foreach ($lines as $line) {
                 $variant = $line['variant'];
                 $product = $variant->product()->with('images')->firstOrFail();
                 OrderItem::query()->create(['order_id' => $order->id, 'product_variant_id' => $variant->id, 'sku' => $variant->sku, 'title' => $product->title, 'variant_title' => $variant->title, 'image_url' => $product->images->sortBy('position')->first()?->path, 'unit_price' => $variant->price, 'quantity' => $line['quantity'], 'line_total' => $line['line_total']]);
             }
-            $payment = $this->paymentAttempts->createPendingPayment($order, $method, $order->currency, $bankAccountId);
             $this->persistTaxSnapshot($order, $summary['tax_quote']);
+            $payment = $this->paymentAttempts->createPendingPayment($order, $method, $order->currency, $bankAccountId);
             if ($paymentProof) {
                 if ($gateway !== 'bank_transfer' || ! data_get($method, 'bankTransfer.allowProofUpload', false)) {
                     throw ValidationException::withMessages(['payment_proof' => 'Receipt uploads are not enabled for this payment method.']);
@@ -106,81 +111,37 @@ class CheckoutService
         });
     }
 
-    /** @param array{tax: int, status: string, reason: string, lines: list<array<string, mixed>>} $quote */
+    /** @param array<string, mixed> $quote */
     private function persistTaxSnapshot(Order $order, array $quote): void
     {
-        $matchedLines = collect($quote['lines'] ?? [])
-            ->filter(fn (array $line): bool => filled($line['rule_id'] ?? null))
-            ->values();
-
-        if ($matchedLines->isEmpty()) {
+        $line = collect($quote['lines'] ?? [])->first();
+        if (! is_array($line) || ! filled($line['tax_class_id'] ?? null)) {
             return;
         }
 
-        $rules = TaxRule::query()
-            ->with(['taxClass', 'taxZone'])
-            ->whereIn('id', $matchedLines->pluck('rule_id')->unique())
-            ->get()
-            ->keyBy('id');
-        $configuration = TaxConfiguration::query()->first();
-
-        foreach ($matchedLines as $line) {
-            $rule = $rules->get($line['rule_id']);
-            if (! $rule) {
-                throw new RuntimeException('A matched tax rule is no longer available for checkout.');
-            }
-
-            OrderTaxLine::query()->create([
-                'order_id' => $order->id,
-                'tax_rule_id' => $rule->id,
-                'tax_class_id' => $rule->tax_class_id,
-                'label' => (string) $line['label'],
-                'tax_type' => (string) $rule->tax_type,
-                'rate_percent' => (string) $line['rate_percent'],
-                'taxable_amount' => (int) $line['taxable_amount'],
-                'tax_amount' => (int) $line['tax_amount'],
-                'configuration_snapshot' => [
-                    'quoted_at' => now()->toIso8601String(),
-                    'quote_line' => [
-                        'kind' => $line['kind'] ?? 'merchandise',
-                        'status' => $line['status'] ?? 'chargeable',
-                        'variant_id' => $line['variant_id'] ?? null,
-                    ],
-                    'configuration' => $configuration ? [
-                        'id' => $configuration->id,
-                        'is_enabled' => $configuration->is_enabled,
-                        'is_published' => $configuration->is_published,
-                        'prices_include_tax' => $configuration->prices_include_tax,
-                        'address_basis' => $configuration->address_basis,
-                        'merchant_compliance_metadata' => $configuration->merchant_compliance_metadata,
-                    ] : null,
-                    'tax_rule' => [
-                        'id' => $rule->id,
-                        'label' => $rule->label,
-                        'tax_type' => $rule->tax_type,
-                        'rate_percent' => (string) $rule->rate_percent,
-                        'applies_to_shipping' => $rule->applies_to_shipping,
-                        'priority' => $rule->priority,
-                        'effective_from' => $rule->effective_from?->toIso8601String(),
-                        'effective_until' => $rule->effective_until?->toIso8601String(),
-                    ],
-                    'tax_class' => $rule->taxClass ? [
-                        'id' => $rule->taxClass->id,
-                        'code' => $rule->taxClass->code,
-                        'name' => $rule->taxClass->name,
-                        'description' => $rule->taxClass->description,
-                    ] : null,
-                    'tax_zone' => $rule->taxZone ? [
-                        'id' => $rule->taxZone->id,
-                        'code' => $rule->taxZone->code,
-                        'name' => $rule->taxZone->name,
-                        'country' => $rule->taxZone->country,
-                        'state' => $rule->taxZone->state,
-                        'postcode' => $rule->taxZone->postcode,
-                    ] : null,
+        OrderTaxLine::query()->create([
+            'order_id' => $order->id,
+            'tax_rule_id' => null,
+            'tax_class_id' => (int) $line['tax_class_id'],
+            'label' => (string) $line['label'],
+            'tax_type' => 'store_wide_percentage',
+            'rate_percent' => (string) $line['rate_percent'],
+            'taxable_amount' => (int) $line['taxable_amount'],
+            'tax_amount' => (int) $line['tax_amount'],
+            'configuration_snapshot' => [
+                'quoted_at' => now()->toIso8601String(),
+                'calculation_mode' => 'store_wide_percentage',
+                'quote_line' => [
+                    'kind' => 'merchandise',
+                    'status' => $line['status'] ?? 'chargeable',
                 ],
-            ]);
-        }
+                'tax_class' => [
+                    'id' => (int) $line['tax_class_id'],
+                    'name' => (string) $line['label'],
+                    'rate_percent' => (string) $line['rate_percent'],
+                ],
+            ],
+        ]);
     }
 
     public function transition(Order $order, string $status, ?int $userId = null, ?string $note = null): Order
