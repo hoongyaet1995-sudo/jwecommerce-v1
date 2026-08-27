@@ -10,7 +10,7 @@ import { CountriesSettingAdmin } from './CountriesSettingAdmin';
 import { ZonesSettingAdmin } from './ZonesSettingAdmin';
 import { CurrenciesSettingAdmin } from './CurrenciesSettingAdmin';
 import { OrderTotalSettingAdmin } from './OrderTotalSettingAdmin';
-import { TaxZonesSettingAdmin } from './TaxZonesSettingAdmin';
+import { TaxClassesSettingAdmin } from './TaxClassesSettingAdmin';
 import { CouriersSettingAdmin } from './CouriersSettingAdmin';
 import { AIAutoReplyStudioHub } from '../ai-auto-reply/AIAutoReplyStudioHub';
 import {
@@ -59,7 +59,7 @@ export const SETTING_TABS: { id: NavSection; label: string; icon: React.ElementT
   { id: 'settings-zones', label: 'Zones Setting', icon: Map },
   { id: 'settings-currencies', label: 'Currencies', icon: DollarSign },
   { id: 'settings-order-total', label: 'Order Total', icon: Calculator },
-  { id: 'settings-tax-zones', label: 'Tax Zones', icon: Percent },
+  { id: 'settings-tax-classes', label: 'Tax Classes', icon: Percent },
 ];
 
 export const SettingNavBar: React.FC<{ currentSection: NavSection; setCurrentSection: (s: NavSection) => void }> = ({
@@ -194,11 +194,11 @@ export const ShopSettingsHub: React.FC = () => {
     );
   }
 
-  if (currentSection === 'settings-tax-zones') {
+  if (currentSection === 'settings-tax-classes' || currentSection === 'settings-tax-zones') {
     return (
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-        <SettingNavBar currentSection={currentSection} setCurrentSection={setCurrentSection} />
-        <TaxZonesSettingAdmin />
+        <SettingNavBar currentSection="settings-tax-classes" setCurrentSection={setCurrentSection} />
+        <TaxClassesSettingAdmin />
       </div>
     );
   }
@@ -227,7 +227,7 @@ export const ShopSettingsHub: React.FC = () => {
     { id: 'settings-zones', label: 'Zones Setting', icon: Map },
     { id: 'settings-currencies', label: 'Currencies', icon: DollarSign },
     { id: 'settings-order-total', label: 'Order Total', icon: Calculator },
-    { id: 'settings-tax-zones', label: 'Tax Zones', icon: Percent },
+    { id: 'settings-tax-classes', label: 'Tax Classes', icon: Percent },
   ];
 
   return (

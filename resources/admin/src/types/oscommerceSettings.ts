@@ -98,10 +98,14 @@ export interface GeoTaxZone {
 
 export interface TaxClass {
   id: string;
-  name: string; // e.g. "Taxable Goods 8%", "Digital Services", "Zero-Rated Food"
-  description: string;
-  defaultRate: number;
-  productCount: number;
+  name: string;
+  ratePercent?: number;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  description?: string;
+  defaultRate?: number;
+  productCount?: number;
 }
 
 export interface TaxRate {

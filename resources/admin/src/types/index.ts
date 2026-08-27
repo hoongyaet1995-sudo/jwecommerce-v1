@@ -31,9 +31,11 @@ export interface LaravelAdminBootstrap {
   catalogUrl?: string;
   menusUrl?: string;
   ordersUrl?: string;
+  shipmentsUrl?: string;
   couponsUrl?: string;
   commerceSettingsUrl?: string;
   taxSettingsUrl?: string;
+  taxClassesUrl?: string;
   storefrontShellSettingsUrl?: string;
 }
 
@@ -990,6 +992,7 @@ export type NavSection =
   | 'settings-currencies'
   | 'settings-order-total'
   | 'settings-tax-zones'
+  | 'settings-tax-classes'
   | 'reports'
   | 'reports-sales'
   | 'reports-orders'

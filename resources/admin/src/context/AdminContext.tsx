@@ -7,8 +7,10 @@ import { deleteCatalogEntity, fetchCatalog, saveCatalogEntity } from '../integra
 import { fetchMenus, saveMenuDocument } from '../integration/menuData';
 import { customerDirectoryToCustomers, deleteCustomerData, fetchCustomerDirectoryData, saveCustomerData } from '../integration/customerDirectoryData';
 import { fetchOrders, processOrderRefundData, updateOrderStatusData, updateOrderTrackingData } from '../integration/orderData';
-import { fetchCommerceSettings, saveBankTransferConfiguration, saveCodConfiguration, saveCommerceSettings } from '../integration/commerceSettingsData';
-import { deleteTaxClass as deleteTaxClassData, deleteTaxRule as deleteTaxRuleData, deleteTaxZone as deleteTaxZoneData, fetchTaxSettings, globalTaxEngineFromConfiguration, saveTaxClass as saveTaxClassData, saveTaxConfiguration, saveTaxRule, saveTaxZone, type TaxSettingsDocument } from '../integration/taxSettingsData';
+import { appendShipmentEvent, fetchShipments } from '../integration/shipmentData';
+import { fetchCommerceSettings, saveBankTransferConfiguration, saveCodConfiguration, saveCommerceSettings, saveShippingConfiguration } from '../integration/commerceSettingsData';
+import { deleteTaxRule as deleteTaxRuleData, deleteTaxZone as deleteTaxZoneData, fetchTaxSettings, globalTaxEngineFromConfiguration, saveTaxConfiguration, saveTaxRule, saveTaxZone, type TaxSettingsDocument } from '../integration/taxSettingsData';
+import { activateTaxClass as activateTaxClassData, createTaxClass, deactivateTaxClass as deactivateTaxClassData, deleteTaxClass as deleteSimpleTaxClassData, fetchTaxClasses, updateTaxClass } from '../integration/taxClassData';
 import { loadStorefrontShellSettings, saveStorefrontShellSettingsData } from '../integration/storefrontShellSettingsData';
 import {
   bulkModerateReviews as bulkModerateReviewsData,
@@ -77,13 +79,6 @@ import {
   CashOnDeliveryConfig,
   GlobalPaymentSettings
 } from '../types/payment';
-import {
-  INITIAL_COURIER_CONFIGS,
-  INITIAL_SMART_ROUTING_RULES,
-  INITIAL_SHIPMENT_PARCELS,
-  INITIAL_PICKUP_REQUESTS,
-  INITIAL_BILLING_RECONCILIATIONS
-} from '../data/shippingData';
 import {
   CustomOrderStatus,
   CountrySetting,
@@ -404,6 +399,8 @@ interface AdminContextType {
   saveGeoTaxZone: (zone: GeoTaxZone) => void;
   deleteGeoTaxZone: (id: string) => void;
   saveTaxClass: (taxClass: TaxClass) => void;
+  activateTaxClass: (id: string) => void;
+  deactivateTaxClass: (id: string) => void;
   deleteTaxClass: (id: string) => void;
   saveTaxRate: (taxRate: TaxRate) => void;
   deleteTaxRate: (id: string) => void;
@@ -531,9 +528,27 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   useEffect(() => {
+    void fetchTaxClasses(laravelBootstrap).then(document => {
+      setTaxClasses(document.classes);
+    }).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
     let active = true;
     void fetchOrders(laravelBootstrap).then(loaded => { if (active) setOrders(loaded); }).catch(() => {
       if (active) addToast({ type: 'error', title: 'Orders Unavailable', message: 'Unable to load orders from MySQL.' });
+    });
+    return () => { active = false; };
+  // Laravel emits this immutable bootstrap once per admin app load.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void fetchShipments(laravelBootstrap).then((loaded) => {
+      if (active) setShipmentParcels(loaded);
+    }).catch(() => {
+      if (active) addToast({ type: 'error', title: 'Shipments Unavailable', message: 'Unable to load shipment and event records from MySQL.' });
     });
     return () => { active = false; };
   // Laravel emits this immutable bootstrap once per admin app load.
@@ -691,11 +706,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [selectedMarketplaceOrderId, setSelectedMarketplaceOrderId] = useState<string | null>(null);
 
   // Malaysia Shipping Module State
-  const [courierConfigs, setCourierConfigs] = useState<CourierConfig[]>(INITIAL_COURIER_CONFIGS);
-  const [smartRoutingRules, setSmartRoutingRules] = useState<SmartRoutingRule[]>(INITIAL_SMART_ROUTING_RULES);
-  const [shipmentParcels, setShipmentParcels] = useState<ShipmentParcel[]>(INITIAL_SHIPMENT_PARCELS);
-  const [pickupRequests, setPickupRequests] = useState<PickupRequest[]>(INITIAL_PICKUP_REQUESTS);
-  const [billingReconciliations, setBillingReconciliations] = useState<BillingReconciliationRecord[]>(INITIAL_BILLING_RECONCILIATIONS);
+  const [courierConfigs, setCourierConfigs] = useState<CourierConfig[]>([]);
+  const [smartRoutingRules, setSmartRoutingRules] = useState<SmartRoutingRule[]>([]);
+  const [shipmentParcels, setShipmentParcels] = useState<ShipmentParcel[]>([]);
+  const [pickupRequests, setPickupRequests] = useState<PickupRequest[]>([]);
+  const [billingReconciliations, setBillingReconciliations] = useState<BillingReconciliationRecord[]>([]);
   const [shippingRates, setShippingRates] = useState<GeneralShippingRate[]>([]);
   const [selectedParcelId, setSelectedParcelId] = useState<string | null>(null);
 
@@ -774,21 +789,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const savedLogs = safeParseArray(STORAGE_KEYS.MARKETPLACE_SYNC_LOGS, INITIAL_MARKETPLACE_SYNC_LOGS);
       setSyncLogs(savedLogs);
 
-      const savedCouriers = safeParseArray(STORAGE_KEYS.COURIER_CONFIGS, INITIAL_COURIER_CONFIGS);
-      setCourierConfigs(savedCouriers);
-
-      const savedRules = safeParseArray(STORAGE_KEYS.SMART_ROUTING_RULES, INITIAL_SMART_ROUTING_RULES);
-      setSmartRoutingRules(savedRules);
-
-      const savedParcels = safeParseArray(STORAGE_KEYS.SHIPMENT_PARCELS, INITIAL_SHIPMENT_PARCELS);
-      setShipmentParcels(savedParcels);
-
-      const savedPickups = safeParseArray(STORAGE_KEYS.PICKUP_REQUESTS, INITIAL_PICKUP_REQUESTS);
-      setPickupRequests(savedPickups);
-
-      const savedReconciles = safeParseArray(STORAGE_KEYS.BILLING_RECONCILIATIONS, INITIAL_BILLING_RECONCILIATIONS);
-      setBillingReconciliations(savedReconciles);
-
       const savedStatuses = safeParseArray(STORAGE_KEYS.CUSTOM_ORDER_STATUSES, INITIAL_CUSTOM_ORDER_STATUSES);
       setOrderStatuses(savedStatuses);
 
@@ -800,7 +800,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       const savedOrderTotals = safeParseArray(STORAGE_KEYS.ORDER_TOTAL_MODULES, INITIAL_ORDER_TOTAL_MODULES);
       setOrderTotalModules(savedOrderTotals);
-
 
       const savedSupportConvs = safeParseArray(STORAGE_KEYS.SUPPORT_CONVERSATIONS, INITIAL_SUPPORT_CONVERSATIONS);
       setSupportConversations(savedSupportConvs);
@@ -919,7 +918,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     void fetchTaxSettings(laravelBootstrap).then(document => {
       if (!active) return;
       setTaxZones(document.zones);
-      setTaxClasses(document.classes);
       setTaxRates(document.rules);
       setTaxConfiguration(document.configuration);
       setGlobalTaxEngine(current => globalTaxEngineFromConfiguration(document.configuration, current));
@@ -1340,6 +1338,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const saved = await updateOrderTrackingData(laravelBootstrap, orderId, carrier, trackingNumber);
       setOrders(prev => prev.map(order => order.id === saved.id ? saved : order));
+      void fetchShipments(laravelBootstrap).then(setShipmentParcels).catch(() => undefined);
       addToast({ type: 'success', title: 'Logistics Dispatched', message: `Assigned tracking ${trackingNumber} via ${carrier}.` });
       return saved;
     } catch (error) {
@@ -2059,389 +2058,95 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Malaysia Shipping Module Operations
   // ------------------------------------
 
-  const saveCourierConfig = (config: CourierConfig) => {
-    setCourierConfigs(prev => {
-      const exists = prev.some(c => c.id === config.id);
-      const updated = exists ? prev.map(c => (c.id === config.id ? config : c)) : [...prev, config];
-      localStorage.setItem(STORAGE_KEYS.COURIER_CONFIGS, JSON.stringify(updated));
-      return updated;
-    });
-    addToast({
-      type: 'success',
-      title: 'Courier Configuration Saved',
-      message: `Updated API credentials for ${config.displayName} (${(config.environment || 'PRODUCTION').toUpperCase()}).`
-    });
+  const saveCourierConfig = (_config: CourierConfig) => {
+    addToast({ type: 'error', title: 'Courier configuration unavailable', message: 'Provider credentials are not persisted until the EasyParcel integration is implemented.' });
   };
 
-  const toggleCourierStatus = (id: string) => {
-    setCourierConfigs(prev => {
-      const updated = prev.map(c => {
-        if (c.id === id) {
-          const nextState = !c.isEnabled;
-          addToast({
-            type: nextState ? 'success' : 'info',
-            title: `Courier ${nextState ? 'Enabled' : 'Disabled'}`,
-            message: `${c.displayName} routing is now ${nextState ? 'active' : 'suspended'}.`
-          });
-          return { ...c, isEnabled: nextState };
-        }
-        return c;
-      });
-      localStorage.setItem(STORAGE_KEYS.COURIER_CONFIGS, JSON.stringify(updated));
-      return updated;
-    });
+  const toggleCourierStatus = (_id: string) => {
+    addToast({ type: 'error', title: 'Courier activation unavailable', message: 'Activation is blocked until the provider credentials can be verified server-side.' });
   };
 
-  const pingCourierAPI = async (id: string): Promise<number> => {
-    const courier = courierConfigs.find(c => c.id === id);
-    const latency = Math.floor(Math.random() * 45) + 35; // 35 - 80ms
-    await new Promise(r => setTimeout(r, 600));
-    setCourierConfigs(prev => {
-      const updated = prev.map(c => (c.id === id ? { ...c, lastPingLatency: latency, status: 'connected' as const } : c));
-      localStorage.setItem(STORAGE_KEYS.COURIER_CONFIGS, JSON.stringify(updated));
-      return updated;
-    });
-    addToast({
-      type: 'success',
-      title: 'API Handshake 200 OK',
-      message: `${courier?.name || 'Courier'} endpoint pinged in ${latency}ms.`
-    });
-    return latency;
+  const pingCourierAPI = async (_id: string): Promise<number> => {
+    addToast({ type: 'error', title: 'Provider health check unavailable', message: 'No courier endpoint has been configured, so no test request was sent.' });
+    return 0;
   };
 
-  const topUpEasyParcelWallet = (amountRM: number) => {
-    setCourierConfigs(prev => {
-      const updated = prev.map(c => {
-        if (c.courierCode === 'easyparcel') {
-          const newBal = (c.walletBalance || 0) + amountRM;
-          return { ...c, walletBalance: newBal };
-        }
-        return c;
-      });
-      localStorage.setItem(STORAGE_KEYS.COURIER_CONFIGS, JSON.stringify(updated));
-      return updated;
-    });
-    addToast({
-      type: 'success',
-      title: 'EasyParcel Wallet Top-Up Successful',
-      message: `Credited +RM ${amountRM.toFixed(2)} to prepaid shipping balance.`
-    });
+  const topUpEasyParcelWallet = (_amountRM: number) => {
+    addToast({ type: 'error', title: 'EasyParcel top-up unavailable', message: 'Wallet transactions are unavailable until the provider integration is configured.' });
   };
 
-  const saveSmartRoutingRule = (rule: SmartRoutingRule) => {
-    setSmartRoutingRules(prev => {
-      const exists = prev.some(r => r.id === rule.id);
-      const updated = exists ? prev.map(r => (r.id === rule.id ? rule : r)) : [...prev, rule];
-      localStorage.setItem(STORAGE_KEYS.SMART_ROUTING_RULES, JSON.stringify(updated));
-      return updated;
-    });
-    addToast({
-      type: 'success',
-      title: 'Routing Rule Saved',
-      message: `Rule "${rule.name}" priority updated.`
-    });
+  const saveSmartRoutingRule = (_rule: SmartRoutingRule) => {
+    addToast({ type: 'error', title: 'Smart routing unavailable', message: 'Routing rules are not saved locally; connect a courier provider before enabling routing.' });
   };
 
-  const deleteSmartRoutingRule = (id: string) => {
-    setSmartRoutingRules(prev => {
-      const updated = prev.filter(r => r.id !== id);
-      localStorage.setItem(STORAGE_KEYS.SMART_ROUTING_RULES, JSON.stringify(updated));
-      return updated;
-    });
-    addToast({ type: 'info', title: 'Rule Deleted', message: 'Smart routing rule removed.' });
+  const deleteSmartRoutingRule = (_id: string) => {
+    addToast({ type: 'error', title: 'Smart routing unavailable', message: 'No persisted provider routing rules are configured.' });
   };
 
-  const toggleSmartRoutingRule = (id: string) => {
-    setSmartRoutingRules(prev => {
-      const updated = prev.map(r => (r.id === id ? { ...r, isActive: !r.isActive } : r));
-      localStorage.setItem(STORAGE_KEYS.SMART_ROUTING_RULES, JSON.stringify(updated));
-      return updated;
-    });
+  const toggleSmartRoutingRule = (_id: string) => {
+    addToast({ type: 'error', title: 'Smart routing unavailable', message: 'No persisted provider routing rules are configured.' });
   };
 
-  const reorderSmartRoutingRules = (rules: SmartRoutingRule[]) => {
-    const updated = rules.map((r, idx) => ({ ...r, priority: idx + 1 }));
-    setSmartRoutingRules(updated);
-    localStorage.setItem(STORAGE_KEYS.SMART_ROUTING_RULES, JSON.stringify(updated));
-    addToast({ type: 'success', title: 'Rule Priority Updated', message: 'Smart routing precedence recalculated.' });
+  const reorderSmartRoutingRules = (_rules: SmartRoutingRule[]) => {
+    addToast({ type: 'error', title: 'Smart routing unavailable', message: 'No persisted provider routing rules are configured.' });
   };
 
-  const generateShipmentAWB = (parcelId: string, courierCode?: string) => {
-    setShipmentParcels(prev => {
-      const updated = prev.map(p => {
-        if (p.id === parcelId) {
-          const courier = (courierCode as any) || p.courier;
-          const prefix = courier === 'jnt' ? 'JNT60' : courier === 'ninjavan' ? 'NVMY' : courier === 'posmalaysia' ? 'PL' : courier === 'easyparcel' ? 'EP' : courier === 'flashexpress' ? 'FL' : 'DHL';
-          const trackingNo = `${prefix}${Math.floor(100000000 + Math.random() * 900000000)}MY`;
-          const now = new Date().toISOString();
-          
-          return {
-            ...p,
-            courier,
-            trackingNumber: trackingNo,
-            status: 'ready_to_ship' as const,
-            awbGeneratedAt: now,
-            trackingEvents: [
-              {
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                location: 'JW Studio Fulfillment Desk',
-                status: 'AWB Created & Ready for Packing',
-                description: `Created consignment label via ${(courier || 'COURIER').toUpperCase()} API (Tracking: ${trackingNo}).`
-              },
-              ...p.trackingEvents
-            ]
-          };
-        }
-        return p;
-      });
-      localStorage.setItem(STORAGE_KEYS.SHIPMENT_PARCELS, JSON.stringify(updated));
-      return updated;
-    });
-    addToast({
-      type: 'success',
-      title: 'AWB Generated (4x6" Thermal Ready)',
-      message: `Generated consignment tracking number via Courier API.`
-    });
+  const generateShipmentAWB = (_parcelId: string, _courierCode?: string) => {
+    addToast({ type: 'error', title: 'Courier label issuance unavailable', message: 'A tracking number must be assigned through the real courier workflow. EasyParcel label issuance is not connected yet.' });
   };
 
-  const batchGenerateAWB = (parcelIds: string[]) => {
-    let count = 0;
-    setShipmentParcels(prev => {
-      const updated = prev.map(p => {
-        if (parcelIds.includes(p.id) && (p.status === 'pending' || !p.trackingNumber)) {
-          count++;
-          const prefix = p.courier === 'jnt' ? 'JNT60' : p.courier === 'ninjavan' ? 'NVMY' : p.courier === 'posmalaysia' ? 'PL' : p.courier === 'easyparcel' ? 'EP' : 'FL';
-          const trackingNo = `${prefix}${Math.floor(100000000 + Math.random() * 900000000)}MY`;
-          return {
-            ...p,
-            trackingNumber: trackingNo,
-            status: 'ready_to_ship' as const,
-            awbGeneratedAt: new Date().toISOString(),
-            trackingEvents: [
-              {
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                location: 'JW Studio Batch Fulfill Desk',
-                status: 'AWB Batch Printed',
-                description: `Consignment created in batch (Tracking: ${trackingNo}).`
-              },
-              ...p.trackingEvents
-            ]
-          };
-        }
-        return p;
-      });
-      localStorage.setItem(STORAGE_KEYS.SHIPMENT_PARCELS, JSON.stringify(updated));
-      return updated;
-    });
-    addToast({
-      type: 'success',
-      title: 'Batch AWB Generation Complete',
-      message: `Generated thermal waybills for ${count} shipments.`
-    });
+  const batchGenerateAWB = (_parcelIds: string[]) => {
+    addToast({ type: 'error', title: 'Courier label issuance unavailable', message: 'Batch AWB generation remains disabled until EasyParcel is connected.' });
   };
 
   const updateShipmentStatus = (parcelId: string, status: ShipmentParcel['status'], eventDesc?: string, location?: string) => {
-    setShipmentParcels(prev => {
-      const updated = prev.map(p => {
-        if (p.id === parcelId) {
-          const newEvents = eventDesc ? [
-            {
-              timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
-              location: location || 'Transit Hub',
-              status: (status || '').replace('_', ' ').toUpperCase(),
-              description: eventDesc
-            },
-            ...p.trackingEvents
-          ] : p.trackingEvents;
-
-          return {
-            ...p,
-            status,
-            trackingEvents: newEvents,
-            ...(status === 'delivered' ? { deliveredAt: new Date().toISOString() } : {}),
-            ...(status === 'picked_up' ? { dispatchedAt: new Date().toISOString() } : {})
-          };
-        }
-        return p;
-      });
-      localStorage.setItem(STORAGE_KEYS.SHIPMENT_PARCELS, JSON.stringify(updated));
-      return updated;
+    const permittedStatuses = ['in_transit', 'out_for_delivery', 'delivered', 'failed_delivery', 'returned'] as const;
+    if (!permittedStatuses.includes(status as typeof permittedStatuses[number])) {
+      addToast({ type: 'error', title: 'Unsupported shipment action', message: 'This status requires a courier integration and cannot be fabricated locally.' });
+      return;
+    }
+    void appendShipmentEvent(
+      laravelBootstrap,
+      parcelId,
+      status as typeof permittedStatuses[number],
+      eventDesc?.trim() || `Shipment marked ${status.replaceAll('_', ' ')} by warehouse staff.`,
+      location,
+    ).then(() => fetchShipments(laravelBootstrap)).then(setShipmentParcels).then(() => {
+      addToast({ type: 'success', title: 'Shipment event recorded', message: 'The event was saved to the immutable shipment audit trail.' });
+    }).catch((error) => {
+      addToast({ type: 'error', title: 'Shipment event failed', message: error instanceof Error ? error.message : 'Unable to record shipment event.' });
     });
   };
 
-  const requestRedelivery = (parcelId: string) => {
-    setShipmentParcels(prev => {
-      const updated = prev.map(p => {
-        if (p.id === parcelId) {
-          const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 16);
-          addToast({
-            type: 'success',
-            title: 'Re-delivery Scheduled via API',
-            message: `Dispatched re-delivery command for ${p.trackingNumber} to courier dispatch station.`
-          });
-          return {
-            ...p,
-            status: 'in_transit' as const,
-            exceptionReason: undefined,
-            trackingEvents: [
-              {
-                timestamp: nowStr,
-                location: 'Courier Local Hub',
-                status: 'Re-delivery Requested',
-                description: 'Merchant customer support initiated automated re-delivery after contacting customer.'
-              },
-              ...p.trackingEvents
-            ]
-          };
-        }
-        return p;
-      });
-      localStorage.setItem(STORAGE_KEYS.SHIPMENT_PARCELS, JSON.stringify(updated));
-      return updated;
-    });
+  const requestRedelivery = (_parcelId: string) => {
+    addToast({ type: 'error', title: 'Re-delivery unavailable', message: 'This courier command requires an active provider integration and has not been simulated.' });
   };
 
-  const createRMAReturnShipment = (orderNumber: string, reason: string) => {
-    const rmaId = `shp_rma_${Date.now()}`;
-    const trackingNo = `NVMY-RMA-${Math.floor(100000 + Math.random() * 900000)}`;
-    const newParcel: ShipmentParcel = {
-      id: rmaId,
-      orderId: `ord_rma_${Date.now()}`,
-      orderNumber: `${orderNumber}-RMA`,
-      customerName: 'Return Customer',
-      customerPhone: '+60 12-000 0000',
-      customerEmail: 'return@customer.my',
-      recipientAddress: {
-        street: 'JW Studio Central Warehouse Return Center, No. 18, Jalan TP 5',
-        city: 'Subang Jaya',
-        state: 'Selangor',
-        postcode: '47600',
-        country: 'Malaysia',
-        region: 'peninsular'
-      },
-      items: [{ sku: 'RMA-ITEM-01', name: `Returned Item (${reason})`, qty: 1, unitPrice: 0, weightKg: 0.5 }],
-      totalWeightKg: 0.5,
-      volumetricWeightKg: 0.4,
-      dimensionsCm: { length: 20, width: 15, height: 8 },
-      courier: 'ninjavan',
-      serviceType: 'Ninja Return (RMA Drop-off)',
-      trackingNumber: trackingNo,
-      routingSortCode: 'SEL-RET-01',
-      status: 'ready_to_ship',
-      paymentMode: 'prepaid',
-      isEastMalaysiaAirRestricted: false,
-      postcodeValidationStatus: 'valid',
-      createdAt: new Date().toISOString(),
-      systemQuotedCharge: 6.50,
-      isWeightDiscrepancy: false,
-      trackingEvents: [
-        {
-          timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
-          location: 'RMA Return Desk',
-          status: 'RMA Label Created',
-          description: `Prepaid return label generated for buyer drop-off at Ninja Points (${reason}).`
-        }
-      ]
-    };
-
-    setShipmentParcels(prev => {
-      const updated = [newParcel, ...prev];
-      localStorage.setItem(STORAGE_KEYS.SHIPMENT_PARCELS, JSON.stringify(updated));
-      return updated;
-    });
-
-    addToast({
-      type: 'success',
-      title: 'RMA Return Waybill Generated',
-      message: `Return label ${trackingNo} generated for buyer drop-off.`
-    });
+  const createRMAReturnShipment = (_orderNumber: string, _reason: string) => {
+    addToast({ type: 'error', title: 'Return shipment unavailable', message: 'RMA labels require a connected courier provider and are not created as local demo data.' });
   };
 
   const simulateCourierWebhookEvent = (parcelId: string, eventType: string, location: string, description: string) => {
-    setShipmentParcels(prev => {
-      const updated = prev.map(p => {
-        if (p.id === parcelId) {
-          const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 16);
-          let newStatus: ShipmentParcel['status'] = p.status;
-          if (eventType.includes('Delivered')) newStatus = 'delivered';
-          else if (eventType.includes('Out for Delivery')) newStatus = 'out_for_delivery';
-          else if (eventType.includes('Failed') || eventType.includes('NITC')) newStatus = 'failed_delivery';
-          else if (eventType.includes('Picked Up')) newStatus = 'in_transit';
-
-          return {
-            ...p,
-            status: newStatus,
-            trackingEvents: [
-              {
-                timestamp: nowStr,
-                location,
-                status: eventType,
-                description,
-                rawEventCode: `EVENT_${Math.floor(1000 + Math.random() * 9000)}`
-              },
-              ...p.trackingEvents
-            ]
-          };
-        }
-        return p;
-      });
-      localStorage.setItem(STORAGE_KEYS.SHIPMENT_PARCELS, JSON.stringify(updated));
-      return updated;
-    });
-
-    addToast({
-      type: 'info',
-      title: '⚡ Courier Webhook Ingested',
-      message: `Event: "${eventType}" received from courier gateway.`
-    });
+    const status: ShipmentParcel['status'] = eventType.includes('Delivered')
+      ? 'delivered'
+      : eventType.includes('Out for Delivery')
+        ? 'out_for_delivery'
+        : eventType.includes('Failed') || eventType.includes('NITC')
+          ? 'failed_delivery'
+          : 'in_transit';
+    updateShipmentStatus(parcelId, status, description, location);
   };
 
-  const createPickupRequest = (request: Omit<PickupRequest, 'id' | 'createdAt'>) => {
-    const newId = `pkup_${Date.now()}`;
-    const newReq: PickupRequest = {
-      ...request,
-      id: newId,
-      createdAt: new Date().toISOString(),
-      assignedDriver: {
-        name: 'Azman Bin Kassim',
-        phone: '+60 19-338 1290',
-        vehiclePlate: 'WTR 5521'
-      }
-    };
-
-    setPickupRequests(prev => {
-      const updated = [newReq, ...prev];
-      localStorage.setItem(STORAGE_KEYS.PICKUP_REQUESTS, JSON.stringify(updated));
-      return updated;
-    });
-
-    addToast({
-      type: 'success',
-      title: 'Pickup Scheduled Successfully',
-      message: `Courier driver assigned for ${request.pickupDate} (${request.timeSlot}).`
-    });
+  const createPickupRequest = (_request: Omit<PickupRequest, 'id' | 'createdAt'>) => {
+    addToast({ type: 'error', title: 'Pickup scheduling unavailable', message: 'Driver booking requires a configured courier provider and has not been simulated.' });
   };
 
-  const cancelPickupRequest = (id: string) => {
-    setPickupRequests(prev => {
-      const updated = prev.map(r => (r.id === id ? { ...r, status: 'cancelled' as const } : r));
-      localStorage.setItem(STORAGE_KEYS.PICKUP_REQUESTS, JSON.stringify(updated));
-      return updated;
-    });
-    addToast({ type: 'info', title: 'Pickup Cancelled', message: 'Pickup request has been cancelled.' });
+  const cancelPickupRequest = (_id: string) => {
+    addToast({ type: 'error', title: 'Pickup cancellation unavailable', message: 'Pickup cancellation requires a connected courier provider.' });
   };
 
-  const resolveBillingDispute = (id: string) => {
-    setBillingReconciliations(prev => {
-      const updated = prev.map(r => (r.id === id ? { ...r, reconciliationStatus: 'resolved' as const } : r));
-      localStorage.setItem(STORAGE_KEYS.BILLING_RECONCILIATIONS, JSON.stringify(updated));
-      return updated;
-    });
-    addToast({
-      type: 'success',
-      title: 'Discrepancy Claim Resolved',
-      message: 'Adjusted courier credit note and marked dispute resolved.'
-    });
+  const resolveBillingDispute = (_id: string) => {
+    addToast({ type: 'error', title: 'Billing reconciliation unavailable', message: 'No provider invoice has been imported, so no courier credit note was created.' });
   };
 
   // General Shipping Rates & Postage Calculation Engine
@@ -2476,11 +2181,23 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const saveShippingRate = (rate: GeneralShippingRate) => {
+  const persistShippingRates = async (updated: GeneralShippingRate[], previous: GeneralShippingRate[]): Promise<boolean> => {
+    setShippingRates(updated);
+    try {
+      const document = await saveShippingConfiguration(laravelBootstrap, updated);
+      setShippingRates(document.shippingRates);
+      return true;
+    } catch (error) {
+      setShippingRates(previous);
+      addToast({ type: 'error', title: 'Shipping Rate Save Failed', message: error instanceof Error ? error.message : 'Unable to save shipping rates to MySQL.' });
+      return false;
+    }
+  };
+
+  const saveShippingRate = async (rate: GeneralShippingRate) => {
     const exists = shippingRates.some(item => item.id === rate.id);
     const updated = exists ? shippingRates.map(item => item.id === rate.id ? { ...rate, updatedAt: new Date().toISOString().replace('T', ' ').slice(0, 19) } : item) : [{ ...rate, createdAt: new Date().toISOString().replace('T', ' ').slice(0, 19), updatedAt: new Date().toISOString().replace('T', ' ').slice(0, 19) }, ...shippingRates];
-    setShippingRates(updated);
-    persistCommerceDocument({ shippingRates: updated });
+    if (! await persistShippingRates(updated, shippingRates)) return;
     addToast({
       type: 'success',
       title: 'Shipping Rate Saved',
@@ -2488,10 +2205,9 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
-  const deleteShippingRate = (id: string) => {
+  const deleteShippingRate = async (id: string) => {
     const updated = shippingRates.filter(rate => rate.id !== id);
-    setShippingRates(updated);
-    persistCommerceDocument({ shippingRates: updated });
+    if (! await persistShippingRates(updated, shippingRates)) return;
     addToast({
       type: 'info',
       title: 'Shipping Rate Removed',
@@ -2499,13 +2215,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
-  const toggleShippingRateStatus = (id: string) => {
+  const toggleShippingRateStatus = async (id: string) => {
     const updated = shippingRates.map(rate => rate.id === id ? { ...rate, isActive: !rate.isActive } : rate);
-    setShippingRates(updated);
-    persistCommerceDocument({ shippingRates: updated });
+    await persistShippingRates(updated, shippingRates);
   };
 
-  const duplicateShippingRate = (id: string) => {
+  const duplicateShippingRate = async (id: string) => {
     const existing = shippingRates.find(r => r.id === id);
     if (!existing) return;
     const duplicated: GeneralShippingRate = {
@@ -2516,8 +2231,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       updatedAt: new Date().toISOString().replace('T', ' ').slice(0, 19)
     };
     const updated = [duplicated, ...shippingRates];
-    setShippingRates(updated);
-    persistCommerceDocument({ shippingRates: updated });
+    if (! await persistShippingRates(updated, shippingRates)) return;
     addToast({
       type: 'success',
       title: 'Rate Rule Duplicated',
@@ -3039,15 +2753,32 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const saveTaxClass = (taxClass: TaxClass) => {
-    void saveTaxClassData(laravelBootstrap, taxClass).then(saved => {
-      setTaxClasses(prev => prev.some(item => item.id === saved.id) ? prev.map(item => item.id === saved.id ? saved : item) : [...prev, saved]);
-      addToast({ type: 'success', title: 'Tax Class Saved', message: `Tax Class "${saved.name}" updated.` });
+    const request = /^\d+$/.test(taxClass.id)
+      ? updateTaxClass(laravelBootstrap, { ...taxClass, ratePercent: taxClass.ratePercent ?? 0, isActive: taxClass.isActive ?? false })
+      : createTaxClass(laravelBootstrap, { name: taxClass.name, ratePercent: taxClass.ratePercent ?? 0, isActive: taxClass.isActive ?? false });
+    void request.then(document => {
+      setTaxClasses(document.classes);
+      addToast({ type: 'success', title: 'Tax Class Saved', message: `Tax Class "${taxClass.name}" updated.` });
     }).catch(error => addToast({ type: 'error', title: 'Tax Class Save Failed', message: error instanceof Error ? error.message : 'Unable to save tax class to MySQL.' }));
   };
 
+  const activateTaxClass = (id: string) => {
+    void activateTaxClassData(laravelBootstrap, id).then(document => {
+      setTaxClasses(document.classes);
+      addToast({ type: 'success', title: 'Tax Class Activated', message: 'The store-wide tax charge is now active.' });
+    }).catch(error => addToast({ type: 'error', title: 'Tax Class Activation Failed', message: error instanceof Error ? error.message : 'Unable to activate tax class.' }));
+  };
+
+  const deactivateTaxClass = (id: string) => {
+    void deactivateTaxClassData(laravelBootstrap, id).then(document => {
+      setTaxClasses(document.classes);
+      addToast({ type: 'info', title: 'Tax Class Deactivated', message: 'New carts and orders will not be charged tax.' });
+    }).catch(error => addToast({ type: 'error', title: 'Tax Class Deactivation Failed', message: error instanceof Error ? error.message : 'Unable to deactivate tax class.' }));
+  };
+
   const deleteTaxClass = (id: string) => {
-    void deleteTaxClassData(laravelBootstrap, id).then(() => {
-      setTaxClasses(prev => prev.filter(taxClass => taxClass.id !== id));
+    void deleteSimpleTaxClassData(laravelBootstrap, id).then(document => {
+      setTaxClasses(document.classes);
       addToast({ type: 'info', title: 'Tax Class Deleted', message: 'Tax classification schedule removed.' });
     }).catch(error => addToast({ type: 'error', title: 'Tax Class Delete Failed', message: error instanceof Error ? error.message : 'Unable to delete tax class.' }));
   };
@@ -3829,24 +3560,25 @@ Would you like me to drill down into customer records, inventory allocation, or 
     setMarketplaceOrders(INITIAL_MARKETPLACE_ORDERS);
     setMarketplaceInventory(INITIAL_MARKETPLACE_INVENTORY);
     setSyncLogs(INITIAL_MARKETPLACE_SYNC_LOGS);
-    setCourierConfigs(INITIAL_COURIER_CONFIGS);
-    setSmartRoutingRules(INITIAL_SMART_ROUTING_RULES);
-    setShipmentParcels(INITIAL_SHIPMENT_PARCELS);
-    setPickupRequests(INITIAL_PICKUP_REQUESTS);
-    setBillingReconciliations(INITIAL_BILLING_RECONCILIATIONS);
+    setCourierConfigs([]);
+    setSmartRoutingRules([]);
+    void fetchShipments(laravelBootstrap).then(setShipmentParcels).catch(() => undefined);
+    setPickupRequests([]);
+    setBillingReconciliations([]);
     void fetchCommerceSettings(laravelBootstrap).then(document => {
       setShippingRates(document.shippingRates); setPaymentGateways(document.paymentGateways);
       setBankTransferConfig(document.bankTransfer as ManualBankTransferConfig); setCodConfig(document.codConfig as CashOnDeliveryConfig); setGlobalPaymentSettings(document.globalPayment as GlobalPaymentSettings);
       setCurrenciesSetting(document.currencies);
     }).catch(error => addToast({ type: 'error', title: 'Commerce Settings Reload Failed', message: error instanceof Error ? error.message : 'Unable to reload commerce settings.' }));
+    void fetchTaxSettings(laravelBootstrap).then(document => {
+      setTaxZones(document.zones); setTaxRates(document.rules);
+      setTaxConfiguration(document.configuration);
+      setGlobalTaxEngine(current => globalTaxEngineFromConfiguration(document.configuration, current));
+    }).catch(error => addToast({ type: 'error', title: 'Tax Settings Reload Failed', message: error instanceof Error ? error.message : 'Unable to reload tax settings.' }));
     setOrderStatuses(INITIAL_CUSTOM_ORDER_STATUSES);
     setCountriesSetting(INITIAL_COUNTRIES);
     setZonesSetting(INITIAL_ZONES);
     setOrderTotalModules(INITIAL_ORDER_TOTAL_MODULES);
-    setTaxZones(INITIAL_GEO_TAX_ZONES);
-    setTaxClasses(INITIAL_TAX_CLASSES);
-    setTaxRates(INITIAL_TAX_RATES);
-    setGlobalTaxEngine(INITIAL_GLOBAL_TAX_ENGINE);
     setSupportConversations(INITIAL_SUPPORT_CONVERSATIONS);
     setCopilotMessages(INITIAL_INTERNAL_COPILOT_MESSAGES);
     setAiAutoReplyConfig(DEFAULT_AI_AUTO_REPLY_CONFIG);
@@ -4042,6 +3774,8 @@ Would you like me to drill down into customer records, inventory allocation, or 
         saveGeoTaxZone,
         deleteGeoTaxZone,
         saveTaxClass,
+        activateTaxClass,
+        deactivateTaxClass,
         deleteTaxClass,
         saveTaxRate,
         deleteTaxRate,

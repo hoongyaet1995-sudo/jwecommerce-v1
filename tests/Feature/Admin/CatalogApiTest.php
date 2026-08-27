@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\CmsMediaAsset;
+use App\Models\TaxClass;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -46,6 +47,27 @@ class CatalogApiTest extends TestCase
             ->assertJsonPath('products.0.title', 'Reference Monitor Headphones');
 
         $this->get('/shop')->assertOk()->assertSee('Reference Monitor Headphones');
+    }
+
+    public function test_catalog_ignores_legacy_product_tax_class_input(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $taxClass = TaxClass::factory()->create(['name' => 'Standard SST Goods']);
+        $category = $this->actingAs($admin)->postJson('/admin/api/catalog/categories', [
+            'name' => 'Taxable catalog', 'slug' => 'taxable-catalog', 'status' => 'active', 'sortOrder' => 1,
+        ])->assertCreated()->json('data');
+
+        $payload = $this->productPayload((string) $category['id'], []);
+        $payload['taxClassId'] = (string) $taxClass->id;
+
+        $product = $this->actingAs($admin)->postJson('/admin/api/catalog/products', $payload)
+            ->assertCreated()
+            ->json('data');
+
+        $this->assertDatabaseHas('products', ['id' => $product['id'], 'tax_class_id' => null]);
+        $this->actingAs($admin)->getJson('/admin/api/catalog')
+            ->assertOk()
+            ->assertJsonMissing(['taxClassId' => (string) $taxClass->id]);
     }
 
     public function test_duplicate_sku_rejects_the_whole_product_transaction(): void

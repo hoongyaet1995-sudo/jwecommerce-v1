@@ -223,7 +223,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/settings/zones', AdminAppController::class)->name('settings.zones');
     Route::get('/settings/currencies', AdminAppController::class)->name('settings.currencies');
     Route::get('/settings/order-total', AdminAppController::class)->name('settings.order-total');
-    Route::get('/settings/tax-zones', AdminAppController::class)->name('settings.tax-zones');
+    Route::redirect('/settings/tax-zones', '/admin/settings/tax-classes')->name('settings.tax-zones');
+    Route::get('/settings/tax-classes', AdminAppController::class)->name('settings.tax-classes');
     Route::get('/settings/ai-agent', AdminAppController::class)->name('settings.ai-agent');
     Route::get('/developer-specs', AdminAppController::class)->name('developer-specs');
     Route::get('/search', SearchController::class)->name('search');

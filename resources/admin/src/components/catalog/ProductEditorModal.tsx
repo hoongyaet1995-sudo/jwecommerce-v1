@@ -37,7 +37,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   isOpen,
   onClose
 }) => {
-  const { categories, collections, products, saveProduct } = useAdmin();
+  const { categories, collections, products, taxClasses, saveProduct } = useAdmin();
 
   const [activeTab, setActiveTab] = useState<'basic' | 'variants' | 'media' | 'extra_info' | 'seo'>('basic');
   const [formData, setFormData] = useState<Product | null>(null);

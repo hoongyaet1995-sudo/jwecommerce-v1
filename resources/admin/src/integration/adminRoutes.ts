@@ -48,6 +48,7 @@ export const ADMIN_PATH_BY_SECTION = {
   'settings-currencies': '/admin/settings/currencies',
   'settings-order-total': '/admin/settings/order-total',
   'settings-tax-zones': '/admin/settings/tax-zones',
+  'settings-tax-classes': '/admin/settings/tax-classes',
   'settings-ai-agent': '/admin/settings/ai-agent',
   'architecture-spec': '/admin/developer-specs',
 } satisfies Record<NavSection, string>;
