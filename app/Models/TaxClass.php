@@ -10,11 +10,15 @@ class TaxClass extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['code', 'name', 'description', 'is_active'];
+    protected $fillable = ['code', 'name', 'description', 'rate_percent', 'is_active', 'active_slot'];
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return [
+            'is_active' => 'boolean',
+            'rate_percent' => 'decimal:4',
+            'active_slot' => 'integer',
+        ];
     }
 
     public function products(): HasMany
