@@ -12,6 +12,7 @@ class ShippingProvider extends Model
         'environment',
         'enabled',
         'connection_state',
+        'configuration_version',
         'public_metadata',
         'last_verified_at',
         'last_error',
@@ -21,6 +22,7 @@ class ShippingProvider extends Model
     {
         return [
             'enabled' => 'boolean',
+            'configuration_version' => 'integer',
             'public_metadata' => 'array',
             'last_verified_at' => 'datetime',
         ];

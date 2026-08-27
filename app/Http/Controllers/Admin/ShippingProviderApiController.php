@@ -7,6 +7,7 @@ use App\Services\Shipping\ShippingProviderConfigurationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Throwable;
 
 class ShippingProviderApiController extends Controller
 {
@@ -29,11 +30,17 @@ class ShippingProviderApiController extends Controller
             'enabled' => ['required', 'boolean'],
         ]);
 
-        return response()->json(['data' => $this->configuration->save(
-            $data['clientId'],
-            $data['clientSecret'],
-            $data['enabled'],
-        )]);
+        try {
+            $status = $this->configuration->save(
+                $data['clientId'],
+                $data['clientSecret'],
+                $data['enabled'],
+            );
+        } catch (Throwable) {
+            return response()->json(['message' => 'Provider configuration could not be saved.'], 500);
+        }
+
+        return response()->json(['data' => $status]);
     }
 
     public function testConnection(Request $request): JsonResponse
@@ -41,18 +48,28 @@ class ShippingProviderApiController extends Controller
         $this->authorizeAdmin($request);
         $data = $request->validate([
             'authorizationCode' => ['required', 'string', 'max:4096'],
-            'redirectUri' => ['required', 'url:https', 'max:2048'],
+            'redirectUri' => [
+                'required',
+                'url:https',
+                'max:2048',
+                Rule::in([(string) config('services.easyparcel.redirect_uri')]),
+            ],
         ]);
 
-        $status = $this->configuration->testConnection($data['authorizationCode'], $data['redirectUri']);
-        if ($status['connectionState'] !== 'connected') {
+        try {
+            $result = $this->configuration->testConnection($data['authorizationCode'], $data['redirectUri']);
+        } catch (Throwable) {
+            return response()->json(['message' => 'Provider connection could not be verified.'], 500);
+        }
+
+        if (! $result['verified']) {
             return response()->json([
                 'message' => 'Connection verification failed.',
-                'data' => $status,
+                'data' => $result['status'],
             ], 422);
         }
 
-        return response()->json(['data' => $status]);
+        return response()->json(['data' => $result['status']]);
     }
 
     private function authorizeAdmin(Request $request): void

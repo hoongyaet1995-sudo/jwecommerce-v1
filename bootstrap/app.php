@@ -1,8 +1,13 @@
 <?php
 
+use App\Http\Middleware\ClearLegacyCustomerWebSession;
+use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\EnsureCustomer;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\StartSession;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,18 +22,18 @@ return Application::configure(basePath: dirname(__DIR__))
             'payments/webhooks/paypal',
         ]);
         $middleware->web(append: [
-            \App\Http\Middleware\ClearLegacyCustomerWebSession::class,
+            ClearLegacyCustomerWebSession::class,
         ]);
         $middleware->appendToPriorityList(
-            \Illuminate\Session\Middleware\StartSession::class,
-            \App\Http\Middleware\ClearLegacyCustomerWebSession::class,
+            StartSession::class,
+            ClearLegacyCustomerWebSession::class,
         );
         $middleware->redirectGuestsTo(
-            static fn (\Illuminate\Http\Request $request): string => $request->is('account', 'account/*')
+            static fn (Request $request): string => $request->is('account', 'account/*')
                 ? route('customer.login')
                 : route('admin.login'),
         );
-        $middleware->redirectUsersTo(static function (\Illuminate\Http\Request $request): string {
+        $middleware->redirectUsersTo(static function (Request $request): string {
             if ($request->user()?->is_admin) {
                 return route('admin.dashboard');
             }
@@ -41,10 +46,14 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $middleware->alias([
-            'admin' => \App\Http\Middleware\EnsureAdmin::class,
-            'customer' => \App\Http\Middleware\EnsureCustomer::class,
+            'admin' => EnsureAdmin::class,
+            'customer' => EnsureCustomer::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->dontFlash([
+            'clientId',
+            'clientSecret',
+            'authorizationCode',
+        ]);
     })->create();

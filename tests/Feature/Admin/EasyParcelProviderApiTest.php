@@ -5,10 +5,13 @@ namespace Tests\Feature\Admin;
 use App\Models\ShippingProvider;
 use App\Models\ShippingProviderCredential;
 use App\Models\User;
+use App\Services\Shipping\ShippingProviderConfigurationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use RuntimeException;
 use Tests\TestCase;
 
 class EasyParcelProviderApiTest extends TestCase
@@ -71,6 +74,15 @@ class EasyParcelProviderApiTest extends TestCase
         $this->assertDatabaseCount('shipping_provider_credentials', 0);
     }
 
+    public function test_guests_and_ordinary_users_cannot_read_provider_configuration(): void
+    {
+        $this->getJson('/admin/api/shipping/providers/easyparcel')->assertUnauthorized();
+
+        $this->actingAs(User::factory()->create(['is_admin' => false, 'is_super_admin' => false]))
+            ->getJson('/admin/api/shipping/providers/easyparcel')
+            ->assertUnauthorized();
+    }
+
     public function test_only_sandbox_configuration_is_accepted_and_connection_inputs_are_required(): void
     {
         $admin = $this->superAdmin();
@@ -92,6 +104,120 @@ class EasyParcelProviderApiTest extends TestCase
         $this->postJson('/admin/api/shipping/providers/easyparcel/test-connection')
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['authorizationCode', 'redirectUri']);
+    }
+
+    public function test_connection_rejects_an_https_redirect_uri_not_owned_by_the_server(): void
+    {
+        Http::fake();
+        $admin = $this->superAdmin();
+        $this->actingAs($admin)->putJson('/admin/api/shipping/providers/easyparcel', [
+            'environment' => 'sandbox',
+            'clientId' => 'redirect-client-id',
+            'clientSecret' => 'redirect-client-secret',
+            'enabled' => false,
+        ])->assertOk();
+
+        $this->postJson('/admin/api/shipping/providers/easyparcel/test-connection', [
+            'authorizationCode' => 'redirect-one-time-code',
+            'redirectUri' => 'https://unowned.example/callback',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('redirectUri');
+
+        Http::assertNothingSent();
+    }
+
+    public function test_sensitive_provider_inputs_are_never_flashed_after_non_json_validation(): void
+    {
+        $admin = $this->superAdmin();
+
+        $this->actingAs($admin)
+            ->from('/admin/settings/couriers')
+            ->put('/admin/api/shipping/providers/easyparcel', [
+                'environment' => 'production',
+                'clientId' => 'non-flash-client-id',
+                'clientSecret' => 'non-flash-client-secret',
+                'enabled' => false,
+            ])
+            ->assertRedirect('/admin/settings/couriers')
+            ->assertSessionHasInput('environment', 'production')
+            ->assertSessionMissing('_old_input.clientId')
+            ->assertSessionMissing('_old_input.clientSecret');
+
+        $this->from('/admin/settings/couriers')
+            ->post('/admin/api/shipping/providers/easyparcel/test-connection', [
+                'authorizationCode' => 'non-flash-authorization-code',
+                'redirectUri' => 'not-a-url',
+            ])
+            ->assertRedirect('/admin/settings/couriers')
+            ->assertSessionMissing('_old_input.authorizationCode');
+    }
+
+    public function test_unexpected_configuration_exception_returns_a_fixed_response_without_sensitive_input(): void
+    {
+        config(['app.debug' => true]);
+        Event::listen('eloquent.saving: '.ShippingProviderCredential::class, function (): void {
+            throw new RuntimeException('unexpected-sensitive-value');
+        });
+
+        try {
+            $response = $this->actingAs($this->superAdmin())->putJson('/admin/api/shipping/providers/easyparcel', [
+                'environment' => 'sandbox',
+                'clientId' => 'unexpected-client-id',
+                'clientSecret' => 'unexpected-sensitive-value',
+                'enabled' => false,
+            ]);
+        } finally {
+            Event::forget('eloquent.saving: '.ShippingProviderCredential::class);
+        }
+
+        $response->assertInternalServerError()
+            ->assertJsonPath('message', 'Provider configuration could not be saved.');
+        $this->assertStringNotContainsString('unexpected-client-id', $response->getContent());
+        $this->assertStringNotContainsString('unexpected-sensitive-value', $response->getContent());
+    }
+
+    public function test_unexpected_verification_exception_returns_a_fixed_response_without_authorization_code(): void
+    {
+        config(['app.debug' => true]);
+        $admin = $this->superAdmin();
+        $this->actingAs($admin)->putJson('/admin/api/shipping/providers/easyparcel', [
+            'environment' => 'sandbox',
+            'clientId' => 'unexpected-verification-client-id',
+            'clientSecret' => 'unexpected-verification-client-secret',
+            'enabled' => false,
+        ])->assertOk();
+
+        Http::fake([
+            'https://api.easyparcel.com/oauth/token' => Http::response([
+                'token_type' => 'Bearer',
+                'expires_in' => 36000,
+                'access_token' => 'unexpected-verification-access-token',
+            ]),
+            'https://api.easyparcel.com/open_api/2026-06/wallet' => Http::response([
+                'status_code' => 200,
+                'message' => 'Success',
+                'data' => [
+                    'wallet' => [['balance' => 1000.00, 'currency' => 'MYR']],
+                    'free_credit_wallet' => [['balance' => 0, 'currency' => 'MYR']],
+                ],
+            ]),
+        ]);
+        Event::listen('eloquent.saving: '.ShippingProviderCredential::class, function (): void {
+            throw new RuntimeException('unexpected-authorization-code-marker');
+        });
+
+        try {
+            $response = $this->postJson('/admin/api/shipping/providers/easyparcel/test-connection', [
+                'authorizationCode' => 'unexpected-authorization-code-marker',
+                'redirectUri' => 'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback',
+            ]);
+        } finally {
+            Event::forget('eloquent.saving: '.ShippingProviderCredential::class);
+        }
+
+        $response->assertInternalServerError()
+            ->assertJsonPath('message', 'Provider connection could not be verified.');
+        $this->assertStringNotContainsString('unexpected-authorization-code-marker', $response->getContent());
     }
 
     public function test_unverified_credentials_cannot_be_enabled_by_the_configuration_write(): void
@@ -262,6 +388,87 @@ class EasyParcelProviderApiTest extends TestCase
         $credential = ShippingProviderCredential::query()->sole();
         $this->assertArrayNotHasKey('access_token', $credential->credentials);
         $this->assertArrayNotHasKey('refresh_token', $credential->credentials);
+    }
+
+    public function test_successful_verification_cannot_overwrite_credentials_changed_while_request_is_in_flight(): void
+    {
+        $admin = $this->superAdmin();
+        $this->actingAs($admin)->putJson('/admin/api/shipping/providers/easyparcel', [
+            'environment' => 'sandbox',
+            'clientId' => 'original-client-id',
+            'clientSecret' => 'original-client-secret',
+            'enabled' => false,
+        ])->assertOk();
+
+        $configuration = app(ShippingProviderConfigurationService::class);
+        Http::fake(function (Request $request) use ($configuration) {
+            if ($request->url() === 'https://api.easyparcel.com/oauth/token') {
+                $configuration->save('new-client-id', 'new-client-secret', false);
+
+                return Http::response([
+                    'token_type' => 'Bearer',
+                    'expires_in' => 36000,
+                    'access_token' => 'stale-access-token',
+                    'refresh_token' => 'stale-refresh-token',
+                ]);
+            }
+
+            return Http::response([
+                'status_code' => 200,
+                'message' => 'Success',
+                'data' => [
+                    'wallet' => [['balance' => 1000.00, 'currency' => 'MYR']],
+                    'free_credit_wallet' => [['balance' => 0, 'currency' => 'MYR']],
+                ],
+            ]);
+        });
+
+        $this->postJson('/admin/api/shipping/providers/easyparcel/test-connection', [
+            'authorizationCode' => 'stale-success-one-time-code',
+            'redirectUri' => 'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback',
+        ])->assertUnprocessable()
+            ->assertJsonPath('data.enabled', false)
+            ->assertJsonPath('data.connectionState', 'unverified');
+
+        $credential = ShippingProviderCredential::query()->sole();
+        $this->assertSame('new-client-id', $credential->credentials['client_id']);
+        $this->assertSame('new-client-secret', $credential->credentials['client_secret']);
+        $this->assertArrayNotHasKey('access_token', $credential->credentials);
+        $this->assertArrayNotHasKey('refresh_token', $credential->credentials);
+    }
+
+    public function test_failed_verification_cannot_mark_newer_credentials_failed(): void
+    {
+        $admin = $this->superAdmin();
+        $this->actingAs($admin)->putJson('/admin/api/shipping/providers/easyparcel', [
+            'environment' => 'sandbox',
+            'clientId' => 'failure-original-client-id',
+            'clientSecret' => 'failure-original-client-secret',
+            'enabled' => false,
+        ])->assertOk();
+
+        $configuration = app(ShippingProviderConfigurationService::class);
+        Http::fake(function (Request $request) use ($configuration) {
+            if ($request->url() === 'https://api.easyparcel.com/oauth/token') {
+                $configuration->save('failure-new-client-id', 'failure-new-client-secret', false);
+
+                return Http::response(['error' => 'invalid_grant'], 401);
+            }
+
+            return Http::response([], 500);
+        });
+
+        $this->postJson('/admin/api/shipping/providers/easyparcel/test-connection', [
+            'authorizationCode' => 'stale-failure-one-time-code',
+            'redirectUri' => 'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback',
+        ])->assertUnprocessable()
+            ->assertJsonPath('data.enabled', false)
+            ->assertJsonPath('data.connectionState', 'unverified')
+            ->assertJsonPath('data.lastError', null);
+
+        $credential = ShippingProviderCredential::query()->sole();
+        $this->assertSame('failure-new-client-id', $credential->credentials['client_id']);
+        $this->assertSame('failure-new-client-secret', $credential->credentials['client_secret']);
     }
 
     public function test_resaving_unchanged_verified_credentials_preserves_the_server_token_cache(): void

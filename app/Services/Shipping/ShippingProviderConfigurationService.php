@@ -24,15 +24,16 @@ final class ShippingProviderConfigurationService
     public function save(string $clientId, string $clientSecret, bool $enabled): array
     {
         $provider = DB::transaction(function () use ($clientId, $clientSecret, $enabled): ShippingProvider {
-            $provider = ShippingProvider::query()->firstOrCreate(
+            $createdProvider = ShippingProvider::query()->firstOrCreate(
                 ['provider' => self::PROVIDER, 'environment' => self::ENVIRONMENT],
-                ['enabled' => false, 'connection_state' => 'unverified'],
+                ['enabled' => false, 'connection_state' => 'unverified', 'configuration_version' => 0],
             );
+            $provider = ShippingProvider::query()->lockForUpdate()->findOrFail($createdProvider->id);
 
             $credential = ShippingProviderCredential::query()->where([
                 'provider' => self::PROVIDER,
                 'environment' => self::ENVIRONMENT,
-            ])->first();
+            ])->lockForUpdate()->first();
             $stored = $credential?->credentials ?? [];
             $credentialsChanged = ! hash_equals((string) ($stored['client_id'] ?? ''), $clientId)
                 || ! hash_equals((string) ($stored['client_secret'] ?? ''), $clientSecret);
@@ -51,12 +52,14 @@ final class ShippingProviderConfigurationService
                 $provider->forceFill([
                     'enabled' => false,
                     'connection_state' => 'unverified',
+                    'configuration_version' => $provider->configuration_version + 1,
                     'last_verified_at' => null,
                     'last_error' => null,
                 ])->save();
             } else {
                 $provider->forceFill([
                     'enabled' => $enabled && $provider->connection_state === 'connected',
+                    'configuration_version' => $provider->configuration_version + 1,
                 ])->save();
             }
 
@@ -66,22 +69,26 @@ final class ShippingProviderConfigurationService
         return $this->dto($provider);
     }
 
-    /** @return array<string, bool|string|null> */
+    /**
+     * @return array{
+     *     verified: bool,
+     *     status: array<string, bool|string|null>
+     * }
+     */
     public function testConnection(string $authorizationCode, string $redirectUri): array
     {
-        $provider = $this->findProvider();
-        $credential = $provider?->credential;
+        $snapshot = $this->verificationSnapshot();
 
-        if ($provider === null || $credential === null) {
-            return $this->failed($provider);
+        if ($snapshot === null) {
+            return ['verified' => false, 'status' => $this->dto(null)];
         }
 
-        $stored = $credential->credentials ?? [];
+        $stored = $snapshot['credentials'];
         if (! is_string($stored['client_id'] ?? null)
             || ! is_string($stored['client_secret'] ?? null)
             || $stored['client_id'] === ''
             || $stored['client_secret'] === '') {
-            return $this->failed($provider);
+            return ['verified' => false, 'status' => $this->applyFailure($snapshot)];
         }
 
         try {
@@ -90,13 +97,35 @@ final class ShippingProviderConfigurationService
                 'client_secret' => $stored['client_secret'],
             ], $authorizationCode, $redirectUri);
         } catch (EasyParcelVerificationException) {
-            return $this->failed($provider);
+            return ['verified' => false, 'status' => $this->applyFailure($snapshot)];
         }
 
-        $provider = DB::transaction(function () use ($provider, $credential, $stored, $tokens): ShippingProvider {
+        return $this->applySuccess($snapshot, $tokens);
+    }
+
+    /**
+     * @param  array{
+     *     provider_id: int,
+     *     credential_id: int,
+     *     configuration_version: int,
+     *     credential_fingerprint: string,
+     *     credentials: array<string, mixed>
+     * }  $snapshot
+     * @param  array<string, int|string|null>  $tokens
+     * @return array{verified: bool, status: array<string, bool|string|null>}
+     */
+    private function applySuccess(array $snapshot, array $tokens): array
+    {
+        return DB::transaction(function () use ($snapshot, $tokens): array {
+            [$provider, $credential] = $this->lockSnapshotRows($snapshot);
+
+            if (! $this->snapshotStillCurrent($provider, $credential, $snapshot)) {
+                return ['verified' => false, 'status' => $this->dtoWithCredential($provider, $credential)];
+            }
+
             $credential->forceFill(['credentials' => [
-                'client_id' => $stored['client_id'],
-                'client_secret' => $stored['client_secret'],
+                'client_id' => $snapshot['credentials']['client_id'],
+                'client_secret' => $snapshot['credentials']['client_secret'],
                 ...$tokens,
             ]])->save();
 
@@ -108,28 +137,33 @@ final class ShippingProviderConfigurationService
                 'last_error' => null,
             ])->save();
 
-            return $provider->fresh();
+            return ['verified' => true, 'status' => $this->dtoWithCredential($provider, $credential)];
         });
-
-        return $this->dto($provider);
     }
 
-    /** @return array<string, bool|string|null> */
-    private function failed(?ShippingProvider $provider): array
+    /**
+     * @param  array{
+     *     provider_id: int,
+     *     credential_id: int,
+     *     configuration_version: int,
+     *     credential_fingerprint: string,
+     *     credentials: array<string, mixed>
+     * }  $snapshot
+     * @return array<string, bool|string|null>
+     */
+    private function applyFailure(array $snapshot): array
     {
-        if ($provider === null) {
-            return $this->dto(null);
-        }
+        return DB::transaction(function () use ($snapshot): array {
+            [$provider, $credential] = $this->lockSnapshotRows($snapshot);
 
-        DB::transaction(function () use ($provider): void {
-            $credential = $provider->credential;
-            if ($credential !== null) {
-                $stored = $credential->credentials ?? [];
-                $credential->forceFill(['credentials' => [
-                    'client_id' => $stored['client_id'] ?? null,
-                    'client_secret' => $stored['client_secret'] ?? null,
-                ]])->save();
+            if (! $this->snapshotStillCurrent($provider, $credential, $snapshot)) {
+                return $this->dtoWithCredential($provider, $credential);
             }
+
+            $credential->forceFill(['credentials' => [
+                'client_id' => $snapshot['credentials']['client_id'] ?? null,
+                'client_secret' => $snapshot['credentials']['client_secret'] ?? null,
+            ]])->save();
 
             $provider->forceFill([
                 'enabled' => false,
@@ -137,9 +171,98 @@ final class ShippingProviderConfigurationService
                 'last_verified_at' => null,
                 'last_error' => 'verification_failed',
             ])->save();
-        });
 
-        return $this->dto($provider->fresh());
+            return $this->dtoWithCredential($provider, $credential);
+        });
+    }
+
+    /**
+     * @return array{
+     *     provider_id: int,
+     *     credential_id: int,
+     *     configuration_version: int,
+     *     credential_fingerprint: string,
+     *     credentials: array<string, mixed>
+     * }|null
+     */
+    private function verificationSnapshot(): ?array
+    {
+        return DB::transaction(function (): ?array {
+            $provider = ShippingProvider::query()
+                ->where('provider', self::PROVIDER)
+                ->where('environment', self::ENVIRONMENT)
+                ->lockForUpdate()
+                ->first();
+
+            if ($provider === null) {
+                return null;
+            }
+
+            $credential = ShippingProviderCredential::query()
+                ->where('shipping_provider_id', $provider->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($credential === null) {
+                return null;
+            }
+
+            $credentials = $credential->credentials ?? [];
+
+            return [
+                'provider_id' => $provider->id,
+                'credential_id' => $credential->id,
+                'configuration_version' => $provider->configuration_version,
+                'credential_fingerprint' => $this->credentialFingerprint($credentials),
+                'credentials' => $credentials,
+            ];
+        });
+    }
+
+    /**
+     * @param  array{provider_id: int, credential_id: int}  $snapshot
+     * @return array{ShippingProvider, ShippingProviderCredential}
+     */
+    private function lockSnapshotRows(array $snapshot): array
+    {
+        $provider = ShippingProvider::query()->lockForUpdate()->findOrFail($snapshot['provider_id']);
+        $credential = ShippingProviderCredential::query()->lockForUpdate()->findOrFail($snapshot['credential_id']);
+
+        return [$provider, $credential];
+    }
+
+    /**
+     * @param  array{configuration_version: int, credential_fingerprint: string}  $snapshot
+     */
+    private function snapshotStillCurrent(
+        ShippingProvider $provider,
+        ShippingProviderCredential $credential,
+        array $snapshot,
+    ): bool {
+        return $provider->configuration_version === $snapshot['configuration_version']
+            && $credential->shipping_provider_id === $provider->id
+            && hash_equals(
+                $snapshot['credential_fingerprint'],
+                $this->credentialFingerprint($credential->credentials ?? []),
+            );
+    }
+
+    /** @param array<string, mixed> $credentials */
+    private function credentialFingerprint(array $credentials): string
+    {
+        $clientId = (string) ($credentials['client_id'] ?? '');
+        $clientSecret = (string) ($credentials['client_secret'] ?? '');
+
+        return hash('sha256', strlen($clientId).':'.$clientId.'|'.strlen($clientSecret).':'.$clientSecret);
+    }
+
+    private function dtoWithCredential(
+        ShippingProvider $provider,
+        ShippingProviderCredential $credential,
+    ): array {
+        $provider->setRelation('credential', $credential);
+
+        return $this->dto($provider);
     }
 
     private function findProvider(): ?ShippingProvider

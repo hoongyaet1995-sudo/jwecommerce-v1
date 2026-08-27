@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'easyparcel' => [
+        'redirect_uri' => 'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback',
+    ],
+
 ];
