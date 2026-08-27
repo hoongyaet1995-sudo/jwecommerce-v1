@@ -9,6 +9,7 @@ use App\Models\ShipmentQuote;
 use App\Models\ShippingProvider;
 use App\Models\ShippingProviderCredential;
 use App\Models\User;
+use App\Support\CurrencySettings;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -23,6 +24,11 @@ final class EasyParcelFulfillmentService
     public const QUOTATION_URL = 'https://api.easyparcel.com/open_api/'.EasyParcelOpenApiClient::API_VERSION.'/shipment/quotations';
 
     private const QUOTE_TTL_MINUTES = 15;
+
+    public function __construct(
+        private readonly EasyParcelBookingGuard $bookingGuard,
+        private readonly CurrencySettings $currencies,
+    ) {}
 
     public function quote(Order $order, PackageSpec $package, User $actor): ShipmentQuote
     {
@@ -69,7 +75,7 @@ final class EasyParcelFulfillmentService
                 'package_snapshot' => $package->snapshot(),
                 'request_snapshot' => $context['request_snapshot'],
                 'response_snapshot' => $responseSnapshot,
-                'idempotency_reference' => 'JWEP-'.$lockedOrder->id.'-'.Str::uuid(),
+                'reconciliation_reference' => 'JWEP-'.$lockedOrder->id.'-'.Str::uuid(),
                 'booking_state' => 'available',
                 'expires_at' => now()->addMinutes(self::QUOTE_TTL_MINUTES),
                 'created_by' => $actor->id,
@@ -111,16 +117,10 @@ final class EasyParcelFulfillmentService
         }
 
         $payload = $response->json();
-        if (! $response->successful() || ! is_array($payload)) {
-            $state = $response->serverError() ? 'uncertain' : 'failed';
-            $error = $state === 'uncertain' ? 'provider_outcome_uncertain' : 'provider_rejected';
-            $this->markBookingOutcome($claimedQuote->id, $state, $error);
+        if ($response->status() !== 200 || ! is_array($payload)) {
+            $this->markBookingOutcome($claimedQuote->id, 'uncertain', 'provider_outcome_uncertain');
 
-            throw new InvalidArgumentException(
-                $state === 'uncertain'
-                    ? 'EasyParcel booking outcome is uncertain and requires reconciliation.'
-                    : 'EasyParcel rejected the shipment booking.',
-            );
+            throw new InvalidArgumentException('EasyParcel booking outcome is uncertain and requires reconciliation.');
         }
 
         if ($this->isExplicitBookingFailure($payload)) {
@@ -380,7 +380,7 @@ final class EasyParcelFulfillmentService
         }
 
         return ['shipment' => [[
-            'reference' => $quote->idempotency_reference,
+            'reference' => $quote->reconciliation_reference,
             'service_id' => $service['service_code'],
             'collection_date' => $booking['collection_date'],
             'weight' => $package['weight_kg'],
@@ -421,6 +421,8 @@ final class EasyParcelFulfillmentService
 
                 return $existing->fresh(['events']);
             }
+
+            $this->bookingGuard->assertFinalizationAllowed($lockedOrder, $lockedQuote);
 
             if ($lockedQuote->booking_state !== 'in_progress'
                 || $lockedQuote->booking_claim_key !== ShippingProviderConfigurationService::PROVIDER.':order:'.$lockedOrder->id) {
@@ -742,7 +744,7 @@ final class EasyParcelFulfillmentService
 
         return [
             'amount' => $this->money((int) $payment->amount),
-            'currency' => $this->currency($payment->currency ?? $order->currency),
+            'currency' => $this->currency(data_get($this->currencies->default(), 'code')),
         ];
     }
 

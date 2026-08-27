@@ -3,7 +3,6 @@
 namespace App\Services\Admin;
 
 use App\Models\Order;
-use App\Models\OrderAddress;
 use App\Models\Shipment;
 use Illuminate\Support\Collection;
 
@@ -42,10 +41,7 @@ class ShipmentDataService
             'id' => (string) $shipment->id,
             'orderId' => (string) $order->id,
             'orderNumber' => $order->number,
-            'customerName' => $name !== '' ? $name : $order->email,
-            'customerPhone' => $order->customer?->phone ?? $address?->phone ?? '',
-            'customerEmail' => $order->email,
-            'recipientAddress' => $this->address($address),
+            'customerName' => $name !== '' ? $name : 'Customer',
             'items' => $order->items->map(fn ($item): array => [
                 'sku' => $item->sku,
                 'name' => $item->title,
@@ -56,13 +52,13 @@ class ShipmentDataService
             'courier' => $shipment->source === 'easyparcel' ? 'easyparcel' : ($shipment->carrier_code ?? 'manual'),
             'serviceType' => $shipment->service_name ?? $shipment->carrier_name,
             'trackingNumber' => $shipment->tracking_number ?? '',
-            'status' => $shipment->source === 'easyparcel' && filled($shipment->provider_reference)
+            'status' => $shipment->source === 'easyparcel' && filled($shipment->tracking_number)
                 ? 'ready_to_ship'
                 : $shipment->status,
             'paymentMode' => $order->payments->first()?->gateway === 'cod' ? 'cod' : 'prepaid',
             'codAmount' => $order->payments->first()?->gateway === 'cod' ? $order->total / 100 : null,
             'createdAt' => $shipment->created_at?->toIso8601String(),
-            'awbGeneratedAt' => $shipment->source === 'easyparcel' && filled($shipment->provider_reference)
+            'awbGeneratedAt' => $shipment->source === 'easyparcel' && filled($shipment->tracking_number)
                 ? $shipment->created_at?->toIso8601String()
                 : null,
             'dispatchedAt' => $shipment->dispatched_at?->toIso8601String(),
@@ -101,10 +97,7 @@ class ShipmentDataService
             'id' => 'pending-order-'.$order->id,
             'orderId' => (string) $order->id,
             'orderNumber' => $order->number,
-            'customerName' => $name !== '' ? $name : $order->email,
-            'customerPhone' => $order->customer?->phone ?? $address?->phone ?? '',
-            'customerEmail' => $order->email,
-            'recipientAddress' => $this->address($address),
+            'customerName' => $name !== '' ? $name : 'Customer',
             'items' => $order->items->map(fn ($item): array => [
                 'sku' => $item->sku,
                 'name' => $item->title,
@@ -208,21 +201,5 @@ class ShipmentDataService
         return $dimensions === null
             ? null
             : round(($dimensions['length'] * $dimensions['width'] * $dimensions['height']) / 5000, 2);
-    }
-
-    private function address(?OrderAddress $address): array
-    {
-        $state = $address?->state ?? '';
-        $normalizedState = strtolower($state);
-        $region = str_contains($normalizedState, 'sabah') ? 'sabah' : (str_contains($normalizedState, 'sarawak') ? 'sarawak' : 'peninsular');
-
-        return [
-            'street' => trim(($address?->line_1 ?? '').' '.($address?->line_2 ?? '')),
-            'city' => $address?->city ?? '',
-            'state' => $state,
-            'postcode' => $address?->postal_code ?? '',
-            'country' => $address?->country ?? '',
-            'region' => $region,
-        ];
     }
 }

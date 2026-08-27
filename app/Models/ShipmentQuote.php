@@ -11,7 +11,7 @@ class ShipmentQuote extends Model
     protected $hidden = [
         'request_snapshot',
         'response_snapshot',
-        'idempotency_reference',
+        'reconciliation_reference',
         'booking_claim_key',
     ];
 
@@ -25,7 +25,7 @@ class ShipmentQuote extends Model
         'request_snapshot',
         'response_snapshot',
         'selected_service_code',
-        'idempotency_reference',
+        'reconciliation_reference',
         'booking_state',
         'booking_claim_key',
         'last_error',

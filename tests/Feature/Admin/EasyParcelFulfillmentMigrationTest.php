@@ -1,0 +1,94 @@
+<?php
+
+namespace Tests\Feature\Admin;
+
+use App\Models\Customer;
+use App\Models\Order;
+use App\Models\ShippingProvider;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Tests\TestCase;
+
+class EasyParcelFulfillmentMigrationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_fulfillment_schema_upgrade_preserves_existing_references_and_accepts_full_length_label(): void
+    {
+        $upgradePath = database_path('migrations/2026_08_27_000800_harden_easyparcel_fulfillment_columns.php');
+        $this->assertFileExists($upgradePath);
+
+        $upgradeMigration = require $upgradePath;
+        $upgradeMigration->down();
+
+        $this->assertTrue(Schema::hasColumn('shipment_quotes', 'idempotency_reference'));
+        $this->assertFalse(Schema::hasColumn('shipment_quotes', 'reconciliation_reference'));
+
+        $actor = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        $customer = Customer::query()->create(['email' => 'migration-buyer@example.test']);
+        $order = Order::query()->create([
+            'number' => 'JW-EASYPARCEL-MIGRATION-1',
+            'customer_id' => $customer->id,
+            'email' => $customer->email,
+            'currency' => 'MYR',
+            'status' => 'processing',
+            'subtotal' => 10000,
+            'discount_amount' => 0,
+            'shipping_amount' => 0,
+            'tax_amount' => 0,
+            'total' => 10000,
+        ]);
+        $provider = ShippingProvider::query()->create([
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'enabled' => true,
+            'connection_state' => 'connected',
+            'configuration_version' => 1,
+        ]);
+        DB::table('shipment_quotes')->insert([
+            'order_id' => $order->id,
+            'shipping_provider_id' => $provider->id,
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'provider_configuration_version' => 1,
+            'package_snapshot' => json_encode(['weight_kg' => 1], JSON_THROW_ON_ERROR),
+            'request_snapshot' => json_encode(['booking' => []], JSON_THROW_ON_ERROR),
+            'response_snapshot' => json_encode(['services' => []], JSON_THROW_ON_ERROR),
+            'idempotency_reference' => 'JWEP-LEGACY-REFERENCE',
+            'booking_state' => 'available',
+            'expires_at' => now()->addMinutes(15),
+            'created_by' => $actor->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $shipmentId = DB::table('shipments')->insertGetId([
+            'order_id' => $order->id,
+            'sequence' => 1,
+            'source' => 'manual',
+            'carrier_name' => 'Legacy courier',
+            'status' => 'pending',
+            'currency' => 'MYR',
+            'label_path' => 'https://app.easyparcel.com/legacy-label',
+            'created_by' => $actor->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $upgradeMigration->up();
+
+        $this->assertFalse(Schema::hasColumn('shipment_quotes', 'idempotency_reference'));
+        $this->assertTrue(Schema::hasColumn('shipment_quotes', 'reconciliation_reference'));
+        $this->assertSame(
+            'JWEP-LEGACY-REFERENCE',
+            DB::table('shipment_quotes')->where('order_id', $order->id)->value('reconciliation_reference'),
+        );
+
+        $prefix = 'https://app.easyparcel.com/labels/';
+        $longLabel = $prefix.str_repeat('a', 2048 - strlen($prefix));
+        DB::table('shipments')->where('id', $shipmentId)->update(['label_path' => $longLabel]);
+
+        $this->assertSame($longLabel, DB::table('shipments')->where('id', $shipmentId)->value('label_path'));
+    }
+}

@@ -8,7 +8,9 @@ use App\Models\Shipment;
 use App\Models\ShipmentQuote;
 use App\Models\ShippingProvider;
 use App\Models\ShippingProviderCredential;
+use App\Models\StoreSetting;
 use App\Models\User;
+use App\Services\CheckoutService;
 use App\Services\Shipping\EasyParcelFulfillmentService;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -92,9 +94,28 @@ class EasyParcelFulfillmentApiTest extends TestCase
             ->assertJsonPath('data.0.status', 'pending')
             ->assertJsonPath('data.0.items.0.weightKg', 1.25)
             ->assertJsonPath('data.0.totalWeightKg', 1.25)
-            ->assertJsonPath('data.0.dimensionsCm.length', 28);
+            ->assertJsonPath('data.0.dimensionsCm.length', 28)
+            ->assertJsonMissingPath('data.0.customerPhone')
+            ->assertJsonMissingPath('data.0.customerEmail')
+            ->assertJsonMissingPath('data.0.recipientAddress')
+            ->assertDontSee('easyparcel-buyer@example.test', false)
+            ->assertDontSee('10 Test Customer Road', false)
+            ->assertDontSee('+60 12-345 6789', false);
 
         $this->assertDatabaseCount('shipments', 0);
+    }
+
+    public function test_shipment_list_never_falls_back_to_customer_email_as_a_display_name(): void
+    {
+        $order = $this->processingOrder();
+        $order->customer()->update(['first_name' => null, 'last_name' => null]);
+        $order->addresses()->update(['first_name' => '', 'last_name' => '']);
+
+        $this->actingAs($this->superAdmin())
+            ->getJson('/admin/api/shipping/shipments')
+            ->assertOk()
+            ->assertJsonPath('data.0.customerName', 'Customer')
+            ->assertDontSee($order->email, false);
     }
 
     public function test_quote_maps_documented_payload_and_keeps_package_override_out_of_item_snapshot(): void
@@ -257,6 +278,51 @@ class EasyParcelFulfillmentApiTest extends TestCase
             'booking_state' => 'uncertain',
             'last_error' => 'provider_outcome_uncertain',
         ]);
+        $this->assertDatabaseCount('shipments', 0);
+    }
+
+    public function test_unknown_http_outcomes_retain_the_claim_for_reconciliation(): void
+    {
+        Http::preventStrayRequests();
+        $this->configureSender();
+        $this->connectedProvider();
+        $admin = $this->superAdmin();
+        $bookingStatus = null;
+        Http::fake(function (Request $request) use (&$bookingStatus) {
+            if ($request->url() === 'https://api.easyparcel.com/open_api/2026-06/shipment/quotations') {
+                return Http::response($this->quotationResponse());
+            }
+
+            return Http::response([
+                'status_code' => $bookingStatus,
+                'message' => 'synthetic intermediary response',
+            ], $bookingStatus ?? 500);
+        });
+
+        foreach ([201, 302, 400, 409, 422] as $index => $status) {
+            $order = $this->processingOrder(
+                'unknown-'.$status.'@example.test',
+                'JW-EASYPARCEL-UNKNOWN-'.$index,
+            );
+            $quoteId = $this->actingAs($admin)
+                ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/quotes', [
+                    'package' => $this->actualPackage(),
+                ])->assertCreated()->json('data.id');
+
+            $bookingStatus = $status;
+
+            $this->actingAs($admin)
+                ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/bookings', [
+                    'quoteId' => $quoteId,
+                    'serviceCode' => 'EP-CS096',
+                ])->assertUnprocessable();
+
+            $quote = ShipmentQuote::query()->findOrFail($quoteId);
+            $this->assertSame('uncertain', $quote->booking_state);
+            $this->assertSame('provider_outcome_uncertain', $quote->last_error);
+            $this->assertNotNull($quote->booking_claim_key);
+        }
+
         $this->assertDatabaseCount('shipments', 0);
     }
 
@@ -452,6 +518,170 @@ class EasyParcelFulfillmentApiTest extends TestCase
         $this->assertDatabaseCount('shipments', 1);
     }
 
+    public function test_legacy_dispatch_is_rejected_while_provider_booking_is_in_flight(): void
+    {
+        Http::preventStrayRequests();
+        $this->configureSender();
+        $this->connectedProvider();
+        $order = $this->processingOrder();
+        $admin = $this->superAdmin();
+
+        Http::fake([
+            'https://api.easyparcel.com/open_api/2026-06/shipment/quotations' => Http::response($this->quotationResponse()),
+        ]);
+        $quoteId = $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/quotes', [
+                'package' => $this->actualPackage(),
+            ])->assertCreated()->json('data.id');
+
+        $legacyDispatchRejected = false;
+        Http::fake(function () use ($admin, $order, &$legacyDispatchRejected) {
+            try {
+                app(CheckoutService::class)->dispatch(
+                    $order->fresh(),
+                    'Legacy courier',
+                    'LEGACY-RACE-TRACKING',
+                    $admin->id,
+                );
+            } catch (InvalidArgumentException) {
+                $legacyDispatchRejected = true;
+            }
+
+            return Http::response($this->bookingResponse());
+        });
+
+        $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/bookings', [
+                'quoteId' => $quoteId,
+                'serviceCode' => 'EP-CS096',
+            ])->assertOk();
+
+        $this->assertTrue($legacyDispatchRejected);
+        $this->assertDatabaseHas('orders', [
+            'id' => $order->id,
+            'status' => 'processing',
+            'tracking_number' => null,
+        ]);
+        $this->assertDatabaseHas('shipments', ['order_id' => $order->id, 'source' => 'easyparcel']);
+    }
+
+    public function test_cancellation_is_rejected_while_provider_booking_is_in_flight(): void
+    {
+        Http::preventStrayRequests();
+        $this->configureSender();
+        $this->connectedProvider();
+        $order = $this->processingOrder();
+        $admin = $this->superAdmin();
+
+        Http::fake([
+            'https://api.easyparcel.com/open_api/2026-06/shipment/quotations' => Http::response($this->quotationResponse()),
+        ]);
+        $quoteId = $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/quotes', [
+                'package' => $this->actualPackage(),
+            ])->assertCreated()->json('data.id');
+
+        $cancellationRejected = false;
+        Http::fake(function () use ($admin, $order, &$cancellationRejected) {
+            try {
+                app(CheckoutService::class)->transition($order->fresh(), 'cancelled', $admin->id);
+            } catch (InvalidArgumentException) {
+                $cancellationRejected = true;
+            }
+
+            return Http::response($this->bookingResponse());
+        });
+
+        $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/bookings', [
+                'quoteId' => $quoteId,
+                'serviceCode' => 'EP-CS096',
+            ])->assertOk();
+
+        $this->assertTrue($cancellationRejected);
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'processing']);
+        $this->assertDatabaseHas('shipments', ['order_id' => $order->id, 'source' => 'easyparcel']);
+    }
+
+    public function test_finalization_rejects_an_order_changed_outside_the_claim_guard(): void
+    {
+        Http::preventStrayRequests();
+        $this->configureSender();
+        $this->connectedProvider();
+        $order = $this->processingOrder();
+        $admin = $this->superAdmin();
+
+        Http::fake([
+            'https://api.easyparcel.com/open_api/2026-06/shipment/quotations' => Http::response($this->quotationResponse()),
+        ]);
+        $quoteId = $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/quotes', [
+                'package' => $this->actualPackage(),
+            ])->assertCreated()->json('data.id');
+
+        Http::fake(function () use ($order) {
+            Order::query()->whereKey($order->id)->update(['status' => 'cancelled']);
+
+            return Http::response($this->bookingResponse());
+        });
+
+        $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/bookings', [
+                'quoteId' => $quoteId,
+                'serviceCode' => 'EP-CS096',
+            ])->assertUnprocessable();
+
+        $this->assertDatabaseCount('shipments', 0);
+        $this->assertDatabaseHas('shipment_quotes', [
+            'id' => $quoteId,
+            'booking_state' => 'uncertain',
+            'last_error' => 'provider_outcome_uncertain',
+        ]);
+    }
+
+    public function test_finalization_rejects_a_competing_manual_shipment(): void
+    {
+        Http::preventStrayRequests();
+        $this->configureSender();
+        $this->connectedProvider();
+        $order = $this->processingOrder();
+        $admin = $this->superAdmin();
+
+        Http::fake([
+            'https://api.easyparcel.com/open_api/2026-06/shipment/quotations' => Http::response($this->quotationResponse()),
+        ]);
+        $quoteId = $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/quotes', [
+                'package' => $this->actualPackage(),
+            ])->assertCreated()->json('data.id');
+
+        Http::fake(function () use ($admin, $order) {
+            Shipment::query()->create([
+                'order_id' => $order->id,
+                'sequence' => 2,
+                'source' => 'manual',
+                'carrier_name' => 'Competing manual courier',
+                'tracking_number' => 'COMPETING-MANUAL-TRACKING',
+                'status' => 'shipped',
+                'currency' => 'MYR',
+                'created_by' => $admin->id,
+            ]);
+
+            return Http::response($this->bookingResponse());
+        });
+
+        $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/bookings', [
+                'quoteId' => $quoteId,
+                'serviceCode' => 'EP-CS096',
+            ])->assertUnprocessable();
+
+        $this->assertDatabaseCount('shipments', 1);
+        $this->assertDatabaseHas('shipments', ['order_id' => $order->id, 'source' => 'manual']);
+        $this->assertDatabaseMissing('shipments', ['order_id' => $order->id, 'source' => 'easyparcel']);
+        $this->assertDatabaseHas('shipment_quotes', ['id' => $quoteId, 'booking_state' => 'uncertain']);
+    }
+
     public function test_booking_fails_closed_inside_an_ambient_transaction_before_claim_or_http(): void
     {
         Http::preventStrayRequests();
@@ -556,14 +786,70 @@ class EasyParcelFulfillmentApiTest extends TestCase
         $serializedQuote = ShipmentQuote::query()->findOrFail($quoteId)->toArray();
         $this->assertArrayNotHasKey('request_snapshot', $serializedQuote);
         $this->assertArrayNotHasKey('response_snapshot', $serializedQuote);
-        $this->assertArrayNotHasKey('idempotency_reference', $serializedQuote);
+        $this->assertArrayNotHasKey('reconciliation_reference', $serializedQuote);
         $this->assertArrayNotHasKey('booking_claim_key', $serializedQuote);
 
         $this->actingAs($admin)
             ->getJson('/admin/api/shipping/shipments')
             ->assertOk()
             ->assertJsonPath('data.0.status', 'ready_to_ship')
-            ->assertJsonPath('data.0.orderId', (string) $order->id);
+            ->assertJsonPath('data.0.orderId', (string) $order->id)
+            ->assertJsonMissingPath('data.0.customerPhone')
+            ->assertJsonMissingPath('data.0.customerEmail')
+            ->assertJsonMissingPath('data.0.recipientAddress')
+            ->assertDontSee('easyparcel-buyer@example.test', false)
+            ->assertDontSee('10 Test Customer Road', false)
+            ->assertDontSee('+60 12-345 6789', false);
+    }
+
+    public function test_documented_success_without_awb_remains_pending_awb(): void
+    {
+        Http::preventStrayRequests();
+        $this->configureSender();
+        $this->connectedProvider();
+        $order = $this->processingOrder();
+        $admin = $this->superAdmin();
+
+        Http::fake([
+            'https://api.easyparcel.com/open_api/2026-06/shipment/quotations' => Http::response($this->quotationResponse()),
+        ]);
+        $quoteId = $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/quotes', [
+                'package' => $this->actualPackage(),
+            ])->assertCreated()->json('data.id');
+
+        $booking = $this->bookingResponse();
+        data_set($booking, 'data.0.shipments.0.awb_number', null);
+        data_set($booking, 'data.0.shipments.0.awb_url', null);
+        data_set($booking, 'data.0.shipments.0.awb_urls_by_format.A6', '');
+        data_set($booking, 'data.0.shipments.0.tracking_url', null);
+        Http::fake([
+            'https://api.easyparcel.com/open_api/2026-06/shipment/submit_orders' => Http::response($booking),
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/bookings', [
+                'quoteId' => $quoteId,
+                'serviceCode' => 'EP-CS096',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.fulfillmentStatus', 'pending')
+            ->assertJsonPath('data.trackingNumber', null)
+            ->assertJsonPath('data.hasLabel', false);
+
+        $this->assertDatabaseHas('shipments', [
+            'id' => $response->json('data.id'),
+            'source' => 'easyparcel',
+            'status' => 'pending',
+            'tracking_number' => null,
+            'label_path' => null,
+            'tracking_url' => null,
+        ]);
+        $this->actingAs($admin)
+            ->getJson('/admin/api/shipping/shipments')
+            ->assertOk()
+            ->assertJsonPath('data.0.status', 'pending')
+            ->assertJsonPath('data.0.awbGeneratedAt', null);
     }
 
     public function test_cod_order_uses_only_a_quoted_cod_service_and_submits_documented_cod_fields(): void
@@ -636,6 +922,94 @@ class EasyParcelFulfillmentApiTest extends TestCase
         $this->assertSame(1, $bookingCalls);
         $this->assertSame(100.0, data_get($bookingRequest, 'shipment.0.feature.cod.cod_amount'));
         $this->assertSame('MYR', data_get($bookingRequest, 'shipment.0.feature.cod.cod_currency'));
+    }
+
+    public function test_cod_uses_store_base_currency_when_checkout_display_currency_differs(): void
+    {
+        Http::preventStrayRequests();
+        $this->configureSender();
+        $this->connectedProvider();
+        StoreSetting::query()->updateOrCreate(['key' => 'currencies'], ['value' => ['data' => [
+            ['id' => 'MYR', 'code' => 'MYR', 'title' => 'Malaysian Ringgit', 'symbolLeft' => 'RM ', 'symbolRight' => '', 'decimalPlaces' => 2, 'exchangeRate' => 1, 'isDefault' => true, 'isEnabled' => true],
+            ['id' => 'USD', 'code' => 'USD', 'title' => 'US Dollar', 'symbolLeft' => '$', 'symbolRight' => '', 'decimalPlaces' => 2, 'exchangeRate' => 0.2245, 'isDefault' => false, 'isEnabled' => true],
+        ]]]);
+        $order = $this->processingOrder();
+        $order->update(['currency' => 'USD', 'currency_exchange_rate' => 0.2245]);
+        $order->payments()->create([
+            'gateway' => 'cod',
+            'provider' => 'cod',
+            'environment' => 'offline',
+            'status' => 'pending',
+            'amount' => 10000,
+            'currency' => 'USD',
+        ]);
+        $admin = $this->superAdmin();
+        $quotation = $this->quotationResponse();
+        data_set($quotation, 'data.0.quotations.0.features', [['cod' => ['available' => true]]]);
+        Http::fake([
+            'https://api.easyparcel.com/open_api/2026-06/shipment/quotations' => Http::response($quotation),
+        ]);
+
+        $quoteId = $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/quotes', [
+                'package' => $this->actualPackage(),
+            ])->assertCreated()->json('data.id');
+
+        $bookingRequest = null;
+        Http::fake(function (Request $request) use (&$bookingRequest) {
+            $bookingRequest = $request->data();
+
+            return Http::response($this->bookingResponse());
+        });
+
+        $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/bookings', [
+                'quoteId' => $quoteId,
+                'serviceCode' => 'EP-CS096',
+            ])->assertOk();
+
+        $this->assertSame(100.0, data_get($bookingRequest, 'shipment.0.feature.cod.cod_amount'));
+        $this->assertSame('MYR', data_get($bookingRequest, 'shipment.0.feature.cod.cod_currency'));
+        $this->assertSame('MYR', data_get(ShipmentQuote::query()->findOrFail($quoteId)->request_snapshot, 'booking.cod.currency'));
+    }
+
+    public function test_full_length_authorized_label_url_and_reconciliation_reference_are_persisted(): void
+    {
+        Http::preventStrayRequests();
+        $this->configureSender();
+        $this->connectedProvider();
+        $order = $this->processingOrder();
+        $admin = $this->superAdmin();
+        Http::fake([
+            'https://api.easyparcel.com/open_api/2026-06/shipment/quotations' => Http::response($this->quotationResponse()),
+        ]);
+        $quoteId = $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/quotes', [
+                'package' => $this->actualPackage(),
+            ])->assertCreated()->json('data.id');
+
+        $prefix = 'https://app.easyparcel.com/labels/';
+        $longLabel = $prefix.str_repeat('a', 2048 - strlen($prefix));
+        $booking = $this->bookingResponse();
+        data_set($booking, 'data.0.shipments.0.awb_urls_by_format.A6', $longLabel);
+        $bookingRequest = null;
+        Http::fake(function (Request $request) use ($booking, &$bookingRequest) {
+            $bookingRequest = $request->data();
+
+            return Http::response($booking);
+        });
+
+        $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/bookings', [
+                'quoteId' => $quoteId,
+                'serviceCode' => 'EP-CS096',
+            ])->assertOk();
+
+        $quote = ShipmentQuote::query()->findOrFail($quoteId);
+        $this->assertNotNull($quote->reconciliation_reference);
+        $this->assertSame($quote->reconciliation_reference, data_get($bookingRequest, 'shipment.0.reference'));
+        $this->assertSame(2048, strlen(Shipment::query()->sole()->label_path));
+        $this->assertSame($longLabel, Shipment::query()->sole()->label_path);
     }
 
     public function test_manual_dispatch_cannot_replace_an_easyparcel_booking(): void

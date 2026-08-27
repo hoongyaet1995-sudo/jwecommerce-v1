@@ -163,7 +163,7 @@ class ShipmentApiController extends Controller
             'orderId' => (string) $shipment->order_id,
             'quoteId' => (string) $shipment->shipment_quote_id,
             'provider' => $shipment->source,
-            'fulfillmentStatus' => 'ready_to_ship',
+            'fulfillmentStatus' => filled($shipment->tracking_number) ? 'ready_to_ship' : 'pending',
             'courierCode' => $shipment->carrier_code,
             'courierName' => $shipment->carrier_name,
             'serviceCode' => $shipment->service_code,

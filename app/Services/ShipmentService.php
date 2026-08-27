@@ -6,14 +6,15 @@ use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\Shipment;
 use App\Models\ShipmentEvent;
-use App\Models\ShipmentQuote;
 use App\Models\User;
-use App\Services\Shipping\ShippingProviderConfigurationService;
+use App\Services\Shipping\EasyParcelBookingGuard;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class ShipmentService
 {
+    public function __construct(private readonly EasyParcelBookingGuard $easyParcelBookings) {}
+
     public function dispatchManually(Order $order, User $actor, string $carrierName, string $trackingNumber): Shipment
     {
         return DB::transaction(function () use ($order, $actor, $carrierName, $trackingNumber): Shipment {
@@ -23,16 +24,7 @@ class ShipmentService
                 throw new InvalidArgumentException('Only processing orders can be dispatched.');
             }
 
-            if (Shipment::query()
-                ->where('order_id', $lockedOrder->id)
-                ->where('source', ShippingProviderConfigurationService::PROVIDER)
-                ->exists()
-                || ShipmentQuote::query()
-                    ->where('order_id', $lockedOrder->id)
-                    ->whereNotNull('booking_claim_key')
-                    ->exists()) {
-                throw new InvalidArgumentException('This order already has an EasyParcel booking or unresolved booking attempt.');
-            }
+            $this->easyParcelBookings->assertManualDispatchAllowed($lockedOrder);
 
             $shipment = Shipment::query()
                 ->where('order_id', $lockedOrder->id)

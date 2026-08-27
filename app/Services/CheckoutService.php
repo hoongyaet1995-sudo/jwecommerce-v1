@@ -10,6 +10,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\OrderTaxLine;
 use App\Models\ProductVariant;
 use App\Models\Coupon;
+use App\Services\Shipping\EasyParcelBookingGuard;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
@@ -33,6 +34,7 @@ class CheckoutService
         private readonly PaymentAttemptService $paymentAttempts,
         private readonly CartPricingService $pricing,
         private readonly ShippingConfigurationService $shipping,
+        private readonly EasyParcelBookingGuard $easyParcelBookings,
     )
     {
     }
@@ -155,6 +157,7 @@ class CheckoutService
             $locked = Order::query()->lockForUpdate()->findOrFail($order->id);
             if ($locked->status === 'cancelled' || $locked->status === $status) return $locked;
             if (! in_array($status, $this->availableTransitions($locked), true)) throw new InvalidArgumentException('This order cannot move from '.$locked->status.' to '.$status.'.');
+            $this->easyParcelBookings->assertLegacyOrderMutationAllowed($locked);
             if ($status === 'cancelled') foreach ($locked->items as $item) { if ($item->product_variant_id) ProductVariant::query()->whereKey($item->product_variant_id)->increment('stock', $item->quantity); }
             if ($status === 'paid') {
                 $payment = $locked->payments()->latest('id')->first();
@@ -175,6 +178,7 @@ class CheckoutService
             if ($locked->status !== 'processing') {
                 throw new InvalidArgumentException('Only processing orders can be dispatched.');
             }
+            $this->easyParcelBookings->assertManualDispatchAllowed($locked);
 
             $from = $locked->status;
             $locked->update([
