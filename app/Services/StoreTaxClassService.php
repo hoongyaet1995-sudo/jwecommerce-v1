@@ -8,6 +8,29 @@ use Illuminate\Validation\ValidationException;
 
 class StoreTaxClassService
 {
+    public function create(string $name, string $ratePercent, bool $isActive): TaxClass
+    {
+        return DB::transaction(function () use ($name, $ratePercent, $isActive): TaxClass {
+            $taxClass = TaxClass::query()->create([
+                'code' => $this->uniqueCode($name),
+                'name' => $name,
+                'rate_percent' => $ratePercent,
+                'is_active' => false,
+                'active_slot' => null,
+            ]);
+
+            return $isActive ? $this->activate($taxClass) : $taxClass;
+        });
+    }
+
+    public function update(TaxClass $taxClass, string $name, string $ratePercent, bool $isActive): TaxClass
+    {
+        return DB::transaction(function () use ($taxClass, $name, $ratePercent, $isActive): TaxClass {
+            $taxClass->update(['name' => $name, 'rate_percent' => $ratePercent]);
+
+            return $isActive ? $this->activate($taxClass) : $taxClass->fresh();
+        });
+    }
     public function active(): ?TaxClass
     {
         return TaxClass::query()->where('active_slot', 1)->first();
@@ -56,5 +79,18 @@ class StoreTaxClassService
 
             $lockedTaxClass->delete();
         });
+    }
+
+    private function uniqueCode(string $name): string
+    {
+        $base = str($name)->slug()->limit(220, '')->toString() ?: 'tax-class';
+        $code = $base;
+        $suffix = 2;
+
+        while (TaxClass::query()->where('code', $code)->exists()) {
+            $code = $base.'-'.$suffix++;
+        }
+
+        return $code;
     }
 }

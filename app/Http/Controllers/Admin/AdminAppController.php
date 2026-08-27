@@ -44,9 +44,11 @@ class AdminAppController extends Controller
             'catalogUrl' => route('admin.api.catalog.index'),
             'menusUrl' => route('admin.api.menus.index'),
             'ordersUrl' => route('admin.api.orders.index'),
+            'shipmentsUrl' => route('admin.api.shipping.shipments.index'),
             'couponsUrl' => route('admin.api.coupons.index'),
             'commerceSettingsUrl' => route('admin.api.commerce-settings.show'),
             'taxSettingsUrl' => route('admin.api.tax-settings.index'),
+            'taxClassesUrl' => route('admin.api.tax-classes.index'),
             'storefrontShellSettingsUrl' => route('admin.api.storefront-shell-settings.show'),
         ];
 
