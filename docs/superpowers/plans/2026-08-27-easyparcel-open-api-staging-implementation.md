@@ -230,11 +230,11 @@ Expected: PASS and standard generated assets only.
 git add docs/source-extraction resources/admin/src/integration resources/admin/src/types/shipping.ts resources/admin/src/context/AdminContext.tsx resources/admin/src/components/shipping public/build-admin; git commit -m "feat: bind source-faithful easyparcel fulfillment UI"
 ```
 
-## Task 6: Release isolated staging and prove Sandbox browser workflow
+## Task 6: Release the full ecommerce application and prove Sandbox browser workflow
 
-**Files:** Create safe deployment script/runbook and redacted acceptance report. Host-only: private `~/apps/jwecommerce-staging/releases/<commit>` plus `current`, dedicated DB, private `.env`, and public `ecom` entry only to `current/public`.
+**Files:** Create safe deployment script/runbook and redacted acceptance report. Host-only: private `~/apps/jwecommerce/releases/<commit>` plus `current`, dedicated DB, private `.env`, and public `ecom` entry only to `current/public`.
 
-**Interface:** Consumes Tasks 1-5 and produces HTTPS staging. User creates Sandbox Open API app for `https://ecom.jwaistudio.online`, then enters credentials in admin UI at action time.
+**Interface:** Consumes Tasks 1-5 and produces the full HTTPS ecommerce deployment. User creates Sandbox Open API app for `https://ecom.jwaistudio.online`, then enters credentials in admin UI at action time.
 
 - [ ] **Step 1: Write/run artifact validator**
 
@@ -249,15 +249,15 @@ Run: `ssh -p <port> <host> "php -v"`
 
 Expected: host supports project PHP; retain default ecom entry backup and prior release. Never touch the main-site app.
 
-- [ ] **Step 3: Configure host environment and migrate staging DB**
+- [ ] **Step 3: Configure host environment and migrate the dedicated ecommerce DB**
 
-Set staging URL, real SMTP, dedicated DB, queue/cache only in host `.env`; install/build, migrate once, link storage, optimize caches.
+Set the ecommerce URL, real SMTP, dedicated DB, queue/cache only in host `.env`; install/build, migrate once, link storage, optimize caches.
 
 - [ ] **Step 4: Verify deployed health**
 
 Run: `curl -I https://ecom.jwaistudio.online`
 
-Expected: HTTPS works, migrations use staging DB, unauthenticated admin API is denied.
+Expected: HTTPS works, migrations use the dedicated ecommerce DB, unauthenticated admin API is denied.
 
 - [ ] **Step 5: Run real browser acceptance and commit safe evidence**
 
@@ -271,6 +271,6 @@ Refresh/re-login after each transition, attempt duplicate booking once, and prov
 
 ## Plan self-review
 
-- [x] Package data, encrypted provider setup, quote/booking, tracking, ZIP UI, isolated release, SMTP and browser proof each have a task.
+- [x] Package data, encrypted provider setup, quote/booking, tracking, ZIP UI, full ecommerce release, SMTP and browser proof each have a task.
 - [x] The plan forbids legacy API, production credentials, fake courier state, secret exposure, automatic financial actions and main-site overwrite.
 - [x] Task interfaces are ordered and every task has red/green verification plus focused commit guidance.

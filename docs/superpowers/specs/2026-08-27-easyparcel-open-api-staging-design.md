@@ -8,7 +8,7 @@
 
 Close the operational hand-off between paid/processing orders and shipment delivery using EasyParcel Open API Sandbox. Preserve the Google AI Studio Shipping & Delivery Management courier and fulfillment DOM/classes from `jw-ecommerce-dashboard (14).zip`; replace only mock state/actions with Laravel/MySQL truth.
 
-The subdomain is a public Sandbox/Staging environment. It receives real SMTP messages for intentional test orders and is the public HTTPS target for later EasyParcel Sandbox webhook testing. It is not a Production courier cutover.
+`ecom.jwaistudio.online` is the full JW Ecommerce deployment target. It receives real SMTP messages for intentional test orders and is the public HTTPS target for later EasyParcel Sandbox webhook testing. The courier provider remains a Sandbox integration in this phase; this is not a Production courier credential cutover.
 
 ## Non-goals
 
@@ -23,7 +23,7 @@ The subdomain is a public Sandbox/Staging environment. It receives real SMTP mes
 The host is Linux with PHP 8.2. The existing `ecom` web directory contains only the host's default page and has no application data. The main `jwaistudio.online` Laravel application remains untouched.
 
 ```text
-ecom.jwaistudio.online
+ecom.jwaistudio.online (full JW Ecommerce deployment)
   web root: only the release public entry/assets
   application root: private account directory outside the web root
   storage: private, writable by the application
