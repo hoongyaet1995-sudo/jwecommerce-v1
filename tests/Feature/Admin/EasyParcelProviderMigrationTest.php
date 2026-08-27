@@ -11,8 +11,23 @@ class EasyParcelProviderMigrationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_durable_oauth_authorization_transaction_schema_is_available(): void
+    {
+        $this->assertTrue(Schema::hasTable('shipping_provider_authorization_transactions'));
+        $this->assertTrue(Schema::hasColumns('shipping_provider_authorization_transactions', [
+            'shipping_provider_id',
+            'user_id',
+            'state_hash',
+            'session_fingerprint',
+            'configuration_version',
+            'expires_at',
+            'consumed_at',
+        ]));
+    }
+
     public function test_configuration_version_is_added_to_the_previously_released_provider_schema(): void
     {
+        Schema::dropIfExists('shipping_provider_authorization_transactions');
         Schema::dropIfExists('shipping_provider_credentials');
         Schema::dropIfExists('shipping_providers');
 

@@ -20,19 +20,6 @@ final class ShippingProviderConfigurationService
         return $this->dto($this->findProvider());
     }
 
-    public function authorizationUrl(string $state, string $redirectUri): ?string
-    {
-        $provider = $this->findProvider();
-        $credentials = $provider?->credential?->credentials ?? [];
-        $clientId = is_array($credentials) ? ($credentials['client_id'] ?? null) : null;
-
-        if (! is_string($clientId) || $clientId === '') {
-            return null;
-        }
-
-        return $this->client->authorizationUrl($clientId, $redirectUri, $state);
-    }
-
     /** @return array<string, bool|string|null> */
     public function save(string $clientId, string $clientSecret, bool $enabled): array
     {
@@ -88,12 +75,15 @@ final class ShippingProviderConfigurationService
      *     status: array<string, bool|string|null>
      * }
      */
-    public function testConnection(string $authorizationCode, string $redirectUri): array
-    {
-        $snapshot = $this->verificationSnapshot();
+    public function testConnection(
+        string $authorizationCode,
+        string $redirectUri,
+        ?int $expectedConfigurationVersion = null,
+    ): array {
+        $snapshot = $this->verificationSnapshot($expectedConfigurationVersion);
 
         if ($snapshot === null) {
-            return ['verified' => false, 'status' => $this->dto(null)];
+            return ['verified' => false, 'status' => $this->status()];
         }
 
         $stored = $snapshot['credentials'];
@@ -145,6 +135,7 @@ final class ShippingProviderConfigurationService
             $provider->forceFill([
                 'enabled' => true,
                 'connection_state' => 'connected',
+                'configuration_version' => $provider->configuration_version + 1,
                 'public_metadata' => ['apiVersion' => EasyParcelOpenApiClient::API_VERSION],
                 'last_verified_at' => now(),
                 'last_error' => null,
@@ -181,6 +172,7 @@ final class ShippingProviderConfigurationService
             $provider->forceFill([
                 'enabled' => false,
                 'connection_state' => 'failed',
+                'configuration_version' => $provider->configuration_version + 1,
                 'last_verified_at' => null,
                 'last_error' => 'verification_failed',
             ])->save();
@@ -198,9 +190,9 @@ final class ShippingProviderConfigurationService
      *     credentials: array<string, mixed>
      * }|null
      */
-    private function verificationSnapshot(): ?array
+    private function verificationSnapshot(?int $expectedConfigurationVersion = null): ?array
     {
-        return DB::transaction(function (): ?array {
+        return DB::transaction(function () use ($expectedConfigurationVersion): ?array {
             $provider = ShippingProvider::query()
                 ->where('provider', self::PROVIDER)
                 ->where('environment', self::ENVIRONMENT)
@@ -208,6 +200,11 @@ final class ShippingProviderConfigurationService
                 ->first();
 
             if ($provider === null) {
+                return null;
+            }
+
+            if ($expectedConfigurationVersion !== null
+                && $provider->configuration_version !== $expectedConfigurationVersion) {
                 return null;
             }
 

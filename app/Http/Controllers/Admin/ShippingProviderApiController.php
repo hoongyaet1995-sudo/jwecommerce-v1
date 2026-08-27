@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\Shipping\EasyParcelOAuthAuthorizationService;
 use App\Services\Shipping\ShippingProviderConfigurationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -12,11 +13,12 @@ use Throwable;
 
 class ShippingProviderApiController extends Controller
 {
-    private const AUTHORIZATION_TRANSACTION_SESSION_KEY = 'easyparcel.oauth.authorization';
+    private const AUTHORIZATION_SESSION_BINDING_KEY = 'easyparcel.oauth.session_binding';
 
-    private const AUTHORIZATION_TRANSACTION_TTL_SECONDS = 600;
-
-    public function __construct(private readonly ShippingProviderConfigurationService $configuration) {}
+    public function __construct(
+        private readonly ShippingProviderConfigurationService $configuration,
+        private readonly EasyParcelOAuthAuthorizationService $authorization,
+    ) {}
 
     public function show(Request $request): JsonResponse
     {
@@ -80,12 +82,12 @@ class ShippingProviderApiController extends Controller
     public function beginAuthorization(Request $request): RedirectResponse
     {
         $this->authorizeAdmin($request);
-        $request->session()->forget(self::AUTHORIZATION_TRANSACTION_SESSION_KEY);
 
         try {
-            $state = bin2hex(random_bytes(32));
-            $authorizationUrl = $this->configuration->authorizationUrl(
-                $state,
+            $sessionBinding = bin2hex(random_bytes(32));
+            $authorizationUrl = $this->authorization->begin(
+                $request->user()->id,
+                $sessionBinding,
                 (string) config('services.easyparcel.redirect_uri'),
             );
         } catch (Throwable) {
@@ -96,32 +98,32 @@ class ShippingProviderApiController extends Controller
             return $this->callbackRedirect(false);
         }
 
-        $request->session()->put(self::AUTHORIZATION_TRANSACTION_SESSION_KEY, [
-            'state_hash' => hash('sha256', $state),
-            'expires_at' => now()->addSeconds(self::AUTHORIZATION_TRANSACTION_TTL_SECONDS)->timestamp,
-            'available' => true,
-            'user_id' => $request->user()->id,
-        ]);
+        $request->session()->put(self::AUTHORIZATION_SESSION_BINDING_KEY, $sessionBinding);
 
         return redirect()->away($authorizationUrl);
     }
 
     public function callback(Request $request): RedirectResponse
     {
-        $callback = $this->consumeCallbackRequest($request);
+        if ($request->user() === null) {
+            $this->sanitizeCallbackRequest($request);
 
-        abort_if($request->user() === null, 401);
-        $this->authorizeAdmin($request);
-
-        if (! $this->consumeAuthorizationTransaction($request, $callback['state'])
-            || $callback['code'] === null
-            || $callback['code'] === ''
-            || strlen($callback['code']) > 4096) {
-            return $this->callbackRedirect(false);
+            return redirect()->route('admin.login');
         }
 
+        if (! $this->isSuperAdmin($request)) {
+            $this->sanitizeCallbackRequest($request);
+
+            return redirect()->route('admin.shipping.easyparcel.callback.denied');
+        }
+
+        $callback = $this->consumeCallbackRequest($request);
+
         try {
-            $result = $this->configuration->testConnection(
+            $verified = $this->authorization->complete(
+                $request->user()->id,
+                $this->authorizationSessionBinding($request),
+                $callback['state'],
                 $callback['code'],
                 (string) config('services.easyparcel.redirect_uri'),
             );
@@ -129,7 +131,15 @@ class ShippingProviderApiController extends Controller
             return $this->callbackRedirect(false);
         }
 
-        return $this->callbackRedirect($result['verified']);
+        return $this->callbackRedirect($verified);
+    }
+
+    public function callbackDenied(Request $request): RedirectResponse
+    {
+        abort_if($request->user() === null, 401);
+        $this->authorizeAdmin($request);
+
+        return $this->callbackRedirect(false);
     }
 
     /** @return array{code: string|null, state: string|null} */
@@ -137,11 +147,8 @@ class ShippingProviderApiController extends Controller
     {
         $authorizationCode = $request->query('code');
         $state = $request->query('state');
-        $safePath = $request->getPathInfo();
 
-        $request->query->replace([]);
-        $request->server->set('QUERY_STRING', '');
-        $request->server->set('REQUEST_URI', $safePath);
+        $this->sanitizeCallbackRequest($request);
 
         return [
             'code' => is_string($authorizationCode) ? $authorizationCode : null,
@@ -149,34 +156,30 @@ class ShippingProviderApiController extends Controller
         ];
     }
 
-    private function consumeAuthorizationTransaction(Request $request, ?string $state): bool
+    private function sanitizeCallbackRequest(Request $request): void
     {
-        $transaction = $request->session()->pull(self::AUTHORIZATION_TRANSACTION_SESSION_KEY);
-        $providedState = $state !== null && strlen($state) <= 512 ? $state : '';
-        $expectedStateHash = is_array($transaction)
-            && is_string($transaction['state_hash'] ?? null)
-            && strlen($transaction['state_hash']) === 64
-                ? $transaction['state_hash']
-                : str_repeat('0', 64);
-        $stateMatches = hash_equals($expectedStateHash, hash('sha256', $providedState));
+        $safePath = $request->getPathInfo();
 
-        return is_array($transaction)
-            && $state !== null
-            && $state !== ''
-            && strlen($state) <= 512
-            && $stateMatches
-            && ($transaction['available'] ?? null) === true
-            && is_int($transaction['expires_at'] ?? null)
-            && $transaction['expires_at'] > now()->timestamp
-            && ($transaction['user_id'] ?? null) === $request->user()?->id;
+        $request->query->replace([]);
+        $request->server->set('QUERY_STRING', '');
+        $request->server->set('REQUEST_URI', $safePath);
+    }
+
+    private function authorizationSessionBinding(Request $request): string
+    {
+        $binding = $request->session()->get(self::AUTHORIZATION_SESSION_BINDING_KEY);
+
+        return is_string($binding) ? $binding : '';
     }
 
     private function authorizeAdmin(Request $request): void
     {
-        abort_unless(
-            $request->user()?->is_admin === true && $request->user()?->is_super_admin === true,
-            403,
-        );
+        abort_unless($this->isSuperAdmin($request), 403);
+    }
+
+    private function isSuperAdmin(Request $request): bool
+    {
+        return $request->user()?->is_admin === true && $request->user()?->is_super_admin === true;
     }
 
     private function callbackRedirect(bool $verified): RedirectResponse

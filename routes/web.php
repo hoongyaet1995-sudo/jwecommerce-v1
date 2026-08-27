@@ -115,6 +115,8 @@ Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->
 
 Route::get('/admin/shipping/easyparcel/callback', [ShippingProviderApiController::class, 'callback'])
     ->name('admin.shipping.easyparcel.callback');
+Route::get('/admin/shipping/easyparcel/callback/denied', [ShippingProviderApiController::class, 'callbackDenied'])
+    ->name('admin.shipping.easyparcel.callback.denied');
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/api/dashboard', DashboardDataController::class)->name('api.dashboard');

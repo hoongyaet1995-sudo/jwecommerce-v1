@@ -21,7 +21,6 @@ final class EasyParcelOpenApiClient
         return self::AUTHORIZATION_URL.'?'.http_build_query([
             'client_id' => $clientId,
             'redirect_uri' => $redirectUri,
-            'response_type' => 'code',
             'state' => $state,
         ], '', '&', PHP_QUERY_RFC3986);
     }
