@@ -196,6 +196,9 @@ export interface ProductVariant {
   costPrice?: number;
   inventoryQuantity: number;
   weightGrams?: number;
+  packageLengthCm?: number;
+  packageWidthCm?: number;
+  packageHeightCm?: number;
   barcode?: string;
   image?: string;
   visualType?: VariantVisualType;

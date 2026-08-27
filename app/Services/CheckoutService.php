@@ -92,7 +92,7 @@ class CheckoutService
             foreach ($lines as $line) {
                 $variant = $line['variant'];
                 $product = $variant->product()->with('images')->firstOrFail();
-                OrderItem::query()->create(['order_id' => $order->id, 'product_variant_id' => $variant->id, 'sku' => $variant->sku, 'title' => $product->title, 'variant_title' => $variant->title, 'image_url' => $product->images->sortBy('position')->first()?->path, 'unit_price' => $variant->price, 'quantity' => $line['quantity'], 'line_total' => $line['line_total']]);
+                OrderItem::query()->create(['order_id' => $order->id, 'product_variant_id' => $variant->id, 'sku' => $variant->sku, 'title' => $product->title, 'variant_title' => $variant->title, 'image_url' => $product->images->sortBy('position')->first()?->path, 'package_snapshot' => ['weight_grams' => $variant->weight_grams, 'length_cm' => $variant->package_length_cm, 'width_cm' => $variant->package_width_cm, 'height_cm' => $variant->package_height_cm], 'unit_price' => $variant->price, 'quantity' => $line['quantity'], 'line_total' => $line['line_total']]);
             }
             $this->persistTaxSnapshot($order, $summary['tax_quote']);
             $payment = $this->paymentAttempts->createPendingPayment($order, $method, $order->currency, $bankAccountId);

@@ -744,6 +744,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                         <th className="py-2.5 px-3">Cost ($)</th>
                         <th className="py-2.5 px-3">Stock Qty</th>
                         <th className="py-2.5 px-3">Weight (g)</th>
+                        <th className="py-2.5 px-3">Package (cm)</th>
                         <th className="py-2.5 px-3 text-center">Active</th>
                       </tr>
                     </thead>
@@ -824,6 +825,14 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                               onChange={(e) => updateVariantRow(vIdx, 'weightGrams', parseInt(e.target.value, 10) || undefined)}
                               className="w-18 px-2 py-1 text-xs rounded border bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 font-mono"
                             />
+                          </td>
+
+                          <td className="py-2.5 px-3">
+                            <div className="flex items-center gap-1 min-w-48">
+                              <input type="number" min="0.01" max="9999" step="0.01" placeholder="L" aria-label={`Package length in centimeters for ${variant.title}`} value={variant.packageLengthCm ?? ''} onChange={(e) => updateVariantRow(vIdx, 'packageLengthCm', parseFloat(e.target.value) || undefined)} className="w-14 px-2 py-1 text-xs rounded border bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 font-mono" />
+                              <input type="number" min="0.01" max="9999" step="0.01" placeholder="W" aria-label={`Package width in centimeters for ${variant.title}`} value={variant.packageWidthCm ?? ''} onChange={(e) => updateVariantRow(vIdx, 'packageWidthCm', parseFloat(e.target.value) || undefined)} className="w-14 px-2 py-1 text-xs rounded border bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 font-mono" />
+                              <input type="number" min="0.01" max="9999" step="0.01" placeholder="H" aria-label={`Package height in centimeters for ${variant.title}`} value={variant.packageHeightCm ?? ''} onChange={(e) => updateVariantRow(vIdx, 'packageHeightCm', parseFloat(e.target.value) || undefined)} className="w-14 px-2 py-1 text-xs rounded border bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 font-mono" />
+                            </div>
                           </td>
 
                           <td className="py-2.5 px-3 text-center">

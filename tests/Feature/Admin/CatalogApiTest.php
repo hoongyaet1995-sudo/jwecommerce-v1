@@ -70,6 +70,53 @@ class CatalogApiTest extends TestCase
             ->assertJsonMissing(['taxClassId' => (string) $taxClass->id]);
     }
 
+    public function test_catalog_round_trips_variant_package_dimensions_and_rejects_non_positive_values(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $category = $this->actingAs($admin)->postJson('/admin/api/catalog/categories', [
+            'name' => 'Package catalog', 'slug' => 'package-catalog', 'status' => 'active', 'sortOrder' => 1,
+        ])->assertCreated()->json('data');
+        $payload = $this->productPayload((string) $category['id'], []);
+        $payload['variants'][0]['packageLengthCm'] = 30.5;
+        $payload['variants'][0]['packageWidthCm'] = 12;
+        $payload['variants'][0]['packageHeightCm'] = 8;
+
+        $product = $this->actingAs($admin)->postJson('/admin/api/catalog/products', $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.variants.0.packageLengthCm', 30.5)
+            ->assertJsonPath('data.variants.0.packageWidthCm', 12)
+            ->assertJsonPath('data.variants.0.packageHeightCm', 8)
+            ->json('data');
+
+        $this->assertDatabaseHas('product_variants', [
+            'id' => $product['variants'][0]['id'],
+            'package_length_cm' => 30.5,
+            'package_width_cm' => 12,
+            'package_height_cm' => 8,
+        ]);
+
+        $payload['variants'][0]['id'] = $product['variants'][0]['id'];
+        $payload['variants'][0]['packageLengthCm'] = 0;
+
+        $this->actingAs($admin)->patchJson('/admin/api/catalog/products/'.$product['id'], $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('variants.0.packageLengthCm');
+    }
+
+    public function test_catalog_allows_legacy_variants_without_package_dimensions(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $category = $this->actingAs($admin)->postJson('/admin/api/catalog/categories', [
+            'name' => 'Legacy catalog', 'slug' => 'legacy-catalog', 'status' => 'active', 'sortOrder' => 1,
+        ])->assertCreated()->json('data');
+
+        $this->actingAs($admin)->postJson('/admin/api/catalog/products', $this->productPayload((string) $category['id'], []))
+            ->assertCreated()
+            ->assertJsonPath('data.variants.0.packageLengthCm', null)
+            ->assertJsonPath('data.variants.0.packageWidthCm', null)
+            ->assertJsonPath('data.variants.0.packageHeightCm', null);
+    }
+
     public function test_duplicate_sku_rejects_the_whole_product_transaction(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
