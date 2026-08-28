@@ -137,8 +137,33 @@ class ShippingProviderApiController extends Controller
 
         return [
             'code' => is_string($authorizationCode) ? $authorizationCode : null,
-            'state' => is_string($state) ? $state : null,
+            'state' => $this->unwrapEasyParcelState($state),
         ];
+    }
+
+    private function unwrapEasyParcelState(mixed $state): ?string
+    {
+        if (! is_string($state) || $state === '') {
+            return null;
+        }
+
+        $normalized = strtr($state, '-_', '+/');
+        $normalized .= str_repeat('=', (4 - strlen($normalized) % 4) % 4);
+        $decoded = base64_decode($normalized, true);
+
+        if ($decoded === false) {
+            return $state;
+        }
+
+        try {
+            $payload = json_decode($decoded, true, flags: JSON_THROW_ON_ERROR);
+        } catch (Throwable) {
+            return $state;
+        }
+
+        return is_array($payload) && is_string($payload['state'] ?? null) && $payload['state'] !== ''
+            ? $payload['state']
+            : $state;
     }
 
     private function sanitizeCallbackRequest(Request $request): void

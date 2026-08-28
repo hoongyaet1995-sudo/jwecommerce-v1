@@ -9,6 +9,7 @@ use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Tests\TestCase;
@@ -144,5 +145,36 @@ class EasyParcelPlatformOauthTest extends TestCase
                 'has_code' => false,
             ],
         );
+    }
+
+    public function test_callback_accepts_easyparcel_wrapped_state_without_persisting_the_provider_envelope(): void
+    {
+        config()->set('services.easyparcel.client_id', 'platform-client');
+        config()->set('services.easyparcel.client_secret', 'platform-secret');
+        Http::fake([
+            'https://api.easyparcel.com/oauth/token' => Http::response([
+                'token_type' => 'Bearer',
+                'access_token' => 'provider-token',
+                'expires_in' => 3600,
+            ]),
+            'https://api.easyparcel.com/open_api/2026-06/wallet' => Http::response([
+                'status_code' => 200,
+                'data' => ['wallet' => [], 'free_credit_wallet' => []],
+            ]),
+        ]);
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        $start = $this->actingAs($admin)->post('/admin/api/shipping/providers/easyparcel/authorize');
+        parse_str((string) parse_url((string) $start->headers->get('Location'), PHP_URL_QUERY), $query);
+        $providerState = base64_encode(json_encode(['state' => $query['state']], JSON_THROW_ON_ERROR));
+
+        $this->get('/admin/shipping/easyparcel/callback?code=provider-code&state='.urlencode($providerState))
+            ->assertRedirect('/admin/shipping')
+            ->assertSessionHas('easyparcelConnection.state', 'connected');
+
+        $this->assertDatabaseHas('shipping_providers', [
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'connection_state' => 'connected',
+        ]);
     }
 }
