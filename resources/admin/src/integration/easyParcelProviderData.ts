@@ -39,15 +39,11 @@ const providerUrl = (bootstrap: LaravelAdminBootstrap): string => {
 export const fetchEasyParcelProvider = async (bootstrap: LaravelAdminBootstrap): Promise<EasyParcelProviderStatus> =>
   responseData(await window.fetch(providerUrl(bootstrap), { credentials: 'same-origin', headers: { Accept: 'application/json' } }), 'EasyParcel provider could not be loaded.');
 
-export const saveEasyParcelCredentials = async (
-  bootstrap: LaravelAdminBootstrap,
-  input: { environment: 'sandbox'; clientId: string; clientSecret: string; enabled: boolean },
-): Promise<EasyParcelProviderStatus> => responseData(await window.fetch(providerUrl(bootstrap), {
-  method: 'PUT',
+export const disconnectEasyParcelStore = async (bootstrap: LaravelAdminBootstrap): Promise<EasyParcelProviderStatus> => responseData(await window.fetch(providerUrl(bootstrap), {
+  method: 'DELETE',
   credentials: 'same-origin',
   headers: jsonHeaders(bootstrap),
-  body: JSON.stringify(input),
-}), 'EasyParcel provider could not be saved.');
+}), 'EasyParcel store could not be disconnected.');
 
 export const startEasyParcelAuthorization = (bootstrap: LaravelAdminBootstrap): void => {
   if (!bootstrap.easyParcelProviderAuthorizeUrl) throw new Error('EasyParcel authorization is unavailable.');

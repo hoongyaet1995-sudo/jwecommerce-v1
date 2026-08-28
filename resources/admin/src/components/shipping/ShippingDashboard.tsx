@@ -42,6 +42,8 @@ import { ParcelTrackingModal } from './ParcelTrackingModal';
 import { SmartRoutingRuleModal } from './SmartRoutingRuleModal';
 import { CourierConfigModal } from './CourierConfigModal';
 import { GeneralShippingRateModal } from './GeneralShippingRateModal';
+import { EasyParcelOAuthModal } from './EasyParcelOAuthModal';
+import { EasyParcelBookingModal } from './EasyParcelBookingModal';
 
 export type ShippingTabType = 
   | 'overview' 
@@ -57,6 +59,9 @@ export const ShippingDashboard: React.FC = () => {
     courierConfigs = [],
     saveCourierConfig,
     refreshEasyParcelProvider,
+    disconnectEasyParcel,
+    quoteEasyParcelShipment,
+    bookEasyParcelShipment,
     toggleCourierStatus,
     pingCourierAPI,
     topUpEasyParcelWallet,
@@ -93,6 +98,8 @@ export const ShippingDashboard: React.FC = () => {
   const [editingCourier, setEditingCourier] = useState<CourierConfig | null>(null);
   const [isRateModalOpen, setIsRateModalOpen] = useState(false);
   const [editingRate, setEditingRate] = useState<GeneralShippingRate | null>(null);
+  const [isEasyParcelOAuthOpen, setIsEasyParcelOAuthOpen] = useState(false);
+  const [easyParcelBookingParcel, setEasyParcelBookingParcel] = useState<ShipmentParcel | null>(null);
 
   // Counts for badge notifications
   const pendingAwbCount = shipmentParcels.filter(p => p.status === 'pending').length;
@@ -124,6 +131,9 @@ export const ShippingDashboard: React.FC = () => {
   const handleOpenCourierConfig = (courier: CourierConfig) => {
     if (courier.courierCode === 'easyparcel') {
       void refreshEasyParcelProvider().catch(() => undefined);
+      setEditingCourier(courier);
+      setIsEasyParcelOAuthOpen(true);
+      return;
     }
     setEditingCourier(courier);
     setIsCourierModalOpen(true);
@@ -340,6 +350,7 @@ export const ShippingDashboard: React.FC = () => {
             onOpenTrackingModal={(parcel) => setActiveTrackingParcel(parcel)}
             onOpenPickupModal={explainPickupUnavailable}
             onUpdateStatus={updateShipmentStatus}
+            onOpenEasyParcelBooking={(parcel) => setEasyParcelBookingParcel(parcel)}
           />
         )}
 
@@ -444,6 +455,27 @@ export const ShippingDashboard: React.FC = () => {
           onSave={handleSaveCourier}
           onPing={pingCourierAPI}
           onTopUpWallet={topUpEasyParcelWallet}
+        />
+      )}
+
+      {isEasyParcelOAuthOpen && editingCourier && (
+        <EasyParcelOAuthModal
+          isOpen={isEasyParcelOAuthOpen}
+          provider={{ provider: 'easyparcel', environment: 'sandbox', configured: true, enabled: editingCourier.isEnabled, connectionState: editingCourier.status === 'connected' ? 'connected' : editingCourier.status === 'error' ? 'failed' : 'unconfigured', lastVerifiedAt: null, lastError: null }}
+          onClose={() => { setIsEasyParcelOAuthOpen(false); setEditingCourier(null); }}
+          onAuthorize={() => { void pingCourierAPI(editingCourier.id); }}
+          onDisconnect={async () => { await disconnectEasyParcel(); setEditingCourier({ ...editingCourier, isEnabled: false, status: 'pending_keys' }); }}
+        />
+      )}
+
+      {easyParcelBookingParcel && (
+        <EasyParcelBookingModal
+          isOpen={true}
+          parcel={easyParcelBookingParcel}
+          onClose={() => setEasyParcelBookingParcel(null)}
+          onQuote={quoteEasyParcelShipment}
+          onBook={(quote, serviceCode) => bookEasyParcelShipment(easyParcelBookingParcel, quote, serviceCode)}
+          onBooked={async () => { await refreshEasyParcelProvider(); }}
         />
       )}
 

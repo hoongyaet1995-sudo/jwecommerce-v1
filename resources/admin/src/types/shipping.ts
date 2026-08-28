@@ -118,6 +118,7 @@ export interface ShipmentParcel {
   orderId: string;
   orderNumber: string;
   customerName: string;
+  destinationPostcode?: string;
   items: {
     sku: string;
     name: string;

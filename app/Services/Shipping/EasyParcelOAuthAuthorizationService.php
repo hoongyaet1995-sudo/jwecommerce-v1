@@ -37,26 +37,15 @@ final class EasyParcelOAuthAuthorizationService
             $stateHash,
             $redirectUri,
         ): ?string {
-            $provider = ShippingProvider::query()
-                ->where('provider', ShippingProviderConfigurationService::PROVIDER)
-                ->where('environment', ShippingProviderConfigurationService::ENVIRONMENT)
-                ->lockForUpdate()
-                ->first();
-
-            if ($provider === null) {
+            $credentials = $this->configuration->platformCredentials();
+            if ($credentials === null) {
                 return null;
             }
-
-            $credential = ShippingProviderCredential::query()
-                ->where('shipping_provider_id', $provider->id)
-                ->lockForUpdate()
-                ->first();
-            $credentials = $credential?->credentials ?? [];
-            $clientId = is_array($credentials) ? ($credentials['client_id'] ?? null) : null;
-
-            if (! is_string($clientId) || $clientId === '') {
-                return null;
-            }
+            $provider = ShippingProvider::query()->firstOrCreate(
+                ['provider' => ShippingProviderConfigurationService::PROVIDER, 'environment' => ShippingProviderConfigurationService::ENVIRONMENT],
+                ['enabled' => false, 'connection_state' => 'unverified', 'configuration_version' => 0],
+            );
+            $provider = ShippingProvider::query()->lockForUpdate()->findOrFail($provider->id);
 
             $now = now();
             ShippingProviderAuthorizationTransaction::query()
@@ -78,7 +67,7 @@ final class EasyParcelOAuthAuthorizationService
                 'consumed_at' => null,
             ]);
 
-            return $this->client->authorizationUrl($clientId, $redirectUri, $state);
+            return $this->client->authorizationUrl($credentials['client_id'], $redirectUri, $state);
         });
     }
 

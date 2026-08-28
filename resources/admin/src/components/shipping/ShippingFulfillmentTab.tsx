@@ -30,6 +30,7 @@ interface ShippingFulfillmentTabProps {
   onOpenTrackingModal: (parcel: ShipmentParcel) => void;
   onOpenPickupModal: () => void;
   onUpdateStatus: (parcelId: string, status: ShipmentParcel['status'], desc?: string) => void;
+  onOpenEasyParcelBooking: (parcel: ShipmentParcel) => void;
 }
 
 export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
@@ -39,7 +40,8 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   onOpenAWBModal,
   onOpenTrackingModal,
   onOpenPickupModal,
-  onUpdateStatus
+  onUpdateStatus,
+  onOpenEasyParcelBooking
 }) => {
   const [activeStatusFilter, setActiveStatusFilter] = useState<'all' | 'pending' | 'ready_to_ship' | 'in_transit' | 'delivered' | 'failed_delivery'>('all');
   const [regionFilter, setRegionFilter] = useState<'all' | 'peninsular' | 'east_malaysia'>('all');
@@ -400,7 +402,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                         <div className="flex items-center justify-end gap-1.5">
                           {!parcel.trackingNumber ? (
                             <button
-                              onClick={() => onGenerateAWB(parcel.id)}
+                              onClick={() => onOpenEasyParcelBooking(parcel)}
                               className="px-2.5 py-1 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1"
                             >
                               <Zap className="w-3 h-3" />

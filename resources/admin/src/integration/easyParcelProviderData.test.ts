@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LaravelAdminBootstrap } from '../types';
-import { saveEasyParcelCredentials } from './easyParcelProviderData';
+import { disconnectEasyParcelStore } from './easyParcelProviderData';
 
 const bootstrap = {
   user: { name: 'Admin', email: 'admin@example.test', avatar: null },
@@ -12,24 +12,18 @@ const bootstrap = {
 describe('EasyParcel provider client', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('saves sandbox credentials through Laravel and never expects credentials in the response', async () => {
+  it('disconnects the authorized store without sending platform credentials from the browser', async () => {
     const fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ data: { provider: 'easyparcel', environment: 'sandbox', configured: true, enabled: false, connectionState: 'unverified', lastVerifiedAt: null, lastError: null } }),
     });
     vi.stubGlobal('window', { fetch });
 
-    const provider = await saveEasyParcelCredentials(bootstrap, {
-      environment: 'sandbox',
-      clientId: 'client-id',
-      clientSecret: 'client-secret',
-      enabled: false,
-    });
+    const provider = await disconnectEasyParcelStore(bootstrap);
 
     expect(fetch).toHaveBeenCalledWith('/admin/api/shipping/providers/easyparcel', expect.objectContaining({
-      method: 'PUT',
+      method: 'DELETE',
       credentials: 'same-origin',
-      body: JSON.stringify({ environment: 'sandbox', clientId: 'client-id', clientSecret: 'client-secret', enabled: false }),
     }));
     expect(provider).toMatchObject({ provider: 'easyparcel', configured: true, connectionState: 'unverified' });
     expect(provider).not.toHaveProperty('clientSecret');

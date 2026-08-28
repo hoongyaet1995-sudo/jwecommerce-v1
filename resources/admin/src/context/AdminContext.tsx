@@ -8,7 +8,8 @@ import { fetchMenus, saveMenuDocument } from '../integration/menuData';
 import { customerDirectoryToCustomers, deleteCustomerData, fetchCustomerDirectoryData, saveCustomerData } from '../integration/customerDirectoryData';
 import { fetchOrders, processOrderRefundData, updateOrderStatusData, updateOrderTrackingData } from '../integration/orderData';
 import { appendShipmentEvent, fetchShipments } from '../integration/shipmentData';
-import { courierConfigsFromEasyParcel, fetchEasyParcelProvider, saveEasyParcelCredentials, startEasyParcelAuthorization } from '../integration/easyParcelProviderData';
+import { courierConfigsFromEasyParcel, disconnectEasyParcelStore, fetchEasyParcelProvider, startEasyParcelAuthorization } from '../integration/easyParcelProviderData';
+import { confirmEasyParcelBooking, requestEasyParcelQuote, type EasyParcelBooking, type EasyParcelPackageSpec, type EasyParcelQuote } from '../integration/easyParcelFulfillmentData';
 import { fetchCommerceSettings, saveBankTransferConfiguration, saveCodConfiguration, saveCommerceSettings, saveShippingConfiguration } from '../integration/commerceSettingsData';
 import { deleteTaxRule as deleteTaxRuleData, deleteTaxZone as deleteTaxZoneData, globalTaxEngineFromConfiguration, saveTaxConfiguration, saveTaxRule, saveTaxZone, type TaxSettingsDocument } from '../integration/taxSettingsData';
 import { activateTaxClass as activateTaxClassData, createTaxClass, deactivateTaxClass as deactivateTaxClassData, deleteTaxClass as deleteSimpleTaxClassData, fetchTaxClasses, updateTaxClass } from '../integration/taxClassData';
@@ -292,6 +293,9 @@ interface AdminContextType {
   courierConfigs: CourierConfig[];
   saveCourierConfig: (config: CourierConfig) => void;
   refreshEasyParcelProvider: () => Promise<void>;
+  disconnectEasyParcel: () => Promise<void>;
+  quoteEasyParcelShipment: (parcel: ShipmentParcel) => Promise<EasyParcelQuote>;
+  bookEasyParcelShipment: (parcel: ShipmentParcel, quote: EasyParcelQuote, serviceCode: string) => Promise<EasyParcelBooking>;
   toggleCourierStatus: (id: string) => void;
   pingCourierAPI: (id: string) => Promise<number>;
   topUpEasyParcelWallet: (amountRM: number) => void;
@@ -2066,25 +2070,25 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       addToast({ type: 'error', title: 'Courier not configured', message: 'Only EasyParcel Sandbox is available for this store. This courier has no provider integration.' });
       return;
     }
-    if (config.environment !== 'sandbox') {
-      addToast({ type: 'error', title: 'Production mode unavailable', message: 'EasyParcel Production credentials are intentionally not accepted in this Sandbox-only integration.' });
-      return;
-    }
-    if (!config.apiKey.trim() || !config.apiSecret.trim()) {
-      addToast({ type: 'error', title: 'Credentials required', message: 'Enter the EasyParcel Open API client ID and client secret before saving.' });
-      return;
-    }
-    void saveEasyParcelCredentials(laravelBootstrap, {
-      environment: 'sandbox',
-      clientId: config.apiKey.trim(),
-      clientSecret: config.apiSecret,
-      enabled: config.isEnabled,
-    }).then((provider) => {
-      setCourierConfigs(courierConfigsFromEasyParcel(provider));
-      addToast({ type: 'success', title: 'EasyParcel saved', message: 'Sandbox credentials are encrypted server-side. Complete authorization before activation.' });
-    }).catch((error) => {
-      addToast({ type: 'error', title: 'EasyParcel save failed', message: error instanceof Error ? error.message : 'Provider configuration could not be saved.' });
-    });
+    addToast({ type: 'info', title: 'Platform OAuth', message: 'Use Connect EasyParcel Store to authorize the server-managed Sandbox integration.' });
+  };
+
+  const disconnectEasyParcel = async (): Promise<void> => {
+    const provider = await disconnectEasyParcelStore(laravelBootstrap);
+    setCourierConfigs(courierConfigsFromEasyParcel(provider));
+    addToast({ type: 'success', title: 'EasyParcel disconnected', message: 'The connected EasyParcel store was removed.' });
+  };
+
+  const quoteEasyParcelShipment = async (parcel: ShipmentParcel): Promise<EasyParcelQuote> => {
+    if (parcel.totalWeightKg === null || parcel.dimensionsCm === null) throw new Error('Package weight and dimensions must be configured before requesting a quote.');
+    const packageSpec: EasyParcelPackageSpec = { weightKg: parcel.totalWeightKg, lengthCm: parcel.dimensionsCm.length, widthCm: parcel.dimensionsCm.width, heightCm: parcel.dimensionsCm.height };
+    return requestEasyParcelQuote(laravelBootstrap, parcel.orderId, packageSpec);
+  };
+
+  const bookEasyParcelShipment = async (parcel: ShipmentParcel, quote: EasyParcelQuote, serviceCode: string): Promise<EasyParcelBooking> => {
+    const booking = await confirmEasyParcelBooking(laravelBootstrap, parcel.orderId, quote.id, serviceCode);
+    setShipmentParcels(await fetchShipments(laravelBootstrap));
+    return booking;
   };
 
   const toggleCourierStatus = (id: string) => {
@@ -3738,6 +3742,9 @@ Would you like me to drill down into customer records, inventory allocation, or 
         courierConfigs,
         saveCourierConfig,
         refreshEasyParcelProvider,
+        disconnectEasyParcel,
+        quoteEasyParcelShipment,
+        bookEasyParcelShipment,
         toggleCourierStatus,
         pingCourierAPI,
         topUpEasyParcelWallet,

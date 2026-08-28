@@ -12,6 +12,7 @@ const shipmentListParcel = (row: ShipmentParcel): ShipmentParcel => ({
   orderId: row.orderId,
   orderNumber: row.orderNumber,
   customerName: row.customerName,
+  destinationPostcode: row.destinationPostcode,
   items: row.items,
   totalWeightKg: row.totalWeightKg,
   volumetricWeightKg: row.volumetricWeightKg,

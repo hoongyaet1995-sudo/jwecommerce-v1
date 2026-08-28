@@ -42,6 +42,7 @@ class ShipmentDataService
             'orderId' => (string) $order->id,
             'orderNumber' => $order->number,
             'customerName' => $name !== '' ? $name : 'Customer',
+            'destinationPostcode' => $address?->postal_code,
             'items' => $order->items->map(fn ($item): array => [
                 'sku' => $item->sku,
                 'name' => $item->title,
@@ -98,6 +99,7 @@ class ShipmentDataService
             'orderId' => (string) $order->id,
             'orderNumber' => $order->number,
             'customerName' => $name !== '' ? $name : 'Customer',
+            'destinationPostcode' => $address?->postal_code,
             'items' => $order->items->map(fn ($item): array => [
                 'sku' => $item->sku,
                 'name' => $item->title,

@@ -30,24 +30,14 @@ class ShippingProviderApiController extends Controller
     public function update(Request $request): JsonResponse
     {
         $this->authorizeAdmin($request);
-        $data = $request->validate([
-            'environment' => ['required', 'string', Rule::in(['sandbox'])],
-            'clientId' => ['required', 'string', 'max:2048'],
-            'clientSecret' => ['required', 'string', 'max:4096'],
-            'enabled' => ['required', 'boolean'],
-        ]);
+        return response()->json(['message' => 'EasyParcel platform credentials are server-managed.'], 410);
+    }
 
-        try {
-            $status = $this->configuration->save(
-                $data['clientId'],
-                $data['clientSecret'],
-                $data['enabled'],
-            );
-        } catch (Throwable) {
-            return response()->json(['message' => 'Provider configuration could not be saved.'], 500);
-        }
+    public function disconnect(Request $request): JsonResponse
+    {
+        $this->authorizeAdmin($request);
 
-        return response()->json(['data' => $status]);
+        return response()->json(['data' => $this->configuration->disconnect()]);
     }
 
     public function testConnection(Request $request): JsonResponse
