@@ -56,6 +56,7 @@ export const ShippingDashboard: React.FC = () => {
   const {
     courierConfigs = [],
     saveCourierConfig,
+    refreshEasyParcelProvider,
     toggleCourierStatus,
     pingCourierAPI,
     topUpEasyParcelWallet,
@@ -121,6 +122,9 @@ export const ShippingDashboard: React.FC = () => {
   };
 
   const handleOpenCourierConfig = (courier: CourierConfig) => {
+    if (courier.courierCode === 'easyparcel') {
+      void refreshEasyParcelProvider().catch(() => undefined);
+    }
     setEditingCourier(courier);
     setIsCourierModalOpen(true);
   };

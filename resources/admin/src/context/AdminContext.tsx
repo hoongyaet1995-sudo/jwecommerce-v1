@@ -8,6 +8,7 @@ import { fetchMenus, saveMenuDocument } from '../integration/menuData';
 import { customerDirectoryToCustomers, deleteCustomerData, fetchCustomerDirectoryData, saveCustomerData } from '../integration/customerDirectoryData';
 import { fetchOrders, processOrderRefundData, updateOrderStatusData, updateOrderTrackingData } from '../integration/orderData';
 import { appendShipmentEvent, fetchShipments } from '../integration/shipmentData';
+import { courierConfigsFromEasyParcel, fetchEasyParcelProvider, saveEasyParcelCredentials, startEasyParcelAuthorization } from '../integration/easyParcelProviderData';
 import { fetchCommerceSettings, saveBankTransferConfiguration, saveCodConfiguration, saveCommerceSettings, saveShippingConfiguration } from '../integration/commerceSettingsData';
 import { deleteTaxRule as deleteTaxRuleData, deleteTaxZone as deleteTaxZoneData, globalTaxEngineFromConfiguration, saveTaxConfiguration, saveTaxRule, saveTaxZone, type TaxSettingsDocument } from '../integration/taxSettingsData';
 import { activateTaxClass as activateTaxClassData, createTaxClass, deactivateTaxClass as deactivateTaxClassData, deleteTaxClass as deleteSimpleTaxClassData, fetchTaxClasses, updateTaxClass } from '../integration/taxClassData';
@@ -290,6 +291,7 @@ interface AdminContextType {
   // Malaysia Shipping & Fulfillment Module
   courierConfigs: CourierConfig[];
   saveCourierConfig: (config: CourierConfig) => void;
+  refreshEasyParcelProvider: () => Promise<void>;
   toggleCourierStatus: (id: string) => void;
   pingCourierAPI: (id: string) => Promise<number>;
   topUpEasyParcelWallet: (amountRM: number) => void;
@@ -524,6 +526,18 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       active = false;
     };
   // The API bootstrap is emitted once by Laravel for the lifetime of the admin app.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void fetchEasyParcelProvider(laravelBootstrap).then((provider) => {
+      if (active) setCourierConfigs(courierConfigsFromEasyParcel(provider));
+    }).catch(() => {
+      if (active) addToast({ type: 'error', title: 'EasyParcel Unavailable', message: 'Unable to load the server-side EasyParcel provider state.' });
+    });
+    return () => { active = false; };
+  // Laravel emits this immutable bootstrap once per admin app load.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -2042,16 +2056,57 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Malaysia Shipping Module Operations
   // ------------------------------------
 
-  const saveCourierConfig = (_config: CourierConfig) => {
-    addToast({ type: 'error', title: 'Courier configuration unavailable', message: 'Provider credentials are not persisted until the EasyParcel integration is implemented.' });
+  const refreshEasyParcelProvider = async (): Promise<void> => {
+    const provider = await fetchEasyParcelProvider(laravelBootstrap);
+    setCourierConfigs(courierConfigsFromEasyParcel(provider));
   };
 
-  const toggleCourierStatus = (_id: string) => {
-    addToast({ type: 'error', title: 'Courier activation unavailable', message: 'Activation is blocked until the provider credentials can be verified server-side.' });
+  const saveCourierConfig = (config: CourierConfig) => {
+    if (config.courierCode !== 'easyparcel') {
+      addToast({ type: 'error', title: 'Courier not configured', message: 'Only EasyParcel Sandbox is available for this store. This courier has no provider integration.' });
+      return;
+    }
+    if (config.environment !== 'sandbox') {
+      addToast({ type: 'error', title: 'Production mode unavailable', message: 'EasyParcel Production credentials are intentionally not accepted in this Sandbox-only integration.' });
+      return;
+    }
+    if (!config.apiKey.trim() || !config.apiSecret.trim()) {
+      addToast({ type: 'error', title: 'Credentials required', message: 'Enter the EasyParcel Open API client ID and client secret before saving.' });
+      return;
+    }
+    void saveEasyParcelCredentials(laravelBootstrap, {
+      environment: 'sandbox',
+      clientId: config.apiKey.trim(),
+      clientSecret: config.apiSecret,
+      enabled: config.isEnabled,
+    }).then((provider) => {
+      setCourierConfigs(courierConfigsFromEasyParcel(provider));
+      addToast({ type: 'success', title: 'EasyParcel saved', message: 'Sandbox credentials are encrypted server-side. Complete authorization before activation.' });
+    }).catch((error) => {
+      addToast({ type: 'error', title: 'EasyParcel save failed', message: error instanceof Error ? error.message : 'Provider configuration could not be saved.' });
+    });
   };
 
-  const pingCourierAPI = async (_id: string): Promise<number> => {
-    addToast({ type: 'error', title: 'Provider health check unavailable', message: 'No courier endpoint has been configured, so no test request was sent.' });
+  const toggleCourierStatus = (id: string) => {
+    const courier = courierConfigs.find((entry) => entry.id === id);
+    if (courier?.courierCode === 'easyparcel') {
+      addToast({ type: 'info', title: 'Authorization required', message: 'Open EasyParcel credentials and complete the provider authorization flow before activation.' });
+      return;
+    }
+    addToast({ type: 'error', title: 'Courier not configured', message: 'This courier has no configured provider integration.' });
+  };
+
+  const pingCourierAPI = async (id: string): Promise<number> => {
+    const courier = courierConfigs.find((entry) => entry.id === id);
+    if (courier?.courierCode === 'easyparcel') {
+      try {
+        startEasyParcelAuthorization(laravelBootstrap);
+      } catch (error) {
+        addToast({ type: 'error', title: 'EasyParcel authorization unavailable', message: error instanceof Error ? error.message : 'Unable to start provider authorization.' });
+      }
+      return 0;
+    }
+    addToast({ type: 'error', title: 'Courier not configured', message: 'This courier has no provider endpoint to test.' });
     return 0;
   };
 
@@ -3682,6 +3737,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
         simulateIncomingOrder,
         courierConfigs,
         saveCourierConfig,
+        refreshEasyParcelProvider,
         toggleCourierStatus,
         pingCourierAPI,
         topUpEasyParcelWallet,

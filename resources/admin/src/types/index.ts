@@ -32,6 +32,10 @@ export interface LaravelAdminBootstrap {
   menusUrl?: string;
   ordersUrl?: string;
   shipmentsUrl?: string;
+  easyParcelProviderUrl?: string;
+  easyParcelProviderAuthorizeUrl?: string;
+  easyParcelProviderTestConnectionUrl?: string;
+  easyParcelOrdersUrl?: string;
   couponsUrl?: string;
   commerceSettingsUrl?: string;
   taxSettingsUrl?: string;

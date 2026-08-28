@@ -30,6 +30,9 @@ export const CourierConfigTab: React.FC<CourierConfigTabProps> = ({
   onPingCourier,
   onTopUpEasyParcel
 }) => {
+  const easyParcel = couriers.find((courier) => courier.courierCode === 'easyparcel');
+  const gatewayHealthy = easyParcel?.status === 'connected';
+
   return (
     <div className="space-y-6">
       {/* Top Banner */}
@@ -45,9 +48,13 @@ export const CourierConfigTab: React.FC<CourierConfigTabProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold border border-emerald-200 dark:border-emerald-800">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            API Gateway Healthy
+          <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border ${
+            gatewayHealthy
+              ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+              : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+          }`}>
+            <span className={`w-2 h-2 rounded-full ${gatewayHealthy ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+            {gatewayHealthy ? 'API Gateway Healthy' : 'Gateway Configuration Required'}
           </span>
         </div>
       </div>
@@ -55,7 +62,6 @@ export const CourierConfigTab: React.FC<CourierConfigTabProps> = ({
       {/* Courier Gateway Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {couriers.map((courier) => {
-          const isConfigured = Boolean(courier.apiKey || (courier as any).credentials?.apiKey || (courier as any).credentials?.sandboxApiKey);
           const isEasyParcel = courier.courierCode === 'easyparcel';
           const supportsCod = courier.supportsCOD ?? (courier as any).features?.supportsCod ?? false;
           const supportsEM = courier.supportsEastMalaysia ?? (courier as any).features?.supportsEastMalaysia ?? false;
@@ -116,11 +122,12 @@ export const CourierConfigTab: React.FC<CourierConfigTabProps> = ({
                     <div>
                       <span className="text-[10px] text-pink-700 dark:text-pink-300 block font-medium">Prepaid Wallet</span>
                       <span className="font-mono font-bold text-base text-pink-900 dark:text-pink-200">
-                        RM {(courier.walletBalance || 0).toFixed(2)}
+                        {courier.walletBalance === undefined ? 'Unavailable' : `RM ${courier.walletBalance.toFixed(2)}`}
                       </span>
                     </div>
                     <button
                       onClick={() => onTopUpEasyParcel(100)}
+                      title="Wallet top-up is not available through this integration"
                       className="px-2.5 py-1 text-[11px] font-bold text-white bg-pink-600 hover:bg-pink-700 rounded-lg transition-colors cursor-pointer shadow-sm"
                     >
                       + RM100
