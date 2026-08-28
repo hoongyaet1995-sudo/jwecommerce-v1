@@ -63,6 +63,7 @@ export const CourierConfigTab: React.FC<CourierConfigTabProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {couriers.map((courier) => {
           const isEasyParcel = courier.courierCode === 'easyparcel';
+          const walletAvailable = typeof courier.walletBalance === 'number';
           const supportsCod = courier.supportsCOD ?? (courier as any).features?.supportsCod ?? false;
           const supportsEM = courier.supportsEastMalaysia ?? (courier as any).features?.supportsEastMalaysia ?? false;
           const autoQueue = courier.autoRetryQueue ?? (courier as any).features?.autoAwbGeneration ?? false;
@@ -122,13 +123,14 @@ export const CourierConfigTab: React.FC<CourierConfigTabProps> = ({
                     <div>
                       <span className="text-[10px] text-pink-700 dark:text-pink-300 block font-medium">Prepaid Wallet</span>
                       <span className="font-mono font-bold text-base text-pink-900 dark:text-pink-200">
-                        {courier.walletBalance === undefined ? 'Unavailable' : `RM ${courier.walletBalance.toFixed(2)}`}
+                        {walletAvailable ? `RM ${courier.walletBalance.toFixed(2)}` : 'Unavailable'}
                       </span>
                     </div>
                     <button
-                      onClick={() => onTopUpEasyParcel(100)}
-                      title="Wallet top-up is not available through this integration"
-                      className="px-2.5 py-1 text-[11px] font-bold text-white bg-pink-600 hover:bg-pink-700 rounded-lg transition-colors cursor-pointer shadow-sm"
+                      onClick={() => { if (walletAvailable) onTopUpEasyParcel(100); }}
+                      disabled={!walletAvailable}
+                      title={walletAvailable ? undefined : 'Wallet top-up is not available through this integration'}
+                      className="px-2.5 py-1 text-[11px] font-bold text-white bg-pink-600 hover:bg-pink-700 rounded-lg transition-colors cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       + RM100
                     </button>
