@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Truck, 
   Package, 
@@ -100,6 +100,16 @@ export const ShippingDashboard: React.FC = () => {
   const [editingRate, setEditingRate] = useState<GeneralShippingRate | null>(null);
   const [isEasyParcelOAuthOpen, setIsEasyParcelOAuthOpen] = useState(false);
   const [easyParcelBookingParcel, setEasyParcelBookingParcel] = useState<ShipmentParcel | null>(null);
+  const [easyParcelCallbackState, setEasyParcelCallbackState] = useState(window.__JW_ADMIN__?.easyParcelConnection?.state ?? null);
+
+  useEffect(() => {
+    if (!easyParcelCallbackState) return;
+    const easyParcel = courierConfigs.find((courier) => courier.courierCode === 'easyparcel');
+    if (easyParcel) {
+      setEditingCourier(easyParcel);
+      setIsEasyParcelOAuthOpen(true);
+    }
+  }, [courierConfigs, easyParcelCallbackState]);
 
   // Counts for badge notifications
   const pendingAwbCount = shipmentParcels.filter(p => p.status === 'pending').length;
@@ -462,7 +472,8 @@ export const ShippingDashboard: React.FC = () => {
         <EasyParcelOAuthModal
           isOpen={isEasyParcelOAuthOpen}
           provider={{ provider: 'easyparcel', environment: 'sandbox', configured: true, enabled: editingCourier.isEnabled, connectionState: editingCourier.status === 'connected' ? 'connected' : editingCourier.status === 'error' ? 'failed' : 'unconfigured', lastVerifiedAt: null, lastError: null }}
-          onClose={() => { setIsEasyParcelOAuthOpen(false); setEditingCourier(null); }}
+          callbackState={easyParcelCallbackState}
+          onClose={() => { setEasyParcelCallbackState(null); setIsEasyParcelOAuthOpen(false); setEditingCourier(null); }}
           onAuthorize={() => { void pingCourierAPI(editingCourier.id); }}
           onDisconnect={async () => { await disconnectEasyParcel(); setEditingCourier({ ...editingCourier, isEnabled: false, status: 'pending_keys' }); }}
         />

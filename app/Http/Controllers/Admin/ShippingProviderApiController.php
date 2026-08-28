@@ -8,8 +8,6 @@ use App\Services\Shipping\ShippingProviderConfigurationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Throwable;
 
 class ShippingProviderApiController extends Controller
 {
@@ -40,35 +38,6 @@ class ShippingProviderApiController extends Controller
         return response()->json(['data' => $this->configuration->disconnect()]);
     }
 
-    public function testConnection(Request $request): JsonResponse
-    {
-        $this->authorizeAdmin($request);
-        $data = $request->validate([
-            'authorizationCode' => ['required', 'string', 'max:4096'],
-            'redirectUri' => [
-                'required',
-                'url:https',
-                'max:2048',
-                Rule::in([(string) config('services.easyparcel.redirect_uri')]),
-            ],
-        ]);
-
-        try {
-            $result = $this->configuration->testConnection($data['authorizationCode'], $data['redirectUri']);
-        } catch (Throwable) {
-            return response()->json(['message' => 'Provider connection could not be verified.'], 500);
-        }
-
-        if (! $result['verified']) {
-            return response()->json([
-                'message' => 'Connection verification failed.',
-                'data' => $result['status'],
-            ], 422);
-        }
-
-        return response()->json(['data' => $result['status']]);
-    }
-
     public function beginAuthorization(Request $request): RedirectResponse
     {
         $this->authorizeAdmin($request);
@@ -81,11 +50,11 @@ class ShippingProviderApiController extends Controller
                 (string) config('services.easyparcel.redirect_uri'),
             );
         } catch (Throwable) {
-            return $this->callbackRedirect(false);
+            return $this->callbackRedirect('failed');
         }
 
         if ($authorizationUrl === null) {
-            return $this->callbackRedirect(false);
+            return $this->callbackRedirect('failed');
         }
 
         $request->session()->put(self::AUTHORIZATION_SESSION_BINDING_KEY, $sessionBinding);
@@ -107,6 +76,12 @@ class ShippingProviderApiController extends Controller
             return redirect()->route('admin.shipping.easyparcel.callback.denied');
         }
 
+        if ($request->query('error') !== null) {
+            $this->sanitizeCallbackRequest($request);
+
+            return $this->callbackRedirect('cancelled');
+        }
+
         $callback = $this->consumeCallbackRequest($request);
 
         try {
@@ -118,10 +93,10 @@ class ShippingProviderApiController extends Controller
                 (string) config('services.easyparcel.redirect_uri'),
             );
         } catch (Throwable) {
-            return $this->callbackRedirect(false);
+            return $this->callbackRedirect('failed');
         }
 
-        return $this->callbackRedirect($verified);
+        return $this->callbackRedirect($verified ? 'connected' : 'failed');
     }
 
     public function callbackDenied(Request $request): RedirectResponse
@@ -129,7 +104,7 @@ class ShippingProviderApiController extends Controller
         abort_if($request->user() === null, 401);
         $this->authorizeAdmin($request);
 
-        return $this->callbackRedirect(false);
+        return $this->callbackRedirect('failed');
     }
 
     /** @return array{code: string|null, state: string|null} */
@@ -172,13 +147,17 @@ class ShippingProviderApiController extends Controller
         return $request->user()?->is_admin === true && $request->user()?->is_super_admin === true;
     }
 
-    private function callbackRedirect(bool $verified): RedirectResponse
+    private function callbackRedirect(string $state): RedirectResponse
     {
+        $message = match ($state) {
+            'connected' => 'EasyParcel connection verified.',
+            'cancelled' => 'EasyParcel authorization was not completed.',
+            default => 'EasyParcel connection could not be verified.',
+        };
+
         return redirect()->route('admin.shipping')->with('easyparcelConnection', [
-            'state' => $verified ? 'connected' : 'failed',
-            'message' => $verified
-                ? 'EasyParcel connection verified.'
-                : 'EasyParcel connection could not be verified.',
+            'state' => $state,
+            'message' => $message,
         ]);
     }
 }

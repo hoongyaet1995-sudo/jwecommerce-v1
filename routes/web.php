@@ -173,7 +173,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/api/shipping/providers/easyparcel', [ShippingProviderApiController::class, 'update'])->name('api.shipping.providers.easyparcel.update');
     Route::delete('/api/shipping/providers/easyparcel', [ShippingProviderApiController::class, 'disconnect'])->name('api.shipping.providers.easyparcel.disconnect');
     Route::post('/api/shipping/providers/easyparcel/authorize', [ShippingProviderApiController::class, 'beginAuthorization'])->name('api.shipping.providers.easyparcel.authorize');
-    Route::post('/api/shipping/providers/easyparcel/test-connection', [ShippingProviderApiController::class, 'testConnection'])->name('api.shipping.providers.easyparcel.test-connection');
     Route::post('/api/orders/{order}/refund', [OrderApiController::class, 'refund']);
     Route::get('/api/coupons', [CouponApiController::class, 'index'])->name('api.coupons.index');
     Route::post('/api/coupons', [CouponApiController::class, 'store']);

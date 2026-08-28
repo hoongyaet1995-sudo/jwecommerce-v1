@@ -65,4 +65,32 @@ class EasyParcelPlatformOauthTest extends TestCase
 
         $this->assertDatabaseCount('shipping_provider_credentials', 0);
     }
+
+    public function test_retired_browser_token_exchange_endpoint_is_not_routable_and_cannot_mutate_connection_state(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+
+        $this->actingAs($admin)->postJson('/admin/api/shipping/providers/easyparcel/test-connection', [
+            'authorizationCode' => 'unbound-browser-code',
+            'redirectUri' => 'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback',
+        ])->assertNotFound();
+
+        $this->assertDatabaseCount('shipping_providers', 0);
+        $this->assertDatabaseCount('shipping_provider_credentials', 0);
+    }
+
+    public function test_provider_cancellation_returns_only_the_safe_cancelled_oauth_result(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+
+        $response = $this->actingAs($admin)->get('/admin/shipping/easyparcel/callback?error=access_denied&error_description=private-provider-detail');
+
+        $response->assertRedirect('/admin/shipping')
+            ->assertSessionHas('easyparcelConnection', [
+                'state' => 'cancelled',
+                'message' => 'EasyParcel authorization was not completed.',
+            ]);
+        $this->assertStringNotContainsString('private-provider-detail', $response->getContent());
+        $this->assertDatabaseCount('shipping_providers', 0);
+    }
 }

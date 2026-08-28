@@ -34,7 +34,7 @@ export interface LaravelAdminBootstrap {
   shipmentsUrl?: string;
   easyParcelProviderUrl?: string;
   easyParcelProviderAuthorizeUrl?: string;
-  easyParcelProviderTestConnectionUrl?: string;
+  easyParcelConnection?: { state: 'connected' | 'failed' | 'cancelled'; message: string } | null;
   easyParcelOrdersUrl?: string;
   couponsUrl?: string;
   commerceSettingsUrl?: string;
