@@ -8,11 +8,23 @@ use App\Models\Shipment;
 use App\Models\ShipmentEvent;
 use App\Models\User;
 use App\Services\Shipping\EasyParcelBookingGuard;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class ShipmentService
 {
+    /** @var list<string> */
+    private const EASYPARCEL_EVENT_STATUSES = [
+        'pending',
+        'shipped',
+        'in_transit',
+        'delivered',
+        'failed_delivery',
+        'returned',
+        'provider_update',
+    ];
+
     public function __construct(private readonly EasyParcelBookingGuard $easyParcelBookings) {}
 
     public function dispatchManually(Order $order, User $actor, string $carrierName, string $trackingNumber): Shipment
@@ -124,6 +136,62 @@ class ShipmentService
         });
     }
 
+    /**
+     * @param  list<array{
+     *     external_event_id: string,
+     *     status: string,
+     *     occurred_at: CarbonInterface,
+     *     description: string,
+     *     location: ?string
+     * }>  $events
+     */
+    public function recordEasyParcelEvents(
+        Shipment $shipment,
+        string $expectedTrackingNumber,
+        array $events,
+    ): int {
+        return DB::transaction(function () use ($shipment, $expectedTrackingNumber, $events): int {
+            $lockedOrder = Order::query()->lockForUpdate()->findOrFail($shipment->order_id);
+            $lockedShipment = Shipment::query()->lockForUpdate()->findOrFail($shipment->id);
+
+            if ($lockedShipment->order_id !== $lockedOrder->id
+                || $lockedShipment->source !== 'easyparcel'
+                || ! hash_equals($expectedTrackingNumber, (string) $lockedShipment->tracking_number)) {
+                throw new InvalidArgumentException('Only EasyParcel shipments accept provider tracking events.');
+            }
+
+            $created = 0;
+            foreach ($events as $event) {
+                $this->assertValidEasyParcelEvent($event);
+
+                $stored = ShipmentEvent::query()->firstOrCreate([
+                    'shipment_id' => $lockedShipment->id,
+                    'external_event_id' => $event['external_event_id'],
+                ], [
+                    'status' => $event['status'],
+                    'occurred_at' => $event['occurred_at'],
+                    'location' => $event['location'],
+                    'description' => $event['description'],
+                    'source' => 'easyparcel',
+                    'created_by' => null,
+                ]);
+
+                if (! $stored->wasRecentlyCreated) {
+                    continue;
+                }
+
+                $created++;
+                $this->projectEasyParcelEventToOrder($lockedOrder, $lockedShipment, $stored);
+            }
+
+            if ($created > 0) {
+                $this->projectEasyParcelShipmentLifecycle($lockedShipment);
+            }
+
+            return $created;
+        });
+    }
+
     /** @return list<string> */
     private function allowedNextStatuses(string $status): array
     {
@@ -133,5 +201,123 @@ class ShipmentService
             'out_for_delivery' => ['delivered', 'failed_delivery', 'returned'],
             default => [],
         };
+    }
+
+    /**
+     * @param  array{
+     *     external_event_id: string,
+     *     status: string,
+     *     occurred_at: CarbonInterface,
+     *     description: string,
+     *     location: ?string
+     * }  $event
+     */
+    private function assertValidEasyParcelEvent(array $event): void
+    {
+        if (! str_starts_with($event['external_event_id'], 'easyparcel:')
+            || mb_strlen($event['external_event_id']) > 160
+            || ! in_array($event['status'], self::EASYPARCEL_EVENT_STATUSES, true)
+            || trim($event['description']) === ''
+            || mb_strlen($event['description']) > 2000
+            || ($event['location'] !== null && mb_strlen($event['location']) > 255)) {
+            throw new InvalidArgumentException('The EasyParcel tracking event is invalid.');
+        }
+    }
+
+    private function projectEasyParcelEventToOrder(
+        Order $order,
+        Shipment $shipment,
+        ShipmentEvent $event,
+    ): void {
+        $trackingSnapshot = [];
+        if (filled($shipment->carrier_name)
+            && (blank($order->tracking_carrier) || $order->tracking_carrier === $shipment->carrier_name)) {
+            $trackingSnapshot['tracking_carrier'] = $shipment->carrier_name;
+        }
+        if (filled($shipment->tracking_number)
+            && (blank($order->tracking_number) || $order->tracking_number === $shipment->tracking_number)) {
+            $trackingSnapshot['tracking_number'] = $shipment->tracking_number;
+        }
+        if ($trackingSnapshot !== []) {
+            $order->forceFill($trackingSnapshot)->save();
+        }
+
+        if (in_array($event->status, ['shipped', 'in_transit'], true)) {
+            $this->advanceEasyParcelOrderToShipped($order, $shipment, $event->occurred_at);
+
+            return;
+        }
+
+        if ($event->status !== 'delivered') {
+            return;
+        }
+
+        $this->advanceEasyParcelOrderToShipped($order, $shipment, $event->occurred_at);
+        if ($order->status !== 'shipped') {
+            return;
+        }
+
+        $from = $order->status;
+        $order->forceFill(['status' => 'delivered'])->save();
+        OrderStatusHistory::query()->create([
+            'order_id' => $order->id,
+            'from_status' => $from,
+            'to_status' => 'delivered',
+            'user_id' => null,
+            'note' => 'EasyParcel tracking confirmed delivery.',
+        ]);
+    }
+
+    private function advanceEasyParcelOrderToShipped(
+        Order $order,
+        Shipment $shipment,
+        CarbonInterface $occurredAt,
+    ): void {
+        if ($order->status !== 'processing') {
+            return;
+        }
+
+        $from = $order->status;
+        $order->forceFill([
+            'status' => 'shipped',
+            'tracking_carrier' => $shipment->carrier_name,
+            'tracking_number' => $shipment->tracking_number,
+            'shipped_at' => $order->shipped_at ?? $occurredAt,
+        ])->save();
+        OrderStatusHistory::query()->create([
+            'order_id' => $order->id,
+            'from_status' => $from,
+            'to_status' => 'shipped',
+            'user_id' => null,
+            'note' => 'EasyParcel tracking confirmed carrier handoff.',
+        ]);
+    }
+
+    private function projectEasyParcelShipmentLifecycle(Shipment $shipment): void
+    {
+        $providerEvents = ShipmentEvent::query()
+            ->where('shipment_id', $shipment->id)
+            ->where('source', 'easyparcel');
+        $latest = (clone $providerEvents)
+            ->whereIn('status', ['pending', 'shipped', 'in_transit', 'delivered', 'failed_delivery', 'returned'])
+            ->orderByDesc('occurred_at')
+            ->orderByDesc('id')
+            ->first();
+        $firstDispatch = (clone $providerEvents)
+            ->whereIn('status', ['shipped', 'in_transit', 'delivered'])
+            ->oldest('occurred_at')
+            ->oldest('id')
+            ->first();
+        $firstDelivery = (clone $providerEvents)
+            ->where('status', 'delivered')
+            ->oldest('occurred_at')
+            ->oldest('id')
+            ->first();
+
+        $shipment->forceFill([
+            'status' => $latest?->status ?? $shipment->status,
+            'dispatched_at' => $shipment->dispatched_at ?? $firstDispatch?->occurred_at,
+            'delivered_at' => $shipment->delivered_at ?? $firstDelivery?->occurred_at,
+        ])->save();
     }
 }

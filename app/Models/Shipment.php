@@ -11,6 +11,7 @@ class Shipment extends Model
     protected $hidden = [
         'label_path',
         'tracking_url',
+        'tracking_polled_at',
     ];
 
     protected $fillable = [
@@ -28,6 +29,7 @@ class Shipment extends Model
             'cancelled_at' => 'datetime',
             'quote_snapshot' => 'array',
             'package_snapshot' => 'array',
+            'tracking_polled_at' => 'datetime',
         ];
     }
 

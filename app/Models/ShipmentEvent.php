@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ShipmentEvent extends Model
 {
+    protected $hidden = ['external_event_id'];
+
     protected $fillable = ['shipment_id', 'status', 'occurred_at', 'location', 'description', 'source', 'external_event_id', 'created_by'];
 
     protected function casts(): array

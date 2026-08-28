@@ -5,7 +5,6 @@ namespace App\Domain\Orders;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\ShipmentEvent;
-use Illuminate\Support\Collection;
 
 class OrderTrackingPayloadFactory
 {
@@ -114,11 +113,12 @@ class OrderTrackingPayloadFactory
     private function shipmentTitle(string $status): string
     {
         return match ($status) {
+            'pending' => 'Shipment Confirmed',
             'shipped' => 'Handed to Carrier',
             'in_transit' => 'In Transit',
             'out_for_delivery' => 'Out for Delivery',
             'delivered' => 'Delivered',
-            'failed_delivery' => 'Delivery Update',
+            'failed_delivery' => 'Delivery Exception',
             'returned' => 'Return Update',
             default => 'Shipment Update',
         };
