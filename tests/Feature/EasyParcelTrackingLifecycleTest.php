@@ -22,6 +22,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class EasyParcelTrackingLifecycleTest extends TestCase
@@ -276,6 +277,115 @@ class EasyParcelTrackingLifecycleTest extends TestCase
         self::assertSame('pending', $shipment->fresh()->status);
         self::assertNull($shipment->fresh()->tracking_polled_at);
         self::assertSame('processing', $order->fresh()->status);
+    }
+
+    /**
+     * @param  array{
+     *     event_date: string,
+     *     shipment_status_code: int,
+     *     tracking_status?: string,
+     *     location: null
+     * }  $malformedLog
+     */
+    #[DataProvider('missingOrEmptyTrackingStatusProvider')]
+    public function test_missing_or_empty_tracking_status_fails_the_entire_batch_before_projection(
+        string $case,
+        array $malformedLog,
+    ): void {
+        $this->connectedProvider();
+        [, $validOrder] = $this->processingOrder('JW-TRACK-VALID-'.strtoupper($case));
+        $validShipment = $this->easyParcelShipment($validOrder, 'AWB-VALID-'.strtoupper($case));
+        [, $malformedOrder] = $this->processingOrder('JW-TRACK-MALFORMED-'.strtoupper($case));
+        $malformedShipment = $this->easyParcelShipment(
+            $malformedOrder,
+            'AWB-MALFORMED-'.strtoupper($case),
+        );
+
+        Http::fake([
+            EasyParcelTrackingService::TRACKING_URL => Http::response([
+                'status_code' => 200,
+                'request_id' => 'tracking-status-required-'.$case,
+                'message' => '2 requests success, 0 request error.',
+                'data' => ['results' => [
+                    [
+                        'status' => 'success',
+                        'awb_number' => $validShipment->tracking_number,
+                        'shipment_number' => 'ES-VALID-'.$case,
+                        'order_number' => 'EI-VALID-'.$case,
+                        'latest_shipment_status_code' => 3,
+                        'latest_tracking_status' => 'Parcel collected by courier',
+                        'latest_event_date' => '2026-08-27 01:00:00',
+                        'status_log' => [[
+                            'event_date' => '2026-08-27 01:00:00',
+                            'shipment_status_code' => 3,
+                            'tracking_status' => 'Parcel collected by courier',
+                            'location' => 'Penang Hub',
+                        ]],
+                    ],
+                    [
+                        'status' => 'success',
+                        'awb_number' => $malformedShipment->tracking_number,
+                        'shipment_number' => 'ES-MALFORMED-'.$case,
+                        'order_number' => 'EI-MALFORMED-'.$case,
+                        'latest_shipment_status_code' => 5,
+                        'latest_tracking_status' => 'Delivered to recipient',
+                        'latest_event_date' => '2026-08-27 02:00:00',
+                        'status_log' => [$malformedLog],
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $exception = null;
+        try {
+            app(EasyParcelTrackingService::class)->syncNextBatch();
+        } catch (EasyParcelTrackingException $caught) {
+            $exception = $caught;
+        }
+
+        self::assertSame(0, $validShipment->events()->count());
+        self::assertSame(0, $malformedShipment->events()->count());
+        self::assertNull($validShipment->fresh()->tracking_polled_at);
+        self::assertNull($malformedShipment->fresh()->tracking_polled_at);
+        self::assertSame('pending', $validShipment->fresh()->status);
+        self::assertSame('pending', $malformedShipment->fresh()->status);
+        self::assertSame('processing', $validOrder->fresh()->status);
+        self::assertSame('processing', $malformedOrder->fresh()->status);
+        self::assertSame(
+            0,
+            $validOrder->statusHistory()->whereIn('to_status', ['shipped', 'delivered'])->count(),
+        );
+        self::assertSame(
+            0,
+            $malformedOrder->statusHistory()->whereIn('to_status', ['shipped', 'delivered'])->count(),
+        );
+        self::assertInstanceOf(EasyParcelTrackingException::class, $exception);
+        self::assertSame('EasyParcel tracking synchronization failed.', $exception->getMessage());
+    }
+
+    /**
+     * @return array<string, array{string, array{
+     *     event_date: string,
+     *     shipment_status_code: int,
+     *     tracking_status?: string,
+     *     location: null
+     * }}>
+     */
+    public static function missingOrEmptyTrackingStatusProvider(): array
+    {
+        return [
+            'missing tracking_status' => ['missing', [
+                'event_date' => '2026-08-27 02:00:00',
+                'shipment_status_code' => 5,
+                'location' => null,
+            ]],
+            'empty tracking_status' => ['empty', [
+                'event_date' => '2026-08-27 02:00:00',
+                'shipment_status_code' => 5,
+                'tracking_status' => '',
+                'location' => null,
+            ]],
+        ];
     }
 
     public function test_stale_provider_response_cannot_mutate_shipments_after_configuration_changes(): void

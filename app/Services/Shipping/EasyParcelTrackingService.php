@@ -284,7 +284,7 @@ final class EasyParcelTrackingService
         $status = $this->normalizedStatus($code);
         $occurredAt = $this->eventTime($log['event_date'] ?? null);
         $description = $this->normalizedText($log['tracking_status'] ?? null, 2000)
-            ?? $this->defaultDescription($status);
+            ?? throw new EasyParcelTrackingException;
         $location = $this->normalizedText($log['location'] ?? null, 255);
 
         try {
@@ -364,19 +364,6 @@ final class EasyParcelTrackingService
             5 => 'delivered',
             6 => 'returned',
             default => 'provider_update',
-        };
-    }
-
-    private function defaultDescription(string $status): string
-    {
-        return match ($status) {
-            'pending' => 'EasyParcel is preparing the shipment.',
-            'shipped' => 'EasyParcel confirmed carrier handoff.',
-            'in_transit' => 'The shipment is in transit.',
-            'delivered' => 'EasyParcel confirmed delivery.',
-            'failed_delivery' => 'EasyParcel reported a delivery exception.',
-            'returned' => 'EasyParcel reported a return.',
-            default => 'EasyParcel reported a shipment update.',
         };
     }
 }
