@@ -8,6 +8,8 @@ use App\Models\User;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
+use Illuminate\Support\Facades\Event;
+use RuntimeException;
 use Tests\TestCase;
 
 class EasyParcelPlatformOauthTest extends TestCase
@@ -92,5 +94,37 @@ class EasyParcelPlatformOauthTest extends TestCase
             ]);
         $this->assertStringNotContainsString('private-provider-detail', $response->getContent());
         $this->assertDatabaseCount('shipping_providers', 0);
+    }
+
+    public function test_cancelled_issued_state_is_terminal_and_cannot_later_complete_a_connection(): void
+    {
+        config()->set('services.easyparcel.client_id', 'platform-client');
+        config()->set('services.easyparcel.client_secret', 'platform-secret');
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        $start = $this->actingAs($admin)->post('/admin/api/shipping/providers/easyparcel/authorize');
+        parse_str((string) parse_url((string) $start->headers->get('Location'), PHP_URL_QUERY), $query);
+
+        $this->get('/admin/shipping/easyparcel/callback?error=access_denied&state='.$query['state'])
+            ->assertSessionHas('easyparcelConnection.state', 'cancelled');
+        $this->get('/admin/shipping/easyparcel/callback?code=late-code&state='.$query['state'])
+            ->assertSessionHas('easyparcelConnection.state', 'failed');
+
+        $this->assertSame(1, \App\Models\ShippingProviderAuthorizationTransaction::query()->whereNotNull('consumed_at')->count());
+        $this->assertDatabaseCount('shipping_provider_credentials', 0);
+    }
+
+    public function test_oauth_service_exception_is_shielded_by_a_safe_failed_redirect(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        Event::listen('eloquent.creating: '.ShippingProvider::class, function (): void {
+            throw new RuntimeException('provider-private-detail');
+        });
+        try {
+            $response = $this->actingAs($admin)->post('/admin/api/shipping/providers/easyparcel/authorize');
+            $response->assertRedirect('/admin/shipping')->assertSessionHas('easyparcelConnection.state', 'failed');
+            $this->assertStringNotContainsString('provider-private-detail', $response->getContent());
+        } finally {
+            Event::forget('eloquent.creating: '.ShippingProvider::class);
+        }
     }
 }

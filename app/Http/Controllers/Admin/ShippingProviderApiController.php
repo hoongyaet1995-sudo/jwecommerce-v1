@@ -8,6 +8,7 @@ use App\Services\Shipping\ShippingProviderConfigurationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Throwable;
 
 class ShippingProviderApiController extends Controller
 {
@@ -77,7 +78,19 @@ class ShippingProviderApiController extends Controller
         }
 
         if ($request->query('error') !== null) {
+            $state = $request->query('state');
             $this->sanitizeCallbackRequest($request);
+            try {
+                $this->authorization->cancel(
+                    $request->user()->id,
+                    $this->authorizationSessionBinding($request),
+                    is_string($state) ? $state : null,
+                );
+            } catch (Throwable) {
+                // Provider cancellation must never reveal a callback or persistence failure.
+            } finally {
+                $request->session()->forget(self::AUTHORIZATION_SESSION_BINDING_KEY);
+            }
 
             return $this->callbackRedirect('cancelled');
         }
@@ -94,6 +107,8 @@ class ShippingProviderApiController extends Controller
             );
         } catch (Throwable) {
             return $this->callbackRedirect('failed');
+        } finally {
+            $request->session()->forget(self::AUTHORIZATION_SESSION_BINDING_KEY);
         }
 
         return $this->callbackRedirect($verified ? 'connected' : 'failed');
@@ -103,6 +118,8 @@ class ShippingProviderApiController extends Controller
     {
         abort_if($request->user() === null, 401);
         $this->authorizeAdmin($request);
+
+        $request->session()->forget(self::AUTHORIZATION_SESSION_BINDING_KEY);
 
         return $this->callbackRedirect('failed');
     }

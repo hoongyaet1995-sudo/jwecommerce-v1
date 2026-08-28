@@ -94,6 +94,14 @@ final class EasyParcelOAuthAuthorizationService
         )['verified'];
     }
 
+    /**
+     * Makes a provider-denied OAuth callback terminal without exchanging a code.
+     */
+    public function cancel(int $userId, string $sessionBinding, ?string $state): bool
+    {
+        return $this->consume($userId, $sessionBinding, $state) !== null;
+    }
+
     public function consume(int $userId, string $sessionBinding, ?string $state): ?int
     {
         if (DB::connection()->transactionLevel() !== 0) {
