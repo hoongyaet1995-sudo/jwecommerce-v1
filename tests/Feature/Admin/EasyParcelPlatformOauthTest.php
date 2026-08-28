@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -180,6 +181,7 @@ class EasyParcelPlatformOauthTest extends TestCase
 
     public function test_callback_accepts_easyparcel_wrapped_state_without_persisting_the_provider_envelope(): void
     {
+        $this->withoutMiddleware(ValidateCsrfToken::class);
         config()->set('services.easyparcel.client_id', 'platform-client');
         config()->set('services.easyparcel.client_secret', 'platform-secret');
         Http::fake([
@@ -188,9 +190,9 @@ class EasyParcelPlatformOauthTest extends TestCase
                 'access_token' => 'provider-token',
                 'expires_in' => 3600,
             ]),
-            'https://api.easyparcel.com/open_api/2026-06/wallet' => Http::response([
+            'https://api.easyparcel.com/open_api/2026-06/account/get_account_information' => Http::response([
                 'status_code' => 200,
-                'data' => ['wallet' => [], 'free_credit_wallet' => []],
+                'data' => ['account' => ['name' => 'Sandbox Account']],
             ]),
         ]);
         $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);

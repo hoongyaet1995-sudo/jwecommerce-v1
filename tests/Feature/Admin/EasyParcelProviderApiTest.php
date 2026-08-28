@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -37,14 +38,16 @@ class EasyParcelProviderApiTest extends TestCase
 
     public function test_callback_exchanges_tokens_only_after_the_session_bound_authorization_state_and_stores_no_platform_credentials(): void
     {
+        $this->withoutMiddleware(ValidateCsrfToken::class);
         $this->platform();
         $admin = $this->superAdmin();
         Http::fake([
             'https://api.easyparcel.com/oauth/token' => Http::response([
                 'token_type' => 'Bearer', 'access_token' => 'connected-token', 'expires_in' => 3600,
             ]),
-            'https://api.easyparcel.com/open_api/2026-06/wallet' => Http::response([
-                'status_code' => 200, 'data' => ['wallet' => [], 'free_credit_wallet' => []],
+            'https://api.easyparcel.com/open_api/2026-06/account/get_account_information' => Http::response([
+                'status_code' => 200,
+                'data' => ['account' => ['name' => 'Sandbox Account', 'account_type' => 'Personal']],
             ]),
         ]);
 
@@ -63,15 +66,19 @@ class EasyParcelProviderApiTest extends TestCase
         $raw = (string) DB::table('shipping_provider_credentials')->value('credentials');
         $this->assertStringNotContainsString('connected-token', $raw);
         $this->assertStringNotContainsString('platform-secret', $raw);
+        Http::assertSent(fn ($request) => $request->method() === 'POST'
+            && $request->url() === 'https://api.easyparcel.com/open_api/2026-06/account/get_account_information'
+            && $request->hasHeader('Authorization', 'Bearer connected-token'));
     }
 
     public function test_replayed_callback_state_never_repeats_the_token_exchange_or_disconnects_the_store(): void
     {
+        $this->withoutMiddleware(ValidateCsrfToken::class);
         $this->platform();
         $admin = $this->superAdmin();
         Http::fake([
             'https://api.easyparcel.com/oauth/token' => Http::response(['token_type' => 'Bearer', 'access_token' => 'once-token']),
-            'https://api.easyparcel.com/open_api/2026-06/wallet' => Http::response(['status_code' => 200, 'data' => ['wallet' => [], 'free_credit_wallet' => []]]),
+            'https://api.easyparcel.com/open_api/2026-06/account/get_account_information' => Http::response(['status_code' => 200, 'data' => ['account' => ['name' => 'Sandbox Account']]]),
         ]);
         $start = $this->actingAs($admin)->post('/admin/api/shipping/providers/easyparcel/authorize');
         parse_str((string) parse_url((string) $start->headers->get('Location'), PHP_URL_QUERY), $query);

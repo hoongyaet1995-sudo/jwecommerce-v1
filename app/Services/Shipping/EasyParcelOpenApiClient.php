@@ -14,7 +14,7 @@ final class EasyParcelOpenApiClient
 
     public const TOKEN_URL = 'https://api.easyparcel.com/oauth/token';
 
-    public const WALLET_URL = 'https://api.easyparcel.com/open_api/'.self::API_VERSION.'/wallet';
+    public const ACCOUNT_INFORMATION_URL = 'https://api.easyparcel.com/open_api/'.self::API_VERSION.'/account/get_account_information';
 
     public function authorizationUrl(string $clientId, string $redirectUri, string $state): string
     {
@@ -52,18 +52,17 @@ final class EasyParcelOpenApiClient
                 throw new EasyParcelVerificationException;
             }
 
-            $walletResponse = Http::acceptJson()
+            $accountResponse = Http::acceptJson()
                 ->withToken($tokenPayload['access_token'])
                 ->connectTimeout(5)
                 ->timeout(10)
-                ->get(self::WALLET_URL);
+                ->post(self::ACCOUNT_INFORMATION_URL);
 
-            $walletPayload = $walletResponse->json();
-            if (! $walletResponse->successful()
-                || ! is_array($walletPayload)
-                || ($walletPayload['status_code'] ?? null) !== 200
-                || ! is_array(data_get($walletPayload, 'data.wallet'))
-                || ! is_array(data_get($walletPayload, 'data.free_credit_wallet'))) {
+            $accountPayload = $accountResponse->json();
+            if (! $accountResponse->successful()
+                || ! is_array($accountPayload)
+                || ($accountPayload['status_code'] ?? null) !== 200
+                || ! is_array(data_get($accountPayload, 'data.account'))) {
                 throw new EasyParcelVerificationException;
             }
 
