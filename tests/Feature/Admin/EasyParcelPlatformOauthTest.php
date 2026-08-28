@@ -147,6 +147,37 @@ class EasyParcelPlatformOauthTest extends TestCase
         );
     }
 
+    public function test_callback_completion_exception_logs_only_its_safe_classification(): void
+    {
+        config()->set('services.easyparcel.client_id', 'platform-client');
+        config()->set('services.easyparcel.client_secret', 'platform-secret');
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        $sessionBinding = 'safe-test-session-binding';
+        $state = app(\App\Services\Shipping\EasyParcelOAuthAuthorizationService::class)->begin(
+            $admin->id,
+            $sessionBinding,
+            'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback',
+        );
+        $this->assertNotNull($state);
+        Log::spy();
+        Event::listen('eloquent.creating: '.ShippingProviderCredential::class, function (): void {
+            throw new RuntimeException('provider-private-detail');
+        });
+        try {
+            $this->actingAs($admin)->withSession(['easyparcel.oauth.session_binding' => $sessionBinding])
+                ->get('/admin/shipping/easyparcel/callback?code=private-code&state='.$state)
+                ->assertRedirect('/admin/shipping')
+                ->assertSessionHas('easyparcelConnection.state', 'failed');
+        } finally {
+            Event::forget('eloquent.creating: '.ShippingProviderCredential::class);
+        }
+
+        Log::shouldHaveReceived('warning')->once()->with(
+            'EasyParcel OAuth completion failed',
+            ['exception_class' => RuntimeException::class],
+        );
+    }
+
     public function test_callback_accepts_easyparcel_wrapped_state_without_persisting_the_provider_envelope(): void
     {
         config()->set('services.easyparcel.client_id', 'platform-client');

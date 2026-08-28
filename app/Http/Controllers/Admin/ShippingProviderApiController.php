@@ -108,7 +108,11 @@ class ShippingProviderApiController extends Controller
                 $callback['code'],
                 (string) config('services.easyparcel.redirect_uri'),
             );
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
+            Log::warning('EasyParcel OAuth completion failed', [
+                'exception_class' => $exception::class,
+            ]);
+
             return $this->callbackRedirect('failed');
         } finally {
             $request->session()->forget(self::AUTHORIZATION_SESSION_BINDING_KEY);
