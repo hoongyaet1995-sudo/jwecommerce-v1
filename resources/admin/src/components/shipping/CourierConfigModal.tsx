@@ -36,6 +36,7 @@ export const CourierConfigModal: React.FC<CourierConfigModalProps> = ({
 }) => {
   if (!isOpen || !config) return null;
 
+  const walletAvailable = typeof config.walletBalance === 'number';
   const [environment, setEnvironment] = useState<'sandbox' | 'production'>(config.environment || 'production');
   const [apiKey, setApiKey] = useState(config.apiKey || (config as any).credentials?.apiKey || '');
   const [apiSecret, setApiSecret] = useState(config.apiSecret || (config as any).credentials?.secretKey || (config as any).credentials?.apiSecret || '');
@@ -180,7 +181,7 @@ export const CourierConfigModal: React.FC<CourierConfigModalProps> = ({
                   EasyParcel Prepaid Shipping Wallet Balance
                 </div>
                 <div className="text-xl font-bold font-mono text-pink-700 dark:text-pink-300 mt-0.5">
-                  RM {(config.walletBalance || 0).toFixed(2)}
+                  {walletAvailable ? `RM ${config.walletBalance.toFixed(2)}` : 'Unavailable'}
                 </div>
               </div>
 
@@ -190,7 +191,8 @@ export const CourierConfigModal: React.FC<CourierConfigModalProps> = ({
                     <span className="absolute left-2.5 top-2 text-xs text-neutral-500 font-semibold">RM</span>
                     <input
                       type="number"
-                      value={topUpAmount}
+                      value={walletAvailable ? topUpAmount : ''}
+                      disabled={!walletAvailable}
                       onChange={(e) => setTopUpAmount(e.target.value)}
                       className="w-24 pl-8 pr-2 py-1.5 text-xs font-mono rounded-lg border border-pink-300 dark:border-pink-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
                     />
@@ -199,8 +201,10 @@ export const CourierConfigModal: React.FC<CourierConfigModalProps> = ({
                     type="button"
                     onClick={() => {
                       const val = parseFloat(topUpAmount);
-                      if (val > 0) onTopUpWallet(val);
+                      if (walletAvailable && val > 0) onTopUpWallet(val);
                     }}
+                    disabled={!walletAvailable}
+                    title={walletAvailable ? undefined : 'Wallet top-up is not available through this integration'}
                     className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-pink-600 hover:bg-pink-700 rounded-lg transition-colors cursor-pointer shadow-sm"
                   >
                     <Plus className="w-3.5 h-3.5" />

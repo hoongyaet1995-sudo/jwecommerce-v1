@@ -19,29 +19,29 @@ export const DEFAULT_JW_STUDIO_LOGO = `data:image/svg+xml;utf8,${encodeURICompon
   </defs>
   <!-- Sleek Dark Futuristic Base -->
   <rect width="512" height="512" rx="96" fill="#040711" />
-  
+
   <!-- Outer Neon Geometric Contour with Open Gaps -->
-  <path d="M 96 230 L 96 96 L 416 96 L 416 390" 
-        fill="none" 
-        stroke="url(#jwNeonGrad)" 
-        stroke-width="18" 
-        stroke-linecap="round" 
+  <path d="M 96 230 L 96 96 L 416 96 L 416 390"
+        fill="none"
+        stroke="url(#jwNeonGrad)"
+        stroke-width="18"
+        stroke-linecap="round"
         stroke-linejoin="round"
         filter="url(#neonGlow)" />
-        
-  <path d="M 260 416 L 416 416" 
-        fill="none" 
-        stroke="url(#jwNeonGrad)" 
-        stroke-width="18" 
-        stroke-linecap="round" 
+
+  <path d="M 260 416 L 416 416"
+        fill="none"
+        stroke="url(#jwNeonGrad)"
+        stroke-width="18"
+        stroke-linecap="round"
         filter="url(#neonGlow)" />
-        
+
   <!-- Center Neon Glowing 'J' Glyph -->
-  <path d="M 276 185 L 276 305 C 276 348 248 375 208 375 C 172 375 148 352 142 328" 
-        fill="none" 
-        stroke="url(#jwNeonGrad)" 
-        stroke-width="28" 
-        stroke-linecap="round" 
+  <path d="M 276 185 L 276 305 C 276 348 248 375 208 375 C 172 375 148 352 142 328"
+        fill="none"
+        stroke="url(#jwNeonGrad)"
+        stroke-width="28"
+        stroke-linecap="round"
         stroke-linejoin="round"
         filter="url(#neonGlow)" />
 </svg>
