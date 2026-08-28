@@ -9,6 +9,7 @@ use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -126,5 +127,22 @@ class EasyParcelPlatformOauthTest extends TestCase
         } finally {
             Event::forget('eloquent.creating: '.ShippingProvider::class);
         }
+    }
+
+    public function test_callback_diagnostics_record_only_the_received_parameter_names(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        Log::spy();
+
+        $this->actingAs($admin)->get('/admin/shipping/easyparcel/callback?authorization_code=private-code&state=private-state');
+
+        Log::shouldHaveReceived('info')->once()->with(
+            'EasyParcel OAuth callback received',
+            [
+                'parameter_names' => ['authorization_code', 'state'],
+                'has_authorization_code' => true,
+                'has_code' => false,
+            ],
+        );
     }
 }

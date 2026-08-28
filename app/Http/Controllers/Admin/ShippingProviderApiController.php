@@ -8,6 +8,7 @@ use App\Services\Shipping\ShippingProviderConfigurationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class ShippingProviderApiController extends Controller
@@ -65,6 +66,8 @@ class ShippingProviderApiController extends Controller
 
     public function callback(Request $request): RedirectResponse
     {
+        $this->logCallbackDiagnostics($request);
+
         if ($request->user() === null) {
             $this->sanitizeCallbackRequest($request);
 
@@ -145,6 +148,21 @@ class ShippingProviderApiController extends Controller
         $request->query->replace([]);
         $request->server->set('QUERY_STRING', '');
         $request->server->set('REQUEST_URI', $safePath);
+    }
+
+    private function logCallbackDiagnostics(Request $request): void
+    {
+        $allowed = ['authorization_code', 'code', 'error', 'state'];
+        $parameterNames = array_values(array_filter(
+            $allowed,
+            fn (string $name): bool => $request->query->has($name),
+        ));
+
+        Log::info('EasyParcel OAuth callback received', [
+            'parameter_names' => $parameterNames,
+            'has_authorization_code' => $request->query->has('authorization_code'),
+            'has_code' => $request->query->has('code'),
+        ]);
     }
 
     private function authorizationSessionBinding(Request $request): string
