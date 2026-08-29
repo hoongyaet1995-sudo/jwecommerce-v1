@@ -16,17 +16,17 @@ use App\Services\Shipping\EasyParcelTrackingService;
 use App\Services\Shipping\EasyParcelWebhookReconciliationService;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Tests\Concerns\UsesIsolatedDatabaseMigrations;
 use Tests\TestCase;
 
 class EasyParcelWebhookReconciliationTest extends TestCase
 {
-    use RefreshDatabase;
+    use UsesIsolatedDatabaseMigrations;
 
     public function test_authenticated_details_delivered_status_is_projected_once_and_webhook_status_remains_a_hint(): void
     {

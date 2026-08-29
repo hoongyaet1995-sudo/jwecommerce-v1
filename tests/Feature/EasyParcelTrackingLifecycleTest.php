@@ -47,12 +47,12 @@ class EasyParcelTrackingLifecycleTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_public_easyparcel_webhook_is_not_registered_without_a_documented_signature_contract(): void
+    public function test_stable_public_easyparcel_webhook_accepts_provider_events_as_reconciliation_hints(): void
     {
         $this->postJson('/webhooks/easyparcel', [
             'topic' => 'shipment.tracking.update',
             'latest_shipment_status_code' => 5,
-        ])->assertNotFound();
+        ])->assertOk()->assertJson(['received' => true]);
     }
 
     public function test_targeted_tracking_sync_queries_only_the_requested_easyparcel_shipment(): void

@@ -7,10 +7,16 @@ use LogicException;
 
 trait UsesIsolatedDatabaseMigrations
 {
+    private string $originalDatabaseConnection;
+
+    /** @var array<string, mixed> */
+    private array $originalMysqlConfiguration;
+
     protected function setUp(): void
     {
         parent::setUp();
 
+        $this->useIsolatedMysqlDatabase();
         $this->migrateIsolatedDatabase();
     }
 
@@ -19,8 +25,41 @@ trait UsesIsolatedDatabaseMigrations
         try {
             $this->clearIsolatedDatabase();
         } finally {
+            $this->restoreOriginalDatabaseConnection();
             parent::tearDown();
         }
+    }
+
+    private function useIsolatedMysqlDatabase(): void
+    {
+        $this->originalDatabaseConnection = (string) config('database.default');
+        $this->originalMysqlConfiguration = config('database.connections.mysql');
+
+        config([
+            'database.default' => 'mysql',
+            'database.connections.mysql.url' => null,
+            'database.connections.mysql.host' => '127.0.0.1',
+            'database.connections.mysql.port' => '3306',
+            'database.connections.mysql.database' => 'jw_ecommerce_testing',
+            'database.connections.mysql.username' => 'root',
+            'database.connections.mysql.password' => '',
+        ]);
+
+        DB::purge('mysql');
+        DB::setDefaultConnection('mysql');
+        DB::reconnect('mysql');
+    }
+
+    private function restoreOriginalDatabaseConnection(): void
+    {
+        DB::purge('mysql');
+
+        config([
+            'database.default' => $this->originalDatabaseConnection,
+            'database.connections.mysql' => $this->originalMysqlConfiguration,
+        ]);
+
+        DB::setDefaultConnection($this->originalDatabaseConnection);
     }
 
     private function migrateIsolatedDatabase(): void

@@ -7,23 +7,32 @@ use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\ShippingWebhookReceipt;
 use App\Services\Shipping\EasyParcelWebhookReceiptService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use PDO;
 use RuntimeException;
 use Symfony\Component\Process\Process;
+use Tests\Concerns\UsesIsolatedDatabaseMigrations;
 use Tests\TestCase;
 
 class EasyParcelWebhookIngressTest extends TestCase
 {
-    use RefreshDatabase;
+    use UsesIsolatedDatabaseMigrations;
+
+    public function test_stable_webhook_route_is_csrf_exempt_outside_the_testing_environment(): void
+    {
+        $this->app->detectEnvironment(static fn (): string => 'local');
+
+        $this->call('POST', '/webhooks/easyparcel', [], [], [], [
+            'CONTENT_TYPE' => 'text/plain',
+            'HTTP_ACCEPT' => 'application/json',
+        ], '{}')->assertStatus(415);
+    }
 
     public function test_supported_webhook_is_sanitized_deduplicated_and_does_not_mutate_order(): void
     {
         Queue::fake();
-        config(['services.easyparcel.webhook_path_token' => 'test-endpoint-token']);
         [$order, $shipment] = $this->easyParcelShipment('ES-2608-WEB01', 'AWB-WEB01');
         $payload = [
             'topic' => 'shipment.tracking.update',
@@ -36,8 +45,8 @@ class EasyParcelWebhookIngressTest extends TestCase
             'receiver_email' => 'must-not-persist@example.test',
         ];
 
-        $this->postJson('/webhooks/easyparcel/test-endpoint-token', $payload)->assertOk();
-        $this->postJson('/webhooks/easyparcel/test-endpoint-token', $payload)->assertOk();
+        $this->postJson('/webhooks/easyparcel', $payload)->assertOk();
+        $this->postJson('/webhooks/easyparcel', $payload)->assertOk();
 
         $this->assertDatabaseCount('shipping_webhook_receipts', 1);
         $receipt = ShippingWebhookReceipt::query()->sole();

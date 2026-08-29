@@ -9,7 +9,12 @@ use JsonException;
 
 class EasyParcelWebhookController extends Controller
 {
-    public function __invoke(Request $request, string $token, EasyParcelWebhookReceiptService $receipts): JsonResponse
+    public function __invoke(Request $request, EasyParcelWebhookReceiptService $receipts): JsonResponse
+    {
+        return $this->receive($request, $receipts);
+    }
+
+    public function legacy(Request $request, string $token, EasyParcelWebhookReceiptService $receipts): JsonResponse
     {
         $configuredToken = config('services.easyparcel.webhook_path_token');
 
@@ -17,6 +22,11 @@ class EasyParcelWebhookController extends Controller
             abort(404);
         }
 
+        return $this->receive($request, $receipts);
+    }
+
+    private function receive(Request $request, EasyParcelWebhookReceiptService $receipts): JsonResponse
+    {
         if (! $request->isJson()) {
             abort(415);
         }

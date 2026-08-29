@@ -288,7 +288,7 @@ class ShipmentApiTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_admin_bootstrap_exposes_safe_webhook_receipt_configuration_without_the_endpoint_token(): void
+    public function test_admin_bootstrap_exposes_stable_webhook_callback_url_without_the_endpoint_token(): void
     {
         config(['services.easyparcel.webhook_path_token' => 'must-not-serialize-webhook-token']);
 
@@ -300,6 +300,7 @@ class ShipmentApiTest extends TestCase
         $bootstrap = json_decode($matches[1] ?? '{}', true, 512, JSON_THROW_ON_ERROR);
 
         $this->assertSame(route('admin.api.shipping.webhook-receipts.index'), $bootstrap['easyParcelWebhookReceiptsUrl'] ?? null);
+        $this->assertSame(url('/webhooks/easyparcel'), $bootstrap['easyParcelWebhookCallbackUrl'] ?? null);
         $this->assertTrue($bootstrap['easyParcelWebhookConfigured'] ?? false);
         $this->assertStringNotContainsString('must-not-serialize-webhook-token', $response->getContent());
     }

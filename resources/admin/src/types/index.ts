@@ -33,6 +33,7 @@ export interface LaravelAdminBootstrap {
   ordersUrl?: string;
   shipmentsUrl?: string;
   easyParcelWebhookReceiptsUrl?: string;
+  easyParcelWebhookCallbackUrl?: string;
   easyParcelWebhookConfigured?: boolean;
   easyParcelProviderUrl?: string;
   easyParcelProviderAuthorizeUrl?: string;

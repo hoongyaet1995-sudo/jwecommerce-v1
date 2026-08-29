@@ -67,9 +67,12 @@ Route::post('/checkout/payment-retry/{payment}', [CheckoutController::class, 're
 Route::post('/payments/webhooks/stripe', [PaymentWebhookController::class, 'stripe'])->name('payments.webhooks.stripe');
 Route::post('/payments/webhooks/billplz', [PaymentWebhookController::class, 'billplz'])->name('payments.webhooks.billplz');
 Route::post('/payments/webhooks/paypal', [PaymentWebhookController::class, 'paypal'])->name('payments.webhooks.paypal');
-Route::post('/webhooks/easyparcel/{token}', EasyParcelWebhookController::class)
+Route::post('/webhooks/easyparcel', EasyParcelWebhookController::class)
     ->middleware('throttle:60,1')
     ->name('webhooks.easyparcel');
+Route::post('/webhooks/easyparcel/{token}', [EasyParcelWebhookController::class, 'legacy'])
+    ->middleware('throttle:60,1')
+    ->name('webhooks.easyparcel.legacy');
 Route::get('/order/success', [CheckoutController::class, 'success'])->name('checkout.success');
 Route::get('/order-tracking', [OrderTrackingController::class, 'preview'])->name('order-tracking.show');
 Route::redirect('/order-tracking/preview', '/order-tracking');

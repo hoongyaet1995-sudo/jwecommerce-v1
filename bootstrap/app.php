@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'payments/webhooks/stripe',
             'payments/webhooks/billplz',
             'payments/webhooks/paypal',
+            'webhooks/easyparcel',
             'webhooks/easyparcel/*',
         ]);
         $middleware->web(append: [

@@ -489,6 +489,7 @@ export const ShippingDashboard: React.FC = () => {
         <EasyParcelOAuthModal
           isOpen={isEasyParcelOAuthOpen}
           provider={{ provider: 'easyparcel', environment: 'sandbox', configured: true, enabled: editingCourier.isEnabled, connectionState: editingCourier.status === 'connected' ? 'connected' : editingCourier.status === 'error' ? 'failed' : 'unconfigured', lastVerifiedAt: null, lastError: null }}
+          webhookCallbackUrl={window.__JW_ADMIN__?.easyParcelWebhookCallbackUrl ?? editingCourier.webhookEndpointUrl}
           callbackState={easyParcelCallbackState}
           onClose={() => { setEasyParcelCallbackState(null); setIsEasyParcelOAuthOpen(false); setEditingCourier(null); }}
           onAuthorize={() => { void pingCourierAPI(editingCourier.id); }}

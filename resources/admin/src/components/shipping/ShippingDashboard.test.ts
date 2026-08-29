@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const mockedAdminContext = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
 vi.mock('../../context/AdminContext', () => ({ useAdmin: () => mockedAdminContext.value }));
 import { CourierConfigModal } from './CourierConfigModal';
+import { EasyParcelOAuthModal } from './EasyParcelOAuthModal';
 import { CourierConfigTab } from './CourierConfigTab';
 import { ShippingDashboard } from './ShippingDashboard';
 import { ShippingOverviewTab } from './ShippingOverviewTab';
@@ -64,6 +65,48 @@ afterEach(() => {
 });
 
 describe('ShippingDashboard provider action binding', () => {
+  it('shows the stable EasyParcel callback URL using the existing courier callback presentation', () => {
+    const html = renderToStaticMarkup(React.createElement(EasyParcelOAuthModal, {
+      isOpen: true,
+      provider: null,
+      webhookCallbackUrl: 'https://www.ramarama.com/webhooks/easyparcel',
+      onClose: () => undefined,
+      onAuthorize: () => undefined,
+      onDisconnect: async () => undefined,
+    }));
+
+    expect(html).toContain('Courier Webhook Callback URL');
+    expect(html).toContain('https://www.ramarama.com/webhooks/easyparcel');
+    expect(html).toContain('Copy');
+  });
+
+  it('copies the stable EasyParcel callback URL from the existing copy control', () => {
+    const writeText = vi.fn();
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    mountedRoots.push({ root, host });
+
+    act(() => root.render(React.createElement(EasyParcelOAuthModal, {
+      isOpen: true,
+      provider: null,
+      webhookCallbackUrl: 'https://www.ramarama.com/webhooks/easyparcel',
+      onClose: () => undefined,
+      onAuthorize: () => undefined,
+      onDisconnect: async () => undefined,
+    })));
+    const copyButton = Array.from(host.querySelectorAll('button'))
+      .find(button => button.textContent?.trim() === 'Copy');
+
+    act(() => copyButton?.click());
+
+    expect(writeText).toHaveBeenCalledWith('https://www.ramarama.com/webhooks/easyparcel');
+  });
+
   it('binds the existing EasyParcel provider and fulfillment actions from AdminContext before passing them to source UI controls', () => {
     expect(source).toContain('saveCourierConfig,');
     expect(source).toContain('generateShipmentAWB,');
