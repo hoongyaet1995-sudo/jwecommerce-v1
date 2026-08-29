@@ -5,8 +5,11 @@ import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+const mockedAdminContext = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
+vi.mock('../../context/AdminContext', () => ({ useAdmin: () => mockedAdminContext.value }));
 import { CourierConfigModal } from './CourierConfigModal';
 import { CourierConfigTab } from './CourierConfigTab';
+import { ShippingDashboard } from './ShippingDashboard';
 import { TrackingAndWebhooksTab } from './TrackingAndWebhooksTab';
 import type { CourierConfig, EasyParcelWebhookReceiptRow } from '../../types/shipping';
 
@@ -176,6 +179,20 @@ describe('ShippingDashboard provider action binding', () => {
     expect(empty).not.toContain('Webhook audit unavailable');
   });
 
+  it('marks retained receipt rows as cached throughout a failed audit view', () => {
+    const failedWithRows = renderToStaticMarkup(React.createElement(TrackingAndWebhooksTab, trackingProps({
+      webhookReceipts: [receipt({ id: 'cached-receipt' })],
+      webhookAuditStatus: 'error',
+      webhookAuditError: 'EasyParcel webhook audit could not be loaded.',
+    })));
+
+    expect(failedWithRows).toContain('Showing last successful provider receipts below');
+    expect(failedWithRows).toContain('Cached provider receipt');
+    expect(failedWithRows).toContain('cached provider data');
+    expect(failedWithRows).toContain('Webhook audit unavailable · cached receipts shown');
+    expect(failedWithRows).not.toContain('Latest: processed');
+  });
+
   it('does not claim queue connectivity when OAuth is connected but the endpoint is not configured', () => {
     const html = renderToStaticMarkup(React.createElement(TrackingAndWebhooksTab, trackingProps({
       webhookEndpointConfigured: false,
@@ -197,32 +214,39 @@ describe('ShippingDashboard provider action binding', () => {
     expect(html).not.toContain('Invalid Date');
   });
 
-  it('refreshes the existing audit card and renders newly returned receipt data', async () => {
+  it('invokes one bounded refresh on tab entry and another from the existing audit refresh action', async () => {
+    const refreshAudit = vi.fn().mockResolvedValue(undefined);
+    mockedAdminContext.value = {
+      courierConfigs: [],
+      smartRoutingRules: [],
+      shipmentParcels: [],
+      easyParcelWebhookReceipts: [],
+      easyParcelWebhookAuditStatus: 'ready',
+      easyParcelWebhookAuditError: null,
+      refreshEasyParcelWebhookReceipts: refreshAudit,
+      pickupRequests: [],
+      billingReconciliations: [],
+      shippingRates: [],
+      addToast: vi.fn(),
+    };
     const host = document.createElement('div');
     document.body.append(host);
     const root = createRoot(host);
     mountedRoots.push({ root, host });
-    const onRefresh = vi.fn(async () => {
-      await act(async () => {
-        root.render(React.createElement(TrackingAndWebhooksTab, trackingProps({
-          webhookReceipts: [receipt({ id: 'receipt-new', trackingNumber: 'AWB-NEW-01' })],
-          onRefreshWebhookAudit: onRefresh,
-        })));
-      });
-    });
 
     await act(async () => {
-      root.render(React.createElement(TrackingAndWebhooksTab, trackingProps({
-        onRefreshWebhookAudit: onRefresh,
-      })));
+      root.render(React.createElement(ShippingDashboard));
     });
+    const trackingTab = Array.from(host.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('Webhooks & Telemetry')) as HTMLButtonElement;
+    await act(async () => { trackingTab.click(); });
+
+    expect(refreshAudit).toHaveBeenCalledTimes(1);
+
     const refreshButton = Array.from(host.querySelectorAll('button'))
       .find(button => button.textContent?.includes('Refresh audit')) as HTMLButtonElement;
-
     await act(async () => { refreshButton.click(); });
 
-    expect(onRefresh).toHaveBeenCalledTimes(1);
-    expect(host.textContent).toContain('AWB-NEW-01');
-    expect(host.textContent).not.toContain('No provider receipts received yet');
+    expect(refreshAudit).toHaveBeenCalledTimes(2);
   });
 });

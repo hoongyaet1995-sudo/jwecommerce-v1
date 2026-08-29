@@ -8,7 +8,7 @@ import { fetchMenus, saveMenuDocument } from '../integration/menuData';
 import { customerDirectoryToCustomers, deleteCustomerData, fetchCustomerDirectoryData, saveCustomerData } from '../integration/customerDirectoryData';
 import { fetchOrders, processOrderRefundData, updateOrderStatusData, updateOrderTrackingData } from '../integration/orderData';
 import { appendShipmentEvent, fetchShipments } from '../integration/shipmentData';
-import { fetchEasyParcelWebhookReceipts } from '../integration/easyParcelWebhookData';
+import { createEasyParcelWebhookAuditRefresher, fetchEasyParcelWebhookReceipts } from '../integration/easyParcelWebhookData';
 import { courierConfigsFromEasyParcel, disconnectEasyParcelStore, fetchEasyParcelProvider, startEasyParcelAuthorization } from '../integration/easyParcelProviderData';
 import { confirmEasyParcelBooking, requestEasyParcelQuote, type EasyParcelBooking, type EasyParcelPackageSpec, type EasyParcelQuote } from '../integration/easyParcelFulfillmentData';
 import { fetchCommerceSettings, saveBankTransferConfiguration, saveCodConfiguration, saveCommerceSettings, saveShippingConfiguration } from '../integration/commerceSettingsData';
@@ -70,6 +70,7 @@ import {
   ShipmentParcel,
   EasyParcelWebhookReceiptRow,
   EasyParcelWebhookAuditStatus,
+  EasyParcelWebhookAuditSnapshot,
   PickupRequest,
   BillingReconciliationRecord,
   GeneralShippingRate,
@@ -734,9 +735,18 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [courierConfigs, setCourierConfigs] = useState<CourierConfig[]>([]);
   const [smartRoutingRules, setSmartRoutingRules] = useState<SmartRoutingRule[]>([]);
   const [shipmentParcels, setShipmentParcels] = useState<ShipmentParcel[]>([]);
-  const [easyParcelWebhookReceipts, setEasyParcelWebhookReceipts] = useState<EasyParcelWebhookReceiptRow[]>([]);
-  const [easyParcelWebhookAuditStatus, setEasyParcelWebhookAuditStatus] = useState<EasyParcelWebhookAuditStatus>('loading');
-  const [easyParcelWebhookAuditError, setEasyParcelWebhookAuditError] = useState<string | null>(null);
+  const [easyParcelWebhookAudit, setEasyParcelWebhookAudit] = useState<EasyParcelWebhookAuditSnapshot>({
+    receipts: [],
+    status: 'loading',
+    error: null,
+  });
+  const easyParcelWebhookAuditRefreshRef = useRef<(() => Promise<void>) | null>(null);
+  if (easyParcelWebhookAuditRefreshRef.current === null) {
+    easyParcelWebhookAuditRefreshRef.current = createEasyParcelWebhookAuditRefresher(
+      () => fetchEasyParcelWebhookReceipts(laravelBootstrap),
+      setEasyParcelWebhookAudit,
+    );
+  }
   const [pickupRequests, setPickupRequests] = useState<PickupRequest[]>([]);
   const [billingReconciliations, setBillingReconciliations] = useState<BillingReconciliationRecord[]>([]);
   const [shippingRates, setShippingRates] = useState<GeneralShippingRate[]>([]);
@@ -2076,18 +2086,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const refreshEasyParcelWebhookReceipts = async (): Promise<void> => {
-    setEasyParcelWebhookAuditStatus('loading');
-    setEasyParcelWebhookAuditError(null);
-
     try {
-      setEasyParcelWebhookReceipts(await fetchEasyParcelWebhookReceipts(laravelBootstrap));
-      setEasyParcelWebhookAuditStatus('ready');
+      await easyParcelWebhookAuditRefreshRef.current?.();
     } catch (error) {
       const failure = error instanceof Error
         ? error
         : new Error('EasyParcel webhook audit could not be loaded.');
-      setEasyParcelWebhookAuditError(failure.message);
-      setEasyParcelWebhookAuditStatus('error');
       addToast({ type: 'error', title: 'Webhook Audit Unavailable', message: failure.message });
       throw failure;
     }
@@ -3792,9 +3796,9 @@ Would you like me to drill down into customer records, inventory allocation, or 
         toggleSmartRoutingRule,
         reorderSmartRoutingRules,
         shipmentParcels,
-        easyParcelWebhookReceipts,
-        easyParcelWebhookAuditStatus,
-        easyParcelWebhookAuditError,
+        easyParcelWebhookReceipts: easyParcelWebhookAudit.receipts,
+        easyParcelWebhookAuditStatus: easyParcelWebhookAudit.status,
+        easyParcelWebhookAuditError: easyParcelWebhookAudit.error,
         refreshEasyParcelWebhookReceipts,
         selectedParcelId,
         setSelectedParcelId,

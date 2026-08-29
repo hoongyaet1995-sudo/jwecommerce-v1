@@ -172,6 +172,12 @@ export interface EasyParcelWebhookReceiptRow {
 
 export type EasyParcelWebhookAuditStatus = 'loading' | 'ready' | 'error';
 
+export interface EasyParcelWebhookAuditSnapshot {
+  receipts: EasyParcelWebhookReceiptRow[];
+  status: EasyParcelWebhookAuditStatus;
+  error: string | null;
+}
+
 export interface PickupRequest {
   id: string;
   pickupRefNo: string;

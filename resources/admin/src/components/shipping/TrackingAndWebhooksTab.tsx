@@ -68,6 +68,12 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
   const allEvents = [...shipmentEvents, ...providerEvents]
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   const latestReceipt = webhookReceipts[0] ?? null;
+  const auditRowsAreStale = webhookAuditStatus !== 'ready' && webhookReceipts.length > 0;
+  const providerReceiptBadge = webhookAuditStatus === 'error'
+    ? 'Cached provider receipt'
+    : webhookAuditStatus === 'loading'
+      ? 'Last successful provider receipt'
+      : 'Provider receipt';
 
   return (
     <div className="space-y-6">
@@ -236,6 +242,7 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
               </h4>
               <span className="text-xs text-neutral-400">
                 {allEvents.length} events logged
+                {auditRowsAreStale ? ` · ${webhookAuditStatus === 'error' ? 'cached provider data' : 'refreshing provider data'}` : ''}
               </span>
             </div>
 
@@ -249,6 +256,7 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
               {webhookAuditStatus === 'error' && (
                 <div className="p-3.5 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50/70 dark:bg-rose-950/20 text-xs text-rose-700 dark:text-rose-300">
                   <strong>Webhook audit unavailable.</strong> {webhookAuditError || 'EasyParcel webhook audit could not be loaded.'}
+                  {webhookReceipts.length > 0 ? ' Showing last successful provider receipts below.' : ''}
                 </div>
               )}
               {webhookAuditStatus === 'ready' && allEvents.length === 0 ? (
@@ -279,7 +287,7 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
                                 {receipt.topic}
                               </span>
                               <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">
-                                Provider receipt
+                                {providerReceiptBadge}
                               </span>
                               <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300">
                                 {receipt.trackingNumber || 'AWB-UNMATCHED'}
@@ -381,9 +389,9 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
             <span>Provider webhook validation: <strong>{webhookEndpointConfigured ? 'Endpoint configured' : 'Endpoint not configured'}</strong></span>
             <span className="font-mono">
               {webhookAuditStatus === 'loading'
-                ? 'Loading provider receipts'
+                ? webhookReceipts.length > 0 ? 'Refreshing · last successful receipts shown' : 'Loading provider receipts'
                 : webhookAuditStatus === 'error'
-                  ? 'Webhook audit unavailable'
+                  ? webhookReceipts.length > 0 ? 'Webhook audit unavailable · cached receipts shown' : 'Webhook audit unavailable'
                   : latestReceipt
                     ? `Latest: ${latestReceipt.state} · ${latestReceipt.processedAt || 'Awaiting reconciliation'}`
                     : 'No provider receipts received yet'}
