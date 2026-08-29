@@ -254,6 +254,81 @@ class EasyParcelReconciliationRecoveryTest extends TestCase
         Queue::assertPushed(ReconcileEasyParcelTask::class, 1);
     }
 
+    public function test_sweeper_schedules_details_when_awb_exists_but_label_is_missing(): void
+    {
+        Queue::fake();
+        $shipment = $this->easyParcelShipment('ES-LABEL-RECOVERY-01', 'AWB-LABEL-RECOVERY-01');
+        $shipment->forceFill([
+            'created_at' => now()->subHours(2),
+            'updated_at' => now()->subHours(2),
+        ])->save();
+        Log::spy();
+
+        app(EasyParcelReconciliationSweeper::class)->sweep();
+
+        $task = EasyParcelReconciliationTask::query()
+            ->where('type', EasyParcelReconciliationTaskService::TYPE_SHIPMENT_DETAILS)
+            ->where('shipment_id', $shipment->id)
+            ->sole();
+        self::assertSame('queued', $task->state);
+        Log::shouldNotHaveReceived('warning');
+        Queue::assertPushed(ReconcileEasyParcelTask::class, 1);
+    }
+
+    public function test_sweeper_reopens_a_resolved_details_task_when_the_label_is_still_missing(): void
+    {
+        Queue::fake();
+        $this->connectedProvider();
+        $shipment = $this->easyParcelShipment('ES-LABEL-REOPEN-01', 'AWB-LABEL-REOPEN-01');
+        $task = app(EasyParcelReconciliationTaskService::class)->ensureShipmentDetails($shipment);
+        $task->forceFill([
+            'state' => 'resolved',
+            'available_at' => null,
+            'published_at' => now()->subHour(),
+            'last_error' => null,
+            'completed_at' => now()->subHour(),
+        ])->save();
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => Http::response(
+                $this->shipmentDetailsResponseForShipment($shipment, $shipment->tracking_number),
+            ),
+        ]);
+
+        app(EasyParcelReconciliationSweeper::class)->sweep();
+
+        $task->refresh();
+        self::assertSame('queued', $task->state);
+        self::assertNull($task->completed_at);
+        Queue::assertPushed(ReconcileEasyParcelTask::class, 1);
+
+        self::assertTrue(app(EasyParcelReconciliationTaskProcessor::class)->process($task->id));
+
+        self::assertSame('resolved', $task->fresh()->state);
+        self::assertNotNull($shipment->fresh()->label_path);
+        Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'submit_orders'));
+    }
+
+    public function test_details_reconciliation_retries_when_awb_exists_but_label_is_still_unavailable(): void
+    {
+        $this->connectedProvider();
+        $shipment = $this->easyParcelShipment('ES-LABEL-PENDING-01', 'AWB-LABEL-PENDING-01');
+        $task = app(EasyParcelReconciliationTaskService::class)->ensureShipmentDetails($shipment);
+        $task->forceFill(['state' => 'queued', 'published_at' => now()])->save();
+        $details = $this->shipmentDetailsResponseForShipment($shipment, $shipment->tracking_number);
+        data_set($details, 'data.0.shipment_details.awb_url', null);
+
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => Http::response($details),
+        ]);
+
+        self::assertTrue(app(EasyParcelReconciliationTaskProcessor::class)->process($task->id));
+
+        $task->refresh();
+        self::assertSame('retrying', $task->state);
+        self::assertSame('label_not_available', $task->last_error);
+        self::assertNull($shipment->fresh()->label_path);
+    }
+
     public function test_authorized_retry_requeues_reconciliation_without_calling_submit_order(): void
     {
         Queue::fake();

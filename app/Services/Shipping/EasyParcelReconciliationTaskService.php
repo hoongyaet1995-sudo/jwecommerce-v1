@@ -30,12 +30,35 @@ final class EasyParcelReconciliationTaskService
 
     public function ensureShipmentDetails(Shipment $shipment): EasyParcelReconciliationTask
     {
-        return $this->ensure('shipment-details:'.$shipment->id, [
+        $task = $this->ensure('shipment-details:'.$shipment->id, [
             'type' => self::TYPE_SHIPMENT_DETAILS,
             'shipment_id' => $shipment->id,
             'shipment_quote_id' => $shipment->shipment_quote_id,
             'application_reference' => $shipment->quote?->reconciliation_reference,
         ]);
+
+        if ($task->state !== 'resolved') {
+            return $task;
+        }
+
+        return DB::transaction(function () use ($task): EasyParcelReconciliationTask {
+            $locked = EasyParcelReconciliationTask::query()->lockForUpdate()->findOrFail($task->id);
+            if ($locked->state !== 'resolved') {
+                return $locked;
+            }
+
+            $locked->forceFill([
+                'state' => 'pending',
+                'available_at' => now(),
+                'published_at' => null,
+                'lease_token' => null,
+                'lease_expires_at' => null,
+                'last_error' => null,
+                'completed_at' => null,
+            ])->save();
+
+            return $locked;
+        });
     }
 
     public function ensureWebhookReceipt(ShippingWebhookReceipt $receipt): EasyParcelReconciliationTask

@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Jobs\ReconcileEasyParcelTask;
 use App\Models\Customer;
+use App\Models\EasyParcelReconciliationTask;
 use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\ShipmentQuote;
@@ -17,6 +19,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use InvalidArgumentException;
 use Tests\Concerns\UsesIsolatedDatabaseMigrations;
 use Tests\TestCase;
@@ -980,6 +983,46 @@ class EasyParcelFulfillmentApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.status', 'pending')
             ->assertJsonPath('data.0.awbGeneratedAt', null);
+    }
+
+    public function test_documented_success_with_awb_but_without_label_queues_shipment_details_reconciliation(): void
+    {
+        Queue::fake();
+        Http::preventStrayRequests();
+        $this->configureSender();
+        $this->connectedProvider();
+        $order = $this->processingOrder();
+        $admin = $this->superAdmin();
+
+        Http::fake([
+            'https://api.easyparcel.com/open_api/2026-06/shipment/quotations' => Http::response($this->quotationResponse()),
+        ]);
+        $quoteId = $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/quotes', [
+                'package' => $this->actualPackage(),
+            ])->assertCreated()->json('data.id');
+
+        $booking = $this->bookingResponse();
+        data_set($booking, 'data.0.shipments.0.awb_url', null);
+        data_set($booking, 'data.0.shipments.0.awb_urls_by_format.A6', '');
+        Http::fake([
+            'https://api.easyparcel.com/open_api/2026-06/shipment/submit_orders' => Http::response($booking),
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/bookings', [
+                'quoteId' => $quoteId,
+                'serviceCode' => 'EP-CS096',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.fulfillmentStatus', 'ready_to_ship')
+            ->assertJsonPath('data.trackingNumber', 'TEST-AWB-2608')
+            ->assertJsonPath('data.hasLabel', false);
+
+        $task = EasyParcelReconciliationTask::query()->sole();
+        $this->assertSame('shipment_details', $task->type);
+        $this->assertSame((int) $response->json('data.id'), $task->shipment_id);
+        Queue::assertPushed(ReconcileEasyParcelTask::class, 1);
     }
 
     public function test_cod_order_uses_only_a_quoted_cod_service_and_submits_documented_cod_fields(): void

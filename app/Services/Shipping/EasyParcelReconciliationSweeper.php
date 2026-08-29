@@ -40,13 +40,20 @@ final class EasyParcelReconciliationSweeper
         Shipment::query()
             ->where('source', ShippingProviderConfigurationService::PROVIDER)
             ->whereNotIn('status', ['delivered', 'returned'])
-            ->where(fn ($query) => $query->whereNull('tracking_number')->orWhere('tracking_number', ''))
+            ->where(function ($query): void {
+                $query->whereNull('tracking_number')
+                    ->orWhere('tracking_number', '')
+                    ->orWhereNull('label_path')
+                    ->orWhere('label_path', '');
+            })
             ->orderBy('id')
             ->limit(self::DISCOVERY_LIMIT)
             ->get()
             ->each(function (Shipment $shipment): void {
                 $task = $this->tasks->ensureShipmentDetails($shipment);
-                $this->alertIfAwbOverdue($task, $shipment);
+                if (blank($shipment->tracking_number)) {
+                    $this->alertIfAwbOverdue($task, $shipment);
+                }
             });
 
         ShippingWebhookReceipt::query()

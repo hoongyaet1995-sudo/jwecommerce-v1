@@ -201,7 +201,7 @@ final class EasyParcelBookingReconciliationService
             ])->save();
 
             $taskId = null;
-            if (blank($shipment->tracking_number)) {
+            if (blank($shipment->tracking_number) || blank($shipment->label_path)) {
                 $taskId = $this->tasks->ensureShipmentDetails($shipment)->id;
             }
 

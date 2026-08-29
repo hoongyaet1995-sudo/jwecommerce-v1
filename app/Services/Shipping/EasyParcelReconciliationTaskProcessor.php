@@ -127,6 +127,9 @@ final class EasyParcelReconciliationTaskProcessor
         if (blank($shipment->tracking_number)) {
             throw new EasyParcelReconciliationPendingException('awb_not_available');
         }
+        if (blank($shipment->label_path)) {
+            throw new EasyParcelReconciliationPendingException('label_not_available');
+        }
     }
 
     private function reconcileWebhook(EasyParcelReconciliationTask $task): void

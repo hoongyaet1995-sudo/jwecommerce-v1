@@ -484,7 +484,7 @@ final class EasyParcelFulfillmentService
                 'last_error' => null,
             ])->save();
 
-            $taskId = blank($shipment->tracking_number)
+            $taskId = blank($shipment->tracking_number) || blank($shipment->label_path)
                 ? $this->reconciliationTasks->ensureShipmentDetails($shipment)->id
                 : null;
 
