@@ -40,6 +40,8 @@ return [
         'client_secret' => env('EASYPARCEL_OAUTH_CLIENT_SECRET'),
         'redirect_uri' => env('EASYPARCEL_OAUTH_REDIRECT_URI', 'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback'),
         'webhook_path_token' => env('EASYPARCEL_WEBHOOK_PATH_TOKEN'),
+        'reconciliation_stale_queue_seconds' => env('EASYPARCEL_RECONCILIATION_STALE_QUEUE_SECONDS', 120),
+        'awb_alert_after_minutes' => env('EASYPARCEL_AWB_ALERT_AFTER_MINUTES', 60),
         'sender' => [
             'name' => env('EASYPARCEL_SENDER_NAME'),
             'company' => env('EASYPARCEL_SENDER_COMPANY'),

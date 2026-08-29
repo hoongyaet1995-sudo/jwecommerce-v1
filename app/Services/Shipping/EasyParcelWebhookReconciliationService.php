@@ -11,6 +11,8 @@ final class EasyParcelWebhookReconciliationService
     public function __construct(
         private readonly EasyParcelShipmentDetailsService $details,
         private readonly EasyParcelTrackingService $tracking,
+        private readonly EasyParcelWebhookCorrelationService $correlation,
+        private readonly EasyParcelBookingReconciliationService $bookings,
     ) {}
 
     public function reconcile(ShippingWebhookReceipt $receipt): void
@@ -21,7 +23,25 @@ final class EasyParcelWebhookReconciliationService
                 return;
             }
 
-            $shipment = $locked->shipment()->firstOrFail();
+            $shipment = $locked->shipment;
+            if ($shipment === null) {
+                $snapshot = is_array($locked->correlation_snapshot) ? $locked->correlation_snapshot : [];
+                $shipment = $this->correlation->shipment($snapshot);
+                $shipmentNumber = $snapshot['shipment_number'] ?? null;
+                if ($shipment === null && is_string($shipmentNumber)) {
+                    $shipment = $this->bookings->reconcileShipmentNumber($shipmentNumber);
+                }
+                $correlated = $this->correlation->shipment($snapshot);
+                if ($shipment === null || $correlated === null || ! $shipment->is($correlated)) {
+                    throw new EasyParcelReconciliationPendingException('unmatched_receipt');
+                }
+
+                $locked->forceFill([
+                    'shipment_id' => $shipment->id,
+                    'processing_state' => 'queued',
+                    'queued_at' => $locked->queued_at ?? now(),
+                ])->save();
+            }
 
             if (in_array($locked->topic, [
                 'shipment.created',
@@ -40,9 +60,19 @@ final class EasyParcelWebhookReconciliationService
                 'processed_at' => now(),
                 'last_error' => null,
             ])->save();
-        } catch (Throwable $exception) {
+        } catch (EasyParcelReconciliationPendingException $exception) {
             ShippingWebhookReceipt::query()->whereKey($receipt->id)->update([
-                'processing_state' => 'retrying',
+                'processing_state' => 'unmatched',
+                'attempt_count' => DB::raw('LEAST(attempt_count + 1, 65535)'),
+                'last_error' => $exception->safeCode,
+                'updated_at' => now(),
+            ]);
+
+            throw $exception;
+        } catch (Throwable $exception) {
+            $unmatched = ShippingWebhookReceipt::query()->whereKey($receipt->id)->value('shipment_id') === null;
+            ShippingWebhookReceipt::query()->whereKey($receipt->id)->update([
+                'processing_state' => $unmatched ? 'unmatched' : 'retrying',
                 'attempt_count' => DB::raw('LEAST(attempt_count + 1, 65535)'),
                 'last_error' => 'provider_unavailable',
                 'updated_at' => now(),

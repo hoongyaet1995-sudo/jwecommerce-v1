@@ -112,6 +112,10 @@ class ShipmentService
         return DB::transaction(function () use ($shipment, $actor, $status, $description, $location): ShipmentEvent {
             $lockedShipment = Shipment::query()->with('order')->lockForUpdate()->findOrFail($shipment->id);
 
+            if ($lockedShipment->source !== 'manual') {
+                throw new InvalidArgumentException('EasyParcel lifecycle is provider-managed and cannot accept manual events.');
+            }
+
             if (! in_array($status, $this->allowedNextStatuses($lockedShipment->status), true)) {
                 throw new InvalidArgumentException('This shipment cannot transition from '.$lockedShipment->status.' to '.$status.'.');
             }
@@ -335,11 +339,6 @@ class ShipmentService
             ->whereIn('status', array_keys(self::SHIPMENT_STATUS_RANK))
             ->get();
         $projectedStatus = $shipment->status;
-        $latestReturn = (clone $providerEvents)
-            ->where('status', 'returned')
-            ->orderByDesc('occurred_at')
-            ->orderByDesc('id')
-            ->first();
         $firstDelivery = (clone $providerEvents)
             ->where('status', 'delivered')
             ->oldest('occurred_at')
@@ -349,7 +348,12 @@ class ShipmentService
 
         if ($projectedStatus === 'delivered') {
             $qualifyingDelivery = $firstDelivery;
-        } elseif ($latestReturn !== null) {
+        } elseif ($projectedStatus === 'returned') {
+            $latestReturn = (clone $providerEvents)
+                ->where('status', 'returned')
+                ->orderByDesc('occurred_at')
+                ->orderByDesc('id')
+                ->first();
             $qualifyingDelivery = (clone $providerEvents)
                 ->where('status', 'delivered')
                 ->where('occurred_at', '>', $latestReturn->occurred_at)
@@ -357,15 +361,29 @@ class ShipmentService
                 ->oldest('id')
                 ->first();
             $projectedStatus = $qualifyingDelivery === null ? 'returned' : 'delivered';
-        } elseif ($firstDelivery !== null) {
-            $projectedStatus = 'delivered';
-            $qualifyingDelivery = $firstDelivery;
         } else {
-            $currentRank = self::SHIPMENT_STATUS_RANK[$projectedStatus] ?? 0;
-            foreach ($projectableEvents as $event) {
-                if (self::SHIPMENT_STATUS_RANK[$event->status] > $currentRank) {
-                    $projectedStatus = $event->status;
-                    $currentRank = self::SHIPMENT_STATUS_RANK[$event->status];
+            $firstTerminal = (clone $providerEvents)
+                ->whereIn('status', ['delivered', 'returned'])
+                ->oldest('id')
+                ->first();
+            if ($firstTerminal?->status === 'delivered') {
+                $projectedStatus = 'delivered';
+                $qualifyingDelivery = $firstTerminal;
+            } elseif ($firstTerminal?->status === 'returned') {
+                $qualifyingDelivery = (clone $providerEvents)
+                    ->where('status', 'delivered')
+                    ->where('occurred_at', '>', $firstTerminal->occurred_at)
+                    ->oldest('occurred_at')
+                    ->oldest('id')
+                    ->first();
+                $projectedStatus = $qualifyingDelivery === null ? 'returned' : 'delivered';
+            } else {
+                $currentRank = self::SHIPMENT_STATUS_RANK[$projectedStatus] ?? 0;
+                foreach ($projectableEvents as $event) {
+                    if (self::SHIPMENT_STATUS_RANK[$event->status] > $currentRank) {
+                        $projectedStatus = $event->status;
+                        $currentRank = self::SHIPMENT_STATUS_RANK[$event->status];
+                    }
                 }
             }
         }

@@ -115,6 +115,7 @@ export interface ShipmentTrackingEvent {
 
 export interface ShipmentParcel {
   id: string;
+  source?: 'manual' | 'easyparcel' | 'pending';
   orderId: string;
   orderNumber: string;
   customerName: string;

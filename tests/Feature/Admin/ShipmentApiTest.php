@@ -119,6 +119,34 @@ class ShipmentApiTest extends TestCase
         $this->assertDatabaseCount('shipment_events', 4);
     }
 
+    public function test_manual_event_endpoint_cannot_mutate_easyparcel_provider_truth(): void
+    {
+        $order = $this->processingOrder();
+        $shipment = Shipment::query()->create([
+            'order_id' => $order->id,
+            'sequence' => 1,
+            'source' => 'easyparcel',
+            'carrier_name' => 'EasyParcel Sandbox Courier',
+            'tracking_number' => 'AWB-PROVIDER-ONLY',
+            'provider_reference' => 'ES-PROVIDER-ONLY',
+            'status' => 'shipped',
+            'currency' => 'MYR',
+        ]);
+
+        $this->actingAs($this->superAdmin())
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/events', [
+                'status' => 'in_transit',
+                'description' => 'Warehouse user cannot confirm a provider milestone.',
+                'location' => 'Manual console',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('status');
+
+        self::assertSame('shipped', $shipment->fresh()->status);
+        self::assertSame('processing', $order->fresh()->status);
+        $this->assertDatabaseCount('shipment_events', 0);
+    }
+
     public function test_duplicate_tracking_number_is_rejected_for_a_different_order(): void
     {
         $admin = $this->superAdmin();

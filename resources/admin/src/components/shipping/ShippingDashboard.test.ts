@@ -12,6 +12,7 @@ import { CourierConfigTab } from './CourierConfigTab';
 import { ShippingDashboard } from './ShippingDashboard';
 import { TrackingAndWebhooksTab } from './TrackingAndWebhooksTab';
 import type { CourierConfig, EasyParcelWebhookReceiptRow } from '../../types/shipping';
+import { INITIAL_SHIPMENT_PARCELS } from '../../data/shippingData';
 
 const source = readFileSync(resolve(process.cwd(), 'src/components/shipping/ShippingDashboard.tsx'), 'utf8');
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -156,6 +157,30 @@ describe('ShippingDashboard provider action binding', () => {
     expect(html).not.toContain('Manual audit mode');
     expect(html).not.toContain('Not connected');
     expect(html).not.toContain('queue connected');
+  });
+
+  it('offers only manual shipments as manual lifecycle event targets', () => {
+    const manual = {
+      ...INITIAL_SHIPMENT_PARCELS[0],
+      id: 'manual-target',
+      orderNumber: 'JW-MANUAL-TARGET',
+      source: 'manual' as const,
+      trackingEvents: [],
+    };
+    const provider = {
+      ...INITIAL_SHIPMENT_PARCELS[1],
+      id: 'easyparcel-provider-truth',
+      orderNumber: 'JW-EASYPARCEL-PROVIDER-TRUTH',
+      source: 'easyparcel' as const,
+      trackingEvents: [],
+    };
+
+    const html = renderToStaticMarkup(React.createElement(TrackingAndWebhooksTab, trackingProps({
+      parcels: [provider, manual],
+    })));
+
+    expect(html).toContain('JW-MANUAL-TARGET');
+    expect(html).not.toContain('JW-EASYPARCEL-PROVIDER-TRUTH');
   });
 
   it('renders loading, failure, and genuinely empty webhook audit states distinctly', () => {

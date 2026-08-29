@@ -3,7 +3,8 @@
 namespace App\Jobs;
 
 use App\Models\ShippingWebhookReceipt;
-use App\Services\Shipping\EasyParcelWebhookReconciliationService;
+use App\Services\Shipping\EasyParcelReconciliationTaskProcessor;
+use App\Services\Shipping\EasyParcelReconciliationTaskService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -35,18 +36,20 @@ final class ReconcileEasyParcelWebhook implements ShouldBeUnique, ShouldQueue
         return 'easyparcel-webhook-receipt-'.$this->receiptId;
     }
 
-    public function handle(EasyParcelWebhookReconciliationService $reconciliation): void
-    {
+    public function handle(
+        EasyParcelReconciliationTaskService $tasks,
+        EasyParcelReconciliationTaskProcessor $processor,
+    ): void {
         $receipt = ShippingWebhookReceipt::query()->findOrFail($this->receiptId);
-        $reconciliation->reconcile($receipt);
+        $processor->process($tasks->ensureWebhookReceipt($receipt)->id);
     }
 
     public function failed(Throwable $exception): void
     {
-        ShippingWebhookReceipt::query()->whereKey($this->receiptId)->update([
-            'processing_state' => 'failed',
-            'processed_at' => now(),
-            'last_error' => 'retry_exhausted',
-        ]);
+        $receipt = ShippingWebhookReceipt::query()->find($this->receiptId);
+        if ($receipt instanceof ShippingWebhookReceipt) {
+            $task = app(EasyParcelReconciliationTaskService::class)->ensureWebhookReceipt($receipt);
+            app(EasyParcelReconciliationTaskProcessor::class)->releaseCrashedTask($task->id);
+        }
     }
 }

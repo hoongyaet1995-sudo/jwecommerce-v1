@@ -3,8 +3,6 @@
 use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AdminAppController;
 use App\Http\Controllers\Admin\CatalogApiController;
-use App\Http\Controllers\Admin\ProductReviewApiController;
-use App\Http\Controllers\Admin\StaffReviewPermissionController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CmsFormContractsController;
 use App\Http\Controllers\Admin\CmsMediaAssetController;
@@ -23,26 +21,28 @@ use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PageApiController;
 use App\Http\Controllers\Admin\PagePreviewController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ProductReviewApiController;
 use App\Http\Controllers\Admin\SearchController;
 use App\Http\Controllers\Admin\ShipmentApiController;
 use App\Http\Controllers\Admin\ShippingProviderApiController;
+use App\Http\Controllers\Admin\StaffReviewPermissionController;
 use App\Http\Controllers\Admin\StorefrontShellSettingsApiController;
-use App\Http\Controllers\Admin\TaxSettingsApiController;
 use App\Http\Controllers\Admin\TaxClassApiController;
+use App\Http\Controllers\Admin\TaxSettingsApiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
-use App\Http\Controllers\EasyParcelWebhookController;
-use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\CustomerAccountController;
 use App\Http\Controllers\CustomerAuthController;
-use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\CustomerProductReviewController;
+use App\Http\Controllers\EasyParcelWebhookController;
+use App\Http\Controllers\OrderTrackingController;
+use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\ProductReviewMediaController;
 use App\Http\Controllers\Storefront\CmsContactSubmissionController;
 use App\Http\Controllers\Storefront\NewsletterSubscriptionController;
-use App\Http\Controllers\StorefrontCurrencyController;
 use App\Http\Controllers\StorefrontController;
+use App\Http\Controllers\StorefrontCurrencyController;
 use App\Http\Controllers\StorefrontPageController;
 use Illuminate\Support\Facades\Route;
 
@@ -172,6 +172,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         ->name('api.shipping.easyparcel.quotes.store');
     Route::post('/api/shipping/orders/{order}/easyparcel/bookings', [ShipmentApiController::class, 'bookEasyParcel'])
         ->name('api.shipping.easyparcel.bookings.store');
+    Route::post('/api/shipping/orders/{order}/easyparcel/reconciliation', [ShipmentApiController::class, 'reconcileEasyParcel'])
+        ->name('api.shipping.easyparcel.reconciliation.store');
     Route::get('/api/shipping/shipments', [ShipmentApiController::class, 'index'])->name('api.shipping.shipments.index');
     Route::get('/api/shipping/webhook-receipts', EasyParcelWebhookReceiptApiController::class)->name('api.shipping.webhook-receipts.index');
     Route::post('/api/shipping/shipments/{shipment}/events', [ShipmentApiController::class, 'appendEvent']);

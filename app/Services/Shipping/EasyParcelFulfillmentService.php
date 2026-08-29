@@ -7,10 +7,8 @@ use App\Models\OrderAddress;
 use App\Models\Shipment;
 use App\Models\ShipmentQuote;
 use App\Models\ShippingProvider;
-use App\Models\ShippingProviderCredential;
 use App\Models\User;
 use App\Support\CurrencySettings;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -28,15 +26,26 @@ final class EasyParcelFulfillmentService
     public function __construct(
         private readonly EasyParcelBookingGuard $bookingGuard,
         private readonly CurrencySettings $currencies,
+        private readonly EasyParcelProviderSessionService $providerSessions,
+        private readonly EasyParcelReconciliationTaskService $reconciliationTasks,
+        private readonly EasyParcelReconciliationPublisher $reconciliationPublisher,
     ) {}
 
     public function quote(Order $order, PackageSpec $package, User $actor): ShipmentQuote
     {
-        $context = $this->quoteContext($order, $package);
+        try {
+            $providerSession = $this->providerSessions->connected();
+        } catch (Throwable) {
+            throw new InvalidArgumentException('The EasyParcel Sandbox connection is unavailable.');
+        }
+        if ($providerSession === null) {
+            throw new InvalidArgumentException('The EasyParcel Sandbox connection is unavailable.');
+        }
+        $context = $this->quoteContext($order, $package, $providerSession);
 
         try {
             $response = Http::acceptJson()
-                ->withToken($context['access_token'])
+                ->withToken($providerSession->accessToken)
                 ->connectTimeout(5)
                 ->timeout(10)
                 ->post(self::QUOTATION_URL, $context['quote_payload']);
@@ -51,7 +60,7 @@ final class EasyParcelFulfillmentService
 
         $responseSnapshot = $this->normalizeQuotation($payload);
 
-        return DB::transaction(function () use ($actor, $context, $package, $responseSnapshot): ShipmentQuote {
+        return DB::transaction(function () use ($actor, $context, $package, $providerSession, $responseSnapshot): ShipmentQuote {
             $lockedOrder = Order::query()->lockForUpdate()->findOrFail($context['order_id']);
             $provider = ShippingProvider::query()->lockForUpdate()->findOrFail($context['provider_id']);
 
@@ -65,6 +74,8 @@ final class EasyParcelFulfillmentService
                 || $provider->configuration_version !== $context['provider_configuration_version']) {
                 throw new InvalidArgumentException('The EasyParcel Sandbox connection changed while quoting.');
             }
+
+            $this->providerSessions->assertCurrent($providerSession);
 
             return ShipmentQuote::query()->create([
                 'order_id' => $lockedOrder->id,
@@ -89,7 +100,16 @@ final class EasyParcelFulfillmentService
             throw new InvalidArgumentException('EasyParcel booking must start outside an existing database transaction.');
         }
 
-        $claim = $this->claimBooking($order, $quote, $serviceCode);
+        try {
+            $providerSession = $this->providerSessions->connected();
+        } catch (Throwable) {
+            throw new InvalidArgumentException('The EasyParcel Sandbox connection is unavailable.');
+        }
+        if ($providerSession === null) {
+            throw new InvalidArgumentException('The EasyParcel Sandbox connection is unavailable.');
+        }
+
+        $claim = $this->claimBooking($order, $quote, $serviceCode, $providerSession);
         if ($claim['existing'] instanceof Shipment) {
             return $claim['existing'];
         }
@@ -106,7 +126,7 @@ final class EasyParcelFulfillmentService
 
         try {
             $response = Http::acceptJson()
-                ->withToken($claim['access_token'])
+                ->withToken($providerSession->accessToken)
                 ->connectTimeout(5)
                 ->timeout(10)
                 ->post(self::BOOKING_URL, $bookingPayload);
@@ -132,7 +152,7 @@ final class EasyParcelFulfillmentService
         try {
             $providerBooking = $this->normalizeBooking($payload);
 
-            return $this->finalizeBooking($claimedQuote, $claim['service'], $providerBooking, $actor);
+            return $this->finalizeBooking($claimedQuote, $claim['service'], $providerBooking, $actor, $providerSession);
         } catch (InvalidArgumentException $exception) {
             $this->markBookingOutcome($claimedQuote->id, 'uncertain', 'provider_outcome_uncertain');
 
@@ -154,14 +174,16 @@ final class EasyParcelFulfillmentService
      *     order_id: int,
      *     provider_id: int,
      *     provider_configuration_version: int,
-     *     access_token: string,
      *     quote_payload: array<string, mixed>,
      *     request_snapshot: array<string, mixed>
      * }
      */
-    private function quoteContext(Order $order, PackageSpec $package): array
-    {
-        return DB::transaction(function () use ($order, $package): array {
+    private function quoteContext(
+        Order $order,
+        PackageSpec $package,
+        EasyParcelProviderSession $providerSession,
+    ): array {
+        return DB::transaction(function () use ($order, $package, $providerSession): array {
             $lockedOrder = Order::query()
                 ->with(['customer', 'items', 'addresses', 'payments'])
                 ->lockForUpdate()
@@ -189,12 +211,10 @@ final class EasyParcelFulfillmentService
             if ($provider === null) {
                 throw new InvalidArgumentException('The EasyParcel Sandbox connection is unavailable.');
             }
-
-            $credential = ShippingProviderCredential::query()
-                ->where('shipping_provider_id', $provider->id)
-                ->lockForUpdate()
-                ->first();
-            $accessToken = $this->connectedAccessToken($provider, $credential);
+            if ($provider->id !== $providerSession->providerId) {
+                throw new InvalidArgumentException('The EasyParcel Sandbox connection changed while quoting.');
+            }
+            $this->providerSessions->assertCurrent($providerSession);
             $sender = $this->sender();
             $receiver = $this->receiver($lockedOrder, $address);
             $packageSnapshot = $package->snapshot();
@@ -223,7 +243,6 @@ final class EasyParcelFulfillmentService
                 'order_id' => $lockedOrder->id,
                 'provider_id' => $provider->id,
                 'provider_configuration_version' => $provider->configuration_version,
-                'access_token' => $accessToken,
                 'quote_payload' => ['shipment' => [$quoteShipment]],
                 'request_snapshot' => [
                     'api_version' => EasyParcelOpenApiClient::API_VERSION,
@@ -244,13 +263,16 @@ final class EasyParcelFulfillmentService
      * @return array{
      *     existing: Shipment|null,
      *     quote?: ShipmentQuote,
-     *     service?: array<string, mixed>,
-     *     access_token?: string
+     *     service?: array<string, mixed>
      * }
      */
-    private function claimBooking(Order $order, ShipmentQuote $quote, string $serviceCode): array
-    {
-        return DB::transaction(function () use ($order, $quote, $serviceCode): array {
+    private function claimBooking(
+        Order $order,
+        ShipmentQuote $quote,
+        string $serviceCode,
+        EasyParcelProviderSession $providerSession,
+    ): array {
+        return DB::transaction(function () use ($order, $quote, $serviceCode, $providerSession): array {
             $lockedOrder = Order::query()->lockForUpdate()->findOrFail($order->id);
             $lockedQuote = ShipmentQuote::query()->lockForUpdate()->find($quote->id);
 
@@ -299,15 +321,11 @@ final class EasyParcelFulfillmentService
             if ($provider === null
                 || $provider->provider !== ShippingProviderConfigurationService::PROVIDER
                 || $provider->environment !== ShippingProviderConfigurationService::ENVIRONMENT
-                || $provider->configuration_version !== $lockedQuote->provider_configuration_version) {
+                || $provider->configuration_version !== $lockedQuote->provider_configuration_version
+                || $provider->id !== $providerSession->providerId) {
                 throw new InvalidArgumentException('The EasyParcel Sandbox connection changed after this quote was created.');
             }
-
-            $credential = ShippingProviderCredential::query()
-                ->where('shipping_provider_id', $provider->id)
-                ->lockForUpdate()
-                ->first();
-            $accessToken = $this->connectedAccessToken($provider, $credential);
+            $this->providerSessions->assertCurrent($providerSession);
             $claimKey = ShippingProviderConfigurationService::PROVIDER.':order:'.$lockedOrder->id;
 
             $anotherClaim = ShipmentQuote::query()
@@ -322,6 +340,7 @@ final class EasyParcelFulfillmentService
                 'booking_state' => 'in_progress',
                 'booking_claim_key' => $claimKey,
                 'booking_started_at' => now(),
+                'selected_service_code' => $service['service_code'],
                 'last_error' => null,
             ])->save();
 
@@ -329,7 +348,6 @@ final class EasyParcelFulfillmentService
                 'existing' => null,
                 'quote' => $lockedQuote->fresh(),
                 'service' => $service,
-                'access_token' => $accessToken,
             ];
         });
     }
@@ -403,8 +421,9 @@ final class EasyParcelFulfillmentService
         array $service,
         array $providerBooking,
         User $actor,
+        EasyParcelProviderSession $providerSession,
     ): Shipment {
-        return DB::transaction(function () use ($actor, $providerBooking, $quote, $service): Shipment {
+        [$shipment, $detailsTaskId] = DB::transaction(function () use ($actor, $providerBooking, $providerSession, $quote, $service): array {
             $lockedOrder = Order::query()->lockForUpdate()->findOrFail($quote->order_id);
             $lockedQuote = ShipmentQuote::query()->lockForUpdate()->findOrFail($quote->id);
             $existing = Shipment::query()
@@ -419,7 +438,7 @@ final class EasyParcelFulfillmentService
                     throw new InvalidArgumentException('This order already has a different EasyParcel booking.');
                 }
 
-                return $existing->fresh(['events']);
+                return [$existing->fresh(['events']), null];
             }
 
             $this->bookingGuard->assertFinalizationAllowed($lockedOrder, $lockedQuote);
@@ -428,6 +447,8 @@ final class EasyParcelFulfillmentService
                 || $lockedQuote->booking_claim_key !== ShippingProviderConfigurationService::PROVIDER.':order:'.$lockedOrder->id) {
                 throw new InvalidArgumentException('This EasyParcel booking claim is no longer valid.');
             }
+
+            $this->providerSessions->assertCurrent($providerSession);
 
             $shipment = Shipment::query()->create([
                 'order_id' => $lockedOrder->id,
@@ -463,13 +484,23 @@ final class EasyParcelFulfillmentService
                 'last_error' => null,
             ])->save();
 
-            return $shipment->fresh(['events']);
+            $taskId = blank($shipment->tracking_number)
+                ? $this->reconciliationTasks->ensureShipmentDetails($shipment)->id
+                : null;
+
+            return [$shipment->fresh(['events']), $taskId];
         });
+
+        if (is_int($detailsTaskId)) {
+            $this->reconciliationPublisher->publish($detailsTaskId);
+        }
+
+        return $shipment;
     }
 
     private function markBookingOutcome(int $quoteId, string $state, string $error): void
     {
-        DB::transaction(function () use ($error, $quoteId, $state): void {
+        $taskId = DB::transaction(function () use ($error, $quoteId, $state): ?int {
             $quote = ShipmentQuote::query()->lockForUpdate()->find($quoteId);
             if ($quote !== null && $quote->booking_state === 'in_progress') {
                 $changes = ['booking_state' => $state, 'last_error' => $error];
@@ -478,8 +509,18 @@ final class EasyParcelFulfillmentService
                 }
 
                 $quote->forceFill($changes)->save();
+
+                return $state === 'uncertain'
+                    ? $this->reconciliationTasks->ensureBooking($quote)->id
+                    : null;
             }
+
+            return null;
         });
+
+        if (is_int($taskId)) {
+            $this->reconciliationPublisher->publish($taskId);
+        }
     }
 
     /** @param array<string, mixed> $payload @return array{request_id: string|null, services: list<array<string, mixed>>} */
@@ -617,34 +658,6 @@ final class EasyParcelFulfillmentService
         }
 
         return false;
-    }
-
-    private function connectedAccessToken(
-        ShippingProvider $provider,
-        ?ShippingProviderCredential $credential,
-    ): string {
-        $credentials = $credential?->credentials;
-        if (! $provider->enabled
-            || $provider->connection_state !== 'connected'
-            || ! is_array($credentials)
-            || ($credentials['token_type'] ?? null) !== 'Bearer'
-            || ! is_string($credentials['access_token'] ?? null)
-            || $credentials['access_token'] === ''
-            || ! is_string($credentials['access_token_expires_at'] ?? null)) {
-            throw new InvalidArgumentException('The EasyParcel Sandbox connection is unavailable.');
-        }
-
-        try {
-            $expiresAt = Carbon::parse($credentials['access_token_expires_at']);
-        } catch (Throwable) {
-            throw new InvalidArgumentException('The EasyParcel Sandbox connection is unavailable.');
-        }
-
-        if (! $expiresAt->isAfter(now()->addMinute())) {
-            throw new InvalidArgumentException('The EasyParcel Sandbox connection is unavailable.');
-        }
-
-        return $credentials['access_token'];
     }
 
     /** @return array<string, string> */

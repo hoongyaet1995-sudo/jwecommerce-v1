@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { EasyParcelQuote } from '../../integration/easyParcelFulfillmentData';
 import type { ShipmentParcel } from '../../types/shipping';
 import { EasyParcelBookingModal } from './EasyParcelBookingModal';
@@ -59,6 +59,7 @@ afterEach(() => {
     act(() => root.unmount());
     host.remove();
   });
+  vi.useRealTimers();
 });
 
 describe('EasyParcelBookingModal quote lifecycle', () => {
@@ -100,5 +101,45 @@ describe('EasyParcelBookingModal quote lifecycle', () => {
     expect(refreshedQuoteButton.disabled).toBe(false);
     const bookingButton = Array.from(host.querySelectorAll('button')).find((button) => button.textContent?.includes('Confirm Booking')) as HTMLButtonElement;
     expect(bookingButton.disabled).toBe(true);
+  });
+
+  it('recomputes quote expiry while the modal is idle', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-29T00:00:00Z'));
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    mountedRoots.push({ root, host });
+    const expiringQuote: EasyParcelQuote = {
+      ...staleQuote,
+      id: 'expiring-quote',
+      expiresAt: '2026-08-29T00:00:01Z',
+      services: [{ ...staleQuote.services[0], serviceCode: 'EXPIRING', serviceName: 'Expiring Courier' }],
+    };
+
+    await act(async () => {
+      root.render(React.createElement(EasyParcelBookingModal, {
+        isOpen: true,
+        parcel: parcel('parcel-expiry'),
+        onClose: () => undefined,
+        onQuote: async () => expiringQuote,
+        onBook: async () => ({ id: 'booking', orderId: 'order-parcel-expiry', quoteId: 'expiring-quote', fulfillmentStatus: 'ready_to_ship', trackingNumber: null, hasLabel: true }),
+        onBooked: async () => undefined,
+      }));
+    });
+
+    const quoteButton = Array.from(host.querySelectorAll('button')).find((button) => button.textContent?.includes('Re-fetch Quotes')) as HTMLButtonElement;
+    await act(async () => {
+      quoteButton.click();
+      await Promise.resolve();
+    });
+    expect(host.textContent).toContain('Expiring Courier');
+    expect(host.textContent).not.toContain('Quote expired. Refresh rates to continue.');
+
+    await act(async () => {
+      vi.advanceTimersByTime(1_100);
+    });
+
+    expect(host.textContent).toContain('Quote expired. Refresh rates to continue.');
   });
 });

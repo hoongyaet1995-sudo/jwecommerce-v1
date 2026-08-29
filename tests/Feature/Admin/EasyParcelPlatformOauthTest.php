@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
+use Symfony\Component\Process\Process;
 use Tests\Concerns\UsesIsolatedDatabaseMigrations;
 use Tests\TestCase;
 
@@ -72,6 +73,114 @@ class EasyParcelPlatformOauthTest extends TestCase
         self::assertStringNotContainsString('rotated-access-token', $raw);
         self::assertStringNotContainsString('rotated-refresh-token', $raw);
         self::assertStringNotContainsString('platform-secret', $raw);
+    }
+
+    public function test_two_process_refresh_lock_performs_one_exchange_and_one_persisted_rotation(): void
+    {
+        $provider = $this->connectedProviderWithTokens();
+        $counterFile = tempnam(sys_get_temp_dir(), 'easyparcel-refresh-count-');
+        $barrierFile = tempnam(sys_get_temp_dir(), 'easyparcel-refresh-ready-');
+        self::assertIsString($counterFile);
+        self::assertIsString($barrierFile);
+        file_put_contents($counterFile, '0');
+        file_put_contents($barrierFile, '');
+
+        $script = <<<'PHP'
+require $argv[1].'/vendor/autoload.php';
+$app = require $argv[1].'/bootstrap/app.php';
+$kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
+$kernel->bootstrap();
+
+$counterFile = $argv[2];
+$barrierFile = $argv[3];
+$barrier = fopen($barrierFile, 'c+');
+if ($barrier === false || ! flock($barrier, LOCK_EX)) {
+    throw new \RuntimeException('Unable to establish refresh barrier.');
+}
+fseek($barrier, 0, SEEK_END);
+fwrite($barrier, "ready\n");
+fflush($barrier);
+flock($barrier, LOCK_UN);
+
+$deadline = microtime(true) + 5;
+do {
+    clearstatcache(true, $barrierFile);
+    $ready = file($barrierFile, FILE_IGNORE_NEW_LINES) ?: [];
+    if (count($ready) >= 2) {
+        break;
+    }
+    usleep(10_000);
+} while (microtime(true) < $deadline);
+if (count($ready) < 2) {
+    throw new \RuntimeException('Timed out waiting for refresh workers.');
+}
+
+\Illuminate\Support\Facades\Http::fake([
+    \App\Services\Shipping\EasyParcelOpenApiClient::TOKEN_URL => function () use ($counterFile) {
+        $counter = fopen($counterFile, 'c+');
+        if ($counter === false || ! flock($counter, LOCK_EX)) {
+            throw new \RuntimeException('Unable to count refresh exchange.');
+        }
+        $value = (int) trim(stream_get_contents($counter));
+        ftruncate($counter, 0);
+        rewind($counter);
+        fwrite($counter, (string) ($value + 1));
+        fflush($counter);
+        usleep(400_000);
+        flock($counter, LOCK_UN);
+
+        return \Illuminate\Support\Facades\Http::response([
+            'token_type' => 'Bearer',
+            'access_token' => 'two-process-access-token',
+            'expires_in' => 3600,
+            'refresh_token' => 'two-process-refresh-token',
+            'refresh_token_expires_in' => 7200,
+        ]);
+    },
+]);
+
+$session = $app->make(\App\Services\Shipping\EasyParcelProviderSessionService::class)->connected();
+fwrite(STDOUT, 'session:'.($session?->accessToken ?? 'none').PHP_EOL);
+PHP;
+
+        $environment = array_replace(getenv(), [
+            'APP_ENV' => 'testing',
+            'DB_CONNECTION' => 'mysql',
+            'DB_DATABASE' => 'jw_ecommerce_testing',
+            'DB_USERNAME' => 'root',
+            'DB_PASSWORD' => '',
+            'CACHE_STORE' => 'database',
+            'EASYPARCEL_OAUTH_CLIENT_ID' => 'platform-client',
+            'EASYPARCEL_OAUTH_CLIENT_SECRET' => 'platform-secret',
+        ]);
+        $workers = [
+            new Process([PHP_BINARY, '-r', $script, base_path(), $counterFile, $barrierFile], base_path(), $environment),
+            new Process([PHP_BINARY, '-r', $script, base_path(), $counterFile, $barrierFile], base_path(), $environment),
+        ];
+
+        try {
+            foreach ($workers as $worker) {
+                $worker->setTimeout(15)->start();
+            }
+            foreach ($workers as $worker) {
+                $worker->wait();
+                self::assertTrue($worker->isSuccessful(), $worker->getErrorOutput().$worker->getOutput());
+                self::assertStringContainsString('session:two-process-access-token', $worker->getOutput());
+            }
+
+            self::assertSame('1', trim((string) file_get_contents($counterFile)));
+            $stored = $provider->credential()->sole()->credentials;
+            self::assertSame('two-process-access-token', $stored['access_token']);
+            self::assertSame('two-process-refresh-token', $stored['refresh_token']);
+        } finally {
+            foreach ($workers as $worker) {
+                if ($worker->isRunning()) {
+                    $worker->stop(1);
+                }
+            }
+            @unlink($counterFile);
+            @unlink($barrierFile);
+        }
     }
 
     public function test_refresh_preserves_the_current_refresh_token_when_the_provider_omits_rotation(): void

@@ -10,11 +10,16 @@ export interface EasyParcelPackageDraft {
 
 type PackageSource = Pick<ShipmentParcel, 'totalWeightKg' | 'dimensionsCm'>;
 
+const normalizedDraftValue = (value: number | null | undefined): string => {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '';
+  return Number(value.toFixed(2)).toString();
+};
+
 export const packageDraftFromParcel = (parcel: PackageSource): EasyParcelPackageDraft => ({
-  weightKg: parcel.totalWeightKg?.toString() ?? '',
-  lengthCm: parcel.dimensionsCm?.length.toString() ?? '',
-  widthCm: parcel.dimensionsCm?.width.toString() ?? '',
-  heightCm: parcel.dimensionsCm?.height.toString() ?? '',
+  weightKg: normalizedDraftValue(parcel.totalWeightKg),
+  lengthCm: normalizedDraftValue(parcel.dimensionsCm?.length),
+  widthCm: normalizedDraftValue(parcel.dimensionsCm?.width),
+  heightCm: normalizedDraftValue(parcel.dimensionsCm?.height),
 });
 
 export const packageSpecFromDraft = (draft: EasyParcelPackageDraft): EasyParcelPackageSpec => {

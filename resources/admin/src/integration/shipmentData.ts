@@ -9,6 +9,7 @@ const errorMessage = (payload: ErrorResponse | null, fallback: string): string =
 
 const shipmentListParcel = (row: ShipmentParcel): ShipmentParcel => ({
   id: row.id,
+  source: row.source,
   orderId: row.orderId,
   orderNumber: row.orderNumber,
   customerName: row.customerName,

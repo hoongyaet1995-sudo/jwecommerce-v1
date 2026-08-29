@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\ReconcileEasyParcelWebhook;
+use App\Jobs\ReconcileEasyParcelTask;
 use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\ShippingWebhookReceipt;
@@ -55,7 +55,7 @@ class EasyParcelWebhookIngressTest extends TestCase
         self::assertSame('pending', $shipment->fresh()->status);
         self::assertSame('queued', $receipt->fresh()->processing_state);
         self::assertNotNull($receipt->fresh()->queued_at);
-        Queue::assertPushed(ReconcileEasyParcelWebhook::class, 1);
+        Queue::assertPushed(ReconcileEasyParcelTask::class, 1);
     }
 
     public function test_ondemand_and_unknown_standard_webhooks_are_classified_without_a_lifecycle_mutation(): void
@@ -88,6 +88,44 @@ class EasyParcelWebhookIngressTest extends TestCase
         ]);
         self::assertSame('processing', $order->fresh()->status);
         self::assertSame('pending', $shipment->fresh()->status);
+    }
+
+    public function test_webhook_correlation_ignores_non_easyparcel_shipments(): void
+    {
+        Queue::fake();
+        config(['services.easyparcel.webhook_path_token' => 'test-endpoint-token']);
+        [, $manualShipment] = $this->easyParcelShipment('MANUAL-PROVIDER-REF', 'MANUAL-AWB');
+        $manualShipment->forceFill(['source' => 'manual'])->save();
+
+        $this->postJson('/webhooks/easyparcel/test-endpoint-token', [
+            'topic' => 'shipment.status.update',
+            'shipment_number' => 'MANUAL-PROVIDER-REF',
+            'awb_number' => 'MANUAL-AWB',
+        ])->assertOk();
+
+        $receipt = ShippingWebhookReceipt::query()->sole();
+        self::assertNull($receipt->shipment_id);
+        self::assertSame('unmatched', $receipt->processing_state);
+        Queue::assertPushed(ReconcileEasyParcelTask::class, 1);
+    }
+
+    public function test_webhook_with_two_identifiers_requires_both_to_resolve_to_the_same_easyparcel_shipment(): void
+    {
+        Queue::fake();
+        config(['services.easyparcel.webhook_path_token' => 'test-endpoint-token']);
+        [, $first] = $this->easyParcelShipment('ES-CONSISTENT-A', 'AWB-CONSISTENT-A');
+        [, $second] = $this->easyParcelShipment('ES-CONSISTENT-B', 'AWB-CONSISTENT-B');
+
+        $this->postJson('/webhooks/easyparcel/test-endpoint-token', [
+            'topic' => 'shipment.tracking.update',
+            'shipment_number' => $first->provider_reference,
+            'awb_number' => $second->tracking_number,
+        ])->assertOk();
+
+        $receipt = ShippingWebhookReceipt::query()->sole();
+        self::assertNull($receipt->shipment_id);
+        self::assertSame('unmatched', $receipt->processing_state);
+        Queue::assertPushed(ReconcileEasyParcelTask::class, 1);
     }
 
     public function test_concurrent_matched_duplicates_return_one_queued_receipt_and_dispatch_once(): void
@@ -390,6 +428,7 @@ PHP;
     ): void {
         $pdo = $this->workerPdo();
         $pdo->prepare('DELETE FROM jobs WHERE queue = ?')->execute([$queue]);
+        $pdo->prepare('DELETE FROM easyparcel_reconciliation_tasks WHERE shipping_webhook_receipt_id IN (SELECT id FROM shipping_webhook_receipts WHERE payload_hash = ?)')->execute([$payloadHash]);
         $statement = $pdo->prepare('DELETE FROM shipping_webhook_receipts WHERE payload_hash = ?');
         $statement->execute([$payloadHash]);
         $pdo->prepare('DELETE FROM shipments WHERE id = ?')->execute([$shipmentId]);

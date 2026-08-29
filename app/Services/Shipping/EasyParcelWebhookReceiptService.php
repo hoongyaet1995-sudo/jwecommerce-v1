@@ -2,8 +2,6 @@
 
 namespace App\Services\Shipping;
 
-use App\Jobs\ReconcileEasyParcelWebhook;
-use App\Models\Shipment;
 use App\Models\ShippingWebhookReceipt;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -26,12 +24,18 @@ final class EasyParcelWebhookReceiptService
         'shipment.tracking.update',
     ];
 
+    public function __construct(
+        private readonly EasyParcelWebhookCorrelationService $correlation,
+        private readonly EasyParcelReconciliationTaskService $tasks,
+        private readonly EasyParcelReconciliationPublisher $publisher,
+    ) {}
+
     /** @param array<string, mixed> $payload */
     public function receiveAndQueue(string $rawBody, array $payload): ShippingWebhookReceipt
     {
         [$identity, $values] = $this->receiptAttributes($rawBody, $payload);
 
-        return DB::transaction(function () use ($identity, $values): ShippingWebhookReceipt {
+        [$receipt, $taskId] = DB::transaction(function () use ($identity, $values): array {
             try {
                 ShippingWebhookReceipt::query()->create([...$identity, ...$values]);
             } catch (UniqueConstraintViolationException) {
@@ -43,22 +47,26 @@ final class EasyParcelWebhookReceiptService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($locked->shipment_id !== null
-                && $locked->processing_state === 'received'
-                && in_array($locked->topic, self::RECONCILABLE_TOPICS, true)) {
-                $locked->forceFill([
-                    'processing_state' => 'queued',
-                    'queued_at' => now(),
-                ])->save();
+            $taskId = null;
+            if (in_array($locked->topic, self::RECONCILABLE_TOPICS, true)) {
+                if ($locked->shipment_id !== null && $locked->processing_state === 'received') {
+                    $locked->forceFill([
+                        'processing_state' => 'queued',
+                        'queued_at' => now(),
+                    ])->save();
+                }
 
-                $receiptId = $locked->id;
-                DB::afterCommit(static function () use ($receiptId): void {
-                    ReconcileEasyParcelWebhook::dispatch($receiptId);
-                });
+                $taskId = $this->tasks->ensureWebhookReceipt($locked)->id;
             }
 
-            return $locked;
+            return [$locked, $taskId];
         });
+
+        if (is_int($taskId)) {
+            $this->publisher->publish($taskId);
+        }
+
+        return $receipt->fresh();
     }
 
     /** @param array<string, mixed> $payload */
@@ -77,7 +85,7 @@ final class EasyParcelWebhookReceiptService
     {
         $topic = $this->topic($payload['topic'] ?? null);
         $snapshot = $this->correlationSnapshot($payload);
-        $shipment = $topic === 'ondemand.status.update' ? null : $this->shipment($snapshot);
+        $shipment = $topic === 'ondemand.status.update' ? null : $this->correlation->shipment($snapshot);
         $processingState = $topic === 'ondemand.status.update'
             ? 'ignored'
             : ($shipment === null ? 'unmatched' : 'received');
@@ -128,24 +136,6 @@ final class EasyParcelWebhookReceiptService
         }
 
         return $snapshot;
-    }
-
-    /** @param array<string, int|string> $snapshot */
-    private function shipment(array $snapshot): ?Shipment
-    {
-        $providerReference = $snapshot['shipment_number'] ?? null;
-        if (is_string($providerReference)) {
-            $shipment = Shipment::query()->where('provider_reference', $providerReference)->first();
-            if ($shipment !== null) {
-                return $shipment;
-            }
-        }
-
-        $awb = $snapshot['awb_number'] ?? null;
-
-        return is_string($awb)
-            ? Shipment::query()->where('tracking_number', $awb)->first()
-            : null;
     }
 
     private function topic(mixed $value): string

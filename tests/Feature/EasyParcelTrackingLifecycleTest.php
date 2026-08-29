@@ -305,14 +305,52 @@ class EasyParcelTrackingLifecycleTest extends TestCase
             ],
         ]);
 
-        self::assertSame('returned', $shipment->fresh()->status);
-        self::assertNull($shipment->fresh()->delivered_at);
-        self::assertSame('processing', $order->fresh()->status);
-        self::assertSame(0, $order->statusHistory()->whereIn('to_status', ['shipped', 'delivered'])->count());
+        self::assertSame('delivered', $shipment->fresh()->status);
+        self::assertSame('2026-08-29 13:00:00', $shipment->fresh()->delivered_at?->utc()->format('Y-m-d H:i:s'));
+        self::assertSame('delivered', $order->fresh()->status);
+        self::assertSame(2, $order->statusHistory()->whereIn('to_status', ['shipped', 'delivered'])->count());
         self::assertCount(2, $shipment->events()->get());
         $row = app(ShipmentDataService::class)->collection()->firstWhere('id', (string) $shipment->id);
-        self::assertSame('returned', data_get($row, 'status'));
-        self::assertNull(data_get($row, 'deliveredAt'));
+        self::assertSame('delivered', data_get($row, 'status'));
+        self::assertSame('2026-08-29T13:00:00+00:00', data_get($row, 'deliveredAt'));
+    }
+
+    public function test_delivered_and_returned_projection_is_batch_equivalent_and_keeps_delivered_terminal(): void
+    {
+        [, $batchedOrder] = $this->processingOrder('JW-BATCH-EQUIVALENCE');
+        [, $separateOrder] = $this->processingOrder('JW-SEPARATE-EQUIVALENCE');
+        $batched = $this->easyParcelShipment($batchedOrder, 'AWB-BATCH-EQUIVALENCE');
+        $separate = $this->easyParcelShipment($separateOrder, 'AWB-SEPARATE-EQUIVALENCE');
+        $service = app(ShipmentService::class);
+        $events = [
+            [
+                'external_event_id' => 'easyparcel:equivalence-delivered',
+                'status' => 'delivered',
+                'occurred_at' => CarbonImmutable::parse('2026-08-29 12:00:00', 'UTC'),
+                'description' => 'Delivered to recipient',
+                'location' => 'Recipient',
+            ],
+            [
+                'external_event_id' => 'easyparcel:equivalence-returned',
+                'status' => 'returned',
+                'occurred_at' => CarbonImmutable::parse('2026-08-29 13:00:00', 'UTC'),
+                'description' => 'Later provider return scan',
+                'location' => 'Origin hub',
+            ],
+        ];
+
+        $service->recordEasyParcelEvents($batched, 'AWB-BATCH-EQUIVALENCE', $events);
+        $service->recordEasyParcelEvents($separate, 'AWB-SEPARATE-EQUIVALENCE', [$events[0]]);
+        $service->recordEasyParcelEvents($separate, 'AWB-SEPARATE-EQUIVALENCE', [$events[1]]);
+
+        self::assertSame('delivered', $batched->fresh()->status);
+        self::assertSame($batched->fresh()->status, $separate->fresh()->status);
+        self::assertSame('delivered', $batchedOrder->fresh()->status);
+        self::assertSame($batchedOrder->fresh()->status, $separateOrder->fresh()->status);
+        self::assertSame(
+            $batched->fresh()->delivered_at?->utc()->toIso8601String(),
+            $separate->fresh()->delivered_at?->utc()->toIso8601String(),
+        );
     }
 
     public function test_exception_and_unknown_codes_never_deliver_cancel_refund_or_restock_an_order(): void

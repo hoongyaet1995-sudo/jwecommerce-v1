@@ -135,9 +135,11 @@ class EasyParcelFulfillmentMigrationTest extends TestCase
         $this->assertFileExists($migrationPath);
 
         $migration = require $migrationPath;
+        $reconciliationMigration = require database_path('migrations/2026_08_29_000100_create_easyparcel_reconciliation_tasks_table.php');
         $this->guardTestingSchemaMutation();
 
         try {
+            $reconciliationMigration->down();
             $migration->down();
 
             $this->assertFalse(Schema::hasTable('shipping_webhook_receipts'));
@@ -157,9 +159,79 @@ class EasyParcelFulfillmentMigrationTest extends TestCase
                 'received_at',
             ]));
             $this->assertFalse(Schema::hasColumn('shipping_webhook_receipts', 'raw_payload'));
+            $reconciliationMigration->up();
         } finally {
             $this->restoreCurrentWebhookReceiptSchema($migration);
+            $this->restoreCurrentReconciliationSchema($reconciliationMigration);
         }
+    }
+
+    public function test_reconciliation_outbox_schema_round_trip_is_additive_and_rollback_safe(): void
+    {
+        $migrationPath = database_path('migrations/2026_08_29_000100_create_easyparcel_reconciliation_tasks_table.php');
+        $this->assertFileExists($migrationPath);
+        $migration = require $migrationPath;
+        $this->guardTestingSchemaMutation();
+
+        try {
+            $migration->down();
+            $this->assertFalse(Schema::hasTable('easyparcel_reconciliation_tasks'));
+
+            $migration->up();
+            $this->assertTrue(Schema::hasColumns('easyparcel_reconciliation_tasks', [
+                'task_key',
+                'type',
+                'shipment_quote_id',
+                'shipment_id',
+                'shipping_webhook_receipt_id',
+                'state',
+                'published_at',
+                'lease_token',
+                'lease_expires_at',
+                'alerted_at',
+            ]));
+            DB::table('easyparcel_reconciliation_tasks')->insert([
+                'provider' => 'easyparcel',
+                'environment' => 'sandbox',
+                'task_key' => 'migration-round-trip',
+                'type' => 'shipment_details',
+                'state' => 'pending',
+                'publication_attempt_count' => 0,
+                'processing_attempt_count' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $this->assertDatabaseHas('easyparcel_reconciliation_tasks', [
+                'task_key' => 'migration-round-trip',
+                'state' => 'pending',
+            ]);
+
+            $migration->down();
+            $this->assertFalse(Schema::hasTable('easyparcel_reconciliation_tasks'));
+            $migration->up();
+            $this->assertTrue(Schema::hasTable('easyparcel_reconciliation_tasks'));
+        } finally {
+            $this->restoreCurrentReconciliationSchema($migration);
+        }
+    }
+
+    public function test_reconciliation_schema_is_restored_when_the_missing_table_body_throws(): void
+    {
+        $migration = require database_path('migrations/2026_08_29_000100_create_easyparcel_reconciliation_tasks_table.php');
+        $this->guardTestingSchemaMutation();
+
+        try {
+            try {
+                $migration->down();
+                throw new RuntimeException('intentional reconciliation downgrade probe');
+            } finally {
+                $this->restoreCurrentReconciliationSchema($migration);
+            }
+        } catch (RuntimeException $exception) {
+            $this->assertSame('intentional reconciliation downgrade probe', $exception->getMessage());
+        }
+
+        $this->assertTrue(Schema::hasTable('easyparcel_reconciliation_tasks'));
     }
 
     public function test_fulfillment_schema_is_restored_when_the_downgraded_body_throws(): void
@@ -185,14 +257,17 @@ class EasyParcelFulfillmentMigrationTest extends TestCase
     public function test_webhook_receipt_schema_is_restored_when_the_missing_table_body_throws(): void
     {
         $migration = require database_path('migrations/2026_08_29_000000_create_shipping_webhook_receipts_table.php');
+        $reconciliationMigration = require database_path('migrations/2026_08_29_000100_create_easyparcel_reconciliation_tasks_table.php');
         $this->guardTestingSchemaMutation();
 
         try {
             try {
+                $reconciliationMigration->down();
                 $migration->down();
                 throw new RuntimeException('intentional webhook downgrade probe');
             } finally {
                 $this->restoreCurrentWebhookReceiptSchema($migration);
+                $this->restoreCurrentReconciliationSchema($reconciliationMigration);
             }
         } catch (RuntimeException $exception) {
             $this->assertSame('intentional webhook downgrade probe', $exception->getMessage());
@@ -256,6 +331,26 @@ class EasyParcelFulfillmentMigrationTest extends TestCase
             'received_at',
         ])) {
             throw new LogicException('The shipping_webhook_receipts table is not in its current schema.');
+        }
+    }
+
+    private function restoreCurrentReconciliationSchema(Migration $migration): void
+    {
+        $this->guardTestingSchemaMutation();
+
+        if (! Schema::hasTable('easyparcel_reconciliation_tasks')) {
+            $migration->up();
+        }
+
+        if (! Schema::hasColumns('easyparcel_reconciliation_tasks', [
+            'task_key',
+            'type',
+            'state',
+            'published_at',
+            'lease_token',
+            'lease_expires_at',
+        ])) {
+            throw new LogicException('The EasyParcel reconciliation task table is not in its current schema.');
         }
     }
 

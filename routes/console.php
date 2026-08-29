@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\SweepEasyParcelReconciliation;
 use App\Jobs\SyncEasyParcelTracking;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -11,3 +12,6 @@ Artisan::command('inspire', function () {
 
 Schedule::job(new SyncEasyParcelTracking)
     ->everyFifteenMinutes();
+
+Schedule::job(new SweepEasyParcelReconciliation)
+    ->everyFiveMinutes();

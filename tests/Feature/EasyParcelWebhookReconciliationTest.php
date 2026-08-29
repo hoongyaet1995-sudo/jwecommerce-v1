@@ -2,12 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\ReconcileEasyParcelWebhook;
+use App\Jobs\ReconcileEasyParcelTask;
 use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\ShippingProvider;
 use App\Models\ShippingProviderCredential;
 use App\Models\ShippingWebhookReceipt;
+use App\Services\Shipping\EasyParcelReconciliationTaskService;
 use App\Services\Shipping\EasyParcelShipmentDetailsService;
 use App\Services\Shipping\EasyParcelTrackingException;
 use App\Services\Shipping\EasyParcelTrackingService;
@@ -125,6 +126,36 @@ class EasyParcelWebhookReconciliationTest extends TestCase
         }
     }
 
+    public function test_stale_details_response_cannot_overwrite_an_awb_replaced_while_request_was_in_flight(): void
+    {
+        $this->connectedProvider();
+        [, $shipment] = $this->easyParcelShipment('ES-2608-AWB-RACE', 'AWB-ORIGINAL');
+
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => function () use ($shipment) {
+                Shipment::query()->whereKey($shipment->id)->update([
+                    'tracking_number' => 'AWB-REPLACEMENT',
+                    'updated_at' => now()->addSecond(),
+                ]);
+
+                return Http::response($this->shipmentDetailsResponse(
+                    shipmentNumber: 'ES-2608-AWB-RACE',
+                    awb: 'AWB-STALE-RESPONSE',
+                ));
+            },
+        ]);
+
+        try {
+            app(EasyParcelShipmentDetailsService::class)->reconcile($shipment);
+            self::fail('A stale Shipment Details response must be rejected.');
+        } catch (EasyParcelTrackingException) {
+            // Expected stale-response boundary.
+        }
+
+        self::assertSame('AWB-REPLACEMENT', $shipment->fresh()->tracking_number);
+        self::assertNull($shipment->fresh()->provider_order_reference);
+    }
+
     public function test_non_easyparcel_https_reference_is_rejected_without_partial_mutation(): void
     {
         $this->connectedProvider();
@@ -161,7 +192,7 @@ class EasyParcelWebhookReconciliationTest extends TestCase
         $this->postJson('/webhooks/easyparcel/test-token', $payload)->assertOk();
         $this->postJson('/webhooks/easyparcel/test-token', $payload)->assertOk();
 
-        Queue::assertPushed(ReconcileEasyParcelWebhook::class, 1);
+        Queue::assertPushed(ReconcileEasyParcelTask::class, 1);
         self::assertSame('processing', $order->fresh()->status);
         self::assertSame('pending', $shipment->fresh()->status);
         $receipt = ShippingWebhookReceipt::query()->sole();
@@ -169,7 +200,7 @@ class EasyParcelWebhookReconciliationTest extends TestCase
         self::assertNotNull($receipt->queued_at);
     }
 
-    public function test_unmatched_and_ignored_receipts_are_never_enqueued(): void
+    public function test_unmatched_receipts_are_durably_requeued_while_ignored_receipts_are_not(): void
     {
         Queue::fake();
         config(['services.easyparcel.webhook_path_token' => 'test-token']);
@@ -183,7 +214,7 @@ class EasyParcelWebhookReconciliationTest extends TestCase
             'shipment_number' => 'ES-UNKNOWN',
         ])->assertOk();
 
-        Queue::assertNothingPushed();
+        Queue::assertPushed(ReconcileEasyParcelTask::class, 1);
         self::assertSame(
             ['ignored', 'unmatched'],
             ShippingWebhookReceipt::query()->orderBy('processing_state')->pluck('processing_state')->all(),
@@ -198,22 +229,27 @@ class EasyParcelWebhookReconciliationTest extends TestCase
             'shipment_number' => 'ES-2608-JOB01',
             'awb_number' => 'AWB-JOB01',
         ], $shipment);
-        $job = new ReconcileEasyParcelWebhook($receipt->id);
+        $task = app(EasyParcelReconciliationTaskService::class)->ensureWebhookReceipt($receipt);
+        $task->forceFill([
+            'state' => 'processing',
+            'lease_token' => (string) str()->uuid(),
+            'lease_expires_at' => now()->subSecond(),
+        ])->save();
+        $job = new ReconcileEasyParcelTask($task->id);
 
         self::assertInstanceOf(ShouldQueue::class, $job);
         self::assertInstanceOf(ShouldBeUnique::class, $job);
-        self::assertSame(4, $job->tries);
-        self::assertSame(30, $job->timeout);
-        self::assertSame(900, $job->uniqueFor);
-        self::assertSame([30, 120, 600], $job->backoff());
-        self::assertSame('easyparcel-webhook-receipt-'.$receipt->id, $job->uniqueId());
+        self::assertSame(1, $job->tries);
+        self::assertSame(60, $job->timeout);
+        self::assertSame(300, $job->uniqueFor);
+        self::assertSame('easyparcel-reconciliation-task-'.$task->id, $job->uniqueId());
 
         $job->failed(new RuntimeException('raw provider secret must not persist'));
 
-        $receipt->refresh();
-        self::assertSame('failed', $receipt->processing_state);
-        self::assertNotNull($receipt->processed_at);
-        self::assertSame('retry_exhausted', $receipt->last_error);
+        $task->refresh();
+        self::assertSame('retrying', $task->state);
+        self::assertNull($task->lease_token);
+        self::assertSame('worker_crashed', $task->last_error);
     }
 
     private function connectedProvider(): ShippingProvider

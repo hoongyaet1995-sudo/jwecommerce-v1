@@ -19,9 +19,14 @@ final class EasyParcelShipmentDetailsService
     public function reconcile(Shipment $shipment): Shipment
     {
         try {
-            $shipmentNumber = $this->requiredString($shipment->provider_reference, 160);
-            if ($shipment->source !== ShippingProviderConfigurationService::PROVIDER
-                || $shipment->provider_reference !== $shipmentNumber) {
+            $snapshot = Shipment::query()->find($shipment->id);
+            if (! $snapshot instanceof Shipment) {
+                throw new EasyParcelTrackingException;
+            }
+            $shipmentNumber = $this->requiredString($snapshot->provider_reference, 160);
+            $snapshotAwb = $snapshot->tracking_number;
+            if ($snapshot->source !== ShippingProviderConfigurationService::PROVIDER
+                || $snapshot->provider_reference !== $shipmentNumber) {
                 throw new EasyParcelTrackingException;
             }
 
@@ -29,30 +34,20 @@ final class EasyParcelShipmentDetailsService
             if ($providerSession === null) {
                 throw new EasyParcelTrackingException;
             }
-
-            $response = Http::acceptJson()
-                ->withToken($providerSession->accessToken)
-                ->connectTimeout(5)
-                ->timeout(10)
-                ->post(self::DETAILS_URL, ['shipment_number' => $shipmentNumber]);
-            $payload = $response->json();
-
-            if (! $response->successful() || ! is_array($payload)) {
-                throw new EasyParcelTrackingException;
-            }
-
-            $details = $this->normalizeResponse($payload, $shipmentNumber);
+            $details = $this->lookup($shipmentNumber, $providerSession);
 
             return DB::transaction(function () use (
                 $shipment,
                 $shipmentNumber,
+                $snapshotAwb,
                 $details,
                 $providerSession,
             ): Shipment {
                 $locked = Shipment::query()->lockForUpdate()->find($shipment->id);
                 if (! $locked instanceof Shipment
                     || $locked->source !== ShippingProviderConfigurationService::PROVIDER
-                    || $locked->provider_reference !== $shipmentNumber) {
+                    || $locked->provider_reference !== $shipmentNumber
+                    || $locked->tracking_number !== $snapshotAwb) {
                     throw new EasyParcelTrackingException;
                 }
 
@@ -79,13 +74,66 @@ final class EasyParcelShipmentDetailsService
     }
 
     /**
+     * @return array{
+     *     shipment_number: string,
+     *     order_number: ?string,
+     *     reference: ?string,
+     *     awb_number: ?string,
+     *     awb_url: ?string,
+     *     tracking_url: ?string,
+     *     service_code: ?string,
+     *     courier_code: ?string,
+     *     courier_name: ?string,
+     *     service_name: ?string,
+     *     currency: ?string,
+     *     amount_minor: ?int
+     * }
+     */
+    public function lookup(
+        string $shipmentNumber,
+        ?EasyParcelProviderSession $providerSession = null,
+    ): array {
+        try {
+            $shipmentNumber = $this->requiredString($shipmentNumber, 160);
+            $providerSession ??= $this->providerSessions->connected();
+            if ($providerSession === null) {
+                throw new EasyParcelTrackingException;
+            }
+
+            $response = Http::acceptJson()
+                ->withToken($providerSession->accessToken)
+                ->connectTimeout(5)
+                ->timeout(10)
+                ->post(self::DETAILS_URL, ['shipment_number' => $shipmentNumber]);
+            $payload = $response->json();
+
+            if (! $response->successful() || ! is_array($payload)) {
+                throw new EasyParcelTrackingException;
+            }
+
+            return $this->normalizeResponse($payload, $shipmentNumber);
+        } catch (EasyParcelTrackingException $exception) {
+            throw $exception;
+        } catch (Throwable) {
+            throw new EasyParcelTrackingException;
+        }
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      * @return array{
      *     shipment_number: string,
      *     order_number: ?string,
+     *     reference: ?string,
      *     awb_number: ?string,
      *     awb_url: ?string,
-     *     tracking_url: ?string
+     *     tracking_url: ?string,
+     *     service_code: ?string,
+     *     courier_code: ?string,
+     *     courier_name: ?string,
+     *     service_name: ?string,
+     *     currency: ?string,
+     *     amount_minor: ?int
      * }
      */
     private function normalizeResponse(array $payload, string $requestedShipmentNumber): array
@@ -113,13 +161,40 @@ final class EasyParcelShipmentDetailsService
             throw new InvalidArgumentException('EasyParcel returned an invalid response.');
         }
 
+        $courier = $shipment['courier'] ?? null;
+        $courier = is_array($courier) && ! array_is_list($courier) ? $courier : [];
+        $pricing = $shipment['pricing'] ?? null;
+        $pricing = is_array($pricing) && ! array_is_list($pricing) ? $pricing : [];
+        $currency = $this->optionalString($pricing['currency_code'] ?? null, 3);
+        if ($currency !== null && preg_match('/^[A-Z]{3}$/', $currency) !== 1) {
+            throw new InvalidArgumentException('EasyParcel returned an invalid currency.');
+        }
+        $amount = $pricing['total_price'] ?? null;
+
         return [
             'shipment_number' => $shipmentNumber,
             'order_number' => $this->optionalString($shipment['order_number'] ?? null, 160),
+            'reference' => $this->optionalString($shipmentDetails['reference'] ?? null, 160),
             'awb_number' => $this->optionalString($shipmentDetails['awb_number'] ?? null, 160),
             'awb_url' => $this->optionalHttpsUrl($shipmentDetails['awb_url'] ?? null),
             'tracking_url' => $this->optionalHttpsUrl($shipmentDetails['tracking_url'] ?? null),
+            'service_code' => $this->optionalString($courier['service_id'] ?? null, 10),
+            'courier_code' => $this->optionalString($courier['courier_id'] ?? null, 80),
+            'courier_name' => $this->optionalString($courier['courier_name'] ?? null, 120),
+            'service_name' => $this->optionalString($courier['service_types'] ?? null, 160),
+            'currency' => $currency,
+            'amount_minor' => $amount === null ? null : $this->decimalToMinor($amount),
         ];
+    }
+
+    private function decimalToMinor(mixed $value): int
+    {
+        $string = is_int($value) || is_float($value) || is_string($value) ? trim((string) $value) : '';
+        if (! preg_match('/^(\d{1,10})(?:\.(\d{1,2}))?$/', $string, $matches)) {
+            throw new InvalidArgumentException('EasyParcel returned an invalid price.');
+        }
+
+        return ((int) $matches[1] * 100) + (int) str_pad($matches[2] ?? '', 2, '0');
     }
 
     private function requiredString(mixed $value, int $max): string

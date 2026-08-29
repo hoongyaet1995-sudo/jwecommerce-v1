@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Radio, 
   Zap, 
@@ -38,12 +38,17 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
   onSimulateWebhook,
   onOpenTrackingModal
 }) => {
-  const [selectedParcelId, setSelectedParcelId] = useState<string>(parcels[0]?.id || '');
+  const manualParcels = parcels.filter((parcel) => parcel.source === 'manual');
+  const [selectedParcelId, setSelectedParcelId] = useState<string>(manualParcels[0]?.id || '');
   const [customEvent, setCustomEvent] = useState('Out for Delivery');
   const [customLocation, setCustomLocation] = useState('Petaling Jaya Delivery Hub');
   const [customDesc, setCustomDesc] = useState('Assigned to courier rider for final delivery attempt.');
 
-  const selectedParcel = parcels.find(p => p.id === selectedParcelId) || parcels[0];
+  useEffect(() => {
+    if (!manualParcels.some((parcel) => parcel.id === selectedParcelId)) {
+      setSelectedParcelId(manualParcels[0]?.id || '');
+    }
+  }, [manualParcels, selectedParcelId]);
 
   const handleSimulate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,9 +135,11 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
               <select
                 value={selectedParcelId}
                 onChange={(e) => setSelectedParcelId(e.target.value)}
+                disabled={manualParcels.length === 0}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-mono"
               >
-                {parcels.map((p) => (
+                {manualParcels.length === 0 && <option value="">No manual shipments available</option>}
+                {manualParcels.map((p) => (
                   <option key={p.id} value={p.id}>
                     #{p.orderNumber} ({p.trackingNumber || 'Pending AWB'}) - {p.customerName}
                   </option>
@@ -202,6 +209,7 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
             <div className="pt-2">
               <button
                 type="submit"
+                disabled={!selectedParcelId}
                 className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
@@ -218,12 +226,14 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
             <div className="flex flex-wrap gap-1.5">
               <button
                 onClick={() => onSimulateWebhook(selectedParcelId, 'Delivered', 'Recipient Doorstep', 'Delivered to resident.')}
+                disabled={!selectedParcelId}
                 className="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg text-[10px] font-semibold border border-emerald-200 dark:border-emerald-800"
               >
                 + Mark Delivered
               </button>
               <button
                 onClick={() => onSimulateWebhook(selectedParcelId, 'Delivery Failed (NITC)', 'Recipient Address', 'Recipient premise closed.')}
+                disabled={!selectedParcelId}
                 className="px-2 py-1 bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 rounded-lg text-[10px] font-semibold border border-rose-200 dark:border-rose-800"
               >
                 + Trigger NITC

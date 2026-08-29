@@ -12,6 +12,7 @@ use App\Models\StoreSetting;
 use App\Models\User;
 use App\Services\CheckoutService;
 use App\Services\Shipping\EasyParcelFulfillmentService;
+use App\Services\Shipping\EasyParcelOpenApiClient;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,101 @@ use Tests\TestCase;
 class EasyParcelFulfillmentApiTest extends TestCase
 {
     use UsesIsolatedDatabaseMigrations;
+
+    public function test_quote_refreshes_an_expiring_provider_session_before_the_locked_snapshot_commit(): void
+    {
+        Http::preventStrayRequests();
+        $this->configureSender();
+        Config::set('services.easyparcel.client_id', 'platform-client');
+        Config::set('services.easyparcel.client_secret', 'platform-secret');
+        $provider = $this->connectedProvider();
+        $credential = $provider->credential()->sole();
+        $credential->forceFill(['credentials' => array_replace($credential->credentials, [
+            'access_token' => 'expiring-quote-token',
+            'access_token_expires_at' => now()->addSeconds(30)->utc()->toIso8601String(),
+            'refresh_token' => 'quote-refresh-token',
+            'refresh_token_expires_at' => now()->addHour()->utc()->toIso8601String(),
+        ])])->save();
+        $transactionLevels = [];
+
+        Http::fake(function (Request $request) use (&$transactionLevels) {
+            $transactionLevels[] = DB::transactionLevel();
+            if ($request->url() === EasyParcelOpenApiClient::TOKEN_URL) {
+                return Http::response([
+                    'token_type' => 'Bearer',
+                    'access_token' => 'refreshed-quote-token',
+                    'expires_in' => 3600,
+                    'refresh_token' => 'rotated-quote-refresh-token',
+                    'refresh_token_expires_in' => 7200,
+                ]);
+            }
+
+            self::assertSame('Bearer refreshed-quote-token', $request->header('Authorization')[0] ?? null);
+
+            return Http::response($this->quotationResponse());
+        });
+
+        $this->actingAs($this->superAdmin())
+            ->postJson('/admin/api/shipping/orders/'.$this->processingOrder()->id.'/easyparcel/quotes', [
+                'package' => $this->actualPackage(),
+            ])
+            ->assertCreated();
+
+        self::assertSame([0, 0], $transactionLevels);
+        self::assertSame('refreshed-quote-token', $credential->fresh()->credentials['access_token']);
+    }
+
+    public function test_booking_refreshes_an_expiring_provider_session_before_claiming_the_quote(): void
+    {
+        Http::preventStrayRequests();
+        $this->configureSender();
+        Config::set('services.easyparcel.client_id', 'platform-client');
+        Config::set('services.easyparcel.client_secret', 'platform-secret');
+        $provider = $this->connectedProvider();
+        $order = $this->processingOrder();
+        $admin = $this->superAdmin();
+        Http::fake([
+            EasyParcelFulfillmentService::QUOTATION_URL => Http::response($this->quotationResponse()),
+        ]);
+        $quoteId = $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/quotes', [
+                'package' => $this->actualPackage(),
+            ])->assertCreated()->json('data.id');
+        $credential = $provider->credential()->sole();
+        $credential->forceFill(['credentials' => array_replace($credential->credentials, [
+            'access_token' => 'expiring-booking-token',
+            'access_token_expires_at' => now()->addSeconds(30)->utc()->toIso8601String(),
+            'refresh_token' => 'booking-refresh-token',
+            'refresh_token_expires_at' => now()->addHour()->utc()->toIso8601String(),
+        ])])->save();
+        $transactionLevels = [];
+
+        Http::fake(function (Request $request) use (&$transactionLevels) {
+            $transactionLevels[] = DB::transactionLevel();
+            if ($request->url() === EasyParcelOpenApiClient::TOKEN_URL) {
+                return Http::response([
+                    'token_type' => 'Bearer',
+                    'access_token' => 'refreshed-booking-token',
+                    'expires_in' => 3600,
+                    'refresh_token' => 'rotated-booking-refresh-token',
+                    'refresh_token_expires_in' => 7200,
+                ]);
+            }
+
+            self::assertSame('Bearer refreshed-booking-token', $request->header('Authorization')[0] ?? null);
+
+            return Http::response($this->bookingResponse());
+        });
+
+        $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/bookings', [
+                'quoteId' => $quoteId,
+                'serviceCode' => 'EP-CS096',
+            ])->assertOk();
+
+        self::assertSame([0, 0], $transactionLevels);
+        self::assertSame('refreshed-booking-token', $credential->fresh()->credentials['access_token']);
+    }
 
     public function test_booking_same_quote_twice_creates_one_shipment_and_one_provider_booking(): void
     {
@@ -289,8 +385,10 @@ class EasyParcelFulfillmentApiTest extends TestCase
             ])->assertCreated()->json('data.id');
 
         $bookingAttempts = 0;
-        Http::fake(function () use (&$bookingAttempts) {
-            $bookingAttempts++;
+        Http::fake(function (Request $request) use (&$bookingAttempts) {
+            if ($request->url() === EasyParcelFulfillmentService::BOOKING_URL) {
+                $bookingAttempts++;
+            }
             throw new \RuntimeException('sensitive-upstream-marker');
         });
         $request = ['quoteId' => $quoteId, 'serviceCode' => 'EP-CS096'];

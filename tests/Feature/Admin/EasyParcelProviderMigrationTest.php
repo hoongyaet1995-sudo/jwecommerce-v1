@@ -35,8 +35,10 @@ class EasyParcelProviderMigrationTest extends TestCase
         $authorizationMigration = require database_path('migrations/2026_08_27_000600_create_shipping_provider_authorization_transactions.php');
         $configurationVersionMigration = require $upgradePath;
         $createMigration = require database_path('migrations/2026_08_27_000400_create_shipping_provider_tables.php');
+        $reconciliationMigration = require database_path('migrations/2026_08_29_000100_create_easyparcel_reconciliation_tasks_table.php');
 
         try {
+            $reconciliationMigration->down();
             $fulfillmentUpgradeMigration->down();
             $fulfillmentMigration->down();
             $authorizationMigration->down();
@@ -83,6 +85,10 @@ class EasyParcelProviderMigrationTest extends TestCase
 
             if (Schema::hasColumn('shipment_quotes', 'idempotency_reference')) {
                 $fulfillmentUpgradeMigration->up();
+            }
+
+            if (! Schema::hasTable('easyparcel_reconciliation_tasks')) {
+                $reconciliationMigration->up();
             }
         }
     }

@@ -10,6 +10,8 @@ use App\Models\ShipmentQuote;
 use App\Services\Admin\ShipmentDataService;
 use App\Services\ShipmentService;
 use App\Services\Shipping\EasyParcelFulfillmentService;
+use App\Services\Shipping\EasyParcelReconciliationPublisher;
+use App\Services\Shipping\EasyParcelReconciliationTaskService;
 use App\Services\Shipping\PackageSpec;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -102,6 +104,28 @@ class ShipmentApiController extends Controller
         }
 
         return response()->json(['data' => $this->bookingData($shipment)]);
+    }
+
+    public function reconcileEasyParcel(
+        Request $request,
+        Order $order,
+        EasyParcelReconciliationTaskService $tasks,
+        EasyParcelReconciliationPublisher $publisher,
+    ): JsonResponse {
+        abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::DISPATCH), 403);
+
+        try {
+            $task = $tasks->retryForOrder($order);
+            $publisher->publish($task);
+            $task->refresh();
+        } catch (InvalidArgumentException $exception) {
+            throw ValidationException::withMessages(['reconciliation' => $exception->getMessage()]);
+        }
+
+        return response()->json(['data' => [
+            'taskId' => (string) $task->id,
+            'state' => $task->state,
+        ]], 202);
     }
 
     public function appendEvent(Request $request, Shipment $shipment, ShipmentService $shipments): JsonResponse

@@ -39,6 +39,7 @@ class ShipmentDataService
 
         return [
             'id' => (string) $shipment->id,
+            'source' => $shipment->source,
             'orderId' => (string) $order->id,
             'orderNumber' => $order->number,
             'customerName' => $name !== '' ? $name : 'Customer',
@@ -94,6 +95,7 @@ class ShipmentDataService
 
         return [
             'id' => 'pending-order-'.$order->id,
+            'source' => 'pending',
             'orderId' => (string) $order->id,
             'orderNumber' => $order->number,
             'customerName' => $name !== '' ? $name : 'Customer',
