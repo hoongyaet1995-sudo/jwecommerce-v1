@@ -170,6 +170,30 @@ class EasyParcelPlatformOauthTest extends TestCase
         );
     }
 
+    public function test_callback_logs_a_safe_reason_when_its_session_binding_is_missing(): void
+    {
+        config()->set('services.easyparcel.client_id', 'platform-client');
+        config()->set('services.easyparcel.client_secret', 'platform-secret');
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        $state = app(\App\Services\Shipping\EasyParcelOAuthAuthorizationService::class)->begin(
+            $admin->id,
+            'binding-that-is-not-in-the-callback-session',
+            'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback',
+        );
+        $this->assertNotNull($state);
+        Log::spy();
+
+        $this->actingAs($admin)->withSession([])
+            ->get('/admin/shipping/easyparcel/callback?code=provider-code&state='.$state)
+            ->assertRedirect('/admin/shipping')
+            ->assertSessionHas('easyparcelConnection.state', 'failed');
+
+        Log::shouldHaveReceived('warning')->once()->with(
+            'EasyParcel OAuth callback rejected',
+            ['reason' => 'session_binding_missing'],
+        );
+    }
+
     public function test_callback_accepts_easyparcel_wrapped_state_without_persisting_the_provider_envelope(): void
     {
         $this->withoutMiddleware(ValidateCsrfToken::class);

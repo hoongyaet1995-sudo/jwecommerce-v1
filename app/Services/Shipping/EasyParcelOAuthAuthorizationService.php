@@ -6,6 +6,7 @@ use App\Models\ShippingProvider;
 use App\Models\ShippingProviderAuthorizationTransaction;
 use App\Models\ShippingProviderCredential;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 final class EasyParcelOAuthAuthorizationService
 {
@@ -105,17 +106,14 @@ final class EasyParcelOAuthAuthorizationService
     public function consume(int $userId, string $sessionBinding, ?string $state): ?int
     {
         if (DB::connection()->transactionLevel() !== 0) {
-            return null;
+            return $this->reject('transaction_already_open');
         }
 
         $sessionFingerprint = $this->sessionFingerprint($sessionBinding);
-        if ($userId < 1
-            || $sessionFingerprint === null
-            || $state === null
-            || $state === ''
-            || strlen($state) > self::MAX_STATE_LENGTH) {
-            return null;
-        }
+        if ($userId < 1) return $this->reject('user_missing');
+        if ($sessionFingerprint === null) return $this->reject('session_binding_missing');
+        if ($state === null || $state === '') return $this->reject('state_missing');
+        if (strlen($state) > self::MAX_STATE_LENGTH) return $this->reject('state_too_long');
 
         $stateHash = hash('sha256', $state);
         // Resolve the provider before the transaction so every writer can lock provider -> OAuth row.
@@ -125,7 +123,7 @@ final class EasyParcelOAuthAuthorizationService
             ->first();
 
         if ($candidate === null) {
-            return null;
+            return $this->reject('state_transaction_missing');
         }
 
         return DB::transaction(function () use (
@@ -143,19 +141,16 @@ final class EasyParcelOAuthAuthorizationService
                 ->lockForUpdate()
                 ->first();
 
-            if ($provider === null
-                || $transaction === null
-                || $transaction->shipping_provider_id !== $provider->id
-                || $provider->provider !== ShippingProviderConfigurationService::PROVIDER
-                || $provider->environment !== ShippingProviderConfigurationService::ENVIRONMENT
-                || $transaction->user_id !== $userId
-                || ! hash_equals($transaction->session_fingerprint, $sessionFingerprint)
-                || $transaction->configuration_version !== $provider->configuration_version
-                || $transaction->consumed_at !== null
-                || $transaction->expires_at === null
-                || ! $transaction->expires_at->isFuture()) {
-                return null;
-            }
+            if ($provider === null) return $this->reject('provider_missing');
+            if ($transaction === null) return $this->reject('transaction_missing');
+            if ($transaction->shipping_provider_id !== $provider->id) return $this->reject('provider_mismatch');
+            if ($provider->provider !== ShippingProviderConfigurationService::PROVIDER) return $this->reject('provider_type_mismatch');
+            if ($provider->environment !== ShippingProviderConfigurationService::ENVIRONMENT) return $this->reject('provider_environment_mismatch');
+            if ($transaction->user_id !== $userId) return $this->reject('user_mismatch');
+            if (! hash_equals($transaction->session_fingerprint, $sessionFingerprint)) return $this->reject('session_binding_mismatch');
+            if ($transaction->configuration_version !== $provider->configuration_version) return $this->reject('configuration_version_mismatch');
+            if ($transaction->consumed_at !== null) return $this->reject('transaction_already_consumed');
+            if ($transaction->expires_at === null || ! $transaction->expires_at->isFuture()) return $this->reject('transaction_expired');
 
             $consumedAt = now();
             // The conditional update is the compare-and-set boundary if a caller re-enters on one connection.
@@ -173,7 +168,7 @@ final class EasyParcelOAuthAuthorizationService
                 ]);
 
             if ($consumed !== 1) {
-                return null;
+                return $this->reject('transaction_compare_and_set_failed');
             }
 
             return $transaction->configuration_version;
@@ -189,5 +184,12 @@ final class EasyParcelOAuthAuthorizationService
         }
 
         return hash_hmac('sha256', $sessionBinding, $applicationKey);
+    }
+
+    private function reject(string $reason): ?int
+    {
+        Log::warning('EasyParcel OAuth callback rejected', ['reason' => $reason]);
+
+        return null;
     }
 }
