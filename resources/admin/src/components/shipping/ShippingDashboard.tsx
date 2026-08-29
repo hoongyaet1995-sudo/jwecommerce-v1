@@ -484,7 +484,7 @@ export const ShippingDashboard: React.FC = () => {
           isOpen={true}
           parcel={easyParcelBookingParcel}
           onClose={() => setEasyParcelBookingParcel(null)}
-          onQuote={quoteEasyParcelShipment}
+          onQuote={(parcel, packageSpec) => quoteEasyParcelShipment(parcel, packageSpec)}
           onBook={(quote, serviceCode) => bookEasyParcelShipment(easyParcelBookingParcel, quote, serviceCode)}
           onBooked={async () => { await refreshEasyParcelProvider(); }}
         />

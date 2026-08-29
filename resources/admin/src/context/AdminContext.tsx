@@ -294,7 +294,7 @@ interface AdminContextType {
   saveCourierConfig: (config: CourierConfig) => void;
   refreshEasyParcelProvider: () => Promise<void>;
   disconnectEasyParcel: () => Promise<void>;
-  quoteEasyParcelShipment: (parcel: ShipmentParcel) => Promise<EasyParcelQuote>;
+  quoteEasyParcelShipment: (parcel: ShipmentParcel, packageSpec: EasyParcelPackageSpec) => Promise<EasyParcelQuote>;
   bookEasyParcelShipment: (parcel: ShipmentParcel, quote: EasyParcelQuote, serviceCode: string) => Promise<EasyParcelBooking>;
   toggleCourierStatus: (id: string) => void;
   pingCourierAPI: (id: string) => Promise<number>;
@@ -2079,11 +2079,14 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addToast({ type: 'success', title: 'EasyParcel disconnected', message: 'The connected EasyParcel store was removed.' });
   };
 
-  const quoteEasyParcelShipment = async (parcel: ShipmentParcel): Promise<EasyParcelQuote> => {
-    if (parcel.totalWeightKg === null || parcel.dimensionsCm === null) throw new Error('Package weight and dimensions must be configured before requesting a quote.');
-    const packageSpec: EasyParcelPackageSpec = { weightKg: parcel.totalWeightKg, lengthCm: parcel.dimensionsCm.length, widthCm: parcel.dimensionsCm.width, heightCm: parcel.dimensionsCm.height };
-    return requestEasyParcelQuote(laravelBootstrap, parcel.orderId, packageSpec);
-  };
+  const quoteEasyParcelShipment = (
+    parcel: ShipmentParcel,
+    packageSpec: EasyParcelPackageSpec,
+  ): Promise<EasyParcelQuote> => requestEasyParcelQuote(
+    laravelBootstrap,
+    parcel.orderId,
+    packageSpec,
+  );
 
   const bookEasyParcelShipment = async (parcel: ShipmentParcel, quote: EasyParcelQuote, serviceCode: string): Promise<EasyParcelBooking> => {
     const booking = await confirmEasyParcelBooking(laravelBootstrap, parcel.orderId, quote.id, serviceCode);
