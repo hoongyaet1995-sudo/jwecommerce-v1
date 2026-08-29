@@ -205,9 +205,9 @@ class EasyParcelPlatformOauthTest extends TestCase
                 'access_token' => 'provider-token',
                 'expires_in' => 3600,
             ]),
-            'https://api.easyparcel.com/open_api/2026-06/account/get_account_information' => Http::response([
+            'https://api.easyparcel.com/open_api/2026-06/wallet' => Http::response([
                 'status_code' => 200,
-                'data' => ['account' => ['name' => 'Sandbox Account']],
+                'data' => ['wallet' => []],
             ]),
         ]);
         $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);

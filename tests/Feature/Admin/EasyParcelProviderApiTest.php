@@ -37,9 +37,9 @@ class EasyParcelProviderApiTest extends TestCase
             'https://api.easyparcel.com/oauth/token' => Http::response([
                 'token_type' => 'Bearer', 'access_token' => 'connected-token', 'expires_in' => 3600,
             ]),
-            'https://api.easyparcel.com/open_api/2026-06/account/get_account_information' => Http::response([
+            'https://api.easyparcel.com/open_api/2026-06/wallet' => Http::response([
                 'status_code' => 200,
-                'data' => ['account' => ['name' => 'Sandbox Account', 'account_type' => 'Personal']],
+                'data' => ['wallet' => [['balance' => 100, 'currency' => 'MYR']]],
             ]),
         ]);
 
@@ -62,8 +62,8 @@ class EasyParcelProviderApiTest extends TestCase
             && $request->url() === 'https://api.easyparcel.com/oauth/token'
             && $request['grant_type'] === 'authorization_code'
             && $request['state'] === $query['state']);
-        Http::assertSent(fn ($request) => $request->method() === 'POST'
-            && $request->url() === 'https://api.easyparcel.com/open_api/2026-06/account/get_account_information'
+        Http::assertSent(fn ($request) => $request->method() === 'GET'
+            && $request->url() === 'https://api.easyparcel.com/open_api/2026-06/wallet'
             && $request->hasHeader('Authorization', 'Bearer connected-token'));
     }
 
@@ -74,7 +74,7 @@ class EasyParcelProviderApiTest extends TestCase
         $admin = $this->superAdmin();
         Http::fake([
             'https://api.easyparcel.com/oauth/token' => Http::response(['token_type' => 'Bearer', 'access_token' => 'once-token']),
-            'https://api.easyparcel.com/open_api/2026-06/account/get_account_information' => Http::response(['status_code' => 200, 'data' => ['account' => ['name' => 'Sandbox Account']]]),
+            'https://api.easyparcel.com/open_api/2026-06/wallet' => Http::response(['status_code' => 200, 'data' => ['wallet' => []]]),
         ]);
         $start = $this->actingAs($admin)->post('/admin/api/shipping/providers/easyparcel/authorize');
         parse_str((string) parse_url((string) $start->headers->get('Location'), PHP_URL_QUERY), $query);
