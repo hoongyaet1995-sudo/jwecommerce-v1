@@ -4,6 +4,7 @@ namespace App\Services\Shipping;
 
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 final class EasyParcelOpenApiClient
@@ -50,6 +51,7 @@ final class EasyParcelOpenApiClient
                 || ($tokenPayload['token_type'] ?? null) !== 'Bearer'
                 || ! is_string($tokenPayload['access_token'] ?? null)
                 || $tokenPayload['access_token'] === '') {
+                $this->logVerificationRejection('token', $tokenResponse->status());
                 throw new EasyParcelVerificationException;
             }
 
@@ -64,6 +66,7 @@ final class EasyParcelOpenApiClient
                 || ! is_array($accountPayload)
                 || ($accountPayload['status_code'] ?? null) !== 200
                 || ! is_array(data_get($accountPayload, 'data.account'))) {
+                $this->logVerificationRejection('account', $accountResponse->status());
                 throw new EasyParcelVerificationException;
             }
 
@@ -108,5 +111,13 @@ final class EasyParcelOpenApiClient
         return $expiresIn !== null && $expiresIn > 0
             ? now()->addSeconds($expiresIn)->utc()->toIso8601String()
             : null;
+    }
+
+    private function logVerificationRejection(string $stage, int $httpStatus): void
+    {
+        Log::warning('EasyParcel OAuth verification rejected', [
+            'stage' => $stage,
+            'http_status' => $httpStatus,
+        ]);
     }
 }

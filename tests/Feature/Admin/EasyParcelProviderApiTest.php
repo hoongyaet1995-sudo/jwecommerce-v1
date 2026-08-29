@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 use Tests\Concerns\UsesIsolatedDatabaseMigrations;
 
@@ -81,6 +82,27 @@ class EasyParcelProviderApiTest extends TestCase
         $this->get('/admin/shipping/easyparcel/callback?code=two&state='.$query['state'])->assertSessionHas('easyparcelConnection.state', 'failed');
         $this->assertSame('connected', ShippingProvider::query()->sole()->connection_state);
         Http::assertSentCount(2);
+    }
+
+    public function test_token_exchange_logs_only_its_safe_http_failure_classification(): void
+    {
+        $this->withoutMiddleware(ValidateCsrfToken::class);
+        $this->platform();
+        $admin = $this->superAdmin();
+        Http::fake([
+            'https://api.easyparcel.com/oauth/token' => Http::response(['message' => 'private provider detail'], 401),
+        ]);
+        $start = $this->actingAs($admin)->post('/admin/api/shipping/providers/easyparcel/authorize');
+        parse_str((string) parse_url((string) $start->headers->get('Location'), PHP_URL_QUERY), $query);
+        Log::spy();
+
+        $this->get('/admin/shipping/easyparcel/callback?code=provider-code&state='.$query['state'])
+            ->assertSessionHas('easyparcelConnection.state', 'failed');
+
+        Log::shouldHaveReceived('warning')->once()->with(
+            'EasyParcel OAuth verification rejected',
+            ['stage' => 'token', 'http_status' => 401],
+        );
     }
 
     public function test_permissions_and_disconnect_only_apply_to_the_connected_store_token(): void
