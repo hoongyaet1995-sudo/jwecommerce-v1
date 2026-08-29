@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AlertCircle, AlertTriangle, Check, CheckCircle2, Clock, Package, RefreshCw, ShieldCheck, Truck, X, Zap } from 'lucide-react';
 import type { EasyParcelBooking, EasyParcelPackageSpec, EasyParcelQuote } from '../../integration/easyParcelFulfillmentData';
 import type { ShipmentParcel } from '../../types/shipping';
@@ -6,11 +6,21 @@ import { packageDraftFromParcel, packageSpecFromDraft, type EasyParcelPackageDra
 
 interface Props { isOpen: boolean; parcel: ShipmentParcel | null; onClose: () => void; onQuote: (parcel: ShipmentParcel, packageSpec: EasyParcelPackageSpec) => Promise<EasyParcelQuote>; onBook: (quote: EasyParcelQuote, serviceCode: string) => Promise<EasyParcelBooking>; onBooked: () => Promise<void>; }
 
+export const createEasyParcelQuoteRequestGuard = () => {
+  let version = 0;
+  return {
+    begin: (parcelId: string) => ({ version: ++version, parcelId }),
+    invalidate: () => { version += 1; },
+    isCurrent: (request: { version: number; parcelId: string }, activeParcelId: string | null) => request.version === version && request.parcelId === activeParcelId,
+  };
+};
+
 export const EasyParcelBookingModal: React.FC<Props> = ({ isOpen, parcel, onClose, onQuote, onBook, onBooked }) => {
+  const quoteRequestGuard = useRef(createEasyParcelQuoteRequestGuard()); const activeParcelId = useRef<string | null>(null); activeParcelId.current = isOpen && parcel ? parcel.id : null;
   const [draft, setDraft] = useState<EasyParcelPackageDraft>({ weightKg: '', lengthCm: '', widthCm: '', heightCm: '' }); const [quote, setQuote] = useState<EasyParcelQuote | null>(null); const [selectedServiceCode, setSelectedServiceCode] = useState<string | null>(null); const [loading, setLoading] = useState(false); const [booking, setBooking] = useState(false); const [error, setError] = useState<string | null>(null); const [success, setSuccess] = useState(false);
-  const updateDraft = (field: keyof EasyParcelPackageDraft, value: string) => { setDraft((current) => ({ ...current, [field]: value })); setQuote(null); setSelectedServiceCode(null); setError(null); setSuccess(false); };
-  const fetchRates = async () => { if (!parcel) return; let packageSpec: EasyParcelPackageSpec; try { packageSpec = packageSpecFromDraft(draft); } catch (e) { setQuote(null); setSelectedServiceCode(null); setError(e instanceof Error ? e.message : 'Enter weight and dimensions as positive numbers with up to 2 decimals.'); return; } setLoading(true); setError(null); setSelectedServiceCode(null); setSuccess(false); try { setQuote(await onQuote(parcel, packageSpec)); } catch (e) { setQuote(null); setError(e instanceof Error ? e.message : 'Failed to retrieve EasyParcel rates.'); } finally { setLoading(false); } };
-  useEffect(() => { if (isOpen && parcel) { setDraft(packageDraftFromParcel(parcel)); setQuote(null); setSelectedServiceCode(null); setError(null); setSuccess(false); } }, [isOpen, parcel?.id]);
+  const updateDraft = (field: keyof EasyParcelPackageDraft, value: string) => { quoteRequestGuard.current.invalidate(); setDraft((current) => ({ ...current, [field]: value })); setQuote(null); setSelectedServiceCode(null); setError(null); setSuccess(false); };
+  const fetchRates = async () => { if (!parcel) return; let packageSpec: EasyParcelPackageSpec; try { packageSpec = packageSpecFromDraft(draft); } catch (e) { setQuote(null); setSelectedServiceCode(null); setError(e instanceof Error ? e.message : 'Enter weight and dimensions as positive numbers with up to 2 decimals.'); return; } const request = quoteRequestGuard.current.begin(parcel.id); setLoading(true); setError(null); setSelectedServiceCode(null); setSuccess(false); try { const nextQuote = await onQuote(parcel, packageSpec); if (quoteRequestGuard.current.isCurrent(request, activeParcelId.current)) setQuote(nextQuote); } catch (e) { if (quoteRequestGuard.current.isCurrent(request, activeParcelId.current)) { setQuote(null); setError(e instanceof Error ? e.message : 'Failed to retrieve EasyParcel rates.'); } } finally { if (quoteRequestGuard.current.isCurrent(request, activeParcelId.current)) setLoading(false); } };
+  useEffect(() => { if (isOpen && parcel) { quoteRequestGuard.current.invalidate(); setDraft(packageDraftFromParcel(parcel)); setQuote(null); setSelectedServiceCode(null); setError(null); setSuccess(false); } }, [isOpen, parcel?.id]);
   if (!isOpen || !parcel) return null;
   const expired = quote?.expiresAt ? new Date(quote.expiresAt).getTime() <= Date.now() : false;
   const selected = quote?.services.find((service) => service.serviceCode === selectedServiceCode);
