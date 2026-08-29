@@ -23,7 +23,9 @@ Create one row per evidence class used. Use `not executed` rather than leaving a
 | Evidence class | Accepted order number | Backup filename | Pre-test status | Selected service | EasyParcel shipment/order reference | AWB presence | Webhook receipt ids | Resulting shipment/order state | Screenshots or artifacts | Rollback action |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `LOCAL_FIXTURE` | Fixture-specific; no development order | Not applicable; isolated test database | Fixture-specific | Fixture service from `Http::fake` | Fixture-only reference | Fixture-specific | Fixture-only ids | Asserted by automated tests | Test output in the Task 7 report | Roll back the test transaction/reset `jw_ecommerce_testing`; never restore `jw_ecommerce` |
-| `LOCAL_BROWSER` | `JW-SMTP-20260827082409` | `C:\xampp\htdocs\jwstudio-ecommerce\storage\app\backups\jw_ecommerce-before-easyparcel-20260829-155212.sql` (195,830 bytes) | Order `Processing`; shipment `Pending AWB`; package not configured; no AWB | Not selected — the valid package request reached the quote boundary but the Sandbox connection was unavailable | Not created | Absent | None; truthful empty provider-receipt state after the pending local receipt-table migration was applied | Unchanged: order `Processing`, shipment `Pending AWB`, package not configured, no AWB | `.superpowers/sdd/2026-08-29-easyparcel-sandbox-lifecycle-closure/task-7-artifacts/local-browser-package-validation.png`; `local-browser-shipping-queues.png`; `local-browser-webhook-audit-status.png`; `local-browser-webhook-audit-error.png`; `local-browser-webhook-audit-empty.png`; `local-browser-admin-shipment-timeline.png` | None. The failed quote did not persist the temporary package override; backup retained and not restored |
+| `LOCAL_BROWSER` — package/quote | `JW-SMTP-20260827082409` | `C:\xampp\htdocs\jwstudio-ecommerce\storage\app\backups\jw_ecommerce-before-easyparcel-20260829-155212.sql` (195,830 bytes) | Order `Processing`; shipment `Pending AWB`; package not configured; no AWB | Not selected — the valid package request reached the quote boundary but the Sandbox connection was unavailable | Not created | Absent | Not applicable to package/quote check | Unchanged: order `Processing`, shipment `Pending AWB`, package not configured, no AWB | `.superpowers/sdd/2026-08-29-easyparcel-sandbox-lifecycle-closure/task-7-artifacts/local-browser-package-validation.png` | None. The failed quote did not persist the temporary package override; backup retained and not restored |
+| `LOCAL_BROWSER` — webhook audit | Not applicable; read-only audit surface | Same timestamped local backup above | Provider not authorized; endpoint not configured; receipt-table migration initially pending | Not applicable | Not created | Absent | None; truthful error before the local migration and truthful empty state afterward | Provider and endpoint remained not configured; no provider receipts | `local-browser-webhook-audit-status.png`; `local-browser-webhook-audit-error.png`; `local-browser-webhook-audit-empty.png` | None. The pending local receipt-table migration was applied after backup; no receipt or shipment mutation occurred |
+| `LOCAL_BROWSER` — Admin timeline/queues | `JW-20260815110325-3676` | Same timestamped local backup above | Order/shipment displayed as `Dispatched`; manual tracking `JW-ADMIN-DISPATCH-20260826-001` | Not applicable — existing Manual Warehouse dispatch | Not created; manual tracking is not an EasyParcel shipment/order reference | No EasyParcel AWB proved | None | Unchanged `Dispatched`; one existing `shipped` event rendered in Admin | `local-browser-shipping-queues.png`; `local-browser-admin-shipment-timeline.png` | None; read-only inspection |
 | `SANDBOX_API` | Not executed in the local-only gate | Local backup must be referenced before later execution | Not executed | Not executed | Not executed | Not executed | Not applicable | Not executed | Not executed | Reconcile an uncertain submit; do not resubmit. Restore only documented local data if later acceptance requires it |
 | `SANDBOX_WEBHOOK` | Not executed in the local-only gate | Local backup must be referenced before later execution | Not executed | Not applicable | Not executed | Not executed | Not executed | Not executed | Not executed | Disable/remove the Developer Hub endpoint and preserve sanitized audit evidence; do not treat the test delivery as carrier truth |
 | `LIVE_CARRIER` | Blocked pending separate explicit approval | Not executed | Not executed | Not executed | Not executed | Not executed | Not executed | Not executed | Not executed | Follow the separately approved carrier cancellation/parcel recovery procedure; never infer refund, restock, or cancellation from tracking |
@@ -53,7 +55,7 @@ Run from the canonical XAMPP checkout:
 ```powershell
 Set-Location C:\xampp\htdocs\jwstudio-ecommerce
 C:\xampp\php\php.exe artisan config:clear
-C:\xampp\php\php.exe artisan test tests/Feature/Admin/EasyParcelPlatformOauthTest.php tests/Feature/Admin/EasyParcelProviderApiTest.php tests/Feature/Admin/EasyParcelFulfillmentApiTest.php tests/Feature/EasyParcelTrackingLifecycleTest.php tests/Feature/EasyParcelWebhookIngressTest.php tests/Feature/EasyParcelWebhookReconciliationTest.php tests/Feature/Admin/ShipmentApiTest.php
+C:\xampp\php\php.exe artisan test tests/Feature/Admin/EasyParcelPlatformOauthTest.php tests/Feature/Admin/EasyParcelProviderApiTest.php tests/Feature/Admin/EasyParcelFulfillmentApiTest.php tests/Feature/Admin/EasyParcelFulfillmentMigrationTest.php tests/Feature/Admin/EasyParcelProviderMigrationTest.php tests/Feature/EasyParcelTrackingLifecycleTest.php tests/Feature/EasyParcelWebhookIngressTest.php tests/Feature/EasyParcelWebhookReconciliationTest.php tests/Feature/Admin/ShipmentApiTest.php
 C:\xampp\php\php.exe artisan test
 
 Set-Location C:\xampp\htdocs\jwstudio-ecommerce\resources\admin
@@ -68,6 +70,8 @@ Record every failure exactly. Do not suppress or rename failures. If the two kno
 
 Use the existing signed-in browser session at `http://127.0.0.1:8500/admin/shipping`. Do not reset an administrator password and do not inspect cookies, storage, browser profiles, or password stores. If authentication is unavailable, record the exact blocker and stop the authenticated proof; never substitute fixture or source inspection for browser evidence.
 
+For the 2026-08-29 local acceptance, authentication used the application's visible `One-Click Demo Personas` control: select `Alexander S.` (`Super Admin`) to let the local form fill itself, then click `Sign in to Admin`. Do not reveal, copy, log, or inspect the filled password value.
+
 Before selecting or editing an order, record its non-PII order number and pre-test status. Prefer a recorded development order in `Processing` with non-customer test data.
 
 ### Package and quote readiness
@@ -80,6 +84,8 @@ Before selecting or editing an order, record its non-PII order number and pre-te
 6. Confirm quote expiry is visible and expired quotes cannot be booked.
 7. Confirm COD services are offered only when the returned service supports the exact COD amount. Do not book or pay for a Live service.
 8. Record selected service only if a safe local fixture flow returns one; otherwise record `not selected`.
+
+If localhost has no connected Sandbox and therefore returns no services, mark quote expiry and COD restrictions as `UNPROVEN LOCAL_BROWSER`. Carry them to deployed Sandbox acceptance under separate authorization. Automated `LOCAL_FIXTURE` coverage must not be relabelled as browser evidence. This disclosed limitation does not block a truthful local code/test candidate.
 
 ### Webhook audit truth and refresh
 
@@ -97,6 +103,8 @@ Before selecting or editing an order, record its non-PII order number and pre-te
 3. From a safe recorded order, compare the same customer-safe timeline in Admin Order, customer Account, and `/order-tracking` after refresh.
 4. Open a new browser session only if it does not require password reset, cookie/storage inspection, or disclosure of credentials. Otherwise record the session/authentication limitation.
 5. Do not use a local webhook fixture as proof that a real webhook or carrier event occurred. Label any UI seeded with HTTP fakes as `LOCAL_BROWSER` plus fixture.
+
+If Account requires a customer login and `/order-tracking` requires an email plus verification code that the acceptance operator is not authorized to use, mark both shared-timeline comparisons as `UNPROVEN LOCAL_BROWSER`. Carry them to deployed Sandbox or a later user-authorized acceptance with valid customer verification context; do not bypass authentication or invent a mock endpoint. This disclosed limitation does not block a truthful local code/test candidate.
 
 ## Later external gates — not part of local acceptance
 
