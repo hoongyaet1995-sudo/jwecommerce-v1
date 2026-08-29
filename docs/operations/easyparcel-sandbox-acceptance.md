@@ -70,7 +70,7 @@ Record every failure exactly. Do not suppress or rename failures. If the two kno
 
 Use the existing signed-in browser session at `http://127.0.0.1:8500/admin/shipping`. Do not reset an administrator password and do not inspect cookies, storage, browser profiles, or password stores. If authentication is unavailable, record the exact blocker and stop the authenticated proof; never substitute fixture or source inspection for browser evidence.
 
-For the 2026-08-29 local acceptance, authentication used the application's visible `One-Click Demo Personas` control: select `Alexander S.` (`Super Admin`) to let the local form fill itself, then click `Sign in to Admin`. Do not reveal, copy, log, or inspect the filled password value.
+The 2026-08-29 browser acceptance proceeded in a local Admin browser session that was authorized during the run, but the credential source/sign-in method was not independently reproducible and is not accepted authentication evidence. The visible persona cards are informational, not sign-in controls. Future runs require an existing authorized Admin session or user-supplied credentials and must stop if neither is available. Never reveal, copy, log, or inspect a password value.
 
 Before selecting or editing an order, record its non-PII order number and pre-test status. Prefer a recorded development order in `Processing` with non-customer test data.
 
