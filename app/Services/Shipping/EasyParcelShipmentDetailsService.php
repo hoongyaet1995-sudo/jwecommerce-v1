@@ -171,7 +171,7 @@ final class EasyParcelShipmentDetailsService
             throw new InvalidArgumentException('EasyParcel returned an invalid currency.');
         }
         $amount = $pricing['total_price'] ?? null;
-        $statusCode = $shipment['shipment_status_code'] ?? null;
+        $statusCode = $shipmentDetails['shipment_status_code'] ?? null;
         if (! is_int($statusCode)) {
             throw new InvalidArgumentException('EasyParcel returned an invalid response.');
         }
@@ -190,7 +190,7 @@ final class EasyParcelShipmentDetailsService
             'currency' => $currency,
             'amount_minor' => $amount === null ? null : $this->decimalToMinor($amount),
             'shipment_status_code' => $statusCode,
-            'shipment_status' => $this->statuses->description($shipment['shipment_status'] ?? null),
+            'shipment_status' => $this->statuses->description($shipmentDetails['shipment_status'] ?? null),
         ];
     }
 

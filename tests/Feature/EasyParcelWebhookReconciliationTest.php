@@ -100,6 +100,45 @@ class EasyParcelWebhookReconciliationTest extends TestCase
         self::assertSame('in_transit', $shipment->fresh()->status);
     }
 
+    public function test_authenticated_details_reads_status_from_the_documented_nested_shipment_details_shape(): void
+    {
+        $this->connectedProvider();
+
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => Http::response([
+                'status_code' => 200,
+                'message' => 'success',
+                'data' => [[
+                    'shipment_number' => 'ES-2608-NESTED-STATUS',
+                    'order_number' => 'EI-2608-NESTED-STATUS',
+                    'shipment_details' => [
+                        'shipment_status_code' => 4,
+                        'shipment_status' => "Delivery\n  in transit",
+                        'awb_number' => 'AWB-NESTED-STATUS',
+                        'awb_url' => 'https://app.easyparcel.com/labels/AWB-NESTED-STATUS',
+                        'tracking_url' => 'https://easyparcel.com/my/en/track/details/AWB-NESTED-STATUS',
+                    ],
+                    'courier' => [
+                        'service_id' => 'EP-CS096',
+                        'courier_id' => 'EP-CR0AP',
+                        'courier_name' => 'Aramex',
+                        'service_types' => 'Aramex (Pick Up)',
+                    ],
+                    'pricing' => [
+                        'currency_code' => 'MYR',
+                        'total_price' => '10.84',
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $details = app(EasyParcelShipmentDetailsService::class)->lookup('ES-2608-NESTED-STATUS');
+
+        self::assertSame(4, $details['shipment_status_code']);
+        self::assertSame('Delivery in transit', $details['shipment_status']);
+        self::assertSame('AWB-NESTED-STATUS', $details['awb_number']);
+    }
+
     public function test_details_and_tracking_share_the_documented_status_code_normalization(): void
     {
         $statuses = app(EasyParcelStatusNormalizer::class);
@@ -130,7 +169,7 @@ class EasyParcelWebhookReconciliationTest extends TestCase
             statusCode: 5,
             status: 'Delivered',
         );
-        data_set($response, 'data.0.shipment_status', ['Delivered']);
+        data_set($response, 'data.0.shipment_details.shipment_status', ['Delivered']);
 
         Http::fake([
             EasyParcelShipmentDetailsService::DETAILS_URL => Http::response($response),
@@ -518,9 +557,9 @@ class EasyParcelWebhookReconciliationTest extends TestCase
             'data' => [[
                 'shipment_number' => $shipmentNumber,
                 'order_number' => 'EI-2608-AWB01',
-                'shipment_status_code' => $statusCode,
-                'shipment_status' => $status,
                 'shipment_details' => [
+                    'shipment_status_code' => $statusCode,
+                    'shipment_status' => $status,
                     'awb_number' => $awb,
                     'awb_url' => 'https://app.easyparcel.com/labels/'.$awb,
                     'tracking_url' => 'https://easyparcel.com/my/en/track/details/'.$awb,
