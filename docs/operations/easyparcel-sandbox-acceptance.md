@@ -137,7 +137,7 @@ If Account requires a customer login and `/order-tracking` requires an email plu
 
 Completed Sandbox release gates on 2026-08-29:
 
-- Localhost and GitHub `main` accepted the status projection; Hostinger deployed the same behavioral commit `d48173892b1a45f799656bc321a06e1bb53d8183` at `/apps/jwecommerce` with the production `.env` preserved.
+- Localhost, GitHub `main`, and Hostinger `/apps/jwecommerce` were verified at the same accepted SHA after this evidence record was deployed. Hostinger records that exact SHA in `/apps/jwecommerce/RELEASE_COMMIT`; the production `.env` was preserved.
 - The existing endpoint received exactly one processed `shipment.awb.update` and one processed `shipment.status.update`; no failed attempts were recorded.
 - Authenticated Shipment Details reconciled the existing Sandbox shipment to Delivered, the Admin Shipping and order views showed the same state, and a repeat reconciliation created no duplicate event/history.
 
