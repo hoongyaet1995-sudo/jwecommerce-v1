@@ -2,8 +2,10 @@
 
 namespace App\Services\Shipping;
 
+use App\Jobs\ReconcileEasyParcelWebhook;
 use App\Models\Shipment;
 use App\Models\ShippingWebhookReceipt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 final class EasyParcelWebhookReceiptService
@@ -15,6 +17,40 @@ final class EasyParcelWebhookReceiptService
         'shipment.tracking.update',
         'ondemand.status.update',
     ];
+
+    private const RECONCILABLE_TOPICS = [
+        'shipment.created',
+        'shipment.awb.update',
+        'shipment.status.update',
+        'shipment.tracking.update',
+    ];
+
+    /** @param array<string, mixed> $payload */
+    public function receiveAndQueue(string $rawBody, array $payload): ShippingWebhookReceipt
+    {
+        return DB::transaction(function () use ($rawBody, $payload): ShippingWebhookReceipt {
+            $receipt = $this->receive($rawBody, $payload);
+
+            if ($receipt->wasRecentlyCreated !== true
+                || $receipt->shipment_id === null
+                || $receipt->processing_state !== 'received'
+                || ! in_array($receipt->topic, self::RECONCILABLE_TOPICS, true)) {
+                return $receipt;
+            }
+
+            $receipt->forceFill([
+                'processing_state' => 'queued',
+                'queued_at' => now(),
+            ])->save();
+
+            $receiptId = $receipt->id;
+            DB::afterCommit(static function () use ($receiptId): void {
+                ReconcileEasyParcelWebhook::dispatch($receiptId);
+            });
+
+            return $receipt;
+        });
+    }
 
     /** @param array<string, mixed> $payload */
     public function receive(string $rawBody, array $payload): ShippingWebhookReceipt
@@ -43,8 +79,9 @@ final class EasyParcelWebhookReceiptService
         );
     }
 
-    /** @param array<string, mixed> $payload
-     *  @return array<string, int|string>
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, int|string>
      */
     private function correlationSnapshot(array $payload): array
     {

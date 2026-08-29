@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ReconcileEasyParcelWebhook;
 use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\ShippingWebhookReceipt;
@@ -50,7 +51,9 @@ class EasyParcelWebhookIngressTest extends TestCase
         self::assertStringNotContainsString('Delivered to recipient', json_encode($receipt->getAttributes()));
         self::assertSame('processing', $order->fresh()->status);
         self::assertSame('pending', $shipment->fresh()->status);
-        Queue::assertNothingPushed();
+        self::assertSame('queued', $receipt->fresh()->processing_state);
+        self::assertNotNull($receipt->fresh()->queued_at);
+        Queue::assertPushed(ReconcileEasyParcelWebhook::class, 1);
     }
 
     public function test_ondemand_and_unknown_standard_webhooks_are_classified_without_a_lifecycle_mutation(): void

@@ -36,7 +36,7 @@ class EasyParcelWebhookController extends Controller
             abort(422);
         }
 
-        $receipts->receive($rawBody, $payload);
+        $receipts->receiveAndQueue($rawBody, $payload);
 
         return response()->json(['received' => true]);
     }
