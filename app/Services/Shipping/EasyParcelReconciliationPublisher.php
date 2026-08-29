@@ -66,6 +66,8 @@ final class EasyParcelReconciliationPublisher
 
     public function sweep(): int
     {
+        $this->recoverExpiredProcessingLeases();
+
         $staleSeconds = max(30, (int) config('services.easyparcel.reconciliation_stale_queue_seconds', 120));
         $ids = EasyParcelReconciliationTask::query()
             ->where(function ($query) use ($staleSeconds): void {
@@ -87,5 +89,37 @@ final class EasyParcelReconciliationPublisher
         }
 
         return $published;
+    }
+
+    private function recoverExpiredProcessingLeases(): void
+    {
+        $ids = EasyParcelReconciliationTask::query()
+            ->where('state', 'processing')
+            ->where(fn ($lease) => $lease
+                ->whereNull('lease_expires_at')
+                ->orWhere('lease_expires_at', '<=', now()))
+            ->orderBy('id')
+            ->limit(self::SWEEP_LIMIT)
+            ->pluck('id');
+
+        foreach ($ids as $id) {
+            DB::transaction(function () use ($id): void {
+                $task = EasyParcelReconciliationTask::query()->lockForUpdate()->find($id);
+                if (! $task instanceof EasyParcelReconciliationTask
+                    || $task->state !== 'processing'
+                    || ($task->lease_expires_at !== null && $task->lease_expires_at->isFuture())) {
+                    return;
+                }
+
+                $task->forceFill([
+                    'state' => 'retrying',
+                    'available_at' => now(),
+                    'published_at' => null,
+                    'lease_token' => null,
+                    'lease_expires_at' => null,
+                    'last_error' => 'worker_lease_expired',
+                ])->save();
+            });
+        }
     }
 }

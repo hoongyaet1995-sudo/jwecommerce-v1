@@ -87,6 +87,29 @@ class ShipmentApiTest extends TestCase
             ->assertJsonPath('data.0.trackingNumber', 'READMODEL-1001');
     }
 
+    public function test_pending_order_defaults_missing_product_package_specs_for_quote_confirmation(): void
+    {
+        $order = $this->processingOrder('legacy-package@example.com', 'JW-LEGACY-PACKAGE-1001');
+        $order->items()->create([
+            'sku' => 'LEGACY-SKU-1',
+            'title' => 'Legacy product without package specification',
+            'package_snapshot' => null,
+            'unit_price' => 1000,
+            'quantity' => 2,
+            'line_total' => 2000,
+        ]);
+
+        $this->actingAs($this->superAdmin())
+            ->getJson('/admin/api/shipping/shipments')
+            ->assertOk()
+            ->assertJsonPath('data.0.orderNumber', 'JW-LEGACY-PACKAGE-1001')
+            ->assertJsonPath('data.0.items.0.weightKg', 1)
+            ->assertJsonPath('data.0.totalWeightKg', 2)
+            ->assertJsonPath('data.0.dimensionsCm.length', 1)
+            ->assertJsonPath('data.0.dimensionsCm.width', 1)
+            ->assertJsonPath('data.0.dimensionsCm.height', 1);
+    }
+
     public function test_authorized_staff_can_append_a_forward_event_and_order_delivery_is_recorded(): void
     {
         $admin = $this->superAdmin();

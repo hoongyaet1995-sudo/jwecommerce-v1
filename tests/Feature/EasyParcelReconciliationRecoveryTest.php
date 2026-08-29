@@ -165,6 +165,34 @@ class EasyParcelReconciliationRecoveryTest extends TestCase
         self::assertSame('resolved', $task->fresh()->state);
     }
 
+    public function test_sweeper_republishes_a_processing_task_only_after_its_worker_lease_expires(): void
+    {
+        Queue::fake();
+        $shipment = $this->easyParcelShipment('ES-LEASE-RECOVERY-01', null);
+        $task = app(EasyParcelReconciliationTaskService::class)->ensureShipmentDetails($shipment);
+        $task->forceFill([
+            'state' => 'processing',
+            'published_at' => now(),
+            'lease_token' => 'abandoned-worker-lease',
+            'lease_expires_at' => now()->addMinutes(2),
+        ])->save();
+
+        app(EasyParcelReconciliationSweeper::class)->sweep();
+
+        self::assertSame('processing', $task->fresh()->state);
+        Queue::assertNothingPushed();
+
+        Carbon::setTestNow(now()->addMinutes(3));
+        app(EasyParcelReconciliationSweeper::class)->sweep();
+
+        $task->refresh();
+        self::assertSame('queued', $task->state);
+        self::assertNull($task->lease_token);
+        self::assertNull($task->lease_expires_at);
+        self::assertSame('worker_lease_expired', $task->last_error);
+        Queue::assertPushed(ReconcileEasyParcelTask::class, 1);
+    }
+
     public function test_early_unmatched_webhook_is_recorrelated_through_provider_reference_without_resubmitting(): void
     {
         Queue::fake();

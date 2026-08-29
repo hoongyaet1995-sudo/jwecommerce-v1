@@ -221,7 +221,7 @@ class EasyParcelWebhookReconciliationTest extends TestCase
         );
     }
 
-    public function test_reconciliation_job_has_bounded_unique_retry_and_failure_contract(): void
+    public function test_reconciliation_job_relies_on_the_database_lease_instead_of_a_queue_unique_lock(): void
     {
         [, $shipment] = $this->easyParcelShipment('ES-2608-JOB01', 'AWB-JOB01');
         $receipt = $this->receipt([
@@ -238,11 +238,9 @@ class EasyParcelWebhookReconciliationTest extends TestCase
         $job = new ReconcileEasyParcelTask($task->id);
 
         self::assertInstanceOf(ShouldQueue::class, $job);
-        self::assertInstanceOf(ShouldBeUnique::class, $job);
+        self::assertNotInstanceOf(ShouldBeUnique::class, $job);
         self::assertSame(1, $job->tries);
         self::assertSame(60, $job->timeout);
-        self::assertSame(300, $job->uniqueFor);
-        self::assertSame('easyparcel-reconciliation-task-'.$task->id, $job->uniqueId());
 
         $job->failed(new RuntimeException('raw provider secret must not persist'));
 

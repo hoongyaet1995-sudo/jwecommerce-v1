@@ -8,6 +8,10 @@ use Illuminate\Support\Collection;
 
 class ShipmentDataService
 {
+    private const DEFAULT_ITEM_WEIGHT_KG = 1.0;
+
+    private const DEFAULT_PACKAGE_DIMENSION_CM = 1.0;
+
     public function collection(): Collection
     {
         $shipments = Shipment::query()
@@ -145,21 +149,21 @@ class ShipmentDataService
             : $shipment->status;
     }
 
-    /** @return array<string, float>|null */
-    private function initialPackage(Order $order): ?array
+    /** @return array<string, float> */
+    private function initialPackage(Order $order): array
     {
         if ($order->items->count() !== 1 || $order->items->first()->quantity !== 1) {
-            return null;
+            return $this->defaultDimensionsSnapshot();
         }
 
         $snapshot = $order->items->first()->package_snapshot;
         if (! is_array($snapshot)) {
-            return null;
+            return $this->defaultDimensionsSnapshot();
         }
 
         foreach (['length_cm', 'width_cm', 'height_cm'] as $key) {
             if (! is_numeric($snapshot[$key] ?? null) || (float) $snapshot[$key] <= 0) {
-                return null;
+                return $this->defaultDimensionsSnapshot();
             }
         }
 
@@ -171,26 +175,30 @@ class ShipmentDataService
     }
 
     /** @param array<string, mixed>|null $snapshot */
-    private function itemWeightKg(?array $snapshot): ?float
+    private function itemWeightKg(?array $snapshot): float
     {
         $grams = $snapshot['weight_grams'] ?? null;
 
         return is_numeric($grams) && (float) $grams > 0
             ? round((float) $grams / 1000, 3)
-            : null;
+            : self::DEFAULT_ITEM_WEIGHT_KG;
     }
 
-    private function totalWeightKg(Order $order): ?float
+    private function totalWeightKg(Order $order): float
     {
-        $grams = $order->items->sum(function ($item): float {
-            $weight = data_get($item->package_snapshot, 'weight_grams');
+        $weightKg = $order->items->sum(fn ($item): float => $this->itemWeightKg($item->package_snapshot) * $item->quantity);
 
-            return is_numeric($weight) && (float) $weight > 0
-                ? (float) $weight * $item->quantity
-                : 0;
-        });
+        return $weightKg > 0 ? round($weightKg, 3) : self::DEFAULT_ITEM_WEIGHT_KG;
+    }
 
-        return $grams > 0 ? round($grams / 1000, 3) : null;
+    /** @return array{length_cm: float, width_cm: float, height_cm: float} */
+    private function defaultDimensionsSnapshot(): array
+    {
+        return [
+            'length_cm' => self::DEFAULT_PACKAGE_DIMENSION_CM,
+            'width_cm' => self::DEFAULT_PACKAGE_DIMENSION_CM,
+            'height_cm' => self::DEFAULT_PACKAGE_DIMENSION_CM,
+        ];
     }
 
     /** @param array<string, mixed>|null $snapshot @return array{length: float, width: float, height: float}|null */
