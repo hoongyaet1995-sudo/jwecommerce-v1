@@ -31,6 +31,8 @@ interface ShippingFulfillmentTabProps {
   onOpenPickupModal: () => void;
   onUpdateStatus: (parcelId: string, status: ShipmentParcel['status'], desc?: string) => void;
   onOpenEasyParcelBooking: (parcel: ShipmentParcel) => void;
+  onRefreshEasyParcelStatus: (parcelId: string) => Promise<void>;
+  onRefreshAllEasyParcelStatuses: () => Promise<void>;
 }
 
 export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
@@ -41,7 +43,9 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   onOpenTrackingModal,
   onOpenPickupModal,
   onUpdateStatus,
-  onOpenEasyParcelBooking
+  onOpenEasyParcelBooking,
+  onRefreshEasyParcelStatus,
+  onRefreshAllEasyParcelStatuses,
 }) => {
   const [activeStatusFilter, setActiveStatusFilter] = useState<'all' | 'pending' | 'ready_to_ship' | 'in_transit' | 'delivered' | 'failed_delivery'>('all');
   const [regionFilter, setRegionFilter] = useState<'all' | 'peninsular' | 'east_malaysia'>('all');
@@ -49,6 +53,39 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedParcelIds, setSelectedParcelIds] = useState<string[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [refreshingParcelId, setRefreshingParcelId] = useState<string | null>(null);
+  const [isRefreshingAll, setIsRefreshingAll] = useState(false);
+
+  const refreshableEasyParcelCount = parcels.filter((parcel) => (
+    parcel.source === 'easyparcel'
+    && Boolean(parcel.trackingNumber)
+    && parcel.status !== 'delivered'
+    && parcel.status !== 'returned'
+  )).length;
+
+  const handleRefreshAllEasyParcelStatuses = async () => {
+    if (isRefreshingAll || refreshingParcelId !== null) return;
+    setIsRefreshingAll(true);
+    try {
+      await onRefreshAllEasyParcelStatuses();
+    } catch {
+      // The shared admin action presents the failure toast.
+    } finally {
+      setIsRefreshingAll(false);
+    }
+  };
+
+  const handleRefreshEasyParcelStatus = async (parcelId: string) => {
+    if (isRefreshingAll || refreshingParcelId !== null) return;
+    setRefreshingParcelId(parcelId);
+    try {
+      await onRefreshEasyParcelStatus(parcelId);
+    } catch {
+      // The shared admin action presents the failure toast.
+    } finally {
+      setRefreshingParcelId(null);
+    }
+  };
 
   // Filter logic
   const filteredParcels = parcels.filter(p => {
@@ -182,6 +219,16 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+            <button
+              onClick={() => void handleRefreshAllEasyParcelStatuses()}
+              disabled={isRefreshingAll || refreshingParcelId !== null || refreshableEasyParcelCount === 0}
+              title={refreshableEasyParcelCount === 0 ? 'No non-terminal EasyParcel shipments need refreshing' : 'Refresh all non-terminal EasyParcel shipment statuses'}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-pink-200 dark:border-pink-900/60 bg-pink-50 dark:bg-pink-950/30 text-pink-700 dark:text-pink-300 hover:bg-pink-100 dark:hover:bg-pink-950/50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 ${isRefreshingAll ? 'animate-spin' : ''}`} />
+              Get Latest Status
+            </button>
+
             {/* Region Filter */}
             <select
               value={regionFilter}
@@ -404,6 +451,18 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                       {/* Actions */}
                       <td className="p-3.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {parcel.source === 'easyparcel' && parcel.trackingNumber && (
+                            <button
+                              onClick={() => void handleRefreshEasyParcelStatus(parcel.id)}
+                              disabled={isRefreshingAll || refreshingParcelId !== null}
+                              className="p-1.5 text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/30 rounded-lg border border-pink-200 dark:border-pink-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Refresh this EasyParcel shipment status"
+                              aria-label="Get Latest Status"
+                            >
+                              <RotateCcw className={`w-3.5 h-3.5 ${refreshingParcelId === parcel.id ? 'animate-spin' : ''}`} />
+                            </button>
+                          )}
+
                           {!parcel.trackingNumber ? (
                             <button
                               onClick={() => onOpenEasyParcelBooking(parcel)}

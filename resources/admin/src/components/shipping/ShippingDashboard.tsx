@@ -71,6 +71,8 @@ export const ShippingDashboard: React.FC = () => {
     toggleSmartRoutingRule,
     reorderSmartRoutingRules,
     shipmentParcels = [],
+    refreshEasyParcelShipmentStatus,
+    refreshAllEasyParcelShipmentStatuses,
     easyParcelWebhookReceipts = [],
     easyParcelWebhookAuditStatus,
     easyParcelWebhookAuditError,
@@ -372,6 +374,8 @@ export const ShippingDashboard: React.FC = () => {
             onOpenPickupModal={explainPickupUnavailable}
             onUpdateStatus={updateShipmentStatus}
             onOpenEasyParcelBooking={(parcel) => setEasyParcelBookingParcel(parcel)}
+            onRefreshEasyParcelStatus={refreshEasyParcelShipmentStatus}
+            onRefreshAllEasyParcelStatuses={refreshAllEasyParcelShipmentStatuses}
           />
         )}
 

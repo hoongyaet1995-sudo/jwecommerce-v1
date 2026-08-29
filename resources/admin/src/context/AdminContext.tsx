@@ -7,7 +7,7 @@ import { deleteCatalogEntity, fetchCatalog, saveCatalogEntity } from '../integra
 import { fetchMenus, saveMenuDocument } from '../integration/menuData';
 import { customerDirectoryToCustomers, deleteCustomerData, fetchCustomerDirectoryData, saveCustomerData } from '../integration/customerDirectoryData';
 import { fetchOrders, processOrderRefundData, updateOrderStatusData, updateOrderTrackingData } from '../integration/orderData';
-import { appendShipmentEvent, fetchShipments } from '../integration/shipmentData';
+import { appendShipmentEvent, fetchShipments, refreshEasyParcelShipmentStatus as refreshEasyParcelShipmentStatusData } from '../integration/shipmentData';
 import { createEasyParcelWebhookAuditRefresher, fetchEasyParcelWebhookReceipts } from '../integration/easyParcelWebhookData';
 import { courierConfigsFromEasyParcel, disconnectEasyParcelStore, fetchEasyParcelProvider, startEasyParcelAuthorization } from '../integration/easyParcelProviderData';
 import { confirmEasyParcelBooking, requestEasyParcelQuote, type EasyParcelBooking, type EasyParcelPackageSpec, type EasyParcelQuote } from '../integration/easyParcelFulfillmentData';
@@ -311,6 +311,8 @@ interface AdminContextType {
   reorderSmartRoutingRules: (rules: SmartRoutingRule[]) => void;
 
   shipmentParcels: ShipmentParcel[];
+  refreshEasyParcelShipmentStatus: (parcelId: string) => Promise<void>;
+  refreshAllEasyParcelShipmentStatuses: () => Promise<void>;
   easyParcelWebhookReceipts: EasyParcelWebhookReceiptRow[];
   easyParcelWebhookAuditStatus: EasyParcelWebhookAuditStatus;
   easyParcelWebhookAuditError: string | null;
@@ -2132,6 +2134,66 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return booking;
   };
 
+  const refreshEasyParcelShipmentStatus = async (parcelId: string): Promise<void> => {
+    try {
+      const result = await refreshEasyParcelShipmentStatusData(laravelBootstrap, parcelId);
+      setShipmentParcels(await fetchShipments(laravelBootstrap));
+      addToast({
+        type: 'success',
+        title: 'EasyParcel status refreshed',
+        message: result.changed
+          ? `Latest EasyParcel details saved. Current status: ${result.status.replaceAll('_', ' ')}.`
+          : 'The shipment already has the latest EasyParcel status.',
+      });
+    } catch (error) {
+      const failure = error instanceof Error ? error : new Error('EasyParcel status could not be refreshed.');
+      addToast({ type: 'error', title: 'Status refresh failed', message: failure.message });
+      throw failure;
+    }
+  };
+
+  const refreshAllEasyParcelShipmentStatuses = async (): Promise<void> => {
+    const eligible = shipmentParcels.filter((parcel) => (
+      parcel.source === 'easyparcel'
+      && Boolean(parcel.trackingNumber)
+      && parcel.status !== 'delivered'
+      && parcel.status !== 'returned'
+    ));
+
+    if (eligible.length === 0) {
+      addToast({ type: 'info', title: 'Statuses already current', message: 'There are no non-terminal EasyParcel shipments to refresh.' });
+      return;
+    }
+
+    let updated = 0;
+    let failed = 0;
+    for (const parcel of eligible) {
+      try {
+        const result = await refreshEasyParcelShipmentStatusData(laravelBootstrap, parcel.id);
+        if (result.changed) updated += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+
+    try {
+      setShipmentParcels(await fetchShipments(laravelBootstrap));
+    } catch (error) {
+      const failure = error instanceof Error ? error : new Error('Shipment list could not be reloaded.');
+      addToast({
+        type: 'warning',
+        title: 'Statuses checked; list refresh failed',
+        message: `${eligible.length - failed} provider checks completed, but the shipment list could not reload. Refresh the page before retrying. ${failure.message}`,
+      });
+      throw failure;
+    }
+    addToast({
+      type: failed > 0 ? 'warning' : 'success',
+      title: 'Latest EasyParcel statuses retrieved',
+      message: `${eligible.length - failed} checked · ${updated} updated${failed > 0 ? ` · ${failed} failed` : ''}.`,
+    });
+  };
+
   const toggleCourierStatus = (id: string) => {
     const courier = courierConfigs.find((entry) => entry.id === id);
     if (courier?.courierCode === 'easyparcel') {
@@ -3796,6 +3858,8 @@ Would you like me to drill down into customer records, inventory allocation, or 
         toggleSmartRoutingRule,
         reorderSmartRoutingRules,
         shipmentParcels,
+        refreshEasyParcelShipmentStatus,
+        refreshAllEasyParcelShipmentStatuses,
         easyParcelWebhookReceipts: easyParcelWebhookAudit.receipts,
         easyParcelWebhookAuditStatus: easyParcelWebhookAudit.status,
         easyParcelWebhookAuditError: easyParcelWebhookAudit.error,

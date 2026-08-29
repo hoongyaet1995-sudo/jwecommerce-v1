@@ -3,6 +3,11 @@ import type { ShipmentParcel } from '../types/shipping';
 
 type ShipmentResponse = { data: ShipmentParcel[] };
 type ErrorResponse = { message?: string; errors?: Record<string, string[]> };
+export type EasyParcelShipmentStatusRefresh = {
+  shipmentId: string;
+  status: ShipmentParcel['status'];
+  changed: boolean;
+};
 
 const errorMessage = (payload: ErrorResponse | null, fallback: string): string =>
   payload?.errors ? Object.values(payload.errors).flat().join(' ') : payload?.message ?? fallback;
@@ -65,4 +70,25 @@ export const appendShipmentEvent = async (
   });
   const payload = await response.json().catch(() => null) as ErrorResponse | null;
   if (!response.ok) throw new Error(errorMessage(payload, 'Shipment event could not be recorded.'));
+};
+
+export const refreshEasyParcelShipmentStatus = async (
+  bootstrap: LaravelAdminBootstrap,
+  shipmentId: string,
+): Promise<EasyParcelShipmentStatusRefresh> => {
+  if (!bootstrap.shipmentsUrl) throw new Error('Shipment API is unavailable.');
+  const response = await window.fetch(
+    `${bootstrap.shipmentsUrl}/${encodeURIComponent(shipmentId)}/easyparcel/status`,
+    {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json', 'X-CSRF-TOKEN': bootstrap.csrfToken },
+    },
+  );
+  const payload = await response.json().catch(() => null) as { data?: EasyParcelShipmentStatusRefresh } & ErrorResponse | null;
+  if (!response.ok || !payload?.data) {
+    throw new Error(errorMessage(payload, 'EasyParcel status could not be refreshed.'));
+  }
+
+  return payload.data;
 };

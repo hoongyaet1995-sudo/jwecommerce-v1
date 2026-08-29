@@ -6,9 +6,13 @@ use App\Domain\Shipping\ShippingPermission;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Shipment;
+use App\Models\ShippingProvider;
+use App\Models\ShippingProviderCredential;
 use App\Models\ShippingWebhookReceipt;
 use App\Models\User;
+use App\Services\Shipping\EasyParcelShipmentDetailsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class ShipmentApiTest extends TestCase
@@ -170,6 +174,149 @@ class ShipmentApiTest extends TestCase
         $this->assertDatabaseCount('shipment_events', 0);
     }
 
+    public function test_authorized_admin_can_get_latest_easyparcel_status_from_authenticated_shipment_details(): void
+    {
+        $this->connectedEasyParcelProvider();
+        $order = $this->processingOrder('latest-status@example.test', 'JW-LATEST-STATUS-1001');
+        $shipment = Shipment::query()->create([
+            'order_id' => $order->id,
+            'sequence' => 1,
+            'source' => 'easyparcel',
+            'carrier_name' => 'EasyParcel Sandbox Courier',
+            'tracking_number' => 'AWB-LATEST-STATUS-1001',
+            'provider_reference' => 'ES-LATEST-STATUS-1001',
+            'status' => 'ready_to_ship',
+            'currency' => 'MYR',
+        ]);
+
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => Http::response([
+                'status_code' => 200,
+                'message' => 'success',
+                'data' => [[
+                    'shipment_number' => 'ES-LATEST-STATUS-1001',
+                    'shipment_details' => [
+                        'shipment_status_code' => 5,
+                        'shipment_status' => 'Delivered',
+                        'awb_number' => 'AWB-LATEST-STATUS-1001',
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $this->actingAs($this->superAdmin())
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/easyparcel/status')
+            ->assertOk()
+            ->assertJsonPath('data.shipmentId', (string) $shipment->id)
+            ->assertJsonPath('data.status', 'delivered')
+            ->assertJsonPath('data.changed', true);
+
+        $this->assertDatabaseHas('shipments', ['id' => $shipment->id, 'status' => 'delivered']);
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'delivered']);
+        $this->assertDatabaseHas('shipment_events', [
+            'shipment_id' => $shipment->id,
+            'source' => 'easyparcel',
+            'status' => 'delivered',
+        ]);
+    }
+
+    public function test_latest_easyparcel_status_rejects_non_easyparcel_shipments_without_provider_request(): void
+    {
+        Http::fake();
+        $order = $this->processingOrder('manual-status@example.test', 'JW-MANUAL-STATUS-1001');
+        $shipment = Shipment::query()->create([
+            'order_id' => $order->id,
+            'sequence' => 1,
+            'source' => 'manual',
+            'carrier_name' => 'Manual Courier',
+            'tracking_number' => 'MANUAL-LATEST-STATUS-1001',
+            'status' => 'shipped',
+            'currency' => 'MYR',
+        ]);
+
+        $this->actingAs($this->superAdmin())
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/easyparcel/status')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('shipment');
+
+        Http::assertNothingSent();
+    }
+
+    public function test_latest_easyparcel_status_is_idempotent_when_provider_details_are_unchanged(): void
+    {
+        $this->connectedEasyParcelProvider();
+        $order = $this->processingOrder('idempotent-status@example.test', 'JW-IDEMPOTENT-STATUS-1001');
+        $shipment = Shipment::query()->create([
+            'order_id' => $order->id,
+            'sequence' => 1,
+            'source' => 'easyparcel',
+            'carrier_name' => 'EasyParcel Sandbox Courier',
+            'tracking_number' => 'AWB-IDEMPOTENT-STATUS-1001',
+            'provider_reference' => 'ES-IDEMPOTENT-STATUS-1001',
+            'status' => 'ready_to_ship',
+            'currency' => 'MYR',
+        ]);
+        $response = [
+            'status_code' => 200,
+            'message' => 'success',
+            'data' => [[
+                'shipment_number' => 'ES-IDEMPOTENT-STATUS-1001',
+                'shipment_details' => [
+                    'shipment_status_code' => 5,
+                    'shipment_status' => 'Delivered',
+                    'awb_number' => 'AWB-IDEMPOTENT-STATUS-1001',
+                ],
+            ]],
+        ];
+        Http::fakeSequence(EasyParcelShipmentDetailsService::DETAILS_URL)
+            ->push($response)
+            ->push($response);
+        $admin = $this->superAdmin();
+
+        $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/easyparcel/status')
+            ->assertOk()
+            ->assertJsonPath('data.changed', true);
+        $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/easyparcel/status')
+            ->assertOk()
+            ->assertJsonPath('data.changed', false);
+
+        $this->assertDatabaseCount('shipment_events', 1);
+        $this->assertDatabaseHas('shipments', ['id' => $shipment->id, 'status' => 'delivered']);
+    }
+
+    public function test_latest_easyparcel_status_shields_provider_failures(): void
+    {
+        $this->connectedEasyParcelProvider();
+        $order = $this->processingOrder('provider-failure@example.test', 'JW-PROVIDER-FAILURE-1001');
+        $shipment = Shipment::query()->create([
+            'order_id' => $order->id,
+            'sequence' => 1,
+            'source' => 'easyparcel',
+            'carrier_name' => 'EasyParcel Sandbox Courier',
+            'tracking_number' => 'AWB-PROVIDER-FAILURE-1001',
+            'provider_reference' => 'ES-PROVIDER-FAILURE-1001',
+            'status' => 'ready_to_ship',
+            'currency' => 'MYR',
+        ]);
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => Http::response([
+                'message' => 'provider-sensitive-failure',
+            ], 500),
+        ]);
+
+        $this->actingAs($this->superAdmin())
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/easyparcel/status')
+            ->assertServiceUnavailable()
+            ->assertExactJson([
+                'message' => 'EasyParcel status is temporarily unavailable. Please try again.',
+            ]);
+
+        self::assertSame('ready_to_ship', $shipment->fresh()->status);
+        $this->assertDatabaseCount('shipment_events', 0);
+    }
+
     public function test_duplicate_tracking_number_is_rejected_for_a_different_order(): void
     {
         $admin = $this->superAdmin();
@@ -308,6 +455,33 @@ class ShipmentApiTest extends TestCase
     private function superAdmin(): User
     {
         return User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+    }
+
+    private function connectedEasyParcelProvider(): ShippingProvider
+    {
+        $provider = ShippingProvider::query()->create([
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'enabled' => true,
+            'connection_state' => 'connected',
+            'configuration_version' => 1,
+            'public_metadata' => ['apiVersion' => '2026-06'],
+            'last_verified_at' => now(),
+        ]);
+        ShippingProviderCredential::query()->create([
+            'shipping_provider_id' => $provider->id,
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'credentials' => [
+                'client_id' => 'sandbox-client',
+                'client_secret' => 'sandbox-secret',
+                'token_type' => 'Bearer',
+                'access_token' => 'sandbox-access-token',
+                'access_token_expires_at' => now()->addHour()->utc()->toIso8601String(),
+            ],
+        ]);
+
+        return $provider;
     }
 
     private function processingOrder(string $email = 'shipment-buyer@example.com', string $number = 'JW-SHIPMENT-1001'): Order

@@ -6,7 +6,7 @@ import { ShippingFulfillmentTab } from '../components/shipping/ShippingFulfillme
 import { INITIAL_SHIPMENT_PARCELS } from '../data/shippingData';
 import type { LaravelAdminBootstrap } from '../types';
 import type { ShipmentParcel } from '../types/shipping';
-import { fetchShipments } from './shipmentData';
+import { fetchShipments, refreshEasyParcelShipmentStatus } from './shipmentData';
 
 const bootstrap = {
   user: { name: 'Admin', email: 'admin@example.test', avatar: null },
@@ -72,6 +72,24 @@ describe('redacted shipment-list client contract', () => {
     expect(parcel).not.toHaveProperty('recipientAddress');
   });
 
+  it('requests an authenticated EasyParcel shipment-details refresh for one shipment', async () => {
+    const fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: { shipmentId: '1', status: 'delivered', changed: true } }),
+    });
+    vi.stubGlobal('window', { fetch });
+
+    await expect(refreshEasyParcelShipmentStatus(bootstrap, '1')).resolves.toEqual({
+      shipmentId: '1',
+      status: 'delivered',
+      changed: true,
+    });
+    expect(fetch).toHaveBeenCalledWith('/admin/api/shipping/shipments/1/easyparcel/status', expect.objectContaining({
+      method: 'POST',
+      credentials: 'same-origin',
+    }));
+  });
+
   it('renders a non-empty fulfillment row using neutral recipient placeholders', () => {
     const html = renderToStaticMarkup(
       <ShippingFulfillmentTab
@@ -82,6 +100,9 @@ describe('redacted shipment-list client contract', () => {
         onOpenTrackingModal={vi.fn()}
         onOpenPickupModal={vi.fn()}
         onUpdateStatus={vi.fn()}
+        onOpenEasyParcelBooking={vi.fn()}
+        onRefreshEasyParcelStatus={vi.fn()}
+        onRefreshAllEasyParcelStatuses={vi.fn()}
       />,
     );
 
@@ -99,6 +120,33 @@ describe('redacted shipment-list client contract', () => {
     expect(html).toContain('JW-10011');
     expect(html).toContain('Recipient contact restricted');
     expect(html).not.toContain('Contact Recipient on WhatsApp');
+  });
+
+  it('renders unified and per-row Get Latest Status controls for an EasyParcel AWB', () => {
+    const parcel = {
+      ...redactedParcel,
+      source: 'easyparcel',
+      courier: 'easyparcel',
+      trackingNumber: 'AWB-LATEST-STATUS-1001',
+      status: 'ready_to_ship' as const,
+    };
+    const html = renderToStaticMarkup(
+      <ShippingFulfillmentTab
+        parcels={[parcel]}
+        onGenerateAWB={vi.fn()}
+        onBatchGenerateAWB={vi.fn()}
+        onOpenAWBModal={vi.fn()}
+        onOpenTrackingModal={vi.fn()}
+        onOpenPickupModal={vi.fn()}
+        onUpdateStatus={vi.fn()}
+        onOpenEasyParcelBooking={vi.fn()}
+        onRefreshEasyParcelStatus={vi.fn()}
+        onRefreshAllEasyParcelStatuses={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain('Get Latest Status');
+    expect(html).toContain('Refresh this EasyParcel shipment status');
   });
 
   it('keeps bundled shipment-list examples within the redacted DTO boundary', () => {

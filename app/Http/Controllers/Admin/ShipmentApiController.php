@@ -12,6 +12,8 @@ use App\Services\ShipmentService;
 use App\Services\Shipping\EasyParcelFulfillmentService;
 use App\Services\Shipping\EasyParcelReconciliationPublisher;
 use App\Services\Shipping\EasyParcelReconciliationTaskService;
+use App\Services\Shipping\EasyParcelShipmentDetailsService;
+use App\Services\Shipping\EasyParcelTrackingException;
 use App\Services\Shipping\PackageSpec;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -126,6 +128,40 @@ class ShipmentApiController extends Controller
             'taskId' => (string) $task->id,
             'state' => $task->state,
         ]], 202);
+    }
+
+    public function refreshEasyParcelStatus(
+        Request $request,
+        Shipment $shipment,
+        EasyParcelShipmentDetailsService $details,
+    ): JsonResponse {
+        abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::DISPATCH), 403);
+
+        if ($shipment->source !== 'easyparcel' || blank($shipment->provider_reference)) {
+            throw ValidationException::withMessages([
+                'shipment' => 'Only provider-backed EasyParcel shipments can retrieve a latest status.',
+            ]);
+        }
+
+        $beforeStatus = $shipment->status;
+        $beforeEventCount = $shipment->events()->count();
+
+        try {
+            $shipment = $details->reconcile($shipment);
+        } catch (EasyParcelTrackingException) {
+            return response()->json([
+                'message' => 'EasyParcel status is temporarily unavailable. Please try again.',
+            ], 503);
+        }
+
+        $shipment->refresh();
+
+        return response()->json(['data' => [
+            'shipmentId' => (string) $shipment->id,
+            'status' => $shipment->status,
+            'changed' => $shipment->status !== $beforeStatus
+                || $shipment->events()->count() !== $beforeEventCount,
+        ]]);
     }
 
     public function appendEvent(Request $request, Shipment $shipment, ShipmentService $shipments): JsonResponse
