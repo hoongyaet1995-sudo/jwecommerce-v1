@@ -6,8 +6,11 @@ use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\ShippingWebhookReceipt;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
+use PDO;
+use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 class EasyParcelWebhookIngressTest extends TestCase
@@ -82,6 +85,64 @@ class EasyParcelWebhookIngressTest extends TestCase
         self::assertSame('pending', $shipment->fresh()->status);
     }
 
+    public function test_concurrent_duplicate_deliveries_return_one_durable_receipt_without_a_unique_constraint_error(): void
+    {
+        $rawBody = json_encode([
+            'topic' => 'shipment.created',
+            'uuid' => 'concurrent-webhook-'.Str::uuid(),
+            'shipment_number' => 'ES-CONCURRENT-UNKNOWN',
+        ], JSON_THROW_ON_ERROR);
+        $payloadHash = hash('sha256', $rawBody);
+        $barrier = 'easyparcel-webhook-'.Str::uuid();
+        $lock = DB::selectOne('SELECT GET_LOCK(?, 5) AS acquired', [$barrier]);
+        self::assertSame(1, (int) $lock->acquired);
+
+        $workers = [
+            $this->concurrentReceiptWorker($barrier, $rawBody),
+            $this->concurrentReceiptWorker($barrier, $rawBody),
+        ];
+
+        try {
+            foreach ($workers as $worker) {
+                $worker->start();
+            }
+
+            $this->waitForWorkersAtReceiptLookup($workers);
+            DB::selectOne('SELECT RELEASE_LOCK(?) AS released', [$barrier]);
+
+            foreach ($workers as $worker) {
+                $worker->wait();
+                self::assertTrue($worker->isSuccessful(), $worker->getErrorOutput().$worker->getOutput());
+            }
+
+            $receiptIds = array_map(function (Process $worker): string {
+                preg_match('/receipt:(\d+)/', $worker->getOutput(), $matches);
+
+                self::assertArrayHasKey(1, $matches, $worker->getOutput());
+
+                return $matches[1];
+            }, $workers);
+
+            self::assertSame($receiptIds[0], $receiptIds[1]);
+            $this->assertDatabaseCount('shipping_webhook_receipts', 1);
+            $this->assertDatabaseHas('shipping_webhook_receipts', [
+                'id' => $receiptIds[0],
+                'payload_hash' => $payloadHash,
+                'processing_state' => 'unmatched',
+            ]);
+        } finally {
+            DB::selectOne('SELECT RELEASE_LOCK(?) AS released', [$barrier]);
+
+            foreach ($workers as $worker) {
+                if ($worker->isRunning()) {
+                    $worker->stop(1);
+                }
+            }
+
+            $this->deleteWorkerReceipt($payloadHash);
+        }
+    }
+
     public function test_wrong_token_and_oversized_body_are_rejected_without_receipt(): void
     {
         config(['services.easyparcel.webhook_path_token' => 'correct-token']);
@@ -122,5 +183,93 @@ class EasyParcelWebhookIngressTest extends TestCase
         ]);
 
         return [$order, $shipment];
+    }
+
+    private function concurrentReceiptWorker(string $barrier, string $rawBody): Process
+    {
+        $script = <<<'PHP'
+require $argv[1].'/vendor/autoload.php';
+$app = require $argv[1].'/bootstrap/app.php';
+$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+
+$barrier = $argv[2];
+$rawBody = base64_decode($argv[3], true);
+if ($rawBody === false) {
+    throw new \RuntimeException('Worker received an invalid raw body.');
+}
+$payload = json_decode($rawBody, true, 512, JSON_THROW_ON_ERROR);
+$blocked = false;
+
+\Illuminate\Support\Facades\DB::listen(function (\Illuminate\Database\Events\QueryExecuted $query) use (&$blocked, $barrier): void {
+    if ($blocked || ! str_contains(strtolower($query->sql), 'shipping_webhook_receipts')) {
+        return;
+    }
+
+    $blocked = true;
+    fwrite(STDOUT, "snapshot-ready\n");
+    $lock = \Illuminate\Support\Facades\DB::selectOne('SELECT GET_LOCK(?, 10) AS acquired', [$barrier]);
+    if ((int) $lock->acquired !== 1) {
+        throw new \RuntimeException('Timed out waiting for the concurrent receipt barrier.');
+    }
+    \Illuminate\Support\Facades\DB::selectOne('SELECT RELEASE_LOCK(?) AS released', [$barrier]);
+});
+
+$receipt = app(\App\Services\Shipping\EasyParcelWebhookReceiptService::class)->receive($rawBody, $payload);
+fwrite(STDOUT, 'receipt:'.$receipt->id.PHP_EOL);
+PHP;
+
+        return (new Process(
+            [PHP_BINARY, '-r', $script, base_path(), $barrier, base64_encode($rawBody)],
+            base_path(),
+            array_replace(getenv(), [
+                'APP_ENV' => 'testing',
+                'DB_CONNECTION' => 'mysql',
+                'DB_DATABASE' => 'jw_ecommerce_testing',
+                'DB_USERNAME' => 'root',
+                'DB_PASSWORD' => '',
+            ]),
+        ))->setTimeout(15);
+    }
+
+    /** @param array<int, Process> $workers */
+    private function waitForWorkersAtReceiptLookup(array $workers): void
+    {
+        $deadline = microtime(true) + 5;
+
+        while (microtime(true) < $deadline) {
+            if (collect($workers)->every(
+                static fn (Process $worker): bool => str_contains($worker->getOutput(), 'snapshot-ready'),
+            )) {
+                return;
+            }
+
+            foreach ($workers as $worker) {
+                if (! $worker->isRunning()) {
+                    self::fail($worker->getErrorOutput().$worker->getOutput());
+                }
+            }
+
+            usleep(10_000);
+        }
+
+        self::fail('Timed out waiting for both concurrent workers to establish their receipt lookup snapshot.');
+    }
+
+    private function deleteWorkerReceipt(string $payloadHash): void
+    {
+        $connection = config('database.connections.mysql');
+        $pdo = new PDO(
+            sprintf(
+                'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
+                $connection['host'],
+                $connection['port'],
+                $connection['database'],
+            ),
+            $connection['username'],
+            $connection['password'],
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
+        );
+        $statement = $pdo->prepare('DELETE FROM shipping_webhook_receipts WHERE payload_hash = ?');
+        $statement->execute([$payloadHash]);
     }
 }

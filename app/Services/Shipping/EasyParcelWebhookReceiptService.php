@@ -4,7 +4,6 @@ namespace App\Services\Shipping;
 
 use App\Models\Shipment;
 use App\Models\ShippingWebhookReceipt;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 final class EasyParcelWebhookReceiptService
@@ -27,23 +26,21 @@ final class EasyParcelWebhookReceiptService
             ? 'ignored'
             : ($shipment === null ? 'unmatched' : 'received');
 
-        return DB::transaction(function () use ($rawBody, $payload, $topic, $snapshot, $shipment, $processingState): ShippingWebhookReceipt {
-            return ShippingWebhookReceipt::query()->firstOrCreate(
-                [
-                    'provider' => ShippingProviderConfigurationService::PROVIDER,
-                    'environment' => ShippingProviderConfigurationService::ENVIRONMENT,
-                    'payload_hash' => hash('sha256', $rawBody),
-                ],
-                [
-                    'topic' => $topic,
-                    'provider_uuid' => $this->string($payload['uuid'] ?? null, 160),
-                    'shipment_id' => $shipment?->id,
-                    'correlation_snapshot' => $snapshot,
-                    'processing_state' => $processingState,
-                    'received_at' => now(),
-                ],
-            );
-        });
+        return ShippingWebhookReceipt::query()->firstOrCreate(
+            [
+                'provider' => ShippingProviderConfigurationService::PROVIDER,
+                'environment' => ShippingProviderConfigurationService::ENVIRONMENT,
+                'payload_hash' => hash('sha256', $rawBody),
+            ],
+            [
+                'topic' => $topic,
+                'provider_uuid' => $this->string($payload['uuid'] ?? null, 160),
+                'shipment_id' => $shipment?->id,
+                'correlation_snapshot' => $snapshot,
+                'processing_state' => $processingState,
+                'received_at' => now(),
+            ],
+        );
     }
 
     /** @param array<string, mixed> $payload
