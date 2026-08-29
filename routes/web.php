@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\TaxClassApiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\EasyParcelWebhookController;
 use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\CustomerAccountController;
 use App\Http\Controllers\CustomerAuthController;
@@ -65,6 +66,9 @@ Route::post('/checkout/payment-retry/{payment}', [CheckoutController::class, 're
 Route::post('/payments/webhooks/stripe', [PaymentWebhookController::class, 'stripe'])->name('payments.webhooks.stripe');
 Route::post('/payments/webhooks/billplz', [PaymentWebhookController::class, 'billplz'])->name('payments.webhooks.billplz');
 Route::post('/payments/webhooks/paypal', [PaymentWebhookController::class, 'paypal'])->name('payments.webhooks.paypal');
+Route::post('/webhooks/easyparcel/{token}', EasyParcelWebhookController::class)
+    ->middleware('throttle:60,1')
+    ->name('webhooks.easyparcel');
 Route::get('/order/success', [CheckoutController::class, 'success'])->name('checkout.success');
 Route::get('/order-tracking', [OrderTrackingController::class, 'preview'])->name('order-tracking.show');
 Route::redirect('/order-tracking/preview', '/order-tracking');

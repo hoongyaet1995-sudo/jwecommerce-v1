@@ -119,4 +119,31 @@ class EasyParcelFulfillmentMigrationTest extends TestCase
         );
         $this->assertSame($longLabel, DB::table('shipments')->where('id', $shipmentId)->value('label_path'));
     }
+
+    public function test_webhook_receipt_schema_round_trip_is_safe_and_has_no_raw_payload_column(): void
+    {
+        $migrationPath = database_path('migrations/2026_08_29_000000_create_shipping_webhook_receipts_table.php');
+        $this->assertFileExists($migrationPath);
+
+        $migration = require $migrationPath;
+        $migration->down();
+
+        $this->assertFalse(Schema::hasTable('shipping_webhook_receipts'));
+
+        $migration->up();
+
+        $this->assertTrue(Schema::hasTable('shipping_webhook_receipts'));
+        $this->assertTrue(Schema::hasColumns('shipping_webhook_receipts', [
+            'provider',
+            'environment',
+            'topic',
+            'provider_uuid',
+            'payload_hash',
+            'shipment_id',
+            'correlation_snapshot',
+            'processing_state',
+            'received_at',
+        ]));
+        $this->assertFalse(Schema::hasColumn('shipping_webhook_receipts', 'raw_payload'));
+    }
 }

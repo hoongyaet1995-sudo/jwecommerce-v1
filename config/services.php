@@ -39,6 +39,7 @@ return [
         'client_id' => env('EASYPARCEL_OAUTH_CLIENT_ID'),
         'client_secret' => env('EASYPARCEL_OAUTH_CLIENT_SECRET'),
         'redirect_uri' => env('EASYPARCEL_OAUTH_REDIRECT_URI', 'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback'),
+        'webhook_path_token' => env('EASYPARCEL_WEBHOOK_PATH_TOKEN'),
         'sender' => [
             'name' => env('EASYPARCEL_SENDER_NAME'),
             'company' => env('EASYPARCEL_SENDER_COMPANY'),
