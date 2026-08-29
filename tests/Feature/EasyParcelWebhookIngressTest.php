@@ -6,11 +6,13 @@ use App\Jobs\ReconcileEasyParcelWebhook;
 use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\ShippingWebhookReceipt;
+use App\Services\Shipping\EasyParcelWebhookReceiptService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use PDO;
+use RuntimeException;
 use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
@@ -120,6 +122,7 @@ class EasyParcelWebhookIngressTest extends TestCase
             foreach ($workers as $worker) {
                 $worker->wait();
                 self::assertTrue($worker->isSuccessful(), $worker->getErrorOutput().$worker->getOutput());
+                self::assertStringContainsString('status:200', $worker->getOutput());
             }
 
             $receiptIds = array_map(function (Process $worker): string {
@@ -131,6 +134,14 @@ class EasyParcelWebhookIngressTest extends TestCase
             }, $workers);
 
             self::assertSame($receiptIds[0], $receiptIds[1]);
+            $claimUpdates = array_map(function (Process $worker): int {
+                preg_match('/claim-updates:(\d+)/', $worker->getOutput(), $matches);
+
+                self::assertArrayHasKey(1, $matches, $worker->getOutput());
+
+                return (int) $matches[1];
+            }, $workers);
+            self::assertSame(1, array_sum($claimUpdates));
             $this->assertDatabaseCount('shipping_webhook_receipts', 1);
             $this->assertDatabaseHas('shipping_webhook_receipts', [
                 'id' => $receiptIds[0],
@@ -151,6 +162,40 @@ class EasyParcelWebhookIngressTest extends TestCase
 
             $this->deleteConcurrentFixture($payloadHash, $queue, $shipmentId, $orderId);
         }
+    }
+
+    public function test_queue_claim_failure_rolls_back_the_new_matched_receipt(): void
+    {
+        [, $shipment] = $this->easyParcelShipment('ES-ATOMIC-ROLLBACK', 'AWB-ATOMIC-ROLLBACK');
+        $payload = [
+            'topic' => 'shipment.tracking.update',
+            'uuid' => 'atomic-rollback-webhook',
+            'shipment_number' => $shipment->provider_reference,
+            'awb_number' => $shipment->tracking_number,
+        ];
+        $rawBody = json_encode($payload, JSON_THROW_ON_ERROR);
+        $payloadHash = hash('sha256', $rawBody);
+        $failClaim = true;
+
+        DB::connection()->beforeExecuting(function (string $query) use (&$failClaim): void {
+            if ($failClaim && str_contains(strtolower($query), 'update `shipping_webhook_receipts`')) {
+                $failClaim = false;
+
+                throw new RuntimeException('simulated_queue_claim_failure');
+            }
+        });
+
+        try {
+            app(EasyParcelWebhookReceiptService::class)
+                ->receiveAndQueue($rawBody, $payload);
+            self::fail('A failed queue claim must abort receipt creation.');
+        } catch (RuntimeException $exception) {
+            self::assertSame('simulated_queue_claim_failure', $exception->getMessage());
+        }
+
+        $this->assertDatabaseMissing('shipping_webhook_receipts', [
+            'payload_hash' => $payloadHash,
+        ]);
     }
 
     public function test_wrong_token_and_oversized_body_are_rejected_without_receipt(): void
@@ -200,18 +245,23 @@ class EasyParcelWebhookIngressTest extends TestCase
         $script = <<<'PHP'
 require $argv[1].'/vendor/autoload.php';
 $app = require $argv[1].'/bootstrap/app.php';
-$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$kernel = $app->make(\Illuminate\Contracts\Http\Kernel::class);
+$kernel->bootstrap();
 
 $barrier = $argv[2];
 $rawBody = base64_decode($argv[3], true);
 if ($rawBody === false) {
     throw new \RuntimeException('Worker received an invalid raw body.');
 }
-$payload = json_decode($rawBody, true, 512, JSON_THROW_ON_ERROR);
 $blocked = false;
+$claimUpdates = 0;
 
-\Illuminate\Support\Facades\DB::listen(function (\Illuminate\Database\Events\QueryExecuted $query) use (&$blocked, $barrier): void {
-    if ($blocked || ! str_contains(strtolower($query->sql), 'shipping_webhook_receipts')) {
+\Illuminate\Support\Facades\DB::connection()->beforeExecuting(function (string $query) use (&$blocked, &$claimUpdates, $barrier): void {
+    if (str_contains(strtolower($query), 'update `shipping_webhook_receipts`')) {
+        $claimUpdates++;
+    }
+
+    if ($blocked || ! str_contains(strtolower($query), 'shipping_webhook_receipts')) {
         return;
     }
 
@@ -224,8 +274,28 @@ $blocked = false;
     \Illuminate\Support\Facades\DB::selectOne('SELECT RELEASE_LOCK(?) AS released', [$barrier]);
 });
 
-$receipt = app(\App\Services\Shipping\EasyParcelWebhookReceiptService::class)->receiveAndQueue($rawBody, $payload);
-fwrite(STDOUT, 'receipt:'.$receipt->id.PHP_EOL);
+config(['services.easyparcel.webhook_path_token' => 'concurrency-token']);
+$request = \Illuminate\Http\Request::create(
+    '/webhooks/easyparcel/concurrency-token',
+    'POST',
+    [],
+    [],
+    [],
+    ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
+    $rawBody,
+);
+$response = $kernel->handle($request);
+$kernel->terminate($request, $response);
+if ($response->getStatusCode() !== 200) {
+    throw new \RuntimeException('Webhook returned HTTP '.$response->getStatusCode().': '.$response->getContent());
+}
+$receipt = \App\Models\ShippingWebhookReceipt::query()
+    ->where('payload_hash', hash('sha256', $rawBody))
+    ->sole();
+fwrite(
+    STDOUT,
+    'status:'.$response->getStatusCode().' receipt:'.$receipt->id.' claim-updates:'.$claimUpdates.PHP_EOL,
+);
 PHP;
 
         return (new Process(
