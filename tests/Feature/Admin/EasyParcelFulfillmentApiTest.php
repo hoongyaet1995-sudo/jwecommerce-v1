@@ -12,26 +12,17 @@ use App\Models\StoreSetting;
 use App\Models\User;
 use App\Services\CheckoutService;
 use App\Services\Shipping\EasyParcelFulfillmentService;
-use Illuminate\Contracts\Console\Kernel;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
 use Tests\TestCase;
+use Tests\Concerns\UsesIsolatedDatabaseMigrations;
 
 class EasyParcelFulfillmentApiTest extends TestCase
 {
-    use DatabaseMigrations;
-
-    public function runDatabaseMigrations(): void
-    {
-        $this->artisan('migrate:fresh', $this->migrateFreshUsing());
-        $this->app[Kernel::class]->setArtisan(null);
-        RefreshDatabaseState::$migrated = false;
-    }
+    use UsesIsolatedDatabaseMigrations;
 
     public function test_booking_same_quote_twice_creates_one_shipment_and_one_provider_booking(): void
     {

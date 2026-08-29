@@ -5,24 +5,15 @@ namespace Tests\Feature\Admin;
 use App\Models\ShippingProvider;
 use App\Models\ShippingProviderCredential;
 use App\Models\User;
-use Illuminate\Contracts\Console\Kernel;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
+use Tests\Concerns\UsesIsolatedDatabaseMigrations;
 
 class EasyParcelProviderApiTest extends TestCase
 {
-    use DatabaseMigrations;
-
-    public function runDatabaseMigrations(): void
-    {
-        $this->artisan('migrate:fresh', $this->migrateFreshUsing());
-        $this->app[Kernel::class]->setArtisan(null);
-        RefreshDatabaseState::$migrated = false;
-    }
+    use UsesIsolatedDatabaseMigrations;
 
     public function test_platform_credentials_are_never_bootstrapped_and_the_retired_browser_exchange_route_is_absent(): void
     {

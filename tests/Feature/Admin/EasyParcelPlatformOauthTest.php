@@ -5,26 +5,17 @@ namespace Tests\Feature\Admin;
 use App\Models\ShippingProvider;
 use App\Models\ShippingProviderCredential;
 use App\Models\User;
-use Illuminate\Contracts\Console\Kernel;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Tests\TestCase;
+use Tests\Concerns\UsesIsolatedDatabaseMigrations;
 
 class EasyParcelPlatformOauthTest extends TestCase
 {
-    use DatabaseMigrations;
-
-    public function runDatabaseMigrations(): void
-    {
-        $this->artisan('migrate:fresh', $this->migrateFreshUsing());
-        $this->app[Kernel::class]->setArtisan(null);
-        RefreshDatabaseState::$migrated = false;
-    }
+    use UsesIsolatedDatabaseMigrations;
 
     public function test_platform_environment_credentials_start_authorization_without_a_browser_configuration_payload(): void
     {
