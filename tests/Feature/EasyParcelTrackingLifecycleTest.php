@@ -474,6 +474,130 @@ class EasyParcelTrackingLifecycleTest extends TestCase
         self::assertSame('processing', $order->fresh()->status);
     }
 
+    public function test_tracking_success_with_matching_awb_but_mismatched_shipment_number_rejects_the_entire_batch_atomically(): void
+    {
+        $this->connectedProvider();
+        [, $validOrder] = $this->processingOrder('JW-TRACK-IDENTITY-SHIPMENT-VALID');
+        $validShipment = $this->easyParcelShipment($validOrder, 'AWB-IDENTITY-SHIPMENT-VALID');
+        [, $mismatchedOrder] = $this->processingOrder('JW-TRACK-IDENTITY-SHIPMENT-MISMATCH');
+        $mismatchedShipment = $this->easyParcelShipment(
+            $mismatchedOrder,
+            'AWB-IDENTITY-SHIPMENT-MISMATCH',
+        );
+        $before = $this->trackingMutationSnapshot(
+            [$validShipment, $mismatchedShipment],
+            [$validOrder, $mismatchedOrder],
+        );
+
+        $validResult = data_get($this->trackingResponse(
+            'AWB-IDENTITY-SHIPMENT-VALID',
+            [[
+                'event_date' => '2026-08-27 01:00:00',
+                'shipment_status_code' => 3,
+                'tracking_status' => 'Parcel collected by courier',
+                'location' => 'Penang Hub',
+            ]],
+        ), 'data.results.0');
+        $mismatchedResult = data_get($this->trackingResponse(
+            'AWB-IDENTITY-SHIPMENT-MISMATCH',
+            [[
+                'event_date' => '2026-08-27 02:00:00',
+                'shipment_status_code' => 5,
+                'tracking_status' => 'Delivered to recipient',
+                'location' => 'Kuala Lumpur',
+            ]],
+        ), 'data.results.0');
+        $mismatchedResult['shipment_number'] = 'ES-ANOTHER-SHIPMENT';
+
+        Http::fake([
+            EasyParcelTrackingService::TRACKING_URL => Http::response([
+                'status_code' => 200,
+                'request_id' => 'tracking-identity-shipment-mismatch',
+                'message' => '2 requests success, 0 request error.',
+                'data' => ['results' => [$validResult, $mismatchedResult]],
+            ]),
+        ]);
+
+        $exception = null;
+        try {
+            app(EasyParcelTrackingService::class)->syncNextBatch();
+        } catch (EasyParcelTrackingException $caught) {
+            $exception = $caught;
+        }
+
+        self::assertInstanceOf(EasyParcelTrackingException::class, $exception);
+        self::assertSame('EasyParcel tracking synchronization failed.', $exception->getMessage());
+        self::assertSame(
+            $before,
+            $this->trackingMutationSnapshot(
+                [$validShipment, $mismatchedShipment],
+                [$validOrder, $mismatchedOrder],
+            ),
+        );
+    }
+
+    public function test_tracking_success_with_matching_awb_but_mismatched_stored_order_number_rejects_the_entire_batch_atomically(): void
+    {
+        $this->connectedProvider();
+        [, $validOrder] = $this->processingOrder('JW-TRACK-IDENTITY-ORDER-VALID');
+        $validShipment = $this->easyParcelShipment($validOrder, 'AWB-IDENTITY-ORDER-VALID');
+        [, $mismatchedOrder] = $this->processingOrder('JW-TRACK-IDENTITY-ORDER-MISMATCH');
+        $mismatchedShipment = $this->easyParcelShipment(
+            $mismatchedOrder,
+            'AWB-IDENTITY-ORDER-MISMATCH',
+        );
+        $before = $this->trackingMutationSnapshot(
+            [$validShipment, $mismatchedShipment],
+            [$validOrder, $mismatchedOrder],
+        );
+
+        $validResult = data_get($this->trackingResponse(
+            'AWB-IDENTITY-ORDER-VALID',
+            [[
+                'event_date' => '2026-08-27 01:00:00',
+                'shipment_status_code' => 3,
+                'tracking_status' => 'Parcel collected by courier',
+                'location' => 'Penang Hub',
+            ]],
+        ), 'data.results.0');
+        $mismatchedResult = data_get($this->trackingResponse(
+            'AWB-IDENTITY-ORDER-MISMATCH',
+            [[
+                'event_date' => '2026-08-27 02:00:00',
+                'shipment_status_code' => 5,
+                'tracking_status' => 'Delivered to recipient',
+                'location' => 'Kuala Lumpur',
+            ]],
+        ), 'data.results.0');
+        $mismatchedResult['order_number'] = 'EI-ANOTHER-ORDER';
+
+        Http::fake([
+            EasyParcelTrackingService::TRACKING_URL => Http::response([
+                'status_code' => 200,
+                'request_id' => 'tracking-identity-order-mismatch',
+                'message' => '2 requests success, 0 request error.',
+                'data' => ['results' => [$validResult, $mismatchedResult]],
+            ]),
+        ]);
+
+        $exception = null;
+        try {
+            app(EasyParcelTrackingService::class)->syncNextBatch();
+        } catch (EasyParcelTrackingException $caught) {
+            $exception = $caught;
+        }
+
+        self::assertInstanceOf(EasyParcelTrackingException::class, $exception);
+        self::assertSame('EasyParcel tracking synchronization failed.', $exception->getMessage());
+        self::assertSame(
+            $before,
+            $this->trackingMutationSnapshot(
+                [$validShipment, $mismatchedShipment],
+                [$validOrder, $mismatchedOrder],
+            ),
+        );
+    }
+
     /**
      * @param  array{
      *     event_date: string,
@@ -849,6 +973,33 @@ class EasyParcelTrackingLifecycleTest extends TestCase
                 'latest_event_date' => $latest['event_date'] ?? '2026-08-28 11:00:00',
                 'status_log' => $events,
             ]]],
+        ];
+    }
+
+    /**
+     * @param  list<Shipment>  $shipments
+     * @param  list<Order>  $orders
+     * @return array<string, mixed>
+     */
+    private function trackingMutationSnapshot(array $shipments, array $orders): array
+    {
+        return [
+            'shipments' => collect($shipments)->mapWithKeys(fn (Shipment $shipment): array => [
+                $shipment->id => Shipment::query()->findOrFail($shipment->id)->getRawOriginal(),
+            ])->all(),
+            'shipment_events' => collect($shipments)->mapWithKeys(fn (Shipment $shipment): array => [
+                $shipment->id => $shipment->events()->reorder()->orderBy('id')->get()
+                    ->map(fn ($event): array => $event->getRawOriginal())
+                    ->all(),
+            ])->all(),
+            'orders' => collect($orders)->mapWithKeys(fn (Order $order): array => [
+                $order->id => Order::query()->findOrFail($order->id)->getRawOriginal(),
+            ])->all(),
+            'order_status_history' => collect($orders)->mapWithKeys(fn (Order $order): array => [
+                $order->id => $order->statusHistory()->reorder()->orderBy('id')->get()
+                    ->map(fn ($history): array => $history->getRawOriginal())
+                    ->all(),
+            ])->all(),
         ];
     }
 }

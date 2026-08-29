@@ -10,6 +10,7 @@ vi.mock('../../context/AdminContext', () => ({ useAdmin: () => mockedAdminContex
 import { CourierConfigModal } from './CourierConfigModal';
 import { CourierConfigTab } from './CourierConfigTab';
 import { ShippingDashboard } from './ShippingDashboard';
+import { ShippingOverviewTab } from './ShippingOverviewTab';
 import { TrackingAndWebhooksTab } from './TrackingAndWebhooksTab';
 import type { CourierConfig, EasyParcelWebhookReceiptRow } from '../../types/shipping';
 import { INITIAL_SHIPMENT_PARCELS } from '../../data/shippingData';
@@ -45,6 +46,15 @@ const trackingProps = (overrides: Record<string, unknown> = {}) => ({
 });
 
 const mountedRoots: Array<{ root: Root; host: HTMLDivElement }> = [];
+
+const metricCardText = (html: string, label: string): string => {
+  const host = document.createElement('div');
+  host.innerHTML = html;
+  const labelNode = Array.from(host.querySelectorAll('span'))
+    .find(node => node.textContent === label);
+
+  return labelNode?.closest('.cursor-pointer')?.textContent ?? '';
+};
 
 afterEach(() => {
   mountedRoots.splice(0).forEach(({ root, host }) => {
@@ -100,6 +110,62 @@ describe('ShippingDashboard provider action binding', () => {
     expect(html).toContain('Unavailable');
     expect(html).not.toContain('RM 0.00');
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*title="Wallet top-up is not available through this integration"/);
+  });
+
+  it('counts canonical shipped parcels in the ShippingDashboard in-transit badge', () => {
+    mockedAdminContext.value = {
+      courierConfigs: [],
+      smartRoutingRules: [],
+      shipmentParcels: [{
+        ...INITIAL_SHIPMENT_PARCELS[0],
+        id: 'canonical-shipped-dashboard',
+        status: 'shipped' as const,
+      }],
+      easyParcelWebhookReceipts: [],
+      easyParcelWebhookAuditStatus: 'ready',
+      easyParcelWebhookAuditError: null,
+      refreshEasyParcelWebhookReceipts: async () => undefined,
+      pickupRequests: [],
+      billingReconciliations: [],
+      shippingRates: [],
+      addToast: vi.fn(),
+    };
+
+    const html = renderToStaticMarkup(React.createElement(ShippingDashboard));
+
+    expect(html).toContain('1 In-Transit');
+  });
+
+  it('counts canonical shipped parcels in the ShippingOverview in-transit metric', () => {
+    const html = renderToStaticMarkup(React.createElement(ShippingOverviewTab, {
+      parcels: [{
+        ...INITIAL_SHIPMENT_PARCELS[0],
+        id: 'canonical-shipped-overview',
+        status: 'shipped' as const,
+      }],
+      couriers: [],
+      pickupRequests: [],
+      onNavigateTab: () => undefined,
+      onOpenPickupModal: () => undefined,
+    }));
+
+    expect(metricCardText(html, 'In-Transit Shipments')).toContain('1');
+  });
+
+  it('counts returned parcels in the ShippingOverview exceptions metric', () => {
+    const html = renderToStaticMarkup(React.createElement(ShippingOverviewTab, {
+      parcels: [{
+        ...INITIAL_SHIPMENT_PARCELS[0],
+        id: 'canonical-returned-overview',
+        status: 'returned' as const,
+      }],
+      couriers: [],
+      pickupRequests: [],
+      onNavigateTab: () => undefined,
+      onOpenPickupModal: () => undefined,
+    }));
+
+    expect(metricCardText(html, 'Exceptions & NITC')).toContain('1');
   });
 
   it('renders the unavailable EasyParcel card top-up control as disabled', () => {

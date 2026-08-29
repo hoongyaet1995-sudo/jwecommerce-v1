@@ -161,6 +161,19 @@ final class EasyParcelTrackingService
                 throw new EasyParcelTrackingException;
             }
 
+            if (! is_string($result['shipment_number'] ?? null)
+                || $result['shipment_number'] !== $shipment->provider_reference) {
+                throw new EasyParcelTrackingException;
+            }
+
+            $providerOrderReference = $shipment->provider_order_reference;
+            if (is_string($providerOrderReference)
+                && $providerOrderReference !== ''
+                && (! is_string($result['order_number'] ?? null)
+                    || $result['order_number'] !== $providerOrderReference)) {
+                throw new EasyParcelTrackingException;
+            }
+
             foreach ($logs as $log) {
                 $normalized[$shipment->id][] = $this->normalizeEvent($awb, $log);
             }

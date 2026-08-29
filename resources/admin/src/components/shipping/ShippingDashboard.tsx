@@ -117,7 +117,7 @@ export const ShippingDashboard: React.FC = () => {
 
   // Counts for badge notifications
   const pendingAwbCount = shipmentParcels.filter(p => p.status === 'pending').length;
-  const inTransitCount = shipmentParcels.filter(p => p.status === 'in_transit' || p.status === 'picked_up' || p.status === 'out_for_delivery').length;
+  const inTransitCount = shipmentParcels.filter(p => p.status === 'shipped' || p.status === 'in_transit' || p.status === 'picked_up' || p.status === 'out_for_delivery').length;
   const discrepancyCount = billingReconciliations.filter(b => b.reconciliationStatus === 'disputed').length;
   const connectedCouriersCount = courierConfigs.filter(c => c.isEnabled).length;
   const activeRatesCount = shippingRates.filter(r => r.isActive).length;
