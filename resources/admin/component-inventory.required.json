@@ -62,7 +62,7 @@
     "src/components/settings/PaymentSettingAdmin.tsx",
     "src/components/settings/ShopSettingsHub.tsx",
     "src/components/settings/SocialLinkSettingAdmin.tsx",
-    "src/components/settings/TaxZonesSettingAdmin.tsx",
+    "src/components/settings/TaxClassesSettingAdmin.tsx",
     "src/components/settings/UserLoginSettingAdmin.tsx",
     "src/components/settings/ZonesSettingAdmin.tsx",
     "src/components/shipping/BillingReconciliationTab.tsx",

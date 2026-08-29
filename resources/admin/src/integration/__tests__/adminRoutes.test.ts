@@ -47,6 +47,7 @@ const ALL_ADMIN_SECTIONS = [
   'settings-zones',
   'settings-currencies',
   'settings-order-total',
+  'settings-tax-classes',
   'settings-tax-zones',
   'reports',
   'reports-sales',
