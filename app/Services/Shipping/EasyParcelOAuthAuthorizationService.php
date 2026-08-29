@@ -92,6 +92,7 @@ final class EasyParcelOAuthAuthorizationService
             $authorizationCode,
             $redirectUri,
             $configurationVersion,
+            $state,
         )['verified'];
     }
 

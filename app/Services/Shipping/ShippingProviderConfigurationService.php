@@ -112,6 +112,7 @@ final class ShippingProviderConfigurationService
         string $authorizationCode,
         string $redirectUri,
         ?int $expectedConfigurationVersion = null,
+        ?string $state = null,
     ): array {
         $snapshot = $this->verificationSnapshot($expectedConfigurationVersion);
         $platformCredentials = $this->platformCredentials();
@@ -125,7 +126,7 @@ final class ShippingProviderConfigurationService
         }
 
         try {
-            $tokens = $this->client->verifyAuthorizationCode($platformCredentials, $authorizationCode, $redirectUri);
+            $tokens = $this->client->verifyAuthorizationCode($platformCredentials, $authorizationCode, $redirectUri, $state);
         } catch (EasyParcelVerificationException) {
             return ['verified' => false, 'status' => $this->applyFailure($snapshot)];
         }

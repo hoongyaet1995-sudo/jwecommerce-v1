@@ -58,6 +58,10 @@ class EasyParcelProviderApiTest extends TestCase
         $this->assertStringNotContainsString('connected-token', $raw);
         $this->assertStringNotContainsString('platform-secret', $raw);
         Http::assertSent(fn ($request) => $request->method() === 'POST'
+            && $request->url() === 'https://api.easyparcel.com/oauth/token'
+            && $request['grant_type'] === 'authorization_code'
+            && $request['state'] === $query['state']);
+        Http::assertSent(fn ($request) => $request->method() === 'POST'
             && $request->url() === 'https://api.easyparcel.com/open_api/2026-06/account/get_account_information'
             && $request->hasHeader('Authorization', 'Bearer connected-token'));
     }

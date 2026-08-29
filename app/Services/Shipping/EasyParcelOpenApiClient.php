@@ -29,7 +29,7 @@ final class EasyParcelOpenApiClient
      * @param  array{client_id: string, client_secret: string}  $credentials
      * @return array<string, int|string|null>
      */
-    public function verifyAuthorizationCode(array $credentials, string $authorizationCode, string $redirectUri): array
+    public function verifyAuthorizationCode(array $credentials, string $authorizationCode, string $redirectUri, ?string $state): array
     {
         try {
             $tokenResponse = Http::asForm()
@@ -41,6 +41,7 @@ final class EasyParcelOpenApiClient
                     'grant_type' => 'authorization_code',
                     'redirect_uri' => $redirectUri,
                     'code' => $authorizationCode,
+                    'state' => $state,
                 ]);
 
             $tokenPayload = $tokenResponse->json();
