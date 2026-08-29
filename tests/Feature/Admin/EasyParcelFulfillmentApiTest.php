@@ -17,8 +17,8 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
-use Tests\TestCase;
 use Tests\Concerns\UsesIsolatedDatabaseMigrations;
+use Tests\TestCase;
 
 class EasyParcelFulfillmentApiTest extends TestCase
 {
@@ -94,6 +94,47 @@ class EasyParcelFulfillmentApiTest extends TestCase
             ->assertDontSee('+60 12-345 6789', false);
 
         $this->assertDatabaseCount('shipments', 0);
+    }
+
+    public function test_easyparcel_shipments_keep_their_provider_lifecycle_in_the_five_shipping_queues(): void
+    {
+        $fixtures = [
+            ['ready', 'pending'],
+            ['shipped', 'shipped'],
+            ['transit', 'in_transit'],
+            ['delivered', 'delivered'],
+            ['failed', 'failed_delivery'],
+            ['returned', 'returned'],
+        ];
+
+        foreach ($fixtures as [$suffix, $shipmentStatus]) {
+            $order = $this->processingOrder(
+                "queue-{$suffix}@example.test",
+                'JW-QUEUE-'.strtoupper($suffix),
+            );
+            Shipment::query()->create([
+                'order_id' => $order->id,
+                'sequence' => 1,
+                'source' => 'easyparcel',
+                'carrier_name' => 'Aramex',
+                'tracking_number' => 'AWB-QUEUE-'.strtoupper($suffix),
+                'status' => $shipmentStatus,
+                'currency' => 'MYR',
+            ]);
+        }
+
+        $rows = collect($this->actingAs($this->superAdmin())
+            ->getJson('/admin/api/shipping/shipments')
+            ->assertOk()
+            ->json('data'))
+            ->keyBy('trackingNumber');
+
+        self::assertSame('ready_to_ship', data_get($rows, 'AWB-QUEUE-READY.status'));
+        self::assertSame('shipped', data_get($rows, 'AWB-QUEUE-SHIPPED.status'));
+        self::assertSame('in_transit', data_get($rows, 'AWB-QUEUE-TRANSIT.status'));
+        self::assertSame('delivered', data_get($rows, 'AWB-QUEUE-DELIVERED.status'));
+        self::assertSame('failed_delivery', data_get($rows, 'AWB-QUEUE-FAILED.status'));
+        self::assertSame('returned', data_get($rows, 'AWB-QUEUE-RETURNED.status'));
     }
 
     public function test_shipment_list_never_falls_back_to_customer_email_as_a_display_name(): void

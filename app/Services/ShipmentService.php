@@ -14,6 +14,16 @@ use InvalidArgumentException;
 
 class ShipmentService
 {
+    /** @var array<string, int> */
+    private const SHIPMENT_STATUS_RANK = [
+        'pending' => 10,
+        'shipped' => 20,
+        'in_transit' => 30,
+        'failed_delivery' => 40,
+        'returned' => 50,
+        'delivered' => 60,
+    ];
+
     /** @var list<string> */
     private const EASYPARCEL_EVENT_STATUSES = [
         'pending',
@@ -252,6 +262,10 @@ class ShipmentService
             return;
         }
 
+        if (! $this->deliveredEventCanAdvanceReturnedShipment($shipment, $event)) {
+            return;
+        }
+
         $this->advanceEasyParcelOrderToShipped($order, $shipment, $event->occurred_at);
         if ($order->status !== 'shipped') {
             return;
@@ -298,11 +312,36 @@ class ShipmentService
         $providerEvents = ShipmentEvent::query()
             ->where('shipment_id', $shipment->id)
             ->where('source', 'easyparcel');
-        $latest = (clone $providerEvents)
-            ->whereIn('status', ['pending', 'shipped', 'in_transit', 'delivered', 'failed_delivery', 'returned'])
-            ->orderByDesc('occurred_at')
-            ->orderByDesc('id')
-            ->first();
+        $projectableEvents = (clone $providerEvents)
+            ->whereIn('status', array_keys(self::SHIPMENT_STATUS_RANK))
+            ->get();
+        $projectedStatus = $shipment->status;
+
+        if ($projectedStatus !== 'delivered') {
+            if ($projectedStatus === 'returned') {
+                $latestReturn = (clone $providerEvents)
+                    ->where('status', 'returned')
+                    ->orderByDesc('occurred_at')
+                    ->orderByDesc('id')
+                    ->first();
+                $hasLaterDelivery = $latestReturn !== null
+                    && $projectableEvents->contains(fn (ShipmentEvent $event): bool => $event->status === 'delivered'
+                        && $event->occurred_at->gt($latestReturn->occurred_at));
+
+                if ($hasLaterDelivery) {
+                    $projectedStatus = 'delivered';
+                }
+            } else {
+                $currentRank = self::SHIPMENT_STATUS_RANK[$projectedStatus] ?? 0;
+                foreach ($projectableEvents as $event) {
+                    if (self::SHIPMENT_STATUS_RANK[$event->status] > $currentRank) {
+                        $projectedStatus = $event->status;
+                        $currentRank = self::SHIPMENT_STATUS_RANK[$event->status];
+                    }
+                }
+            }
+        }
+
         $firstDispatch = (clone $providerEvents)
             ->whereIn('status', ['shipped', 'in_transit', 'delivered'])
             ->oldest('occurred_at')
@@ -315,9 +354,28 @@ class ShipmentService
             ->first();
 
         $shipment->forceFill([
-            'status' => $latest?->status ?? $shipment->status,
+            'status' => $projectedStatus,
             'dispatched_at' => $shipment->dispatched_at ?? $firstDispatch?->occurred_at,
             'delivered_at' => $shipment->delivered_at ?? $firstDelivery?->occurred_at,
         ])->save();
+    }
+
+    private function deliveredEventCanAdvanceReturnedShipment(
+        Shipment $shipment,
+        ShipmentEvent $event,
+    ): bool {
+        if ($shipment->status !== 'returned') {
+            return true;
+        }
+
+        $latestReturn = ShipmentEvent::query()
+            ->where('shipment_id', $shipment->id)
+            ->where('source', 'easyparcel')
+            ->where('status', 'returned')
+            ->orderByDesc('occurred_at')
+            ->orderByDesc('id')
+            ->first();
+
+        return $latestReturn !== null && $event->occurred_at->gt($latestReturn->occurred_at);
     }
 }

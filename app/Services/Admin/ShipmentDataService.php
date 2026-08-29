@@ -53,9 +53,7 @@ class ShipmentDataService
             'courier' => $shipment->source === 'easyparcel' ? 'easyparcel' : ($shipment->carrier_code ?? 'manual'),
             'serviceType' => $shipment->service_name ?? $shipment->carrier_name,
             'trackingNumber' => $shipment->tracking_number ?? '',
-            'status' => $shipment->source === 'easyparcel' && filled($shipment->tracking_number)
-                ? 'ready_to_ship'
-                : $shipment->status,
+            'status' => $this->fulfillmentStatus($shipment),
             'paymentMode' => $order->payments->first()?->gateway === 'cod' ? 'cod' : 'prepaid',
             'codAmount' => $order->payments->first()?->gateway === 'cod' ? $order->total / 100 : null,
             'createdAt' => $shipment->created_at?->toIso8601String(),
@@ -128,6 +126,21 @@ class ShipmentDataService
             'isWeightDiscrepancy' => false,
             'trackingEvents' => [],
         ];
+    }
+
+    private function fulfillmentStatus(Shipment $shipment): string
+    {
+        if ($shipment->source !== 'easyparcel') {
+            return $shipment->status;
+        }
+
+        if (blank($shipment->tracking_number)) {
+            return 'pending';
+        }
+
+        return in_array($shipment->status, ['pending', 'provider_update'], true)
+            ? 'ready_to_ship'
+            : $shipment->status;
     }
 
     /** @return array<string, float>|null */

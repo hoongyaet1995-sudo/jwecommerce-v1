@@ -55,7 +55,9 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
     // Status
     if (activeStatusFilter !== 'all') {
       if (activeStatusFilter === 'in_transit') {
-        if (p.status !== 'in_transit' && p.status !== 'picked_up' && p.status !== 'out_for_delivery') return false;
+        if (p.status !== 'shipped' && p.status !== 'in_transit' && p.status !== 'picked_up' && p.status !== 'out_for_delivery') return false;
+      } else if (activeStatusFilter === 'failed_delivery') {
+        if (p.status !== 'failed_delivery' && p.status !== 'returned') return false;
       } else if (p.status !== activeStatusFilter) {
         return false;
       }
@@ -126,6 +128,8 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
         return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300">Delivered</span>;
       case 'failed_delivery':
         return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300">Delivery Exception</span>;
+      case 'returned':
+        return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300">Returned</span>;
       default:
         return null;
     }
@@ -141,9 +145,9 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
             { id: 'all', label: 'All Shipments', count: parcels.length },
             { id: 'pending', label: 'Pending AWB', count: parcels.filter(p => p.status === 'pending').length },
             { id: 'ready_to_ship', label: 'Ready to Ship', count: parcels.filter(p => p.status === 'ready_to_ship').length },
-            { id: 'in_transit', label: 'In Transit', count: parcels.filter(p => p.status === 'in_transit' || p.status === 'picked_up' || p.status === 'out_for_delivery').length },
+            { id: 'in_transit', label: 'In Transit', count: parcels.filter(p => p.status === 'shipped' || p.status === 'in_transit' || p.status === 'picked_up' || p.status === 'out_for_delivery').length },
             { id: 'delivered', label: 'Delivered', count: parcels.filter(p => p.status === 'delivered').length },
-            { id: 'failed_delivery', label: 'Exceptions (NITC)', count: parcels.filter(p => p.status === 'failed_delivery').length },
+            { id: 'failed_delivery', label: 'Exceptions (NITC)', count: parcels.filter(p => p.status === 'failed_delivery' || p.status === 'returned').length },
           ].map((tab) => (
             <button
               key={tab.id}
