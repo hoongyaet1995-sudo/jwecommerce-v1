@@ -72,6 +72,9 @@ export const ShippingDashboard: React.FC = () => {
     reorderSmartRoutingRules,
     shipmentParcels = [],
     easyParcelWebhookReceipts = [],
+    easyParcelWebhookAuditStatus,
+    easyParcelWebhookAuditError,
+    refreshEasyParcelWebhookReceipts,
     generateShipmentAWB,
     batchGenerateAWB,
     updateShipmentStatus,
@@ -290,7 +293,10 @@ export const ShippingDashboard: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setActiveTab('tracking')}
+          onClick={() => {
+            setActiveTab('tracking');
+            void refreshEasyParcelWebhookReceipts().catch(() => undefined);
+          }}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
             activeTab === 'tracking'
               ? 'bg-indigo-600 text-white shadow-xs'
@@ -340,7 +346,10 @@ export const ShippingDashboard: React.FC = () => {
               else if (tab === 'fulfillment') setActiveTab('fulfillment');
               else if (tab === 'routing') setActiveTab('routing');
               else if (tab === 'couriers') setActiveTab('couriers');
-              else if (tab === 'tracking') setActiveTab('tracking');
+              else if (tab === 'tracking') {
+                setActiveTab('tracking');
+                void refreshEasyParcelWebhookReceipts().catch(() => undefined);
+              }
             }}
             onOpenPickupModal={explainPickupUnavailable}
           />
@@ -392,8 +401,11 @@ export const ShippingDashboard: React.FC = () => {
           <TrackingAndWebhooksTab
             parcels={shipmentParcels}
             webhookReceipts={easyParcelWebhookReceipts}
+            webhookAuditStatus={easyParcelWebhookAuditStatus}
+            webhookAuditError={easyParcelWebhookAuditError}
             webhookEndpointConfigured={Boolean(window.__JW_ADMIN__?.easyParcelWebhookConfigured)}
             providerConnected={easyParcelConnected}
+            onRefreshWebhookAudit={refreshEasyParcelWebhookReceipts}
             onSimulateWebhook={simulateCourierWebhookEvent}
             onOpenTrackingModal={(parcel) => setActiveTrackingParcel(parcel)}
           />

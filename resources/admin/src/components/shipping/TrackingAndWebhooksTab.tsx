@@ -13,13 +13,16 @@ import {
   ArrowRight,
   Eye
 } from 'lucide-react';
-import { EasyParcelWebhookReceiptRow, ShipmentParcel } from '../../types/shipping';
+import { EasyParcelWebhookAuditStatus, EasyParcelWebhookReceiptRow, ShipmentParcel } from '../../types/shipping';
 
 interface TrackingAndWebhooksTabProps {
   parcels: ShipmentParcel[];
   webhookReceipts: EasyParcelWebhookReceiptRow[];
+  webhookAuditStatus: EasyParcelWebhookAuditStatus;
+  webhookAuditError: string | null;
   webhookEndpointConfigured: boolean;
   providerConnected: boolean;
+  onRefreshWebhookAudit: () => Promise<void>;
   onSimulateWebhook: (parcelId: string, eventType: string, location: string, description: string) => void;
   onOpenTrackingModal: (parcel: ShipmentParcel) => void;
 }
@@ -27,8 +30,11 @@ interface TrackingAndWebhooksTabProps {
 export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
   parcels,
   webhookReceipts,
+  webhookAuditStatus,
+  webhookAuditError,
   webhookEndpointConfigured,
   providerConnected,
+  onRefreshWebhookAudit,
   onSimulateWebhook,
   onOpenTrackingModal
 }) => {
@@ -81,12 +87,20 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
 
         <div className="flex items-center gap-2">
           <span className="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-semibold border border-purple-200 dark:border-purple-800">
-            {providerConnected
-              ? 'EasyParcel queue connected'
-              : webhookEndpointConfigured
-                ? 'Webhook endpoint configured'
-                : 'Webhook endpoint not configured'}
+            {providerConnected ? 'Provider authorized' : 'Provider not authorized'}
           </span>
+          <span className="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-semibold border border-purple-200 dark:border-purple-800">
+            {webhookEndpointConfigured ? 'Webhook endpoint configured' : 'Webhook endpoint not configured'}
+          </span>
+          <button
+            type="button"
+            disabled={webhookAuditStatus === 'loading'}
+            onClick={() => void onRefreshWebhookAudit().catch(() => undefined)}
+            className="px-3 py-1.5 rounded-xl bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-semibold border border-neutral-200 dark:border-neutral-700 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${webhookAuditStatus === 'loading' ? 'animate-spin' : ''}`} />
+            {webhookAuditStatus === 'loading' ? 'Refreshing audit' : 'Refresh audit'}
+          </button>
         </div>
       </div>
 
@@ -226,11 +240,22 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
             </div>
 
             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-              {allEvents.length === 0 ? (
-                <div className="p-8 text-center text-xs text-neutral-400">
-                  No shipment events have been recorded yet. Record an authorized warehouse milestone on the left.
+              {webhookAuditStatus === 'loading' && (
+                <div className="p-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-800/40 text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-2">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  Loading EasyParcel webhook audit…
                 </div>
-              ) : (
+              )}
+              {webhookAuditStatus === 'error' && (
+                <div className="p-3.5 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50/70 dark:bg-rose-950/20 text-xs text-rose-700 dark:text-rose-300">
+                  <strong>Webhook audit unavailable.</strong> {webhookAuditError || 'EasyParcel webhook audit could not be loaded.'}
+                </div>
+              )}
+              {webhookAuditStatus === 'ready' && allEvents.length === 0 ? (
+                <div className="p-8 text-center text-xs text-neutral-400">
+                  No provider receipts received yet. Record an authorized warehouse milestone on the left when a manual event is required.
+                </div>
+              ) : allEvents.length > 0 ? (
                 allEvents.map((entry) => {
                   if (entry.kind === 'provider') {
                     const { receipt } = entry;
@@ -264,6 +289,9 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
                             <p className="text-xs text-neutral-600 dark:text-neutral-300 mt-0.5">
                               Queue state: {receipt.state} · {receipt.attemptCount} {receipt.attemptCount === 1 ? 'attempt' : 'attempts'}
                               {receipt.errorCode ? ` · ${receipt.errorCode}` : ''}
+                            </p>
+                            <p className="text-[10px] text-neutral-400 mt-1">
+                              {receipt.processedAt ? `Reconciled at ${receipt.processedAt}` : 'Awaiting reconciliation'}
                             </p>
 
                             <div className="flex items-center gap-3 text-[10px] text-neutral-400 mt-1">
@@ -345,14 +373,20 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
                     </div>
                   );
                 })
-              )}
+              ) : null}
             </div>
           </div>
 
           <div className="mt-4 pt-3 border-t border-neutral-200 dark:border-neutral-800 text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center justify-between">
             <span>Provider webhook validation: <strong>{webhookEndpointConfigured ? 'Endpoint configured' : 'Endpoint not configured'}</strong></span>
             <span className="font-mono">
-              {latestReceipt ? `Latest: ${latestReceipt.state} · ${latestReceipt.receivedAt}` : 'No provider receipts received'}
+              {webhookAuditStatus === 'loading'
+                ? 'Loading provider receipts'
+                : webhookAuditStatus === 'error'
+                  ? 'Webhook audit unavailable'
+                  : latestReceipt
+                    ? `Latest: ${latestReceipt.state} · ${latestReceipt.processedAt || 'Awaiting reconciliation'}`
+                    : 'No provider receipts received yet'}
             </span>
           </div>
         </div>

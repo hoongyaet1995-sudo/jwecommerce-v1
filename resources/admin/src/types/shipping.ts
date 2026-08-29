@@ -170,6 +170,8 @@ export interface EasyParcelWebhookReceiptRow {
   errorCode: string | null;
 }
 
+export type EasyParcelWebhookAuditStatus = 'loading' | 'ready' | 'error';
+
 export interface PickupRequest {
   id: string;
   pickupRefNo: string;

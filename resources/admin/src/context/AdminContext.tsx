@@ -69,6 +69,7 @@ import {
   SmartRoutingRule,
   ShipmentParcel,
   EasyParcelWebhookReceiptRow,
+  EasyParcelWebhookAuditStatus,
   PickupRequest,
   BillingReconciliationRecord,
   GeneralShippingRate,
@@ -310,6 +311,9 @@ interface AdminContextType {
 
   shipmentParcels: ShipmentParcel[];
   easyParcelWebhookReceipts: EasyParcelWebhookReceiptRow[];
+  easyParcelWebhookAuditStatus: EasyParcelWebhookAuditStatus;
+  easyParcelWebhookAuditError: string | null;
+  refreshEasyParcelWebhookReceipts: () => Promise<void>;
   selectedParcelId: string | null;
   setSelectedParcelId: (id: string | null) => void;
   generateShipmentAWB: (parcelId: string, courierCode?: string) => void;
@@ -578,24 +582,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     let active = true;
-    void fetchEasyParcelWebhookReceipts(laravelBootstrap).then((loaded) => {
-      if (active) setEasyParcelWebhookReceipts(loaded);
-    }).catch((error) => {
-      if (active) {
-        addToast({
-          type: 'error',
-          title: 'Webhook Audit Unavailable',
-          message: error instanceof Error ? error.message : 'EasyParcel webhook audit could not be loaded.',
-        });
-      }
-    });
-    return () => { active = false; };
-  // Laravel emits this immutable bootstrap once per admin app load.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    let active = true;
     void fetchReviewsData(laravelBootstrap).then((loadedReviews) => {
       if (active) setReviews(loadedReviews);
     }).catch(() => {
@@ -749,6 +735,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [smartRoutingRules, setSmartRoutingRules] = useState<SmartRoutingRule[]>([]);
   const [shipmentParcels, setShipmentParcels] = useState<ShipmentParcel[]>([]);
   const [easyParcelWebhookReceipts, setEasyParcelWebhookReceipts] = useState<EasyParcelWebhookReceiptRow[]>([]);
+  const [easyParcelWebhookAuditStatus, setEasyParcelWebhookAuditStatus] = useState<EasyParcelWebhookAuditStatus>('loading');
+  const [easyParcelWebhookAuditError, setEasyParcelWebhookAuditError] = useState<string | null>(null);
   const [pickupRequests, setPickupRequests] = useState<PickupRequest[]>([]);
   const [billingReconciliations, setBillingReconciliations] = useState<BillingReconciliationRecord[]>([]);
   const [shippingRates, setShippingRates] = useState<GeneralShippingRate[]>([]);
@@ -2086,6 +2074,30 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const provider = await fetchEasyParcelProvider(laravelBootstrap);
     setCourierConfigs(courierConfigsFromEasyParcel(provider));
   };
+
+  const refreshEasyParcelWebhookReceipts = async (): Promise<void> => {
+    setEasyParcelWebhookAuditStatus('loading');
+    setEasyParcelWebhookAuditError(null);
+
+    try {
+      setEasyParcelWebhookReceipts(await fetchEasyParcelWebhookReceipts(laravelBootstrap));
+      setEasyParcelWebhookAuditStatus('ready');
+    } catch (error) {
+      const failure = error instanceof Error
+        ? error
+        : new Error('EasyParcel webhook audit could not be loaded.');
+      setEasyParcelWebhookAuditError(failure.message);
+      setEasyParcelWebhookAuditStatus('error');
+      addToast({ type: 'error', title: 'Webhook Audit Unavailable', message: failure.message });
+      throw failure;
+    }
+  };
+
+  useEffect(() => {
+    void refreshEasyParcelWebhookReceipts().catch(() => undefined);
+  // Laravel emits this immutable bootstrap once per admin app load.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const saveCourierConfig = (config: CourierConfig) => {
     if (config.courierCode !== 'easyparcel') {
@@ -3631,7 +3643,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
     setCourierConfigs([]);
     setSmartRoutingRules([]);
     void fetchShipments(laravelBootstrap).then(setShipmentParcels).catch(() => undefined);
-    void fetchEasyParcelWebhookReceipts(laravelBootstrap).then(setEasyParcelWebhookReceipts).catch(() => undefined);
+    void refreshEasyParcelWebhookReceipts().catch(() => undefined);
     setPickupRequests([]);
     setBillingReconciliations([]);
     void fetchCommerceSettings(laravelBootstrap).then(document => {
@@ -3781,6 +3793,9 @@ Would you like me to drill down into customer records, inventory allocation, or 
         reorderSmartRoutingRules,
         shipmentParcels,
         easyParcelWebhookReceipts,
+        easyParcelWebhookAuditStatus,
+        easyParcelWebhookAuditError,
+        refreshEasyParcelWebhookReceipts,
         selectedParcelId,
         setSelectedParcelId,
         generateShipmentAWB,

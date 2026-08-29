@@ -46,4 +46,22 @@ describe('EasyParcel webhook receipt client', () => {
       'EasyParcel webhook audit could not be loaded.',
     );
   });
+
+  it('performs a fresh request and preserves nullable processedAt on every refresh', async () => {
+    const first = [{
+      id: 'receipt-1', topic: 'shipment.tracking.update', state: 'queued' as const,
+      shipmentId: '9', orderNumber: 'JW-1009', trackingNumber: 'AWB-1009',
+      receivedAt: '2026-08-29T10:00:00+08:00', processedAt: null,
+      attemptCount: 1, errorCode: null,
+    }];
+    const second = [{ ...first[0], id: 'receipt-2', state: 'processed' as const, processedAt: '2026-08-29T10:01:00+08:00' }];
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: first }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: second }) });
+    vi.stubGlobal('window', { fetch });
+
+    await expect(fetchEasyParcelWebhookReceipts(bootstrap)).resolves.toEqual(first);
+    await expect(fetchEasyParcelWebhookReceipts(bootstrap)).resolves.toEqual(second);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
 });
