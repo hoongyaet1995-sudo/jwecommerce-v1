@@ -71,6 +71,7 @@ export const ShippingDashboard: React.FC = () => {
     toggleSmartRoutingRule,
     reorderSmartRoutingRules,
     shipmentParcels = [],
+    easyParcelWebhookReceipts = [],
     generateShipmentAWB,
     batchGenerateAWB,
     updateShipmentStatus,
@@ -117,6 +118,7 @@ export const ShippingDashboard: React.FC = () => {
   const discrepancyCount = billingReconciliations.filter(b => b.reconciliationStatus === 'disputed').length;
   const connectedCouriersCount = courierConfigs.filter(c => c.isEnabled).length;
   const activeRatesCount = shippingRates.filter(r => r.isActive).length;
+  const easyParcelConnected = courierConfigs.some(c => c.courierCode === 'easyparcel' && c.status === 'connected');
 
   const handleOpenEditRule = (rule: SmartRoutingRule) => {
     setEditingRule(rule);
@@ -389,6 +391,9 @@ export const ShippingDashboard: React.FC = () => {
         {activeTab === 'tracking' && (
           <TrackingAndWebhooksTab
             parcels={shipmentParcels}
+            webhookReceipts={easyParcelWebhookReceipts}
+            webhookEndpointConfigured={Boolean(window.__JW_ADMIN__?.easyParcelWebhookConfigured)}
+            providerConnected={easyParcelConnected}
             onSimulateWebhook={simulateCourierWebhookEvent}
             onOpenTrackingModal={(parcel) => setActiveTrackingParcel(parcel)}
           />

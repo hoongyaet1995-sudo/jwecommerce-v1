@@ -157,6 +157,19 @@ export interface ShipmentParcel {
   trackingEvents: ShipmentTrackingEvent[];
 }
 
+export interface EasyParcelWebhookReceiptRow {
+  id: string;
+  topic: string;
+  state: 'received' | 'queued' | 'processed' | 'retrying' | 'failed' | 'ignored' | 'unmatched';
+  shipmentId: string | null;
+  orderNumber: string | null;
+  trackingNumber: string | null;
+  receivedAt: string;
+  processedAt: string | null;
+  attemptCount: number;
+  errorCode: string | null;
+}
+
 export interface PickupRequest {
   id: string;
   pickupRefNo: string;

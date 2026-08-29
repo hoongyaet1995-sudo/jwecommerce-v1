@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Domain\Shipping\ShippingPermission;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Shipment;
+use App\Models\ShippingWebhookReceipt;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -133,6 +135,122 @@ class ShipmentApiTest extends TestCase
             'trackingNumber' => 'UNIQUE-1001',
         ])->assertUnprocessable()
             ->assertJsonValidationErrors('trackingNumber');
+    }
+
+    public function test_authorized_shipping_viewer_sees_only_safe_webhook_receipt_fields(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => false]);
+        $admin->permissions()->create(['permission' => ShippingPermission::VIEW]);
+        $order = $this->processingOrder();
+        $shipment = Shipment::query()->create([
+            'order_id' => $order->id,
+            'source' => 'easyparcel',
+            'carrier_name' => 'EasyParcel',
+            'tracking_number' => 'AWB-SAFE-01',
+            'status' => 'in_transit',
+        ]);
+        $receivedAt = now()->startOfSecond();
+        $processedAt = $receivedAt->copy()->addSecond();
+        $receipt = ShippingWebhookReceipt::query()->create([
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'topic' => 'shipment.tracking.update',
+            'processing_state' => 'processed',
+            'payload_hash' => str_repeat('a', 64),
+            'shipment_id' => $shipment->id,
+            'correlation_snapshot' => [
+                'awb_number' => 'AWB-SAFE-01',
+                'receiver_email' => 'must-not-serialize@example.test',
+                'receiver_phone' => '+60111111111',
+                'receiver_address' => 'Must not serialize',
+                'raw_body' => 'must-not-serialize',
+            ],
+            'attempt_count' => 2,
+            'last_error' => null,
+            'received_at' => $receivedAt,
+            'processed_at' => $processedAt,
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson('/admin/api/shipping/webhook-receipts')
+            ->assertOk()
+            ->assertExactJson([
+                'data' => [[
+                    'id' => (string) $receipt->id,
+                    'topic' => 'shipment.tracking.update',
+                    'state' => 'processed',
+                    'shipmentId' => (string) $shipment->id,
+                    'orderNumber' => $order->number,
+                    'trackingNumber' => 'AWB-SAFE-01',
+                    'receivedAt' => $receivedAt->toIso8601String(),
+                    'processedAt' => $processedAt->toIso8601String(),
+                    'attemptCount' => 2,
+                    'errorCode' => null,
+                ]],
+            ]);
+    }
+
+    public function test_webhook_receipt_read_model_returns_only_the_newest_one_hundred_rows(): void
+    {
+        $admin = $this->superAdmin();
+
+        foreach (range(1, 101) as $index) {
+            ShippingWebhookReceipt::query()->create([
+                'provider' => 'easyparcel',
+                'environment' => 'sandbox',
+                'topic' => 'shipment.tracking.update',
+                'processing_state' => 'received',
+                'payload_hash' => hash('sha256', 'receipt-'.$index),
+                'correlation_snapshot' => ['awb_number' => 'AWB-'.$index],
+                'received_at' => now()->addSeconds($index),
+            ]);
+        }
+        ShippingWebhookReceipt::query()->create([
+            'provider' => 'another-provider',
+            'environment' => 'sandbox',
+            'topic' => 'shipment.tracking.update',
+            'processing_state' => 'received',
+            'payload_hash' => hash('sha256', 'other-provider-receipt'),
+            'correlation_snapshot' => ['awb_number' => 'AWB-OTHER-PROVIDER'],
+            'received_at' => now()->addMinutes(10),
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->getJson('/admin/api/shipping/webhook-receipts')
+            ->assertOk()
+            ->assertJsonCount(100, 'data');
+
+        $this->assertSame('AWB-101', $response->json('data.0.trackingNumber'));
+        $this->assertSame('AWB-2', $response->json('data.99.trackingNumber'));
+    }
+
+    public function test_webhook_receipt_read_model_requires_admin_authentication_and_shipping_view_permission(): void
+    {
+        $this->getJson('/admin/api/shipping/webhook-receipts')->assertUnauthorized();
+
+        $this->actingAs(User::factory()->create(['is_admin' => false]))
+            ->getJson('/admin/api/shipping/webhook-receipts')
+            ->assertUnauthorized();
+
+        $this->actingAs(User::factory()->create(['is_admin' => true, 'is_super_admin' => false]))
+            ->getJson('/admin/api/shipping/webhook-receipts')
+            ->assertForbidden();
+    }
+
+    public function test_admin_bootstrap_exposes_safe_webhook_receipt_configuration_without_the_endpoint_token(): void
+    {
+        config(['services.easyparcel.webhook_path_token' => 'must-not-serialize-webhook-token']);
+
+        $response = $this->actingAs($this->superAdmin())
+            ->get('/admin/shipping')
+            ->assertOk();
+
+        preg_match('/window\.__JW_ADMIN__\s*=\s*(\{.*\});/sU', $response->getContent(), $matches);
+        $bootstrap = json_decode($matches[1] ?? '{}', true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertSame(route('admin.api.shipping.webhook-receipts.index'), $bootstrap['easyParcelWebhookReceiptsUrl'] ?? null);
+        $this->assertTrue($bootstrap['easyParcelWebhookConfigured'] ?? false);
+        $this->assertStringNotContainsString('must-not-serialize-webhook-token', $response->getContent());
     }
 
     private function superAdmin(): User

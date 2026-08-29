@@ -45,6 +45,8 @@ class AdminAppController extends Controller
             'menusUrl' => route('admin.api.menus.index'),
             'ordersUrl' => route('admin.api.orders.index'),
             'shipmentsUrl' => route('admin.api.shipping.shipments.index'),
+            'easyParcelWebhookReceiptsUrl' => route('admin.api.shipping.webhook-receipts.index'),
+            'easyParcelWebhookConfigured' => filled(config('services.easyparcel.webhook_path_token')),
             'easyParcelProviderUrl' => route('admin.api.shipping.providers.easyparcel.show'),
             'easyParcelProviderAuthorizeUrl' => route('admin.api.shipping.providers.easyparcel.authorize'),
             'easyParcelConnection' => $request->session()->get('easyparcelConnection'),

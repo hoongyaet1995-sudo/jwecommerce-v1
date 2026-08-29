@@ -13,16 +13,22 @@ import {
   ArrowRight,
   Eye
 } from 'lucide-react';
-import { ShipmentParcel } from '../../types/shipping';
+import { EasyParcelWebhookReceiptRow, ShipmentParcel } from '../../types/shipping';
 
 interface TrackingAndWebhooksTabProps {
   parcels: ShipmentParcel[];
+  webhookReceipts: EasyParcelWebhookReceiptRow[];
+  webhookEndpointConfigured: boolean;
+  providerConnected: boolean;
   onSimulateWebhook: (parcelId: string, eventType: string, location: string, description: string) => void;
   onOpenTrackingModal: (parcel: ShipmentParcel) => void;
 }
 
 export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
   parcels,
+  webhookReceipts,
+  webhookEndpointConfigured,
+  providerConnected,
   onSimulateWebhook,
   onOpenTrackingModal
 }) => {
@@ -39,17 +45,23 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
     onSimulateWebhook(selectedParcelId, customEvent, customLocation, customDesc);
   };
 
-  // Collect all recent tracking events across parcels
-  const allEvents = parcels.flatMap(p => 
+  // Collect shipment lifecycle events and the safe provider receipt projection in one audit stream.
+  const shipmentEvents = parcels.flatMap(p =>
     (p.trackingEvents || []).map(evt => ({
-      ...evt,
-      parcelId: p.id,
-      orderNumber: p.orderNumber,
-      trackingNumber: p.trackingNumber,
-      courier: p.courier,
-      customerName: p.customerName
+      kind: 'shipment' as const,
+      timestamp: evt.timestamp,
+      event: evt,
+      parcel: p,
     }))
-  ).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  );
+  const providerEvents = webhookReceipts.map(receipt => ({
+    kind: 'provider' as const,
+    timestamp: receipt.receivedAt,
+    receipt,
+  }));
+  const allEvents = [...shipmentEvents, ...providerEvents]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const latestReceipt = webhookReceipts[0] ?? null;
 
   return (
     <div className="space-y-6">
@@ -61,13 +73,19 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
             Shipment Event Audit Trail
           </h3>
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-            Record authorized warehouse milestones now; provider webhooks remain unavailable until an EasyParcel integration is configured.
+            {webhookEndpointConfigured
+              ? 'EasyParcel webhook receipts are sanitized and reconciled alongside authorized warehouse milestones.'
+              : 'Authorized warehouse milestones remain available; the EasyParcel webhook endpoint is not configured.'}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <span className="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-semibold border border-purple-200 dark:border-purple-800">
-            Manual audit mode
+            {providerConnected
+              ? 'EasyParcel queue connected'
+              : webhookEndpointConfigured
+                ? 'Webhook endpoint configured'
+                : 'Webhook endpoint not configured'}
           </span>
         </div>
       </div>
@@ -213,63 +231,129 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
                   No shipment events have been recorded yet. Record an authorized warehouse milestone on the left.
                 </div>
               ) : (
-                allEvents.map((evt, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-800/40 flex items-start justify-between gap-3 hover:border-blue-500/40 transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold text-xs shrink-0">
-                        <Truck className="w-4 h-4" />
-                      </div>
+                allEvents.map((entry) => {
+                  if (entry.kind === 'provider') {
+                    const { receipt } = entry;
+                    const receiptParcel = receipt.shipmentId === null
+                      ? null
+                      : parcels.find(parcel => parcel.id === receipt.shipmentId) ?? null;
 
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-xs text-neutral-900 dark:text-neutral-100">
-                            {evt.status}
-                          </span>
-                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300">
-                            {evt.trackingNumber || 'AWB-PENDING'}
-                          </span>
+                    return (
+                      <div
+                        key={`provider-${receipt.id}`}
+                        className="p-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-800/40 flex items-start justify-between gap-3 hover:border-blue-500/40 transition-colors"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 flex items-center justify-center font-bold text-xs shrink-0">
+                            <Code className="w-4 h-4" />
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-xs text-neutral-900 dark:text-neutral-100">
+                                {receipt.topic}
+                              </span>
+                              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">
+                                Provider receipt
+                              </span>
+                              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300">
+                                {receipt.trackingNumber || 'AWB-UNMATCHED'}
+                              </span>
+                            </div>
+
+                            <p className="text-xs text-neutral-600 dark:text-neutral-300 mt-0.5">
+                              Queue state: {receipt.state} · {receipt.attemptCount} {receipt.attemptCount === 1 ? 'attempt' : 'attempts'}
+                              {receipt.errorCode ? ` · ${receipt.errorCode}` : ''}
+                            </p>
+
+                            <div className="flex items-center gap-3 text-[10px] text-neutral-400 mt-1">
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                EasyParcel sandbox receipt
+                              </span>
+                              <span>•</span>
+                              <span>{receipt.orderNumber ? `Order #${receipt.orderNumber}` : 'Shipment not matched'}</span>
+                            </div>
+                          </div>
                         </div>
 
-                        <p className="text-xs text-neutral-600 dark:text-neutral-300 mt-0.5">
-                          {evt.description}
-                        </p>
-
-                        <div className="flex items-center gap-3 text-[10px] text-neutral-400 mt-1">
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {evt.location}
+                        <div className="text-right shrink-0">
+                          <span className="text-[10px] font-mono text-neutral-400 block">
+                            {receipt.receivedAt}
                           </span>
-                          <span>•</span>
-                          <span>Order #{evt.orderNumber} ({evt.customerName})</span>
+                          {receiptParcel && (
+                            <button
+                              onClick={() => onOpenTrackingModal(receiptParcel)}
+                              className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-flex items-center gap-0.5 font-medium"
+                            >
+                              <Eye className="w-3 h-3" /> View Parcel
+                            </button>
+                          )}
                         </div>
                       </div>
-                    </div>
+                    );
+                  }
 
-                    <div className="text-right shrink-0">
-                      <span className="text-[10px] font-mono text-neutral-400 block">
-                        {evt.timestamp}
-                      </span>
-                      {selectedParcel && (
+                  const { event, parcel } = entry;
+
+                  return (
+                    <div
+                      key={`shipment-${parcel.id}-${event.timestamp}-${event.status}`}
+                      className="p-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-800/40 flex items-start justify-between gap-3 hover:border-blue-500/40 transition-colors"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold text-xs shrink-0">
+                          <Truck className="w-4 h-4" />
+                        </div>
+
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-neutral-900 dark:text-neutral-100">
+                              {event.status}
+                            </span>
+                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300">
+                              {parcel.trackingNumber || 'AWB-PENDING'}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-neutral-600 dark:text-neutral-300 mt-0.5">
+                            {event.description}
+                          </p>
+
+                          <div className="flex items-center gap-3 text-[10px] text-neutral-400 mt-1">
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {event.location}
+                            </span>
+                            <span>•</span>
+                            <span>Order #{parcel.orderNumber} ({parcel.customerName})</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span className="text-[10px] font-mono text-neutral-400 block">
+                          {event.timestamp}
+                        </span>
                         <button
-                          onClick={() => onOpenTrackingModal(selectedParcel)}
+                          onClick={() => onOpenTrackingModal(parcel)}
                           className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-flex items-center gap-0.5 font-medium"
                         >
                           <Eye className="w-3 h-3" /> View Parcel
                         </button>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
 
           <div className="mt-4 pt-3 border-t border-neutral-200 dark:border-neutral-800 text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center justify-between">
-            <span>Provider webhook validation: <strong>Not connected</strong></span>
-            <span className="font-mono">Source: manual warehouse audit</span>
+            <span>Provider webhook validation: <strong>{webhookEndpointConfigured ? 'Endpoint configured' : 'Endpoint not configured'}</strong></span>
+            <span className="font-mono">
+              {latestReceipt ? `Latest: ${latestReceipt.state} · ${latestReceipt.receivedAt}` : 'No provider receipts received'}
+            </span>
           </div>
         </div>
       </div>

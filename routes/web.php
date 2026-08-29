@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\CouponApiController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CustomerDirectoryDataController;
 use App\Http\Controllers\Admin\DashboardDataController;
+use App\Http\Controllers\Admin\EasyParcelWebhookReceiptApiController;
 use App\Http\Controllers\Admin\MenuApiController;
 use App\Http\Controllers\Admin\OperationsController;
 use App\Http\Controllers\Admin\OrderApiController;
@@ -172,6 +173,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/shipping/orders/{order}/easyparcel/bookings', [ShipmentApiController::class, 'bookEasyParcel'])
         ->name('api.shipping.easyparcel.bookings.store');
     Route::get('/api/shipping/shipments', [ShipmentApiController::class, 'index'])->name('api.shipping.shipments.index');
+    Route::get('/api/shipping/webhook-receipts', EasyParcelWebhookReceiptApiController::class)->name('api.shipping.webhook-receipts.index');
     Route::post('/api/shipping/shipments/{shipment}/events', [ShipmentApiController::class, 'appendEvent']);
     Route::get('/api/shipping/providers/easyparcel', [ShippingProviderApiController::class, 'show'])->name('api.shipping.providers.easyparcel.show');
     Route::put('/api/shipping/providers/easyparcel', [ShippingProviderApiController::class, 'update'])->name('api.shipping.providers.easyparcel.update');
