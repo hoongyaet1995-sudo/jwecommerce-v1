@@ -174,36 +174,108 @@ class ShipmentService
                 throw new InvalidArgumentException('Only EasyParcel shipments accept provider tracking events.');
             }
 
-            $created = 0;
-            foreach ($events as $event) {
-                $this->assertValidEasyParcelEvent($event);
-
-                $stored = ShipmentEvent::query()->firstOrCreate([
-                    'shipment_id' => $lockedShipment->id,
-                    'external_event_id' => $event['external_event_id'],
-                ], [
-                    'status' => $event['status'],
-                    'occurred_at' => $event['occurred_at'],
-                    'location' => $event['location'],
-                    'description' => $event['description'],
-                    'source' => 'easyparcel',
-                    'created_by' => null,
-                ]);
-
-                if (! $stored->wasRecentlyCreated) {
-                    continue;
-                }
-
-                $created++;
-            }
-
-            if ($created > 0) {
-                $projection = $this->projectEasyParcelShipmentLifecycle($lockedShipment);
-                $this->projectEasyParcelLifecycleToOrder($lockedOrder, $lockedShipment, $projection);
-            }
-
-            return $created;
+            return $this->recordEasyParcelEventsOnLockedShipment($lockedOrder, $lockedShipment, $events);
         });
+    }
+
+    /**
+     * @param  list<array{
+     *     external_event_id: string,
+     *     status: string,
+     *     occurred_at: CarbonInterface,
+     *     description: string,
+     *     location: ?string
+     * }>  $events
+     */
+    public function reconcileEasyParcelDetails(
+        Shipment $shipment,
+        string $expectedProviderReference,
+        ?string $expectedTrackingNumber,
+        ?string $providerOrderReference,
+        ?string $trackingNumber,
+        ?string $labelPath,
+        ?string $trackingUrl,
+        array $events,
+    ): Shipment {
+        return DB::transaction(function () use (
+            $shipment,
+            $expectedProviderReference,
+            $expectedTrackingNumber,
+            $providerOrderReference,
+            $trackingNumber,
+            $labelPath,
+            $trackingUrl,
+            $events,
+        ): Shipment {
+            $lockedOrder = Order::query()->lockForUpdate()->findOrFail($shipment->order_id);
+            $lockedShipment = Shipment::query()->lockForUpdate()->findOrFail($shipment->id);
+
+            if ($lockedShipment->order_id !== $lockedOrder->id
+                || $lockedShipment->source !== 'easyparcel'
+                || $lockedShipment->provider_reference !== $expectedProviderReference
+                || $lockedShipment->tracking_number !== $expectedTrackingNumber) {
+                throw new InvalidArgumentException('Only the current EasyParcel shipment accepts provider details.');
+            }
+
+            $updates = array_filter([
+                'provider_order_reference' => $providerOrderReference,
+                'tracking_number' => $trackingNumber,
+                'label_path' => $labelPath,
+                'tracking_url' => $trackingUrl,
+            ], static fn (?string $value): bool => $value !== null);
+            if ($updates !== []) {
+                $lockedShipment->forceFill($updates)->save();
+            }
+
+            $this->recordEasyParcelEventsOnLockedShipment($lockedOrder, $lockedShipment, $events);
+
+            return $lockedShipment->fresh(['events']);
+        });
+    }
+
+    /**
+     * @param  list<array{
+     *     external_event_id: string,
+     *     status: string,
+     *     occurred_at: CarbonInterface,
+     *     description: string,
+     *     location: ?string
+     * }>  $events
+     */
+    private function recordEasyParcelEventsOnLockedShipment(
+        Order $lockedOrder,
+        Shipment $lockedShipment,
+        array $events,
+    ): int {
+        $created = 0;
+        foreach ($events as $event) {
+            $this->assertValidEasyParcelEvent($event);
+
+            $stored = ShipmentEvent::query()->firstOrCreate([
+                'shipment_id' => $lockedShipment->id,
+                'external_event_id' => $event['external_event_id'],
+            ], [
+                'status' => $event['status'],
+                'occurred_at' => $event['occurred_at'],
+                'location' => $event['location'],
+                'description' => $event['description'],
+                'source' => 'easyparcel',
+                'created_by' => null,
+            ]);
+
+            if (! $stored->wasRecentlyCreated) {
+                continue;
+            }
+
+            $created++;
+        }
+
+        if ($created > 0) {
+            $projection = $this->projectEasyParcelShipmentLifecycle($lockedShipment);
+            $this->projectEasyParcelLifecycleToOrder($lockedOrder, $lockedShipment, $projection);
+        }
+
+        return $created;
     }
 
     /** @return list<string> */

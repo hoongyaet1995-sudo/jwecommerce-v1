@@ -463,6 +463,8 @@ class EasyParcelReconciliationRecoveryTest extends TestCase
             'data' => [[
                 'shipment_number' => $shipmentNumber,
                 'order_number' => 'EI-RECOVERED-01',
+                'shipment_status_code' => 7,
+                'shipment_status' => 'Schedule In Arrangement',
                 'shipment_details' => [
                     'awb_number' => $awb,
                     'awb_url' => $awb === null ? null : 'https://app.easyparcel.com/labels/'.$awb,
@@ -492,6 +494,8 @@ class EasyParcelReconciliationRecoveryTest extends TestCase
             'data' => [[
                 'shipment_number' => $shipment->provider_reference,
                 'order_number' => 'EI-DETAILS-01',
+                'shipment_status_code' => 7,
+                'shipment_status' => 'Schedule In Arrangement',
                 'shipment_details' => [
                     'awb_number' => $awb,
                     'awb_url' => $awb === null ? null : 'https://app.easyparcel.com/labels/'.$awb,

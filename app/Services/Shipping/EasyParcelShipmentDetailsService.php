@@ -3,9 +3,12 @@
 namespace App\Services\Shipping;
 
 use App\Models\Shipment;
+use App\Services\ShipmentService;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
+use JsonException;
 use Throwable;
 
 final class EasyParcelShipmentDetailsService
@@ -14,6 +17,8 @@ final class EasyParcelShipmentDetailsService
 
     public function __construct(
         private readonly EasyParcelProviderSessionService $providerSessions,
+        private readonly ShipmentService $shipments,
+        private readonly EasyParcelStatusNormalizer $statuses,
     ) {}
 
     public function reconcile(Shipment $shipment): Shipment
@@ -43,28 +48,20 @@ final class EasyParcelShipmentDetailsService
                 $details,
                 $providerSession,
             ): Shipment {
-                $locked = Shipment::query()->lockForUpdate()->find($shipment->id);
-                if (! $locked instanceof Shipment
-                    || $locked->source !== ShippingProviderConfigurationService::PROVIDER
-                    || $locked->provider_reference !== $shipmentNumber
-                    || $locked->tracking_number !== $snapshotAwb) {
-                    throw new EasyParcelTrackingException;
-                }
-
-                $updates = array_filter([
-                    'provider_order_reference' => $details['order_number'],
-                    'tracking_number' => $details['awb_number'],
-                    'label_path' => $details['awb_url'],
-                    'tracking_url' => $details['tracking_url'],
-                ], static fn (?string $value): bool => $value !== null);
-
-                if ($updates !== []) {
-                    $locked->forceFill($updates)->save();
-                }
+                $reconciled = $this->shipments->reconcileEasyParcelDetails(
+                    $shipment,
+                    $shipmentNumber,
+                    $snapshotAwb,
+                    $details['order_number'],
+                    $details['awb_number'],
+                    $details['awb_url'],
+                    $details['tracking_url'],
+                    [$this->statusEvent($details)],
+                );
 
                 $this->providerSessions->assertCurrent($providerSession);
 
-                return $locked;
+                return $reconciled;
             });
         } catch (EasyParcelTrackingException $exception) {
             throw $exception;
@@ -86,7 +83,9 @@ final class EasyParcelShipmentDetailsService
      *     courier_name: ?string,
      *     service_name: ?string,
      *     currency: ?string,
-     *     amount_minor: ?int
+     *     amount_minor: ?int,
+     *     shipment_status_code: int,
+     *     shipment_status: string
      * }
      */
     public function lookup(
@@ -133,7 +132,9 @@ final class EasyParcelShipmentDetailsService
      *     courier_name: ?string,
      *     service_name: ?string,
      *     currency: ?string,
-     *     amount_minor: ?int
+     *     amount_minor: ?int,
+     *     shipment_status_code: int,
+     *     shipment_status: string
      * }
      */
     private function normalizeResponse(array $payload, string $requestedShipmentNumber): array
@@ -170,6 +171,10 @@ final class EasyParcelShipmentDetailsService
             throw new InvalidArgumentException('EasyParcel returned an invalid currency.');
         }
         $amount = $pricing['total_price'] ?? null;
+        $statusCode = $shipment['shipment_status_code'] ?? null;
+        if (! is_int($statusCode)) {
+            throw new InvalidArgumentException('EasyParcel returned an invalid response.');
+        }
 
         return [
             'shipment_number' => $shipmentNumber,
@@ -184,6 +189,40 @@ final class EasyParcelShipmentDetailsService
             'service_name' => $this->optionalString($courier['service_types'] ?? null, 160),
             'currency' => $currency,
             'amount_minor' => $amount === null ? null : $this->decimalToMinor($amount),
+            'shipment_status_code' => $statusCode,
+            'shipment_status' => $this->statuses->description($shipment['shipment_status'] ?? null),
+        ];
+    }
+
+    /**
+     * @param  array{shipment_number: string, shipment_status_code: int, shipment_status: string}  $details
+     * @return array{
+     *     external_event_id: string,
+     *     status: string,
+     *     occurred_at: CarbonInterface,
+     *     description: string,
+     *     location: null
+     * }
+     */
+    private function statusEvent(array $details): array
+    {
+        try {
+            $identity = json_encode([
+                'provider' => ShippingProviderConfigurationService::PROVIDER,
+                'shipment_number' => $details['shipment_number'],
+                'shipment_status_code' => $details['shipment_status_code'],
+                'shipment_status' => $details['shipment_status'],
+            ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        } catch (JsonException) {
+            throw new EasyParcelTrackingException;
+        }
+
+        return [
+            'external_event_id' => 'easyparcel:'.hash('sha256', $identity),
+            'status' => $this->statuses->normalize($details['shipment_status_code']),
+            'occurred_at' => now(),
+            'description' => $details['shipment_status'],
+            'location' => null,
         ];
     }
 

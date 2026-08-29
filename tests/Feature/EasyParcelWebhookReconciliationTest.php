@@ -10,6 +10,7 @@ use App\Models\ShippingProviderCredential;
 use App\Models\ShippingWebhookReceipt;
 use App\Services\Shipping\EasyParcelReconciliationTaskService;
 use App\Services\Shipping\EasyParcelShipmentDetailsService;
+use App\Services\Shipping\EasyParcelStatusNormalizer;
 use App\Services\Shipping\EasyParcelTrackingException;
 use App\Services\Shipping\EasyParcelTrackingService;
 use App\Services\Shipping\EasyParcelWebhookReconciliationService;
@@ -26,6 +27,176 @@ use Tests\TestCase;
 class EasyParcelWebhookReconciliationTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_authenticated_details_delivered_status_is_projected_once_and_webhook_status_remains_a_hint(): void
+    {
+        $this->connectedProvider();
+        [$order, $shipment] = $this->easyParcelShipment('ES-2608-DELIVERED', 'AWB-DELIVERED');
+        $receipt = $this->receipt([
+            'topic' => 'shipment.status.update',
+            'shipment_number' => 'ES-2608-DELIVERED',
+            'awb_number' => 'AWB-DELIVERED',
+            'latest_shipment_status_code' => 0,
+            'latest_shipment_status' => 'Forged webhook cancellation',
+        ], $shipment);
+
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => Http::response($this->shipmentDetailsResponse(
+                shipmentNumber: 'ES-2608-DELIVERED',
+                awb: 'AWB-DELIVERED',
+                statusCode: 5,
+                status: 'Delivered',
+            )),
+            EasyParcelTrackingService::TRACKING_URL => Http::response($this->trackingStatusResponse(
+                shipmentNumber: 'ES-2608-DELIVERED',
+                orderNumber: 'EI-2608-AWB01',
+                awb: 'AWB-DELIVERED',
+                code: 4,
+                status: 'Late authenticated transit scan',
+            )),
+        ]);
+
+        app(EasyParcelWebhookReconciliationService::class)->reconcile($receipt);
+        app(EasyParcelShipmentDetailsService::class)->reconcile($shipment->fresh());
+
+        $events = $shipment->events()->get();
+        self::assertCount(2, $events);
+        self::assertSame(1, $events->where('source', 'easyparcel')->where('status', 'delivered')->count());
+        self::assertSame('Delivered', $events->firstWhere('status', 'delivered')?->description);
+        self::assertSame(1, $events->where('status', 'in_transit')->count());
+        self::assertSame('delivered', $shipment->fresh()->status);
+        self::assertSame('delivered', $order->fresh()->status);
+        self::assertSame(
+            ['shipped', 'delivered'],
+            $order->statusHistory()->oldest('id')->pluck('to_status')->all(),
+        );
+    }
+
+    public function test_authenticated_details_normalizes_status_description_before_deriving_event_identity(): void
+    {
+        $this->connectedProvider();
+        [, $shipment] = $this->easyParcelShipment('ES-2608-NORMALIZED', 'AWB-NORMALIZED');
+
+        Http::fakeSequence(EasyParcelShipmentDetailsService::DETAILS_URL)
+            ->push($this->shipmentDetailsResponse(
+                shipmentNumber: 'ES-2608-NORMALIZED',
+                awb: 'AWB-NORMALIZED',
+                statusCode: 4,
+                status: "Delivery\n  in transit",
+            ))
+            ->push($this->shipmentDetailsResponse(
+                shipmentNumber: 'ES-2608-NORMALIZED',
+                awb: 'AWB-NORMALIZED',
+                statusCode: 4,
+                status: 'Delivery in transit',
+            ));
+
+        $service = app(EasyParcelShipmentDetailsService::class);
+        $service->reconcile($shipment);
+        $service->reconcile($shipment->fresh());
+
+        self::assertSame(1, $shipment->events()->count());
+        self::assertSame('Delivery in transit', $shipment->events()->sole()->description);
+        self::assertSame('in_transit', $shipment->fresh()->status);
+    }
+
+    public function test_details_and_tracking_share_the_documented_status_code_normalization(): void
+    {
+        $statuses = app(EasyParcelStatusNormalizer::class);
+
+        self::assertSame([
+            0 => 'failed_delivery',
+            2 => 'pending',
+            3 => 'shipped',
+            4 => 'in_transit',
+            5 => 'delivered',
+            6 => 'returned',
+            7 => 'pending',
+            8 => 'failed_delivery',
+            11 => 'shipped',
+            99 => 'provider_update',
+        ], collect([0, 2, 3, 4, 5, 6, 7, 8, 11, 99])
+            ->mapWithKeys(fn (int $code): array => [$code => $statuses->normalize($code)])
+            ->all());
+    }
+
+    public function test_malformed_authenticated_details_status_cannot_mutate_metadata_or_lifecycle(): void
+    {
+        $this->connectedProvider();
+        [$order, $shipment] = $this->easyParcelShipmentWithoutAwb('ES-2608-MALFORMED');
+        $response = $this->shipmentDetailsResponse(
+            shipmentNumber: 'ES-2608-MALFORMED',
+            awb: 'AWB-MUST-ROLL-BACK',
+            statusCode: 5,
+            status: 'Delivered',
+        );
+        data_set($response, 'data.0.shipment_status', ['Delivered']);
+
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => Http::response($response),
+        ]);
+
+        try {
+            app(EasyParcelShipmentDetailsService::class)->reconcile($shipment);
+            self::fail('Malformed authenticated Details status must be rejected.');
+        } catch (EasyParcelTrackingException) {
+            // Expected provider boundary.
+        }
+
+        self::assertNull($shipment->fresh()->tracking_number);
+        self::assertNull($shipment->fresh()->provider_order_reference);
+        self::assertSame('pending', $shipment->fresh()->status);
+        self::assertSame(0, $shipment->events()->count());
+        self::assertSame('processing', $order->fresh()->status);
+        self::assertSame(0, $order->statusHistory()->count());
+    }
+
+    public function test_stale_provider_details_roll_back_metadata_event_and_order_projection_atomically(): void
+    {
+        $provider = $this->connectedProvider();
+        [$order, $shipment] = $this->easyParcelShipmentWithoutAwb('ES-2608-STALE-PROVIDER');
+
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => function () use ($provider) {
+                $provider->forceFill([
+                    'enabled' => false,
+                    'connection_state' => 'unverified',
+                    'configuration_version' => 2,
+                ])->save();
+                $provider->credential()->firstOrFail()->forceFill(['credentials' => [
+                    'client_id' => 'replacement-client',
+                    'client_secret' => 'replacement-secret',
+                    'token_type' => 'Bearer',
+                    'access_token' => 'replacement-access-token',
+                    'access_token_expires_at' => now()->addHour()->utc()->toIso8601String(),
+                ]])->save();
+
+                return Http::response($this->shipmentDetailsResponse(
+                    shipmentNumber: 'ES-2608-STALE-PROVIDER',
+                    awb: 'AWB-MUST-ROLL-BACK',
+                    statusCode: 5,
+                    status: 'Delivered by stale provider account',
+                ));
+            },
+        ]);
+
+        try {
+            app(EasyParcelShipmentDetailsService::class)->reconcile($shipment);
+            self::fail('A stale provider response must fail before committing Details projection.');
+        } catch (EasyParcelTrackingException) {
+            // Expected stale-provider boundary.
+        }
+
+        $shipment->refresh();
+        self::assertNull($shipment->tracking_number);
+        self::assertNull($shipment->provider_order_reference);
+        self::assertNull($shipment->label_path);
+        self::assertNull($shipment->tracking_url);
+        self::assertSame('pending', $shipment->status);
+        self::assertSame(0, $shipment->events()->count());
+        self::assertSame('processing', $order->fresh()->status);
+        self::assertSame(0, $order->statusHistory()->count());
+    }
 
     public function test_awb_webhook_uses_authenticated_details_before_updating_shipment(): void
     {
@@ -98,7 +269,9 @@ class EasyParcelWebhookReconciliationTest extends TestCase
         self::assertNull($shipment->fresh()->tracking_number);
         self::assertNull($shipment->fresh()->provider_order_reference);
         self::assertSame('pending', $shipment->fresh()->status);
+        self::assertSame(0, $shipment->events()->count());
         self::assertSame('processing', $order->fresh()->status);
+        self::assertSame(0, $order->statusHistory()->count());
         self::assertSame('retrying', $receipt->fresh()->processing_state);
         self::assertSame(1, $receipt->fresh()->attempt_count);
         self::assertSame('provider_unavailable', $receipt->fresh()->last_error);
@@ -129,7 +302,7 @@ class EasyParcelWebhookReconciliationTest extends TestCase
     public function test_stale_details_response_cannot_overwrite_an_awb_replaced_while_request_was_in_flight(): void
     {
         $this->connectedProvider();
-        [, $shipment] = $this->easyParcelShipment('ES-2608-AWB-RACE', 'AWB-ORIGINAL');
+        [$order, $shipment] = $this->easyParcelShipment('ES-2608-AWB-RACE', 'AWB-ORIGINAL');
 
         Http::fake([
             EasyParcelShipmentDetailsService::DETAILS_URL => function () use ($shipment) {
@@ -154,6 +327,10 @@ class EasyParcelWebhookReconciliationTest extends TestCase
 
         self::assertSame('AWB-REPLACEMENT', $shipment->fresh()->tracking_number);
         self::assertNull($shipment->fresh()->provider_order_reference);
+        self::assertSame('pending', $shipment->fresh()->status);
+        self::assertSame(0, $shipment->events()->count());
+        self::assertSame('processing', $order->fresh()->status);
+        self::assertSame(0, $order->statusHistory()->count());
     }
 
     public function test_non_easyparcel_https_reference_is_rejected_without_partial_mutation(): void
@@ -329,14 +506,20 @@ class EasyParcelWebhookReconciliationTest extends TestCase
     }
 
     /** @return array<string, mixed> */
-    private function shipmentDetailsResponse(string $shipmentNumber, string $awb): array
-    {
+    private function shipmentDetailsResponse(
+        string $shipmentNumber,
+        string $awb,
+        int $statusCode = 7,
+        string $status = 'Schedule In Arrangement',
+    ): array {
         return [
             'status_code' => 200,
             'message' => 'success',
             'data' => [[
                 'shipment_number' => $shipmentNumber,
                 'order_number' => 'EI-2608-AWB01',
+                'shipment_status_code' => $statusCode,
+                'shipment_status' => $status,
                 'shipment_details' => [
                     'awb_number' => $awb,
                     'awb_url' => 'https://app.easyparcel.com/labels/'.$awb,
@@ -361,6 +544,35 @@ class EasyParcelWebhookReconciliationTest extends TestCase
                 'latest_tracking_status' => null,
                 'latest_event_date' => null,
                 'status_log' => [],
+            ]]],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function trackingStatusResponse(
+        string $shipmentNumber,
+        string $orderNumber,
+        string $awb,
+        int $code,
+        string $status,
+    ): array {
+        return [
+            'status_code' => 200,
+            'message' => '1 request success, 0 request error.',
+            'data' => ['results' => [[
+                'status' => 'success',
+                'awb_number' => $awb,
+                'shipment_number' => $shipmentNumber,
+                'order_number' => $orderNumber,
+                'latest_shipment_status_code' => $code,
+                'latest_tracking_status' => $status,
+                'latest_event_date' => '2026-08-29 13:00:00',
+                'status_log' => [[
+                    'event_date' => '2026-08-29 13:00:00',
+                    'shipment_status_code' => $code,
+                    'tracking_status' => $status,
+                    'location' => 'Authenticated tracking timeline',
+                ]],
             ]]],
         ];
     }

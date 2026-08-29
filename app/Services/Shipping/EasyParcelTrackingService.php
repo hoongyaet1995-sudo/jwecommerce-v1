@@ -20,6 +20,7 @@ final class EasyParcelTrackingService
     public function __construct(
         private readonly ShipmentService $shipments,
         private readonly EasyParcelProviderSessionService $providerSessions,
+        private readonly EasyParcelStatusNormalizer $statuses,
     ) {}
 
     public function syncNextBatch(): int
@@ -34,7 +35,6 @@ final class EasyParcelTrackingService
             ->where('source', ShippingProviderConfigurationService::PROVIDER)
             ->whereNotNull('tracking_number')
             ->where('tracking_number', '<>', '')
-            ->whereNotIn('status', ['delivered', 'returned'])
             ->get();
 
         return $this->syncCollection($eligible);
@@ -213,10 +213,9 @@ final class EasyParcelTrackingService
         }
 
         $code = $log['shipment_status_code'];
-        $status = $this->normalizedStatus($code);
+        $status = $this->statuses->normalize($code);
         $occurredAt = $this->eventTime($log['event_date'] ?? null);
-        $description = $this->normalizedText($log['tracking_status'] ?? null, 2000)
-            ?? throw new EasyParcelTrackingException;
+        $description = $this->statuses->description($log['tracking_status'] ?? null);
         $location = $this->normalizedText($log['location'] ?? null, 255);
 
         try {
@@ -284,18 +283,5 @@ final class EasyParcelTrackingService
         }
 
         return $normalized;
-    }
-
-    private function normalizedStatus(int $code): string
-    {
-        return match ($code) {
-            0, 8 => 'failed_delivery',
-            2, 7 => 'pending',
-            3, 11 => 'shipped',
-            4 => 'in_transit',
-            5 => 'delivered',
-            6 => 'returned',
-            default => 'provider_update',
-        };
     }
 }
