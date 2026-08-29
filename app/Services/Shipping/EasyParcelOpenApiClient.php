@@ -30,6 +30,45 @@ final class EasyParcelOpenApiClient
      * @param  array{client_id: string, client_secret: string}  $credentials
      * @return array<string, int|string|null>
      */
+    public function refreshAccessToken(array $credentials, string $refreshToken): array
+    {
+        try {
+            $response = Http::asForm()
+                ->acceptJson()
+                ->withBasicAuth($credentials['client_id'], $credentials['client_secret'])
+                ->connectTimeout(5)
+                ->timeout(10)
+                ->post(self::TOKEN_URL, [
+                    'grant_type' => 'refresh_token',
+                    'refresh_token' => $refreshToken,
+                ]);
+
+            $payload = $response->json();
+            if (! $response->successful()
+                || ! is_array($payload)
+                || ($payload['token_type'] ?? null) !== 'Bearer'
+                || ! is_string($payload['access_token'] ?? null)
+                || $payload['access_token'] === '') {
+                $this->logVerificationRejection('refresh', $response->status());
+                throw new EasyParcelVerificationException;
+            }
+
+            return $this->tokenCache($payload);
+        } catch (EasyParcelVerificationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            Log::warning('EasyParcel OAuth verification failed', [
+                'exception_class' => $exception::class,
+            ]);
+
+            throw new EasyParcelVerificationException;
+        }
+    }
+
+    /**
+     * @param  array{client_id: string, client_secret: string}  $credentials
+     * @return array<string, int|string|null>
+     */
     public function verifyAuthorizationCode(array $credentials, string $authorizationCode, string $redirectUri, ?string $state): array
     {
         try {

@@ -52,6 +52,36 @@ class EasyParcelTrackingLifecycleTest extends TestCase
         ])->assertNotFound();
     }
 
+    public function test_targeted_tracking_sync_queries_only_the_requested_easyparcel_shipment(): void
+    {
+        $this->connectedProvider();
+        [, $firstOrder] = $this->processingOrder('JW-TARGET-1');
+        [, $secondOrder] = $this->processingOrder('JW-TARGET-2');
+        $first = $this->easyParcelShipment($firstOrder, 'AWB-TARGET-1');
+        $this->easyParcelShipment($secondOrder, 'AWB-TARGET-2');
+
+        Http::fake([
+            EasyParcelTrackingService::TRACKING_URL => Http::response(
+                $this->trackingResponse('AWB-TARGET-1', [[
+                    'event_date' => '2026-08-29 12:00:00',
+                    'shipment_status_code' => 4,
+                    'tracking_status' => 'Parcel in transit',
+                    'location' => 'KL Hub',
+                ]]),
+            ),
+        ]);
+
+        self::assertSame(1, app(EasyParcelTrackingService::class)->syncShipment($first));
+
+        Http::assertSent(fn (Request $request): bool => $request->data() === ['awb_numbers' => ['AWB-TARGET-1']]
+        );
+        self::assertSame('in_transit', $first->fresh()->status);
+        self::assertSame(
+            'pending',
+            Shipment::query()->where('tracking_number', 'AWB-TARGET-2')->sole()->status,
+        );
+    }
+
     public function test_authenticated_polling_records_authoritative_history_once_and_projects_both_customer_read_models(): void
     {
         $this->connectedProvider();

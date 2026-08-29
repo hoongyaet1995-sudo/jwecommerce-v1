@@ -3,19 +3,184 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\ShippingProvider;
+use App\Models\ShippingProviderAuthorizationTransaction;
 use App\Models\ShippingProviderCredential;
 use App\Models\User;
+use App\Services\Shipping\EasyParcelOAuthAuthorizationService;
+use App\Services\Shipping\EasyParcelOpenApiClient;
+use App\Services\Shipping\EasyParcelProviderSessionService;
+use App\Services\Shipping\EasyParcelTrackingException;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
-use Tests\TestCase;
 use Tests\Concerns\UsesIsolatedDatabaseMigrations;
+use Tests\TestCase;
 
 class EasyParcelPlatformOauthTest extends TestCase
 {
     use UsesIsolatedDatabaseMigrations;
+
+    public function test_expiring_access_token_refreshes_once_for_duplicate_session_reads_and_persists_rotation(): void
+    {
+        $provider = $this->connectedProviderWithTokens();
+        $transactionLevels = [];
+        Http::fake([
+            EasyParcelOpenApiClient::TOKEN_URL => function (Request $request) use (&$transactionLevels) {
+                $transactionLevels[] = DB::transactionLevel();
+
+                return Http::response([
+                    'token_type' => 'Bearer',
+                    'access_token' => 'rotated-access-token',
+                    'expires_in' => 3600,
+                    'refresh_token' => 'rotated-refresh-token',
+                    'refresh_token_expires_in' => 7200,
+                ]);
+            },
+        ]);
+
+        $sessions = app(EasyParcelProviderSessionService::class);
+        $first = $sessions->connected();
+        $second = $sessions->connected();
+
+        self::assertNotNull($first);
+        self::assertNotNull($second);
+        self::assertSame('rotated-access-token', $first->accessToken);
+        self::assertSame('rotated-access-token', $second->accessToken);
+        self::assertSame([0], $transactionLevels);
+        Http::assertSentCount(1);
+        Http::assertSent(fn (Request $request): bool => $request->url() === EasyParcelOpenApiClient::TOKEN_URL
+            && $request->method() === 'POST'
+            && $request->hasHeader(
+                'Authorization',
+                'Basic '.base64_encode('platform-client:platform-secret'),
+            )
+            && $request->data() === [
+                'grant_type' => 'refresh_token',
+                'refresh_token' => 'current-refresh-token',
+            ]
+        );
+
+        $stored = $provider->credential()->sole()->credentials;
+        self::assertSame('rotated-access-token', $stored['access_token']);
+        self::assertSame('rotated-refresh-token', $stored['refresh_token']);
+        self::assertNull($provider->fresh()->last_error);
+        $raw = (string) DB::table('shipping_provider_credentials')->value('credentials');
+        self::assertStringNotContainsString('rotated-access-token', $raw);
+        self::assertStringNotContainsString('rotated-refresh-token', $raw);
+        self::assertStringNotContainsString('platform-secret', $raw);
+    }
+
+    public function test_refresh_preserves_the_current_refresh_token_when_the_provider_omits_rotation(): void
+    {
+        $provider = $this->connectedProviderWithTokens();
+        $oldRefreshExpiry = $provider->credential()->sole()->credentials['refresh_token_expires_at'];
+        Http::fake([
+            EasyParcelOpenApiClient::TOKEN_URL => Http::response([
+                'token_type' => 'Bearer',
+                'access_token' => 'fresh-access-token',
+                'expires_in' => 3600,
+            ]),
+        ]);
+
+        $session = app(EasyParcelProviderSessionService::class)->connected();
+
+        self::assertNotNull($session);
+        self::assertSame('fresh-access-token', $session->accessToken);
+        $stored = $provider->credential()->sole()->credentials;
+        self::assertSame('current-refresh-token', $stored['refresh_token']);
+        self::assertSame($oldRefreshExpiry, $stored['refresh_token_expires_at']);
+    }
+
+    public function test_refresh_result_cannot_overwrite_a_reconfigured_provider_snapshot(): void
+    {
+        $provider = $this->connectedProviderWithTokens();
+        Http::fake([
+            EasyParcelOpenApiClient::TOKEN_URL => function () use ($provider) {
+                $provider->forceFill(['configuration_version' => 8])->save();
+                $provider->credential()->sole()->forceFill(['credentials' => [
+                    'token_type' => 'Bearer',
+                    'access_token' => 'replacement-access-token',
+                    'access_token_expires_at' => now()->addHour()->utc()->toIso8601String(),
+                    'refresh_token' => 'replacement-refresh-token',
+                    'refresh_token_expires_at' => now()->addHours(2)->utc()->toIso8601String(),
+                ]])->save();
+
+                return Http::response([
+                    'token_type' => 'Bearer',
+                    'access_token' => 'stale-rotated-access-token',
+                    'expires_in' => 3600,
+                    'refresh_token' => 'stale-rotated-refresh-token',
+                    'refresh_token_expires_in' => 7200,
+                ]);
+            },
+        ]);
+
+        try {
+            app(EasyParcelProviderSessionService::class)->connected();
+            self::fail('A stale refresh response must be rejected.');
+        } catch (EasyParcelTrackingException $exception) {
+            self::assertSame('EasyParcel tracking synchronization failed.', $exception->getMessage());
+        }
+
+        $stored = $provider->credential()->sole()->credentials;
+        self::assertSame('replacement-access-token', $stored['access_token']);
+        self::assertSame('replacement-refresh-token', $stored['refresh_token']);
+        self::assertSame(8, $provider->fresh()->configuration_version);
+    }
+
+    public function test_refresh_rejects_an_already_expired_access_token_without_persisting_it(): void
+    {
+        $provider = $this->connectedProviderWithTokens();
+        Http::fake([
+            EasyParcelOpenApiClient::TOKEN_URL => Http::response([
+                'token_type' => 'Bearer',
+                'access_token' => 'already-expired-access-token',
+                'expires_at' => now()->subMinute()->utc()->toIso8601String(),
+                'refresh_token' => 'already-expired-rotated-refresh-token',
+                'refresh_token_expires_in' => 7200,
+            ]),
+        ]);
+
+        try {
+            app(EasyParcelProviderSessionService::class)->connected();
+            self::fail('An already-expired refreshed access token must not be persisted.');
+        } catch (EasyParcelTrackingException $exception) {
+            self::assertSame('EasyParcel tracking synchronization failed.', $exception->getMessage());
+        }
+
+        self::assertSame('token_refresh_failed', $provider->fresh()->last_error);
+        $stored = $provider->credential()->sole()->credentials;
+        self::assertSame('expiring-access-token', $stored['access_token']);
+        self::assertSame('current-refresh-token', $stored['refresh_token']);
+    }
+
+    public function test_expired_refresh_token_fails_safely_without_an_exchange_or_secret_exposure(): void
+    {
+        $provider = $this->connectedProviderWithTokens([
+            'refresh_token_expires_at' => now()->subSecond()->utc()->toIso8601String(),
+        ]);
+        Http::fake();
+
+        try {
+            app(EasyParcelProviderSessionService::class)->connected();
+            self::fail('An expired refresh token must not be exchanged.');
+        } catch (EasyParcelTrackingException $exception) {
+            self::assertSame('EasyParcel tracking synchronization failed.', $exception->getMessage());
+            self::assertStringNotContainsString('current-refresh-token', $exception->getMessage());
+            self::assertStringNotContainsString('platform-secret', $exception->getMessage());
+        }
+
+        Http::assertNothingSent();
+        self::assertSame('token_refresh_failed', $provider->fresh()->last_error);
+        self::assertSame(
+            'expiring-access-token',
+            $provider->credential()->sole()->credentials['access_token'],
+        );
+    }
 
     public function test_platform_environment_credentials_start_authorization_without_a_browser_configuration_payload(): void
     {
@@ -103,7 +268,7 @@ class EasyParcelPlatformOauthTest extends TestCase
         $this->get('/admin/shipping/easyparcel/callback?code=late-code&state='.$query['state'])
             ->assertSessionHas('easyparcelConnection.state', 'failed');
 
-        $this->assertSame(1, \App\Models\ShippingProviderAuthorizationTransaction::query()->whereNotNull('consumed_at')->count());
+        $this->assertSame(1, ShippingProviderAuthorizationTransaction::query()->whereNotNull('consumed_at')->count());
         $this->assertDatabaseCount('shipping_provider_credentials', 0);
     }
 
@@ -145,7 +310,7 @@ class EasyParcelPlatformOauthTest extends TestCase
         config()->set('services.easyparcel.client_secret', 'platform-secret');
         $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
         $sessionBinding = 'safe-test-session-binding';
-        $state = app(\App\Services\Shipping\EasyParcelOAuthAuthorizationService::class)->begin(
+        $state = app(EasyParcelOAuthAuthorizationService::class)->begin(
             $admin->id,
             $sessionBinding,
             'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback',
@@ -175,7 +340,7 @@ class EasyParcelPlatformOauthTest extends TestCase
         config()->set('services.easyparcel.client_id', 'platform-client');
         config()->set('services.easyparcel.client_secret', 'platform-secret');
         $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
-        $state = app(\App\Services\Shipping\EasyParcelOAuthAuthorizationService::class)->begin(
+        $state = app(EasyParcelOAuthAuthorizationService::class)->begin(
             $admin->id,
             'binding-that-is-not-in-the-callback-session',
             'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback',
@@ -224,5 +389,34 @@ class EasyParcelPlatformOauthTest extends TestCase
             'environment' => 'sandbox',
             'connection_state' => 'connected',
         ]);
+    }
+
+    /** @param array<string, mixed> $overrides */
+    private function connectedProviderWithTokens(array $overrides = []): ShippingProvider
+    {
+        config()->set('services.easyparcel.client_id', 'platform-client');
+        config()->set('services.easyparcel.client_secret', 'platform-secret');
+        $provider = ShippingProvider::query()->create([
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'enabled' => true,
+            'connection_state' => 'connected',
+            'configuration_version' => 7,
+            'last_verified_at' => now(),
+        ]);
+        ShippingProviderCredential::query()->create([
+            'shipping_provider_id' => $provider->id,
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'credentials' => array_merge([
+                'token_type' => 'Bearer',
+                'access_token' => 'expiring-access-token',
+                'access_token_expires_at' => now()->addSeconds(30)->utc()->toIso8601String(),
+                'refresh_token' => 'current-refresh-token',
+                'refresh_token_expires_at' => now()->addHour()->utc()->toIso8601String(),
+            ], $overrides),
+        ]);
+
+        return $provider;
     }
 }
