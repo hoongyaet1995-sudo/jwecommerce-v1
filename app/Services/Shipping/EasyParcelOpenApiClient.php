@@ -73,7 +73,11 @@ final class EasyParcelOpenApiClient
             return $this->tokenCache($tokenPayload);
         } catch (EasyParcelVerificationException $exception) {
             throw $exception;
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
+            Log::warning('EasyParcel OAuth verification failed', [
+                'exception_class' => $exception::class,
+            ]);
+
             throw new EasyParcelVerificationException;
         }
     }

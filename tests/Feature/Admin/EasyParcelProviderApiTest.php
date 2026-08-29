@@ -105,6 +105,25 @@ class EasyParcelProviderApiTest extends TestCase
         );
     }
 
+    public function test_token_exchange_logs_only_the_safe_transport_exception_classification(): void
+    {
+        $this->withoutMiddleware(ValidateCsrfToken::class);
+        $this->platform();
+        $admin = $this->superAdmin();
+        Http::fake(fn () => throw new \RuntimeException('private transport detail'));
+        $start = $this->actingAs($admin)->post('/admin/api/shipping/providers/easyparcel/authorize');
+        parse_str((string) parse_url((string) $start->headers->get('Location'), PHP_URL_QUERY), $query);
+        Log::spy();
+
+        $this->get('/admin/shipping/easyparcel/callback?code=provider-code&state='.$query['state'])
+            ->assertSessionHas('easyparcelConnection.state', 'failed');
+
+        Log::shouldHaveReceived('warning')->once()->with(
+            'EasyParcel OAuth verification failed',
+            ['exception_class' => \RuntimeException::class],
+        );
+    }
+
     public function test_permissions_and_disconnect_only_apply_to_the_connected_store_token(): void
     {
         $this->platform();
