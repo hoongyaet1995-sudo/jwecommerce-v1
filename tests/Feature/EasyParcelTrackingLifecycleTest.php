@@ -258,8 +258,11 @@ class EasyParcelTrackingLifecycleTest extends TestCase
         ]]);
 
         self::assertSame('returned', $shipment->fresh()->status);
+        self::assertNull($shipment->fresh()->delivered_at);
         self::assertSame('processing', $order->fresh()->status);
         self::assertCount(2, $shipment->events()->get());
+        $returnedRow = app(ShipmentDataService::class)->collection()->firstWhere('id', (string) $shipment->id);
+        self::assertNull(data_get($returnedRow, 'deliveredAt'));
 
         $service->recordEasyParcelEvents($shipment, 'AWB-RETURNED-TERMINAL', [[
             'external_event_id' => 'easyparcel:later-delivery',
@@ -270,8 +273,46 @@ class EasyParcelTrackingLifecycleTest extends TestCase
         ]]);
 
         self::assertSame('delivered', $shipment->fresh()->status);
+        self::assertSame(
+            '2026-08-29 13:00:00',
+            $shipment->fresh()->delivered_at?->utc()->format('Y-m-d H:i:s'),
+        );
         self::assertSame('delivered', $order->fresh()->status);
         self::assertCount(3, $shipment->events()->get());
+        $deliveredRow = app(ShipmentDataService::class)->collection()->firstWhere('id', (string) $shipment->id);
+        self::assertSame('2026-08-29T13:00:00+00:00', data_get($deliveredRow, 'deliveredAt'));
+    }
+
+    public function test_single_batch_projects_order_from_the_final_shipment_lifecycle(): void
+    {
+        [, $order] = $this->processingOrder('JW-TRACK-BATCH-TERMINAL');
+        $shipment = $this->easyParcelShipment($order, 'AWB-BATCH-TERMINAL');
+
+        app(ShipmentService::class)->recordEasyParcelEvents($shipment, 'AWB-BATCH-TERMINAL', [
+            [
+                'external_event_id' => 'easyparcel:batch-delivered-before-return',
+                'status' => 'delivered',
+                'occurred_at' => CarbonImmutable::parse('2026-08-29 13:00:00', 'UTC'),
+                'description' => 'Delivered scan before return',
+                'location' => 'Recipient',
+            ],
+            [
+                'external_event_id' => 'easyparcel:batch-later-return',
+                'status' => 'returned',
+                'occurred_at' => CarbonImmutable::parse('2026-08-29 14:00:00', 'UTC'),
+                'description' => 'Returned to sender after delivery correction',
+                'location' => 'Origin hub',
+            ],
+        ]);
+
+        self::assertSame('returned', $shipment->fresh()->status);
+        self::assertNull($shipment->fresh()->delivered_at);
+        self::assertSame('processing', $order->fresh()->status);
+        self::assertSame(0, $order->statusHistory()->whereIn('to_status', ['shipped', 'delivered'])->count());
+        self::assertCount(2, $shipment->events()->get());
+        $row = app(ShipmentDataService::class)->collection()->firstWhere('id', (string) $shipment->id);
+        self::assertSame('returned', data_get($row, 'status'));
+        self::assertNull(data_get($row, 'deliveredAt'));
     }
 
     public function test_exception_and_unknown_codes_never_deliver_cancel_refund_or_restock_an_order(): void
