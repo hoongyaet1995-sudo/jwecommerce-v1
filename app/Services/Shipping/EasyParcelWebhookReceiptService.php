@@ -28,27 +28,28 @@ final class EasyParcelWebhookReceiptService
     /** @param array<string, mixed> $payload */
     public function receiveAndQueue(string $rawBody, array $payload): ShippingWebhookReceipt
     {
-        return DB::transaction(function () use ($rawBody, $payload): ShippingWebhookReceipt {
-            $receipt = $this->receive($rawBody, $payload);
+        $receipt = $this->receive($rawBody, $payload);
 
-            if ($receipt->wasRecentlyCreated !== true
-                || $receipt->shipment_id === null
-                || $receipt->processing_state !== 'received'
-                || ! in_array($receipt->topic, self::RECONCILABLE_TOPICS, true)) {
-                return $receipt;
-            }
+        if ($receipt->wasRecentlyCreated !== true
+            || $receipt->shipment_id === null
+            || $receipt->processing_state !== 'received'
+            || ! in_array($receipt->topic, self::RECONCILABLE_TOPICS, true)) {
+            return $receipt;
+        }
 
-            $receipt->forceFill([
+        return DB::transaction(function () use ($receipt): ShippingWebhookReceipt {
+            $locked = ShippingWebhookReceipt::query()->lockForUpdate()->findOrFail($receipt->id);
+            $locked->forceFill([
                 'processing_state' => 'queued',
                 'queued_at' => now(),
             ])->save();
 
-            $receiptId = $receipt->id;
+            $receiptId = $locked->id;
             DB::afterCommit(static function () use ($receiptId): void {
                 ReconcileEasyParcelWebhook::dispatch($receiptId);
             });
 
-            return $receipt;
+            return $locked;
         });
     }
 

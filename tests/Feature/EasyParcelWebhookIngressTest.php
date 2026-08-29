@@ -88,12 +88,16 @@ class EasyParcelWebhookIngressTest extends TestCase
         self::assertSame('pending', $shipment->fresh()->status);
     }
 
-    public function test_concurrent_duplicate_deliveries_return_one_durable_receipt_without_a_unique_constraint_error(): void
+    public function test_concurrent_matched_duplicates_return_one_queued_receipt_and_dispatch_once(): void
     {
+        $providerReference = 'ES-CONCURRENT-'.Str::upper(Str::random(12));
+        $queue = 'easyparcel-concurrency-'.Str::uuid();
+        [$orderId, $shipmentId] = $this->createConcurrentShipmentFixture($providerReference);
         $rawBody = json_encode([
-            'topic' => 'shipment.created',
+            'topic' => 'shipment.tracking.update',
             'uuid' => 'concurrent-webhook-'.Str::uuid(),
-            'shipment_number' => 'ES-CONCURRENT-UNKNOWN',
+            'shipment_number' => $providerReference,
+            'awb_number' => 'AWB-'.$providerReference,
         ], JSON_THROW_ON_ERROR);
         $payloadHash = hash('sha256', $rawBody);
         $barrier = 'easyparcel-webhook-'.Str::uuid();
@@ -101,8 +105,8 @@ class EasyParcelWebhookIngressTest extends TestCase
         self::assertSame(1, (int) $lock->acquired);
 
         $workers = [
-            $this->concurrentReceiptWorker($barrier, $rawBody),
-            $this->concurrentReceiptWorker($barrier, $rawBody),
+            $this->concurrentReceiptWorker($barrier, $rawBody, $queue),
+            $this->concurrentReceiptWorker($barrier, $rawBody, $queue),
         ];
 
         try {
@@ -131,8 +135,11 @@ class EasyParcelWebhookIngressTest extends TestCase
             $this->assertDatabaseHas('shipping_webhook_receipts', [
                 'id' => $receiptIds[0],
                 'payload_hash' => $payloadHash,
-                'processing_state' => 'unmatched',
+                'shipment_id' => $shipmentId,
+                'processing_state' => 'queued',
             ]);
+            self::assertNotNull(ShippingWebhookReceipt::query()->sole()->queued_at);
+            self::assertSame(1, DB::table('jobs')->where('queue', $queue)->count());
         } finally {
             DB::selectOne('SELECT RELEASE_LOCK(?) AS released', [$barrier]);
 
@@ -142,7 +149,7 @@ class EasyParcelWebhookIngressTest extends TestCase
                 }
             }
 
-            $this->deleteWorkerReceipt($payloadHash);
+            $this->deleteConcurrentFixture($payloadHash, $queue, $shipmentId, $orderId);
         }
     }
 
@@ -188,7 +195,7 @@ class EasyParcelWebhookIngressTest extends TestCase
         return [$order, $shipment];
     }
 
-    private function concurrentReceiptWorker(string $barrier, string $rawBody): Process
+    private function concurrentReceiptWorker(string $barrier, string $rawBody, string $queue): Process
     {
         $script = <<<'PHP'
 require $argv[1].'/vendor/autoload.php';
@@ -217,7 +224,7 @@ $blocked = false;
     \Illuminate\Support\Facades\DB::selectOne('SELECT RELEASE_LOCK(?) AS released', [$barrier]);
 });
 
-$receipt = app(\App\Services\Shipping\EasyParcelWebhookReceiptService::class)->receive($rawBody, $payload);
+$receipt = app(\App\Services\Shipping\EasyParcelWebhookReceiptService::class)->receiveAndQueue($rawBody, $payload);
 fwrite(STDOUT, 'receipt:'.$receipt->id.PHP_EOL);
 PHP;
 
@@ -230,6 +237,8 @@ PHP;
                 'DB_DATABASE' => 'jw_ecommerce_testing',
                 'DB_USERNAME' => 'root',
                 'DB_PASSWORD' => '',
+                'QUEUE_CONNECTION' => 'database',
+                'DB_QUEUE' => $queue,
             ]),
         ))->setTimeout(15);
     }
@@ -258,10 +267,70 @@ PHP;
         self::fail('Timed out waiting for both concurrent workers to establish their receipt lookup snapshot.');
     }
 
-    private function deleteWorkerReceipt(string $payloadHash): void
+    /** @return array{int, int} */
+    private function createConcurrentShipmentFixture(string $providerReference): array
+    {
+        $pdo = $this->workerPdo();
+        $now = now()->format('Y-m-d H:i:s');
+        $order = $pdo->prepare(
+            'INSERT INTO orders '
+            .'(number, email, currency, status, subtotal, discount_amount, shipping_amount, tax_amount, total, created_at, updated_at) '
+            .'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        );
+        $order->execute([
+            'JW-CONCURRENT-'.Str::upper(Str::random(12)),
+            'concurrent-webhook@example.test',
+            'MYR',
+            'processing',
+            10000,
+            0,
+            0,
+            0,
+            10000,
+            $now,
+            $now,
+        ]);
+        $orderId = (int) $pdo->lastInsertId();
+        $shipment = $pdo->prepare(
+            'INSERT INTO shipments '
+            .'(order_id, sequence, source, carrier_name, tracking_number, status, currency, provider_reference, created_at, updated_at) '
+            .'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        );
+        $shipment->execute([
+            $orderId,
+            1,
+            'easyparcel',
+            'EasyParcel Sandbox Courier',
+            'AWB-'.$providerReference,
+            'pending',
+            'MYR',
+            $providerReference,
+            $now,
+            $now,
+        ]);
+
+        return [$orderId, (int) $pdo->lastInsertId()];
+    }
+
+    private function deleteConcurrentFixture(
+        string $payloadHash,
+        string $queue,
+        int $shipmentId,
+        int $orderId,
+    ): void {
+        $pdo = $this->workerPdo();
+        $pdo->prepare('DELETE FROM jobs WHERE queue = ?')->execute([$queue]);
+        $statement = $pdo->prepare('DELETE FROM shipping_webhook_receipts WHERE payload_hash = ?');
+        $statement->execute([$payloadHash]);
+        $pdo->prepare('DELETE FROM shipments WHERE id = ?')->execute([$shipmentId]);
+        $pdo->prepare('DELETE FROM orders WHERE id = ?')->execute([$orderId]);
+    }
+
+    private function workerPdo(): PDO
     {
         $connection = config('database.connections.mysql');
-        $pdo = new PDO(
+
+        return new PDO(
             sprintf(
                 'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
                 $connection['host'],
@@ -272,7 +341,5 @@ PHP;
             $connection['password'],
             [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
         );
-        $statement = $pdo->prepare('DELETE FROM shipping_webhook_receipts WHERE payload_hash = ?');
-        $statement->execute([$payloadHash]);
     }
 }
