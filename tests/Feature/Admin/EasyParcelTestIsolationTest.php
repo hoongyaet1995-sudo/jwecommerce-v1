@@ -12,6 +12,8 @@ class EasyParcelTestIsolationTest extends TestCase
             'EasyParcelProviderApiTest.php',
             'EasyParcelPlatformOauthTest.php',
             'EasyParcelFulfillmentApiTest.php',
+            'EasyParcelFulfillmentMigrationTest.php',
+            'EasyParcelProviderMigrationTest.php',
         ] as $filename) {
             $source = file_get_contents(__DIR__.DIRECTORY_SEPARATOR.$filename);
 

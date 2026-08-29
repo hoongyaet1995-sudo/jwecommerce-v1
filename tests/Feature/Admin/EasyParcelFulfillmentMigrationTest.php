@@ -6,14 +6,14 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\ShippingProvider;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Tests\Concerns\UsesIsolatedDatabaseMigrations;
 use Tests\TestCase;
 
 class EasyParcelFulfillmentMigrationTest extends TestCase
 {
-    use RefreshDatabase;
+    use UsesIsolatedDatabaseMigrations;
 
     public function test_fulfillment_schema_upgrade_and_safe_rollback_preserve_references_and_full_length_label(): void
     {
