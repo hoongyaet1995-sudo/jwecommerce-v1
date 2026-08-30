@@ -139,3 +139,42 @@ Complete in the canonical development environment `C:\xampp\htdocs\jwstudio-ecom
 
 - Code fix commit: `b4254f1` (`fix: harden EasyParcel recovery handoff`).
 - Report-only evidence commit: the follow-up commit containing this exact SHA and verification record.
+
+## Reviewer fix round 2/5
+
+### Focused RED evidence
+
+- `C:\xampp\php\php.exe artisan test tests/Feature/EasyParcelTrackingLifecycleTest.php --filter=current_provider_exception_truth_follows_chronology`
+  - RED: 3 failures from the rank-based projection.
+  - `on_hold → in_transit` incorrectly remained `on_hold`.
+  - same-timestamp, later-ID `on_hold → cancelled` incorrectly remained `on_hold`.
+  - same-timestamp, later-ID `cancelled → on_hold` incorrectly remained `cancelled`.
+- Every chronology dataset also asserts no order-cancel history, no refund, no stock change/restock, and no payment-state change.
+- A separate pending-noise characterization was GREEN before the production change and remains a regression guard for both `in_transit → pending` and `in_transit → on_hold → pending`.
+
+### Minimal projection correction
+
+- `on_hold` and `cancelled` are no longer ranked delivery milestones.
+- Existing normal delivery milestones remain monotonic, and the existing delivered/returned terminal handling is unchanged.
+- Current provider exception truth is selected by newest `occurred_at`, then newest event `id` for equal timestamps.
+- A later valid active provider event clears an older `on_hold`/`cancelled`; a later exception overrides an active state.
+- Once normal progress has reached dispatched/in-transit or beyond, `pending` is excluded from exception-clearing/current-truth selection so late pending/Details noise cannot regress shipment truth.
+
+### GREEN evidence
+
+- Focused chronology and pending-noise run:
+  - PASS: 5 tests, 25 assertions.
+- Affected backend suites:
+  - `C:\xampp\php\php.exe artisan test tests/Feature/Admin/ShipmentApiTest.php tests/Feature/EasyParcelFailedBookingRecoveryTest.php tests/Feature/EasyParcelTrackingLifecycleTest.php tests/Feature/EasyParcelReconciliationRecoveryTest.php tests/Feature/EasyParcelWebhookReconciliationTest.php tests/Feature/EasyParcelWebhookIngressTest.php`
+  - PASS: 90 tests, 597 assertions.
+- `C:\xampp\php\php.exe vendor\bin\pint --dirty`
+  - PASS.
+- `git diff --check`
+  - PASS with no whitespace errors.
+- No frontend contract changed, so the frontend suite was not rerun for this backend-only projection fix.
+
+### Round-two commit and concerns
+
+- Code fix commit: `b83f098` (`fix: project EasyParcel exceptions chronologically`).
+- `AGENTS.md` remains the pre-existing unstaged modification and is excluded from both the code and report commits.
+- No push, deployment, build artifact, or browser acceptance was performed.
