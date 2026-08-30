@@ -248,3 +248,43 @@ This later ruling supersedes the round-one behavior that allowed provider code 0
 - `AGENTS.md` remains a pre-existing unstaged modification and was not touched or staged.
 - No push, deployment, built-asset mutation, or browser acceptance was performed.
 - The new migration is applied to the isolated MySQL test database for verification but remains pending in the normal development database until the release/operator migration step.
+
+## Task 5 final-review cross-layer fix round 2/5
+
+### Root cause and RED evidence
+
+- The durable recovery guard covered only `awaiting_replacement` and `complete`. A manual confirmation first commits `cancelling/claimed`, then waits outside a transaction for the provider cancellation HTTP response. During that window, a Details request that started earlier could still attach its AWB/label to the old shipment.
+- `test_durable_cancel_claim_rejects_a_late_details_awb_before_cancel_finalization`
+  - RED: the simulated late Details write succeeded while the cancellation callback observed the durable `cancelling/claimed` row; the rejection flag remained false and the old shipment gained an AWB.
+- The cancelling cases added to the sweeper and already-queued processor tests were both RED:
+  - sweeper created one Details task for the claimed recovery;
+  - the already-queued task polled the provider and became `retrying` instead of resolving without mutation.
+- `test_cancel_finalization_refuses_to_terminalize_a_contaminated_claim`
+  - RED: a defensive direct contamination during provider HTTP still finalized the recovery as `awaiting_replacement`, incorrectly releasing rebooking.
+- The inverse-order characterization was already GREEN before the fix: when an AWB commits before manual confirmation locks the shipment, confirmation is ineligible, no recovery is created, and no cancellation request is sent.
+- A separate code-0 characterization was made RED against the strict cancelling guard: without the bounded cancelled-snapshot allowance, authenticated provider code 0 could not complete an existing claim.
+
+### Minimal fix and exact behavior
+
+- `cancelling` now participates in immutable recovery ownership at the processor preflight, sweeper/manual-retry selection, and locked Shipment Details write boundary.
+- Once `cancelling/claimed` is durable, late AWB, label, metadata, status-event, and tracking-event writes are rejected. The old attempt remains no-AWB while the provider cancellation request finishes.
+- Cancellation finalization re-locks and revalidates recovery/provider identity, EasyParcel source, `pending` status, and no-AWB state before moving to `awaiting_replacement`. A contaminated claim remains `cancelling/claimed` and cannot release a replacement.
+- Stale no-AWB claims still recover to audited `awaiting_replacement`; fresh claims remain protected.
+- A Details snapshot that began before the claim and authentically returns provider code 0 is accepted only as a metadata/event no-op, then may upgrade the matching `cancelling` audit to provider-confirmed `awaiting_replacement`.
+- If the AWB transaction wins first, manual confirmation fails closed with no recovery and no rebook handoff.
+
+### GREEN verification
+
+- Focused claim-order and provider-code tests: PASS, 4 tests and 30 assertions.
+- Focused sweeper/queued-processor tests: PASS, 2 tests and 28 assertions.
+- Full affected suites (`EasyParcelFailedBookingRecoveryTest`, `EasyParcelReconciliationRecoveryTest`, `EasyParcelTrackingLifecycleTest`, `EasyParcelWebhookReconciliationTest`, and `Admin/ShipmentApiTest`): PASS, 92 tests and 638 assertions.
+- Existing stale-claim, fresh-claim, provider-terminal, chronological tracking, idempotency, and late-AWB tests all remained green in that run.
+- MySQL test migration status confirms the recovery table and nullable confirmer migration are applied. A complete in-memory SQLite migration run also passed through the nullable confirmer migration.
+- Focused Pint passed. `git diff --check` and staged `git diff --cached --check` passed.
+
+### Commit and concerns
+
+- Code fix commit: `63cdfdb` (`fix: seal EasyParcel cancellation claim race`).
+- No frontend/API contract, Google AI Studio UI, migration source, or built asset changed in this round.
+- `AGENTS.md` remains the pre-existing unstaged modification and was not touched or staged.
+- No push, deployment, or browser acceptance was performed.
