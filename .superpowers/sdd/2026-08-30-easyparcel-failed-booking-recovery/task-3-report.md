@@ -178,3 +178,73 @@ Complete in the canonical development environment `C:\xampp\htdocs\jwstudio-ecom
 - Code fix commit: `b83f098` (`fix: project EasyParcel exceptions chronologically`).
 - `AGENTS.md` remains the pre-existing unstaged modification and is excluded from both the code and report commits.
 - No push, deployment, build artifact, or browser acceptance was performed.
+
+## Task 5 final-review cross-layer fix round 1/5
+
+This later ruling supersedes the round-one behavior that allowed provider code 0 to rewrite an already-terminal `awaiting_replacement` recovery. Terminal recovery history is now immutable: later provider evidence may be returned diagnostically, but it cannot erase an already-audited cancellation ambiguity or replace its attribution.
+
+### Focused RED evidence
+
+- `EasyParcelReconciliationRecoveryTest::test_details_processor_records_provider_code_zero_as_system_recovery_and_resolves`
+  - RED: the task processor discarded the authenticated Details snapshot, retried as `awb_not_available`, and created no recovery.
+- `EasyParcelReconciliationRecoveryTest::test_sweeper_never_reopens_terminal_or_recovery_owned_shipments`
+  - RED: the sweeper created four Details tasks for `booking_failed`, `cancelled`, `awaiting_replacement`, and `complete` history.
+- `EasyParcelReconciliationRecoveryTest::test_already_queued_details_tasks_resolve_without_polling_or_mutating_immutable_history`
+  - RED: an already-queued terminal task called the provider and moved to `retrying` instead of resolving without mutation.
+- `EasyParcelFailedBookingRecoveryTest::test_provider_verified_cancellation_is_system_attributed_without_an_employee_confirmer`
+  - RED: `recordProviderCancellation` rejected the required null system attribution with a `TypeError`.
+- `ShipmentApiTest::test_interactive_on_hold_refresh_accepts_provider_code_zero_and_records_system_recovery`
+  - RED: the protected refresh returned `500` because an `on_hold` shipment was rejected by provider-terminal recovery eligibility.
+- `EasyParcelWebhookReconciliationTest::test_late_awb_response_cannot_revive_a_shipment_terminalized_while_details_was_in_flight`
+  - RED: a late provider response attached its AWB/label to the old shipment after it had become `booking_failed`.
+
+### Minimal implementation
+
+- A new forward migration makes `easyparcel_shipment_recoveries.confirmed_by` nullable. Manual employee confirmation still requires a persisted user and bounded reason; authenticated provider code-0 evidence records `confirmed_by = null` rather than falsely naming the refreshing employee.
+- The task processor consumes exactly one authenticated Details snapshot. Code 0 without AWB creates the audited `awaiting_replacement` recovery and resolves the task instead of polling twice or retrying for an AWB that will never arrive.
+- The sweeper and manual retry selection exclude failed/cancelled booking attempts and `awaiting_replacement`/`complete` recoveries. An already-queued task rechecks immutable history before any provider call and resolves harmlessly.
+- The shipment Details write boundary locks and rejects late metadata, AWB, label, status, or new events once failed-booking/recovery history is terminal. Exact repeat snapshots remain idempotent, so an unchanged interactive refresh can still return its diagnostic.
+- Provider tracking chronology remains intact for a real AWB-backed shipment whose current exception status is `cancelled`; only no-AWB failed-booking cancellation and durable recovery ownership are terminalized by this guard.
+- A provider code-0 refresh from `on_hold` now returns `200`, projects the old attempt `cancelled`, and returns the system-attributed durable recovery. No cancellation HTTP request is issued.
+
+### GREEN evidence
+
+- Focused reviewer cases:
+  - PASS: processor/sweeper/queued-task group, 3 tests and 33 assertions.
+  - PASS: nullable provider evidence, 1 test and 6 assertions.
+  - PASS: interactive `on_hold → code 0`, 1 test and 9 assertions.
+  - PASS: late-AWB write boundary, 1 test and 6 assertions.
+- Final affected backend run:
+  - `ShipmentApiTest`, `EasyParcelFailedBookingRecoveryTest`, `EasyParcelReconciliationRecoveryTest`, `EasyParcelWebhookReconciliationTest`, `EasyParcelTrackingLifecycleTest`, and `EasyParcelWebhookIngressTest`.
+  - PASS: 96 tests, 651 assertions.
+- Additional operational regression runs:
+  - `RunEasyParcelCronTest` plus `EasyParcelWebhookIngressTest`: PASS, 12 tests and 62 assertions.
+  - `EasyParcelFulfillmentApiTest` plus `EasyParcelTestIsolationTest`: PASS, 31 tests and 247 assertions.
+- Migration compatibility:
+  - The forward migration ran successfully against `jw_ecommerce_testing` on MySQL.
+  - A complete in-memory SQLite migration run also passed, including the nullable-column change.
+- Formatting and diff:
+  - Focused Pint run passed after formatting `ShipmentService.php`.
+  - `git diff --check` and staged `git diff --cached --check` passed.
+
+### Files in the fix
+
+- `database/migrations/2026_08_30_000200_make_easyparcel_recovery_confirmer_nullable.php`
+- `app/Http/Controllers/Admin/ShipmentApiController.php`
+- `app/Services/ShipmentService.php`
+- `app/Services/Shipping/EasyParcelFailedBookingRecoveryService.php`
+- `app/Services/Shipping/EasyParcelReconciliationSweeper.php`
+- `app/Services/Shipping/EasyParcelReconciliationTaskProcessor.php`
+- `app/Services/Shipping/EasyParcelReconciliationTaskService.php`
+- `tests/Feature/Admin/ShipmentApiTest.php`
+- `tests/Feature/EasyParcelFailedBookingRecoveryTest.php`
+- `tests/Feature/EasyParcelReconciliationRecoveryTest.php`
+- `tests/Feature/EasyParcelWebhookReconciliationTest.php`
+
+### Self-review, commit, and concerns
+
+- Code fix commit: `2d7fc58` (`fix: terminalize failed EasyParcel reconciliation`).
+- No frontend contract or Google AI Studio DOM/Tailwind source changed, so no Admin rebuild or frontend suite was required.
+- `AGENTS.md` remains a pre-existing unstaged modification and was not touched or staged.
+- No push, deployment, built-asset mutation, or browser acceptance was performed.
+- The new migration is applied to the isolated MySQL test database for verification but remains pending in the normal development database until the release/operator migration step.
