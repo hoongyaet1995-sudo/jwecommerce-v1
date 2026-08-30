@@ -9,6 +9,7 @@ use App\Models\Shipment;
 use App\Models\ShipmentQuote;
 use App\Services\Admin\ShipmentDataService;
 use App\Services\ShipmentService;
+use App\Services\Shipping\EasyParcelFailedBookingRecoveryService;
 use App\Services\Shipping\EasyParcelFulfillmentService;
 use App\Services\Shipping\EasyParcelReconciliationPublisher;
 use App\Services\Shipping\EasyParcelReconciliationTaskService;
@@ -175,6 +176,37 @@ class ShipmentApiController extends Controller
                 $statuses->normalize($providerDetails['shipment_status_code']),
                 $awbAvailable,
             ),
+        ]]);
+    }
+
+    public function confirmEasyParcelProviderFailure(
+        Request $request,
+        Shipment $shipment,
+        EasyParcelFailedBookingRecoveryService $recoveries,
+    ): JsonResponse {
+        abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::DISPATCH), 403);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'min:3', 'max:500'],
+        ]);
+
+        try {
+            $recovery = $recoveries->confirm($shipment, $request->user(), $validated['reason']);
+        } catch (InvalidArgumentException $exception) {
+            throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
+        }
+
+        $shipment->refresh();
+
+        return response()->json(['data' => [
+            'recoveryId' => (string) $recovery->id,
+            'shipmentId' => (string) $shipment->id,
+            'replacementOrderId' => (string) $recovery->order_id,
+            'shipmentStatus' => $shipment->status,
+            'recoveryState' => $recovery->state,
+            'cancellationState' => $recovery->provider_cancel_state,
+            'cancellationMessage' => $recovery->provider_cancel_message,
+            'cancellationConfirmed' => $recovery->provider_cancel_state === 'success',
         ]]);
     }
 

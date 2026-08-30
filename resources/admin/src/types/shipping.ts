@@ -98,6 +98,9 @@ export type ShipmentStatus =
   | 'shipped'
   | 'pending'
   | 'ready_to_ship'
+  | 'on_hold'
+  | 'cancelled'
+  | 'booking_failed'
   | 'picked_up'
   | 'in_transit'
   | 'out_for_delivery'
@@ -154,6 +157,7 @@ export interface ShipmentParcel {
   isWeightDiscrepancy: boolean;
   exceptionReason?: string; // e.g. "NITC - Recipient unreachable", "Incorrect Postcode", "Address not found"
   exceptionAttempts?: number;
+  easyParcelRecoveryWarning?: string;
   pickupRequestId?: string;
   trackingEvents: ShipmentTrackingEvent[];
 }

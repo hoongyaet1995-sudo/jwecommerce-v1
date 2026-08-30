@@ -21,6 +21,8 @@ import {
   Layers
 } from 'lucide-react';
 import { ShipmentParcel, CourierCode } from '../../types/shipping';
+import type { EasyParcelRecoveryResult, EasyParcelShipmentStatusRefresh } from '../../integration/shipmentData';
+import { easyParcelRecoveryCanRebook, easyParcelShipmentStatusDiagnostic } from '../../integration/shipmentData';
 
 interface ShippingFulfillmentTabProps {
   parcels: ShipmentParcel[];
@@ -31,8 +33,9 @@ interface ShippingFulfillmentTabProps {
   onOpenPickupModal: () => void;
   onUpdateStatus: (parcelId: string, status: ShipmentParcel['status'], desc?: string) => void;
   onOpenEasyParcelBooking: (parcel: ShipmentParcel) => void;
-  onRefreshEasyParcelStatus: (parcelId: string) => Promise<void>;
-  onRefreshAllEasyParcelStatuses: () => Promise<void>;
+  onRefreshEasyParcelStatus: (parcelId: string) => Promise<EasyParcelShipmentStatusRefresh>;
+  onRefreshAllEasyParcelStatuses: () => Promise<EasyParcelShipmentStatusRefresh[]>;
+  onConfirmEasyParcelProviderFailure: (parcelId: string, reason: string) => Promise<EasyParcelRecoveryResult>;
 }
 
 export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
@@ -46,6 +49,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   onOpenEasyParcelBooking,
   onRefreshEasyParcelStatus,
   onRefreshAllEasyParcelStatuses,
+  onConfirmEasyParcelProviderFailure,
 }) => {
   const [activeStatusFilter, setActiveStatusFilter] = useState<'all' | 'pending' | 'ready_to_ship' | 'in_transit' | 'delivered' | 'failed_delivery'>('all');
   const [regionFilter, setRegionFilter] = useState<'all' | 'peninsular' | 'east_malaysia'>('all');
@@ -55,18 +59,53 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [refreshingParcelId, setRefreshingParcelId] = useState<string | null>(null);
   const [isRefreshingAll, setIsRefreshingAll] = useState(false);
+  const [recoveryGuidance, setRecoveryGuidance] = useState<{
+    parcel: ShipmentParcel;
+    diagnostic: EasyParcelShipmentStatusRefresh;
+    outcome: EasyParcelRecoveryResult | null;
+  } | null>(null);
+  const [recoveryReason, setRecoveryReason] = useState('');
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [isConfirmingRecovery, setIsConfirmingRecovery] = useState(false);
 
   const refreshableEasyParcelCount = parcels.filter((parcel) => (
     parcel.source === 'easyparcel'
     && parcel.status !== 'delivered'
     && parcel.status !== 'returned'
+    && parcel.status !== 'booking_failed'
+    && parcel.status !== 'cancelled'
   )).length;
+
+  const showRecoveryGuidance = (results: EasyParcelShipmentStatusRefresh[]) => {
+    const diagnostic = results.find(result => result.recoveryDisposition === 'provider_terminal')
+      ?? results.find(result => result.recoveryDisposition === 'needs_review');
+    if (!diagnostic) return;
+    const parcel = parcels.find(candidate => candidate.id === diagnostic.shipmentId);
+    if (!parcel) return;
+    setRecoveryReason('');
+    setRecoveryError(null);
+    setRecoveryGuidance({ parcel, diagnostic, outcome: null });
+  };
+
+  const replacementParcel = (
+    parcel: ShipmentParcel,
+    orderId: string,
+    warning?: string,
+  ): ShipmentParcel => ({
+    ...parcel,
+    id: `pending-order-${orderId}`,
+    source: 'pending',
+    orderId,
+    trackingNumber: '',
+    status: 'pending',
+    easyParcelRecoveryWarning: warning,
+  });
 
   const handleRefreshAllEasyParcelStatuses = async () => {
     if (isRefreshingAll || refreshingParcelId !== null) return;
     setIsRefreshingAll(true);
     try {
-      await onRefreshAllEasyParcelStatuses();
+      showRecoveryGuidance(await onRefreshAllEasyParcelStatuses());
     } catch {
       // The shared admin action presents the failure toast.
     } finally {
@@ -78,11 +117,39 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
     if (isRefreshingAll || refreshingParcelId !== null) return;
     setRefreshingParcelId(parcelId);
     try {
-      await onRefreshEasyParcelStatus(parcelId);
+      showRecoveryGuidance([await onRefreshEasyParcelStatus(parcelId)]);
     } catch {
       // The shared admin action presents the failure toast.
     } finally {
       setRefreshingParcelId(null);
+    }
+  };
+
+  const handleConfirmRecovery = async () => {
+    if (!recoveryGuidance || isConfirmingRecovery) return;
+    const reason = recoveryReason.trim();
+    if (reason.length < 3 || reason.length > 500) {
+      setRecoveryError('Enter a reason between 3 and 500 characters.');
+      return;
+    }
+    setIsConfirmingRecovery(true);
+    setRecoveryError(null);
+    try {
+      const outcome = await onConfirmEasyParcelProviderFailure(recoveryGuidance.parcel.id, reason);
+      setRecoveryGuidance(current => current ? { ...current, outcome } : current);
+      if (easyParcelRecoveryCanRebook(outcome)) {
+        onOpenEasyParcelBooking(replacementParcel(
+          recoveryGuidance.parcel,
+          outcome.replacementOrderId,
+          outcome.cancellationConfirmed
+            ? undefined
+            : outcome.cancellationMessage ?? 'EasyParcel cancellation outcome is unconfirmed.',
+        ));
+      }
+    } catch (error) {
+      setRecoveryError(error instanceof Error ? error.message : 'EasyParcel failed-booking recovery could not be confirmed.');
+    } finally {
+      setIsConfirmingRecovery(false);
     }
   };
 
@@ -93,7 +160,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
       if (activeStatusFilter === 'in_transit') {
         if (p.status !== 'shipped' && p.status !== 'in_transit' && p.status !== 'picked_up' && p.status !== 'out_for_delivery') return false;
       } else if (activeStatusFilter === 'failed_delivery') {
-        if (p.status !== 'failed_delivery' && p.status !== 'returned') return false;
+        if (!['failed_delivery', 'returned', 'booking_failed', 'cancelled', 'on_hold'].includes(p.status)) return false;
       } else if (p.status !== activeStatusFilter) {
         return false;
       }
@@ -164,6 +231,12 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
         return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300">Delivered</span>;
       case 'failed_delivery':
         return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300">Delivery Exception</span>;
+      case 'booking_failed':
+        return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300">Booking Failed</span>;
+      case 'cancelled':
+        return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300">Cancelled</span>;
+      case 'on_hold':
+        return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">On Hold</span>;
       case 'returned':
         return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300">Returned</span>;
       default:
@@ -183,7 +256,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
             { id: 'ready_to_ship', label: 'Ready to Ship', count: parcels.filter(p => p.status === 'ready_to_ship').length },
             { id: 'in_transit', label: 'In Transit', count: parcels.filter(p => p.status === 'shipped' || p.status === 'in_transit' || p.status === 'picked_up' || p.status === 'out_for_delivery').length },
             { id: 'delivered', label: 'Delivered', count: parcels.filter(p => p.status === 'delivered').length },
-            { id: 'failed_delivery', label: 'Exceptions (NITC)', count: parcels.filter(p => p.status === 'failed_delivery' || p.status === 'returned').length },
+            { id: 'failed_delivery', label: 'Exceptions (NITC)', count: parcels.filter(p => ['failed_delivery', 'returned', 'booking_failed', 'cancelled', 'on_hold'].includes(p.status)).length },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -512,6 +585,108 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
           </div>
         </div>
       </div>
+
+      {recoveryGuidance && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
+            <div className="p-5 border-b border-neutral-200 dark:border-neutral-800 flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center text-rose-600 dark:text-rose-400">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">EasyParcel Booking Recovery</h3>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Order #{recoveryGuidance.parcel.orderNumber}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRecoveryGuidance(null)}
+                className="px-3 py-1.5 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="p-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
+                <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                  {easyParcelShipmentStatusDiagnostic(recoveryGuidance.diagnostic)}
+                </p>
+                <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-1">
+                  Checked {new Date(recoveryGuidance.diagnostic.checkedAt).toLocaleString()}
+                </p>
+              </div>
+
+              {recoveryGuidance.diagnostic.recoveryDisposition === 'needs_review' && !recoveryGuidance.outcome && (
+                <>
+                  <p className="text-xs text-neutral-600 dark:text-neutral-300">
+                    The AWB waiting threshold has elapsed, but EasyParcel has not confirmed a terminal failure through the API. Compare the provider portal before recording a manual confirmation.
+                  </p>
+                  <label className="block">
+                    <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">Employee reason</span>
+                    <textarea
+                      value={recoveryReason}
+                      onChange={(event) => setRecoveryReason(event.target.value)}
+                      minLength={3}
+                      maxLength={500}
+                      rows={3}
+                      placeholder="Describe the provider portal evidence."
+                      className="mt-1.5 w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => void handleConfirmRecovery()}
+                    disabled={isConfirmingRecovery || recoveryReason.trim().length < 3 || recoveryReason.trim().length > 500}
+                    className="w-full px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isConfirmingRecovery ? 'Confirming Provider Failure…' : 'Confirm Provider Failure & Rebook'}
+                  </button>
+                </>
+              )}
+
+              {recoveryGuidance.diagnostic.recoveryDisposition === 'provider_terminal' && !recoveryGuidance.outcome && (
+                recoveryGuidance.diagnostic.status === 'cancelled' || recoveryGuidance.diagnostic.status === 'booking_failed'
+                  ? <button
+                    type="button"
+                    onClick={() => onOpenEasyParcelBooking(replacementParcel(
+                      recoveryGuidance.parcel,
+                      recoveryGuidance.parcel.orderId,
+                    ))}
+                    className="w-full px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm cursor-pointer"
+                  >
+                    Start Fresh Quote & Rebook
+                  </button>
+                  : <p className="text-xs text-neutral-600 dark:text-neutral-300">This provider terminal result is recorded for review and is not eligible for a replacement booking.</p>
+              )}
+
+              {recoveryGuidance.outcome && (
+                <div className={`p-3 rounded-xl border ${recoveryGuidance.outcome.cancellationConfirmed
+                  ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30'
+                  : 'border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30'}`}>
+                  <p className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                    {recoveryGuidance.outcome.cancellationState === 'claimed'
+                      ? 'EasyParcel cancellation is still processing.'
+                      : recoveryGuidance.outcome.cancellationConfirmed
+                      ? 'EasyParcel cancellation confirmed.'
+                      : 'Cancellation was not confirmed by EasyParcel.'}
+                  </p>
+                  <p className="text-[11px] text-neutral-600 dark:text-neutral-300 mt-1">
+                    {recoveryGuidance.outcome.cancellationMessage ?? 'No provider cancellation result was returned.'}
+                  </p>
+                </div>
+              )}
+
+              {recoveryError && (
+                <div className="p-3 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 text-xs text-rose-700 dark:text-rose-300">
+                  {recoveryError}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

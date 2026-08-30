@@ -180,6 +180,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/shipping/shipments', [ShipmentApiController::class, 'index'])->name('api.shipping.shipments.index');
     Route::post('/api/shipping/shipments/{shipment}/easyparcel/status', [ShipmentApiController::class, 'refreshEasyParcelStatus'])
         ->name('api.shipping.shipments.easyparcel.status.store');
+    Route::post('/api/shipping/shipments/{shipment}/easyparcel/recovery', [ShipmentApiController::class, 'confirmEasyParcelProviderFailure'])
+        ->name('api.shipping.shipments.easyparcel.recovery.store');
     Route::get('/api/shipping/webhook-receipts', EasyParcelWebhookReceiptApiController::class)->name('api.shipping.webhook-receipts.index');
     Route::post('/api/shipping/shipments/{shipment}/events', [ShipmentApiController::class, 'appendEvent']);
     Route::get('/api/shipping/providers/easyparcel', [ShippingProviderApiController::class, 'show'])->name('api.shipping.providers.easyparcel.show');

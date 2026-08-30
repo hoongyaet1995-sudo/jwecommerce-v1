@@ -6,7 +6,12 @@ import { ShippingFulfillmentTab } from '../components/shipping/ShippingFulfillme
 import { INITIAL_SHIPMENT_PARCELS } from '../data/shippingData';
 import type { LaravelAdminBootstrap } from '../types';
 import type { ShipmentParcel } from '../types/shipping';
-import { fetchShipments, refreshEasyParcelShipmentStatus } from './shipmentData';
+import {
+  confirmEasyParcelProviderFailure,
+  easyParcelRecoveryCanRebook,
+  fetchShipments,
+  refreshEasyParcelShipmentStatus,
+} from './shipmentData';
 
 const bootstrap = {
   user: { name: 'Admin', email: 'admin@example.test', avatar: null },
@@ -75,7 +80,16 @@ describe('redacted shipment-list client contract', () => {
   it('requests an authenticated EasyParcel shipment-details refresh for one shipment', async () => {
     const fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ data: { shipmentId: '1', status: 'delivered', changed: true } }),
+      json: async () => ({ data: {
+        shipmentId: '1',
+        status: 'delivered',
+        changed: true,
+        providerStatusCode: 5,
+        providerStatus: 'Delivered',
+        checkedAt: '2026-08-30T10:00:00+08:00',
+        awbAvailable: true,
+        recoveryDisposition: 'none',
+      } }),
     });
     vi.stubGlobal('window', { fetch });
 
@@ -83,11 +97,74 @@ describe('redacted shipment-list client contract', () => {
       shipmentId: '1',
       status: 'delivered',
       changed: true,
+      providerStatusCode: 5,
+      providerStatus: 'Delivered',
+      checkedAt: '2026-08-30T10:00:00+08:00',
+      awbAvailable: true,
+      recoveryDisposition: 'none',
     });
     expect(fetch).toHaveBeenCalledWith('/admin/api/shipping/shipments/1/easyparcel/status', expect.objectContaining({
       method: 'POST',
       credentials: 'same-origin',
     }));
+  });
+
+  it('posts an employee reason to the protected failed-booking recovery endpoint', async () => {
+    const fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: {
+        recoveryId: '91',
+        shipmentId: '1',
+        replacementOrderId: '11',
+        shipmentStatus: 'booking_failed',
+        cancellationState: 'error',
+        cancellationMessage: 'EasyParcel cancellation unconfirmed.',
+        cancellationConfirmed: false,
+      } }),
+    });
+    vi.stubGlobal('window', { fetch });
+
+    await expect(confirmEasyParcelProviderFailure(
+      bootstrap,
+      '1',
+      'EasyParcel portal explicitly reports Failed.',
+    )).resolves.toMatchObject({
+      recoveryId: '91',
+      replacementOrderId: '11',
+      cancellationConfirmed: false,
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      '/admin/api/shipping/shipments/1/easyparcel/recovery',
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'same-origin',
+        body: JSON.stringify({ reason: 'EasyParcel portal explicitly reports Failed.' }),
+      }),
+    );
+  });
+
+  it('does not release a replacement quote while cancellation is still claimed', () => {
+    expect(easyParcelRecoveryCanRebook({
+      recoveryId: '91',
+      shipmentId: '1',
+      replacementOrderId: '11',
+      shipmentStatus: 'pending',
+      recoveryState: 'cancelling',
+      cancellationState: 'claimed',
+      cancellationMessage: null,
+      cancellationConfirmed: false,
+    })).toBe(false);
+
+    expect(easyParcelRecoveryCanRebook({
+      recoveryId: '91',
+      shipmentId: '1',
+      replacementOrderId: '11',
+      shipmentStatus: 'booking_failed',
+      recoveryState: 'awaiting_replacement',
+      cancellationState: 'error',
+      cancellationMessage: 'EasyParcel cancellation unconfirmed.',
+      cancellationConfirmed: false,
+    })).toBe(true);
   });
 
   it('renders a non-empty fulfillment row using neutral recipient placeholders', () => {

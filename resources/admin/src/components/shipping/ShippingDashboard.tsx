@@ -73,6 +73,7 @@ export const ShippingDashboard: React.FC = () => {
     shipmentParcels = [],
     refreshEasyParcelShipmentStatus,
     refreshAllEasyParcelShipmentStatuses,
+    confirmEasyParcelProviderFailure,
     easyParcelWebhookReceipts = [],
     easyParcelWebhookAuditStatus,
     easyParcelWebhookAuditError,
@@ -376,6 +377,7 @@ export const ShippingDashboard: React.FC = () => {
             onOpenEasyParcelBooking={(parcel) => setEasyParcelBookingParcel(parcel)}
             onRefreshEasyParcelStatus={refreshEasyParcelShipmentStatus}
             onRefreshAllEasyParcelStatuses={refreshAllEasyParcelShipmentStatuses}
+            onConfirmEasyParcelProviderFailure={confirmEasyParcelProviderFailure}
           />
         )}
 

@@ -9,8 +9,10 @@ const mockedAdminContext = vi.hoisted(() => ({ value: {} as Record<string, unkno
 vi.mock('../../context/AdminContext', () => ({ useAdmin: () => mockedAdminContext.value }));
 import { CourierConfigModal } from './CourierConfigModal';
 import { EasyParcelOAuthModal } from './EasyParcelOAuthModal';
+import { EasyParcelBookingModal } from './EasyParcelBookingModal';
 import { CourierConfigTab } from './CourierConfigTab';
 import { ShippingDashboard } from './ShippingDashboard';
+import { ShippingFulfillmentTab } from './ShippingFulfillmentTab';
 import { ShippingOverviewTab } from './ShippingOverviewTab';
 import { TrackingAndWebhooksTab } from './TrackingAndWebhooksTab';
 import type { CourierConfig, EasyParcelWebhookReceiptRow } from '../../types/shipping';
@@ -155,6 +157,161 @@ describe('ShippingDashboard provider action binding', () => {
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*title="Wallet top-up is not available through this integration"/);
   });
 
+  it('opens recovery guidance for an aged pending AWB and starts a fresh quote only after confirmation', async () => {
+    const parcel = {
+      ...INITIAL_SHIPMENT_PARCELS[0],
+      id: 'aged-pending-awb',
+      orderId: 'replacement-order-77',
+      orderNumber: 'JW-AGED-PENDING-AWB',
+      source: 'easyparcel' as const,
+      courier: 'easyparcel' as const,
+      trackingNumber: '',
+      status: 'pending' as const,
+    };
+    const onOpenEasyParcelBooking = vi.fn();
+    const onConfirmEasyParcelProviderFailure = vi.fn().mockResolvedValue({
+      recoveryId: 'recovery-91',
+      shipmentId: parcel.id,
+      replacementOrderId: parcel.orderId,
+      shipmentStatus: 'booking_failed',
+      recoveryState: 'awaiting_replacement',
+      cancellationState: 'error',
+      cancellationMessage: 'EasyParcel cancellation unconfirmed.',
+      cancellationConfirmed: false,
+    });
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    mountedRoots.push({ root, host });
+
+    await act(async () => root.render(React.createElement(ShippingFulfillmentTab, {
+      parcels: [parcel],
+      onGenerateAWB: vi.fn(),
+      onBatchGenerateAWB: vi.fn(),
+      onOpenAWBModal: vi.fn(),
+      onOpenTrackingModal: vi.fn(),
+      onOpenPickupModal: vi.fn(),
+      onUpdateStatus: vi.fn(),
+      onOpenEasyParcelBooking,
+      onRefreshEasyParcelStatus: vi.fn().mockResolvedValue({
+        shipmentId: parcel.id,
+        status: 'pending',
+        changed: false,
+        providerStatusCode: 7,
+        providerStatus: 'Schedule In Arrangement',
+        checkedAt: '2026-08-30T10:00:00+08:00',
+        awbAvailable: false,
+        recoveryDisposition: 'needs_review',
+      }),
+      onRefreshAllEasyParcelStatuses: vi.fn().mockResolvedValue([]),
+      onConfirmEasyParcelProviderFailure,
+    })));
+
+    const refresh = host.querySelector('button[aria-label="Get Latest Status"]') as HTMLButtonElement;
+    await act(async () => refresh.click());
+
+    expect(host.textContent).toContain('EasyParcel reports Schedule In Arrangement (code 7); AWB is still unavailable.');
+    expect(host.textContent).toContain('Confirm Provider Failure & Rebook');
+    expect(onOpenEasyParcelBooking).not.toHaveBeenCalled();
+
+    const reason = host.querySelector('textarea') as HTMLTextAreaElement;
+    await act(async () => {
+      const setValue = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+      setValue?.call(reason, 'EasyParcel portal explicitly reports Failed.');
+      reason.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const confirm = Array.from(host.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('Confirm Provider Failure & Rebook')) as HTMLButtonElement;
+    await act(async () => confirm.click());
+
+    expect(onConfirmEasyParcelProviderFailure).toHaveBeenCalledWith(
+      parcel.id,
+      'EasyParcel portal explicitly reports Failed.',
+    );
+    expect(host.textContent).toContain('EasyParcel cancellation unconfirmed.');
+    expect(host.textContent).toContain('Cancellation was not confirmed by EasyParcel.');
+    expect(onOpenEasyParcelBooking).toHaveBeenCalledTimes(1);
+    expect(onOpenEasyParcelBooking).toHaveBeenCalledWith(expect.objectContaining({
+      orderId: 'replacement-order-77',
+    }));
+  });
+
+  it('keeps an unconfirmed provider cancellation warning visible in the existing booking modal', () => {
+    const parcel = {
+      ...INITIAL_SHIPMENT_PARCELS[0],
+      id: 'replacement-order-warning',
+      source: 'pending' as const,
+      status: 'pending' as const,
+      trackingNumber: '',
+      easyParcelRecoveryWarning: 'EasyParcel cancellation unconfirmed.',
+    };
+
+    const html = renderToStaticMarkup(React.createElement(EasyParcelBookingModal, {
+      isOpen: true,
+      parcel,
+      onClose: vi.fn(),
+      onQuote: vi.fn(),
+      onBook: vi.fn(),
+      onBooked: vi.fn(),
+    }));
+
+    expect(html).toContain('Cancellation was not confirmed by EasyParcel.');
+    expect(html).toContain('EasyParcel cancellation unconfirmed.');
+  });
+
+  it('opens provider-terminal recovery guidance from the global status refresh', async () => {
+    const parcel = {
+      ...INITIAL_SHIPMENT_PARCELS[0],
+      id: 'provider-terminal-shipment',
+      orderId: 'provider-terminal-order',
+      source: 'easyparcel' as const,
+      courier: 'easyparcel' as const,
+      trackingNumber: '',
+      status: 'pending' as const,
+    };
+    const onOpenEasyParcelBooking = vi.fn();
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    mountedRoots.push({ root, host });
+
+    await act(async () => root.render(React.createElement(ShippingFulfillmentTab, {
+      parcels: [parcel],
+      onGenerateAWB: vi.fn(),
+      onBatchGenerateAWB: vi.fn(),
+      onOpenAWBModal: vi.fn(),
+      onOpenTrackingModal: vi.fn(),
+      onOpenPickupModal: vi.fn(),
+      onUpdateStatus: vi.fn(),
+      onOpenEasyParcelBooking,
+      onRefreshEasyParcelStatus: vi.fn(),
+      onRefreshAllEasyParcelStatuses: vi.fn().mockResolvedValue([{
+        shipmentId: parcel.id,
+        status: 'cancelled',
+        changed: true,
+        providerStatusCode: 0,
+        providerStatus: 'Cancelled',
+        checkedAt: '2026-08-30T11:00:00+08:00',
+        awbAvailable: false,
+        recoveryDisposition: 'provider_terminal',
+      }]),
+      onConfirmEasyParcelProviderFailure: vi.fn(),
+    })));
+
+    const globalRefresh = Array.from(host.querySelectorAll('button'))
+      .find(button => button.textContent?.trim() === 'Get Latest Status') as HTMLButtonElement;
+    await act(async () => globalRefresh.click());
+
+    expect(host.textContent).toContain('EasyParcel reports Cancelled (code 0); AWB is still unavailable.');
+    const rebook = Array.from(host.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('Start Fresh Quote & Rebook')) as HTMLButtonElement;
+    await act(async () => rebook.click());
+    expect(onOpenEasyParcelBooking).toHaveBeenCalledWith(expect.objectContaining({
+      orderId: 'provider-terminal-order',
+      source: 'pending',
+    }));
+  });
+
   it('counts canonical shipped parcels in the ShippingDashboard in-transit badge', () => {
     mockedAdminContext.value = {
       courierConfigs: [],
@@ -209,6 +366,40 @@ describe('ShippingDashboard provider action binding', () => {
     }));
 
     expect(metricCardText(html, 'Exceptions & NITC')).toContain('1');
+  });
+
+  it('treats booking failures, cancellations, and holds as shipping exceptions', () => {
+    const exceptionParcels = (['booking_failed', 'cancelled', 'on_hold'] as const).map((status, index) => ({
+      ...INITIAL_SHIPMENT_PARCELS[0],
+      id: `easyparcel-exception-${index}`,
+      status,
+    }));
+    const overview = renderToStaticMarkup(React.createElement(ShippingOverviewTab, {
+      parcels: exceptionParcels,
+      couriers: [],
+      pickupRequests: [],
+      onNavigateTab: () => undefined,
+      onOpenPickupModal: () => undefined,
+    }));
+    const fulfillment = renderToStaticMarkup(React.createElement(ShippingFulfillmentTab, {
+      parcels: exceptionParcels,
+      onGenerateAWB: vi.fn(),
+      onBatchGenerateAWB: vi.fn(),
+      onOpenAWBModal: vi.fn(),
+      onOpenTrackingModal: vi.fn(),
+      onOpenPickupModal: vi.fn(),
+      onUpdateStatus: vi.fn(),
+      onOpenEasyParcelBooking: vi.fn(),
+      onRefreshEasyParcelStatus: vi.fn(),
+      onRefreshAllEasyParcelStatuses: vi.fn(),
+      onConfirmEasyParcelProviderFailure: vi.fn(),
+    }));
+
+    expect(metricCardText(overview, 'Exceptions & NITC')).toContain('3');
+    expect(fulfillment).toMatch(/Exceptions \(NITC\)<\/span><span[^>]*>3<\/span>/);
+    expect(fulfillment).toContain('Booking Failed');
+    expect(fulfillment).toContain('Cancelled');
+    expect(fulfillment).toContain('On Hold');
   });
 
   it('renders the unavailable EasyParcel card top-up control as disabled', () => {

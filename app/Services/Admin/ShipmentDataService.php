@@ -23,7 +23,9 @@ class ShipmentDataService
         $pending = Order::query()
             ->with(['customer', 'items', 'addresses', 'payments'])
             ->where('status', 'processing')
-            ->whereDoesntHave('shipments', fn ($query) => $query->where('source', 'easyparcel'))
+            ->whereDoesntHave('shipments', fn ($query) => $query
+                ->where('source', 'easyparcel')
+                ->whereNotIn('status', ['booking_failed', 'cancelled']))
             ->latest('id')
             ->get()
             ->map(fn (Order $order): array => $this->pendingData($order));
@@ -137,6 +139,10 @@ class ShipmentDataService
     private function fulfillmentStatus(Shipment $shipment): string
     {
         if ($shipment->source !== 'easyparcel') {
+            return $shipment->status;
+        }
+
+        if (in_array($shipment->status, ['booking_failed', 'cancelled', 'on_hold'], true)) {
             return $shipment->status;
         }
 

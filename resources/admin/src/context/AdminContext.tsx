@@ -7,7 +7,15 @@ import { deleteCatalogEntity, fetchCatalog, saveCatalogEntity } from '../integra
 import { fetchMenus, saveMenuDocument } from '../integration/menuData';
 import { customerDirectoryToCustomers, deleteCustomerData, fetchCustomerDirectoryData, saveCustomerData } from '../integration/customerDirectoryData';
 import { fetchOrders, processOrderRefundData, updateOrderStatusData, updateOrderTrackingData } from '../integration/orderData';
-import { appendShipmentEvent, fetchShipments, refreshEasyParcelShipmentStatus as refreshEasyParcelShipmentStatusData } from '../integration/shipmentData';
+import {
+  appendShipmentEvent,
+  confirmEasyParcelProviderFailure as confirmEasyParcelProviderFailureData,
+  easyParcelShipmentStatusDiagnostic,
+  fetchShipments,
+  refreshEasyParcelShipmentStatus as refreshEasyParcelShipmentStatusData,
+  type EasyParcelRecoveryResult,
+  type EasyParcelShipmentStatusRefresh,
+} from '../integration/shipmentData';
 import { createEasyParcelWebhookAuditRefresher, fetchEasyParcelWebhookReceipts } from '../integration/easyParcelWebhookData';
 import { courierConfigsFromEasyParcel, disconnectEasyParcelStore, fetchEasyParcelProvider, startEasyParcelAuthorization } from '../integration/easyParcelProviderData';
 import { confirmEasyParcelBooking, requestEasyParcelQuote, type EasyParcelBooking, type EasyParcelPackageSpec, type EasyParcelQuote } from '../integration/easyParcelFulfillmentData';
@@ -311,8 +319,9 @@ interface AdminContextType {
   reorderSmartRoutingRules: (rules: SmartRoutingRule[]) => void;
 
   shipmentParcels: ShipmentParcel[];
-  refreshEasyParcelShipmentStatus: (parcelId: string) => Promise<void>;
-  refreshAllEasyParcelShipmentStatuses: () => Promise<void>;
+  refreshEasyParcelShipmentStatus: (parcelId: string) => Promise<EasyParcelShipmentStatusRefresh>;
+  refreshAllEasyParcelShipmentStatuses: () => Promise<EasyParcelShipmentStatusRefresh[]>;
+  confirmEasyParcelProviderFailure: (parcelId: string, reason: string) => Promise<EasyParcelRecoveryResult>;
   easyParcelWebhookReceipts: EasyParcelWebhookReceiptRow[];
   easyParcelWebhookAuditStatus: EasyParcelWebhookAuditStatus;
   easyParcelWebhookAuditError: string | null;
@@ -2134,17 +2143,16 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return booking;
   };
 
-  const refreshEasyParcelShipmentStatus = async (parcelId: string): Promise<void> => {
+  const refreshEasyParcelShipmentStatus = async (parcelId: string): Promise<EasyParcelShipmentStatusRefresh> => {
     try {
       const result = await refreshEasyParcelShipmentStatusData(laravelBootstrap, parcelId);
       setShipmentParcels(await fetchShipments(laravelBootstrap));
       addToast({
         type: 'success',
-        title: 'EasyParcel status refreshed',
-        message: result.changed
-          ? `Latest EasyParcel details saved. Current status: ${result.status.replaceAll('_', ' ')}.`
-          : 'The shipment already has the latest EasyParcel status.',
+        title: 'EasyParcel provider status',
+        message: easyParcelShipmentStatusDiagnostic(result),
       });
+      return result;
     } catch (error) {
       const failure = error instanceof Error ? error : new Error('EasyParcel status could not be refreshed.');
       addToast({ type: 'error', title: 'Status refresh failed', message: failure.message });
@@ -2152,24 +2160,33 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const refreshAllEasyParcelShipmentStatuses = async (): Promise<void> => {
+  const refreshAllEasyParcelShipmentStatuses = async (): Promise<EasyParcelShipmentStatusRefresh[]> => {
     const eligible = shipmentParcels.filter((parcel) => (
       parcel.source === 'easyparcel'
       && parcel.status !== 'delivered'
       && parcel.status !== 'returned'
+      && parcel.status !== 'booking_failed'
+      && parcel.status !== 'cancelled'
     ));
 
     if (eligible.length === 0) {
       addToast({ type: 'info', title: 'Statuses already current', message: 'There are no non-terminal EasyParcel shipments to refresh.' });
-      return;
+      return [];
     }
 
     let updated = 0;
     let failed = 0;
+    const results: EasyParcelShipmentStatusRefresh[] = [];
     for (const parcel of eligible) {
       try {
         const result = await refreshEasyParcelShipmentStatusData(laravelBootstrap, parcel.id);
+        results.push(result);
         if (result.changed) updated += 1;
+        addToast({
+          type: 'success',
+          title: `EasyParcel provider status · #${parcel.orderNumber}`,
+          message: easyParcelShipmentStatusDiagnostic(result),
+        });
       } catch {
         failed += 1;
       }
@@ -2191,6 +2208,21 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       title: 'Latest EasyParcel statuses retrieved',
       message: `${eligible.length - failed} checked · ${updated} updated${failed > 0 ? ` · ${failed} failed` : ''}.`,
     });
+    return results;
+  };
+
+  const confirmEasyParcelProviderFailure = async (
+    parcelId: string,
+    reason: string,
+  ): Promise<EasyParcelRecoveryResult> => {
+    const result = await confirmEasyParcelProviderFailureData(laravelBootstrap, parcelId, reason);
+    setShipmentParcels(await fetchShipments(laravelBootstrap));
+    addToast({
+      type: result.cancellationConfirmed ? 'success' : 'warning',
+      title: 'EasyParcel recovery recorded',
+      message: result.cancellationMessage ?? 'EasyParcel cancellation outcome is still pending.',
+    });
+    return result;
   };
 
   const toggleCourierStatus = (id: string) => {
@@ -3859,6 +3891,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
         shipmentParcels,
         refreshEasyParcelShipmentStatus,
         refreshAllEasyParcelShipmentStatuses,
+        confirmEasyParcelProviderFailure,
         easyParcelWebhookReceipts: easyParcelWebhookAudit.receipts,
         easyParcelWebhookAuditStatus: easyParcelWebhookAudit.status,
         easyParcelWebhookAuditError: easyParcelWebhookAudit.error,

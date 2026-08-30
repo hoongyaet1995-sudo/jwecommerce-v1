@@ -7,6 +7,21 @@ export type EasyParcelShipmentStatusRefresh = {
   shipmentId: string;
   status: ShipmentParcel['status'];
   changed: boolean;
+  providerStatusCode: number;
+  providerStatus: string;
+  checkedAt: string;
+  awbAvailable: boolean;
+  recoveryDisposition: 'none' | 'needs_review' | 'provider_terminal';
+};
+export type EasyParcelRecoveryResult = {
+  recoveryId: string;
+  shipmentId: string;
+  replacementOrderId: string;
+  shipmentStatus: ShipmentParcel['status'];
+  recoveryState: string;
+  cancellationState: 'success' | 'error' | 'claimed';
+  cancellationMessage: string | null;
+  cancellationConfirmed: boolean;
 };
 
 const errorMessage = (payload: ErrorResponse | null, fallback: string): string =>
@@ -88,6 +103,41 @@ export const refreshEasyParcelShipmentStatus = async (
   const payload = await response.json().catch(() => null) as { data?: EasyParcelShipmentStatusRefresh } & ErrorResponse | null;
   if (!response.ok || !payload?.data) {
     throw new Error(errorMessage(payload, 'EasyParcel status could not be refreshed.'));
+  }
+
+  return payload.data;
+};
+
+export const easyParcelShipmentStatusDiagnostic = (
+  result: EasyParcelShipmentStatusRefresh,
+): string => `EasyParcel reports ${result.providerStatus} (code ${result.providerStatusCode}); AWB ${result.awbAvailable ? 'is available.' : 'is still unavailable.'}`;
+
+export const easyParcelRecoveryCanRebook = (result: EasyParcelRecoveryResult): boolean =>
+  result.recoveryState === 'awaiting_replacement'
+  && (result.shipmentStatus === 'booking_failed' || result.shipmentStatus === 'cancelled');
+
+export const confirmEasyParcelProviderFailure = async (
+  bootstrap: LaravelAdminBootstrap,
+  shipmentId: string,
+  reason: string,
+): Promise<EasyParcelRecoveryResult> => {
+  if (!bootstrap.shipmentsUrl) throw new Error('Shipment API is unavailable.');
+  const response = await window.fetch(
+    `${bootstrap.shipmentsUrl}/${encodeURIComponent(shipmentId)}/easyparcel/recovery`,
+    {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': bootstrap.csrfToken,
+      },
+      body: JSON.stringify({ reason }),
+    },
+  );
+  const payload = await response.json().catch(() => null) as { data?: EasyParcelRecoveryResult } & ErrorResponse | null;
+  if (!response.ok || !payload?.data) {
+    throw new Error(errorMessage(payload, 'EasyParcel failed-booking recovery could not be confirmed.'));
   }
 
   return payload.data;

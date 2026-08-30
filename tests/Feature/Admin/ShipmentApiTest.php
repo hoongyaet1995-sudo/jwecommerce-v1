@@ -6,18 +6,20 @@ use App\Domain\Shipping\ShippingPermission;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Shipment;
+use App\Models\ShipmentQuote;
 use App\Models\ShippingProvider;
 use App\Models\ShippingProviderCredential;
 use App\Models\ShippingWebhookReceipt;
 use App\Models\User;
+use App\Services\Shipping\EasyParcelCancellationService;
 use App\Services\Shipping\EasyParcelShipmentDetailsService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Tests\Concerns\UsesIsolatedDatabaseMigrations;
 use Tests\TestCase;
 
 class ShipmentApiTest extends TestCase
 {
-    use RefreshDatabase;
+    use UsesIsolatedDatabaseMigrations;
 
     public function test_manual_dispatch_creates_one_shipment_and_an_append_only_event(): void
     {
@@ -264,6 +266,97 @@ class ShipmentApiTest extends TestCase
             ->assertJsonStructure(['data' => ['checkedAt']]);
         self::assertNotEmpty($response->json('data.checkedAt'));
         Http::assertSentCount(1);
+    }
+
+    public function test_dispatch_staff_can_confirm_provider_failure_and_receives_rebook_instructions(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedEasyParcelProvider();
+        $order = $this->processingOrder('recovery-dispatch@example.test', 'JW-RECOVERY-DISPATCH-1001');
+        $shipment = $this->recoverableEasyParcelShipment($order, $provider, 'ES-RECOVERY-DISPATCH-1001');
+        $staff = User::factory()->create(['is_admin' => true, 'is_super_admin' => false]);
+        $staff->permissions()->create(['permission' => ShippingPermission::DISPATCH]);
+        Http::fake([
+            EasyParcelCancellationService::CANCELLATION_URL => Http::response([
+                'status_code' => 200,
+                'message' => '1 request success, 0 request error.',
+                'data' => [[
+                    'status' => 'success',
+                    'message' => 'Shipment Cancelled',
+                    'shipment_number' => 'ES-RECOVERY-DISPATCH-1001',
+                ]],
+            ]),
+        ]);
+
+        $response = $this->actingAs($staff)
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/easyparcel/recovery', [
+                'reason' => 'EasyParcel portal explicitly reports this booking as failed.',
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('data.shipmentId', (string) $shipment->id)
+            ->assertJsonPath('data.replacementOrderId', (string) $order->id)
+            ->assertJsonPath('data.shipmentStatus', 'cancelled')
+            ->assertJsonPath('data.cancellationState', 'success')
+            ->assertJsonPath('data.cancellationMessage', 'EasyParcel cancellation confirmed.')
+            ->assertJsonPath('data.cancellationConfirmed', true)
+            ->assertJsonStructure(['data' => ['recoveryId']]);
+        self::assertNotEmpty($response->json('data.recoveryId'));
+        $this->assertDatabaseHas('easyparcel_shipment_recoveries', [
+            'shipment_id' => $shipment->id,
+            'order_id' => $order->id,
+            'confirmed_by' => $staff->id,
+            'reason' => 'EasyParcel portal explicitly reports this booking as failed.',
+            'provider_cancel_state' => 'success',
+        ]);
+        $rows = $this->actingAs($this->superAdmin())
+            ->getJson('/admin/api/shipping/shipments')
+            ->assertOk()
+            ->json('data');
+        self::assertTrue(collect($rows)->contains(fn (array $row): bool => $row['id'] === (string) $shipment->id && $row['status'] === 'cancelled'));
+        self::assertTrue(collect($rows)->contains(fn (array $row): bool => $row['id'] === 'pending-order-'.$order->id && $row['orderId'] === (string) $order->id));
+        Http::assertSentCount(1);
+    }
+
+    public function test_view_only_staff_cannot_confirm_provider_failure(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedEasyParcelProvider();
+        $order = $this->processingOrder('recovery-viewer@example.test', 'JW-RECOVERY-VIEWER-1001');
+        $shipment = $this->recoverableEasyParcelShipment($order, $provider, 'ES-RECOVERY-VIEWER-1001');
+        $staff = User::factory()->create(['is_admin' => true, 'is_super_admin' => false]);
+        $staff->permissions()->create(['permission' => ShippingPermission::VIEW]);
+        Http::fake();
+
+        $this->actingAs($staff)
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/easyparcel/recovery', [
+                'reason' => 'EasyParcel portal explicitly reports this booking as failed.',
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('easyparcel_shipment_recoveries', 0);
+        self::assertSame('pending', $shipment->fresh()->status);
+        Http::assertNothingSent();
+    }
+
+    public function test_provider_failure_confirmation_requires_a_bounded_reason(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedEasyParcelProvider();
+        $order = $this->processingOrder('recovery-reason@example.test', 'JW-RECOVERY-REASON-1001');
+        $shipment = $this->recoverableEasyParcelShipment($order, $provider, 'ES-RECOVERY-REASON-1001');
+        Http::fake();
+
+        foreach (['no', str_repeat('x', 501)] as $reason) {
+            $this->actingAs($this->superAdmin())
+                ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/easyparcel/recovery', compact('reason'))
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors('reason');
+        }
+
+        $this->assertDatabaseCount('easyparcel_shipment_recoveries', 0);
+        Http::assertNothingSent();
     }
 
     public function test_latest_easyparcel_status_rejects_non_easyparcel_shipments_without_provider_request(): void
@@ -553,5 +646,40 @@ class ShipmentApiTest extends TestCase
         $order->statusHistory()->create(['to_status' => 'processing']);
 
         return $order;
+    }
+
+    private function recoverableEasyParcelShipment(
+        Order $order,
+        ShippingProvider $provider,
+        string $shipmentNumber,
+    ): Shipment {
+        $quote = ShipmentQuote::query()->create([
+            'order_id' => $order->id,
+            'shipping_provider_id' => $provider->id,
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'provider_configuration_version' => $provider->configuration_version,
+            'package_snapshot' => ['weight_kg' => 1, 'length_cm' => 10, 'width_cm' => 10, 'height_cm' => 10],
+            'request_snapshot' => ['booking' => []],
+            'response_snapshot' => ['services' => []],
+            'reconciliation_reference' => 'JWEP-'.$order->id.'-'.$shipmentNumber,
+            'booking_state' => 'booked',
+            'booking_claim_key' => 'easyparcel:order:'.$order->id,
+            'expires_at' => now()->addMinutes(15),
+        ]);
+
+        return Shipment::query()->create([
+            'order_id' => $order->id,
+            'shipment_quote_id' => $quote->id,
+            'sequence' => 1,
+            'source' => 'easyparcel',
+            'carrier_code' => 'EP-CR0AP',
+            'carrier_name' => 'Aramex',
+            'service_code' => 'EP-CS096',
+            'service_name' => 'Aramex (Pick Up)',
+            'status' => 'pending',
+            'currency' => 'MYR',
+            'provider_reference' => $shipmentNumber,
+        ]);
     }
 }
