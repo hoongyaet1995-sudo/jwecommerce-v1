@@ -134,6 +134,27 @@ class OrderPaymentProofApiTest extends TestCase
         $this->assertSame('local', $payment->fresh()->proof_disk);
     }
 
+    public function test_order_payload_infers_safe_preview_metadata_for_a_legacy_bank_transfer_proof(): void
+    {
+        Storage::fake('public');
+        Storage::fake('local');
+        [$order, $payment] = $this->bankTransferOrderWithProof();
+        Storage::disk('local')->delete($payment->proof_path);
+        Storage::disk('public')->put($payment->proof_path, 'legacy-proof');
+        $payment->update([
+            'proof_disk' => 'public',
+            'proof_original_name' => null,
+            'proof_mime_type' => null,
+        ]);
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+
+        $this->actingAs($admin)
+            ->getJson('/admin/api/orders')
+            ->assertOk()
+            ->assertJsonPath('orders.0.paymentProof.originalFileName', 'receipt.png')
+            ->assertJsonPath('orders.0.paymentProof.mimeType', 'image/png');
+    }
+
     public function test_order_payload_identifies_bank_transfer_and_checkout_shipping_source_without_disclosing_proof_path(): void
     {
         Storage::fake('local');

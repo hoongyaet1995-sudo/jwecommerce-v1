@@ -18,6 +18,13 @@
 4. Deploy that exact Git commit to `/apps/jwecommerce` on Hostinger.
 5. Verify that localhost, GitHub `main`, and Hostinger report the same commit SHA, then verify live HTTPS behavior before declaring a release complete.
 
+## Sync and deployment cadence
+
+- Do not push to GitHub or deploy to Hostinger after every individual change.
+- Accumulate a coherent, locally verified phase of work in `C:\xampp\htdocs\jwstudio-ecommerce` first.
+- At the end of that phase, report the completed scope and verification evidence, then explicitly ask the user whether to synchronize the phase to GitHub and/or Hostinger.
+- Commit, push, and deploy only after the user gives that synchronization approval. Until then, localhost is the active development truth.
+
 ## Drift prevention
 
 - Do not implement application code only on Hostinger.

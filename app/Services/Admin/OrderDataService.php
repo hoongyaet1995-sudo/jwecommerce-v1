@@ -6,6 +6,7 @@ use App\Domain\Payments\PaymentProofPermission;
 use App\Models\Order;
 use App\Models\OrderAddress;
 use App\Models\User;
+use App\Services\Payments\PaymentProofService;
 use Illuminate\Support\Collection;
 
 class OrderDataService
@@ -142,14 +143,17 @@ class OrderDataService
             return ['required' => false, 'status' => 'not_required', 'previewUrl' => null, 'downloadUrl' => null, 'canReview' => false, 'audit' => []];
         }
 
+        $mimeType = PaymentProofService::safeMime($payment->proof_mime_type, $payment->proof_path);
+        $originalFileName = PaymentProofService::safeFilename($payment->proof_original_name, $mimeType, $payment->proof_path);
+
         return [
             'required' => true,
             'paymentId' => (string) $payment->id,
             'status' => $payment->proof_status ?: ($payment->proof_path ? 'uploaded' : 'missing'),
             'uploadedAt' => $payment->proof_uploaded_at?->toIso8601String(),
             'reviewedAt' => $payment->proof_reviewed_at?->toIso8601String(),
-            'originalFileName' => $payment->proof_original_name,
-            'mimeType' => $payment->proof_mime_type,
+            'originalFileName' => $originalFileName,
+            'mimeType' => $mimeType,
             'previewUrl' => $canViewProof && $payment->proof_path ? route('admin.api.orders.payments.proof.show', [$order, $payment]) : null,
             'downloadUrl' => $canViewProof && $payment->proof_path ? route('admin.api.orders.payments.proof.download', [$order, $payment]) : null,
             'canReview' => $canReviewProof && $payment->proof_status === 'uploaded',

@@ -71,13 +71,13 @@ class PaymentProofService
         }
 
         $this->appendEvent($payment, $download ? 'downloaded' : 'previewed', $actor);
-        $filename = $this->safeFilename($payment->proof_original_name, $payment->proof_mime_type);
+        $filename = self::safeFilename($payment->proof_original_name, $payment->proof_mime_type, $payment->proof_path);
 
         return response()->stream(function () use ($stream): void {
             fpassthru($stream);
             fclose($stream);
         }, 200, [
-            'Content-Type' => $this->safeMime($payment->proof_mime_type, $payment->proof_path),
+            'Content-Type' => self::safeMime($payment->proof_mime_type, $payment->proof_path),
             'Content-Disposition' => ($download ? 'attachment' : 'inline').'; filename="'.$filename.'"',
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, no-store, max-age=0',
@@ -127,7 +127,7 @@ class PaymentProofService
         return $mime;
     }
 
-    private function safeMime(?string $mime, ?string $path): string
+    public static function safeMime(?string $mime, ?string $path): string
     {
         if (in_array($mime, self::ALLOWED_MIMES, true)) {
             return $mime;
@@ -140,14 +140,18 @@ class PaymentProofService
         };
     }
 
-    private function safeFilename(?string $originalName, ?string $mime): string
+    public static function safeFilename(?string $originalName, ?string $mime, ?string $path = null): string
     {
-        $fallback = match ($this->safeMime($mime, null)) {
+        $fallback = match (self::safeMime($mime, $path)) {
             'image/jpeg' => 'payment-proof.jpg',
             'image/png' => 'payment-proof.png',
             default => 'payment-proof.pdf',
         };
         $name = basename((string) $originalName);
+
+        if ($name === '') {
+            $name = basename((string) $path);
+        }
 
         return $name !== '' ? str_replace(['"', "\r", "\n"], '', $name) : $fallback;
     }
