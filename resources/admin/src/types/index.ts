@@ -402,6 +402,41 @@ export interface Customer {
 
 export type PaymentStatus = 'paid' | 'pending' | 'refunded' | 'partially_refunded' | 'failed';
 export type FulfillmentStatus = 'unfulfilled' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type PaymentProofStatus = 'not_required' | 'missing' | 'none' | 'uploaded' | 'verified' | 'rejected';
+
+export interface PaymentProofAuditEvent {
+  id: string;
+  eventType: string;
+  reason?: string | null;
+  at?: string | null;
+  actor?: string | null;
+}
+
+export interface PaymentProof {
+  required?: boolean;
+  paymentId?: string;
+  status: PaymentProofStatus;
+  uploadedAt?: string | null;
+  reviewedAt?: string | null;
+  originalFileName?: string | null;
+  mimeType?: string | null;
+  previewUrl?: string | null;
+  downloadUrl?: string | null;
+  canReview?: boolean;
+  audit?: PaymentProofAuditEvent[];
+}
+
+export interface OrderShippingSource {
+  checkoutMethod?: string | null;
+  checkoutService?: string | null;
+  checkoutRateType?: string | null;
+  checkoutCalculationMode?: string | null;
+  fulfillmentModule?: string | null;
+  provider?: string | null;
+  service?: string | null;
+  quoteState?: string | null;
+  providerReference?: string | null;
+}
 
 export interface OrderItem {
   id: string;
@@ -433,9 +468,14 @@ export interface Order {
   customerName: string;
   customerEmail: string;
   customerPhone?: string;
-  paymentGateway: 'Stripe' | 'PayPal' | 'Apple Pay' | 'Credit Card';
+  paymentGateway: string;
   paymentGatewayStatus: PaymentStatus;
+  paymentProvider?: string | null;
+  paymentReference?: string | null;
+  paymentEnvironment?: string | null;
+  paymentProof?: PaymentProof;
   fulfillmentStatus: FulfillmentStatus;
+  shippingSource?: OrderShippingSource;
   currency: string;
   items: OrderItem[];
   subtotal: number;

@@ -1,4 +1,4 @@
-import type { FulfillmentStatus, LaravelAdminBootstrap, Order, PaymentStatus } from '../types';
+import type { FulfillmentStatus, LaravelAdminBootstrap, Order, PaymentProofStatus, PaymentStatus } from '../types';
 
 type OrderCollectionResponse = { orders: Order[] };
 type OrderResponse = { data: Order };
@@ -36,3 +36,16 @@ export const updateOrderTrackingData = (bootstrap: LaravelAdminBootstrap, orderI
 
 export const processOrderRefundData = (bootstrap: LaravelAdminBootstrap, orderId: string, amount: number, reason: string): Promise<Order> =>
   mutateOrder(bootstrap, `${encodeURIComponent(orderId)}/refund`, 'POST', { amount, reason });
+
+export const reviewPaymentProofData = (
+  bootstrap: LaravelAdminBootstrap,
+  orderId: string,
+  paymentId: string,
+  decision: Extract<PaymentProofStatus, 'verified' | 'rejected'>,
+  reason?: string,
+): Promise<Order> => mutateOrder(
+  bootstrap,
+  `${encodeURIComponent(orderId)}/payments/${encodeURIComponent(paymentId)}/proof/review`,
+  'POST',
+  { decision, reason },
+);

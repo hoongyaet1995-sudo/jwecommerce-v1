@@ -13,4 +13,13 @@ describe('OrderAdmin manual fulfillment source fidelity', () => {
     expect(source).toContain('const saved = await updateOrderTracking(selectedOrder.id, carrier, tracking);');
     expect(source).toContain('if (saved) {');
   });
+
+  it('binds the Bank In-only proof controls to persisted Laravel data rather than browser mock state', () => {
+    expect(source).toContain('selectedOrder.paymentProof?.required');
+    expect(source).toContain('reviewPaymentProof');
+    expect(source).toContain('Payment Summary');
+    expect(source).toContain('Shipping Source');
+    expect(source).not.toContain('URL.createObjectURL');
+    expect(source).not.toContain('localStorage.setItem');
+  });
 });

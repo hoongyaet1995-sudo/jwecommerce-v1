@@ -6,7 +6,7 @@ import { clonePage, createPage, fetchPages, removePage, savePageDraft } from '..
 import { deleteCatalogEntity, fetchCatalog, saveCatalogEntity } from '../integration/catalogData';
 import { fetchMenus, saveMenuDocument } from '../integration/menuData';
 import { customerDirectoryToCustomers, deleteCustomerData, fetchCustomerDirectoryData, saveCustomerData } from '../integration/customerDirectoryData';
-import { fetchOrders, processOrderRefundData, updateOrderStatusData, updateOrderTrackingData } from '../integration/orderData';
+import { fetchOrders, processOrderRefundData, reviewPaymentProofData, updateOrderStatusData, updateOrderTrackingData } from '../integration/orderData';
 import {
   appendShipmentEvent,
   confirmEasyParcelProviderFailureWithReload,
@@ -262,6 +262,7 @@ interface AdminContextType {
   updateOrderStatus: (orderId: string, paymentStatus?: PaymentStatus, fulfillmentStatus?: FulfillmentStatus, note?: string) => Promise<Order | null>;
   updateOrderTracking: (orderId: string, carrier: string, trackingNumber: string) => Promise<Order | null>;
   processOrderRefund: (orderId: string, amount: number, reason: string) => Promise<Order | null>;
+  reviewPaymentProof: (orderId: string, paymentId: string, decision: 'verified' | 'rejected', reason?: string) => Promise<Order | null>;
 
   // Settings & Staff RBAC
   staffUsers: StaffUser[];
@@ -1391,6 +1392,22 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return saved;
     } catch (error) {
       addToast({ type: 'error', title: 'Refund Failed', message: error instanceof Error ? error.message : 'Unable to process refund.' });
+      return null;
+    }
+  };
+
+  const reviewPaymentProof = async (orderId: string, paymentId: string, decision: 'verified' | 'rejected', reason?: string): Promise<Order | null> => {
+    try {
+      const saved = await reviewPaymentProofData(laravelBootstrap, orderId, paymentId, decision, reason);
+      setOrders(prev => prev.map(order => order.id === saved.id ? saved : order));
+      addToast({
+        type: decision === 'verified' ? 'success' : 'warning',
+        title: decision === 'verified' ? 'Payment Proof Verified' : 'Payment Proof Rejected',
+        message: decision === 'verified' ? 'Payment is now confirmed and ready for fulfillment.' : 'The order remains pending payment.',
+      });
+      return saved;
+    } catch (error) {
+      addToast({ type: 'error', title: 'Payment Proof Review Failed', message: error instanceof Error ? error.message : 'Unable to review payment proof.' });
       return null;
     }
   };
@@ -3863,6 +3880,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
         updateOrderStatus,
         updateOrderTracking,
         processOrderRefund,
+        reviewPaymentProof,
         staffUsers,
         saveStaffUser,
         deleteStaffUser,

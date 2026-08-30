@@ -168,6 +168,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/storefront-shell-settings', [StorefrontShellSettingsApiController::class, 'show'])->name('api.storefront-shell-settings.show');
     Route::put('/api/storefront-shell-settings', [StorefrontShellSettingsApiController::class, 'update'])->name('api.storefront-shell-settings.update');
     Route::get('/api/orders', [OrderApiController::class, 'index'])->name('api.orders.index');
+    Route::get('/api/orders/{order}/payments/{payment}/proof', [OrderApiController::class, 'showPaymentProof'])->name('api.orders.payments.proof.show');
+    Route::get('/api/orders/{order}/payments/{payment}/proof/download', [OrderApiController::class, 'downloadPaymentProof'])->name('api.orders.payments.proof.download');
+    Route::post('/api/orders/{order}/payments/{payment}/proof/review', [OrderApiController::class, 'reviewPaymentProof'])->name('api.orders.payments.proof.review');
     Route::patch('/api/orders/{order}/status', [OrderApiController::class, 'updateStatus']);
     Route::patch('/api/orders/{order}/tracking', [OrderApiController::class, 'tracking']);
     Route::post('/api/shipping/orders/{order}/dispatch', [ShipmentApiController::class, 'dispatch']);

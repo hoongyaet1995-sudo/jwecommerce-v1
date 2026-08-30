@@ -66,7 +66,7 @@ class OfflineCheckoutTest extends TestCase
 
     public function test_bank_transfer_receipt_is_stored_only_when_operator_enabled_uploads(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
         $variant = $this->variant();
         StoreSetting::query()->updateOrCreate(['key' => 'bank_transfer'], ['value' => ['data' => [
             'isEnabled' => true, 'allowProofUpload' => true, 'paymentWindowHours' => 24,
@@ -82,7 +82,12 @@ class OfflineCheckoutTest extends TestCase
 
         $payment = \App\Models\OrderPayment::query()->firstOrFail();
         $this->assertNotNull($payment->proof_path);
-        Storage::disk('public')->assertExists($payment->proof_path);
+        $this->assertSame('local', $payment->proof_disk);
+        $this->assertSame('uploaded', $payment->proof_status);
+        $this->assertSame('receipt.png', $payment->proof_original_name);
+        $this->assertSame('image/png', $payment->proof_mime_type);
+        Storage::disk('local')->assertExists($payment->proof_path);
+        Storage::disk('public')->assertMissing($payment->proof_path);
     }
 
     public function test_bank_transfer_snapshots_the_customer_selected_active_account(): void

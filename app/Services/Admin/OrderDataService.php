@@ -2,23 +2,36 @@
 
 namespace App\Services\Admin;
 
+use App\Domain\Payments\PaymentProofPermission;
 use App\Models\Order;
 use App\Models\OrderAddress;
+use App\Models\User;
 use Illuminate\Support\Collection;
 
 class OrderDataService
 {
     public function collection(): Collection
     {
-        return Order::query()->with(['customer', 'items', 'addresses', 'payments', 'statusHistory', 'refunds', 'taxLines'])->latest()->get()->map(fn (Order $order): array => $this->data($order));
+        return Order::query()->with([
+            'customer', 'items', 'addresses', 'payments.proofEvents.user', 'statusHistory', 'refunds', 'taxLines',
+            'shipments', 'shipmentQuotes',
+        ])->latest()->get()->map(fn (Order $order): array => $this->data($order));
     }
 
     public function data(Order $order): array
     {
-        $order->loadMissing(['customer', 'items', 'addresses', 'payments', 'statusHistory', 'refunds', 'taxLines']);
+        $order->loadMissing([
+            'customer', 'items', 'addresses', 'payments.proofEvents.user', 'statusHistory', 'refunds', 'taxLines',
+            'shipments', 'shipmentQuotes',
+        ]);
         $payment = $order->payments->sortByDesc('id')->first();
+        $viewer = request()->user();
+        $canViewProof = $viewer instanceof User && PaymentProofPermission::allows($viewer, PaymentProofPermission::VIEW);
+        $canReviewProof = $viewer instanceof User && PaymentProofPermission::allows($viewer, PaymentProofPermission::REVIEW);
         $shipping = $order->addresses->firstWhere('type', 'shipping') ?? $order->addresses->first();
         $billing = $order->addresses->firstWhere('type', 'billing') ?? $shipping;
+        $shipment = $order->shipments->sortByDesc('id')->first();
+        $shipmentQuote = $order->shipmentQuotes->sortByDesc('id')->first();
         $customerName = trim(($order->customer?->first_name ?? '').' '.($order->customer?->last_name ?? ''));
         $refundedAmount = (int) $order->refunds->where('status', 'completed')->sum('amount');
 
@@ -40,9 +53,14 @@ class OrderDataService
             'customerName' => $customerName !== '' ? $customerName : $order->email,
             'customerEmail' => $order->email,
             'customerPhone' => $order->customer?->phone,
-            'paymentGateway' => match ($payment?->gateway) { 'paypal' => 'PayPal', 'apple_pay' => 'Apple Pay', default => 'Credit Card' },
+            'paymentGateway' => $this->paymentGatewayLabel($payment?->gateway),
             'paymentGatewayStatus' => in_array($payment?->status, ['paid', 'pending', 'refunded', 'partially_refunded', 'failed'], true) ? $payment->status : 'failed',
+            'paymentProvider' => $this->paymentProviderLabel($payment?->provider, $payment?->gateway),
+            'paymentReference' => $payment?->reference,
+            'paymentEnvironment' => $payment?->environment,
+            'paymentProof' => $this->paymentProof($order, $payment, $canViewProof, $canReviewProof),
             'fulfillmentStatus' => match ($order->status) { 'processing', 'shipped', 'delivered', 'cancelled' => $order->status, default => 'unfulfilled' },
+            'shippingSource' => $this->shippingSource($order, $shipment, $shipmentQuote),
             'currency' => $order->currency,
             'items' => $order->items->map(fn ($item): array => ['id' => (string) $item->id, 'productId' => '', 'variantId' => $item->product_variant_id ? (string) $item->product_variant_id : null, 'title' => $item->title, 'variantTitle' => $item->variant_title, 'sku' => $item->sku, 'price' => $item->unit_price / 100, 'quantity' => $item->quantity, 'image' => $item->image_url ?: ''])->values(),
             'subtotal' => $order->subtotal / 100,
@@ -90,5 +108,80 @@ class OrderDataService
     private function address(?OrderAddress $address, string $type): array
     {
         return ['id' => (string) ($address?->id ?? ''), 'isDefault' => true, 'type' => $type, 'firstName' => $address?->first_name ?? '', 'lastName' => $address?->last_name ?? '', 'address1' => $address?->line_1 ?? '', 'address2' => $address?->line_2, 'city' => $address?->city ?? '', 'province' => $address?->state ?? '', 'country' => $address?->country ?? '', 'postalCode' => $address?->postal_code ?? '', 'phone' => $address?->phone ?? ''];
+    }
+
+    private function paymentGatewayLabel(?string $gateway): string
+    {
+        return match ($gateway) {
+            'bank_transfer' => 'Bank In / DuitNow',
+            'paypal' => 'PayPal',
+            'apple_pay' => 'Apple Pay',
+            'stripe' => 'Stripe',
+            'billplz' => 'Billplz',
+            'simulated_card' => 'Simulated Card',
+            default => 'Credit Card',
+        };
+    }
+
+    private function paymentProviderLabel(?string $provider, ?string $gateway): string
+    {
+        if ($gateway === 'bank_transfer') {
+            return 'Manual Bank Transfer';
+        }
+
+        return match ($provider) {
+            null, '' => 'Not recorded',
+            'simulated_card' => 'Simulated payment',
+            default => ucfirst(str_replace('_', ' ', $provider)),
+        };
+    }
+
+    private function paymentProof(Order $order, $payment, bool $canViewProof, bool $canReviewProof): array
+    {
+        if (! $payment || $payment->gateway !== 'bank_transfer') {
+            return ['required' => false, 'status' => 'not_required', 'previewUrl' => null, 'downloadUrl' => null, 'canReview' => false, 'audit' => []];
+        }
+
+        return [
+            'required' => true,
+            'paymentId' => (string) $payment->id,
+            'status' => $payment->proof_status ?: ($payment->proof_path ? 'uploaded' : 'missing'),
+            'uploadedAt' => $payment->proof_uploaded_at?->toIso8601String(),
+            'reviewedAt' => $payment->proof_reviewed_at?->toIso8601String(),
+            'originalFileName' => $payment->proof_original_name,
+            'mimeType' => $payment->proof_mime_type,
+            'previewUrl' => $canViewProof && $payment->proof_path ? route('admin.api.orders.payments.proof.show', [$order, $payment]) : null,
+            'downloadUrl' => $canViewProof && $payment->proof_path ? route('admin.api.orders.payments.proof.download', [$order, $payment]) : null,
+            'canReview' => $canReviewProof && $payment->proof_status === 'uploaded',
+            'audit' => $payment->proofEvents->map(fn ($event): array => [
+                'id' => (string) $event->id,
+                'eventType' => $event->event_type,
+                'reason' => $event->reason,
+                'at' => $event->created_at?->toIso8601String(),
+                'actor' => $event->user?->name,
+            ])->values(),
+        ];
+    }
+
+    private function shippingSource(Order $order, $shipment, $shipmentQuote): array
+    {
+        $snapshot = $order->shipping_snapshot ?? [];
+        $fulfillmentModule = match ($shipment?->source) {
+            'easyparcel' => 'EasyParcel',
+            'manual' => 'Manual dispatch',
+            default => $shipmentQuote ? ucfirst((string) $shipmentQuote->provider) : 'Not initiated',
+        };
+
+        return [
+            'checkoutMethod' => $order->shipping_method,
+            'checkoutService' => $order->shipping_label ?: data_get($snapshot, 'label'),
+            'checkoutRateType' => data_get($snapshot, 'rate_type'),
+            'checkoutCalculationMode' => data_get($snapshot, 'calculation_mode'),
+            'fulfillmentModule' => $fulfillmentModule,
+            'provider' => $shipment?->carrier_name ?? $shipmentQuote?->provider,
+            'service' => $shipment?->service_name ?? $shipmentQuote?->selected_service_code,
+            'quoteState' => $shipmentQuote?->booking_state ?? 'not_requested',
+            'providerReference' => $shipment?->provider_reference,
+        ];
     }
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { Order, FulfillmentStatus, PaymentStatus } from '../../types';
+import { OrderPaymentProofPreviewModal } from './OrderPaymentProofPreviewModal';
 import {
   ShoppingBag,
   Search,
@@ -23,16 +24,21 @@ import {
   MessageSquare,
   History,
   ShieldCheck,
-  Layers
+  Layers,
+  Download,
+  FileText
 } from 'lucide-react';
 
 export const OrderAdmin: React.FC = () => {
-  const { orders, updateOrderStatus, updateOrderTracking, orderStatuses, setCurrentSection } = useAdmin();
+  const { orders, updateOrderStatus, updateOrderTracking, reviewPaymentProof, orderStatuses, setCurrentSection } = useAdmin();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isProofPreviewOpen, setIsProofPreviewOpen] = useState(false);
+  const [isRejectBoxOpen, setIsRejectBoxOpen] = useState(false);
+  const [rejectionReasonInput, setRejectionReasonInput] = useState('');
 
   // Status Change Workflow State
   const [chosenStatusId, setChosenStatusId] = useState<string>('');
@@ -80,7 +86,27 @@ export const OrderAdmin: React.FC = () => {
     setChosenStatusId(currentStatusObj?.id || '');
     setNotifyCustomerCheck(Boolean(currentStatusObj?.notifyCustomer));
     setCustomerCommentInput('');
+    setIsProofPreviewOpen(false);
+    setIsRejectBoxOpen(false);
+    setRejectionReasonInput('');
     setIsDetailOpen(true);
+  };
+
+  const handlePaymentProofReview = async (decision: 'verified' | 'rejected') => {
+    if (!selectedOrder?.paymentProof?.paymentId) return;
+    const reason = rejectionReasonInput.trim();
+    if (decision === 'rejected' && !reason) return;
+    const saved = await reviewPaymentProof(selectedOrder.id, selectedOrder.paymentProof.paymentId, decision, reason || undefined);
+    if (saved) {
+      setSelectedOrder(saved);
+      setIsRejectBoxOpen(false);
+      setRejectionReasonInput('');
+    }
+  };
+
+  const handleProofDownload = () => {
+    const url = selectedOrder?.paymentProof?.downloadUrl;
+    if (url) window.open(url, '_blank', 'noopener');
   };
 
   const handleStatusSelectChange = (statusId: string) => {
@@ -572,6 +598,39 @@ export const OrderAdmin: React.FC = () => {
                   <CreditCard className="w-3.5 h-3.5 text-emerald-500" />
                   <span>Payment Summary</span>
                 </div>
+                <div className="space-y-1.5 text-[11px] font-mono text-neutral-600 dark:text-neutral-300 pb-3 border-b border-neutral-200 dark:border-neutral-700/80">
+                  <div className="flex items-center justify-between gap-3"><span className="text-neutral-500 dark:text-neutral-400">Payment Method:</span><span className="font-semibold text-neutral-800 dark:text-neutral-200 text-right">{selectedOrder.paymentGateway}</span></div>
+                  <div className="flex items-center justify-between gap-3"><span className="text-neutral-500 dark:text-neutral-400">Provider:</span><span className="text-neutral-700 dark:text-neutral-300 text-right">{selectedOrder.paymentProvider || 'Not recorded'}</span></div>
+                  <div className="flex items-center justify-between gap-3"><span className="text-neutral-500 dark:text-neutral-400">Reference:</span><span className="font-mono font-medium text-neutral-800 dark:text-neutral-200 text-right break-all">{selectedOrder.paymentReference || 'Not recorded'}</span></div>
+                  <div className="flex items-center justify-between gap-3"><span className="text-neutral-500 dark:text-neutral-400">Payment Status:</span><span>{renderPaymentBadge(selectedOrder.paymentGatewayStatus)}</span></div>
+                  {selectedOrder.paymentProof?.required && <div className="flex items-center justify-between gap-3"><span className="text-neutral-500 dark:text-neutral-400">Payment Proof:</span><span className={`text-[10px] font-bold ${selectedOrder.paymentProof.status === 'verified' ? 'text-emerald-600 dark:text-emerald-400' : selectedOrder.paymentProof.status === 'rejected' ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}>{selectedOrder.paymentProof.status.replace('_', ' ')}</span></div>}
+                </div>
+
+                {selectedOrder.paymentProof?.required && (
+                  <div className="p-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 space-y-2.5">
+                    {selectedOrder.paymentProof.status === 'uploaded' && (
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between gap-3"><span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800"><FileText className="w-2.5 h-2.5" /> Receipt uploaded — awaiting staff review</span><span className="text-[10px] font-mono text-neutral-400 truncate">{selectedOrder.paymentProof.originalFileName || 'Protected receipt'}</span></div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button type="button" disabled={!selectedOrder.paymentProof.previewUrl} onClick={() => setIsProofPreviewOpen(true)} className="px-2.5 py-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-50 text-neutral-800 dark:text-neutral-200 font-semibold text-[11px] flex items-center gap-1 transition cursor-pointer"><Eye className="w-3.5 h-3.5" /><span>View proof</span></button>
+                          <button type="button" disabled={!selectedOrder.paymentProof.downloadUrl} onClick={handleProofDownload} className="px-2.5 py-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-50 text-neutral-800 dark:text-neutral-200 font-semibold text-[11px] flex items-center gap-1 transition cursor-pointer"><Download className="w-3.5 h-3.5" /><span>Download</span></button>
+                          {selectedOrder.paymentProof.canReview && <><button type="button" onClick={() => handlePaymentProofReview('verified')} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-xs transition cursor-pointer ml-auto"><ShieldCheck className="w-3.5 h-3.5" /><span>Verify payment</span></button><button type="button" onClick={() => setIsRejectBoxOpen(value => !value)} className="px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/80 font-bold text-[11px] flex items-center gap-1 transition cursor-pointer"><AlertCircle className="w-3.5 h-3.5" /><span>Reject proof</span></button></>}
+                        </div>
+                        {isRejectBoxOpen && <div className="p-2.5 rounded-xl bg-rose-50/60 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 space-y-2 animate-in fade-in"><label className="text-[10px] font-bold text-rose-800 dark:text-rose-300 uppercase tracking-wider">Rejection Reason / Verification Note</label><input type="text" placeholder="Type reason for customer notice..." value={rejectionReasonInput} onChange={event => setRejectionReasonInput(event.target.value)} className="w-full px-2.5 py-1.5 text-xs rounded-lg border bg-white dark:bg-neutral-900 border-rose-300 dark:border-rose-800 text-neutral-900 dark:text-white" /><div className="flex justify-end gap-2"><button type="button" onClick={() => setIsRejectBoxOpen(false)} className="px-2.5 py-1 text-[11px] rounded-lg text-neutral-600 hover:text-neutral-800 font-medium">Cancel</button><button type="button" disabled={!rejectionReasonInput.trim()} onClick={() => handlePaymentProofReview('rejected')} className="px-3 py-1 text-[11px] rounded-lg bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold shadow-xs cursor-pointer">Confirm Rejection</button></div></div>}
+                      </div>
+                    )}
+                    {selectedOrder.paymentProof.status === 'verified' && <div className="flex items-center justify-between gap-3"><div><span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800"><ShieldCheck className="w-2.5 h-2.5" /> Payment verified</span><p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">Ready for fulfillment</p></div><button type="button" onClick={() => setIsProofPreviewOpen(true)} className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 font-semibold text-[11px] flex items-center gap-1 transition cursor-pointer"><Eye className="w-3.5 h-3.5" />View proof</button></div>}
+                    {selectedOrder.paymentProof.status === 'rejected' && <div className="space-y-2"><span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800"><AlertCircle className="w-2.5 h-2.5" /> Proof rejected</span><p className="text-[11px] text-rose-700 dark:text-rose-300">{selectedOrder.paymentProof.audit?.find(event => event.eventType === 'rejected')?.reason || 'Awaiting customer re-upload.'}</p><button type="button" onClick={() => setIsProofPreviewOpen(true)} className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 font-semibold text-[11px] flex items-center gap-1 transition cursor-pointer"><Eye className="w-3.5 h-3.5" />View proof</button></div>}
+                    {['missing', 'none'].includes(selectedOrder.paymentProof.status) && <p className="text-[11px] text-neutral-500 dark:text-neutral-400">No receipt uploaded by customer yet.</p>}
+                  </div>
+                )}
+
+                <div className="p-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 space-y-1.5 text-[11px]">
+                  <div className="flex items-center gap-1.5 font-bold text-neutral-900 dark:text-white"><Layers className="w-3.5 h-3.5 text-indigo-500" />Shipping Source</div>
+                  <div className="flex justify-between gap-3"><span className="text-neutral-500">Checkout service:</span><span className="text-right font-medium text-neutral-700 dark:text-neutral-300">{selectedOrder.shippingSource?.checkoutService || 'Not recorded'}</span></div>
+                  <div className="flex justify-between gap-3"><span className="text-neutral-500">Fulfillment module:</span><span className="text-right font-medium text-neutral-700 dark:text-neutral-300">{selectedOrder.shippingSource?.fulfillmentModule || 'Not initiated'}</span></div>
+                  {(selectedOrder.shippingSource?.provider || selectedOrder.shippingSource?.service) && <div className="flex justify-between gap-3"><span className="text-neutral-500">Provider / service:</span><span className="text-right font-medium text-neutral-700 dark:text-neutral-300">{[selectedOrder.shippingSource?.provider, selectedOrder.shippingSource?.service].filter(Boolean).join(' • ')}</span></div>}
+                </div>
                 <div className="space-y-1 text-[11px] font-mono text-neutral-600 dark:text-neutral-300">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
@@ -604,6 +663,18 @@ export const OrderAdmin: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+      {selectedOrder && (
+        <OrderPaymentProofPreviewModal
+          isOpen={isProofPreviewOpen}
+          orderNumber={selectedOrder.orderNumber}
+          paymentMethod={selectedOrder.paymentGateway}
+          paymentProvider={selectedOrder.paymentProvider}
+          paymentReference={selectedOrder.paymentReference}
+          proof={selectedOrder.paymentProof}
+          onDownload={handleProofDownload}
+          onClose={() => setIsProofPreviewOpen(false)}
+        />
       )}
     </div>
   );

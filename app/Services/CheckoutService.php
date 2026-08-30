@@ -11,6 +11,7 @@ use App\Models\OrderTaxLine;
 use App\Models\ProductVariant;
 use App\Models\Coupon;
 use App\Services\Shipping\EasyParcelBookingGuard;
+use App\Services\Payments\PaymentProofService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
@@ -35,6 +36,7 @@ class CheckoutService
         private readonly CartPricingService $pricing,
         private readonly ShippingConfigurationService $shipping,
         private readonly EasyParcelBookingGuard $easyParcelBookings,
+        private readonly PaymentProofService $paymentProofs,
     )
     {
     }
@@ -103,10 +105,7 @@ class CheckoutService
                     throw ValidationException::withMessages(['payment_proof' => 'Receipt uploads are not enabled for this payment method.']);
                 }
 
-                $payment->update([
-                    'proof_path' => $paymentProof->store('payment-proofs/'.$order->id, 'public'),
-                    'proof_uploaded_at' => now(),
-                ]);
+                $this->paymentProofs->storeCheckoutUpload($payment, $paymentProof);
             }
             if ($lockedCoupon) {
                 $lockedCoupon->usages()->create(['order_id' => $order->id, 'customer_id' => $customer->id, 'customer_email' => $email, 'discount_amount' => $summary['discount']]);

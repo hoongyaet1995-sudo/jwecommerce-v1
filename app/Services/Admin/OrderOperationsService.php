@@ -23,6 +23,12 @@ class OrderOperationsService
         if ($fulfillmentStatus === 'shipped') {
             throw ValidationException::withMessages(['fulfillmentStatus' => 'Add carrier and tracking details to dispatch this order.']);
         }
+        if ($paymentStatus === 'paid') {
+            $payment = $order->payments()->latest('id')->first();
+            if ($payment?->gateway === 'bank_transfer' && $payment->proof_status !== 'verified') {
+                throw ValidationException::withMessages(['paymentStatus' => 'Verify the Bank In / DuitNow payment proof before marking this order as paid.']);
+            }
+        }
 
         try {
             if ($paymentStatus === 'paid' && $order->status === 'pending_payment') {

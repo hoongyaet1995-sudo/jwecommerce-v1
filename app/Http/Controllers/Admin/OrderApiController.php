@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Payments\PaymentProofPermission;
 use App\Domain\Shipping\ShippingPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\OrderPayment;
 use App\Services\Admin\OrderDataService;
 use App\Services\Admin\OrderOperationsService;
+use App\Services\Payments\PaymentProofReviewService;
+use App\Services\Payments\PaymentProofService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -29,6 +33,42 @@ class OrderApiController extends Controller
         return response()->json(['data' => $data->data($saved)]);
     }
 
+    public function showPaymentProof(Request $request, Order $order, OrderPayment $payment, PaymentProofService $proofs)
+    {
+        $this->assertPaymentBelongsToOrder($order, $payment);
+        $this->assertBankTransferPayment($payment);
+        abort_unless(PaymentProofPermission::allows($request->user(), PaymentProofPermission::VIEW), 403);
+
+        return $proofs->stream($payment, $request->user());
+    }
+
+    public function downloadPaymentProof(Request $request, Order $order, OrderPayment $payment, PaymentProofService $proofs)
+    {
+        $this->assertPaymentBelongsToOrder($order, $payment);
+        $this->assertBankTransferPayment($payment);
+        abort_unless(PaymentProofPermission::allows($request->user(), PaymentProofPermission::VIEW), 403);
+
+        return $proofs->stream($payment, $request->user(), true);
+    }
+
+    public function reviewPaymentProof(Request $request, Order $order, OrderPayment $payment, PaymentProofReviewService $reviews, OrderDataService $data): JsonResponse
+    {
+        $this->assertPaymentBelongsToOrder($order, $payment);
+        $this->assertBankTransferPayment($payment);
+        abort_unless(PaymentProofPermission::allows($request->user(), PaymentProofPermission::REVIEW), 403);
+        $validated = $request->validate([
+            'decision' => ['required', Rule::in(['verified', 'rejected'])],
+            'reason' => ['nullable', 'string', 'max:2000'],
+        ]);
+        if ($validated['decision'] === 'rejected' && blank($validated['reason'] ?? null)) {
+            abort(422, 'A rejection reason is required.');
+        }
+
+        $saved = $reviews->review($order, $payment, $request->user(), $validated['decision'], $validated['reason'] ?? null);
+
+        return response()->json(['data' => $data->data($saved)]);
+    }
+
     public function tracking(Request $request, Order $order, OrderOperationsService $operations, OrderDataService $data): JsonResponse
     {
         abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::DISPATCH), 403);
@@ -42,5 +82,15 @@ class OrderApiController extends Controller
         $validated = $request->validate(['amount' => ['required', 'numeric', 'min:0.01'], 'reason' => ['required', 'string', 'max:2000']]);
         $saved = $operations->refund($order, (int) round(((float) $validated['amount']) * 100), $validated['reason'], (int) $request->user()->id);
         return response()->json(['data' => $data->data($saved)]);
+    }
+
+    private function assertPaymentBelongsToOrder(Order $order, OrderPayment $payment): void
+    {
+        abort_unless($payment->order_id === $order->id, 404);
+    }
+
+    private function assertBankTransferPayment(OrderPayment $payment): void
+    {
+        abort_unless($payment->gateway === 'bank_transfer', 404);
     }
 }
