@@ -8,9 +8,12 @@ import type { LaravelAdminBootstrap } from '../types';
 import type { ShipmentParcel } from '../types/shipping';
 import {
   confirmEasyParcelProviderFailure,
+  confirmEasyParcelProviderFailureWithReload,
   easyParcelRecoveryCanRebook,
+  easyParcelShipmentStatusDiagnostic,
   fetchShipments,
   refreshEasyParcelShipmentStatus,
+  refreshEasyParcelShipmentStatusWithReload,
 } from './shipmentData';
 
 const bootstrap = {
@@ -165,6 +168,124 @@ describe('redacted shipment-list client contract', () => {
       cancellationMessage: 'EasyParcel cancellation unconfirmed.',
       cancellationConfirmed: false,
     })).toBe(true);
+  });
+
+  it('preserves provider-terminal recovery readiness and fresh backend package data through reload', async () => {
+    const recovery = {
+      recoveryId: '91',
+      state: 'awaiting_replacement',
+      cancellationState: 'success',
+      cancellationMessage: 'EasyParcel cancellation confirmed by provider status code 0.',
+      cancellationConfirmed: true,
+      replacementOrderId: '11',
+      readyToRebook: true,
+    };
+    const replacement = {
+      ...redactedParcel,
+      id: 'pending-order-11',
+      source: 'pending' as const,
+      totalWeightKg: 1.5,
+      dimensionsCm: { length: 31, width: 21, height: 11 },
+      easyParcelRecovery: recovery,
+    };
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: {
+          shipmentId: '1',
+          status: 'cancelled',
+          changed: true,
+          providerStatusCode: 0,
+          providerStatus: 'Cancelled',
+          checkedAt: '2026-08-30T12:00:00+08:00',
+          awbAvailable: false,
+          recoveryDisposition: 'provider_terminal',
+          recovery,
+        } }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [replacement] }) });
+    vi.stubGlobal('window', { fetch });
+
+    const outcome = await refreshEasyParcelShipmentStatusWithReload(bootstrap, '1');
+
+    expect(outcome.result.status).toBe('cancelled');
+    expect(outcome.result.recovery).toEqual(recovery);
+    expect(outcome.replacementParcel).toMatchObject({
+      id: 'pending-order-11',
+      totalWeightKg: 1.5,
+      dimensionsCm: { length: 31, width: 21, height: 11 },
+      easyParcelRecovery: recovery,
+    });
+    expect(outcome.reloadWarning).toBeNull();
+  });
+
+  it('preserves a successful refresh and confirmation when shipment reload fails', async () => {
+    const refreshFetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: {
+          shipmentId: '1',
+          status: 'on_hold',
+          changed: true,
+          providerStatusCode: 8,
+          providerStatus: 'On Hold',
+          checkedAt: '2026-08-30T12:05:00+08:00',
+          awbAvailable: false,
+          recoveryDisposition: 'none',
+          recovery: null,
+        } }),
+      })
+      .mockResolvedValueOnce({ ok: false, json: async () => ({ message: 'reload failed' }) });
+    vi.stubGlobal('window', { fetch: refreshFetch });
+
+    await expect(refreshEasyParcelShipmentStatusWithReload(bootstrap, '1')).resolves.toMatchObject({
+      result: { status: 'on_hold', providerStatusCode: 8 },
+      shipments: null,
+      replacementParcel: null,
+      reloadWarning: 'Shipment list could not be reloaded. Refresh the page before continuing.',
+    });
+
+    const confirmFetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: {
+          recoveryId: '92',
+          shipmentId: '1',
+          replacementOrderId: '11',
+          shipmentStatus: 'booking_failed',
+          recoveryState: 'awaiting_replacement',
+          cancellationState: 'error',
+          cancellationMessage: 'EasyParcel cancellation unconfirmed.',
+          cancellationConfirmed: false,
+        } }),
+      })
+      .mockResolvedValueOnce({ ok: false, json: async () => ({ message: 'reload failed' }) });
+    vi.stubGlobal('window', { fetch: confirmFetch });
+
+    await expect(confirmEasyParcelProviderFailureWithReload(
+      bootstrap,
+      '1',
+      'Provider portal reports Failed.',
+    )).resolves.toMatchObject({
+      result: { recoveryId: '92', recoveryState: 'awaiting_replacement' },
+      shipments: null,
+      replacementParcel: null,
+      reloadWarning: 'Shipment list could not be reloaded. Refresh the page before continuing.',
+    });
+  });
+
+  it('includes the provider check timestamp in every exact status diagnostic', () => {
+    expect(easyParcelShipmentStatusDiagnostic({
+      shipmentId: '1',
+      status: 'on_hold',
+      changed: true,
+      providerStatusCode: 8,
+      providerStatus: 'On Hold',
+      checkedAt: '2026-08-30T12:05:00+08:00',
+      awbAvailable: false,
+      recoveryDisposition: 'none',
+      recovery: null,
+    })).toBe('EasyParcel reports On Hold (code 8); AWB is still unavailable. Checked 2026-08-30T12:05:00+08:00.');
   });
 
   it('renders a non-empty fulfillment row using neutral recipient placeholders', () => {

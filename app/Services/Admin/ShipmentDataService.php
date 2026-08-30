@@ -2,6 +2,7 @@
 
 namespace App\Services\Admin;
 
+use App\Models\EasyParcelShipmentRecovery;
 use App\Models\Order;
 use App\Models\Shipment;
 use Illuminate\Support\Collection;
@@ -15,13 +16,13 @@ class ShipmentDataService
     public function collection(): Collection
     {
         $shipments = Shipment::query()
-            ->with(['order.customer', 'order.items', 'order.addresses', 'order.payments', 'events'])
+            ->with(['order.customer', 'order.items', 'order.addresses', 'order.payments', 'events', 'failedBookingRecovery'])
             ->latest('id')
             ->get()
             ->map(fn (Shipment $shipment): array => $this->data($shipment));
 
         $pending = Order::query()
-            ->with(['customer', 'items', 'addresses', 'payments'])
+            ->with(['customer', 'items', 'addresses', 'payments', 'easyParcelShipmentRecoveries'])
             ->where('status', 'processing')
             ->whereDoesntHave('shipments', fn ($query) => $query
                 ->where('source', 'easyparcel')
@@ -38,7 +39,7 @@ class ShipmentDataService
 
     public function data(Shipment $shipment): array
     {
-        $shipment->loadMissing(['order.customer', 'order.items', 'order.addresses', 'order.payments', 'events']);
+        $shipment->loadMissing(['order.customer', 'order.items', 'order.addresses', 'order.payments', 'events', 'failedBookingRecovery']);
         $order = $shipment->order;
         $address = $order->addresses->firstWhere('type', 'shipping') ?? $order->addresses->first();
         $name = trim(($order->customer?->first_name ?? $address?->first_name ?? '').' '.($order->customer?->last_name ?? $address?->last_name ?? ''));
@@ -81,6 +82,7 @@ class ShipmentDataService
                 ? null
                 : data_get($shipment->quote_snapshot, 'service.amount_minor') / 100,
             'isWeightDiscrepancy' => false,
+            'easyParcelRecovery' => $this->recoveryData($shipment->failedBookingRecovery),
             'trackingEvents' => $shipment->events->map(fn ($event): array => [
                 'id' => (string) $event->id,
                 'timestamp' => $event->occurred_at?->toIso8601String(),
@@ -132,7 +134,30 @@ class ShipmentDataService
             'postcodeValidationStatus' => 'unknown',
             'systemQuotedCharge' => null,
             'isWeightDiscrepancy' => false,
+            'easyParcelRecovery' => $this->recoveryData(
+                $order->easyParcelShipmentRecoveries
+                    ->first(fn (EasyParcelShipmentRecovery $recovery): bool => $recovery->state !== 'complete'),
+            ),
             'trackingEvents' => [],
+        ];
+    }
+
+    /** @return array<string, mixed>|null */
+    public function recoveryData(?EasyParcelShipmentRecovery $recovery): ?array
+    {
+        if (! $recovery instanceof EasyParcelShipmentRecovery) {
+            return null;
+        }
+
+        return [
+            'recoveryId' => (string) $recovery->id,
+            'state' => $recovery->state,
+            'cancellationState' => $recovery->provider_cancel_state,
+            'cancellationMessage' => $recovery->provider_cancel_message,
+            'cancellationConfirmed' => $recovery->provider_cancel_state === 'success',
+            'replacementOrderId' => (string) $recovery->order_id,
+            'readyToRebook' => $recovery->state === 'awaiting_replacement'
+                && $recovery->replacement_shipment_id === null,
         ];
     }
 

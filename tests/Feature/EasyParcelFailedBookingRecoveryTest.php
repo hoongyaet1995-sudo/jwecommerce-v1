@@ -10,6 +10,7 @@ use App\Models\ShipmentQuote;
 use App\Models\ShippingProvider;
 use App\Models\ShippingProviderCredential;
 use App\Models\User;
+use App\Services\Admin\ShipmentDataService;
 use App\Services\Shipping\EasyParcelBookingGuard;
 use App\Services\Shipping\EasyParcelCancellationService;
 use App\Services\Shipping\EasyParcelFailedBookingRecoveryService;
@@ -120,6 +121,25 @@ class EasyParcelFailedBookingRecoveryTest extends TestCase
         self::assertSame('booking_failed', $shipment->fresh()->status);
         self::assertSame('failed', $quote->fresh()->booking_state);
         self::assertNull($quote->fresh()->booking_claim_key);
+        $rows = app(ShipmentDataService::class)->collection();
+        $failed = $rows->firstWhere('id', (string) $shipment->id);
+        $replacement = $rows->firstWhere('id', 'pending-order-'.$order->id);
+        self::assertSame('error', data_get($failed, 'easyParcelRecovery.cancellationState'));
+        self::assertFalse(data_get($failed, 'easyParcelRecovery.cancellationConfirmed'));
+        self::assertSame('EasyParcel cancellation unconfirmed.', data_get($replacement, 'easyParcelRecovery.cancellationMessage'));
+        self::assertTrue(data_get($replacement, 'easyParcelRecovery.readyToRebook'));
+
+        $providerConfirmed = app(EasyParcelFailedBookingRecoveryService::class)->recordProviderCancellation(
+            $shipment->fresh(),
+            $actor,
+            0,
+            'Cancelled',
+            now(),
+        );
+        self::assertSame($recovery->id, $providerConfirmed->id);
+        self::assertSame('success', $providerConfirmed->provider_cancel_state);
+        self::assertSame('EasyParcel cancellation confirmed by provider status code 0.', $providerConfirmed->provider_cancel_message);
+        self::assertSame('cancelled', $shipment->fresh()->status);
 
         app(EasyParcelBookingGuard::class)->assertQuoteAllowed($order->fresh());
         $this->addToAssertionCount(1);

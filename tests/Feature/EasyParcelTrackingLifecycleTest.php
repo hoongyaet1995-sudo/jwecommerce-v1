@@ -420,7 +420,7 @@ class EasyParcelTrackingLifecycleTest extends TestCase
         self::assertSame('returned', $shipment->fresh()->status);
         self::assertNull($shipment->fresh()->cancelled_at);
         self::assertSame(
-            ['failed_delivery', 'failed_delivery', 'returned', 'provider_update'],
+            ['cancelled', 'on_hold', 'returned', 'provider_update'],
             $shipment->events()->reorder()->oldest('occurred_at')->oldest('id')->pluck('status')->all(),
         );
         self::assertSame(0, $order->statusHistory()->whereIn('to_status', ['delivered', 'cancelled'])->count());

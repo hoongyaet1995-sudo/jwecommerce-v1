@@ -268,6 +268,125 @@ class ShipmentApiTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_provider_cancelled_refresh_creates_durable_recovery_without_cancel_request(): void
+    {
+        Http::preventStrayRequests();
+        $this->connectedEasyParcelProvider();
+        $order = $this->processingOrder('provider-cancelled@example.test', 'JW-PROVIDER-CANCELLED-1001');
+        $order->items()->create([
+            'sku' => 'PROVIDER-CANCELLED-SKU',
+            'title' => 'Fresh replacement package source',
+            'unit_price' => 10000,
+            'quantity' => 1,
+            'line_total' => 10000,
+            'package_snapshot' => [
+                'weight_grams' => 1500,
+                'length_cm' => 31,
+                'width_cm' => 21,
+                'height_cm' => 11,
+            ],
+        ]);
+        $shipment = $this->recoverableEasyParcelShipment(
+            $order,
+            ShippingProvider::query()->where('provider', 'easyparcel')->sole(),
+            'ES-PROVIDER-CANCELLED-1001',
+        );
+        $response = [
+            'status_code' => 200,
+            'message' => 'success',
+            'data' => [[
+                'shipment_number' => 'ES-PROVIDER-CANCELLED-1001',
+                'shipment_details' => [
+                    'shipment_status_code' => 0,
+                    'shipment_status' => 'Cancelled',
+                    'awb_number' => null,
+                ],
+            ]],
+        ];
+        Http::fakeSequence(EasyParcelShipmentDetailsService::DETAILS_URL)
+            ->push($response)
+            ->push($response);
+        $staff = User::factory()->create(['is_admin' => true, 'is_super_admin' => false]);
+        $staff->permissions()->create(['permission' => ShippingPermission::DISPATCH]);
+
+        $first = $this->actingAs($staff)
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/easyparcel/status')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'cancelled')
+            ->assertJsonPath('data.recoveryDisposition', 'provider_terminal')
+            ->assertJsonPath('data.recovery.state', 'awaiting_replacement')
+            ->assertJsonPath('data.recovery.cancellationState', 'success')
+            ->assertJsonPath('data.recovery.cancellationConfirmed', true)
+            ->assertJsonPath('data.recovery.readyToRebook', true);
+        $second = $this->actingAs($staff)
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/easyparcel/status')
+            ->assertOk()
+            ->assertJsonPath('data.recovery.recoveryId', $first->json('data.recovery.recoveryId'));
+
+        $this->assertDatabaseCount('easyparcel_shipment_recoveries', 1);
+        $this->assertDatabaseHas('easyparcel_shipment_recoveries', [
+            'shipment_id' => $shipment->id,
+            'confirmed_by' => $staff->id,
+            'state' => 'awaiting_replacement',
+            'provider_cancel_state' => 'success',
+        ]);
+        self::assertSame('cancelled', $shipment->fresh()->status);
+        self::assertNotNull($shipment->fresh()->cancelled_at);
+        Http::assertSentCount(2);
+
+        $rows = $this->actingAs($this->superAdmin())
+            ->getJson('/admin/api/shipping/shipments')
+            ->assertOk()
+            ->json('data');
+        $old = collect($rows)->firstWhere('id', (string) $shipment->id);
+        $replacement = collect($rows)->firstWhere('id', 'pending-order-'.$order->id);
+        self::assertSame('awaiting_replacement', data_get($old, 'easyParcelRecovery.state'));
+        self::assertSame('awaiting_replacement', data_get($replacement, 'easyParcelRecovery.state'));
+        self::assertSame(1.5, data_get($replacement, 'totalWeightKg'));
+        self::assertSame(31, data_get($replacement, 'dimensionsCm.length'));
+        self::assertSame(21, data_get($replacement, 'dimensionsCm.width'));
+        self::assertSame(11, data_get($replacement, 'dimensionsCm.height'));
+        self::assertSame($first->json('data.recovery.recoveryId'), data_get($replacement, 'easyParcelRecovery.recoveryId'));
+        self::assertSame($first->json('data.recovery.recoveryId'), $second->json('data.recovery.recoveryId'));
+    }
+
+    public function test_provider_on_hold_refresh_is_an_exception_without_recovery_or_rebook(): void
+    {
+        config(['services.easyparcel.awb_review_after_minutes' => 10]);
+        $provider = $this->connectedEasyParcelProvider();
+        $order = $this->processingOrder('provider-on-hold@example.test', 'JW-PROVIDER-ON-HOLD-1001');
+        $shipment = $this->recoverableEasyParcelShipment($order, $provider, 'ES-PROVIDER-ON-HOLD-1001');
+        $shipment->forceFill(['created_at' => now()->subMinutes(60)])->save();
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => Http::response([
+                'status_code' => 200,
+                'message' => 'success',
+                'data' => [[
+                    'shipment_number' => 'ES-PROVIDER-ON-HOLD-1001',
+                    'shipment_details' => [
+                        'shipment_status_code' => 8,
+                        'shipment_status' => 'On Hold',
+                        'awb_number' => null,
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $this->actingAs($this->superAdmin())
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/easyparcel/status')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'on_hold')
+            ->assertJsonPath('data.providerStatusCode', 8)
+            ->assertJsonPath('data.providerStatus', 'On Hold')
+            ->assertJsonPath('data.awbAvailable', false)
+            ->assertJsonPath('data.recoveryDisposition', 'none')
+            ->assertJsonPath('data.recovery', null);
+
+        self::assertSame('on_hold', $shipment->fresh()->status);
+        $this->assertDatabaseCount('easyparcel_shipment_recoveries', 0);
+        Http::assertSentCount(1);
+    }
+
     public function test_dispatch_staff_can_confirm_provider_failure_and_receives_rebook_instructions(): void
     {
         Http::preventStrayRequests();

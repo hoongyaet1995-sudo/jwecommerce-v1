@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\ShipmentQuote;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Throwable;
@@ -180,6 +181,108 @@ final class EasyParcelFailedBookingRecoveryService
             ])->save();
 
             return $recovery->fresh();
+        });
+    }
+
+    public function recordProviderCancellation(
+        Shipment $shipment,
+        User $actor,
+        int $providerStatusCode,
+        string $providerStatus,
+        CarbonInterface $checkedAt,
+    ): EasyParcelShipmentRecovery {
+        if ($providerStatusCode !== 0 || trim($providerStatus) === '') {
+            throw new InvalidArgumentException('The EasyParcel provider-terminal recovery evidence is invalid.');
+        }
+
+        return DB::transaction(function () use (
+            $actor,
+            $checkedAt,
+            $providerStatus,
+            $shipment,
+        ): EasyParcelShipmentRecovery {
+            $lockedOrder = Order::query()->lockForUpdate()->findOrFail($shipment->order_id);
+            $lockedShipment = Shipment::query()->lockForUpdate()->findOrFail($shipment->id);
+            $lockedQuote = $lockedShipment->shipment_quote_id === null
+                ? null
+                : ShipmentQuote::query()->lockForUpdate()->find($lockedShipment->shipment_quote_id);
+            $existing = EasyParcelShipmentRecovery::query()
+                ->where('shipment_id', $lockedShipment->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($existing instanceof EasyParcelShipmentRecovery) {
+                if ($existing->order_id !== $lockedOrder->id
+                    || $existing->provider_shipment_number !== $lockedShipment->provider_reference
+                    || ! $lockedQuote instanceof ShipmentQuote
+                    || $lockedQuote->order_id !== $lockedOrder->id) {
+                    throw new InvalidArgumentException('The EasyParcel recovery identity changed before completion.');
+                }
+
+                $lockedShipment->forceFill([
+                    'status' => 'cancelled',
+                    'cancelled_at' => $checkedAt,
+                ])->save();
+                $lockedQuote->forceFill([
+                    'booking_state' => 'failed',
+                    'booking_claim_key' => null,
+                    'last_error' => 'provider_cancelled_booking',
+                ])->save();
+                $existing->forceFill([
+                    'state' => $existing->replacement_shipment_id === null
+                        ? self::AWAITING_REPLACEMENT
+                        : self::COMPLETE,
+                    'provider_cancel_state' => 'success',
+                    'provider_cancel_message' => 'EasyParcel cancellation confirmed by provider status code 0.',
+                    'provider_cancel_claimed_at' => $checkedAt,
+                ])->save();
+
+                return $existing->fresh();
+            }
+
+            if (! $actor->exists
+                || $lockedShipment->order_id !== $lockedOrder->id
+                || $lockedShipment->source !== ShippingProviderConfigurationService::PROVIDER
+                || ! in_array($lockedShipment->status, ['pending', 'cancelled'], true)
+                || filled($lockedShipment->tracking_number)
+                || ! is_string($lockedShipment->provider_reference)
+                || trim($lockedShipment->provider_reference) === ''
+                || ! $lockedQuote instanceof ShipmentQuote
+                || $lockedQuote->order_id !== $lockedOrder->id) {
+                throw new InvalidArgumentException('This EasyParcel shipment is not eligible for provider-terminal recovery.');
+            }
+
+            $otherUnresolved = EasyParcelShipmentRecovery::query()
+                ->where('order_id', $lockedOrder->id)
+                ->where('state', '!=', self::COMPLETE)
+                ->lockForUpdate()
+                ->exists();
+            if ($otherUnresolved) {
+                throw new InvalidArgumentException('This order already has an unresolved EasyParcel recovery.');
+            }
+
+            $lockedShipment->forceFill([
+                'status' => 'cancelled',
+                'cancelled_at' => $checkedAt,
+            ])->save();
+            $lockedQuote->forceFill([
+                'booking_state' => 'failed',
+                'booking_claim_key' => null,
+                'last_error' => 'provider_cancelled_booking',
+            ])->save();
+
+            return EasyParcelShipmentRecovery::query()->create([
+                'shipment_id' => $lockedShipment->id,
+                'order_id' => $lockedOrder->id,
+                'confirmed_by' => $actor->id,
+                'state' => self::AWAITING_REPLACEMENT,
+                'reason' => sprintf('EasyParcel reports %s (code 0).', trim($providerStatus)),
+                'provider_shipment_number' => trim($lockedShipment->provider_reference),
+                'provider_cancel_state' => 'success',
+                'provider_cancel_message' => 'EasyParcel cancellation confirmed by provider status code 0.',
+                'provider_cancel_claimed_at' => $checkedAt,
+                'confirmed_at' => $checkedAt,
+            ]);
         });
     }
 

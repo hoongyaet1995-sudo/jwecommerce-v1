@@ -84,6 +84,7 @@ final class EasyParcelShipmentDetailsService
                     $details['awb_number'],
                     $details['awb_url'],
                     $details['tracking_url'],
+                    $this->statuses->normalize($details['shipment_status_code']),
                     $this->reconciliationEvents($details),
                 );
 

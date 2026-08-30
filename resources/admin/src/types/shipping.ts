@@ -116,6 +116,16 @@ export interface ShipmentTrackingEvent {
   rawEventCode?: string;
 }
 
+export interface EasyParcelRecoverySnapshot {
+  recoveryId: string;
+  state: string;
+  cancellationState: 'success' | 'error' | 'claimed';
+  cancellationMessage: string | null;
+  cancellationConfirmed: boolean;
+  replacementOrderId: string;
+  readyToRebook: boolean;
+}
+
 export interface ShipmentParcel {
   id: string;
   source?: 'manual' | 'easyparcel' | 'pending';
@@ -157,7 +167,7 @@ export interface ShipmentParcel {
   isWeightDiscrepancy: boolean;
   exceptionReason?: string; // e.g. "NITC - Recipient unreachable", "Incorrect Postcode", "Address not found"
   exceptionAttempts?: number;
-  easyParcelRecoveryWarning?: string;
+  easyParcelRecovery?: EasyParcelRecoverySnapshot | null;
   pickupRequestId?: string;
   trackingEvents: ShipmentTrackingEvent[];
 }

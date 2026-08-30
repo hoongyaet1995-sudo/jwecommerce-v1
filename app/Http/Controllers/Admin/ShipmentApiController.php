@@ -136,7 +136,9 @@ class ShipmentApiController extends Controller
         Request $request,
         Shipment $shipment,
         EasyParcelShipmentDetailsService $details,
+        EasyParcelFailedBookingRecoveryService $recoveries,
         EasyParcelStatusNormalizer $statuses,
+        ShipmentDataService $shipmentData,
     ): JsonResponse {
         abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::DISPATCH), 403);
 
@@ -160,6 +162,17 @@ class ShipmentApiController extends Controller
         $shipment = $result['shipment'];
         $providerDetails = $result['details'];
         $awbAvailable = $providerDetails['awb_number'] !== null;
+        $providerStatus = $statuses->normalize($providerDetails['shipment_status_code']);
+        $recovery = null;
+        if (! $awbAvailable && $providerStatus === 'cancelled') {
+            $recovery = $recoveries->recordProviderCancellation(
+                $shipment,
+                $request->user(),
+                $providerDetails['shipment_status_code'],
+                $providerDetails['shipment_status'],
+                $result['checked_at'],
+            );
+        }
         $shipment->refresh();
 
         return response()->json(['data' => [
@@ -171,9 +184,10 @@ class ShipmentApiController extends Controller
             'providerStatus' => $providerDetails['shipment_status'],
             'checkedAt' => $result['checked_at']->toIso8601String(),
             'awbAvailable' => $awbAvailable,
+            'recovery' => $shipmentData->recoveryData($recovery),
             'recoveryDisposition' => $this->recoveryDisposition(
                 $shipment,
-                $statuses->normalize($providerDetails['shipment_status_code']),
+                $providerStatus,
                 $awbAvailable,
             ),
         ]]);
@@ -284,6 +298,10 @@ class ShipmentApiController extends Controller
     private function recoveryDisposition(Shipment $shipment, string $providerStatus, bool $awbAvailable): string
     {
         if ($awbAvailable) {
+            return 'none';
+        }
+
+        if ($providerStatus === 'on_hold') {
             return 'none';
         }
 

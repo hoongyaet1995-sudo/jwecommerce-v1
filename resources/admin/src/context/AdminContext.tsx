@@ -9,12 +9,15 @@ import { customerDirectoryToCustomers, deleteCustomerData, fetchCustomerDirector
 import { fetchOrders, processOrderRefundData, updateOrderStatusData, updateOrderTrackingData } from '../integration/orderData';
 import {
   appendShipmentEvent,
-  confirmEasyParcelProviderFailure as confirmEasyParcelProviderFailureData,
+  confirmEasyParcelProviderFailureWithReload,
   easyParcelShipmentStatusDiagnostic,
   fetchShipments,
+  findEasyParcelReplacementParcel,
   refreshEasyParcelShipmentStatus as refreshEasyParcelShipmentStatusData,
-  type EasyParcelRecoveryResult,
+  refreshEasyParcelShipmentStatusWithReload,
+  type EasyParcelRecoveryConfirmationOutcome,
   type EasyParcelShipmentStatusRefresh,
+  type EasyParcelStatusRefreshOutcome,
 } from '../integration/shipmentData';
 import { createEasyParcelWebhookAuditRefresher, fetchEasyParcelWebhookReceipts } from '../integration/easyParcelWebhookData';
 import { courierConfigsFromEasyParcel, disconnectEasyParcelStore, fetchEasyParcelProvider, startEasyParcelAuthorization } from '../integration/easyParcelProviderData';
@@ -319,9 +322,9 @@ interface AdminContextType {
   reorderSmartRoutingRules: (rules: SmartRoutingRule[]) => void;
 
   shipmentParcels: ShipmentParcel[];
-  refreshEasyParcelShipmentStatus: (parcelId: string) => Promise<EasyParcelShipmentStatusRefresh>;
-  refreshAllEasyParcelShipmentStatuses: () => Promise<EasyParcelShipmentStatusRefresh[]>;
-  confirmEasyParcelProviderFailure: (parcelId: string, reason: string) => Promise<EasyParcelRecoveryResult>;
+  refreshEasyParcelShipmentStatus: (parcelId: string) => Promise<EasyParcelStatusRefreshOutcome>;
+  refreshAllEasyParcelShipmentStatuses: () => Promise<EasyParcelStatusRefreshOutcome[]>;
+  confirmEasyParcelProviderFailure: (parcelId: string, reason: string) => Promise<EasyParcelRecoveryConfirmationOutcome>;
   easyParcelWebhookReceipts: EasyParcelWebhookReceiptRow[];
   easyParcelWebhookAuditStatus: EasyParcelWebhookAuditStatus;
   easyParcelWebhookAuditError: string | null;
@@ -2143,16 +2146,26 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return booking;
   };
 
-  const refreshEasyParcelShipmentStatus = async (parcelId: string): Promise<EasyParcelShipmentStatusRefresh> => {
+  const reportShipmentReloadWarning = (warning: string | null): void => {
+    if (!warning) return;
+    addToast({
+      type: 'warning',
+      title: 'Shipment list refresh failed',
+      message: warning,
+    });
+  };
+
+  const refreshEasyParcelShipmentStatus = async (parcelId: string): Promise<EasyParcelStatusRefreshOutcome> => {
     try {
-      const result = await refreshEasyParcelShipmentStatusData(laravelBootstrap, parcelId);
-      setShipmentParcels(await fetchShipments(laravelBootstrap));
+      const outcome = await refreshEasyParcelShipmentStatusWithReload(laravelBootstrap, parcelId);
+      if (outcome.shipments) setShipmentParcels(outcome.shipments);
       addToast({
         type: 'success',
         title: 'EasyParcel provider status',
-        message: easyParcelShipmentStatusDiagnostic(result),
+        message: easyParcelShipmentStatusDiagnostic(outcome.result),
       });
-      return result;
+      reportShipmentReloadWarning(outcome.reloadWarning);
+      return outcome;
     } catch (error) {
       const failure = error instanceof Error ? error : new Error('EasyParcel status could not be refreshed.');
       addToast({ type: 'error', title: 'Status refresh failed', message: failure.message });
@@ -2160,7 +2173,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const refreshAllEasyParcelShipmentStatuses = async (): Promise<EasyParcelShipmentStatusRefresh[]> => {
+  const refreshAllEasyParcelShipmentStatuses = async (): Promise<EasyParcelStatusRefreshOutcome[]> => {
     const eligible = shipmentParcels.filter((parcel) => (
       parcel.source === 'easyparcel'
       && parcel.status !== 'delivered'
@@ -2192,37 +2205,47 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
 
+    let refreshedShipments: ShipmentParcel[] | null = null;
+    let reloadWarning: string | null = null;
     try {
-      setShipmentParcels(await fetchShipments(laravelBootstrap));
-    } catch (error) {
-      const failure = error instanceof Error ? error : new Error('Shipment list could not be reloaded.');
+      refreshedShipments = await fetchShipments(laravelBootstrap);
+      setShipmentParcels(refreshedShipments);
+    } catch {
+      reloadWarning = 'Shipment list could not be reloaded. Refresh the page before continuing.';
       addToast({
         type: 'warning',
         title: 'Statuses checked; list refresh failed',
-        message: `${eligible.length - failed} provider checks completed, but the shipment list could not reload. Refresh the page before retrying. ${failure.message}`,
+        message: `${eligible.length - failed} provider checks completed. ${reloadWarning}`,
       });
-      throw failure;
     }
     addToast({
       type: failed > 0 ? 'warning' : 'success',
       title: 'Latest EasyParcel statuses retrieved',
       message: `${eligible.length - failed} checked · ${updated} updated${failed > 0 ? ` · ${failed} failed` : ''}.`,
     });
-    return results;
+    return results.map(result => ({
+      result,
+      shipments: refreshedShipments,
+      replacementParcel: refreshedShipments
+        ? findEasyParcelReplacementParcel(refreshedShipments, result.recovery)
+        : null,
+      reloadWarning,
+    }));
   };
 
   const confirmEasyParcelProviderFailure = async (
     parcelId: string,
     reason: string,
-  ): Promise<EasyParcelRecoveryResult> => {
-    const result = await confirmEasyParcelProviderFailureData(laravelBootstrap, parcelId, reason);
-    setShipmentParcels(await fetchShipments(laravelBootstrap));
+  ): Promise<EasyParcelRecoveryConfirmationOutcome> => {
+    const outcome = await confirmEasyParcelProviderFailureWithReload(laravelBootstrap, parcelId, reason);
+    if (outcome.shipments) setShipmentParcels(outcome.shipments);
     addToast({
-      type: result.cancellationConfirmed ? 'success' : 'warning',
+      type: outcome.result.cancellationConfirmed ? 'success' : 'warning',
       title: 'EasyParcel recovery recorded',
-      message: result.cancellationMessage ?? 'EasyParcel cancellation outcome is still pending.',
+      message: outcome.result.cancellationMessage ?? 'EasyParcel cancellation outcome is still pending.',
     });
-    return result;
+    reportShipmentReloadWarning(outcome.reloadWarning);
+    return outcome;
   };
 
   const toggleCourierStatus = (id: string) => {

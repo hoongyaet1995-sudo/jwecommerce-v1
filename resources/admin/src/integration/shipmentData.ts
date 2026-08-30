@@ -1,5 +1,5 @@
 import type { LaravelAdminBootstrap } from '../types';
-import type { ShipmentParcel } from '../types/shipping';
+import type { EasyParcelRecoverySnapshot, ShipmentParcel } from '../types/shipping';
 
 type ShipmentResponse = { data: ShipmentParcel[] };
 type ErrorResponse = { message?: string; errors?: Record<string, string[]> };
@@ -12,6 +12,18 @@ export type EasyParcelShipmentStatusRefresh = {
   checkedAt: string;
   awbAvailable: boolean;
   recoveryDisposition: 'none' | 'needs_review' | 'provider_terminal';
+  recovery: EasyParcelRecoverySnapshot | null;
+};
+export type EasyParcelShipmentReload = {
+  shipments: ShipmentParcel[] | null;
+  replacementParcel: ShipmentParcel | null;
+  reloadWarning: string | null;
+};
+export type EasyParcelStatusRefreshOutcome = EasyParcelShipmentReload & {
+  result: EasyParcelShipmentStatusRefresh;
+};
+export type EasyParcelRecoveryConfirmationOutcome = EasyParcelShipmentReload & {
+  result: EasyParcelRecoveryResult;
 };
 export type EasyParcelRecoveryResult = {
   recoveryId: string;
@@ -26,6 +38,18 @@ export type EasyParcelRecoveryResult = {
 
 const errorMessage = (payload: ErrorResponse | null, fallback: string): string =>
   payload?.errors ? Object.values(payload.errors).flat().join(' ') : payload?.message ?? fallback;
+
+const recoverySnapshot = (
+  recovery: EasyParcelRecoverySnapshot | null | undefined,
+): EasyParcelRecoverySnapshot | null => recovery ? {
+  recoveryId: recovery.recoveryId,
+  state: recovery.state,
+  cancellationState: recovery.cancellationState,
+  cancellationMessage: recovery.cancellationMessage,
+  cancellationConfirmed: recovery.cancellationConfirmed,
+  replacementOrderId: recovery.replacementOrderId,
+  readyToRebook: recovery.readyToRebook,
+} : null;
 
 const shipmentListParcel = (row: ShipmentParcel): ShipmentParcel => ({
   id: row.id,
@@ -57,6 +81,7 @@ const shipmentListParcel = (row: ShipmentParcel): ShipmentParcel => ({
   isWeightDiscrepancy: row.isWeightDiscrepancy,
   exceptionReason: row.exceptionReason,
   exceptionAttempts: row.exceptionAttempts,
+  easyParcelRecovery: recoverySnapshot(row.easyParcelRecovery),
   pickupRequestId: row.pickupRequestId,
   trackingEvents: row.trackingEvents,
 });
@@ -110,7 +135,7 @@ export const refreshEasyParcelShipmentStatus = async (
 
 export const easyParcelShipmentStatusDiagnostic = (
   result: EasyParcelShipmentStatusRefresh,
-): string => `EasyParcel reports ${result.providerStatus} (code ${result.providerStatusCode}); AWB ${result.awbAvailable ? 'is available.' : 'is still unavailable.'}`;
+): string => `EasyParcel reports ${result.providerStatus} (code ${result.providerStatusCode}); AWB ${result.awbAvailable ? 'is available.' : 'is still unavailable.'} Checked ${result.checkedAt}.`;
 
 export const easyParcelRecoveryCanRebook = (result: EasyParcelRecoveryResult): boolean =>
   result.recoveryState === 'awaiting_replacement'
@@ -141,4 +166,60 @@ export const confirmEasyParcelProviderFailure = async (
   }
 
   return payload.data;
+};
+
+export const findEasyParcelReplacementParcel = (
+  shipments: ShipmentParcel[],
+  recovery: { recoveryId: string; replacementOrderId: string; readyToRebook: boolean } | null,
+): ShipmentParcel | null => recovery?.readyToRebook
+  ? shipments.find(parcel => (
+    parcel.id === `pending-order-${recovery.replacementOrderId}`
+    && parcel.source === 'pending'
+    && parcel.orderId === recovery.replacementOrderId
+    && parcel.easyParcelRecovery?.recoveryId === recovery.recoveryId
+    && parcel.easyParcelRecovery.readyToRebook
+  )) ?? null
+  : null;
+
+export const reloadShipmentsAfterEasyParcelMutation = async (
+  bootstrap: LaravelAdminBootstrap,
+  recovery: { recoveryId: string; replacementOrderId: string; readyToRebook: boolean } | null,
+): Promise<EasyParcelShipmentReload> => {
+  try {
+    const shipments = await fetchShipments(bootstrap);
+    const replacementParcel = findEasyParcelReplacementParcel(shipments, recovery);
+
+    return { shipments, replacementParcel, reloadWarning: null };
+  } catch {
+    return {
+      shipments: null,
+      replacementParcel: null,
+      reloadWarning: 'Shipment list could not be reloaded. Refresh the page before continuing.',
+    };
+  }
+};
+
+export const refreshEasyParcelShipmentStatusWithReload = async (
+  bootstrap: LaravelAdminBootstrap,
+  shipmentId: string,
+): Promise<EasyParcelStatusRefreshOutcome> => {
+  const result = await refreshEasyParcelShipmentStatus(bootstrap, shipmentId);
+  const reload = await reloadShipmentsAfterEasyParcelMutation(bootstrap, result.recovery);
+
+  return { result, ...reload };
+};
+
+export const confirmEasyParcelProviderFailureWithReload = async (
+  bootstrap: LaravelAdminBootstrap,
+  shipmentId: string,
+  reason: string,
+): Promise<EasyParcelRecoveryConfirmationOutcome> => {
+  const result = await confirmEasyParcelProviderFailure(bootstrap, shipmentId, reason);
+  const reload = await reloadShipmentsAfterEasyParcelMutation(bootstrap, {
+    recoveryId: result.recoveryId,
+    replacementOrderId: result.replacementOrderId,
+    readyToRebook: easyParcelRecoveryCanRebook(result),
+  });
+
+  return { result, ...reload };
 };

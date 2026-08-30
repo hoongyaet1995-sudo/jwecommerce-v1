@@ -20,6 +20,8 @@ class ShipmentService
         'shipped' => 20,
         'in_transit' => 30,
         'failed_delivery' => 40,
+        'on_hold' => 40,
+        'cancelled' => 40,
         'returned' => 50,
         'delivered' => 60,
     ];
@@ -31,6 +33,8 @@ class ShipmentService
         'in_transit',
         'delivered',
         'failed_delivery',
+        'on_hold',
+        'cancelled',
         'returned',
         'provider_update',
     ];
@@ -195,6 +199,7 @@ class ShipmentService
         ?string $trackingNumber,
         ?string $labelPath,
         ?string $trackingUrl,
+        string $providerStatus,
         array $events,
     ): Shipment {
         return DB::transaction(function () use (
@@ -205,6 +210,7 @@ class ShipmentService
             $trackingNumber,
             $labelPath,
             $trackingUrl,
+            $providerStatus,
             $events,
         ): Shipment {
             $lockedOrder = Order::query()->lockForUpdate()->findOrFail($shipment->order_id);
@@ -225,6 +231,13 @@ class ShipmentService
             ], static fn (?string $value): bool => $value !== null);
             if ($updates !== []) {
                 $lockedShipment->forceFill($updates)->save();
+            }
+
+            if (blank($lockedShipment->tracking_number)
+                && in_array($lockedShipment->status, ['pending', 'on_hold'], true)
+                && in_array($providerStatus, ['pending', 'on_hold'], true)
+                && $lockedShipment->status !== $providerStatus) {
+                $lockedShipment->forceFill(['status' => $providerStatus])->save();
             }
 
             $this->recordEasyParcelEventsOnLockedShipment($lockedOrder, $lockedShipment, $events);

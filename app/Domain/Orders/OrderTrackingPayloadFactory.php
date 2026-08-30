@@ -118,7 +118,7 @@ class OrderTrackingPayloadFactory
             'in_transit' => 'In Transit',
             'out_for_delivery' => 'Out for Delivery',
             'delivered' => 'Delivered',
-            'failed_delivery' => 'Delivery Exception',
+            'failed_delivery', 'booking_failed', 'cancelled', 'on_hold' => 'Delivery Exception',
             'returned' => 'Return Update',
             default => 'Shipment Update',
         };

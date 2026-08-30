@@ -169,15 +169,35 @@ describe('ShippingDashboard provider action binding', () => {
       status: 'pending' as const,
     };
     const onOpenEasyParcelBooking = vi.fn();
-    const onConfirmEasyParcelProviderFailure = vi.fn().mockResolvedValue({
+    const recovery = {
       recoveryId: 'recovery-91',
-      shipmentId: parcel.id,
-      replacementOrderId: parcel.orderId,
-      shipmentStatus: 'booking_failed',
-      recoveryState: 'awaiting_replacement',
-      cancellationState: 'error',
+      state: 'awaiting_replacement',
+      cancellationState: 'error' as const,
       cancellationMessage: 'EasyParcel cancellation unconfirmed.',
       cancellationConfirmed: false,
+      replacementOrderId: parcel.orderId,
+      readyToRebook: true,
+    };
+    const replacement = {
+      ...parcel,
+      id: `pending-order-${parcel.orderId}`,
+      source: 'pending' as const,
+      easyParcelRecovery: recovery,
+    };
+    const onConfirmEasyParcelProviderFailure = vi.fn().mockResolvedValue({
+      result: {
+        recoveryId: recovery.recoveryId,
+        shipmentId: parcel.id,
+        replacementOrderId: parcel.orderId,
+        shipmentStatus: 'booking_failed',
+        recoveryState: 'awaiting_replacement',
+        cancellationState: 'error',
+        cancellationMessage: recovery.cancellationMessage,
+        cancellationConfirmed: false,
+      },
+      shipments: [{ ...parcel, status: 'booking_failed', easyParcelRecovery: recovery }, replacement],
+      replacementParcel: replacement,
+      reloadWarning: null,
     });
     const host = document.createElement('div');
     document.body.append(host);
@@ -194,14 +214,20 @@ describe('ShippingDashboard provider action binding', () => {
       onUpdateStatus: vi.fn(),
       onOpenEasyParcelBooking,
       onRefreshEasyParcelStatus: vi.fn().mockResolvedValue({
-        shipmentId: parcel.id,
-        status: 'pending',
-        changed: false,
-        providerStatusCode: 7,
-        providerStatus: 'Schedule In Arrangement',
-        checkedAt: '2026-08-30T10:00:00+08:00',
-        awbAvailable: false,
-        recoveryDisposition: 'needs_review',
+        result: {
+          shipmentId: parcel.id,
+          status: 'pending',
+          changed: false,
+          providerStatusCode: 7,
+          providerStatus: 'Schedule In Arrangement',
+          checkedAt: '2026-08-30T10:00:00+08:00',
+          awbAvailable: false,
+          recoveryDisposition: 'needs_review',
+          recovery: null,
+        },
+        shipments: [parcel],
+        replacementParcel: null,
+        reloadWarning: null,
       }),
       onRefreshAllEasyParcelStatuses: vi.fn().mockResolvedValue([]),
       onConfirmEasyParcelProviderFailure,
@@ -210,7 +236,7 @@ describe('ShippingDashboard provider action binding', () => {
     const refresh = host.querySelector('button[aria-label="Get Latest Status"]') as HTMLButtonElement;
     await act(async () => refresh.click());
 
-    expect(host.textContent).toContain('EasyParcel reports Schedule In Arrangement (code 7); AWB is still unavailable.');
+    expect(host.textContent).toContain('EasyParcel reports Schedule In Arrangement (code 7); AWB is still unavailable. Checked 2026-08-30T10:00:00+08:00.');
     expect(host.textContent).toContain('Confirm Provider Failure & Rebook');
     expect(onOpenEasyParcelBooking).not.toHaveBeenCalled();
 
@@ -228,11 +254,10 @@ describe('ShippingDashboard provider action binding', () => {
       parcel.id,
       'EasyParcel portal explicitly reports Failed.',
     );
-    expect(host.textContent).toContain('EasyParcel cancellation unconfirmed.');
-    expect(host.textContent).toContain('Cancellation was not confirmed by EasyParcel.');
     expect(onOpenEasyParcelBooking).toHaveBeenCalledTimes(1);
     expect(onOpenEasyParcelBooking).toHaveBeenCalledWith(expect.objectContaining({
       orderId: 'replacement-order-77',
+      easyParcelRecovery: recovery,
     }));
   });
 
@@ -243,7 +268,15 @@ describe('ShippingDashboard provider action binding', () => {
       source: 'pending' as const,
       status: 'pending' as const,
       trackingNumber: '',
-      easyParcelRecoveryWarning: 'EasyParcel cancellation unconfirmed.',
+      easyParcelRecovery: {
+        recoveryId: 'recovery-warning',
+        state: 'awaiting_replacement',
+        cancellationState: 'error' as const,
+        cancellationMessage: 'EasyParcel cancellation unconfirmed.',
+        cancellationConfirmed: false,
+        replacementOrderId: 'replacement-order-warning',
+        readyToRebook: true,
+      },
     };
 
     const html = renderToStaticMarkup(React.createElement(EasyParcelBookingModal, {
@@ -259,7 +292,7 @@ describe('ShippingDashboard provider action binding', () => {
     expect(html).toContain('EasyParcel cancellation unconfirmed.');
   });
 
-  it('opens provider-terminal recovery guidance from the global status refresh', async () => {
+  it('opens audited provider-terminal recovery guidance from the global status refresh', async () => {
     const parcel = {
       ...INITIAL_SHIPMENT_PARCELS[0],
       id: 'provider-terminal-shipment',
@@ -268,6 +301,22 @@ describe('ShippingDashboard provider action binding', () => {
       courier: 'easyparcel' as const,
       trackingNumber: '',
       status: 'pending' as const,
+    };
+    const recovery = {
+      recoveryId: 'global-recovery-94',
+      state: 'awaiting_replacement',
+      cancellationState: 'success' as const,
+      cancellationMessage: 'EasyParcel cancellation confirmed by provider status code 0.',
+      cancellationConfirmed: true,
+      replacementOrderId: parcel.orderId,
+      readyToRebook: true,
+    };
+    const replacement = {
+      ...parcel,
+      id: `pending-order-${parcel.orderId}`,
+      source: 'pending' as const,
+      status: 'pending' as const,
+      easyParcelRecovery: recovery,
     };
     const onOpenEasyParcelBooking = vi.fn();
     const host = document.createElement('div');
@@ -286,14 +335,20 @@ describe('ShippingDashboard provider action binding', () => {
       onOpenEasyParcelBooking,
       onRefreshEasyParcelStatus: vi.fn(),
       onRefreshAllEasyParcelStatuses: vi.fn().mockResolvedValue([{
-        shipmentId: parcel.id,
-        status: 'cancelled',
-        changed: true,
-        providerStatusCode: 0,
-        providerStatus: 'Cancelled',
-        checkedAt: '2026-08-30T11:00:00+08:00',
-        awbAvailable: false,
-        recoveryDisposition: 'provider_terminal',
+        result: {
+          shipmentId: parcel.id,
+          status: 'cancelled',
+          changed: true,
+          providerStatusCode: 0,
+          providerStatus: 'Cancelled',
+          checkedAt: '2026-08-30T11:00:00+08:00',
+          awbAvailable: false,
+          recoveryDisposition: 'provider_terminal',
+          recovery,
+        },
+        shipments: [{ ...parcel, status: 'cancelled', easyParcelRecovery: recovery }, replacement],
+        replacementParcel: replacement,
+        reloadWarning: null,
       }]),
       onConfirmEasyParcelProviderFailure: vi.fn(),
     })));
@@ -302,13 +357,160 @@ describe('ShippingDashboard provider action binding', () => {
       .find(button => button.textContent?.trim() === 'Get Latest Status') as HTMLButtonElement;
     await act(async () => globalRefresh.click());
 
-    expect(host.textContent).toContain('EasyParcel reports Cancelled (code 0); AWB is still unavailable.');
+    expect(host.textContent).toContain('EasyParcel reports Cancelled (code 0); AWB is still unavailable. Checked 2026-08-30T11:00:00+08:00.');
     const rebook = Array.from(host.querySelectorAll('button'))
-      .find(button => button.textContent?.includes('Start Fresh Quote & Rebook')) as HTMLButtonElement;
+      .find(button => button.textContent?.includes('Continue to Fresh Quote & Rebook')) as HTMLButtonElement;
     await act(async () => rebook.click());
     expect(onOpenEasyParcelBooking).toHaveBeenCalledWith(expect.objectContaining({
       orderId: 'provider-terminal-order',
       source: 'pending',
+      easyParcelRecovery: recovery,
+    }));
+  });
+
+  it('renders provider code 8 as on hold without failure confirmation or rebook', async () => {
+    const pending = {
+      ...INITIAL_SHIPMENT_PARCELS[0],
+      id: 'provider-on-hold-shipment',
+      source: 'easyparcel' as const,
+      courier: 'easyparcel' as const,
+      trackingNumber: '',
+      status: 'pending' as const,
+    };
+    const onHold = { ...pending, status: 'on_hold' as const };
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    mountedRoots.push({ root, host });
+
+    const Harness = () => {
+      const [rows, setRows] = React.useState([pending]);
+      return React.createElement(ShippingFulfillmentTab, {
+        parcels: rows,
+        onGenerateAWB: vi.fn(),
+        onBatchGenerateAWB: vi.fn(),
+        onOpenAWBModal: vi.fn(),
+        onOpenTrackingModal: vi.fn(),
+        onOpenPickupModal: vi.fn(),
+        onUpdateStatus: vi.fn(),
+        onOpenEasyParcelBooking: vi.fn(),
+        onRefreshEasyParcelStatus: async () => {
+          setRows([onHold]);
+          return {
+            result: {
+              shipmentId: pending.id,
+              status: 'on_hold' as const,
+              changed: true,
+              providerStatusCode: 8,
+              providerStatus: 'On Hold',
+              checkedAt: '2026-08-30T12:05:00+08:00',
+              awbAvailable: false,
+              recoveryDisposition: 'none' as const,
+              recovery: null,
+            },
+            shipments: [onHold],
+            replacementParcel: null,
+            reloadWarning: null,
+          };
+        },
+        onRefreshAllEasyParcelStatuses: vi.fn().mockResolvedValue([]),
+        onConfirmEasyParcelProviderFailure: vi.fn(),
+      });
+    };
+    await act(async () => root.render(React.createElement(Harness)));
+
+    const refresh = host.querySelector('button[aria-label="Get Latest Status"]') as HTMLButtonElement;
+    await act(async () => refresh.click());
+
+    expect(host.textContent).toContain('On Hold');
+    expect(host.textContent).not.toContain('Confirm Provider Failure & Rebook');
+    expect(host.textContent).not.toContain('Start Fresh Quote & Rebook');
+    expect(host.querySelector('#easyparcel-recovery-modal-overlay')).toBeNull();
+  });
+
+  it('opens audited code 0 guidance and hands off the refreshed backend parcel after unmounting recovery', async () => {
+    const stale = {
+      ...INITIAL_SHIPMENT_PARCELS[0],
+      id: 'provider-cancelled-shipment',
+      orderId: 'provider-cancelled-order',
+      source: 'easyparcel' as const,
+      courier: 'easyparcel' as const,
+      trackingNumber: '',
+      status: 'pending' as const,
+      totalWeightKg: 99,
+      dimensionsCm: { length: 99, width: 99, height: 99 },
+    };
+    const recovery = {
+      recoveryId: 'provider-recovery-93',
+      state: 'awaiting_replacement',
+      cancellationState: 'success' as const,
+      cancellationMessage: 'EasyParcel cancellation confirmed by provider status code 0.',
+      cancellationConfirmed: true,
+      replacementOrderId: stale.orderId,
+      readyToRebook: true,
+    };
+    const replacement = {
+      ...stale,
+      id: `pending-order-${stale.orderId}`,
+      source: 'pending' as const,
+      status: 'pending' as const,
+      totalWeightKg: 1.5,
+      dimensionsCm: { length: 31, width: 21, height: 11 },
+      easyParcelRecovery: recovery,
+    };
+    const onOpenEasyParcelBooking = vi.fn();
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    mountedRoots.push({ root, host });
+
+    await act(async () => root.render(React.createElement(ShippingFulfillmentTab, {
+      parcels: [stale],
+      onGenerateAWB: vi.fn(),
+      onBatchGenerateAWB: vi.fn(),
+      onOpenAWBModal: vi.fn(),
+      onOpenTrackingModal: vi.fn(),
+      onOpenPickupModal: vi.fn(),
+      onUpdateStatus: vi.fn(),
+      onOpenEasyParcelBooking,
+      onRefreshEasyParcelStatus: vi.fn().mockResolvedValue({
+        result: {
+          shipmentId: stale.id,
+          status: 'cancelled',
+          changed: true,
+          providerStatusCode: 0,
+          providerStatus: 'Cancelled',
+          checkedAt: '2026-08-30T12:00:00+08:00',
+          awbAvailable: false,
+          recoveryDisposition: 'provider_terminal',
+          recovery,
+        },
+        shipments: [{ ...stale, status: 'cancelled', easyParcelRecovery: recovery }, replacement],
+        replacementParcel: replacement,
+        reloadWarning: null,
+      }),
+      onRefreshAllEasyParcelStatuses: vi.fn().mockResolvedValue([]),
+      onConfirmEasyParcelProviderFailure: vi.fn(),
+    })));
+
+    const refresh = host.querySelector('button[aria-label="Get Latest Status"]') as HTMLButtonElement;
+    await act(async () => refresh.click());
+    const overlay = host.querySelector('#easyparcel-recovery-modal-overlay') as HTMLDivElement;
+    expect(overlay).not.toBeNull();
+    expect(overlay.className).toContain('bg-black/70');
+    expect(overlay.className).toContain('backdrop-blur-sm');
+    expect(host.textContent).toContain('Checked 2026-08-30T12:00:00+08:00.');
+
+    const rebook = Array.from(host.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('Continue to Fresh Quote & Rebook')) as HTMLButtonElement;
+    await act(async () => rebook.click());
+
+    expect(host.querySelector('#easyparcel-recovery-modal-overlay')).toBeNull();
+    expect(onOpenEasyParcelBooking).toHaveBeenCalledWith(expect.objectContaining({
+      id: `pending-order-${stale.orderId}`,
+      totalWeightKg: 1.5,
+      dimensionsCm: { length: 31, width: 21, height: 11 },
+      easyParcelRecovery: recovery,
     }));
   });
 
