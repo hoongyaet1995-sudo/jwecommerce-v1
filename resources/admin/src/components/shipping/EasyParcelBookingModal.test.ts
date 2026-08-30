@@ -63,6 +63,59 @@ afterEach(() => {
 });
 
 describe('EasyParcelBookingModal quote lifecycle', () => {
+  it('turns a successful pending booking into an explicit close action', async () => {
+    const onClose = vi.fn();
+    const onBooked = vi.fn(async () => undefined);
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    mountedRoots.push({ root, host });
+
+    await act(async () => {
+      root.render(React.createElement(EasyParcelBookingModal, {
+        isOpen: true,
+        parcel: parcel('parcel-pending-awb'),
+        onClose,
+        onQuote: async () => staleQuote,
+        onBook: async () => ({
+          id: 'booking-pending-awb',
+          orderId: 'order-parcel-pending-awb',
+          quoteId: staleQuote.id,
+          fulfillmentStatus: 'pending',
+          trackingNumber: null,
+          hasLabel: true,
+        }),
+        onBooked,
+      }));
+    });
+
+    const quoteButton = Array.from(host.querySelectorAll('button')).find((button) => button.textContent?.includes('Re-fetch Quotes')) as HTMLButtonElement;
+    await act(async () => {
+      quoteButton.click();
+      await Promise.resolve();
+    });
+
+    const service = Array.from(host.querySelectorAll('div')).find((element) =>
+      element.className.includes('cursor-pointer') && element.textContent?.includes('Stale Courier'),
+    ) as HTMLDivElement;
+    await act(async () => { service.click(); });
+
+    const confirmButton = Array.from(host.querySelectorAll('button')).find((button) => button.textContent?.includes('Confirm Booking')) as HTMLButtonElement;
+    await act(async () => {
+      confirmButton.click();
+      await Promise.resolve();
+    });
+
+    expect(onBooked).toHaveBeenCalledOnce();
+    expect(host.textContent).toContain('Booking accepted. AWB generation is still pending.');
+    const closeButton = Array.from(host.querySelectorAll('button')).find((button) => button.textContent === 'Close') as HTMLButtonElement;
+    expect(closeButton).toBeTruthy();
+    expect(closeButton.disabled).toBe(false);
+
+    await act(async () => { closeButton.click(); });
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
   it('clears loading and ignores a pending quote after package edits or parcel switches', async () => {
     const pendingQuote = deferred<EasyParcelQuote>();
     const quote = () => pendingQuote.promise;

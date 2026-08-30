@@ -149,6 +149,34 @@ describe('redacted shipment-list client contract', () => {
     expect(html).toContain('Refresh this EasyParcel shipment status');
   });
 
+  it('uses status reconciliation instead of offering a duplicate booking while an EasyParcel AWB is pending', () => {
+    const parcel = {
+      ...redactedParcel,
+      source: 'easyparcel',
+      courier: 'easyparcel',
+      trackingNumber: '',
+      status: 'pending' as const,
+    };
+    const html = renderToStaticMarkup(
+      <ShippingFulfillmentTab
+        parcels={[parcel]}
+        onGenerateAWB={vi.fn()}
+        onBatchGenerateAWB={vi.fn()}
+        onOpenAWBModal={vi.fn()}
+        onOpenTrackingModal={vi.fn()}
+        onOpenPickupModal={vi.fn()}
+        onUpdateStatus={vi.fn()}
+        onOpenEasyParcelBooking={vi.fn()}
+        onRefreshEasyParcelStatus={vi.fn()}
+        onRefreshAllEasyParcelStatuses={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain('Get Latest Status');
+    expect(html).toContain('AWB Pending');
+    expect(html).not.toContain('Gen AWB');
+  });
+
   it('keeps bundled shipment-list examples within the redacted DTO boundary', () => {
     for (const parcel of INITIAL_SHIPMENT_PARCELS) {
       expect(parcel).not.toHaveProperty('customerPhone');

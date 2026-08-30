@@ -58,7 +58,6 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
 
   const refreshableEasyParcelCount = parcels.filter((parcel) => (
     parcel.source === 'easyparcel'
-    && Boolean(parcel.trackingNumber)
     && parcel.status !== 'delivered'
     && parcel.status !== 'returned'
   )).length;
@@ -451,7 +450,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                       {/* Actions */}
                       <td className="p-3.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          {parcel.source === 'easyparcel' && parcel.trackingNumber && (
+                          {parcel.source === 'easyparcel' && (
                             <button
                               onClick={() => void handleRefreshEasyParcelStatus(parcel.id)}
                               disabled={isRefreshingAll || refreshingParcelId !== null}
@@ -463,7 +462,11 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                             </button>
                           )}
 
-                          {!parcel.trackingNumber ? (
+                          {!parcel.trackingNumber && parcel.source === 'easyparcel' ? (
+                            <span className="px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                              AWB Pending
+                            </span>
+                          ) : !parcel.trackingNumber ? (
                             <button
                               onClick={() => onOpenEasyParcelBooking(parcel)}
                               className="px-2.5 py-1 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1"

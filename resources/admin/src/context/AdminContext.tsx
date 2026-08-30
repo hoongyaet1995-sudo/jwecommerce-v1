@@ -2155,7 +2155,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const refreshAllEasyParcelShipmentStatuses = async (): Promise<void> => {
     const eligible = shipmentParcels.filter((parcel) => (
       parcel.source === 'easyparcel'
-      && Boolean(parcel.trackingNumber)
       && parcel.status !== 'delivered'
       && parcel.status !== 'returned'
     ));
