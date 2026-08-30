@@ -71,6 +71,41 @@ class EasyParcelFulfillmentApiTest extends TestCase
         self::assertSame('refreshed-quote-token', $credential->fresh()->credentials['access_token']);
     }
 
+    public function test_quote_uses_the_encrypted_authorized_sender_profile_instead_of_the_environment_sender_configuration(): void
+    {
+        Http::preventStrayRequests();
+        $this->configureSender();
+        $provider = $this->connectedProvider();
+        $credential = $provider->credential()->sole();
+        $credential->forceFill(['credentials' => array_replace($credential->credentials, [
+            'sender_profile' => [
+                'name' => 'Authorized Dispatch',
+                'company' => 'Authorized Merchant',
+                'phone_number_country_code' => 'MY',
+                'phone_number' => '0198887777',
+                'email' => 'dispatch@authorized.example',
+                'address_1' => '99 Authorized Road',
+                'postcode' => '47500',
+                'city' => 'Subang Jaya',
+                'subdivision_code' => 'MY-10',
+                'country_code' => 'MY',
+            ],
+        ])])->save();
+
+        Http::fake(function (Request $request) {
+            self::assertSame('47500', $request['shipment'][0]['sender']['postcode']);
+            self::assertSame('MY-10', $request['shipment'][0]['sender']['subdivision_code']);
+
+            return Http::response($this->quotationResponse());
+        });
+
+        $this->actingAs($this->superAdmin())
+            ->postJson('/admin/api/shipping/orders/'.$this->processingOrder()->id.'/easyparcel/quotes', [
+                'package' => $this->actualPackage(),
+            ])
+            ->assertCreated();
+    }
+
     public function test_booking_refreshes_an_expiring_provider_session_before_claiming_the_quote(): void
     {
         Http::preventStrayRequests();
@@ -1285,19 +1320,7 @@ class EasyParcelFulfillmentApiTest extends TestCase
 
     private function configureSender(): void
     {
-        Config::set('services.easyparcel.sender', [
-            'name' => 'JW Studio Dispatch',
-            'company' => 'JW Studio',
-            'phone_number_country_code' => 'MY',
-            'phone_number' => '123456789',
-            'email' => 'dispatch@example.test',
-            'address_1' => '18 Test Industry Road',
-            'address_2' => null,
-            'postcode' => '47600',
-            'city' => 'Subang Jaya',
-            'subdivision_code' => 'MY-10',
-            'country_code' => 'MY',
-        ]);
+        // Sender data is seeded with the encrypted provider credential below.
     }
 
     private function connectedProvider(): ShippingProvider
@@ -1322,6 +1345,18 @@ class EasyParcelFulfillmentApiTest extends TestCase
                 'token_type' => 'Bearer',
                 'access_token' => 'sandbox-access-token',
                 'access_token_expires_at' => now()->addHour()->utc()->toIso8601String(),
+                'sender_profile' => [
+                    'name' => 'JW Studio Dispatch',
+                    'company' => 'JW Studio',
+                    'phone_number_country_code' => 'MY',
+                    'phone_number' => '123456789',
+                    'email' => 'dispatch@example.test',
+                    'address_1' => '18 Test Industry Road',
+                    'postcode' => '47600',
+                    'city' => 'Subang Jaya',
+                    'subdivision_code' => 'MY-10',
+                    'country_code' => 'MY',
+                ],
             ],
         ]);
 

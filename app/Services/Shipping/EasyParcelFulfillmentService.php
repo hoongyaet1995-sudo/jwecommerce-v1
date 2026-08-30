@@ -210,7 +210,7 @@ final class EasyParcelFulfillmentService
                 throw new InvalidArgumentException('The EasyParcel Sandbox connection changed while quoting.');
             }
             $this->providerSessions->assertCurrent($providerSession);
-            $sender = $this->sender();
+            $sender = $this->sender($providerSession->senderProfile);
             $receiver = $this->receiver($lockedOrder, $address);
             $packageSnapshot = $package->snapshot();
             $parcelValue = $this->money(max(0, $lockedOrder->subtotal - $lockedOrder->discount_amount));
@@ -662,13 +662,8 @@ final class EasyParcelFulfillmentService
     }
 
     /** @return array<string, string> */
-    private function sender(): array
+    private function sender(array $sender): array
     {
-        $sender = config('services.easyparcel.sender');
-        if (! is_array($sender)) {
-            throw new InvalidArgumentException('The EasyParcel sender profile is not configured.');
-        }
-
         $required = [
             'name',
             'phone_number_country_code',

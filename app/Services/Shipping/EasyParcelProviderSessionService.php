@@ -226,6 +226,7 @@ final class EasyParcelProviderSessionService
             configurationVersion: $provider->configuration_version,
             credentialFingerprint: $this->credentialFingerprint($credentials),
             accessToken: $credentials['access_token'],
+            senderProfile: is_array($credentials['sender_profile'] ?? null) ? $credentials['sender_profile'] : [],
         );
     }
 
@@ -279,6 +280,7 @@ final class EasyParcelProviderSessionService
             'access_token_expires_at',
             'refresh_token',
             'refresh_token_expires_at',
+            'sender_profile',
         ] as $key) {
             $canonical[$key] = $credentials[$key] ?? null;
         }

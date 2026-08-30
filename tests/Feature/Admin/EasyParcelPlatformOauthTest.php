@@ -325,18 +325,36 @@ PHP;
         $this->assertDatabaseCount('shipping_provider_authorization_transactions', 0);
     }
 
-    public function test_production_authorization_uses_only_production_credentials_and_persists_a_separate_provider_record(): void
+    public function test_production_authorization_reuses_the_platform_oauth_app_when_the_live_gate_is_enabled(): void
+    {
+        config()->set('services.easyparcel.client_id', 'platform-client');
+        config()->set('services.easyparcel.client_secret', 'platform-secret');
+        config()->set('services.easyparcel.environments.production.authorization_enabled', true);
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+
+        $response = $this->actingAs($admin)
+            ->post('/admin/api/shipping/providers/easyparcel/authorize', ['environment' => 'production']);
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('https://api.easyparcel.com/oauth/login', (string) $response->headers->get('Location'));
+        $this->assertStringContainsString('client_id=platform-client', (string) $response->headers->get('Location'));
+        $this->assertDatabaseHas('shipping_providers', [
+            'provider' => 'easyparcel',
+            'environment' => 'production',
+            'enabled' => false,
+        ]);
+    }
+
+    public function test_production_authorization_keeps_a_separate_connection_record_while_reusing_the_platform_oauth_app(): void
     {
         config()->set('services.easyparcel.environments.production', [
             'authorization_enabled' => true,
-            'client_id' => 'production-client',
-            'client_secret' => 'production-secret',
             'authorization_url' => 'https://production.easyparcel.test/oauth/login',
             'token_url' => 'https://production.easyparcel.test/oauth/token',
             'wallet_url' => 'https://production.easyparcel.test/open_api/wallet',
         ]);
-        config()->set('services.easyparcel.client_id', 'sandbox-client');
-        config()->set('services.easyparcel.client_secret', 'sandbox-secret');
+        config()->set('services.easyparcel.client_id', 'platform-client');
+        config()->set('services.easyparcel.client_secret', 'platform-secret');
         $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
 
         $response = $this->actingAs($admin)
@@ -344,8 +362,7 @@ PHP;
 
         $response->assertRedirect();
         $this->assertStringContainsString('https://production.easyparcel.test/oauth/login', (string) $response->headers->get('Location'));
-        $this->assertStringContainsString('client_id=production-client', (string) $response->headers->get('Location'));
-        $this->assertStringNotContainsString('sandbox-client', (string) $response->headers->get('Location'));
+        $this->assertStringContainsString('client_id=platform-client', (string) $response->headers->get('Location'));
         $this->assertDatabaseHas('shipping_providers', [
             'provider' => 'easyparcel',
             'environment' => 'production',
@@ -357,16 +374,16 @@ PHP;
         ]);
     }
 
-    public function test_production_authorization_stays_closed_when_oauth_endpoints_are_not_explicitly_configured(): void
+    public function test_production_authorization_stays_closed_when_the_live_gate_is_disabled(): void
     {
         config()->set('services.easyparcel.environments.production', [
-            'authorization_enabled' => true,
-            'client_id' => 'production-client',
-            'client_secret' => 'production-secret',
-            'authorization_url' => null,
-            'token_url' => null,
-            'wallet_url' => null,
+            'authorization_enabled' => false,
+            'authorization_url' => 'https://api.easyparcel.com/oauth/login',
+            'token_url' => 'https://api.easyparcel.com/oauth/token',
+            'wallet_url' => 'https://api.easyparcel.com/open_api/2026-06/wallet',
         ]);
+        config()->set('services.easyparcel.client_id', 'platform-client');
+        config()->set('services.easyparcel.client_secret', 'platform-secret');
         $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
 
         $this->actingAs($admin)
@@ -548,6 +565,23 @@ PHP;
                 'status_code' => 200,
                 'data' => ['wallet' => []],
             ]),
+            EasyParcelOpenApiClient::ACCOUNT_INFORMATION_URL => Http::response([
+                'status_code' => 200,
+                'data' => [
+                    'account' => ['name' => 'Authorized Merchant', 'account_type' => 'Business'],
+                    'address' => ['pickup_address' => [
+                        'name' => 'Authorized Dispatch',
+                        'phone_number' => '0123456789',
+                        'email' => 'dispatch@merchant.example',
+                        'company_name' => 'Merchant Sdn Bhd',
+                        'address1' => '8 Merchant Road',
+                        'postcode' => '47500',
+                        'city' => 'Subang Jaya',
+                        'province_code' => 'MY-10',
+                        'country_code' => 'MY',
+                    ]],
+                ],
+            ]),
         ]);
         $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
         $start = $this->actingAs($admin)->post('/admin/api/shipping/providers/easyparcel/authorize');
@@ -563,6 +597,63 @@ PHP;
             'environment' => 'sandbox',
             'connection_state' => 'connected',
         ]);
+    }
+
+    public function test_successful_authorization_persists_the_authorized_accounts_pickup_address_as_the_sender_profile(): void
+    {
+        $this->withoutMiddleware(ValidateCsrfToken::class);
+        config()->set('services.easyparcel.client_id', 'platform-client');
+        config()->set('services.easyparcel.client_secret', 'platform-secret');
+        Http::fake([
+            'https://api.easyparcel.com/oauth/token' => Http::response([
+                'token_type' => 'Bearer',
+                'access_token' => 'provider-token',
+                'expires_in' => 3600,
+                'refresh_token' => 'provider-refresh-token',
+                'refresh_token_expires_in' => 7200,
+            ]),
+            'https://api.easyparcel.com/open_api/2026-06/wallet' => Http::response([
+                'status_code' => 200,
+                'data' => ['wallet' => []],
+            ]),
+            'https://api.easyparcel.com/open_api/2026-06/account/get_account_information' => Http::response([
+                'status_code' => 200,
+                'data' => [
+                    'account' => ['name' => 'Merchant Owner', 'account_type' => 'Business'],
+                    'address' => [
+                        'pickup_address' => [
+                            'name' => 'Merchant Dispatch',
+                            'phone_number' => '0123456789',
+                            'email' => 'dispatch@merchant.example',
+                            'company_name' => 'Merchant Sdn Bhd',
+                            'address1' => '8 Merchant Road',
+                            'address2' => null,
+                            'postcode' => '47500',
+                            'city' => 'Subang Jaya',
+                            'province_code' => 'MY-10',
+                            'country_code' => 'MY',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        $start = $this->actingAs($admin)->post('/admin/api/shipping/providers/easyparcel/authorize');
+        parse_str((string) parse_url((string) $start->headers->get('Location'), PHP_URL_QUERY), $query);
+
+        $this->get('/admin/shipping/easyparcel/callback?code=provider-code&state='.$query['state'])
+            ->assertRedirect('/admin/shipping')
+            ->assertSessionHas('easyparcelConnection.state', 'connected');
+
+        $credentials = ShippingProviderCredential::query()->sole()->credentials;
+        self::assertSame('Merchant Owner', $credentials['account_profile']['name']);
+        self::assertSame('Merchant Dispatch', $credentials['sender_profile']['name']);
+        self::assertSame('8 Merchant Road', $credentials['sender_profile']['address_1']);
+        self::assertSame('MY-10', $credentials['sender_profile']['subdivision_code']);
+        self::assertSame('MY', $credentials['sender_profile']['phone_number_country_code']);
+
+        $raw = (string) DB::table('shipping_provider_credentials')->value('credentials');
+        self::assertStringNotContainsString('dispatch@merchant.example', $raw);
     }
 
     /** @param array<string, mixed> $overrides */

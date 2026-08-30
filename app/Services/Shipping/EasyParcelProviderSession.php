@@ -10,5 +10,7 @@ final readonly class EasyParcelProviderSession
         public int $configurationVersion,
         public string $credentialFingerprint,
         public string $accessToken,
+        /** @var array<string, mixed> */
+        public array $senderProfile,
     ) {}
 }

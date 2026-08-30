@@ -74,12 +74,8 @@ final class ShippingProviderConfigurationService
             return null;
         }
 
-        $clientId = $environment === self::SANDBOX_ENVIRONMENT
-            ? config('services.easyparcel.client_id')
-            : config('services.easyparcel.environments.'.$environment.'.client_id');
-        $clientSecret = $environment === self::SANDBOX_ENVIRONMENT
-            ? config('services.easyparcel.client_secret')
-            : config('services.easyparcel.environments.'.$environment.'.client_secret');
+        $clientId = config('services.easyparcel.client_id');
+        $clientSecret = config('services.easyparcel.client_secret');
 
         if (! is_string($clientId) || $clientId === '' || ! is_string($clientSecret) || $clientSecret === '') {
             return null;

@@ -694,6 +694,18 @@ class EasyParcelFailedBookingRecoveryTest extends TestCase
                 'token_type' => 'Bearer',
                 'access_token' => 'sandbox-access-token',
                 'access_token_expires_at' => now()->addHour()->utc()->toIso8601String(),
+                'sender_profile' => [
+                    'name' => 'JW Studio Dispatch',
+                    'company' => 'JW Studio',
+                    'phone_number_country_code' => 'MY',
+                    'phone_number' => '123456789',
+                    'email' => 'dispatch@example.test',
+                    'address_1' => '18 Test Industry Road',
+                    'postcode' => '47600',
+                    'city' => 'Subang Jaya',
+                    'subdivision_code' => 'MY-10',
+                    'country_code' => 'MY',
+                ],
             ],
         ]);
 
@@ -752,19 +764,7 @@ class EasyParcelFailedBookingRecoveryTest extends TestCase
 
     private function configureSender(): void
     {
-        Config::set('services.easyparcel.sender', [
-            'name' => 'JW Studio Dispatch',
-            'company' => 'JW Studio',
-            'phone_number_country_code' => 'MY',
-            'phone_number' => '123456789',
-            'email' => 'dispatch@example.test',
-            'address_1' => '18 Test Industry Road',
-            'address_2' => null,
-            'postcode' => '47600',
-            'city' => 'Subang Jaya',
-            'subdivision_code' => 'MY-10',
-            'country_code' => 'MY',
-        ]);
+        // Sender data is seeded with the encrypted provider credential below.
     }
 
     /** @return array<string, mixed> */
