@@ -7,13 +7,19 @@ use Illuminate\Support\Facades\Cache;
 
 final class RunEasyParcelCron extends Command
 {
+    private const MINIMUM_LOCK_SECONDS = 180;
+
     protected $signature = 'easyparcel:cron';
 
     protected $description = 'Run due EasyParcel schedules and drain the default database queue safely';
 
     public function handle(): int
     {
-        $lock = Cache::lock('easyparcel:cron', 55);
+        $lockSeconds = max(
+            self::MINIMUM_LOCK_SECONDS,
+            (int) config('services.easyparcel.cron_lock_seconds', self::MINIMUM_LOCK_SECONDS),
+        );
+        $lock = Cache::lock('easyparcel:cron', $lockSeconds);
 
         if (! $lock->get()) {
             $this->components->info('EasyParcel cron is already running; this invocation will exit.');

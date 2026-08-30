@@ -32,8 +32,10 @@ Create one Hostinger cron job that runs every minute with this exact command:
 cd /home/u762348670/apps/jwecommerce && php artisan easyparcel:cron --no-interaction
 ```
 
-The command uses a 55-second overlap lock, runs Laravel's due schedules, and
-then drains the default database queue within a bounded shared-hosting runtime.
+The command uses a crash-safe overlap lock with a minimum 180-second lease,
+runs Laravel's due schedules, and then drains the default database queue within
+a bounded shared-hosting runtime. Production `CACHE_STORE` must support Laravel
+atomic locks across separate PHP processes (the database cache store does).
 EasyParcel pending-AWB reconciliation runs every minute; tracking for shipments
 that already have an AWB remains scheduled every 15 minutes.
 

@@ -8,8 +8,8 @@ Implemented one bounded Artisan entry point for Hostinger shared hosting:
 cd /home/u762348670/apps/jwecommerce && php artisan easyparcel:cron --no-interaction
 ```
 
-`easyparcel:cron` acquires the atomic `easyparcel:cron` cache lock for 55 seconds,
-runs due Laravel schedules, then drains the `default` database queue with
+`easyparcel:cron` acquires the atomic `easyparcel:cron` cache lock with a
+crash-safe minimum 180-second lease, runs due Laravel schedules, then drains the `default` database queue with
 `--stop-when-empty --tries=1 --timeout=45 --max-time=50`. The lock is released
 in `finally`, and an overlapping invocation exits successfully without dispatching
 or processing work.
@@ -51,6 +51,32 @@ Observed after the minimal implementation:
 - An independently held atomic lock prevented all scheduled/queued side effects
   and returned exit code 0.
 
+## Fix round 1/5 — crash-safe lease boundary
+
+Review found that the original 55-second lock could expire while the bounded
+worker was finishing a job: `--max-time=50` is checked between jobs, and an
+existing reconciliation job may have a 60-second timeout.
+
+### RED
+
+The new behavior test runs a real scheduled database job under `easyparcel:cron`,
+advances the lock clock to second 179 from inside that worker, and attempts to
+acquire the same lock as a competing minute invocation. With the original
+55-second lease it failed as intended:
+
+- 1 failed, 2 assertions.
+- Failure: `A second minute invocation could acquire the cron lock while the first bounded worker may still be finishing a job.`
+
+### GREEN
+
+The command now enforces a 180-second minimum lease while allowing
+`EASYPARCEL_CRON_LOCK_SECONDS` to raise it. The test deliberately configures an
+unsafe 55-second value and proves the command still owns the lock at second 179.
+The production queue arguments remain unchanged.
+
+- Focused boundary test: 1 passed, 2 assertions.
+- Command plus reconciliation suites: 16 passed, 100 assertions.
+
 ## Additional verification
 
 - `php artisan schedule:list` reports reconciliation every minute and tracking every 15 minutes.
@@ -63,5 +89,5 @@ Observed after the minimal implementation:
 - Hostinger still needs the documented command configured as a once-per-minute
   cron entry after this exact commit is deployed.
 - Correct cross-process overlap protection requires the production cache store to
-  support Laravel atomic locks; the current application cache configuration must
-  remain backed by a lock-capable shared store on Hostinger.
+  support Laravel atomic locks; production must remain backed by a lock-capable
+  shared store such as the configured database cache store on Hostinger.

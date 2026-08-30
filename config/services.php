@@ -43,6 +43,7 @@ return [
         'reconciliation_stale_queue_seconds' => env('EASYPARCEL_RECONCILIATION_STALE_QUEUE_SECONDS', 120),
         'awb_alert_after_minutes' => env('EASYPARCEL_AWB_ALERT_AFTER_MINUTES', 60),
         'awb_review_after_minutes' => env('EASYPARCEL_AWB_REVIEW_AFTER_MINUTES', 10),
+        'cron_lock_seconds' => env('EASYPARCEL_CRON_LOCK_SECONDS', 180),
         'sender' => [
             'name' => env('EASYPARCEL_SENDER_NAME'),
             'company' => env('EASYPARCEL_SENDER_COMPANY'),
