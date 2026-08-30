@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\EasyParcelShipmentRecovery;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\Shipment;
@@ -182,6 +183,20 @@ class ShipmentService
                 throw new InvalidArgumentException('Only EasyParcel shipments accept provider tracking events.');
             }
 
+            if ($this->hasImmutableEasyParcelHistory($lockedShipment)) {
+                foreach ($events as $event) {
+                    $this->assertValidEasyParcelEvent($event);
+                    if (! ShipmentEvent::query()
+                        ->where('shipment_id', $lockedShipment->id)
+                        ->where('external_event_id', $event['external_event_id'])
+                        ->exists()) {
+                        throw new InvalidArgumentException('Terminal EasyParcel recovery history is immutable.');
+                    }
+                }
+
+                return 0;
+            }
+
             return $this->recordEasyParcelEventsOnLockedShipment($lockedOrder, $lockedShipment, $events);
         });
     }
@@ -233,6 +248,28 @@ class ShipmentService
                 'label_path' => $labelPath,
                 'tracking_url' => $trackingUrl,
             ], static fn (?string $value): bool => $value !== null);
+            if ($this->hasImmutableEasyParcelHistory($lockedShipment)) {
+                $statusIsCompatible = $providerStatus === $lockedShipment->status
+                    || ($providerStatus === 'cancelled'
+                        && in_array($lockedShipment->status, ['booking_failed', 'cancelled'], true));
+                $metadataIsUnchanged = collect($updates)->every(
+                    static fn (string $value, string $key): bool => $lockedShipment->getAttribute($key) === $value,
+                );
+                $eventsAreKnown = collect($events)->every(function (array $event) use ($lockedShipment): bool {
+                    $this->assertValidEasyParcelEvent($event);
+
+                    return ShipmentEvent::query()
+                        ->where('shipment_id', $lockedShipment->id)
+                        ->where('external_event_id', $event['external_event_id'])
+                        ->exists();
+                });
+                if (! $statusIsCompatible || ! $metadataIsUnchanged || ! $eventsAreKnown) {
+                    throw new InvalidArgumentException('Terminal EasyParcel recovery history is immutable.');
+                }
+
+                return $lockedShipment->fresh(['events']);
+            }
+
             if ($updates !== []) {
                 $lockedShipment->forceFill($updates)->save();
             }
@@ -293,6 +330,20 @@ class ShipmentService
         }
 
         return $created;
+    }
+
+    private function hasImmutableEasyParcelHistory(Shipment $shipment): bool
+    {
+        if ($shipment->status === 'booking_failed'
+            || ($shipment->status === 'cancelled' && blank($shipment->tracking_number))) {
+            return true;
+        }
+
+        return EasyParcelShipmentRecovery::query()
+            ->where('shipment_id', $shipment->id)
+            ->whereIn('state', ['awaiting_replacement', 'complete'])
+            ->lockForUpdate()
+            ->exists();
     }
 
     /** @return list<string> */

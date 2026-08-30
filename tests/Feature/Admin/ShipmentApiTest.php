@@ -326,7 +326,7 @@ class ShipmentApiTest extends TestCase
         $this->assertDatabaseCount('easyparcel_shipment_recoveries', 1);
         $this->assertDatabaseHas('easyparcel_shipment_recoveries', [
             'shipment_id' => $shipment->id,
-            'confirmed_by' => $staff->id,
+            'confirmed_by' => null,
             'state' => 'awaiting_replacement',
             'provider_cancel_state' => 'success',
         ]);
@@ -384,6 +384,48 @@ class ShipmentApiTest extends TestCase
 
         self::assertSame('on_hold', $shipment->fresh()->status);
         $this->assertDatabaseCount('easyparcel_shipment_recoveries', 0);
+        Http::assertSentCount(1);
+    }
+
+    public function test_interactive_on_hold_refresh_accepts_provider_code_zero_and_records_system_recovery(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedEasyParcelProvider();
+        $order = $this->processingOrder('on-hold-cancelled@example.test', 'JW-ON-HOLD-CANCELLED-1001');
+        $shipment = $this->recoverableEasyParcelShipment($order, $provider, 'ES-ON-HOLD-CANCELLED-1001');
+        $shipment->forceFill(['status' => 'on_hold'])->save();
+        $staff = User::factory()->create(['is_admin' => true, 'is_super_admin' => false]);
+        $staff->permissions()->create(['permission' => ShippingPermission::DISPATCH]);
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => Http::response([
+                'status_code' => 200,
+                'message' => 'success',
+                'data' => [[
+                    'shipment_number' => 'ES-ON-HOLD-CANCELLED-1001',
+                    'shipment_details' => [
+                        'shipment_status_code' => 0,
+                        'shipment_status' => 'Cancelled',
+                        'awb_number' => null,
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $this->actingAs($staff)
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/easyparcel/status')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'cancelled')
+            ->assertJsonPath('data.providerStatusCode', 0)
+            ->assertJsonPath('data.recoveryDisposition', 'provider_terminal')
+            ->assertJsonPath('data.recovery.state', 'awaiting_replacement')
+            ->assertJsonPath('data.recovery.cancellationConfirmed', true);
+
+        $this->assertDatabaseHas('easyparcel_shipment_recoveries', [
+            'shipment_id' => $shipment->id,
+            'confirmed_by' => null,
+            'state' => 'awaiting_replacement',
+        ]);
+        self::assertSame('cancelled', $shipment->fresh()->status);
         Http::assertSentCount(1);
     }
 

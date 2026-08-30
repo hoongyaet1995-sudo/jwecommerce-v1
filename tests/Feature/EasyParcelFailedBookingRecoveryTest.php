@@ -137,12 +137,39 @@ class EasyParcelFailedBookingRecoveryTest extends TestCase
             now(),
         );
         self::assertSame($recovery->id, $providerConfirmed->id);
-        self::assertSame('success', $providerConfirmed->provider_cancel_state);
-        self::assertSame('EasyParcel cancellation confirmed by provider status code 0.', $providerConfirmed->provider_cancel_message);
-        self::assertSame('cancelled', $shipment->fresh()->status);
+        self::assertSame('error', $providerConfirmed->provider_cancel_state);
+        self::assertSame('EasyParcel cancellation unconfirmed.', $providerConfirmed->provider_cancel_message);
+        self::assertSame('booking_failed', $shipment->fresh()->status);
 
         app(EasyParcelBookingGuard::class)->assertQuoteAllowed($order->fresh());
         $this->addToAssertionCount(1);
+    }
+
+    public function test_provider_verified_cancellation_is_system_attributed_without_an_employee_confirmer(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedProvider();
+        $order = $this->processingOrder(
+            email: 'system-provider-cancel@example.test',
+            number: 'JW-SYSTEM-PROVIDER-CANCEL',
+        );
+        [$quote, $shipment] = $this->bookedAttempt($order, $provider);
+        Http::fake();
+
+        $recovery = app(EasyParcelFailedBookingRecoveryService::class)->recordProviderCancellation(
+            $shipment,
+            null,
+            0,
+            'Cancelled',
+            now(),
+        );
+
+        self::assertNull($recovery->confirmed_by);
+        self::assertSame('EasyParcel reports Cancelled (code 0).', $recovery->reason);
+        self::assertSame('awaiting_replacement', $recovery->state);
+        self::assertSame('cancelled', $shipment->fresh()->status);
+        self::assertSame('failed', $quote->fresh()->booking_state);
+        Http::assertNothingSent();
     }
 
     public function test_active_or_uncertain_easyparcel_attempt_still_blocks_duplicate_booking(): void

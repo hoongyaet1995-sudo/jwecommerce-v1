@@ -77,7 +77,10 @@ final class EasyParcelReconciliationTaskService
             $shipment = Shipment::query()
                 ->where('order_id', $lockedOrder->id)
                 ->where('source', ShippingProviderConfigurationService::PROVIDER)
-                ->whereNotIn('status', ['delivered', 'returned'])
+                ->whereNotIn('status', ['delivered', 'returned', 'booking_failed', 'cancelled'])
+                ->whereDoesntHave('failedBookingRecovery', function ($query): void {
+                    $query->whereIn('state', ['awaiting_replacement', 'complete']);
+                })
                 ->lockForUpdate()
                 ->first();
             $quote = ShipmentQuote::query()

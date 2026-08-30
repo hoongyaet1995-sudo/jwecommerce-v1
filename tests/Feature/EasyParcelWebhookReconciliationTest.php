@@ -372,6 +372,40 @@ class EasyParcelWebhookReconciliationTest extends TestCase
         self::assertSame(0, $order->statusHistory()->count());
     }
 
+    public function test_late_awb_response_cannot_revive_a_shipment_terminalized_while_details_was_in_flight(): void
+    {
+        $this->connectedProvider();
+        [$order, $shipment] = $this->easyParcelShipmentWithoutAwb('ES-2608-TERMINAL-RACE');
+
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => function () use ($shipment) {
+                Shipment::query()->whereKey($shipment->id)->update([
+                    'status' => 'booking_failed',
+                    'updated_at' => now()->addSecond(),
+                ]);
+
+                return Http::response($this->shipmentDetailsResponse(
+                    shipmentNumber: 'ES-2608-TERMINAL-RACE',
+                    awb: 'LATE-AWB-MUST-NOT-ATTACH',
+                ));
+            },
+        ]);
+
+        try {
+            app(EasyParcelShipmentDetailsService::class)->reconcile($shipment);
+            self::fail('A late AWB must not mutate terminal failed-booking history.');
+        } catch (EasyParcelTrackingException) {
+            // Expected immutable-history write boundary.
+        }
+
+        self::assertSame('booking_failed', $shipment->fresh()->status);
+        self::assertNull($shipment->fresh()->tracking_number);
+        self::assertNull($shipment->fresh()->label_path);
+        self::assertNull($shipment->fresh()->provider_order_reference);
+        self::assertSame(0, $shipment->events()->count());
+        self::assertSame('processing', $order->fresh()->status);
+    }
+
     public function test_non_easyparcel_https_reference_is_rejected_without_partial_mutation(): void
     {
         $this->connectedProvider();

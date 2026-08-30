@@ -167,7 +167,7 @@ class ShipmentApiController extends Controller
         if (! $awbAvailable && $providerStatus === 'cancelled') {
             $recovery = $recoveries->recordProviderCancellation(
                 $shipment,
-                $request->user(),
+                null,
                 $providerDetails['shipment_status_code'],
                 $providerDetails['shipment_status'],
                 $result['checked_at'],

@@ -186,7 +186,7 @@ final class EasyParcelFailedBookingRecoveryService
 
     public function recordProviderCancellation(
         Shipment $shipment,
-        User $actor,
+        ?User $actor,
         int $providerStatusCode,
         string $providerStatus,
         CarbonInterface $checkedAt,
@@ -219,6 +219,10 @@ final class EasyParcelFailedBookingRecoveryService
                     throw new InvalidArgumentException('The EasyParcel recovery identity changed before completion.');
                 }
 
+                if (in_array($existing->state, [self::AWAITING_REPLACEMENT, self::COMPLETE], true)) {
+                    return $existing->fresh();
+                }
+
                 $lockedShipment->forceFill([
                     'status' => 'cancelled',
                     'cancelled_at' => $checkedAt,
@@ -240,10 +244,10 @@ final class EasyParcelFailedBookingRecoveryService
                 return $existing->fresh();
             }
 
-            if (! $actor->exists
+            if (($actor !== null && ! $actor->exists)
                 || $lockedShipment->order_id !== $lockedOrder->id
                 || $lockedShipment->source !== ShippingProviderConfigurationService::PROVIDER
-                || ! in_array($lockedShipment->status, ['pending', 'cancelled'], true)
+                || ! in_array($lockedShipment->status, ['pending', 'on_hold', 'cancelled'], true)
                 || filled($lockedShipment->tracking_number)
                 || ! is_string($lockedShipment->provider_reference)
                 || trim($lockedShipment->provider_reference) === ''
@@ -274,7 +278,7 @@ final class EasyParcelFailedBookingRecoveryService
             return EasyParcelShipmentRecovery::query()->create([
                 'shipment_id' => $lockedShipment->id,
                 'order_id' => $lockedOrder->id,
-                'confirmed_by' => $actor->id,
+                'confirmed_by' => $actor?->id,
                 'state' => self::AWAITING_REPLACEMENT,
                 'reason' => sprintf('EasyParcel reports %s (code 0).', trim($providerStatus)),
                 'provider_shipment_number' => trim($lockedShipment->provider_reference),
@@ -284,6 +288,18 @@ final class EasyParcelFailedBookingRecoveryService
                 'confirmed_at' => $checkedAt,
             ]);
         });
+    }
+
+    public function hasImmutableHistory(Shipment $shipment): bool
+    {
+        if (in_array($shipment->status, ['booking_failed', 'cancelled'], true)) {
+            return true;
+        }
+
+        return EasyParcelShipmentRecovery::query()
+            ->where('shipment_id', $shipment->id)
+            ->whereIn('state', [self::AWAITING_REPLACEMENT, self::COMPLETE])
+            ->exists();
     }
 
     public function completeForReplacement(Shipment $replacement): void

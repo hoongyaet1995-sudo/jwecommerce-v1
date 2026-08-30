@@ -238,6 +238,108 @@ class EasyParcelReconciliationRecoveryTest extends TestCase
         self::assertSame('resolved', $task->fresh()->state);
     }
 
+    public function test_details_processor_records_provider_code_zero_as_system_recovery_and_resolves(): void
+    {
+        $this->connectedProvider();
+        [$order, $quote] = $this->claimedQuote('booked');
+        $shipment = Shipment::query()->create([
+            'order_id' => $order->id,
+            'shipment_quote_id' => $quote->id,
+            'sequence' => 1,
+            'source' => 'easyparcel',
+            'carrier_code' => 'EP-CR0AP',
+            'carrier_name' => 'Aramex',
+            'service_code' => 'EP-CS096',
+            'service_name' => 'Aramex (Pick Up)',
+            'status' => 'pending',
+            'currency' => 'MYR',
+            'shipping_cost' => 1084,
+            'provider_reference' => 'ES-SYSTEM-CANCELLED-01',
+        ]);
+        $task = app(EasyParcelReconciliationTaskService::class)->ensureShipmentDetails($shipment);
+        $task->forceFill(['state' => 'queued', 'published_at' => now()])->save();
+        $details = $this->shipmentDetailsResponseForShipment($shipment, null);
+        data_set($details, 'data.0.shipment_details.shipment_status_code', 0);
+        data_set($details, 'data.0.shipment_details.shipment_status', 'Cancelled');
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => Http::response($details),
+        ]);
+
+        self::assertTrue(app(EasyParcelReconciliationTaskProcessor::class)->process($task->id));
+
+        $recovery = EasyParcelShipmentRecovery::query()->sole();
+        self::assertSame('resolved', $task->fresh()->state);
+        self::assertNull($task->fresh()->last_error);
+        self::assertSame('cancelled', $shipment->fresh()->status);
+        self::assertNull($shipment->fresh()->tracking_number);
+        self::assertSame('awaiting_replacement', $recovery->state);
+        self::assertNull($recovery->confirmed_by);
+        self::assertSame('success', $recovery->provider_cancel_state);
+        self::assertSame('failed', $quote->fresh()->booking_state);
+        Http::assertSentCount(1);
+    }
+
+    public function test_sweeper_never_reopens_terminal_or_recovery_owned_shipments(): void
+    {
+        Queue::fake();
+        $bookingFailed = $this->easyParcelShipment('ES-SWEEP-BOOKING-FAILED', null);
+        $bookingFailed->forceFill(['status' => 'booking_failed'])->save();
+        $cancelled = $this->easyParcelShipment('ES-SWEEP-CANCELLED', null);
+        $cancelled->forceFill(['status' => 'cancelled', 'cancelled_at' => now()])->save();
+        $awaiting = $this->easyParcelShipment('ES-SWEEP-AWAITING', null);
+        $this->recovery($awaiting, 'awaiting_replacement');
+        $complete = $this->easyParcelShipment('ES-SWEEP-COMPLETE', null);
+        $replacement = $this->replacementShipment($complete, 'ES-SWEEP-COMPLETE-REPLACEMENT');
+        $this->recovery($complete, 'complete', $replacement);
+
+        app(EasyParcelReconciliationSweeper::class)->sweep();
+
+        self::assertSame(0, EasyParcelReconciliationTask::query()
+            ->whereIn('shipment_id', [$bookingFailed->id, $cancelled->id, $awaiting->id, $complete->id])
+            ->count());
+        Queue::assertNothingPushed();
+    }
+
+    public function test_already_queued_details_tasks_resolve_without_polling_or_mutating_immutable_history(): void
+    {
+        $bookingFailed = $this->easyParcelShipment('ES-QUEUED-BOOKING-FAILED', null);
+        $bookingFailedTask = app(EasyParcelReconciliationTaskService::class)->ensureShipmentDetails($bookingFailed);
+        $bookingFailed->forceFill(['status' => 'booking_failed'])->save();
+        $cancelled = $this->easyParcelShipment('ES-QUEUED-CANCELLED', null);
+        $cancelledTask = app(EasyParcelReconciliationTaskService::class)->ensureShipmentDetails($cancelled);
+        $cancelled->forceFill(['status' => 'cancelled', 'cancelled_at' => now()])->save();
+        $awaiting = $this->easyParcelShipment('ES-QUEUED-AWAITING', null);
+        $awaitingTask = app(EasyParcelReconciliationTaskService::class)->ensureShipmentDetails($awaiting);
+        $this->recovery($awaiting, 'awaiting_replacement');
+        $complete = $this->easyParcelShipment('ES-QUEUED-COMPLETE', null);
+        $completeTask = app(EasyParcelReconciliationTaskService::class)->ensureShipmentDetails($complete);
+        $replacement = $this->replacementShipment($complete, 'ES-QUEUED-COMPLETE-REPLACEMENT');
+        $this->recovery($complete, 'complete', $replacement);
+        $cases = [
+            [$bookingFailed, $bookingFailedTask, 'booking_failed'],
+            [$cancelled, $cancelledTask, 'cancelled'],
+            [$awaiting, $awaitingTask, 'pending'],
+            [$complete, $completeTask, 'pending'],
+        ];
+        foreach ($cases as [, $task]) {
+            $task->forceFill(['state' => 'queued', 'published_at' => now()])->save();
+        }
+        Http::fake(function (Request $request) {
+            $shipment = Shipment::query()->where('provider_reference', $request->data()['shipment_number'])->firstOrFail();
+
+            return Http::response($this->shipmentDetailsResponseForShipment($shipment, 'LATE-AWB-'.$shipment->id));
+        });
+
+        foreach ($cases as [$shipment, $task, $expectedStatus]) {
+            self::assertTrue(app(EasyParcelReconciliationTaskProcessor::class)->process($task->id));
+            self::assertSame('resolved', $task->fresh()->state);
+            self::assertSame($expectedStatus, $shipment->fresh()->status);
+            self::assertNull($shipment->fresh()->tracking_number);
+            self::assertNull($shipment->fresh()->label_path);
+        }
+        Http::assertNothingSent();
+    }
+
     public function test_sweeper_republishes_a_processing_task_only_after_its_worker_lease_expires(): void
     {
         Queue::fake();
@@ -521,6 +623,46 @@ class EasyParcelReconciliationRecoveryTest extends TestCase
             'service_name' => 'Aramex (Pick Up)',
             'tracking_number' => $awb,
             'status' => 'pending',
+            'currency' => 'MYR',
+            'shipping_cost' => 1084,
+            'provider_reference' => $providerReference,
+        ]);
+    }
+
+    private function recovery(
+        Shipment $shipment,
+        string $state,
+        ?Shipment $replacement = null,
+    ): EasyParcelShipmentRecovery {
+        return EasyParcelShipmentRecovery::query()->create([
+            'shipment_id' => $shipment->id,
+            'order_id' => $shipment->order_id,
+            'confirmed_by' => User::factory()->create()->id,
+            'state' => $state,
+            'reason' => 'Provider terminal recovery evidence.',
+            'provider_shipment_number' => $shipment->provider_reference,
+            'provider_cancel_state' => 'success',
+            'provider_cancel_message' => 'EasyParcel cancellation confirmed.',
+            'provider_cancel_claimed_at' => now(),
+            'replacement_shipment_id' => $replacement?->id,
+            'confirmed_at' => now(),
+            'completed_at' => $state === 'complete' ? now() : null,
+        ]);
+    }
+
+    private function replacementShipment(Shipment $failed, string $providerReference): Shipment
+    {
+        return Shipment::query()->create([
+            'order_id' => $failed->order_id,
+            'sequence' => $failed->sequence + 1,
+            'source' => 'easyparcel',
+            'carrier_code' => 'EP-CR0AP',
+            'carrier_name' => 'Aramex',
+            'service_code' => 'EP-CS096',
+            'service_name' => 'Aramex (Pick Up)',
+            'tracking_number' => 'AWB-'.$providerReference,
+            'label_path' => 'https://app.easyparcel.com/labels/AWB-'.$providerReference,
+            'status' => 'ready_to_ship',
             'currency' => 'MYR',
             'shipping_cost' => 1084,
             'provider_reference' => $providerReference,

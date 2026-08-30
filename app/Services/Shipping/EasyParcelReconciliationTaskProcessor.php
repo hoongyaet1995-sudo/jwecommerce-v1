@@ -19,6 +19,8 @@ final class EasyParcelReconciliationTaskProcessor
     public function __construct(
         private readonly EasyParcelBookingReconciliationService $bookings,
         private readonly EasyParcelShipmentDetailsService $details,
+        private readonly EasyParcelFailedBookingRecoveryService $recoveries,
+        private readonly EasyParcelStatusNormalizer $statuses,
         private readonly EasyParcelWebhookReconciliationService $webhooks,
     ) {}
 
@@ -123,7 +125,26 @@ final class EasyParcelReconciliationTaskProcessor
             throw new EasyParcelReconciliationPendingException('shipment_missing');
         }
 
-        $shipment = $this->details->reconcile($shipment);
+        if ($this->recoveries->hasImmutableHistory($shipment)) {
+            return;
+        }
+
+        $result = $this->details->reconcileWithSnapshot($shipment);
+        $shipment = $result['shipment'];
+        $providerDetails = $result['details'];
+        if ($providerDetails['awb_number'] === null
+            && $this->statuses->normalize($providerDetails['shipment_status_code']) === 'cancelled') {
+            $this->recoveries->recordProviderCancellation(
+                $shipment,
+                null,
+                $providerDetails['shipment_status_code'],
+                $providerDetails['shipment_status'],
+                $result['checked_at'],
+            );
+
+            return;
+        }
+
         if (blank($shipment->tracking_number)) {
             throw new EasyParcelReconciliationPendingException('awb_not_available');
         }
