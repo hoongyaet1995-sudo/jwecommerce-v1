@@ -24,6 +24,19 @@ A Laravel + Blade + MySQL migration of the supplied JW storefront and administra
 
 Full Apache/XAMPP detail is in docs/xampp-setup.md.
 
+## Hostinger EasyParcel cron
+
+Create one Hostinger cron job that runs every minute with this exact command:
+
+```sh
+cd /home/u762348670/apps/jwecommerce && php artisan easyparcel:cron --no-interaction
+```
+
+The command uses a 55-second overlap lock, runs Laravel's due schedules, and
+then drains the default database queue within a bounded shared-hosting runtime.
+EasyParcel pending-AWB reconciliation runs every minute; tracking for shipments
+that already have an AWB remains scheduled every 15 minutes.
+
 Create the owner account with your selected local credentials before using /admin.
 Never commit passwords or a populated .env file. The owner can change their password
 from **Login settings** after signing in.

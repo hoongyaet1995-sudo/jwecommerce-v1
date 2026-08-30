@@ -14,4 +14,4 @@ Schedule::job(new SyncEasyParcelTracking)
     ->everyFifteenMinutes();
 
 Schedule::job(new SweepEasyParcelReconciliation)
-    ->everyFiveMinutes();
+    ->everyMinute();
