@@ -312,6 +312,71 @@ PHP;
             ->assertJsonMissing(['clientSecret' => 'platform-secret']);
     }
 
+    public function test_production_authorization_is_rejected_until_its_server_side_gate_and_credentials_are_configured(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+
+        $this->actingAs($admin)
+            ->post('/admin/api/shipping/providers/easyparcel/authorize', ['environment' => 'production'])
+            ->assertRedirect('/admin/shipping')
+            ->assertSessionHas('easyparcelConnection.state', 'failed');
+
+        $this->assertDatabaseCount('shipping_providers', 0);
+        $this->assertDatabaseCount('shipping_provider_authorization_transactions', 0);
+    }
+
+    public function test_production_authorization_uses_only_production_credentials_and_persists_a_separate_provider_record(): void
+    {
+        config()->set('services.easyparcel.environments.production', [
+            'authorization_enabled' => true,
+            'client_id' => 'production-client',
+            'client_secret' => 'production-secret',
+            'authorization_url' => 'https://production.easyparcel.test/oauth/login',
+            'token_url' => 'https://production.easyparcel.test/oauth/token',
+            'wallet_url' => 'https://production.easyparcel.test/open_api/wallet',
+        ]);
+        config()->set('services.easyparcel.client_id', 'sandbox-client');
+        config()->set('services.easyparcel.client_secret', 'sandbox-secret');
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+
+        $response = $this->actingAs($admin)
+            ->post('/admin/api/shipping/providers/easyparcel/authorize', ['environment' => 'production']);
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('https://production.easyparcel.test/oauth/login', (string) $response->headers->get('Location'));
+        $this->assertStringContainsString('client_id=production-client', (string) $response->headers->get('Location'));
+        $this->assertStringNotContainsString('sandbox-client', (string) $response->headers->get('Location'));
+        $this->assertDatabaseHas('shipping_providers', [
+            'provider' => 'easyparcel',
+            'environment' => 'production',
+            'enabled' => false,
+        ]);
+        $this->assertDatabaseMissing('shipping_providers', [
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+        ]);
+    }
+
+    public function test_production_authorization_stays_closed_when_oauth_endpoints_are_not_explicitly_configured(): void
+    {
+        config()->set('services.easyparcel.environments.production', [
+            'authorization_enabled' => true,
+            'client_id' => 'production-client',
+            'client_secret' => 'production-secret',
+            'authorization_url' => null,
+            'token_url' => null,
+            'wallet_url' => null,
+        ]);
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+
+        $this->actingAs($admin)
+            ->post('/admin/api/shipping/providers/easyparcel/authorize', ['environment' => 'production'])
+            ->assertRedirect('/admin/shipping')
+            ->assertSessionHas('easyparcelConnection.state', 'failed');
+
+        $this->assertDatabaseCount('shipping_providers', 0);
+    }
+
     public function test_super_admin_can_disconnect_a_connected_store_without_removing_platform_configuration(): void
     {
         config()->set('services.easyparcel.client_id', 'platform-client');

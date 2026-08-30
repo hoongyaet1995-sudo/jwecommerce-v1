@@ -36,9 +36,28 @@ return [
     ],
 
     'easyparcel' => [
-        'client_id' => env('EASYPARCEL_OAUTH_CLIENT_ID'),
-        'client_secret' => env('EASYPARCEL_OAUTH_CLIENT_SECRET'),
+        'client_id' => env('EASYPARCEL_SANDBOX_OAUTH_CLIENT_ID', env('EASYPARCEL_OAUTH_CLIENT_ID')),
+        'client_secret' => env('EASYPARCEL_SANDBOX_OAUTH_CLIENT_SECRET', env('EASYPARCEL_OAUTH_CLIENT_SECRET')),
         'redirect_uri' => env('EASYPARCEL_OAUTH_REDIRECT_URI', 'https://ecom.jwaistudio.online/admin/shipping/easyparcel/callback'),
+        'operating_environment' => env('EASYPARCEL_OPERATING_ENVIRONMENT', 'sandbox'),
+        'environments' => [
+            'sandbox' => [
+                'authorization_enabled' => true,
+                'client_id' => env('EASYPARCEL_SANDBOX_OAUTH_CLIENT_ID', env('EASYPARCEL_OAUTH_CLIENT_ID')),
+                'client_secret' => env('EASYPARCEL_SANDBOX_OAUTH_CLIENT_SECRET', env('EASYPARCEL_OAUTH_CLIENT_SECRET')),
+                'authorization_url' => env('EASYPARCEL_SANDBOX_OAUTH_AUTHORIZATION_URL', 'https://api.easyparcel.com/oauth/login'),
+                'token_url' => env('EASYPARCEL_SANDBOX_OAUTH_TOKEN_URL', 'https://api.easyparcel.com/oauth/token'),
+                'wallet_url' => env('EASYPARCEL_SANDBOX_OAUTH_WALLET_URL', 'https://api.easyparcel.com/open_api/2026-06/wallet'),
+            ],
+            'production' => [
+                'authorization_enabled' => env('EASYPARCEL_PRODUCTION_AUTHORIZATION_ENABLED', false),
+                'client_id' => env('EASYPARCEL_PRODUCTION_OAUTH_CLIENT_ID'),
+                'client_secret' => env('EASYPARCEL_PRODUCTION_OAUTH_CLIENT_SECRET'),
+                'authorization_url' => env('EASYPARCEL_PRODUCTION_OAUTH_AUTHORIZATION_URL'),
+                'token_url' => env('EASYPARCEL_PRODUCTION_OAUTH_TOKEN_URL'),
+                'wallet_url' => env('EASYPARCEL_PRODUCTION_OAUTH_WALLET_URL'),
+            ],
+        ],
         'webhook_path_token' => env('EASYPARCEL_WEBHOOK_PATH_TOKEN'),
         'reconciliation_stale_queue_seconds' => env('EASYPARCEL_RECONCILIATION_STALE_QUEUE_SECONDS', 120),
         'awb_alert_after_minutes' => env('EASYPARCEL_AWB_ALERT_AFTER_MINUTES', 60),

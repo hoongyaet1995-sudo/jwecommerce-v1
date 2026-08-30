@@ -3,12 +3,18 @@ import type { CourierConfig } from '../types/shipping';
 
 export interface EasyParcelProviderStatus {
   provider: 'easyparcel';
-  environment: 'sandbox';
+  environment: 'sandbox' | 'production';
   configured: boolean;
   enabled: boolean;
   connectionState: 'unconfigured' | 'unverified' | 'connected' | 'failed';
   lastVerifiedAt: string | null;
   lastError: string | null;
+  environments?: Partial<Record<'sandbox' | 'production', {
+    authorizationEnabled: boolean;
+    configured: boolean;
+    connectionState: 'unconfigured' | 'unverified' | 'connected' | 'failed';
+    enabled: boolean;
+  }>>;
 }
 
 type ProviderResponse = { data: EasyParcelProviderStatus };
@@ -39,13 +45,20 @@ const providerUrl = (bootstrap: LaravelAdminBootstrap): string => {
 export const fetchEasyParcelProvider = async (bootstrap: LaravelAdminBootstrap): Promise<EasyParcelProviderStatus> =>
   responseData(await window.fetch(providerUrl(bootstrap), { credentials: 'same-origin', headers: { Accept: 'application/json' } }), 'EasyParcel provider could not be loaded.');
 
-export const disconnectEasyParcelStore = async (bootstrap: LaravelAdminBootstrap): Promise<EasyParcelProviderStatus> => responseData(await window.fetch(providerUrl(bootstrap), {
+export const disconnectEasyParcelStore = async (
+  bootstrap: LaravelAdminBootstrap,
+  environment: 'sandbox' | 'production' = 'sandbox',
+): Promise<EasyParcelProviderStatus> => responseData(await window.fetch(providerUrl(bootstrap), {
   method: 'DELETE',
   credentials: 'same-origin',
   headers: jsonHeaders(bootstrap),
+  body: JSON.stringify({ environment }),
 }), 'EasyParcel store could not be disconnected.');
 
-export const startEasyParcelAuthorization = (bootstrap: LaravelAdminBootstrap): void => {
+export const startEasyParcelAuthorization = (
+  bootstrap: LaravelAdminBootstrap,
+  environment: 'sandbox' | 'production' = 'sandbox',
+): void => {
   if (!bootstrap.easyParcelProviderAuthorizeUrl) throw new Error('EasyParcel authorization is unavailable.');
   const form = document.createElement('form');
   form.method = 'POST';
@@ -56,6 +69,11 @@ export const startEasyParcelAuthorization = (bootstrap: LaravelAdminBootstrap): 
   token.name = '_token';
   token.value = bootstrap.csrfToken;
   form.append(token);
+  const selectedEnvironment = document.createElement('input');
+  selectedEnvironment.type = 'hidden';
+  selectedEnvironment.name = 'environment';
+  selectedEnvironment.value = environment;
+  form.append(selectedEnvironment);
   document.body.append(form);
   form.submit();
 };

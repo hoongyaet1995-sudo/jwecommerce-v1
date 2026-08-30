@@ -21,10 +21,15 @@ final class EasyParcelOAuthAuthorizationService
         private readonly ShippingProviderConfigurationService $configuration,
     ) {}
 
-    public function begin(int $userId, string $sessionBinding, string $redirectUri): ?string
+    public function begin(
+        int $userId,
+        string $sessionBinding,
+        string $redirectUri,
+        string $environment = ShippingProviderConfigurationService::SANDBOX_ENVIRONMENT,
+    ): ?string
     {
         $sessionFingerprint = $this->sessionFingerprint($sessionBinding);
-        if ($userId < 1 || $sessionFingerprint === null) {
+        if ($userId < 1 || $sessionFingerprint === null || ! ShippingProviderConfigurationService::isSupportedEnvironment($environment)) {
             return null;
         }
 
@@ -37,13 +42,14 @@ final class EasyParcelOAuthAuthorizationService
             $state,
             $stateHash,
             $redirectUri,
+            $environment,
         ): ?string {
-            $credentials = $this->configuration->platformCredentials();
+            $credentials = $this->configuration->platformCredentials($environment);
             if ($credentials === null) {
                 return null;
             }
             $provider = ShippingProvider::query()->firstOrCreate(
-                ['provider' => ShippingProviderConfigurationService::PROVIDER, 'environment' => ShippingProviderConfigurationService::ENVIRONMENT],
+                ['provider' => ShippingProviderConfigurationService::PROVIDER, 'environment' => $environment],
                 ['enabled' => false, 'connection_state' => 'unverified', 'configuration_version' => 0],
             );
             $provider = ShippingProvider::query()->lockForUpdate()->findOrFail($provider->id);
@@ -68,7 +74,7 @@ final class EasyParcelOAuthAuthorizationService
                 'consumed_at' => null,
             ]);
 
-            return $this->client->authorizationUrl($credentials['client_id'], $redirectUri, $state);
+            return $this->client->authorizationUrl($environment, $credentials['client_id'], $redirectUri, $state);
         });
     }
 
@@ -79,9 +85,9 @@ final class EasyParcelOAuthAuthorizationService
         ?string $authorizationCode,
         string $redirectUri,
     ): bool {
-        $configurationVersion = $this->consume($userId, $sessionBinding, $state);
+        $authorization = $this->consume($userId, $sessionBinding, $state);
 
-        if ($configurationVersion === null
+        if ($authorization === null
             || $authorizationCode === null
             || $authorizationCode === ''
             || strlen($authorizationCode) > self::MAX_AUTHORIZATION_CODE_LENGTH) {
@@ -91,7 +97,8 @@ final class EasyParcelOAuthAuthorizationService
         return $this->configuration->testConnection(
             $authorizationCode,
             $redirectUri,
-            $configurationVersion,
+            $authorization['environment'],
+            $authorization['configuration_version'],
             $state,
         )['verified'];
     }
@@ -104,7 +111,8 @@ final class EasyParcelOAuthAuthorizationService
         return $this->consume($userId, $sessionBinding, $state) !== null;
     }
 
-    public function consume(int $userId, string $sessionBinding, ?string $state): ?int
+    /** @return array{environment: string, configuration_version: int}|null */
+    public function consume(int $userId, string $sessionBinding, ?string $state): ?array
     {
         if (DB::connection()->transactionLevel() !== 0) {
             return $this->reject('transaction_already_open');
@@ -132,7 +140,7 @@ final class EasyParcelOAuthAuthorizationService
             $userId,
             $sessionFingerprint,
             $stateHash,
-        ): ?int {
+        ): ?array {
             $provider = ShippingProvider::query()
                 ->lockForUpdate()
                 ->find($candidate->shipping_provider_id);
@@ -146,7 +154,7 @@ final class EasyParcelOAuthAuthorizationService
             if ($transaction === null) return $this->reject('transaction_missing');
             if ($transaction->shipping_provider_id !== $provider->id) return $this->reject('provider_mismatch');
             if ($provider->provider !== ShippingProviderConfigurationService::PROVIDER) return $this->reject('provider_type_mismatch');
-            if ($provider->environment !== ShippingProviderConfigurationService::ENVIRONMENT) return $this->reject('provider_environment_mismatch');
+            if (! ShippingProviderConfigurationService::isSupportedEnvironment($provider->environment)) return $this->reject('provider_environment_mismatch');
             if ($transaction->user_id !== $userId) return $this->reject('user_mismatch');
             if (! hash_equals($transaction->session_fingerprint, $sessionFingerprint)) return $this->reject('session_binding_mismatch');
             if ($transaction->configuration_version !== $provider->configuration_version) return $this->reject('configuration_version_mismatch');
@@ -172,7 +180,10 @@ final class EasyParcelOAuthAuthorizationService
                 return $this->reject('transaction_compare_and_set_failed');
             }
 
-            return $transaction->configuration_version;
+            return [
+                'environment' => $provider->environment,
+                'configuration_version' => $transaction->configuration_version,
+            ];
         });
     }
 
@@ -187,7 +198,7 @@ final class EasyParcelOAuthAuthorizationService
         return hash_hmac('sha256', $sessionBinding, $applicationKey);
     }
 
-    private function reject(string $reason): ?int
+    private function reject(string $reason): ?array
     {
         Log::warning('EasyParcel OAuth callback rejected', ['reason' => $reason]);
 

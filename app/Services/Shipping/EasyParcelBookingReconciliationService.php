@@ -29,7 +29,7 @@ final class EasyParcelBookingReconciliationService
         $snapshot = ShipmentQuote::query()->find($quote->id);
         if (! $snapshot instanceof ShipmentQuote
             || $snapshot->provider !== ShippingProviderConfigurationService::PROVIDER
-            || $snapshot->environment !== ShippingProviderConfigurationService::ENVIRONMENT
+            || $snapshot->environment !== ShippingProviderConfigurationService::operationalEnvironment()
             || blank($snapshot->reconciliation_reference)
             || blank($snapshot->booking_claim_key)) {
             throw new EasyParcelTrackingException;
@@ -72,7 +72,7 @@ final class EasyParcelBookingReconciliationService
 
         $quote = ShipmentQuote::query()
             ->where('provider', ShippingProviderConfigurationService::PROVIDER)
-            ->where('environment', ShippingProviderConfigurationService::ENVIRONMENT)
+            ->where('environment', ShippingProviderConfigurationService::operationalEnvironment())
             ->where('reconciliation_reference', $reference)
             ->whereNotNull('booking_claim_key')
             ->first();

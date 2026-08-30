@@ -1,12 +1,14 @@
+// @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LaravelAdminBootstrap } from '../types';
-import { disconnectEasyParcelStore } from './easyParcelProviderData';
+import { disconnectEasyParcelStore, startEasyParcelAuthorization } from './easyParcelProviderData';
 
 const bootstrap = {
   user: { name: 'Admin', email: 'admin@example.test', avatar: null },
   csrfToken: 'csrf-token',
   logoutUrl: '/logout',
   easyParcelProviderUrl: '/admin/api/shipping/providers/easyparcel',
+  easyParcelProviderAuthorizeUrl: '/admin/api/shipping/providers/easyparcel/authorize',
 } satisfies LaravelAdminBootstrap;
 
 describe('EasyParcel provider client', () => {
@@ -27,5 +29,18 @@ describe('EasyParcel provider client', () => {
     }));
     expect(provider).toMatchObject({ provider: 'easyparcel', configured: true, connectionState: 'unverified' });
     expect(provider).not.toHaveProperty('clientSecret');
+  });
+
+  it('sends only the selected production environment through the existing server-managed authorization form', () => {
+    const submitted = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => undefined);
+
+    startEasyParcelAuthorization(bootstrap, 'production');
+
+    const form = document.querySelector('form[action="/admin/api/shipping/providers/easyparcel/authorize"]') as HTMLFormElement;
+    expect(form).not.toBeNull();
+    expect(new FormData(form).get('environment')).toBe('production');
+    expect(form.innerHTML).not.toContain('client_secret');
+    expect(submitted).toHaveBeenCalledOnce();
+    form.remove();
   });
 });

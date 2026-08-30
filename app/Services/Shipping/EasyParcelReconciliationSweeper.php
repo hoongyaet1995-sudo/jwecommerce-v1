@@ -22,7 +22,7 @@ final class EasyParcelReconciliationSweeper
     {
         ShipmentQuote::query()
             ->where('provider', ShippingProviderConfigurationService::PROVIDER)
-            ->where('environment', ShippingProviderConfigurationService::ENVIRONMENT)
+            ->where('environment', ShippingProviderConfigurationService::operationalEnvironment())
             ->whereNotNull('booking_claim_key')
             ->whereDoesntHave('shipment')
             ->where(function ($query): void {
@@ -61,7 +61,7 @@ final class EasyParcelReconciliationSweeper
 
         ShippingWebhookReceipt::query()
             ->where('provider', ShippingProviderConfigurationService::PROVIDER)
-            ->where('environment', ShippingProviderConfigurationService::ENVIRONMENT)
+            ->where('environment', ShippingProviderConfigurationService::operationalEnvironment())
             ->whereIn('topic', [
                 'shipment.created',
                 'shipment.awb.update',

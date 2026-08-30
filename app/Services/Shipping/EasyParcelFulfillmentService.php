@@ -79,7 +79,7 @@ final class EasyParcelFulfillmentService
                 'order_id' => $lockedOrder->id,
                 'shipping_provider_id' => $provider->id,
                 'provider' => ShippingProviderConfigurationService::PROVIDER,
-                'environment' => ShippingProviderConfigurationService::ENVIRONMENT,
+                'environment' => ShippingProviderConfigurationService::operationalEnvironment(),
                 'provider_configuration_version' => $provider->configuration_version,
                 'package_snapshot' => $package->snapshot(),
                 'request_snapshot' => $context['request_snapshot'],
@@ -200,7 +200,7 @@ final class EasyParcelFulfillmentService
 
             $provider = ShippingProvider::query()
                 ->where('provider', ShippingProviderConfigurationService::PROVIDER)
-                ->where('environment', ShippingProviderConfigurationService::ENVIRONMENT)
+                ->where('environment', ShippingProviderConfigurationService::operationalEnvironment())
                 ->lockForUpdate()
                 ->first();
             if ($provider === null) {
@@ -295,7 +295,7 @@ final class EasyParcelFulfillmentService
             }
 
             if ($lockedQuote->provider !== ShippingProviderConfigurationService::PROVIDER
-                || $lockedQuote->environment !== ShippingProviderConfigurationService::ENVIRONMENT) {
+                || $lockedQuote->environment !== ShippingProviderConfigurationService::operationalEnvironment()) {
                 throw new InvalidArgumentException('The selected quote is not an EasyParcel Sandbox quote.');
             }
 
@@ -316,7 +316,7 @@ final class EasyParcelFulfillmentService
             $provider = ShippingProvider::query()->lockForUpdate()->find($lockedQuote->shipping_provider_id);
             if ($provider === null
                 || $provider->provider !== ShippingProviderConfigurationService::PROVIDER
-                || $provider->environment !== ShippingProviderConfigurationService::ENVIRONMENT
+                || $provider->environment !== ShippingProviderConfigurationService::operationalEnvironment()
                 || $provider->configuration_version !== $lockedQuote->provider_configuration_version
                 || $provider->id !== $providerSession->providerId) {
                 throw new InvalidArgumentException('The EasyParcel Sandbox connection changed after this quote was created.');

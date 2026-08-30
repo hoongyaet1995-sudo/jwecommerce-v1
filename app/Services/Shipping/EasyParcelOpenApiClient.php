@@ -17,9 +17,9 @@ final class EasyParcelOpenApiClient
 
     public const WALLET_URL = 'https://api.easyparcel.com/open_api/'.self::API_VERSION.'/wallet';
 
-    public function authorizationUrl(string $clientId, string $redirectUri, string $state): string
+    public function authorizationUrl(string $environment, string $clientId, string $redirectUri, string $state): string
     {
-        return self::AUTHORIZATION_URL.'?'.http_build_query([
+        return $this->endpoint($environment, 'authorization_url', self::AUTHORIZATION_URL).'?'.http_build_query([
             'client_id' => $clientId,
             'redirect_uri' => $redirectUri,
             'state' => $state,
@@ -30,7 +30,7 @@ final class EasyParcelOpenApiClient
      * @param  array{client_id: string, client_secret: string}  $credentials
      * @return array<string, int|string|null>
      */
-    public function refreshAccessToken(array $credentials, string $refreshToken): array
+    public function refreshAccessToken(array $credentials, string $refreshToken, string $environment): array
     {
         try {
             $response = Http::asForm()
@@ -38,7 +38,7 @@ final class EasyParcelOpenApiClient
                 ->withBasicAuth($credentials['client_id'], $credentials['client_secret'])
                 ->connectTimeout(5)
                 ->timeout(10)
-                ->post(self::TOKEN_URL, [
+                ->post($this->endpoint($environment, 'token_url', self::TOKEN_URL), [
                     'grant_type' => 'refresh_token',
                     'refresh_token' => $refreshToken,
                 ]);
@@ -69,7 +69,7 @@ final class EasyParcelOpenApiClient
      * @param  array{client_id: string, client_secret: string}  $credentials
      * @return array<string, int|string|null>
      */
-    public function verifyAuthorizationCode(array $credentials, string $authorizationCode, string $redirectUri, ?string $state): array
+    public function verifyAuthorizationCode(array $credentials, string $authorizationCode, string $redirectUri, ?string $state, string $environment): array
     {
         try {
             $tokenResponse = Http::asForm()
@@ -77,7 +77,7 @@ final class EasyParcelOpenApiClient
                 ->withBasicAuth($credentials['client_id'], $credentials['client_secret'])
                 ->connectTimeout(5)
                 ->timeout(10)
-                ->post(self::TOKEN_URL, [
+                ->post($this->endpoint($environment, 'token_url', self::TOKEN_URL), [
                     'grant_type' => 'authorization_code',
                     'redirect_uri' => $redirectUri,
                     'code' => $authorizationCode,
@@ -98,7 +98,7 @@ final class EasyParcelOpenApiClient
                 ->withToken($tokenPayload['access_token'])
                 ->connectTimeout(5)
                 ->timeout(10)
-                ->get(self::WALLET_URL);
+                ->get($this->endpoint($environment, 'wallet_url', self::WALLET_URL));
 
             $walletPayload = $walletResponse->json();
             if (! $walletResponse->successful()
@@ -154,6 +154,13 @@ final class EasyParcelOpenApiClient
         return $expiresIn !== null && $expiresIn > 0
             ? now()->addSeconds($expiresIn)->utc()->toIso8601String()
             : null;
+    }
+
+    private function endpoint(string $environment, string $key, string $fallback): string
+    {
+        $configured = config('services.easyparcel.environments.'.$environment.'.'.$key);
+
+        return is_string($configured) && $configured !== '' ? $configured : $fallback;
     }
 
     private function logVerificationRejection(string $stage, int $httpStatus): void

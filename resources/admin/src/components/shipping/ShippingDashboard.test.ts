@@ -109,6 +109,44 @@ describe('ShippingDashboard provider action binding', () => {
     expect(writeText).toHaveBeenCalledWith('https://www.ramarama.com/webhooks/easyparcel');
   });
 
+  it('selects the existing production account card only when the server reports its authorization gate is ready', () => {
+    const onAuthorize = vi.fn();
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    mountedRoots.push({ root, host });
+
+    act(() => root.render(React.createElement(EasyParcelOAuthModal, {
+      isOpen: true,
+      provider: {
+        provider: 'easyparcel',
+        environment: 'sandbox',
+        configured: true,
+        enabled: false,
+        connectionState: 'unconfigured',
+        lastVerifiedAt: null,
+        lastError: null,
+        environments: {
+          production: { authorizationEnabled: true, configured: true, enabled: false, connectionState: 'unconfigured' },
+        },
+      },
+      webhookCallbackUrl: 'https://www.ramarama.com/webhooks/easyparcel',
+      onClose: () => undefined,
+      onAuthorize,
+      onDisconnect: async () => undefined,
+    })));
+
+    const liveAccount = Array.from(host.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('Live Account')) as HTMLButtonElement;
+    expect(liveAccount.disabled).toBe(false);
+    act(() => liveAccount.click());
+    const continueToProvider = Array.from(host.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('Continue to EasyParcel')) as HTMLButtonElement;
+    act(() => continueToProvider.click());
+
+    expect(onAuthorize).toHaveBeenCalledWith('production');
+  });
+
   it('binds the existing EasyParcel provider and fulfillment actions from AdminContext before passing them to source UI controls', () => {
     expect(source).toContain('saveCourierConfig,');
     expect(source).toContain('generateShipmentAWB,');

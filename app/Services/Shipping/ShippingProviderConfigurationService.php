@@ -10,21 +10,46 @@ final class ShippingProviderConfigurationService
 {
     public const PROVIDER = 'easyparcel';
 
-    public const ENVIRONMENT = 'sandbox';
+    public const SANDBOX_ENVIRONMENT = 'sandbox';
+
+    public const PRODUCTION_ENVIRONMENT = 'production';
+
+    /** @deprecated Use operationalEnvironment() or an explicit environment. */
+    public const ENVIRONMENT = self::SANDBOX_ENVIRONMENT;
 
     public function __construct(private readonly EasyParcelOpenApiClient $client) {}
+
+    public static function operationalEnvironment(): string
+    {
+        $environment = config('services.easyparcel.operating_environment', self::SANDBOX_ENVIRONMENT);
+
+        return is_string($environment) && self::isSupportedEnvironment($environment)
+            ? $environment
+            : self::SANDBOX_ENVIRONMENT;
+    }
+
+    public static function isSupportedEnvironment(string $environment): bool
+    {
+        return in_array($environment, [self::SANDBOX_ENVIRONMENT, self::PRODUCTION_ENVIRONMENT], true);
+    }
 
     /** @return array<string, bool|string|null> */
     public function status(): array
     {
-        return $this->dto($this->findProvider());
+        $environment = self::operationalEnvironment();
+
+        return $this->dto($this->findProvider($environment), $environment);
     }
 
     /** @return array<string, bool|string|null> */
-    public function disconnect(): array
+    public function disconnect(string $environment = self::SANDBOX_ENVIRONMENT): array
     {
-        $provider = DB::transaction(function (): ShippingProvider {
-            $provider = $this->providerForUpdate();
+        if (! self::isSupportedEnvironment($environment)) {
+            return $this->status();
+        }
+
+        $provider = DB::transaction(function () use ($environment): ShippingProvider {
+            $provider = $this->providerForUpdate($environment);
             ShippingProviderCredential::query()->where('shipping_provider_id', $provider->id)->delete();
             $provider->forceFill([
                 'enabled' => false,
@@ -37,14 +62,24 @@ final class ShippingProviderConfigurationService
             return $provider->fresh();
         });
 
-        return $this->dto($provider);
+        return $this->dto($provider, $environment);
     }
 
     /** @return array{client_id: string, client_secret: string}|null */
-    public function platformCredentials(): ?array
+    public function platformCredentials(string $environment = self::SANDBOX_ENVIRONMENT): ?array
     {
-        $clientId = config('services.easyparcel.client_id');
-        $clientSecret = config('services.easyparcel.client_secret');
+        if (! self::isSupportedEnvironment($environment)
+            || ! $this->authorizationEnabled($environment)
+            || ! $this->hasRequiredOAuthEndpoints($environment)) {
+            return null;
+        }
+
+        $clientId = $environment === self::SANDBOX_ENVIRONMENT
+            ? config('services.easyparcel.client_id')
+            : config('services.easyparcel.environments.'.$environment.'.client_id');
+        $clientSecret = $environment === self::SANDBOX_ENVIRONMENT
+            ? config('services.easyparcel.client_secret')
+            : config('services.easyparcel.environments.'.$environment.'.client_secret');
 
         if (! is_string($clientId) || $clientId === '' || ! is_string($clientSecret) || $clientSecret === '') {
             return null;
@@ -56,23 +91,24 @@ final class ShippingProviderConfigurationService
     /** @return array<string, bool|string|null> */
     public function save(string $clientId, string $clientSecret, bool $enabled): array
     {
-        $provider = DB::transaction(function () use ($clientId, $clientSecret, $enabled): ShippingProvider {
+        $environment = self::operationalEnvironment();
+        $provider = DB::transaction(function () use ($clientId, $clientSecret, $enabled, $environment): ShippingProvider {
             $createdProvider = ShippingProvider::query()->firstOrCreate(
-                ['provider' => self::PROVIDER, 'environment' => self::ENVIRONMENT],
+                ['provider' => self::PROVIDER, 'environment' => $environment],
                 ['enabled' => false, 'connection_state' => 'unverified', 'configuration_version' => 0],
             );
             $provider = ShippingProvider::query()->lockForUpdate()->findOrFail($createdProvider->id);
 
             $credential = ShippingProviderCredential::query()->where([
                 'provider' => self::PROVIDER,
-                'environment' => self::ENVIRONMENT,
+                'environment' => $environment,
             ])->lockForUpdate()->first();
             $stored = $credential?->credentials ?? [];
             $credentialsChanged = ! hash_equals((string) ($stored['client_id'] ?? ''), $clientId)
                 || ! hash_equals((string) ($stored['client_secret'] ?? ''), $clientSecret);
 
             ShippingProviderCredential::query()->updateOrCreate(
-                ['provider' => self::PROVIDER, 'environment' => self::ENVIRONMENT],
+                ['provider' => self::PROVIDER, 'environment' => $environment],
                 [
                     'shipping_provider_id' => $provider->id,
                     'credentials' => $credentialsChanged
@@ -99,7 +135,7 @@ final class ShippingProviderConfigurationService
             return $provider->fresh();
         });
 
-        return $this->dto($provider);
+        return $this->dto($provider, $environment);
     }
 
     /**
@@ -111,27 +147,32 @@ final class ShippingProviderConfigurationService
     public function testConnection(
         string $authorizationCode,
         string $redirectUri,
+        string $environment,
         ?int $expectedConfigurationVersion = null,
         ?string $state = null,
     ): array {
-        $snapshot = $this->verificationSnapshot($expectedConfigurationVersion);
-        $platformCredentials = $this->platformCredentials();
+        if (! self::isSupportedEnvironment($environment)) {
+            return ['verified' => false, 'status' => $this->status()];
+        }
+
+        $snapshot = $this->verificationSnapshot($environment, $expectedConfigurationVersion);
+        $platformCredentials = $this->platformCredentials($environment);
 
         if ($snapshot === null) {
             return ['verified' => false, 'status' => $this->status()];
         }
 
         if ($platformCredentials === null) {
-            return ['verified' => false, 'status' => $this->applyFailure($snapshot)];
+            return ['verified' => false, 'status' => $this->applyFailure($snapshot, $environment)];
         }
 
         try {
-            $tokens = $this->client->verifyAuthorizationCode($platformCredentials, $authorizationCode, $redirectUri, $state);
+            $tokens = $this->client->verifyAuthorizationCode($platformCredentials, $authorizationCode, $redirectUri, $state, $environment);
         } catch (EasyParcelVerificationException) {
-            return ['verified' => false, 'status' => $this->applyFailure($snapshot)];
+            return ['verified' => false, 'status' => $this->applyFailure($snapshot, $environment)];
         }
 
-        return $this->applySuccess($snapshot, $tokens);
+        return $this->applySuccess($snapshot, $tokens, $environment);
     }
 
     /**
@@ -145,13 +186,13 @@ final class ShippingProviderConfigurationService
      * @param  array<string, int|string|null>  $tokens
      * @return array{verified: bool, status: array<string, bool|string|null>}
      */
-    private function applySuccess(array $snapshot, array $tokens): array
+    private function applySuccess(array $snapshot, array $tokens, string $environment): array
     {
-        return DB::transaction(function () use ($snapshot, $tokens): array {
+        return DB::transaction(function () use ($snapshot, $tokens, $environment): array {
             [$provider, $credential] = $this->lockSnapshotRows($snapshot);
 
             if (! $this->snapshotStillCurrent($provider, $credential, $snapshot)) {
-                return ['verified' => false, 'status' => $this->dtoWithCredential($provider, $credential)];
+                return ['verified' => false, 'status' => $this->dtoWithCredential($provider, $credential, $environment)];
             }
 
             $credential->forceFill(['credentials' => $tokens])->save();
@@ -165,7 +206,7 @@ final class ShippingProviderConfigurationService
                 'last_error' => null,
             ])->save();
 
-            return ['verified' => true, 'status' => $this->dtoWithCredential($provider, $credential)];
+            return ['verified' => true, 'status' => $this->dtoWithCredential($provider, $credential, $environment)];
         });
     }
 
@@ -179,13 +220,13 @@ final class ShippingProviderConfigurationService
      * }  $snapshot
      * @return array<string, bool|string|null>
      */
-    private function applyFailure(array $snapshot): array
+    private function applyFailure(array $snapshot, string $environment): array
     {
-        return DB::transaction(function () use ($snapshot): array {
+        return DB::transaction(function () use ($snapshot, $environment): array {
             [$provider, $credential] = $this->lockSnapshotRows($snapshot);
 
             if (! $this->snapshotStillCurrent($provider, $credential, $snapshot)) {
-                return $this->dtoWithCredential($provider, $credential);
+                return $this->dtoWithCredential($provider, $credential, $environment);
             }
 
             $credential->forceFill(['credentials' => []])->save();
@@ -198,7 +239,7 @@ final class ShippingProviderConfigurationService
                 'last_error' => 'verification_failed',
             ])->save();
 
-            return $this->dtoWithCredential($provider, $credential);
+            return $this->dtoWithCredential($provider, $credential, $environment);
         });
     }
 
@@ -211,10 +252,10 @@ final class ShippingProviderConfigurationService
      *     credentials: array<string, mixed>
      * }|null
      */
-    private function verificationSnapshot(?int $expectedConfigurationVersion = null): ?array
+    private function verificationSnapshot(string $environment, ?int $expectedConfigurationVersion = null): ?array
     {
-        return DB::transaction(function () use ($expectedConfigurationVersion): ?array {
-            $provider = $this->providerForUpdate();
+        return DB::transaction(function () use ($environment, $expectedConfigurationVersion): ?array {
+            $provider = $this->providerForUpdate($environment);
 
             if ($expectedConfigurationVersion !== null
                 && $provider->configuration_version !== $expectedConfigurationVersion) {
@@ -230,7 +271,7 @@ final class ShippingProviderConfigurationService
                 $credential = ShippingProviderCredential::query()->create([
                     'shipping_provider_id' => $provider->id,
                     'provider' => self::PROVIDER,
-                    'environment' => self::ENVIRONMENT,
+                    'environment' => $environment,
                     'credentials' => [],
                 ]);
             }
@@ -284,25 +325,26 @@ final class ShippingProviderConfigurationService
     private function dtoWithCredential(
         ShippingProvider $provider,
         ShippingProviderCredential $credential,
+        string $environment,
     ): array {
         $provider->setRelation('credential', $credential);
 
-        return $this->dto($provider);
+        return $this->dto($provider, $environment);
     }
 
-    private function findProvider(): ?ShippingProvider
+    private function findProvider(string $environment): ?ShippingProvider
     {
         return ShippingProvider::query()
             ->with('credential')
             ->where('provider', self::PROVIDER)
-            ->where('environment', self::ENVIRONMENT)
+            ->where('environment', $environment)
             ->first();
     }
 
-    private function providerForUpdate(): ShippingProvider
+    private function providerForUpdate(string $environment): ShippingProvider
     {
         $created = ShippingProvider::query()->firstOrCreate(
-            ['provider' => self::PROVIDER, 'environment' => self::ENVIRONMENT],
+            ['provider' => self::PROVIDER, 'environment' => $environment],
             ['enabled' => false, 'connection_state' => 'unverified', 'configuration_version' => 0],
         );
 
@@ -310,16 +352,58 @@ final class ShippingProviderConfigurationService
     }
 
     /** @return array<string, bool|string|null> */
-    private function dto(?ShippingProvider $provider): array
+    private function dto(?ShippingProvider $provider, string $environment): array
     {
         return [
             'provider' => self::PROVIDER,
-            'environment' => self::ENVIRONMENT,
-            'configured' => $this->platformCredentials() !== null,
+            'environment' => $environment,
+            'configured' => $this->platformCredentials($environment) !== null,
             'enabled' => $provider?->enabled ?? false,
             'connectionState' => $provider?->connection_state ?? 'unconfigured',
             'lastVerifiedAt' => $provider?->last_verified_at?->toIso8601String(),
             'lastError' => $provider?->last_error,
+            'environments' => [
+                self::SANDBOX_ENVIRONMENT => $this->environmentStatus(self::SANDBOX_ENVIRONMENT),
+                self::PRODUCTION_ENVIRONMENT => $this->environmentStatus(self::PRODUCTION_ENVIRONMENT),
+            ],
         ];
+    }
+
+    /** @return array{authorizationEnabled: bool, configured: bool, connectionState: string, enabled: bool} */
+    private function environmentStatus(string $environment): array
+    {
+        $provider = $this->findProvider($environment);
+
+        return [
+            'authorizationEnabled' => $this->authorizationEnabled($environment),
+            'configured' => $this->platformCredentials($environment) !== null,
+            'connectionState' => $provider?->connection_state ?? 'unconfigured',
+            'enabled' => $provider?->enabled ?? false,
+        ];
+    }
+
+    private function authorizationEnabled(string $environment): bool
+    {
+        if ($environment === self::SANDBOX_ENVIRONMENT) {
+            return true;
+        }
+
+        return config('services.easyparcel.environments.'.$environment.'.authorization_enabled') === true;
+    }
+
+    private function hasRequiredOAuthEndpoints(string $environment): bool
+    {
+        if ($environment === self::SANDBOX_ENVIRONMENT) {
+            return true;
+        }
+
+        foreach (['authorization_url', 'token_url', 'wallet_url'] as $key) {
+            $value = config('services.easyparcel.environments.'.$environment.'.'.$key);
+            if (! is_string($value) || $value === '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

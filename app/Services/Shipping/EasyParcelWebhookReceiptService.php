@@ -93,7 +93,7 @@ final class EasyParcelWebhookReceiptService
         return [
             [
                 'provider' => ShippingProviderConfigurationService::PROVIDER,
-                'environment' => ShippingProviderConfigurationService::ENVIRONMENT,
+                'environment' => ShippingProviderConfigurationService::operationalEnvironment(),
                 'payload_hash' => hash('sha256', $rawBody),
             ],
             [

@@ -37,7 +37,7 @@ class ShippingProviderApiController extends Controller
     {
         $this->authorizeAdmin($request);
 
-        return response()->json(['data' => $this->configuration->disconnect()]);
+        return response()->json(['data' => $this->configuration->disconnect($this->requestedEnvironment($request))]);
     }
 
     public function beginAuthorization(Request $request): RedirectResponse
@@ -50,6 +50,7 @@ class ShippingProviderApiController extends Controller
                 $request->user()->id,
                 $sessionBinding,
                 (string) config('services.easyparcel.redirect_uri'),
+                $this->requestedEnvironment($request),
             );
         } catch (Throwable) {
             return $this->callbackRedirect('failed');
@@ -199,6 +200,13 @@ class ShippingProviderApiController extends Controller
         $binding = $request->session()->get(self::AUTHORIZATION_SESSION_BINDING_KEY);
 
         return is_string($binding) ? $binding : '';
+    }
+
+    private function requestedEnvironment(Request $request): string
+    {
+        $environment = $request->input('environment');
+
+        return is_string($environment) ? $environment : ShippingProviderConfigurationService::operationalEnvironment();
     }
 
     private function authorizeAdmin(Request $request): void

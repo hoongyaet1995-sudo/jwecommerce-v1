@@ -57,6 +57,7 @@ export type ShippingTabType =
 export const ShippingDashboard: React.FC = () => {
   const {
     courierConfigs = [],
+    easyParcelProvider,
     saveCourierConfig,
     refreshEasyParcelProvider,
     disconnectEasyParcel,
@@ -494,12 +495,12 @@ export const ShippingDashboard: React.FC = () => {
       {isEasyParcelOAuthOpen && editingCourier && (
         <EasyParcelOAuthModal
           isOpen={isEasyParcelOAuthOpen}
-          provider={{ provider: 'easyparcel', environment: 'sandbox', configured: true, enabled: editingCourier.isEnabled, connectionState: editingCourier.status === 'connected' ? 'connected' : editingCourier.status === 'error' ? 'failed' : 'unconfigured', lastVerifiedAt: null, lastError: null }}
+          provider={easyParcelProvider ?? { provider: 'easyparcel', environment: 'sandbox', configured: false, enabled: editingCourier.isEnabled, connectionState: editingCourier.status === 'connected' ? 'connected' : editingCourier.status === 'error' ? 'failed' : 'unconfigured', lastVerifiedAt: null, lastError: null }}
           webhookCallbackUrl={window.__JW_ADMIN__?.easyParcelWebhookCallbackUrl ?? editingCourier.webhookEndpointUrl}
           callbackState={easyParcelCallbackState}
           onClose={() => { setEasyParcelCallbackState(null); setIsEasyParcelOAuthOpen(false); setEditingCourier(null); }}
-          onAuthorize={() => { void pingCourierAPI(editingCourier.id); }}
-          onDisconnect={async () => { await disconnectEasyParcel(); setEditingCourier({ ...editingCourier, isEnabled: false, status: 'pending_keys' }); }}
+          onAuthorize={(environment) => { void pingCourierAPI(editingCourier.id, environment); }}
+          onDisconnect={async (environment) => { await disconnectEasyParcel(environment); setEditingCourier({ ...editingCourier, isEnabled: false, status: 'pending_keys' }); }}
         />
       )}
 

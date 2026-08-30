@@ -22,7 +22,7 @@ final class EasyParcelProviderSessionService
             $provider = ShippingProvider::query()
                 ->with('credential')
                 ->where('provider', ShippingProviderConfigurationService::PROVIDER)
-                ->where('environment', ShippingProviderConfigurationService::ENVIRONMENT)
+                ->where('environment', ShippingProviderConfigurationService::operationalEnvironment())
                 ->first();
 
             if ($provider === null || ! $this->isConnectedProvider($provider)) {
@@ -78,7 +78,7 @@ final class EasyParcelProviderSessionService
         }
 
         $fingerprint = $this->credentialFingerprint($credentials);
-        $platformCredentials = $this->configuration->platformCredentials();
+        $platformCredentials = $this->configuration->platformCredentials($provider->environment);
         $refreshToken = $credentials['refresh_token'] ?? null;
 
         if ($platformCredentials === null
@@ -90,7 +90,7 @@ final class EasyParcelProviderSessionService
         }
 
         try {
-            $tokens = $this->client->refreshAccessToken($platformCredentials, $refreshToken);
+            $tokens = $this->client->refreshAccessToken($platformCredentials, $refreshToken, $provider->environment);
         } catch (EasyParcelVerificationException) {
             $this->markRefreshFailure($provider, $credential, $fingerprint);
             throw new EasyParcelTrackingException;
@@ -150,7 +150,7 @@ final class EasyParcelProviderSessionService
     ): array {
         if ($credential->shipping_provider_id !== $provider->id
             || $credential->provider !== ShippingProviderConfigurationService::PROVIDER
-            || $credential->environment !== ShippingProviderConfigurationService::ENVIRONMENT) {
+            || $credential->environment !== $provider->environment) {
             throw new EasyParcelTrackingException;
         }
 
@@ -251,7 +251,7 @@ final class EasyParcelProviderSessionService
     ): bool {
         return $credential->shipping_provider_id === $provider->id
             && $credential->provider === ShippingProviderConfigurationService::PROVIDER
-            && $credential->environment === ShippingProviderConfigurationService::ENVIRONMENT
+            && $credential->environment === $provider->environment
             && $provider->configuration_version === $configurationVersion
             && hash_equals(
                 $credentialFingerprint,
@@ -262,7 +262,7 @@ final class EasyParcelProviderSessionService
     private function isConnectedProvider(ShippingProvider $provider): bool
     {
         return $provider->provider === ShippingProviderConfigurationService::PROVIDER
-            && $provider->environment === ShippingProviderConfigurationService::ENVIRONMENT
+            && $provider->environment === ShippingProviderConfigurationService::operationalEnvironment()
             && $provider->enabled
             && $provider->connection_state === 'connected';
     }

@@ -118,7 +118,7 @@ final class EasyParcelReconciliationTaskService
     {
         $identity = [
             'provider' => ShippingProviderConfigurationService::PROVIDER,
-            'environment' => ShippingProviderConfigurationService::ENVIRONMENT,
+            'environment' => ShippingProviderConfigurationService::operationalEnvironment(),
             'task_key' => $key,
         ];
 

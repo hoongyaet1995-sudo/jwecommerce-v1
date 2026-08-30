@@ -20,7 +20,7 @@ import {
   type EasyParcelStatusRefreshOutcome,
 } from '../integration/shipmentData';
 import { createEasyParcelWebhookAuditRefresher, fetchEasyParcelWebhookReceipts } from '../integration/easyParcelWebhookData';
-import { courierConfigsFromEasyParcel, disconnectEasyParcelStore, fetchEasyParcelProvider, startEasyParcelAuthorization } from '../integration/easyParcelProviderData';
+import { courierConfigsFromEasyParcel, disconnectEasyParcelStore, fetchEasyParcelProvider, startEasyParcelAuthorization, type EasyParcelProviderStatus } from '../integration/easyParcelProviderData';
 import { confirmEasyParcelBooking, requestEasyParcelQuote, type EasyParcelBooking, type EasyParcelPackageSpec, type EasyParcelQuote } from '../integration/easyParcelFulfillmentData';
 import { fetchCommerceSettings, saveBankTransferConfiguration, saveCodConfiguration, saveCommerceSettings, saveShippingConfiguration } from '../integration/commerceSettingsData';
 import { deleteTaxRule as deleteTaxRuleData, deleteTaxZone as deleteTaxZoneData, globalTaxEngineFromConfiguration, saveTaxConfiguration, saveTaxRule, saveTaxZone, type TaxSettingsDocument } from '../integration/taxSettingsData';
@@ -307,13 +307,14 @@ interface AdminContextType {
 
   // Malaysia Shipping & Fulfillment Module
   courierConfigs: CourierConfig[];
+  easyParcelProvider: EasyParcelProviderStatus | null;
   saveCourierConfig: (config: CourierConfig) => void;
   refreshEasyParcelProvider: () => Promise<void>;
-  disconnectEasyParcel: () => Promise<void>;
+  disconnectEasyParcel: (environment?: 'sandbox' | 'production') => Promise<void>;
   quoteEasyParcelShipment: (parcel: ShipmentParcel, packageSpec: EasyParcelPackageSpec) => Promise<EasyParcelQuote>;
   bookEasyParcelShipment: (parcel: ShipmentParcel, quote: EasyParcelQuote, serviceCode: string) => Promise<EasyParcelBooking>;
   toggleCourierStatus: (id: string) => void;
-  pingCourierAPI: (id: string) => Promise<number>;
+  pingCourierAPI: (id: string, environment?: 'sandbox' | 'production') => Promise<number>;
   topUpEasyParcelWallet: (amountRM: number) => void;
 
   smartRoutingRules: SmartRoutingRule[];
@@ -559,7 +560,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     let active = true;
     void fetchEasyParcelProvider(laravelBootstrap).then((provider) => {
-      if (active) setCourierConfigs(courierConfigsFromEasyParcel(provider));
+      if (active) {
+        setEasyParcelProvider(provider);
+        setCourierConfigs(courierConfigsFromEasyParcel(provider));
+      }
     }).catch(() => {
       if (active) addToast({ type: 'error', title: 'EasyParcel Unavailable', message: 'Unable to load the server-side EasyParcel provider state.' });
     });
@@ -748,6 +752,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Malaysia Shipping Module State
   const [courierConfigs, setCourierConfigs] = useState<CourierConfig[]>([]);
+  const [easyParcelProvider, setEasyParcelProvider] = useState<EasyParcelProviderStatus | null>(null);
   const [smartRoutingRules, setSmartRoutingRules] = useState<SmartRoutingRule[]>([]);
   const [shipmentParcels, setShipmentParcels] = useState<ShipmentParcel[]>([]);
   const [easyParcelWebhookAudit, setEasyParcelWebhookAudit] = useState<EasyParcelWebhookAuditSnapshot>({
@@ -2113,6 +2118,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const refreshEasyParcelProvider = async (): Promise<void> => {
     const provider = await fetchEasyParcelProvider(laravelBootstrap);
+    setEasyParcelProvider(provider);
     setCourierConfigs(courierConfigsFromEasyParcel(provider));
   };
 
@@ -2142,8 +2148,9 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addToast({ type: 'info', title: 'Platform OAuth', message: 'Use Connect EasyParcel Store to authorize the server-managed Sandbox integration.' });
   };
 
-  const disconnectEasyParcel = async (): Promise<void> => {
-    const provider = await disconnectEasyParcelStore(laravelBootstrap);
+  const disconnectEasyParcel = async (environment: 'sandbox' | 'production' = 'sandbox'): Promise<void> => {
+    const provider = await disconnectEasyParcelStore(laravelBootstrap, environment);
+    setEasyParcelProvider(provider);
     setCourierConfigs(courierConfigsFromEasyParcel(provider));
     addToast({ type: 'success', title: 'EasyParcel disconnected', message: 'The connected EasyParcel store was removed.' });
   };
@@ -2274,11 +2281,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addToast({ type: 'error', title: 'Courier not configured', message: 'This courier has no configured provider integration.' });
   };
 
-  const pingCourierAPI = async (id: string): Promise<number> => {
+  const pingCourierAPI = async (id: string, environment: 'sandbox' | 'production' = 'sandbox'): Promise<number> => {
     const courier = courierConfigs.find((entry) => entry.id === id);
     if (courier?.courierCode === 'easyparcel') {
       try {
-        startEasyParcelAuthorization(laravelBootstrap);
+        startEasyParcelAuthorization(laravelBootstrap, environment);
       } catch (error) {
         addToast({ type: 'error', title: 'EasyParcel authorization unavailable', message: error instanceof Error ? error.message : 'Unable to start provider authorization.' });
       }
@@ -3916,6 +3923,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
         clearSyncLogs,
         simulateIncomingOrder,
         courierConfigs,
+        easyParcelProvider,
         saveCourierConfig,
         refreshEasyParcelProvider,
         disconnectEasyParcel,
