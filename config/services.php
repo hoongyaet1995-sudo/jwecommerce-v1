@@ -42,6 +42,7 @@ return [
         'webhook_path_token' => env('EASYPARCEL_WEBHOOK_PATH_TOKEN'),
         'reconciliation_stale_queue_seconds' => env('EASYPARCEL_RECONCILIATION_STALE_QUEUE_SECONDS', 120),
         'awb_alert_after_minutes' => env('EASYPARCEL_AWB_ALERT_AFTER_MINUTES', 60),
+        'awb_review_after_minutes' => env('EASYPARCEL_AWB_REVIEW_AFTER_MINUTES', 10),
         'sender' => [
             'name' => env('EASYPARCEL_SENDER_NAME'),
             'company' => env('EASYPARCEL_SENDER_COMPANY'),

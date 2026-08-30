@@ -7,8 +7,9 @@ final class EasyParcelStatusNormalizer
     public function normalize(int $code): string
     {
         return match ($code) {
-            0, 8 => 'failed_delivery',
+            0 => 'cancelled',
             2, 7 => 'pending',
+            8 => 'on_hold',
             3, 11 => 'shipped',
             4 => 'in_transit',
             5 => 'delivered',

@@ -23,6 +23,33 @@ final class EasyParcelShipmentDetailsService
 
     public function reconcile(Shipment $shipment): Shipment
     {
+        return $this->reconcileWithSnapshot($shipment)['shipment'];
+    }
+
+    /**
+     * @return array{
+     *     shipment: Shipment,
+     *     details: array{
+     *         shipment_number: string,
+     *         order_number: ?string,
+     *         reference: ?string,
+     *         awb_number: ?string,
+     *         awb_url: ?string,
+     *         tracking_url: ?string,
+     *         service_code: ?string,
+     *         courier_code: ?string,
+     *         courier_name: ?string,
+     *         service_name: ?string,
+     *         currency: ?string,
+     *         amount_minor: ?int,
+     *         shipment_status_code: int,
+     *         shipment_status: string
+     *     },
+     *     checked_at: CarbonInterface
+     * }
+     */
+    public function reconcileWithSnapshot(Shipment $shipment): array
+    {
         try {
             $snapshot = Shipment::query()->find($shipment->id);
             if (! $snapshot instanceof Shipment) {
@@ -40,8 +67,9 @@ final class EasyParcelShipmentDetailsService
                 throw new EasyParcelTrackingException;
             }
             $details = $this->lookup($shipmentNumber, $providerSession);
+            $checkedAt = now();
 
-            return DB::transaction(function () use (
+            $reconciled = DB::transaction(function () use (
                 $shipment,
                 $shipmentNumber,
                 $snapshotAwb,
@@ -56,13 +84,19 @@ final class EasyParcelShipmentDetailsService
                     $details['awb_number'],
                     $details['awb_url'],
                     $details['tracking_url'],
-                    [$this->statusEvent($details)],
+                    $this->reconciliationEvents($details),
                 );
 
                 $this->providerSessions->assertCurrent($providerSession);
 
                 return $reconciled;
             });
+
+            return [
+                'shipment' => $reconciled,
+                'details' => $details,
+                'checked_at' => $checkedAt,
+            ];
         } catch (EasyParcelTrackingException $exception) {
             throw $exception;
         } catch (Throwable) {
@@ -224,6 +258,21 @@ final class EasyParcelShipmentDetailsService
             'description' => $details['shipment_status'],
             'location' => null,
         ];
+    }
+
+    /**
+     * @param  array{awb_number: ?string, shipment_number: string, shipment_status_code: int, shipment_status: string}  $details
+     * @return list<array{external_event_id: string, status: string, occurred_at: CarbonInterface, description: string, location: null}>
+     */
+    private function reconciliationEvents(array $details): array
+    {
+        $event = $this->statusEvent($details);
+        if (($event['status'] === 'pending' && $details['awb_number'] === null)
+            || ! in_array($event['status'], ['pending', 'shipped', 'in_transit', 'delivered', 'failed_delivery', 'returned'], true)) {
+            return [];
+        }
+
+        return [$event];
     }
 
     private function decimalToMinor(mixed $value): int

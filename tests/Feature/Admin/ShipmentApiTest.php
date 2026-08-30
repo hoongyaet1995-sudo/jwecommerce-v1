@@ -220,6 +220,52 @@ class ShipmentApiTest extends TestCase
         ]);
     }
 
+    public function test_status_refresh_returns_truthful_pending_awb_diagnostics(): void
+    {
+        config(['services.easyparcel.awb_review_after_minutes' => 10]);
+        $this->connectedEasyParcelProvider();
+        $order = $this->processingOrder('pending-awb@example.test', 'JW-PENDING-AWB-1001');
+        $shipment = Shipment::query()->create([
+            'order_id' => $order->id,
+            'sequence' => 1,
+            'source' => 'easyparcel',
+            'carrier_name' => 'EasyParcel Sandbox Courier',
+            'provider_reference' => 'ES-PENDING-AWB-1001',
+            'status' => 'pending',
+            'currency' => 'MYR',
+        ]);
+        $shipment->forceFill(['created_at' => now()->subMinutes(11)])->save();
+
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => Http::response([
+                'status_code' => 200,
+                'message' => 'success',
+                'data' => [[
+                    'shipment_number' => 'ES-PENDING-AWB-1001',
+                    'shipment_details' => [
+                        'shipment_status_code' => 7,
+                        'shipment_status' => 'Schedule In Arrangement',
+                        'awb_number' => null,
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $response = $this->actingAs($this->superAdmin())
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/easyparcel/status');
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('data.changed', false)
+            ->assertJsonPath('data.providerStatusCode', 7)
+            ->assertJsonPath('data.providerStatus', 'Schedule In Arrangement')
+            ->assertJsonPath('data.awbAvailable', false)
+            ->assertJsonPath('data.recoveryDisposition', 'needs_review')
+            ->assertJsonStructure(['data' => ['checkedAt']]);
+        self::assertNotEmpty($response->json('data.checkedAt'));
+        Http::assertSentCount(1);
+    }
+
     public function test_latest_easyparcel_status_rejects_non_easyparcel_shipments_without_provider_request(): void
     {
         Http::fake();

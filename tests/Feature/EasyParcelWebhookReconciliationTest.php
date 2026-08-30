@@ -144,14 +144,14 @@ class EasyParcelWebhookReconciliationTest extends TestCase
         $statuses = app(EasyParcelStatusNormalizer::class);
 
         self::assertSame([
-            0 => 'failed_delivery',
+            0 => 'cancelled',
             2 => 'pending',
             3 => 'shipped',
             4 => 'in_transit',
             5 => 'delivered',
             6 => 'returned',
             7 => 'pending',
-            8 => 'failed_delivery',
+            8 => 'on_hold',
             11 => 'shipped',
             99 => 'provider_update',
         ], collect([0, 2, 3, 4, 5, 6, 7, 8, 11, 99])

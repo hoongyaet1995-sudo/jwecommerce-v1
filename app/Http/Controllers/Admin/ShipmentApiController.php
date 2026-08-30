@@ -13,6 +13,7 @@ use App\Services\Shipping\EasyParcelFulfillmentService;
 use App\Services\Shipping\EasyParcelReconciliationPublisher;
 use App\Services\Shipping\EasyParcelReconciliationTaskService;
 use App\Services\Shipping\EasyParcelShipmentDetailsService;
+use App\Services\Shipping\EasyParcelStatusNormalizer;
 use App\Services\Shipping\EasyParcelTrackingException;
 use App\Services\Shipping\PackageSpec;
 use Illuminate\Http\JsonResponse;
@@ -134,6 +135,7 @@ class ShipmentApiController extends Controller
         Request $request,
         Shipment $shipment,
         EasyParcelShipmentDetailsService $details,
+        EasyParcelStatusNormalizer $statuses,
     ): JsonResponse {
         abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::DISPATCH), 403);
 
@@ -147,13 +149,16 @@ class ShipmentApiController extends Controller
         $beforeEventCount = $shipment->events()->count();
 
         try {
-            $shipment = $details->reconcile($shipment);
+            $result = $details->reconcileWithSnapshot($shipment);
         } catch (EasyParcelTrackingException) {
             return response()->json([
                 'message' => 'EasyParcel status is temporarily unavailable. Please try again.',
             ], 503);
         }
 
+        $shipment = $result['shipment'];
+        $providerDetails = $result['details'];
+        $awbAvailable = $providerDetails['awb_number'] !== null;
         $shipment->refresh();
 
         return response()->json(['data' => [
@@ -161,6 +166,15 @@ class ShipmentApiController extends Controller
             'status' => $shipment->status,
             'changed' => $shipment->status !== $beforeStatus
                 || $shipment->events()->count() !== $beforeEventCount,
+            'providerStatusCode' => $providerDetails['shipment_status_code'],
+            'providerStatus' => $providerDetails['shipment_status'],
+            'checkedAt' => $result['checked_at']->toIso8601String(),
+            'awbAvailable' => $awbAvailable,
+            'recoveryDisposition' => $this->recoveryDisposition(
+                $shipment,
+                $statuses->normalize($providerDetails['shipment_status_code']),
+                $awbAvailable,
+            ),
         ]]);
     }
 
@@ -233,5 +247,22 @@ class ShipmentApiController extends Controller
             'currency' => $shipment->currency,
             'amount' => $shipment->shipping_cost === null ? null : $shipment->shipping_cost / 100,
         ];
+    }
+
+    private function recoveryDisposition(Shipment $shipment, string $providerStatus, bool $awbAvailable): string
+    {
+        if ($awbAvailable) {
+            return 'none';
+        }
+
+        if (in_array($providerStatus, ['cancelled', 'booking_failed', 'delivered', 'failed_delivery', 'returned'], true)) {
+            return 'provider_terminal';
+        }
+
+        $thresholdMinutes = max(0, (int) config('services.easyparcel.awb_review_after_minutes', 10));
+
+        return $shipment->created_at?->lt(now()->subMinutes($thresholdMinutes))
+            ? 'needs_review'
+            : 'none';
     }
 }
