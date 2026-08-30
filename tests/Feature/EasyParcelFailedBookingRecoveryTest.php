@@ -11,6 +11,7 @@ use App\Models\ShippingProvider;
 use App\Models\ShippingProviderCredential;
 use App\Models\User;
 use App\Services\Admin\ShipmentDataService;
+use App\Services\ShipmentService;
 use App\Services\Shipping\EasyParcelBookingGuard;
 use App\Services\Shipping\EasyParcelCancellationService;
 use App\Services\Shipping\EasyParcelFailedBookingRecoveryService;
@@ -78,6 +79,134 @@ class EasyParcelFailedBookingRecoveryTest extends TestCase
         self::assertNull($quote->fresh()->booking_claim_key);
         $this->assertDatabaseCount('easyparcel_shipment_recoveries', 1);
         Http::assertSentCount(1);
+    }
+
+    public function test_durable_cancel_claim_rejects_a_late_details_awb_before_cancel_finalization(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedProvider();
+        $actor = User::factory()->create(['is_admin' => true]);
+        $order = $this->processingOrder();
+        [$quote, $shipment] = $this->bookedAttempt($order, $provider);
+        $lateWriteRejected = false;
+
+        Http::fake(function (Request $request) use ($shipment, &$lateWriteRejected) {
+            self::assertSame(EasyParcelCancellationService::CANCELLATION_URL, $request->url());
+            self::assertSame('cancelling', $shipment->failedBookingRecovery()->sole()->state);
+            self::assertSame('claimed', $shipment->failedBookingRecovery()->sole()->provider_cancel_state);
+
+            try {
+                app(ShipmentService::class)->reconcileEasyParcelDetails(
+                    $shipment,
+                    (string) $shipment->provider_reference,
+                    null,
+                    (string) $shipment->provider_order_reference,
+                    'AWB-LATE-AFTER-CANCEL-CLAIM',
+                    'https://app.easyparcel.com/labels/AWB-LATE-AFTER-CANCEL-CLAIM',
+                    'https://easyparcel.com/my/en/track/details/AWB-LATE-AFTER-CANCEL-CLAIM',
+                    'pending',
+                    [],
+                );
+            } catch (InvalidArgumentException $exception) {
+                $lateWriteRejected = $exception->getMessage() === 'Terminal EasyParcel recovery history is immutable.';
+            }
+
+            return Http::response([
+                'status_code' => 200,
+                'data' => [[
+                    'status' => 'success',
+                    'message' => 'Shipment Cancelled',
+                    'shipment_number' => 'ES-2608-FAILED1',
+                ]],
+            ]);
+        });
+
+        $recovery = app(EasyParcelFailedBookingRecoveryService::class)
+            ->confirm($shipment, $actor, 'Provider portal reports a failed booking.');
+
+        self::assertTrue($lateWriteRejected);
+        self::assertSame('awaiting_replacement', $recovery->state);
+        self::assertSame('success', $recovery->provider_cancel_state);
+        self::assertSame('cancelled', $shipment->fresh()->status);
+        self::assertNull($shipment->fresh()->tracking_number);
+        self::assertSame('failed', $quote->fresh()->booking_state);
+        Http::assertSentCount(1);
+    }
+
+    public function test_awb_committed_before_manual_confirmation_prevents_recovery_creation(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedProvider();
+        $actor = User::factory()->create(['is_admin' => true]);
+        $order = $this->processingOrder();
+        [$quote, $shipment] = $this->bookedAttempt($order, $provider);
+        $shipment->forceFill([
+            'tracking_number' => 'AWB-COMMITTED-FIRST',
+            'label_path' => 'https://app.easyparcel.com/labels/AWB-COMMITTED-FIRST',
+        ])->save();
+        Http::fake();
+
+        try {
+            app(EasyParcelFailedBookingRecoveryService::class)
+                ->confirm($shipment, $actor, 'This must not replace an AWB-backed shipment.');
+            self::fail('An AWB-backed shipment must not enter failed-booking recovery.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame(
+                'This EasyParcel shipment is not eligible for failed-booking recovery.',
+                $exception->getMessage(),
+            );
+        }
+
+        self::assertSame('AWB-COMMITTED-FIRST', $shipment->fresh()->tracking_number);
+        self::assertSame('pending', $shipment->fresh()->status);
+        self::assertSame('booked', $quote->fresh()->booking_state);
+        self::assertNotNull($quote->fresh()->booking_claim_key);
+        $this->assertDatabaseCount('easyparcel_shipment_recoveries', 0);
+        Http::assertNothingSent();
+    }
+
+    public function test_cancel_finalization_refuses_to_terminalize_a_contaminated_claim(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedProvider();
+        $actor = User::factory()->create(['is_admin' => true]);
+        $order = $this->processingOrder();
+        [$quote, $shipment] = $this->bookedAttempt($order, $provider);
+
+        Http::fake(function () use ($shipment) {
+            Shipment::query()->whereKey($shipment->id)->update([
+                'tracking_number' => 'AWB-CONTAMINATED-CLAIM',
+                'updated_at' => now(),
+            ]);
+
+            return Http::response([
+                'status_code' => 200,
+                'data' => [[
+                    'status' => 'success',
+                    'message' => 'Shipment Cancelled',
+                    'shipment_number' => 'ES-2608-FAILED1',
+                ]],
+            ]);
+        });
+
+        try {
+            app(EasyParcelFailedBookingRecoveryService::class)
+                ->confirm($shipment, $actor, 'Provider portal reports a failed booking.');
+            self::fail('A contaminated cancellation claim must not release rebooking.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame(
+                'The EasyParcel recovery identity changed before completion.',
+                $exception->getMessage(),
+            );
+        }
+
+        $recovery = EasyParcelShipmentRecovery::query()->sole();
+        self::assertSame('cancelling', $recovery->state);
+        self::assertSame('claimed', $recovery->provider_cancel_state);
+        self::assertSame('pending', $shipment->fresh()->status);
+        self::assertSame('AWB-CONTAMINATED-CLAIM', $shipment->fresh()->tracking_number);
+        self::assertSame('booked', $quote->fresh()->booking_state);
+        self::assertNotNull($quote->fresh()->booking_claim_key);
     }
 
     public function test_cancel_error_is_audited_but_employee_confirmation_still_releases_rebooking(): void
@@ -169,6 +298,43 @@ class EasyParcelFailedBookingRecoveryTest extends TestCase
         self::assertSame('awaiting_replacement', $recovery->state);
         self::assertSame('cancelled', $shipment->fresh()->status);
         self::assertSame('failed', $quote->fresh()->booking_state);
+        Http::assertNothingSent();
+    }
+
+    public function test_provider_code_zero_snapshot_can_complete_an_existing_cancel_claim(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedProvider();
+        $actor = User::factory()->create(['is_admin' => true]);
+        $order = $this->processingOrder();
+        [, $shipment] = $this->bookedAttempt($order, $provider);
+        $claimed = $this->claimedRecovery($shipment, $actor, now());
+        Http::fake();
+
+        $reconciled = app(ShipmentService::class)->reconcileEasyParcelDetails(
+            $shipment,
+            (string) $shipment->provider_reference,
+            null,
+            (string) $shipment->provider_order_reference,
+            null,
+            null,
+            null,
+            'cancelled',
+            [],
+        );
+        $recovery = app(EasyParcelFailedBookingRecoveryService::class)->recordProviderCancellation(
+            $reconciled,
+            null,
+            0,
+            'Cancelled',
+            now(),
+        );
+
+        self::assertSame($claimed->id, $recovery->id);
+        self::assertSame('awaiting_replacement', $recovery->state);
+        self::assertSame('success', $recovery->provider_cancel_state);
+        self::assertSame('cancelled', $shipment->fresh()->status);
+        self::assertNull($shipment->fresh()->tracking_number);
         Http::assertNothingSent();
     }
 

@@ -41,7 +41,7 @@ final class EasyParcelReconciliationSweeper
             ->where('source', ShippingProviderConfigurationService::PROVIDER)
             ->whereNotIn('status', ['delivered', 'returned', 'booking_failed', 'cancelled'])
             ->whereDoesntHave('failedBookingRecovery', function ($query): void {
-                $query->whereIn('state', ['awaiting_replacement', 'complete']);
+                $query->whereIn('state', ['cancelling', 'awaiting_replacement', 'complete']);
             })
             ->where(function ($query): void {
                 $query->whereNull('tracking_number')

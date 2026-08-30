@@ -286,6 +286,8 @@ class EasyParcelReconciliationRecoveryTest extends TestCase
         $bookingFailed->forceFill(['status' => 'booking_failed'])->save();
         $cancelled = $this->easyParcelShipment('ES-SWEEP-CANCELLED', null);
         $cancelled->forceFill(['status' => 'cancelled', 'cancelled_at' => now()])->save();
+        $cancelling = $this->easyParcelShipment('ES-SWEEP-CANCELLING', null);
+        $this->recovery($cancelling, 'cancelling');
         $awaiting = $this->easyParcelShipment('ES-SWEEP-AWAITING', null);
         $this->recovery($awaiting, 'awaiting_replacement');
         $complete = $this->easyParcelShipment('ES-SWEEP-COMPLETE', null);
@@ -295,7 +297,7 @@ class EasyParcelReconciliationRecoveryTest extends TestCase
         app(EasyParcelReconciliationSweeper::class)->sweep();
 
         self::assertSame(0, EasyParcelReconciliationTask::query()
-            ->whereIn('shipment_id', [$bookingFailed->id, $cancelled->id, $awaiting->id, $complete->id])
+            ->whereIn('shipment_id', [$bookingFailed->id, $cancelled->id, $cancelling->id, $awaiting->id, $complete->id])
             ->count());
         Queue::assertNothingPushed();
     }
@@ -308,6 +310,9 @@ class EasyParcelReconciliationRecoveryTest extends TestCase
         $cancelled = $this->easyParcelShipment('ES-QUEUED-CANCELLED', null);
         $cancelledTask = app(EasyParcelReconciliationTaskService::class)->ensureShipmentDetails($cancelled);
         $cancelled->forceFill(['status' => 'cancelled', 'cancelled_at' => now()])->save();
+        $cancelling = $this->easyParcelShipment('ES-QUEUED-CANCELLING', null);
+        $cancellingTask = app(EasyParcelReconciliationTaskService::class)->ensureShipmentDetails($cancelling);
+        $this->recovery($cancelling, 'cancelling');
         $awaiting = $this->easyParcelShipment('ES-QUEUED-AWAITING', null);
         $awaitingTask = app(EasyParcelReconciliationTaskService::class)->ensureShipmentDetails($awaiting);
         $this->recovery($awaiting, 'awaiting_replacement');
@@ -318,6 +323,7 @@ class EasyParcelReconciliationRecoveryTest extends TestCase
         $cases = [
             [$bookingFailed, $bookingFailedTask, 'booking_failed'],
             [$cancelled, $cancelledTask, 'cancelled'],
+            [$cancelling, $cancellingTask, 'pending'],
             [$awaiting, $awaitingTask, 'pending'],
             [$complete, $completeTask, 'pending'],
         ];
@@ -641,8 +647,8 @@ class EasyParcelReconciliationRecoveryTest extends TestCase
             'state' => $state,
             'reason' => 'Provider terminal recovery evidence.',
             'provider_shipment_number' => $shipment->provider_reference,
-            'provider_cancel_state' => 'success',
-            'provider_cancel_message' => 'EasyParcel cancellation confirmed.',
+            'provider_cancel_state' => $state === 'cancelling' ? 'claimed' : 'success',
+            'provider_cancel_message' => $state === 'cancelling' ? null : 'EasyParcel cancellation confirmed.',
             'provider_cancel_claimed_at' => now(),
             'replacement_shipment_id' => $replacement?->id,
             'confirmed_at' => now(),

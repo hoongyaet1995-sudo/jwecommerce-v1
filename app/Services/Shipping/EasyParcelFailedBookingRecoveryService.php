@@ -55,6 +55,9 @@ final class EasyParcelFailedBookingRecoveryService
                     if ($existing->order_id !== $lockedOrder->id
                         || $existing->shipment_id !== $lockedShipment->id
                         || $existing->provider_shipment_number !== $lockedShipment->provider_reference
+                        || $lockedShipment->source !== ShippingProviderConfigurationService::PROVIDER
+                        || $lockedShipment->status !== 'pending'
+                        || filled($lockedShipment->tracking_number)
                         || ! $lockedQuote instanceof ShipmentQuote
                         || $lockedQuote->order_id !== $lockedOrder->id) {
                         throw new InvalidArgumentException('The EasyParcel recovery identity changed before completion.');
@@ -159,6 +162,10 @@ final class EasyParcelFailedBookingRecoveryService
             if ($recovery->order_id !== $lockedOrder->id
                 || $recovery->shipment_id !== $lockedShipment->id
                 || $lockedShipment->order_id !== $lockedOrder->id
+                || $recovery->provider_shipment_number !== $lockedShipment->provider_reference
+                || $lockedShipment->source !== ShippingProviderConfigurationService::PROVIDER
+                || $lockedShipment->status !== 'pending'
+                || filled($lockedShipment->tracking_number)
                 || ! $lockedQuote instanceof ShipmentQuote
                 || $lockedQuote->order_id !== $lockedOrder->id) {
                 throw new InvalidArgumentException('The EasyParcel recovery identity changed before completion.');
@@ -221,6 +228,12 @@ final class EasyParcelFailedBookingRecoveryService
 
                 if (in_array($existing->state, [self::AWAITING_REPLACEMENT, self::COMPLETE], true)) {
                     return $existing->fresh();
+                }
+
+                if ($lockedShipment->source !== ShippingProviderConfigurationService::PROVIDER
+                    || ! in_array($lockedShipment->status, ['pending', 'on_hold', 'cancelled'], true)
+                    || filled($lockedShipment->tracking_number)) {
+                    throw new InvalidArgumentException('The EasyParcel recovery identity changed before completion.');
                 }
 
                 $lockedShipment->forceFill([
@@ -298,7 +311,7 @@ final class EasyParcelFailedBookingRecoveryService
 
         return EasyParcelShipmentRecovery::query()
             ->where('shipment_id', $shipment->id)
-            ->whereIn('state', [self::AWAITING_REPLACEMENT, self::COMPLETE])
+            ->whereIn('state', [self::CANCELLING, self::AWAITING_REPLACEMENT, self::COMPLETE])
             ->exists();
     }
 

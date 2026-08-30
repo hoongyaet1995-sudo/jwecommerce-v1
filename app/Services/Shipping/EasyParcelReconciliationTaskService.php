@@ -79,7 +79,7 @@ final class EasyParcelReconciliationTaskService
                 ->where('source', ShippingProviderConfigurationService::PROVIDER)
                 ->whereNotIn('status', ['delivered', 'returned', 'booking_failed', 'cancelled'])
                 ->whereDoesntHave('failedBookingRecovery', function ($query): void {
-                    $query->whereIn('state', ['awaiting_replacement', 'complete']);
+                    $query->whereIn('state', ['cancelling', 'awaiting_replacement', 'complete']);
                 })
                 ->lockForUpdate()
                 ->first();

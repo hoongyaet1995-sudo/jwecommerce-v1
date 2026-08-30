@@ -251,7 +251,7 @@ class ShipmentService
             if ($this->hasImmutableEasyParcelHistory($lockedShipment)) {
                 $statusIsCompatible = $providerStatus === $lockedShipment->status
                     || ($providerStatus === 'cancelled'
-                        && in_array($lockedShipment->status, ['booking_failed', 'cancelled'], true));
+                        && in_array($lockedShipment->status, ['pending', 'on_hold', 'booking_failed', 'cancelled'], true));
                 $metadataIsUnchanged = collect($updates)->every(
                     static fn (string $value, string $key): bool => $lockedShipment->getAttribute($key) === $value,
                 );
@@ -341,7 +341,7 @@ class ShipmentService
 
         return EasyParcelShipmentRecovery::query()
             ->where('shipment_id', $shipment->id)
-            ->whereIn('state', ['awaiting_replacement', 'complete'])
+            ->whereIn('state', ['cancelling', 'awaiting_replacement', 'complete'])
             ->lockForUpdate()
             ->exists();
     }
