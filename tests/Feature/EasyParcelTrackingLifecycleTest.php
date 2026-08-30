@@ -435,6 +435,107 @@ class EasyParcelTrackingLifecycleTest extends TestCase
         );
     }
 
+    #[DataProvider('providerExceptionChronologyProvider')]
+    public function test_current_provider_exception_truth_follows_chronology_without_commerce_side_effects(
+        string $initialStatus,
+        string $laterStatus,
+        string $expectedShipmentStatus,
+        string $expectedOrderStatus,
+        bool $sameTimestamp,
+    ): void {
+        [, $order] = $this->processingOrder('JW-TRACK-CHRONOLOGY-'.strtoupper($initialStatus).'-'.strtoupper($laterStatus));
+        $shipment = $this->easyParcelShipment($order, 'AWB-CHRONOLOGY-'.strtoupper($initialStatus).'-'.strtoupper($laterStatus));
+        $variant = Product::query()->create([
+            'handle' => 'tracking-chronology-'.$initialStatus.'-'.$laterStatus,
+            'title' => 'Tracking Chronology Product',
+            'base_price' => 5000,
+            'status' => 'active',
+        ])->variants()->create([
+            'sku' => 'TRACK-CHRONOLOGY-'.strtoupper($initialStatus).'-'.strtoupper($laterStatus),
+            'title' => 'Default',
+            'price' => 5000,
+            'stock' => 9,
+        ]);
+        $order->items()->create([
+            'product_variant_id' => $variant->id,
+            'sku' => $variant->sku,
+            'title' => 'Tracking Chronology Product',
+            'unit_price' => 5000,
+            'quantity' => 2,
+            'line_total' => 10000,
+        ]);
+        $payment = $order->payments()->create([
+            'gateway' => 'simulated_card',
+            'status' => 'paid',
+            'reference' => 'tracking-chronology-'.$initialStatus.'-'.$laterStatus,
+        ]);
+        $service = app(ShipmentService::class);
+        $initialAt = CarbonImmutable::parse('2026-08-27 01:00:00', 'UTC');
+        $laterAt = $sameTimestamp ? $initialAt : CarbonImmutable::parse('2026-08-27 02:00:00', 'UTC');
+
+        $service->recordEasyParcelEvents($shipment, $shipment->tracking_number, [[
+            'external_event_id' => 'easyparcel:chronology-initial-'.$initialStatus.'-'.$laterStatus,
+            'status' => $initialStatus,
+            'occurred_at' => $initialAt,
+            'description' => 'Initial provider state',
+            'location' => 'Courier depot',
+        ]]);
+        self::assertSame($initialStatus, $shipment->fresh()->status);
+
+        $service->recordEasyParcelEvents($shipment, $shipment->tracking_number, [[
+            'external_event_id' => 'easyparcel:chronology-later-'.$initialStatus.'-'.$laterStatus,
+            'status' => $laterStatus,
+            'occurred_at' => $laterAt,
+            'description' => 'Later provider state',
+            'location' => 'Courier depot',
+        ]]);
+
+        self::assertSame($expectedShipmentStatus, $shipment->fresh()->status);
+        self::assertSame($expectedOrderStatus, $order->fresh()->status);
+        self::assertSame(0, $order->statusHistory()->where('to_status', 'cancelled')->count());
+        self::assertSame(0, $order->refunds()->count());
+        self::assertSame(9, $variant->fresh()->stock);
+        self::assertSame('paid', $payment->fresh()->status);
+    }
+
+    /** @return array<string, array{string, string, string, string, bool}> */
+    public static function providerExceptionChronologyProvider(): array
+    {
+        return [
+            'on hold clears on later in transit' => ['on_hold', 'in_transit', 'in_transit', 'shipped', false],
+            'on hold changes to same-time later cancelled' => ['on_hold', 'cancelled', 'cancelled', 'processing', true],
+            'cancelled changes to same-time later on hold' => ['cancelled', 'on_hold', 'on_hold', 'processing', true],
+        ];
+    }
+
+    #[DataProvider('pendingNoiseProvider')]
+    public function test_pending_provider_noise_does_not_regress_dispatched_truth(array $statuses, string $expectedStatus): void
+    {
+        [, $order] = $this->processingOrder('JW-TRACK-PENDING-NOISE-'.strtoupper(implode('-', $statuses)));
+        $shipment = $this->easyParcelShipment($order, 'AWB-PENDING-NOISE-'.strtoupper(implode('-', $statuses)));
+        $events = collect($statuses)->map(fn (string $status, int $index): array => [
+            'external_event_id' => 'easyparcel:pending-noise-'.$index.'-'.$status,
+            'status' => $status,
+            'occurred_at' => CarbonImmutable::parse('2026-08-27 0'.($index + 1).':00:00', 'UTC'),
+            'description' => 'Provider state '.$status,
+            'location' => 'Courier depot',
+        ])->all();
+
+        app(ShipmentService::class)->recordEasyParcelEvents($shipment, $shipment->tracking_number, $events);
+
+        self::assertSame($expectedStatus, $shipment->fresh()->status);
+        self::assertSame('shipped', $order->fresh()->status);
+    }
+
+    /** @return array<string, array{list<string>, string}> */
+    public static function pendingNoiseProvider(): array
+    {
+        return [
+            'pending cannot regress in transit' => [['in_transit', 'pending'], 'in_transit'],
+            'pending cannot clear a later hold after dispatch' => [['in_transit', 'on_hold', 'pending'], 'on_hold'],
+        ];
+    }
+
     public function test_malformed_provider_response_fails_closed_without_leaking_or_persisting_raw_data(): void
     {
         $this->connectedProvider();

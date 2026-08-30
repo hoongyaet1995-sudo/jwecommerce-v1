@@ -20,10 +20,14 @@ class ShipmentService
         'shipped' => 20,
         'in_transit' => 30,
         'failed_delivery' => 40,
-        'on_hold' => 40,
-        'cancelled' => 40,
         'returned' => 50,
         'delivered' => 60,
+    ];
+
+    /** @var list<string> */
+    private const CURRENT_PROVIDER_EXCEPTION_STATUSES = [
+        'on_hold',
+        'cancelled',
     ];
 
     /** @var list<string> */
@@ -447,6 +451,9 @@ class ShipmentService
                 ->first();
             $projectedStatus = $qualifyingDelivery === null ? 'returned' : 'delivered';
         } else {
+            if (in_array($projectedStatus, self::CURRENT_PROVIDER_EXCEPTION_STATUSES, true)) {
+                $projectedStatus = 'pending';
+            }
             $firstTerminal = (clone $providerEvents)
                 ->whereIn('status', ['delivered', 'returned'])
                 ->oldest('id')
@@ -469,6 +476,20 @@ class ShipmentService
                         $projectedStatus = $event->status;
                         $currentRank = self::SHIPMENT_STATUS_RANK[$event->status];
                     }
+                }
+
+                $clearingStatuses = array_keys(self::SHIPMENT_STATUS_RANK);
+                if ($currentRank > self::SHIPMENT_STATUS_RANK['pending']) {
+                    $clearingStatuses = array_values(array_diff($clearingStatuses, ['pending']));
+                }
+                $latestCurrentTruth = (clone $providerEvents)
+                    ->whereIn('status', [...self::CURRENT_PROVIDER_EXCEPTION_STATUSES, ...$clearingStatuses])
+                    ->orderByDesc('occurred_at')
+                    ->orderByDesc('id')
+                    ->first();
+                if ($latestCurrentTruth !== null
+                    && in_array($latestCurrentTruth->status, self::CURRENT_PROVIDER_EXCEPTION_STATUSES, true)) {
+                    $projectedStatus = $latestCurrentTruth->status;
                 }
             }
         }
