@@ -29,6 +29,7 @@ final class EasyParcelFulfillmentService
         private readonly EasyParcelProviderSessionService $providerSessions,
         private readonly EasyParcelReconciliationTaskService $reconciliationTasks,
         private readonly EasyParcelReconciliationPublisher $reconciliationPublisher,
+        private readonly EasyParcelFailedBookingRecoveryService $failedBookingRecoveries,
     ) {}
 
     public function quote(Order $order, PackageSpec $package, User $actor): ShipmentQuote
@@ -64,10 +65,7 @@ final class EasyParcelFulfillmentService
             $lockedOrder = Order::query()->lockForUpdate()->findOrFail($context['order_id']);
             $provider = ShippingProvider::query()->lockForUpdate()->findOrFail($context['provider_id']);
 
-            if ($lockedOrder->status !== 'processing'
-                || $lockedOrder->shipments()->where('source', ShippingProviderConfigurationService::PROVIDER)->exists()) {
-                throw new InvalidArgumentException('Only unbooked processing orders can be quoted.');
-            }
+            $this->bookingGuard->assertQuoteAllowed($lockedOrder);
 
             if (! $provider->enabled
                 || $provider->connection_state !== 'connected'
@@ -189,10 +187,7 @@ final class EasyParcelFulfillmentService
                 ->lockForUpdate()
                 ->findOrFail($order->id);
 
-            if ($lockedOrder->status !== 'processing'
-                || $lockedOrder->shipments()->where('source', ShippingProviderConfigurationService::PROVIDER)->exists()) {
-                throw new InvalidArgumentException('Only unbooked processing orders can be quoted.');
-            }
+            $this->bookingGuard->assertQuoteAllowed($lockedOrder);
 
             if ($lockedOrder->items->isEmpty()) {
                 throw new InvalidArgumentException('The order has no immutable item snapshot to quote.');
@@ -283,6 +278,7 @@ final class EasyParcelFulfillmentService
             $existing = Shipment::query()
                 ->where('order_id', $lockedOrder->id)
                 ->where('source', ShippingProviderConfigurationService::PROVIDER)
+                ->whereNotIn('status', ['booking_failed', 'cancelled'])
                 ->lockForUpdate()
                 ->first();
             if ($existing !== null) {
@@ -429,6 +425,7 @@ final class EasyParcelFulfillmentService
             $existing = Shipment::query()
                 ->where('order_id', $lockedOrder->id)
                 ->where('source', ShippingProviderConfigurationService::PROVIDER)
+                ->whereNotIn('status', ['booking_failed', 'cancelled'])
                 ->lockForUpdate()
                 ->first();
 
@@ -453,7 +450,9 @@ final class EasyParcelFulfillmentService
             $shipment = Shipment::query()->create([
                 'order_id' => $lockedOrder->id,
                 'shipment_quote_id' => $lockedQuote->id,
-                'sequence' => 1,
+                'sequence' => ((int) Shipment::query()
+                    ->where('order_id', $lockedOrder->id)
+                    ->max('sequence')) + 1,
                 'source' => ShippingProviderConfigurationService::PROVIDER,
                 'carrier_code' => $service['courier_code'],
                 'carrier_name' => $service['courier_name'],
@@ -483,6 +482,8 @@ final class EasyParcelFulfillmentService
                 'booked_at' => now(),
                 'last_error' => null,
             ])->save();
+
+            $this->failedBookingRecoveries->completeForReplacement($shipment);
 
             $taskId = blank($shipment->tracking_number) || blank($shipment->label_path)
                 ? $this->reconciliationTasks->ensureShipmentDetails($shipment)->id

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Shipment extends Model
 {
@@ -51,5 +52,15 @@ class Shipment extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function failedBookingRecovery(): HasOne
+    {
+        return $this->hasOne(EasyParcelShipmentRecovery::class);
+    }
+
+    public function replacementForRecovery(): HasOne
+    {
+        return $this->hasOne(EasyParcelShipmentRecovery::class, 'replacement_shipment_id');
     }
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class ShipmentQuote extends Model
 {
@@ -66,5 +67,15 @@ class ShipmentQuote extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function failedBookingRecovery(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            EasyParcelShipmentRecovery::class,
+            Shipment::class,
+            'shipment_quote_id',
+            'shipment_id',
+        );
     }
 }

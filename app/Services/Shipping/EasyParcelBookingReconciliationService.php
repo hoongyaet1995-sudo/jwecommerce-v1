@@ -21,6 +21,7 @@ final class EasyParcelBookingReconciliationService
         private readonly EasyParcelShipmentDetailsService $details,
         private readonly EasyParcelReconciliationTaskService $tasks,
         private readonly EasyParcelReconciliationPublisher $publisher,
+        private readonly EasyParcelFailedBookingRecoveryService $failedBookingRecoveries,
     ) {}
 
     public function reconcile(ShipmentQuote $quote, ?string $hintedShipmentNumber = null): ?Shipment
@@ -141,6 +142,7 @@ final class EasyParcelBookingReconciliationService
             $existing = Shipment::query()
                 ->where('order_id', $lockedOrder->id)
                 ->where('source', ShippingProviderConfigurationService::PROVIDER)
+                ->whereNotIn('status', ['booking_failed', 'cancelled'])
                 ->lockForUpdate()
                 ->first();
             if ($existing instanceof Shipment) {
@@ -170,7 +172,9 @@ final class EasyParcelBookingReconciliationService
             $shipment = Shipment::query()->create([
                 'order_id' => $lockedOrder->id,
                 'shipment_quote_id' => $lockedQuote->id,
-                'sequence' => 1,
+                'sequence' => ((int) Shipment::query()
+                    ->where('order_id', $lockedOrder->id)
+                    ->max('sequence')) + 1,
                 'source' => ShippingProviderConfigurationService::PROVIDER,
                 'carrier_code' => $details['courier_code'] ?? $service['courier_code'],
                 'carrier_name' => $details['courier_name'] ?? $service['courier_name'],
@@ -199,6 +203,8 @@ final class EasyParcelBookingReconciliationService
                 'booked_at' => now(),
                 'last_error' => null,
             ])->save();
+
+            $this->failedBookingRecoveries->completeForReplacement($shipment);
 
             $taskId = null;
             if (blank($shipment->tracking_number) || blank($shipment->label_path)) {

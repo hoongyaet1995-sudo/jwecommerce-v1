@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Jobs\ReconcileEasyParcelTask;
 use App\Models\EasyParcelReconciliationTask;
+use App\Models\EasyParcelShipmentRecovery;
 use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\ShipmentQuote;
@@ -106,6 +107,76 @@ class EasyParcelReconciliationRecoveryTest extends TestCase
         self::assertSame('EP-CS096', $quote->fresh()->selected_service_code);
         self::assertSame('resolved', $task->fresh()->state);
         Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'submit_orders'));
+    }
+
+    public function test_uncertain_replacement_reconciliation_uses_next_sequence_and_completes_recovery(): void
+    {
+        $this->connectedProvider();
+        [$order, $replacementQuote] = $this->claimedQuote('uncertain');
+        $oldQuote = $replacementQuote->replicate();
+        $oldQuote->forceFill([
+            'reconciliation_reference' => 'JWEP-'.$order->id.'-old-attempt',
+            'booking_state' => 'failed',
+            'booking_claim_key' => null,
+            'last_error' => 'provider_failure_confirmed',
+            'booked_at' => now()->subMinutes(15),
+        ])->save();
+        $failedShipment = Shipment::query()->create([
+            'order_id' => $order->id,
+            'shipment_quote_id' => $oldQuote->id,
+            'sequence' => 1,
+            'source' => 'easyparcel',
+            'carrier_code' => 'EP-CR0AP',
+            'carrier_name' => 'Aramex',
+            'service_code' => 'EP-CS096',
+            'service_name' => 'Aramex (Pick Up)',
+            'status' => 'cancelled',
+            'currency' => 'MYR',
+            'shipping_cost' => 1084,
+            'provider_reference' => 'ES-FAILED-REPLACEMENT-01',
+            'provider_order_reference' => 'EI-FAILED-REPLACEMENT-01',
+            'cancelled_at' => now()->subMinutes(10),
+        ]);
+        $recovery = EasyParcelShipmentRecovery::query()->create([
+            'shipment_id' => $failedShipment->id,
+            'order_id' => $order->id,
+            'confirmed_by' => $replacementQuote->created_by,
+            'state' => 'awaiting_replacement',
+            'reason' => 'Provider portal failure confirmed.',
+            'provider_cancel_state' => 'success',
+            'provider_cancel_message' => 'Shipment Cancelled',
+            'confirmed_at' => now()->subMinutes(10),
+        ]);
+        $task = app(EasyParcelReconciliationTaskService::class)->ensureBooking($replacementQuote);
+        $task->forceFill(['state' => 'queued', 'published_at' => now()])->save();
+        $details = $this->shipmentDetailsResponse(
+            $replacementQuote,
+            'ES-RECOVERED-REPLACEMENT-01',
+            'AWB-RECOVERED-REPLACEMENT-01',
+        );
+
+        Http::fake([
+            EasyParcelBookingReconciliationService::LIST_URL => Http::response([
+                'status_code' => 200,
+                'message' => 'success',
+                'data' => [[
+                    'shipment_number' => 'ES-RECOVERED-REPLACEMENT-01',
+                    'awb_number' => 'AWB-RECOVERED-REPLACEMENT-01',
+                ]],
+                'pagination' => ['has_more' => false],
+            ]),
+            EasyParcelShipmentDetailsService::DETAILS_URL => Http::response($details),
+        ]);
+
+        self::assertTrue(app(EasyParcelReconciliationTaskProcessor::class)->process($task->id));
+
+        $replacement = Shipment::query()
+            ->where('shipment_quote_id', $replacementQuote->id)
+            ->sole();
+        self::assertSame(2, $replacement->sequence);
+        self::assertSame('complete', $recovery->fresh()->state);
+        self::assertSame($replacement->id, $recovery->fresh()->replacement_shipment_id);
+        self::assertNotNull($recovery->fresh()->completed_at);
     }
 
     public function test_receipt_outbox_survives_dispatch_failure_and_stale_queue_is_republished(): void

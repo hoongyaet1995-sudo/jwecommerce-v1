@@ -9,9 +9,20 @@ use InvalidArgumentException;
 
 final class EasyParcelBookingGuard
 {
+    private const TERMINAL_REBOOKABLE_SHIPMENT_STATUSES = ['booking_failed', 'cancelled'];
+
+    public function assertQuoteAllowed(Order $order): void
+    {
+        if ($order->status !== 'processing'
+            || $this->hasActiveEasyParcelShipment($order)
+            || $this->hasClaimedQuote($order)) {
+            throw new InvalidArgumentException('Only unbooked processing orders can be quoted.');
+        }
+    }
+
     public function assertLegacyOrderMutationAllowed(Order $order): void
     {
-        if ($this->hasEasyParcelShipment($order) || $this->hasClaimedQuote($order)) {
+        if ($this->hasActiveEasyParcelShipment($order) || $this->hasClaimedQuote($order)) {
             throw new InvalidArgumentException('This order is managed by an EasyParcel booking or unresolved booking attempt.');
         }
     }
@@ -38,11 +49,12 @@ final class EasyParcelBookingGuard
         }
     }
 
-    private function hasEasyParcelShipment(Order $order): bool
+    private function hasActiveEasyParcelShipment(Order $order): bool
     {
         return Shipment::query()
             ->where('order_id', $order->id)
             ->where('source', ShippingProviderConfigurationService::PROVIDER)
+            ->whereNotIn('status', self::TERMINAL_REBOOKABLE_SHIPMENT_STATUSES)
             ->exists();
     }
 

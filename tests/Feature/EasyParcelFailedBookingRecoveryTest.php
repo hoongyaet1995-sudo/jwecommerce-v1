@@ -1,0 +1,448 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Customer;
+use App\Models\Order;
+use App\Models\Shipment;
+use App\Models\ShipmentQuote;
+use App\Models\ShippingProvider;
+use App\Models\ShippingProviderCredential;
+use App\Models\User;
+use App\Services\Shipping\EasyParcelBookingGuard;
+use App\Services\Shipping\EasyParcelFailedBookingRecoveryService;
+use App\Services\Shipping\EasyParcelFulfillmentService;
+use App\Services\Shipping\PackageSpec;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use InvalidArgumentException;
+use Tests\Concerns\UsesIsolatedDatabaseMigrations;
+use Tests\TestCase;
+
+class EasyParcelFailedBookingRecoveryTest extends TestCase
+{
+    use UsesIsolatedDatabaseMigrations;
+
+    public function test_dispatch_staff_can_confirm_failure_and_provider_cancel_result_is_audited_once(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedProvider();
+        $actor = User::factory()->create(['is_admin' => true]);
+        $order = $this->processingOrder();
+        [$quote, $shipment] = $this->bookedAttempt($order, $provider);
+        $transactionLevels = [];
+
+        Http::fake(function (Request $request) use (&$transactionLevels) {
+            $transactionLevels[] = DB::transactionLevel();
+
+            return Http::response([
+                'status_code' => 200,
+                'message' => '1 request success, 1 request error.',
+                'data' => [
+                    [
+                        'status' => 'error',
+                        'message' => 'Shipment Not Found',
+                        'shipment_number' => 'ES-2608-OTHER',
+                    ],
+                    [
+                        'status' => 'success',
+                        'message' => "Shipment\r\nCancelled",
+                        'shipment_number' => 'ES-2608-FAILED1',
+                    ],
+                ],
+            ]);
+        });
+
+        $service = app(EasyParcelFailedBookingRecoveryService::class);
+        $first = $service->confirm($shipment, $actor, 'Provider portal reports a failed booking.');
+        $second = $service->confirm($shipment->fresh(), User::factory()->create(), 'This must not replace the audit.');
+
+        self::assertSame($first->id, $second->id);
+        self::assertSame([0], $transactionLevels);
+        self::assertSame('awaiting_replacement', $first->fresh()->state);
+        self::assertSame('success', $first->fresh()->provider_cancel_state);
+        self::assertSame('Shipment Cancelled', $first->fresh()->provider_cancel_message);
+        self::assertSame($actor->id, $first->fresh()->confirmed_by);
+        self::assertSame('Provider portal reports a failed booking.', $first->fresh()->reason);
+        self::assertNotNull($first->fresh()->confirmed_at);
+        self::assertSame('cancelled', $shipment->fresh()->status);
+        self::assertNotNull($shipment->fresh()->cancelled_at);
+        self::assertSame('failed', $quote->fresh()->booking_state);
+        self::assertNull($quote->fresh()->booking_claim_key);
+        $this->assertDatabaseCount('easyparcel_shipment_recoveries', 1);
+        Http::assertSentCount(1);
+    }
+
+    public function test_cancel_error_is_audited_but_employee_confirmation_still_releases_rebooking(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedProvider();
+        $actor = User::factory()->create(['is_admin' => true]);
+        $order = $this->processingOrder();
+        [$quote, $shipment] = $this->bookedAttempt($order, $provider);
+
+        Http::fake([
+            'https://api.easyparcel.com/open_api/2026-06/shipment/cancel' => Http::response([
+                'status_code' => 200,
+                'message' => '0 requests success, 2 request error.',
+                'data' => [
+                    [
+                        'status' => 'success',
+                        'message' => 'Shipment Cancelled',
+                        'shipment_number' => 'ES-2608-OTHER',
+                    ],
+                    [
+                        'status' => 'error',
+                        'message' => "Shipment Not Found\r\nBearer provider-secret-token",
+                        'shipment_number' => 'ES-2608-FAILED1',
+                    ],
+                ],
+            ]),
+        ]);
+
+        $recovery = app(EasyParcelFailedBookingRecoveryService::class)
+            ->confirm($shipment, $actor, 'EasyParcel portal explicitly reports Failed.');
+
+        self::assertSame('error', $recovery->provider_cancel_state);
+        self::assertSame('Shipment Not Found Bearer [REDACTED]', $recovery->provider_cancel_message);
+        self::assertSame('booking_failed', $shipment->fresh()->status);
+        self::assertSame('failed', $quote->fresh()->booking_state);
+        self::assertNull($quote->fresh()->booking_claim_key);
+
+        app(EasyParcelBookingGuard::class)->assertQuoteAllowed($order->fresh());
+        $this->addToAssertionCount(1);
+    }
+
+    public function test_active_or_uncertain_easyparcel_attempt_still_blocks_duplicate_booking(): void
+    {
+        $provider = $this->connectedProvider();
+        $guard = app(EasyParcelBookingGuard::class);
+
+        foreach (['pending', 'ready_to_ship', 'on_hold', 'in_transit'] as $index => $status) {
+            $order = $this->processingOrder(
+                email: 'active-'.$index.'@example.test',
+                number: 'JW-ACTIVE-'.$index,
+            );
+            [, $shipment] = $this->bookedAttempt($order, $provider, $status, 'ES-2608-ACTIVE'.$index);
+
+            try {
+                $guard->assertQuoteAllowed($order);
+                self::fail('An active EasyParcel '.$status.' shipment must block a new quote.');
+            } catch (InvalidArgumentException $exception) {
+                self::assertSame('Only unbooked processing orders can be quoted.', $exception->getMessage());
+            }
+
+            self::assertSame($status, $shipment->fresh()->status);
+        }
+
+        $uncertainOrder = $this->processingOrder(
+            email: 'uncertain@example.test',
+            number: 'JW-UNCERTAIN',
+        );
+        $this->quote($uncertainOrder, $provider, 'uncertain');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Only unbooked processing orders can be quoted.');
+        $guard->assertQuoteAllowed($uncertainOrder);
+    }
+
+    public function test_confirmation_fails_closed_inside_an_ambient_transaction_before_cancel_http(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedProvider();
+        $actor = User::factory()->create(['is_admin' => true]);
+        $order = $this->processingOrder();
+        [, $shipment] = $this->bookedAttempt($order, $provider);
+        Http::fake([
+            'https://api.easyparcel.com/open_api/2026-06/shipment/cancel' => Http::response([
+                'status_code' => 200,
+                'data' => [[
+                    'status' => 'success',
+                    'message' => 'Shipment Cancelled',
+                    'shipment_number' => 'ES-2608-FAILED1',
+                ]],
+            ]),
+        ]);
+
+        try {
+            DB::transaction(fn () => app(EasyParcelFailedBookingRecoveryService::class)
+                ->confirm($shipment, $actor, 'This must fail before provider HTTP.'));
+            self::fail('Recovery must not inherit an ambient database transaction.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame(
+                'EasyParcel failed-booking recovery must start outside an existing database transaction.',
+                $exception->getMessage(),
+            );
+        }
+
+        Http::assertNothingSent();
+        $this->assertDatabaseCount('easyparcel_shipment_recoveries', 0);
+    }
+
+    public function test_replacement_booking_uses_next_sequence_and_completes_recovery_link(): void
+    {
+        Http::preventStrayRequests();
+        $this->configureSender();
+        $provider = $this->connectedProvider();
+        $actor = User::factory()->create(['is_admin' => true]);
+        $order = $this->processingOrder();
+        [, $failedShipment] = $this->bookedAttempt($order, $provider);
+
+        Http::fake(function (Request $request) {
+            return match ($request->url()) {
+                'https://api.easyparcel.com/open_api/2026-06/shipment/cancel' => Http::response([
+                    'status_code' => 200,
+                    'message' => '1 request success, 0 request error.',
+                    'data' => [[
+                        'status' => 'success',
+                        'message' => 'Shipment Cancelled',
+                        'shipment_number' => 'ES-2608-FAILED1',
+                    ]],
+                ]),
+                EasyParcelFulfillmentService::QUOTATION_URL => Http::response($this->quotationResponse()),
+                EasyParcelFulfillmentService::BOOKING_URL => Http::response($this->bookingResponse()),
+                default => Http::response([], 500),
+            };
+        });
+
+        $recovery = app(EasyParcelFailedBookingRecoveryService::class)
+            ->confirm($failedShipment, $actor, 'Portal failure confirmed before replacement.');
+        $fulfillment = app(EasyParcelFulfillmentService::class);
+        $replacementQuote = $fulfillment->quote(
+            $order->fresh(),
+            new PackageSpec(1.5, 30, 20, 10),
+            $actor,
+        );
+        $replacement = $fulfillment->book(
+            $order->fresh(),
+            $replacementQuote,
+            'EP-CS096',
+            $actor,
+        );
+
+        self::assertSame(2, $replacement->sequence);
+        self::assertSame('ES-2608-REPLACEMENT1', $replacement->provider_reference);
+        self::assertSame('complete', $recovery->fresh()->state);
+        self::assertSame($replacement->id, $recovery->fresh()->replacement_shipment_id);
+        self::assertNotNull($recovery->fresh()->completed_at);
+        self::assertSame('cancelled', $failedShipment->fresh()->status);
+        $this->assertDatabaseCount('shipments', 2);
+    }
+
+    /** @return array{ShipmentQuote, Shipment} */
+    private function bookedAttempt(
+        Order $order,
+        ShippingProvider $provider,
+        string $status = 'pending',
+        string $shipmentNumber = 'ES-2608-FAILED1',
+    ): array {
+        $quote = $this->quote($order, $provider, 'booked');
+        $quote->forceFill([
+            'selected_service_code' => 'EP-CS096',
+            'booking_claim_key' => 'easyparcel:order:'.$order->id,
+            'booking_started_at' => now()->subMinutes(20),
+            'booked_at' => now()->subMinutes(19),
+        ])->save();
+
+        $shipment = Shipment::query()->create([
+            'order_id' => $order->id,
+            'shipment_quote_id' => $quote->id,
+            'sequence' => 1,
+            'source' => 'easyparcel',
+            'carrier_code' => 'EP-CR0AP',
+            'carrier_name' => 'Aramex',
+            'service_code' => 'EP-CS096',
+            'service_name' => 'Aramex (Pick Up)',
+            'tracking_number' => null,
+            'status' => $status,
+            'shipping_cost' => 1084,
+            'currency' => 'MYR',
+            'provider_reference' => $shipmentNumber,
+            'provider_order_reference' => 'EI-'.$shipmentNumber,
+            'package_snapshot' => [
+                'weight_kg' => 1.5,
+                'length_cm' => 30,
+                'width_cm' => 20,
+                'height_cm' => 10,
+            ],
+        ]);
+
+        return [$quote, $shipment];
+    }
+
+    private function quote(Order $order, ShippingProvider $provider, string $state): ShipmentQuote
+    {
+        return ShipmentQuote::query()->create([
+            'order_id' => $order->id,
+            'shipping_provider_id' => $provider->id,
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'provider_configuration_version' => $provider->configuration_version,
+            'package_snapshot' => [
+                'weight_kg' => 1.5,
+                'length_cm' => 30,
+                'width_cm' => 20,
+                'height_cm' => 10,
+            ],
+            'request_snapshot' => ['booking' => []],
+            'response_snapshot' => ['services' => []],
+            'reconciliation_reference' => 'JWEP-'.$order->id.'-'.fake()->uuid(),
+            'booking_state' => $state,
+            'booking_claim_key' => $state === 'uncertain' ? 'easyparcel:order:'.$order->id : null,
+            'last_error' => $state === 'uncertain' ? 'provider_outcome_uncertain' : null,
+            'expires_at' => now()->addMinutes(15),
+        ]);
+    }
+
+    private function connectedProvider(): ShippingProvider
+    {
+        $provider = ShippingProvider::query()->create([
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'enabled' => true,
+            'connection_state' => 'connected',
+            'configuration_version' => 1,
+            'public_metadata' => ['apiVersion' => '2026-06'],
+            'last_verified_at' => now(),
+        ]);
+
+        ShippingProviderCredential::query()->create([
+            'shipping_provider_id' => $provider->id,
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'credentials' => [
+                'client_id' => 'sandbox-client',
+                'client_secret' => 'sandbox-secret',
+                'token_type' => 'Bearer',
+                'access_token' => 'sandbox-access-token',
+                'access_token_expires_at' => now()->addHour()->utc()->toIso8601String(),
+            ],
+        ]);
+
+        return $provider;
+    }
+
+    private function processingOrder(
+        string $email = 'easyparcel-recovery@example.test',
+        string $number = 'JW-EASYPARCEL-RECOVERY-1',
+    ): Order {
+        $customer = Customer::query()->create([
+            'email' => $email,
+            'first_name' => 'Recovery',
+            'last_name' => 'Buyer',
+            'phone' => '+60 12-345 6789',
+        ]);
+        $order = Order::query()->create([
+            'number' => $number,
+            'customer_id' => $customer->id,
+            'email' => $customer->email,
+            'currency' => 'MYR',
+            'status' => 'processing',
+            'subtotal' => 10000,
+            'discount_amount' => 0,
+            'shipping_amount' => 0,
+            'tax_amount' => 0,
+            'total' => 10000,
+        ]);
+        $order->items()->create([
+            'sku' => 'EP-RECOVERY-1',
+            'title' => 'Recovery Parcel Item',
+            'unit_price' => 10000,
+            'quantity' => 1,
+            'line_total' => 10000,
+            'package_snapshot' => [
+                'weight_grams' => 1250,
+                'length_cm' => 28,
+                'width_cm' => 18,
+                'height_cm' => 8,
+            ],
+        ]);
+        $order->addresses()->create([
+            'type' => 'shipping',
+            'first_name' => 'Recovery',
+            'last_name' => 'Buyer',
+            'phone' => '+60 12-345 6789',
+            'line_1' => '10 Test Customer Road',
+            'city' => 'Shah Alam',
+            'state' => 'Selangor',
+            'postal_code' => '40100',
+            'country' => 'MY',
+        ]);
+
+        return $order;
+    }
+
+    private function configureSender(): void
+    {
+        Config::set('services.easyparcel.sender', [
+            'name' => 'JW Studio Dispatch',
+            'company' => 'JW Studio',
+            'phone_number_country_code' => 'MY',
+            'phone_number' => '123456789',
+            'email' => 'dispatch@example.test',
+            'address_1' => '18 Test Industry Road',
+            'address_2' => null,
+            'postcode' => '47600',
+            'city' => 'Subang Jaya',
+            'subdivision_code' => 'MY-10',
+            'country_code' => 'MY',
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function quotationResponse(): array
+    {
+        return [
+            'status_code' => 200,
+            'request_id' => 'replacement-quote-request',
+            'message' => '1 request success, 0 request error.',
+            'data' => [[
+                'status' => 'success',
+                'quotations' => [[
+                    'courier' => [
+                        'service_id' => 'EP-CS096',
+                        'service_name' => 'Aramex (Pick Up)',
+                        'courier_id' => 'EP-CR0AP',
+                        'courier_name' => 'Aramex',
+                        'delivery_duration' => '1-3 working days',
+                        'is_pickup' => true,
+                        'is_dropoff' => false,
+                    ],
+                    'pricing' => [
+                        'currency' => 'MYR',
+                        'total_amount' => '10.84',
+                    ],
+                    'features' => [],
+                ]],
+            ]],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function bookingResponse(): array
+    {
+        return [
+            'status_code' => 200,
+            'message' => '1 request success, 0 request error.',
+            'data' => [[
+                'order_details' => ['order_number' => 'EI-2608-REPLACEMENT1'],
+                'shipments' => [[
+                    'status' => 'success',
+                    'shipment_number' => 'ES-2608-REPLACEMENT1',
+                    'awb_number' => 'REPLACEMENT-AWB-2608',
+                    'awb_url' => 'https://app.easyparcel.com/labels/replacement-a4',
+                    'awb_urls_by_format' => [
+                        'A6' => 'https://app.easyparcel.com/labels/replacement-a6',
+                    ],
+                    'tracking_url' => 'https://app.easyparcel.com/tracking/REPLACEMENT-AWB-2608',
+                    'pricing_breakdown' => [
+                        'currency_code' => 'MYR',
+                        'total_paid_amount' => '10.84',
+                    ],
+                ]],
+            ]],
+        ];
+    }
+}
