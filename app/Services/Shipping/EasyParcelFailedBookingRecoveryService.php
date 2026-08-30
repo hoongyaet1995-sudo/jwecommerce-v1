@@ -21,6 +21,10 @@ final class EasyParcelFailedBookingRecoveryService
 
     private const CANCEL_CLAIMED = 'claimed';
 
+    private const CANCEL_CLAIM_LEASE_MINUTES = 5;
+
+    private const CANCELLATION_UNCONFIRMED_MESSAGE = 'EasyParcel cancellation unconfirmed.';
+
     public function __construct(
         private readonly EasyParcelCancellationService $cancellations,
     ) {}
@@ -46,8 +50,33 @@ final class EasyParcelFailedBookingRecoveryService
                 ->lockForUpdate()
                 ->first();
             if ($existing instanceof EasyParcelShipmentRecovery) {
+                if ($this->claimIsStale($existing)) {
+                    if ($existing->order_id !== $lockedOrder->id
+                        || $existing->shipment_id !== $lockedShipment->id
+                        || $existing->provider_shipment_number !== $lockedShipment->provider_reference
+                        || ! $lockedQuote instanceof ShipmentQuote
+                        || $lockedQuote->order_id !== $lockedOrder->id) {
+                        throw new InvalidArgumentException('The EasyParcel recovery identity changed before completion.');
+                    }
+
+                    $lockedShipment->forceFill([
+                        'status' => 'booking_failed',
+                        'cancelled_at' => null,
+                    ])->save();
+                    $lockedQuote->forceFill([
+                        'booking_state' => 'failed',
+                        'booking_claim_key' => null,
+                        'last_error' => 'provider_failure_confirmed',
+                    ])->save();
+                    $existing->forceFill([
+                        'state' => self::AWAITING_REPLACEMENT,
+                        'provider_cancel_state' => 'error',
+                        'provider_cancel_message' => self::CANCELLATION_UNCONFIRMED_MESSAGE,
+                    ])->save();
+                }
+
                 return [
-                    'recovery' => $existing,
+                    'recovery' => $existing->fresh(),
                     'should_cancel' => false,
                     'shipment_number' => (string) $lockedShipment->provider_reference,
                 ];
@@ -56,7 +85,7 @@ final class EasyParcelFailedBookingRecoveryService
             if (! $actor->exists
                 || $lockedShipment->order_id !== $lockedOrder->id
                 || $lockedShipment->source !== ShippingProviderConfigurationService::PROVIDER
-                || ! in_array($lockedShipment->status, ['pending', 'on_hold'], true)
+                || $lockedShipment->status !== 'pending'
                 || filled($lockedShipment->tracking_number)
                 || ! is_string($lockedShipment->provider_reference)
                 || trim($lockedShipment->provider_reference) === ''
@@ -80,8 +109,10 @@ final class EasyParcelFailedBookingRecoveryService
                 'confirmed_by' => $actor->id,
                 'state' => self::CANCELLING,
                 'reason' => $reason,
+                'provider_shipment_number' => trim($lockedShipment->provider_reference),
                 'provider_cancel_state' => self::CANCEL_CLAIMED,
                 'provider_cancel_message' => null,
+                'provider_cancel_claimed_at' => now(),
                 'confirmed_at' => now(),
             ]);
 
@@ -101,7 +132,7 @@ final class EasyParcelFailedBookingRecoveryService
         } catch (Throwable) {
             $result = new EasyParcelCancellationResult(
                 'error',
-                'EasyParcel cancellation could not be confirmed.',
+                self::CANCELLATION_UNCONFIRMED_MESSAGE,
             );
         }
 
@@ -204,5 +235,15 @@ final class EasyParcelFailedBookingRecoveryService
         }
 
         return $reason;
+    }
+
+    private function claimIsStale(EasyParcelShipmentRecovery $recovery): bool
+    {
+        return $recovery->state === self::CANCELLING
+            && $recovery->provider_cancel_state === self::CANCEL_CLAIMED
+            && $recovery->provider_cancel_claimed_at !== null
+            && $recovery->provider_cancel_claimed_at->lte(
+                now()->subMinutes(self::CANCEL_CLAIM_LEASE_MINUTES),
+            );
     }
 }

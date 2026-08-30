@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
+use App\Models\EasyParcelShipmentRecovery;
 use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\ShipmentQuote;
@@ -10,9 +11,11 @@ use App\Models\ShippingProvider;
 use App\Models\ShippingProviderCredential;
 use App\Models\User;
 use App\Services\Shipping\EasyParcelBookingGuard;
+use App\Services\Shipping\EasyParcelCancellationService;
 use App\Services\Shipping\EasyParcelFailedBookingRecoveryService;
 use App\Services\Shipping\EasyParcelFulfillmentService;
 use App\Services\Shipping\PackageSpec;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -63,7 +66,8 @@ class EasyParcelFailedBookingRecoveryTest extends TestCase
         self::assertSame([0], $transactionLevels);
         self::assertSame('awaiting_replacement', $first->fresh()->state);
         self::assertSame('success', $first->fresh()->provider_cancel_state);
-        self::assertSame('Shipment Cancelled', $first->fresh()->provider_cancel_message);
+        self::assertSame('EasyParcel cancellation confirmed.', $first->fresh()->provider_cancel_message);
+        self::assertSame('ES-2608-FAILED1', $first->fresh()->provider_shipment_number);
         self::assertSame($actor->id, $first->fresh()->confirmed_by);
         self::assertSame('Provider portal reports a failed booking.', $first->fresh()->reason);
         self::assertNotNull($first->fresh()->confirmed_at);
@@ -95,7 +99,7 @@ class EasyParcelFailedBookingRecoveryTest extends TestCase
                     ],
                     [
                         'status' => 'error',
-                        'message' => "Shipment Not Found\r\nBearer provider-secret-token",
+                        'message' => "Jane Buyer jane@example.test +60123456789 10 Customer Road\r\nBearer provider-secret-token",
                         'shipment_number' => 'ES-2608-FAILED1',
                     ],
                 ],
@@ -106,7 +110,13 @@ class EasyParcelFailedBookingRecoveryTest extends TestCase
             ->confirm($shipment, $actor, 'EasyParcel portal explicitly reports Failed.');
 
         self::assertSame('error', $recovery->provider_cancel_state);
-        self::assertSame('Shipment Not Found Bearer [REDACTED]', $recovery->provider_cancel_message);
+        self::assertSame('EasyParcel cancellation unconfirmed.', $recovery->provider_cancel_message);
+        $audit = json_encode($recovery->toArray(), JSON_THROW_ON_ERROR);
+        self::assertStringNotContainsString('Jane Buyer', $audit);
+        self::assertStringNotContainsString('jane@example.test', $audit);
+        self::assertStringNotContainsString('+60123456789', $audit);
+        self::assertStringNotContainsString('10 Customer Road', $audit);
+        self::assertStringNotContainsString('provider-secret-token', $audit);
         self::assertSame('booking_failed', $shipment->fresh()->status);
         self::assertSame('failed', $quote->fresh()->booking_state);
         self::assertNull($quote->fresh()->booking_claim_key);
@@ -179,6 +189,141 @@ class EasyParcelFailedBookingRecoveryTest extends TestCase
 
         Http::assertNothingSent();
         $this->assertDatabaseCount('easyparcel_shipment_recoveries', 0);
+    }
+
+    public function test_cancellation_service_fails_closed_inside_an_ambient_transaction_before_http(): void
+    {
+        Http::preventStrayRequests();
+        $this->connectedProvider();
+        Http::fake();
+
+        try {
+            DB::transaction(fn () => app(EasyParcelCancellationService::class)
+                ->cancel('ES-2608-FAILED1', 'Portal failure confirmed.'));
+            self::fail('Cancellation must not inherit an ambient database transaction.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame(
+                'EasyParcel cancellation must start outside an existing database transaction.',
+                $exception->getMessage(),
+            );
+        }
+
+        Http::assertNothingSent();
+    }
+
+    public function test_on_hold_shipment_is_not_eligible_for_employee_failure_confirmation(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedProvider();
+        $actor = User::factory()->create(['is_admin' => true]);
+        $order = $this->processingOrder();
+        [, $shipment] = $this->bookedAttempt($order, $provider, 'on_hold');
+        Http::fake();
+
+        try {
+            app(EasyParcelFailedBookingRecoveryService::class)
+                ->confirm($shipment, $actor, 'On hold is not provider booking failure.');
+            self::fail('On-hold shipment must not enter manual failed-booking recovery.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame(
+                'This EasyParcel shipment is not eligible for failed-booking recovery.',
+                $exception->getMessage(),
+            );
+        }
+
+        self::assertSame('on_hold', $shipment->fresh()->status);
+        $this->assertDatabaseCount('easyparcel_shipment_recoveries', 0);
+        Http::assertNothingSent();
+    }
+
+    public function test_stale_claim_becomes_recoverable_without_another_provider_request(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedProvider();
+        $actor = User::factory()->create(['is_admin' => true]);
+        $order = $this->processingOrder();
+        [$quote, $shipment] = $this->bookedAttempt($order, $provider);
+        $recovery = $this->claimedRecovery($shipment, $actor, now()->subMinutes(6));
+        Http::fake();
+
+        $result = app(EasyParcelFailedBookingRecoveryService::class)
+            ->confirm($shipment, User::factory()->create(), 'A repeated reason must not replace the audit.');
+
+        self::assertSame($recovery->id, $result->id);
+        self::assertSame('awaiting_replacement', $result->state);
+        self::assertSame('error', $result->provider_cancel_state);
+        self::assertSame('EasyParcel cancellation unconfirmed.', $result->provider_cancel_message);
+        self::assertSame('booking_failed', $shipment->fresh()->status);
+        self::assertSame('failed', $quote->fresh()->booking_state);
+        self::assertNull($quote->fresh()->booking_claim_key);
+        app(EasyParcelBookingGuard::class)->assertQuoteAllowed($order->fresh());
+        Http::assertNothingSent();
+    }
+
+    public function test_fresh_claim_remains_protected_without_another_provider_request(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedProvider();
+        $actor = User::factory()->create(['is_admin' => true]);
+        $order = $this->processingOrder();
+        [$quote, $shipment] = $this->bookedAttempt($order, $provider);
+        $recovery = $this->claimedRecovery($shipment, $actor, now()->subMinutes(4));
+        Http::fake();
+
+        $result = app(EasyParcelFailedBookingRecoveryService::class)
+            ->confirm($shipment, User::factory()->create(), 'A repeated reason must not replace the audit.');
+
+        self::assertSame($recovery->id, $result->id);
+        self::assertSame('cancelling', $result->state);
+        self::assertSame('claimed', $result->provider_cancel_state);
+        self::assertSame('pending', $shipment->fresh()->status);
+        self::assertSame('booked', $quote->fresh()->booking_state);
+        self::assertNotNull($quote->fresh()->booking_claim_key);
+        Http::assertNothingSent();
+    }
+
+    public function test_recovery_snapshots_provider_identity_and_restricts_audit_owner_deletion(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedProvider();
+        $actor = User::factory()->create(['is_admin' => true]);
+        $order = $this->processingOrder();
+        [, $shipment] = $this->bookedAttempt($order, $provider);
+        Http::fake([
+            'https://api.easyparcel.com/open_api/2026-06/shipment/cancel' => Http::response([
+                'status_code' => 200,
+                'data' => [[
+                    'status' => 'success',
+                    'message' => 'Shipment Cancelled',
+                    'shipment_number' => 'ES-2608-FAILED1',
+                ]],
+            ]),
+        ]);
+
+        $recovery = app(EasyParcelFailedBookingRecoveryService::class)
+            ->confirm($shipment, $actor, 'Preserve immutable audit ownership.');
+
+        self::assertSame('ES-2608-FAILED1', $recovery->provider_shipment_number);
+
+        try {
+            $order->delete();
+            self::fail('An order owning a recovery audit must not be deleted.');
+        } catch (QueryException) {
+            $this->addToAssertionCount(1);
+        }
+        try {
+            $shipment->delete();
+            self::fail('A shipment owning a recovery audit must not be deleted.');
+        } catch (QueryException) {
+            $this->addToAssertionCount(1);
+        }
+
+        $this->assertDatabaseHas('easyparcel_shipment_recoveries', [
+            'id' => $recovery->id,
+            'order_id' => $order->id,
+            'shipment_id' => $shipment->id,
+            'provider_shipment_number' => 'ES-2608-FAILED1',
+        ]);
     }
 
     public function test_replacement_booking_uses_next_sequence_and_completes_recovery_link(): void
@@ -270,6 +415,24 @@ class EasyParcelFailedBookingRecoveryTest extends TestCase
         ]);
 
         return [$quote, $shipment];
+    }
+
+    private function claimedRecovery(
+        Shipment $shipment,
+        User $actor,
+        \DateTimeInterface $claimedAt,
+    ): EasyParcelShipmentRecovery {
+        return EasyParcelShipmentRecovery::query()->create([
+            'shipment_id' => $shipment->id,
+            'order_id' => $shipment->order_id,
+            'confirmed_by' => $actor->id,
+            'state' => 'cancelling',
+            'reason' => 'Original portal failure confirmation.',
+            'provider_shipment_number' => $shipment->provider_reference,
+            'provider_cancel_state' => 'claimed',
+            'provider_cancel_claimed_at' => $claimedAt,
+            'confirmed_at' => $claimedAt,
+        ]);
     }
 
     private function quote(Order $order, ShippingProvider $provider, string $state): ShipmentQuote

@@ -15,8 +15,10 @@ class EasyParcelShipmentRecovery extends Model
         'confirmed_by',
         'state',
         'reason',
+        'provider_shipment_number',
         'provider_cancel_state',
         'provider_cancel_message',
+        'provider_cancel_claimed_at',
         'replacement_shipment_id',
         'confirmed_at',
         'completed_at',
@@ -25,6 +27,7 @@ class EasyParcelShipmentRecovery extends Model
     protected function casts(): array
     {
         return [
+            'provider_cancel_claimed_at' => 'datetime',
             'confirmed_at' => 'datetime',
             'completed_at' => 'datetime',
         ];

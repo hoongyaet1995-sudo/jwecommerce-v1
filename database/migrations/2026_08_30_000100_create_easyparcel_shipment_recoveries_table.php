@@ -10,13 +10,15 @@ return new class extends Migration
     {
         Schema::create('easyparcel_shipment_recoveries', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('shipment_id')->unique()->constrained()->cascadeOnDelete();
-            $table->foreignId('order_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('shipment_id')->unique()->constrained()->restrictOnDelete();
+            $table->foreignId('order_id')->constrained()->restrictOnDelete();
             $table->foreignId('confirmed_by')->constrained('users')->restrictOnDelete();
             $table->string('state', 32);
             $table->text('reason');
+            $table->string('provider_shipment_number', 160);
             $table->string('provider_cancel_state', 24);
             $table->string('provider_cancel_message', 500)->nullable();
+            $table->dateTime('provider_cancel_claimed_at');
             $table->foreignId('replacement_shipment_id')
                 ->nullable()
                 ->unique()
@@ -27,7 +29,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['order_id', 'state']);
-            $table->index(['provider_cancel_state', 'created_at'], 'ep_recoveries_cancel_state_created_index');
+            $table->index(['provider_cancel_state', 'provider_cancel_claimed_at'], 'ep_recoveries_cancel_claim_index');
         });
     }
 

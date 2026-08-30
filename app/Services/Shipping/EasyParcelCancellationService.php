@@ -2,6 +2,7 @@
 
 namespace App\Services\Shipping;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
 use Throwable;
@@ -10,7 +11,9 @@ final class EasyParcelCancellationService
 {
     public const CANCELLATION_URL = 'https://api.easyparcel.com/open_api/'.EasyParcelOpenApiClient::API_VERSION.'/shipment/cancel';
 
-    private const FAILURE_MESSAGE = 'EasyParcel cancellation could not be confirmed.';
+    private const SUCCESS_MESSAGE = 'EasyParcel cancellation confirmed.';
+
+    private const FAILURE_MESSAGE = 'EasyParcel cancellation unconfirmed.';
 
     public function __construct(
         private readonly EasyParcelProviderSessionService $providerSessions,
@@ -18,6 +21,10 @@ final class EasyParcelCancellationService
 
     public function cancel(string $shipmentNumber, string $remark): EasyParcelCancellationResult
     {
+        if (DB::connection()->transactionLevel() !== 0) {
+            throw new InvalidArgumentException('EasyParcel cancellation must start outside an existing database transaction.');
+        }
+
         $shipmentNumber = trim($shipmentNumber);
         $remark = trim($remark);
         if ($shipmentNumber === '' || mb_strlen($shipmentNumber) > 160
@@ -70,10 +77,10 @@ final class EasyParcelCancellationService
                 return $this->error();
             }
 
-            $message = $this->safeMessage($result['message'] ?? null)
-                ?? ($status === 'success' ? 'Shipment Cancelled' : self::FAILURE_MESSAGE);
-
-            return new EasyParcelCancellationResult($status, $message);
+            return new EasyParcelCancellationResult(
+                $status,
+                $status === 'success' ? self::SUCCESS_MESSAGE : self::FAILURE_MESSAGE,
+            );
         } catch (Throwable) {
             return $this->error();
         }
@@ -82,23 +89,5 @@ final class EasyParcelCancellationService
     private function error(): EasyParcelCancellationResult
     {
         return new EasyParcelCancellationResult('error', self::FAILURE_MESSAGE);
-    }
-
-    private function safeMessage(mixed $message): ?string
-    {
-        if (! is_string($message)) {
-            return null;
-        }
-
-        $message = preg_replace('/[\x00-\x1F\x7F]+/u', ' ', $message) ?? '';
-        $message = preg_replace('/\b(Bearer)\s+[A-Za-z0-9._~+\/=:-]+/i', '$1 [REDACTED]', $message) ?? '';
-        $message = preg_replace(
-            '/\b(access_token|refresh_token|client_secret|authorization)\s*[:=]\s*[^\s,;]+/i',
-            '$1=[REDACTED]',
-            $message,
-        ) ?? '';
-        $message = trim(preg_replace('/\s+/u', ' ', $message) ?? '');
-
-        return $message === '' ? null : mb_substr($message, 0, 500);
     }
 }

@@ -143,8 +143,10 @@ class EasyParcelReconciliationRecoveryTest extends TestCase
             'confirmed_by' => $replacementQuote->created_by,
             'state' => 'awaiting_replacement',
             'reason' => 'Provider portal failure confirmed.',
+            'provider_shipment_number' => $failedShipment->provider_reference,
             'provider_cancel_state' => 'success',
-            'provider_cancel_message' => 'Shipment Cancelled',
+            'provider_cancel_message' => 'EasyParcel cancellation confirmed.',
+            'provider_cancel_claimed_at' => now()->subMinutes(10),
             'confirmed_at' => now()->subMinutes(10),
         ]);
         $task = app(EasyParcelReconciliationTaskService::class)->ensureBooking($replacementQuote);
