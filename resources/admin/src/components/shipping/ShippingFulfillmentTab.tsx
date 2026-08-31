@@ -331,23 +331,9 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => onBatchGenerateAWB(selectedParcelIds)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer"
-            >
-              <Zap className="w-3.5 h-3.5" />
-              Batch Generate AWBs
-            </button>
-            <button
-              onClick={() => {
-                const first = parcels.find(p => selectedParcelIds.includes(p.id));
-                if (first) onOpenAWBModal(first);
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200 bg-white dark:bg-neutral-800 hover:bg-neutral-100 rounded-lg border border-neutral-300 dark:border-neutral-700 transition-colors cursor-pointer"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              Print Selected AWBs
-            </button>
+            <span className="px-3 py-1.5 text-xs font-medium text-blue-800 dark:text-blue-200 bg-white/70 dark:bg-neutral-800 rounded-lg border border-blue-200 dark:border-blue-800">
+              Batch AWB printing is not enabled. Open each shipment to print its official PDF.
+            </span>
             <button
               onClick={onOpenPickupModal}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 rounded-lg transition-colors cursor-pointer"
@@ -523,9 +509,13 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                             </button>
                           )}
 
-                          {!parcel.trackingNumber && parcel.source === 'easyparcel' ? (
+                          {parcel.source === 'easyparcel' && !parcel.hasLabel ? (
                             <span className="px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
                               AWB Pending
+                            </span>
+                          ) : parcel.source === 'manual' ? (
+                            <span className="px-2.5 py-1 text-[11px] font-semibold text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg">
+                              Manual Dispatch
                             </span>
                           ) : !parcel.trackingNumber ? (
                             <button
@@ -539,7 +529,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                             <button
                               onClick={() => onOpenAWBModal(parcel)}
                               className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer"
-                              title="Print 4x6 Thermal AWB"
+                              title="Open Official EasyParcel AWB"
                             >
                               <Printer className="w-3.5 h-3.5" />
                             </button>

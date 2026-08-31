@@ -11,6 +11,7 @@ use App\Services\Admin\ShipmentDataService;
 use App\Services\ShipmentService;
 use App\Services\Shipping\EasyParcelFailedBookingRecoveryService;
 use App\Services\Shipping\EasyParcelFulfillmentService;
+use App\Services\Shipping\EasyParcelLabelService;
 use App\Services\Shipping\EasyParcelReconciliationPublisher;
 use App\Services\Shipping\EasyParcelReconciliationTaskService;
 use App\Services\Shipping\EasyParcelShipmentDetailsService;
@@ -21,6 +22,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
+use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class ShipmentApiController extends Controller
@@ -30,6 +32,26 @@ class ShipmentApiController extends Controller
         abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::VIEW), 403);
 
         return response()->json(['data' => $data->collection()->values()]);
+    }
+
+    public function showEasyParcelLabel(
+        Request $request,
+        Shipment $shipment,
+        EasyParcelLabelService $labels,
+    ): Response {
+        abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::DISPATCH), 403);
+
+        return $labels->response($shipment, $request->user(), false);
+    }
+
+    public function downloadEasyParcelLabel(
+        Request $request,
+        Shipment $shipment,
+        EasyParcelLabelService $labels,
+    ): Response {
+        abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::DISPATCH), 403);
+
+        return $labels->response($shipment, $request->user(), true);
     }
 
     public function dispatch(Request $request, Order $order, ShipmentService $shipments): JsonResponse

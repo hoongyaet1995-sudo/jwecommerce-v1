@@ -13,13 +13,197 @@ use App\Models\ShippingWebhookReceipt;
 use App\Models\User;
 use App\Services\Shipping\EasyParcelCancellationService;
 use App\Services\Shipping\EasyParcelShipmentDetailsService;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Tests\Concerns\UsesIsolatedDatabaseMigrations;
 use Tests\TestCase;
 
 class ShipmentApiTest extends TestCase
 {
     use UsesIsolatedDatabaseMigrations;
+
+    public function test_dispatch_staff_can_preview_and_download_an_official_easyparcel_pdf_without_exposing_its_url(): void
+    {
+        Http::preventStrayRequests();
+        $staff = User::factory()->create(['is_admin' => true, 'is_super_admin' => false]);
+        $staff->permissions()->create(['permission' => ShippingPermission::DISPATCH]);
+        $shipment = $this->recoverableEasyParcelShipment(
+            $this->processingOrder(),
+            $this->connectedEasyParcelProvider(),
+            'ES-LABEL-1001',
+        );
+        $shipment->forceFill([
+            'tracking_number' => 'TEST-AWB-1001',
+            'label_path' => 'https://app.easyparcel.com/labels/private-token-1001',
+        ])->save();
+        $pdf = "%PDF-1.7\nJW Studio AWB fixture\n%%EOF";
+        Http::fake([
+            'https://app.easyparcel.com/labels/private-token-1001' => Http::response($pdf, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Length' => (string) strlen($pdf),
+            ]),
+        ]);
+        Log::spy();
+
+        $this->actingAs($staff)
+            ->get('/admin/api/shipping/shipments/'.$shipment->id.'/label')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertHeader('Content-Disposition', 'inline; filename="AWB-TEST-AWB-1001.pdf"')
+            ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('Cache-Control', 'max-age=0, no-store, private')
+            ->assertContent($pdf)
+            ->assertDontSee('private-token-1001');
+
+        $this->actingAs($staff)
+            ->get('/admin/api/shipping/shipments/'.$shipment->id.'/label/download')
+            ->assertOk()
+            ->assertHeader('Content-Disposition', 'attachment; filename="AWB-TEST-AWB-1001.pdf"')
+            ->assertContent($pdf)
+            ->assertDontSee('private-token-1001');
+
+        Log::shouldHaveReceived('info')->twice()->withArgs(function (string $message, array $context) use ($shipment, $staff): bool {
+            return $message === 'EasyParcel AWB accessed'
+                && $context['shipment_id'] === $shipment->id
+                && $context['actor_id'] === $staff->id
+                && in_array($context['action'], ['preview', 'download'], true)
+                && ! str_contains(json_encode($context, JSON_THROW_ON_ERROR), 'private-token-1001');
+        });
+    }
+
+    public function test_easyparcel_label_requires_dispatch_permission_and_never_enters_the_shipment_list_payload(): void
+    {
+        $shipment = $this->recoverableEasyParcelShipment(
+            $this->processingOrder(),
+            $this->connectedEasyParcelProvider(),
+            'ES-LABEL-1002',
+        );
+        $shipment->forceFill([
+            'tracking_number' => 'TEST-AWB-1002',
+            'label_path' => 'https://app.easyparcel.com/labels/private-token-1002',
+        ])->save();
+        $viewer = User::factory()->create(['is_admin' => true, 'is_super_admin' => false]);
+        $viewer->permissions()->create(['permission' => ShippingPermission::VIEW]);
+        $nonAdmin = User::factory()->create(['is_admin' => false, 'is_super_admin' => false]);
+        $nonAdmin->permissions()->create(['permission' => ShippingPermission::DISPATCH]);
+
+        $this->getJson('/admin/api/shipping/shipments/'.$shipment->id.'/label')->assertUnauthorized();
+        $this->actingAs($nonAdmin)
+            ->getJson('/admin/api/shipping/shipments/'.$shipment->id.'/label')
+            ->assertUnauthorized();
+        $this->actingAs($viewer)
+            ->getJson('/admin/api/shipping/shipments/'.$shipment->id.'/label')
+            ->assertForbidden();
+
+        $this->actingAs($this->superAdmin())
+            ->getJson('/admin/api/shipping/shipments')
+            ->assertOk()
+            ->assertJsonPath('data.0.hasLabel', true)
+            ->assertJsonMissingPath('data.0.labelPath')
+            ->assertDontSee('private-token-1002', false);
+    }
+
+    public function test_easyparcel_label_rejects_missing_manual_and_untrusted_references_without_leaking_them(): void
+    {
+        Log::spy();
+        $admin = $this->superAdmin();
+        $order = $this->processingOrder();
+        $manual = Shipment::query()->create([
+            'order_id' => $order->id,
+            'sequence' => 1,
+            'source' => 'manual',
+            'carrier_name' => 'Manual Courier',
+            'tracking_number' => 'MANUAL-LABEL-1003',
+            'status' => 'shipped',
+            'currency' => 'MYR',
+            'label_path' => 'https://app.easyparcel.com/labels/manual-should-not-print',
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson('/admin/api/shipping/shipments/'.$manual->id.'/label')
+            ->assertNotFound();
+
+        $easyParcel = $this->recoverableEasyParcelShipment(
+            $this->processingOrder('label-1003@example.com', 'JW-LABEL-1003'),
+            $this->connectedEasyParcelProvider(),
+            'ES-LABEL-1003',
+        );
+        $this->actingAs($admin)
+            ->getJson('/admin/api/shipping/shipments/'.$easyParcel->id.'/label')
+            ->assertNotFound();
+
+        foreach ([
+            'https://attacker.example.test/private-label-token',
+            'http://app.easyparcel.com/labels/private-label-token',
+            'https://user:secret@app.easyparcel.com/labels/private-label-token',
+        ] as $unsafeUrl) {
+            $easyParcel->forceFill(['label_path' => $unsafeUrl])->save();
+            $this->actingAs($admin)
+                ->getJson('/admin/api/shipping/shipments/'.$easyParcel->id.'/label')
+                ->assertUnprocessable()
+                ->assertJsonMissing(['private-label-token', 'attacker.example.test', 'secret']);
+        }
+
+        Log::shouldHaveReceived('warning')->times(5)->withArgs(function (string $message, array $context): bool {
+            $encoded = json_encode($context, JSON_THROW_ON_ERROR);
+
+            return $message === 'EasyParcel AWB access failed'
+                && in_array($context['result'], ['unsupported_shipment', 'label_missing', 'invalid_reference'], true)
+                && ! str_contains($encoded, 'private-label-token')
+                && ! str_contains($encoded, 'attacker.example.test')
+                && ! str_contains($encoded, 'secret');
+        });
+    }
+
+    public function test_easyparcel_label_rejects_redirects_malformed_pdfs_and_oversized_responses(): void
+    {
+        Http::preventStrayRequests();
+        $shipment = $this->recoverableEasyParcelShipment(
+            $this->processingOrder(),
+            $this->connectedEasyParcelProvider(),
+            'ES-LABEL-1004',
+        );
+        $shipment->forceFill([
+            'tracking_number' => 'TEST-AWB-1004',
+            'label_path' => 'https://app.easyparcel.com/labels/provider-response-1004',
+        ])->save();
+        $admin = $this->superAdmin();
+
+        Http::fakeSequence('https://app.easyparcel.com/labels/provider-response-1004')
+            ->push('', 302, ['Location' => 'https://cdn.example.test/redirected-label'])
+            ->push('%PDF-1.7', 200, ['Content-Type' => 'text/html'])
+            ->push('not-a-pdf', 200, ['Content-Type' => 'application/pdf'])
+            ->push('%PDF-1.7', 200, ['Content-Type' => 'application/pdf', 'Content-Length' => (string) (10 * 1024 * 1024 + 1)])
+            ->push('%PDF-'.str_repeat('x', 10 * 1024 * 1024), 200, ['Content-Type' => 'application/pdf']);
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $this->actingAs($admin)
+                ->getJson('/admin/api/shipping/shipments/'.$shipment->id.'/label')
+                ->assertStatus(502)
+                ->assertJsonMissing(['provider-response-1004', 'cdn.example.test']);
+        }
+    }
+
+    public function test_easyparcel_label_returns_a_stable_gateway_error_when_the_provider_times_out(): void
+    {
+        Http::preventStrayRequests();
+        $shipment = $this->recoverableEasyParcelShipment(
+            $this->processingOrder(),
+            $this->connectedEasyParcelProvider(),
+            'ES-LABEL-1005',
+        );
+        $shipment->forceFill([
+            'tracking_number' => 'TEST-AWB-1005',
+            'label_path' => 'https://app.easyparcel.com/labels/provider-timeout-1005',
+        ])->save();
+        Http::fake(fn () => throw new ConnectionException('provider timeout'));
+
+        $this->actingAs($this->superAdmin())
+            ->getJson('/admin/api/shipping/shipments/'.$shipment->id.'/label')
+            ->assertStatus(502)
+            ->assertJsonMissing(['provider-timeout-1005']);
+    }
 
     public function test_manual_dispatch_creates_one_shipment_and_an_append_only_event(): void
     {

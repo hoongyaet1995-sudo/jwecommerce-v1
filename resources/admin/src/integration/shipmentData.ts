@@ -65,6 +65,7 @@ const shipmentListParcel = (row: ShipmentParcel): ShipmentParcel => ({
   courier: row.courier,
   serviceType: row.serviceType,
   trackingNumber: row.trackingNumber,
+  hasLabel: row.hasLabel,
   routingSortCode: row.routingSortCode,
   status: row.status,
   paymentMode: row.paymentMode,

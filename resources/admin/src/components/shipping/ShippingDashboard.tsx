@@ -121,7 +121,12 @@ export const ShippingDashboard: React.FC = () => {
   }, [courierConfigs, easyParcelCallbackState]);
 
   // Counts for badge notifications
-  const pendingAwbCount = shipmentParcels.filter(p => p.status === 'pending').length;
+  const pendingAwbCount = shipmentParcels.filter(p => (
+    (p.source === 'pending' || p.source === 'easyparcel')
+    && !p.hasLabel
+    && p.status !== 'cancelled'
+    && p.status !== 'booking_failed'
+  )).length;
   const inTransitCount = shipmentParcels.filter(p => p.status === 'shipped' || p.status === 'in_transit' || p.status === 'picked_up' || p.status === 'out_for_delivery').length;
   const discrepancyCount = billingReconciliations.filter(b => b.reconciliationStatus === 'disputed').length;
   const connectedCouriersCount = courierConfigs.filter(c => c.isEnabled).length;
@@ -208,7 +213,7 @@ export const ShippingDashboard: React.FC = () => {
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 transition-colors cursor-pointer shadow-xs"
           >
             <Printer className="w-3.5 h-3.5" />
-            Batch Print AWB ({pendingAwbCount})
+            View Pending AWBs ({pendingAwbCount})
           </button>
         </div>
       </div>
@@ -432,9 +437,6 @@ export const ShippingDashboard: React.FC = () => {
         <ThermalAWBModal
           parcel={activeAWBParcel}
           onClose={() => setActiveAWBParcel(null)}
-          onPrint={(parcelId) => {
-            updateShipmentStatus(parcelId, 'ready_to_ship', 'Thermal 100x150mm waybill printed. Ready for driver pickup.');
-          }}
         />
       )}
 

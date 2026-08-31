@@ -33,6 +33,7 @@ const parcel = (id: string): ShipmentParcel => ({
   courier: 'easyparcel',
   serviceType: 'standard',
   trackingNumber: '',
+  hasLabel: false,
   routingSortCode: '',
   status: 'pending',
   paymentMode: 'prepaid',

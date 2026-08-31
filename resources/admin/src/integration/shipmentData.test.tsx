@@ -35,6 +35,7 @@ const redactedParcel = {
   courier: 'easyparcel',
   serviceType: 'EP-STD',
   trackingNumber: '',
+  hasLabel: false,
   routingSortCode: '',
   status: 'pending',
   paymentMode: 'prepaid',

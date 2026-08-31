@@ -151,6 +151,7 @@ export interface ShipmentParcel {
   courier: CourierCode;
   serviceType: string;
   trackingNumber: string;
+  hasLabel: boolean;
   routingSortCode: string; // e.g. KUL-HUB-04, BKI-A1
   status: ShipmentStatus;
   paymentMode: 'prepaid' | 'cod';

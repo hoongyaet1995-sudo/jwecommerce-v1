@@ -6,8 +6,7 @@ import type { ShipmentParcel } from '../../src/types/shipping';
 declare global {
   interface Window {
     __THERMAL_AWB_EFFECTS__: {
-      onPrint: number;
-      windowPrint: number;
+      windowOpen: number;
     };
   }
 }
@@ -24,6 +23,7 @@ const redactedParcel = {
   courier: 'easyparcel',
   serviceType: 'EP-STD',
   trackingNumber: 'EP-TRACKING-1',
+  hasLabel: false,
   routingSortCode: '',
   status: 'ready_to_ship',
   paymentMode: 'prepaid',
@@ -35,17 +35,15 @@ const redactedParcel = {
   trackingEvents: [],
 } satisfies ShipmentParcel;
 
-window.__THERMAL_AWB_EFFECTS__ = { onPrint: 0, windowPrint: 0 };
-window.print = () => {
-  window.__THERMAL_AWB_EFFECTS__.windowPrint += 1;
+window.__THERMAL_AWB_EFFECTS__ = { windowOpen: 0 };
+window.open = () => {
+  window.__THERMAL_AWB_EFFECTS__.windowOpen += 1;
+  return null;
 };
 
 createRoot(document.getElementById('root')!).render(
   <ThermalAWBModal
     parcel={redactedParcel}
     onClose={() => undefined}
-    onPrint={() => {
-      window.__THERMAL_AWB_EFFECTS__.onPrint += 1;
-    }}
   />,
 );

@@ -181,6 +181,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/shipping/orders/{order}/easyparcel/reconciliation', [ShipmentApiController::class, 'reconcileEasyParcel'])
         ->name('api.shipping.easyparcel.reconciliation.store');
     Route::get('/api/shipping/shipments', [ShipmentApiController::class, 'index'])->name('api.shipping.shipments.index');
+    Route::get('/api/shipping/shipments/{shipment}/label', [ShipmentApiController::class, 'showEasyParcelLabel'])
+        ->name('api.shipping.shipments.label.show');
+    Route::get('/api/shipping/shipments/{shipment}/label/download', [ShipmentApiController::class, 'downloadEasyParcelLabel'])
+        ->name('api.shipping.shipments.label.download');
     Route::post('/api/shipping/shipments/{shipment}/easyparcel/status', [ShipmentApiController::class, 'refreshEasyParcelStatus'])
         ->name('api.shipping.shipments.easyparcel.status.store');
     Route::post('/api/shipping/shipments/{shipment}/easyparcel/recovery', [ShipmentApiController::class, 'confirmEasyParcelProviderFailure'])

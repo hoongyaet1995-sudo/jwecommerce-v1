@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const printControls = ['Print Thermal AWB', 'Print Waybill'] as const;
+const printControls = ['Print Thermal AWB', 'Download AWB PDF'] as const;
 
 for (const controlName of printControls) {
   test(`redacted shipment blocks ${controlName} without invoking print side effects`, async ({ page }) => {
@@ -11,14 +11,13 @@ for (const controlName of printControls) {
     await control.evaluate((button: HTMLButtonElement) => button.click());
     await page.waitForTimeout(500);
 
-    expect(await page.evaluate(() => window.__THERMAL_AWB_EFFECTS__)).toEqual({
-      onPrint: 0,
-      windowPrint: 0,
-    });
+    expect(await page.evaluate(() => window.__THERMAL_AWB_EFFECTS__)).toEqual({ windowOpen: 0 });
     await expect(control).toBeDisabled();
     await expect(page.getByText(
-      'Printing unavailable: authorized recipient and label details are not included in shipment-list responses.',
+      'Official EasyParcel AWB is still pending. Refresh the provider status or reconcile the shipment before printing.',
       { exact: true },
-    )).toBeVisible();
+    ).first()).toBeVisible();
+    await expect(page.getByText('Aurora Commerce Hub HQ')).toHaveCount(0);
+    await expect(page.getByText('SCAN-AWB')).toHaveCount(0);
   });
 }

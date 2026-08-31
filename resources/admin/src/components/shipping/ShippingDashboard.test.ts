@@ -671,6 +671,72 @@ describe('ShippingDashboard provider action binding', () => {
     expect(html).toContain('1 In-Transit');
   });
 
+  it('labels the global waybill shortcut as navigation instead of claiming batch printing', () => {
+    mockedAdminContext.value = {
+      courierConfigs: [],
+      smartRoutingRules: [],
+      shipmentParcels: [INITIAL_SHIPMENT_PARCELS[0]],
+      easyParcelWebhookReceipts: [],
+      easyParcelWebhookAuditStatus: 'ready',
+      easyParcelWebhookAuditError: null,
+      refreshEasyParcelWebhookReceipts: async () => undefined,
+      pickupRequests: [],
+      billingReconciliations: [],
+      shippingRates: [],
+      addToast: vi.fn(),
+    };
+
+    const html = renderToStaticMarkup(React.createElement(ShippingDashboard));
+
+    expect(html).toContain('View Pending AWBs');
+    expect(html).not.toContain('Batch Print AWB');
+  });
+
+  it('offers printing only when an EasyParcel shipment has an official provider label', () => {
+    const withoutLabel = renderToStaticMarkup(React.createElement(ShippingFulfillmentTab, {
+      parcels: [{
+        ...INITIAL_SHIPMENT_PARCELS[0],
+        id: 'easyparcel-without-label',
+        source: 'easyparcel' as const,
+        trackingNumber: 'EPSAMPLE-WITHOUT-LABEL',
+        hasLabel: false,
+      }],
+      onGenerateAWB: vi.fn(),
+      onBatchGenerateAWB: vi.fn(),
+      onOpenAWBModal: vi.fn(),
+      onOpenTrackingModal: vi.fn(),
+      onOpenPickupModal: vi.fn(),
+      onUpdateStatus: vi.fn(),
+      onOpenEasyParcelBooking: vi.fn(),
+      onRefreshEasyParcelStatus: vi.fn(),
+      onRefreshAllEasyParcelStatuses: vi.fn(),
+      onConfirmEasyParcelProviderFailure: vi.fn(),
+    }));
+    const withLabel = renderToStaticMarkup(React.createElement(ShippingFulfillmentTab, {
+      parcels: [{
+        ...INITIAL_SHIPMENT_PARCELS[0],
+        id: 'easyparcel-with-label',
+        source: 'easyparcel' as const,
+        trackingNumber: 'EPSAMPLE-WITH-LABEL',
+        hasLabel: true,
+      }],
+      onGenerateAWB: vi.fn(),
+      onBatchGenerateAWB: vi.fn(),
+      onOpenAWBModal: vi.fn(),
+      onOpenTrackingModal: vi.fn(),
+      onOpenPickupModal: vi.fn(),
+      onUpdateStatus: vi.fn(),
+      onOpenEasyParcelBooking: vi.fn(),
+      onRefreshEasyParcelStatus: vi.fn(),
+      onRefreshAllEasyParcelStatuses: vi.fn(),
+      onConfirmEasyParcelProviderFailure: vi.fn(),
+    }));
+
+    expect(withoutLabel).toContain('AWB Pending');
+    expect(withoutLabel).not.toContain('title="Open Official EasyParcel AWB"');
+    expect(withLabel).toContain('title="Open Official EasyParcel AWB"');
+  });
+
   it('counts canonical shipped parcels in the ShippingOverview in-transit metric', () => {
     const html = renderToStaticMarkup(React.createElement(ShippingOverviewTab, {
       parcels: [{
