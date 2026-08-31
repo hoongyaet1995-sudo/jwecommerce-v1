@@ -62,4 +62,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(UserPermission::class);
     }
+
+    public function notificationTemplates(): HasMany
+    {
+        return $this->hasMany(NotificationTemplate::class, 'updated_by');
+    }
 }
