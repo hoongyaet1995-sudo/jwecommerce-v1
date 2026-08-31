@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\PaymentGatewayCredential;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductReview;
@@ -101,9 +102,23 @@ class StorefrontPdpRichContentTest extends TestCase
     {
         StoreSetting::query()->updateOrCreate(['key' => 'shop_name'], ['value' => ['data' => 'JW Studio']]);
         StoreSetting::query()->updateOrCreate(['key' => 'payment_gateways'], ['value' => ['data' => [
-            ['id' => 'paypal', 'isEnabled' => true],
-            ['id' => 'stripe', 'isEnabled' => true, 'features' => ['supportsApplePay' => true]],
+            ['id' => 'paypal', 'name' => 'PayPal', 'isEnabled' => true, 'isSandbox' => true],
+            ['id' => 'stripe', 'name' => 'Credit Card', 'isEnabled' => true, 'isSandbox' => true],
         ]]]);
+        PaymentGatewayCredential::query()->create([
+            'gateway_id' => 'paypal',
+            'environment' => 'sandbox',
+            'credentials' => ['clientId' => 'paypal-client', 'clientSecret' => 'paypal-secret'],
+        ]);
+        PaymentGatewayCredential::query()->create([
+            'gateway_id' => 'stripe',
+            'environment' => 'sandbox',
+            'credentials' => [
+                'publishableKey' => 'pk_test_public',
+                'secretKey' => 'sk_test_private',
+                'webhookSecret' => 'whsec_test_private',
+            ],
+        ]);
 
         $product = $this->product('configured-pdp-product', 'This must not become PDP copy');
         $variant = $product->variants()->firstOrFail();
@@ -115,7 +130,7 @@ class StorefrontPdpRichContentTest extends TestCase
         $this->assertStringContainsString('JW Studio', $html);
         $this->assertStringContainsString('In Stock (7 units)', $html);
         $this->assertStringContainsString('Payment methods available at checkout:', $html);
-        $this->assertStringContainsString('Apple Pay', $html);
+        $this->assertStringContainsString('Credit Card', $html);
         $this->assertStringContainsString('PayPal', $html);
         $this->assertSame(3, substr_count($html, 'data-pdp-rating-star="filled"'));
         $this->assertSame(2, substr_count($html, 'data-pdp-rating-star="empty"'));
@@ -144,7 +159,7 @@ class StorefrontPdpRichContentTest extends TestCase
         $this->assertStringNotContainsString('Actual policy content without a configured title.', $html);
     }
 
-    public function test_pdp_uses_the_configured_atome_payment_name_instead_of_a_klarna_alias(): void
+    public function test_pdp_does_not_advertise_an_unsupported_atome_gateway_or_klarna_alias(): void
     {
         StoreSetting::query()->updateOrCreate(['key' => 'payment_gateways'], ['value' => ['data' => [
             ['id' => 'atome', 'isEnabled' => true],
@@ -154,7 +169,7 @@ class StorefrontPdpRichContentTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString('Atome (3x)', $html);
+        $this->assertStringNotContainsString('Atome (3x)', $html);
         $this->assertStringNotContainsString('Klarna', $html);
     }
 

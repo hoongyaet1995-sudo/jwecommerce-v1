@@ -101,6 +101,7 @@ export type ShipmentStatus =
   | 'on_hold'
   | 'cancelled'
   | 'booking_failed'
+  | 'provider_update'
   | 'picked_up'
   | 'in_transit'
   | 'out_for_delivery'

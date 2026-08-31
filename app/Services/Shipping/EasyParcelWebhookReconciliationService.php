@@ -13,6 +13,8 @@ final class EasyParcelWebhookReconciliationService
         private readonly EasyParcelTrackingService $tracking,
         private readonly EasyParcelWebhookCorrelationService $correlation,
         private readonly EasyParcelBookingReconciliationService $bookings,
+        private readonly EasyParcelFailedBookingRecoveryService $recoveries,
+        private readonly EasyParcelStatusNormalizer $statuses,
     ) {}
 
     public function reconcile(ShippingWebhookReceipt $receipt): void
@@ -48,7 +50,19 @@ final class EasyParcelWebhookReconciliationService
                 'shipment.awb.update',
                 'shipment.status.update',
             ], true)) {
-                $shipment = $this->details->reconcile($shipment);
+                $result = $this->details->reconcileWithSnapshot($shipment);
+                $shipment = $result['shipment'];
+                $providerDetails = $result['details'];
+                if ($this->statuses->normalize($providerDetails['shipment_status_code']) === 'cancelled') {
+                    $this->recoveries->recordProviderCancellation(
+                        $shipment,
+                        null,
+                        $providerDetails['shipment_status_code'],
+                        $providerDetails['shipment_status'],
+                        $result['checked_at'],
+                    );
+                    $shipment->refresh();
+                }
             }
 
             if ($locked->topic === 'shipment.tracking.update' || filled($shipment->tracking_number)) {

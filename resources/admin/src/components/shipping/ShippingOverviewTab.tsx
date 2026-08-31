@@ -35,7 +35,7 @@ export const ShippingOverviewTab: React.FC<ShippingOverviewTabProps> = ({
   const readyToShip = parcels.filter(p => p.status === 'ready_to_ship');
   const inTransit = parcels.filter(p => p.status === 'shipped' || p.status === 'in_transit' || p.status === 'picked_up' || p.status === 'out_for_delivery');
   const delivered = parcels.filter(p => p.status === 'delivered');
-  const exceptions = parcels.filter(p => ['failed_delivery', 'returned', 'booking_failed', 'cancelled', 'on_hold'].includes(p.status));
+  const exceptions = parcels.filter(p => ['failed_delivery', 'returned', 'booking_failed', 'cancelled', 'on_hold', 'provider_update'].includes(p.status));
 
   const eastMalaysiaCount = parcels.filter(p => p.isEastMalaysiaAirRestricted).length;
   const codCount = parcels.filter(p => p.paymentMode === 'cod').length;

@@ -186,7 +186,7 @@ class ShipmentApiController extends Controller
         $awbAvailable = $providerDetails['awb_number'] !== null;
         $providerStatus = $statuses->normalize($providerDetails['shipment_status_code']);
         $recovery = null;
-        if (! $awbAvailable && $providerStatus === 'cancelled') {
+        if ($providerStatus === 'cancelled') {
             $recovery = $recoveries->recordProviderCancellation(
                 $shipment,
                 null,
@@ -319,15 +319,19 @@ class ShipmentApiController extends Controller
 
     private function recoveryDisposition(Shipment $shipment, string $providerStatus, bool $awbAvailable): string
     {
+        if ($providerStatus === 'cancelled') {
+            return 'provider_terminal';
+        }
+
+        if (in_array($providerStatus, ['on_hold', 'returned', 'failed_delivery', 'provider_update'], true)) {
+            return 'needs_review';
+        }
+
         if ($awbAvailable) {
             return 'none';
         }
 
-        if ($providerStatus === 'on_hold') {
-            return 'none';
-        }
-
-        if (in_array($providerStatus, ['cancelled', 'booking_failed', 'delivered', 'failed_delivery', 'returned'], true)) {
+        if ($providerStatus === 'booking_failed') {
             return 'provider_terminal';
         }
 

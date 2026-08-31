@@ -47,7 +47,7 @@ class CurrencySettingsClosureTest extends TestCase
             ->assertSee('<template data-atelier-currency-options', false)
             ->assertSee('value="MYR" selected', false)
             ->assertSee('value="USD"', false)
-            ->assertSee('class="bg-white text-zinc-900"', false)
+            ->assertSee('class="bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100"', false)
             ->assertDontSee('value="GBP"', false);
     }
 }

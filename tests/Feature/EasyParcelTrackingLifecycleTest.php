@@ -85,6 +85,35 @@ class EasyParcelTrackingLifecycleTest extends TestCase
         );
     }
 
+    public function test_undocumented_provider_code_enters_exceptions_without_rebooking_or_advancing_the_order(): void
+    {
+        $this->connectedProvider();
+        [, $order] = $this->processingOrder('JW-TRACK-UNKNOWN');
+        $shipment = $this->easyParcelShipment($order, 'AWB-TRACK-UNKNOWN');
+
+        Http::fake([
+            EasyParcelTrackingService::TRACKING_URL => Http::response(
+                $this->trackingResponse('AWB-TRACK-UNKNOWN', [[
+                    'event_date' => '2026-08-27 01:00:00',
+                    'shipment_status_code' => 99,
+                    'tracking_status' => 'Provider status requires review',
+                    'location' => null,
+                ]]),
+            ),
+        ]);
+
+        self::assertSame(1, app(EasyParcelTrackingService::class)->syncShipment($shipment));
+
+        self::assertSame('provider_update', $shipment->fresh()->status);
+        self::assertSame('processing', $order->fresh()->status);
+        self::assertNull($order->fresh()->shipped_at);
+        self::assertNull($shipment->failedBookingRecovery()->first());
+        self::assertSame(
+            'provider_update',
+            app(ShipmentDataService::class)->collection()->firstWhere('id', (string) $shipment->id)['status'],
+        );
+    }
+
     public function test_authenticated_polling_records_authoritative_history_once_and_projects_both_customer_read_models(): void
     {
         $this->connectedProvider();

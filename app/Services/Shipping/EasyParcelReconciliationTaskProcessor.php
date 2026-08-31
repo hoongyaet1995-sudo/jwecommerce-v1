@@ -132,8 +132,7 @@ final class EasyParcelReconciliationTaskProcessor
         $result = $this->details->reconcileWithSnapshot($shipment);
         $shipment = $result['shipment'];
         $providerDetails = $result['details'];
-        if ($providerDetails['awb_number'] === null
-            && $this->statuses->normalize($providerDetails['shipment_status_code']) === 'cancelled') {
+        if ($this->statuses->normalize($providerDetails['shipment_status_code']) === 'cancelled') {
             $this->recoveries->recordProviderCancellation(
                 $shipment,
                 null,

@@ -39,7 +39,7 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
         $accountView = file_get_contents(resource_path('views/storefront/account.blade.php'));
 
         self::assertIsString($accountView);
-        self::assertStringContainsString('<x-layouts.app title="Member Account | ATELIER">', $accountView);
+        self::assertStringContainsString('<x-layouts.app :title="\'Member Account | \'.$shopBrandName">', $accountView);
         self::assertStringContainsString('<x-storefront.nav active="account" />', $accountView);
         self::assertStringContainsString('<x-storefront.footer />', $accountView);
         self::assertStringNotContainsString('<footer', $accountView);
@@ -77,7 +77,7 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
             ->assertViewIs('storefront.account');
 
         self::assertSame(1, substr_count($response->getContent(), 'data-original-account-workspace'));
-        self::assertSame(1, substr_count($response->getContent(), 'COMPLIMENTARY SHIPPING'));
+        self::assertSame(1, substr_count($response->getContent(), '© 2026 JW Studio. All rights reserved.'));
     }
 
     public function test_account_adapter_refreshes_mutations_on_its_current_entrypoint(): void

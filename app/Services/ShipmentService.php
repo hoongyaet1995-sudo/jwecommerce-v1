@@ -29,6 +29,7 @@ class ShipmentService
     private const CURRENT_PROVIDER_EXCEPTION_STATUSES = [
         'on_hold',
         'cancelled',
+        'provider_update',
     ];
 
     /** @var list<string> */

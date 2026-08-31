@@ -232,7 +232,7 @@ final class EasyParcelFailedBookingRecoveryService
 
                 if ($lockedShipment->source !== ShippingProviderConfigurationService::PROVIDER
                     || ! in_array($lockedShipment->status, ['pending', 'on_hold', 'cancelled'], true)
-                    || filled($lockedShipment->tracking_number)) {
+                ) {
                     throw new InvalidArgumentException('The EasyParcel recovery identity changed before completion.');
                 }
 
@@ -241,9 +241,11 @@ final class EasyParcelFailedBookingRecoveryService
                     'cancelled_at' => $checkedAt,
                 ])->save();
                 $lockedQuote->forceFill([
-                    'booking_state' => 'failed',
+                    'booking_state' => filled($lockedShipment->tracking_number) ? 'cancelled' : 'failed',
                     'booking_claim_key' => null,
-                    'last_error' => 'provider_cancelled_booking',
+                    'last_error' => filled($lockedShipment->tracking_number)
+                        ? 'provider_cancelled_after_booking'
+                        : 'provider_cancelled_booking',
                 ])->save();
                 $existing->forceFill([
                     'state' => $existing->replacement_shipment_id === null
@@ -261,7 +263,6 @@ final class EasyParcelFailedBookingRecoveryService
                 || $lockedShipment->order_id !== $lockedOrder->id
                 || $lockedShipment->source !== ShippingProviderConfigurationService::PROVIDER
                 || ! in_array($lockedShipment->status, ['pending', 'on_hold', 'cancelled'], true)
-                || filled($lockedShipment->tracking_number)
                 || ! is_string($lockedShipment->provider_reference)
                 || trim($lockedShipment->provider_reference) === ''
                 || ! $lockedQuote instanceof ShipmentQuote
@@ -283,9 +284,11 @@ final class EasyParcelFailedBookingRecoveryService
                 'cancelled_at' => $checkedAt,
             ])->save();
             $lockedQuote->forceFill([
-                'booking_state' => 'failed',
+                'booking_state' => filled($lockedShipment->tracking_number) ? 'cancelled' : 'failed',
                 'booking_claim_key' => null,
-                'last_error' => 'provider_cancelled_booking',
+                'last_error' => filled($lockedShipment->tracking_number)
+                    ? 'provider_cancelled_after_booking'
+                    : 'provider_cancelled_booking',
             ])->save();
 
             return EasyParcelShipmentRecovery::query()->create([

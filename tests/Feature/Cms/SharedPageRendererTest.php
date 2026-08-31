@@ -116,7 +116,7 @@ class SharedPageRendererTest extends TestCase
         $this->assertStringNotContainsString('HIDDEN DRAFT SECRET', $response->getContent());
         $this->assertStringNotContainsString('OLD PUBLISHED COPY', $response->getContent());
         $response->assertSee('data-mega-nav', false)
-            ->assertSee('ATELIER Design Studio Inc.', false)
+            ->assertSee('© 2026 JW Studio. All rights reserved.', false)
             ->assertDontSee('AURORA COMMERCE', false);
     }
 

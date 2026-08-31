@@ -148,7 +148,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
       if (activeStatusFilter === 'in_transit') {
         if (p.status !== 'shipped' && p.status !== 'in_transit' && p.status !== 'picked_up' && p.status !== 'out_for_delivery') return false;
       } else if (activeStatusFilter === 'failed_delivery') {
-        if (!['failed_delivery', 'returned', 'booking_failed', 'cancelled', 'on_hold'].includes(p.status)) return false;
+        if (!['failed_delivery', 'returned', 'booking_failed', 'cancelled', 'on_hold', 'provider_update'].includes(p.status)) return false;
       } else if (p.status !== activeStatusFilter) {
         return false;
       }
@@ -227,6 +227,8 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
         return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">On Hold</span>;
       case 'returned':
         return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300">Returned</span>;
+      case 'provider_update':
+        return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300">Provider Review</span>;
       default:
         return null;
     }
@@ -244,7 +246,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
             { id: 'ready_to_ship', label: 'Ready to Ship', count: parcels.filter(p => p.status === 'ready_to_ship').length },
             { id: 'in_transit', label: 'In Transit', count: parcels.filter(p => p.status === 'shipped' || p.status === 'in_transit' || p.status === 'picked_up' || p.status === 'out_for_delivery').length },
             { id: 'delivered', label: 'Delivered', count: parcels.filter(p => p.status === 'delivered').length },
-            { id: 'failed_delivery', label: 'Exceptions (NITC)', count: parcels.filter(p => ['failed_delivery', 'returned', 'booking_failed', 'cancelled', 'on_hold'].includes(p.status)).length },
+            { id: 'failed_delivery', label: 'Exceptions (NITC)', count: parcels.filter(p => ['failed_delivery', 'returned', 'booking_failed', 'cancelled', 'on_hold', 'provider_update'].includes(p.status)).length },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -509,7 +511,11 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                             </button>
                           )}
 
-                          {parcel.source === 'easyparcel' && !parcel.hasLabel ? (
+                          {parcel.source === 'easyparcel' && parcel.status === 'cancelled' ? (
+                            <span className="px-2.5 py-1 text-[11px] font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-lg">
+                              Cancelled AWB
+                            </span>
+                          ) : parcel.source === 'easyparcel' && !parcel.hasLabel ? (
                             <span className="px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
                               AWB Pending
                             </span>

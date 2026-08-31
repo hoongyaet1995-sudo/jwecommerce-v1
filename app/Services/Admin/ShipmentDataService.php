@@ -169,7 +169,7 @@ class ShipmentDataService
             return $shipment->status;
         }
 
-        if (in_array($shipment->status, ['booking_failed', 'cancelled', 'on_hold'], true)) {
+        if (in_array($shipment->status, ['booking_failed', 'cancelled', 'on_hold', 'provider_update'], true)) {
             return $shipment->status;
         }
 
@@ -177,7 +177,7 @@ class ShipmentDataService
             return 'pending';
         }
 
-        return in_array($shipment->status, ['pending', 'provider_update'], true)
+        return $shipment->status === 'pending'
             ? 'ready_to_ship'
             : $shipment->status;
     }

@@ -122,7 +122,7 @@ class StorefrontCanonicalHeaderTest extends TestCase
             $response = $this->get($route)->assertOk();
 
             $this->assertCanonicalHeader($response, $surface);
-            $response->assertSee('© 2026 ATELIER Design Studio Inc. All rights reserved.', false);
+            $response->assertSee('© 2026 JW Studio. All rights reserved.', false);
         }
     }
 

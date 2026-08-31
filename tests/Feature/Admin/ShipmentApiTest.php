@@ -595,6 +595,74 @@ class ShipmentApiTest extends TestCase
         self::assertSame($first->json('data.recovery.recoveryId'), $second->json('data.recovery.recoveryId'));
     }
 
+    public function test_provider_cancelled_refresh_with_existing_awb_moves_to_exceptions_and_releases_fresh_rebooking(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedEasyParcelProvider();
+        $order = $this->processingOrder('provider-cancelled-awb@example.test', 'JW-PROVIDER-CANCELLED-AWB-1001');
+        $shipment = $this->recoverableEasyParcelShipment(
+            $order,
+            $provider,
+            'ES-PROVIDER-CANCELLED-AWB-1001',
+        );
+        $shipment->forceFill([
+            'tracking_number' => 'AWB-PROVIDER-CANCELLED-1001',
+            'label_path' => 'https://app.easyparcel.com/labels/AWB-PROVIDER-CANCELLED-1001',
+        ])->save();
+        $shipment->quote->forceFill(['booked_at' => now()])->save();
+        $response = [
+            'status_code' => 200,
+            'message' => 'success',
+            'data' => [[
+                'shipment_number' => 'ES-PROVIDER-CANCELLED-AWB-1001',
+                'shipment_details' => [
+                    'shipment_status_code' => 0,
+                    'shipment_status' => 'Cancelled',
+                    'awb_number' => 'AWB-PROVIDER-CANCELLED-1001',
+                    'awb_url' => 'https://app.easyparcel.com/labels/AWB-PROVIDER-CANCELLED-1001',
+                ],
+            ]],
+        ];
+        Http::fakeSequence(EasyParcelShipmentDetailsService::DETAILS_URL)
+            ->push($response)
+            ->push($response);
+
+        $first = $this->actingAs($this->superAdmin())
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/easyparcel/status')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'cancelled')
+            ->assertJsonPath('data.awbAvailable', true)
+            ->assertJsonPath('data.recoveryDisposition', 'provider_terminal')
+            ->assertJsonPath('data.recovery.state', 'awaiting_replacement')
+            ->assertJsonPath('data.recovery.cancellationConfirmed', true)
+            ->assertJsonPath('data.recovery.readyToRebook', true);
+        $second = $this->actingAs($this->superAdmin())
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/easyparcel/status')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'cancelled')
+            ->assertJsonPath('data.recovery.recoveryId', $first->json('data.recovery.recoveryId'));
+
+        $shipment->refresh();
+        self::assertNotNull($shipment->cancelled_at);
+        self::assertSame('AWB-PROVIDER-CANCELLED-1001', $shipment->tracking_number);
+        self::assertSame(
+            'https://app.easyparcel.com/labels/AWB-PROVIDER-CANCELLED-1001',
+            $shipment->label_path,
+        );
+        self::assertSame(1, $shipment->events()->where('status', 'cancelled')->count());
+        self::assertSame('cancelled', $shipment->quote->fresh()->booking_state);
+        self::assertNull($shipment->quote->fresh()->booking_claim_key);
+        self::assertNotNull($shipment->quote->fresh()->booked_at);
+        $this->assertDatabaseCount('easyparcel_shipment_recoveries', 1);
+
+        $rows = collect($this->actingAs($this->superAdmin())
+            ->getJson('/admin/api/shipping/shipments')
+            ->assertOk()
+            ->json('data'));
+        self::assertSame('cancelled', data_get($rows->firstWhere('id', (string) $shipment->id), 'status'));
+        self::assertSame('pending', data_get($rows->firstWhere('id', 'pending-order-'.$order->id), 'status'));
+    }
+
     public function test_provider_on_hold_refresh_is_an_exception_without_recovery_or_rebook(): void
     {
         config(['services.easyparcel.awb_review_after_minutes' => 10]);
@@ -624,7 +692,7 @@ class ShipmentApiTest extends TestCase
             ->assertJsonPath('data.providerStatusCode', 8)
             ->assertJsonPath('data.providerStatus', 'On Hold')
             ->assertJsonPath('data.awbAvailable', false)
-            ->assertJsonPath('data.recoveryDisposition', 'none')
+            ->assertJsonPath('data.recoveryDisposition', 'needs_review')
             ->assertJsonPath('data.recovery', null);
 
         self::assertSame('on_hold', $shipment->fresh()->status);

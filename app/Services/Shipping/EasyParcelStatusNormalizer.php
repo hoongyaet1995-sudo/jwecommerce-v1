@@ -8,9 +8,9 @@ final class EasyParcelStatusNormalizer
     {
         return match ($code) {
             0 => 'cancelled',
-            2, 7 => 'pending',
+            2, 7, 11 => 'pending',
             8 => 'on_hold',
-            3, 11 => 'shipped',
+            3 => 'shipped',
             4 => 'in_transit',
             5 => 'delivered',
             6 => 'returned',

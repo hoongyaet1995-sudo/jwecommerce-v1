@@ -15,7 +15,7 @@ import { ShippingDashboard } from './ShippingDashboard';
 import { ShippingFulfillmentTab } from './ShippingFulfillmentTab';
 import { ShippingOverviewTab } from './ShippingOverviewTab';
 import { TrackingAndWebhooksTab } from './TrackingAndWebhooksTab';
-import type { CourierConfig, EasyParcelWebhookReceiptRow } from '../../types/shipping';
+import type { CourierConfig, EasyParcelWebhookReceiptRow, ShipmentParcel } from '../../types/shipping';
 import { INITIAL_SHIPMENT_PARCELS } from '../../data/shippingData';
 
 const source = readFileSync(resolve(process.cwd(), 'src/components/shipping/ShippingDashboard.tsx'), 'utf8');
@@ -737,6 +737,32 @@ describe('ShippingDashboard provider action binding', () => {
     expect(withLabel).toContain('title="Open Official EasyParcel AWB"');
   });
 
+  it('keeps a cancelled provider label out of the active print workflow', () => {
+    const html = renderToStaticMarkup(React.createElement(ShippingFulfillmentTab, {
+      parcels: [{
+        ...INITIAL_SHIPMENT_PARCELS[0],
+        id: 'cancelled-easyparcel-label',
+        source: 'easyparcel' as const,
+        trackingNumber: 'AWB-CANCELLED-LABEL',
+        hasLabel: true,
+        status: 'cancelled' as const,
+      }],
+      onGenerateAWB: vi.fn(),
+      onBatchGenerateAWB: vi.fn(),
+      onOpenAWBModal: vi.fn(),
+      onOpenTrackingModal: vi.fn(),
+      onOpenPickupModal: vi.fn(),
+      onUpdateStatus: vi.fn(),
+      onOpenEasyParcelBooking: vi.fn(),
+      onRefreshEasyParcelStatus: vi.fn(),
+      onRefreshAllEasyParcelStatuses: vi.fn(),
+      onConfirmEasyParcelProviderFailure: vi.fn(),
+    }));
+
+    expect(html).toContain('Cancelled AWB');
+    expect(html).not.toContain('title="Open Official EasyParcel AWB"');
+  });
+
   it('counts canonical shipped parcels in the ShippingOverview in-transit metric', () => {
     const html = renderToStaticMarkup(React.createElement(ShippingOverviewTab, {
       parcels: [{
@@ -769,12 +795,12 @@ describe('ShippingDashboard provider action binding', () => {
     expect(metricCardText(html, 'Exceptions & NITC')).toContain('1');
   });
 
-  it('treats booking failures, cancellations, and holds as shipping exceptions', () => {
-    const exceptionParcels = (['booking_failed', 'cancelled', 'on_hold'] as const).map((status, index) => ({
+  it('treats booking failures, cancellations, holds, and unknown provider updates as shipping exceptions', () => {
+    const exceptionParcels = (['booking_failed', 'cancelled', 'on_hold', 'provider_update'] as const).map((status, index) => ({
       ...INITIAL_SHIPMENT_PARCELS[0],
       id: `easyparcel-exception-${index}`,
       status,
-    }));
+    })) as ShipmentParcel[];
     const overview = renderToStaticMarkup(React.createElement(ShippingOverviewTab, {
       parcels: exceptionParcels,
       couriers: [],
@@ -796,11 +822,12 @@ describe('ShippingDashboard provider action binding', () => {
       onConfirmEasyParcelProviderFailure: vi.fn(),
     }));
 
-    expect(metricCardText(overview, 'Exceptions & NITC')).toContain('3');
-    expect(fulfillment).toMatch(/Exceptions \(NITC\)<\/span><span[^>]*>3<\/span>/);
+    expect(metricCardText(overview, 'Exceptions & NITC')).toContain('4');
+    expect(fulfillment).toMatch(/Exceptions \(NITC\)<\/span><span[^>]*>4<\/span>/);
     expect(fulfillment).toContain('Booking Failed');
     expect(fulfillment).toContain('Cancelled');
     expect(fulfillment).toContain('On Hold');
+    expect(fulfillment).toContain('Provider Review');
   });
 
   it('renders the unavailable EasyParcel card top-up control as disabled', () => {

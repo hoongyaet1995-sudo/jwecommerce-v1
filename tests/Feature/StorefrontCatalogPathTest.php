@@ -65,7 +65,7 @@ class StorefrontCatalogPathTest extends TestCase
 
         $this->get(route('storefront.collections.show', ['collection' => $collection->slug]))
             ->assertOk()
-            ->assertSee('© 2026 ATELIER Design Studio Inc. All rights reserved.', false);
+            ->assertSee('© 2026 JW Studio. All rights reserved.', false);
     }
 
     public function test_catalog_listing_retains_the_google_source_footer_spacing(): void

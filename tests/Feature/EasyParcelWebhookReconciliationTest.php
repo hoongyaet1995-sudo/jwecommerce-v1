@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Jobs\ReconcileEasyParcelTask;
 use App\Models\Order;
 use App\Models\Shipment;
+use App\Models\ShipmentQuote;
 use App\Models\ShippingProvider;
 use App\Models\ShippingProviderCredential;
 use App\Models\ShippingWebhookReceipt;
@@ -70,6 +71,68 @@ class EasyParcelWebhookReconciliationTest extends TestCase
             ['shipped', 'delivered'],
             $order->statusHistory()->oldest('id')->pluck('to_status')->all(),
         );
+    }
+
+    public function test_shipment_status_webhook_reconciles_authenticated_cancelled_awb_into_rebookable_exception(): void
+    {
+        $provider = $this->connectedProvider();
+        [$order, $shipment] = $this->easyParcelShipment(
+            'ES-2608-WEBHOOK-CANCELLED',
+            'AWB-WEBHOOK-CANCELLED',
+        );
+        $quote = ShipmentQuote::query()->create([
+            'order_id' => $order->id,
+            'shipping_provider_id' => $provider->id,
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'provider_configuration_version' => $provider->configuration_version,
+            'package_snapshot' => ['weight_kg' => 1, 'length_cm' => 10, 'width_cm' => 10, 'height_cm' => 10],
+            'request_snapshot' => ['booking' => []],
+            'response_snapshot' => ['services' => []],
+            'reconciliation_reference' => 'JWEP-WEBHOOK-CANCELLED-'.$order->id,
+            'booking_state' => 'booked',
+            'booking_claim_key' => 'easyparcel:order:'.$order->id,
+            'booked_at' => now(),
+            'expires_at' => now()->addMinutes(15),
+        ]);
+        $shipment->forceFill([
+            'shipment_quote_id' => $quote->id,
+            'label_path' => 'https://app.easyparcel.com/labels/AWB-WEBHOOK-CANCELLED',
+        ])->save();
+        $receipt = $this->receipt([
+            'topic' => 'shipment.status.update',
+            'shipment_number' => $shipment->provider_reference,
+            'awb_number' => $shipment->tracking_number,
+            'shipment_status_code' => 0,
+        ], $shipment);
+
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => Http::response($this->shipmentDetailsResponse(
+                shipmentNumber: 'ES-2608-WEBHOOK-CANCELLED',
+                awb: 'AWB-WEBHOOK-CANCELLED',
+                statusCode: 0,
+                status: 'Cancelled',
+            )),
+            EasyParcelTrackingService::TRACKING_URL => Http::response($this->trackingNotFoundResponse(
+                'AWB-WEBHOOK-CANCELLED',
+            )),
+        ]);
+
+        app(EasyParcelWebhookReconciliationService::class)->reconcile($receipt);
+
+        $shipment->refresh();
+        self::assertSame('cancelled', $shipment->status);
+        self::assertNotNull($shipment->cancelled_at);
+        self::assertSame('AWB-WEBHOOK-CANCELLED', $shipment->tracking_number);
+        self::assertSame(1, $shipment->events()->where('status', 'cancelled')->count());
+        self::assertSame('cancelled', $quote->fresh()->booking_state);
+        self::assertNull($quote->fresh()->booking_claim_key);
+        $this->assertDatabaseHas('easyparcel_shipment_recoveries', [
+            'shipment_id' => $shipment->id,
+            'state' => 'awaiting_replacement',
+            'provider_cancel_state' => 'success',
+        ]);
+        self::assertSame('processed', $receipt->fresh()->processing_state);
     }
 
     public function test_authenticated_details_normalizes_status_description_before_deriving_event_identity(): void
@@ -152,11 +215,75 @@ class EasyParcelWebhookReconciliationTest extends TestCase
             6 => 'returned',
             7 => 'pending',
             8 => 'on_hold',
-            11 => 'shipped',
+            11 => 'pending',
             99 => 'provider_update',
         ], collect([0, 2, 3, 4, 5, 6, 7, 8, 11, 99])
             ->mapWithKeys(fn (int $code): array => [$code => $statuses->normalize($code)])
             ->all());
+    }
+
+    public function test_authenticated_drop_off_status_does_not_mark_the_order_shipped_before_carrier_collection(): void
+    {
+        $this->connectedProvider();
+        [$order, $shipment] = $this->easyParcelShipment('ES-2608-DROP-OFF', 'AWB-DROP-OFF');
+
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => Http::response($this->shipmentDetailsResponse(
+                shipmentNumber: 'ES-2608-DROP-OFF',
+                awb: 'AWB-DROP-OFF',
+                statusCode: 11,
+                status: 'Drop Off',
+            )),
+        ]);
+
+        app(EasyParcelShipmentDetailsService::class)->reconcile($shipment);
+
+        self::assertSame('pending', $shipment->fresh()->status);
+        self::assertSame('processing', $order->fresh()->status);
+        self::assertNull($order->fresh()->shipped_at);
+        self::assertSame('pending', $shipment->events()->sole()->status);
+    }
+
+    public function test_authenticated_details_projects_hold_and_unknown_codes_for_manual_review_without_rebooking(): void
+    {
+        $this->connectedProvider();
+        [$holdOrder, $holdShipment] = $this->easyParcelShipment('ES-2608-HOLD-REVIEW', 'AWB-HOLD-REVIEW');
+        [$unknownOrder, $unknownShipment] = $this->easyParcelShipment('ES-2608-UNKNOWN-REVIEW', 'AWB-UNKNOWN-REVIEW');
+
+        Http::fake([
+            EasyParcelShipmentDetailsService::DETAILS_URL => function (Request $request) {
+                $shipmentNumber = $request->data()['shipment_number'] ?? null;
+                $response = match ($shipmentNumber) {
+                    'ES-2608-HOLD-REVIEW' => $this->shipmentDetailsResponse(
+                        shipmentNumber: $shipmentNumber,
+                        awb: 'AWB-HOLD-REVIEW',
+                        statusCode: 8,
+                        status: 'On Hold',
+                    ),
+                    'ES-2608-UNKNOWN-REVIEW' => $this->shipmentDetailsResponse(
+                        shipmentNumber: $shipmentNumber,
+                        awb: 'AWB-UNKNOWN-REVIEW',
+                        statusCode: 99,
+                        status: 'Provider review required',
+                    ),
+                    default => [],
+                };
+                data_set($response, 'data.0.order_number', 'EI-'.$shipmentNumber);
+
+                return $response === [] ? Http::response([], 500) : Http::response($response);
+            },
+        ]);
+
+        $service = app(EasyParcelShipmentDetailsService::class);
+        $service->reconcile($holdShipment);
+        $service->reconcile($unknownShipment);
+
+        self::assertSame('on_hold', $holdShipment->fresh()->status);
+        self::assertSame('provider_update', $unknownShipment->fresh()->status);
+        self::assertSame('processing', $holdOrder->fresh()->status);
+        self::assertSame('processing', $unknownOrder->fresh()->status);
+        self::assertNull($holdShipment->failedBookingRecovery()->first());
+        self::assertNull($unknownShipment->failedBookingRecovery()->first());
     }
 
     public function test_malformed_authenticated_details_status_cannot_mutate_metadata_or_lifecycle(): void

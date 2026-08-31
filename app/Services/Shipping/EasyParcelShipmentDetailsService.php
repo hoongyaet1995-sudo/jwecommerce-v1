@@ -269,7 +269,7 @@ final class EasyParcelShipmentDetailsService
     {
         $event = $this->statusEvent($details);
         if (($event['status'] === 'pending' && $details['awb_number'] === null)
-            || ! in_array($event['status'], ['pending', 'shipped', 'in_transit', 'delivered', 'failed_delivery', 'returned'], true)) {
+            || ! in_array($event['status'], ['pending', 'shipped', 'in_transit', 'delivered', 'failed_delivery', 'on_hold', 'cancelled', 'returned', 'provider_update'], true)) {
             return [];
         }
 

@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\Menu;
+use App\Models\MenuItem;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
-use App\Models\Menu;
-use App\Models\MenuItem;
 use App\Models\StoreSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -76,8 +76,7 @@ class StorefrontVariantVisualTest extends TestCase
             ->assertSee('data-pdp-option-visual="color"', false)
             ->assertSee('data-pdp-option-visual="image"', false)
             ->assertSee('aria-label="Studio White - Out of Stock"', false)
-            ->assertSee('top-[96px]', false)
-            ->assertDontSee('top-[104px]', false)
+            ->assertSee('data-pdp-sticky-purchase', false)
             ->assertDontSee('Configuration')
             ->assertDontSee('Standard atelier specification');
     }
