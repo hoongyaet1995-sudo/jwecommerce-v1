@@ -4,6 +4,7 @@ namespace App\Services\Shipping;
 
 use App\Models\Shipment;
 use App\Models\User;
+use Illuminate\Http\Client\Response as HttpResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -37,28 +38,25 @@ final class EasyParcelLabelService
         }
 
         try {
-            $providerResponse = Http::accept('application/pdf')
-                ->connectTimeout(5)
-                ->timeout(20)
-                ->withoutRedirecting()
-                ->withOptions([
-                    'on_headers' => function (ResponseInterface $response): void {
-                        $length = $response->getHeaderLine('Content-Length');
-
-                        if (is_numeric($length) && (int) $length > self::MAX_PDF_BYTES) {
-                            throw new \RuntimeException('EasyParcel AWB exceeds the download limit.');
-                        }
-                    },
-                    'progress' => function (float $downloadTotal, float $downloadedBytes): void {
-                        if ($downloadedBytes > self::MAX_PDF_BYTES) {
-                            throw new \RuntimeException('EasyParcel AWB exceeds the download limit.');
-                        }
-                    },
-                ])
-                ->get($url);
+            $providerResponse = $this->fetch($url);
         } catch (Throwable) {
             $this->logFailure($shipment, $actor, $download, 'provider_unavailable');
             abort(502, 'The EasyParcel AWB is temporarily unavailable.');
+        }
+
+        if ($this->isRedirect($providerResponse)) {
+            $redirectUrl = (string) $providerResponse->header('Location');
+            if (! $this->isAllowedRedirectUrl($redirectUrl)) {
+                $this->logFailure($shipment, $actor, $download, 'invalid_redirect');
+                abort(502, 'The EasyParcel AWB could not be verified.');
+            }
+
+            try {
+                $providerResponse = $this->fetch($redirectUrl);
+            } catch (Throwable) {
+                $this->logFailure($shipment, $actor, $download, 'provider_unavailable');
+                abort(502, 'The EasyParcel AWB is temporarily unavailable.');
+            }
         }
 
         $contentLength = $providerResponse->header('Content-Length');
@@ -104,6 +102,46 @@ final class EasyParcelLabelService
             && ! isset($parts['user'])
             && ! isset($parts['pass'])
             && ($host === 'easyparcel.com' || str_ends_with($host, '.easyparcel.com'));
+    }
+
+    private function isAllowedRedirectUrl(string $url): bool
+    {
+        $parts = parse_url($url);
+
+        return is_array($parts)
+            && ($parts['scheme'] ?? null) === 'https'
+            && strtolower((string) ($parts['host'] ?? '')) === 's3-ap-southeast-1.amazonaws.com'
+            && ! isset($parts['user'])
+            && ! isset($parts['pass'])
+            && (! isset($parts['port']) || (int) $parts['port'] === 443);
+    }
+
+    private function isRedirect(HttpResponse $response): bool
+    {
+        return in_array($response->status(), [301, 302, 303, 307, 308], true);
+    }
+
+    private function fetch(string $url): HttpResponse
+    {
+        return Http::accept('application/pdf')
+            ->connectTimeout(5)
+            ->timeout(20)
+            ->withoutRedirecting()
+            ->withOptions([
+                'on_headers' => function (ResponseInterface $response): void {
+                    $length = $response->getHeaderLine('Content-Length');
+
+                    if (is_numeric($length) && (int) $length > self::MAX_PDF_BYTES) {
+                        throw new \RuntimeException('EasyParcel AWB exceeds the download limit.');
+                    }
+                },
+                'progress' => function (float $downloadTotal, float $downloadedBytes): void {
+                    if ($downloadedBytes > self::MAX_PDF_BYTES) {
+                        throw new \RuntimeException('EasyParcel AWB exceeds the download limit.');
+                    }
+                },
+            ])
+            ->get($url);
     }
 
     private function filename(Shipment $shipment): string

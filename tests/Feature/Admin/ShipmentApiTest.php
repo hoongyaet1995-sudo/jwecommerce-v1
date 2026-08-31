@@ -72,6 +72,67 @@ class ShipmentApiTest extends TestCase
         });
     }
 
+    public function test_dispatch_staff_can_preview_an_official_pdf_after_one_allowlisted_easyparcel_s3_redirect(): void
+    {
+        Http::preventStrayRequests();
+        $shipment = $this->recoverableEasyParcelShipment(
+            $this->processingOrder(),
+            $this->connectedEasyParcelProvider(),
+            'ES-LABEL-REDIRECT-1001',
+        );
+        $shipment->forceFill([
+            'tracking_number' => 'TEST-AWB-REDIRECT-1001',
+            'label_path' => 'https://app.easyparcel.com/labels/redirect-token-1001',
+        ])->save();
+        $signedS3Url = 'https://s3-ap-southeast-1.amazonaws.com/easyparcel-labels/signed-token-1001.pdf';
+        $pdf = "%PDF-1.7\nRedirected EasyParcel AWB fixture\n%%EOF";
+        Http::fake([
+            'https://app.easyparcel.com/labels/redirect-token-1001' => Http::response('', 302, [
+                'Location' => $signedS3Url,
+            ]),
+            $signedS3Url => Http::response($pdf, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Length' => (string) strlen($pdf),
+            ]),
+        ]);
+
+        $this->actingAs($this->superAdmin())
+            ->get('/admin/api/shipping/shipments/'.$shipment->id.'/label')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertContent($pdf)
+            ->assertDontSee('redirect-token-1001')
+            ->assertDontSee('signed-token-1001');
+    }
+
+    public function test_easyparcel_label_rejects_a_second_redirect_after_the_allowlisted_s3_hop(): void
+    {
+        Http::preventStrayRequests();
+        $shipment = $this->recoverableEasyParcelShipment(
+            $this->processingOrder(),
+            $this->connectedEasyParcelProvider(),
+            'ES-LABEL-REDIRECT-1002',
+        );
+        $shipment->forceFill([
+            'tracking_number' => 'TEST-AWB-REDIRECT-1002',
+            'label_path' => 'https://app.easyparcel.com/labels/redirect-token-1002',
+        ])->save();
+        $signedS3Url = 'https://s3-ap-southeast-1.amazonaws.com/easyparcel-labels/signed-token-1002.pdf';
+        Http::fake([
+            'https://app.easyparcel.com/labels/redirect-token-1002' => Http::response('', 302, [
+                'Location' => $signedS3Url,
+            ]),
+            $signedS3Url => Http::response('', 302, [
+                'Location' => 'https://cdn.example.test/second-hop-token-1002',
+            ]),
+        ]);
+
+        $this->actingAs($this->superAdmin())
+            ->getJson('/admin/api/shipping/shipments/'.$shipment->id.'/label')
+            ->assertStatus(502)
+            ->assertJsonMissing(['redirect-token-1002', 'signed-token-1002', 'second-hop-token-1002']);
+    }
+
     public function test_easyparcel_label_requires_dispatch_permission_and_never_enters_the_shipment_list_payload(): void
     {
         $shipment = $this->recoverableEasyParcelShipment(
