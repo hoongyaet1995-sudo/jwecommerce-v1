@@ -67,8 +67,12 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   const [recoveryReason, setRecoveryReason] = useState('');
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [isConfirmingRecovery, setIsConfirmingRecovery] = useState(false);
+  const visibleParcels = parcels.filter((parcel) => !(
+    parcel.source === 'pending'
+    && parcel.easyParcelRecovery?.readyToRebook
+  ));
 
-  const refreshableEasyParcelCount = parcels.filter((parcel) => (
+  const refreshableEasyParcelCount = visibleParcels.filter((parcel) => (
     parcel.source === 'easyparcel'
     && parcel.status !== 'delivered'
     && parcel.status !== 'returned'
@@ -142,7 +146,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   };
 
   // Filter logic
-  const filteredParcels = parcels.filter(p => {
+  const filteredParcels = visibleParcels.filter(p => {
     // Status
     if (activeStatusFilter !== 'all') {
       if (activeStatusFilter === 'in_transit') {
@@ -241,12 +245,12 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
         {/* Status Tabs */}
         <div className="flex flex-wrap items-center gap-1.5 border-b border-neutral-200 dark:border-neutral-800 pb-3">
           {[
-            { id: 'all', label: 'All Shipments', count: parcels.length },
-            { id: 'pending', label: 'Pending AWB', count: parcels.filter(p => p.status === 'pending').length },
-            { id: 'ready_to_ship', label: 'Ready to Ship', count: parcels.filter(p => p.status === 'ready_to_ship').length },
-            { id: 'in_transit', label: 'In Transit', count: parcels.filter(p => p.status === 'shipped' || p.status === 'in_transit' || p.status === 'picked_up' || p.status === 'out_for_delivery').length },
-            { id: 'delivered', label: 'Delivered', count: parcels.filter(p => p.status === 'delivered').length },
-            { id: 'failed_delivery', label: 'Exceptions (NITC)', count: parcels.filter(p => ['failed_delivery', 'returned', 'booking_failed', 'cancelled', 'on_hold', 'provider_update'].includes(p.status)).length },
+            { id: 'all', label: 'All Shipments', count: visibleParcels.length },
+            { id: 'pending', label: 'Pending AWB', count: visibleParcels.filter(p => p.status === 'pending').length },
+            { id: 'ready_to_ship', label: 'Ready to Ship', count: visibleParcels.filter(p => p.status === 'ready_to_ship').length },
+            { id: 'in_transit', label: 'In Transit', count: visibleParcels.filter(p => p.status === 'shipped' || p.status === 'in_transit' || p.status === 'picked_up' || p.status === 'out_for_delivery').length },
+            { id: 'delivered', label: 'Delivered', count: visibleParcels.filter(p => p.status === 'delivered').length },
+            { id: 'failed_delivery', label: 'Exceptions (NITC)', count: visibleParcels.filter(p => ['failed_delivery', 'returned', 'booking_failed', 'cancelled', 'on_hold', 'provider_update'].includes(p.status)).length },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -381,6 +385,16 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
               ) : (
                 filteredParcels.map((parcel) => {
                   const isSelected = selectedParcelIds.includes(parcel.id);
+                  const rebookParcel = parcels.find((candidate) => (
+                    candidate.source === 'pending'
+                    && candidate.orderId === parcel.orderId
+                    && candidate.easyParcelRecovery?.recoveryId === parcel.easyParcelRecovery?.recoveryId
+                    && candidate.easyParcelRecovery?.readyToRebook
+                  ));
+                  const canRebook = parcel.source === 'easyparcel'
+                    && (parcel.status === 'cancelled' || parcel.status === 'booking_failed')
+                    && parcel.easyParcelRecovery?.readyToRebook
+                    && rebookParcel !== undefined;
 
                   return (
                     <tr 
@@ -511,9 +525,17 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                             </button>
                           )}
 
-                          {parcel.source === 'easyparcel' && parcel.status === 'cancelled' ? (
+                          {canRebook ? (
+                            <button
+                              onClick={() => onOpenEasyParcelBooking(rebookParcel)}
+                              className="px-2.5 py-1 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1"
+                            >
+                              <Zap className="w-3 h-3" />
+                              Rebook
+                            </button>
+                          ) : parcel.source === 'easyparcel' && (parcel.status === 'cancelled' || parcel.status === 'booking_failed') ? (
                             <span className="px-2.5 py-1 text-[11px] font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-lg">
-                              Cancelled AWB
+                              Recovery Review
                             </span>
                           ) : parcel.source === 'easyparcel' && !parcel.hasLabel ? (
                             <span className="px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
@@ -561,7 +583,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
         {/* Footer info bar */}
         <div className="px-4 py-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/40 flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
           <div>
-            Showing <strong>{filteredParcels.length}</strong> of <strong>{parcels.length}</strong> shipments
+            Showing <strong>{filteredParcels.length}</strong> of <strong>{visibleParcels.length}</strong> shipments
           </div>
           <div className="flex items-center gap-4">
             <span>Manual dispatch records do not create a provider waybill.</span>

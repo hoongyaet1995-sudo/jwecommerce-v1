@@ -737,31 +737,68 @@ describe('ShippingDashboard provider action binding', () => {
     expect(withLabel).toContain('title="Open Official EasyParcel AWB"');
   });
 
-  it('keeps a cancelled provider label out of the active print workflow', () => {
-    const html = renderToStaticMarkup(React.createElement(ShippingFulfillmentTab, {
-      parcels: [{
-        ...INITIAL_SHIPMENT_PARCELS[0],
-        id: 'cancelled-easyparcel-label',
-        source: 'easyparcel' as const,
-        trackingNumber: 'AWB-CANCELLED-LABEL',
-        hasLabel: true,
-        status: 'cancelled' as const,
-      }],
+  it.each(['cancelled', 'booking_failed'] as const)(
+    'opens a fresh rebook draft from a recoverable %s exception without exposing its old label action',
+    async (status) => {
+    const recovery = {
+      recoveryId: 'cancelled-recovery-1',
+      state: 'awaiting_replacement',
+      cancellationState: 'success' as const,
+      cancellationMessage: 'EasyParcel cancellation confirmed.',
+      cancellationConfirmed: true,
+      replacementOrderId: 'cancelled-order-1',
+      readyToRebook: true,
+    };
+    const rebookParcel = {
+      ...INITIAL_SHIPMENT_PARCELS[0],
+      id: 'pending-order-cancelled-order-1',
+      orderId: 'cancelled-order-1',
+      source: 'pending' as const,
+      trackingNumber: '',
+      hasLabel: false,
+      status: 'pending' as const,
+      easyParcelRecovery: recovery,
+    };
+    const cancelled = {
+      ...INITIAL_SHIPMENT_PARCELS[0],
+      id: `${status}-easyparcel-label`,
+      orderId: 'cancelled-order-1',
+      source: 'easyparcel' as const,
+      trackingNumber: 'AWB-CANCELLED-LABEL',
+      hasLabel: true,
+      status,
+      easyParcelRecovery: recovery,
+    };
+    const onOpenEasyParcelBooking = vi.fn();
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    mountedRoots.push({ root, host });
+
+    await act(async () => root.render(React.createElement(ShippingFulfillmentTab, {
+      parcels: [cancelled, rebookParcel],
       onGenerateAWB: vi.fn(),
       onBatchGenerateAWB: vi.fn(),
       onOpenAWBModal: vi.fn(),
       onOpenTrackingModal: vi.fn(),
       onOpenPickupModal: vi.fn(),
       onUpdateStatus: vi.fn(),
-      onOpenEasyParcelBooking: vi.fn(),
+      onOpenEasyParcelBooking,
       onRefreshEasyParcelStatus: vi.fn(),
       onRefreshAllEasyParcelStatuses: vi.fn(),
       onConfirmEasyParcelProviderFailure: vi.fn(),
-    }));
+    })));
 
-    expect(html).toContain('Cancelled AWB');
-    expect(html).not.toContain('title="Open Official EasyParcel AWB"');
-  });
+    expect(host.textContent).toContain('All Shipments1');
+    expect(host.textContent).toContain('Pending AWB0');
+    expect(host.textContent).not.toContain('Cancelled AWB');
+    expect(host.innerHTML).not.toContain('title="Open Official EasyParcel AWB"');
+    const rebook = Array.from(host.querySelectorAll('button'))
+      .find(button => button.textContent?.trim() === 'Rebook') as HTMLButtonElement;
+    await act(async () => rebook.click());
+    expect(onOpenEasyParcelBooking).toHaveBeenCalledWith(rebookParcel);
+    },
+  );
 
   it('counts canonical shipped parcels in the ShippingOverview in-transit metric', () => {
     const html = renderToStaticMarkup(React.createElement(ShippingOverviewTab, {
