@@ -6,6 +6,13 @@
     <title>{!! $dispatch->rendered_subject !!}</title>
 </head>
 <body style="margin:0;background:#f5f5f4;color:#1c1917;font-family:Arial,Helvetica,sans-serif;">
+    @php
+        $ownedTrackingUrl = url('/order-tracking');
+        $frozenTrackingUrl = data_get($dispatch->variable_snapshot, 'tracking_url');
+        $trackingUrl = is_string($frozenTrackingUrl) && hash_equals($ownedTrackingUrl, $frozenTrackingUrl)
+            ? $frozenTrackingUrl
+            : $ownedTrackingUrl;
+    @endphp
     <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
         {!! $dispatch->rendered_preheader !!}
     </div>
@@ -35,8 +42,8 @@
                             @endif
                             <p style="margin:28px 0 0;font-size:14px;line-height:1.6;color:#57534e;">
                                 View your order status securely:<br>
-                                <a href="{!! data_get($dispatch->variable_snapshot, 'tracking_url', '') !!}" style="color:#1d4ed8;text-decoration:underline;">
-                                    {!! data_get($dispatch->variable_snapshot, 'tracking_url', '') !!}
+                                <a href="{{ $trackingUrl }}" style="color:#1d4ed8;text-decoration:underline;">
+                                    {{ $trackingUrl }}
                                 </a>
                             </p>
                         </td>

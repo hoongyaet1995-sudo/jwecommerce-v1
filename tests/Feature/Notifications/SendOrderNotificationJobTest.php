@@ -214,6 +214,33 @@ class SendOrderNotificationJobTest extends TestCase
         $this->assertStringNotContainsString('token', $html);
         $this->assertStringNotContainsString('proof-storage', $html);
     }
+
+    public function test_mail_tracking_anchor_uses_safe_owned_fallback_for_missing_or_corrupt_snapshots(): void
+    {
+        foreach ([
+            'missing' => ['shop_name' => 'JW Studio'],
+            'corrupt' => [
+                'shop_name' => 'JW Studio',
+                'tracking_url' => 'javascript:alert(1)\" onclick=\"steal()//tracking.easyparcel.com',
+            ],
+        ] as $snapshot) {
+            $dispatch = NotificationDispatch::factory()->create([
+                'variable_snapshot' => $snapshot,
+                'rendered_cta_text' => '',
+                'rendered_cta_url' => '',
+            ]);
+
+            $html = (new OrderStatusNotificationMail($dispatch))->render();
+            $expectedHref = 'href="'.e(url('/order-tracking')).'"';
+
+            $this->assertStringContainsString($expectedHref, $html);
+            $this->assertStringContainsString(e(url('/order-tracking')), $html);
+            $this->assertStringNotContainsString('href=""', $html);
+            $this->assertStringNotContainsString('javascript:', $html);
+            $this->assertStringNotContainsString('onclick=', $html);
+            $this->assertStringNotContainsString('easyparcel.com', $html);
+        }
+    }
 }
 
 final class ThrowingMailer implements MailerContract

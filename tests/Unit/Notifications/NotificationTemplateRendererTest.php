@@ -104,7 +104,31 @@ class NotificationTemplateRendererTest extends TestCase
             'body' => ['email_body', 'Private link: https://easyparcel.com/private?token=secret'],
             'cta text' => ['email_cta_text', 'https://easyparcel.com/private'],
             'cta URL subdomain' => ['email_cta_url', 'https://api.easyparcel.com/private'],
+            'protocol relative' => ['email_body', 'Private link: //tracking.easyparcel.com/private'],
+            'entity obfuscated' => ['email_heading', 'Private link: easyparcel&#46;com/private'],
+            'hex entity obfuscated' => ['email_preheader', 'Private link: easyparcel&#x2e;com/private'],
+            'nested entity obfuscated' => ['email_body', 'Private link: easyparcel&amp;#46;com/private'],
+            'percent obfuscated' => ['email_subject', 'Private link: easyparcel%252Ecom/private'],
+            'bare domain' => ['email_cta_text', 'Private link: easyparcel.com/private'],
         ];
+    }
+
+    public function test_renderer_escapes_static_template_html_and_variable_html_exactly_once(): void
+    {
+        $rendered = $this->renderer->render($this->template([
+            'email_body' => "<a href=\"https://example.test\" onclick=\"alert(1)\">Open</a>\n<img src=x onerror=alert(2)><script>alert(3)</script> {customer_name}",
+        ]), [
+            'customer_name' => '<strong>A&B</strong>',
+        ]);
+
+        $this->assertSame(
+            "&lt;a href=&quot;https://example.test&quot; onclick=&quot;alert(1)&quot;&gt;Open&lt;/a&gt;\n&lt;img src=x onerror=alert(2)&gt;&lt;script&gt;alert(3)&lt;/script&gt; &lt;strong&gt;A&amp;B&lt;/strong&gt;",
+            $rendered->body,
+        );
+        $this->assertStringNotContainsString('&amp;lt;strong&amp;gt;', $rendered->body);
+        $this->assertStringNotContainsString('<script>', $rendered->body);
+        $this->assertStringNotContainsString('<img', $rendered->body);
+        $this->assertStringNotContainsString('<a ', $rendered->body);
     }
 
     public function test_renderer_rejects_an_empty_referenced_variable(): void

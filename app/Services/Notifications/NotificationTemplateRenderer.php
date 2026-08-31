@@ -31,11 +31,11 @@ class NotificationTemplateRenderer
         }
 
         $renderedFields = [
-            'email_subject' => $this->replaceTokens($fields['email_subject'], $escapedVariables),
-            'email_preheader' => $this->replaceTokens($fields['email_preheader'], $escapedVariables),
-            'email_heading' => $this->replaceTokens($fields['email_heading'], $escapedVariables),
-            'email_body' => $this->replaceTokens($fields['email_body'], $escapedVariables),
-            'email_cta_text' => $this->replaceTokens($fields['email_cta_text'], $escapedVariables),
+            'email_subject' => $this->renderEscapedText($fields['email_subject'], $variables),
+            'email_preheader' => $this->renderEscapedText($fields['email_preheader'], $variables),
+            'email_heading' => $this->renderEscapedText($fields['email_heading'], $variables),
+            'email_body' => $this->renderEscapedText($fields['email_body'], $variables),
+            'email_cta_text' => $this->renderEscapedText($fields['email_cta_text'], $variables),
             'email_cta_url' => e($this->validatedCtaUrl($this->replaceRawTokens($fields['email_cta_url'], $variables))),
         ];
         $this->validateNoPrivateProviderUrls($renderedFields);
@@ -81,10 +81,20 @@ class NotificationTemplateRenderer
         }
     }
 
-    /** @param array<string, string> $variables */
-    private function replaceTokens(string $value, array $variables): string
+    /** @param array<string, mixed> $variables */
+    private function renderEscapedText(string $value, array $variables): string
     {
-        return preg_replace_callback('/\{([a-z0-9_]+)\}/', static fn (array $matches): string => $variables[$matches[1]], $value) ?? $value;
+        preg_match_all('/\{([a-z0-9_]+)\}/', $value, $matches, PREG_OFFSET_CAPTURE);
+
+        $rendered = '';
+        $offset = 0;
+        foreach ($matches[0] as $index => [$token, $position]) {
+            $rendered .= e(substr($value, $offset, $position - $offset));
+            $rendered .= e((string) $variables[$matches[1][$index][0]]);
+            $offset = $position + strlen($token);
+        }
+
+        return $rendered.e(substr($value, $offset));
     }
 
     /** @param array<string, mixed> $variables */
@@ -116,7 +126,9 @@ class NotificationTemplateRenderer
         $errors = [];
 
         foreach ($fields as $field => $value) {
-            if (preg_match('~https?://(?:[a-z0-9-]+\.)*easyparcel\.com(?=[/:?#\s<>"\']|$)~i', $value) === 1) {
+            $normalized = $this->normalizeForProviderDetection($value);
+
+            if (preg_match('~(?<![a-z0-9-])(?:[a-z0-9-]+\.)*easyparcel\.com(?=[/:?#\s<>"\']|$)~i', $normalized) === 1) {
                 $errors[$field][] = 'Customer notifications cannot contain EasyParcel provider URLs.';
             }
         }
@@ -124,6 +136,26 @@ class NotificationTemplateRenderer
         if ($errors !== []) {
             throw ValidationException::withMessages($errors);
         }
+    }
+
+    private function normalizeForProviderDetection(string $value): string
+    {
+        $normalized = $value;
+
+        for ($pass = 0; $pass < 5; $pass++) {
+            $decoded = html_entity_decode($normalized, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $decoded = rawurldecode($decoded);
+
+            if ($decoded === $normalized) {
+                break;
+            }
+
+            $normalized = $decoded;
+        }
+
+        $normalized = strtolower(str_replace('\\', '/', $normalized));
+
+        return preg_replace('~/+~', '/', $normalized) ?? $normalized;
     }
 
     private function isApplicationRelativePath(string $url): bool
