@@ -58,6 +58,11 @@ class Order extends Model
         return $this->hasMany(ShipmentQuote::class);
     }
 
+    public function notificationDispatches(): HasMany
+    {
+        return $this->hasMany(NotificationDispatch::class);
+    }
+
     public function easyParcelShipmentRecoveries(): HasMany
     {
         return $this->hasMany(EasyParcelShipmentRecovery::class)->latest('id');
