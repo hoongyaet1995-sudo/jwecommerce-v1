@@ -33,6 +33,12 @@
                                     </a>
                                 </p>
                             @endif
+                            <p style="margin:28px 0 0;font-size:14px;line-height:1.6;color:#57534e;">
+                                View your order status securely:<br>
+                                <a href="{!! data_get($dispatch->variable_snapshot, 'tracking_url', '') !!}" style="color:#1d4ed8;text-decoration:underline;">
+                                    {!! data_get($dispatch->variable_snapshot, 'tracking_url', '') !!}
+                                </a>
+                            </p>
                         </td>
                     </tr>
                 </table>

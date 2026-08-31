@@ -41,6 +41,62 @@ class SendOrderNotificationJobTest extends TestCase
         $this->assertSame(1, $dispatch->attempt_count);
         $this->assertNotNull($dispatch->sent_at);
         $this->assertNull($dispatch->last_error_code);
+        $this->assertNull($dispatch->delivery_lease_token);
+        $this->assertNull($dispatch->delivery_lease_expires_at);
+    }
+
+    public function test_two_immediate_delivery_claims_have_only_one_owner(): void
+    {
+        $dispatch = NotificationDispatch::factory()->create();
+
+        $first = NotificationDispatch::claimForDelivery($dispatch->id);
+        $second = NotificationDispatch::claimForDelivery($dispatch->id);
+
+        $this->assertNotNull($first);
+        $this->assertNull($second);
+        $this->assertSame(NotificationDispatch::STATE_SENDING, $first->state);
+        $this->assertNotNull($first->delivery_lease_token);
+        $this->assertTrue($first->delivery_lease_expires_at->isFuture());
+        $this->assertSame(1, $dispatch->refresh()->attempt_count);
+    }
+
+    public function test_fresh_sending_claim_cannot_send(): void
+    {
+        Mail::fake();
+        $dispatch = NotificationDispatch::factory()->create([
+            'state' => NotificationDispatch::STATE_SENDING,
+            'attempt_count' => 1,
+            'delivery_lease_token' => '0ad9805a-3ccd-4bb0-9404-3d8860e96530',
+            'delivery_lease_expires_at' => now()->addMinute(),
+        ]);
+
+        (new SendOrderNotificationJob($dispatch->id))->handle(app(MailerContract::class));
+
+        Mail::assertNothingSent();
+        $dispatch->refresh();
+        $this->assertSame(NotificationDispatch::STATE_SENDING, $dispatch->state);
+        $this->assertSame(1, $dispatch->attempt_count);
+        $this->assertSame('0ad9805a-3ccd-4bb0-9404-3d8860e96530', $dispatch->delivery_lease_token);
+    }
+
+    public function test_stale_sending_claim_is_reclaimed_and_sent_once(): void
+    {
+        Mail::fake();
+        $dispatch = NotificationDispatch::factory()->create([
+            'state' => NotificationDispatch::STATE_SENDING,
+            'attempt_count' => 1,
+            'delivery_lease_token' => '7397c1a4-6a0e-4698-8f89-7798925dd628',
+            'delivery_lease_expires_at' => now()->subSecond(),
+        ]);
+
+        (new SendOrderNotificationJob($dispatch->id))->handle(app(MailerContract::class));
+
+        Mail::assertSent(OrderStatusNotificationMail::class, 1);
+        $dispatch->refresh();
+        $this->assertSame(NotificationDispatch::STATE_SENT, $dispatch->state);
+        $this->assertSame(2, $dispatch->attempt_count);
+        $this->assertNull($dispatch->delivery_lease_token);
+        $this->assertNull($dispatch->delivery_lease_expires_at);
     }
 
     public function test_sent_dispatch_is_an_idempotent_no_op(): void
@@ -82,6 +138,8 @@ class SendOrderNotificationJobTest extends TestCase
         $this->assertSame(1, $dispatch->attempt_count);
         $this->assertSame('transport', $dispatch->last_error_code);
         $this->assertNotNull($dispatch->failed_at);
+        $this->assertNull($dispatch->delivery_lease_token);
+        $this->assertNull($dispatch->delivery_lease_expires_at);
         $this->assertStringNotContainsString('private-password', json_encode($dispatch->getAttributes(), JSON_THROW_ON_ERROR));
     }
 
@@ -110,6 +168,7 @@ class SendOrderNotificationJobTest extends TestCase
         $job = new SendOrderNotificationJob(123);
 
         $this->assertSame(4, $job->tries);
+        $this->assertSame(45, $job->timeout);
         $this->assertSame([60, 300, 900], $job->backoff());
     }
 

@@ -20,6 +20,8 @@ class SendOrderNotificationJob implements ShouldQueue
 
     public int $tries = 4;
 
+    public int $timeout = 45;
+
     public function __construct(public readonly int $dispatchId) {}
 
     /** @return list<int> */
@@ -30,16 +32,13 @@ class SendOrderNotificationJob implements ShouldQueue
 
     public function handle(Mailer $mailer): void
     {
-        $dispatch = NotificationDispatch::query()->findOrFail($this->dispatchId);
+        $dispatch = NotificationDispatch::claimForDelivery($this->dispatchId);
 
-        if ($dispatch->state === NotificationDispatch::STATE_SENT) {
+        if (! $dispatch instanceof NotificationDispatch) {
             return;
         }
 
-        $dispatch->forceFill([
-            'state' => NotificationDispatch::STATE_SENDING,
-            'attempt_count' => $dispatch->attempt_count + 1,
-        ])->save();
+        $leaseToken = (string) $dispatch->delivery_lease_token;
 
         try {
             $recipient = new Address(
@@ -47,20 +46,33 @@ class SendOrderNotificationJob implements ShouldQueue
                 $dispatch->recipient_name ?: '',
             );
             $mailer->to($recipient)->send(new OrderStatusNotificationMail($dispatch));
-            $dispatch->forceFill([
+            $this->finishClaim($dispatch, $leaseToken, [
                 'state' => NotificationDispatch::STATE_SENT,
                 'sent_at' => now(),
                 'last_error_code' => null,
-            ])->save();
+            ]);
         } catch (Throwable $error) {
-            $dispatch->forceFill([
+            $this->finishClaim($dispatch, $leaseToken, [
                 'state' => NotificationDispatch::STATE_FAILED,
                 'failed_at' => now(),
                 'last_error_code' => $this->safeErrorCode($error),
-            ])->save();
+            ]);
 
             throw $error;
         }
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function finishClaim(NotificationDispatch $dispatch, string $leaseToken, array $attributes): void
+    {
+        NotificationDispatch::query()
+            ->whereKey($dispatch->id)
+            ->where('state', NotificationDispatch::STATE_SENDING)
+            ->where('delivery_lease_token', $leaseToken)
+            ->update(array_merge($attributes, [
+                'delivery_lease_token' => null,
+                'delivery_lease_expires_at' => null,
+            ]));
     }
 
     private function safeErrorCode(Throwable $error): string

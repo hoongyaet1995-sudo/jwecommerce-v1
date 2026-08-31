@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class NotificationDispatch extends Model
@@ -30,6 +31,8 @@ class NotificationDispatch extends Model
 
     public const SOURCE_TEST = 'test';
 
+    private const DELIVERY_LEASE_SECONDS = 60;
+
     protected $fillable = [
         'public_id',
         'order_id',
@@ -52,6 +55,8 @@ class NotificationDispatch extends Model
         'state',
         'source',
         'attempt_count',
+        'delivery_lease_token',
+        'delivery_lease_expires_at',
         'queued_at',
         'sent_at',
         'failed_at',
@@ -74,10 +79,44 @@ class NotificationDispatch extends Model
             'variable_snapshot' => 'array',
             'template_version' => 'integer',
             'attempt_count' => 'integer',
+            'delivery_lease_expires_at' => 'datetime',
             'queued_at' => 'datetime',
             'sent_at' => 'datetime',
             'failed_at' => 'datetime',
         ];
+    }
+
+    public static function claimForDelivery(int $dispatchId): ?self
+    {
+        $now = now();
+        $leaseToken = (string) Str::uuid();
+        $claimed = self::query()
+            ->whereKey($dispatchId)
+            ->where(function ($query) use ($now): void {
+                $query->whereIn('state', [self::STATE_QUEUED, self::STATE_FAILED])
+                    ->orWhere(function ($query) use ($now): void {
+                        $query->where('state', self::STATE_SENDING)
+                            ->where(function ($query) use ($now): void {
+                                $query->whereNull('delivery_lease_expires_at')
+                                    ->orWhere('delivery_lease_expires_at', '<=', $now);
+                            });
+                    });
+            })
+            ->update([
+                'state' => self::STATE_SENDING,
+                'attempt_count' => DB::raw('attempt_count + 1'),
+                'delivery_lease_token' => $leaseToken,
+                'delivery_lease_expires_at' => $now->copy()->addSeconds(self::DELIVERY_LEASE_SECONDS),
+            ]);
+
+        if ($claimed !== 1) {
+            return null;
+        }
+
+        return self::query()
+            ->whereKey($dispatchId)
+            ->where('delivery_lease_token', $leaseToken)
+            ->first();
     }
 
     public function order(): BelongsTo

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Notifications;
 
 use App\Jobs\SendOrderNotificationJob;
+use App\Mail\OrderStatusNotificationMail;
 use App\Models\Customer;
 use App\Models\NotificationTemplate;
 use App\Models\Order;
@@ -12,6 +13,7 @@ use App\Services\Notifications\OrderNotificationMilestoneService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -168,6 +170,49 @@ class OrderNotificationMilestoneTest extends TestCase
         $this->assertNull($dormant);
         $this->assertDatabaseCount('notification_dispatches', 0);
         Queue::assertNothingPushed();
+    }
+
+    public function test_automatic_dispatch_rejects_literal_easyparcel_customer_links(): void
+    {
+        Queue::fake();
+        NotificationTemplate::query()
+            ->where('event_key', 'payment_verified')
+            ->update([
+                'email_body' => 'Private status: https://tracking.easyparcel.com/order/secret?token=provider-token',
+            ]);
+
+        try {
+            $this->service->record($this->order, 'payment_verified', 'order_payment', 41);
+            $this->fail('The automatic dispatch accepted a private EasyParcel URL.');
+        } catch (ValidationException) {
+            $this->addToAssertionCount(1);
+        }
+
+        $this->assertDatabaseCount('notification_dispatches', 0);
+        Queue::assertNothingPushed();
+    }
+
+    public function test_automatic_mail_without_template_cta_always_contains_frozen_jw_tracking_url(): void
+    {
+        Queue::fake();
+        NotificationTemplate::query()
+            ->where('event_key', 'payment_verified')
+            ->update([
+                'email_body' => 'Your payment is verified.',
+                'email_cta_text' => '',
+                'email_cta_url' => '',
+            ]);
+
+        $dispatch = $this->service->record($this->order, 'payment_verified', 'order_payment', 41);
+        $html = (new OrderStatusNotificationMail($dispatch))->render();
+
+        $this->assertSame(url('/order-tracking'), $dispatch->variable_snapshot['tracking_url']);
+        $this->assertStringContainsString(url('/order-tracking'), $html);
+        $this->assertStringNotContainsString('easyparcel.com', $html);
+        $this->assertStringNotContainsString('provider-token', $html);
+        $this->assertStringNotContainsString('label_path', $html);
+        $this->assertStringNotContainsString('proof_path', $html);
+        Queue::assertPushed(SendOrderNotificationJob::class, 1);
     }
 
     private function template(string $eventKey, array $changes = []): NotificationTemplate

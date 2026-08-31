@@ -33,6 +33,8 @@ class NotificationDispatchFactory extends Factory
             'state' => NotificationDispatch::STATE_QUEUED,
             'source' => NotificationDispatch::SOURCE_TEST,
             'attempt_count' => 0,
+            'delivery_lease_token' => null,
+            'delivery_lease_expires_at' => null,
             'queued_at' => now(),
             'sent_at' => null,
             'failed_at' => null,

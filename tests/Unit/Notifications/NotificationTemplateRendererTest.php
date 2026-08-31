@@ -85,6 +85,28 @@ class NotificationTemplateRendererTest extends TestCase
         ];
     }
 
+    #[DataProvider('easyParcelVisibleFieldProvider')]
+    public function test_renderer_rejects_easyparcel_urls_in_every_customer_visible_field(string $field, string $url): void
+    {
+        $this->expectException(ValidationException::class);
+
+        $this->renderer->render($this->template([
+            $field => $url,
+        ]), []);
+    }
+
+    public static function easyParcelVisibleFieldProvider(): array
+    {
+        return [
+            'subject' => ['email_subject', 'Update at https://easyparcel.com/private'],
+            'preheader subdomain' => ['email_preheader', 'Update at https://tracking.easyparcel.com/private'],
+            'heading' => ['email_heading', 'https://www.easyparcel.com/private'],
+            'body' => ['email_body', 'Private link: https://easyparcel.com/private?token=secret'],
+            'cta text' => ['email_cta_text', 'https://easyparcel.com/private'],
+            'cta URL subdomain' => ['email_cta_url', 'https://api.easyparcel.com/private'],
+        ];
+    }
+
     public function test_renderer_rejects_an_empty_referenced_variable(): void
     {
         $this->expectException(ValidationException::class);

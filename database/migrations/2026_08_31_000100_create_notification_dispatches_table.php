@@ -31,6 +31,8 @@ return new class extends Migration
             $table->string('state', 32)->index();
             $table->string('source', 32)->index();
             $table->unsignedInteger('attempt_count')->default(0);
+            $table->uuid('delivery_lease_token')->nullable();
+            $table->timestamp('delivery_lease_expires_at')->nullable();
             $table->timestamp('queued_at')->nullable();
             $table->timestamp('sent_at')->nullable();
             $table->timestamp('failed_at')->nullable();
@@ -42,6 +44,7 @@ return new class extends Migration
 
             $table->index(['order_id', 'created_at']);
             $table->index(['state', 'queued_at']);
+            $table->index(['state', 'delivery_lease_expires_at']);
             $table->index(['event_key', 'channel']);
         });
     }

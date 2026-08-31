@@ -30,13 +30,23 @@ class NotificationTemplateRenderer
             $escapedVariables[$name] = e((string) $value);
         }
 
+        $renderedFields = [
+            'email_subject' => $this->replaceTokens($fields['email_subject'], $escapedVariables),
+            'email_preheader' => $this->replaceTokens($fields['email_preheader'], $escapedVariables),
+            'email_heading' => $this->replaceTokens($fields['email_heading'], $escapedVariables),
+            'email_body' => $this->replaceTokens($fields['email_body'], $escapedVariables),
+            'email_cta_text' => $this->replaceTokens($fields['email_cta_text'], $escapedVariables),
+            'email_cta_url' => e($this->validatedCtaUrl($this->replaceRawTokens($fields['email_cta_url'], $variables))),
+        ];
+        $this->validateNoPrivateProviderUrls($renderedFields);
+
         return new RenderedNotification(
-            subject: $this->replaceTokens($fields['email_subject'], $escapedVariables),
-            preheader: $this->replaceTokens($fields['email_preheader'], $escapedVariables),
-            heading: $this->replaceTokens($fields['email_heading'], $escapedVariables),
-            body: $this->replaceTokens($fields['email_body'], $escapedVariables),
-            ctaText: $this->replaceTokens($fields['email_cta_text'], $escapedVariables),
-            ctaUrl: e($this->validatedCtaUrl($this->replaceRawTokens($fields['email_cta_url'], $variables))),
+            subject: $renderedFields['email_subject'],
+            preheader: $renderedFields['email_preheader'],
+            heading: $renderedFields['email_heading'],
+            body: $renderedFields['email_body'],
+            ctaText: $renderedFields['email_cta_text'],
+            ctaUrl: $renderedFields['email_cta_url'],
             variables: $escapedVariables,
         );
     }
@@ -87,6 +97,10 @@ class NotificationTemplateRenderer
     {
         $url = trim($url);
 
+        if ($url === '') {
+            return '';
+        }
+
         if ($url === url('/order-tracking') || $this->isApplicationRelativePath($url) || $this->isSafeHttpsUrl($url) || $this->isAllowedMailtoUrl($url)) {
             return $url;
         }
@@ -94,6 +108,22 @@ class NotificationTemplateRenderer
         throw ValidationException::withMessages([
             'email_cta_url' => 'The email CTA URL must be an application path, a safe HTTPS URL, or an allowlisted mailto address.',
         ]);
+    }
+
+    /** @param array<string, string> $fields */
+    private function validateNoPrivateProviderUrls(array $fields): void
+    {
+        $errors = [];
+
+        foreach ($fields as $field => $value) {
+            if (preg_match('~https?://(?:[a-z0-9-]+\.)*easyparcel\.com(?=[/:?#\s<>"\']|$)~i', $value) === 1) {
+                $errors[$field][] = 'Customer notifications cannot contain EasyParcel provider URLs.';
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
     }
 
     private function isApplicationRelativePath(string $url): bool
