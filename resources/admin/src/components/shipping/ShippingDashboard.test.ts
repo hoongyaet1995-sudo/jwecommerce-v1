@@ -199,6 +199,47 @@ describe('ShippingDashboard provider action binding', () => {
       name: 'JW Studio Dispatch',
       address_1: '18 Test Industry Road',
     }));
+    expect(host.querySelector('input[name="address_1"]')).toBeNull();
+  });
+
+  it('keeps a ready sender profile collapsed until the merchant chooses to edit it', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    mountedRoots.push({ root, host });
+
+    act(() => root.render(React.createElement(EasyParcelOAuthModal, {
+      isOpen: true,
+      provider: {
+        provider: 'easyparcel',
+        environment: 'production',
+        configured: true,
+        enabled: true,
+        connectionState: 'connected',
+        lastVerifiedAt: '2026-08-31T00:00:00+00:00',
+        lastError: null,
+        senderProfileComplete: true,
+        senderProfile: {
+          name: 'JW Studio Dispatch',
+          city: 'Subang Jaya',
+          subdivision_code: 'MY-10',
+        },
+      },
+      webhookCallbackUrl: 'https://www.ramarama.com/webhooks/easyparcel',
+      onClose: () => undefined,
+      onAuthorize: () => undefined,
+      onDisconnect: async () => undefined,
+    })));
+
+    expect(host.textContent).toContain('JW Studio Dispatch');
+    expect(host.textContent).toContain('Subang Jaya, MY-10');
+    expect(host.querySelector('input[name="address_1"]')).toBeNull();
+
+    const edit = Array.from(host.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('Edit Sender Profile')) as HTMLButtonElement;
+    act(() => edit.click());
+
+    expect(host.querySelector('input[name="address_1"]')).not.toBeNull();
   });
 
   it('binds the existing EasyParcel provider and fulfillment actions from AdminContext before passing them to source UI controls', () => {
