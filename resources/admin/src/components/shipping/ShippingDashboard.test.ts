@@ -147,6 +147,60 @@ describe('ShippingDashboard provider action binding', () => {
     expect(onAuthorize).toHaveBeenCalledWith('production');
   });
 
+  it('lets a connected merchant edit and save the sender profile independently from OAuth', async () => {
+    const onSaveSenderProfile = vi.fn().mockResolvedValue(undefined);
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    mountedRoots.push({ root, host });
+
+    act(() => root.render(React.createElement(EasyParcelOAuthModal, {
+      isOpen: true,
+      provider: {
+        provider: 'easyparcel',
+        environment: 'sandbox',
+        configured: true,
+        enabled: true,
+        connectionState: 'connected',
+        lastVerifiedAt: '2026-08-31T00:00:00+00:00',
+        lastError: null,
+        senderProfileComplete: false,
+        senderProfile: {
+          name: 'JW Studio Dispatch',
+          phone_number_country_code: 'MY',
+          phone_number: '0142244200',
+          postcode: '47600',
+          city: 'Subang Jaya',
+          subdivision_code: 'MY-10',
+          country_code: 'MY',
+        },
+      },
+      webhookCallbackUrl: 'https://www.ramarama.com/webhooks/easyparcel',
+      onClose: () => undefined,
+      onAuthorize: () => undefined,
+      onDisconnect: async () => undefined,
+      onSaveSenderProfile,
+    })));
+
+    expect(host.textContent).toContain('Sender Profile');
+    expect(host.textContent).toContain('Required before quotes and bookings');
+    const address = host.querySelector('input[name="address_1"]') as HTMLInputElement;
+    expect(address).not.toBeNull();
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(address, '18 Test Industry Road');
+      address.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const save = Array.from(host.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('Save Sender Profile')) as HTMLButtonElement;
+
+    await act(async () => save.click());
+
+    expect(onSaveSenderProfile).toHaveBeenCalledWith('sandbox', expect.objectContaining({
+      name: 'JW Studio Dispatch',
+      address_1: '18 Test Industry Road',
+    }));
+  });
+
   it('binds the existing EasyParcel provider and fulfillment actions from AdminContext before passing them to source UI controls', () => {
     expect(source).toContain('saveCourierConfig,');
     expect(source).toContain('generateShipmentAWB,');

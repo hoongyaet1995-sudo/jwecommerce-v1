@@ -106,6 +106,25 @@ class EasyParcelFulfillmentApiTest extends TestCase
             ->assertCreated();
     }
 
+    public function test_connected_oauth_without_a_sender_profile_blocks_quotes_before_any_provider_request(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedProvider();
+        $credential = $provider->credential()->sole();
+        $credentials = $credential->credentials;
+        unset($credentials['sender_profile']);
+        $credential->forceFill(['credentials' => $credentials])->save();
+
+        $this->actingAs($this->superAdmin())
+            ->postJson('/admin/api/shipping/orders/'.$this->processingOrder()->id.'/easyparcel/quotes', [
+                'package' => $this->actualPackage(),
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'The EasyParcel sender profile is not configured.');
+
+        Http::assertNothingSent();
+    }
+
     public function test_booking_refreshes_an_expiring_provider_session_before_claiming_the_quote(): void
     {
         Http::preventStrayRequests();

@@ -9,12 +9,28 @@ export interface EasyParcelProviderStatus {
   connectionState: 'unconfigured' | 'unverified' | 'connected' | 'failed';
   lastVerifiedAt: string | null;
   lastError: string | null;
+  senderProfile?: EasyParcelSenderProfile;
+  senderProfileComplete?: boolean;
   environments?: Partial<Record<'sandbox' | 'production', {
     authorizationEnabled: boolean;
     configured: boolean;
     connectionState: 'unconfigured' | 'unverified' | 'connected' | 'failed';
     enabled: boolean;
   }>>;
+}
+
+export interface EasyParcelSenderProfile {
+  name?: string;
+  company?: string;
+  phone_number_country_code?: string;
+  phone_number?: string;
+  email?: string;
+  address_1?: string;
+  address_2?: string;
+  postcode?: string;
+  city?: string;
+  subdivision_code?: string;
+  country_code?: string;
 }
 
 type ProviderResponse = { data: EasyParcelProviderStatus };
@@ -54,6 +70,17 @@ export const disconnectEasyParcelStore = async (
   headers: jsonHeaders(bootstrap),
   body: JSON.stringify({ environment }),
 }), 'EasyParcel store could not be disconnected.');
+
+export const saveEasyParcelSenderProfile = async (
+  bootstrap: LaravelAdminBootstrap,
+  environment: 'sandbox' | 'production',
+  senderProfile: EasyParcelSenderProfile,
+): Promise<EasyParcelProviderStatus> => responseData(await window.fetch(providerUrl(bootstrap), {
+  method: 'PUT',
+  credentials: 'same-origin',
+  headers: jsonHeaders(bootstrap),
+  body: JSON.stringify({ environment, senderProfile }),
+}), 'EasyParcel sender profile could not be saved.');
 
 export const startEasyParcelAuthorization = (
   bootstrap: LaravelAdminBootstrap,

@@ -9,8 +9,8 @@ use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Tests\TestCase;
 use Tests\Concerns\UsesIsolatedDatabaseMigrations;
+use Tests\TestCase;
 
 class EasyParcelProviderApiTest extends TestCase
 {
@@ -138,6 +138,95 @@ class EasyParcelProviderApiTest extends TestCase
         $this->assertDatabaseCount('shipping_provider_credentials', 0);
     }
 
-    private function platform(): void { config()->set('services.easyparcel.client_id', 'platform-client'); config()->set('services.easyparcel.client_secret', 'platform-secret'); }
-    private function superAdmin(): User { return User::factory()->create(['is_admin' => true, 'is_super_admin' => true]); }
+    public function test_super_admin_can_save_a_manual_sender_profile_without_replacing_oauth_tokens(): void
+    {
+        $this->platform();
+        $admin = $this->superAdmin();
+        $provider = ShippingProvider::query()->create([
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'enabled' => true,
+            'connection_state' => 'connected',
+            'configuration_version' => 3,
+            'last_verified_at' => now(),
+        ]);
+        ShippingProviderCredential::query()->create([
+            'shipping_provider_id' => $provider->id,
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'credentials' => [
+                'token_type' => 'Bearer',
+                'access_token' => 'connected-token',
+                'sender_profile' => [],
+            ],
+        ]);
+
+        $response = $this->actingAs($admin)->putJson('/admin/api/shipping/providers/easyparcel', [
+            'environment' => 'sandbox',
+            'senderProfile' => [
+                'name' => 'JW Studio Dispatch',
+                'company' => 'JW Studio',
+                'phone_number_country_code' => 'MY',
+                'phone_number' => '0142244200',
+                'email' => 'support@jwaistudio.online',
+                'address_1' => '18 Test Industry Road',
+                'address_2' => 'Sandbox Fulfillment',
+                'postcode' => '47600',
+                'city' => 'Subang Jaya',
+                'subdivision_code' => 'MY-10',
+                'country_code' => 'MY',
+            ],
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.environment', 'sandbox')
+            ->assertJsonPath('data.senderProfile.name', 'JW Studio Dispatch')
+            ->assertJsonPath('data.senderProfileComplete', true);
+
+        $stored = ShippingProviderCredential::query()->sole()->credentials;
+        $this->assertSame('connected-token', $stored['access_token']);
+        $this->assertSame('JW Studio Dispatch', $stored['sender_profile']['name']);
+        $this->assertSame(4, $provider->fresh()->configuration_version);
+
+        $raw = (string) DB::table('shipping_provider_credentials')->value('credentials');
+        $this->assertStringNotContainsString('support@jwaistudio.online', $raw);
+        $this->assertStringNotContainsString('18 Test Industry Road', $raw);
+    }
+
+    public function test_sender_profile_requires_a_connected_environment_and_complete_pickup_data(): void
+    {
+        $this->platform();
+        $admin = $this->superAdmin();
+
+        $this->actingAs($admin)->putJson('/admin/api/shipping/providers/easyparcel', [
+            'environment' => 'sandbox',
+            'senderProfile' => ['name' => 'Incomplete'],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'senderProfile.phone_number_country_code',
+                'senderProfile.phone_number',
+                'senderProfile.address_1',
+                'senderProfile.postcode',
+                'senderProfile.city',
+                'senderProfile.subdivision_code',
+                'senderProfile.country_code',
+            ]);
+
+        $this->actingAs(User::factory()->create(['is_admin' => true, 'is_super_admin' => false]))
+            ->putJson('/admin/api/shipping/providers/easyparcel', [
+                'environment' => 'sandbox',
+                'senderProfile' => [],
+            ])->assertForbidden();
+    }
+
+    private function platform(): void
+    {
+        config()->set('services.easyparcel.client_id', 'platform-client');
+        config()->set('services.easyparcel.client_secret', 'platform-secret');
+    }
+
+    private function superAdmin(): User
+    {
+        return User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+    }
 }

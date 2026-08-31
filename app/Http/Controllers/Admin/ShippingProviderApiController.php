@@ -24,13 +24,41 @@ class ShippingProviderApiController extends Controller
     {
         $this->authorizeAdmin($request);
 
-        return response()->json(['data' => $this->configuration->status()]);
+        return response()->json(['data' => $this->configuration->status($this->requestedEnvironment($request))]);
     }
 
     public function update(Request $request): JsonResponse
     {
         $this->authorizeAdmin($request);
-        return response()->json(['message' => 'EasyParcel platform credentials are server-managed.'], 410);
+
+        $validated = $request->validate([
+            'environment' => ['required', 'string', 'in:sandbox,production'],
+            'senderProfile' => ['required', 'array'],
+            'senderProfile.name' => ['required', 'string', 'max:100'],
+            'senderProfile.company' => ['nullable', 'string', 'max:100'],
+            'senderProfile.phone_number_country_code' => ['required', 'string', 'size:2'],
+            'senderProfile.phone_number' => ['required', 'string', 'max:30'],
+            'senderProfile.email' => ['nullable', 'email:rfc', 'max:255'],
+            'senderProfile.address_1' => ['required', 'string', 'max:255'],
+            'senderProfile.address_2' => ['nullable', 'string', 'max:255'],
+            'senderProfile.postcode' => ['required', 'string', 'max:20'],
+            'senderProfile.city' => ['required', 'string', 'max:100'],
+            'senderProfile.subdivision_code' => ['required', 'string', 'max:20'],
+            'senderProfile.country_code' => ['required', 'string', 'size:2'],
+        ]);
+
+        $profile = array_map(
+            static fn (mixed $value): mixed => is_string($value) ? trim($value) : $value,
+            $validated['senderProfile'],
+        );
+        $profile['phone_number_country_code'] = strtoupper($profile['phone_number_country_code']);
+        $profile['country_code'] = strtoupper($profile['country_code']);
+        $profile['subdivision_code'] = strtoupper($profile['subdivision_code']);
+
+        $status = $this->configuration->saveSenderProfile($validated['environment'], $profile);
+        abort_if($status === null, 409, 'Connect this EasyParcel environment before saving its sender profile.');
+
+        return response()->json(['data' => $status]);
     }
 
     public function disconnect(Request $request): JsonResponse

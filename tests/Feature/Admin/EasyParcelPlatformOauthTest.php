@@ -105,7 +105,14 @@ flock($barrier, LOCK_UN);
 $deadline = microtime(true) + 5;
 do {
     clearstatcache(true, $barrierFile);
-    $ready = file($barrierFile, FILE_IGNORE_NEW_LINES) ?: [];
+    $reader = fopen($barrierFile, 'r');
+    if ($reader === false || ! flock($reader, LOCK_SH)) {
+        throw new \RuntimeException('Unable to read refresh barrier.');
+    }
+    $contents = stream_get_contents($reader);
+    flock($reader, LOCK_UN);
+    fclose($reader);
+    $ready = array_values(array_filter(preg_split('/\R/', (string) $contents) ?: []));
     if (count($ready) >= 2) {
         break;
     }
@@ -565,23 +572,6 @@ PHP;
                 'status_code' => 200,
                 'data' => ['wallet' => []],
             ]),
-            EasyParcelOpenApiClient::ACCOUNT_INFORMATION_URL => Http::response([
-                'status_code' => 200,
-                'data' => [
-                    'account' => ['name' => 'Authorized Merchant', 'account_type' => 'Business'],
-                    'address' => ['pickup_address' => [
-                        'name' => 'Authorized Dispatch',
-                        'phone_number' => '0123456789',
-                        'email' => 'dispatch@merchant.example',
-                        'company_name' => 'Merchant Sdn Bhd',
-                        'address1' => '8 Merchant Road',
-                        'postcode' => '47500',
-                        'city' => 'Subang Jaya',
-                        'province_code' => 'MY-10',
-                        'country_code' => 'MY',
-                    ]],
-                ],
-            ]),
         ]);
         $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
         $start = $this->actingAs($admin)->post('/admin/api/shipping/providers/easyparcel/authorize');
@@ -599,7 +589,7 @@ PHP;
         ]);
     }
 
-    public function test_successful_authorization_persists_the_authorized_accounts_pickup_address_as_the_sender_profile(): void
+    public function test_successful_authorization_does_not_depend_on_account_information_or_create_a_sender_profile(): void
     {
         $this->withoutMiddleware(ValidateCsrfToken::class);
         config()->set('services.easyparcel.client_id', 'platform-client');
@@ -616,26 +606,6 @@ PHP;
                 'status_code' => 200,
                 'data' => ['wallet' => []],
             ]),
-            'https://api.easyparcel.com/open_api/2026-06/account/get_account_information' => Http::response([
-                'status_code' => 200,
-                'data' => [
-                    'account' => ['name' => 'Merchant Owner', 'account_type' => 'Business'],
-                    'address' => [
-                        'pickup_address' => [
-                            'name' => 'Merchant Dispatch',
-                            'phone_number' => '0123456789',
-                            'email' => 'dispatch@merchant.example',
-                            'company_name' => 'Merchant Sdn Bhd',
-                            'address1' => '8 Merchant Road',
-                            'address2' => null,
-                            'postcode' => '47500',
-                            'city' => 'Subang Jaya',
-                            'province_code' => 'MY-10',
-                            'country_code' => 'MY',
-                        ],
-                    ],
-                ],
-            ]),
         ]);
         $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
         $start = $this->actingAs($admin)->post('/admin/api/shipping/providers/easyparcel/authorize');
@@ -646,14 +616,10 @@ PHP;
             ->assertSessionHas('easyparcelConnection.state', 'connected');
 
         $credentials = ShippingProviderCredential::query()->sole()->credentials;
-        self::assertSame('Merchant Owner', $credentials['account_profile']['name']);
-        self::assertSame('Merchant Dispatch', $credentials['sender_profile']['name']);
-        self::assertSame('8 Merchant Road', $credentials['sender_profile']['address_1']);
-        self::assertSame('MY-10', $credentials['sender_profile']['subdivision_code']);
-        self::assertSame('MY', $credentials['sender_profile']['phone_number_country_code']);
-
-        $raw = (string) DB::table('shipping_provider_credentials')->value('credentials');
-        self::assertStringNotContainsString('dispatch@merchant.example', $raw);
+        self::assertSame('provider-token', $credentials['access_token']);
+        self::assertArrayNotHasKey('account_profile', $credentials);
+        self::assertArrayNotHasKey('sender_profile', $credentials);
+        Http::assertSentCount(2);
     }
 
     /** @param array<string, mixed> $overrides */

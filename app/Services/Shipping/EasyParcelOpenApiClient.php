@@ -13,8 +13,6 @@ final class EasyParcelOpenApiClient
 
     public const API_VERSION = '2026-06';
 
-    public const ACCOUNT_INFORMATION_URL = 'https://api.easyparcel.com/open_api/'.self::API_VERSION.'/account/get_account_information';
-
     public const TOKEN_URL = 'https://api.easyparcel.com/oauth/token';
 
     public const WALLET_URL = 'https://api.easyparcel.com/open_api/'.self::API_VERSION.'/wallet';
@@ -111,10 +109,7 @@ final class EasyParcelOpenApiClient
                 throw new EasyParcelVerificationException;
             }
 
-            return array_replace(
-                $this->tokenCache($tokenPayload),
-                $this->authorizedAccountProfile((string) $tokenPayload['access_token']),
-            );
+            return $this->tokenCache($tokenPayload);
         } catch (EasyParcelVerificationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
@@ -144,90 +139,6 @@ final class EasyParcelOpenApiClient
             'refresh_token' => is_string($payload['refresh_token'] ?? null) ? $payload['refresh_token'] : null,
             'refresh_token_expires_at' => $this->expiry($payload['refresh_token_expires_at'] ?? null, $refreshExpiresIn),
         ];
-    }
-
-    /** @return array{account_profile: array{name: string, account_type: string|null}, sender_profile: array<string, string>} */
-    private function authorizedAccountProfile(string $accessToken): array
-    {
-        try {
-            $response = Http::acceptJson()
-                ->withToken($accessToken)
-                ->connectTimeout(5)
-                ->timeout(10)
-                ->post(self::ACCOUNT_INFORMATION_URL);
-            $payload = $response->json();
-            $account = data_get($payload, 'data.account');
-            $pickup = data_get($payload, 'data.address.pickup_address');
-
-            if (! $response->successful()
-                || ! is_array($payload)
-                || ($payload['status_code'] ?? null) !== 200
-                || ! is_array($account)
-                || ! is_array($pickup)) {
-                $this->logVerificationRejection('account_information', $response->status());
-                throw new EasyParcelVerificationException;
-            }
-
-            $sender = [
-                'name' => $this->requiredProfileValue($pickup, 'name'),
-                'phone_number_country_code' => $this->requiredProfileValue($pickup, 'country_code'),
-                'phone_number' => $this->requiredProfileValue($pickup, 'phone_number'),
-                'email' => $this->optionalProfileValue($pickup, 'email'),
-                'company' => $this->optionalProfileValue($pickup, 'company_name'),
-                'address_1' => $this->requiredProfileValue($pickup, 'address1'),
-                'address_2' => $this->optionalProfileValue($pickup, 'address2'),
-                'postcode' => $this->requiredProfileValue($pickup, 'postcode'),
-                'city' => $this->requiredProfileValue($pickup, 'city'),
-                'subdivision_code' => $this->requiredProfileValue($pickup, 'province_code'),
-                'country_code' => $this->requiredProfileValue($pickup, 'country_code'),
-            ];
-
-            return [
-                'account_profile' => [
-                    'name' => $this->requiredProfileValue($account, 'name'),
-                    'account_type' => $this->optionalProfileValue($account, 'account_type'),
-                ],
-                'sender_profile' => array_filter($sender, fn (mixed $value): bool => $value !== null),
-            ];
-        } catch (EasyParcelVerificationException $exception) {
-            throw $exception;
-        } catch (Throwable $exception) {
-            Log::warning('EasyParcel OAuth verification failed', [
-                'exception_class' => $exception::class,
-            ]);
-
-            throw new EasyParcelVerificationException;
-        }
-    }
-
-    /** @param array<string, mixed> $profile */
-    private function requiredProfileValue(array $profile, string $key): string
-    {
-        $value = $profile[$key] ?? null;
-
-        if (! is_string($value) || trim($value) === '') {
-            throw new EasyParcelVerificationException;
-        }
-
-        return trim($value);
-    }
-
-    /** @param array<string, mixed> $profile */
-    private function optionalProfileValue(array $profile, string $key): ?string
-    {
-        $value = $profile[$key] ?? null;
-
-        if ($value === null) {
-            return null;
-        }
-
-        if (! is_string($value)) {
-            throw new EasyParcelVerificationException;
-        }
-
-        $normalized = trim($value);
-
-        return $normalized === '' ? null : $normalized;
     }
 
     private function expiry(mixed $absoluteExpiry, ?int $expiresIn): ?string

@@ -20,7 +20,7 @@ import {
   type EasyParcelStatusRefreshOutcome,
 } from '../integration/shipmentData';
 import { createEasyParcelWebhookAuditRefresher, fetchEasyParcelWebhookReceipts } from '../integration/easyParcelWebhookData';
-import { courierConfigsFromEasyParcel, disconnectEasyParcelStore, fetchEasyParcelProvider, startEasyParcelAuthorization, type EasyParcelProviderStatus } from '../integration/easyParcelProviderData';
+import { courierConfigsFromEasyParcel, disconnectEasyParcelStore, fetchEasyParcelProvider, saveEasyParcelSenderProfile, startEasyParcelAuthorization, type EasyParcelProviderStatus, type EasyParcelSenderProfile } from '../integration/easyParcelProviderData';
 import { confirmEasyParcelBooking, requestEasyParcelQuote, type EasyParcelBooking, type EasyParcelPackageSpec, type EasyParcelQuote } from '../integration/easyParcelFulfillmentData';
 import { fetchCommerceSettings, saveBankTransferConfiguration, saveCodConfiguration, saveCommerceSettings, saveShippingConfiguration } from '../integration/commerceSettingsData';
 import { deleteTaxRule as deleteTaxRuleData, deleteTaxZone as deleteTaxZoneData, globalTaxEngineFromConfiguration, saveTaxConfiguration, saveTaxRule, saveTaxZone, type TaxSettingsDocument } from '../integration/taxSettingsData';
@@ -311,6 +311,7 @@ interface AdminContextType {
   saveCourierConfig: (config: CourierConfig) => void;
   refreshEasyParcelProvider: () => Promise<void>;
   disconnectEasyParcel: (environment?: 'sandbox' | 'production') => Promise<void>;
+  saveEasyParcelSender: (environment: 'sandbox' | 'production', profile: EasyParcelSenderProfile) => Promise<void>;
   quoteEasyParcelShipment: (parcel: ShipmentParcel, packageSpec: EasyParcelPackageSpec) => Promise<EasyParcelQuote>;
   bookEasyParcelShipment: (parcel: ShipmentParcel, quote: EasyParcelQuote, serviceCode: string) => Promise<EasyParcelBooking>;
   toggleCourierStatus: (id: string) => void;
@@ -2155,6 +2156,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addToast({ type: 'success', title: 'EasyParcel disconnected', message: 'The connected EasyParcel store was removed.' });
   };
 
+  const saveEasyParcelSender = async (environment: 'sandbox' | 'production', profile: EasyParcelSenderProfile): Promise<void> => {
+    const provider = await saveEasyParcelSenderProfile(laravelBootstrap, environment, profile);
+    setEasyParcelProvider(provider);
+    setCourierConfigs(courierConfigsFromEasyParcel(provider));
+    addToast({ type: 'success', title: 'Sender profile saved', message: 'EasyParcel pickup details are ready for quotes and bookings.' });
+  };
+
   const quoteEasyParcelShipment = (
     parcel: ShipmentParcel,
     packageSpec: EasyParcelPackageSpec,
@@ -3927,6 +3935,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
         saveCourierConfig,
         refreshEasyParcelProvider,
         disconnectEasyParcel,
+        saveEasyParcelSender,
         quoteEasyParcelShipment,
         bookEasyParcelShipment,
         toggleCourierStatus,

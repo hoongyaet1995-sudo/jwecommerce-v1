@@ -61,6 +61,7 @@ export const ShippingDashboard: React.FC = () => {
     saveCourierConfig,
     refreshEasyParcelProvider,
     disconnectEasyParcel,
+    saveEasyParcelSender,
     quoteEasyParcelShipment,
     bookEasyParcelShipment,
     toggleCourierStatus,
@@ -501,6 +502,7 @@ export const ShippingDashboard: React.FC = () => {
           onClose={() => { setEasyParcelCallbackState(null); setIsEasyParcelOAuthOpen(false); setEditingCourier(null); }}
           onAuthorize={(environment) => { void pingCourierAPI(editingCourier.id, environment); }}
           onDisconnect={async (environment) => { await disconnectEasyParcel(environment); setEditingCourier({ ...editingCourier, isEnabled: false, status: 'pending_keys' }); }}
+          onSaveSenderProfile={saveEasyParcelSender}
         />
       )}
 

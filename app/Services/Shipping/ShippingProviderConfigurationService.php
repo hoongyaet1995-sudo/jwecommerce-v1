@@ -34,9 +34,11 @@ final class ShippingProviderConfigurationService
     }
 
     /** @return array<string, bool|string|null> */
-    public function status(): array
+    public function status(?string $requestedEnvironment = null): array
     {
-        $environment = self::operationalEnvironment();
+        $environment = is_string($requestedEnvironment) && self::isSupportedEnvironment($requestedEnvironment)
+            ? $requestedEnvironment
+            : self::operationalEnvironment();
 
         return $this->dto($this->findProvider($environment), $environment);
     }
@@ -134,6 +136,45 @@ final class ShippingProviderConfigurationService
         return $this->dto($provider, $environment);
     }
 
+    /** @param array<string, string|null> $senderProfile */
+    public function saveSenderProfile(string $environment, array $senderProfile): ?array
+    {
+        if (! self::isSupportedEnvironment($environment)) {
+            return null;
+        }
+
+        return DB::transaction(function () use ($environment, $senderProfile): ?array {
+            $provider = $this->findProvider($environment);
+            if ($provider === null || $provider->connection_state !== 'connected') {
+                return null;
+            }
+
+            $provider = ShippingProvider::query()->lockForUpdate()->findOrFail($provider->id);
+            if ($provider->connection_state !== 'connected') {
+                return null;
+            }
+            $credential = ShippingProviderCredential::query()
+                ->where('shipping_provider_id', $provider->id)
+                ->lockForUpdate()
+                ->first();
+            if ($credential === null) {
+                return null;
+            }
+
+            $credentials = $credential->credentials ?? [];
+            $credentials['sender_profile'] = array_filter(
+                $senderProfile,
+                static fn (mixed $value): bool => $value !== null && $value !== '',
+            );
+            $credential->forceFill(['credentials' => $credentials])->save();
+            $provider->forceFill([
+                'configuration_version' => $provider->configuration_version + 1,
+            ])->save();
+
+            return $this->dtoWithCredential($provider, $credential, $environment);
+        });
+    }
+
     /**
      * @return array{
      *     verified: bool,
@@ -191,6 +232,10 @@ final class ShippingProviderConfigurationService
                 return ['verified' => false, 'status' => $this->dtoWithCredential($provider, $credential, $environment)];
             }
 
+            $stored = $credential->credentials ?? [];
+            if (is_array($stored['sender_profile'] ?? null)) {
+                $tokens['sender_profile'] = $stored['sender_profile'];
+            }
             $credential->forceFill(['credentials' => $tokens])->save();
 
             $provider->forceFill([
@@ -225,7 +270,10 @@ final class ShippingProviderConfigurationService
                 return $this->dtoWithCredential($provider, $credential, $environment);
             }
 
-            $credential->forceFill(['credentials' => []])->save();
+            $stored = $credential->credentials ?? [];
+            $credential->forceFill(['credentials' => is_array($stored['sender_profile'] ?? null)
+                ? ['sender_profile' => $stored['sender_profile']]
+                : []])->save();
 
             $provider->forceFill([
                 'enabled' => false,
@@ -350,6 +398,9 @@ final class ShippingProviderConfigurationService
     /** @return array<string, bool|string|null> */
     private function dto(?ShippingProvider $provider, string $environment): array
     {
+        $senderProfile = $provider?->credential?->credentials['sender_profile'] ?? [];
+        $senderProfile = is_array($senderProfile) ? $senderProfile : [];
+
         return [
             'provider' => self::PROVIDER,
             'environment' => $environment,
@@ -358,11 +409,25 @@ final class ShippingProviderConfigurationService
             'connectionState' => $provider?->connection_state ?? 'unconfigured',
             'lastVerifiedAt' => $provider?->last_verified_at?->toIso8601String(),
             'lastError' => $provider?->last_error,
+            'senderProfile' => $senderProfile,
+            'senderProfileComplete' => $this->senderProfileComplete($senderProfile),
             'environments' => [
                 self::SANDBOX_ENVIRONMENT => $this->environmentStatus(self::SANDBOX_ENVIRONMENT),
                 self::PRODUCTION_ENVIRONMENT => $this->environmentStatus(self::PRODUCTION_ENVIRONMENT),
             ],
         ];
+    }
+
+    /** @param array<string, mixed> $profile */
+    private function senderProfileComplete(array $profile): bool
+    {
+        foreach (['name', 'phone_number_country_code', 'phone_number', 'address_1', 'postcode', 'city', 'subdivision_code', 'country_code'] as $key) {
+            if (! is_string($profile[$key] ?? null) || trim($profile[$key]) === '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /** @return array{authorizationEnabled: bool, configured: bool, connectionState: string, enabled: bool} */

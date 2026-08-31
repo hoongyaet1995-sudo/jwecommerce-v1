@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LaravelAdminBootstrap } from '../types';
-import { disconnectEasyParcelStore, startEasyParcelAuthorization } from './easyParcelProviderData';
+import { disconnectEasyParcelStore, saveEasyParcelSenderProfile, startEasyParcelAuthorization } from './easyParcelProviderData';
 
 const bootstrap = {
   user: { name: 'Admin', email: 'admin@example.test', avatar: null },
@@ -42,5 +42,27 @@ describe('EasyParcel provider client', () => {
     expect(form.innerHTML).not.toContain('client_secret');
     expect(submitted).toHaveBeenCalledOnce();
     form.remove();
+  });
+
+  it('saves only manual sender data and the selected environment without browser OAuth credentials', async () => {
+    const fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: { provider: 'easyparcel', environment: 'production', configured: true, enabled: true, connectionState: 'connected', lastVerifiedAt: null, lastError: null, senderProfile: { name: 'JW Studio Dispatch' }, senderProfileComplete: true } }),
+    });
+    vi.stubGlobal('window', { fetch });
+
+    await saveEasyParcelSenderProfile(bootstrap, 'production', {
+      name: 'JW Studio Dispatch',
+      address_1: '18 Test Industry Road',
+    });
+
+    const options = fetch.mock.calls[0][1] as RequestInit;
+    expect(fetch).toHaveBeenCalledWith('/admin/api/shipping/providers/easyparcel', expect.objectContaining({ method: 'PUT' }));
+    expect(JSON.parse(String(options.body))).toEqual({
+      environment: 'production',
+      senderProfile: { name: 'JW Studio Dispatch', address_1: '18 Test Industry Road' },
+    });
+    expect(String(options.body)).not.toContain('access_token');
+    expect(String(options.body)).not.toContain('client_secret');
   });
 });
