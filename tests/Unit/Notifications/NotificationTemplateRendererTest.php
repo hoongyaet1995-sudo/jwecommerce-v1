@@ -57,7 +57,54 @@ class NotificationTemplateRendererTest extends TestCase
             'credentials' => ['https://customer:secret@example.test/order-tracking'],
             'username-only credentials' => ['https://customer@example.test/order-tracking'],
             'malformed URL' => ['https://'],
+            'quote-bearing relative path' => ['/order-tracking" onclick="alert(1)'],
+            'backslash relative path' => ['/\\evil.example/order-tracking'],
+            'network-path variant' => ['//evil.example/order-tracking'],
         ];
+    }
+
+    #[DataProvider('foreignOwnedLinkProvider')]
+    public function test_renderer_rejects_foreign_tracking_and_order_urls_wherever_they_are_referenced(string $field, string $token): void
+    {
+        $this->expectException(ValidationException::class);
+
+        $this->renderer->render($this->template([
+            $field => $token,
+        ]), [
+            trim($token, '{}') => 'https://easyparcel.example.test/private-token',
+        ]);
+    }
+
+    public static function foreignOwnedLinkProvider(): array
+    {
+        return [
+            'foreign tracking CTA' => ['email_cta_url', '{tracking_url}'],
+            'foreign tracking body' => ['email_body', '{tracking_url}'],
+            'foreign order CTA' => ['email_cta_url', '{order_url}'],
+            'foreign order body' => ['email_body', '{order_url}'],
+        ];
+    }
+
+    public function test_renderer_rejects_an_empty_referenced_variable(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        $this->renderer->render($this->template([
+            'email_body' => 'Carrier: {carrier_name}',
+        ]), [
+            'carrier_name' => '',
+        ]);
+    }
+
+    public function test_renderer_escapes_cta_variable_content_after_raw_url_validation(): void
+    {
+        $rendered = $this->renderer->render($this->template([
+            'email_cta_url' => 'https://example.test/contact?note={staff_note}',
+        ]), [
+            'staff_note' => 'Warehouse&support',
+        ]);
+
+        $this->assertSame('https://example.test/contact?note=Warehouse&amp;support', $rendered->ctaUrl);
     }
 
     public function test_renderer_rejects_unknown_or_missing_template_variables(): void

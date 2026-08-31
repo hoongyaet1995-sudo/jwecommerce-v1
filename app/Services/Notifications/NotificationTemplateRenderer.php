@@ -36,7 +36,7 @@ class NotificationTemplateRenderer
             heading: $this->replaceTokens($fields['email_heading'], $escapedVariables),
             body: $this->replaceTokens($fields['email_body'], $escapedVariables),
             ctaText: $this->replaceTokens($fields['email_cta_text'], $escapedVariables),
-            ctaUrl: $this->validatedCtaUrl($this->replaceRawTokens($fields['email_cta_url'], $variables)),
+            ctaUrl: e($this->validatedCtaUrl($this->replaceRawTokens($fields['email_cta_url'], $variables))),
             variables: $escapedVariables,
         );
     }
@@ -58,8 +58,10 @@ class NotificationTemplateRenderer
 
                 if (! in_array($token, $allowedTokens, true)) {
                     $errors[$field][] = "The {$token} variable is not available for this notification event.";
-                } elseif (! array_key_exists($name, $variables) || $variables[$name] === null) {
+                } elseif (! array_key_exists($name, $variables) || $variables[$name] === null || trim((string) $variables[$name]) === '') {
                     $errors[$field][] = "The {$token} variable must be resolved before rendering.";
+                } elseif (in_array($name, ['tracking_url', 'order_url'], true) && $variables[$name] !== url('/order-tracking')) {
+                    $errors[$field][] = "The {$token} variable must resolve to the JW order-tracking URL.";
                 }
             }
         }
@@ -98,7 +100,7 @@ class NotificationTemplateRenderer
     {
         return Str::startsWith($url, '/')
             && ! Str::startsWith($url, '//')
-            && ! preg_match('/[\x00-\x1F\x7F]/', $url);
+            && ! preg_match('/[\x00-\x20\x7F<>"\'\\\\]/', $url);
     }
 
     private function isSafeHttpsUrl(string $url): bool
