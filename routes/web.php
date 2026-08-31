@@ -15,9 +15,11 @@ use App\Http\Controllers\Admin\CustomerDirectoryDataController;
 use App\Http\Controllers\Admin\DashboardDataController;
 use App\Http\Controllers\Admin\EasyParcelWebhookReceiptApiController;
 use App\Http\Controllers\Admin\MenuApiController;
+use App\Http\Controllers\Admin\NotificationTemplateApiController;
 use App\Http\Controllers\Admin\OperationsController;
 use App\Http\Controllers\Admin\OrderApiController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\OrderNotificationApiController;
 use App\Http\Controllers\Admin\PageApiController;
 use App\Http\Controllers\Admin\PagePreviewController;
 use App\Http\Controllers\Admin\ProductController;
@@ -168,6 +170,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/storefront-shell-settings', [StorefrontShellSettingsApiController::class, 'show'])->name('api.storefront-shell-settings.show');
     Route::put('/api/storefront-shell-settings', [StorefrontShellSettingsApiController::class, 'update'])->name('api.storefront-shell-settings.update');
     Route::get('/api/orders', [OrderApiController::class, 'index'])->name('api.orders.index');
+    Route::get('/api/notification-templates', [NotificationTemplateApiController::class, 'index'])->name('api.notification-templates.index');
+    Route::put('/api/notification-templates/{eventKey}', [NotificationTemplateApiController::class, 'update'])->name('api.notification-templates.update');
+    Route::post('/api/notification-templates/reset', [NotificationTemplateApiController::class, 'reset'])->name('api.notification-templates.reset');
+    Route::post('/api/notification-templates/{eventKey}/test', [NotificationTemplateApiController::class, 'test'])
+        ->middleware('throttle:6,1')
+        ->name('api.notification-templates.test');
+    Route::get('/api/orders/{order}/notification-dispatches', [OrderNotificationApiController::class, 'index'])->name('api.orders.notification-dispatches.index');
+    Route::post('/api/orders/{order}/notifications/preview', [OrderNotificationApiController::class, 'preview'])->name('api.orders.notifications.preview');
+    Route::post('/api/orders/{order}/notifications/send-current', [OrderNotificationApiController::class, 'sendCurrent'])->name('api.orders.notifications.send-current');
+    Route::post('/api/notification-dispatches/{dispatch:public_id}/retry', [OrderNotificationApiController::class, 'retry'])->name('api.notification-dispatches.retry');
+    Route::post('/api/notification-dispatches/{dispatch:public_id}/resend', [OrderNotificationApiController::class, 'resend'])->name('api.notification-dispatches.resend');
     Route::get('/api/orders/{order}/payments/{payment}/proof', [OrderApiController::class, 'showPaymentProof'])->name('api.orders.payments.proof.show');
     Route::get('/api/orders/{order}/payments/{payment}/proof/download', [OrderApiController::class, 'downloadPaymentProof'])->name('api.orders.payments.proof.download');
     Route::post('/api/orders/{order}/payments/{payment}/proof/review', [OrderApiController::class, 'reviewPaymentProof'])->name('api.orders.payments.proof.review');

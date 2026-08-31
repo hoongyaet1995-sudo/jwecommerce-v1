@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Notifications\NotificationPermission;
 use App\Domain\Reviews\ReviewPermission;
 use App\Http\Controllers\Controller;
 use App\Support\ViteManifestEntry;
@@ -21,6 +22,12 @@ class AdminAppController extends Controller
             : collect(ReviewPermission::ALL)
                 ->filter(fn (string $permission): bool => $user->permissions()->where('permission', $permission)->exists())
                 ->values();
+        $notificationPermissions = $user->is_super_admin
+            ? NotificationPermission::ALL
+            : collect(NotificationPermission::ALL)
+                ->filter(fn (string $permission): bool => NotificationPermission::allows($user, $permission))
+                ->values()
+                ->all();
 
         $bootstrap = [
             'user' => [
@@ -30,8 +37,10 @@ class AdminAppController extends Controller
                 'avatar' => null,
                 'isSuperAdmin' => $user->is_super_admin,
                 'reviewPermissions' => $reviewPermissions,
+                'notificationPermissions' => $notificationPermissions,
             ],
             'reviewPermissions' => $reviewPermissions,
+            'notificationPermissions' => $notificationPermissions,
             'csrfToken' => csrf_token(),
             'logoutUrl' => route('logout'),
             'dashboardUrl' => route('admin.api.dashboard'),
@@ -44,6 +53,8 @@ class AdminAppController extends Controller
             'catalogUrl' => route('admin.api.catalog.index'),
             'menusUrl' => route('admin.api.menus.index'),
             'ordersUrl' => route('admin.api.orders.index'),
+            'notificationTemplatesUrl' => route('admin.api.notification-templates.index'),
+            'orderNotificationsUrl' => url('/admin/api/orders'),
             'shipmentsUrl' => route('admin.api.shipping.shipments.index'),
             'easyParcelWebhookReceiptsUrl' => route('admin.api.shipping.webhook-receipts.index'),
             'easyParcelWebhookCallbackUrl' => route('webhooks.easyparcel'),

@@ -4,6 +4,8 @@ namespace App\Services\Notifications;
 
 use App\Domain\Notifications\NotificationEventCatalog;
 use App\Models\NotificationTemplate;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class NotificationTemplateDefaults
 {
@@ -15,6 +17,26 @@ class NotificationTemplateDefaults
                 $template,
             );
         }
+    }
+
+    public function reset(User $actor): void
+    {
+        $this->synchronize();
+
+        DB::transaction(function () use ($actor): void {
+            foreach ($this->templates() as $definition) {
+                $template = NotificationTemplate::query()
+                    ->where('event_key', $definition['event_key'])
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $template->forceFill([
+                    ...$definition,
+                    'version' => $template->version + 1,
+                    'updated_by' => $actor->id,
+                ])->save();
+            }
+        });
     }
 
     private function templates(): array
