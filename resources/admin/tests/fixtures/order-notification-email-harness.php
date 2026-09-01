@@ -620,6 +620,36 @@ function businessEvidence(string $token, array $ownerRoots): array
     ];
 }
 
+/**
+ * Lock and compare the complete schema-derived closure against the signed
+ * baseline plus only the explicitly allowed exact row identifiers.
+ *
+ * @param  array<string, mixed>  $state
+ * @param  array<string, list<int|string>>  $allowedIdsByTable
+ */
+function assertExactOwnerClosureDeltas(array $state, array $allowedIdsByTable): void
+{
+    $expectedClosure = $state['owner_closure'];
+    foreach ($allowedIdsByTable as $table => $ids) {
+        $primaryKey = fixturePrimaryKeyMetadata()[$table] ?? null;
+        if ($primaryKey === null || ! array_key_exists($table, $expectedClosure)) {
+            throw new RuntimeException('fixture_owner_delta_table_invalid');
+        }
+        $normalizedIds = normalizeIdentifiers($table, $ids);
+        $query = DB::table($table);
+        constrainIds($query, $primaryKey['column'], $normalizedIds);
+        $snapshot = querySnapshot($query, true, $table);
+        if ($snapshot['ids'] !== $normalizedIds) {
+            throw new RuntimeException('fixture_owner_delta_row_missing');
+        }
+        $expectedClosure[$table] = $snapshot;
+    }
+
+    if (fixtureOwnerClosure($state['owner_roots'], true) !== $expectedClosure) {
+        throw new RuntimeException('fixture_owner_delta_mismatch');
+    }
+}
+
 /** @param array<string, mixed> $state
  * @return array<string, mixed>
  */
@@ -1147,6 +1177,101 @@ try {
         exit(0);
     }
 
+    if ($mode === 'inject-uuid-owner-descendant-guard') {
+        $ownership = expectedOwnership($token);
+        if ($state['ownership'] !== $ownership) {
+            failHarness('state_ownership_mismatch');
+        }
+
+        $referenceId = DB::transaction(static function () use ($ownership, $state, $token): int {
+            $admin = User::query()
+                ->whereKey($state['admin_id'])
+                ->where('email', $ownership['adminEmail'])
+                ->lockForUpdate()
+                ->sole();
+            $asset = DB::table('cms_media_assets')
+                ->where('uploader_id', $admin->id)
+                ->where('path', "task9-owner-guard/{$token}.png")
+                ->where('checksum', hash('sha256', "TASK9-UUID-OWNER-GUARD-{$token}"))
+                ->lockForUpdate()
+                ->sole();
+            assertExactOwnerClosureDeltas($state, [
+                'cms_media_assets' => [(string) $asset->id],
+            ]);
+
+            return (int) DB::table('catalog_media_references')->insertGetId([
+                'asset_id' => $asset->id,
+                'owner_type' => 'task9_smoke',
+                'owner_id' => $admin->id,
+                'field_path' => "task9.uuid-owner-descendant.{$token}",
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+
+        passHarness([
+            'mode' => 'inject-uuid-owner-descendant-guard',
+            'database' => $safeRuntime['database'],
+            'catalogMediaReferenceId' => $referenceId,
+        ]);
+        exit(0);
+    }
+
+    if ($mode === 'remove-uuid-owner-descendant-guard') {
+        $ownership = expectedOwnership($token);
+        if ($state['ownership'] !== $ownership) {
+            failHarness('state_ownership_mismatch');
+        }
+
+        DB::transaction(static function () use ($ownership, $state, $token): void {
+            $admin = User::query()
+                ->whereKey($state['admin_id'])
+                ->where('email', $ownership['adminEmail'])
+                ->lockForUpdate()
+                ->sole();
+            $asset = DB::table('cms_media_assets')
+                ->where('uploader_id', $admin->id)
+                ->where('path', "task9-owner-guard/{$token}.png")
+                ->where('checksum', hash('sha256', "TASK9-UUID-OWNER-GUARD-{$token}"))
+                ->lockForUpdate()
+                ->sole();
+            $references = DB::table('catalog_media_references')
+                ->where('asset_id', $asset->id)
+                ->where('owner_type', 'task9_smoke')
+                ->where('owner_id', $admin->id)
+                ->where('field_path', "task9.uuid-owner-descendant.{$token}")
+                ->lockForUpdate()
+                ->get();
+            if ($references->count() !== 1) {
+                throw new RuntimeException('uuid_owner_descendant_guard_ownership_mismatch');
+            }
+            assertExactOwnerClosureDeltas($state, [
+                'cms_media_assets' => [(string) $asset->id],
+                'catalog_media_references' => [(int) $references->first()->id],
+            ]);
+            $deleted = DB::table('catalog_media_references')
+                ->where('id', $references->first()->id)
+                ->where('asset_id', $asset->id)
+                ->where('owner_type', 'task9_smoke')
+                ->where('owner_id', $admin->id)
+                ->where('field_path', "task9.uuid-owner-descendant.{$token}")
+                ->delete();
+            if ($deleted !== 1) {
+                throw new RuntimeException('uuid_owner_descendant_guard_delete_mismatch');
+            }
+            assertExactOwnerClosureDeltas($state, [
+                'cms_media_assets' => [(string) $asset->id],
+            ]);
+        });
+
+        passHarness([
+            'mode' => 'remove-uuid-owner-descendant-guard',
+            'database' => $safeRuntime['database'],
+            'uuidOwnerDescendantRemoved' => true,
+        ]);
+        exit(0);
+    }
+
     if ($mode === 'remove-uuid-owner-cleanup-guard') {
         $ownership = expectedOwnership($token);
         if ($state['ownership'] !== $ownership) {
@@ -1169,6 +1294,9 @@ try {
                 throw new RuntimeException('uuid_owner_cleanup_guard_ownership_mismatch');
             }
             $asset = $assets->first();
+            assertExactOwnerClosureDeltas($state, [
+                'cms_media_assets' => [(string) $asset->id],
+            ]);
             $deleted = DB::table('cms_media_assets')
                 ->where('id', $asset->id)
                 ->where('uploader_id', $admin->id)
@@ -1178,6 +1306,7 @@ try {
             if ($deleted !== 1) {
                 throw new RuntimeException('uuid_owner_cleanup_guard_delete_mismatch');
             }
+            assertExactOwnerClosureDeltas($state, []);
         });
 
         $business = businessEvidence($token, $state['owner_roots']);

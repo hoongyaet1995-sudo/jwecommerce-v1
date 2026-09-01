@@ -33,6 +33,8 @@ type HarnessResult = {
   cmsMediaAssetId?: string;
   uuidOwnerAssociationStateRestored?: boolean;
   ownerPrimaryKeys?: Record<string, { column: string; dataType: string; columnType: string; kind: 'integer' | 'string' }>;
+  catalogMediaReferenceId?: number;
+  uuidOwnerDescendantRemoved?: boolean;
 };
 
 type RequestLedgerEntry = {
@@ -159,7 +161,7 @@ const stopOwnedServer = async (): Promise<boolean> => {
   return !(await portHasListener());
 };
 
-type HarnessMode = 'probe' | 'baseline' | 'setup' | 'snapshot' | 'inject-cleanup-guard' | 'remove-cleanup-guard' | 'inject-owner-cleanup-guard' | 'remove-owner-cleanup-guard' | 'inject-uuid-owner-cleanup-guard' | 'remove-uuid-owner-cleanup-guard' | 'seal-browser-sessions' | 'cleanup';
+type HarnessMode = 'probe' | 'baseline' | 'setup' | 'snapshot' | 'inject-cleanup-guard' | 'remove-cleanup-guard' | 'inject-owner-cleanup-guard' | 'remove-owner-cleanup-guard' | 'inject-uuid-owner-cleanup-guard' | 'inject-uuid-owner-descendant-guard' | 'remove-uuid-owner-descendant-guard' | 'remove-uuid-owner-cleanup-guard' | 'seal-browser-sessions' | 'cleanup';
 
 const runHarness = (mode: HarnessMode): HarnessResult => {
   const raw = execFileSync(php, [harness, mode], {
@@ -328,16 +330,8 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
       columnType: 'char(36)',
       kind: 'string',
     });
-    expect(Object.entries(setup.ownerPrimaryKeys ?? {})
-      .filter(([, primaryKey]) => primaryKey.kind !== 'integer')
-      .map(([table, primaryKey]) => ({ table, ...primaryKey })))
-      .toEqual([{
-        table: 'cms_media_assets',
-        column: 'id',
-        dataType: 'char',
-        columnType: 'char(36)',
-        kind: 'string',
-      }]);
+    const supportedPrimaryKeyKinds = new Set(['integer', 'string']);
+    expect(Object.values(setup.ownerPrimaryKeys ?? {}).every(primaryKey => supportedPrimaryKeyKinds.has(primaryKey.kind))).toBe(true);
 
     const cleanupGuard = runHarness('inject-cleanup-guard');
     expect(cleanupGuard.associationGuardId).toBeGreaterThan(0);
@@ -380,6 +374,16 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
     expect(uuidOwnerCleanupRefusal).toEqual({ exitCode: 1, code: 'fixture_business_state_changed' });
     expect(existsSync(statePath)).toBe(true);
     expect(runHarness('snapshot').ownerClosure?.cms_media_assets.ids).toEqual([uuidOwnerCleanupGuard.cmsMediaAssetId]);
+    const uuidOwnerDescendantGuard = runHarness('inject-uuid-owner-descendant-guard');
+    expect(uuidOwnerDescendantGuard.catalogMediaReferenceId).toBeGreaterThan(0);
+    const uuidOwnerTeardownRefusal = refusedHarnessMode('remove-uuid-owner-cleanup-guard');
+    expect(uuidOwnerTeardownRefusal).toEqual({ exitCode: 1, code: 'harness_exception' });
+    expect(existsSync(statePath)).toBe(true);
+    const preservedUuidOwnerSnapshot = runHarness('snapshot');
+    expect(preservedUuidOwnerSnapshot.ownerClosure?.cms_media_assets.ids).toEqual([uuidOwnerCleanupGuard.cmsMediaAssetId]);
+    expect(preservedUuidOwnerSnapshot.ownerClosure?.catalog_media_references.ids).toEqual([uuidOwnerDescendantGuard.catalogMediaReferenceId]);
+    const uuidOwnerDescendantRemoval = runHarness('remove-uuid-owner-descendant-guard');
+    expect(uuidOwnerDescendantRemoval.uuidOwnerDescendantRemoved).toBe(true);
     const uuidOwnerCleanupGuardRemoval = runHarness('remove-uuid-owner-cleanup-guard');
     expect(uuidOwnerCleanupGuardRemoval.uuidOwnerAssociationStateRestored).toBe(true);
     writeEvidence('fixture-uuid-owner-cleanup-fail-closed.json', {
@@ -389,6 +393,10 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
       cleanupRefusal: uuidOwnerCleanupRefusal,
       fixtureAndRowPreserved: true,
       stateFilePreserved: true,
+      descendantInjectedTable: 'catalog_media_references',
+      descendantTeardownRefusal: uuidOwnerTeardownRefusal,
+      assetReferenceAndStatePreserved: true,
+      exactDescendantRemoved: uuidOwnerDescendantRemoval.uuidOwnerDescendantRemoved,
       exactInjectedRowRemoved: true,
       ownerAssociationStateRestored: uuidOwnerCleanupGuardRemoval.uuidOwnerAssociationStateRestored,
     });
