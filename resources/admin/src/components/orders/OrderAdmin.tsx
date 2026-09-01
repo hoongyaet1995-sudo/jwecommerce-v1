@@ -69,8 +69,7 @@ export const OrderAdmin: React.FC = () => {
   const [notificationAuditRefreshKey, setNotificationAuditRefreshKey] = useState(0);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const selectedOrderRef = useRef<Order | null>(null);
-  const statusUpdateRequestRef = useRef(0);
-  const producerMutationRequestRef = useRef(0);
+  const selectedOrderMutationRequestRef = useRef(0);
   const canViewNotificationAudit = notificationPermissions.includes('notifications.deliveries.view');
 
   // Manual Fulfillment State
@@ -98,8 +97,7 @@ export const OrderAdmin: React.FC = () => {
   });
 
   const handleOpenDetail = (order: Order) => {
-    statusUpdateRequestRef.current += 1;
-    producerMutationRequestRef.current += 1;
+    selectedOrderMutationRequestRef.current += 1;
     selectedOrderRef.current = order;
     setSelectedOrder(order);
     setTrackingNumberInput(order.trackingNumber || '');
@@ -126,8 +124,7 @@ export const OrderAdmin: React.FC = () => {
   };
 
   const handleCloseDetail = () => {
-    statusUpdateRequestRef.current += 1;
-    producerMutationRequestRef.current += 1;
+    selectedOrderMutationRequestRef.current += 1;
     selectedOrderRef.current = null;
     setIsUpdatingStatus(false);
     setIsDetailOpen(false);
@@ -138,9 +135,10 @@ export const OrderAdmin: React.FC = () => {
     const reason = rejectionReasonInput.trim();
     if (decision === 'rejected' && !reason) return;
     const orderId = selectedOrder.id;
-    const requestId = ++producerMutationRequestRef.current;
+    const requestId = ++selectedOrderMutationRequestRef.current;
+    setIsUpdatingStatus(false);
     const saved = await reviewPaymentProof(orderId, selectedOrder.paymentProof.paymentId, decision, reason || undefined);
-    if (requestId !== producerMutationRequestRef.current || selectedOrderRef.current?.id !== orderId) return;
+    if (requestId !== selectedOrderMutationRequestRef.current || selectedOrderRef.current?.id !== orderId) return;
     if (saved) {
       selectedOrderRef.current = saved;
       setSelectedOrder(saved);
@@ -156,7 +154,7 @@ export const OrderAdmin: React.FC = () => {
   };
 
   const handleStatusSelectChange = (statusId: string) => {
-    statusUpdateRequestRef.current += 1;
+    selectedOrderMutationRequestRef.current += 1;
     setIsUpdatingStatus(false);
     setChosenStatusId(statusId);
     setStatusMutationDispatch(null);
@@ -167,14 +165,14 @@ export const OrderAdmin: React.FC = () => {
   };
 
   const handleCustomerCommentChange = (value: string) => {
-    statusUpdateRequestRef.current += 1;
+    selectedOrderMutationRequestRef.current += 1;
     setIsUpdatingStatus(false);
     setStatusMutationDispatch(null);
     setCustomerCommentInput(value);
   };
 
   const handleNotifyCustomerChange = (checked: boolean) => {
-    statusUpdateRequestRef.current += 1;
+    selectedOrderMutationRequestRef.current += 1;
     setIsUpdatingStatus(false);
     setStatusMutationDispatch(null);
     setNotifyCustomerCheck(checked);
@@ -201,9 +199,10 @@ export const OrderAdmin: React.FC = () => {
     const carrier = manualCarrier.trim();
     const tracking = manualTracking.trim();
     const orderId = selectedOrder.id;
-    const requestId = ++producerMutationRequestRef.current;
+    const requestId = ++selectedOrderMutationRequestRef.current;
+    setIsUpdatingStatus(false);
     const saved = await updateOrderTracking(selectedOrder.id, carrier, tracking);
-    if (requestId !== producerMutationRequestRef.current || selectedOrderRef.current?.id !== orderId) return;
+    if (requestId !== selectedOrderMutationRequestRef.current || selectedOrderRef.current?.id !== orderId) return;
     if (saved) {
       selectedOrderRef.current = saved;
       setSelectedOrder(saved);
@@ -219,7 +218,7 @@ export const OrderAdmin: React.FC = () => {
     const targetStatus = orderStatuses.find(s => s.id === chosenStatusId);
     if (!targetStatus) return;
     const orderId = selectedOrder.id;
-    const requestId = ++statusUpdateRequestRef.current;
+    const requestId = ++selectedOrderMutationRequestRef.current;
     setIsUpdatingStatus(true);
     setStatusMutationDispatch(null);
 
@@ -236,7 +235,7 @@ export const OrderAdmin: React.FC = () => {
       customerCommentInput || `Order transitioned to ${targetStatus.name}. Inventory action: ${targetStatus.inventoryAction}.`,
       notifyCustomerCheck && notificationEventKeyForStatus(targetStatus.code) !== null,
     );
-    if (requestId !== statusUpdateRequestRef.current || selectedOrderRef.current?.id !== orderId) return;
+    if (requestId !== selectedOrderMutationRequestRef.current || selectedOrderRef.current?.id !== orderId) return;
 
     if (saved) {
       selectedOrderRef.current = saved;

@@ -7,6 +7,7 @@ import { deleteCatalogEntity, fetchCatalog, saveCatalogEntity } from '../integra
 import { fetchMenus, saveMenuDocument } from '../integration/menuData';
 import { customerDirectoryToCustomers, deleteCustomerData, fetchCustomerDirectoryData, saveCustomerData } from '../integration/customerDirectoryData';
 import { fetchOrders, processOrderRefundData, reviewPaymentProofData, updateOrderStatusData, updateOrderTrackingData } from '../integration/orderData';
+import { LatestOrderMutationCoordinator } from './LatestOrderMutationCoordinator';
 import {
   appendShipmentEvent,
   confirmEasyParcelProviderFailureWithReload,
@@ -744,6 +745,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const pagesRef = useRef<CmsPage[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const orderMutationCoordinatorRef = useRef<LatestOrderMutationCoordinator | null>(null);
+  if (orderMutationCoordinatorRef.current === null) {
+    orderMutationCoordinatorRef.current = new LatestOrderMutationCoordinator();
+  }
   const [staffUsers, setStaffUsers] = useState<StaffUser[]>(INITIAL_STAFF_USERS);
   const [shopSettings, setShopSettings] = useState<ShopGeneralSettings>(INITIAL_SHOP_SETTINGS);
 
@@ -1374,8 +1379,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Orders
   const updateOrderStatus = async (orderId: string, paymentStatus?: PaymentStatus, fulfillmentStatus?: FulfillmentStatus, note?: string, notifyCustomer?: boolean): Promise<Order | null> => {
     try {
-      const saved = await updateOrderStatusData(laravelBootstrap, orderId, paymentStatus, fulfillmentStatus, note, notifyCustomer);
-      setOrders(prev => prev.map(order => order.id === saved.id ? saved : order));
+      const saved = await orderMutationCoordinatorRef.current!.run(
+        orderId,
+        () => updateOrderStatusData(laravelBootstrap, orderId, paymentStatus, fulfillmentStatus, note, notifyCustomer),
+        current => setOrders(prev => prev.map(order => order.id === current.id ? current : order)),
+      );
+      if (saved === null) return null;
       addToast({ type: 'success', title: 'Order State Changed', message: 'Order updated successfully.' });
       return saved;
     } catch (error) {
@@ -1386,8 +1395,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateOrderTracking = async (orderId: string, carrier: string, trackingNumber: string): Promise<Order | null> => {
     try {
-      const saved = await updateOrderTrackingData(laravelBootstrap, orderId, carrier, trackingNumber);
-      setOrders(prev => prev.map(order => order.id === saved.id ? saved : order));
+      const saved = await orderMutationCoordinatorRef.current!.run(
+        orderId,
+        () => updateOrderTrackingData(laravelBootstrap, orderId, carrier, trackingNumber),
+        current => setOrders(prev => prev.map(order => order.id === current.id ? current : order)),
+      );
+      if (saved === null) return null;
       void fetchShipments(laravelBootstrap).then(setShipmentParcels).catch(() => undefined);
       addToast({ type: 'success', title: 'Logistics Dispatched', message: `Assigned tracking ${trackingNumber} via ${carrier}.` });
       return saved;
@@ -1399,8 +1412,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const processOrderRefund = async (orderId: string, amount: number, reason: string): Promise<Order | null> => {
     try {
-      const saved = await processOrderRefundData(laravelBootstrap, orderId, amount, reason);
-      setOrders(prev => prev.map(order => order.id === saved.id ? saved : order));
+      const saved = await orderMutationCoordinatorRef.current!.run(
+        orderId,
+        () => processOrderRefundData(laravelBootstrap, orderId, amount, reason),
+        current => setOrders(prev => prev.map(order => order.id === current.id ? current : order)),
+      );
+      if (saved === null) return null;
       addToast({ type: 'warning', title: 'Refund Completed', message: `Processed refund of $${amount.toFixed(2)}.` });
       return saved;
     } catch (error) {
@@ -1411,8 +1428,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const reviewPaymentProof = async (orderId: string, paymentId: string, decision: 'verified' | 'rejected', reason?: string): Promise<Order | null> => {
     try {
-      const saved = await reviewPaymentProofData(laravelBootstrap, orderId, paymentId, decision, reason);
-      setOrders(prev => prev.map(order => order.id === saved.id ? saved : order));
+      const saved = await orderMutationCoordinatorRef.current!.run(
+        orderId,
+        () => reviewPaymentProofData(laravelBootstrap, orderId, paymentId, decision, reason),
+        current => setOrders(prev => prev.map(order => order.id === current.id ? current : order)),
+      );
+      if (saved === null) return null;
       addToast({
         type: decision === 'verified' ? 'success' : 'warning',
         title: decision === 'verified' ? 'Payment Proof Verified' : 'Payment Proof Rejected',

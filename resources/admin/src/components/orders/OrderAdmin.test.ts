@@ -596,6 +596,141 @@ describe('OrderAdmin notification mutation binding', () => {
     expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(4);
   });
 
+  it('keeps a newer status response when an older same-order proof review resolves last', async () => {
+    const proofGate = deferred<Order | null>();
+    const reviewPaymentProof = vi.fn(() => proofGate.promise);
+    const updateOrderStatus = vi.fn(async () => baseOrder({
+      customerEmail: 'newer-status@example.test',
+      paymentGateway: 'Bank In / DuitNow',
+      paymentGatewayStatus: 'paid',
+      paymentProof: { required: true, paymentId: 'payment-a', status: 'verified', canReview: false },
+      notificationContextFingerprint: 'newer-status-context',
+      notificationSummary: {
+        publicId: 'newer-status-dispatch', eventKey: 'payment_verified', channel: 'email', state: 'queued', source: 'automatic', queuedAt: '2026-09-01T09:00:00.000Z',
+      },
+    }));
+    mockedAdminContext.value = {
+      ...mockedAdminContext.value,
+      orders: [baseOrder({
+        paymentGateway: 'Bank In / DuitNow',
+        paymentGatewayStatus: 'pending',
+        paymentProof: { required: true, paymentId: 'payment-a', status: 'uploaded', canReview: true },
+      })],
+      reviewPaymentProof,
+      updateOrderStatus,
+    };
+    const { host } = await mountOrderAdmin();
+
+    await act(async () => detailButton(host, 0).click());
+    const auditFetch = (mockedAdminContext.value as { auditFetch: ReturnType<typeof vi.fn> }).auditFetch;
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(1));
+    act(() => exactButton(host, 'Verify payment').click());
+    await vi.waitFor(() => expect(reviewPaymentProof).toHaveBeenCalledTimes(1));
+    await act(async () => exactButton(host, 'Update & Notify').click());
+    await vi.waitFor(() => expect(updateOrderStatus).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(host.textContent).toContain('Dispatch Email Update to newer-status@example.test'));
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2));
+
+    await act(async () => proofGate.resolve(baseOrder({
+      customerEmail: 'stale-proof@example.test',
+      paymentGateway: 'Bank In / DuitNow',
+      paymentGatewayStatus: 'paid',
+      paymentProof: { required: true, paymentId: 'payment-a', status: 'verified', canReview: false },
+      notificationContextFingerprint: 'stale-proof-context',
+    })));
+
+    expect(host.textContent).toContain('Dispatch Email Update to newer-status@example.test');
+    expect(host.textContent).toContain('Status update Email intent: Queued');
+    expect(host.textContent).not.toContain('stale-proof@example.test');
+    expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2);
+  });
+
+  it('keeps a newer proof-review response when an older same-order status mutation resolves last', async () => {
+    const statusGate = deferred<Order | null>();
+    const updateOrderStatus = vi.fn(() => statusGate.promise);
+    const reviewPaymentProof = vi.fn(async () => baseOrder({
+      customerEmail: 'newer-proof@example.test',
+      paymentGateway: 'Bank In / DuitNow',
+      paymentGatewayStatus: 'paid',
+      paymentProof: { required: true, paymentId: 'payment-a', status: 'verified', canReview: false },
+      notificationContextFingerprint: 'newer-proof-context',
+    }));
+    mockedAdminContext.value = {
+      ...mockedAdminContext.value,
+      orders: [baseOrder({
+        paymentGateway: 'Bank In / DuitNow',
+        paymentGatewayStatus: 'pending',
+        paymentProof: { required: true, paymentId: 'payment-a', status: 'uploaded', canReview: true },
+      })],
+      updateOrderStatus,
+      reviewPaymentProof,
+    };
+    const { host } = await mountOrderAdmin();
+
+    await act(async () => detailButton(host, 0).click());
+    const auditFetch = (mockedAdminContext.value as { auditFetch: ReturnType<typeof vi.fn> }).auditFetch;
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(1));
+    act(() => exactButton(host, 'Update & Notify').click());
+    await vi.waitFor(() => expect(updateOrderStatus).toHaveBeenCalledTimes(1));
+    await act(async () => exactButton(host, 'Verify payment').click());
+    await vi.waitFor(() => expect(reviewPaymentProof).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(host.textContent).toContain('Dispatch Email Update to newer-proof@example.test'));
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2));
+
+    await act(async () => statusGate.resolve(baseOrder({
+      customerEmail: 'stale-status@example.test',
+      notificationContextFingerprint: 'stale-status-context',
+      notificationSummary: {
+        publicId: 'stale-status-dispatch', eventKey: 'payment_verified', channel: 'email', state: 'queued', source: 'automatic', queuedAt: '2026-09-01T09:00:00.000Z',
+      },
+    })));
+
+    expect(exactButton(host, 'Update & Notify').disabled).toBe(false);
+    expect(host.textContent).toContain('Dispatch Email Update to newer-proof@example.test');
+    expect(host.textContent).not.toContain('stale-status@example.test');
+    expect(host.textContent).not.toContain('Status update Email intent: Queued');
+    expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2);
+  });
+
+  it('keeps a newer manual-dispatch response when an older same-order status mutation resolves last', async () => {
+    const statusGate = deferred<Order | null>();
+    const updateOrderStatus = vi.fn(() => statusGate.promise);
+    const updateOrderTracking = vi.fn(async () => baseOrder({
+      customerEmail: 'newer-manual@example.test',
+      trackingCarrier: 'New Carrier',
+      trackingNumber: 'NEW-CROSS-2002',
+      notificationContextFingerprint: 'newer-manual-context',
+    }));
+    mockedAdminContext.value = { ...mockedAdminContext.value, updateOrderStatus, updateOrderTracking };
+    const { host } = await mountOrderAdmin();
+
+    await act(async () => detailButton(host, 0).click());
+    const auditFetch = (mockedAdminContext.value as { auditFetch: ReturnType<typeof vi.fn> }).auditFetch;
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(1));
+    act(() => exactButton(host, 'Update & Notify').click());
+    await vi.waitFor(() => expect(updateOrderStatus).toHaveBeenCalledTimes(1));
+    await fillManualDispatch(host, 'New Carrier', 'NEW-CROSS-2002');
+    await act(async () => exactButton(host, 'Record dispatch').click());
+    await vi.waitFor(() => expect(updateOrderTracking).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(host.textContent).toContain('NEW-CROSS-2002'));
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2));
+
+    await act(async () => statusGate.resolve(baseOrder({
+      customerEmail: 'stale-status@example.test',
+      notificationContextFingerprint: 'stale-status-context',
+      notificationSummary: {
+        publicId: 'stale-status-dispatch', eventKey: 'payment_verified', channel: 'email', state: 'queued', source: 'automatic', queuedAt: '2026-09-01T09:00:00.000Z',
+      },
+    })));
+
+    expect(exactButton(host, 'Update & Notify').disabled).toBe(false);
+    expect(host.textContent).toContain('Dispatch Email Update to newer-manual@example.test');
+    expect(host.textContent).toContain('NEW-CROSS-2002');
+    expect(host.textContent).not.toContain('stale-status@example.test');
+    expect(host.textContent).not.toContain('Status update Email intent: Queued');
+    expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2);
+  });
+
   it('refetches delivery audit after a proof review even when the refreshed order summary is null', async () => {
     const reviewPaymentProof = vi.fn(async () => baseOrder({
       paymentGateway: 'Bank In / DuitNow',
