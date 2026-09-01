@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Domain\Notifications\NotificationPermission;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -9,7 +10,10 @@ class UpdateNotificationTemplateRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+
+        return $user !== null
+            && NotificationPermission::allows($user, NotificationPermission::TEMPLATES_MANAGE);
     }
 
     /** @return array<string, mixed> */

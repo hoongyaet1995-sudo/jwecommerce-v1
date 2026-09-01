@@ -8,8 +8,10 @@ use App\Models\NotificationDispatch;
 use App\Models\NotificationTemplate;
 use App\Models\User;
 use App\Services\Notifications\NotificationTemplateDefaults;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Mockery;
 use Tests\TestCase;
 
 class NotificationTemplateApiTest extends TestCase
@@ -77,6 +79,70 @@ class NotificationTemplateApiTest extends TestCase
             'eventKey' => 'shipped',
             'emailSubject' => 'Mismatched edit',
         ])->assertUnprocessable()->assertJsonValidationErrors('eventKey');
+    }
+
+    public function test_unauthorized_template_update_is_forbidden_before_payload_validation(): void
+    {
+        app(NotificationTemplateDefaults::class)->synchronize();
+        $staff = User::factory()->create(['is_admin' => true, 'is_super_admin' => false]);
+        $original = NotificationTemplate::query()->where('event_key', 'order_created')->firstOrFail();
+
+        $this->actingAs($staff)->putJson('/admin/api/notification-templates/order_created', [
+            'eventKey' => 'shipped',
+            'emailEnabled' => true,
+            'emailCtaUrl' => 'javascript:alert(1)',
+        ])->assertForbidden();
+
+        $original->refresh();
+        $this->assertSame('{order_url}', $original->email_cta_url);
+        $this->assertSame(1, $original->version);
+        $this->assertNull($original->updated_by);
+    }
+
+    public function test_permission_variants_never_authorize_view_or_manage_actions(): void
+    {
+        app(NotificationTemplateDefaults::class)->synchronize();
+        $variants = [
+            'NOTIFICATIONS.TEMPLATES.VIEW' => 'NOTIFICATIONS.TEMPLATES.MANAGE',
+            'Notifications.Templates.View' => 'Notifications.Templates.Manage',
+            'prefix.notifications.templates.view' => 'prefix.notifications.templates.manage',
+            'notifications.templates.view.suffix' => 'notifications.templates.manage.suffix',
+        ];
+
+        foreach ($variants as $viewPermission => $managePermission) {
+            $viewer = $this->staffWith([$viewPermission]);
+            $manager = $this->staffWith([$managePermission]);
+
+            $this->actingAs($viewer)->getJson('/admin/api/notification-templates')->assertForbidden();
+            $this->actingAs($manager)->putJson('/admin/api/notification-templates/order_created', [
+                'emailSubject' => 'Variant must not authorize',
+            ])->assertForbidden();
+        }
+
+        $exactViewer = $this->staffWith([NotificationPermission::TEMPLATES_VIEW]);
+        $exactManager = $this->staffWith([NotificationPermission::TEMPLATES_MANAGE]);
+
+        $this->actingAs($exactViewer)->getJson('/admin/api/notification-templates')->assertOk();
+        $this->actingAs($exactManager)->putJson('/admin/api/notification-templates/order_created', [
+            'version' => 1,
+            'emailSubject' => 'Exact lowercase permission authorizes',
+        ])->assertOk()->assertJsonPath('data.emailSubject', 'Exact lowercase permission authorizes');
+    }
+
+    public function test_permission_matching_remains_byte_exact_when_the_database_comparison_is_case_insensitive(): void
+    {
+        $permission = NotificationPermission::TEMPLATES_VIEW;
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->forceFill(['is_super_admin' => false]);
+        $relation = Mockery::mock(HasMany::class);
+        $relation->shouldReceive('where')->with('permission', $permission)->andReturnSelf();
+        $relation->shouldReceive('exists')->andReturnTrue();
+        $relation->shouldReceive('pluck')->with('permission')->andReturn(collect([
+            'NOTIFICATIONS.TEMPLATES.VIEW',
+        ]));
+        $user->shouldReceive('permissions')->andReturn($relation);
+
+        $this->assertFalse(NotificationPermission::allows($user, $permission));
     }
 
     public function test_unknown_template_event_returns_a_stable_not_found_response(): void

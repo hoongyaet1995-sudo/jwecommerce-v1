@@ -33,6 +33,6 @@ class NotificationPermission
     public static function allows(User $user, string $permission): bool
     {
         return $user->is_super_admin
-            || $user->permissions()->where('permission', $permission)->exists();
+            || in_array($permission, $user->permissions()->pluck('permission')->all(), true);
     }
 }
