@@ -114,8 +114,10 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
   const [isTesting, setIsTesting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [testSendError, setTestSendError] = useState<string | null>(null);
   const [operationStatus, setOperationStatus] = useState<'Saved' | 'Reset' | 'Queued' | 'Not connected' | null>(null);
 
+  const selectedStatusIdRef = useRef<NotificationEventKey>('order_created');
   const emailSubjectRef = useRef<HTMLInputElement>(null);
   const emailBodyRef = useRef<HTMLTextAreaElement>(null);
   const whatsappBodyRef = useRef<HTMLTextAreaElement>(null);
@@ -166,6 +168,10 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
     }
   }, [currentTemplate]);
 
+  useEffect(() => {
+    selectedStatusIdRef.current = selectedStatusId;
+  }, [selectedStatusId]);
+
   const filteredVariables = useMemo(() => {
     const allowed = new Set(currentTemplate?.variables ?? []);
     return NOTIFICATION_VARIABLES.filter(variable => (
@@ -182,7 +188,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
     );
   }
 
-  if (isLoading || (!localFormData && !loadError)) {
+  if (isLoading) {
     return (
       <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6 shadow-xs">
         <p className="text-xs text-neutral-500">Loading notification templates...</p>
@@ -193,7 +199,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
   if (loadError || !localFormData) {
     return (
       <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-rose-200 dark:border-rose-900 p-6 shadow-xs">
-        <p className="text-sm font-semibold text-rose-700 dark:text-rose-300">{loadError ?? 'Notification templates are unavailable.'}</p>
+        <p className="text-sm font-semibold text-rose-700 dark:text-rose-300">{loadError ?? 'No notification templates are available.'}</p>
       </div>
     );
   }
@@ -257,6 +263,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
   const handleSaveCurrent = async () => {
     if (!canManageTemplates) return;
 
+    const requestedEventKey = localFormData.eventKey;
     setIsSaving(true);
     setValidationError(null);
     setOperationStatus(null);
@@ -267,13 +274,17 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
         editableTemplateFields(localFormData),
       );
       setNotificationTemplates(prev => prev.map(template => template.eventKey === saved.eventKey ? saved : template));
-      setLocalFormData(saved);
-      setOperationStatus('Saved');
+      if (selectedStatusIdRef.current === requestedEventKey && saved.eventKey === requestedEventKey) {
+        setLocalFormData(saved);
+        setOperationStatus('Saved');
+      }
     } catch (error: unknown) {
       const messages = error instanceof NotificationApiError
         ? Object.values(error.errors).flat()
         : [];
-      setValidationError(messages.join(' ') || (error instanceof Error ? error.message : 'Notification template could not be saved.'));
+      if (selectedStatusIdRef.current === requestedEventKey) {
+        setValidationError(messages.join(' ') || (error instanceof Error ? error.message : 'Notification template could not be saved.'));
+      }
     } finally {
       setIsSaving(false);
     }
@@ -300,6 +311,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
 
   const handleSendTestNotification = async () => {
     setValidationError(null);
+    setTestSendError(null);
     if (activeChannel === 'whatsapp') {
       setIsTestModalOpen(false);
       setOperationStatus('Not connected');
@@ -319,7 +331,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
       setIsTestModalOpen(false);
       setOperationStatus('Queued');
     } catch (error: unknown) {
-      setValidationError(error instanceof Error ? error.message : 'Notification test could not be queued.');
+      setTestSendError(error instanceof Error ? error.message : 'Notification test could not be queued.');
     } finally {
       setIsTesting(false);
     }
@@ -412,7 +424,10 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
           )}
           <button
             type="button"
-            onClick={() => setIsTestModalOpen(true)}
+            onClick={() => {
+              setTestSendError(null);
+              setIsTestModalOpen(true);
+            }}
             disabled={!canSendTests}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-xs font-semibold text-neutral-700 dark:text-neutral-300 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -470,6 +485,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
               <button
                 key={status.eventKey}
                 onClick={() => {
+                  selectedStatusIdRef.current = status.eventKey;
                   setSelectedStatusId(status.eventKey);
                   setValidationError(null);
                   setOperationStatus(null);
@@ -1058,6 +1074,13 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
                 <>The <strong>{localFormData.statusName}</strong> WhatsApp template remains previewable, but delivery is <strong>Not connected</strong>.</>
               )}
             </p>
+
+            {testSendError && (
+              <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300 text-xs font-semibold">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{testSendError}</span>
+              </div>
+            )}
 
             {activeChannel === 'email' ? (
               <div>

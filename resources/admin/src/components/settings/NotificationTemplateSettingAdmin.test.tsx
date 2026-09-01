@@ -113,6 +113,8 @@ const jsonResponse = (payload: unknown, status = 200) => new Response(JSON.strin
 class NotificationTemplateApi {
   templates = initialTemplates();
   testDispatches = 0;
+  saveGate: Promise<void> | null = null;
+  testFailure: { payload: unknown; status: number } | null = null;
 
   readonly fetch = vi.fn(async (input: RequestInfo | URL, init: RequestInit = {}) => {
     const url = String(input);
@@ -141,6 +143,10 @@ class NotificationTemplateApi {
     if (!current) return jsonResponse({ message: 'Not found' }, 404);
 
     if (match[2] === '/test' && method === 'POST') {
+      if (this.testFailure) {
+        return jsonResponse(this.testFailure.payload, this.testFailure.status);
+      }
+
       this.testDispatches += 1;
       const dispatch: NotificationDispatch = {
         id: `test-${this.testDispatches}`,
@@ -174,6 +180,12 @@ class NotificationTemplateApi {
         return jsonResponse({ message: 'Stale template version.' }, 409);
       }
 
+      if (this.saveGate) {
+        const gate = this.saveGate;
+        this.saveGate = null;
+        await gate;
+      }
+
       Object.assign(current, body, { version: current.version + 1 });
       return jsonResponse({ data: { ...current } });
     }
@@ -184,7 +196,7 @@ class NotificationTemplateApi {
 
 const mountedRoots: Array<{ root: Root; host: HTMLDivElement }> = [];
 
-const mount = async (node: React.ReactNode = <NotificationTemplateSettingAdmin />) => {
+const renderComponent = async (node: React.ReactNode = <NotificationTemplateSettingAdmin />) => {
   const host = document.createElement('div');
   document.body.append(host);
   const root = createRoot(host);
@@ -194,8 +206,14 @@ const mount = async (node: React.ReactNode = <NotificationTemplateSettingAdmin /
     root.render(node);
   });
 
-  await vi.waitFor(() => expect(host.textContent).toContain('Pending Payment'));
   return { host, root };
+};
+
+const mount = async (node: React.ReactNode = <NotificationTemplateSettingAdmin />) => {
+  const mounted = await renderComponent(node);
+
+  await vi.waitFor(() => expect(mounted.host.textContent).toContain('Pending Payment'));
+  return mounted;
 };
 
 const button = (host: HTMLElement, label: string): HTMLButtonElement => {
@@ -286,6 +304,37 @@ describe('NotificationTemplateSettingAdmin real-data binding', () => {
     expect(remountedSubject.value).not.toContain('Browser-owned stale value');
   });
 
+  it('keeps the selected event form and messages intact when another event save resolves late', async () => {
+    const { host } = await mount();
+    const api = (mockedAdminContext.value as { api: NotificationTemplateApi }).api;
+    const subject = inputByPlaceholder(host, 'e.g. [{shop_name}] Order #{order_number} Update: {status_name}');
+    let releaseSave!: () => void;
+    api.saveGate = new Promise<void>((resolve) => {
+      releaseSave = resolve;
+    });
+
+    await change(subject, 'Delayed Pending Payment subject');
+    act(() => button(host, 'Save Status Template').click());
+    await act(async () => button(host, 'Processing & Verified').click());
+    await vi.waitFor(() => expect(subject.value).toBe('[JW Studio] Processing & Verified for #{order_number}'));
+
+    await act(async () => releaseSave());
+    await vi.waitFor(() => expect(api.templates[0].version).toBe(5));
+
+    expect(subject.value).toBe('[JW Studio] Processing & Verified for #{order_number}');
+    expect(host.textContent).not.toContain('Saved');
+
+    await change(subject, 'Saved Processing & Verified subject');
+    await act(async () => button(host, 'Save Status Template').click());
+    await vi.waitFor(() => expect(api.templates[1].emailSubject).toBe('Saved Processing & Verified subject'));
+
+    expect(api.templates[0].emailSubject).toBe('Delayed Pending Payment subject');
+    expect(api.templates[0].version).toBe(5);
+    expect(api.templates[1].version).toBe(5);
+    expect(subject.value).toBe('Saved Processing & Verified subject');
+    expect(host.textContent).toContain('Saved');
+  });
+
   it('resets templates only after explicit confirmation', async () => {
     const { host } = await mount();
     const api = (mockedAdminContext.value as { api: NotificationTemplateApi }).api;
@@ -361,6 +410,43 @@ describe('NotificationTemplateSettingAdmin real-data binding', () => {
     expect(api.testDispatches).toBe(1);
   });
 
+  it('keeps API validation for a rejected Email test visible inside the dispatch modal', async () => {
+    const { host } = await mount();
+    const api = (mockedAdminContext.value as { api: NotificationTemplateApi }).api;
+    api.testFailure = {
+      status: 422,
+      payload: {
+        message: 'Invalid test recipient.',
+        errors: { recipientEmail: ['Enter a valid email address.'] },
+      },
+    };
+
+    await act(async () => button(host, 'Send Test Notification').click());
+    await act(async () => button(host, 'Send Test').click());
+
+    const modal = host.querySelector('.fixed.inset-0.z-50');
+    await vi.waitFor(() => expect(modal?.textContent).toContain('Enter a valid email address.'));
+    expect(modal?.textContent).toContain('Send Test Notification');
+    expect(api.testDispatches).toBe(0);
+  });
+
+  it('shows the adapter safe rate-limit message inside the Email test modal', async () => {
+    const { host } = await mount();
+    const api = (mockedAdminContext.value as { api: NotificationTemplateApi }).api;
+    api.testFailure = {
+      status: 429,
+      payload: { message: 'Private infrastructure limit details.' },
+    };
+
+    await act(async () => button(host, 'Send Test Notification').click());
+    await act(async () => button(host, 'Send Test').click());
+
+    const modal = host.querySelector('.fixed.inset-0.z-50');
+    await vi.waitFor(() => expect(modal?.textContent).toContain('Too many notification requests. Please try again shortly.'));
+    expect(modal?.textContent).not.toContain('Private infrastructure limit details.');
+    expect(api.testDispatches).toBe(0);
+  });
+
   it('never dispatches or simulates WhatsApp delivery', async () => {
     const { host } = await mount();
     const api = (mockedAdminContext.value as { api: NotificationTemplateApi }).api;
@@ -396,5 +482,14 @@ describe('NotificationTemplateSettingAdmin real-data binding', () => {
     const { host } = await mount(<ShopSettingsHub />);
     expect(host.textContent).toContain('Auto Email & WhatsApp Template');
     expect(host.textContent).toContain('Auto Email & WhatsApp Templates');
+  });
+
+  it('shows an explicit unavailable state when the API returns an empty template collection', async () => {
+    const api = (mockedAdminContext.value as { api: NotificationTemplateApi }).api;
+    api.templates = [];
+    const { host } = await renderComponent();
+
+    await vi.waitFor(() => expect(host.textContent).toContain('No notification templates are available.'));
+    expect(host.textContent).not.toContain('Loading notification templates...');
   });
 });
