@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\Notifications\NotificationTemplateDefaults;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 require dirname(__DIR__, 4).'/vendor/autoload.php';
 
@@ -172,14 +173,15 @@ function expectedOwnership(string $token): array
     ];
 }
 
-/** @return array{ids: list<int>, fingerprint: string} */
-function querySnapshot($query, bool $lockForUpdate = false): array
+/** @return array{ids: list<int|string>, fingerprint: string} */
+function querySnapshot($query, bool $lockForUpdate = false, ?string $table = null): array
 {
+    $primaryKey = $table === null ? 'id' : fixturePrimaryKeyMetadata()[$table]['column'];
     if ($lockForUpdate) {
         $query->lockForUpdate();
     }
 
-    $rows = $query->orderBy('id')->get()->map(static function (object $row): array {
+    $rows = $query->orderBy($primaryKey)->get()->map(static function (object $row): array {
         $attributes = (array) $row;
         ksort($attributes);
 
@@ -187,12 +189,14 @@ function querySnapshot($query, bool $lockForUpdate = false): array
     })->values()->all();
 
     return [
-        'ids' => array_map(static fn (array $row): int => (int) $row['id'], $rows),
+        'ids' => $table === null
+            ? array_map(static fn (array $row): int => (int) $row[$primaryKey], $rows)
+            : normalizeIdentifiers($table, array_column($rows, $primaryKey)),
         'fingerprint' => smokeHash(['rows' => $rows]),
     ];
 }
 
-/** @param list<int> $ids */
+/** @param list<int|string> $ids */
 function constrainIds($query, string $column, array $ids): void
 {
     if ($ids === []) {
@@ -228,6 +232,123 @@ function fixtureForeignKeys(): array
     );
 }
 
+/** @return array<string, array{column: string, dataType: string, columnType: string, kind: 'integer'|'string'}> */
+function fixturePrimaryKeyMetadata(): array
+{
+    static $metadata = null;
+    if (is_array($metadata)) {
+        return $metadata;
+    }
+
+    $rows = DB::select(<<<'SQL'
+        SELECT
+            k.TABLE_NAME AS table_name,
+            k.COLUMN_NAME AS primary_key,
+            c.DATA_TYPE AS data_type,
+            c.COLUMN_TYPE AS column_type,
+            k.ORDINAL_POSITION AS ordinal_position
+        FROM information_schema.TABLE_CONSTRAINTS tc
+        JOIN information_schema.KEY_COLUMN_USAGE k
+          ON k.CONSTRAINT_SCHEMA = tc.CONSTRAINT_SCHEMA
+         AND k.TABLE_NAME = tc.TABLE_NAME
+         AND k.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
+        JOIN information_schema.COLUMNS c
+          ON c.TABLE_SCHEMA = k.TABLE_SCHEMA
+         AND c.TABLE_NAME = k.TABLE_NAME
+         AND c.COLUMN_NAME = k.COLUMN_NAME
+        WHERE tc.TABLE_SCHEMA = DATABASE()
+          AND tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
+        ORDER BY k.TABLE_NAME, k.ORDINAL_POSITION
+        SQL);
+
+    $grouped = [];
+    foreach ($rows as $row) {
+        $grouped[(string) $row->table_name][] = $row;
+    }
+
+    $integerTypes = ['tinyint', 'smallint', 'mediumint', 'int', 'integer', 'bigint'];
+    $metadata = [];
+    foreach ($grouped as $table => $primaryKeyRows) {
+        if (count($primaryKeyRows) !== 1) {
+            continue;
+        }
+        $row = $primaryKeyRows[0];
+        $dataType = strtolower((string) $row->data_type);
+        $metadata[$table] = [
+            'column' => (string) $row->primary_key,
+            'dataType' => $dataType,
+            'columnType' => strtolower((string) $row->column_type),
+            'kind' => in_array($dataType, $integerTypes, true) ? 'integer' : 'string',
+        ];
+    }
+
+    return $metadata;
+}
+
+/** @return int|string */
+function canonicalIdentifier(string $table, mixed $value)
+{
+    $primaryKey = fixturePrimaryKeyMetadata()[$table] ?? null;
+    if ($primaryKey === null || $value === null) {
+        throw new RuntimeException('fixture_primary_key_metadata_missing');
+    }
+    if ($primaryKey['kind'] === 'string') {
+        return (string) $value;
+    }
+
+    $candidate = (string) $value;
+    if (! preg_match('/^-?(?:0|[1-9][0-9]*)$/', $candidate)) {
+        throw new RuntimeException('fixture_integer_primary_key_invalid');
+    }
+    $integer = (int) $candidate;
+    if ((string) $integer === $candidate) {
+        return $integer;
+    }
+
+    return $candidate;
+}
+
+/**
+ * @param  list<mixed>  $values
+ * @return list<int|string>
+ */
+function normalizeIdentifiers(string $table, array $values): array
+{
+    $normalized = [];
+    foreach ($values as $value) {
+        $identifier = canonicalIdentifier($table, $value);
+        $key = is_int($identifier) ? "integer:{$identifier}" : 'string:'.$identifier;
+        $normalized[$key] = $identifier;
+    }
+
+    $identifiers = array_values($normalized);
+    $kind = fixturePrimaryKeyMetadata()[$table]['kind'];
+    usort($identifiers, static function (int|string $left, int|string $right) use ($kind): int {
+        if ($kind === 'string') {
+            return strcmp((string) $left, (string) $right);
+        }
+        if (is_int($left) && is_int($right)) {
+            return $left <=> $right;
+        }
+
+        $leftString = (string) $left;
+        $rightString = (string) $right;
+        $leftNegative = str_starts_with($leftString, '-');
+        $rightNegative = str_starts_with($rightString, '-');
+        if ($leftNegative !== $rightNegative) {
+            return $leftNegative ? -1 : 1;
+        }
+        $leftMagnitude = ltrim($leftString, '-');
+        $rightMagnitude = ltrim($rightString, '-');
+        $comparison = strlen($leftMagnitude) <=> strlen($rightMagnitude)
+            ?: strcmp($leftMagnitude, $rightMagnitude);
+
+        return $leftNegative ? -$comparison : $comparison;
+    });
+
+    return $identifiers;
+}
+
 /** @return list<string> */
 function fixtureClosureTables(): array
 {
@@ -255,14 +376,30 @@ function fixtureClosureTables(): array
     return $tables;
 }
 
+/** @return array<string, array{column: string, dataType: string, columnType: string, kind: 'integer'|'string'}> */
+function fixtureClosurePrimaryKeys(): array
+{
+    $allPrimaryKeys = fixturePrimaryKeyMetadata();
+    $primaryKeys = [];
+    foreach (fixtureClosureTables() as $table) {
+        if (! isset($allPrimaryKeys[$table])) {
+            throw new RuntimeException('fixture_primary_key_metadata_missing');
+        }
+        $primaryKeys[$table] = $allPrimaryKeys[$table];
+    }
+    ksort($primaryKeys);
+
+    return $primaryKeys;
+}
+
 /**
  * Build the exact row closure reachable through real MySQL foreign keys from
  * the dedicated Admin, Customer, Order, created templates, and dispatches.
  * Empty reachable tables remain in the snapshot so a later association cannot
  * be hidden by parent cascade/nullOnDelete behavior.
  *
- * @param  array<string, list<int>>  $rootIds
- * @return array<string, array{ids: list<int>, fingerprint: string}>
+ * @param  array<string, list<int|string>>  $rootIds
+ * @return array<string, array{ids: list<int|string>, fingerprint: string}>
  */
 function fixtureOwnerClosure(array $rootIds, bool $lockForUpdate = false): array
 {
@@ -274,9 +411,7 @@ function fixtureOwnerClosure(array $rootIds, bool $lockForUpdate = false): array
         if (! array_key_exists($table, $idsByTable)) {
             throw new RuntimeException('fixture_root_table_not_reachable');
         }
-        $normalized = array_values(array_unique(array_map('intval', $ids)));
-        sort($normalized);
-        $idsByTable[$table] = $normalized;
+        $idsByTable[$table] = normalizeIdentifiers($table, $ids);
     }
 
     $foreignKeys = fixtureForeignKeys();
@@ -289,7 +424,9 @@ function fixtureOwnerClosure(array $rootIds, bool $lockForUpdate = false): array
                 || $idsByTable[$foreignKey['parentTable']] === []) {
                 continue;
             }
-            if ($foreignKey['parentColumn'] !== 'id') {
+            $parentPrimaryKey = fixturePrimaryKeyMetadata()[$foreignKey['parentTable']] ?? null;
+            $childPrimaryKey = fixturePrimaryKeyMetadata()[$foreignKey['childTable']] ?? null;
+            if ($parentPrimaryKey === null || $childPrimaryKey === null || $foreignKey['parentColumn'] !== $parentPrimaryKey['column']) {
                 throw new RuntimeException('fixture_non_id_parent_foreign_key');
             }
 
@@ -298,9 +435,11 @@ function fixtureOwnerClosure(array $rootIds, bool $lockForUpdate = false): array
             if ($lockForUpdate) {
                 $query->lockForUpdate();
             }
-            $discovered = array_map('intval', $query->pluck('id')->all());
-            $merged = array_values(array_unique([...$idsByTable[$foreignKey['childTable']], ...$discovered]));
-            sort($merged);
+            $discovered = $query->pluck($childPrimaryKey['column'])->all();
+            $merged = normalizeIdentifiers(
+                $foreignKey['childTable'],
+                [...$idsByTable[$foreignKey['childTable']], ...$discovered],
+            );
             if ($merged !== $idsByTable[$foreignKey['childTable']]) {
                 $idsByTable[$foreignKey['childTable']] = $merged;
                 $changed = true;
@@ -310,8 +449,12 @@ function fixtureOwnerClosure(array $rootIds, bool $lockForUpdate = false): array
 
     $snapshots = [];
     foreach ($idsByTable as $table => $ids) {
+        $primaryKey = fixturePrimaryKeyMetadata()[$table] ?? null;
+        if ($primaryKey === null) {
+            throw new RuntimeException('fixture_primary_key_metadata_missing');
+        }
         $query = DB::table($table);
-        constrainIds($query, 'id', $ids);
+        constrainIds($query, $primaryKey['column'], $ids);
         if ($table === 'users') {
             if ($lockForUpdate) {
                 $query->lockForUpdate();
@@ -324,13 +467,13 @@ function fixtureOwnerClosure(array $rootIds, bool $lockForUpdate = false): array
                 return $attributes;
             })->values()->all();
             $snapshots[$table] = [
-                'ids' => array_map(static fn (array $row): int => (int) $row['id'], $rows),
+                'ids' => normalizeIdentifiers($table, array_column($rows, $primaryKey['column'])),
                 'fingerprint' => smokeHash(['rows' => $rows]),
             ];
 
             continue;
         }
-        $snapshots[$table] = querySnapshot($query, $lockForUpdate);
+        $snapshots[$table] = querySnapshot($query, $lockForUpdate, $table);
     }
 
     ksort($snapshots);
@@ -743,6 +886,7 @@ try {
             'businessFingerprint' => $state['setup_business_fingerprint'],
             'ownedAssociations' => $state['owned_associations'],
             'ownerClosure' => $state['owner_closure'],
+            'ownerPrimaryKeys' => fixtureClosurePrimaryKeys(),
         ]);
         exit(0);
     }
@@ -962,6 +1106,96 @@ try {
         exit(0);
     }
 
+    if ($mode === 'inject-uuid-owner-cleanup-guard') {
+        $ownership = expectedOwnership($token);
+        if ($state['ownership'] !== $ownership || fixtureOwnerClosure($state['owner_roots']) !== $state['owner_closure']) {
+            failHarness('fixture_owner_closure_mismatch');
+        }
+
+        $assetId = DB::transaction(static function () use ($ownership, $state, $token): string {
+            $admin = User::query()
+                ->whereKey($state['admin_id'])
+                ->where('email', $ownership['adminEmail'])
+                ->lockForUpdate()
+                ->sole();
+            $assetId = (string) Str::uuid();
+            DB::table('cms_media_assets')->insert([
+                'id' => $assetId,
+                'disk' => 'local',
+                'path' => "task9-owner-guard/{$token}.png",
+                'url' => "/storage/task9-owner-guard/{$token}.png",
+                'original_name' => "task9-owner-guard-{$token}.png",
+                'mime_type' => 'image/png',
+                'size' => 1,
+                'width' => 1,
+                'height' => 1,
+                'checksum' => hash('sha256', "TASK9-UUID-OWNER-GUARD-{$token}"),
+                'uploader_id' => $admin->id,
+                'orphaned_at' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return $assetId;
+        });
+
+        passHarness([
+            'mode' => 'inject-uuid-owner-cleanup-guard',
+            'database' => $safeRuntime['database'],
+            'cmsMediaAssetId' => $assetId,
+        ]);
+        exit(0);
+    }
+
+    if ($mode === 'remove-uuid-owner-cleanup-guard') {
+        $ownership = expectedOwnership($token);
+        if ($state['ownership'] !== $ownership) {
+            failHarness('state_ownership_mismatch');
+        }
+
+        DB::transaction(static function () use ($ownership, $state, $token): void {
+            $admin = User::query()
+                ->whereKey($state['admin_id'])
+                ->where('email', $ownership['adminEmail'])
+                ->lockForUpdate()
+                ->sole();
+            $assets = DB::table('cms_media_assets')
+                ->where('uploader_id', $admin->id)
+                ->where('path', "task9-owner-guard/{$token}.png")
+                ->where('checksum', hash('sha256', "TASK9-UUID-OWNER-GUARD-{$token}"))
+                ->lockForUpdate()
+                ->get();
+            if ($assets->count() !== 1) {
+                throw new RuntimeException('uuid_owner_cleanup_guard_ownership_mismatch');
+            }
+            $asset = $assets->first();
+            $deleted = DB::table('cms_media_assets')
+                ->where('id', $asset->id)
+                ->where('uploader_id', $admin->id)
+                ->where('path', "task9-owner-guard/{$token}.png")
+                ->where('checksum', hash('sha256', "TASK9-UUID-OWNER-GUARD-{$token}"))
+                ->delete();
+            if ($deleted !== 1) {
+                throw new RuntimeException('uuid_owner_cleanup_guard_delete_mismatch');
+            }
+        });
+
+        $business = businessEvidence($token, $state['owner_roots']);
+        $restored = $business['counts'] === $state['setup_business_counts']
+            && hash_equals((string) $state['setup_business_fingerprint'], $business['fingerprint'])
+            && fixtureOwnerClosure($state['owner_roots']) === $state['owner_closure'];
+        if (! $restored) {
+            failHarness('uuid_owner_cleanup_guard_restore_mismatch');
+        }
+
+        passHarness([
+            'mode' => 'remove-uuid-owner-cleanup-guard',
+            'database' => $safeRuntime['database'],
+            'uuidOwnerAssociationStateRestored' => true,
+        ]);
+        exit(0);
+    }
+
     if ($mode === 'seal-browser-sessions') {
         $ownership = expectedOwnership($token);
         if ($state['ownership'] !== $ownership || ($state['owned_sessions']['ids'] ?? null) !== []) {
@@ -1015,6 +1249,7 @@ try {
             'database' => $safeRuntime['database'],
             'counts' => $business['counts'],
             'businessFingerprint' => $business['fingerprint'],
+            'ownerClosure' => fixtureOwnerClosure($state['owner_roots']),
         ]);
         exit(0);
     }

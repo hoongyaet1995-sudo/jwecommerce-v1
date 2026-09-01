@@ -22,7 +22,7 @@ type HarnessResult = {
   templateFingerprint?: string;
   orderId?: number;
   ownedAssociations?: Record<string, { ids: number[]; fingerprint: string }>;
-  ownerClosure?: Record<string, { ids: number[]; fingerprint: string }>;
+  ownerClosure?: Record<string, { ids: Array<number | string>; fingerprint: string }>;
   associationGuardId?: number;
   associationStateRestored?: boolean;
   customerAddressId?: number;
@@ -30,6 +30,9 @@ type HarnessResult = {
   ownerAssociationStateRestored?: boolean;
   ownedSessionIds?: string[];
   ownerClosureTableCount?: number;
+  cmsMediaAssetId?: string;
+  uuidOwnerAssociationStateRestored?: boolean;
+  ownerPrimaryKeys?: Record<string, { column: string; dataType: string; columnType: string; kind: 'integer' | 'string' }>;
 };
 
 type RequestLedgerEntry = {
@@ -156,7 +159,7 @@ const stopOwnedServer = async (): Promise<boolean> => {
   return !(await portHasListener());
 };
 
-type HarnessMode = 'probe' | 'baseline' | 'setup' | 'snapshot' | 'inject-cleanup-guard' | 'remove-cleanup-guard' | 'inject-owner-cleanup-guard' | 'remove-owner-cleanup-guard' | 'seal-browser-sessions' | 'cleanup';
+type HarnessMode = 'probe' | 'baseline' | 'setup' | 'snapshot' | 'inject-cleanup-guard' | 'remove-cleanup-guard' | 'inject-owner-cleanup-guard' | 'remove-owner-cleanup-guard' | 'inject-uuid-owner-cleanup-guard' | 'remove-uuid-owner-cleanup-guard' | 'seal-browser-sessions' | 'cleanup';
 
 const runHarness = (mode: HarnessMode): HarnessResult => {
   const raw = execFileSync(php, [harness, mode], {
@@ -319,6 +322,22 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
 
     setup = runHarness('setup');
     writeEvidence('fixture-setup.json', setup);
+    expect(setup.ownerPrimaryKeys?.cms_media_assets).toEqual({
+      column: 'id',
+      dataType: 'char',
+      columnType: 'char(36)',
+      kind: 'string',
+    });
+    expect(Object.entries(setup.ownerPrimaryKeys ?? {})
+      .filter(([, primaryKey]) => primaryKey.kind !== 'integer')
+      .map(([table, primaryKey]) => ({ table, ...primaryKey })))
+      .toEqual([{
+        table: 'cms_media_assets',
+        column: 'id',
+        dataType: 'char',
+        columnType: 'char(36)',
+        kind: 'string',
+      }]);
 
     const cleanupGuard = runHarness('inject-cleanup-guard');
     expect(cleanupGuard.associationGuardId).toBeGreaterThan(0);
@@ -351,6 +370,27 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
       stateFilePreserved: true,
       exactInjectedRowsRemoved: true,
       ownerAssociationStateRestored: ownerCleanupGuardRemoval.ownerAssociationStateRestored,
+    });
+
+    const uuidOwnerCleanupGuard = runHarness('inject-uuid-owner-cleanup-guard');
+    expect(uuidOwnerCleanupGuard.cmsMediaAssetId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    const uuidOwnerSnapshot = runHarness('snapshot');
+    expect(uuidOwnerSnapshot.ownerClosure?.cms_media_assets.ids).toEqual([uuidOwnerCleanupGuard.cmsMediaAssetId]);
+    const uuidOwnerCleanupRefusal = refusedHarnessMode('cleanup');
+    expect(uuidOwnerCleanupRefusal).toEqual({ exitCode: 1, code: 'fixture_business_state_changed' });
+    expect(existsSync(statePath)).toBe(true);
+    expect(runHarness('snapshot').ownerClosure?.cms_media_assets.ids).toEqual([uuidOwnerCleanupGuard.cmsMediaAssetId]);
+    const uuidOwnerCleanupGuardRemoval = runHarness('remove-uuid-owner-cleanup-guard');
+    expect(uuidOwnerCleanupGuardRemoval.uuidOwnerAssociationStateRestored).toBe(true);
+    writeEvidence('fixture-uuid-owner-cleanup-fail-closed.json', {
+      injectedTable: 'cms_media_assets',
+      primaryKeyType: 'char(36)',
+      cmsMediaAssetId: uuidOwnerCleanupGuard.cmsMediaAssetId,
+      cleanupRefusal: uuidOwnerCleanupRefusal,
+      fixtureAndRowPreserved: true,
+      stateFilePreserved: true,
+      exactInjectedRowRemoved: true,
+      ownerAssociationStateRestored: uuidOwnerCleanupGuardRemoval.uuidOwnerAssociationStateRestored,
     });
 
     const args = ['-d', 'display_errors=0', '-S', `127.0.0.1:${port}`, router];
