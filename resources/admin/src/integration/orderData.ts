@@ -28,8 +28,8 @@ const mutateOrder = async (bootstrap: LaravelAdminBootstrap, path: string, metho
   return payload.data;
 };
 
-export const updateOrderStatusData = (bootstrap: LaravelAdminBootstrap, orderId: string, paymentStatus?: PaymentStatus, fulfillmentStatus?: FulfillmentStatus, note?: string): Promise<Order> =>
-  mutateOrder(bootstrap, `${encodeURIComponent(orderId)}/status`, 'PATCH', { paymentStatus, fulfillmentStatus, note });
+export const updateOrderStatusData = (bootstrap: LaravelAdminBootstrap, orderId: string, paymentStatus?: PaymentStatus, fulfillmentStatus?: FulfillmentStatus, note?: string, notifyCustomer?: boolean): Promise<Order> =>
+  mutateOrder(bootstrap, `${encodeURIComponent(orderId)}/status`, 'PATCH', { paymentStatus, fulfillmentStatus, note, notifyCustomer });
 
 export const updateOrderTrackingData = (bootstrap: LaravelAdminBootstrap, orderId: string, carrier: string, trackingNumber: string): Promise<Order> =>
   mutateOrder(bootstrap, `${encodeURIComponent(orderId)}/tracking`, 'PATCH', { carrier, trackingNumber });

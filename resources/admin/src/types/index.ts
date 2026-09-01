@@ -1,3 +1,5 @@
+import type { NotificationPermission } from './notifications';
+
 export type AdminRole = 'super_admin' | 'catalog_manager' | 'order_specialist' | 'developer';
 
 export interface AdminUser {
@@ -17,8 +19,10 @@ export interface LaravelAdminBootstrap {
     avatar: string | null;
     isSuperAdmin?: boolean;
     reviewPermissions?: string[];
+    notificationPermissions?: NotificationPermission[];
   };
   reviewPermissions?: string[];
+  notificationPermissions?: NotificationPermission[];
   csrfToken: string;
   logoutUrl: string;
   dashboardUrl?: string;
@@ -31,6 +35,8 @@ export interface LaravelAdminBootstrap {
   catalogUrl?: string;
   menusUrl?: string;
   ordersUrl?: string;
+  notificationTemplatesUrl?: string;
+  orderNotificationsUrl?: string;
   shipmentsUrl?: string;
   easyParcelWebhookReceiptsUrl?: string;
   easyParcelWebhookCallbackUrl?: string;
@@ -1061,3 +1067,4 @@ export * from './support';
 export * from './reports';
 export * from './aiAutoReply';
 export * from './promotions';
+export * from './notifications';

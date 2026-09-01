@@ -27,6 +27,14 @@ describe('Laravel Admin bootstrap adapter', () => {
     expect(() => readAdminBootstrap(undefined)).toThrow('Missing Laravel Admin bootstrap');
   });
 
+  it('rejects malformed optional notification bootstrap data instead of accepting an unusable API contract', () => {
+    expect(() => readAdminBootstrap({
+      ...bootstrap,
+      notificationTemplatesUrl: 17,
+      notificationPermissions: ['notifications.templates.view', 7],
+    } as unknown as Parameters<typeof readAdminBootstrap>[0])).toThrow('Missing Laravel Admin bootstrap');
+  });
+
   it('submits the real logout endpoint with the Laravel CSRF token', () => {
     const submit = vi.fn();
     const form = {
