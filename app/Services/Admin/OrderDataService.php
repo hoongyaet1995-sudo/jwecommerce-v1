@@ -2,7 +2,9 @@
 
 namespace App\Services\Admin;
 
+use App\Domain\Notifications\NotificationPermission;
 use App\Domain\Payments\PaymentProofPermission;
+use App\Models\NotificationDispatch;
 use App\Models\Order;
 use App\Models\OrderAddress;
 use App\Models\User;
@@ -15,27 +17,28 @@ class OrderDataService
     {
         return Order::query()->with([
             'customer', 'items', 'addresses', 'payments.proofEvents.user', 'statusHistory', 'refunds', 'taxLines',
-            'shipments', 'shipmentQuotes', 'notificationDispatches',
+            'shipments', 'shipmentQuotes',
         ])->latest()->get()->map(fn (Order $order): array => $this->data($order));
     }
 
-    public function data(Order $order): array
+    public function data(Order $order, ?NotificationDispatch $notificationDispatch = null): array
     {
         $order->loadMissing([
             'customer', 'items', 'addresses', 'payments.proofEvents.user', 'statusHistory', 'refunds', 'taxLines',
-            'shipments', 'shipmentQuotes', 'notificationDispatches',
+            'shipments', 'shipmentQuotes',
         ]);
         $payment = $order->payments->sortByDesc('id')->first();
         $viewer = request()->user();
         $canViewProof = $viewer instanceof User && PaymentProofPermission::allows($viewer, PaymentProofPermission::VIEW);
         $canReviewProof = $viewer instanceof User && PaymentProofPermission::allows($viewer, PaymentProofPermission::REVIEW);
+        $canViewNotifications = $viewer instanceof User && NotificationPermission::allows($viewer, NotificationPermission::DELIVERIES_VIEW);
         $shipping = $order->addresses->firstWhere('type', 'shipping') ?? $order->addresses->first();
         $billing = $order->addresses->firstWhere('type', 'billing') ?? $shipping;
         $shipment = $order->shipments->sortByDesc('id')->first();
         $shipmentQuote = $order->shipmentQuotes->sortByDesc('id')->first();
         $customerName = trim(($order->customer?->first_name ?? '').' '.($order->customer?->last_name ?? ''));
         $refundedAmount = (int) $order->refunds->where('status', 'completed')->sum('amount');
-        $notificationDispatch = $order->notificationDispatches->sortByDesc('id')->first();
+        $notificationDispatch = $canViewNotifications ? $notificationDispatch : null;
 
         $history = $order->statusHistory->map(function ($event): array {
             $type = match ($event->to_status) {

@@ -67,6 +67,34 @@ const timestamp = (value: string | null): string | null => {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toLocaleString();
 };
 
+const previewFingerprintForOrder = (order: Order): string => JSON.stringify({
+  id: order.id,
+  orderNumber: order.orderNumber,
+  createdAt: order.createdAt,
+  customerName: order.customerName,
+  customerEmail: order.customerEmail,
+  customerPhone: order.customerPhone ?? null,
+  paymentGateway: order.paymentGateway,
+  paymentGatewayStatus: order.paymentGatewayStatus,
+  paymentProvider: order.paymentProvider ?? null,
+  paymentReference: order.paymentReference ?? null,
+  paymentProofStatus: order.paymentProof?.status ?? null,
+  fulfillmentStatus: order.fulfillmentStatus,
+  currency: order.currency,
+  totalAmount: order.totalAmount,
+  trackingNumber: order.trackingNumber ?? null,
+  trackingCarrier: order.trackingCarrier ?? null,
+  shippingAddress: order.shippingAddress,
+  items: order.items.map(item => ({
+    id: item.id,
+    title: item.title,
+    variantTitle: item.variantTitle ?? null,
+    sku: item.sku,
+    price: item.price,
+    quantity: item.quantity,
+  })),
+});
+
 export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
   order,
   eventKey,
@@ -96,13 +124,17 @@ export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
   const previewRequestRef = useRef(0);
   const auditRequestRef = useRef(0);
   const actionRequestRef = useRef(0);
+  const previewFingerprint = previewFingerprintForOrder(order);
+  const currentPreviewFingerprintRef = useRef(previewFingerprint);
 
   currentOrderIdRef.current = order.id;
+  currentPreviewFingerprintRef.current = previewFingerprint;
 
   const canView = notificationPermissions.includes('notifications.deliveries.view');
   const canRetry = notificationPermissions.includes('notifications.deliveries.retry');
   const canResend = notificationPermissions.includes('notifications.deliveries.resend');
   const canSendCurrent = notificationPermissions.includes('notifications.current.send');
+  const canPreview = canView || canSendCurrent;
 
   const loadDispatches = useCallback(async (orderId: string): Promise<void> => {
     const requestId = ++auditRequestRef.current;
@@ -133,7 +165,7 @@ export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
     setActionId(null);
     setActionError('');
     setActionState(null);
-  }, [eventKey, order.id, staffNote]);
+  }, [eventKey, order.id, previewFingerprint, staffNote]);
 
   useEffect(() => {
     if (!canView) {
@@ -162,31 +194,32 @@ export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
     setPreview(null);
     setPreviewError('');
 
-    if (!notifyCustomer || !eventKey || !canView) {
+    if (!eventKey || !canPreview) {
       setPreviewLoading(false);
-      if (notifyCustomer && !canView) {
+      if (eventKey && !canPreview) {
         setPreviewError('You do not have permission to preview Email notifications.');
       }
       return;
     }
 
     const orderId = order.id;
+    const orderFingerprint = previewFingerprint;
     setPreviewLoading(true);
     void previewOrderNotification(laravelBootstrap, orderId, {
       eventKey,
       staffNote: staffNote || null,
     }).then((loaded) => {
-      if (requestId !== previewRequestRef.current || currentOrderIdRef.current !== orderId) return;
+      if (requestId !== previewRequestRef.current || currentOrderIdRef.current !== orderId || currentPreviewFingerprintRef.current !== orderFingerprint) return;
       setPreview(loaded);
     }).catch((error: unknown) => {
-      if (requestId !== previewRequestRef.current || currentOrderIdRef.current !== orderId) return;
+      if (requestId !== previewRequestRef.current || currentOrderIdRef.current !== orderId || currentPreviewFingerprintRef.current !== orderFingerprint) return;
       setPreviewError(error instanceof Error ? error.message : 'Order notification preview could not be loaded.');
     }).finally(() => {
-      if (requestId === previewRequestRef.current && currentOrderIdRef.current === orderId) {
+      if (requestId === previewRequestRef.current && currentOrderIdRef.current === orderId && currentPreviewFingerprintRef.current === orderFingerprint) {
         setPreviewLoading(false);
       }
     });
-  }, [canView, eventKey, laravelBootstrap, notifyCustomer, order.id, staffNote]);
+  }, [canPreview, eventKey, laravelBootstrap, order.id, previewFingerprint, staffNote]);
 
   const runAction = async (
     id: string,
@@ -194,20 +227,21 @@ export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
   ): Promise<void> => {
     const requestId = ++actionRequestRef.current;
     const orderId = order.id;
+    const orderFingerprint = previewFingerprint;
     setActionId(id);
     setActionError('');
     setActionState(null);
 
     try {
       const result = await action();
-      if (requestId !== actionRequestRef.current || currentOrderIdRef.current !== orderId) return;
+      if (requestId !== actionRequestRef.current || currentOrderIdRef.current !== orderId || currentPreviewFingerprintRef.current !== orderFingerprint) return;
       setActionState(result.state);
-      await loadDispatches(orderId);
+      if (canView) await loadDispatches(orderId);
     } catch (error) {
-      if (requestId !== actionRequestRef.current || currentOrderIdRef.current !== orderId) return;
+      if (requestId !== actionRequestRef.current || currentOrderIdRef.current !== orderId || currentPreviewFingerprintRef.current !== orderFingerprint) return;
       setActionError(error instanceof Error ? error.message : 'Notification action could not be completed.');
     } finally {
-      if (requestId === actionRequestRef.current && currentOrderIdRef.current === orderId) {
+      if (requestId === actionRequestRef.current && currentOrderIdRef.current === orderId && currentPreviewFingerprintRef.current === orderFingerprint) {
         setActionId(null);
       }
     }
@@ -267,38 +301,37 @@ export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
             <label className="flex items-center gap-1.5 cursor-pointer text-neutral-700 dark:text-neutral-300 font-semibold">
               <input
                 type="checkbox"
-                checked={notifyCustomer}
+                checked={Boolean(eventKey) && notifyCustomer}
+                disabled={!eventKey}
                 onChange={event => onNotifyCustomerChange?.(event.target.checked)}
-                className="w-4 h-4 rounded text-indigo-600 accent-indigo-600 cursor-pointer"
+                className="w-4 h-4 rounded text-indigo-600 accent-indigo-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <span>Dispatch Email Update to {order.customerEmail}</span>
             </label>
 
-            {notifyCustomer ? (
-              <button
-                type="button"
-                disabled={!canView || !eventKey}
-                onClick={() => setShowPreview(value => !value)}
-                className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Eye className="w-3 h-3" />
-                <span>{showPreview ? 'Hide Template Preview' : 'Preview Message Template'}</span>
-              </button>
-            ) : null}
+            <button
+              type="button"
+              disabled={!canPreview || !eventKey}
+              onClick={() => setShowPreview(value => !value)}
+              className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Eye className="w-3 h-3" />
+              <span>{showPreview ? 'Hide Template Preview' : 'Preview Message Template'}</span>
+            </button>
           </div>
 
-          {mutationDispatch ? (
+          {canView && mutationDispatch ? (
             <div className="p-2.5 rounded-xl bg-white/80 dark:bg-neutral-800/80 border border-indigo-200 dark:border-indigo-900/60 text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">
               Status update Email intent: <span className="text-indigo-600 dark:text-indigo-400">{stateLabel(mutationDispatch.state)}</span>
             </div>
           ) : null}
 
-          {notifyCustomer && showPreview ? (
+          {showPreview ? (
             <div className="p-3 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200/70 dark:border-indigo-800/60 text-xs space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <span className="font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
                   <Mail className="w-3.5 h-3.5" />
-                  Template Trigger: {preview?.heading || 'Status Update'}
+                  Template Trigger: {preview?.statusName || 'Status Update'}
                 </span>
                 <button
                   type="button"
@@ -321,8 +354,8 @@ export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
                 <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 border border-indigo-100 dark:border-indigo-900/50 space-y-1">
                   <div className="flex items-center justify-between font-bold text-neutral-800 dark:text-neutral-200">
                     <span>✉️ Email Subject:</span>
-                    <span className={preview ? 'text-emerald-600' : 'text-neutral-400'}>
-                      {preview ? 'Enabled' : 'Unavailable'}
+                    <span className={preview?.emailEnabled ? 'text-emerald-600' : 'text-neutral-400'}>
+                      {preview ? (preview.emailEnabled ? 'Enabled' : 'DORMANT') : 'Unavailable'}
                     </span>
                   </div>
                   <p className="text-neutral-600 dark:text-neutral-300 font-mono text-[10px] break-words">
@@ -351,7 +384,7 @@ export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
           <div className="flex items-center justify-end gap-2">
             <button
               type="button"
-              disabled={!canSendCurrent || !eventKey || actionId !== null || previewLoading || preview === null}
+              disabled={!canSendCurrent || !eventKey || actionId !== null || previewLoading || preview === null || !preview.emailEnabled}
               onClick={handleSendCurrent}
               className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-[11px] transition cursor-pointer"
             >

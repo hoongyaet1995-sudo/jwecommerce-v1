@@ -19,12 +19,18 @@ class NotificationDispatchService
         private readonly NotificationTemplateRenderer $renderer,
     ) {}
 
-    /** @param array<string, mixed> $extra */
-    public function preview(Order $order, string $eventKey, array $extra = []): RenderedNotification
+    /** @param array<string, mixed> $extra
+     * @return array{rendered: RenderedNotification, statusName: string, emailEnabled: bool}
+     */
+    public function preview(Order $order, string $eventKey, array $extra = []): array
     {
         $template = $this->template($eventKey);
 
-        return $this->renderer->render($template, $this->orderContext($order, $template, $extra));
+        return [
+            'rendered' => $this->renderer->render($template, $this->orderContext($order, $template, $extra)),
+            'statusName' => (string) $template->status_name,
+            'emailEnabled' => (bool) $template->email_enabled,
+        ];
     }
 
     public function retry(NotificationDispatch $dispatch, User $actor): NotificationDispatch

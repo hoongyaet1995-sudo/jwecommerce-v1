@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\NotificationDispatch;
 use App\Models\NotificationTemplate;
 use App\Models\Order;
+use App\Models\StoreSetting;
 use App\Models\User;
 use App\Services\Notifications\NotificationTemplateDefaults;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,9 +35,15 @@ class OrderNotificationApiTest extends TestCase
 
         $staff->permissions()->create(['permission' => NotificationPermission::DELIVERIES_VIEW.'.extra']);
         $this->actingAs($staff)->getJson("/admin/api/orders/{$order->id}/notification-dispatches")->assertForbidden();
+        $this->actingAs($staff)->postJson("/admin/api/orders/{$order->id}/notifications/preview", [
+            'eventKey' => 'order_created',
+        ])->assertForbidden();
 
         $staff->permissions()->create(['permission' => NotificationPermission::DELIVERIES_VIEW]);
         $this->actingAs($staff)->getJson("/admin/api/orders/{$order->id}/notification-dispatches")->assertOk();
+        $this->actingAs($staff)->postJson("/admin/api/orders/{$order->id}/notifications/preview", [
+            'eventKey' => 'order_created',
+        ])->assertOk();
         $this->actingAs($this->superAdmin())->postJson("/admin/api/orders/{$order->id}/notifications/preview", [
             'eventKey' => 'order_created',
         ])->assertOk();
@@ -51,9 +58,50 @@ class OrderNotificationApiTest extends TestCase
             'staffNote' => 'Please complete payment before Friday.',
         ])->assertOk()
             ->assertJsonPath('data.eventKey', 'order_created')
+            ->assertJsonPath('data.statusName', 'Pending Payment')
+            ->assertJsonPath('data.emailEnabled', true)
             ->assertJsonPath('data.subject', '[JW Studio] Order #JW-NOTIFY-PREVIEW Received - Please Complete Payment')
             ->assertJsonPath('data.variables.order_number', 'JW-NOTIFY-PREVIEW')
             ->assertJsonPath('data.variables.staff_note', 'Please complete payment before Friday.');
+    }
+
+    public function test_preview_allows_exact_send_current_permission_without_granting_delivery_audit_access(): void
+    {
+        $order = $this->order('CURRENT-PREVIEW');
+        $sender = $this->staffWith([NotificationPermission::CURRENT_SEND]);
+
+        $this->actingAs($sender)->postJson("/admin/api/orders/{$order->id}/notifications/preview", [
+            'eventKey' => 'payment_verified',
+        ])->assertOk()
+            ->assertJsonPath('data.statusName', 'Processing & Verified')
+            ->assertJsonPath('data.emailEnabled', true);
+
+        $this->actingAs($sender)
+            ->getJson("/admin/api/orders/{$order->id}/notification-dispatches")
+            ->assertForbidden();
+
+        $caseVariant = $this->staffWith([strtoupper(NotificationPermission::CURRENT_SEND)]);
+        $this->actingAs($caseVariant)->postJson("/admin/api/orders/{$order->id}/notifications/preview", [
+            'eventKey' => 'payment_verified',
+        ])->assertForbidden();
+    }
+
+    public function test_preview_exposes_dormant_email_truth_and_send_current_still_rejects_it(): void
+    {
+        $order = $this->order('DORMANT');
+        StoreSetting::query()->create(['key' => 'support_phone', 'value' => ['data' => '+60312345678']]);
+
+        $this->actingAs($this->staffWith([NotificationPermission::CURRENT_SEND]))
+            ->postJson("/admin/api/orders/{$order->id}/notifications/preview", [
+                'eventKey' => 'on_hold',
+            ])->assertOk()
+            ->assertJsonPath('data.statusName', 'On Hold (Review Required)')
+            ->assertJsonPath('data.emailEnabled', false);
+
+        $this->actingAs($this->staffWith([NotificationPermission::CURRENT_SEND]))
+            ->postJson("/admin/api/orders/{$order->id}/notifications/send-current", [
+                'eventKey' => 'on_hold',
+            ])->assertUnprocessable();
     }
 
     public function test_timeline_is_order_scoped_and_never_leaks_recipients_bodies_or_provider_fields(): void

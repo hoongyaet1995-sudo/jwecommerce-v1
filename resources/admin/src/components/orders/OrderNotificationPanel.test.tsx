@@ -133,6 +133,7 @@ class OrderNotificationApi {
     if (url === '/admin/api/orders/17/notifications/preview' && method === 'POST') {
       const body = JSON.parse(String(init.body ?? '{}')) as { eventKey: NotificationEventKey; staffNote?: string | null };
       this.previewRequests.push(body);
+      const requestSequence = this.previewRequests.length;
       const gate = this.previewGates.get(body.eventKey);
       if (gate) {
         this.previewGates.delete(body.eventKey);
@@ -141,10 +142,12 @@ class OrderNotificationApi {
       return jsonResponse({
         data: {
           eventKey: body.eventKey,
+          statusName: body.eventKey === 'on_hold' ? 'On Hold' : body.eventKey === 'shipped' ? 'Dispatched (In Transit)' : 'Payment Verified',
+          emailEnabled: body.eventKey !== 'on_hold',
           subject: `${body.eventKey} for JW-10017`,
           preheader: 'Order update',
           heading: `${body.eventKey} heading`,
-          body: `Order JW-10017 note: ${body.staffNote || '(no custom note)'}`,
+          body: `Order JW-10017 note: ${body.staffNote || '(no custom note)'} preview ${requestSequence}`,
           ctaText: 'Track order',
           ctaUrl: 'https://ecom.jwaistudio.online/order-tracking',
           variables: {
@@ -295,6 +298,7 @@ describe('OrderNotificationPanel real delivery binding', () => {
     await vi.waitFor(() => expect(host.textContent).toContain('Order JW-10017 note: Packed with care'));
     expect(host.textContent).toContain('shipped for JW-10017');
     expect(host.textContent).toContain('Not connected');
+    expect(host.textContent).toContain('Template Trigger: Dispatched (In Transit)');
     expect(host.textContent).not.toContain('successfully sent');
     expect(api.previewRequests.at(-1)).toEqual({ eventKey: 'shipped', staffNote: 'Packed with care' });
   });
@@ -311,6 +315,37 @@ describe('OrderNotificationPanel real delivery binding', () => {
     await vi.waitFor(() => expect(button(host, 'Retry')).toBeTruthy());
     expect(button(host, 'Retry').disabled).toBe(true);
     expect(button(host, 'Resend').disabled).toBe(true);
+    expect(button(host, 'Send Current Template').disabled).toBe(true);
+  });
+
+  it('keeps preview and Send Current independent from the automatic Email checkbox and delivery-audit permission', async () => {
+    mockedAdminContext.value = {
+      ...mockedAdminContext.value,
+      notificationPermissions: ['notifications.current.send'],
+    };
+    const api = (mockedAdminContext.value as { api: OrderNotificationApi }).api;
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const { host } = await renderPanel({ notifyCustomer: false });
+
+    await vi.waitFor(() => expect(api.previewRequests).toHaveLength(1));
+    expect(api.auditReads).toBe(0);
+    expect(host.textContent).toContain('You do not have permission to view Email delivery audit.');
+    expect(button(host, 'Preview Message Template').disabled).toBe(false);
+    await act(async () => button(host, 'Preview Message Template').click());
+    await vi.waitFor(() => expect(host.textContent).toContain('shipped for JW-10017'));
+    expect(button(host, 'Send Current Template').disabled).toBe(false);
+    await act(async () => button(host, 'Send Current Template').click());
+    await vi.waitFor(() => expect(api.actionRequests.some(item => item.url.endsWith('/notifications/send-current'))).toBe(true));
+    expect(api.auditReads).toBe(0);
+  });
+
+  it('renders an authoritative disabled template as dormant and never offers Send Current', async () => {
+    const { host } = await renderPanel({ eventKey: 'on_hold', notifyCustomer: false });
+
+    await vi.waitFor(() => expect(button(host, 'Preview Message Template').disabled).toBe(false));
+    await act(async () => button(host, 'Preview Message Template').click());
+    await vi.waitFor(() => expect(host.textContent).toContain('Template Trigger: On Hold'));
+    expect(host.textContent).toContain('DORMANT');
     expect(button(host, 'Send Current Template').disabled).toBe(true);
   });
 
@@ -353,6 +388,23 @@ describe('OrderNotificationPanel real delivery binding', () => {
     expect(host.textContent).not.toContain('Order JW-10017 note: Old note');
   });
 
+  it('refreshes same-order preview truth and rejects an older delayed response after an authoritative value changes', async () => {
+    const api = (mockedAdminContext.value as { api: OrderNotificationApi }).api;
+    let releaseOldPreview!: () => void;
+    api.previewGates.set('shipped', new Promise<void>(resolve => { releaseOldPreview = resolve; }));
+    const { host, render } = await renderPanel({ order: order({ totalAmount: 128 }) });
+
+    await vi.waitFor(() => expect(api.previewRequests).toHaveLength(1));
+    await render({ order: order({ totalAmount: 129 }) });
+    await vi.waitFor(() => expect(api.previewRequests).toHaveLength(2));
+    await act(async () => button(host, 'Preview Message Template').click());
+    await vi.waitFor(() => expect(host.textContent).toContain('preview 2'));
+
+    await act(async () => releaseOldPreview());
+    expect(host.textContent).toContain('preview 2');
+    expect(host.textContent).not.toContain('preview 1');
+  });
+
   it('ignores an old action response after an event ABA change', async () => {
     const api = (mockedAdminContext.value as { api: OrderNotificationApi }).api;
     vi.spyOn(window, 'confirm').mockReturnValue(true);
@@ -388,6 +440,13 @@ describe('OrderNotificationPanel real delivery binding', () => {
     const withSummary = await renderPanel({ mutationDispatch: summary });
     await vi.waitFor(() => expect(withSummary.host.textContent).toContain('Status update Email intent: Queued'));
     expect(withSummary.host.textContent).not.toContain('Status update Email intent: Sent');
+
+    mockedAdminContext.value = {
+      ...mockedAdminContext.value,
+      notificationPermissions: ['notifications.current.send'],
+    };
+    const hiddenWithoutView = await renderPanel({ mutationDispatch: summary });
+    expect(hiddenWithoutView.host.textContent).not.toContain('Status update Email intent: Queued');
   });
 
   it('refetches the delivery audit when refreshed order truth exposes a new notification summary', async () => {

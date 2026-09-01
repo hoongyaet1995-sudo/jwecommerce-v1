@@ -82,6 +82,8 @@ export interface NotificationDispatch {
 
 export interface OrderNotificationPreview {
   eventKey: NotificationEventKey;
+  statusName: string;
+  emailEnabled: boolean;
   subject: string;
   preheader: string;
   heading: string;

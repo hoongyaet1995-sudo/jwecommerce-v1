@@ -29,12 +29,16 @@ class OrderNotificationApiController extends Controller
 
     public function preview(Request $request, Order $order): JsonResponse
     {
-        $this->authorizePermission($request, NotificationPermission::DELIVERIES_VIEW);
+        abort_unless(
+            NotificationPermission::allows($request->user(), NotificationPermission::DELIVERIES_VIEW)
+                || NotificationPermission::allows($request->user(), NotificationPermission::CURRENT_SEND),
+            403,
+        );
         $validated = $this->validateOrderAction($request);
-        $rendered = $this->dispatches->preview($order, $validated['eventKey'], $this->extra($validated));
+        $preview = $this->dispatches->preview($order, $validated['eventKey'], $this->extra($validated));
 
         return response()->json([
-            'data' => $this->previewData($validated['eventKey'], $rendered),
+            'data' => $this->previewData($validated['eventKey'], $preview),
         ]);
     }
 
@@ -96,11 +100,17 @@ class OrderNotificationApiController extends Controller
         ], static fn (?string $value): bool => $value !== null);
     }
 
-    /** @return array<string, mixed> */
-    private function previewData(string $eventKey, RenderedNotification $rendered): array
+    /** @param array{rendered: RenderedNotification, statusName: string, emailEnabled: bool} $preview
+     * @return array<string, mixed>
+     */
+    private function previewData(string $eventKey, array $preview): array
     {
+        $rendered = $preview['rendered'];
+
         return [
             'eventKey' => $eventKey,
+            'statusName' => $preview['statusName'],
+            'emailEnabled' => $preview['emailEnabled'],
             'subject' => $rendered->subject,
             'preheader' => $rendered->preheader,
             'heading' => $rendered->heading,

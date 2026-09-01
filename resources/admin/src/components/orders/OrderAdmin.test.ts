@@ -12,7 +12,7 @@ vi.mock('../../context/AdminContext', () => ({
   useAdmin: () => mockedAdminContext.value,
 }));
 
-import { OrderAdmin } from './OrderAdmin';
+import { notificationEventKeyForStatus, OrderAdmin } from './OrderAdmin';
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -35,6 +35,8 @@ describe('OrderAdmin manual fulfillment source fidelity', () => {
     expect(source).toContain('Shipping Source');
     expect(source).not.toContain('URL.createObjectURL');
     expect(source).not.toContain('localStorage.setItem');
+    expect(source).toContain('Payment verification required:');
+    expect(source).toContain('This manual Bank In / DuitNow order cannot proceed to parcel fulfillment or courier dispatch until payment proof is verified by authorized staff.');
   });
 
   it('retains the selected notification frame while removing simulated delivery ownership', () => {
@@ -43,6 +45,18 @@ describe('OrderAdmin manual fulfillment source fidelity', () => {
     expect(source).not.toContain('email_sent');
     expect(source).not.toContain('whatsapp_sent');
     expect(source).not.toContain('Dispatched instant customer notification.');
+  });
+});
+
+describe('OrderAdmin canonical notification event ownership', () => {
+  it('maps only exact owned status codes and rejects substring lookalikes', () => {
+    expect(notificationEventKeyForStatus('pending')).toBe('order_created');
+    expect(notificationEventKeyForStatus('processing')).toBe('payment_verified');
+    expect(notificationEventKeyForStatus('ready_to_ship')).toBe('ready_to_ship');
+    expect(notificationEventKeyForStatus('cancelled')).toBe('cancelled');
+    expect(notificationEventKeyForStatus('unpaid_review')).toBeNull();
+    expect(notificationEventKeyForStatus('cancel_requested')).toBeNull();
+    expect(notificationEventKeyForStatus('processing_manual')).toBeNull();
   });
 });
 
@@ -60,7 +74,7 @@ const address = {
   phone: '+60123456789',
 };
 
-const baseOrder = (): Order => ({
+const baseOrder = (overrides: Partial<Order> = {}): Order => ({
   id: '17',
   orderNumber: 'JW-10017',
   createdAt: '2026-08-31T08:00:00.000Z',
@@ -88,6 +102,7 @@ const baseOrder = (): Order => ({
     title: 'Payment verified',
     description: 'Payment was verified.',
   }],
+  ...overrides,
 });
 
 const roots: Array<{ root: ReturnType<typeof createRoot>; host: HTMLDivElement }> = [];
@@ -132,6 +147,8 @@ beforeEach(() => {
       const body = JSON.parse(String(init.body ?? '{}')) as { eventKey: string; staffNote?: string };
       return new Response(JSON.stringify({ data: {
         eventKey: body.eventKey,
+        statusName: body.eventKey === 'payment_verified' ? 'Payment Verified' : 'Status Update',
+        emailEnabled: body.eventKey !== 'on_hold',
         subject: `${body.eventKey} preview`,
         preheader: '',
         heading: 'Order update',
@@ -221,5 +238,66 @@ describe('OrderAdmin notification mutation binding', () => {
     expect(updateOrderStatus.mock.calls[0][4]).toBe(true);
     await vi.waitFor(() => expect(host.textContent).toContain('Status update Email intent: Queued'));
     expect(host.textContent).not.toContain('Status update Email intent: Sent');
+  });
+
+  it('keeps the selected Bank In payment-verification notice bound to authoritative proof truth', async () => {
+    mockedAdminContext.value = {
+      ...mockedAdminContext.value,
+      orders: [baseOrder({
+        paymentGateway: 'Bank In / DuitNow',
+        paymentGatewayStatus: 'pending',
+        paymentProof: { required: true, status: 'uploaded', canReview: true },
+      })],
+    };
+    const { host } = await mountOrderAdmin();
+    await act(async () => exactButton(host, 'Details').click());
+
+    expect(host.textContent).toContain('Payment verification required:');
+    expect(host.textContent).toContain('This manual Bank In / DuitNow order cannot proceed to parcel fulfillment or courier dispatch until payment proof is verified by authorized staff.');
+  });
+
+  it('invalidates a delayed status mutation when same-order note and status drafts change through ABA', async () => {
+    let resolveMutation!: (order: Order) => void;
+    const updateOrderStatus = vi.fn(() => new Promise<Order>(resolve => { resolveMutation = resolve; }));
+    mockedAdminContext.value = {
+      ...mockedAdminContext.value,
+      updateOrderStatus,
+      orderStatuses: [
+        ...(mockedAdminContext.value.orderStatuses as Array<Record<string, unknown>>),
+        {
+          id: 'status_delivered', code: 'delivered', name: 'Delivered & Completed', description: 'Delivered', color: 'emerald',
+          isDefault: false, isDefaultPaid: false, isDefaultCancelled: false, notifyCustomer: true,
+          publicVisibility: true, inventoryAction: 'none', emailTemplate: 'Delivered', sortOrder: 50,
+        },
+      ],
+    };
+    const { host } = await mountOrderAdmin();
+    await act(async () => exactButton(host, 'Details').click());
+    const statusSelect = Array.from(host.querySelectorAll('select')).find(select =>
+      Array.from(select.options).some(option => option.value === 'status_processing'),
+    ) as HTMLSelectElement;
+    const note = host.querySelector('input[placeholder^="e.g. Package packed"]') as HTMLInputElement;
+
+    act(() => exactButton(host, 'Update & Notify').click());
+    await vi.waitFor(() => expect(updateOrderStatus).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(note, 'Newer same-order note');
+      note.dispatchEvent(new Event('input', { bubbles: true }));
+      statusSelect.value = 'status_delivered';
+      statusSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      statusSelect.value = 'status_processing';
+      statusSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    await act(async () => resolveMutation({
+      ...baseOrder(),
+      notificationSummary: {
+        publicId: 'stale-dispatch', eventKey: 'payment_verified', channel: 'email', state: 'queued', source: 'automatic', queuedAt: '2026-08-31T08:02:00.000Z',
+      },
+    }));
+
+    expect(statusSelect.value).toBe('status_processing');
+    expect(note.value).toBe('Newer same-order note');
+    expect(host.textContent).not.toContain('Status update Email intent: Queued');
   });
 });

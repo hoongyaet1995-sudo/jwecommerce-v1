@@ -30,7 +30,7 @@ class OrderApiController extends Controller
             'note' => ['nullable', 'string', 'max:2000'],
             'notifyCustomer' => ['sometimes', 'boolean'],
         ]);
-        $saved = $operations->updateStatus(
+        $result = $operations->updateStatus(
             $order,
             $validated['paymentStatus'] ?? null,
             $validated['fulfillmentStatus'] ?? null,
@@ -39,7 +39,7 @@ class OrderApiController extends Controller
             $validated['notifyCustomer'] ?? true,
         );
 
-        return response()->json(['data' => $data->data($saved)]);
+        return response()->json(['data' => $data->data($result->order, $result->notificationDispatch)]);
     }
 
     public function showPaymentProof(Request $request, Order $order, OrderPayment $payment, PaymentProofService $proofs)

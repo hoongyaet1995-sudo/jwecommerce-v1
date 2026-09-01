@@ -56,7 +56,8 @@ const resendDispatch = {
 };
 
 const preview = {
-  eventKey: 'payment_verified', subject: 'Payment verified', preheader: 'Thank you', heading: 'Payment received',
+  eventKey: 'payment_verified', statusName: 'Payment Verified', emailEnabled: true,
+  subject: 'Payment verified', preheader: 'Thank you', heading: 'Payment received',
   body: 'Hello Buyer', ctaText: 'Track order', ctaUrl: 'https://ecom.jwaistudio.online/order-tracking',
   variables: { customer_name: 'Buyer', tracking_url: 'https://ecom.jwaistudio.online/order-tracking' },
 };

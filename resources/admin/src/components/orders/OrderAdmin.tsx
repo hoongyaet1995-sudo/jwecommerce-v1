@@ -25,19 +25,30 @@ import {
   ShieldCheck,
   Layers,
   Download,
-  FileText
+  FileText,
+  AlertTriangle
 } from 'lucide-react';
 
-const notificationEventKeyForStatus = (code: string): NotificationEventKey | null => {
-  if (code === 'pending') return 'order_created';
-  if (code.includes('process') || code.includes('paid')) return 'payment_verified';
-  if (code.includes('ready_to_ship') || code.includes('pack')) return 'ready_to_ship';
-  if (code.includes('shipped') || code.includes('in_transit')) return 'shipped';
-  if (code.includes('delivered')) return 'delivered';
-  if (code.includes('cancel')) return 'cancelled';
-  if (code.includes('on_hold')) return 'on_hold';
-  return null;
+const NOTIFICATION_EVENT_BY_STATUS_CODE: Readonly<Record<string, NotificationEventKey>> = {
+  pending: 'order_created',
+  processing: 'payment_verified',
+  ready_to_ship: 'ready_to_ship',
+  shipped: 'shipped',
+  delivered: 'delivered',
+  cancelled: 'cancelled',
+  on_hold: 'on_hold',
 };
+
+const FULFILLMENT_BY_STATUS_CODE: Readonly<Partial<Record<string, FulfillmentStatus>>> = {
+  processing: 'processing',
+  ready_to_ship: 'processing',
+  shipped: 'shipped',
+  delivered: 'delivered',
+  cancelled: 'cancelled',
+};
+
+export const notificationEventKeyForStatus = (code: string): NotificationEventKey | null =>
+  NOTIFICATION_EVENT_BY_STATUS_CODE[code] ?? null;
 
 export const OrderAdmin: React.FC = () => {
   const { orders, updateOrderStatus, updateOrderTracking, reviewPaymentProof, orderStatuses, setCurrentSection } = useAdmin();
@@ -137,12 +148,28 @@ export const OrderAdmin: React.FC = () => {
   };
 
   const handleStatusSelectChange = (statusId: string) => {
+    statusUpdateRequestRef.current += 1;
+    setIsUpdatingStatus(false);
     setChosenStatusId(statusId);
     setStatusMutationDispatch(null);
     const targetStatus = orderStatuses.find(s => s.id === statusId);
     if (targetStatus) {
-      setNotifyCustomerCheck(Boolean(targetStatus.notifyCustomer));
+      setNotifyCustomerCheck(Boolean(targetStatus.notifyCustomer && notificationEventKeyForStatus(targetStatus.code)));
     }
+  };
+
+  const handleCustomerCommentChange = (value: string) => {
+    statusUpdateRequestRef.current += 1;
+    setIsUpdatingStatus(false);
+    setStatusMutationDispatch(null);
+    setCustomerCommentInput(value);
+  };
+
+  const handleNotifyCustomerChange = (checked: boolean) => {
+    statusUpdateRequestRef.current += 1;
+    setIsUpdatingStatus(false);
+    setStatusMutationDispatch(null);
+    setNotifyCustomerCheck(checked);
   };
 
   const handleRecordDispatch = async () => {
@@ -185,11 +212,7 @@ export const OrderAdmin: React.FC = () => {
     setStatusMutationDispatch(null);
 
     // Map to standard fulfillment status if applicable
-    let mappedFulfillment: FulfillmentStatus = selectedOrder.fulfillmentStatus;
-    if (targetStatus.code.includes('delivered')) mappedFulfillment = 'delivered';
-    else if (targetStatus.code.includes('shipped') || targetStatus.code.includes('in_transit')) mappedFulfillment = 'shipped';
-    else if (targetStatus.code.includes('process') || targetStatus.code.includes('pack')) mappedFulfillment = 'processing';
-    else if (targetStatus.code.includes('cancel')) mappedFulfillment = 'cancelled';
+    const mappedFulfillment = FULFILLMENT_BY_STATUS_CODE[targetStatus.code] ?? selectedOrder.fulfillmentStatus;
 
     // Map payment status if default paid
     let mappedPayment = selectedOrder.paymentGatewayStatus;
@@ -199,14 +222,14 @@ export const OrderAdmin: React.FC = () => {
       mappedPayment,
       mappedFulfillment,
       customerCommentInput || `Order transitioned to ${targetStatus.name}. Inventory action: ${targetStatus.inventoryAction}.`,
-      notifyCustomerCheck,
+      notifyCustomerCheck && notificationEventKeyForStatus(targetStatus.code) !== null,
     );
     if (requestId !== statusUpdateRequestRef.current || selectedOrderRef.current?.id !== orderId) return;
 
     if (saved) {
       selectedOrderRef.current = saved;
       setSelectedOrder(saved);
-      setStatusMutationDispatch(notifyCustomerCheck ? saved.notificationSummary : null);
+      setStatusMutationDispatch(saved.notificationSummary);
       setNotificationAuditRefreshKey(value => value + 1);
     }
     setIsUpdatingStatus(false);
@@ -400,7 +423,7 @@ export const OrderAdmin: React.FC = () => {
               notifyCustomer={notifyCustomerCheck}
               mutationDispatch={statusMutationDispatch}
               auditRefreshKey={notificationAuditRefreshKey}
-              onNotifyCustomerChange={setNotifyCustomerCheck}
+              onNotifyCustomerChange={handleNotifyCustomerChange}
               onConfigureStatuses={() => setCurrentSection('settings-orders-status')}
               onManageTemplates={() => {
                 handleCloseDetail();
@@ -409,6 +432,21 @@ export const OrderAdmin: React.FC = () => {
               frameClassName="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/60 space-y-3"
               frameTitle="Update Order Status & Dispatch Customer Notification"
             >
+              {/* Bank In / DuitNow Payment Gate Notice */}
+              {selectedOrder.paymentProof?.required &&
+                selectedOrder.paymentProof.status !== 'verified' &&
+                selectedOrder.paymentGatewayStatus !== 'paid' && (
+                  <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="font-semibold">Payment verification required:</strong>
+                      <p className="text-[11px] text-amber-700/90 dark:text-amber-300/90 mt-0.5">
+                        This manual Bank In / DuitNow order cannot proceed to parcel fulfillment or courier dispatch until payment proof is verified by authorized staff.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                 <div className="sm:col-span-4 space-y-1">
                   <label className="text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">
@@ -435,7 +473,7 @@ export const OrderAdmin: React.FC = () => {
                     type="text"
                     placeholder="e.g. Package packed with fragile bubble wrap. Ready for pickup."
                     value={customerCommentInput}
-                    onChange={e => setCustomerCommentInput(e.target.value)}
+                    onChange={e => handleCustomerCommentChange(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-xl border bg-white dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white"
                   />
                 </div>

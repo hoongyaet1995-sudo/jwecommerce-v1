@@ -2,6 +2,7 @@
 
 namespace App\Services\Admin;
 
+use App\Models\NotificationDispatch;
 use App\Models\Order;
 use App\Models\OrderRefund;
 use App\Models\OrderStatusHistory;
@@ -28,7 +29,7 @@ class OrderOperationsService
         int $userId,
         ?string $note,
         bool $notifyCustomer = true,
-    ): Order {
+    ): OrderStatusUpdateResult {
         if (in_array($paymentStatus, ['refunded', 'partially_refunded'], true)) {
             throw ValidationException::withMessages(['paymentStatus' => 'Use the refund action so the refund is recorded in the ledger.']);
         }
@@ -50,15 +51,16 @@ class OrderOperationsService
                 $order,
                 $paymentStatus,
                 $userId,
-            ): Order {
+            ): OrderStatusUpdateResult {
                 $order = Order::query()->lockForUpdate()->findOrFail($order->id);
                 $actor = User::query()->findOrFail($userId);
+                $notificationDispatch = null;
 
                 if ($paymentStatus === 'paid' && $order->status === 'pending_payment') {
                     $order = $this->checkout->transition($order, 'paid', $userId, $note, false);
                     if ($notifyCustomer) {
                         $history = $order->statusHistory()->where('to_status', 'paid')->latest('id')->firstOrFail();
-                        $this->recordNotification($order, 'payment_verified', $history, $actor, $note);
+                        $notificationDispatch = $this->recordNotification($order, 'payment_verified', $history, $actor, $note);
                     }
                 }
 
@@ -72,11 +74,12 @@ class OrderOperationsService
                     $order = $this->checkout->transition($order, $target, $userId, $note, false);
                     if ($notifyCustomer && in_array($target, ['delivered', 'cancelled'], true)) {
                         $history = $order->statusHistory()->where('to_status', $target)->latest('id')->firstOrFail();
-                        $this->recordNotification($order, $target, $history, $actor, $note);
+                        $notificationDispatch = $this->recordNotification($order, $target, $history, $actor, $note)
+                            ?? $notificationDispatch;
                     }
                 }
 
-                return $order->fresh();
+                return new OrderStatusUpdateResult($order->fresh(), $notificationDispatch);
             });
         } catch (InvalidArgumentException $exception) {
             throw ValidationException::withMessages(['fulfillmentStatus' => $exception->getMessage()]);
@@ -123,8 +126,8 @@ class OrderOperationsService
         OrderStatusHistory $history,
         User $actor,
         ?string $note,
-    ): void {
-        rescue(
+    ): ?NotificationDispatch {
+        $dispatch = rescue(
             fn () => $this->notifications->record(
                 $order,
                 $eventKey,
@@ -135,5 +138,9 @@ class OrderOperationsService
             ),
             report: true,
         );
+
+        return $dispatch instanceof NotificationDispatch && $dispatch->wasRecentlyCreated
+            ? $dispatch
+            : null;
     }
 }
