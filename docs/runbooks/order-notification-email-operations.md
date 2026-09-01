@@ -167,11 +167,29 @@ No production worker/configuration change is authorized by this localhost phase.
 Run this gate before deploying the first notification release. It is a count-only preflight and must not print job payloads, recipients, bodies, or credentials.
 
 1. Put the application in maintenance mode so no notification producer can add rows. Pause the durable worker's automatic restart in the Hostinger process manager, allow its current reservation to finish, then stop it gracefully. `php artisan queue:restart` may be used only as the graceful stop signal after automatic restart is paused; confirm the worker process has actually exited.
-2. In the protected MySQL console for the intended application database, run exactly these count-only statements:
+2. In the protected MySQL console for the intended application database, run exactly these count-only statements. The `information_schema` guard makes an absent `notification_dispatches` table an explicit zero-row fresh-install result instead of raising `table not found`:
 
 ```sql
-SELECT COUNT(*) AS notification_dispatch_rows
-FROM notification_dispatches;
+SET @notification_dispatches_table_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.tables
+    WHERE table_schema = DATABASE()
+      AND table_name = 'notification_dispatches'
+);
+
+SELECT @notification_dispatches_table_exists
+    AS notification_dispatches_table_exists;
+
+SET @notification_dispatch_count_sql := IF(
+    @notification_dispatches_table_exists = 0,
+    'SELECT 0 AS notification_dispatch_rows',
+    'SELECT COUNT(*) AS notification_dispatch_rows FROM notification_dispatches'
+);
+
+PREPARE notification_dispatch_count_statement
+FROM @notification_dispatch_count_sql;
+EXECUTE notification_dispatch_count_statement;
+DEALLOCATE PREPARE notification_dispatch_count_statement;
 
 SELECT COUNT(*) AS queued_or_reserved_old_notification_jobs
 FROM jobs
@@ -182,9 +200,13 @@ FROM failed_jobs
 WHERE payload LIKE '%SendOrderNotificationJob%';
 ```
 
-All three counts must be `0`. This feature has not had a production release, so any existing dispatch or serialized notification job is unexpected. Do not delete it, edit `snapshot_version`, run `queue:retry`, or continue the deployment. Keep the worker stopped and investigate under the previously deployed SHA.
+Interpret the results literally:
 
-3. Only after all counts are zero, deploy the authorized exact SHA and run the normal non-destructive `php artisan migrate --force`. The initial and correction migrations both check for an empty dispatch table before adding/reclassifying the snapshot default, and a fresh install defaults to `v2`.
+- `notification_dispatches_table_exists = 0` and `notification_dispatch_rows = 0` is the expected fresh-install state; do not run a direct query against the absent table.
+- If `notification_dispatches_table_exists = 1`, `notification_dispatch_rows` is the exact table count and must be `0`.
+- If the table exists with one or more rows, either job count is non-zero, or any statement errors, fail closed. This feature has not had a production release, so the state is unexpected. Do not delete it, edit `snapshot_version`, run `queue:retry`, or continue the deployment. Keep the worker stopped and investigate under the previously deployed SHA.
+
+3. Only after the guarded dispatch result and both job counts are zero, deploy the authorized exact SHA and run the normal non-destructive `php artisan migrate --force`. The initial and correction migrations both check for an empty dispatch table before adding/reclassifying the snapshot default, and a fresh install defaults to `v2`.
 4. If the migration aborts with the snapshot-format precondition, it has performed no row rewrite or column-default change. Keep workers stopped and restore the previous application SHA; do not run `migrate:rollback` for a migration that was never recorded as successful. If the correction migration completed successfully but the release must later be rolled back, stop workers again, run `php artisan migrate:rollback --step=1 --force`, restore the previous SHA, and only then restart its compatible worker.
 
 If a pre-generation payload somehow reaches current code despite this gate, it cannot send or silently succeed: it records the matching generation-less dispatch as safe terminal `failed`/`queue`. After that old queue lifecycle is no longer active, recover only with Admin **Retry**, which rotates and publishes a generation-owned job.
