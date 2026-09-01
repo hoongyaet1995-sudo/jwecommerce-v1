@@ -46,12 +46,12 @@ import {
 } from 'lucide-react';
 
 export const SETTING_TABS: { id: NavSection; label: string; icon: React.ElementType }[] = [
-  { id: 'settings-ai-agent', label: 'AI Auto Reply & Bot', icon: Bot },
   { id: 'settings-users', label: 'User Login Setting', icon: Users },
   { id: 'settings-shop', label: 'My Shop Setting', icon: Store },
   { id: 'settings-points', label: 'Points/Rewards', icon: Award },
   { id: 'settings-invoice', label: 'Invoice Information Setting', icon: FileText },
   { id: 'settings-email', label: 'Auto Email & WhatsApp Template', icon: Mail },
+  { id: 'settings-ai-agent', label: 'AI Auto Reply & Bot', icon: Bot },
   { id: 'settings-social', label: 'Social Link Setting', icon: Share2 },
   { id: 'settings-general', label: 'General Setting', icon: Sliders },
   { id: 'settings-agent-group', label: 'Agent Group Setting', icon: Users },
@@ -222,30 +222,12 @@ export const ShopSettingsHub: React.FC = () => {
     );
   }
 
-  // Navigation settings tabs mapping
-  const settingTabs: { id: NavSection; label: string; icon: React.ElementType }[] = [
-    { id: 'settings-users', label: 'User Login Setting', icon: Users },
-    { id: 'settings-shop', label: 'My Shop Setting', icon: Store },
-    { id: 'settings-points', label: 'Points/Rewards', icon: Award },
-    { id: 'settings-invoice', label: 'Invoice Information Setting', icon: FileText },
-    { id: 'settings-email', label: 'Auto Email & WhatsApp Template', icon: Mail },
-    { id: 'settings-social', label: 'Social Link Setting', icon: Share2 },
-    { id: 'settings-general', label: 'General Setting', icon: Sliders },
-    { id: 'settings-agent-group', label: 'Agent Group Setting', icon: Users },
-    { id: 'settings-orders-status', label: 'Orders Status Setting', icon: Clock },
-    { id: 'settings-countries', label: 'Countries Setting', icon: Globe },
-    { id: 'settings-zones', label: 'Zones Setting', icon: Map },
-    { id: 'settings-currencies', label: 'Currencies', icon: DollarSign },
-    { id: 'settings-order-total', label: 'Order Total', icon: Calculator },
-    { id: 'settings-tax-classes', label: 'Tax Classes', icon: Percent },
-  ];
-
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Top Setting Navigation Bar */}
       <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-2 shadow-xs overflow-x-auto scrollbar-thin">
         <div className="flex items-center gap-1.5 min-w-max">
-          {settingTabs.map(tab => {
+          {SETTING_TABS.map(tab => {
             const Icon = tab.icon;
             const isActive = currentSection === tab.id;
             return (

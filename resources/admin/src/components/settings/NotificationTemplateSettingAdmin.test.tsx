@@ -559,6 +559,23 @@ describe('NotificationTemplateSettingAdmin real-data binding', () => {
     expect(host.textContent).toContain('Auto Email & WhatsApp Templates');
   });
 
+  it('keeps AI Auto Reply immediately after the notification template in every Settings navigation', async () => {
+    mockedAdminContext.value = {
+      ...mockedAdminContext.value,
+      currentSection: 'settings-shop',
+    };
+
+    const { host } = await renderComponent(<ShopSettingsHub />);
+    const buttonLabels = Array.from(host.querySelectorAll('button'))
+      .map(candidate => candidate.textContent?.trim())
+      .filter((label): label is string => Boolean(label));
+    const notificationIndex = buttonLabels.indexOf('Auto Email & WhatsApp Template');
+
+    expect(notificationIndex).toBeGreaterThanOrEqual(0);
+    expect(buttonLabels[notificationIndex + 1]).toBe('AI Auto Reply & Bot');
+    expect(buttonLabels.filter(label => label === 'AI Auto Reply & Bot')).toHaveLength(1);
+  });
+
   it('shows an explicit unavailable state when the API returns an empty template collection', async () => {
     const api = (mockedAdminContext.value as { api: NotificationTemplateApi }).api;
     api.templates = [];
