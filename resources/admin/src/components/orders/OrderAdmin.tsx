@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
-import { Order, FulfillmentStatus, PaymentStatus } from '../../types';
+import { Order, FulfillmentStatus, NotificationEventKey, OrderNotificationSummary, PaymentStatus } from '../../types';
+import { OrderNotificationPanel } from './OrderNotificationPanel';
 import { OrderPaymentProofPreviewModal } from './OrderPaymentProofPreviewModal';
 import {
   ShoppingBag,
@@ -16,18 +17,27 @@ import {
   X,
   CreditCard,
   MapPin,
-  Mail,
   User,
   DollarSign,
   PackageCheck,
   Send,
-  MessageSquare,
   History,
   ShieldCheck,
   Layers,
   Download,
   FileText
 } from 'lucide-react';
+
+const notificationEventKeyForStatus = (code: string): NotificationEventKey | null => {
+  if (code === 'pending') return 'order_created';
+  if (code.includes('process') || code.includes('paid')) return 'payment_verified';
+  if (code.includes('ready_to_ship') || code.includes('pack')) return 'ready_to_ship';
+  if (code.includes('shipped') || code.includes('in_transit')) return 'shipped';
+  if (code.includes('delivered')) return 'delivered';
+  if (code.includes('cancel')) return 'cancelled';
+  if (code.includes('on_hold')) return 'on_hold';
+  return null;
+};
 
 export const OrderAdmin: React.FC = () => {
   const { orders, updateOrderStatus, updateOrderTracking, reviewPaymentProof, orderStatuses, setCurrentSection } = useAdmin();
@@ -44,6 +54,11 @@ export const OrderAdmin: React.FC = () => {
   const [chosenStatusId, setChosenStatusId] = useState<string>('');
   const [notifyCustomerCheck, setNotifyCustomerCheck] = useState<boolean>(true);
   const [customerCommentInput, setCustomerCommentInput] = useState<string>('');
+  const [statusMutationDispatch, setStatusMutationDispatch] = useState<OrderNotificationSummary | null>(null);
+  const [notificationAuditRefreshKey, setNotificationAuditRefreshKey] = useState(0);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const selectedOrderRef = useRef<Order | null>(null);
+  const statusUpdateRequestRef = useRef(0);
 
   // Manual Fulfillment State
   const [manualCarrier, setManualCarrier] = useState('');
@@ -70,6 +85,8 @@ export const OrderAdmin: React.FC = () => {
   });
 
   const handleOpenDetail = (order: Order) => {
+    statusUpdateRequestRef.current += 1;
+    selectedOrderRef.current = order;
     setSelectedOrder(order);
     setTrackingNumberInput(order.trackingNumber || '');
     setManualCarrier(order.trackingCarrier || '');
@@ -86,10 +103,19 @@ export const OrderAdmin: React.FC = () => {
     setChosenStatusId(currentStatusObj?.id || '');
     setNotifyCustomerCheck(Boolean(currentStatusObj?.notifyCustomer));
     setCustomerCommentInput('');
+    setStatusMutationDispatch(null);
+    setIsUpdatingStatus(false);
     setIsProofPreviewOpen(false);
     setIsRejectBoxOpen(false);
     setRejectionReasonInput('');
     setIsDetailOpen(true);
+  };
+
+  const handleCloseDetail = () => {
+    statusUpdateRequestRef.current += 1;
+    selectedOrderRef.current = null;
+    setIsUpdatingStatus(false);
+    setIsDetailOpen(false);
   };
 
   const handlePaymentProofReview = async (decision: 'verified' | 'rejected') => {
@@ -98,6 +124,7 @@ export const OrderAdmin: React.FC = () => {
     if (decision === 'rejected' && !reason) return;
     const saved = await reviewPaymentProof(selectedOrder.id, selectedOrder.paymentProof.paymentId, decision, reason || undefined);
     if (saved) {
+      selectedOrderRef.current = saved;
       setSelectedOrder(saved);
       setIsRejectBoxOpen(false);
       setRejectionReasonInput('');
@@ -111,6 +138,7 @@ export const OrderAdmin: React.FC = () => {
 
   const handleStatusSelectChange = (statusId: string) => {
     setChosenStatusId(statusId);
+    setStatusMutationDispatch(null);
     const targetStatus = orderStatuses.find(s => s.id === statusId);
     if (targetStatus) {
       setNotifyCustomerCheck(Boolean(targetStatus.notifyCustomer));
@@ -139,6 +167,7 @@ export const OrderAdmin: React.FC = () => {
     const tracking = manualTracking.trim();
     const saved = await updateOrderTracking(selectedOrder.id, carrier, tracking);
     if (saved) {
+      selectedOrderRef.current = saved;
       setSelectedOrder(saved);
       setManualCarrier(saved.trackingCarrier || carrier);
       setManualTracking(saved.trackingNumber || tracking);
@@ -150,6 +179,10 @@ export const OrderAdmin: React.FC = () => {
     if (!selectedOrder) return;
     const targetStatus = orderStatuses.find(s => s.id === chosenStatusId);
     if (!targetStatus) return;
+    const orderId = selectedOrder.id;
+    const requestId = ++statusUpdateRequestRef.current;
+    setIsUpdatingStatus(true);
+    setStatusMutationDispatch(null);
 
     // Map to standard fulfillment status if applicable
     let mappedFulfillment: FulfillmentStatus = selectedOrder.fulfillmentStatus;
@@ -162,13 +195,26 @@ export const OrderAdmin: React.FC = () => {
     let mappedPayment = selectedOrder.paymentGatewayStatus;
     if (targetStatus.isDefaultPaid) mappedPayment = 'paid';
     const saved = await updateOrderStatus(
-      selectedOrder.id,
+      orderId,
       mappedPayment,
       mappedFulfillment,
       customerCommentInput || `Order transitioned to ${targetStatus.name}. Inventory action: ${targetStatus.inventoryAction}.`,
+      notifyCustomerCheck,
     );
-    if (saved) setSelectedOrder(saved);
+    if (requestId !== statusUpdateRequestRef.current || selectedOrderRef.current?.id !== orderId) return;
+
+    if (saved) {
+      selectedOrderRef.current = saved;
+      setSelectedOrder(saved);
+      setStatusMutationDispatch(notifyCustomerCheck ? saved.notificationSummary : null);
+      setNotificationAuditRefreshKey(value => value + 1);
+    }
+    setIsUpdatingStatus(false);
   };
+
+  const selectedNotificationEventKey = notificationEventKeyForStatus(
+    orderStatuses.find(status => status.id === chosenStatusId)?.code || '',
+  );
 
   const renderStatusBadge = (status: FulfillmentStatus) => {
     switch (status) {
@@ -342,29 +388,27 @@ export const OrderAdmin: React.FC = () => {
                 <p className="text-xs text-neutral-400 mt-0.5">Placed on {selectedOrder.createdAt}</p>
               </div>
 
-              <button onClick={() => setIsDetailOpen(false)} className="text-neutral-400 hover:text-neutral-600">
+              <button onClick={handleCloseDetail} className="text-neutral-400 hover:text-neutral-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* osCommerce Order Status & Customer Notification Control Hub */}
-            <div className="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/60 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  <span className="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider">
-                    Update Order Status & Dispatch Customer Notification
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setCurrentSection('settings-orders-status')}
-                  className="text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
-                >
-                  Configure Statuses →
-                </button>
-              </div>
-
+            <OrderNotificationPanel
+              order={selectedOrder}
+              eventKey={selectedNotificationEventKey}
+              staffNote={customerCommentInput}
+              notifyCustomer={notifyCustomerCheck}
+              mutationDispatch={statusMutationDispatch}
+              auditRefreshKey={notificationAuditRefreshKey}
+              onNotifyCustomerChange={setNotifyCustomerCheck}
+              onConfigureStatuses={() => setCurrentSection('settings-orders-status')}
+              onManageTemplates={() => {
+                handleCloseDetail();
+                setCurrentSection('settings-email');
+              }}
+              frameClassName="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/60 space-y-3"
+              frameTitle="Update Order Status & Dispatch Customer Notification"
+            >
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                 <div className="sm:col-span-4 space-y-1">
                   <label className="text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">
@@ -399,11 +443,12 @@ export const OrderAdmin: React.FC = () => {
                 <div className="sm:col-span-3">
                   <button
                     type="button"
+                    disabled={isUpdatingStatus}
                     onClick={handleApplyOrderStatusUpdate}
-                    className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer"
+                    className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>Update & Notify</span>
+                    <span>{isUpdatingStatus ? 'Updating...' : 'Update & Notify'}</span>
                   </button>
                 </div>
               </div>
@@ -502,25 +547,14 @@ export const OrderAdmin: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex items-center gap-4 pt-1 text-xs">
-                <label className="flex items-center gap-1.5 cursor-pointer text-neutral-700 dark:text-neutral-300 font-semibold">
-                  <input
-                    type="checkbox"
-                    checked={notifyCustomerCheck}
-                    onChange={e => setNotifyCustomerCheck(e.target.checked)}
-                    className="w-4 h-4 rounded text-indigo-600 accent-indigo-600 cursor-pointer"
-                  />
-                  <span>Dispatch Email & WhatsApp Update to {selectedOrder.customerEmail}</span>
-                </label>
-              </div>
-            </div>
+            </OrderNotificationPanel>
 
             {/* Order Timeline History */}
             <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-800/30 space-y-3">
               <div className="flex items-center gap-2">
                 <History className="w-4 h-4 text-indigo-500" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200">
-                  Order Status Audit Trail & Customer Notifications
+                  Order Status Audit Trail
                 </h4>
               </div>
 
@@ -655,7 +689,7 @@ export const OrderAdmin: React.FC = () => {
             <div className="flex justify-end pt-3 border-t border-neutral-100 dark:border-neutral-800">
               <button
                 type="button"
-                onClick={() => setIsDetailOpen(false)}
+                onClick={handleCloseDetail}
                 className="px-5 py-2 text-xs font-bold rounded-xl bg-neutral-800 text-white hover:bg-neutral-700"
               >
                 Close Order

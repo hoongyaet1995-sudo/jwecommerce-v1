@@ -263,7 +263,7 @@ interface AdminContextType {
   orders: Order[];
   selectedOrderId: string | null;
   setSelectedOrderId: (id: string | null) => void;
-  updateOrderStatus: (orderId: string, paymentStatus?: PaymentStatus, fulfillmentStatus?: FulfillmentStatus, note?: string) => Promise<Order | null>;
+  updateOrderStatus: (orderId: string, paymentStatus?: PaymentStatus, fulfillmentStatus?: FulfillmentStatus, note?: string, notifyCustomer?: boolean) => Promise<Order | null>;
   updateOrderTracking: (orderId: string, carrier: string, trackingNumber: string) => Promise<Order | null>;
   processOrderRefund: (orderId: string, amount: number, reason: string) => Promise<Order | null>;
   reviewPaymentProof: (orderId: string, paymentId: string, decision: 'verified' | 'rejected', reason?: string) => Promise<Order | null>;
@@ -1372,9 +1372,9 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Orders
-  const updateOrderStatus = async (orderId: string, paymentStatus?: PaymentStatus, fulfillmentStatus?: FulfillmentStatus, note?: string): Promise<Order | null> => {
+  const updateOrderStatus = async (orderId: string, paymentStatus?: PaymentStatus, fulfillmentStatus?: FulfillmentStatus, note?: string, notifyCustomer?: boolean): Promise<Order | null> => {
     try {
-      const saved = await updateOrderStatusData(laravelBootstrap, orderId, paymentStatus, fulfillmentStatus, note);
+      const saved = await updateOrderStatusData(laravelBootstrap, orderId, paymentStatus, fulfillmentStatus, note, notifyCustomer);
       setOrders(prev => prev.map(order => order.id === saved.id ? saved : order));
       addToast({ type: 'success', title: 'Order State Changed', message: 'Order updated successfully.' });
       return saved;
