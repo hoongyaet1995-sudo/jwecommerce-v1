@@ -294,10 +294,9 @@ class NotificationDispatchService
             try {
                 SendOrderNotificationJob::dispatch($dispatch->id)->afterCommit();
             } catch (Throwable) {
-                report(new NotificationDeliveryException('queue'));
-
+                $errorCode = 'queue';
                 try {
-                    NotificationDispatch::query()
+                    $updated = NotificationDispatch::query()
                         ->whereKey($dispatch->id)
                         ->where('state', NotificationDispatch::STATE_QUEUED)
                         ->update([
@@ -307,11 +306,26 @@ class NotificationDispatchService
                             'delivery_lease_token' => null,
                             'delivery_lease_expires_at' => null,
                         ]);
+
+                    if ($updated !== 1) {
+                        $errorCode = 'unknown';
+                    }
                 } catch (Throwable) {
-                    report(new NotificationDeliveryException('unknown'));
+                    $errorCode = 'unknown';
                 }
+
+                self::reportSafely(new NotificationDeliveryException($errorCode));
             }
         });
+    }
+
+    private static function reportSafely(NotificationDeliveryException $exception): void
+    {
+        try {
+            report($exception);
+        } catch (Throwable) {
+            // Delivery state is authoritative; reporting must never reverse the committed audit row.
+        }
     }
 
     private function validateAvailableTokens(NotificationTemplate $template): void

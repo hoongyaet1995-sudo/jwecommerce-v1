@@ -96,6 +96,22 @@ function smokeCounts(): array
         'order_items' => DB::table('order_items')->count(),
         'order_addresses' => DB::table('order_addresses')->count(),
         'order_payments' => DB::table('order_payments')->count(),
+        'order_status_histories' => DB::table('order_status_histories')->count(),
+        'order_refunds' => DB::table('order_refunds')->count(),
+        'order_tax_lines' => DB::table('order_tax_lines')->count(),
+        'coupon_usages' => DB::table('coupon_usages')->count(),
+        'order_tracking_verifications' => DB::table('order_tracking_verifications')->count(),
+        'order_payment_proof_events' => DB::table('order_payment_proof_events')->count(),
+        'payment_webhook_events' => DB::table('payment_webhook_events')->count(),
+        'shipments' => DB::table('shipments')->count(),
+        'shipment_events' => DB::table('shipment_events')->count(),
+        'shipment_quotes' => DB::table('shipment_quotes')->count(),
+        'shipping_webhook_receipts' => DB::table('shipping_webhook_receipts')->count(),
+        'easyparcel_reconciliation_tasks' => DB::table('easyparcel_reconciliation_tasks')->count(),
+        'easyparcel_shipment_recoveries' => DB::table('easyparcel_shipment_recoveries')->count(),
+        'product_reviews' => DB::table('product_reviews')->count(),
+        'product_review_media' => DB::table('product_review_media')->count(),
+        'product_review_events' => DB::table('product_review_events')->count(),
         'notification_templates' => DB::table('notification_templates')->count(),
         'notification_dispatches' => DB::table('notification_dispatches')->count(),
         'jobs' => DB::table('jobs')->count(),
@@ -131,16 +147,122 @@ function templateSnapshot(): array
         ->all();
 }
 
-/** @return array{adminEmail: string, customerEmail: string, orderNumber: string, dispatchSourceType: string, dispatchSourceId: string} */
+/** @return array{adminEmail: string, customerEmail: string, orderNumber: string, itemSku: string, addressMarker: string, paymentReference: string, dispatchSourceType: string, dispatchSourceId: string} */
 function expectedOwnership(string $token): array
 {
+    $shortToken = strtoupper(substr($token, 0, 8));
+
     return [
         'adminEmail' => "task9-admin-{$token}@example.test",
         'customerEmail' => "task9-customer-{$token}@example.test",
         'orderNumber' => 'JW-TASK9-'.strtoupper(substr($token, 0, 12)),
+        'itemSku' => 'TASK9-'.$shortToken,
+        'addressMarker' => 'TASK9-ADDRESS-'.$shortToken,
+        'paymentReference' => 'TASK9-PAY-'.$shortToken,
         'dispatchSourceType' => 'task9_smoke',
         'dispatchSourceId' => $token,
     ];
+}
+
+/** @return array{ids: list<int>, fingerprint: string} */
+function querySnapshot($query, bool $lockForUpdate = false): array
+{
+    if ($lockForUpdate) {
+        $query->lockForUpdate();
+    }
+
+    $rows = $query->orderBy('id')->get()->map(static function (object $row): array {
+        $attributes = (array) $row;
+        ksort($attributes);
+
+        return $attributes;
+    })->values()->all();
+
+    return [
+        'ids' => array_map(static fn (array $row): int => (int) $row['id'], $rows),
+        'fingerprint' => smokeHash(['rows' => $rows]),
+    ];
+}
+
+/** @param list<int> $ids */
+function constrainIds($query, string $column, array $ids): void
+{
+    if ($ids === []) {
+        $query->whereRaw('1 = 0');
+
+        return;
+    }
+
+    $query->whereIn($column, $ids);
+}
+
+/** @return array<string, array{ids: list<int>, fingerprint: string}> */
+function orderAssociationSnapshot(int $orderId, bool $lockForUpdate = false): array
+{
+    $snapshots = [];
+    foreach ([
+        'order_items',
+        'order_addresses',
+        'order_payments',
+        'order_status_histories',
+        'order_refunds',
+        'order_tax_lines',
+        'coupon_usages',
+        'order_tracking_verifications',
+        'order_payment_proof_events',
+        'shipments',
+        'shipment_quotes',
+        'easyparcel_shipment_recoveries',
+        'notification_dispatches',
+    ] as $table) {
+        $snapshots[$table] = querySnapshot(DB::table($table)->where('order_id', $orderId), $lockForUpdate);
+    }
+
+    $dependentTables = [
+        'shipment_events' => ['shipment_id', $snapshots['shipments']['ids']],
+        'payment_webhook_events' => ['order_payment_id', $snapshots['order_payments']['ids']],
+        'shipping_webhook_receipts' => ['shipment_id', $snapshots['shipments']['ids']],
+        'product_reviews' => ['order_item_id', $snapshots['order_items']['ids']],
+    ];
+    foreach ($dependentTables as $table => [$column, $ids]) {
+        $query = DB::table($table);
+        constrainIds($query, $column, $ids);
+        $snapshots[$table] = querySnapshot($query, $lockForUpdate);
+    }
+
+    foreach ([
+        'product_review_media' => 'product_review_id',
+        'product_review_events' => 'product_review_id',
+    ] as $table => $column) {
+        $query = DB::table($table);
+        constrainIds($query, $column, $snapshots['product_reviews']['ids']);
+        $snapshots[$table] = querySnapshot($query, $lockForUpdate);
+    }
+
+    $reconciliation = DB::table('easyparcel_reconciliation_tasks');
+    $quoteIds = $snapshots['shipment_quotes']['ids'];
+    $shipmentIds = $snapshots['shipments']['ids'];
+    $receiptIds = $snapshots['shipping_webhook_receipts']['ids'];
+    if ($quoteIds === [] && $shipmentIds === [] && $receiptIds === []) {
+        $reconciliation->whereRaw('1 = 0');
+    } else {
+        $reconciliation->where(static function ($query) use ($quoteIds, $shipmentIds, $receiptIds): void {
+            if ($quoteIds !== []) {
+                $query->orWhereIn('shipment_quote_id', $quoteIds);
+            }
+            if ($shipmentIds !== []) {
+                $query->orWhereIn('shipment_id', $shipmentIds);
+            }
+            if ($receiptIds !== []) {
+                $query->orWhereIn('shipping_webhook_receipt_id', $receiptIds);
+            }
+        });
+    }
+    $snapshots['easyparcel_reconciliation_tasks'] = querySnapshot($reconciliation, $lockForUpdate);
+
+    ksort($snapshots);
+
+    return $snapshots;
 }
 
 /** @return array<string, int> */
@@ -171,9 +293,6 @@ function ownedBusinessSnapshot(string $token): array
 
         return smokeHash($attributes);
     };
-    $collectionFingerprint = static function ($models) use ($modelFingerprint): array {
-        return $models->map($modelFingerprint)->values()->all();
-    };
 
     return [
         'counts' => businessCounts(),
@@ -181,16 +300,7 @@ function ownedBusinessSnapshot(string $token): array
         'admin' => $modelFingerprint($admin),
         'customer' => $modelFingerprint($customer),
         'order' => $modelFingerprint($order),
-        'items' => $order === null ? [] : $collectionFingerprint($order->items()->orderBy('id')->get()),
-        'addresses' => $order === null ? [] : $collectionFingerprint($order->addresses()->orderBy('id')->get()),
-        'payments' => $order === null ? [] : $collectionFingerprint($order->payments()->orderBy('id')->get()),
-        'dispatches' => $collectionFingerprint(
-            NotificationDispatch::query()
-                ->where('source_type', $ownership['dispatchSourceType'])
-                ->where('source_id', $ownership['dispatchSourceId'])
-                ->orderBy('id')
-                ->get(),
-        ),
+        'associations' => $order === null ? [] : orderAssociationSnapshot((int) $order->id),
     ];
 }
 
@@ -342,7 +452,7 @@ try {
                 'total' => 13900,
             ]);
             $order->items()->create([
-                'sku' => 'TASK9-'.strtoupper(substr($token, 0, 8)),
+                'sku' => $ownership['itemSku'],
                 'title' => 'Task 9 Smoke Product',
                 'variant_title' => 'Dedicated Fixture',
                 'unit_price' => 12900,
@@ -355,6 +465,7 @@ try {
                 'last_name' => 'Smoke',
                 'phone' => '+601100000009',
                 'line_1' => '9 Local Smoke Lane',
+                'line_2' => $ownership['addressMarker'],
                 'city' => 'Kuala Lumpur',
                 'state' => 'Kuala Lumpur',
                 'postal_code' => '50000',
@@ -365,7 +476,7 @@ try {
                 'provider' => 'local_smoke',
                 'environment' => 'testing',
                 'status' => 'pending',
-                'reference' => 'TASK9-PAY-'.strtoupper(substr($token, 0, 8)),
+                'reference' => $ownership['paymentReference'],
                 'amount' => 13900,
                 'currency' => 'MYR',
             ]);
@@ -414,6 +525,7 @@ try {
                 static fn (array $template): bool => ! in_array($template['eventKey'], $baselineEventKeys, true),
             ));
             $business = businessEvidence($token);
+            $ownedAssociations = orderAssociationSnapshot((int) $order->id);
             $state = signedSmokeState([
                 'token' => $token,
                 'ownership' => $ownership,
@@ -424,6 +536,7 @@ try {
                 'baseline_templates' => $baselineTemplates,
                 'post_setup_templates' => $postSetupTemplates,
                 'created_templates' => $createdTemplates,
+                'owned_associations' => $ownedAssociations,
                 'setup_business_counts' => $business['counts'],
                 'setup_business_fingerprint' => $business['fingerprint'],
             ], $token);
@@ -445,17 +558,108 @@ try {
             'mode' => 'setup',
             'database' => config('database.connections.mysql.database'),
             'orderNumber' => $state['ownership']['orderNumber'],
+            'orderId' => $state['order_id'],
             'baselineCounts' => $baselineCounts,
             'baselineTemplateCount' => count($baselineTemplates),
             'createdTemplateCount' => count($state['created_templates']),
             'fixtureCounts' => ['users' => 1, 'customers' => 1, 'orders' => 1, 'dispatches' => 2, 'jobs' => 0, 'failedJobs' => 0],
             'businessCounts' => $state['setup_business_counts'],
             'businessFingerprint' => $state['setup_business_fingerprint'],
+            'ownedAssociations' => $state['owned_associations'],
         ]);
         exit(0);
     }
 
     $state = readSmokeState($statePath, $token);
+    if ($mode === 'inject-cleanup-guard') {
+        $ownership = expectedOwnership($token);
+        if ($state['ownership'] !== $ownership) {
+            failHarness('state_ownership_mismatch');
+        }
+        if (orderAssociationSnapshot((int) $state['order_id']) !== $state['owned_associations']) {
+            failHarness('fixture_association_mismatch');
+        }
+
+        $guardId = DB::transaction(static function () use ($ownership, $state, $token): int {
+            $order = Order::query()
+                ->whereKey($state['order_id'])
+                ->where('number', $ownership['orderNumber'])
+                ->lockForUpdate()
+                ->sole();
+            if (orderAssociationSnapshot((int) $order->id, true) !== $state['owned_associations']) {
+                throw new RuntimeException('fixture_association_mismatch');
+            }
+
+            return (int) DB::table('order_status_histories')->insertGetId([
+                'order_id' => $order->id,
+                'from_status' => null,
+                'to_status' => $order->status,
+                'user_id' => $state['admin_id'],
+                'note' => "TASK9-CLEANUP-GUARD-{$token}",
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+
+        passHarness([
+            'mode' => 'inject-cleanup-guard',
+            'database' => $safeRuntime['database'],
+            'associationGuardId' => $guardId,
+        ]);
+        exit(0);
+    }
+
+    if ($mode === 'remove-cleanup-guard') {
+        $ownership = expectedOwnership($token);
+        if ($state['ownership'] !== $ownership) {
+            failHarness('state_ownership_mismatch');
+        }
+
+        DB::transaction(static function () use ($ownership, $state, $token): void {
+            $admin = User::query()
+                ->whereKey($state['admin_id'])
+                ->where('email', $ownership['adminEmail'])
+                ->lockForUpdate()
+                ->sole();
+            $order = Order::query()
+                ->whereKey($state['order_id'])
+                ->where('number', $ownership['orderNumber'])
+                ->lockForUpdate()
+                ->sole();
+            $guardRows = DB::table('order_status_histories')
+                ->where('order_id', $order->id)
+                ->where('user_id', $admin->id)
+                ->where('note', "TASK9-CLEANUP-GUARD-{$token}")
+                ->lockForUpdate()
+                ->get();
+            if ($guardRows->count() !== 1) {
+                throw new RuntimeException('cleanup_guard_ownership_mismatch');
+            }
+            $deleted = DB::table('order_status_histories')
+                ->where('id', $guardRows->first()->id)
+                ->where('order_id', $order->id)
+                ->where('user_id', $admin->id)
+                ->where('note', "TASK9-CLEANUP-GUARD-{$token}")
+                ->delete();
+            if ($deleted !== 1 || orderAssociationSnapshot((int) $order->id, true) !== $state['owned_associations']) {
+                throw new RuntimeException('cleanup_guard_restore_mismatch');
+            }
+        });
+
+        $business = businessEvidence($token);
+        $restored = $business['counts'] === $state['setup_business_counts']
+            && hash_equals((string) $state['setup_business_fingerprint'], $business['fingerprint']);
+        if (! $restored) {
+            failHarness('cleanup_guard_restore_mismatch');
+        }
+        passHarness([
+            'mode' => 'remove-cleanup-guard',
+            'database' => $safeRuntime['database'],
+            'associationStateRestored' => true,
+        ]);
+        exit(0);
+    }
+
     if ($mode === 'snapshot') {
         $business = businessEvidence($token);
         passHarness([
@@ -478,6 +682,13 @@ try {
             (string) $state['setup_business_fingerprint'],
             $preCleanupBusiness['fingerprint'],
         ) && $state['setup_business_counts'] === $preCleanupBusiness['counts'];
+        if (! $businessStateUnchanged) {
+            failHarness('fixture_business_state_changed');
+        }
+        $currentAssociations = orderAssociationSnapshot((int) $state['order_id']);
+        if (($state['owned_associations'] ?? null) !== $currentAssociations) {
+            failHarness('fixture_association_mismatch');
+        }
         if (templateSnapshot() !== $state['post_setup_templates']) {
             failHarness('template_ownership_mismatch');
         }
@@ -490,13 +701,15 @@ try {
         }
 
         DB::transaction(static function () use ($ownership, $state): void {
-            $admin = User::query()->where('email', $ownership['adminEmail'])->sole();
-            $customer = Customer::query()->where('email', $ownership['customerEmail'])->sole();
-            $order = Order::query()->where('number', $ownership['orderNumber'])->sole();
+            $admin = User::query()->where('email', $ownership['adminEmail'])->lockForUpdate()->sole();
+            $customer = Customer::query()->where('email', $ownership['customerEmail'])->lockForUpdate()->sole();
+            $order = Order::query()->where('number', $ownership['orderNumber'])->lockForUpdate()->sole();
             $dispatches = NotificationDispatch::query()
                 ->where('source_type', $ownership['dispatchSourceType'])
                 ->where('source_id', $ownership['dispatchSourceId'])
+                ->lockForUpdate()
                 ->get();
+            $lockedAssociations = orderAssociationSnapshot((int) $order->id, true);
 
             if (
                 (int) $admin->id !== (int) $state['admin_id']
@@ -506,14 +719,67 @@ try {
                 || $order->email !== $ownership['customerEmail']
                 || $dispatches->count() !== 2
                 || $dispatches->contains(static fn (NotificationDispatch $dispatch): bool => (int) $dispatch->order_id !== (int) $order->id)
+                || $lockedAssociations !== $state['owned_associations']
             ) {
                 throw new RuntimeException('fixture_ownership_mismatch');
             }
 
-            NotificationDispatch::query()
+            $expectedAssociationCounts = array_fill_keys(array_keys($lockedAssociations), 0);
+            $expectedAssociationCounts['order_items'] = 1;
+            $expectedAssociationCounts['order_addresses'] = 1;
+            $expectedAssociationCounts['order_payments'] = 1;
+            $expectedAssociationCounts['notification_dispatches'] = 2;
+            foreach ($lockedAssociations as $table => $snapshot) {
+                if (count($snapshot['ids']) !== $expectedAssociationCounts[$table]) {
+                    throw new RuntimeException('unexpected_fixture_association');
+                }
+            }
+
+            $item = DB::table('order_items')->where('id', $lockedAssociations['order_items']['ids'][0])->first();
+            $address = DB::table('order_addresses')->where('id', $lockedAssociations['order_addresses']['ids'][0])->first();
+            $payment = DB::table('order_payments')->where('id', $lockedAssociations['order_payments']['ids'][0])->first();
+            if (
+                $item === null
+                || (int) $item->order_id !== (int) $order->id
+                || $item->sku !== $ownership['itemSku']
+                || $address === null
+                || (int) $address->order_id !== (int) $order->id
+                || $address->line_2 !== $ownership['addressMarker']
+                || $payment === null
+                || (int) $payment->order_id !== (int) $order->id
+                || $payment->reference !== $ownership['paymentReference']
+            ) {
+                throw new RuntimeException('fixture_child_ownership_mismatch');
+            }
+
+            $deletedDispatches = NotificationDispatch::query()
                 ->where('source_type', $ownership['dispatchSourceType'])
                 ->where('source_id', $ownership['dispatchSourceId'])
+                ->where('order_id', $order->id)
+                ->whereIn('id', $lockedAssociations['notification_dispatches']['ids'])
                 ->delete();
+            $deletedPayments = DB::table('order_payments')
+                ->where('order_id', $order->id)
+                ->whereIn('id', $lockedAssociations['order_payments']['ids'])
+                ->delete();
+            $deletedAddresses = DB::table('order_addresses')
+                ->where('order_id', $order->id)
+                ->whereIn('id', $lockedAssociations['order_addresses']['ids'])
+                ->delete();
+            $deletedItems = DB::table('order_items')
+                ->where('order_id', $order->id)
+                ->whereIn('id', $lockedAssociations['order_items']['ids'])
+                ->delete();
+            if ($deletedDispatches !== 2 || $deletedPayments !== 1 || $deletedAddresses !== 1 || $deletedItems !== 1) {
+                throw new RuntimeException('fixture_child_delete_mismatch');
+            }
+
+            foreach (orderAssociationSnapshot((int) $order->id, true) as $snapshot) {
+                if ($snapshot['ids'] !== []) {
+                    throw new RuntimeException('fixture_association_remains');
+                }
+            }
+
             DB::table('sessions')->where('user_id', $admin->id)->delete();
             $order->delete();
             $customer->delete();

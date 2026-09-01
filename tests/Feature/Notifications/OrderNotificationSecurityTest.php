@@ -7,15 +7,18 @@ use App\Models\Customer;
 use App\Models\NotificationDispatch;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\Notifications\NotificationDispatchService;
 use App\Services\Notifications\NotificationTemplateDefaults;
 use App\Services\Notifications\OrderNotificationMilestoneService;
 use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Mail\Mailer as MailerContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Mail\PendingMail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Mockery;
+use PHPUnit\Framework\ExpectationFailedException;
 use RuntimeException;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Tests\TestCase;
@@ -91,7 +94,7 @@ class OrderNotificationSecurityTest extends TestCase
         ];
 
         foreach ($responses as $response) {
-            $this->assertSafeResponse($this->decodedResponseBody($response->getContent()));
+            $this->assertSafeResponse($response->getContent());
         }
     }
 
@@ -248,6 +251,37 @@ class OrderNotificationSecurityTest extends TestCase
         $this->assertSafeResponse($log);
     }
 
+    public function test_queue_failure_is_persisted_before_a_broken_reporter_is_safely_ignored(): void
+    {
+        $admin = $this->superAdmin();
+        $order = $this->order('REPORTER-FAILURE');
+        $failed = NotificationDispatch::factory()->failed()->create(['order_id' => $order->id]);
+
+        $this->bindThrowingDispatcher(implode(' ', self::PRIVATE_MARKERS));
+        $handler = Mockery::mock(ExceptionHandler::class);
+        $handler->shouldReceive('report')
+            ->once()
+            ->andThrow(new RuntimeException('TASK9_REPORTER_FAILURE'));
+        $this->app->instance(ExceptionHandler::class, $handler);
+
+        $result = app(NotificationDispatchService::class)->retry($failed, $admin);
+
+        $this->assertSafeQueueFailure($result);
+        $this->assertSafeQueueFailure($failed->refresh());
+    }
+
+    public function test_private_response_scanner_rejects_nested_json_escaped_url_with_a_suffix(): void
+    {
+        $body = json_encode([
+            'data' => [
+                'error' => self::PRIVATE_MARKERS[3].'?token=TASK9_EMBEDDED',
+            ],
+        ], JSON_THROW_ON_ERROR);
+
+        $this->expectException(ExpectationFailedException::class);
+        $this->assertSafeResponse($body);
+    }
+
     private function bindThrowingDispatcher(string $privateFailure): void
     {
         $dispatcher = Mockery::mock(Dispatcher::class);
@@ -264,6 +298,8 @@ class OrderNotificationSecurityTest extends TestCase
 
     private function assertSafeResponse(string $serialized): void
     {
+        $serialized = $this->decodedResponseBody($serialized);
+
         foreach (self::PRIVATE_MARKERS as $marker) {
             $this->assertStringNotContainsString($marker, $serialized);
             $this->assertStringNotContainsString(json_encode($marker, JSON_THROW_ON_ERROR), $serialized);

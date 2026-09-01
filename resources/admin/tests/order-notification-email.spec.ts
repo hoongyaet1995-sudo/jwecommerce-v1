@@ -20,12 +20,16 @@ type HarnessResult = {
   businessCounts?: Record<string, number>;
   businessFingerprint?: string;
   templateFingerprint?: string;
+  orderId?: number;
+  ownedAssociations?: Record<string, { ids: number[]; fingerprint: string }>;
+  associationGuardId?: number;
+  associationStateRestored?: boolean;
 };
 
 type RequestLedgerEntry = {
   method: string;
   path: string;
-  classification: 'read' | 'login' | 'read-only-preview' | 'mutation';
+  classification: 'foreign-origin' | 'read' | 'login' | 'read-only-preview' | 'mutation';
   allowed: boolean;
 };
 
@@ -36,6 +40,7 @@ const harness = resolve(testDirectory, 'fixtures/order-notification-email-harnes
 const php = 'C:\\xampp\\php\\php.exe';
 const port = 8569;
 const baseUrl = `http://127.0.0.1:${port}`;
+const acceptedOrigin = new URL(baseUrl).origin;
 const router = resolve(repositoryRoot, 'vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php');
 const token = randomBytes(10).toString('hex');
 const adminEmail = `task9-admin-${token}@example.test`;
@@ -46,6 +51,31 @@ const statePath = resolve(repositoryRoot, 'storage/framework/testing', `task9-or
 
 let server: ChildProcess | null = null;
 let setup: HarnessResult | null = null;
+
+const classifyInternalRequest = (
+  rawUrl: string,
+  method: string,
+  fixtureOrderId: number,
+): Pick<RequestLedgerEntry, 'path' | 'classification' | 'allowed'> => {
+  const parsed = new URL(rawUrl);
+  const path = parsed.pathname;
+  const normalizedMethod = method.toUpperCase();
+  const isRead = normalizedMethod === 'GET' || normalizedMethod === 'HEAD';
+  const isLogin = normalizedMethod === 'POST' && path === '/admin/login';
+  const isReadOnlyPreview = normalizedMethod === 'POST'
+    && path === `/admin/api/orders/${fixtureOrderId}/notifications/preview`;
+  const classification: RequestLedgerEntry['classification'] = parsed.origin !== acceptedOrigin
+    ? 'foreign-origin'
+    : isRead
+      ? 'read'
+      : isLogin
+        ? 'login'
+        : isReadOnlyPreview
+          ? 'read-only-preview'
+          : 'mutation';
+
+  return { path, classification, allowed: classification !== 'foreign-origin' && classification !== 'mutation' };
+};
 
 const acceptanceEnvironment = (inherited: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv => {
   const child = { ...inherited };
@@ -120,13 +150,25 @@ const stopOwnedServer = async (): Promise<boolean> => {
   return !(await portHasListener());
 };
 
-const runHarness = (mode: 'probe' | 'baseline' | 'setup' | 'snapshot' | 'cleanup'): HarnessResult => {
+type HarnessMode = 'probe' | 'baseline' | 'setup' | 'snapshot' | 'inject-cleanup-guard' | 'remove-cleanup-guard' | 'cleanup';
+
+const runHarness = (mode: HarnessMode): HarnessResult => {
   const raw = execFileSync(php, [harness, mode], {
     cwd: repositoryRoot,
     env: acceptanceEnvironment(),
     encoding: 'utf8',
   });
   return JSON.parse(raw.trim()) as HarnessResult;
+};
+
+const refusedHarnessMode = (mode: HarnessMode): { exitCode: number; code: string } => {
+  const result = spawnSync(php, [harness, mode], {
+    cwd: repositoryRoot,
+    env: acceptanceEnvironment(),
+    encoding: 'utf8',
+  });
+  const payload = JSON.parse((result.stderr || result.stdout).trim()) as { code?: string };
+  return { exitCode: result.status ?? -1, code: payload.code ?? 'missing_code' };
 };
 
 const refusedHarnessProbe = (overrides: NodeJS.ProcessEnv): { exitCode: number; code: string } => {
@@ -179,6 +221,21 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
     if (await portHasListener()) {
       throw new Error(`Task 9 refuses to run because port ${port} already has a listener. No process was touched.`);
     }
+
+    expect(classifyInternalRequest(`${acceptedOrigin}/admin/api/orders/123/notifications/preview`, 'POST', 123))
+      .toEqual({
+        path: '/admin/api/orders/123/notifications/preview',
+        classification: 'read-only-preview',
+        allowed: true,
+      });
+    expect(classifyInternalRequest('http://127.0.0.1:8570/admin/settings/email', 'GET', 123))
+      .toEqual({ path: '/admin/settings/email', classification: 'foreign-origin', allowed: false });
+    expect(classifyInternalRequest(`${acceptedOrigin}/admin/api/orders/124/notifications/preview`, 'POST', 123))
+      .toEqual({
+        path: '/admin/api/orders/124/notifications/preview',
+        classification: 'mutation',
+        allowed: false,
+      });
 
     execFileSync(php, ['artisan', 'optimize:clear', '--no-interaction'], {
       cwd: repositoryRoot,
@@ -257,6 +314,22 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
     setup = runHarness('setup');
     writeEvidence('fixture-setup.json', setup);
 
+    const cleanupGuard = runHarness('inject-cleanup-guard');
+    expect(cleanupGuard.associationGuardId).toBeGreaterThan(0);
+    const cleanupRefusal = refusedHarnessMode('cleanup');
+    expect(cleanupRefusal).toEqual({ exitCode: 1, code: 'fixture_business_state_changed' });
+    expect(existsSync(statePath)).toBe(true);
+    const cleanupGuardRemoval = runHarness('remove-cleanup-guard');
+    expect(cleanupGuardRemoval.associationStateRestored).toBe(true);
+    writeEvidence('fixture-cleanup-fail-closed.json', {
+      injectedTable: 'order_status_histories',
+      cleanupRefusal,
+      fixturePreserved: true,
+      stateFilePreserved: true,
+      exactInjectedRowRemoved: true,
+      associationStateRestored: cleanupGuardRemoval.associationStateRestored,
+    });
+
     const args = ['-d', 'display_errors=0', '-S', `127.0.0.1:${port}`, router];
     server = spawn(php, args, {
       cwd: resolve(repositoryRoot, 'public'),
@@ -300,14 +373,43 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
       stoppedAt: new Date().toISOString(),
     });
     if (cleanupError) throw cleanupError;
-    if (cleanup?.countsRestored !== true) throw new Error('Task 9 smoke fixture cleanup did not restore the exact baseline.');
-    if (cleanup?.businessStateUnchanged !== true) throw new Error('Task 9 smoke detected a business-state mutation before cleanup.');
+    if (setup !== null && cleanup?.countsRestored !== true) throw new Error('Task 9 smoke fixture cleanup did not restore the exact baseline.');
+    if (setup !== null && cleanup?.businessStateUnchanged !== true) throw new Error('Task 9 smoke detected a business-state mutation before cleanup.');
     if (!portClear) throw new Error(`Task 9 did not prove port ${port} clear after stopping its owned server.`);
   });
 
   test('loads the protected Settings and Order notification surfaces without delivery actions', async ({ page }) => {
     const orderNumber = setup?.orderNumber;
+    const orderId = setup?.orderId;
     expect(orderNumber).toBeTruthy();
+    expect(orderId).toBeGreaterThan(0);
+    for (const table of [
+      'order_items',
+      'order_addresses',
+      'order_payments',
+      'order_status_histories',
+      'order_refunds',
+      'order_tax_lines',
+      'shipments',
+      'shipment_events',
+      'shipment_quotes',
+      'order_payment_proof_events',
+      'coupon_usages',
+      'product_reviews',
+      'product_review_media',
+      'product_review_events',
+      'payment_webhook_events',
+      'order_tracking_verifications',
+      'shipping_webhook_receipts',
+      'easyparcel_reconciliation_tasks',
+      'easyparcel_shipment_recoveries',
+      'notification_dispatches',
+    ]) {
+      expect(setup?.ownedAssociations?.[table]).toEqual(expect.objectContaining({
+        ids: expect.any(Array),
+        fingerprint: expect.any(String),
+      }));
+    }
 
     const blockedExternalRequests: string[] = [];
     const privateNetworkLeaks: string[] = [];
@@ -318,27 +420,15 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
       const method = route.request().method().toUpperCase();
       if (url.includes(privateProviderUrl) || url.includes(privateProviderId)) privateNetworkLeaks.push(url);
       const parsed = new URL(url);
-      if (parsed.hostname !== '127.0.0.1') {
+      const decision = classifyInternalRequest(url, method, orderId!);
+      if (decision.classification === 'foreign-origin') {
         blockedExternalRequests.push(`${parsed.protocol}//${parsed.host}${parsed.pathname}`);
         await route.abort('blockedbyclient');
         return;
       }
 
-      const path = parsed.pathname;
-      const isRead = method === 'GET' || method === 'HEAD';
-      const isLogin = method === 'POST' && path === '/admin/login';
-      const isReadOnlyPreview = method === 'POST'
-        && /^\/admin\/api\/orders\/\d+\/notifications\/preview$/.test(path);
-      const classification: RequestLedgerEntry['classification'] = isRead
-        ? 'read'
-        : isLogin
-          ? 'login'
-          : isReadOnlyPreview
-            ? 'read-only-preview'
-            : 'mutation';
-      const allowed = classification !== 'mutation';
-      requestLedger.push({ method, path, classification, allowed });
-      if (!allowed) {
+      requestLedger.push({ method, ...decision });
+      if (!decision.allowed) {
         await route.abort('blockedbyclient');
         return;
       }
@@ -432,6 +522,10 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
       requestLedger,
       blockedMutationAttempts: blockedMutations,
       executedDeliveryActions,
+      requestAllowlist: {
+        acceptedOrigin,
+        exactPreviewPath: `/admin/api/orders/${orderId}/notifications/preview`,
+      },
       officialRoutes: ['/admin/settings/email', '/admin/orders'],
     });
   });
