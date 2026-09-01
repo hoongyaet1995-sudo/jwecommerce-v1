@@ -10,6 +10,7 @@ use App\Models\ShipmentEvent;
 use App\Models\User;
 use App\Services\Notifications\OrderNotificationMilestoneService;
 use App\Services\Shipping\EasyParcelBookingGuard;
+use App\Services\Shipping\EasyParcelStatusNormalizer;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -48,6 +49,7 @@ class ShipmentService
 
     public function __construct(
         private readonly EasyParcelBookingGuard $easyParcelBookings,
+        private readonly EasyParcelStatusNormalizer $easyParcelStatuses,
         private readonly OrderNotificationMilestoneService $notifications,
     ) {}
 
@@ -242,7 +244,7 @@ class ShipmentService
         ?string $trackingNumber,
         ?string $labelPath,
         ?string $trackingUrl,
-        string $providerStatus,
+        int $providerStatusCode,
         array $events,
     ): Shipment {
         return DB::transaction(function () use (
@@ -253,7 +255,7 @@ class ShipmentService
             $trackingNumber,
             $labelPath,
             $trackingUrl,
-            $providerStatus,
+            $providerStatusCode,
             $events,
         ): Shipment {
             $lockedOrder = Order::query()->lockForUpdate()->findOrFail($shipment->order_id);
@@ -266,6 +268,7 @@ class ShipmentService
                 throw new InvalidArgumentException('Only the current EasyParcel shipment accepts provider details.');
             }
 
+            $providerStatus = $this->easyParcelStatuses->normalize($providerStatusCode);
             $firstOfficialAwb = blank($lockedShipment->tracking_number) && filled($trackingNumber);
             $updates = array_filter([
                 'provider_order_reference' => $providerOrderReference,
@@ -299,7 +302,8 @@ class ShipmentService
                 $lockedShipment->forceFill($updates)->save();
             }
 
-            if ($firstOfficialAwb) {
+            if ($firstOfficialAwb
+                && $this->easyParcelStatuses->allowsReadyToShipNotification($providerStatusCode)) {
                 $this->recordNotification(
                     $lockedOrder,
                     'ready_to_ship',

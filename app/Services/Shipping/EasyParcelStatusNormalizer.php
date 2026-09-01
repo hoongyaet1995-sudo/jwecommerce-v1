@@ -18,6 +18,11 @@ final class EasyParcelStatusNormalizer
         };
     }
 
+    public function allowsReadyToShipNotification(int $code): bool
+    {
+        return $this->normalize($code) === 'pending' && $code !== 11;
+    }
+
     public function description(mixed $value): string
     {
         if (! is_string($value) || ! mb_check_encoding($value, 'UTF-8')) {

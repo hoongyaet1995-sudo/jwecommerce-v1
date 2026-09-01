@@ -23,6 +23,7 @@ final class EasyParcelBookingReconciliationService
         private readonly EasyParcelReconciliationTaskService $tasks,
         private readonly EasyParcelReconciliationPublisher $publisher,
         private readonly EasyParcelFailedBookingRecoveryService $failedBookingRecoveries,
+        private readonly EasyParcelStatusNormalizer $statuses,
         private readonly OrderNotificationMilestoneService $notifications,
     ) {}
 
@@ -208,7 +209,8 @@ final class EasyParcelBookingReconciliationService
 
             $this->failedBookingRecoveries->completeForReplacement($shipment);
 
-            if (filled($shipment->tracking_number)) {
+            if (filled($shipment->tracking_number)
+                && $this->statuses->allowsReadyToShipNotification($details['shipment_status_code'])) {
                 rescue(
                     fn () => $this->notifications->record(
                         $lockedOrder,

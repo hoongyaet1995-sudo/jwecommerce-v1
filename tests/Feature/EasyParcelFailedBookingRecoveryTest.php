@@ -19,7 +19,6 @@ use App\Services\Shipping\EasyParcelFulfillmentService;
 use App\Services\Shipping\PackageSpec;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Client\Request;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
@@ -104,7 +103,7 @@ class EasyParcelFailedBookingRecoveryTest extends TestCase
                     'AWB-LATE-AFTER-CANCEL-CLAIM',
                     'https://app.easyparcel.com/labels/AWB-LATE-AFTER-CANCEL-CLAIM',
                     'https://easyparcel.com/my/en/track/details/AWB-LATE-AFTER-CANCEL-CLAIM',
-                    'pending',
+                    7,
                     [],
                 );
             } catch (InvalidArgumentException $exception) {
@@ -319,7 +318,7 @@ class EasyParcelFailedBookingRecoveryTest extends TestCase
             null,
             null,
             null,
-            'cancelled',
+            0,
             [],
         );
         $recovery = app(EasyParcelFailedBookingRecoveryService::class)->recordProviderCancellation(

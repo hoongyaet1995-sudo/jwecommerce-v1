@@ -32,6 +32,7 @@ use App\Services\Shipping\EasyParcelWebhookReconciliationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -320,6 +321,153 @@ class NotificationProducerCoverageTest extends TestCase
         self::assertSame((string) $recoveredShipment->id, $recoveredDispatch->source_id);
     }
 
+    public function test_authenticated_details_first_awb_exception_statuses_do_not_consume_ready_to_ship_before_a_valid_replacement(): void
+    {
+        Http::preventStrayRequests();
+        $this->connectedEasyParcelProvider();
+        $detailsResponses = [];
+        Http::fake(function (Request $request) use (&$detailsResponses) {
+            $shipmentNumber = $request->data()['shipment_number'] ?? null;
+            if ($request->url() !== EasyParcelShipmentDetailsService::DETAILS_URL
+                || ! is_string($shipmentNumber)
+                || ! isset($detailsResponses[$shipmentNumber])) {
+                throw new RuntimeException('Unexpected EasyParcel details request.');
+            }
+
+            return Http::response($detailsResponses[$shipmentNumber]);
+        });
+
+        foreach ([
+            0 => 'Cancelled',
+            6 => 'Returned',
+            8 => 'On Hold',
+            11 => 'Drop-off Required',
+        ] as $statusCode => $description) {
+            $order = $this->order('processing', 'DETAILS-EXCEPTION-'.$statusCode);
+            $exceptionShipment = $this->easyParcelShipment($order, 'ES-DETAILS-EXCEPTION-'.$statusCode);
+            $detailsResponses['ES-DETAILS-EXCEPTION-'.$statusCode] = $this->detailsResponseForFirstAwb(
+                $exceptionShipment,
+                'AWB-DETAILS-EXCEPTION-'.$statusCode,
+                $statusCode,
+                $description,
+            );
+
+            app(EasyParcelShipmentDetailsService::class)->reconcile($exceptionShipment);
+
+            self::assertSame('AWB-DETAILS-EXCEPTION-'.$statusCode, $exceptionShipment->fresh()->tracking_number);
+            self::assertSame(0, $order->notificationDispatches()->count(), 'provider code '.$statusCode);
+            $this->assertDatabaseMissing('notification_dispatches', [
+                'idempotency_key' => 'automatic:email:order:'.$order->id.':event:ready_to_ship',
+            ]);
+
+            $replacement = $this->easyParcelShipment(
+                $order,
+                'ES-DETAILS-REPLACEMENT-'.$statusCode,
+                sequence: 2,
+            );
+            $detailsResponses['ES-DETAILS-REPLACEMENT-'.$statusCode] = $this->detailsResponseForFirstAwb(
+                $replacement,
+                'AWB-DETAILS-REPLACEMENT-'.$statusCode,
+                7,
+                'Schedule In Arrangement',
+            );
+
+            app(EasyParcelShipmentDetailsService::class)->reconcile($replacement);
+
+            $dispatch = $order->notificationDispatches()->sole();
+            self::assertSame('ready_to_ship', $dispatch->event_key);
+            self::assertSame((string) $replacement->id, $dispatch->source_id);
+        }
+    }
+
+    public function test_booking_recovery_first_awb_exception_statuses_do_not_consume_ready_to_ship_before_a_valid_rebook(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedEasyParcelProvider();
+        $actor = $this->superAdmin();
+        $listedShipmentNumber = null;
+        $detailsResponses = [];
+        Http::fake(function (Request $request) use (&$detailsResponses, &$listedShipmentNumber) {
+            if ($request->url() === EasyParcelBookingReconciliationService::LIST_URL
+                && is_string($listedShipmentNumber)) {
+                return Http::response([
+                    'status_code' => 200,
+                    'data' => [['shipment_number' => $listedShipmentNumber]],
+                ]);
+            }
+
+            $shipmentNumber = $request->data()['shipment_number'] ?? null;
+            if ($request->url() === EasyParcelShipmentDetailsService::DETAILS_URL
+                && is_string($shipmentNumber)
+                && isset($detailsResponses[$shipmentNumber])) {
+                return Http::response($detailsResponses[$shipmentNumber]);
+            }
+
+            throw new RuntimeException('Unexpected EasyParcel recovery request.');
+        });
+
+        foreach ([
+            0 => 'Cancelled',
+            6 => 'Returned',
+            8 => 'On Hold',
+            11 => 'Drop-off Required',
+        ] as $statusCode => $description) {
+            $order = $this->order('processing', 'RECOVERY-EXCEPTION-'.$statusCode);
+            $exceptionQuote = $this->shipmentQuote($order, $provider, $actor, 'uncertain');
+            $exceptionQuote->forceFill([
+                'booking_claim_key' => 'easyparcel:order:'.$order->id,
+                'booking_started_at' => now(),
+                'selected_service_code' => null,
+            ])->save();
+            $exceptionResponse = $this->detailsResponse(
+                $exceptionQuote,
+                'ES-RECOVERY-EXCEPTION-'.$statusCode,
+                'AWB-RECOVERY-EXCEPTION-'.$statusCode,
+                $statusCode,
+            );
+            data_set(
+                $exceptionResponse,
+                'data.0.shipment_details.shipment_status',
+                $description,
+            );
+            $listedShipmentNumber = 'ES-RECOVERY-EXCEPTION-'.$statusCode;
+            $detailsResponses[$listedShipmentNumber] = $exceptionResponse;
+
+            $exceptionShipment = app(EasyParcelBookingReconciliationService::class)->reconcile($exceptionQuote);
+
+            self::assertSame('AWB-RECOVERY-EXCEPTION-'.$statusCode, $exceptionShipment->tracking_number);
+            self::assertSame(0, $order->notificationDispatches()->count(), 'provider code '.$statusCode);
+            $this->assertDatabaseMissing('notification_dispatches', [
+                'idempotency_key' => 'automatic:email:order:'.$order->id.':event:ready_to_ship',
+            ]);
+
+            $exceptionShipment->forceFill(['status' => 'cancelled'])->save();
+            $exceptionQuote->forceFill([
+                'booking_state' => 'failed',
+                'booking_claim_key' => null,
+            ])->save();
+            $replacementQuote = $this->shipmentQuote($order, $provider, $actor, 'in_progress');
+            $replacementQuote->forceFill([
+                'booking_claim_key' => 'easyparcel:order:'.$order->id,
+                'booking_started_at' => now(),
+                'selected_service_code' => null,
+            ])->save();
+            $listedShipmentNumber = 'ES-RECOVERY-REBOOK-'.$statusCode;
+            $detailsResponses[$listedShipmentNumber] = $this->detailsResponse(
+                $replacementQuote,
+                $listedShipmentNumber,
+                'AWB-RECOVERY-REBOOK-'.$statusCode,
+                7,
+            );
+
+            $replacement = app(EasyParcelBookingReconciliationService::class)->reconcile($replacementQuote);
+
+            $dispatch = $order->notificationDispatches()->sole();
+            self::assertSame('ready_to_ship', $dispatch->event_key);
+            self::assertSame((string) $replacement->id, $dispatch->source_id);
+        }
+    }
+
     public function test_late_awb_reconciliation_emits_ready_to_ship_once_and_rebooking_does_not_repeat_it(): void
     {
         $order = $this->order('processing', 'AWB-LATE');
@@ -334,7 +482,7 @@ class NotificationProducerCoverageTest extends TestCase
             'AWB-LATE-1',
             'https://app.easyparcel.com/labels/AWB-LATE-1',
             'https://app.easyparcel.com/tracking/AWB-LATE-1',
-            'pending',
+            7,
             [],
         );
         $service->reconcileEasyParcelDetails(
@@ -345,7 +493,7 @@ class NotificationProducerCoverageTest extends TestCase
             'AWB-LATE-1',
             'https://app.easyparcel.com/labels/AWB-LATE-1',
             'https://app.easyparcel.com/tracking/AWB-LATE-1',
-            'pending',
+            7,
             [],
         );
 
@@ -366,7 +514,7 @@ class NotificationProducerCoverageTest extends TestCase
             'AWB-LATE-2',
             'https://app.easyparcel.com/labels/AWB-LATE-2',
             'https://app.easyparcel.com/tracking/AWB-LATE-2',
-            'pending',
+            7,
             [],
         );
 
@@ -788,6 +936,26 @@ class NotificationProducerCoverageTest extends TestCase
         data_set($response, 'data.0.order_number', $shipment->provider_order_reference);
         data_set($response, 'data.0.shipment_details.reference', null);
         data_set($response, 'data.0.shipment_details.shipment_status', 'Parcel accepted by carrier.');
+
+        return $response;
+    }
+
+    /** @return array<string, mixed> */
+    private function detailsResponseForFirstAwb(
+        Shipment $shipment,
+        string $awb,
+        int $statusCode,
+        string $description,
+    ): array {
+        $quote = new ShipmentQuote(['reconciliation_reference' => null]);
+        $response = $this->detailsResponse(
+            $quote,
+            (string) $shipment->provider_reference,
+            $awb,
+            $statusCode,
+        );
+        data_set($response, 'data.0.shipment_details.shipment_status', $description);
+        data_set($response, 'data.0.shipment_details.reference', null);
 
         return $response;
     }
