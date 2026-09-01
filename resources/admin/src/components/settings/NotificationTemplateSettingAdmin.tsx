@@ -118,6 +118,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
   const [operationStatus, setOperationStatus] = useState<'Saved' | 'Reset' | 'Queued' | 'Not connected' | null>(null);
 
   const selectedStatusIdRef = useRef<NotificationEventKey>('order_created');
+  const draftGenerationRef = useRef(0);
   const emailSubjectRef = useRef<HTMLInputElement>(null);
   const emailBodyRef = useRef<HTMLTextAreaElement>(null);
   const whatsappBodyRef = useRef<HTMLTextAreaElement>(null);
@@ -163,10 +164,10 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
   );
 
   useEffect(() => {
-    if (currentTemplate) {
+    if (currentTemplate && localFormData?.eventKey !== currentTemplate.eventKey) {
       setLocalFormData({ ...currentTemplate });
     }
-  }, [currentTemplate]);
+  }, [currentTemplate, localFormData?.eventKey]);
 
   useEffect(() => {
     selectedStatusIdRef.current = selectedStatusId;
@@ -204,6 +205,13 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
     );
   }
 
+  const updateLocalDraft = (
+    updater: (current: NotificationTemplate | null) => NotificationTemplate | null,
+  ) => {
+    draftGenerationRef.current += 1;
+    setLocalFormData(updater);
+  };
+
   const handleInsertVariable = (variableKey: string) => {
     if (!canManageTemplates || !currentTemplate?.variables.includes(variableKey)) return;
 
@@ -215,13 +223,13 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
           const end = input.selectionEnd || 0;
           const currentVal = localFormData.emailSubject || '';
           const newVal = currentVal.substring(0, start) + variableKey + currentVal.substring(end);
-          setLocalFormData(prev => prev ? { ...prev, emailSubject: newVal } : null);
+          updateLocalDraft(prev => prev ? { ...prev, emailSubject: newVal } : null);
           setTimeout(() => {
             input.focus();
             input.setSelectionRange(start + variableKey.length, start + variableKey.length);
           }, 50);
         } else {
-          setLocalFormData(prev => prev ? { ...prev, emailSubject: (prev.emailSubject || '') + ' ' + variableKey } : null);
+          updateLocalDraft(prev => prev ? { ...prev, emailSubject: (prev.emailSubject || '') + ' ' + variableKey } : null);
         }
       } else {
         const textarea = emailBodyRef.current;
@@ -230,13 +238,13 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
           const end = textarea.selectionEnd || 0;
           const currentVal = localFormData.emailBody || '';
           const newVal = currentVal.substring(0, start) + variableKey + currentVal.substring(end);
-          setLocalFormData(prev => prev ? { ...prev, emailBody: newVal } : null);
+          updateLocalDraft(prev => prev ? { ...prev, emailBody: newVal } : null);
           setTimeout(() => {
             textarea.focus();
             textarea.setSelectionRange(start + variableKey.length, start + variableKey.length);
           }, 50);
         } else {
-          setLocalFormData(prev => prev ? { ...prev, emailBody: (prev.emailBody || '') + ' ' + variableKey } : null);
+          updateLocalDraft(prev => prev ? { ...prev, emailBody: (prev.emailBody || '') + ' ' + variableKey } : null);
         }
       }
     } else {
@@ -246,13 +254,13 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
         const end = textarea.selectionEnd || 0;
         const currentVal = localFormData.whatsappMessage || '';
         const newVal = currentVal.substring(0, start) + variableKey + currentVal.substring(end);
-        setLocalFormData(prev => prev ? { ...prev, whatsappMessage: newVal } : null);
+        updateLocalDraft(prev => prev ? { ...prev, whatsappMessage: newVal } : null);
         setTimeout(() => {
           textarea.focus();
           textarea.setSelectionRange(start + variableKey.length, start + variableKey.length);
         }, 50);
       } else {
-        setLocalFormData(prev => prev ? { ...prev, whatsappMessage: (prev.whatsappMessage || '') + ' ' + variableKey } : null);
+        updateLocalDraft(prev => prev ? { ...prev, whatsappMessage: (prev.whatsappMessage || '') + ' ' + variableKey } : null);
       }
     }
 
@@ -264,6 +272,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
     if (!canManageTemplates) return;
 
     const requestedEventKey = localFormData.eventKey;
+    const requestedDraftGeneration = draftGenerationRef.current;
     setIsSaving(true);
     setValidationError(null);
     setOperationStatus(null);
@@ -275,14 +284,28 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
       );
       setNotificationTemplates(prev => prev.map(template => template.eventKey === saved.eventKey ? saved : template));
       if (selectedStatusIdRef.current === requestedEventKey && saved.eventKey === requestedEventKey) {
-        setLocalFormData(saved);
-        setOperationStatus('Saved');
+        if (draftGenerationRef.current === requestedDraftGeneration) {
+          setLocalFormData(saved);
+          setOperationStatus('Saved');
+        } else {
+          setLocalFormData(current => current?.eventKey === saved.eventKey
+            ? {
+                ...current,
+                version: saved.version,
+                updatedById: saved.updatedById,
+                updatedAt: saved.updatedAt,
+              }
+            : current);
+        }
       }
     } catch (error: unknown) {
       const messages = error instanceof NotificationApiError
         ? Object.values(error.errors).flat()
         : [];
-      if (selectedStatusIdRef.current === requestedEventKey) {
+      if (
+        selectedStatusIdRef.current === requestedEventKey
+        && draftGenerationRef.current === requestedDraftGeneration
+      ) {
         setValidationError(messages.join(' ') || (error instanceof Error ? error.message : 'Notification template could not be saved.'));
       }
     } finally {
@@ -486,6 +509,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
                 key={status.eventKey}
                 onClick={() => {
                   selectedStatusIdRef.current = status.eventKey;
+                  draftGenerationRef.current += 1;
                   setSelectedStatusId(status.eventKey);
                   setValidationError(null);
                   setOperationStatus(null);
@@ -638,7 +662,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={localFormData.emailEnabled}
-                    onChange={e => setLocalFormData(prev => prev ? { ...prev, emailEnabled: e.target.checked } : null)}
+                    onChange={e => updateLocalDraft(prev => prev ? { ...prev, emailEnabled: e.target.checked } : null)}
                     disabled={!canManageTemplates || !localFormData.automaticEmail}
                     className="sr-only peer"
                   />
@@ -656,7 +680,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
                   type="text"
                   onFocus={() => setLastFocusedField('subject')}
                   value={localFormData.emailSubject}
-                  onChange={e => setLocalFormData(prev => prev ? { ...prev, emailSubject: e.target.value } : null)}
+                  onChange={e => updateLocalDraft(prev => prev ? { ...prev, emailSubject: e.target.value } : null)}
                   disabled={!canManageTemplates}
                   placeholder="e.g. [{shop_name}] Order #{order_number} Update: {status_name}"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs font-medium text-neutral-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-hidden font-mono"
@@ -671,7 +695,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
                 <input
                   type="text"
                   value={localFormData.emailPreheader}
-                  onChange={e => setLocalFormData(prev => prev ? { ...prev, emailPreheader: e.target.value } : null)}
+                  onChange={e => updateLocalDraft(prev => prev ? { ...prev, emailPreheader: e.target.value } : null)}
                   disabled={!canManageTemplates}
                   placeholder="Brief preview line shown next to subject in Gmail/Outlook"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs font-medium text-neutral-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-hidden"
@@ -686,7 +710,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
                 <input
                   type="text"
                   value={localFormData.emailHeading}
-                  onChange={e => setLocalFormData(prev => prev ? { ...prev, emailHeading: e.target.value } : null)}
+                  onChange={e => updateLocalDraft(prev => prev ? { ...prev, emailHeading: e.target.value } : null)}
                   disabled={!canManageTemplates}
                   placeholder="e.g. Order Confirmation & Payment Instructions"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs font-medium text-neutral-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-hidden"
@@ -708,7 +732,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
                   onFocus={() => setLastFocusedField('emailBody')}
                   rows={8}
                   value={localFormData.emailBody}
-                  onChange={e => setLocalFormData(prev => prev ? { ...prev, emailBody: e.target.value } : null)}
+                  onChange={e => updateLocalDraft(prev => prev ? { ...prev, emailBody: e.target.value } : null)}
                   disabled={!canManageTemplates}
                   placeholder="Write your email body message here..."
                   className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs font-mono text-neutral-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-hidden resize-y"
@@ -724,7 +748,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
                   <input
                     type="text"
                     value={localFormData.emailCtaText}
-                    onChange={e => setLocalFormData(prev => prev ? { ...prev, emailCtaText: e.target.value } : null)}
+                    onChange={e => updateLocalDraft(prev => prev ? { ...prev, emailCtaText: e.target.value } : null)}
                     disabled={!canManageTemplates}
                     placeholder="e.g. Track Order"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs font-medium text-neutral-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-hidden"
@@ -737,7 +761,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
                   <input
                     type="text"
                     value={localFormData.emailCtaUrl}
-                    onChange={e => setLocalFormData(prev => prev ? { ...prev, emailCtaUrl: e.target.value } : null)}
+                    onChange={e => updateLocalDraft(prev => prev ? { ...prev, emailCtaUrl: e.target.value } : null)}
                     disabled={!canManageTemplates}
                     placeholder="e.g. {order_url} or {tracking_url}"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs font-mono text-neutral-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-hidden"
@@ -766,7 +790,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={localFormData.whatsappEnabled}
-                    onChange={e => setLocalFormData(prev => prev ? { ...prev, whatsappEnabled: e.target.checked } : null)}
+                    onChange={e => updateLocalDraft(prev => prev ? { ...prev, whatsappEnabled: e.target.checked } : null)}
                     disabled={!canManageTemplates}
                     className="sr-only peer"
                   />
@@ -791,7 +815,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
                   onFocus={() => setLastFocusedField('whatsappBody')}
                   rows={9}
                   value={localFormData.whatsappMessage}
-                  onChange={e => setLocalFormData(prev => prev ? { ...prev, whatsappMessage: e.target.value } : null)}
+                  onChange={e => updateLocalDraft(prev => prev ? { ...prev, whatsappMessage: e.target.value } : null)}
                   disabled={!canManageTemplates}
                   placeholder="Hi *{customer_name}*, your order #{order_number} has been updated..."
                   className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs font-mono text-neutral-900 dark:text-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-hidden resize-y"
@@ -814,7 +838,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
                         type: 'url' as const,
                         value: '{order_url}'
                       };
-                      setLocalFormData(prev => prev ? {
+                      updateLocalDraft(prev => prev ? {
                         ...prev,
                         whatsappCtaButtons: [...(prev.whatsappCtaButtons || []), newBtn]
                       } : null);
@@ -836,7 +860,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
                         disabled={!canManageTemplates}
                         onChange={e => {
                           const updated = (localFormData.whatsappCtaButtons || []).map(b => b.id === btn.id ? { ...b, text: e.target.value } : b);
-                          setLocalFormData(prev => prev ? { ...prev, whatsappCtaButtons: updated } : null);
+                          updateLocalDraft(prev => prev ? { ...prev, whatsappCtaButtons: updated } : null);
                         }}
                         placeholder="Button Title (e.g. 📦 View Order)"
                         className="flex-1 px-2 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-neutral-900 dark:text-white"
@@ -847,7 +871,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
                         disabled={!canManageTemplates}
                         onChange={e => {
                           const updated = (localFormData.whatsappCtaButtons || []).map(b => b.id === btn.id ? { ...b, value: e.target.value } : b);
-                          setLocalFormData(prev => prev ? { ...prev, whatsappCtaButtons: updated } : null);
+                          updateLocalDraft(prev => prev ? { ...prev, whatsappCtaButtons: updated } : null);
                         }}
                         placeholder="URL or Variable (e.g. {order_url})"
                         className="flex-1 px-2 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs font-mono text-neutral-900 dark:text-white"
@@ -857,7 +881,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
                         disabled={!canManageTemplates}
                         onClick={() => {
                           const updated = (localFormData.whatsappCtaButtons || []).filter(b => b.id !== btn.id);
-                          setLocalFormData(prev => prev ? { ...prev, whatsappCtaButtons: updated } : null);
+                          updateLocalDraft(prev => prev ? { ...prev, whatsappCtaButtons: updated } : null);
                         }}
                         className="p-1 text-neutral-400 hover:text-rose-500 transition cursor-pointer"
                       >

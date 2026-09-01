@@ -114,6 +114,7 @@ class NotificationTemplateApi {
   templates = initialTemplates();
   testDispatches = 0;
   saveGate: Promise<void> | null = null;
+  saveFailure: { payload: unknown; status: number } | null = null;
   testFailure: { payload: unknown; status: number } | null = null;
 
   readonly fetch = vi.fn(async (input: RequestInfo | URL, init: RequestInit = {}) => {
@@ -184,6 +185,12 @@ class NotificationTemplateApi {
         const gate = this.saveGate;
         this.saveGate = null;
         await gate;
+      }
+
+      if (this.saveFailure) {
+        const failure = this.saveFailure;
+        this.saveFailure = null;
+        return jsonResponse(failure.payload, failure.status);
       }
 
       Object.assign(current, body, { version: current.version + 1 });
@@ -332,6 +339,74 @@ describe('NotificationTemplateSettingAdmin real-data binding', () => {
     expect(api.templates[0].version).toBe(5);
     expect(api.templates[1].version).toBe(5);
     expect(subject.value).toBe('Saved Processing & Verified subject');
+    expect(host.textContent).toContain('Saved');
+  });
+
+  it('preserves a newer A draft across an A to B to A late save and rebases its next save version', async () => {
+    const { host } = await mount();
+    const api = (mockedAdminContext.value as { api: NotificationTemplateApi }).api;
+    const subject = inputByPlaceholder(host, 'e.g. [{shop_name}] Order #{order_number} Update: {status_name}');
+    let releaseSave!: () => void;
+    api.saveGate = new Promise<void>((resolve) => {
+      releaseSave = resolve;
+    });
+
+    await change(subject, 'Older Pending Payment request');
+    act(() => button(host, 'Save Status Template').click());
+    await act(async () => button(host, 'Processing & Verified').click());
+    await act(async () => button(host, 'Pending Payment').click());
+    await vi.waitFor(() => expect(subject.value).toBe('[JW Studio] Pending Payment for #{order_number}'));
+    await change(subject, 'Newer Pending Payment draft');
+
+    await act(async () => releaseSave());
+    await vi.waitFor(() => expect(api.templates[0].version).toBe(5));
+
+    expect(api.templates[0].emailSubject).toBe('Older Pending Payment request');
+    expect(subject.value).toBe('Newer Pending Payment draft');
+    expect(host.textContent).not.toContain('Saved');
+    expect(host.textContent).not.toContain('Stale template version.');
+
+    await act(async () => button(host, 'Save Status Template').click());
+    await vi.waitFor(() => expect(api.templates[0].emailSubject).toBe('Newer Pending Payment draft'));
+
+    expect(api.templates[0].version).toBe(6);
+    expect(subject.value).toBe('Newer Pending Payment draft');
+    expect(host.textContent).toContain('Saved');
+  });
+
+  it('does not show a stale A error after A to B to A draft changes', async () => {
+    const { host } = await mount();
+    const api = (mockedAdminContext.value as { api: NotificationTemplateApi }).api;
+    const subject = inputByPlaceholder(host, 'e.g. [{shop_name}] Order #{order_number} Update: {status_name}');
+    let releaseSave!: () => void;
+    api.saveGate = new Promise<void>((resolve) => {
+      releaseSave = resolve;
+    });
+    api.saveFailure = {
+      status: 422,
+      payload: {
+        message: 'Old request rejected.',
+        errors: { emailSubject: ['The old Pending Payment draft was rejected.'] },
+      },
+    };
+
+    await change(subject, 'Rejected Pending Payment request');
+    act(() => button(host, 'Save Status Template').click());
+    await act(async () => button(host, 'Processing & Verified').click());
+    await act(async () => button(host, 'Pending Payment').click());
+    await change(subject, 'Replacement Pending Payment draft');
+
+    await act(async () => releaseSave());
+    await vi.waitFor(() => expect(button(host, 'Save Status Template').disabled).toBe(false));
+
+    expect(subject.value).toBe('Replacement Pending Payment draft');
+    expect(host.textContent).not.toContain('The old Pending Payment draft was rejected.');
+    expect(host.textContent).not.toContain('Saved');
+
+    await act(async () => button(host, 'Save Status Template').click());
+    await vi.waitFor(() => expect(api.templates[0].emailSubject).toBe('Replacement Pending Payment draft'));
+
+    expect(api.templates[0].version).toBe(5);
     expect(host.textContent).toContain('Saved');
   });
 
