@@ -120,6 +120,8 @@ class OrderNotificationApiTest extends TestCase
         $secondOrder = $this->order('SECOND');
         $first = NotificationDispatch::factory()->create([
             'order_id' => $firstOrder->id,
+            'snapshot_version' => NotificationDispatch::SNAPSHOT_VERSION_LEGACY_ESCAPED,
+            'rendered_subject' => 'Shipped via J&amp;T for O&#039;Brien',
             'recipient_email' => 'first-secret@example.com',
             'rendered_body' => 'First private body',
             'provider_message_id' => 'provider-secret-first',
@@ -136,7 +138,8 @@ class OrderNotificationApiTest extends TestCase
             ->getJson("/admin/api/orders/{$firstOrder->id}/notification-dispatches")
             ->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $first->public_id);
+            ->assertJsonPath('data.0.id', $first->public_id)
+            ->assertJsonPath('data.0.subject', "Shipped via J&T for O'Brien");
 
         $encoded = json_encode($response->json(), JSON_THROW_ON_ERROR);
         $this->assertStringNotContainsString('first-secret@example.com', $encoded);
@@ -174,7 +177,8 @@ class OrderNotificationApiTest extends TestCase
         $failed->refresh();
         $this->assertSame('Frozen retry subject', $failed->rendered_subject);
         $this->assertSame('Frozen retry body', $failed->rendered_body);
-        $this->assertSame(4, $failed->attempt_count);
+        $this->assertSame(0, $failed->attempt_count);
+        $this->assertNull($failed->queue_attempt);
         $this->assertNull($failed->failed_at);
         $this->assertNull($failed->last_error_code);
         Queue::assertPushed(SendOrderNotificationJob::class, fn (SendOrderNotificationJob $job): bool => $job->dispatchId === $failed->id);
@@ -234,6 +238,30 @@ class OrderNotificationApiTest extends TestCase
             ->assertUnprocessable();
     }
 
+    public function test_resend_preserves_a_legacy_snapshot_format_and_decodes_it_once_for_the_api(): void
+    {
+        Queue::fake();
+        $order = $this->order('RESEND-LEGACY');
+        $legacy = NotificationDispatch::factory()->sent()->create([
+            'order_id' => $order->id,
+            'snapshot_version' => NotificationDispatch::SNAPSHOT_VERSION_LEGACY_ESCAPED,
+            'rendered_subject' => 'J&amp;T &amp; O&#039;Brien &lt;b&gt;safe&lt;/b&gt;',
+            'rendered_body' => 'Legacy &lt;img src=x onerror=alert(1)&gt;',
+            'variable_snapshot' => ['shop_name' => 'J&amp;T &lt;script&gt;bad&lt;/script&gt;'],
+        ]);
+
+        $response = $this->actingAs($this->staffWith([NotificationPermission::DELIVERIES_RESEND]))
+            ->postJson("/admin/api/notification-dispatches/{$legacy->public_id}/resend")
+            ->assertCreated()
+            ->assertJsonPath('data.subject', "J&T & O'Brien <b>safe</b>");
+
+        $resend = NotificationDispatch::query()->where('public_id', $response->json('data.id'))->firstOrFail();
+        $this->assertSame(NotificationDispatch::SNAPSHOT_VERSION_LEGACY_ESCAPED, $resend->snapshot_version);
+        $this->assertSame($legacy->rendered_subject, $resend->rendered_subject);
+        $this->assertSame($legacy->rendered_body, $resend->rendered_body);
+        $this->assertStringNotContainsString('&amp;amp;', $response->getContent());
+    }
+
     public function test_send_current_template_creates_a_new_order_owned_manual_snapshot_without_automatic_idempotency(): void
     {
         Queue::fake();
@@ -256,6 +284,8 @@ class OrderNotificationApiTest extends TestCase
         $dispatch = NotificationDispatch::query()->where('public_id', $response->json('data.id'))->firstOrFail();
         $this->assertSame($firstOrder->id, $dispatch->order_id);
         $this->assertSame(9, $dispatch->template_version);
+        $this->assertSame(NotificationDispatch::SNAPSHOT_VERSION_PLAIN_TEXT, $dispatch->snapshot_version);
+        $this->assertNotNull($dispatch->queue_generation);
         $this->assertNull($dispatch->idempotency_key);
         $this->assertSame('Manual order note', $dispatch->variable_snapshot['staff_note']);
 

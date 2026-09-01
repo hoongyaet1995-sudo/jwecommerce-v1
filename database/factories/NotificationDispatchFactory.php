@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\NotificationDispatch;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /** @extends Factory<NotificationDispatch> */
 class NotificationDispatchFactory extends Factory
@@ -29,10 +30,13 @@ class NotificationDispatchFactory extends Factory
             'rendered_cta_text' => 'View Order Status',
             'rendered_cta_url' => url('/order-tracking'),
             'template_version' => 1,
+            'snapshot_version' => NotificationDispatch::SNAPSHOT_VERSION_PLAIN_TEXT,
             'variable_snapshot' => ['shop_name' => 'JW Studio'],
             'state' => NotificationDispatch::STATE_QUEUED,
             'source' => NotificationDispatch::SOURCE_TEST,
             'attempt_count' => 0,
+            'queue_attempt' => null,
+            'queue_generation' => (string) Str::uuid(),
             'delivery_lease_token' => null,
             'delivery_lease_expires_at' => null,
             'queued_at' => now(),

@@ -674,6 +674,15 @@ class EasyParcelWebhookReconciliationTest extends TestCase
             'tax_amount' => 0,
             'total' => 10000,
         ]);
+        $order->addresses()->create([
+            'type' => 'shipping',
+            'first_name' => 'Webhook',
+            'last_name' => 'Recipient',
+            'line_1' => '10 Reconciliation Road',
+            'city' => 'Kuala Lumpur',
+            'postal_code' => '50000',
+            'country' => 'MY',
+        ]);
         $shipment = Shipment::query()->create([
             'order_id' => $order->id,
             'sequence' => 1,

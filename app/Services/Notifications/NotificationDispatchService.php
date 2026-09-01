@@ -11,6 +11,7 @@ use App\Models\NotificationTemplate;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -53,6 +54,9 @@ class NotificationDispatchService
                 'queued_at' => now(),
                 'failed_at' => null,
                 'last_error_code' => null,
+                'attempt_count' => 0,
+                'queue_attempt' => null,
+                'queue_generation' => (string) Str::uuid(),
                 'delivery_lease_token' => null,
                 'delivery_lease_expires_at' => null,
                 'requested_by' => $actor->id,
@@ -85,6 +89,8 @@ class NotificationDispatchService
                 'state' => NotificationDispatch::STATE_QUEUED,
                 'source' => NotificationDispatch::SOURCE_MANUAL_RESEND,
                 'attempt_count' => 0,
+                'queue_attempt' => null,
+                'queue_generation' => (string) Str::uuid(),
                 'queued_at' => now(),
                 'requested_by' => $actor->id,
                 'resend_of_id' => $original->id,
@@ -250,6 +256,7 @@ class NotificationDispatchService
             'rendered_cta_text' => $dispatch->rendered_cta_text,
             'rendered_cta_url' => $dispatch->rendered_cta_url,
             'template_version' => $dispatch->template_version,
+            'snapshot_version' => $dispatch->snapshot_version,
             'variable_snapshot' => $dispatch->variable_snapshot,
         ];
     }
@@ -287,10 +294,13 @@ class NotificationDispatchService
             'rendered_cta_text' => $rendered->ctaText,
             'rendered_cta_url' => $rendered->ctaUrl,
             'template_version' => $template->version,
+            'snapshot_version' => NotificationDispatch::SNAPSHOT_VERSION_PLAIN_TEXT,
             'variable_snapshot' => $variables,
             'state' => NotificationDispatch::STATE_QUEUED,
             'source' => $source,
             'attempt_count' => 0,
+            'queue_attempt' => null,
+            'queue_generation' => (string) Str::uuid(),
             'queued_at' => now(),
             'requested_by' => $actor->id,
         ];
@@ -300,7 +310,10 @@ class NotificationDispatchService
     {
         DB::afterCommit(static function () use ($dispatch): void {
             try {
-                SendOrderNotificationJob::dispatch($dispatch->id)->afterCommit();
+                SendOrderNotificationJob::dispatch(
+                    $dispatch->id,
+                    $dispatch->queue_generation,
+                )->afterCommit();
             } catch (Throwable) {
                 $errorCode = 'queue';
                 try {

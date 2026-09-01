@@ -548,6 +548,7 @@ class EasyParcelReconciliationRecoveryTest extends TestCase
             'tax_amount' => 0,
             'total' => 1084,
         ]);
+        $this->addShippingAddress($order, 'Recovery');
         $quote = ShipmentQuote::query()->create([
             'order_id' => $order->id,
             'shipping_provider_id' => $provider->id,
@@ -618,6 +619,7 @@ class EasyParcelReconciliationRecoveryTest extends TestCase
             'tax_amount' => 0,
             'total' => 1084,
         ]);
+        $this->addShippingAddress($order, 'Details');
 
         return Shipment::query()->create([
             'order_id' => $order->id,
@@ -632,6 +634,19 @@ class EasyParcelReconciliationRecoveryTest extends TestCase
             'currency' => 'MYR',
             'shipping_cost' => 1084,
             'provider_reference' => $providerReference,
+        ]);
+    }
+
+    private function addShippingAddress(Order $order, string $firstName): void
+    {
+        $order->addresses()->create([
+            'type' => 'shipping',
+            'first_name' => $firstName,
+            'last_name' => 'Recipient',
+            'line_1' => '10 Reconciliation Road',
+            'city' => 'Kuala Lumpur',
+            'postal_code' => '50000',
+            'country' => 'MY',
         ]);
     }
 

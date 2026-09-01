@@ -10,6 +10,7 @@ use App\Models\NotificationTemplate;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Throwable;
 
 class OrderNotificationMilestoneService
@@ -71,10 +72,13 @@ class OrderNotificationMilestoneService
             'rendered_cta_text' => $rendered->ctaText,
             'rendered_cta_url' => $rendered->ctaUrl,
             'template_version' => $template->version,
+            'snapshot_version' => NotificationDispatch::SNAPSHOT_VERSION_PLAIN_TEXT,
             'variable_snapshot' => $rendered->variables,
             'state' => NotificationDispatch::STATE_QUEUED,
             'source' => NotificationDispatch::SOURCE_AUTOMATIC,
             'attempt_count' => 0,
+            'queue_attempt' => null,
+            'queue_generation' => (string) Str::uuid(),
             'queued_at' => now(),
             'requested_by' => $actor?->id,
         ]);
@@ -82,7 +86,10 @@ class OrderNotificationMilestoneService
         if ($dispatch->wasRecentlyCreated) {
             DB::afterCommit(static function () use ($dispatch): void {
                 try {
-                    SendOrderNotificationJob::dispatch($dispatch->id)->afterCommit();
+                    SendOrderNotificationJob::dispatch(
+                        $dispatch->id,
+                        $dispatch->queue_generation,
+                    )->afterCommit();
                 } catch (Throwable) {
                     $errorCode = 'queue';
 

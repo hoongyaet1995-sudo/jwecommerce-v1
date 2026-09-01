@@ -321,6 +321,51 @@ class NotificationProducerCoverageTest extends TestCase
         self::assertSame((string) $recoveredShipment->id, $recoveredDispatch->source_id);
     }
 
+    public function test_booking_reconciliation_notification_intent_failure_rolls_back_materialized_shipment_and_quote_finalization(): void
+    {
+        Http::preventStrayRequests();
+        $provider = $this->connectedEasyParcelProvider();
+        $actor = $this->superAdmin();
+        $order = $this->order('processing', 'RECONCILE-OUTBOX-ROLLBACK');
+        $quote = $this->shipmentQuote($order, $provider, $actor, 'uncertain');
+        $quote->forceFill([
+            'booking_claim_key' => 'easyparcel:order:'.$order->id,
+            'booking_started_at' => now(),
+            'selected_service_code' => null,
+        ])->save();
+        Http::fake([
+            EasyParcelBookingReconciliationService::LIST_URL => Http::response([
+                'status_code' => 200,
+                'data' => [['shipment_number' => 'ES-OUTBOX-ROLLBACK']],
+            ]),
+            EasyParcelShipmentDetailsService::DETAILS_URL => Http::response($this->detailsResponse(
+                $quote,
+                'ES-OUTBOX-ROLLBACK',
+                'AWB-OUTBOX-ROLLBACK',
+                7,
+            )),
+        ]);
+        $notifications = Mockery::mock(OrderNotificationMilestoneService::class);
+        $notifications->shouldReceive('record')->once()->andThrow(new RuntimeException('ready-to-ship render failed'));
+        $this->app->instance(OrderNotificationMilestoneService::class, $notifications);
+
+        try {
+            app(EasyParcelBookingReconciliationService::class)->reconcile($quote);
+            $this->fail('The reconciliation notification intent failure was swallowed.');
+        } catch (RuntimeException $error) {
+            self::assertSame('ready-to-ship render failed', $error->getMessage());
+        }
+
+        $this->assertDatabaseMissing('shipments', ['shipment_quote_id' => $quote->id]);
+        $this->assertDatabaseHas('shipment_quotes', [
+            'id' => $quote->id,
+            'booking_state' => 'uncertain',
+            'booked_at' => null,
+            'selected_service_code' => null,
+        ]);
+        $this->assertDatabaseCount('notification_dispatches', 0);
+    }
+
     public function test_authenticated_details_first_awb_exception_statuses_do_not_consume_ready_to_ship_before_a_valid_replacement(): void
     {
         Http::preventStrayRequests();
@@ -758,6 +803,14 @@ class NotificationProducerCoverageTest extends TestCase
             'carrier_name' => 'J&T Express',
             'tracking_number' => 'JT-LEGACY-1',
         ]);
+
+        $unsupported = $this->order('processing', 'LEGACY-PENDING-UNSUPPORTED');
+        $this->actingAs($admin)->patch(route('admin.orders.status', $unsupported), [
+            'status' => 'pending_payment',
+        ])->assertRedirect(route('admin.orders.index'))
+            ->assertSessionHasErrors('status');
+        self::assertSame('processing', $unsupported->fresh()->status);
+        self::assertSame(0, $unsupported->notificationDispatches()->count());
     }
 
     public function test_after_commit_queue_publication_failure_does_not_fail_the_committed_business_mutation(): void

@@ -29,6 +29,9 @@ class OrderController extends Controller
         if ($data['status'] === 'shipped') {
             return redirect()->route('admin.orders.index')->withErrors(['status' => 'Use dispatch to record a carrier and tracking number.']);
         }
+        if ($data['status'] === 'pending_payment') {
+            return redirect()->route('admin.orders.index')->withErrors(['status' => 'Pending payment is a checkout-created status and cannot be selected manually.']);
+        }
 
         $operations->updateStatus(
             $order,

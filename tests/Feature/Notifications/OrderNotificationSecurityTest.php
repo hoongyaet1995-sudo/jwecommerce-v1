@@ -171,7 +171,7 @@ class OrderNotificationSecurityTest extends TestCase
         $mailDispatch = NotificationDispatch::factory()->create(['order_id' => $order->id]);
 
         try {
-            (new SendOrderNotificationJob($mailDispatch->id))->handle(
+            (new SendOrderNotificationJob($mailDispatch->id, $mailDispatch->queue_generation))->handle(
                 new SecurityThrowingMailer(new TransportException($privateFailure)),
             );
             $this->fail('The mail failure was swallowed.');

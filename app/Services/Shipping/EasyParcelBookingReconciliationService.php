@@ -211,14 +211,11 @@ final class EasyParcelBookingReconciliationService
 
             if (filled($shipment->tracking_number)
                 && $this->statuses->allowsReadyToShipNotification($details['shipment_status_code'])) {
-                rescue(
-                    fn () => $this->notifications->record(
-                        $lockedOrder,
-                        'ready_to_ship',
-                        'shipment',
-                        $shipment->id,
-                    ),
-                    report: true,
+                $this->notifications->record(
+                    $lockedOrder,
+                    'ready_to_ship',
+                    'shipment',
+                    $shipment->id,
                 );
             }
 

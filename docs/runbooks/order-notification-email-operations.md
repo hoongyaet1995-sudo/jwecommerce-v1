@@ -47,12 +47,14 @@ Expected observations:
 - `migrate` applies pending migrations without deleting existing rows.
 - the worker stays attached to the `default` database queue and processes `SendOrderNotificationJob` after the business transaction commits;
 - a successful local sink delivery changes the owned `notification_dispatches` row from `queued` to `sent`, sets `sent_at`, increments `attempt_count`, and removes its `jobs` row;
-- a non-terminal delivery exception atomically returns the owned claim to `queued`, clears its lease, and leaves terminal failure fields empty so Laravel's next attempt can claim immediately even before the old lease would have expired;
+- a non-terminal delivery exception atomically returns the owned claim to `queued`, clears its lease, and leaves terminal failure fields empty; the same queue attempt cannot reclaim it, while the next strictly greater Laravel attempt can claim immediately even before the old lease would have expired;
 - only Laravel's terminal failure callback changes a `queued` or orphaned `sending` dispatch to `failed` and stores one of `transport`, `timeout`, or `unknown`. Queue publication failures use `queue`. Raw exception text is not a dispatch or log field.
+
+Each publication has a private `queue_generation` stored on the dispatch and serialized into its queue job. Claims and terminal callbacks require an exact generation match, and the dispatch records the current Laravel queue attempt. Manual Admin Retry rotates the generation and resets the attempt counters. Consequently, a delayed or infrastructure-retried job from an older lifecycle cannot claim or fail the newly published lifecycle, and a concurrent duplicate of the same attempt cannot overlap it. `failOnTimeout` is disabled for this job so a hard timeout does not make attempt 1 terminal; Laravel may run the configured four attempts, then its final failure callback recovers any orphaned `sending` row.
 
 Stop an interactive worker with `Ctrl+C`. After a deploy or configuration change, restart the worker so it loads the accepted code and environment.
 
-## Failure inspection and the two retry paths
+## Failure inspection and the only notification retry path
 
 List Laravel failed jobs without exposing the serialized payload:
 
@@ -60,22 +62,11 @@ List Laravel failed jobs without exposing the serialized payload:
 C:\xampp\php\php.exe artisan queue:failed
 ```
 
-Laravel infrastructure retry uses the UUID from `failed_jobs`:
+Never run `queue:retry` (including `queue:retry all`) for `SendOrderNotificationJob`. An infrastructure retry requeues an old serialized lifecycle and cannot atomically rotate the dispatch generation, reset its attempt ownership, or publish a new auditable lifecycle. The job therefore refuses to claim a terminal `failed` dispatch, and its generation guard also makes an old serialized job a no-op after an Admin Retry.
 
-```powershell
-C:\xampp\php\php.exe artisan queue:retry <failed-job-uuid>
-```
+For this notification job, correct the transport/worker cause and use only the protected Admin **Retry** action. It requires the exact `notifications.deliveries.retry` permission and terminal `failed` state, atomically resets the same frozen dispatch to `queued`, rotates its generation, clears its Laravel attempt ownership, and publishes one fresh job. Then verify that single dispatch before taking another action. `queue:failed` is inspection only for this job. Infrastructure retry policy for unrelated queue jobs is outside this runbook.
 
-This is different from the Admin application's **Retry** action:
-
-| Operation | Owner/key | Preconditions | Result |
-| --- | --- | --- | --- |
-| Admin **Retry** | existing `notification_dispatches.public_id` | exact `notifications.deliveries.retry` permission and dispatch state `failed` | resets the same frozen dispatch to `queued` and publishes a fresh queue job |
-| `queue:retry` | existing `failed_jobs.uuid` | infrastructure issue corrected and exact job UUID selected | requeues Laravel's serialized failed job; it does not create a new dispatch or edit its frozen snapshot |
-
-Use one recovery path deliberately. Do not bulk-retry all failed jobs. Match the safe dispatch ID and failed-job UUID operationally, correct the transport/worker cause, execute one retry, and verify the resulting single dispatch state before taking another action.
-
-Do not use Admin **Retry** while Laravel still owns a non-terminal attempt. Intermediate failures remain `queued` (or briefly `sending` while claimed), and the protected Admin action accepts only terminal `failed`. The job claim path does not claim a terminal `failed` row; Admin Retry must first perform the audited `failed` -> `queued` transition. This prevents an operator retry from overlapping Laravel's remaining attempts.
+Do not use Admin **Retry** while Laravel still owns a non-terminal attempt. Intermediate failures remain `queued` (or briefly `sending` while claimed), and the protected Admin action accepts only terminal `failed`. The job claim path does not claim a terminal `failed` row; Admin Retry must first perform the audited `failed` -> `queued` transition and publish the new generation. This prevents an operator retry from overlapping Laravel's remaining attempts.
 
 **Resend** is not retry. It accepts only a `sent` dispatch, creates a new `manual_resend` row linked by `resend_of_id`, and copies the original frozen content. **Send Current Template** is a separate authorized action that renders and freezes the currently persisted template.
 
@@ -83,7 +74,7 @@ If manual Retry, Resend, Send Current Template, or Test Email cannot publish its
 
 Automatic notification intent creation is part of the same database transaction as its authoritative checkout, payment-review/webhook, shipment, or Admin status mutation. Template/context/render/intent persistence failure therefore rolls back the business mutation instead of silently omitting the outbox row. Queue publication remains an after-commit boundary: if publication fails after the transaction commits, the business mutation and dispatch remain committed and the dispatch is changed to safe `failed`/`queue`. Both current Admin API routes and the compatibility Blade status/shipment routes use the same `OrderOperationsService`/milestone producers.
 
-`on_hold` Email remains backend-enforced `DORMANT`: the template API rejects attempts to enable it, template responses expose it as disabled, and Send Current returns a stable validation error even if a stale database row was previously enabled. Nullable template text inputs are stored as empty strings. Frozen subjects and API preview text remain plain text (for correct values such as `J&T`); the mail Blade escapes title, preheader, shop name, heading, body, CTA text, and URL in their HTML/attribute contexts.
+`on_hold` Email remains backend-enforced `DORMANT`: the template API rejects attempts to enable it, template responses expose it as disabled, and Send Current returns a stable validation error even if a stale database row was previously enabled. Nullable template text inputs are stored as empty strings. Snapshot format `v1` identifies rows written by the earlier entity-escaped renderer; the additive migration safely defaults all existing rows to `v1`. New renders are stored as plain-text `v2`. Mail and Admin presentation decode `v1` exactly once, leave `v2` unchanged, and then escape each HTML/attribute context, so values such as `J&T` and apostrophes are not double encoded while markup-bearing shop names cannot inject HTML. Resend preserves the original snapshot version and frozen bytes.
 
 ## Local acceptance sequence
 

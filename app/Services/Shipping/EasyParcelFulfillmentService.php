@@ -488,15 +488,12 @@ final class EasyParcelFulfillmentService
             $this->failedBookingRecoveries->completeForReplacement($shipment);
 
             if (filled($shipment->tracking_number)) {
-                rescue(
-                    fn () => $this->notifications->record(
-                        $lockedOrder,
-                        'ready_to_ship',
-                        'shipment',
-                        $shipment->id,
-                        $actor,
-                    ),
-                    report: true,
+                $this->notifications->record(
+                    $lockedOrder,
+                    'ready_to_ship',
+                    'shipment',
+                    $shipment->id,
+                    $actor,
                 );
             }
 

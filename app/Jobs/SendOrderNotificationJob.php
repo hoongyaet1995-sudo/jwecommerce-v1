@@ -23,9 +23,12 @@ class SendOrderNotificationJob implements ShouldQueue
 
     public int $timeout = 45;
 
-    public bool $failOnTimeout = true;
+    public bool $failOnTimeout = false;
 
-    public function __construct(public readonly int $dispatchId) {}
+    public function __construct(
+        public readonly int $dispatchId,
+        public readonly ?string $queueGeneration = null,
+    ) {}
 
     /** @return list<int> */
     public function backoff(): array
@@ -35,7 +38,11 @@ class SendOrderNotificationJob implements ShouldQueue
 
     public function handle(Mailer $mailer): void
     {
-        $dispatch = NotificationDispatch::claimForDelivery($this->dispatchId);
+        $dispatch = NotificationDispatch::claimForDelivery(
+            $this->dispatchId,
+            $this->attempts(),
+            $this->queueGeneration,
+        );
 
         if (! $dispatch instanceof NotificationDispatch) {
             return;
@@ -70,6 +77,11 @@ class SendOrderNotificationJob implements ShouldQueue
     {
         NotificationDispatch::query()
             ->whereKey($this->dispatchId)
+            ->when(
+                $this->queueGeneration === null,
+                static fn ($query) => $query->whereNull('queue_generation'),
+                fn ($query) => $query->where('queue_generation', $this->queueGeneration),
+            )
             ->whereIn('state', [
                 NotificationDispatch::STATE_QUEUED,
                 NotificationDispatch::STATE_SENDING,

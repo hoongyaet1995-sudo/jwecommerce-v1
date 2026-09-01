@@ -5,6 +5,7 @@ namespace Tests\Feature\Notifications;
 use App\Jobs\SendOrderNotificationJob;
 use App\Mail\OrderStatusNotificationMail;
 use App\Models\Customer;
+use App\Models\NotificationDispatch;
 use App\Models\NotificationTemplate;
 use App\Models\Order;
 use App\Models\OrderPayment;
@@ -80,7 +81,13 @@ class OrderNotificationMilestoneTest extends TestCase
         );
         $this->assertSame('order_payment', $first->source_type);
         $this->assertSame('41', $first->source_id);
-        Queue::assertPushed(SendOrderNotificationJob::class, 1);
+        $this->assertSame(NotificationDispatch::SNAPSHOT_VERSION_PLAIN_TEXT, $first->snapshot_version);
+        $this->assertNotNull($first->queue_generation);
+        Queue::assertPushed(
+            SendOrderNotificationJob::class,
+            fn (SendOrderNotificationJob $job): bool => $job->dispatchId === $first->id
+                && $job->queueGeneration === $first->queue_generation,
+        );
     }
 
     public function test_rolled_back_business_transaction_creates_no_dispatch_or_job(): void

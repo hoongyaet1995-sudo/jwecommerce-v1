@@ -174,7 +174,7 @@ class NotificationTemplateApiController extends Controller
             'channel' => $dispatch->channel,
             'state' => $dispatch->state,
             'source' => $dispatch->source,
-            'subject' => $dispatch->rendered_subject,
+            'subject' => $dispatch->displaySubject(),
             'templateVersion' => $dispatch->template_version,
             'attemptCount' => $dispatch->attempt_count,
             'queuedAt' => $dispatch->queued_at?->toISOString(),

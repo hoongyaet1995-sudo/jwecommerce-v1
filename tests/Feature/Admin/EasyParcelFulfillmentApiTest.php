@@ -14,6 +14,7 @@ use App\Models\StoreSetting;
 use App\Models\User;
 use App\Services\CheckoutService;
 use App\Services\Notifications\NotificationTemplateDefaults;
+use App\Services\Notifications\OrderNotificationMilestoneService;
 use App\Services\Shipping\EasyParcelFulfillmentService;
 use App\Services\Shipping\EasyParcelOpenApiClient;
 use Illuminate\Http\Client\Request;
@@ -22,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use InvalidArgumentException;
+use Mockery;
 use Tests\Concerns\UsesIsolatedDatabaseMigrations;
 use Tests\TestCase;
 
@@ -235,6 +237,40 @@ class EasyParcelFulfillmentApiTest extends TestCase
         ]);
 
         Http::assertSentCount(2);
+    }
+
+    public function test_booking_notification_intent_failure_rolls_back_shipment_and_booked_quote_state(): void
+    {
+        Http::preventStrayRequests();
+        $this->configureSender();
+        $this->connectedProvider();
+        $order = $this->processingOrder('outbox-rollback@example.test', 'JW-OUTBOX-ROLLBACK');
+        $admin = $this->superAdmin();
+        Http::fake([
+            EasyParcelFulfillmentService::QUOTATION_URL => Http::response($this->quotationResponse()),
+            EasyParcelFulfillmentService::BOOKING_URL => Http::response($this->bookingResponse()),
+        ]);
+        $quoteId = $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/quotes', [
+                'package' => $this->actualPackage(),
+            ])->assertCreated()->json('data.id');
+        $notifications = Mockery::mock(OrderNotificationMilestoneService::class);
+        $notifications->shouldReceive('record')->once()->andThrow(new \RuntimeException('ready-to-ship render failed'));
+        $this->app->instance(OrderNotificationMilestoneService::class, $notifications);
+
+        $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/bookings', [
+                'quoteId' => $quoteId,
+                'serviceCode' => 'EP-CS096',
+            ])->assertUnprocessable();
+
+        $this->assertDatabaseMissing('shipments', ['shipment_quote_id' => $quoteId]);
+        $this->assertDatabaseHas('shipment_quotes', [
+            'id' => $quoteId,
+            'booking_state' => 'uncertain',
+            'booked_at' => null,
+        ]);
+        $this->assertDatabaseCount('notification_dispatches', 0);
     }
 
     public function test_processing_order_is_projected_as_pending_awb_without_creating_a_shipment(): void

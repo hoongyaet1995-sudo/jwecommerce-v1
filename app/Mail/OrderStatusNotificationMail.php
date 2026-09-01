@@ -17,14 +17,18 @@ class OrderStatusNotificationMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: $this->dispatch->rendered_subject);
+        return new Envelope(subject: $this->dispatch->displaySubject());
     }
 
     public function content(): Content
     {
         return new Content(
             view: 'mail.order-status-notification',
-            with: ['dispatch' => $this->dispatch],
+            with: [
+                'dispatch' => $this->dispatch,
+                'subject' => $this->dispatch->displaySubject(),
+                'snapshot' => $this->dispatch->displaySnapshot(),
+            ],
         );
     }
 }
