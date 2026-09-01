@@ -125,7 +125,7 @@ class NotificationDispatchService
                 'resend_of_id' => $original->id,
             ]);
 
-            $this->queueAfterCommit($resend);
+            $this->deliverAfterCommit($resend);
 
             return $resend;
         });
@@ -168,7 +168,7 @@ class NotificationDispatchService
                 sourceId: (string) $actor->id,
             ));
 
-            $this->queueAfterCommit($dispatch);
+            $this->deliverAfterCommit($dispatch);
 
             return $dispatch;
         });
@@ -371,6 +371,24 @@ class NotificationDispatchService
                 }
 
                 self::reportSafely(new NotificationDeliveryException($errorCode));
+            }
+        });
+    }
+
+    private function deliverAfterCommit(NotificationDispatch $dispatch): void
+    {
+        DB::afterCommit(function () use ($dispatch): void {
+            $job = new SendOrderNotificationJob($dispatch->id, $dispatch->queue_generation);
+
+            try {
+                if (! $job->handleSynchronously($this->mailer)) {
+                    throw new NotificationDeliveryException('unknown');
+                }
+            } catch (Throwable $error) {
+                $job->failed($error);
+                self::reportSafely($error instanceof NotificationDeliveryException
+                    ? $error
+                    : new NotificationDeliveryException('unknown'));
             }
         });
     }

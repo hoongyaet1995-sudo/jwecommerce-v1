@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Notifications;
 
-use App\Jobs\SendOrderNotificationJob;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\NotificationDispatch;
@@ -30,15 +29,17 @@ use App\Services\Shipping\EasyParcelShipmentDetailsService;
 use App\Services\Shipping\EasyParcelTrackingService;
 use App\Services\Shipping\EasyParcelWebhookReconciliationService;
 use Carbon\CarbonImmutable;
-use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Contracts\Mail\Mailer as MailerContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Mockery;
 use RuntimeException;
+use Symfony\Component\Mailer\Exception\TransportException;
 use Tests\TestCase;
 
 class NotificationProducerCoverageTest extends TestCase
@@ -50,6 +51,7 @@ class NotificationProducerCoverageTest extends TestCase
         parent::setUp();
 
         Queue::fake();
+        Mail::fake();
         app(NotificationTemplateDefaults::class)->synchronize();
     }
 
@@ -72,7 +74,8 @@ class NotificationProducerCoverageTest extends TestCase
             'order_id' => $order->id,
             'to_status' => 'pending_payment',
         ]);
-        Queue::assertPushed(SendOrderNotificationJob::class, 1);
+        self::assertSame(NotificationDispatch::STATE_SENT, $dispatch->state);
+        Queue::assertNothingPushed();
     }
 
     public function test_first_producer_synchronizes_missing_defaults_before_recording_its_intent(): void
@@ -103,7 +106,7 @@ class NotificationProducerCoverageTest extends TestCase
             'note' => 'Payment confirmed and packing started.',
         ])->assertOk()
             ->assertJsonPath('data.notificationSummary.eventKey', 'payment_verified')
-            ->assertJsonPath('data.notificationSummary.state', 'queued');
+            ->assertJsonPath('data.notificationSummary.state', 'sent');
 
         $paidHistory = $notified->statusHistory()->where('to_status', 'paid')->sole();
         $dispatch = $notified->notificationDispatches()->sole();
@@ -813,19 +816,19 @@ class NotificationProducerCoverageTest extends TestCase
         self::assertSame(0, $unsupported->notificationDispatches()->count());
     }
 
-    public function test_after_commit_queue_publication_failure_does_not_fail_the_committed_business_mutation(): void
+    public function test_after_commit_smtp_failure_does_not_fail_the_committed_business_mutation(): void
     {
-        $order = $this->order('processing', 'QUEUE-PUBLISH-FAILURE');
-        $dispatcher = Mockery::mock(Dispatcher::class);
-        $dispatcher->shouldReceive('dispatch')->once()->andThrow(new RuntimeException('queue backend unavailable'));
-        $this->app->instance(Dispatcher::class, $dispatcher);
+        $order = $this->order('processing', 'SMTP-FAILURE');
+        $mailer = Mockery::mock(MailerContract::class);
+        $mailer->shouldReceive('to')->once()->andThrow(new TransportException('smtp transport unavailable'));
+        $this->app->instance(MailerContract::class, $mailer);
 
         app(CheckoutService::class)->transition($order, 'cancelled', null, 'Cancellation still commits.');
 
         self::assertSame('cancelled', $order->fresh()->status);
         $dispatch = $order->notificationDispatches()->sole();
         self::assertSame('failed', $dispatch->state);
-        self::assertSame('queue', $dispatch->last_error_code);
+        self::assertSame('transport', $dispatch->last_error_code);
         self::assertNotNull($dispatch->failed_at);
     }
 

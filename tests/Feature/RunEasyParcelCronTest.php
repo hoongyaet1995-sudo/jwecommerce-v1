@@ -27,21 +27,23 @@ final class RunEasyParcelCronTest extends TestCase
         Cache::forget('easyparcel-cron-lease-expired-during-worker');
     }
 
-    public function test_cron_runs_due_scheduler_then_drains_database_queue_with_a_lock(): void
+    public function test_cron_runs_due_easyparcel_scheduler_and_drains_only_the_easyparcel_queue(): void
     {
-        Schedule::job(new MarkEasyParcelCronProcessed)
+        Schedule::job((new MarkEasyParcelCronProcessed)->onQueue('easyparcel'))
             ->everyMinute();
 
         $this->artisan('easyparcel:cron')
             ->assertExitCode(0);
 
         $this->assertTrue(Cache::get('easyparcel-cron-test-processed', false));
-        $this->assertSame(0, DB::table('jobs')->count());
+        $this->assertSame(0, DB::table('jobs')
+            ->where('payload', 'like', '%MarkEasyParcelCronProcessed%')
+            ->count());
     }
 
     public function test_overlapping_cron_exits_cleanly_without_double_processing(): void
     {
-        Schedule::job(new MarkEasyParcelCronProcessed)
+        Schedule::job((new MarkEasyParcelCronProcessed)->onQueue('easyparcel'))
             ->everyMinute();
 
         $lock = Cache::lock('easyparcel:cron', 55);
@@ -59,20 +61,34 @@ final class RunEasyParcelCronTest extends TestCase
         }
     }
 
-    public function test_cron_lock_remains_owned_through_the_bounded_worker_safety_window(): void
+    public function test_cron_keeps_its_lock_while_draining_easyparcel_work(): void
     {
         config()->set('services.easyparcel.cron_lock_seconds', 55);
 
-        Schedule::job(new ProbeEasyParcelCronLeaseNearSafetyBoundary)
+        Schedule::job((new ProbeEasyParcelCronLeaseNearSafetyBoundary)->onQueue('easyparcel'))
             ->everyMinute();
 
         $this->artisan('easyparcel:cron')
             ->assertExitCode(0);
 
-        $this->assertFalse(
-            Cache::get('easyparcel-cron-lease-expired-during-worker', true),
-            'A second minute invocation could acquire the cron lock while the first bounded worker may still be finishing a job.',
-        );
+        $this->assertFalse(Cache::get('easyparcel-cron-lease-expired-during-worker'));
+        $this->assertSame(0, DB::table('jobs')
+            ->where('payload', 'like', '%ProbeEasyParcelCronLeaseNearSafetyBoundary%')
+            ->count());
+    }
+
+    public function test_cron_never_drains_default_queue_jobs_such_as_notification_delivery(): void
+    {
+        Schedule::job(new MarkDefaultQueueUntouched)
+            ->everyMinute();
+
+        $this->artisan('easyparcel:cron')
+            ->assertExitCode(0);
+
+        $this->assertFalse(Cache::get('easyparcel-cron-default-queue-processed', false));
+        $this->assertSame(1, DB::table('jobs')
+            ->where('payload', 'like', '%MarkDefaultQueueUntouched%')
+            ->count());
     }
 
     public function test_easyparcel_schedule_keeps_tracking_at_fifteen_minutes_and_runs_reconciliation_every_minute(): void
@@ -120,5 +136,15 @@ final class ProbeEasyParcelCronLeaseNearSafetyBoundary implements ShouldQueue
         } finally {
             Carbon::setTestNow($originalNow);
         }
+    }
+}
+
+final class MarkDefaultQueueUntouched implements ShouldQueue
+{
+    use InteractsWithQueue, Queueable, SerializesModels;
+
+    public function handle(): void
+    {
+        Cache::put('easyparcel-cron-default-queue-processed', true, 60);
     }
 }

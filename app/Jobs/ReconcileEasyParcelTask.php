@@ -18,7 +18,10 @@ final class ReconcileEasyParcelTask implements ShouldQueue
 
     public int $timeout = 60;
 
-    public function __construct(public readonly int $taskId) {}
+    public function __construct(public readonly int $taskId)
+    {
+        $this->onQueue('easyparcel');
+    }
 
     public function handle(EasyParcelReconciliationTaskProcessor $processor): void
     {

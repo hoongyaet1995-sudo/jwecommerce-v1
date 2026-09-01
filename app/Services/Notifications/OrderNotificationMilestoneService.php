@@ -9,6 +9,7 @@ use App\Models\NotificationDispatch;
 use App\Models\NotificationTemplate;
 use App\Models\Order;
 use App\Models\User;
+use Illuminate\Contracts\Mail\Mailer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
@@ -19,6 +20,7 @@ class OrderNotificationMilestoneService
         private readonly NotificationContextFactory $contextFactory,
         private readonly NotificationTemplateRenderer $renderer,
         private readonly NotificationTemplateDefaults $defaults,
+        private readonly Mailer $mailer,
     ) {}
 
     /** @param array<string, mixed> $extra */
@@ -84,35 +86,21 @@ class OrderNotificationMilestoneService
         ]);
 
         if ($dispatch->wasRecentlyCreated) {
-            DB::afterCommit(static function () use ($dispatch): void {
+            DB::afterCommit(function () use ($dispatch): void {
+                $job = new SendOrderNotificationJob(
+                    $dispatch->id,
+                    $dispatch->queue_generation,
+                );
+
                 try {
-                    SendOrderNotificationJob::dispatch(
-                        $dispatch->id,
-                        $dispatch->queue_generation,
-                    )->afterCommit();
-                } catch (Throwable) {
-                    $errorCode = 'queue';
-
-                    try {
-                        $updated = NotificationDispatch::query()
-                            ->whereKey($dispatch->id)
-                            ->where('state', NotificationDispatch::STATE_QUEUED)
-                            ->update([
-                                'state' => NotificationDispatch::STATE_FAILED,
-                                'failed_at' => now(),
-                                'last_error_code' => 'queue',
-                                'delivery_lease_token' => null,
-                                'delivery_lease_expires_at' => null,
-                            ]);
-
-                        if ($updated !== 1) {
-                            $errorCode = 'unknown';
-                        }
-                    } catch (Throwable) {
-                        $errorCode = 'unknown';
+                    if (! $job->handleSynchronously($this->mailer)) {
+                        throw new NotificationDeliveryException('unknown');
                     }
-
-                    self::reportSafely(new NotificationDeliveryException($errorCode));
+                } catch (Throwable $error) {
+                    $job->failed($error);
+                    self::reportSafely($error instanceof NotificationDeliveryException
+                        ? $error
+                        : new NotificationDeliveryException('unknown'));
                 }
             });
         }

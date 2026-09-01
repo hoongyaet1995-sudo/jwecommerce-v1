@@ -140,7 +140,7 @@ class EasyParcelWebhookIngressTest extends TestCase
     public function test_concurrent_matched_duplicates_return_one_queued_receipt_and_dispatch_once(): void
     {
         $providerReference = 'ES-CONCURRENT-'.Str::upper(Str::random(12));
-        $queue = 'easyparcel-concurrency-'.Str::uuid();
+        $queue = 'easyparcel';
         [$orderId, $shipmentId] = $this->createConcurrentShipmentFixture($providerReference);
         $rawBody = json_encode([
             'topic' => 'shipment.tracking.update',

@@ -10,8 +10,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::job(new SyncEasyParcelTracking)
+Schedule::job(new SyncEasyParcelTracking, 'easyparcel')
     ->everyFifteenMinutes();
 
-Schedule::job(new SweepEasyParcelReconciliation)
+Schedule::job(new SweepEasyParcelReconciliation, 'easyparcel')
     ->everyMinute();

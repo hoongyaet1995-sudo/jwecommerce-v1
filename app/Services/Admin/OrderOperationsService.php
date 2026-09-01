@@ -44,7 +44,7 @@ class OrderOperationsService
         }
 
         try {
-            return DB::transaction(function () use (
+            $result = DB::transaction(function () use (
                 $fulfillmentStatus,
                 $note,
                 $notifyCustomer,
@@ -81,6 +81,15 @@ class OrderOperationsService
 
                 return new OrderStatusUpdateResult($order->fresh(), $notificationDispatch);
             });
+
+            // Automatic delivery happens in the transaction's after-commit callback.
+            // Refresh so the API reports the persisted sent/failed outcome, never the
+            // pre-commit queued snapshot.
+            if ($result->notificationDispatch instanceof NotificationDispatch) {
+                $result->notificationDispatch->refresh();
+            }
+
+            return $result;
         } catch (InvalidArgumentException $exception) {
             throw ValidationException::withMessages(['fulfillmentStatus' => $exception->getMessage()]);
         }

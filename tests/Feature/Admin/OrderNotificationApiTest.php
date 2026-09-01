@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\Notifications\NotificationTemplateDefaults;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
@@ -24,6 +25,7 @@ class OrderNotificationApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Mail::fake();
         app(NotificationTemplateDefaults::class)->synchronize();
     }
 
@@ -214,7 +216,8 @@ class OrderNotificationApiTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.subject', 'Original subject')
             ->assertJsonPath('data.resendOfId', $sent->public_id)
-            ->assertJsonPath('data.source', NotificationDispatch::SOURCE_MANUAL_RESEND);
+            ->assertJsonPath('data.source', NotificationDispatch::SOURCE_MANUAL_RESEND)
+            ->assertJsonPath('data.state', NotificationDispatch::STATE_SENT);
 
         $resend = NotificationDispatch::query()->where('public_id', $response->json('data.id'))->firstOrFail();
         $this->assertSame($order->id, $resend->order_id);
@@ -226,7 +229,7 @@ class OrderNotificationApiTest extends TestCase
             'idempotency_key' => "automatic:email:order:{$order->id}:event:order_created",
             'state' => NotificationDispatch::STATE_SENT,
         ]);
-        Queue::assertPushed(SendOrderNotificationJob::class, fn (SendOrderNotificationJob $job): bool => $job->dispatchId === $resend->id);
+        Queue::assertNothingPushed();
     }
 
     public function test_resend_rejects_a_failed_dispatch(): void
@@ -253,7 +256,8 @@ class OrderNotificationApiTest extends TestCase
         $response = $this->actingAs($this->staffWith([NotificationPermission::DELIVERIES_RESEND]))
             ->postJson("/admin/api/notification-dispatches/{$legacy->public_id}/resend")
             ->assertCreated()
-            ->assertJsonPath('data.subject', "J&T & O'Brien <b>safe</b>");
+            ->assertJsonPath('data.subject', "J&T & O'Brien <b>safe</b>")
+            ->assertJsonPath('data.state', NotificationDispatch::STATE_SENT);
 
         $resend = NotificationDispatch::query()->where('public_id', $response->json('data.id'))->firstOrFail();
         $this->assertSame(NotificationDispatch::SNAPSHOT_VERSION_LEGACY_ESCAPED, $resend->snapshot_version);
@@ -279,7 +283,7 @@ class OrderNotificationApiTest extends TestCase
             ])->assertCreated()
             ->assertJsonPath('data.subject', 'Current template for #JW-NOTIFY-CURRENT')
             ->assertJsonPath('data.source', NotificationDispatch::SOURCE_ADMIN_CURRENT_TEMPLATE)
-            ->assertJsonPath('data.state', NotificationDispatch::STATE_QUEUED);
+            ->assertJsonPath('data.state', NotificationDispatch::STATE_SENT);
 
         $dispatch = NotificationDispatch::query()->where('public_id', $response->json('data.id'))->firstOrFail();
         $this->assertSame($firstOrder->id, $dispatch->order_id);
@@ -288,6 +292,7 @@ class OrderNotificationApiTest extends TestCase
         $this->assertNotNull($dispatch->queue_generation);
         $this->assertNull($dispatch->idempotency_key);
         $this->assertSame('Manual order note', $dispatch->variable_snapshot['staff_note']);
+        Queue::assertNothingPushed();
 
         $this->actingAs($this->superAdmin())
             ->getJson("/admin/api/orders/{$secondOrder->id}/notification-dispatches")

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Notifications;
 
-use App\Jobs\SendOrderNotificationJob;
 use App\Mail\OrderStatusNotificationMail;
 use App\Models\Customer;
 use App\Models\NotificationDispatch;
@@ -179,35 +178,26 @@ class OrderNotificationSecurityTest extends TestCase
         Mail::assertSent(OrderStatusNotificationMail::class, 1);
     }
 
-    public function test_reported_queue_and_mail_failures_expose_only_bounded_notification_errors(): void
+    public function test_automatic_smtp_failure_is_recorded_after_commit_without_rolling_back_the_order(): void
     {
         $privateFailure = implode(' ', self::PRIVATE_MARKERS);
         $order = $this->order('LOG-BOUNDARY');
-        $dispatcher = Mockery::mock(Dispatcher::class);
-        $dispatcher->shouldReceive('dispatch')->once()->andThrow(new RuntimeException($privateFailure));
-        $this->app->instance(Dispatcher::class, $dispatcher);
+        $this->app->instance(MailerContract::class, new SecurityThrowingMailer(new TransportException($privateFailure)));
 
-        DB::transaction(fn (): ?NotificationDispatch => app(OrderNotificationMilestoneService::class)->record(
-            $order,
-            'order_created',
-            'order',
-            $order->id,
-        ));
+        DB::transaction(function () use ($order): void {
+            $order->update(['status' => 'paid']);
+            app(OrderNotificationMilestoneService::class)->record(
+                $order,
+                'order_created',
+                'order',
+                $order->id,
+            );
+        });
 
         $dispatch = $order->notificationDispatches()->sole();
         $this->assertSame(NotificationDispatch::STATE_FAILED, $dispatch->state);
-        $this->assertSame('queue', $dispatch->last_error_code);
-
-        $mailDispatch = NotificationDispatch::factory()->create(['order_id' => $order->id]);
-
-        try {
-            (new SendOrderNotificationJob($mailDispatch->id, $mailDispatch->queue_generation))->handle(
-                new SecurityThrowingMailer(new TransportException($privateFailure)),
-            );
-            $this->fail('The mail failure was swallowed.');
-        } catch (Throwable $reported) {
-            report($reported);
-        }
+        $this->assertSame('transport', $dispatch->last_error_code);
+        $this->assertSame('paid', $order->fresh()->status);
 
         $log = is_file($this->securityLogPath)
             ? (string) file_get_contents($this->securityLogPath)
@@ -220,7 +210,7 @@ class OrderNotificationSecurityTest extends TestCase
         }
     }
 
-    public function test_manual_queue_publication_failures_remain_safe_failed_and_auditable(): void
+    public function test_manual_delivery_failures_remain_safe_failed_and_auditable(): void
     {
         $privateFailure = implode(' ', self::PRIVATE_MARKERS);
         $admin = $this->superAdmin();
@@ -237,27 +227,27 @@ class OrderNotificationSecurityTest extends TestCase
         $this->assertSafeQueueFailure($failed->refresh());
 
         $sent = NotificationDispatch::factory()->sent()->create(['order_id' => $order->id]);
-        $this->bindThrowingDispatcher($privateFailure);
+        $this->bindThrowingMailer($privateFailure);
         $resend = $this->actingAs($admin)
             ->postJson("/admin/api/notification-dispatches/{$sent->public_id}/resend")
             ->assertCreated()
             ->assertJsonPath('data.state', NotificationDispatch::STATE_FAILED)
-            ->assertJsonPath('data.errorCode', 'queue');
+            ->assertJsonPath('data.errorCode', 'transport');
         $this->assertSafeResponse($resend->getContent());
-        $this->assertSafeQueueFailure(
+        $this->assertSafeMailFailure(
             NotificationDispatch::query()->where('public_id', $resend->json('data.id'))->firstOrFail(),
         );
 
-        $this->bindThrowingDispatcher($privateFailure);
+        $this->bindThrowingMailer($privateFailure);
         $sendCurrent = $this->actingAs($admin)
             ->postJson("/admin/api/orders/{$order->id}/notifications/send-current", [
                 'eventKey' => 'order_created',
             ])
             ->assertCreated()
             ->assertJsonPath('data.state', NotificationDispatch::STATE_FAILED)
-            ->assertJsonPath('data.errorCode', 'queue');
+            ->assertJsonPath('data.errorCode', 'transport');
         $this->assertSafeResponse($sendCurrent->getContent());
-        $this->assertSafeQueueFailure(
+        $this->assertSafeMailFailure(
             NotificationDispatch::query()->where('public_id', $sendCurrent->json('data.id'))->firstOrFail(),
         );
 
@@ -287,10 +277,13 @@ class OrderNotificationSecurityTest extends TestCase
         $this->assertSafeQueueFailure($failed->refresh());
     }
 
-    public function test_automatic_queue_failure_is_persisted_before_a_broken_reporter_is_safely_ignored(): void
+    public function test_automatic_smtp_failure_is_persisted_when_the_reporter_also_fails(): void
     {
         $order = $this->order('AUTO-REPORTER-FAILURE');
-        $this->bindThrowingDispatcher(implode(' ', self::PRIVATE_MARKERS));
+        $this->app->instance(
+            MailerContract::class,
+            new SecurityThrowingMailer(new TransportException(implode(' ', self::PRIVATE_MARKERS))),
+        );
         $handler = Mockery::mock(ExceptionHandler::class);
         $handler->shouldReceive('report')
             ->once()
@@ -304,7 +297,10 @@ class OrderNotificationSecurityTest extends TestCase
             $order->id,
         ));
 
-        $this->assertSafeQueueFailure($order->notificationDispatches()->sole());
+        $dispatch = $order->notificationDispatches()->sole();
+        $this->assertSame(NotificationDispatch::STATE_FAILED, $dispatch->state);
+        $this->assertSame('transport', $dispatch->last_error_code);
+        $this->assertNotNull($dispatch->failed_at);
     }
 
     public function test_private_response_scanner_rejects_nested_json_escaped_url_with_a_suffix(): void
@@ -326,10 +322,23 @@ class OrderNotificationSecurityTest extends TestCase
         $this->app->instance(Dispatcher::class, $dispatcher);
     }
 
+    private function bindThrowingMailer(string $privateFailure): void
+    {
+        $this->app->forgetInstance(NotificationDispatchService::class);
+        $this->app->instance(MailerContract::class, new SecurityThrowingMailer(new TransportException($privateFailure)));
+    }
+
     private function assertSafeQueueFailure(NotificationDispatch $dispatch): void
     {
         $this->assertSame(NotificationDispatch::STATE_FAILED, $dispatch->state);
         $this->assertSame('queue', $dispatch->last_error_code);
+        $this->assertNotNull($dispatch->failed_at);
+    }
+
+    private function assertSafeMailFailure(NotificationDispatch $dispatch): void
+    {
+        $this->assertSame(NotificationDispatch::STATE_FAILED, $dispatch->state);
+        $this->assertSame('transport', $dispatch->last_error_code);
         $this->assertNotNull($dispatch->failed_at);
     }
 

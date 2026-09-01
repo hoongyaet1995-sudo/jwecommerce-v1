@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Notifications;
 
-use App\Jobs\SendOrderNotificationJob;
 use App\Mail\OrderStatusNotificationMail;
 use App\Models\Customer;
 use App\Models\NotificationDispatch;
@@ -13,6 +12,7 @@ use App\Models\OrderPaymentProofEvent;
 use App\Services\Notifications\OrderNotificationMilestoneService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
@@ -23,8 +23,6 @@ class OrderNotificationMilestoneTest extends TestCase
     use RefreshDatabase;
 
     private Order $order;
-
-    private OrderNotificationMilestoneService $service;
 
     protected function setUp(): void
     {
@@ -56,20 +54,21 @@ class OrderNotificationMilestoneTest extends TestCase
         ]);
         $this->template('on_hold');
 
-        $this->service = app(OrderNotificationMilestoneService::class);
     }
 
-    public function test_regular_milestone_creates_one_dispatch_and_queues_only_after_commit(): void
+    public function test_regular_milestone_creates_one_dispatch_and_sends_synchronously_only_after_commit(): void
     {
         Queue::fake();
+        Mail::fake();
         $first = null;
         $second = null;
 
         DB::transaction(function () use (&$first, &$second): void {
-            $first = $this->service->record($this->order, 'payment_verified', 'order_payment', 41);
-            $second = $this->service->record($this->order, 'payment_verified', 'payment_webhook_event', 99);
+            $first = $this->service()->record($this->order, 'payment_verified', 'order_payment', 41);
+            $second = $this->service()->record($this->order, 'payment_verified', 'payment_webhook_event', 99);
 
             Queue::assertNothingPushed();
+            Mail::assertNothingSent();
         });
 
         $this->assertNotNull($first);
@@ -82,21 +81,20 @@ class OrderNotificationMilestoneTest extends TestCase
         $this->assertSame('order_payment', $first->source_type);
         $this->assertSame('41', $first->source_id);
         $this->assertSame(NotificationDispatch::SNAPSHOT_VERSION_PLAIN_TEXT, $first->snapshot_version);
-        $this->assertNotNull($first->queue_generation);
-        Queue::assertPushed(
-            SendOrderNotificationJob::class,
-            fn (SendOrderNotificationJob $job): bool => $job->dispatchId === $first->id
-                && $job->queueGeneration === $first->queue_generation,
-        );
+        $this->assertSame(NotificationDispatch::STATE_SENT, $first->refresh()->state);
+        $this->assertNotNull($first->sent_at);
+        Queue::assertNothingPushed();
+        Mail::assertSent(OrderStatusNotificationMail::class, 1);
     }
 
     public function test_rolled_back_business_transaction_creates_no_dispatch_or_job(): void
     {
         Queue::fake();
+        Mail::fake();
 
         try {
             DB::transaction(function (): void {
-                $this->service->record($this->order, 'order_created', 'order', $this->order->id);
+                $this->service()->record($this->order, 'order_created', 'order', $this->order->id);
                 throw new RuntimeException('rollback');
             });
         } catch (RuntimeException) {
@@ -104,11 +102,13 @@ class OrderNotificationMilestoneTest extends TestCase
 
         $this->assertDatabaseCount('notification_dispatches', 0);
         Queue::assertNothingPushed();
+        Mail::assertNothingSent();
     }
 
     public function test_distinct_payment_proof_rejections_each_create_one_dispatch(): void
     {
         Queue::fake();
+        Mail::fake();
         $payment = OrderPayment::query()->create([
             'order_id' => $this->order->id,
             'gateway' => 'duitnow',
@@ -127,21 +127,21 @@ class OrderNotificationMilestoneTest extends TestCase
             'reason' => 'Reference does not match.',
         ]);
 
-        $first = $this->service->record(
+        $first = $this->service()->record(
             $this->order,
             'payment_proof_rejected',
             'order_payment_proof_event',
             $firstProofEvent->id,
             extra: ['payment_proof_reason' => $firstProofEvent->reason],
         );
-        $firstDuplicate = $this->service->record(
+        $firstDuplicate = $this->service()->record(
             $this->order,
             'payment_proof_rejected',
             'order_payment_proof_event',
             $firstProofEvent->id,
             extra: ['payment_proof_reason' => $firstProofEvent->reason],
         );
-        $second = $this->service->record(
+        $second = $this->service()->record(
             $this->order,
             'payment_proof_rejected',
             'order_payment_proof_event',
@@ -160,28 +160,34 @@ class OrderNotificationMilestoneTest extends TestCase
             "automatic:email:order:{$this->order->id}:event:payment_proof_rejected:source:order_payment_proof_event:{$secondProofEvent->id}",
             $second->idempotency_key,
         );
-        Queue::assertPushed(SendOrderNotificationJob::class, 2);
+        $this->assertSame(NotificationDispatch::STATE_SENT, $first->refresh()->state);
+        $this->assertSame(NotificationDispatch::STATE_SENT, $second->refresh()->state);
+        Queue::assertNothingPushed();
+        Mail::assertSent(OrderStatusNotificationMail::class, 2);
     }
 
     public function test_email_disabled_and_dormant_events_create_no_dispatch(): void
     {
         Queue::fake();
+        Mail::fake();
         NotificationTemplate::query()
             ->where('event_key', 'payment_verified')
             ->update(['email_enabled' => false]);
 
-        $disabled = $this->service->record($this->order, 'payment_verified', 'order_payment', 41);
-        $dormant = $this->service->record($this->order, 'on_hold', 'order', $this->order->id);
+        $disabled = $this->service()->record($this->order, 'payment_verified', 'order_payment', 41);
+        $dormant = $this->service()->record($this->order, 'on_hold', 'order', $this->order->id);
 
         $this->assertNull($disabled);
         $this->assertNull($dormant);
         $this->assertDatabaseCount('notification_dispatches', 0);
         Queue::assertNothingPushed();
+        Mail::assertNothingSent();
     }
 
     public function test_automatic_dispatch_rejects_literal_easyparcel_customer_links(): void
     {
         Queue::fake();
+        Mail::fake();
         NotificationTemplate::query()
             ->where('event_key', 'payment_verified')
             ->update([
@@ -189,7 +195,7 @@ class OrderNotificationMilestoneTest extends TestCase
             ]);
 
         try {
-            $this->service->record($this->order, 'payment_verified', 'order_payment', 41);
+            $this->service()->record($this->order, 'payment_verified', 'order_payment', 41);
             $this->fail('The automatic dispatch accepted a private EasyParcel URL.');
         } catch (ValidationException) {
             $this->addToAssertionCount(1);
@@ -197,11 +203,13 @@ class OrderNotificationMilestoneTest extends TestCase
 
         $this->assertDatabaseCount('notification_dispatches', 0);
         Queue::assertNothingPushed();
+        Mail::assertNothingSent();
     }
 
     public function test_automatic_mail_without_template_cta_always_contains_frozen_jw_tracking_url(): void
     {
         Queue::fake();
+        Mail::fake();
         NotificationTemplate::query()
             ->where('event_key', 'payment_verified')
             ->update([
@@ -210,7 +218,7 @@ class OrderNotificationMilestoneTest extends TestCase
                 'email_cta_url' => '',
             ]);
 
-        $dispatch = $this->service->record($this->order, 'payment_verified', 'order_payment', 41);
+        $dispatch = $this->service()->record($this->order, 'payment_verified', 'order_payment', 41);
         $html = (new OrderStatusNotificationMail($dispatch))->render();
 
         $this->assertSame(url('/order-tracking'), $dispatch->variable_snapshot['tracking_url']);
@@ -219,7 +227,9 @@ class OrderNotificationMilestoneTest extends TestCase
         $this->assertStringNotContainsString('provider-token', $html);
         $this->assertStringNotContainsString('label_path', $html);
         $this->assertStringNotContainsString('proof_path', $html);
-        Queue::assertPushed(SendOrderNotificationJob::class, 1);
+        $this->assertSame(NotificationDispatch::STATE_SENT, $dispatch->refresh()->state);
+        Queue::assertNothingPushed();
+        Mail::assertSent(OrderStatusNotificationMail::class, 1);
     }
 
     private function template(string $eventKey, array $changes = []): NotificationTemplate
@@ -239,5 +249,10 @@ class OrderNotificationMilestoneTest extends TestCase
             'whatsapp_message' => '',
             'version' => 3,
         ], $changes));
+    }
+
+    private function service(): OrderNotificationMilestoneService
+    {
+        return app(OrderNotificationMilestoneService::class);
     }
 }

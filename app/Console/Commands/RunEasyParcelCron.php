@@ -11,7 +11,7 @@ final class RunEasyParcelCron extends Command
 
     protected $signature = 'easyparcel:cron';
 
-    protected $description = 'Run due EasyParcel schedules and drain the default database queue safely';
+    protected $description = 'Run due EasyParcel schedules and drain only EasyParcel reconciliation jobs';
 
     public function handle(): int
     {
@@ -38,11 +38,11 @@ final class RunEasyParcelCron extends Command
 
             return $this->call('queue:work', [
                 'connection' => 'database',
-                '--queue' => 'default',
+                '--queue' => 'easyparcel',
                 '--stop-when-empty' => true,
-                '--tries' => 1,
-                '--timeout' => 45,
-                '--max-time' => 50,
+                '--tries' => 3,
+                '--timeout' => 60,
+                '--max-time' => 120,
                 '--no-interaction' => true,
             ]);
         } finally {

@@ -11,6 +11,7 @@ use App\Models\Shipment;
 use App\Models\User;
 use App\Services\Notifications\NotificationTemplateDefaults;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
@@ -21,6 +22,7 @@ class OrderApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Mail::fake();
         app(NotificationTemplateDefaults::class)->synchronize();
     }
 
@@ -38,7 +40,7 @@ class OrderApiTest extends TestCase
         ])->assertOk()
             ->assertJsonPath('data.fulfillmentStatus', 'processing')
             ->assertJsonPath('data.paymentGatewayStatus', 'paid')
-            ->assertJsonPath('data.notificationSummary.state', NotificationDispatch::STATE_QUEUED);
+            ->assertJsonPath('data.notificationSummary.state', NotificationDispatch::STATE_SENT);
 
         $this->actingAs($admin)->patchJson('/admin/api/orders/'.$order->id.'/tracking', [
             'carrier' => 'DHL Express', 'trackingNumber' => 'DHL-TRACK-1001',
@@ -131,7 +133,7 @@ class OrderApiTest extends TestCase
             ->assertJsonPath('data.notificationSummary', null);
     }
 
-    public function test_status_mutation_returns_only_the_new_queued_intent_claimed_by_that_operation(): void
+    public function test_status_mutation_returns_only_the_new_sent_dispatch_claimed_by_that_operation(): void
     {
         Queue::fake();
         $viewer = $this->staffWith([NotificationPermission::DELIVERIES_VIEW]);
@@ -144,7 +146,7 @@ class OrderApiTest extends TestCase
             'notifyCustomer' => true,
         ])->assertOk()
             ->assertJsonPath('data.notificationSummary.eventKey', 'payment_verified')
-            ->assertJsonPath('data.notificationSummary.state', NotificationDispatch::STATE_QUEUED)
+            ->assertJsonPath('data.notificationSummary.state', NotificationDispatch::STATE_SENT)
             ->assertJsonPath('data.notificationSummary.source', NotificationDispatch::SOURCE_AUTOMATIC);
 
         $this->assertNotSame($prior->public_id, $response->json('data.notificationSummary.publicId'));

@@ -23,7 +23,10 @@ final class ReconcileEasyParcelWebhook implements ShouldBeUnique, ShouldQueue
 
     public int $uniqueFor = 900;
 
-    public function __construct(public readonly int $receiptId) {}
+    public function __construct(public readonly int $receiptId)
+    {
+        $this->onQueue('easyparcel');
+    }
 
     /** @return list<int> */
     public function backoff(): array

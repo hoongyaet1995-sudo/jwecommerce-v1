@@ -14,6 +14,11 @@ final class SweepEasyParcelReconciliation implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public function __construct()
+    {
+        $this->onQueue('easyparcel');
+    }
+
     public int $tries = 1;
 
     public int $timeout = 60;
