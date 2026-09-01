@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Notifications\NotificationEventCatalog;
+use App\Domain\Notifications\NotificationDeliveryException;
 use App\Domain\Notifications\NotificationPermission;
 use App\Domain\Notifications\RenderedNotification;
 use App\Http\Controllers\Controller;
@@ -81,6 +82,22 @@ class OrderNotificationApiController extends Controller
         return response()->json([
             'data' => $this->dispatchData($this->dispatches->resend($dispatch, $request->user())),
         ], 201);
+    }
+
+    public function sendNow(Request $request, string $dispatch): JsonResponse
+    {
+        $this->authorizePermission($request, NotificationPermission::DELIVERIES_RETRY);
+        $dispatch = NotificationDispatch::query()->where('public_id', $dispatch)->firstOrFail();
+
+        try {
+            $sent = $this->dispatches->sendQueuedNow($dispatch);
+        } catch (NotificationDeliveryException) {
+            return response()->json([
+                'message' => 'Email could not be sent. Check the mail configuration and try again.',
+            ], 502);
+        }
+
+        return response()->json(['data' => $this->dispatchData($sent)]);
     }
 
     private function authorizePermission(Request $request, string $permission): void

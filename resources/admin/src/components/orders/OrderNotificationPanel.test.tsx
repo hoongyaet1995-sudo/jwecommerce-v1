@@ -159,7 +159,7 @@ class OrderNotificationApi {
       });
     }
 
-    const actionMatch = url.match(/^\/admin\/api\/notification-dispatches\/([^/]+)\/(retry|resend)$/);
+    const actionMatch = url.match(/^\/admin\/api\/notification-dispatches\/([^/]+)\/(retry|resend|send-now)$/);
     const sendCurrent = url === '/admin/api/orders/17/notifications/send-current';
     if ((actionMatch || sendCurrent) && method === 'POST') {
       const body = JSON.parse(String(init.body ?? '{}')) as Record<string, unknown>;
@@ -174,6 +174,13 @@ class OrderNotificationApi {
       if (actionMatch?.[2] === 'retry') {
         this.dispatches = this.dispatches.map(item => item.id === actionMatch[1]
           ? { ...item, state: 'queued', failedAt: null, errorCode: null }
+          : item);
+        return jsonResponse({ data: this.dispatches.find(item => item.id === actionMatch[1]) });
+      }
+
+      if (actionMatch?.[2] === 'send-now') {
+        this.dispatches = this.dispatches.map(item => item.id === actionMatch[1]
+          ? { ...item, state: 'sent', attemptCount: item.attemptCount + 1, sentAt: '2026-08-31T08:02:00.000Z' }
           : item);
         return jsonResponse({ data: this.dispatches.find(item => item.id === actionMatch[1]) });
       }
@@ -286,6 +293,18 @@ describe('OrderNotificationPanel real delivery binding', () => {
     await vi.waitFor(() => expect(api.actionRequests.some(item => item.url.endsWith('/notifications/send-current'))).toBe(true));
     expect(confirm).toHaveBeenCalledWith('Send the current Email template and preview to this customer?');
     expect(api.auditReads).toBeGreaterThanOrEqual(4);
+  });
+
+  it('offers Send now only for a queued audit and refreshes it from the server after SMTP delivery', async () => {
+    const api = (mockedAdminContext.value as { api: OrderNotificationApi }).api;
+    api.dispatches = [dispatch('queued-1', 'queued'), dispatch('failed-1', 'failed'), dispatch('sent-1', 'sent')];
+    const { host } = await renderPanel();
+
+    await vi.waitFor(() => expect(button(host, 'Send now')).toBeTruthy());
+    await act(async () => button(host, 'Send now').click());
+    await vi.waitFor(() => expect(api.actionRequests.some(item => item.url.endsWith('/queued-1/send-now'))).toBe(true));
+    await vi.waitFor(() => expect(host.textContent).toContain('Sent'));
+    expect(Array.from(host.querySelectorAll('button')).map(candidate => candidate.textContent?.trim())).not.toContain('Send now');
   });
 
   it('uses Email-only copy and previews the current order, event, and staff note while WhatsApp stays disconnected', async () => {

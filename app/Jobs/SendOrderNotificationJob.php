@@ -46,12 +46,12 @@ class SendOrderNotificationJob implements ShouldQueue
         $this->deliver($mailer, $this->attempts());
     }
 
-    public function handleSynchronously(Mailer $mailer): void
+    public function handleSynchronously(Mailer $mailer): bool
     {
-        $this->deliver($mailer, 1);
+        return $this->deliver($mailer, 1);
     }
 
-    private function deliver(Mailer $mailer, int $attempt): void
+    private function deliver(Mailer $mailer, int $attempt): bool
     {
         if ($this->queueGeneration === null) {
             $exception = new NotificationDeliveryException('queue');
@@ -67,7 +67,7 @@ class SendOrderNotificationJob implements ShouldQueue
         );
 
         if (! $dispatch instanceof NotificationDispatch) {
-            return;
+            return false;
         }
 
         $leaseToken = (string) $dispatch->delivery_lease_token;
@@ -83,6 +83,8 @@ class SendOrderNotificationJob implements ShouldQueue
                 'sent_at' => now(),
                 'last_error_code' => null,
             ]);
+
+            return true;
         } catch (Throwable $error) {
             $safeErrorCode = $this->safeErrorCode($error);
             $this->finishClaim($dispatch, $leaseToken, [

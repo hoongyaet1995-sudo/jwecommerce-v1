@@ -72,6 +72,33 @@ class NotificationDispatchService
         return $queued->refresh();
     }
 
+    public function sendQueuedNow(NotificationDispatch $dispatch): NotificationDispatch
+    {
+        $queued = NotificationDispatch::query()->findOrFail($dispatch->id);
+
+        if ($queued->state !== NotificationDispatch::STATE_QUEUED) {
+            throw ValidationException::withMessages([
+                'dispatch' => 'Only a queued notification delivery can be sent now.',
+            ]);
+        }
+
+        $job = new SendOrderNotificationJob($queued->id, $queued->queue_generation);
+
+        try {
+            if (! $job->handleSynchronously($this->mailer)) {
+                throw ValidationException::withMessages([
+                    'dispatch' => 'This notification delivery is already being processed. Refresh and try again.',
+                ]);
+            }
+        } catch (NotificationDeliveryException $error) {
+            $job->failed($error);
+
+            throw $error;
+        }
+
+        return $queued->refresh();
+    }
+
     public function resend(NotificationDispatch $dispatch, User $actor): NotificationDispatch
     {
         $resend = DB::transaction(function () use ($dispatch, $actor): NotificationDispatch {

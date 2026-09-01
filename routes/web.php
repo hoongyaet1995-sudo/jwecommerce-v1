@@ -180,6 +180,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/orders/{order}/notifications/preview', [OrderNotificationApiController::class, 'preview'])->name('api.orders.notifications.preview');
     Route::post('/api/orders/{order}/notifications/send-current', [OrderNotificationApiController::class, 'sendCurrent'])->name('api.orders.notifications.send-current');
     Route::post('/api/notification-dispatches/{dispatch:public_id}/retry', [OrderNotificationApiController::class, 'retry'])->name('api.notification-dispatches.retry');
+    Route::post('/api/notification-dispatches/{dispatch:public_id}/send-now', [OrderNotificationApiController::class, 'sendNow'])->name('api.notification-dispatches.send-now');
     Route::post('/api/notification-dispatches/{dispatch:public_id}/resend', [OrderNotificationApiController::class, 'resend'])->name('api.notification-dispatches.resend');
     Route::get('/api/orders/{order}/payments/{payment}/proof', [OrderApiController::class, 'showPaymentProof'])->name('api.orders.payments.proof.show');
     Route::get('/api/orders/{order}/payments/{payment}/proof/download', [OrderApiController::class, 'downloadPaymentProof'])->name('api.orders.payments.proof.download');

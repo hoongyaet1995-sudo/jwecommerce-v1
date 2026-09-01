@@ -47,6 +47,16 @@ export const retryNotificationDispatch = (
   body: JSON.stringify({}),
 }, 'Notification retry could not be queued.');
 
+export const sendQueuedNotificationDispatch = (
+  bootstrap: LaravelAdminBootstrap,
+  dispatchId: string,
+): Promise<NotificationDispatch> => notificationRequest(`${dispatchUrl(dispatchId)}/send-now`, {
+  method: 'POST',
+  credentials: 'same-origin',
+  headers: notificationHeaders(bootstrap),
+  body: JSON.stringify({}),
+}, 'Queued Email could not be sent.');
+
 export const resendNotificationDispatch = (
   bootstrap: LaravelAdminBootstrap,
   dispatchId: string,

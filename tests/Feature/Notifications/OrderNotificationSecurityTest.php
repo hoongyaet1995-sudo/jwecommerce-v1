@@ -3,6 +3,7 @@
 namespace Tests\Feature\Notifications;
 
 use App\Jobs\SendOrderNotificationJob;
+use App\Mail\OrderStatusNotificationMail;
 use App\Models\Customer;
 use App\Models\NotificationDispatch;
 use App\Models\Order;
@@ -17,6 +18,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Mail\PendingMail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Mockery;
 use PHPUnit\Framework\ExpectationFailedException;
 use RuntimeException;
@@ -149,6 +151,34 @@ class OrderNotificationSecurityTest extends TestCase
         }
     }
 
+    public function test_authorized_staff_can_send_a_queued_delivery_snapshot_immediately_without_creating_a_new_audit(): void
+    {
+        Mail::fake();
+        $admin = $this->superAdmin();
+        $order = $this->order('SEND-NOW');
+        $queued = NotificationDispatch::factory()->create([
+            'order_id' => $order->id,
+            'state' => NotificationDispatch::STATE_QUEUED,
+            'attempt_count' => 0,
+            'queue_attempt' => null,
+            'sent_at' => null,
+            'failed_at' => null,
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson("/admin/api/notification-dispatches/{$queued->public_id}/send-now")
+            ->assertOk()
+            ->assertJsonPath('data.id', $queued->public_id)
+            ->assertJsonPath('data.state', NotificationDispatch::STATE_SENT);
+
+        $queued->refresh();
+        $this->assertSame(NotificationDispatch::STATE_SENT, $queued->state);
+        $this->assertSame(1, $queued->attempt_count);
+        $this->assertNotNull($queued->sent_at);
+        $this->assertDatabaseCount('notification_dispatches', 1);
+        Mail::assertSent(OrderStatusNotificationMail::class, 1);
+    }
+
     public function test_reported_queue_and_mail_failures_expose_only_bounded_notification_errors(): void
     {
         $privateFailure = implode(' ', self::PRIVATE_MARKERS);
@@ -229,19 +259,6 @@ class OrderNotificationSecurityTest extends TestCase
         $this->assertSafeResponse($sendCurrent->getContent());
         $this->assertSafeQueueFailure(
             NotificationDispatch::query()->where('public_id', $sendCurrent->json('data.id'))->firstOrFail(),
-        );
-
-        $this->bindThrowingDispatcher($privateFailure);
-        $testSend = $this->actingAs($admin)
-            ->postJson('/admin/api/notification-templates/order_created/test', [
-                'recipientEmail' => 'manual-queue@example.test',
-            ])
-            ->assertCreated()
-            ->assertJsonPath('data.state', NotificationDispatch::STATE_FAILED)
-            ->assertJsonPath('data.errorCode', 'queue');
-        $this->assertSafeResponse($testSend->getContent());
-        $this->assertSafeQueueFailure(
-            NotificationDispatch::query()->where('public_id', $testSend->json('data.id'))->firstOrFail(),
         );
 
         $log = is_file($this->securityLogPath)

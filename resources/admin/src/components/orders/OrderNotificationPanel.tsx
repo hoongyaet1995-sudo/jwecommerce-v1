@@ -6,6 +6,7 @@ import {
   previewOrderNotification,
   resendNotificationDispatch,
   retryNotificationDispatch,
+  sendQueuedNotificationDispatch,
   sendCurrentOrderNotification,
 } from '../../integration/orderNotificationData';
 import type {
@@ -223,6 +224,10 @@ export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
     void runAction(`retry:${dispatch.id}`, () => retryNotificationDispatch(laravelBootstrap, dispatch.id));
   };
 
+  const handleSendNow = (dispatch: NotificationDispatch): void => {
+    void runAction(`send-now:${dispatch.id}`, () => sendQueuedNotificationDispatch(laravelBootstrap, dispatch.id));
+  };
+
   const handleResend = (dispatch: NotificationDispatch): void => {
     if (!window.confirm('Resend this Email using its original frozen content?')) return;
     void runAction(`resend:${dispatch.id}`, () => resendNotificationDispatch(laravelBootstrap, dispatch.id));
@@ -426,8 +431,18 @@ export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
                   <p className="text-[10px] text-rose-600 dark:text-rose-400 font-medium">{safeFailureLabel(dispatch.errorCode)}</p>
                 ) : null}
 
-                {dispatch.state === 'failed' || dispatch.state === 'sent' ? (
+                {dispatch.state === 'queued' || dispatch.state === 'failed' || dispatch.state === 'sent' ? (
                   <div className="flex justify-end">
+                    {dispatch.state === 'queued' ? (
+                      <button
+                        type="button"
+                        disabled={!canRetry || actionId !== null}
+                        onClick={() => handleSendNow(dispatch)}
+                        className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 disabled:opacity-50 disabled:cursor-not-allowed text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/80 font-bold text-[11px] transition cursor-pointer"
+                      >
+                        {actionId === `send-now:${dispatch.id}` ? 'Sending...' : 'Send now'}
+                      </button>
+                    ) : null}
                     {dispatch.state === 'failed' ? (
                       <button
                         type="button"
