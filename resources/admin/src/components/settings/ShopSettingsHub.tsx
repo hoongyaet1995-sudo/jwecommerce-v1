@@ -143,7 +143,11 @@ export const ShopSettingsHub: React.FC = () => {
 
   // Dedicated Setting Sub-Views
   if (currentSection === 'settings-users') {
-    return <UserLoginSettingAdmin />;
+    return (
+      <UserLoginSettingAdmin
+        settingsNavigation={<SettingNavBar currentSection={currentSection} setCurrentSection={setCurrentSection} />}
+      />
+    );
   }
 
   if (currentSection === 'settings-payment') {

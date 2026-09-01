@@ -576,6 +576,24 @@ describe('NotificationTemplateSettingAdmin real-data binding', () => {
     expect(buttonLabels.filter(label => label === 'AI Auto Reply & Bot')).toHaveLength(1);
   });
 
+  it('keeps the Settings navigation visible on the User Login page', async () => {
+    mockedAdminContext.value = {
+      ...mockedAdminContext.value,
+      currentSection: 'settings-users',
+      staffUsers: [],
+      saveStaffUser: vi.fn(),
+      deleteStaffUser: vi.fn(),
+      toggleStaffStatus: vi.fn(),
+      resetStaffPassword: vi.fn(),
+    };
+
+    const { host } = await renderComponent(<ShopSettingsHub />);
+
+    expect(host.textContent).toContain('User Login Setting');
+    expect(button(host, 'Auto Email & WhatsApp Template')).toBeTruthy();
+    expect(button(host, 'AI Auto Reply & Bot')).toBeTruthy();
+  });
+
   it('shows an explicit unavailable state when the API returns an empty template collection', async () => {
     const api = (mockedAdminContext.value as { api: NotificationTemplateApi }).api;
     api.templates = [];
