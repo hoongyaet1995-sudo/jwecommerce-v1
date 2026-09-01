@@ -8,6 +8,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\Shipment;
 use App\Models\ShipmentEvent;
 use App\Models\User;
+use App\Services\Notifications\OrderNotificationMilestoneService;
 use App\Services\Shipping\EasyParcelBookingGuard;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +46,10 @@ class ShipmentService
         'provider_update',
     ];
 
-    public function __construct(private readonly EasyParcelBookingGuard $easyParcelBookings) {}
+    public function __construct(
+        private readonly EasyParcelBookingGuard $easyParcelBookings,
+        private readonly OrderNotificationMilestoneService $notifications,
+    ) {}
 
     public function dispatchManually(Order $order, User $actor, string $carrierName, string $trackingNumber): Shipment
     {
@@ -89,7 +93,7 @@ class ShipmentService
             ]);
             $shipment->save();
 
-            ShipmentEvent::query()->create([
+            $dispatchEvent = ShipmentEvent::query()->create([
                 'shipment_id' => $shipment->id,
                 'status' => 'shipped',
                 'occurred_at' => now(),
@@ -112,6 +116,13 @@ class ShipmentService
                 'user_id' => $actor->id,
                 'note' => 'Dispatched via '.$shipment->carrier_name.' · '.$shipment->tracking_number,
             ]);
+            $this->recordNotification(
+                $lockedOrder,
+                'shipped',
+                'shipment_event',
+                $dispatchEvent->id,
+                $actor,
+            );
 
             return $shipment->fresh(['events']);
         });
@@ -148,7 +159,7 @@ class ShipmentService
                 ]);
             }
 
-            return ShipmentEvent::query()->create([
+            $event = ShipmentEvent::query()->create([
                 'shipment_id' => $lockedShipment->id,
                 'status' => $status,
                 'occurred_at' => $occurredAt,
@@ -157,6 +168,18 @@ class ShipmentService
                 'source' => 'manual',
                 'created_by' => $actor->id,
             ]);
+
+            if ($status === 'delivered') {
+                $this->recordNotification(
+                    $lockedShipment->order->fresh(),
+                    'delivered',
+                    'shipment_event',
+                    $event->id,
+                    $actor,
+                );
+            }
+
+            return $event;
         });
     }
 
@@ -243,6 +266,7 @@ class ShipmentService
                 throw new InvalidArgumentException('Only the current EasyParcel shipment accepts provider details.');
             }
 
+            $firstOfficialAwb = blank($lockedShipment->tracking_number) && filled($trackingNumber);
             $updates = array_filter([
                 'provider_order_reference' => $providerOrderReference,
                 'tracking_number' => $trackingNumber,
@@ -273,6 +297,15 @@ class ShipmentService
 
             if ($updates !== []) {
                 $lockedShipment->forceFill($updates)->save();
+            }
+
+            if ($firstOfficialAwb) {
+                $this->recordNotification(
+                    $lockedOrder,
+                    'ready_to_ship',
+                    'shipment',
+                    $lockedShipment->id,
+                );
             }
 
             if (blank($lockedShipment->tracking_number)
@@ -328,6 +361,24 @@ class ShipmentService
         if ($created > 0) {
             $projection = $this->projectEasyParcelShipmentLifecycle($lockedShipment);
             $this->projectEasyParcelLifecycleToOrder($lockedOrder, $lockedShipment, $projection);
+            $lockedOrder->refresh();
+
+            if ($projection['dispatch_event'] !== null) {
+                $this->recordNotification(
+                    $lockedOrder,
+                    'shipped',
+                    'shipment_event',
+                    $projection['dispatch_event']->id,
+                );
+            }
+            if ($projection['delivery_event'] !== null && $projection['status'] === 'delivered') {
+                $this->recordNotification(
+                    $lockedOrder,
+                    'delivered',
+                    'shipment_event',
+                    $projection['delivery_event']->id,
+                );
+            }
         }
 
         return $created;
@@ -570,5 +621,18 @@ class ShipmentService
             'dispatch_event' => $dispatchEvent,
             'delivery_event' => $qualifyingDelivery,
         ];
+    }
+
+    private function recordNotification(
+        Order $order,
+        string $eventKey,
+        string $sourceType,
+        string|int $sourceId,
+        ?User $actor = null,
+    ): void {
+        rescue(
+            fn () => $this->notifications->record($order, $eventKey, $sourceType, $sourceId, $actor),
+            report: true,
+        );
     }
 }

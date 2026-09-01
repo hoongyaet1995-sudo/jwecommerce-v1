@@ -13,6 +13,7 @@ use App\Models\ShippingProviderCredential;
 use App\Models\StoreSetting;
 use App\Models\User;
 use App\Services\CheckoutService;
+use App\Services\Notifications\NotificationTemplateDefaults;
 use App\Services\Shipping\EasyParcelFulfillmentService;
 use App\Services\Shipping\EasyParcelOpenApiClient;
 use Illuminate\Http\Client\Request;
@@ -179,6 +180,8 @@ class EasyParcelFulfillmentApiTest extends TestCase
 
     public function test_booking_same_quote_twice_creates_one_shipment_and_one_provider_booking(): void
     {
+        Queue::fake();
+        app(NotificationTemplateDefaults::class)->synchronize();
         Http::preventStrayRequests();
         $this->configureSender();
         $this->connectedProvider();
@@ -222,6 +225,14 @@ class EasyParcelFulfillmentApiTest extends TestCase
             'status' => 'pending',
         ]);
         $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'processing']);
+        $this->assertDatabaseCount('notification_dispatches', 1);
+        $this->assertDatabaseHas('notification_dispatches', [
+            'order_id' => $order->id,
+            'event_key' => 'ready_to_ship',
+            'source_type' => 'shipment',
+            'source_id' => (string) Shipment::query()->sole()->id,
+            'source' => 'automatic',
+        ]);
 
         Http::assertSentCount(2);
     }

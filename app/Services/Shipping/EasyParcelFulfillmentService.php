@@ -8,6 +8,7 @@ use App\Models\Shipment;
 use App\Models\ShipmentQuote;
 use App\Models\ShippingProvider;
 use App\Models\User;
+use App\Services\Notifications\OrderNotificationMilestoneService;
 use App\Support\CurrencySettings;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -30,6 +31,7 @@ final class EasyParcelFulfillmentService
         private readonly EasyParcelReconciliationTaskService $reconciliationTasks,
         private readonly EasyParcelReconciliationPublisher $reconciliationPublisher,
         private readonly EasyParcelFailedBookingRecoveryService $failedBookingRecoveries,
+        private readonly OrderNotificationMilestoneService $notifications,
     ) {}
 
     public function quote(Order $order, PackageSpec $package, User $actor): ShipmentQuote
@@ -484,6 +486,19 @@ final class EasyParcelFulfillmentService
             ])->save();
 
             $this->failedBookingRecoveries->completeForReplacement($shipment);
+
+            if (filled($shipment->tracking_number)) {
+                rescue(
+                    fn () => $this->notifications->record(
+                        $lockedOrder,
+                        'ready_to_ship',
+                        'shipment',
+                        $shipment->id,
+                        $actor,
+                    ),
+                    report: true,
+                );
+            }
 
             $taskId = blank($shipment->tracking_number) || blank($shipment->label_path)
                 ? $this->reconciliationTasks->ensureShipmentDetails($shipment)->id

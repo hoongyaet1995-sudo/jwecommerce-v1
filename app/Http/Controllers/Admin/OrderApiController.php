@@ -28,8 +28,17 @@ class OrderApiController extends Controller
             'paymentStatus' => ['nullable', Rule::in(['paid', 'pending', 'refunded', 'partially_refunded', 'failed'])],
             'fulfillmentStatus' => ['nullable', Rule::in(['unfulfilled', 'processing', 'shipped', 'delivered', 'cancelled'])],
             'note' => ['nullable', 'string', 'max:2000'],
+            'notifyCustomer' => ['sometimes', 'boolean'],
         ]);
-        $saved = $operations->updateStatus($order, $validated['paymentStatus'] ?? null, $validated['fulfillmentStatus'] ?? null, (int) $request->user()->id, $validated['note'] ?? null);
+        $saved = $operations->updateStatus(
+            $order,
+            $validated['paymentStatus'] ?? null,
+            $validated['fulfillmentStatus'] ?? null,
+            (int) $request->user()->id,
+            $validated['note'] ?? null,
+            $validated['notifyCustomer'] ?? true,
+        );
+
         return response()->json(['data' => $data->data($saved)]);
     }
 
@@ -74,6 +83,7 @@ class OrderApiController extends Controller
         abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::DISPATCH), 403);
         $validated = $request->validate(['carrier' => ['required', 'string', 'max:120'], 'trackingNumber' => ['required', 'string', 'max:120']]);
         $saved = $operations->dispatch($order, $validated['carrier'], $validated['trackingNumber'], (int) $request->user()->id);
+
         return response()->json(['data' => $data->data($saved)]);
     }
 
@@ -81,6 +91,7 @@ class OrderApiController extends Controller
     {
         $validated = $request->validate(['amount' => ['required', 'numeric', 'min:0.01'], 'reason' => ['required', 'string', 'max:2000']]);
         $saved = $operations->refund($order, (int) round(((float) $validated['amount']) * 100), $validated['reason'], (int) $request->user()->id);
+
         return response()->json(['data' => $data->data($saved)]);
     }
 

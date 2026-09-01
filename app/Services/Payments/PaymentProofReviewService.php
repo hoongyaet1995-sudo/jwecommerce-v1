@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderPayment;
 use App\Models\User;
 use App\Services\CheckoutService;
+use App\Services\Notifications\OrderNotificationMilestoneService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -14,8 +15,8 @@ class PaymentProofReviewService
     public function __construct(
         private readonly CheckoutService $checkout,
         private readonly PaymentProofService $proofs,
-    ) {
-    }
+        private readonly OrderNotificationMilestoneService $notifications,
+    ) {}
 
     public function review(Order $order, OrderPayment $payment, User $actor, string $decision, ?string $reason): Order
     {
@@ -39,11 +40,26 @@ class PaymentProofReviewService
                 'proof_reviewed_at' => now(),
             ]);
             $lockedPayment = $lockedPayment->fresh();
-            $this->proofs->appendEvent($lockedPayment, $decision, $actor, $reason);
+            $proofEvent = $this->proofs->appendEvent($lockedPayment, $decision, $actor, $reason);
 
             if ($decision === 'verified' && $lockedOrder->status === 'pending_payment') {
                 $this->checkout->transition($lockedOrder, 'paid', $actor->id, $reason ?: 'Bank In / DuitNow proof verified.');
             }
+
+            $eventKey = $decision === 'verified' ? 'payment_verified' : 'payment_proof_rejected';
+            rescue(
+                fn () => $this->notifications->record(
+                    $lockedOrder->fresh(),
+                    $eventKey,
+                    'order_payment_proof_event',
+                    $proofEvent->id,
+                    $actor,
+                    $decision === 'rejected'
+                        ? ['payment_proof_reason' => (string) $reason]
+                        : ['staff_note' => $reason ?: 'No additional notes.'],
+                ),
+                report: true,
+            );
 
             return $lockedOrder->fresh();
         });

@@ -105,9 +105,9 @@ class PaymentProofService
         return $payment->fresh();
     }
 
-    public function appendEvent(OrderPayment $payment, string $eventType, ?User $actor = null, ?string $reason = null): void
+    public function appendEvent(OrderPayment $payment, string $eventType, ?User $actor = null, ?string $reason = null): OrderPaymentProofEvent
     {
-        OrderPaymentProofEvent::query()->create([
+        return OrderPaymentProofEvent::query()->create([
             'order_id' => $payment->order_id,
             'order_payment_id' => $payment->id,
             'user_id' => $actor?->id,

@@ -5,7 +5,9 @@ namespace App\Services\Admin;
 use App\Models\Order;
 use App\Models\OrderRefund;
 use App\Models\OrderStatusHistory;
+use App\Models\User;
 use App\Services\CheckoutService;
+use App\Services\Notifications\OrderNotificationMilestoneService;
 use App\Services\ShipmentService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -13,10 +15,20 @@ use InvalidArgumentException;
 
 class OrderOperationsService
 {
-    public function __construct(private readonly CheckoutService $checkout, private readonly ShipmentService $shipments) {}
+    public function __construct(
+        private readonly CheckoutService $checkout,
+        private readonly ShipmentService $shipments,
+        private readonly OrderNotificationMilestoneService $notifications,
+    ) {}
 
-    public function updateStatus(Order $order, ?string $paymentStatus, ?string $fulfillmentStatus, int $userId, ?string $note): Order
-    {
+    public function updateStatus(
+        Order $order,
+        ?string $paymentStatus,
+        ?string $fulfillmentStatus,
+        int $userId,
+        ?string $note,
+        bool $notifyCustomer = true,
+    ): Order {
         if (in_array($paymentStatus, ['refunded', 'partially_refunded'], true)) {
             throw ValidationException::withMessages(['paymentStatus' => 'Use the refund action so the refund is recorded in the ledger.']);
         }
@@ -31,30 +43,52 @@ class OrderOperationsService
         }
 
         try {
-            if ($paymentStatus === 'paid' && $order->status === 'pending_payment') {
-                $order = $this->checkout->transition($order, 'paid', $userId, $note);
-            }
-            $target = match ($fulfillmentStatus) {
-                'processing' => 'processing',
-                'delivered' => 'delivered',
-                'cancelled' => 'cancelled',
-                default => null,
-            };
-            if ($target !== null && $order->status !== $target) {
-                $order = $this->checkout->transition($order, $target, $userId, $note);
-            }
+            return DB::transaction(function () use (
+                $fulfillmentStatus,
+                $note,
+                $notifyCustomer,
+                $order,
+                $paymentStatus,
+                $userId,
+            ): Order {
+                $order = Order::query()->lockForUpdate()->findOrFail($order->id);
+                $actor = User::query()->findOrFail($userId);
+
+                if ($paymentStatus === 'paid' && $order->status === 'pending_payment') {
+                    $order = $this->checkout->transition($order, 'paid', $userId, $note, false);
+                    if ($notifyCustomer) {
+                        $history = $order->statusHistory()->where('to_status', 'paid')->latest('id')->firstOrFail();
+                        $this->recordNotification($order, 'payment_verified', $history, $actor, $note);
+                    }
+                }
+
+                $target = match ($fulfillmentStatus) {
+                    'processing' => 'processing',
+                    'delivered' => 'delivered',
+                    'cancelled' => 'cancelled',
+                    default => null,
+                };
+                if ($target !== null && $order->status !== $target) {
+                    $order = $this->checkout->transition($order, $target, $userId, $note, false);
+                    if ($notifyCustomer && in_array($target, ['delivered', 'cancelled'], true)) {
+                        $history = $order->statusHistory()->where('to_status', $target)->latest('id')->firstOrFail();
+                        $this->recordNotification($order, $target, $history, $actor, $note);
+                    }
+                }
+
+                return $order->fresh();
+            });
         } catch (InvalidArgumentException $exception) {
             throw ValidationException::withMessages(['fulfillmentStatus' => $exception->getMessage()]);
         }
-
-        return $order->fresh();
     }
 
     public function dispatch(Order $order, string $carrier, string $trackingNumber, int $userId): Order
     {
         try {
-            $actor = \App\Models\User::query()->findOrFail($userId);
+            $actor = User::query()->findOrFail($userId);
             $this->shipments->dispatchManually($order, $actor, $carrier, $trackingNumber);
+
             return $order->fresh();
         } catch (InvalidArgumentException $exception) {
             throw ValidationException::withMessages(['trackingNumber' => $exception->getMessage()]);
@@ -78,7 +112,28 @@ class OrderOperationsService
             OrderRefund::query()->create(['order_id' => $locked->id, 'order_payment_id' => $payment->id, 'user_id' => $userId, 'amount' => $amount, 'reason' => $reason, 'status' => 'completed']);
             $payment->update(['status' => $amount === $remaining ? 'refunded' : 'partially_refunded']);
             OrderStatusHistory::query()->create(['order_id' => $locked->id, 'from_status' => $locked->status, 'to_status' => $locked->status, 'user_id' => $userId, 'note' => 'Refunded '.number_format($amount / 100, 2).' '.$locked->currency.': '.$reason]);
+
             return $locked->fresh();
         });
+    }
+
+    private function recordNotification(
+        Order $order,
+        string $eventKey,
+        OrderStatusHistory $history,
+        User $actor,
+        ?string $note,
+    ): void {
+        rescue(
+            fn () => $this->notifications->record(
+                $order,
+                $eventKey,
+                'order_status_history',
+                $history->id,
+                $actor,
+                ['staff_note' => $note ?: 'No additional notes.'],
+            ),
+            report: true,
+        );
     }
 }

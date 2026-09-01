@@ -4,9 +4,10 @@ namespace App\Services\Payments;
 
 use App\Models\Order;
 use App\Models\OrderPayment;
+use App\Models\OrderStatusHistory;
 use App\Models\PaymentGatewayCredential;
 use App\Models\PaymentWebhookEvent;
-use App\Models\OrderStatusHistory;
+use App\Services\Notifications\OrderNotificationMilestoneService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -14,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 class PaymentWebhookService
 {
+    public function __construct(private readonly OrderNotificationMilestoneService $notifications) {}
+
     /** @return array{received: bool, duplicate: bool} */
     public function receiveStripe(Request $request): array
     {
@@ -58,7 +61,7 @@ class PaymentWebhookService
             ]);
 
             if ($payment && $event['type'] === 'checkout.session.completed' && data_get($event, 'data.object.payment_status') === 'paid') {
-                $this->confirmPayment($payment, 'Verified Stripe webhook '.$webhook->provider_event_id);
+                $this->confirmPayment($payment, $webhook, 'Verified Stripe webhook '.$webhook->provider_event_id);
             }
 
             return ['received' => true, 'duplicate' => false];
@@ -103,7 +106,7 @@ class PaymentWebhookService
             ]);
 
             if (($callback['status'] ?? null) === 'paid') {
-                $this->confirmPayment($payment, 'Verified Billplz callback '.$webhook->provider_event_id);
+                $this->confirmPayment($payment, $webhook, 'Verified Billplz callback '.$webhook->provider_event_id);
             }
 
             return ['received' => true, 'duplicate' => false];
@@ -146,7 +149,7 @@ class PaymentWebhookService
             ]);
 
             if (($event['event_type'] ?? null) === 'PAYMENT.CAPTURE.COMPLETED') {
-                $this->confirmPayment($payment, 'Verified PayPal webhook '.$webhook->provider_event_id);
+                $this->confirmPayment($payment, $webhook, 'Verified PayPal webhook '.$webhook->provider_event_id);
             }
 
             return ['received' => true, 'duplicate' => false];
@@ -230,22 +233,31 @@ class PaymentWebhookService
         return $verification->successful() && $verification->json('verification_status') === 'SUCCESS';
     }
 
-    private function confirmPayment(OrderPayment $payment, string $note): void
+    private function confirmPayment(OrderPayment $payment, PaymentWebhookEvent $webhook, string $note): void
     {
         $lockedPayment = OrderPayment::query()->lockForUpdate()->findOrFail($payment->id);
         $lockedPayment->update(['status' => 'paid']);
 
         $order = Order::query()->lockForUpdate()->findOrFail($lockedPayment->order_id);
-        if ($order->status !== 'pending_payment') {
-            return;
+        if ($order->status === 'pending_payment') {
+            $order->update(['status' => 'paid']);
+            OrderStatusHistory::query()->create([
+                'order_id' => $order->id,
+                'from_status' => 'pending_payment',
+                'to_status' => 'paid',
+                'note' => $note,
+            ]);
         }
 
-        $order->update(['status' => 'paid']);
-        OrderStatusHistory::query()->create([
-            'order_id' => $order->id,
-            'from_status' => 'pending_payment',
-            'to_status' => 'paid',
-            'note' => $note,
-        ]);
+        rescue(
+            fn () => $this->notifications->record(
+                $order,
+                'payment_verified',
+                'payment_webhook_event',
+                $webhook->id,
+                extra: ['staff_note' => $note],
+            ),
+            report: true,
+        );
     }
 }

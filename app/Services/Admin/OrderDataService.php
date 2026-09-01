@@ -15,7 +15,7 @@ class OrderDataService
     {
         return Order::query()->with([
             'customer', 'items', 'addresses', 'payments.proofEvents.user', 'statusHistory', 'refunds', 'taxLines',
-            'shipments', 'shipmentQuotes',
+            'shipments', 'shipmentQuotes', 'notificationDispatches',
         ])->latest()->get()->map(fn (Order $order): array => $this->data($order));
     }
 
@@ -23,7 +23,7 @@ class OrderDataService
     {
         $order->loadMissing([
             'customer', 'items', 'addresses', 'payments.proofEvents.user', 'statusHistory', 'refunds', 'taxLines',
-            'shipments', 'shipmentQuotes',
+            'shipments', 'shipmentQuotes', 'notificationDispatches',
         ]);
         $payment = $order->payments->sortByDesc('id')->first();
         $viewer = request()->user();
@@ -35,6 +35,7 @@ class OrderDataService
         $shipmentQuote = $order->shipmentQuotes->sortByDesc('id')->first();
         $customerName = trim(($order->customer?->first_name ?? '').' '.($order->customer?->last_name ?? ''));
         $refundedAmount = (int) $order->refunds->where('status', 'completed')->sum('amount');
+        $notificationDispatch = $order->notificationDispatches->sortByDesc('id')->first();
 
         $history = $order->statusHistory->map(function ($event): array {
             $type = match ($event->to_status) {
@@ -43,7 +44,10 @@ class OrderDataService
                 'shipped' => 'tracking_added',
                 default => str_contains((string) $event->note, 'Refunded ') ? 'refunded' : 'fulfillment_updated',
             };
-            return ['id' => 'history-'.$event->id, 'timestamp' => $event->created_at?->toIso8601String() ?? now()->toIso8601String(), 'type' => $type, 'title' => match ($type) { 'created' => 'Order Created', 'paid' => 'Payment Confirmed', 'tracking_added' => 'Tracking Dispatched', 'refunded' => 'Refund Processed', default => 'Fulfillment Updated: '.strtoupper((string) $event->to_status) }, 'description' => $event->note ?: 'Order moved to '.str_replace('_', ' ', (string) $event->to_status).'.'];
+
+            return ['id' => 'history-'.$event->id, 'timestamp' => $event->created_at?->toIso8601String() ?? now()->toIso8601String(), 'type' => $type, 'title' => match ($type) {
+                'created' => 'Order Created', 'paid' => 'Payment Confirmed', 'tracking_added' => 'Tracking Dispatched', 'refunded' => 'Refund Processed', default => 'Fulfillment Updated: '.strtoupper((string) $event->to_status)
+            }, 'description' => $event->note ?: 'Order moved to '.str_replace('_', ' ', (string) $event->to_status).'.'];
         });
 
         return [
@@ -60,7 +64,9 @@ class OrderDataService
             'paymentReference' => $payment?->reference,
             'paymentEnvironment' => $payment?->environment,
             'paymentProof' => $this->paymentProof($order, $payment, $canViewProof, $canReviewProof),
-            'fulfillmentStatus' => match ($order->status) { 'processing', 'shipped', 'delivered', 'cancelled' => $order->status, default => 'unfulfilled' },
+            'fulfillmentStatus' => match ($order->status) {
+                'processing', 'shipped', 'delivered', 'cancelled' => $order->status, default => 'unfulfilled'
+            },
             'shippingSource' => $this->shippingSource($order, $shipment, $shipmentQuote),
             'currency' => $order->currency,
             'items' => $order->items->map(fn ($item): array => ['id' => (string) $item->id, 'productId' => '', 'variantId' => $item->product_variant_id ? (string) $item->product_variant_id : null, 'title' => $item->title, 'variantTitle' => $item->variant_title, 'sku' => $item->sku, 'price' => $item->unit_price / 100, 'quantity' => $item->quantity, 'image' => $item->image_url ?: ''])->values(),
@@ -102,6 +108,14 @@ class OrderDataService
             'billingAddress' => $this->address($billing, 'billing'),
             'customerNote' => $order->customer_note,
             'internalNote' => $order->internal_note,
+            'notificationSummary' => $notificationDispatch === null ? null : [
+                'publicId' => $notificationDispatch->public_id,
+                'eventKey' => $notificationDispatch->event_key,
+                'channel' => $notificationDispatch->channel,
+                'state' => $notificationDispatch->state,
+                'source' => $notificationDispatch->source,
+                'queuedAt' => $notificationDispatch->queued_at?->toIso8601String(),
+            ],
             'timeline' => $history->sortByDesc('timestamp')->values(),
         ];
     }

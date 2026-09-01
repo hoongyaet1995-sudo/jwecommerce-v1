@@ -9,12 +9,14 @@ use App\Models\NotificationTemplate;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class OrderNotificationMilestoneService
 {
     public function __construct(
         private readonly NotificationContextFactory $contextFactory,
         private readonly NotificationTemplateRenderer $renderer,
+        private readonly NotificationTemplateDefaults $defaults,
     ) {}
 
     /** @param array<string, mixed> $extra */
@@ -33,6 +35,11 @@ class OrderNotificationMilestoneService
         }
 
         $template = NotificationTemplate::query()->where('event_key', $eventKey)->first();
+
+        if ($template === null) {
+            $this->defaults->synchronize();
+            $template = NotificationTemplate::query()->where('event_key', $eventKey)->first();
+        }
 
         if ($template === null || ! $template->email_enabled) {
             return null;
@@ -73,7 +80,28 @@ class OrderNotificationMilestoneService
 
         if ($dispatch->wasRecentlyCreated) {
             DB::afterCommit(static function () use ($dispatch): void {
-                SendOrderNotificationJob::dispatch($dispatch->id)->afterCommit();
+                rescue(
+                    static function () use ($dispatch): void {
+                        $pendingDispatch = SendOrderNotificationJob::dispatch($dispatch->id);
+                        $pendingDispatch->afterCommit();
+                        unset($pendingDispatch);
+                    },
+                    static function (Throwable $exception) use ($dispatch): void {
+                        report($exception);
+                        rescue(
+                            static fn () => NotificationDispatch::query()
+                                ->whereKey($dispatch->id)
+                                ->where('state', NotificationDispatch::STATE_QUEUED)
+                                ->update([
+                                    'state' => NotificationDispatch::STATE_FAILED,
+                                    'failed_at' => now(),
+                                    'last_error_code' => 'queue',
+                                ]),
+                            report: true,
+                        );
+                    },
+                    report: false,
+                );
             });
         }
 

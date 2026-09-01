@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Coupon;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -9,15 +10,16 @@ use App\Models\OrderPayment;
 use App\Models\OrderStatusHistory;
 use App\Models\OrderTaxLine;
 use App\Models\ProductVariant;
-use App\Models\Coupon;
-use App\Services\Shipping\EasyParcelBookingGuard;
+use App\Services\Notifications\OrderNotificationMilestoneService;
 use App\Services\Payments\PaymentProofService;
+use App\Services\Shipping\EasyParcelBookingGuard;
+use App\Support\StorefrontCurrencyContext;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\UploadedFile;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use RuntimeException;
-use Illuminate\Validation\ValidationException;
 
 class CheckoutService
 {
@@ -37,9 +39,8 @@ class CheckoutService
         private readonly ShippingConfigurationService $shipping,
         private readonly EasyParcelBookingGuard $easyParcelBookings,
         private readonly PaymentProofService $paymentProofs,
-    )
-    {
-    }
+        private readonly OrderNotificationMilestoneService $notifications,
+    ) {}
 
     public function availableTransitions(Order $order): array
     {
@@ -50,7 +51,7 @@ class CheckoutService
     /** @param array{code?: string, exchange_rate?: float}|null $currencySnapshot */
     public function checkout(string $email, Collection $items, ?Coupon $coupon = null, ?array $shippingAddress = null, string $gateway = 'simulated_card', string $delivery = 'standard', ?array $currencySnapshot = null, ?UploadedFile $paymentProof = null, ?string $bankAccountId = null): Order
     {
-        $currencySnapshot ??= app(\App\Support\StorefrontCurrencyContext::class)->snapshot();
+        $currencySnapshot ??= app(StorefrontCurrencyContext::class)->snapshot();
 
         return DB::transaction(function () use ($email, $items, $coupon, $shippingAddress, $gateway, $delivery, $currencySnapshot, $paymentProof, $bankAccountId): Order {
             $normalizedEmail = strtolower(trim($email));
@@ -69,8 +70,11 @@ class CheckoutService
             }
             $lines = $items->map(function (array $item): array {
                 $variant = ProductVariant::query()->lockForUpdate()->findOrFail($item['variant']->id);
-                if ($item['quantity'] < 1 || $variant->stock < $item['quantity']) throw new RuntimeException('Requested quantity is unavailable.');
+                if ($item['quantity'] < 1 || $variant->stock < $item['quantity']) {
+                    throw new RuntimeException('Requested quantity is unavailable.');
+                }
                 $variant->decrement('stock', $item['quantity']);
+
                 return ['variant' => $variant, 'quantity' => $item['quantity'], 'line_total' => $variant->price * $item['quantity']];
             });
             $checkoutItems = $lines->map(fn (array $line) => ['variant' => $line['variant'], 'quantity' => $line['quantity']]);
@@ -111,8 +115,12 @@ class CheckoutService
                 $lockedCoupon->usages()->create(['order_id' => $order->id, 'customer_id' => $customer->id, 'customer_email' => $email, 'discount_amount' => $summary['discount']]);
                 $lockedCoupon->increment('usage_count');
             }
-            if ($shippingAddress) $order->addresses()->create($shippingAddress + ['type' => 'shipping']);
+            if ($shippingAddress) {
+                $order->addresses()->create($shippingAddress + ['type' => 'shipping']);
+            }
             OrderStatusHistory::query()->create(['order_id' => $order->id, 'to_status' => 'pending_payment']);
+            $this->recordNotification($order, 'order_created', 'order', $order->id);
+
             return $order;
         });
     }
@@ -150,21 +158,49 @@ class CheckoutService
         ]);
     }
 
-    public function transition(Order $order, string $status, ?int $userId = null, ?string $note = null): Order
-    {
-        return DB::transaction(function () use ($order, $status, $userId, $note): Order {
+    public function transition(
+        Order $order,
+        string $status,
+        ?int $userId = null,
+        ?string $note = null,
+        bool $notifyCustomer = true,
+    ): Order {
+        return DB::transaction(function () use ($order, $status, $userId, $note, $notifyCustomer): Order {
             $locked = Order::query()->lockForUpdate()->findOrFail($order->id);
-            if ($locked->status === 'cancelled' || $locked->status === $status) return $locked;
-            if (! in_array($status, $this->availableTransitions($locked), true)) throw new InvalidArgumentException('This order cannot move from '.$locked->status.' to '.$status.'.');
+            if ($locked->status === 'cancelled' || $locked->status === $status) {
+                return $locked;
+            }
+            if (! in_array($status, $this->availableTransitions($locked), true)) {
+                throw new InvalidArgumentException('This order cannot move from '.$locked->status.' to '.$status.'.');
+            }
             $this->easyParcelBookings->assertLegacyOrderMutationAllowed($locked);
-            if ($status === 'cancelled') foreach ($locked->items as $item) { if ($item->product_variant_id) ProductVariant::query()->whereKey($item->product_variant_id)->increment('stock', $item->quantity); }
+            if ($status === 'cancelled') {
+                foreach ($locked->items as $item) {
+                    if ($item->product_variant_id) {
+                        ProductVariant::query()->whereKey($item->product_variant_id)->increment('stock', $item->quantity);
+                    }
+                }
+            }
             if ($status === 'paid') {
                 $payment = $locked->payments()->latest('id')->first();
                 $payment ? $payment->update(['status' => 'paid']) : OrderPayment::query()->create(['order_id' => $locked->id, 'gateway' => 'simulated', 'status' => 'paid']);
             }
-            if ($status === 'cancelled') $locked->payments()->where('status', 'pending')->update(['status' => 'cancelled']);
-            $from = $locked->status; $locked->update(['status' => $status]);
-            OrderStatusHistory::query()->create(['order_id' => $locked->id, 'from_status' => $from, 'to_status' => $status, 'user_id' => $userId, 'note' => $note]);
+            if ($status === 'cancelled') {
+                $locked->payments()->where('status', 'pending')->update(['status' => 'cancelled']);
+            }
+            $from = $locked->status;
+            $locked->update(['status' => $status]);
+            $history = OrderStatusHistory::query()->create(['order_id' => $locked->id, 'from_status' => $from, 'to_status' => $status, 'user_id' => $userId, 'note' => $note]);
+            if ($notifyCustomer && $status === 'cancelled') {
+                $this->recordNotification(
+                    $locked,
+                    'cancelled',
+                    'order_status_history',
+                    $history->id,
+                    extra: ['staff_note' => $note ?: 'No additional notes.'],
+                );
+            }
+
             return $locked;
         });
     }
@@ -196,5 +232,19 @@ class CheckoutService
 
             return $locked;
         });
+    }
+
+    /** @param array<string, mixed> $extra */
+    private function recordNotification(
+        Order $order,
+        string $eventKey,
+        string $sourceType,
+        string|int $sourceId,
+        array $extra = [],
+    ): void {
+        rescue(
+            fn () => $this->notifications->record($order, $eventKey, $sourceType, $sourceId, extra: $extra),
+            report: true,
+        );
     }
 }

@@ -5,6 +5,7 @@ namespace App\Services\Shipping;
 use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\ShipmentQuote;
+use App\Services\Notifications\OrderNotificationMilestoneService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Throwable;
@@ -22,6 +23,7 @@ final class EasyParcelBookingReconciliationService
         private readonly EasyParcelReconciliationTaskService $tasks,
         private readonly EasyParcelReconciliationPublisher $publisher,
         private readonly EasyParcelFailedBookingRecoveryService $failedBookingRecoveries,
+        private readonly OrderNotificationMilestoneService $notifications,
     ) {}
 
     public function reconcile(ShipmentQuote $quote, ?string $hintedShipmentNumber = null): ?Shipment
@@ -205,6 +207,18 @@ final class EasyParcelBookingReconciliationService
             ])->save();
 
             $this->failedBookingRecoveries->completeForReplacement($shipment);
+
+            if (filled($shipment->tracking_number)) {
+                rescue(
+                    fn () => $this->notifications->record(
+                        $lockedOrder,
+                        'ready_to_ship',
+                        'shipment',
+                        $shipment->id,
+                    ),
+                    report: true,
+                );
+            }
 
             $taskId = null;
             if (blank($shipment->tracking_number) || blank($shipment->label_path)) {
