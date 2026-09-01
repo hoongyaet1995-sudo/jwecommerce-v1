@@ -16,6 +16,8 @@ use Throwable;
 
 class NotificationDispatchService
 {
+    private const PLACEHOLDER_PATTERN = '/\{([A-Za-z][A-Za-z0-9_-]*)\}/';
+
     public function __construct(
         private readonly NotificationContextFactory $contextFactory,
         private readonly NotificationTemplateRenderer $renderer,
@@ -31,7 +33,7 @@ class NotificationDispatchService
         return [
             'rendered' => $this->renderer->render($template, $this->orderContext($order, $template, $extra)),
             'statusName' => (string) $template->status_name,
-            'emailEnabled' => (bool) $template->email_enabled,
+            'emailEnabled' => $eventKey !== 'on_hold' && (bool) $template->email_enabled,
         ];
     }
 
@@ -100,6 +102,12 @@ class NotificationDispatchService
     public function sendCurrent(Order $order, string $eventKey, User $actor, array $extra = []): NotificationDispatch
     {
         $template = $this->template($eventKey);
+
+        if ($eventKey === 'on_hold') {
+            throw ValidationException::withMessages([
+                'eventKey' => 'On Hold email delivery is dormant and cannot be sent.',
+            ]);
+        }
 
         if (! $template->email_enabled) {
             throw ValidationException::withMessages([
@@ -347,7 +355,7 @@ class NotificationDispatchService
 
         $errors = [];
         foreach ($fields as $field => $value) {
-            preg_match_all('/\{[a-z0-9_]+\}/', $value, $matches);
+            preg_match_all(self::PLACEHOLDER_PATTERN, $value, $matches);
             foreach (array_unique($matches[0]) as $token) {
                 if (! in_array($token, $allowed, true)) {
                     $errors[$field][] = "The {$token} variable is not available for this notification event.";

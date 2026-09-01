@@ -270,6 +270,26 @@ class OrderNotificationSecurityTest extends TestCase
         $this->assertSafeQueueFailure($failed->refresh());
     }
 
+    public function test_automatic_queue_failure_is_persisted_before_a_broken_reporter_is_safely_ignored(): void
+    {
+        $order = $this->order('AUTO-REPORTER-FAILURE');
+        $this->bindThrowingDispatcher(implode(' ', self::PRIVATE_MARKERS));
+        $handler = Mockery::mock(ExceptionHandler::class);
+        $handler->shouldReceive('report')
+            ->once()
+            ->andThrow(new RuntimeException('TASK9_AUTO_REPORTER_FAILURE'));
+        $this->app->instance(ExceptionHandler::class, $handler);
+
+        DB::transaction(fn (): ?NotificationDispatch => app(OrderNotificationMilestoneService::class)->record(
+            $order,
+            'order_created',
+            'order',
+            $order->id,
+        ));
+
+        $this->assertSafeQueueFailure($order->notificationDispatches()->sole());
+    }
+
     public function test_private_response_scanner_rejects_nested_json_escaped_url_with_a_suffix(): void
     {
         $body = json_encode([

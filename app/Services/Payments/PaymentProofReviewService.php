@@ -47,18 +47,15 @@ class PaymentProofReviewService
             }
 
             $eventKey = $decision === 'verified' ? 'payment_verified' : 'payment_proof_rejected';
-            rescue(
-                fn () => $this->notifications->record(
-                    $lockedOrder->fresh(),
-                    $eventKey,
-                    'order_payment_proof_event',
-                    $proofEvent->id,
-                    $actor,
-                    $decision === 'rejected'
-                        ? ['payment_proof_reason' => (string) $reason]
-                        : ['staff_note' => $reason ?: 'No additional notes.'],
-                ),
-                report: true,
+            $this->notifications->record(
+                $lockedOrder->fresh(),
+                $eventKey,
+                'order_payment_proof_event',
+                $proofEvent->id,
+                $actor,
+                $decision === 'rejected'
+                    ? ['payment_proof_reason' => (string) $reason]
+                    : ['staff_note' => $reason ?: 'No additional notes.'],
             );
 
             return $lockedOrder->fresh();

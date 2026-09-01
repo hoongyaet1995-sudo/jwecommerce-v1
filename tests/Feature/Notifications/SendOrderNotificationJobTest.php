@@ -113,7 +113,7 @@ class SendOrderNotificationJobTest extends TestCase
         $this->assertSame(2, $dispatch->refresh()->attempt_count);
     }
 
-    public function test_failure_keeps_business_data_and_persists_only_a_safe_transport_code(): void
+    public function test_intermediate_failure_returns_to_queue_state_and_attempt_two_can_claim_before_the_old_lease_expiry(): void
     {
         $order = Order::query()->create([
             'number' => 'JW-NOTIFY-FAILURE',
@@ -126,8 +126,9 @@ class SendOrderNotificationJobTest extends TestCase
         $dispatch = NotificationDispatch::factory()->create(['order_id' => $order->id]);
         $error = new TransportException('SMTP authentication failed with private-password');
 
+        $job = new SendOrderNotificationJob($dispatch->id);
         try {
-            (new SendOrderNotificationJob($dispatch->id))->handle(new ThrowingMailer($error));
+            $job->handle(new ThrowingMailer($error));
             $this->fail('The mail transport failure was swallowed.');
         } catch (NotificationDeliveryException $caught) {
             $this->assertSame('transport', $caught->safeCode);
@@ -138,13 +139,24 @@ class SendOrderNotificationJobTest extends TestCase
 
         $dispatch->refresh();
         $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'processing']);
-        $this->assertSame('failed', $dispatch->state);
+        $this->assertSame(NotificationDispatch::STATE_QUEUED, $dispatch->state);
         $this->assertSame(1, $dispatch->attempt_count);
-        $this->assertSame('transport', $dispatch->last_error_code);
-        $this->assertNotNull($dispatch->failed_at);
+        $this->assertNull($dispatch->last_error_code);
+        $this->assertNull($dispatch->failed_at);
         $this->assertNull($dispatch->delivery_lease_token);
         $this->assertNull($dispatch->delivery_lease_expires_at);
         $this->assertStringNotContainsString('private-password', json_encode($dispatch->getAttributes(), JSON_THROW_ON_ERROR));
+
+        Mail::fake();
+        $job->handle(app(MailerContract::class));
+        $dispatch->refresh();
+        Mail::assertSent(OrderStatusNotificationMail::class, 1);
+        $this->assertSame(NotificationDispatch::STATE_SENT, $dispatch->state);
+        $this->assertSame(2, $dispatch->attempt_count);
+        $this->assertNull($dispatch->last_error_code);
+        $this->assertNull($dispatch->failed_at);
+        $this->assertNull($dispatch->delivery_lease_token);
+        $this->assertNull($dispatch->delivery_lease_expires_at);
     }
 
     public function test_timeout_and_unknown_failures_receive_bounded_safe_codes(): void
@@ -155,18 +167,63 @@ class SendOrderNotificationJobTest extends TestCase
         ] as $expectedCode => $error) {
             $dispatch = NotificationDispatch::factory()->create();
 
+            $job = new SendOrderNotificationJob($dispatch->id);
+
             try {
-                (new SendOrderNotificationJob($dispatch->id))->handle(new ThrowingMailer($error));
+                $job->handle(new ThrowingMailer($error));
                 $this->fail('The mail failure was swallowed.');
             } catch (NotificationDeliveryException $caught) {
                 $this->assertSame($expectedCode, $caught->safeCode);
                 $this->assertNull($caught->getPrevious());
                 $this->assertStringNotContainsString($error->getMessage(), $caught->getMessage());
+
+                $job->failed($caught);
             }
 
             $this->assertSame($expectedCode, $dispatch->refresh()->last_error_code);
             $this->assertStringNotContainsString($error->getMessage(), json_encode($dispatch->getAttributes(), JSON_THROW_ON_ERROR));
         }
+    }
+
+    public function test_terminal_failure_recovery_is_idempotent_and_a_failed_row_cannot_be_claimed_without_manual_requeue(): void
+    {
+        $dispatch = NotificationDispatch::factory()->create([
+            'state' => NotificationDispatch::STATE_QUEUED,
+            'attempt_count' => 4,
+        ]);
+        $job = new SendOrderNotificationJob($dispatch->id);
+
+        $job->failed(new RuntimeException('hard timeout with private host detail'));
+        $firstFailedAt = $dispatch->refresh()->failed_at?->toISOString();
+        $job->failed(new RuntimeException('later duplicate callback'));
+
+        $dispatch->refresh();
+        $this->assertSame(NotificationDispatch::STATE_FAILED, $dispatch->state);
+        $this->assertSame('timeout', $dispatch->last_error_code);
+        $this->assertSame($firstFailedAt, $dispatch->failed_at?->toISOString());
+        $this->assertNull(NotificationDispatch::claimForDelivery($dispatch->id));
+        $this->assertSame(4, $dispatch->refresh()->attempt_count);
+    }
+
+    public function test_hard_timeout_failed_callback_recovers_an_orphaned_sending_claim(): void
+    {
+        $dispatch = NotificationDispatch::factory()->create([
+            'state' => NotificationDispatch::STATE_SENDING,
+            'attempt_count' => 4,
+            'delivery_lease_token' => 'e5a004d3-0026-45d0-a3e2-0d276f308265',
+            'delivery_lease_expires_at' => now()->addMinute(),
+        ]);
+
+        (new SendOrderNotificationJob($dispatch->id))->failed(
+            new RuntimeException('Job timed out after the hard timeout.'),
+        );
+
+        $dispatch->refresh();
+        $this->assertSame(NotificationDispatch::STATE_FAILED, $dispatch->state);
+        $this->assertSame('timeout', $dispatch->last_error_code);
+        $this->assertNotNull($dispatch->failed_at);
+        $this->assertNull($dispatch->delivery_lease_token);
+        $this->assertNull($dispatch->delivery_lease_expires_at);
     }
 
     public function test_job_has_four_attempts_and_bounded_backoff(): void
@@ -175,6 +232,7 @@ class SendOrderNotificationJobTest extends TestCase
 
         $this->assertSame(4, $job->tries);
         $this->assertSame(45, $job->timeout);
+        $this->assertTrue($job->failOnTimeout);
         $this->assertSame([60, 300, 900], $job->backoff());
     }
 
@@ -190,13 +248,14 @@ class SendOrderNotificationJobTest extends TestCase
         ]);
         $dispatch = NotificationDispatch::factory()->create([
             'notification_template_id' => $template->id,
+            'rendered_subject' => 'Shipped via J&T',
             'rendered_preheader' => 'Frozen preheader',
-            'rendered_heading' => 'Frozen &lt;Order&gt; Heading',
-            'rendered_body' => "Track safely at /order-tracking\n&lt;strong&gt;escaped&lt;/strong&gt;",
+            'rendered_heading' => 'Frozen <Order> Heading',
+            'rendered_body' => "Track safely at /order-tracking\n<strong>escaped</strong>",
             'rendered_cta_text' => 'Track Order',
             'rendered_cta_url' => url('/order-tracking'),
             'variable_snapshot' => [
-                'shop_name' => 'Frozen JW Brand',
+                'shop_name' => '<img src=x onerror=alert(1)> Frozen JW Brand',
                 'tracking_url' => url('/order-tracking'),
                 'order_url' => url('/order-tracking'),
             ],
@@ -207,13 +266,17 @@ class SendOrderNotificationJobTest extends TestCase
         ]);
 
         $html = (new OrderStatusNotificationMail($dispatch))->render();
+        $mail = new OrderStatusNotificationMail($dispatch);
 
         $this->assertStringContainsString('Frozen JW Brand', $html);
+        $this->assertSame('Shipped via J&T', $mail->envelope()->subject);
         $this->assertStringNotContainsString('Current Changed Brand', $html);
         $this->assertStringContainsString('Frozen preheader', $html);
         $this->assertStringContainsString('Frozen &lt;Order&gt; Heading', $html);
         $this->assertStringContainsString('/order-tracking', $html);
         $this->assertStringContainsString('&lt;strong&gt;escaped&lt;/strong&gt;', $html);
+        $this->assertStringContainsString('&lt;img src=x onerror=alert(1)&gt;', $html);
+        $this->assertStringNotContainsString('<img src=x onerror=alert(1)>', $html);
         $this->assertStringNotContainsString('Changed EasyParcel heading', $html);
         $this->assertStringNotContainsString('easyparcel.com', $html);
         $this->assertStringNotContainsString('label_path', $html);

@@ -21,7 +21,11 @@ class OrderNotificationApiController extends Controller
     {
         $this->authorizePermission($request, NotificationPermission::DELIVERIES_VIEW);
         $order = Order::query()->findOrFail($order);
-        $dispatches = $order->notificationDispatches()->latest('id')->limit(100)->get();
+        $dispatches = $order->notificationDispatches()
+            ->with('resendOf:id,public_id')
+            ->latest('id')
+            ->limit(100)
+            ->get();
 
         return response()->json([
             'data' => $dispatches->map($this->dispatchData(...))->values(),

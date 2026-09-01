@@ -117,4 +117,20 @@ class NotificationContextFactoryTest extends TestCase
             'easyparcel_token' => 'not-for-email',
         ]);
     }
+
+    public function test_legacy_order_without_a_shipping_address_has_a_safe_resolved_destination(): void
+    {
+        $order = Order::query()->create([
+            'number' => 'JW-NOTIFY-LEGACY-ADDRESS',
+            'email' => 'legacy@example.test',
+            'currency' => 'MYR',
+            'status' => 'processing',
+            'subtotal' => 0,
+            'total' => 0,
+        ]);
+
+        $context = app(NotificationContextFactory::class)->forOrder($order);
+
+        $this->assertSame('Address not available', $context['shipping_address']);
+    }
 }

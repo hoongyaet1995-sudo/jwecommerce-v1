@@ -180,6 +180,65 @@ class NotificationTemplateApiTest extends TestCase
         ]);
     }
 
+    public function test_on_hold_email_cannot_be_enabled_through_the_template_api(): void
+    {
+        app(NotificationTemplateDefaults::class)->synchronize();
+
+        $this->actingAs($this->superAdmin())->putJson('/admin/api/notification-templates/on_hold', [
+            'version' => 1,
+            'emailEnabled' => true,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('emailEnabled');
+
+        $this->assertDatabaseHas('notification_templates', [
+            'event_key' => 'on_hold',
+            'email_enabled' => false,
+            'version' => 1,
+        ]);
+    }
+
+    public function test_nullable_template_text_fields_are_normalized_to_empty_strings(): void
+    {
+        app(NotificationTemplateDefaults::class)->synchronize();
+
+        $this->actingAs($this->superAdmin())->putJson('/admin/api/notification-templates/order_created', [
+            'version' => 1,
+            'emailPreheader' => null,
+            'emailHeading' => null,
+            'emailCtaText' => null,
+            'emailCtaUrl' => null,
+            'whatsappMessage' => null,
+        ])->assertOk()
+            ->assertJsonPath('data.emailPreheader', '')
+            ->assertJsonPath('data.emailHeading', '')
+            ->assertJsonPath('data.emailCtaText', '')
+            ->assertJsonPath('data.emailCtaUrl', '')
+            ->assertJsonPath('data.whatsappMessage', '');
+
+        $this->assertDatabaseHas('notification_templates', [
+            'event_key' => 'order_created',
+            'email_preheader' => '',
+            'email_heading' => '',
+            'email_cta_text' => '',
+            'email_cta_url' => '',
+            'whatsapp_message' => '',
+        ]);
+    }
+
+    public function test_template_api_rejects_unknown_uppercase_and_hyphenated_placeholder_shapes(): void
+    {
+        app(NotificationTemplateDefaults::class)->synchronize();
+        $admin = $this->superAdmin();
+
+        foreach (['{Customer_Name}', '{customer-name}'] as $placeholder) {
+            $this->actingAs($admin)->putJson('/admin/api/notification-templates/order_created', [
+                'version' => 1,
+                'emailBody' => "Unknown {$placeholder}, ordinary JSON {\"enabled\":true}.",
+            ])->assertUnprocessable()
+                ->assertJsonValidationErrors('emailBody');
+        }
+    }
+
     public function test_template_update_uses_optimistic_versioning_and_records_the_actor(): void
     {
         app(NotificationTemplateDefaults::class)->synchronize();

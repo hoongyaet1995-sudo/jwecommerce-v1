@@ -13,6 +13,7 @@ use App\Models\StoreSetting;
 use App\Models\User;
 use App\Services\Notifications\NotificationTemplateDefaults;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
@@ -102,7 +103,15 @@ class OrderNotificationApiTest extends TestCase
         $this->actingAs($this->staffWith([NotificationPermission::CURRENT_SEND]))
             ->postJson("/admin/api/orders/{$order->id}/notifications/send-current", [
                 'eventKey' => 'on_hold',
-            ])->assertUnprocessable();
+            ])->assertUnprocessable()
+            ->assertJsonValidationErrors('eventKey');
+
+        NotificationTemplate::query()->where('event_key', 'on_hold')->update(['email_enabled' => true]);
+        $this->actingAs($this->staffWith([NotificationPermission::CURRENT_SEND]))
+            ->postJson("/admin/api/orders/{$order->id}/notifications/send-current", [
+                'eventKey' => 'on_hold',
+            ])->assertUnprocessable()
+            ->assertJsonValidationErrors('eventKey');
     }
 
     public function test_timeline_is_order_scoped_and_never_leaks_recipients_bodies_or_provider_fields(): void
@@ -147,6 +156,13 @@ class OrderNotificationApiTest extends TestCase
             'attempt_count' => 4,
         ]);
         $sent = NotificationDispatch::factory()->sent()->create(['order_id' => $order->id]);
+        $sending = NotificationDispatch::factory()->create([
+            'order_id' => $order->id,
+            'state' => NotificationDispatch::STATE_SENDING,
+            'delivery_lease_token' => 'a56a79e3-d177-4180-adcb-9c2800262d25',
+            'delivery_lease_expires_at' => now()->addMinute(),
+        ]);
+        $queued = NotificationDispatch::factory()->create(['order_id' => $order->id]);
 
         $this->actingAs($this->staffWith([NotificationPermission::DELIVERIES_RETRY]))
             ->postJson("/admin/api/notification-dispatches/{$failed->public_id}/retry")
@@ -165,6 +181,12 @@ class OrderNotificationApiTest extends TestCase
 
         $this->actingAs($this->superAdmin())
             ->postJson("/admin/api/notification-dispatches/{$sent->public_id}/retry")
+            ->assertUnprocessable();
+        $this->actingAs($this->superAdmin())
+            ->postJson("/admin/api/notification-dispatches/{$sending->public_id}/retry")
+            ->assertUnprocessable();
+        $this->actingAs($this->superAdmin())
+            ->postJson("/admin/api/notification-dispatches/{$queued->public_id}/retry")
             ->assertUnprocessable();
     }
 
@@ -264,7 +286,7 @@ class OrderNotificationApiTest extends TestCase
             ->postJson("/admin/api/orders/{$order->id}/notifications/preview", $action)
             ->assertOk()
             ->assertJsonPath('data.variables.customer_email', 'preferred-converge@example.com')
-            ->assertJsonPath('data.variables.carrier_name', 'J&amp;T Context Carrier')
+            ->assertJsonPath('data.variables.carrier_name', 'J&T Context Carrier')
             ->assertJsonPath('data.variables.tracking_number', 'JT-CONTEXT-9001')
             ->json('data');
 
@@ -296,6 +318,32 @@ class OrderNotificationApiTest extends TestCase
         $this->actingAs($viewer)->postJson("/admin/api/orders/{$order->id}/notifications/send-current", [
             'eventKey' => 'order_created',
         ])->assertForbidden();
+    }
+
+    public function test_timeline_eager_loads_resend_sources_with_a_bounded_query_count(): void
+    {
+        $order = $this->order('TIMELINE-EAGER');
+        $originals = NotificationDispatch::factory()->count(3)->sent()->create(['order_id' => $order->id]);
+
+        foreach ($originals as $original) {
+            NotificationDispatch::factory()->sent()->create([
+                'order_id' => $order->id,
+                'resend_of_id' => $original->id,
+                'source' => NotificationDispatch::SOURCE_MANUAL_RESEND,
+            ]);
+        }
+
+        $queries = 0;
+        DB::listen(static function () use (&$queries): void {
+            $queries++;
+        });
+
+        $this->actingAs($this->staffWith([NotificationPermission::DELIVERIES_VIEW]))
+            ->getJson("/admin/api/orders/{$order->id}/notification-dispatches")
+            ->assertOk()
+            ->assertJsonCount(6, 'data');
+
+        $this->assertLessThanOrEqual(6, $queries, 'The timeline must not query each resend source individually.');
     }
 
     private function order(string $suffix): Order

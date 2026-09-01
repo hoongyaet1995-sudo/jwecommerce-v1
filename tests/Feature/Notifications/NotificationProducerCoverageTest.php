@@ -628,7 +628,7 @@ class NotificationProducerCoverageTest extends TestCase
         self::assertSame('cancelled', $order->fresh()->status);
     }
 
-    public function test_notification_intent_failure_is_reported_without_rolling_back_the_authoritative_mutation(): void
+    public function test_checkout_notification_intent_failure_rolls_back_the_business_mutation(): void
     {
         $order = $this->order('processing', 'INTENT-FAILURE');
         $notifications = Mockery::mock(OrderNotificationMilestoneService::class);
@@ -645,14 +645,119 @@ class NotificationProducerCoverageTest extends TestCase
         })->andThrow(new RuntimeException('notification template rendering failed'));
         $this->app->instance(OrderNotificationMilestoneService::class, $notifications);
 
-        app(CheckoutService::class)->transition($order, 'cancelled', null, 'Authoritative cancellation.');
+        try {
+            app(CheckoutService::class)->transition($order, 'cancelled', null, 'Transactional cancellation.');
+            $this->fail('The notification intent failure was swallowed.');
+        } catch (RuntimeException $error) {
+            self::assertSame('notification template rendering failed', $error->getMessage());
+        }
 
-        self::assertSame('cancelled', $order->fresh()->status);
-        $this->assertDatabaseHas('order_status_histories', [
+        self::assertSame('processing', $order->fresh()->status);
+        $this->assertDatabaseMissing('order_status_histories', [
             'order_id' => $order->id,
             'to_status' => 'cancelled',
         ]);
         $this->assertDatabaseCount('notification_dispatches', 0);
+    }
+
+    public function test_shipment_notification_intent_failure_rolls_back_dispatch_and_order_status(): void
+    {
+        $order = $this->order('processing', 'SHIPMENT-INTENT-FAILURE');
+        $actor = $this->superAdmin();
+        $notifications = Mockery::mock(OrderNotificationMilestoneService::class);
+        $notifications->shouldReceive('record')->once()->andThrow(new RuntimeException('shipment notification render failed'));
+        $this->app->instance(OrderNotificationMilestoneService::class, $notifications);
+
+        try {
+            app(ShipmentService::class)->dispatchManually($order, $actor, 'J&T Express', 'JT-ROLLBACK-1');
+            $this->fail('The shipment notification intent failure was swallowed.');
+        } catch (RuntimeException $error) {
+            self::assertSame('shipment notification render failed', $error->getMessage());
+        }
+
+        self::assertSame('processing', $order->fresh()->status);
+        $this->assertDatabaseMissing('shipments', ['order_id' => $order->id]);
+        $this->assertDatabaseMissing('order_status_histories', ['order_id' => $order->id, 'to_status' => 'shipped']);
+    }
+
+    public function test_payment_proof_notification_intent_failure_rolls_back_review_and_proof_event(): void
+    {
+        [$order, $payment] = $this->proofOrder('PROOF-INTENT-FAILURE');
+        $actor = $this->superAdmin();
+        $notifications = Mockery::mock(OrderNotificationMilestoneService::class);
+        $notifications->shouldReceive('record')->once()->andThrow(new RuntimeException('proof notification render failed'));
+        $this->app->instance(OrderNotificationMilestoneService::class, $notifications);
+
+        try {
+            app(PaymentProofReviewService::class)->review($order, $payment, $actor, 'rejected', 'Unreadable receipt.');
+            $this->fail('The proof notification intent failure was swallowed.');
+        } catch (RuntimeException $error) {
+            self::assertSame('proof notification render failed', $error->getMessage());
+        }
+
+        self::assertSame('uploaded', $payment->fresh()->proof_status);
+        $this->assertDatabaseMissing('order_payment_proof_events', [
+            'order_payment_id' => $payment->id,
+            'event_type' => 'rejected',
+        ]);
+    }
+
+    public function test_payment_webhook_notification_intent_failure_rolls_back_webhook_payment_and_order(): void
+    {
+        ['order' => $order, 'payment' => $payment] = $this->hostedPaymentOrder('stripe', 'cs_notification_rollback');
+        PaymentGatewayCredential::query()->create([
+            'gateway_id' => 'stripe',
+            'environment' => 'sandbox',
+            'credentials' => [
+                'publishableKey' => 'pk_test_public',
+                'secretKey' => 'sk_test_private',
+                'webhookSecret' => 'whsec_test_private',
+            ],
+        ]);
+        $notifications = Mockery::mock(OrderNotificationMilestoneService::class);
+        $notifications->shouldReceive('record')->once()->andThrow(new RuntimeException('webhook notification render failed'));
+        $this->app->instance(OrderNotificationMilestoneService::class, $notifications);
+        $payload = json_encode([
+            'id' => 'evt_notification_rollback',
+            'type' => 'checkout.session.completed',
+            'data' => ['object' => ['id' => $payment->reference, 'payment_status' => 'paid']],
+        ], JSON_THROW_ON_ERROR);
+
+        $this->withoutExceptionHandling();
+        try {
+            $this->postStripeWebhook($payload);
+            $this->fail('The webhook notification intent failure was swallowed.');
+        } catch (RuntimeException $error) {
+            self::assertSame('webhook notification render failed', $error->getMessage());
+        }
+
+        self::assertSame('pending_payment', $order->fresh()->status);
+        self::assertSame('pending', $payment->fresh()->status);
+        $this->assertDatabaseMissing('payment_webhook_events', ['provider_event_id' => 'evt_notification_rollback']);
+        $this->assertDatabaseMissing('order_status_histories', ['order_id' => $order->id, 'to_status' => 'paid']);
+    }
+
+    public function test_legacy_admin_status_and_shipment_routes_use_the_same_milestone_outbox(): void
+    {
+        $admin = $this->superAdmin();
+        $paid = $this->order('pending_payment', 'LEGACY-PAID');
+
+        $this->actingAs($admin)->patch(route('admin.orders.status', $paid), [
+            'status' => 'paid',
+        ])->assertRedirect(route('admin.orders.index'));
+        self::assertSame('payment_verified', $paid->notificationDispatches()->sole()->event_key);
+
+        $shipped = $this->order('processing', 'LEGACY-SHIPPED');
+        $this->actingAs($admin)->patch(route('admin.orders.shipment', $shipped), [
+            'carrier' => 'J&T Express',
+            'tracking_number' => 'JT-LEGACY-1',
+        ])->assertRedirect(route('admin.orders.index'));
+        self::assertSame('shipped', $shipped->notificationDispatches()->sole()->event_key);
+        $this->assertDatabaseHas('shipments', [
+            'order_id' => $shipped->id,
+            'carrier_name' => 'J&T Express',
+            'tracking_number' => 'JT-LEGACY-1',
+        ]);
     }
 
     public function test_after_commit_queue_publication_failure_does_not_fail_the_committed_business_mutation(): void

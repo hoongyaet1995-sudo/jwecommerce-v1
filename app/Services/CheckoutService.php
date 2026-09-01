@@ -242,9 +242,6 @@ class CheckoutService
         string|int $sourceId,
         array $extra = [],
     ): void {
-        rescue(
-            fn () => $this->notifications->record($order, $eventKey, $sourceType, $sourceId, extra: $extra),
-            report: true,
-        );
+        $this->notifications->record($order, $eventKey, $sourceType, $sourceId, extra: $extra);
     }
 }

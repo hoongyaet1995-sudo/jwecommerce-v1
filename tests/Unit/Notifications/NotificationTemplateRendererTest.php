@@ -19,7 +19,7 @@ class NotificationTemplateRendererTest extends TestCase
         $this->renderer = app(NotificationTemplateRenderer::class);
     }
 
-    public function test_renderer_escapes_values_and_resolves_only_owned_tracking_url(): void
+    public function test_renderer_keeps_text_and_header_context_plain_and_resolves_only_owned_tracking_url(): void
     {
         $rendered = $this->renderer->render($this->template([
             'email_body' => 'Hello {customer_name}',
@@ -29,7 +29,7 @@ class NotificationTemplateRendererTest extends TestCase
             'tracking_url' => url('/order-tracking'),
         ]);
 
-        $this->assertSame('Hello &lt;script&gt;alert(1)&lt;/script&gt;', $rendered->body);
+        $this->assertSame('Hello <script>alert(1)</script>', $rendered->body);
         $this->assertSame(url('/order-tracking'), $rendered->ctaUrl);
 
         $orderRendered = $this->renderer->render($this->template([
@@ -113,7 +113,7 @@ class NotificationTemplateRendererTest extends TestCase
         ];
     }
 
-    public function test_renderer_escapes_static_template_html_and_variable_html_exactly_once(): void
+    public function test_renderer_keeps_frozen_text_plain_for_react_and_defers_html_escaping_to_the_mail_view(): void
     {
         $rendered = $this->renderer->render($this->template([
             'email_body' => "<a href=\"https://example.test\" onclick=\"alert(1)\">Open</a>\n<img src=x onerror=alert(2)><script>alert(3)</script> {customer_name}",
@@ -122,13 +122,9 @@ class NotificationTemplateRendererTest extends TestCase
         ]);
 
         $this->assertSame(
-            "&lt;a href=&quot;https://example.test&quot; onclick=&quot;alert(1)&quot;&gt;Open&lt;/a&gt;\n&lt;img src=x onerror=alert(2)&gt;&lt;script&gt;alert(3)&lt;/script&gt; &lt;strong&gt;A&amp;B&lt;/strong&gt;",
+            "<a href=\"https://example.test\" onclick=\"alert(1)\">Open</a>\n<img src=x onerror=alert(2)><script>alert(3)</script> <strong>A&B</strong>",
             $rendered->body,
         );
-        $this->assertStringNotContainsString('&amp;lt;strong&amp;gt;', $rendered->body);
-        $this->assertStringNotContainsString('<script>', $rendered->body);
-        $this->assertStringNotContainsString('<img', $rendered->body);
-        $this->assertStringNotContainsString('<a ', $rendered->body);
     }
 
     public function test_renderer_rejects_an_empty_referenced_variable(): void
@@ -142,7 +138,7 @@ class NotificationTemplateRendererTest extends TestCase
         ]);
     }
 
-    public function test_renderer_escapes_cta_variable_content_after_raw_url_validation(): void
+    public function test_renderer_keeps_validated_cta_url_plain_for_the_api_and_mail_attribute_context(): void
     {
         $rendered = $this->renderer->render($this->template([
             'email_cta_url' => 'https://example.test/contact?note={staff_note}',
@@ -150,7 +146,7 @@ class NotificationTemplateRendererTest extends TestCase
             'staff_note' => 'Warehouse&support',
         ]);
 
-        $this->assertSame('https://example.test/contact?note=Warehouse&amp;support', $rendered->ctaUrl);
+        $this->assertSame('https://example.test/contact?note=Warehouse&support', $rendered->ctaUrl);
     }
 
     public function test_renderer_rejects_unknown_or_missing_template_variables(): void
@@ -165,6 +161,20 @@ class NotificationTemplateRendererTest extends TestCase
             } catch (ValidationException) {
                 // Expected: the frozen snapshot must never contain an unallowlisted or unresolved token.
                 $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function test_renderer_rejects_unknown_placeholder_shapes_without_treating_ordinary_braces_as_tokens(): void
+    {
+        foreach (['{Customer_Name}', '{customer-name}'] as $token) {
+            try {
+                $this->renderer->render($this->template([
+                    'email_body' => "Unknown {$token}, ordinary JSON {\"enabled\":true}.",
+                ]), []);
+                $this->fail("The renderer accepted {$token}.");
+            } catch (ValidationException $error) {
+                $this->assertArrayHasKey('email_body', $error->errors());
             }
         }
     }

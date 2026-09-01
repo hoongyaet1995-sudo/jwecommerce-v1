@@ -111,7 +111,7 @@ class NotificationContextFactory
     private function shippingAddress(?OrderAddress $address): string
     {
         if ($address === null) {
-            return '';
+            return 'Address not available';
         }
 
         return implode(', ', array_filter([

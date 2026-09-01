@@ -93,7 +93,7 @@ class NotificationDispatch extends Model
         $claimed = self::query()
             ->whereKey($dispatchId)
             ->where(function ($query) use ($now): void {
-                $query->whereIn('state', [self::STATE_QUEUED, self::STATE_FAILED])
+                $query->where('state', self::STATE_QUEUED)
                     ->orWhere(function ($query) use ($now): void {
                         $query->where('state', self::STATE_SENDING)
                             ->where(function ($query) use ($now): void {

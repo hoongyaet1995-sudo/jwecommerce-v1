@@ -10,6 +10,8 @@ use Illuminate\Validation\ValidationException;
 
 class NotificationTemplateRenderer
 {
+    private const PLACEHOLDER_PATTERN = '/\{([A-Za-z][A-Za-z0-9_-]*)\}/';
+
     /** @param array<string, mixed> $variables */
     public function render(NotificationTemplate $template, array $variables): RenderedNotification
     {
@@ -25,18 +27,18 @@ class NotificationTemplateRenderer
 
         $this->validateTokens($fields, $allowedTokens, $variables);
 
-        $escapedVariables = [];
+        $textVariables = [];
         foreach ($variables as $name => $value) {
-            $escapedVariables[$name] = e((string) $value);
+            $textVariables[$name] = (string) $value;
         }
 
         $renderedFields = [
-            'email_subject' => $this->renderEscapedText($fields['email_subject'], $variables),
-            'email_preheader' => $this->renderEscapedText($fields['email_preheader'], $variables),
-            'email_heading' => $this->renderEscapedText($fields['email_heading'], $variables),
-            'email_body' => $this->renderEscapedText($fields['email_body'], $variables),
-            'email_cta_text' => $this->renderEscapedText($fields['email_cta_text'], $variables),
-            'email_cta_url' => e($this->validatedCtaUrl($this->replaceRawTokens($fields['email_cta_url'], $variables))),
+            'email_subject' => $this->renderPlainText($fields['email_subject'], $variables),
+            'email_preheader' => $this->renderPlainText($fields['email_preheader'], $variables),
+            'email_heading' => $this->renderPlainText($fields['email_heading'], $variables),
+            'email_body' => $this->renderPlainText($fields['email_body'], $variables),
+            'email_cta_text' => $this->renderPlainText($fields['email_cta_text'], $variables),
+            'email_cta_url' => $this->validatedCtaUrl($this->renderPlainText($fields['email_cta_url'], $variables)),
         ];
         $this->validateNoPrivateProviderUrls($renderedFields);
 
@@ -47,7 +49,7 @@ class NotificationTemplateRenderer
             body: $renderedFields['email_body'],
             ctaText: $renderedFields['email_cta_text'],
             ctaUrl: $renderedFields['email_cta_url'],
-            variables: $escapedVariables,
+            variables: $textVariables,
         );
     }
 
@@ -61,7 +63,7 @@ class NotificationTemplateRenderer
         $errors = [];
 
         foreach ($fields as $field => $value) {
-            preg_match_all('/\{[a-z0-9_]+\}/', $value, $matches);
+            preg_match_all(self::PLACEHOLDER_PATTERN, $value, $matches);
 
             foreach (array_unique($matches[0]) as $token) {
                 $name = trim($token, '{}');
@@ -82,25 +84,13 @@ class NotificationTemplateRenderer
     }
 
     /** @param array<string, mixed> $variables */
-    private function renderEscapedText(string $value, array $variables): string
+    private function renderPlainText(string $value, array $variables): string
     {
-        preg_match_all('/\{([a-z0-9_]+)\}/', $value, $matches, PREG_OFFSET_CAPTURE);
-
-        $rendered = '';
-        $offset = 0;
-        foreach ($matches[0] as $index => [$token, $position]) {
-            $rendered .= e(substr($value, $offset, $position - $offset));
-            $rendered .= e((string) $variables[$matches[1][$index][0]]);
-            $offset = $position + strlen($token);
-        }
-
-        return $rendered.e(substr($value, $offset));
-    }
-
-    /** @param array<string, mixed> $variables */
-    private function replaceRawTokens(string $value, array $variables): string
-    {
-        return preg_replace_callback('/\{([a-z0-9_]+)\}/', static fn (array $matches): string => (string) $variables[$matches[1]], $value) ?? $value;
+        return preg_replace_callback(
+            self::PLACEHOLDER_PATTERN,
+            static fn (array $matches): string => (string) $variables[$matches[1]],
+            $value,
+        ) ?? $value;
     }
 
     private function validatedCtaUrl(string $url): string

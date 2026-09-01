@@ -81,33 +81,45 @@ class OrderNotificationMilestoneService
 
         if ($dispatch->wasRecentlyCreated) {
             DB::afterCommit(static function () use ($dispatch): void {
-                rescue(
-                    static function () use ($dispatch): void {
-                        $pendingDispatch = SendOrderNotificationJob::dispatch($dispatch->id);
-                        $pendingDispatch->afterCommit();
-                        unset($pendingDispatch);
-                    },
-                    static function (Throwable $exception) use ($dispatch): void {
-                        report(new NotificationDeliveryException('queue'));
-                        rescue(
-                            static fn () => NotificationDispatch::query()
-                                ->whereKey($dispatch->id)
-                                ->where('state', NotificationDispatch::STATE_QUEUED)
-                                ->update([
-                                    'state' => NotificationDispatch::STATE_FAILED,
-                                    'failed_at' => now(),
-                                    'last_error_code' => 'queue',
-                                ]),
-                            static fn (Throwable $auditException) => report(new NotificationDeliveryException('unknown')),
-                            report: false,
-                        );
-                    },
-                    report: false,
-                );
+                try {
+                    SendOrderNotificationJob::dispatch($dispatch->id)->afterCommit();
+                } catch (Throwable) {
+                    $errorCode = 'queue';
+
+                    try {
+                        $updated = NotificationDispatch::query()
+                            ->whereKey($dispatch->id)
+                            ->where('state', NotificationDispatch::STATE_QUEUED)
+                            ->update([
+                                'state' => NotificationDispatch::STATE_FAILED,
+                                'failed_at' => now(),
+                                'last_error_code' => 'queue',
+                                'delivery_lease_token' => null,
+                                'delivery_lease_expires_at' => null,
+                            ]);
+
+                        if ($updated !== 1) {
+                            $errorCode = 'unknown';
+                        }
+                    } catch (Throwable) {
+                        $errorCode = 'unknown';
+                    }
+
+                    self::reportSafely(new NotificationDeliveryException($errorCode));
+                }
             });
         }
 
         return $dispatch;
+    }
+
+    private static function reportSafely(NotificationDeliveryException $exception): void
+    {
+        try {
+            report($exception);
+        } catch (Throwable) {
+            // The committed dispatch state is authoritative; reporting is best-effort only.
+        }
     }
 
     private function automaticIdempotencyKey(

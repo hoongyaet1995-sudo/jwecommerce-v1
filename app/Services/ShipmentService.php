@@ -634,9 +634,6 @@ class ShipmentService
         string|int $sourceId,
         ?User $actor = null,
     ): void {
-        rescue(
-            fn () => $this->notifications->record($order, $eventKey, $sourceType, $sourceId, $actor),
-            report: true,
-        );
+        $this->notifications->record($order, $eventKey, $sourceType, $sourceId, $actor);
     }
 }

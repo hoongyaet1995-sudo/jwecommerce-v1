@@ -249,15 +249,12 @@ class PaymentWebhookService
             ]);
         }
 
-        rescue(
-            fn () => $this->notifications->record(
-                $order,
-                'payment_verified',
-                'payment_webhook_event',
-                $webhook->id,
-                extra: ['staff_note' => $note],
-            ),
-            report: true,
+        $this->notifications->record(
+            $order,
+            'payment_verified',
+            'payment_webhook_event',
+            $webhook->id,
+            extra: ['staff_note' => $note],
         );
     }
 }

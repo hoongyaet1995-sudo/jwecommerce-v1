@@ -127,16 +127,13 @@ class OrderOperationsService
         User $actor,
         ?string $note,
     ): ?NotificationDispatch {
-        $dispatch = rescue(
-            fn () => $this->notifications->record(
-                $order,
-                $eventKey,
-                'order_status_history',
-                $history->id,
-                $actor,
-                ['staff_note' => $note ?: 'No additional notes.'],
-            ),
-            report: true,
+        $dispatch = $this->notifications->record(
+            $order,
+            $eventKey,
+            'order_status_history',
+            $history->id,
+            $actor,
+            ['staff_note' => $note ?: 'No additional notes.'],
         );
 
         return $dispatch instanceof NotificationDispatch && $dispatch->wasRecentlyCreated

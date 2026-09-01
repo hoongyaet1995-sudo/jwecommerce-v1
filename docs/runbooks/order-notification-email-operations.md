@@ -47,7 +47,8 @@ Expected observations:
 - `migrate` applies pending migrations without deleting existing rows.
 - the worker stays attached to the `default` database queue and processes `SendOrderNotificationJob` after the business transaction commits;
 - a successful local sink delivery changes the owned `notification_dispatches` row from `queued` to `sent`, sets `sent_at`, increments `attempt_count`, and removes its `jobs` row;
-- bounded delivery failures store only `transport`, `timeout`, or `unknown` on the dispatch. Queue publication failures use `queue`. Raw exception text is not a dispatch or log field.
+- a non-terminal delivery exception atomically returns the owned claim to `queued`, clears its lease, and leaves terminal failure fields empty so Laravel's next attempt can claim immediately even before the old lease would have expired;
+- only Laravel's terminal failure callback changes a `queued` or orphaned `sending` dispatch to `failed` and stores one of `transport`, `timeout`, or `unknown`. Queue publication failures use `queue`. Raw exception text is not a dispatch or log field.
 
 Stop an interactive worker with `Ctrl+C`. After a deploy or configuration change, restart the worker so it loads the accepted code and environment.
 
@@ -74,9 +75,15 @@ This is different from the Admin application's **Retry** action:
 
 Use one recovery path deliberately. Do not bulk-retry all failed jobs. Match the safe dispatch ID and failed-job UUID operationally, correct the transport/worker cause, execute one retry, and verify the resulting single dispatch state before taking another action.
 
+Do not use Admin **Retry** while Laravel still owns a non-terminal attempt. Intermediate failures remain `queued` (or briefly `sending` while claimed), and the protected Admin action accepts only terminal `failed`. The job claim path does not claim a terminal `failed` row; Admin Retry must first perform the audited `failed` -> `queued` transition. This prevents an operator retry from overlapping Laravel's remaining attempts.
+
 **Resend** is not retry. It accepts only a `sent` dispatch, creates a new `manual_resend` row linked by `resend_of_id`, and copies the original frozen content. **Send Current Template** is a separate authorized action that renders and freezes the currently persisted template.
 
 If manual Retry, Resend, Send Current Template, or Test Email cannot publish its queue job after the database transaction commits, the owned dispatch remains auditable and retryable as `failed` with `last_error_code=queue`. The API returns that refreshed safe state. Only a bounded `NotificationDeliveryException` is reported; the raw queue/provider cause must not enter the HTTP response, dispatch row, or application log.
+
+Automatic notification intent creation is part of the same database transaction as its authoritative checkout, payment-review/webhook, shipment, or Admin status mutation. Template/context/render/intent persistence failure therefore rolls back the business mutation instead of silently omitting the outbox row. Queue publication remains an after-commit boundary: if publication fails after the transaction commits, the business mutation and dispatch remain committed and the dispatch is changed to safe `failed`/`queue`. Both current Admin API routes and the compatibility Blade status/shipment routes use the same `OrderOperationsService`/milestone producers.
+
+`on_hold` Email remains backend-enforced `DORMANT`: the template API rejects attempts to enable it, template responses expose it as disabled, and Send Current returns a stable validation error even if a stale database row was previously enabled. Nullable template text inputs are stored as empty strings. Frozen subjects and API preview text remain plain text (for correct values such as `J&T`); the mail Blade escapes title, preheader, shop name, heading, body, CTA text, and URL in their HTML/attribute contexts.
 
 ## Local acceptance sequence
 

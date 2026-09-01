@@ -30,6 +30,14 @@ class NotificationTemplateApiController extends Controller
         'whatsappCtaButtons' => 'whatsapp_cta_buttons',
     ];
 
+    private const NULLABLE_TEXT_INPUTS = [
+        'emailPreheader',
+        'emailHeading',
+        'emailCtaText',
+        'emailCtaUrl',
+        'whatsappMessage',
+    ];
+
     public function __construct(
         private readonly NotificationTemplateDefaults $defaults,
         private readonly NotificationDispatchService $dispatches,
@@ -65,8 +73,13 @@ class NotificationTemplateApiController extends Controller
             $attributes = [];
             foreach (self::INPUT_TO_ATTRIBUTE as $input => $attribute) {
                 if (array_key_exists($input, $validated)) {
-                    $attributes[$attribute] = $validated[$input];
+                    $attributes[$attribute] = in_array($input, self::NULLABLE_TEXT_INPUTS, true)
+                        ? (string) ($validated[$input] ?? '')
+                        : $validated[$input];
                 }
+            }
+            if ($eventKey === 'on_hold') {
+                $attributes['email_enabled'] = false;
             }
 
             $candidate = $template->replicate();
@@ -136,7 +149,7 @@ class NotificationTemplateApiController extends Controller
             'color' => $template->color,
             'automaticEmail' => $event['automatic_email'],
             'variables' => $event['variables'],
-            'emailEnabled' => $template->email_enabled,
+            'emailEnabled' => $template->event_key !== 'on_hold' && $template->email_enabled,
             'emailSubject' => $template->email_subject,
             'emailPreheader' => $template->email_preheader,
             'emailHeading' => $template->email_heading,

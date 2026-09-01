@@ -23,6 +23,8 @@ class SendOrderNotificationJob implements ShouldQueue
 
     public int $timeout = 45;
 
+    public bool $failOnTimeout = true;
+
     public function __construct(public readonly int $dispatchId) {}
 
     /** @return list<int> */
@@ -55,13 +57,30 @@ class SendOrderNotificationJob implements ShouldQueue
         } catch (Throwable $error) {
             $safeErrorCode = $this->safeErrorCode($error);
             $this->finishClaim($dispatch, $leaseToken, [
-                'state' => NotificationDispatch::STATE_FAILED,
-                'failed_at' => now(),
-                'last_error_code' => $safeErrorCode,
+                'state' => NotificationDispatch::STATE_QUEUED,
+                'failed_at' => null,
+                'last_error_code' => null,
             ]);
 
             throw new NotificationDeliveryException($safeErrorCode);
         }
+    }
+
+    public function failed(Throwable $error): void
+    {
+        NotificationDispatch::query()
+            ->whereKey($this->dispatchId)
+            ->whereIn('state', [
+                NotificationDispatch::STATE_QUEUED,
+                NotificationDispatch::STATE_SENDING,
+            ])
+            ->update([
+                'state' => NotificationDispatch::STATE_FAILED,
+                'failed_at' => now(),
+                'last_error_code' => $this->safeErrorCode($error),
+                'delivery_lease_token' => null,
+                'delivery_lease_expires_at' => null,
+            ]);
     }
 
     /** @param array<string, mixed> $attributes */
@@ -79,6 +98,10 @@ class SendOrderNotificationJob implements ShouldQueue
 
     private function safeErrorCode(Throwable $error): string
     {
+        if ($error instanceof NotificationDeliveryException) {
+            return $error->safeCode;
+        }
+
         for ($current = $error; $current !== null; $current = $current->getPrevious()) {
             $description = strtolower($current::class.' '.$current->getMessage());
 

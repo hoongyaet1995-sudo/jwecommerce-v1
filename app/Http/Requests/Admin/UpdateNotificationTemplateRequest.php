@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Domain\Notifications\NotificationPermission;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateNotificationTemplateRequest extends FormRequest
 {
@@ -37,5 +38,16 @@ class UpdateNotificationTemplateRequest extends FormRequest
             'whatsappCtaButtons.*.type' => ['required_with:whatsappCtaButtons', Rule::in(['url'])],
             'whatsappCtaButtons.*.value' => ['required_with:whatsappCtaButtons', 'string', 'max:2048'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if ((string) $this->route('eventKey') === 'on_hold'
+                && $this->has('emailEnabled')
+                && $this->boolean('emailEnabled')) {
+                $validator->errors()->add('emailEnabled', 'On Hold email delivery is dormant and cannot be enabled.');
+            }
+        });
     }
 }
