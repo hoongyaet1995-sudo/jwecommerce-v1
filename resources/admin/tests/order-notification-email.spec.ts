@@ -22,8 +22,14 @@ type HarnessResult = {
   templateFingerprint?: string;
   orderId?: number;
   ownedAssociations?: Record<string, { ids: number[]; fingerprint: string }>;
+  ownerClosure?: Record<string, { ids: number[]; fingerprint: string }>;
   associationGuardId?: number;
   associationStateRestored?: boolean;
+  customerAddressId?: number;
+  userPermissionId?: number;
+  ownerAssociationStateRestored?: boolean;
+  ownedSessionIds?: string[];
+  ownerClosureTableCount?: number;
 };
 
 type RequestLedgerEntry = {
@@ -150,7 +156,7 @@ const stopOwnedServer = async (): Promise<boolean> => {
   return !(await portHasListener());
 };
 
-type HarnessMode = 'probe' | 'baseline' | 'setup' | 'snapshot' | 'inject-cleanup-guard' | 'remove-cleanup-guard' | 'cleanup';
+type HarnessMode = 'probe' | 'baseline' | 'setup' | 'snapshot' | 'inject-cleanup-guard' | 'remove-cleanup-guard' | 'inject-owner-cleanup-guard' | 'remove-owner-cleanup-guard' | 'seal-browser-sessions' | 'cleanup';
 
 const runHarness = (mode: HarnessMode): HarnessResult => {
   const raw = execFileSync(php, [harness, mode], {
@@ -330,6 +336,23 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
       associationStateRestored: cleanupGuardRemoval.associationStateRestored,
     });
 
+    const ownerCleanupGuard = runHarness('inject-owner-cleanup-guard');
+    expect(ownerCleanupGuard.customerAddressId).toBeGreaterThan(0);
+    expect(ownerCleanupGuard.userPermissionId).toBeGreaterThan(0);
+    const ownerCleanupRefusal = refusedHarnessMode('cleanup');
+    expect(ownerCleanupRefusal).toEqual({ exitCode: 1, code: 'fixture_business_state_changed' });
+    expect(existsSync(statePath)).toBe(true);
+    const ownerCleanupGuardRemoval = runHarness('remove-owner-cleanup-guard');
+    expect(ownerCleanupGuardRemoval.ownerAssociationStateRestored).toBe(true);
+    writeEvidence('fixture-owner-cleanup-fail-closed.json', {
+      injectedTables: ['customer_addresses', 'user_permissions'],
+      cleanupRefusal: ownerCleanupRefusal,
+      fixturePreserved: true,
+      stateFilePreserved: true,
+      exactInjectedRowsRemoved: true,
+      ownerAssociationStateRestored: ownerCleanupGuardRemoval.ownerAssociationStateRestored,
+    });
+
     const args = ['-d', 'display_errors=0', '-S', `127.0.0.1:${port}`, router];
     server = spawn(php, args, {
       cwd: resolve(repositoryRoot, 'public'),
@@ -410,6 +433,23 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
         fingerprint: expect.any(String),
       }));
     }
+    for (const table of [
+      'customer_addresses',
+      'wishlist_items',
+      'carts',
+      'cart_items',
+      'user_permissions',
+      'users',
+      'customers',
+      'orders',
+      'notification_templates',
+      'notification_dispatches',
+    ]) {
+      expect(setup?.ownerClosure?.[table]).toEqual(expect.objectContaining({
+        ids: expect.any(Array),
+        fingerprint: expect.any(String),
+      }));
+    }
 
     const blockedExternalRequests: string[] = [];
     const privateNetworkLeaks: string[] = [];
@@ -450,7 +490,11 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
 
     await page.setViewportSize({ width: 1440, height: 1000 });
     await login(page, '/admin/settings/email');
-    await expect(page.getByRole('heading', { name: /Auto Email & WhatsApp Templates/ })).toBeVisible();
+    const templateHeading = page.getByRole('heading', { name: /Auto Email & WhatsApp Templates/ });
+    if (!await templateHeading.isVisible().catch(() => false)) {
+      await page.getByRole('button', { name: /Auto Email & WhatsApp Template/ }).click();
+    }
+    await expect(templateHeading).toBeVisible();
     await expect(page.getByRole('button', { name: /Payment Proof Rejected/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /On Hold/ })).toContainText('DORMANT');
     await expect(page.getByText('Live Customer Preview')).toBeVisible();
@@ -513,6 +557,10 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
       countsUnchanged: true,
       fingerprintUnchanged: true,
     });
+    const sealedSessions = runHarness('seal-browser-sessions');
+    expect(sealedSessions.ownedSessionIds).toHaveLength(1);
+    expect(sealedSessions.ownerClosureTableCount).toBeGreaterThan(10);
+    writeEvidence('fixture-owner-session-seal.json', sealedSessions);
     writeEvidence('browser-smoke-security.json', {
       scope: 'authenticated-read-only-smoke',
       deliveryActionsExecuted: executedDeliveryActions.length > 0,

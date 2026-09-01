@@ -89,7 +89,7 @@ function assertSafeRuntime(): array
 /** @return array<string, int> */
 function smokeCounts(): array
 {
-    return [
+    $counts = [
         'users' => DB::table('users')->count(),
         'customers' => DB::table('customers')->count(),
         'orders' => DB::table('orders')->count(),
@@ -118,6 +118,14 @@ function smokeCounts(): array
         'failed_jobs' => DB::table('failed_jobs')->count(),
         'sessions' => DB::table('sessions')->count(),
     ];
+
+    foreach (fixtureClosureTables() as $table) {
+        $counts[$table] ??= DB::table($table)->count();
+    }
+
+    ksort($counts);
+
+    return $counts;
 }
 
 /** @param array<string, mixed> $payload */
@@ -194,6 +202,160 @@ function constrainIds($query, string $column, array $ids): void
     }
 
     $query->whereIn($column, $ids);
+}
+
+/** @return list<array{childTable: string, childColumn: string, parentTable: string, parentColumn: string}> */
+function fixtureForeignKeys(): array
+{
+    return array_map(
+        static fn (object $row): array => [
+            'childTable' => (string) $row->child_table,
+            'childColumn' => (string) $row->child_column,
+            'parentTable' => (string) $row->parent_table,
+            'parentColumn' => (string) $row->parent_column,
+        ],
+        DB::select(<<<'SQL'
+            SELECT
+                TABLE_NAME AS child_table,
+                COLUMN_NAME AS child_column,
+                REFERENCED_TABLE_NAME AS parent_table,
+                REFERENCED_COLUMN_NAME AS parent_column
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND REFERENCED_TABLE_NAME IS NOT NULL
+            ORDER BY REFERENCED_TABLE_NAME, TABLE_NAME, COLUMN_NAME
+            SQL),
+    );
+}
+
+/** @return list<string> */
+function fixtureClosureTables(): array
+{
+    $reachable = array_fill_keys([
+        'users',
+        'customers',
+        'orders',
+        'notification_templates',
+        'notification_dispatches',
+    ], true);
+    $changed = true;
+    while ($changed) {
+        $changed = false;
+        foreach (fixtureForeignKeys() as $foreignKey) {
+            if (isset($reachable[$foreignKey['parentTable']]) && ! isset($reachable[$foreignKey['childTable']])) {
+                $reachable[$foreignKey['childTable']] = true;
+                $changed = true;
+            }
+        }
+    }
+
+    $tables = array_keys($reachable);
+    sort($tables);
+
+    return $tables;
+}
+
+/**
+ * Build the exact row closure reachable through real MySQL foreign keys from
+ * the dedicated Admin, Customer, Order, created templates, and dispatches.
+ * Empty reachable tables remain in the snapshot so a later association cannot
+ * be hidden by parent cascade/nullOnDelete behavior.
+ *
+ * @param  array<string, list<int>>  $rootIds
+ * @return array<string, array{ids: list<int>, fingerprint: string}>
+ */
+function fixtureOwnerClosure(array $rootIds, bool $lockForUpdate = false): array
+{
+    $idsByTable = [];
+    foreach (fixtureClosureTables() as $table) {
+        $idsByTable[$table] = [];
+    }
+    foreach ($rootIds as $table => $ids) {
+        if (! array_key_exists($table, $idsByTable)) {
+            throw new RuntimeException('fixture_root_table_not_reachable');
+        }
+        $normalized = array_values(array_unique(array_map('intval', $ids)));
+        sort($normalized);
+        $idsByTable[$table] = $normalized;
+    }
+
+    $foreignKeys = fixtureForeignKeys();
+    $changed = true;
+    while ($changed) {
+        $changed = false;
+        foreach ($foreignKeys as $foreignKey) {
+            if (! array_key_exists($foreignKey['parentTable'], $idsByTable)
+                || ! array_key_exists($foreignKey['childTable'], $idsByTable)
+                || $idsByTable[$foreignKey['parentTable']] === []) {
+                continue;
+            }
+            if ($foreignKey['parentColumn'] !== 'id') {
+                throw new RuntimeException('fixture_non_id_parent_foreign_key');
+            }
+
+            $query = DB::table($foreignKey['childTable'])
+                ->whereIn($foreignKey['childColumn'], $idsByTable[$foreignKey['parentTable']]);
+            if ($lockForUpdate) {
+                $query->lockForUpdate();
+            }
+            $discovered = array_map('intval', $query->pluck('id')->all());
+            $merged = array_values(array_unique([...$idsByTable[$foreignKey['childTable']], ...$discovered]));
+            sort($merged);
+            if ($merged !== $idsByTable[$foreignKey['childTable']]) {
+                $idsByTable[$foreignKey['childTable']] = $merged;
+                $changed = true;
+            }
+        }
+    }
+
+    $snapshots = [];
+    foreach ($idsByTable as $table => $ids) {
+        $query = DB::table($table);
+        constrainIds($query, 'id', $ids);
+        if ($table === 'users') {
+            if ($lockForUpdate) {
+                $query->lockForUpdate();
+            }
+            $rows = $query->orderBy('id')->get()->map(static function (object $row): array {
+                $attributes = (array) $row;
+                unset($attributes['created_at'], $attributes['updated_at'], $attributes['last_login_at']);
+                ksort($attributes);
+
+                return $attributes;
+            })->values()->all();
+            $snapshots[$table] = [
+                'ids' => array_map(static fn (array $row): int => (int) $row['id'], $rows),
+                'fingerprint' => smokeHash(['rows' => $rows]),
+            ];
+
+            continue;
+        }
+        $snapshots[$table] = querySnapshot($query, $lockForUpdate);
+    }
+
+    ksort($snapshots);
+
+    return $snapshots;
+}
+
+/** @return array{ids: list<string>, fingerprint: string} */
+function ownerSessionSnapshot(int $adminId, bool $lockForUpdate = false): array
+{
+    $query = DB::table('sessions')->where('user_id', $adminId);
+    if ($lockForUpdate) {
+        $query->lockForUpdate();
+    }
+    $rows = $query->orderBy('id')->get()->map(static function (object $row): array {
+        $attributes = (array) $row;
+        ksort($attributes);
+
+        return $attributes;
+    })->values()->all();
+
+    return [
+        'ids' => array_map(static fn (array $row): string => (string) $row['id'], $rows),
+        'fingerprint' => smokeHash(['rows' => $rows]),
+    ];
 }
 
 /** @return array<string, array{ids: list<int>, fingerprint: string}> */
@@ -275,7 +437,7 @@ function businessCounts(): array
 }
 
 /** @return array<string, mixed> */
-function ownedBusinessSnapshot(string $token): array
+function ownedBusinessSnapshot(string $token, array $ownerRoots): array
 {
     $ownership = expectedOwnership($token);
     $admin = User::query()->where('email', $ownership['adminEmail'])->first();
@@ -300,14 +462,14 @@ function ownedBusinessSnapshot(string $token): array
         'admin' => $modelFingerprint($admin),
         'customer' => $modelFingerprint($customer),
         'order' => $modelFingerprint($order),
-        'associations' => $order === null ? [] : orderAssociationSnapshot((int) $order->id),
+        'associations' => fixtureOwnerClosure($ownerRoots),
     ];
 }
 
 /** @return array{counts: array<string, int>, fingerprint: string} */
-function businessEvidence(string $token): array
+function businessEvidence(string $token, array $ownerRoots): array
 {
-    $snapshot = ownedBusinessSnapshot($token);
+    $snapshot = ownedBusinessSnapshot($token, $ownerRoots);
 
     return [
         'counts' => $snapshot['counts'],
@@ -524,8 +686,19 @@ try {
                 $postSetupTemplates,
                 static fn (array $template): bool => ! in_array($template['eventKey'], $baselineEventKeys, true),
             ));
-            $business = businessEvidence($token);
             $ownedAssociations = orderAssociationSnapshot((int) $order->id);
+            $ownerRoots = [
+                'users' => [(int) $admin->id],
+                'customers' => [(int) $customer->id],
+                'orders' => [(int) $order->id],
+                'notification_templates' => array_map(
+                    static fn (array $template): int => (int) $template['id'],
+                    $createdTemplates,
+                ),
+                'notification_dispatches' => $ownedAssociations['notification_dispatches']['ids'],
+            ];
+            $ownerClosure = fixtureOwnerClosure($ownerRoots);
+            $business = businessEvidence($token, $ownerRoots);
             $state = signedSmokeState([
                 'token' => $token,
                 'ownership' => $ownership,
@@ -537,6 +710,9 @@ try {
                 'post_setup_templates' => $postSetupTemplates,
                 'created_templates' => $createdTemplates,
                 'owned_associations' => $ownedAssociations,
+                'owner_roots' => $ownerRoots,
+                'owner_closure' => $ownerClosure,
+                'owned_sessions' => ownerSessionSnapshot((int) $admin->id),
                 'setup_business_counts' => $business['counts'],
                 'setup_business_fingerprint' => $business['fingerprint'],
             ], $token);
@@ -566,6 +742,7 @@ try {
             'businessCounts' => $state['setup_business_counts'],
             'businessFingerprint' => $state['setup_business_fingerprint'],
             'ownedAssociations' => $state['owned_associations'],
+            'ownerClosure' => $state['owner_closure'],
         ]);
         exit(0);
     }
@@ -646,7 +823,7 @@ try {
             }
         });
 
-        $business = businessEvidence($token);
+        $business = businessEvidence($token, $state['owner_roots']);
         $restored = $business['counts'] === $state['setup_business_counts']
             && hash_equals((string) $state['setup_business_fingerprint'], $business['fingerprint']);
         if (! $restored) {
@@ -660,8 +837,179 @@ try {
         exit(0);
     }
 
+    if ($mode === 'inject-owner-cleanup-guard') {
+        $ownership = expectedOwnership($token);
+        if ($state['ownership'] !== $ownership) {
+            failHarness('state_ownership_mismatch');
+        }
+        if (fixtureOwnerClosure($state['owner_roots']) !== $state['owner_closure']) {
+            failHarness('fixture_owner_closure_mismatch');
+        }
+
+        $guardIds = DB::transaction(static function () use ($ownership, $state, $token): array {
+            $admin = User::query()
+                ->whereKey($state['admin_id'])
+                ->where('email', $ownership['adminEmail'])
+                ->lockForUpdate()
+                ->sole();
+            $customer = Customer::query()
+                ->whereKey($state['customer_id'])
+                ->where('email', $ownership['customerEmail'])
+                ->lockForUpdate()
+                ->sole();
+
+            $addressId = DB::table('customer_addresses')->insertGetId([
+                'customer_id' => $customer->id,
+                'label' => "TASK9-OWNER-GUARD-{$token}",
+                'is_default' => false,
+                'first_name' => 'Task Nine',
+                'last_name' => 'Owner Guard',
+                'phone' => null,
+                'line_1' => '9 Fail Closed Lane',
+                'line_2' => $token,
+                'city' => 'Kuala Lumpur',
+                'state' => 'Kuala Lumpur',
+                'postal_code' => '50000',
+                'country' => 'MY',
+                'type' => 'shipping',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $permissionId = DB::table('user_permissions')->insertGetId([
+                'user_id' => $admin->id,
+                'permission' => "task9.owner-guard.{$token}",
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return [
+                'customerAddressId' => (int) $addressId,
+                'userPermissionId' => (int) $permissionId,
+            ];
+        });
+
+        passHarness([
+            'mode' => 'inject-owner-cleanup-guard',
+            'database' => $safeRuntime['database'],
+            ...$guardIds,
+        ]);
+        exit(0);
+    }
+
+    if ($mode === 'remove-owner-cleanup-guard') {
+        $ownership = expectedOwnership($token);
+        if ($state['ownership'] !== $ownership) {
+            failHarness('state_ownership_mismatch');
+        }
+
+        DB::transaction(static function () use ($ownership, $state, $token): void {
+            $admin = User::query()
+                ->whereKey($state['admin_id'])
+                ->where('email', $ownership['adminEmail'])
+                ->lockForUpdate()
+                ->sole();
+            $customer = Customer::query()
+                ->whereKey($state['customer_id'])
+                ->where('email', $ownership['customerEmail'])
+                ->lockForUpdate()
+                ->sole();
+            if (fixtureOwnerClosure($state['owner_roots'], true) === $state['owner_closure']) {
+                throw new RuntimeException('owner_cleanup_guard_missing');
+            }
+            $addresses = DB::table('customer_addresses')
+                ->where('customer_id', $customer->id)
+                ->where('label', "TASK9-OWNER-GUARD-{$token}")
+                ->where('line_2', $token)
+                ->lockForUpdate()
+                ->get();
+            $permissions = DB::table('user_permissions')
+                ->where('user_id', $admin->id)
+                ->where('permission', "task9.owner-guard.{$token}")
+                ->lockForUpdate()
+                ->get();
+            if ($addresses->count() !== 1 || $permissions->count() !== 1) {
+                throw new RuntimeException('owner_cleanup_guard_ownership_mismatch');
+            }
+            $deletedAddresses = DB::table('customer_addresses')
+                ->where('id', $addresses->first()->id)
+                ->where('customer_id', $customer->id)
+                ->where('label', "TASK9-OWNER-GUARD-{$token}")
+                ->where('line_2', $token)
+                ->delete();
+            $deletedPermissions = DB::table('user_permissions')
+                ->where('id', $permissions->first()->id)
+                ->where('user_id', $admin->id)
+                ->where('permission', "task9.owner-guard.{$token}")
+                ->delete();
+            if ($deletedAddresses !== 1 || $deletedPermissions !== 1) {
+                throw new RuntimeException('owner_cleanup_guard_delete_mismatch');
+            }
+        });
+
+        $business = businessEvidence($token, $state['owner_roots']);
+        $restored = $business['counts'] === $state['setup_business_counts']
+            && hash_equals((string) $state['setup_business_fingerprint'], $business['fingerprint'])
+            && fixtureOwnerClosure($state['owner_roots']) === $state['owner_closure'];
+        if (! $restored) {
+            failHarness('owner_cleanup_guard_restore_mismatch');
+        }
+
+        passHarness([
+            'mode' => 'remove-owner-cleanup-guard',
+            'database' => $safeRuntime['database'],
+            'ownerAssociationStateRestored' => true,
+        ]);
+        exit(0);
+    }
+
+    if ($mode === 'seal-browser-sessions') {
+        $ownership = expectedOwnership($token);
+        if ($state['ownership'] !== $ownership || ($state['owned_sessions']['ids'] ?? null) !== []) {
+            failHarness('session_seal_state_mismatch');
+        }
+
+        $sessionSnapshot = DB::transaction(static function () use ($ownership, $state): array {
+            $admin = User::query()
+                ->whereKey($state['admin_id'])
+                ->where('email', $ownership['adminEmail'])
+                ->lockForUpdate()
+                ->sole();
+            if (fixtureOwnerClosure($state['owner_roots'], true) !== $state['owner_closure']) {
+                throw new RuntimeException('fixture_owner_closure_mismatch');
+            }
+            $sessions = DB::table('sessions')
+                ->where('user_id', $admin->id)
+                ->lockForUpdate()
+                ->get();
+            if ($sessions->count() !== 1 || $sessions->contains(static function (object $session): bool {
+                return ! in_array((string) $session->ip_address, ['127.0.0.1', '::1'], true)
+                    || ! str_contains((string) $session->user_agent, 'Chrome/')
+                    || (string) $session->payload === '';
+            })) {
+                throw new RuntimeException('unexpected_fixture_session');
+            }
+
+            return ownerSessionSnapshot((int) $admin->id, true);
+        });
+
+        unset($state['signature']);
+        $state['owned_sessions'] = $sessionSnapshot;
+        $state = signedSmokeState($state, $token);
+        if (file_put_contents($statePath, json_encode($state, JSON_THROW_ON_ERROR)) === false) {
+            failHarness('session_state_write_failed');
+        }
+
+        passHarness([
+            'mode' => 'seal-browser-sessions',
+            'database' => $safeRuntime['database'],
+            'ownedSessionIds' => $sessionSnapshot['ids'],
+            'ownerClosureTableCount' => count($state['owner_closure']),
+        ]);
+        exit(0);
+    }
+
     if ($mode === 'snapshot') {
-        $business = businessEvidence($token);
+        $business = businessEvidence($token, $state['owner_roots']);
         passHarness([
             'mode' => 'snapshot',
             'database' => $safeRuntime['database'],
@@ -677,7 +1025,7 @@ try {
             failHarness('state_ownership_mismatch');
         }
 
-        $preCleanupBusiness = businessEvidence($token);
+        $preCleanupBusiness = businessEvidence($token, $state['owner_roots']);
         $businessStateUnchanged = hash_equals(
             (string) $state['setup_business_fingerprint'],
             $preCleanupBusiness['fingerprint'],
@@ -688,6 +1036,14 @@ try {
         $currentAssociations = orderAssociationSnapshot((int) $state['order_id']);
         if (($state['owned_associations'] ?? null) !== $currentAssociations) {
             failHarness('fixture_association_mismatch');
+        }
+        $currentOwnerClosure = fixtureOwnerClosure($state['owner_roots']);
+        if (($state['owner_closure'] ?? null) !== $currentOwnerClosure) {
+            failHarness('fixture_owner_closure_mismatch');
+        }
+        $currentSessions = ownerSessionSnapshot((int) $state['admin_id']);
+        if (($state['owned_sessions'] ?? null) !== $currentSessions) {
+            failHarness('fixture_session_mismatch');
         }
         if (templateSnapshot() !== $state['post_setup_templates']) {
             failHarness('template_ownership_mismatch');
@@ -710,6 +1066,8 @@ try {
                 ->lockForUpdate()
                 ->get();
             $lockedAssociations = orderAssociationSnapshot((int) $order->id, true);
+            $lockedOwnerClosure = fixtureOwnerClosure($state['owner_roots'], true);
+            $lockedSessions = ownerSessionSnapshot((int) $admin->id, true);
 
             if (
                 (int) $admin->id !== (int) $state['admin_id']
@@ -720,8 +1078,31 @@ try {
                 || $dispatches->count() !== 2
                 || $dispatches->contains(static fn (NotificationDispatch $dispatch): bool => (int) $dispatch->order_id !== (int) $order->id)
                 || $lockedAssociations !== $state['owned_associations']
+                || $lockedOwnerClosure !== $state['owner_closure']
+                || $lockedSessions !== $state['owned_sessions']
             ) {
                 throw new RuntimeException('fixture_ownership_mismatch');
+            }
+
+            $expectedOwnerIds = [
+                'users' => [(int) $admin->id],
+                'customers' => [(int) $customer->id],
+                'orders' => [(int) $order->id],
+                'notification_templates' => array_map(
+                    static fn (array $template): int => (int) $template['id'],
+                    $state['created_templates'],
+                ),
+                'notification_dispatches' => $lockedAssociations['notification_dispatches']['ids'],
+                'order_items' => $lockedAssociations['order_items']['ids'],
+                'order_addresses' => $lockedAssociations['order_addresses']['ids'],
+                'order_payments' => $lockedAssociations['order_payments']['ids'],
+            ];
+            foreach ($lockedOwnerClosure as $table => $snapshot) {
+                $expectedIds = $expectedOwnerIds[$table] ?? [];
+                sort($expectedIds);
+                if ($snapshot['ids'] !== $expectedIds) {
+                    throw new RuntimeException('unexpected_fixture_owner_association');
+                }
             }
 
             $expectedAssociationCounts = array_fill_keys(array_keys($lockedAssociations), 0);
@@ -780,11 +1161,6 @@ try {
                 }
             }
 
-            DB::table('sessions')->where('user_id', $admin->id)->delete();
-            $order->delete();
-            $customer->delete();
-            $admin->delete();
-
             foreach ($state['created_templates'] as $createdTemplate) {
                 $template = NotificationTemplate::query()
                     ->whereKey($createdTemplate['id'])
@@ -798,6 +1174,71 @@ try {
                     throw new RuntimeException('created_template_ownership_mismatch');
                 }
                 $template->delete();
+            }
+
+            $deletedSessions = DB::table('sessions')
+                ->where('user_id', $admin->id)
+                ->whereIn('id', $lockedSessions['ids'])
+                ->delete();
+            if ($deletedSessions !== count($lockedSessions['ids'])) {
+                throw new RuntimeException('fixture_session_delete_mismatch');
+            }
+
+            $deletedOrder = Order::query()
+                ->whereKey($order->id)
+                ->where('number', $ownership['orderNumber'])
+                ->where('customer_id', $customer->id)
+                ->delete();
+            if ($deletedOrder !== 1) {
+                throw new RuntimeException('fixture_order_delete_mismatch');
+            }
+
+            $remainingCustomerRoots = $state['owner_roots'];
+            $remainingCustomerRoots['orders'] = [];
+            $remainingCustomerRoots['notification_templates'] = [];
+            $remainingCustomerRoots['notification_dispatches'] = [];
+            $remainingCustomerClosure = fixtureOwnerClosure($remainingCustomerRoots, true);
+            foreach ($remainingCustomerClosure as $table => $snapshot) {
+                $expectedIds = match ($table) {
+                    'users' => [(int) $admin->id],
+                    'customers' => [(int) $customer->id],
+                    default => [],
+                };
+                if ($snapshot['ids'] !== $expectedIds) {
+                    throw new RuntimeException('fixture_customer_association_remains');
+                }
+            }
+
+            $deletedCustomer = Customer::query()
+                ->whereKey($customer->id)
+                ->where('email', $ownership['customerEmail'])
+                ->whereNull('user_id')
+                ->delete();
+            if ($deletedCustomer !== 1) {
+                throw new RuntimeException('fixture_customer_delete_mismatch');
+            }
+
+            $remainingAdminRoots = $remainingCustomerRoots;
+            $remainingAdminRoots['customers'] = [];
+            $remainingAdminClosure = fixtureOwnerClosure($remainingAdminRoots, true);
+            foreach ($remainingAdminClosure as $table => $snapshot) {
+                $expectedIds = $table === 'users' ? [(int) $admin->id] : [];
+                if ($snapshot['ids'] !== $expectedIds) {
+                    throw new RuntimeException('fixture_admin_association_remains');
+                }
+            }
+            if (ownerSessionSnapshot((int) $admin->id, true)['ids'] !== []) {
+                throw new RuntimeException('fixture_session_remains');
+            }
+
+            $deletedAdmin = User::query()
+                ->whereKey($admin->id)
+                ->where('email', $ownership['adminEmail'])
+                ->where('is_admin', true)
+                ->where('is_super_admin', true)
+                ->delete();
+            if ($deletedAdmin !== 1) {
+                throw new RuntimeException('fixture_admin_delete_mismatch');
             }
         });
 
