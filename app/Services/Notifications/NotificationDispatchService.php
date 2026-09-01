@@ -10,6 +10,7 @@ use App\Models\NotificationDispatch;
 use App\Models\NotificationTemplate;
 use App\Models\Order;
 use App\Models\User;
+use Illuminate\Contracts\Mail\Mailer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -22,6 +23,7 @@ class NotificationDispatchService
     public function __construct(
         private readonly NotificationContextFactory $contextFactory,
         private readonly NotificationTemplateRenderer $renderer,
+        private readonly Mailer $mailer,
     ) {}
 
     /** @param array<string, mixed> $extra
@@ -153,7 +155,7 @@ class NotificationDispatchService
         $rendered = $this->renderer->render($template, $variables);
 
         $dispatch = DB::transaction(function () use ($template, $recipientEmail, $actor, $variables, $rendered): NotificationDispatch {
-            $dispatch = NotificationDispatch::query()->create($this->newSnapshot(
+            return NotificationDispatch::query()->create($this->newSnapshot(
                 template: $template,
                 rendered: $rendered,
                 variables: $variables,
@@ -166,11 +168,17 @@ class NotificationDispatchService
                 sourceType: 'notification_template',
                 sourceId: (string) $template->id,
             ));
-
-            $this->queueAfterCommit($dispatch);
-
-            return $dispatch;
         });
+
+        $job = new SendOrderNotificationJob($dispatch->id, $dispatch->queue_generation);
+
+        try {
+            $job->handleSynchronously($this->mailer);
+        } catch (Throwable $error) {
+            $job->failed($error);
+
+            throw $error;
+        }
 
         return $dispatch->refresh();
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Notifications\NotificationEventCatalog;
+use App\Domain\Notifications\NotificationDeliveryException;
 use App\Domain\Notifications\NotificationPermission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateNotificationTemplateRequest;
@@ -123,7 +124,13 @@ class NotificationTemplateApiController extends Controller
         ]);
         $this->defaults->synchronize();
         $template = NotificationTemplate::query()->where('event_key', $eventKey)->firstOrFail();
-        $dispatch = $this->dispatches->test($template, $validated['recipientEmail'], $request->user());
+        try {
+            $dispatch = $this->dispatches->test($template, $validated['recipientEmail'], $request->user());
+        } catch (NotificationDeliveryException) {
+            return response()->json([
+                'message' => 'Test email could not be sent. Check the mail configuration and try again.',
+            ], 502);
+        }
 
         return response()->json(['data' => $this->dispatchData($dispatch)], 201);
     }

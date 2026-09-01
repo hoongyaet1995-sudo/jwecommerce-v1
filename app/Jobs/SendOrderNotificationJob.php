@@ -43,6 +43,16 @@ class SendOrderNotificationJob implements ShouldQueue
 
     public function handle(Mailer $mailer): void
     {
+        $this->deliver($mailer, $this->attempts());
+    }
+
+    public function handleSynchronously(Mailer $mailer): void
+    {
+        $this->deliver($mailer, 1);
+    }
+
+    private function deliver(Mailer $mailer, int $attempt): void
+    {
         if ($this->queueGeneration === null) {
             $exception = new NotificationDeliveryException('queue');
             $this->failed($exception);
@@ -52,7 +62,7 @@ class SendOrderNotificationJob implements ShouldQueue
 
         $dispatch = NotificationDispatch::claimForDelivery(
             $this->dispatchId,
-            $this->attempts(),
+            $attempt,
             $this->queueGeneration,
         );
 

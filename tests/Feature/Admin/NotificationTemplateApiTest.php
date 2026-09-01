@@ -4,15 +4,21 @@ namespace Tests\Feature\Admin;
 
 use App\Domain\Notifications\NotificationPermission;
 use App\Jobs\SendOrderNotificationJob;
+use App\Mail\OrderStatusNotificationMail;
 use App\Models\NotificationDispatch;
 use App\Models\NotificationTemplate;
 use App\Models\User;
 use App\Services\Notifications\NotificationTemplateDefaults;
+use Illuminate\Contracts\Mail\Mailer as MailerContract;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Mail\PendingMail;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
+use Symfony\Component\Mailer\Exception\TransportException;
 use Tests\TestCase;
+use Throwable;
 
 class NotificationTemplateApiTest extends TestCase
 {
@@ -283,8 +289,9 @@ class NotificationTemplateApiTest extends TestCase
         $this->assertSame($admin->id, $reset->updated_by);
     }
 
-    public function test_email_test_is_permissioned_queued_rate_limited_and_excludes_private_fields_from_its_dto(): void
+    public function test_email_test_is_permissioned_sent_synchronously_rate_limited_and_excludes_private_fields_from_its_dto(): void
     {
+        Mail::fake();
         Queue::fake();
         app(NotificationTemplateDefaults::class)->synchronize();
         $template = NotificationTemplate::query()->where('event_key', 'order_created')->firstOrFail();
@@ -300,7 +307,7 @@ class NotificationTemplateApiTest extends TestCase
         ])->assertCreated()
             ->assertJsonPath('data.eventKey', 'order_created')
             ->assertJsonPath('data.source', NotificationDispatch::SOURCE_TEST)
-            ->assertJsonPath('data.state', NotificationDispatch::STATE_QUEUED);
+            ->assertJsonPath('data.state', NotificationDispatch::STATE_SENT);
 
         $payload = $response->json('data');
         $this->assertArrayNotHasKey('recipientEmail', $payload);
@@ -313,7 +320,9 @@ class NotificationTemplateApiTest extends TestCase
             'source' => NotificationDispatch::SOURCE_TEST,
             'requested_by' => $tester->id,
         ]);
-        Queue::assertPushed(SendOrderNotificationJob::class, 1);
+        Mail::assertSent(OrderStatusNotificationMail::class, fn (OrderStatusNotificationMail $mail): bool =>
+            $mail->hasTo('qa@example.com', 'Notification Test'));
+        Queue::assertNotPushed(SendOrderNotificationJob::class);
 
         for ($request = 2; $request <= 6; $request++) {
             $this->actingAs($tester)->postJson('/admin/api/notification-templates/order_created/test', [
@@ -324,6 +333,31 @@ class NotificationTemplateApiTest extends TestCase
         $this->actingAs($tester)->postJson('/admin/api/notification-templates/order_created/test', [
             'recipientEmail' => 'rate-limited@example.com',
         ])->assertTooManyRequests();
+    }
+
+    public function test_synchronous_email_test_records_a_safe_failure_when_smtp_rejects_delivery(): void
+    {
+        app(NotificationTemplateDefaults::class)->synchronize();
+        $tester = $this->staffWith([NotificationPermission::TEST_SEND]);
+        $this->app->instance(MailerContract::class, new FailingNotificationTestMailer(
+            new TransportException('SMTP authentication failed with private-password'),
+        ));
+
+        $this->actingAs($tester)->postJson('/admin/api/notification-templates/order_created/test', [
+            'recipientEmail' => 'qa@example.com',
+        ])->assertStatus(502)
+            ->assertJsonPath('message', 'Test email could not be sent. Check the mail configuration and try again.')
+            ->assertJsonMissing(['recipientEmail' => 'qa@example.com'])
+            ->assertJsonMissing(['exception' => TransportException::class]);
+
+        $this->assertDatabaseHas('notification_dispatches', [
+            'event_key' => 'order_created',
+            'source' => NotificationDispatch::SOURCE_TEST,
+            'state' => NotificationDispatch::STATE_FAILED,
+            'attempt_count' => 1,
+            'last_error_code' => 'transport',
+        ]);
+        $this->assertDatabaseCount('jobs', 0);
     }
 
     public function test_admin_bootstrap_exposes_only_effective_notification_permissions_and_safe_base_urls(): void
@@ -363,5 +397,35 @@ class NotificationTemplateApiTest extends TestCase
         }
 
         return $staff;
+    }
+}
+
+final class FailingNotificationTestMailer implements MailerContract
+{
+    public function __construct(private readonly Throwable $error) {}
+
+    public function to($users): PendingMail
+    {
+        return (new PendingMail($this))->to($users);
+    }
+
+    public function bcc($users): PendingMail
+    {
+        return (new PendingMail($this))->bcc($users);
+    }
+
+    public function raw($text, $callback): never
+    {
+        throw $this->error;
+    }
+
+    public function send($view, array $data = [], $callback = null): never
+    {
+        throw $this->error;
+    }
+
+    public function sendNow($mailable, array $data = [], $callback = null): never
+    {
+        throw $this->error;
     }
 }

@@ -352,9 +352,9 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
         testRecipient,
       );
       setIsTestModalOpen(false);
-      setOperationStatus('Queued');
+      setOperationStatus('Sent');
     } catch (error: unknown) {
-      setTestSendError(error instanceof Error ? error.message : 'Notification test could not be queued.');
+      setTestSendError(error instanceof Error ? error.message : 'Notification test could not be sent.');
     } finally {
       setIsTesting(false);
     }
@@ -1093,7 +1093,7 @@ export const NotificationTemplateSettingAdmin: React.FC = () => {
 
             <p className="text-xs text-neutral-500">
               {activeChannel === 'email' ? (
-                <>Queues a real test of the <strong>{localFormData.statusName}</strong> Email template populated with test order details.</>
+                <>Sends a real test of the <strong>{localFormData.statusName}</strong> Email template populated with test order details.</>
               ) : (
                 <>The <strong>{localFormData.statusName}</strong> WhatsApp template remains previewable, but delivery is <strong>Not connected</strong>.</>
               )}

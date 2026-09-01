@@ -153,13 +153,13 @@ class NotificationTemplateApi {
         id: `test-${this.testDispatches}`,
         eventKey,
         channel: 'email',
-        state: 'queued',
+        state: 'sent',
         source: 'test',
         subject: current.emailSubject,
         templateVersion: current.version,
-        attemptCount: 0,
+        attemptCount: 1,
         queuedAt: '2026-08-31T00:01:00.000000Z',
-        sentAt: null,
+        sentAt: '2026-08-31T00:01:01.000000Z',
         failedAt: null,
         errorCode: null,
         resendOfId: null,
@@ -471,7 +471,7 @@ describe('NotificationTemplateSettingAdmin real-data binding', () => {
     expect(desktop.className).toContain('bg-white');
   });
 
-  it('queues an Email test and reports Queued rather than delivered', async () => {
+  it('sends an Email test synchronously and reports Sent', async () => {
     const { host } = await mount();
     const api = (mockedAdminContext.value as { api: NotificationTemplateApi }).api;
 
@@ -480,8 +480,8 @@ describe('NotificationTemplateSettingAdmin real-data binding', () => {
     await change(recipient, 'qa@example.test');
     await act(async () => button(host, 'Send Test').click());
 
-    await vi.waitFor(() => expect(host.textContent).toContain('Queued'));
-    expect(host.textContent).not.toContain('delivered');
+    await vi.waitFor(() => expect(host.textContent).toContain('Sent'));
+    expect(host.textContent).not.toContain('Queued');
     expect(api.testDispatches).toBe(1);
   });
 
