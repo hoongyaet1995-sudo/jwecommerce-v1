@@ -70,6 +70,7 @@ export const OrderAdmin: React.FC = () => {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const selectedOrderRef = useRef<Order | null>(null);
   const statusUpdateRequestRef = useRef(0);
+  const producerMutationRequestRef = useRef(0);
   const canViewNotificationAudit = notificationPermissions.includes('notifications.deliveries.view');
 
   // Manual Fulfillment State
@@ -98,6 +99,7 @@ export const OrderAdmin: React.FC = () => {
 
   const handleOpenDetail = (order: Order) => {
     statusUpdateRequestRef.current += 1;
+    producerMutationRequestRef.current += 1;
     selectedOrderRef.current = order;
     setSelectedOrder(order);
     setTrackingNumberInput(order.trackingNumber || '');
@@ -125,6 +127,7 @@ export const OrderAdmin: React.FC = () => {
 
   const handleCloseDetail = () => {
     statusUpdateRequestRef.current += 1;
+    producerMutationRequestRef.current += 1;
     selectedOrderRef.current = null;
     setIsUpdatingStatus(false);
     setIsDetailOpen(false);
@@ -134,7 +137,10 @@ export const OrderAdmin: React.FC = () => {
     if (!selectedOrder?.paymentProof?.paymentId) return;
     const reason = rejectionReasonInput.trim();
     if (decision === 'rejected' && !reason) return;
-    const saved = await reviewPaymentProof(selectedOrder.id, selectedOrder.paymentProof.paymentId, decision, reason || undefined);
+    const orderId = selectedOrder.id;
+    const requestId = ++producerMutationRequestRef.current;
+    const saved = await reviewPaymentProof(orderId, selectedOrder.paymentProof.paymentId, decision, reason || undefined);
+    if (requestId !== producerMutationRequestRef.current || selectedOrderRef.current?.id !== orderId) return;
     if (saved) {
       selectedOrderRef.current = saved;
       setSelectedOrder(saved);
@@ -194,7 +200,10 @@ export const OrderAdmin: React.FC = () => {
 
     const carrier = manualCarrier.trim();
     const tracking = manualTracking.trim();
+    const orderId = selectedOrder.id;
+    const requestId = ++producerMutationRequestRef.current;
     const saved = await updateOrderTracking(selectedOrder.id, carrier, tracking);
+    if (requestId !== producerMutationRequestRef.current || selectedOrderRef.current?.id !== orderId) return;
     if (saved) {
       selectedOrderRef.current = saved;
       setSelectedOrder(saved);

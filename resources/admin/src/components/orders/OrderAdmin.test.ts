@@ -126,6 +126,36 @@ const exactButton = (host: HTMLElement, label: string): HTMLButtonElement => {
   return match as HTMLButtonElement;
 };
 
+const detailButton = (host: HTMLElement, index: number): HTMLButtonElement => {
+  const matches = Array.from(host.querySelectorAll('button')).filter(button => button.textContent?.trim() === 'Details');
+  const match = matches[index];
+  if (!match) throw new Error(`Details button not found at index ${index}`);
+  return match as HTMLButtonElement;
+};
+
+const closeDetailButton = (host: HTMLElement): HTMLButtonElement => {
+  const match = host.querySelector('svg.lucide-x')?.closest('button');
+  if (!match) throw new Error('Order Detail close button not found');
+  return match;
+};
+
+const deferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>(next => { resolve = next; });
+  return { promise, resolve };
+};
+
+const fillManualDispatch = async (host: HTMLElement, carrierValue: string, trackingValue: string) => {
+  const carrier = host.querySelector('input[placeholder^="e.g. DHL Express"]') as HTMLInputElement;
+  const tracking = host.querySelector('input[placeholder^="e.g. TRK-"]') as HTMLInputElement;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(carrier, carrierValue);
+    carrier.dispatchEvent(new Event('input', { bubbles: true }));
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(tracking, trackingValue);
+    tracking.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+};
+
 beforeEach(() => {
   const updateOrderStatus = vi.fn(async (
     _orderId: string,
@@ -350,6 +380,220 @@ describe('OrderAdmin notification mutation binding', () => {
     expect(statusSelect.value).toBe('status_processing');
     expect(note.value).toBe('Newer same-order note');
     expect(host.textContent).not.toContain('Status update Email intent: Queued');
+  });
+
+  it('ignores a delayed proof-review response after the operator switches from order A to order B', async () => {
+    const reviewGate = deferred<Order | null>();
+    const reviewPaymentProof = vi.fn(() => reviewGate.promise);
+    const orderA = baseOrder({
+      paymentGateway: 'Bank In / DuitNow',
+      paymentGatewayStatus: 'pending',
+      paymentProof: { required: true, paymentId: 'payment-a', status: 'uploaded', canReview: true },
+    });
+    const orderB = baseOrder({ id: '18', orderNumber: 'JW-10018', customerEmail: 'buyer-b@example.test' });
+    mockedAdminContext.value = { ...mockedAdminContext.value, orders: [orderA, orderB], reviewPaymentProof };
+    const { host } = await mountOrderAdmin();
+
+    await act(async () => detailButton(host, 0).click());
+    const auditFetch = (mockedAdminContext.value as { auditFetch: ReturnType<typeof vi.fn> }).auditFetch;
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(1));
+    act(() => exactButton(host, 'Verify payment').click());
+    await vi.waitFor(() => expect(reviewPaymentProof).toHaveBeenCalledTimes(1));
+    await act(async () => closeDetailButton(host).click());
+    await act(async () => detailButton(host, 1).click());
+    await vi.waitFor(() => expect(host.textContent).toContain('JW-10018'));
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2));
+
+    await act(async () => reviewGate.resolve(baseOrder({
+      customerEmail: 'stale-proof-a@example.test',
+      paymentGateway: 'Bank In / DuitNow',
+      paymentGatewayStatus: 'paid',
+      paymentProof: { required: true, paymentId: 'payment-a', status: 'verified', canReview: false },
+      notificationContextFingerprint: 'stale-proof-a-context',
+    })));
+
+    expect(host.textContent).toContain('JW-10018');
+    expect(host.textContent).toContain('Dispatch Email Update to buyer-b@example.test');
+    expect(host.textContent).not.toContain('stale-proof-a@example.test');
+    expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2);
+  });
+
+  it('keeps order B unchanged when a delayed proof-review error settles as null', async () => {
+    const reviewGate = deferred<Order | null>();
+    const reviewPaymentProof = vi.fn(() => reviewGate.promise);
+    const orderA = baseOrder({
+      paymentGateway: 'Bank In / DuitNow',
+      paymentGatewayStatus: 'pending',
+      paymentProof: { required: true, paymentId: 'payment-a', status: 'uploaded', canReview: true },
+    });
+    const orderB = baseOrder({ id: '18', orderNumber: 'JW-10018', customerEmail: 'buyer-b@example.test' });
+    mockedAdminContext.value = { ...mockedAdminContext.value, orders: [orderA, orderB], reviewPaymentProof };
+    const { host } = await mountOrderAdmin();
+
+    await act(async () => detailButton(host, 0).click());
+    const auditFetch = (mockedAdminContext.value as { auditFetch: ReturnType<typeof vi.fn> }).auditFetch;
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(1));
+    act(() => exactButton(host, 'Verify payment').click());
+    await vi.waitFor(() => expect(reviewPaymentProof).toHaveBeenCalledTimes(1));
+    await act(async () => closeDetailButton(host).click());
+    await act(async () => detailButton(host, 1).click());
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2));
+
+    await act(async () => reviewGate.resolve(null));
+
+    expect(host.textContent).toContain('Dispatch Email Update to buyer-b@example.test');
+    expect(host.textContent).not.toContain('Status update Email intent:');
+    expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2);
+  });
+
+  it('keeps a newer same-order proof review through an A-to-B-to-A delayed response', async () => {
+    const oldGate = deferred<Order | null>();
+    const newGate = deferred<Order | null>();
+    const reviewPaymentProof = vi.fn()
+      .mockImplementationOnce(() => oldGate.promise)
+      .mockImplementationOnce(() => newGate.promise);
+    const orderA = baseOrder({
+      paymentGateway: 'Bank In / DuitNow',
+      paymentGatewayStatus: 'pending',
+      paymentProof: { required: true, paymentId: 'payment-a', status: 'uploaded', canReview: true },
+    });
+    const orderB = baseOrder({ id: '18', orderNumber: 'JW-10018', customerEmail: 'buyer-b@example.test' });
+    mockedAdminContext.value = { ...mockedAdminContext.value, orders: [orderA, orderB], reviewPaymentProof };
+    const { host } = await mountOrderAdmin();
+
+    await act(async () => detailButton(host, 0).click());
+    const auditFetch = (mockedAdminContext.value as { auditFetch: ReturnType<typeof vi.fn> }).auditFetch;
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(1));
+    act(() => exactButton(host, 'Verify payment').click());
+    await vi.waitFor(() => expect(reviewPaymentProof).toHaveBeenCalledTimes(1));
+    await act(async () => closeDetailButton(host).click());
+    await act(async () => detailButton(host, 1).click());
+    await act(async () => closeDetailButton(host).click());
+    await act(async () => detailButton(host, 0).click());
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(3));
+    act(() => exactButton(host, 'Verify payment').click());
+    await vi.waitFor(() => expect(reviewPaymentProof).toHaveBeenCalledTimes(2));
+
+    await act(async () => newGate.resolve(baseOrder({
+      customerEmail: 'newer-proof-a@example.test',
+      paymentGateway: 'Bank In / DuitNow',
+      paymentGatewayStatus: 'paid',
+      paymentProof: { required: true, paymentId: 'payment-a', status: 'verified', canReview: false },
+      notificationContextFingerprint: 'newer-proof-a-context',
+    })));
+    await vi.waitFor(() => expect(host.textContent).toContain('Dispatch Email Update to newer-proof-a@example.test'));
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(4));
+
+    await act(async () => oldGate.resolve(baseOrder({
+      customerEmail: 'stale-proof-a@example.test',
+      paymentGateway: 'Bank In / DuitNow',
+      paymentGatewayStatus: 'paid',
+      paymentProof: { required: true, paymentId: 'payment-a', status: 'verified', canReview: false },
+      notificationContextFingerprint: 'stale-proof-a-context',
+    })));
+
+    expect(host.textContent).toContain('Dispatch Email Update to newer-proof-a@example.test');
+    expect(host.textContent).not.toContain('stale-proof-a@example.test');
+    expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(4);
+  });
+
+  it('ignores a delayed manual-dispatch response after the operator switches from order A to order B', async () => {
+    const dispatchGate = deferred<Order | null>();
+    const updateOrderTracking = vi.fn(() => dispatchGate.promise);
+    const orderB = baseOrder({ id: '18', orderNumber: 'JW-10018', customerEmail: 'buyer-b@example.test' });
+    mockedAdminContext.value = { ...mockedAdminContext.value, orders: [baseOrder(), orderB], updateOrderTracking };
+    const { host } = await mountOrderAdmin();
+
+    await act(async () => detailButton(host, 0).click());
+    const auditFetch = (mockedAdminContext.value as { auditFetch: ReturnType<typeof vi.fn> }).auditFetch;
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(1));
+    await fillManualDispatch(host, 'Old Carrier', 'OLD-A-1001');
+    act(() => exactButton(host, 'Record dispatch').click());
+    await vi.waitFor(() => expect(updateOrderTracking).toHaveBeenCalledTimes(1));
+    await act(async () => closeDetailButton(host).click());
+    await act(async () => detailButton(host, 1).click());
+    await vi.waitFor(() => expect(host.textContent).toContain('JW-10018'));
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2));
+
+    await act(async () => dispatchGate.resolve(baseOrder({
+      customerEmail: 'stale-dispatch-a@example.test',
+      trackingCarrier: 'Old Carrier',
+      trackingNumber: 'OLD-A-1001',
+      notificationContextFingerprint: 'stale-dispatch-a-context',
+    })));
+
+    expect(host.textContent).toContain('JW-10018');
+    expect(host.textContent).toContain('Dispatch Email Update to buyer-b@example.test');
+    expect(host.textContent).not.toContain('stale-dispatch-a@example.test');
+    expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2);
+  });
+
+  it('keeps order B unchanged when a delayed manual-dispatch error settles as null', async () => {
+    const dispatchGate = deferred<Order | null>();
+    const updateOrderTracking = vi.fn(() => dispatchGate.promise);
+    const orderB = baseOrder({ id: '18', orderNumber: 'JW-10018', customerEmail: 'buyer-b@example.test' });
+    mockedAdminContext.value = { ...mockedAdminContext.value, orders: [baseOrder(), orderB], updateOrderTracking };
+    const { host } = await mountOrderAdmin();
+
+    await act(async () => detailButton(host, 0).click());
+    const auditFetch = (mockedAdminContext.value as { auditFetch: ReturnType<typeof vi.fn> }).auditFetch;
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(1));
+    await fillManualDispatch(host, 'Old Carrier', 'OLD-A-1001');
+    act(() => exactButton(host, 'Record dispatch').click());
+    await vi.waitFor(() => expect(updateOrderTracking).toHaveBeenCalledTimes(1));
+    await act(async () => closeDetailButton(host).click());
+    await act(async () => detailButton(host, 1).click());
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2));
+
+    await act(async () => dispatchGate.resolve(null));
+
+    expect(host.textContent).toContain('Dispatch Email Update to buyer-b@example.test');
+    expect(host.textContent).not.toContain('Manual Dispatch Recorded');
+    expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2);
+  });
+
+  it('keeps a newer same-order manual dispatch through an A-to-B-to-A delayed response', async () => {
+    const oldGate = deferred<Order | null>();
+    const newGate = deferred<Order | null>();
+    const updateOrderTracking = vi.fn()
+      .mockImplementationOnce(() => oldGate.promise)
+      .mockImplementationOnce(() => newGate.promise);
+    const orderB = baseOrder({ id: '18', orderNumber: 'JW-10018', customerEmail: 'buyer-b@example.test' });
+    mockedAdminContext.value = { ...mockedAdminContext.value, orders: [baseOrder(), orderB], updateOrderTracking };
+    const { host } = await mountOrderAdmin();
+
+    await act(async () => detailButton(host, 0).click());
+    const auditFetch = (mockedAdminContext.value as { auditFetch: ReturnType<typeof vi.fn> }).auditFetch;
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(1));
+    await fillManualDispatch(host, 'Old Carrier', 'OLD-A-1001');
+    act(() => exactButton(host, 'Record dispatch').click());
+    await vi.waitFor(() => expect(updateOrderTracking).toHaveBeenCalledTimes(1));
+    await act(async () => closeDetailButton(host).click());
+    await act(async () => detailButton(host, 1).click());
+    await act(async () => closeDetailButton(host).click());
+    await act(async () => detailButton(host, 0).click());
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(3));
+    await fillManualDispatch(host, 'New Carrier', 'NEW-A-2002');
+    act(() => exactButton(host, 'Record dispatch').click());
+    await vi.waitFor(() => expect(updateOrderTracking).toHaveBeenCalledTimes(2));
+
+    await act(async () => newGate.resolve(baseOrder({
+      trackingCarrier: 'New Carrier',
+      trackingNumber: 'NEW-A-2002',
+      notificationContextFingerprint: 'newer-dispatch-a-context',
+    })));
+    await vi.waitFor(() => expect(host.textContent).toContain('NEW-A-2002'));
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(4));
+
+    await act(async () => oldGate.resolve(baseOrder({
+      trackingCarrier: 'Old Carrier',
+      trackingNumber: 'OLD-A-1001',
+      notificationContextFingerprint: 'stale-dispatch-a-context',
+    })));
+
+    expect(host.textContent).toContain('NEW-A-2002');
+    expect(host.textContent).not.toContain('OLD-A-1001');
+    expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(4);
   });
 
   it('refetches delivery audit after a proof review even when the refreshed order summary is null', async () => {
