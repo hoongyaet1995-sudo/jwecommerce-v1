@@ -17,9 +17,10 @@ class OrderNotificationApiController extends Controller
 {
     public function __construct(private readonly NotificationDispatchService $dispatches) {}
 
-    public function index(Request $request, Order $order): JsonResponse
+    public function index(Request $request, string $order): JsonResponse
     {
         $this->authorizePermission($request, NotificationPermission::DELIVERIES_VIEW);
+        $order = Order::query()->findOrFail($order);
         $dispatches = $order->notificationDispatches()->latest('id')->limit(100)->get();
 
         return response()->json([
@@ -27,13 +28,14 @@ class OrderNotificationApiController extends Controller
         ]);
     }
 
-    public function preview(Request $request, Order $order): JsonResponse
+    public function preview(Request $request, string $order): JsonResponse
     {
         abort_unless(
             NotificationPermission::allows($request->user(), NotificationPermission::DELIVERIES_VIEW)
                 || NotificationPermission::allows($request->user(), NotificationPermission::CURRENT_SEND),
             403,
         );
+        $order = Order::query()->findOrFail($order);
         $validated = $this->validateOrderAction($request);
         $preview = $this->dispatches->preview($order, $validated['eventKey'], $this->extra($validated));
 
@@ -42,9 +44,10 @@ class OrderNotificationApiController extends Controller
         ]);
     }
 
-    public function sendCurrent(Request $request, Order $order): JsonResponse
+    public function sendCurrent(Request $request, string $order): JsonResponse
     {
         $this->authorizePermission($request, NotificationPermission::CURRENT_SEND);
+        $order = Order::query()->findOrFail($order);
         $validated = $this->validateOrderAction($request);
         $dispatch = $this->dispatches->sendCurrent(
             $order,
@@ -56,18 +59,20 @@ class OrderNotificationApiController extends Controller
         return response()->json(['data' => $this->dispatchData($dispatch)], 201);
     }
 
-    public function retry(Request $request, NotificationDispatch $dispatch): JsonResponse
+    public function retry(Request $request, string $dispatch): JsonResponse
     {
         $this->authorizePermission($request, NotificationPermission::DELIVERIES_RETRY);
+        $dispatch = NotificationDispatch::query()->where('public_id', $dispatch)->firstOrFail();
 
         return response()->json([
             'data' => $this->dispatchData($this->dispatches->retry($dispatch, $request->user())),
         ]);
     }
 
-    public function resend(Request $request, NotificationDispatch $dispatch): JsonResponse
+    public function resend(Request $request, string $dispatch): JsonResponse
     {
         $this->authorizePermission($request, NotificationPermission::DELIVERIES_RESEND);
+        $dispatch = NotificationDispatch::query()->where('public_id', $dispatch)->firstOrFail();
 
         return response()->json([
             'data' => $this->dispatchData($this->dispatches->resend($dispatch, $request->user())),

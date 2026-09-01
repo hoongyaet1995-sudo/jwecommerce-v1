@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Domain\Notifications\NotificationDeliveryException;
 use App\Mail\OrderStatusNotificationMail;
 use App\Models\NotificationDispatch;
 use Illuminate\Bus\Queueable;
@@ -52,13 +53,14 @@ class SendOrderNotificationJob implements ShouldQueue
                 'last_error_code' => null,
             ]);
         } catch (Throwable $error) {
+            $safeErrorCode = $this->safeErrorCode($error);
             $this->finishClaim($dispatch, $leaseToken, [
                 'state' => NotificationDispatch::STATE_FAILED,
                 'failed_at' => now(),
-                'last_error_code' => $this->safeErrorCode($error),
+                'last_error_code' => $safeErrorCode,
             ]);
 
-            throw $error;
+            throw new NotificationDeliveryException($safeErrorCode);
         }
     }
 

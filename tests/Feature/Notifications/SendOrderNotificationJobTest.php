@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Notifications;
 
+use App\Domain\Notifications\NotificationDeliveryException;
 use App\Jobs\SendOrderNotificationJob;
 use App\Mail\OrderStatusNotificationMail;
 use App\Models\NotificationDispatch;
@@ -128,8 +129,11 @@ class SendOrderNotificationJobTest extends TestCase
         try {
             (new SendOrderNotificationJob($dispatch->id))->handle(new ThrowingMailer($error));
             $this->fail('The mail transport failure was swallowed.');
-        } catch (TransportException $caught) {
-            $this->assertSame($error, $caught);
+        } catch (NotificationDeliveryException $caught) {
+            $this->assertSame('transport', $caught->safeCode);
+            $this->assertSame('Order notification delivery failed [transport].', $caught->getMessage());
+            $this->assertNull($caught->getPrevious());
+            $this->assertStringNotContainsString('private-password', $caught->getMessage());
         }
 
         $dispatch->refresh();
@@ -154,8 +158,10 @@ class SendOrderNotificationJobTest extends TestCase
             try {
                 (new SendOrderNotificationJob($dispatch->id))->handle(new ThrowingMailer($error));
                 $this->fail('The mail failure was swallowed.');
-            } catch (RuntimeException $caught) {
-                $this->assertSame($error, $caught);
+            } catch (NotificationDeliveryException $caught) {
+                $this->assertSame($expectedCode, $caught->safeCode);
+                $this->assertNull($caught->getPrevious());
+                $this->assertStringNotContainsString($error->getMessage(), $caught->getMessage());
             }
 
             $this->assertSame($expectedCode, $dispatch->refresh()->last_error_code);

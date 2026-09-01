@@ -2,6 +2,7 @@
 
 namespace App\Services\Notifications;
 
+use App\Domain\Notifications\NotificationDeliveryException;
 use App\Domain\Notifications\NotificationEventCatalog;
 use App\Jobs\SendOrderNotificationJob;
 use App\Models\NotificationDispatch;
@@ -87,7 +88,7 @@ class OrderNotificationMilestoneService
                         unset($pendingDispatch);
                     },
                     static function (Throwable $exception) use ($dispatch): void {
-                        report($exception);
+                        report(new NotificationDeliveryException('queue'));
                         rescue(
                             static fn () => NotificationDispatch::query()
                                 ->whereKey($dispatch->id)
@@ -97,7 +98,8 @@ class OrderNotificationMilestoneService
                                     'failed_at' => now(),
                                     'last_error_code' => 'queue',
                                 ]),
-                            report: true,
+                            static fn (Throwable $auditException) => report(new NotificationDeliveryException('unknown')),
+                            report: false,
                         );
                     },
                     report: false,
