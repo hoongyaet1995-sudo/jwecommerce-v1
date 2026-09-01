@@ -54,6 +54,7 @@ import {
   ReviewBulkModerationResult,
   ReviewModerationAction,
   ReviewModerationResult,
+  NotificationPermission,
   StaffUser,
   ShopGeneralSettings,
   StorefrontShellSettings,
@@ -161,6 +162,9 @@ export const fetchReviewAuditForContext = async (
 };
 
 interface AdminContextType {
+  laravelBootstrap: ReturnType<typeof readAdminBootstrap>;
+  notificationPermissions: NotificationPermission[];
+
   // Navigation & Theme
   currentSection: NavSection;
   setCurrentSection: (section: NavSection) => void;
@@ -523,6 +527,9 @@ const STORAGE_KEYS = {
 
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const laravelBootstrap = readAdminBootstrap();
+  const notificationPermissions = laravelBootstrap.notificationPermissions
+    ?? laravelBootstrap.user.notificationPermissions
+    ?? [];
   const [currentSection, setCurrentSectionState] = useState<NavSection>(() => {
     if (typeof window === 'undefined') return 'dashboard';
     return initialSectionFromLocation();
@@ -3818,6 +3825,8 @@ Would you like me to drill down into customer records, inventory allocation, or 
   return (
     <AdminContext.Provider
       value={{
+        laravelBootstrap,
+        notificationPermissions,
         currentSection,
         setCurrentSection,
         theme,

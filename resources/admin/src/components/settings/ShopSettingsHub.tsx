@@ -12,6 +12,7 @@ import { CurrenciesSettingAdmin } from './CurrenciesSettingAdmin';
 import { OrderTotalSettingAdmin } from './OrderTotalSettingAdmin';
 import { TaxClassesSettingAdmin } from './TaxClassesSettingAdmin';
 import { CouriersSettingAdmin } from './CouriersSettingAdmin';
+import { NotificationTemplateSettingAdmin } from './NotificationTemplateSettingAdmin';
 import { AIAutoReplyStudioHub } from '../ai-auto-reply/AIAutoReplyStudioHub';
 import {
   Store,
@@ -50,7 +51,7 @@ export const SETTING_TABS: { id: NavSection; label: string; icon: React.ElementT
   { id: 'settings-shop', label: 'My Shop Setting', icon: Store },
   { id: 'settings-points', label: 'Points/Rewards', icon: Award },
   { id: 'settings-invoice', label: 'Invoice Information Setting', icon: FileText },
-  { id: 'settings-email', label: 'Auto Email Template', icon: Mail },
+  { id: 'settings-email', label: 'Auto Email & WhatsApp Template', icon: Mail },
   { id: 'settings-social', label: 'Social Link Setting', icon: Share2 },
   { id: 'settings-general', label: 'General Setting', icon: Sliders },
   { id: 'settings-agent-group', label: 'Agent Group Setting', icon: Users },
@@ -149,6 +150,15 @@ export const ShopSettingsHub: React.FC = () => {
     return <PaymentSettingAdmin />;
   }
 
+  if (currentSection === 'settings-email') {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+        <SettingNavBar currentSection={currentSection} setCurrentSection={setCurrentSection} />
+        <NotificationTemplateSettingAdmin />
+      </div>
+    );
+  }
+
   if (currentSection === 'settings-orders-status') {
     return (
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
@@ -218,7 +228,7 @@ export const ShopSettingsHub: React.FC = () => {
     { id: 'settings-shop', label: 'My Shop Setting', icon: Store },
     { id: 'settings-points', label: 'Points/Rewards', icon: Award },
     { id: 'settings-invoice', label: 'Invoice Information Setting', icon: FileText },
-    { id: 'settings-email', label: 'Auto Email Template', icon: Mail },
+    { id: 'settings-email', label: 'Auto Email & WhatsApp Template', icon: Mail },
     { id: 'settings-social', label: 'Social Link Setting', icon: Share2 },
     { id: 'settings-general', label: 'General Setting', icon: Sliders },
     { id: 'settings-agent-group', label: 'Agent Group Setting', icon: Users },
