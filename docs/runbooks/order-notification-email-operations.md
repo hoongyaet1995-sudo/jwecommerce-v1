@@ -2,7 +2,7 @@
 
 ## Scope and safety boundary
 
-This runbook operates the Laravel/MySQL Email notification outbox on the official protected Admin routes. It does not connect WhatsApp, create a payment-proof re-upload flow, authorize an EasyParcel action, or send a production message. Local acceptance must use a dedicated `@example.test` fixture and a process-only `MAIL_MAILER=array` or `MAIL_MAILER=log` override. Never print `.env`, transport credentials, rendered bodies, recipient addresses, EasyParcel URLs/tokens, or provider message identifiers into command output or evidence.
+This runbook operates the Laravel/MySQL Email notification outbox on the official protected Admin routes. It does not connect WhatsApp, create a payment-proof re-upload flow, authorize an EasyParcel action, or send a production message. Local acceptance must use a dedicated `@example.test` fixture and a process-only `MAIL_MAILER=array` non-delivering sink. Never print `.env`, transport credentials, rendered bodies, recipient addresses, EasyParcel URLs/tokens, or provider message identifiers into command output or evidence.
 
 Local development truth is `C:\xampp\htdocs\jwstudio-ecommerce`. GitHub and Hostinger synchronization require a fresh approval after localhost acceptance.
 
@@ -18,7 +18,7 @@ DB_QUEUE=default
 DB_QUEUE_RETRY_AFTER=90
 QUEUE_FAILED_DRIVER=database-uuids
 
-MAIL_MAILER=log
+MAIL_MAILER=array
 MAIL_SCHEME=null
 MAIL_HOST=127.0.0.1
 MAIL_PORT=2525
@@ -29,7 +29,7 @@ MAIL_FROM_ADDRESS="hello@example.com"
 MAIL_FROM_NAME="${APP_NAME}"
 ```
 
-`MAIL_MAILER=log` is a non-external local default. The Task 9 smoke harness overrides it with `array` for its owned Laravel server, but it does not start a queue worker or execute a delivery action. Production transport values stay outside Git and are not part of this runbook.
+`MAIL_MAILER=array` is a non-delivering local default and the Task 9 smoke harness forces the same sink for its owned Laravel server. It does not start a queue worker or execute a delivery action. Production transport values stay outside Git and are not part of this runbook. Do not substitute Laravel's `log` mailer for acceptance because rendered bodies and recipients must not be written to logs.
 
 ## Local migration and worker operations
 
@@ -76,9 +76,13 @@ Use one recovery path deliberately. Do not bulk-retry all failed jobs. Match the
 
 **Resend** is not retry. It accepts only a `sent` dispatch, creates a new `manual_resend` row linked by `resend_of_id`, and copies the original frozen content. **Send Current Template** is a separate authorized action that renders and freezes the currently persisted template.
 
+If manual Retry, Resend, Send Current Template, or Test Email cannot publish its queue job after the database transaction commits, the owned dispatch remains auditable and retryable as `failed` with `last_error_code=queue`. The API returns that refreshed safe state. Only a bounded `NotificationDeliveryException` is reported; the raw queue/provider cause must not enter the HTTP response, dispatch row, or application log.
+
 ## Local acceptance sequence
 
-The committed Playwright test is intentionally a minimal read-only browser gate. It owns a unique Admin/order/dispatch fixture in the dedicated MySQL database `jw_ecommerce_testing`, refuses any other database name, uses only `@example.test` addresses, starts its own localhost server with `MAIL_MAILER=array`, captures sanitized smoke evidence under `output/playwright/`, and removes only its exact owned rows during teardown. It does not send a test Email, start a worker, mutate an order/template, Retry, Resend, Send Current, or claim cross-session persistence.
+The committed Playwright test is intentionally a minimal read-only browser gate. It owns a unique Admin/order/dispatch/template fixture in the dedicated MySQL database `jw_ecommerce_testing`, uses only `@example.test` addresses, starts its own localhost server with `MAIL_MAILER=array`, captures sanitized smoke evidence under `output/playwright/`, and removes only token-verified owned rows during teardown. Setup, template synchronization, and signed state creation are one transaction. A built-in failure injection after state-file creation must roll back all counts/template fingerprints and remove the state file before the normal fixture is allowed.
+
+The browser ledger permits GET/HEAD reads, the one exact `/admin/login` authentication POST, and the exact order-preview POST classified as read-only. Every other internal non-GET/HEAD request is aborted; the test then fails if any autosave, status, template, or delivery mutation was attempted. Pre/post business counts and SHA-256 fingerprints must match. The smoke does not send a test Email, start a worker, mutate an order/template, Retry, Resend, Send Current, or claim cross-session persistence.
 
 The database safety gate must resolve to exactly:
 
@@ -86,20 +90,48 @@ The database safety gate must resolve to exactly:
 APP_ENV=testing
 DB_CONNECTION=mysql
 DB_DATABASE=jw_ecommerce_testing
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_URL=(absent)
+DB_SOCKET=(absent)
 QUEUE_CONNECTION=database
+DB_QUEUE_CONNECTION=mysql
 MAIL_MAILER=array
+SESSION_DRIVER=database
+SESSION_CONNECTION=mysql
 ```
 
-After clearing cached configuration, prove the resolved runtime before any migration. The harness `probe` mode is read-only and exits non-zero unless all five values match the gate above:
+The Playwright child environment removes inherited database credentials and connection selectors before forcing the local values above; local credentials are loaded from the canonical uncommitted `.env`. It also removes inherited Laravel cache-path overrides so a hostile cached configuration cannot redirect the check. After clearing cached configuration, the harness `probe` mode validates the resolved host, port, URL/socket absence, queue/session bindings, and runs read-only `SELECT DATABASE()` to prove the actual connected schema. It exits non-zero before migration/setup on a remote host, any DB URL/socket, a wrong port/schema, or an unsafe queue/session connection:
 
 ```powershell
 $env:APP_ENV='testing'
 $env:DB_CONNECTION='mysql'
 $env:DB_DATABASE='jw_ecommerce_testing'
+$env:DB_HOST='127.0.0.1'
+$env:DB_PORT='3306'
+$env:DB_URL=''
+$env:DB_SOCKET=''
+$env:DB_QUEUE_CONNECTION='mysql'
 $env:QUEUE_CONNECTION='database'
 $env:MAIL_MAILER='array'
+$env:SESSION_DRIVER='database'
+$env:SESSION_CONNECTION='mysql'
 $probe = & C:\xampp\php\php.exe resources\admin\tests\fixtures\order-notification-email-harness.php probe | ConvertFrom-Json
-if ($probe.environment -ne 'testing' -or $probe.connection -ne 'mysql' -or $probe.database -ne 'jw_ecommerce_testing' -or $probe.queue -ne 'database' -or $probe.mailer -ne 'array') {
+if (
+    $probe.environment -ne 'testing' `
+    -or $probe.connection -ne 'mysql' `
+    -or $probe.database -ne 'jw_ecommerce_testing' `
+    -or $probe.connectedDatabase -ne 'jw_ecommerce_testing' `
+    -or $probe.host -ne '127.0.0.1' `
+    -or $probe.port -ne 3306 `
+    -or $probe.urlPresent `
+    -or $probe.socketPresent `
+    -or $probe.queue -ne 'database' `
+    -or $probe.queueConnection -ne 'mysql' `
+    -or $probe.mailer -ne 'array' `
+    -or $probe.sessionDriver -ne 'database' `
+    -or $probe.sessionConnection -ne 'mysql'
+) {
     throw 'Unsafe notification acceptance runtime; migration refused.'
 }
 C:\xampp\php\php.exe artisan migrate --env=testing --force --no-interaction
@@ -109,7 +141,7 @@ npx playwright test tests/order-notification-email.spec.ts --project=chromium
 Set-Location ..\..
 ```
 
-For routine acceptance, use the non-destructive `artisan migrate --env=testing --force` command used by the Playwright harness. Run `migrate:fresh` only after the read-only probe has resolved the exact dedicated database in the same shell session. Never run `migrate:fresh`, drop, truncate, or fixture cleanup against `jw_ecommerce`. If the resolved connection is not MySQL database `jw_ecommerce_testing` (or a separately approved isolated SQLite database), stop.
+For routine acceptance, use only the non-destructive `artisan migrate --env=testing --force` command used by the Playwright harness. Task 9 does not require or authorize `migrate:fresh`. Never run `migrate:fresh`, drop, truncate, or fixture cleanup against `jw_ecommerce`. If the resolved connection is not loopback MySQL with both configured and actually connected database `jw_ecommerce_testing`, stop.
 
 ## Localhost fidelity evidence
 
@@ -123,6 +155,8 @@ The approved Google AI Studio source baseline is recorded in the implementation 
 | `output/playwright/order-notification-email/order-detail-mobile-smoke.png` | same protected Order Detail at 390×844 | the notification modal remains attached and renderable at the mobile viewport; no lifecycle action is executed |
 
 The browser intercepted and aborted the pre-existing external Unsplash Admin-avatar request before network. No EasyParcel/provider URL or identifier appeared in the DOM, request URLs, or HTML/JSON response bodies.
+
+Safety JSON under the same evidence directory records the hostile-environment refusals, resolved/connected database proof, injected setup rollback, pre/post business-state fingerprint, request ledger, exact fixture cleanup, and owned process stop. These files contain no credentials, rendered private body, recipient, provider token, or session identifier.
 
 ## Hostinger release prerequisite
 

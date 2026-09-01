@@ -2,6 +2,7 @@
 
 namespace App\Services\Notifications;
 
+use App\Domain\Notifications\NotificationDeliveryException;
 use App\Domain\Notifications\NotificationEventCatalog;
 use App\Domain\Notifications\RenderedNotification;
 use App\Jobs\SendOrderNotificationJob;
@@ -11,6 +12,7 @@ use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class NotificationDispatchService
 {
@@ -64,7 +66,7 @@ class NotificationDispatchService
 
     public function resend(NotificationDispatch $dispatch, User $actor): NotificationDispatch
     {
-        return DB::transaction(function () use ($dispatch, $actor): NotificationDispatch {
+        $resend = DB::transaction(function () use ($dispatch, $actor): NotificationDispatch {
             $original = NotificationDispatch::query()->lockForUpdate()->findOrFail($dispatch->id);
 
             if ($original->state !== NotificationDispatch::STATE_SENT) {
@@ -90,6 +92,8 @@ class NotificationDispatchService
 
             return $resend;
         });
+
+        return $resend->refresh();
     }
 
     /** @param array<string, mixed> $extra */
@@ -106,7 +110,7 @@ class NotificationDispatchService
         $context = $this->orderContext($order, $template, $extra);
         $rendered = $this->renderer->render($template, $context);
 
-        return DB::transaction(function () use ($order, $template, $eventKey, $actor, $context, $rendered): NotificationDispatch {
+        $dispatch = DB::transaction(function () use ($order, $template, $eventKey, $actor, $context, $rendered): NotificationDispatch {
             $dispatch = NotificationDispatch::query()->create($this->newSnapshot(
                 template: $template,
                 rendered: $rendered,
@@ -125,6 +129,8 @@ class NotificationDispatchService
 
             return $dispatch;
         });
+
+        return $dispatch->refresh();
     }
 
     public function test(NotificationTemplate $template, string $recipientEmail, User $actor): NotificationDispatch
@@ -132,7 +138,7 @@ class NotificationDispatchService
         $variables = $this->sampleVariables($template->event_key);
         $rendered = $this->renderer->render($template, $variables);
 
-        return DB::transaction(function () use ($template, $recipientEmail, $actor, $variables, $rendered): NotificationDispatch {
+        $dispatch = DB::transaction(function () use ($template, $recipientEmail, $actor, $variables, $rendered): NotificationDispatch {
             $dispatch = NotificationDispatch::query()->create($this->newSnapshot(
                 template: $template,
                 rendered: $rendered,
@@ -151,6 +157,8 @@ class NotificationDispatchService
 
             return $dispatch;
         });
+
+        return $dispatch->refresh();
     }
 
     public function validateTemplate(NotificationTemplate $template): void
@@ -283,7 +291,26 @@ class NotificationDispatchService
     private function queueAfterCommit(NotificationDispatch $dispatch): void
     {
         DB::afterCommit(static function () use ($dispatch): void {
-            SendOrderNotificationJob::dispatch($dispatch->id)->afterCommit();
+            try {
+                SendOrderNotificationJob::dispatch($dispatch->id)->afterCommit();
+            } catch (Throwable) {
+                report(new NotificationDeliveryException('queue'));
+
+                try {
+                    NotificationDispatch::query()
+                        ->whereKey($dispatch->id)
+                        ->where('state', NotificationDispatch::STATE_QUEUED)
+                        ->update([
+                            'state' => NotificationDispatch::STATE_FAILED,
+                            'failed_at' => now(),
+                            'last_error_code' => 'queue',
+                            'delivery_lease_token' => null,
+                            'delivery_lease_expires_at' => null,
+                        ]);
+                } catch (Throwable) {
+                    report(new NotificationDeliveryException('unknown'));
+                }
+            }
         });
     }
 

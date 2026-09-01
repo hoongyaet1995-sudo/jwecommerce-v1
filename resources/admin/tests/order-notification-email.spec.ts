@@ -1,6 +1,6 @@
-import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
+import { execFileSync, spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { connect } from 'node:net';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,7 +14,19 @@ type HarnessResult = {
   baselineCounts?: Record<string, number>;
   fixtureCounts?: Record<string, number>;
   countsRestored?: boolean;
+  businessStateUnchanged?: boolean;
   finalCounts?: Record<string, number>;
+  counts?: Record<string, number>;
+  businessCounts?: Record<string, number>;
+  businessFingerprint?: string;
+  templateFingerprint?: string;
+};
+
+type RequestLedgerEntry = {
+  method: string;
+  path: string;
+  classification: 'read' | 'login' | 'read-only-preview' | 'mutation';
+  allowed: boolean;
 };
 
 const testDirectory = fileURLToPath(new URL('.', import.meta.url));
@@ -35,22 +47,50 @@ const statePath = resolve(repositoryRoot, 'storage/framework/testing', `task9-or
 let server: ChildProcess | null = null;
 let setup: HarnessResult | null = null;
 
-const acceptanceEnvironment = (): NodeJS.ProcessEnv => ({
-  ...process.env,
-  APP_ENV: 'testing',
-  APP_DEBUG: 'false',
-  APP_URL: baseUrl,
-  DB_CONNECTION: 'mysql',
-  DB_DATABASE: 'jw_ecommerce_testing',
-  QUEUE_CONNECTION: 'database',
-  MAIL_MAILER: 'array',
-  LOG_CHANNEL: 'null',
-  CACHE_STORE: 'array',
-  SESSION_DRIVER: 'database',
-  ORDER_NOTIFICATION_ACCEPTANCE_TOKEN: token,
-  ORDER_NOTIFICATION_ACCEPTANCE_ADMIN_PASSWORD: adminPassword,
-  ORDER_NOTIFICATION_ACCEPTANCE_STATE_PATH: statePath,
-});
+const acceptanceEnvironment = (inherited: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv => {
+  const child = { ...inherited };
+  for (const key of [
+    'APP_CONFIG_CACHE',
+    'APP_EVENTS_CACHE',
+    'APP_PACKAGES_CACHE',
+    'APP_ROUTES_CACHE',
+    'APP_SERVICES_CACHE',
+    'DB_CONNECTION',
+    'DB_DATABASE',
+    'DB_HOST',
+    'DB_PASSWORD',
+    'DB_PORT',
+    'DB_QUEUE_CONNECTION',
+    'DB_SOCKET',
+    'DB_URL',
+    'DB_USERNAME',
+    'MYSQL_ATTR_SSL_CA',
+    'SESSION_CONNECTION',
+  ]) delete child[key];
+
+  return {
+    ...child,
+    APP_ENV: 'testing',
+    APP_DEBUG: 'false',
+    APP_URL: baseUrl,
+    DB_CONNECTION: 'mysql',
+    DB_DATABASE: 'jw_ecommerce_testing',
+    DB_HOST: '127.0.0.1',
+    DB_PORT: '3306',
+    DB_URL: '',
+    DB_SOCKET: '',
+    DB_QUEUE_CONNECTION: 'mysql',
+    QUEUE_CONNECTION: 'database',
+    MAIL_MAILER: 'array',
+    LOG_CHANNEL: 'null',
+    CACHE_STORE: 'array',
+    SESSION_DRIVER: 'database',
+    SESSION_CONNECTION: 'mysql',
+    ORDER_NOTIFICATION_ACCEPTANCE_TOKEN: token,
+    ORDER_NOTIFICATION_ACCEPTANCE_ADMIN_PASSWORD: adminPassword,
+    ORDER_NOTIFICATION_ACCEPTANCE_STATE_PATH: statePath,
+  };
+};
 
 const portHasListener = (): Promise<boolean> => new Promise(resolvePort => {
   const socket = connect({ host: '127.0.0.1', port });
@@ -62,7 +102,7 @@ const portHasListener = (): Promise<boolean> => new Promise(resolvePort => {
 const waitForLogin = async (): Promise<void> => {
   for (let attempt = 0; attempt < 80; attempt += 1) {
     try {
-      const response = await fetch(`${baseUrl}/admin/login`);
+      const response = await fetch(`${baseUrl}/up`);
       if (response.ok) return;
     } catch {}
     await new Promise(resolveWait => setTimeout(resolveWait, 250));
@@ -80,13 +120,36 @@ const stopOwnedServer = async (): Promise<boolean> => {
   return !(await portHasListener());
 };
 
-const runHarness = (mode: 'probe' | 'setup' | 'cleanup'): HarnessResult => {
+const runHarness = (mode: 'probe' | 'baseline' | 'setup' | 'snapshot' | 'cleanup'): HarnessResult => {
   const raw = execFileSync(php, [harness, mode], {
     cwd: repositoryRoot,
     env: acceptanceEnvironment(),
     encoding: 'utf8',
   });
   return JSON.parse(raw.trim()) as HarnessResult;
+};
+
+const refusedHarnessProbe = (overrides: NodeJS.ProcessEnv): { exitCode: number; code: string } => {
+  const result = spawnSync(php, [harness, 'probe'], {
+    cwd: repositoryRoot,
+    env: { ...acceptanceEnvironment(), ...overrides },
+    encoding: 'utf8',
+  });
+  const payload = JSON.parse((result.stderr || result.stdout).trim()) as { code?: string };
+  return { exitCode: result.status ?? -1, code: payload.code ?? 'missing_code' };
+};
+
+const injectedSetupFailure = (): { exitCode: number; code: string } => {
+  const result = spawnSync(php, [harness, 'setup'], {
+    cwd: repositoryRoot,
+    env: {
+      ...acceptanceEnvironment(),
+      ORDER_NOTIFICATION_ACCEPTANCE_FAIL_SETUP_AT: 'after_state_write',
+    },
+    encoding: 'utf8',
+  });
+  const payload = JSON.parse((result.stderr || result.stdout).trim()) as { code?: string };
+  return { exitCode: result.status ?? -1, code: payload.code ?? 'missing_code' };
 };
 
 const writeEvidence = (name: string, evidence: unknown): void => {
@@ -103,6 +166,7 @@ const login = async (page: Page, destination: string): Promise<void> => {
       page.waitForURL(url => url.pathname.startsWith('/admin')),
       page.getByRole('button', { name: 'Sign in to Admin' }).click(),
     ]);
+    await page.goto(`${baseUrl}${destination}`);
   }
 };
 
@@ -121,8 +185,52 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
       env: acceptanceEnvironment(),
       stdio: 'ignore',
     });
+
+    const sanitized = acceptanceEnvironment({
+      ...process.env,
+      DB_HOST: 'production.invalid',
+      DB_PORT: '6432',
+      DB_URL: 'mysql://fake:fake@production.invalid:6432/jw_ecommerce_testing',
+      DB_SOCKET: 'hostile-production-socket',
+      DB_QUEUE_CONNECTION: 'production',
+      SESSION_CONNECTION: 'production',
+    });
+    expect(sanitized).toMatchObject({
+      DB_HOST: '127.0.0.1',
+      DB_PORT: '3306',
+      DB_URL: '',
+      DB_SOCKET: '',
+      DB_QUEUE_CONNECTION: 'mysql',
+      SESSION_CONNECTION: 'mysql',
+    });
+    const hostileProofs = {
+      inheritedEnvironmentSanitized: true,
+      remoteHost: refusedHarnessProbe({ DB_HOST: 'production.invalid', DB_URL: '' }),
+      remoteUrl: refusedHarnessProbe({
+        DB_HOST: '127.0.0.1',
+        DB_URL: 'mysql://fake:fake@production.invalid:3306/jw_ecommerce_testing',
+      }),
+      socket: refusedHarnessProbe({ DB_SOCKET: 'hostile-production-socket' }),
+      wrongDatabase: refusedHarnessProbe({ DB_DATABASE: 'jw_ecommerce' }),
+    };
+    for (const refusal of [hostileProofs.remoteHost, hostileProofs.remoteUrl, hostileProofs.socket, hostileProofs.wrongDatabase]) {
+      expect(refusal).toEqual({ exitCode: 1, code: 'unsafe_runtime_config' });
+    }
+    writeEvidence('hostile-environment-guard.json', hostileProofs);
+
     const probe = runHarness('probe');
-    expect(probe).toMatchObject({ ok: true, mode: 'probe', database: 'jw_ecommerce_testing' });
+    expect(probe).toMatchObject({
+      ok: true,
+      mode: 'probe',
+      database: 'jw_ecommerce_testing',
+      connectedDatabase: 'jw_ecommerce_testing',
+      host: '127.0.0.1',
+      port: 3306,
+      urlPresent: false,
+      socketPresent: false,
+      queueConnection: 'mysql',
+      sessionConnection: 'mysql',
+    });
     writeEvidence('database-isolation-proof.json', probe);
 
     execFileSync(php, ['artisan', 'migrate', '--env=testing', '--force', '--no-interaction'], {
@@ -130,6 +238,22 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
       env: acceptanceEnvironment(),
       stdio: 'ignore',
     });
+
+    const failureBaselineBefore = runHarness('baseline');
+    const failure = injectedSetupFailure();
+    expect(failure).toEqual({ exitCode: 1, code: 'harness_exception' });
+    expect(existsSync(statePath)).toBe(false);
+    const failureBaselineAfter = runHarness('baseline');
+    expect(failureBaselineAfter.counts).toEqual(failureBaselineBefore.counts);
+    expect(failureBaselineAfter.templateFingerprint).toBe(failureBaselineBefore.templateFingerprint);
+    writeEvidence('fixture-failure-atomicity.json', {
+      injectionPoint: 'after_state_write',
+      refusal: failure,
+      countsUnchanged: true,
+      templateFingerprintUnchanged: true,
+      stateFileRemoved: true,
+    });
+
     setup = runHarness('setup');
     writeEvidence('fixture-setup.json', setup);
 
@@ -177,6 +301,7 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
     });
     if (cleanupError) throw cleanupError;
     if (cleanup?.countsRestored !== true) throw new Error('Task 9 smoke fixture cleanup did not restore the exact baseline.');
+    if (cleanup?.businessStateUnchanged !== true) throw new Error('Task 9 smoke detected a business-state mutation before cleanup.');
     if (!portClear) throw new Error(`Task 9 did not prove port ${port} clear after stopping its owned server.`);
   });
 
@@ -186,13 +311,34 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
 
     const blockedExternalRequests: string[] = [];
     const privateNetworkLeaks: string[] = [];
+    const requestLedger: RequestLedgerEntry[] = [];
     const responseBodyChecks: Promise<void>[] = [];
     await page.route('**/*', async route => {
       const url = route.request().url();
+      const method = route.request().method().toUpperCase();
       if (url.includes(privateProviderUrl) || url.includes(privateProviderId)) privateNetworkLeaks.push(url);
       const parsed = new URL(url);
       if (parsed.hostname !== '127.0.0.1') {
         blockedExternalRequests.push(`${parsed.protocol}//${parsed.host}${parsed.pathname}`);
+        await route.abort('blockedbyclient');
+        return;
+      }
+
+      const path = parsed.pathname;
+      const isRead = method === 'GET' || method === 'HEAD';
+      const isLogin = method === 'POST' && path === '/admin/login';
+      const isReadOnlyPreview = method === 'POST'
+        && /^\/admin\/api\/orders\/\d+\/notifications\/preview$/.test(path);
+      const classification: RequestLedgerEntry['classification'] = isRead
+        ? 'read'
+        : isLogin
+          ? 'login'
+          : isReadOnlyPreview
+            ? 'read-only-preview'
+            : 'mutation';
+      const allowed = classification !== 'mutation';
+      requestLedger.push({ method, path, classification, allowed });
+      if (!allowed) {
         await route.abort('blockedbyclient');
         return;
       }
@@ -208,16 +354,24 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
       }).catch(() => undefined));
     });
 
+    const beforeBrowser = runHarness('snapshot');
+    expect(beforeBrowser.businessFingerprint).toBe(setup?.businessFingerprint);
+    expect(beforeBrowser.counts).toEqual(setup?.businessCounts);
+
     await page.setViewportSize({ width: 1440, height: 1000 });
     await login(page, '/admin/settings/email');
     await expect(page.getByRole('heading', { name: /Auto Email & WhatsApp Templates/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /Payment Proof Rejected/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /On Hold/ })).toContainText('DORMANT');
     await expect(page.getByText('Live Customer Preview')).toBeVisible();
+    await expect(page.getByText('[JW Studio] Order #ORD-9845 Received - Please Complete Payment')).toBeVisible();
+    await expect(page.getByText(/Dear Elena Rostova,/)).toBeVisible();
     await page.screenshot({ path: resolve(evidenceDirectory, 'settings-desktop-smoke.png'), fullPage: true });
 
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.getByRole('heading', { name: /Auto Email & WhatsApp Templates/ })).toBeAttached();
+    await expect(page.getByText('[JW Studio] Order #ORD-9845 Received - Please Complete Payment')).toBeAttached();
+    await expect(page.getByText(/Dear Elena Rostova,/)).toBeAttached();
     await page.screenshot({ path: resolve(evidenceDirectory, 'settings-mobile-smoke.png'), fullPage: true });
     await page.setViewportSize({ width: 1440, height: 1000 });
 
@@ -233,23 +387,51 @@ test.describe.serial('Order notification Email authenticated localhost smoke', (
     await expect(orderModal.getByRole('button', { name: 'Resend' })).toBeVisible();
     await page.getByRole('button', { name: 'Preview Message Template' }).click();
     await expect(orderModal).toContainText('Email Subject:');
+    await expect(orderModal).toContainText(`[JW Studio] Order #${orderNumber} Received - Please Complete Payment`);
+    await expect(orderModal).toContainText('Dear Task Nine Smoke,');
+    await expect(orderModal).not.toContainText('Loading current Email preview...');
+    await expect(orderModal).not.toContainText('Current Email preview unavailable');
     await expect(orderModal).toContainText('Not connected');
     await page.screenshot({ path: resolve(evidenceDirectory, 'order-detail-desktop-smoke.png'), fullPage: true });
 
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(orderModal).toBeAttached();
+    await expect(orderModal).toContainText(`[JW Studio] Order #${orderNumber} Received - Please Complete Payment`);
+    await expect(orderModal).toContainText('Dear Task Nine Smoke,');
     await page.screenshot({ path: resolve(evidenceDirectory, 'order-detail-mobile-smoke.png'), fullPage: true });
 
     await expect(page.locator('body')).not.toContainText(privateProviderUrl);
     await expect(page.locator('body')).not.toContainText(privateProviderId);
     await Promise.all(responseBodyChecks);
     expect(privateNetworkLeaks).toEqual([]);
+    const blockedMutations = requestLedger.filter(entry => entry.classification === 'mutation');
+    const executedDeliveryActions = requestLedger.filter(entry => entry.allowed && (
+      (entry.method === 'POST' && /^\/admin\/api\/notification-dispatches\/[^/]+\/(retry|resend)$/.test(entry.path))
+      || (entry.method === 'POST' && /^\/admin\/api\/orders\/\d+\/notifications\/send-current$/.test(entry.path))
+      || (entry.method === 'POST' && /^\/admin\/api\/notification-templates\/[^/]+\/test$/.test(entry.path))
+    ));
+    expect(blockedMutations).toEqual([]);
+    expect(executedDeliveryActions).toEqual([]);
+    expect(requestLedger.filter(entry => entry.classification === 'login')).toHaveLength(1);
+
+    const afterBrowser = runHarness('snapshot');
+    expect(afterBrowser.counts).toEqual(beforeBrowser.counts);
+    expect(afterBrowser.businessFingerprint).toBe(beforeBrowser.businessFingerprint);
+    writeEvidence('business-state-read-only-proof.json', {
+      before: beforeBrowser,
+      after: afterBrowser,
+      countsUnchanged: true,
+      fingerprintUnchanged: true,
+    });
     writeEvidence('browser-smoke-security.json', {
       scope: 'authenticated-read-only-smoke',
-      deliveryActionsExecuted: false,
+      deliveryActionsExecuted: executedDeliveryActions.length > 0,
       privateProviderDataExposed: false,
       privateNetworkLeaks,
       externalRequestsBlockedBeforeNetwork: [...new Set(blockedExternalRequests)].sort(),
+      requestLedger,
+      blockedMutationAttempts: blockedMutations,
+      executedDeliveryActions,
       officialRoutes: ['/admin/settings/email', '/admin/orders'],
     });
   });

@@ -91,18 +91,15 @@ class OrderNotificationSecurityTest extends TestCase
         ];
 
         foreach ($responses as $response) {
-            $serialized = $response->getContent();
-
-            foreach (self::PRIVATE_MARKERS as $marker) {
-                $this->assertStringNotContainsString($marker, $serialized);
-            }
+            $this->assertSafeResponse($this->decodedResponseBody($response->getContent()));
         }
     }
 
     public function test_unauthorized_notification_routes_do_not_allow_template_order_or_dispatch_enumeration(): void
     {
         $order = $this->order('ENUMERATION');
-        $dispatch = NotificationDispatch::factory()->failed()->create(['order_id' => $order->id]);
+        $failed = NotificationDispatch::factory()->failed()->create(['order_id' => $order->id]);
+        $sent = NotificationDispatch::factory()->sent()->create(['order_id' => $order->id]);
         $staff = User::factory()->create(['is_admin' => true, 'is_super_admin' => false]);
         $missingOrderId = $order->id + 999999;
         $missingDispatchId = '00000000-0000-4000-8000-000000000000';
@@ -110,16 +107,43 @@ class OrderNotificationSecurityTest extends TestCase
         $this->getJson('/admin/api/notification-templates')->assertUnauthorized();
         $this->getJson("/admin/api/orders/{$order->id}/notification-dispatches")->assertUnauthorized();
         $this->getJson("/admin/api/orders/{$missingOrderId}/notification-dispatches")->assertUnauthorized();
-        $this->postJson("/admin/api/notification-dispatches/{$dispatch->public_id}/retry")->assertUnauthorized();
+        $this->postJson("/admin/api/notification-dispatches/{$failed->public_id}/retry")->assertUnauthorized();
         $this->postJson("/admin/api/notification-dispatches/{$missingDispatchId}/retry")->assertUnauthorized();
 
-        $this->actingAs($staff)->getJson('/admin/api/notification-templates')->assertForbidden();
-        $this->actingAs($staff)->putJson('/admin/api/notification-templates/order_created', [])->assertForbidden();
-        $this->actingAs($staff)->putJson('/admin/api/notification-templates/not-a-real-event', [])->assertForbidden();
-        $this->actingAs($staff)->getJson("/admin/api/orders/{$order->id}/notification-dispatches")->assertForbidden();
-        $this->actingAs($staff)->getJson("/admin/api/orders/{$missingOrderId}/notification-dispatches")->assertForbidden();
-        $this->actingAs($staff)->postJson("/admin/api/notification-dispatches/{$dispatch->public_id}/retry")->assertForbidden();
-        $this->actingAs($staff)->postJson("/admin/api/notification-dispatches/{$missingDispatchId}/retry")->assertForbidden();
+        $forbiddenResponses = [
+            $this->actingAs($staff)->getJson('/admin/api/notification-templates'),
+            $this->actingAs($staff)->putJson('/admin/api/notification-templates/order_created', []),
+            $this->actingAs($staff)->putJson('/admin/api/notification-templates/not-a-real-event', []),
+            $this->actingAs($staff)->postJson('/admin/api/notification-templates/reset'),
+            $this->actingAs($staff)->postJson('/admin/api/notification-templates/order_created/test', [
+                'recipientEmail' => 'enumeration@example.test',
+            ]),
+            $this->actingAs($staff)->postJson('/admin/api/notification-templates/not-a-real-event/test', [
+                'recipientEmail' => 'enumeration@example.test',
+            ]),
+            $this->actingAs($staff)->getJson("/admin/api/orders/{$order->id}/notification-dispatches"),
+            $this->actingAs($staff)->getJson("/admin/api/orders/{$missingOrderId}/notification-dispatches"),
+            $this->actingAs($staff)->postJson("/admin/api/orders/{$order->id}/notifications/preview", [
+                'eventKey' => 'order_created',
+            ]),
+            $this->actingAs($staff)->postJson("/admin/api/orders/{$missingOrderId}/notifications/preview", [
+                'eventKey' => 'order_created',
+            ]),
+            $this->actingAs($staff)->postJson("/admin/api/orders/{$order->id}/notifications/send-current", [
+                'eventKey' => 'order_created',
+            ]),
+            $this->actingAs($staff)->postJson("/admin/api/orders/{$missingOrderId}/notifications/send-current", [
+                'eventKey' => 'order_created',
+            ]),
+            $this->actingAs($staff)->postJson("/admin/api/notification-dispatches/{$failed->public_id}/retry"),
+            $this->actingAs($staff)->postJson("/admin/api/notification-dispatches/{$missingDispatchId}/retry"),
+            $this->actingAs($staff)->postJson("/admin/api/notification-dispatches/{$sent->public_id}/resend"),
+            $this->actingAs($staff)->postJson("/admin/api/notification-dispatches/{$missingDispatchId}/resend"),
+        ];
+
+        foreach ($forbiddenResponses as $response) {
+            $response->assertForbidden();
+        }
     }
 
     public function test_reported_queue_and_mail_failures_expose_only_bounded_notification_errors(): void
@@ -160,6 +184,100 @@ class OrderNotificationSecurityTest extends TestCase
 
         foreach (self::PRIVATE_MARKERS as $marker) {
             $this->assertStringNotContainsString($marker, $log);
+        }
+    }
+
+    public function test_manual_queue_publication_failures_remain_safe_failed_and_auditable(): void
+    {
+        $privateFailure = implode(' ', self::PRIVATE_MARKERS);
+        $admin = $this->superAdmin();
+        $order = $this->order('MANUAL-QUEUE');
+
+        $failed = NotificationDispatch::factory()->failed()->create(['order_id' => $order->id]);
+        $this->bindThrowingDispatcher($privateFailure);
+        $retry = $this->actingAs($admin)
+            ->postJson("/admin/api/notification-dispatches/{$failed->public_id}/retry")
+            ->assertOk()
+            ->assertJsonPath('data.state', NotificationDispatch::STATE_FAILED)
+            ->assertJsonPath('data.errorCode', 'queue');
+        $this->assertSafeResponse($retry->getContent());
+        $this->assertSafeQueueFailure($failed->refresh());
+
+        $sent = NotificationDispatch::factory()->sent()->create(['order_id' => $order->id]);
+        $this->bindThrowingDispatcher($privateFailure);
+        $resend = $this->actingAs($admin)
+            ->postJson("/admin/api/notification-dispatches/{$sent->public_id}/resend")
+            ->assertCreated()
+            ->assertJsonPath('data.state', NotificationDispatch::STATE_FAILED)
+            ->assertJsonPath('data.errorCode', 'queue');
+        $this->assertSafeResponse($resend->getContent());
+        $this->assertSafeQueueFailure(
+            NotificationDispatch::query()->where('public_id', $resend->json('data.id'))->firstOrFail(),
+        );
+
+        $this->bindThrowingDispatcher($privateFailure);
+        $sendCurrent = $this->actingAs($admin)
+            ->postJson("/admin/api/orders/{$order->id}/notifications/send-current", [
+                'eventKey' => 'order_created',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.state', NotificationDispatch::STATE_FAILED)
+            ->assertJsonPath('data.errorCode', 'queue');
+        $this->assertSafeResponse($sendCurrent->getContent());
+        $this->assertSafeQueueFailure(
+            NotificationDispatch::query()->where('public_id', $sendCurrent->json('data.id'))->firstOrFail(),
+        );
+
+        $this->bindThrowingDispatcher($privateFailure);
+        $testSend = $this->actingAs($admin)
+            ->postJson('/admin/api/notification-templates/order_created/test', [
+                'recipientEmail' => 'manual-queue@example.test',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.state', NotificationDispatch::STATE_FAILED)
+            ->assertJsonPath('data.errorCode', 'queue');
+        $this->assertSafeResponse($testSend->getContent());
+        $this->assertSafeQueueFailure(
+            NotificationDispatch::query()->where('public_id', $testSend->json('data.id'))->firstOrFail(),
+        );
+
+        $log = is_file($this->securityLogPath)
+            ? (string) file_get_contents($this->securityLogPath)
+            : '';
+        $this->assertStringContainsString('notification', strtolower($log));
+        $this->assertSafeResponse($log);
+    }
+
+    private function bindThrowingDispatcher(string $privateFailure): void
+    {
+        $dispatcher = Mockery::mock(Dispatcher::class);
+        $dispatcher->shouldReceive('dispatch')->once()->andThrow(new RuntimeException($privateFailure));
+        $this->app->instance(Dispatcher::class, $dispatcher);
+    }
+
+    private function assertSafeQueueFailure(NotificationDispatch $dispatch): void
+    {
+        $this->assertSame(NotificationDispatch::STATE_FAILED, $dispatch->state);
+        $this->assertSame('queue', $dispatch->last_error_code);
+        $this->assertNotNull($dispatch->failed_at);
+    }
+
+    private function assertSafeResponse(string $serialized): void
+    {
+        foreach (self::PRIVATE_MARKERS as $marker) {
+            $this->assertStringNotContainsString($marker, $serialized);
+            $this->assertStringNotContainsString(json_encode($marker, JSON_THROW_ON_ERROR), $serialized);
+        }
+    }
+
+    private function decodedResponseBody(string $body): string
+    {
+        try {
+            $decoded = json_decode($body, true, flags: JSON_THROW_ON_ERROR);
+
+            return json_encode($decoded, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        } catch (Throwable) {
+            return html_entity_decode($body, ENT_QUOTES | ENT_HTML5);
         }
     }
 
