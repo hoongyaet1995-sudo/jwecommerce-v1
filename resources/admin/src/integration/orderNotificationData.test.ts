@@ -22,12 +22,37 @@ const dispatch = {
 };
 
 const sentDispatch = {
-  ...dispatch,
   id: 'dispatch-sent',
+  eventKey: 'payment_verified',
+  channel: 'email',
   state: 'sent',
+  source: 'automatic',
+  subject: 'Payment verified',
+  templateVersion: 2,
+  attemptCount: 1,
+  queuedAt: '2026-08-31T00:00:00Z',
   sentAt: '2026-08-31T00:01:00Z',
   failedAt: null,
   errorCode: null,
+  resendOfId: null,
+  createdAt: '2026-08-31T00:00:00Z',
+};
+
+const resendDispatch = {
+  id: 'dispatch-resend',
+  eventKey: 'payment_verified',
+  channel: 'email',
+  state: 'queued',
+  source: 'manual_resend',
+  subject: 'Payment verified',
+  templateVersion: 2,
+  attemptCount: 0,
+  queuedAt: '2026-09-01T00:05:00.000000Z',
+  sentAt: null,
+  failedAt: null,
+  errorCode: null,
+  resendOfId: 'dispatch-sent',
+  createdAt: '2026-09-01T00:05:00.000000Z',
 };
 
 const preview = {
@@ -49,7 +74,7 @@ describe('Laravel order notification adapter', () => {
       .mockResolvedValueOnce(jsonResponse({ data: [dispatch] }))
       .mockResolvedValueOnce(jsonResponse({ data: preview }))
       .mockResolvedValueOnce(jsonResponse({ data: { ...dispatch, state: 'queued', failedAt: null, errorCode: null } }))
-      .mockResolvedValueOnce(jsonResponse({ data: { ...sentDispatch, id: 'dispatch-resend', state: 'queued', source: 'manual_resend', sentAt: null, failedAt: null, errorCode: null, resendOfId: 'dispatch-sent' } }, 201))
+      .mockResolvedValueOnce(jsonResponse({ data: resendDispatch }, 201))
       .mockResolvedValueOnce(jsonResponse({ data: { ...dispatch, id: 'dispatch-3', state: 'queued', source: 'admin_current_template' } }, 201));
     vi.stubGlobal('window', { fetch });
 
@@ -59,7 +84,8 @@ describe('Laravel order notification adapter', () => {
       id: 'dispatch-1', state: 'queued', failedAt: null, errorCode: null,
     }));
     await expect(resendNotificationDispatch(bootstrap, 'dispatch-sent')).resolves.toEqual(expect.objectContaining({
-      id: 'dispatch-resend', state: 'queued', source: 'manual_resend', resendOfId: 'dispatch-sent', failedAt: null, errorCode: null,
+      id: 'dispatch-resend', state: 'queued', source: 'manual_resend', resendOfId: 'dispatch-sent', attemptCount: 0,
+      queuedAt: '2026-09-01T00:05:00.000000Z', createdAt: '2026-09-01T00:05:00.000000Z', failedAt: null, errorCode: null,
     }));
     await expect(sendCurrentOrderNotification(bootstrap, '17', { eventKey: 'payment_verified', staffNote: 'Packed safely.' })).resolves.toEqual(expect.objectContaining({ id: 'dispatch-3', state: 'queued' }));
 
