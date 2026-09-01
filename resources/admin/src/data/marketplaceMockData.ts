@@ -198,6 +198,7 @@ export const INITIAL_MARKETPLACE_ORDERS: MarketplaceOrder[] = [
         weightGrams: 420
       }
     ],
+    notificationSummary: null,
     timeline: [
       {
         id: 'evt-1',
@@ -297,6 +298,7 @@ export const INITIAL_MARKETPLACE_ORDERS: MarketplaceOrder[] = [
         weightGrams: 180
       }
     ],
+    notificationSummary: null,
     timeline: [
       {
         id: 'evt-sp-1',
@@ -384,6 +386,7 @@ export const INITIAL_MARKETPLACE_ORDERS: MarketplaceOrder[] = [
         weightGrams: 850
       }
     ],
+    notificationSummary: null,
     timeline: [
       {
         id: 'evt-lz-1',
@@ -468,6 +471,7 @@ export const INITIAL_MARKETPLACE_ORDERS: MarketplaceOrder[] = [
         weightGrams: 6200
       }
     ],
+    notificationSummary: null,
     timeline: [
       {
         id: 'evt-sh-1',
@@ -548,6 +552,7 @@ export const INITIAL_MARKETPLACE_ORDERS: MarketplaceOrder[] = [
         weightGrams: 420
       }
     ],
+    notificationSummary: null,
     timeline: [
       {
         id: 'evt-5-1',

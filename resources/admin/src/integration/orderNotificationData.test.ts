@@ -21,6 +21,15 @@ const dispatch = {
   sentAt: null, failedAt: '2026-08-31T00:01:00Z', errorCode: 'transport', resendOfId: null, createdAt: '2026-08-31T00:00:00Z',
 };
 
+const sentDispatch = {
+  ...dispatch,
+  id: 'dispatch-sent',
+  state: 'sent',
+  sentAt: '2026-08-31T00:01:00Z',
+  failedAt: null,
+  errorCode: null,
+};
+
 const preview = {
   eventKey: 'payment_verified', subject: 'Payment verified', preheader: 'Thank you', heading: 'Payment received',
   body: 'Hello Buyer', ctaText: 'Track order', ctaUrl: 'https://ecom.jwaistudio.online/order-tracking',
@@ -39,25 +48,35 @@ describe('Laravel order notification adapter', () => {
     const fetch = vi.fn()
       .mockResolvedValueOnce(jsonResponse({ data: [dispatch] }))
       .mockResolvedValueOnce(jsonResponse({ data: preview }))
-      .mockResolvedValueOnce(jsonResponse({ data: dispatch }))
-      .mockResolvedValueOnce(jsonResponse({ data: { ...dispatch, id: 'dispatch-2', source: 'manual_resend' } }, 201))
+      .mockResolvedValueOnce(jsonResponse({ data: { ...dispatch, state: 'queued', failedAt: null, errorCode: null } }))
+      .mockResolvedValueOnce(jsonResponse({ data: { ...sentDispatch, id: 'dispatch-resend', state: 'queued', source: 'manual_resend', sentAt: null, failedAt: null, errorCode: null, resendOfId: 'dispatch-sent' } }, 201))
       .mockResolvedValueOnce(jsonResponse({ data: { ...dispatch, id: 'dispatch-3', state: 'queued', source: 'admin_current_template' } }, 201));
     vi.stubGlobal('window', { fetch });
 
     await expect(fetchOrderNotificationDispatches(bootstrap, '17')).resolves.toEqual([dispatch]);
     await expect(previewOrderNotification(bootstrap, '17', { eventKey: 'payment_verified', staffNote: 'Packed safely.' })).resolves.toEqual(preview);
-    await expect(retryNotificationDispatch(bootstrap, 'dispatch-1')).resolves.toEqual(dispatch);
-    await expect(resendNotificationDispatch(bootstrap, 'dispatch-2')).resolves.toEqual(expect.objectContaining({ id: 'dispatch-2', source: 'manual_resend' }));
+    await expect(retryNotificationDispatch(bootstrap, 'dispatch-1')).resolves.toEqual(expect.objectContaining({
+      id: 'dispatch-1', state: 'queued', failedAt: null, errorCode: null,
+    }));
+    await expect(resendNotificationDispatch(bootstrap, 'dispatch-sent')).resolves.toEqual(expect.objectContaining({
+      id: 'dispatch-resend', state: 'queued', source: 'manual_resend', resendOfId: 'dispatch-sent', failedAt: null, errorCode: null,
+    }));
     await expect(sendCurrentOrderNotification(bootstrap, '17', { eventKey: 'payment_verified', staffNote: 'Packed safely.' })).resolves.toEqual(expect.objectContaining({ id: 'dispatch-3', state: 'queued' }));
 
     expect(fetch).toHaveBeenNthCalledWith(1, '/admin/api/orders/17/notification-dispatches', expect.objectContaining({ method: 'GET', credentials: 'same-origin' }));
     expect(fetch).toHaveBeenNthCalledWith(2, '/admin/api/orders/17/notifications/preview', expect.objectContaining({
       method: 'POST', body: JSON.stringify({ eventKey: 'payment_verified', staffNote: 'Packed safely.' }),
+      credentials: 'same-origin', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': 'csrf-token' },
     }));
-    expect(fetch).toHaveBeenNthCalledWith(3, '/admin/api/notification-dispatches/dispatch-1/retry', expect.objectContaining({ method: 'POST' }));
-    expect(fetch).toHaveBeenNthCalledWith(4, '/admin/api/notification-dispatches/dispatch-2/resend', expect.objectContaining({ method: 'POST' }));
+    expect(fetch).toHaveBeenNthCalledWith(3, '/admin/api/notification-dispatches/dispatch-1/retry', expect.objectContaining({
+      method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': 'csrf-token' },
+    }));
+    expect(fetch).toHaveBeenNthCalledWith(4, '/admin/api/notification-dispatches/dispatch-sent/resend', expect.objectContaining({
+      method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': 'csrf-token' },
+    }));
     expect(fetch).toHaveBeenNthCalledWith(5, '/admin/api/orders/17/notifications/send-current', expect.objectContaining({
       method: 'POST', body: JSON.stringify({ eventKey: 'payment_verified', staffNote: 'Packed safely.' }),
+      credentials: 'same-origin', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': 'csrf-token' },
     }));
   });
 

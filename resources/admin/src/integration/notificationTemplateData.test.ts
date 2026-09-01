@@ -83,9 +83,16 @@ describe('Laravel notification template adapter', () => {
       headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': 'csrf-token' },
       body: JSON.stringify({ emailSubject: 'Updated', version: 3 }),
     }));
-    expect(fetch).toHaveBeenNthCalledWith(3, '/admin/api/notification-templates/reset', expect.objectContaining({ method: 'POST' }));
+    expect(fetch).toHaveBeenNthCalledWith(3, '/admin/api/notification-templates/reset', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': 'csrf-token' },
+      body: JSON.stringify({}),
+    });
     expect(fetch).toHaveBeenNthCalledWith(4, '/admin/api/notification-templates/order_created/test', expect.objectContaining({
       method: 'POST',
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': 'csrf-token' },
       body: JSON.stringify({ recipientEmail: 'test@example.test' }),
     }));
   });

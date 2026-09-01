@@ -1,4 +1,10 @@
-import type { NotificationPermission } from './notifications';
+import type {
+  NotificationDispatchChannel,
+  NotificationDispatchSource,
+  NotificationDispatchState,
+  NotificationEventKey,
+  NotificationPermission,
+} from './notifications';
 
 export type AdminRole = 'super_admin' | 'catalog_manager' | 'order_specialist' | 'developer';
 
@@ -466,6 +472,15 @@ export interface OrderEvent {
   user?: string;
 }
 
+export interface OrderNotificationSummary {
+  publicId: string;
+  eventKey: NotificationEventKey;
+  channel: NotificationDispatchChannel;
+  state: NotificationDispatchState;
+  source: NotificationDispatchSource;
+  queuedAt: string | null;
+}
+
 export interface Order {
   id: string;
   orderNumber: string; // e.g. "ORD-9842"
@@ -495,6 +510,7 @@ export interface Order {
   billingAddress: CustomerAddress;
   customerNote?: string;
   internalNote?: string;
+  notificationSummary: OrderNotificationSummary | null;
   customStatusId?: string;
   customStatusName?: string;
   timeline: OrderEvent[];

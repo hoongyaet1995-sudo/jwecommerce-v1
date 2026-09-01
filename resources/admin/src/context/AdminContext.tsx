@@ -2009,6 +2009,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       shippingAmount: 0,
       discountAmount: 0,
       totalAmount: item.sellingPrice,
+      notificationSummary: null,
       shippingAddress: {
         id: `addr-sim-${Date.now()}`,
         isDefault: true,
