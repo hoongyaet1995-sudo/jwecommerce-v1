@@ -786,6 +786,7 @@ export const INITIAL_ORDERS: Order[] = [
     },
     customerNote: 'Please leave package with front reception desk if after 5 PM.',
     internalNote: 'High value client - flagged for VIP handling.',
+    notificationContextFingerprint: 'mock-order-context-ord-2024-8921',
     notificationSummary: null,
     timeline: [
       {
@@ -843,6 +844,7 @@ export const INITIAL_ORDERS: Order[] = [
     totalAmount: 194.85,
     trackingNumber: 'UPS-1Z9999999999999999',
     trackingCarrier: 'UPS Ground Air',
+    notificationContextFingerprint: 'mock-order-context-ord-2024-8922',
     notificationSummary: null,
     shippingAddress: {
       id: 'ord-addr-02',
@@ -916,6 +918,7 @@ export const INITIAL_ORDERS: Order[] = [
     shippingAmount: 35.00,
     discountAmount: 0,
     totalAmount: 384.00,
+    notificationContextFingerprint: 'mock-order-context-ord-2024-8923',
     notificationSummary: null,
     shippingAddress: {
       id: 'ord-addr-03',
@@ -983,6 +986,7 @@ export const INITIAL_ORDERS: Order[] = [
     totalAmount: 180.20,
     trackingNumber: 'FDX-773829102938',
     trackingCarrier: 'FedEx Home Delivery',
+    notificationContextFingerprint: 'mock-order-context-ord-2024-8924',
     notificationSummary: null,
     shippingAddress: {
       id: 'ord-addr-04',
@@ -1693,4 +1697,3 @@ export const INITIAL_SHOP_SETTINGS: ShopGeneralSettings = {
   pointsRedeemRate: 100,
   socialLinks: INITIAL_SOCIAL_LINKS
 };
-

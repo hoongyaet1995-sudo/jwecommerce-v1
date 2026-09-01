@@ -8,11 +8,14 @@ use App\Models\NotificationDispatch;
 use App\Models\Order;
 use App\Models\OrderAddress;
 use App\Models\User;
+use App\Services\Notifications\NotificationContextFactory;
 use App\Services\Payments\PaymentProofService;
 use Illuminate\Support\Collection;
 
 class OrderDataService
 {
+    public function __construct(private readonly NotificationContextFactory $notificationContexts) {}
+
     public function collection(): Collection
     {
         return Order::query()->with([
@@ -59,7 +62,7 @@ class OrderDataService
             'createdAt' => $order->created_at?->toIso8601String(),
             'customerId' => (string) ($order->customer_id ?? ''),
             'customerName' => $customerName !== '' ? $customerName : $order->email,
-            'customerEmail' => $order->email,
+            'customerEmail' => $order->customer?->email ?: $order->email,
             'customerPhone' => $order->customer?->phone,
             'paymentGateway' => $this->paymentGatewayLabel($payment?->gateway),
             'paymentGatewayStatus' => in_array($payment?->status, ['paid', 'pending', 'refunded', 'partially_refunded', 'failed'], true) ? $payment->status : 'failed',
@@ -105,12 +108,13 @@ class OrderDataService
                     'taxZoneCode' => data_get($snapshot, 'tax_zone.code'),
                 ];
             })->values(),
-            'trackingNumber' => $order->tracking_number,
-            'trackingCarrier' => $order->tracking_carrier,
+            'trackingNumber' => $shipment?->tracking_number ?: $order->tracking_number,
+            'trackingCarrier' => $shipment?->carrier_name ?: $order->tracking_carrier,
             'shippingAddress' => $this->address($shipping, 'shipping'),
             'billingAddress' => $this->address($billing, 'billing'),
             'customerNote' => $order->customer_note,
             'internalNote' => $order->internal_note,
+            'notificationContextFingerprint' => $this->notificationContexts->fingerprintForOrder($order),
             'notificationSummary' => $notificationDispatch === null ? null : [
                 'publicId' => $notificationDispatch->public_id,
                 'eventKey' => $notificationDispatch->event_key,

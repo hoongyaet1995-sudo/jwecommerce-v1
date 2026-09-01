@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LaravelAdminBootstrap, Order } from '../types';
-import { reviewPaymentProofData, updateOrderStatusData } from './orderData';
+import { fetchOrders, reviewPaymentProofData, updateOrderStatusData } from './orderData';
 
 const bootstrap: LaravelAdminBootstrap = {
   user: { name: 'Payments Admin', email: 'payments@example.test', avatar: null },
@@ -9,7 +9,13 @@ const bootstrap: LaravelAdminBootstrap = {
   ordersUrl: '/admin/api/orders',
 };
 
-const order = { id: '17', paymentGatewayStatus: 'paid', paymentProof: { status: 'verified' }, notificationSummary: null } as Order;
+const order = {
+  id: '17',
+  paymentGatewayStatus: 'paid',
+  paymentProof: { status: 'verified' },
+  notificationContextFingerprint: 'notification-context-v1',
+  notificationSummary: null,
+} as Order;
 const queuedNotificationSummary = {
   publicId: 'dispatch-queued',
   eventKey: 'payment_verified',
@@ -22,6 +28,17 @@ const queuedNotificationSummary = {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('Laravel payment-proof order adapter', () => {
+  it('rejects an order collection entry without the mandatory notification context fingerprint', async () => {
+    const { notificationContextFingerprint: _notificationContextFingerprint, ...orderWithoutContextFingerprint } = order;
+    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({ orders: [orderWithoutContextFingerprint] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }));
+    vi.stubGlobal('window', { fetch: request });
+
+    await expect(fetchOrders(bootstrap)).rejects.toThrow('Invalid order data response.');
+  });
+
   it('sends the staff notification choice with the order mutation', async () => {
     const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: { ...order, notificationSummary: queuedNotificationSummary } }), {
       status: 200,
@@ -59,6 +76,17 @@ describe('Laravel payment-proof order adapter', () => {
   it('rejects an order mutation response that omits the mandatory notification summary', async () => {
     const { notificationSummary: _notificationSummary, ...orderWithoutNotificationSummary } = order;
     const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: orderWithoutNotificationSummary }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }));
+    vi.stubGlobal('window', { fetch: request });
+
+    await expect(updateOrderStatusData(bootstrap, '17', 'paid', 'processing')).rejects.toThrow('Invalid order data response.');
+  });
+
+  it('rejects an order mutation response that omits the mandatory notification context fingerprint', async () => {
+    const { notificationContextFingerprint: _notificationContextFingerprint, ...orderWithoutContextFingerprint } = order;
+    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: orderWithoutContextFingerprint }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     }));

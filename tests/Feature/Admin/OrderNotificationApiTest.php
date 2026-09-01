@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\NotificationDispatch;
 use App\Models\NotificationTemplate;
 use App\Models\Order;
+use App\Models\Shipment;
 use App\Models\StoreSetting;
 use App\Models\User;
 use App\Services\Notifications\NotificationTemplateDefaults;
@@ -240,6 +241,46 @@ class OrderNotificationApiTest extends TestCase
             ->getJson("/admin/api/orders/{$secondOrder->id}/notification-dispatches")
             ->assertOk()
             ->assertJsonCount(0, 'data');
+    }
+
+    public function test_current_preview_and_send_use_the_same_latest_renderer_context(): void
+    {
+        Queue::fake();
+        $order = $this->order('CONVERGE');
+        $order->customer()->update(['email' => 'preferred-converge@example.com']);
+        Shipment::query()->create([
+            'order_id' => $order->id,
+            'sequence' => 1,
+            'source' => 'easyparcel',
+            'carrier_name' => 'J&T Context Carrier',
+            'tracking_number' => 'JT-CONTEXT-9001',
+            'status' => 'shipped',
+            'currency' => 'MYR',
+        ]);
+        $sender = $this->staffWith([NotificationPermission::CURRENT_SEND]);
+        $action = ['eventKey' => 'shipped', 'staffNote' => 'Current context note.'];
+
+        $preview = $this->actingAs($sender)
+            ->postJson("/admin/api/orders/{$order->id}/notifications/preview", $action)
+            ->assertOk()
+            ->assertJsonPath('data.variables.customer_email', 'preferred-converge@example.com')
+            ->assertJsonPath('data.variables.carrier_name', 'J&amp;T Context Carrier')
+            ->assertJsonPath('data.variables.tracking_number', 'JT-CONTEXT-9001')
+            ->json('data');
+
+        $send = $this->actingAs($sender)
+            ->postJson("/admin/api/orders/{$order->id}/notifications/send-current", $action)
+            ->assertCreated();
+        $dispatch = NotificationDispatch::query()->where('public_id', $send->json('data.id'))->firstOrFail();
+
+        $this->assertSame($preview['subject'], $dispatch->rendered_subject);
+        $this->assertSame($preview['preheader'], $dispatch->rendered_preheader);
+        $this->assertSame($preview['heading'], $dispatch->rendered_heading);
+        $this->assertSame($preview['body'], $dispatch->rendered_body);
+        $this->assertSame($preview['ctaText'], $dispatch->rendered_cta_text);
+        $this->assertSame($preview['ctaUrl'], $dispatch->rendered_cta_url);
+        $this->assertSame('J&T Context Carrier', $dispatch->variable_snapshot['carrier_name']);
+        $this->assertSame('preferred-converge@example.com', $dispatch->variable_snapshot['customer_email']);
     }
 
     public function test_each_manual_action_requires_its_own_permission(): void

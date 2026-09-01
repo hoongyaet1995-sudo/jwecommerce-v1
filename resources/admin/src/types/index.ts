@@ -510,6 +510,7 @@ export interface Order {
   billingAddress: CustomerAddress;
   customerNote?: string;
   internalNote?: string;
+  notificationContextFingerprint: string;
   notificationSummary: OrderNotificationSummary | null;
   customStatusId?: string;
   customStatusName?: string;

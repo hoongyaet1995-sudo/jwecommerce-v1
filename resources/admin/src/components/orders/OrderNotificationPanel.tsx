@@ -67,34 +67,6 @@ const timestamp = (value: string | null): string | null => {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toLocaleString();
 };
 
-const previewFingerprintForOrder = (order: Order): string => JSON.stringify({
-  id: order.id,
-  orderNumber: order.orderNumber,
-  createdAt: order.createdAt,
-  customerName: order.customerName,
-  customerEmail: order.customerEmail,
-  customerPhone: order.customerPhone ?? null,
-  paymentGateway: order.paymentGateway,
-  paymentGatewayStatus: order.paymentGatewayStatus,
-  paymentProvider: order.paymentProvider ?? null,
-  paymentReference: order.paymentReference ?? null,
-  paymentProofStatus: order.paymentProof?.status ?? null,
-  fulfillmentStatus: order.fulfillmentStatus,
-  currency: order.currency,
-  totalAmount: order.totalAmount,
-  trackingNumber: order.trackingNumber ?? null,
-  trackingCarrier: order.trackingCarrier ?? null,
-  shippingAddress: order.shippingAddress,
-  items: order.items.map(item => ({
-    id: item.id,
-    title: item.title,
-    variantTitle: item.variantTitle ?? null,
-    sku: item.sku,
-    price: item.price,
-    quantity: item.quantity,
-  })),
-});
-
 export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
   order,
   eventKey,
@@ -124,7 +96,7 @@ export const OrderNotificationPanel: React.FC<OrderNotificationPanelProps> = ({
   const previewRequestRef = useRef(0);
   const auditRequestRef = useRef(0);
   const actionRequestRef = useRef(0);
-  const previewFingerprint = previewFingerprintForOrder(order);
+  const previewFingerprint = order.notificationContextFingerprint;
   const currentPreviewFingerprintRef = useRef(previewFingerprint);
 
   currentOrderIdRef.current = order.id;

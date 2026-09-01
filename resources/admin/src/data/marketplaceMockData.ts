@@ -198,6 +198,7 @@ export const INITIAL_MARKETPLACE_ORDERS: MarketplaceOrder[] = [
         weightGrams: 420
       }
     ],
+    notificationContextFingerprint: 'mock-marketplace-order-context-1',
     notificationSummary: null,
     timeline: [
       {
@@ -298,6 +299,7 @@ export const INITIAL_MARKETPLACE_ORDERS: MarketplaceOrder[] = [
         weightGrams: 180
       }
     ],
+    notificationContextFingerprint: 'mock-marketplace-order-context-2',
     notificationSummary: null,
     timeline: [
       {
@@ -386,6 +388,7 @@ export const INITIAL_MARKETPLACE_ORDERS: MarketplaceOrder[] = [
         weightGrams: 850
       }
     ],
+    notificationContextFingerprint: 'mock-marketplace-order-context-3',
     notificationSummary: null,
     timeline: [
       {
@@ -471,6 +474,7 @@ export const INITIAL_MARKETPLACE_ORDERS: MarketplaceOrder[] = [
         weightGrams: 6200
       }
     ],
+    notificationContextFingerprint: 'mock-marketplace-order-context-4',
     notificationSummary: null,
     timeline: [
       {
@@ -552,6 +556,7 @@ export const INITIAL_MARKETPLACE_ORDERS: MarketplaceOrder[] = [
         weightGrams: 420
       }
     ],
+    notificationContextFingerprint: 'mock-marketplace-order-context-5',
     notificationSummary: null,
     timeline: [
       {

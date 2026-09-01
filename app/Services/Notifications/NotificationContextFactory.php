@@ -13,6 +13,9 @@ use Illuminate\Validation\ValidationException;
 
 class NotificationContextFactory
 {
+    /** @var array{shop_name: string, shop_email: string, shop_phone: string, shop_whatsapp: string}|null */
+    private ?array $shopContext = null;
+
     public function __construct(private readonly ShopBrand $shopBrand) {}
 
     /** @param array<string, mixed> $extra
@@ -46,11 +49,15 @@ class NotificationContextFactory
             'shipping_address' => $this->shippingAddress($shippingAddress),
             'carrier_name' => $this->carrierName($shipment, $order),
             'tracking_number' => (string) ($shipment?->tracking_number ?: $order->tracking_number ?: ''),
-            'shop_name' => $this->shopBrand->name(),
-            'shop_email' => $this->storeValue('support_email', (string) config('mail.from.address')),
-            'shop_phone' => $this->storeValue('support_phone'),
-            'shop_whatsapp' => $this->storeValue('whatsapp'),
-        ], $this->stringExtra($extra));
+        ], $this->shopContext(), $this->stringExtra($extra));
+    }
+
+    public function fingerprintForOrder(Order $order): string
+    {
+        $context = $this->forOrder($order);
+        ksort($context);
+
+        return hash('sha256', json_encode($context, JSON_THROW_ON_ERROR));
     }
 
     /** @param array<string, mixed> $extra */
@@ -135,5 +142,16 @@ class NotificationContextFactory
             'data',
             $default,
         ));
+    }
+
+    /** @return array{shop_name: string, shop_email: string, shop_phone: string, shop_whatsapp: string} */
+    private function shopContext(): array
+    {
+        return $this->shopContext ??= [
+            'shop_name' => $this->shopBrand->name(),
+            'shop_email' => $this->storeValue('support_email', (string) config('mail.from.address')),
+            'shop_phone' => $this->storeValue('support_phone'),
+            'shop_whatsapp' => $this->storeValue('whatsapp'),
+        ];
     }
 }

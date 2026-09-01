@@ -29,29 +29,29 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
-const NOTIFICATION_EVENT_BY_STATUS_CODE: Readonly<Record<string, NotificationEventKey>> = {
-  pending: 'order_created',
-  processing: 'payment_verified',
-  ready_to_ship: 'ready_to_ship',
-  shipped: 'shipped',
-  delivered: 'delivered',
-  cancelled: 'cancelled',
-  on_hold: 'on_hold',
-};
+const NOTIFICATION_EVENT_BY_STATUS_CODE = new Map<string, NotificationEventKey>([
+  ['pending', 'order_created'],
+  ['processing', 'payment_verified'],
+  ['ready_to_ship', 'ready_to_ship'],
+  ['shipped', 'shipped'],
+  ['delivered', 'delivered'],
+  ['cancelled', 'cancelled'],
+  ['on_hold', 'on_hold'],
+]);
 
-const FULFILLMENT_BY_STATUS_CODE: Readonly<Partial<Record<string, FulfillmentStatus>>> = {
-  processing: 'processing',
-  ready_to_ship: 'processing',
-  shipped: 'shipped',
-  delivered: 'delivered',
-  cancelled: 'cancelled',
-};
+const FULFILLMENT_BY_STATUS_CODE = new Map<string, FulfillmentStatus>([
+  ['processing', 'processing'],
+  ['ready_to_ship', 'processing'],
+  ['shipped', 'shipped'],
+  ['delivered', 'delivered'],
+  ['cancelled', 'cancelled'],
+]);
 
 export const notificationEventKeyForStatus = (code: string): NotificationEventKey | null =>
-  NOTIFICATION_EVENT_BY_STATUS_CODE[code] ?? null;
+  NOTIFICATION_EVENT_BY_STATUS_CODE.get(code) ?? null;
 
 export const OrderAdmin: React.FC = () => {
-  const { orders, updateOrderStatus, updateOrderTracking, reviewPaymentProof, orderStatuses, setCurrentSection } = useAdmin();
+  const { orders, updateOrderStatus, updateOrderTracking, reviewPaymentProof, orderStatuses, setCurrentSection, notificationPermissions } = useAdmin();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -70,6 +70,7 @@ export const OrderAdmin: React.FC = () => {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const selectedOrderRef = useRef<Order | null>(null);
   const statusUpdateRequestRef = useRef(0);
+  const canViewNotificationAudit = notificationPermissions.includes('notifications.deliveries.view');
 
   // Manual Fulfillment State
   const [manualCarrier, setManualCarrier] = useState('');
@@ -137,6 +138,7 @@ export const OrderAdmin: React.FC = () => {
     if (saved) {
       selectedOrderRef.current = saved;
       setSelectedOrder(saved);
+      if (canViewNotificationAudit) setNotificationAuditRefreshKey(value => value + 1);
       setIsRejectBoxOpen(false);
       setRejectionReasonInput('');
     }
@@ -199,6 +201,7 @@ export const OrderAdmin: React.FC = () => {
       setManualCarrier(saved.trackingCarrier || carrier);
       setManualTracking(saved.trackingNumber || tracking);
       setIsDispatched(true);
+      if (canViewNotificationAudit) setNotificationAuditRefreshKey(value => value + 1);
     }
   };
 
@@ -212,7 +215,7 @@ export const OrderAdmin: React.FC = () => {
     setStatusMutationDispatch(null);
 
     // Map to standard fulfillment status if applicable
-    const mappedFulfillment = FULFILLMENT_BY_STATUS_CODE[targetStatus.code] ?? selectedOrder.fulfillmentStatus;
+    const mappedFulfillment = FULFILLMENT_BY_STATUS_CODE.get(targetStatus.code) ?? selectedOrder.fulfillmentStatus;
 
     // Map payment status if default paid
     let mappedPayment = selectedOrder.paymentGatewayStatus;

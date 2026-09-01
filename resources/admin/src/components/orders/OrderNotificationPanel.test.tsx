@@ -74,6 +74,7 @@ const order = (overrides: Partial<Order> = {}): Order => ({
   totalAmount: 128,
   shippingAddress: address,
   billingAddress: { ...address, id: 'billing-1', type: 'billing' },
+  notificationContextFingerprint: 'context-v1',
   notificationSummary: null,
   timeline: [],
   ...overrides,
@@ -388,20 +389,40 @@ describe('OrderNotificationPanel real delivery binding', () => {
     expect(host.textContent).not.toContain('Order JW-10017 note: Old note');
   });
 
-  it('refreshes same-order preview truth and rejects an older delayed response after an authoritative value changes', async () => {
+  it('refreshes complete same-order context truth and rejects an older delayed response', async () => {
     const api = (mockedAdminContext.value as { api: OrderNotificationApi }).api;
     let releaseOldPreview!: () => void;
     api.previewGates.set('shipped', new Promise<void>(resolve => { releaseOldPreview = resolve; }));
-    const { host, render } = await renderPanel({ order: order({ totalAmount: 128 }) });
+    const { host, render } = await renderPanel({ order: order({
+      customerEmail: 'old-context@example.test',
+      trackingCarrier: 'Old Carrier',
+      trackingNumber: 'OLD-TRACKING',
+      shippingSource: { provider: 'Old Carrier', service: 'Old Service' },
+      notificationContextFingerprint: 'context-v1',
+    }) });
 
     await vi.waitFor(() => expect(api.previewRequests).toHaveLength(1));
-    await render({ order: order({ totalAmount: 129 }) });
+    await render({ order: order({
+      customerEmail: 'old-context@example.test',
+      trackingCarrier: 'Old Carrier',
+      trackingNumber: 'OLD-TRACKING',
+      shippingSource: { provider: 'New Shipment Carrier', service: 'New Shipment Service' },
+      notificationContextFingerprint: 'context-v2',
+    }) });
     await vi.waitFor(() => expect(api.previewRequests).toHaveLength(2));
+    await render({ order: order({
+      customerEmail: 'preferred-context@example.test',
+      trackingCarrier: 'Preferred Carrier',
+      trackingNumber: 'PREFERRED-TRACKING',
+      shippingSource: { provider: 'Preferred Carrier', service: 'Preferred Service' },
+      notificationContextFingerprint: 'context-v3',
+    }) });
+    await vi.waitFor(() => expect(api.previewRequests).toHaveLength(3));
     await act(async () => button(host, 'Preview Message Template').click());
-    await vi.waitFor(() => expect(host.textContent).toContain('preview 2'));
+    await vi.waitFor(() => expect(host.textContent).toContain('preview 3'));
 
     await act(async () => releaseOldPreview());
-    expect(host.textContent).toContain('preview 2');
+    expect(host.textContent).toContain('preview 3');
     expect(host.textContent).not.toContain('preview 1');
   });
 

@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\NotificationDispatch;
 use App\Models\NotificationTemplate;
 use App\Models\Order;
+use App\Models\Shipment;
 use App\Models\User;
 use App\Services\Notifications\NotificationTemplateDefaults;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -197,6 +198,48 @@ class OrderApiTest extends TestCase
         $this->actingAs($caseVariant)->patchJson('/admin/api/orders/'.$second->id.'/status', [
             'paymentStatus' => 'paid', 'fulfillmentStatus' => 'processing', 'notifyCustomer' => true,
         ])->assertOk()->assertJsonPath('data.notificationSummary', null);
+    }
+
+    public function test_order_dto_context_fingerprint_tracks_renderer_preferred_customer_and_latest_shipment_truth(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        $order = $this->pendingOrder('CONTEXT');
+
+        $before = $this->actingAs($admin)->getJson('/admin/api/orders')
+            ->assertOk()
+            ->assertJsonPath('orders.0.customerEmail', 'buyer-context@example.com')
+            ->json('orders.0.notificationContextFingerprint');
+
+        Shipment::query()->create([
+            'order_id' => $order->id,
+            'sequence' => 1,
+            'source' => 'easyparcel',
+            'carrier_name' => 'Ninja Van Preferred',
+            'tracking_number' => 'NVP-CONTEXT-1001',
+            'status' => 'shipped',
+            'currency' => 'USD',
+        ]);
+
+        $afterShipmentResponse = $this->actingAs($admin)->getJson('/admin/api/orders')
+            ->assertOk()
+            ->assertJsonPath('orders.0.customerEmail', 'buyer-context@example.com')
+            ->assertJsonPath('orders.0.trackingCarrier', 'Ninja Van Preferred')
+            ->assertJsonPath('orders.0.trackingNumber', 'NVP-CONTEXT-1001');
+        $afterShipment = $afterShipmentResponse->json('orders.0.notificationContextFingerprint');
+
+        $order->customer()->update(['email' => 'preferred-context@example.com']);
+        $afterCustomerResponse = $this->actingAs($admin)->getJson('/admin/api/orders')
+            ->assertOk()
+            ->assertJsonPath('orders.0.customerEmail', 'preferred-context@example.com')
+            ->assertJsonPath('orders.0.trackingCarrier', 'Ninja Van Preferred')
+            ->assertJsonPath('orders.0.trackingNumber', 'NVP-CONTEXT-1001');
+        $afterCustomer = $afterCustomerResponse->json('orders.0.notificationContextFingerprint');
+
+        $this->assertIsString($before);
+        $this->assertIsString($afterShipment);
+        $this->assertIsString($afterCustomer);
+        $this->assertNotSame($before, $afterShipment);
+        $this->assertNotSame($afterShipment, $afterCustomer);
     }
 
     private function pendingOrder(string $suffix = '1001'): Order

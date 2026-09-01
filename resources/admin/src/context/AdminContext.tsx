@@ -2016,6 +2016,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       shippingAmount: 0,
       discountAmount: 0,
       totalAmount: item.sellingPrice,
+      notificationContextFingerprint: `simulated-order-context-${Date.now()}`,
       notificationSummary: null,
       shippingAddress: {
         id: `addr-sim-${Date.now()}`,

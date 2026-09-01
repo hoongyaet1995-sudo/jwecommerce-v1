@@ -24,15 +24,22 @@ const isNotificationSummary = (value: unknown): value is OrderNotificationSummar
     && (summary.queuedAt === null || typeof summary.queuedAt === 'string');
 };
 
-const hasNotificationSummary = (value: unknown): value is Order =>
-  Boolean(value && typeof value === 'object' && 'notificationSummary' in value && isNotificationSummary(value.notificationSummary));
+const hasNotificationContract = (value: unknown): value is Order =>
+  Boolean(
+    value
+    && typeof value === 'object'
+    && 'notificationContextFingerprint' in value
+    && typeof value.notificationContextFingerprint === 'string'
+    && 'notificationSummary' in value
+    && isNotificationSummary(value.notificationSummary),
+  );
 
 export const fetchOrders = async (bootstrap: LaravelAdminBootstrap): Promise<Order[]> => {
   if (!bootstrap.ordersUrl) throw new Error('Order API is unavailable.');
   const response = await window.fetch(bootstrap.ordersUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
   if (!response.ok) throw new Error('Order data request failed.');
   const payload = await response.json() as OrderCollectionResponse;
-  if (!Array.isArray(payload.orders)) throw new Error('Invalid order data response.');
+  if (!Array.isArray(payload.orders) || !payload.orders.every(hasNotificationContract)) throw new Error('Invalid order data response.');
   return payload.orders;
 };
 
@@ -45,7 +52,7 @@ const mutateOrder = async (bootstrap: LaravelAdminBootstrap, path: string, metho
   });
   const payload = await response.json().catch(() => null) as (OrderResponse & ErrorResponse) | null;
   if (!response.ok || !payload?.data) throw new Error(errorMessage(payload, 'Order update failed.'));
-  if (!hasNotificationSummary(payload.data)) throw new Error('Invalid order data response.');
+  if (!hasNotificationContract(payload.data)) throw new Error('Invalid order data response.');
   return payload.data;
 };
 

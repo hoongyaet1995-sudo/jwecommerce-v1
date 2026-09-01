@@ -57,6 +57,9 @@ describe('OrderAdmin canonical notification event ownership', () => {
     expect(notificationEventKeyForStatus('unpaid_review')).toBeNull();
     expect(notificationEventKeyForStatus('cancel_requested')).toBeNull();
     expect(notificationEventKeyForStatus('processing_manual')).toBeNull();
+    expect(notificationEventKeyForStatus('constructor')).toBeNull();
+    expect(notificationEventKeyForStatus('toString')).toBeNull();
+    expect(notificationEventKeyForStatus('__proto__')).toBeNull();
   });
 });
 
@@ -93,6 +96,7 @@ const baseOrder = (overrides: Partial<Order> = {}): Order => ({
   totalAmount: 128,
   shippingAddress: address,
   billingAddress: { ...address, id: 'billing-1', type: 'billing' },
+  notificationContextFingerprint: 'order-context-v1',
   notificationSummary: null,
   customStatusId: 'status_processing',
   timeline: [{
@@ -208,6 +212,53 @@ afterEach(() => {
 });
 
 describe('OrderAdmin notification mutation binding', () => {
+  it.each(['constructor', 'toString', '__proto__', 'unpaid_review', 'cancel_requested', 'processing_manual'])('keeps non-canonical key %s non-notifying even when the custom status is paid-by-default', async (code) => {
+    const updateOrderStatus = vi.fn(async (
+      _orderId: string,
+      _paymentStatus: string,
+      _fulfillmentStatus: string,
+      _note: string,
+      notifyCustomer?: boolean,
+    ) => ({
+      ...baseOrder({ paymentGatewayStatus: 'paid' }),
+      notificationSummary: notifyCustomer ? {
+        publicId: 'unsafe-auto-dispatch', eventKey: 'payment_verified' as const, channel: 'email' as const,
+        state: 'queued' as const, source: 'automatic' as const, queuedAt: '2026-09-01T08:00:00.000Z',
+      } : null,
+    }));
+    mockedAdminContext.value = {
+      ...mockedAdminContext.value,
+      orders: [baseOrder({ paymentGatewayStatus: 'pending' })],
+      updateOrderStatus,
+      orderStatuses: [
+        ...(mockedAdminContext.value.orderStatuses as Array<Record<string, unknown>>),
+        {
+          id: `status_${code}`, code, name: `Custom ${code}`, description: 'Custom status', color: 'amber',
+          isDefault: false, isDefaultPaid: true, isDefaultCancelled: false, notifyCustomer: true,
+          publicVisibility: true, inventoryAction: 'deduct', emailTemplate: 'Unsafe custom template', sortOrder: 99,
+        },
+      ],
+    };
+    const { host } = await mountOrderAdmin();
+    await act(async () => exactButton(host, 'Details').click());
+    const statusSelect = Array.from(host.querySelectorAll('select')).find(select =>
+      Array.from(select.options).some(option => option.value === `status_${code}`),
+    ) as HTMLSelectElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set?.call(statusSelect, `status_${code}`);
+      statusSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    expect(exactButton(host, 'Preview Message Template').disabled).toBe(true);
+    expect(exactButton(host, 'Send Current Template').disabled).toBe(true);
+    await act(async () => exactButton(host, 'Update & Notify').click());
+    await vi.waitFor(() => expect(updateOrderStatus).toHaveBeenCalledTimes(1));
+    expect(updateOrderStatus.mock.calls[0][1]).toBe('paid');
+    expect(updateOrderStatus.mock.calls[0][2]).toBe('processing');
+    expect(updateOrderStatus.mock.calls[0][4]).toBe(false);
+    expect(host.textContent).not.toContain('Status update Email intent: Queued');
+  });
+
   it('passes an unchecked Email choice as false and refreshes the selected order plus audit', async () => {
     const { host } = await mountOrderAdmin();
     await act(async () => exactButton(host, 'Details').click());
@@ -299,5 +350,87 @@ describe('OrderAdmin notification mutation binding', () => {
     expect(statusSelect.value).toBe('status_processing');
     expect(note.value).toBe('Newer same-order note');
     expect(host.textContent).not.toContain('Status update Email intent: Queued');
+  });
+
+  it('refetches delivery audit after a proof review even when the refreshed order summary is null', async () => {
+    const reviewPaymentProof = vi.fn(async () => baseOrder({
+      paymentGateway: 'Bank In / DuitNow',
+      paymentGatewayStatus: 'pending',
+      paymentProof: { required: true, paymentId: 'payment-1', status: 'verified', canReview: false },
+      notificationContextFingerprint: 'order-context-v2',
+      notificationSummary: null,
+    }));
+    mockedAdminContext.value = {
+      ...mockedAdminContext.value,
+      orders: [baseOrder({
+        paymentGateway: 'Bank In / DuitNow',
+        paymentGatewayStatus: 'pending',
+        paymentProof: { required: true, paymentId: 'payment-1', status: 'uploaded', canReview: true },
+      })],
+      reviewPaymentProof,
+    };
+    const { host } = await mountOrderAdmin();
+    await act(async () => exactButton(host, 'Details').click());
+    const auditFetch = (mockedAdminContext.value as { auditFetch: ReturnType<typeof vi.fn> }).auditFetch;
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(1));
+
+    await act(async () => exactButton(host, 'Verify payment').click());
+    await vi.waitFor(() => expect(reviewPaymentProof).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2));
+  });
+
+  it('refetches delivery audit after manual dispatch with a null generic summary', async () => {
+    const updateOrderTracking = vi.fn(async () => baseOrder({
+      trackingCarrier: 'Ninja Van',
+      trackingNumber: 'NV-AUDIT-1001',
+      notificationContextFingerprint: 'order-context-v2',
+      notificationSummary: null,
+    }));
+    mockedAdminContext.value = { ...mockedAdminContext.value, updateOrderTracking };
+    const { host } = await mountOrderAdmin();
+    await act(async () => exactButton(host, 'Details').click());
+    const auditFetch = (mockedAdminContext.value as { auditFetch: ReturnType<typeof vi.fn> }).auditFetch;
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(1));
+    const carrier = host.querySelector('input[placeholder^="e.g. DHL Express"]') as HTMLInputElement;
+    const tracking = host.querySelector('input[placeholder^="e.g. TRK-"]') as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(carrier, 'Ninja Van');
+      carrier.dispatchEvent(new Event('input', { bubbles: true }));
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(tracking, 'NV-AUDIT-1001');
+      tracking.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => exactButton(host, 'Record dispatch').click());
+
+    await vi.waitFor(() => expect(updateOrderTracking).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2));
+  });
+
+  it('never calls the protected audit after a non-status producer when view permission is absent', async () => {
+    const updateOrderTracking = vi.fn(async () => baseOrder({
+      trackingCarrier: 'Ninja Van',
+      trackingNumber: 'NV-NO-VIEW',
+      notificationContextFingerprint: 'order-context-v2',
+      notificationSummary: null,
+    }));
+    mockedAdminContext.value = {
+      ...mockedAdminContext.value,
+      notificationPermissions: ['notifications.current.send'],
+      updateOrderTracking,
+    };
+    const { host } = await mountOrderAdmin();
+    await act(async () => exactButton(host, 'Details').click());
+    const carrier = host.querySelector('input[placeholder^="e.g. DHL Express"]') as HTMLInputElement;
+    const tracking = host.querySelector('input[placeholder^="e.g. TRK-"]') as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(carrier, 'Ninja Van');
+      carrier.dispatchEvent(new Event('input', { bubbles: true }));
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(tracking, 'NV-NO-VIEW');
+      tracking.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => exactButton(host, 'Record dispatch').click());
+    await vi.waitFor(() => expect(updateOrderTracking).toHaveBeenCalledTimes(1));
+
+    const auditFetch = (mockedAdminContext.value as { auditFetch: ReturnType<typeof vi.fn> }).auditFetch;
+    expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(0);
   });
 });
