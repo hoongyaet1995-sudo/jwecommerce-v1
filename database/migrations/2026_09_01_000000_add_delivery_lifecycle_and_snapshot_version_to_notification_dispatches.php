@@ -2,14 +2,21 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::table('notification_dispatches')->exists()) {
+            throw new RuntimeException(
+                'Notification snapshot format cannot be inferred for existing rows. Deployment aborted before changes: notification_dispatches must be empty for this unreleased feature. Stop notification workers and follow the notification operations runbook before retrying.',
+            );
+        }
+
         Schema::table('notification_dispatches', function (Blueprint $table): void {
-            $table->unsignedTinyInteger('snapshot_version')->default(1)->after('template_version');
+            $table->unsignedTinyInteger('snapshot_version')->default(2)->after('template_version');
             $table->unsignedSmallInteger('queue_attempt')->nullable()->after('attempt_count');
             $table->uuid('queue_generation')->nullable()->after('queue_attempt');
         });

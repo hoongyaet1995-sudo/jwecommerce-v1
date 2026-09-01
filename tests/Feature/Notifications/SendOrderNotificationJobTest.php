@@ -327,6 +327,72 @@ class SendOrderNotificationJobTest extends TestCase
         $this->assertSame(NotificationDispatch::STATE_SENT, $retried->refresh()->state);
     }
 
+    public function test_true_pre_b1_serialized_job_fails_closed_and_admin_retry_starts_a_safe_new_lifecycle(): void
+    {
+        Queue::fake();
+        Mail::fake();
+        $actor = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        $dispatch = NotificationDispatch::factory()->create([
+            'queue_generation' => null,
+            'queue_attempt' => null,
+        ]);
+        $legacyPayload = $this->serializedJobWithoutQueueGeneration($dispatch->id);
+        $oldJob = unserialize($legacyPayload, ['allowed_classes' => [SendOrderNotificationJob::class]]);
+
+        $this->assertInstanceOf(SendOrderNotificationJob::class, $oldJob);
+        $this->assertTrue($oldJob->failOnTimeout, 'The pre-b1 serialized top-level timeout flag cannot be retrofitted.');
+        $this->assertNull($oldJob->queueGeneration);
+
+        try {
+            $oldJob->handle(app(MailerContract::class));
+            $this->fail('A pre-b1 job without a generation must fail closed.');
+        } catch (NotificationDeliveryException $error) {
+            $this->assertSame('queue', $error->safeCode);
+        }
+
+        Mail::assertNothingSent();
+        $dispatch->refresh();
+        $this->assertSame(NotificationDispatch::STATE_FAILED, $dispatch->state);
+        $this->assertSame('queue', $dispatch->last_error_code);
+        $this->assertNotNull($dispatch->failed_at);
+        $firstFailedAt = $dispatch->failed_at?->toISOString();
+
+        $oldJob->failed(new RuntimeException('private legacy worker failure'));
+        $oldJob->failed(new RuntimeException('duplicate private legacy worker failure'));
+        $dispatch->refresh();
+        $this->assertSame('queue', $dispatch->last_error_code);
+        $this->assertSame($firstFailedAt, $dispatch->failed_at?->toISOString());
+
+        $retried = app(NotificationDispatchService::class)->retry($dispatch, $actor);
+        $this->assertNotNull($retried->queue_generation);
+        $this->assertSame(NotificationDispatch::STATE_QUEUED, $retried->state);
+        Queue::assertPushed(
+            SendOrderNotificationJob::class,
+            fn (SendOrderNotificationJob $job): bool => $job->dispatchId === $retried->id
+                && $job->queueGeneration === $retried->queue_generation,
+        );
+
+        try {
+            $oldJob->handle(app(MailerContract::class));
+            $this->fail('The old serialized job must not claim the Admin Retry lifecycle.');
+        } catch (NotificationDeliveryException $error) {
+            $this->assertSame('queue', $error->safeCode);
+        }
+        $oldJob->failed(new RuntimeException('late old lifecycle callback'));
+
+        $retried->refresh();
+        $this->assertSame(NotificationDispatch::STATE_QUEUED, $retried->state);
+        $this->assertSame(0, $retried->attempt_count);
+        $this->assertNull($retried->queue_attempt);
+        $this->assertNull($retried->failed_at);
+        $this->assertNull($retried->last_error_code);
+        Mail::assertNothingSent();
+
+        $this->jobAtAttempt($retried, 1, $retried->queue_generation)->handle(app(MailerContract::class));
+        Mail::assertSent(OrderStatusNotificationMail::class, 1);
+        $this->assertSame(NotificationDispatch::STATE_SENT, $retried->refresh()->state);
+    }
+
     public function test_mail_html_uses_only_the_frozen_snapshot_and_contains_no_private_provider_links(): void
     {
         StoreSetting::query()->create([
@@ -442,6 +508,29 @@ class SendOrderNotificationJobTest extends TestCase
             $dispatch->id,
             $queueGeneration ?? $dispatch->queue_generation,
         ))->setJob($queueJob);
+    }
+
+    private function serializedJobWithoutQueueGeneration(int $dispatchId): string
+    {
+        $placeholder = 'pre-b1-generation-placeholder';
+        $job = new SendOrderNotificationJob($dispatchId, $placeholder);
+        $job->failOnTimeout = true;
+        $serialized = serialize($job);
+        $property = serialize('queueGeneration').serialize($placeholder);
+        $withoutGeneration = str_replace($property, '', $serialized, $removed);
+        $this->assertSame(1, $removed, 'The current serialized shape must contain queueGeneration before simulating pre-b1.');
+
+        $legacyPayload = preg_replace_callback(
+            '/^(O:\d+:"[^"]+":)(\d+)(:\{)/',
+            static fn (array $matches): string => $matches[1].((int) $matches[2] - 1).$matches[3],
+            $withoutGeneration,
+            1,
+            $adjusted,
+        );
+        $this->assertSame(1, $adjusted);
+        $this->assertIsString($legacyPayload);
+
+        return $legacyPayload;
     }
 }
 

@@ -52,6 +52,8 @@ Expected observations:
 
 Each publication has a private `queue_generation` stored on the dispatch and serialized into its queue job. Claims and terminal callbacks require an exact generation match, and the dispatch records the current Laravel queue attempt. Manual Admin Retry rotates the generation and resets the attempt counters. Consequently, a delayed or infrastructure-retried job from an older lifecycle cannot claim or fail the newly published lifecycle, and a concurrent duplicate of the same attempt cannot overlap it. `failOnTimeout` is disabled for this job so a hard timeout does not make attempt 1 terminal; Laravel may run the configured four attempts, then its final failure callback recovers any orphaned `sending` row.
 
+A queue payload serialized before the generation field existed may retain its old top-level `failOnTimeout=true`; serialized public properties cannot be retrofitted by a class default. Current code therefore gives the missing property a safe nullable default and refuses to deliver any job without a generation. It atomically marks only a matching generation-less dispatch `failed` with `last_error_code=queue`, throws a bounded exception, and never sends. Repeated `failed()` callbacks are idempotent. After the old queue record is no longer active, protected Admin **Retry** rotates a new generation and is the only supported recovery path.
+
 Stop an interactive worker with `Ctrl+C`. After a deploy or configuration change, restart the worker so it loads the accepted code and environment.
 
 ## Failure inspection and the only notification retry path
@@ -74,7 +76,7 @@ If manual Retry, Resend, Send Current Template, or Test Email cannot publish its
 
 Automatic notification intent creation is part of the same database transaction as its authoritative checkout, payment-review/webhook, shipment, or Admin status mutation. Template/context/render/intent persistence failure therefore rolls back the business mutation instead of silently omitting the outbox row. Queue publication remains an after-commit boundary: if publication fails after the transaction commits, the business mutation and dispatch remain committed and the dispatch is changed to safe `failed`/`queue`. Both current Admin API routes and the compatibility Blade status/shipment routes use the same `OrderOperationsService`/milestone producers.
 
-`on_hold` Email remains backend-enforced `DORMANT`: the template API rejects attempts to enable it, template responses expose it as disabled, and Send Current returns a stable validation error even if a stale database row was previously enabled. Nullable template text inputs are stored as empty strings. Snapshot format `v1` identifies rows written by the earlier entity-escaped renderer; the additive migration safely defaults all existing rows to `v1`. New renders are stored as plain-text `v2`. Mail and Admin presentation decode `v1` exactly once, leave `v2` unchanged, and then escape each HTML/attribute context, so values such as `J&T` and apostrophes are not double encoded while markup-bearing shop names cannot inject HTML. Resend preserves the original snapshot version and frozen bytes.
+`on_hold` Email remains backend-enforced `DORMANT`: the template API rejects attempts to enable it, template responses expose it as disabled, and Send Current returns a stable validation error even if a stale database row was previously enabled. Nullable template text inputs are stored as empty strings. Snapshot format is never inferred from an unversioned row: the unreleased compatibility migrations require `notification_dispatches` to be empty before adding or correcting the format default. Fresh and new rows default to plain-text `v2`. `v1` is reserved for a deliberately marked legacy test/import row whose bytes are known to use the earlier entity-escaped format. Mail and Admin presentation decode an explicit `v1` exactly once, leave `v2` unchanged, and then escape each HTML/attribute context, so values such as `J&T` and apostrophes are not double encoded while markup-bearing shop names cannot inject HTML. Resend preserves the original snapshot version and frozen bytes.
 
 ## Local acceptance sequence
 
@@ -159,6 +161,33 @@ Safety JSON under the same evidence directory records the hostile-environment re
 ## Hostinger release prerequisite
 
 No production worker/configuration change is authorized by this localhost phase. Before a later release can be called operational, Hostinger must have a durable, monitored worker for the accepted SHA and environment. Its effective queue policy must process the `default` database queue with four attempts and backoff `60,300,900`, restart after deploys/failures, and expose safe failed-job monitoring. The existing bounded `easyparcel:cron` queue drain uses a different one-attempt policy and is not, by itself, proof of the notification delivery requirement.
+
+### Mandatory first-release compatibility preflight
+
+Run this gate before deploying the first notification release. It is a count-only preflight and must not print job payloads, recipients, bodies, or credentials.
+
+1. Put the application in maintenance mode so no notification producer can add rows. Pause the durable worker's automatic restart in the Hostinger process manager, allow its current reservation to finish, then stop it gracefully. `php artisan queue:restart` may be used only as the graceful stop signal after automatic restart is paused; confirm the worker process has actually exited.
+2. In the protected MySQL console for the intended application database, run exactly these count-only statements:
+
+```sql
+SELECT COUNT(*) AS notification_dispatch_rows
+FROM notification_dispatches;
+
+SELECT COUNT(*) AS queued_or_reserved_old_notification_jobs
+FROM jobs
+WHERE payload LIKE '%SendOrderNotificationJob%';
+
+SELECT COUNT(*) AS failed_old_notification_jobs
+FROM failed_jobs
+WHERE payload LIKE '%SendOrderNotificationJob%';
+```
+
+All three counts must be `0`. This feature has not had a production release, so any existing dispatch or serialized notification job is unexpected. Do not delete it, edit `snapshot_version`, run `queue:retry`, or continue the deployment. Keep the worker stopped and investigate under the previously deployed SHA.
+
+3. Only after all counts are zero, deploy the authorized exact SHA and run the normal non-destructive `php artisan migrate --force`. The initial and correction migrations both check for an empty dispatch table before adding/reclassifying the snapshot default, and a fresh install defaults to `v2`.
+4. If the migration aborts with the snapshot-format precondition, it has performed no row rewrite or column-default change. Keep workers stopped and restore the previous application SHA; do not run `migrate:rollback` for a migration that was never recorded as successful. If the correction migration completed successfully but the release must later be rolled back, stop workers again, run `php artisan migrate:rollback --step=1 --force`, restore the previous SHA, and only then restart its compatible worker.
+
+If a pre-generation payload somehow reaches current code despite this gate, it cannot send or silently succeed: it records the matching generation-less dispatch as safe terminal `failed`/`queue`. After that old queue lifecycle is no longer active, recover only with Admin **Retry**, which rotates and publishes a generation-owned job.
 
 After deployment of the exact accepted commit, the Hostinger acceptance gate must cover production MySQL persistence; the durable Hostinger worker; actual SMTP delivery to a dedicated test mailbox; Settings save/refresh/re-login; queued-to-sent delivery; failed Retry; sent Resend with the frozen original; Send Current Template; action permissions and sensitive-data non-exposure; and desktop/mobile browser evidence. Use unique production-test fixtures and clean only those exact rows.
 
