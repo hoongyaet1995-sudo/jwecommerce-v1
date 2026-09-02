@@ -55,7 +55,22 @@ class ShipmentService
 
     public function dispatchManually(Order $order, User $actor, string $carrierName, string $trackingNumber): Shipment
     {
-        return DB::transaction(function () use ($order, $actor, $carrierName, $trackingNumber): Shipment {
+        return $this->dispatchTeamManaged($order, $actor, [
+            'fulfillment_method' => 'external_courier',
+            'carrier_name' => $carrierName,
+            'tracking_number' => $trackingNumber,
+            'audit_note' => 'Manually dispatched via '.trim($carrierName).' · '.trim($trackingNumber),
+        ]);
+    }
+
+    /**
+     * @param array{fulfillment_method: 'external_courier'|'manual_delivery', carrier_code?: ?string,
+     *   carrier_name?: ?string, tracking_number?: ?string, tracking_url?: ?string, driver_name?: ?string,
+     *   handoff_reference?: ?string, audit_note: string} $details
+     */
+    public function dispatchTeamManaged(Order $order, User $actor, array $details): Shipment
+    {
+        return DB::transaction(function () use ($order, $actor, $details): Shipment {
             $lockedOrder = Order::query()->lockForUpdate()->findOrFail($order->id);
 
             if ($lockedOrder->status !== 'processing') {
@@ -70,12 +85,17 @@ class ShipmentService
                 ->lockForUpdate()
                 ->first();
 
+            $trackingNumber = trim((string) ($details['tracking_number'] ?? ''));
+            if ($details['fulfillment_method'] === 'manual_delivery' && $trackingNumber === '') {
+                $trackingNumber = 'JW-MANUAL-'.$lockedOrder->id.'-1';
+            }
+
             if ($shipment && $shipment->tracking_number && $shipment->tracking_number !== $trackingNumber) {
                 throw new InvalidArgumentException('This order already has a dispatched shipment.');
             }
 
             $trackingAlreadyAssigned = Shipment::query()
-                ->where('tracking_number', trim($trackingNumber))
+                ->where('tracking_number', $trackingNumber)
                 ->when($shipment, fn ($query) => $query->whereKeyNot($shipment->id))
                 ->exists();
             if ($trackingAlreadyAssigned) {
@@ -85,8 +105,15 @@ class ShipmentService
             $shipment ??= new Shipment(['order_id' => $lockedOrder->id, 'sequence' => 1]);
             $shipment->fill([
                 'source' => 'manual',
-                'carrier_name' => trim($carrierName),
-                'tracking_number' => trim($trackingNumber),
+                'fulfillment_method' => $details['fulfillment_method'],
+                'carrier_code' => filled($details['carrier_code'] ?? null) ? trim((string) $details['carrier_code']) : null,
+                'carrier_name' => $details['fulfillment_method'] === 'manual_delivery'
+                    ? 'Manual / Own Delivery'
+                    : trim((string) $details['carrier_name']),
+                'tracking_number' => $trackingNumber,
+                'tracking_url' => filled($details['tracking_url'] ?? null) ? trim((string) $details['tracking_url']) : null,
+                'driver_name' => filled($details['driver_name'] ?? null) ? trim((string) $details['driver_name']) : null,
+                'handoff_reference' => filled($details['handoff_reference'] ?? null) ? trim((string) $details['handoff_reference']) : null,
                 'status' => 'shipped',
                 'currency' => $lockedOrder->currency,
                 'shipping_cost' => $lockedOrder->shipping_amount,
@@ -99,7 +126,7 @@ class ShipmentService
                 'shipment_id' => $shipment->id,
                 'status' => 'shipped',
                 'occurred_at' => now(),
-                'description' => 'Manually dispatched via '.$shipment->carrier_name.' · '.$shipment->tracking_number,
+                'description' => trim($details['audit_note']),
                 'source' => 'manual',
                 'created_by' => $actor->id,
             ]);
@@ -116,7 +143,7 @@ class ShipmentService
                 'from_status' => $from,
                 'to_status' => 'shipped',
                 'user_id' => $actor->id,
-                'note' => 'Dispatched via '.$shipment->carrier_name.' · '.$shipment->tracking_number,
+                'note' => trim($details['audit_note']),
             ]);
             $this->recordNotification(
                 $lockedOrder,
@@ -407,9 +434,11 @@ class ShipmentService
     private function allowedNextStatuses(string $status): array
     {
         return match ($status) {
-            'shipped' => ['in_transit', 'failed_delivery', 'returned', 'cancelled'],
-            'in_transit' => ['out_for_delivery', 'failed_delivery', 'returned'],
+            'shipped' => ['in_transit', 'delivered', 'failed_delivery', 'returned', 'cancelled'],
+            'in_transit' => ['out_for_delivery', 'delivered', 'failed_delivery', 'returned'],
             'out_for_delivery' => ['delivered', 'failed_delivery', 'returned'],
+            'failed_delivery' => ['in_transit', 'out_for_delivery', 'delivered', 'returned'],
+            'delivered' => ['returned'],
             default => [],
         };
     }

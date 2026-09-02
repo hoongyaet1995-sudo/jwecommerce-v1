@@ -57,6 +57,7 @@ class AdminAppController extends Controller
             'notificationTemplatesUrl' => route('admin.api.notification-templates.index'),
             'orderNotificationsUrl' => url('/admin/api/orders'),
             'shipmentsUrl' => route('admin.api.shipping.shipments.index'),
+            'shippingOrdersUrl' => url('/admin/api/shipping/orders'),
             'easyParcelWebhookReceiptsUrl' => route('admin.api.shipping.webhook-receipts.index'),
             'easyParcelWebhookCallbackUrl' => route('webhooks.easyparcel'),
             'easyParcelWebhookConfigured' => true,

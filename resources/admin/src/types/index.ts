@@ -44,6 +44,7 @@ export interface LaravelAdminBootstrap {
   notificationTemplatesUrl?: string;
   orderNotificationsUrl?: string;
   shipmentsUrl?: string;
+  shippingOrdersUrl?: string;
   easyParcelWebhookReceiptsUrl?: string;
   easyParcelWebhookCallbackUrl?: string;
   easyParcelWebhookConfigured?: boolean;

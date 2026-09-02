@@ -44,6 +44,7 @@ import { CourierConfigModal } from './CourierConfigModal';
 import { GeneralShippingRateModal } from './GeneralShippingRateModal';
 import { EasyParcelOAuthModal } from './EasyParcelOAuthModal';
 import { EasyParcelBookingModal } from './EasyParcelBookingModal';
+import { ChooseFulfillmentMethodModal } from './ChooseFulfillmentMethodModal';
 
 export type ShippingTabType = 
   | 'overview' 
@@ -83,6 +84,8 @@ export const ShippingDashboard: React.FC = () => {
     generateShipmentAWB,
     batchGenerateAWB,
     updateShipmentStatus,
+    recordExternalCourierDispatch,
+    recordManualDeliveryDispatch,
     requestRedelivery,
     simulateCourierWebhookEvent,
     pickupRequests = [],
@@ -109,6 +112,7 @@ export const ShippingDashboard: React.FC = () => {
   const [editingRate, setEditingRate] = useState<GeneralShippingRate | null>(null);
   const [isEasyParcelOAuthOpen, setIsEasyParcelOAuthOpen] = useState(false);
   const [easyParcelBookingParcel, setEasyParcelBookingParcel] = useState<ShipmentParcel | null>(null);
+  const [fulfilmentParcel, setFulfilmentParcel] = useState<ShipmentParcel | null>(null);
   const [easyParcelCallbackState, setEasyParcelCallbackState] = useState(window.__JW_ADMIN__?.easyParcelConnection?.state ?? null);
 
   useEffect(() => {
@@ -381,6 +385,7 @@ export const ShippingDashboard: React.FC = () => {
             onOpenTrackingModal={(parcel) => setActiveTrackingParcel(parcel)}
             onOpenPickupModal={explainPickupUnavailable}
             onUpdateStatus={updateShipmentStatus}
+            onOpenFulfilment={(parcel) => setFulfilmentParcel(parcel)}
             onOpenEasyParcelBooking={(parcel) => setEasyParcelBookingParcel(parcel)}
             onRefreshEasyParcelStatus={refreshEasyParcelShipmentStatus}
             onRefreshAllEasyParcelStatuses={refreshAllEasyParcelShipmentStatuses}
@@ -516,6 +521,23 @@ export const ShippingDashboard: React.FC = () => {
           onQuote={(parcel, packageSpec) => quoteEasyParcelShipment(parcel, packageSpec)}
           onBook={(quote, serviceCode) => bookEasyParcelShipment(easyParcelBookingParcel, quote, serviceCode)}
           onBooked={async () => { await refreshEasyParcelProvider(); }}
+        />
+      )}
+
+      {fulfilmentParcel && (
+        <ChooseFulfillmentMethodModal
+          isOpen={true}
+          parcel={fulfilmentParcel}
+          easyParcelConnected={easyParcelConnected}
+          onClose={() => setFulfilmentParcel(null)}
+          onQuoteEasyParcel={(parcel, packageSpec) => quoteEasyParcelShipment(parcel, packageSpec)}
+          onConfirmEasyParcelBooking={async (parcel, quote, serviceCode) => {
+            const booking = await bookEasyParcelShipment(parcel, quote, serviceCode);
+            await refreshEasyParcelProvider();
+            return booking;
+          }}
+          onConfirmExternalCourier={recordExternalCourierDispatch}
+          onConfirmManualDelivery={recordManualDeliveryDispatch}
         />
       )}
 

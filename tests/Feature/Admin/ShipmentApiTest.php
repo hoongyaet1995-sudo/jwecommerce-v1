@@ -289,6 +289,89 @@ class ShipmentApiTest extends TestCase
         ]);
     }
 
+    public function test_dispatch_staff_can_record_an_external_courier_with_operational_metadata(): void
+    {
+        $order = $this->processingOrder('external-dispatch@example.test', 'JW-EXTERNAL-DISPATCH-1001');
+
+        $this->actingAs($this->superAdmin())
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/dispatch', [
+                'fulfillmentMethod' => 'external_courier',
+                'courierCode' => 'jnt',
+                'courierName' => 'J&T Express Malaysia',
+                'trackingNumber' => 'JNT-EXT-1001',
+                'trackingUrl' => 'https://www.jtexpress.my/tracking/JNT-EXT-1001',
+                'auditNote' => 'Booked in the merchant portal and handed to the J&T counter.',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.fulfillmentMethod', 'external_courier')
+            ->assertJsonPath('data.managementMode', 'team_managed')
+            ->assertJsonPath('data.externalCourierName', 'J&T Express Malaysia')
+            ->assertJsonPath('data.trackingNumber', 'JNT-EXT-1001');
+
+        $this->assertDatabaseHas('shipments', [
+            'order_id' => $order->id,
+            'fulfillment_method' => 'external_courier',
+            'carrier_code' => 'jnt',
+            'tracking_number' => 'JNT-EXT-1001',
+            'tracking_url' => 'https://www.jtexpress.my/tracking/JNT-EXT-1001',
+        ]);
+        $this->assertDatabaseHas('shipment_events', [
+            'description' => 'Booked in the merchant portal and handed to the J&T counter.',
+            'source' => 'manual',
+        ]);
+        $this->actingAs($this->superAdmin())
+            ->getJson('/admin/api/shipping/shipments')
+            ->assertOk()
+            ->assertJsonPath('data.0.fulfillmentMethod', 'external_courier')
+            ->assertJsonPath('data.0.managementMode', 'team_managed')
+            ->assertJsonPath('data.0.externalCourierName', 'J&T Express Malaysia')
+            ->assertJsonPath('data.0.trackingUrl', 'https://www.jtexpress.my/tracking/JNT-EXT-1001')
+            ->assertJsonPath('data.0.dispatchAuditNote', 'Booked in the merchant portal and handed to the J&T counter.');
+    }
+
+    public function test_dispatch_staff_can_record_a_manual_delivery_without_an_external_awb(): void
+    {
+        $order = $this->processingOrder('manual-delivery@example.test', 'JW-MANUAL-DELIVERY-1001');
+
+        $this->actingAs($this->superAdmin())
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/dispatch', [
+                'fulfillmentMethod' => 'manual_delivery',
+                'driverName' => 'Farid Ahmad',
+                'handoffReference' => 'VAN-7-AM',
+                'auditNote' => 'Parcel handed to the in-house driver at the loading bay.',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.fulfillmentMethod', 'manual_delivery')
+            ->assertJsonPath('data.managementMode', 'team_managed')
+            ->assertJsonPath('data.driverName', 'Farid Ahmad')
+            ->assertJsonPath('data.handoffReference', 'VAN-7-AM');
+
+        $this->assertDatabaseHas('shipments', [
+            'order_id' => $order->id,
+            'fulfillment_method' => 'manual_delivery',
+            'carrier_name' => 'Manual / Own Delivery',
+            'driver_name' => 'Farid Ahmad',
+            'handoff_reference' => 'VAN-7-AM',
+        ]);
+    }
+
+    public function test_external_courier_rejects_an_unsafe_tracking_url(): void
+    {
+        $order = $this->processingOrder('unsafe-tracking@example.test', 'JW-UNSAFE-TRACKING-1001');
+
+        $this->actingAs($this->superAdmin())
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/dispatch', [
+                'fulfillmentMethod' => 'external_courier',
+                'courierCode' => 'other',
+                'courierName' => 'External Courier',
+                'trackingNumber' => 'UNSAFE-TRACK-1001',
+                'trackingUrl' => 'javascript:alert(1)',
+                'auditNote' => 'Booked externally.',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('trackingUrl');
+    }
+
     public function test_non_permitted_admin_cannot_dispatch_a_shipment(): void
     {
         $this->actingAs(User::factory()->create(['is_admin' => true, 'is_super_admin' => false]))
@@ -391,6 +474,78 @@ class ShipmentApiTest extends TestCase
         $this->assertDatabaseHas('shipments', ['id' => $shipment->id, 'status' => 'delivered']);
         $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'delivered']);
         $this->assertDatabaseCount('shipment_events', 4);
+    }
+
+    public function test_authorized_staff_can_mark_an_in_transit_manual_shipment_as_delivered(): void
+    {
+        $admin = $this->superAdmin();
+        $order = $this->processingOrder();
+
+        $this->actingAs($admin)->postJson('/admin/api/shipping/orders/'.$order->id.'/dispatch', [
+            'carrierName' => 'Manual courier',
+            'trackingNumber' => 'DIRECT-DELIVERY-1001',
+        ])->assertCreated();
+
+        $shipment = Shipment::query()->sole();
+        $this->actingAs($admin)->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/events', [
+            'status' => 'in_transit',
+            'description' => 'Accepted at the dispatch depot.',
+        ])->assertCreated();
+
+        $this->actingAs($admin)->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/events', [
+            'status' => 'delivered',
+            'description' => 'Courier confirmed delivery to the recipient.',
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('shipments', ['id' => $shipment->id, 'status' => 'delivered']);
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'delivered']);
+    }
+
+    public function test_team_managed_failed_delivery_can_recover_to_delivered(): void
+    {
+        $admin = $this->superAdmin();
+        $order = $this->processingOrder('delivery-recovery@example.test', 'JW-DELIVERY-RECOVERY-1001');
+
+        $this->actingAs($admin)->postJson('/admin/api/shipping/orders/'.$order->id.'/dispatch', [
+            'carrierName' => 'Manual courier',
+            'trackingNumber' => 'RECOVERY-DELIVERY-1001',
+        ])->assertCreated();
+
+        $shipment = Shipment::query()->sole();
+        $this->actingAs($admin)->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/events', [
+            'status' => 'failed_delivery',
+            'description' => 'Recipient was unavailable on the first attempt.',
+        ])->assertCreated();
+
+        $this->actingAs($admin)->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/events', [
+            'status' => 'delivered',
+            'description' => 'Recipient accepted the parcel on the second attempt.',
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('shipments', ['id' => $shipment->id, 'status' => 'delivered']);
+    }
+
+    public function test_team_managed_delivered_shipment_can_be_marked_returned(): void
+    {
+        $admin = $this->superAdmin();
+        $order = $this->processingOrder('post-delivery-return@example.test', 'JW-POST-DELIVERY-RETURN-1001');
+
+        $this->actingAs($admin)->postJson('/admin/api/shipping/orders/'.$order->id.'/dispatch', [
+            'carrierName' => 'Manual courier',
+            'trackingNumber' => 'POST-DELIVERY-RETURN-1001',
+        ])->assertCreated();
+        $shipment = Shipment::query()->sole();
+
+        $this->actingAs($admin)->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/events', [
+            'status' => 'delivered',
+            'description' => 'Delivered to the recipient.',
+        ])->assertCreated();
+        $this->actingAs($admin)->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/events', [
+            'status' => 'returned',
+            'description' => 'Recipient returned the parcel to the merchant.',
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('shipments', ['id' => $shipment->id, 'status' => 'returned']);
     }
 
     public function test_authorized_staff_can_void_a_manual_shipment_before_courier_handoff(): void

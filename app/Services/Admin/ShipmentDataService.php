@@ -47,6 +47,17 @@ class ShipmentDataService
         return [
             'id' => (string) $shipment->id,
             'source' => $shipment->source,
+            'fulfillmentMethod' => $shipment->source === 'easyparcel'
+                ? 'easyparcel'
+                : ($shipment->fulfillment_method ?? 'external_courier'),
+            'managementMode' => $shipment->source === 'easyparcel' ? 'provider_managed' : 'team_managed',
+            'externalCourierName' => $shipment->source === 'manual' && $shipment->fulfillment_method !== 'manual_delivery'
+                ? $shipment->carrier_name
+                : null,
+            'trackingUrl' => $this->safeTrackingUrl($shipment->tracking_url),
+            'driverName' => $shipment->driver_name,
+            'handoffReference' => $shipment->handoff_reference,
+            'dispatchAuditNote' => $shipment->events->last()?->description,
             'orderId' => (string) $order->id,
             'orderNumber' => $order->number,
             'customerName' => $name !== '' ? $name : 'Customer',
@@ -105,6 +116,8 @@ class ShipmentDataService
         return [
             'id' => 'pending-order-'.$order->id,
             'source' => 'pending',
+            'fulfillmentMethod' => null,
+            'managementMode' => null,
             'orderId' => (string) $order->id,
             'orderNumber' => $order->number,
             'customerName' => $name !== '' ? $name : 'Customer',
@@ -116,7 +129,7 @@ class ShipmentDataService
                 'unitPrice' => $item->unit_price / 100,
                 'weightKg' => $this->itemWeightKg($item->package_snapshot),
             ])->values(),
-            'courier' => 'easyparcel',
+            'courier' => 'unassigned',
             'serviceType' => '',
             'trackingNumber' => '',
             'hasLabel' => false,
@@ -259,5 +272,23 @@ class ShipmentDataService
         return $dimensions === null
             ? null
             : round(($dimensions['length'] * $dimensions['width'] * $dimensions['height']) / 5000, 2);
+    }
+
+    private function safeTrackingUrl(?string $url): ?string
+    {
+        if (blank($url) || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+
+        $parts = parse_url($url);
+        if (! is_array($parts)
+            || ! in_array(strtolower((string) ($parts['scheme'] ?? '')), ['http', 'https'], true)
+            || blank($parts['host'] ?? null)
+            || isset($parts['user'])
+            || isset($parts['pass'])) {
+            return null;
+        }
+
+        return $url;
     }
 }

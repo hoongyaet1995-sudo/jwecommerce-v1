@@ -59,17 +59,58 @@ class ShipmentApiController extends Controller
         abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::DISPATCH), 403);
 
         $validated = $request->validate([
-            'carrierName' => ['required', 'string', 'max:120'],
-            'trackingNumber' => ['required', 'string', 'max:160'],
+            'fulfillmentMethod' => ['sometimes', 'in:external_courier,manual_delivery'],
+            'courierCode' => ['nullable', 'string', 'max:80'],
+            'courierName' => ['nullable', 'string', 'max:120'],
+            'carrierName' => ['nullable', 'string', 'max:120'],
+            'trackingNumber' => ['nullable', 'string', 'max:160'],
+            'trackingUrl' => ['nullable', 'url:http,https', 'max:2048'],
+            'driverName' => ['nullable', 'string', 'max:120'],
+            'handoffReference' => ['nullable', 'string', 'max:160'],
+            'auditNote' => ['nullable', 'required_with:fulfillmentMethod', 'string', 'min:3', 'max:2000'],
         ]);
+        $method = $validated['fulfillmentMethod'] ?? null;
+        $requiredFields = $method === 'manual_delivery'
+            ? ['driverName']
+            : ($method === 'external_courier' ? ['courierCode', 'courierName', 'trackingNumber'] : ['carrierName', 'trackingNumber']);
+        $missing = [];
+        foreach ($requiredFields as $field) {
+            if (! array_key_exists($field, $validated) || trim((string) $validated[$field]) === '') {
+                $missing[$field] = 'This field is required for the selected fulfilment method.';
+            }
+        }
+        if ($missing !== []) {
+            throw ValidationException::withMessages($missing);
+        }
 
         try {
-            $shipment = $shipments->dispatchManually($order, $request->user(), $validated['carrierName'], $validated['trackingNumber']);
+            if (isset($validated['fulfillmentMethod'])) {
+                $shipment = $shipments->dispatchTeamManaged($order, $request->user(), [
+                    'fulfillment_method' => $validated['fulfillmentMethod'],
+                    'carrier_code' => $validated['courierCode'] ?? null,
+                    'carrier_name' => $validated['courierName'] ?? null,
+                    'tracking_number' => $validated['trackingNumber'] ?? null,
+                    'tracking_url' => $validated['trackingUrl'] ?? null,
+                    'driver_name' => $validated['driverName'] ?? null,
+                    'handoff_reference' => $validated['handoffReference'] ?? null,
+                    'audit_note' => $validated['auditNote'],
+                ]);
+            } else {
+                $shipment = $shipments->dispatchManually($order, $request->user(), $validated['carrierName'], $validated['trackingNumber']);
+            }
         } catch (InvalidArgumentException $exception) {
             throw ValidationException::withMessages(['trackingNumber' => $exception->getMessage()]);
         }
 
-        return response()->json(['data' => ['id' => (string) $shipment->id]], 201);
+        return response()->json(['data' => [
+            'id' => (string) $shipment->id,
+            'fulfillmentMethod' => $shipment->fulfillment_method ?? 'external_courier',
+            'managementMode' => 'team_managed',
+            'externalCourierName' => $shipment->fulfillment_method === 'manual_delivery' ? null : $shipment->carrier_name,
+            'driverName' => $shipment->driver_name,
+            'handoffReference' => $shipment->handoff_reference,
+            'trackingNumber' => $shipment->tracking_number,
+        ]], 201);
     }
 
     public function quoteEasyParcel(

@@ -189,6 +189,26 @@ export const ParcelTrackingModal: React.FC<ParcelTrackingModalProps> = ({
             </div>
           )}
 
+          {parcel.fulfillmentMethod && (
+            <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-800/40 space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  {parcel.fulfillmentMethod === 'easyparcel' ? 'EasyParcel API Booking' : parcel.fulfillmentMethod === 'external_courier' ? 'External Courier' : 'Manual / Own Delivery'}
+                </span>
+                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
+                  {parcel.managementMode === 'provider_managed' ? 'Provider managed' : 'Team managed'}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-neutral-600 dark:text-neutral-300">
+                {parcel.externalCourierName && <div><span className="block text-[10px] text-neutral-400">Courier Partner</span><strong>{parcel.externalCourierName}</strong></div>}
+                {parcel.driverName && <div><span className="block text-[10px] text-neutral-400">Assigned Driver</span><strong>{parcel.driverName}</strong></div>}
+                {parcel.handoffReference && <div><span className="block text-[10px] text-neutral-400">Handoff Reference</span><strong className="font-mono">{parcel.handoffReference}</strong></div>}
+                {parcel.trackingUrl && <div><span className="block text-[10px] text-neutral-400">External Tracking</span><a href={parcel.trackingUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400">Open courier tracking <ExternalLink className="w-3 h-3" /></a></div>}
+              </div>
+              {parcel.dispatchAuditNote && <div className="pt-2 border-t border-neutral-200 dark:border-neutral-700"><span className="block text-[10px] text-neutral-400">Dispatch Audit Note</span><p className="text-xs text-neutral-700 dark:text-neutral-200">{parcel.dispatchAuditNote}</p></div>}
+            </div>
+          )}
+
           {activeTab === 'timeline' && (
             <div className="space-y-4">
               {/* Milestone visual track */}
@@ -226,7 +246,7 @@ export const ParcelTrackingModal: React.FC<ParcelTrackingModalProps> = ({
               </div>
 
               {/* Real-time Webhook Testing Simulator */}
-              {onSimulateEvent && (
+              {onSimulateEvent && parcel.managementMode === 'team_managed' && (
                 <div className="mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/40 p-3.5 rounded-xl">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200 mb-2">
                     <Zap className="w-3.5 h-3.5 text-amber-500" />

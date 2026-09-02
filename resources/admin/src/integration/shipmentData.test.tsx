@@ -14,6 +14,8 @@ import {
   fetchShipments,
   refreshEasyParcelShipmentStatus,
   refreshEasyParcelShipmentStatusWithReload,
+  recordExternalCourierDispatch,
+  recordManualDeliveryDispatch,
 } from './shipmentData';
 
 const bootstrap = {
@@ -21,6 +23,7 @@ const bootstrap = {
   csrfToken: 'csrf-token',
   logoutUrl: '/logout',
   shipmentsUrl: '/admin/api/shipping/shipments',
+  shippingOrdersUrl: '/admin/api/shipping/orders',
 } satisfies LaravelAdminBootstrap;
 
 const redactedParcel = {
@@ -110,6 +113,26 @@ describe('redacted shipment-list client contract', () => {
     expect(fetch).toHaveBeenCalledWith('/admin/api/shipping/shipments/1/easyparcel/status', expect.objectContaining({
       method: 'POST',
       credentials: 'same-origin',
+    }));
+  });
+
+  it('records external and manual fulfilment through the protected order dispatch endpoint', async () => {
+    const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: { id: '91' } }) });
+    vi.stubGlobal('window', { fetch });
+
+    await recordExternalCourierDispatch(bootstrap, '11', {
+      courierCode: 'jnt', courierName: 'J&T Express Malaysia', trackingNumber: 'JNT-11',
+      trackingUrl: 'https://www.jtexpress.my/tracking/JNT-11', auditNote: 'Handed to courier counter.',
+    });
+    await recordManualDeliveryDispatch(bootstrap, '12', {
+      driverName: 'Farid Ahmad', handoffReference: 'VAN-7', auditNote: 'Handed to in-house driver.',
+    });
+
+    expect(fetch).toHaveBeenNthCalledWith(1, '/admin/api/shipping/orders/11/dispatch', expect.objectContaining({
+      method: 'POST', body: expect.stringContaining('external_courier'),
+    }));
+    expect(fetch).toHaveBeenNthCalledWith(2, '/admin/api/shipping/orders/12/dispatch', expect.objectContaining({
+      method: 'POST', body: expect.stringContaining('manual_delivery'),
     }));
   });
 
@@ -299,9 +322,11 @@ describe('redacted shipment-list client contract', () => {
         onOpenTrackingModal={vi.fn()}
         onOpenPickupModal={vi.fn()}
         onUpdateStatus={vi.fn()}
+        onOpenFulfilment={vi.fn()}
         onOpenEasyParcelBooking={vi.fn()}
         onRefreshEasyParcelStatus={vi.fn()}
         onRefreshAllEasyParcelStatuses={vi.fn()}
+        onConfirmEasyParcelProviderFailure={vi.fn()}
       />,
     );
 
@@ -321,6 +346,37 @@ describe('redacted shipment-list client contract', () => {
     expect(html).not.toContain('Contact Recipient on WhatsApp');
   });
 
+  it('renders persisted team-managed fulfilment metadata in tracking inspection', () => {
+    const html = renderToStaticMarkup(<ParcelTrackingModal parcel={{
+      ...redactedParcel,
+      source: 'manual', fulfillmentMethod: 'manual_delivery', managementMode: 'team_managed',
+      courier: 'manual', trackingNumber: 'JW-MANUAL-11-1', driverName: 'Farid Ahmad',
+      handoffReference: 'VAN-7', dispatchAuditNote: 'Handed to the in-house driver.',
+    }} onClose={vi.fn()} />);
+
+    expect(html).toContain('Manual / Own Delivery');
+    expect(html).toContain('Team managed');
+    expect(html).toContain('Farid Ahmad');
+    expect(html).toContain('VAN-7');
+    expect(html).toContain('Handed to the in-house driver.');
+  });
+
+  it('renders one unified Fulfil Order action for an unassigned pending order', () => {
+    const html = renderToStaticMarkup(
+      <ShippingFulfillmentTab
+        parcels={[{ ...redactedParcel, source: 'pending', courier: 'unassigned' }]}
+        onGenerateAWB={vi.fn()} onBatchGenerateAWB={vi.fn()} onOpenAWBModal={vi.fn()}
+        onOpenTrackingModal={vi.fn()} onOpenPickupModal={vi.fn()} onUpdateStatus={vi.fn()}
+        onOpenFulfilment={vi.fn()} onOpenEasyParcelBooking={vi.fn()}
+        onRefreshEasyParcelStatus={vi.fn()} onRefreshAllEasyParcelStatuses={vi.fn()}
+        onConfirmEasyParcelProviderFailure={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain('Fulfil Order');
+    expect(html).not.toContain('Gen AWB');
+  });
+
   it('renders unified and per-row Get Latest Status controls for an EasyParcel AWB', () => {
     const parcel = {
       ...redactedParcel,
@@ -338,9 +394,11 @@ describe('redacted shipment-list client contract', () => {
         onOpenTrackingModal={vi.fn()}
         onOpenPickupModal={vi.fn()}
         onUpdateStatus={vi.fn()}
+        onOpenFulfilment={vi.fn()}
         onOpenEasyParcelBooking={vi.fn()}
         onRefreshEasyParcelStatus={vi.fn()}
         onRefreshAllEasyParcelStatuses={vi.fn()}
+        onConfirmEasyParcelProviderFailure={vi.fn()}
       />,
     );
 
@@ -365,9 +423,11 @@ describe('redacted shipment-list client contract', () => {
         onOpenTrackingModal={vi.fn()}
         onOpenPickupModal={vi.fn()}
         onUpdateStatus={vi.fn()}
+        onOpenFulfilment={vi.fn()}
         onOpenEasyParcelBooking={vi.fn()}
         onRefreshEasyParcelStatus={vi.fn()}
         onRefreshAllEasyParcelStatuses={vi.fn()}
+        onConfirmEasyParcelProviderFailure={vi.fn()}
       />,
     );
 

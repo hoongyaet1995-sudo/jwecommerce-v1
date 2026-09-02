@@ -7,7 +7,25 @@ export type CourierCode =
   | 'easyparcel' 
   | 'delyva'
   | 'dhl'
-  | 'manual';
+  | 'dhl_express'
+  | 'gdex'
+  | 'citylink'
+  | 'other'
+  | 'manual'
+  | 'unassigned';
+
+export interface EasyParcelRateOption {
+  serviceId: string;
+  serviceName: string;
+  courierName: string;
+  courierCode: string;
+  courierLogo: string;
+  priceRM: number;
+  estDays: string;
+  pickupType: 'Doorstep Pickup' | 'Drop-off Point';
+  supportsCOD: boolean;
+  highlights?: string;
+}
 
 export type MalaysiaRegion = 'peninsular' | 'east_malaysia' | 'sabah' | 'sarawak';
 
@@ -109,6 +127,9 @@ export type ShipmentStatus =
   | 'failed_delivery'
   | 'returned';
 
+export type FulfillmentMethodType = 'easyparcel' | 'external_courier' | 'manual_delivery';
+export type ManagementModeType = 'provider_managed' | 'team_managed';
+
 export interface ShipmentTrackingEvent {
   timestamp: string;
   location: string;
@@ -130,6 +151,13 @@ export interface EasyParcelRecoverySnapshot {
 export interface ShipmentParcel {
   id: string;
   source?: 'manual' | 'easyparcel' | 'pending';
+  fulfillmentMethod?: FulfillmentMethodType | null;
+  managementMode?: ManagementModeType | null;
+  externalCourierName?: string | null;
+  trackingUrl?: string | null;
+  driverName?: string | null;
+  handoffReference?: string | null;
+  dispatchAuditNote?: string | null;
   orderId: string;
   orderNumber: string;
   customerName: string;

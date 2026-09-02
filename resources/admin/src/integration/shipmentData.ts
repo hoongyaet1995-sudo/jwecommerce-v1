@@ -2,6 +2,7 @@ import type { LaravelAdminBootstrap } from '../types';
 import type { EasyParcelRecoverySnapshot, ShipmentParcel } from '../types/shipping';
 
 type ShipmentResponse = { data: ShipmentParcel[] };
+type TeamManagedDispatchResponse = { data: { id: string } };
 type ErrorResponse = { message?: string; errors?: Record<string, string[]> };
 export type EasyParcelShipmentStatusRefresh = {
   shipmentId: string;
@@ -54,6 +55,13 @@ const recoverySnapshot = (
 const shipmentListParcel = (row: ShipmentParcel): ShipmentParcel => ({
   id: row.id,
   source: row.source,
+  fulfillmentMethod: row.fulfillmentMethod,
+  managementMode: row.managementMode,
+  externalCourierName: row.externalCourierName,
+  trackingUrl: row.trackingUrl,
+  driverName: row.driverName,
+  handoffReference: row.handoffReference,
+  dispatchAuditNote: row.dispatchAuditNote,
   orderId: row.orderId,
   orderNumber: row.orderNumber,
   customerName: row.customerName,
@@ -113,6 +121,35 @@ export const appendShipmentEvent = async (
   const payload = await response.json().catch(() => null) as ErrorResponse | null;
   if (!response.ok) throw new Error(errorMessage(payload, 'Shipment event could not be recorded.'));
 };
+
+const dispatchTeamManaged = async (
+  bootstrap: LaravelAdminBootstrap,
+  orderId: string,
+  payload: Record<string, unknown>,
+): Promise<string> => {
+  if (!bootstrap.shippingOrdersUrl) throw new Error('Shipment dispatch API is unavailable.');
+  const response = await window.fetch(`${bootstrap.shippingOrdersUrl}/${encodeURIComponent(orderId)}/dispatch`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': bootstrap.csrfToken },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json().catch(() => null) as TeamManagedDispatchResponse & ErrorResponse | null;
+  if (!response.ok || !result?.data?.id) throw new Error(errorMessage(result, 'Shipment dispatch could not be recorded.'));
+  return result.data.id;
+};
+
+export const recordExternalCourierDispatch = (
+  bootstrap: LaravelAdminBootstrap,
+  orderId: string,
+  data: { courierCode: string; courierName: string; trackingNumber: string; trackingUrl?: string; auditNote: string },
+): Promise<string> => dispatchTeamManaged(bootstrap, orderId, { fulfillmentMethod: 'external_courier', ...data });
+
+export const recordManualDeliveryDispatch = (
+  bootstrap: LaravelAdminBootstrap,
+  orderId: string,
+  data: { driverName: string; handoffReference?: string; auditNote: string },
+): Promise<string> => dispatchTeamManaged(bootstrap, orderId, { fulfillmentMethod: 'manual_delivery', ...data });
 
 export const refreshEasyParcelShipmentStatus = async (
   bootstrap: LaravelAdminBootstrap,

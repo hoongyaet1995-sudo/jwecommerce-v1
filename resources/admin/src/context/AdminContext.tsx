@@ -16,6 +16,8 @@ import {
   findEasyParcelReplacementParcel,
   refreshEasyParcelShipmentStatus as refreshEasyParcelShipmentStatusData,
   refreshEasyParcelShipmentStatusWithReload,
+  recordExternalCourierDispatch as recordExternalCourierDispatchData,
+  recordManualDeliveryDispatch as recordManualDeliveryDispatchData,
   type EasyParcelRecoveryConfirmationOutcome,
   type EasyParcelShipmentStatusRefresh,
   type EasyParcelStatusRefreshOutcome,
@@ -344,7 +346,9 @@ interface AdminContextType {
   setSelectedParcelId: (id: string | null) => void;
   generateShipmentAWB: (parcelId: string, courierCode?: string) => void;
   batchGenerateAWB: (parcelIds: string[]) => void;
-  updateShipmentStatus: (parcelId: string, status: ShipmentParcel['status'], eventDesc?: string, location?: string, voidConfirmed?: boolean) => void;
+  updateShipmentStatus: (parcelId: string, status: ShipmentParcel['status'], eventDesc?: string, location?: string, voidConfirmed?: boolean) => Promise<void>;
+  recordExternalCourierDispatch: (parcelId: string, data: { courierCode: string; courierName: string; trackingNumber: string; trackingUrl?: string; auditNote: string }) => Promise<void>;
+  recordManualDeliveryDispatch: (parcelId: string, data: { driverName: string; handoffReference?: string; auditNote: string }) => Promise<void>;
   requestRedelivery: (parcelId: string) => void;
   createRMAReturnShipment: (orderNumber: string, reason: string) => void;
   simulateCourierWebhookEvent: (parcelId: string, eventType: string, location: string, description: string) => void;
@@ -2377,24 +2381,40 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addToast({ type: 'error', title: 'Courier label issuance unavailable', message: 'Batch AWB generation remains disabled until EasyParcel is connected.' });
   };
 
-  const updateShipmentStatus = (parcelId: string, status: ShipmentParcel['status'], eventDesc?: string, location?: string, voidConfirmed = false) => {
+  const updateShipmentStatus = async (parcelId: string, status: ShipmentParcel['status'], eventDesc?: string, location?: string, voidConfirmed = false): Promise<void> => {
     const permittedStatuses = ['in_transit', 'out_for_delivery', 'delivered', 'failed_delivery', 'returned', 'cancelled'] as const;
     if (!permittedStatuses.includes(status as typeof permittedStatuses[number])) {
       addToast({ type: 'error', title: 'Unsupported shipment action', message: 'This status requires a courier integration and cannot be fabricated locally.' });
-      return;
+      throw new Error('This status requires a courier integration and cannot be fabricated locally.');
     }
-    void appendShipmentEvent(
-      laravelBootstrap,
-      parcelId,
-      status as typeof permittedStatuses[number],
-      eventDesc?.trim() || `Shipment marked ${status.replaceAll('_', ' ')} by warehouse staff.`,
-      location,
-      voidConfirmed,
-    ).then(() => fetchShipments(laravelBootstrap)).then(setShipmentParcels).then(() => {
+    try {
+      await appendShipmentEvent(
+        laravelBootstrap, parcelId, status as typeof permittedStatuses[number],
+        eventDesc?.trim() || `Shipment marked ${status.replaceAll('_', ' ')} by warehouse staff.`,
+        location, voidConfirmed,
+      );
+      setShipmentParcels(await fetchShipments(laravelBootstrap));
       addToast({ type: 'success', title: 'Shipment event recorded', message: 'The event was saved to the immutable shipment audit trail.' });
-    }).catch((error) => {
+    } catch (error) {
       addToast({ type: 'error', title: 'Shipment event failed', message: error instanceof Error ? error.message : 'Unable to record shipment event.' });
-    });
+      throw error;
+    }
+  };
+
+  const recordExternalCourierDispatch = async (parcelId: string, data: { courierCode: string; courierName: string; trackingNumber: string; trackingUrl?: string; auditNote: string }): Promise<void> => {
+    const parcel = shipmentParcels.find(candidate => candidate.id === parcelId);
+    if (!parcel || parcel.source !== 'pending') throw new Error('Only an unfulfilled order can be dispatched.');
+    await recordExternalCourierDispatchData(laravelBootstrap, parcel.orderId, data);
+    setShipmentParcels(await fetchShipments(laravelBootstrap));
+    addToast({ type: 'success', title: 'External dispatch recorded', message: 'The external AWB and immutable dispatch audit are now stored.' });
+  };
+
+  const recordManualDeliveryDispatch = async (parcelId: string, data: { driverName: string; handoffReference?: string; auditNote: string }): Promise<void> => {
+    const parcel = shipmentParcels.find(candidate => candidate.id === parcelId);
+    if (!parcel || parcel.source !== 'pending') throw new Error('Only an unfulfilled order can be dispatched.');
+    await recordManualDeliveryDispatchData(laravelBootstrap, parcel.orderId, data);
+    setShipmentParcels(await fetchShipments(laravelBootstrap));
+    addToast({ type: 'success', title: 'Manual delivery recorded', message: 'The driver assignment and immutable dispatch audit are now stored.' });
   };
 
   const requestRedelivery = (_parcelId: string) => {
@@ -2413,7 +2433,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         : eventType.includes('Failed') || eventType.includes('NITC')
           ? 'failed_delivery'
           : 'in_transit';
-    updateShipmentStatus(parcelId, status, description, location);
+    void updateShipmentStatus(parcelId, status, description, location);
   };
 
   const createPickupRequest = (_request: Omit<PickupRequest, 'id' | 'createdAt'>) => {
@@ -4029,6 +4049,8 @@ Would you like me to drill down into customer records, inventory allocation, or 
         generateShipmentAWB,
         batchGenerateAWB,
         updateShipmentStatus,
+        recordExternalCourierDispatch,
+        recordManualDeliveryDispatch,
         requestRedelivery,
         createRMAReturnShipment,
         simulateCourierWebhookEvent,

@@ -23,6 +23,7 @@ import {
 import { ShipmentParcel, CourierCode } from '../../types/shipping';
 import type { EasyParcelRecoveryConfirmationOutcome, EasyParcelStatusRefreshOutcome } from '../../integration/shipmentData';
 import { easyParcelRecoveryCanRebook, easyParcelShipmentStatusDiagnostic } from '../../integration/shipmentData';
+import { UpdateShipmentStatusModal } from './UpdateShipmentStatusModal';
 
 interface ShippingFulfillmentTabProps {
   parcels: ShipmentParcel[];
@@ -31,7 +32,8 @@ interface ShippingFulfillmentTabProps {
   onOpenAWBModal: (parcel: ShipmentParcel) => void;
   onOpenTrackingModal: (parcel: ShipmentParcel) => void;
   onOpenPickupModal: () => void;
-  onUpdateStatus: (parcelId: string, status: ShipmentParcel['status'], desc?: string, location?: string, voidConfirmed?: boolean) => void;
+  onUpdateStatus: (parcelId: string, status: ShipmentParcel['status'], desc?: string, location?: string, voidConfirmed?: boolean) => Promise<void>;
+  onOpenFulfilment: (parcel: ShipmentParcel) => void;
   onOpenEasyParcelBooking: (parcel: ShipmentParcel) => void;
   onRefreshEasyParcelStatus: (parcelId: string) => Promise<EasyParcelStatusRefreshOutcome>;
   onRefreshAllEasyParcelStatuses: () => Promise<EasyParcelStatusRefreshOutcome[]>;
@@ -46,6 +48,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   onOpenTrackingModal,
   onOpenPickupModal,
   onUpdateStatus,
+  onOpenFulfilment,
   onOpenEasyParcelBooking,
   onRefreshEasyParcelStatus,
   onRefreshAllEasyParcelStatuses,
@@ -68,9 +71,6 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [isConfirmingRecovery, setIsConfirmingRecovery] = useState(false);
   const [manualStatusParcel, setManualStatusParcel] = useState<ShipmentParcel | null>(null);
-  const [manualStatus, setManualStatus] = useState<ShipmentParcel['status']>('in_transit');
-  const [manualStatusReason, setManualStatusReason] = useState('');
-  const [manualVoidConfirmed, setManualVoidConfirmed] = useState(false);
   const visibleParcels = parcels.filter((parcel) => !(
     parcel.source === 'pending'
     && parcel.easyParcelRecovery?.readyToRebook
@@ -103,9 +103,11 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   };
 
   const manualStatusOptions = (status: ShipmentParcel['status']): ShipmentParcel['status'][] => {
-    if (status === 'shipped') return ['in_transit', 'failed_delivery', 'returned', 'cancelled'];
-    if (status === 'in_transit') return ['out_for_delivery', 'failed_delivery', 'returned'];
+    if (status === 'shipped') return ['in_transit', 'delivered', 'failed_delivery', 'returned', 'cancelled'];
+    if (status === 'in_transit') return ['out_for_delivery', 'delivered', 'failed_delivery', 'returned'];
     if (status === 'out_for_delivery') return ['delivered', 'failed_delivery', 'returned'];
+    if (status === 'failed_delivery') return ['in_transit', 'out_for_delivery', 'delivered', 'returned'];
+    if (status === 'delivered') return ['returned'];
     return [];
   };
 
@@ -113,15 +115,6 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
     const options = manualStatusOptions(parcel.status);
     if (options.length === 0) return;
     setManualStatusParcel(parcel);
-    setManualStatus(options[0]);
-    setManualStatusReason('');
-    setManualVoidConfirmed(false);
-  };
-
-  const submitManualStatus = () => {
-    if (!manualStatusParcel || !manualStatusReason.trim() || (manualStatus === 'cancelled' && !manualVoidConfirmed)) return;
-    onUpdateStatus(manualStatusParcel.id, manualStatus, manualStatusReason.trim(), undefined, manualStatus === 'cancelled' && manualVoidConfirmed);
-    setManualStatusParcel(null);
   };
 
   const handleRefreshAllEasyParcelStatuses = async () => {
@@ -228,6 +221,12 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
       case 'flashexpress': return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">FLASH EXP</span>;
       case 'easyparcel': return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300">EASYPARCEL</span>;
       case 'dhl': return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">DHL ECOM</span>;
+      case 'dhlecommerce': return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">DHL ECOM</span>;
+      case 'dhl_express': return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">DHL EXPRESS</span>;
+      case 'gdex': return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">GDEX</span>;
+      case 'citylink': return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">CITY-LINK</span>;
+      case 'other': return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">EXTERNAL</span>;
+      case 'unassigned': return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">UNASSIGNED</span>;
       default: return <span className="px-2 py-0.5 text-[10px] font-black rounded bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">MANUAL</span>;
     }
   };
@@ -340,13 +339,19 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
               onChange={(e) => setCourierFilter(e.target.value)}
               className="px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
             >
-              <option value="all">Carrier: All Couriers</option>
+              <option value="all">Carrier: All Methods</option>
+              <option value="unassigned">Unassigned / Pending</option>
               <option value="jnt">J&T Express</option>
               <option value="ninjavan">Ninja Van</option>
               <option value="posmalaysia">Pos Malaysia</option>
               <option value="flashexpress">Flash Express</option>
               <option value="easyparcel">EasyParcel</option>
               <option value="dhl">DHL eCommerce</option>
+              <option value="dhl_express">DHL Express</option>
+              <option value="gdex">GDEX</option>
+              <option value="citylink">City-Link</option>
+              <option value="other">Other External Courier</option>
+              <option value="manual">Manual / Own Delivery</option>
             </select>
           </div>
         </div>
@@ -476,12 +481,13 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                       <td className="p-3.5">
                         <div className="flex items-center gap-1.5">
                           {getCourierBadge(parcel.courier)}
+                          {parcel.managementMode && <span className="px-1.5 py-0.5 text-[9px] font-bold rounded border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300">{parcel.managementMode === 'provider_managed' ? 'Provider managed' : 'Team managed'}</span>}
                         </div>
                         <div className="text-[11px] font-mono font-bold text-neutral-700 dark:text-neutral-300 mt-1">
                           {parcel.routingSortCode ? `Sort Hub: ${parcel.routingSortCode}` : 'Route not assigned'}
                         </div>
                         <div className="text-[10px] text-neutral-400">
-                          {parcel.serviceType}
+                          {parcel.externalCourierName ?? parcel.driverName ?? parcel.serviceType}
                         </div>
                       </td>
 
@@ -577,13 +583,13 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                             >
                               Update status
                             </button>
-                          ) : !parcel.trackingNumber ? (
+                          ) : parcel.source === 'pending' ? (
                             <button
-                              onClick={() => onOpenEasyParcelBooking(parcel)}
+                              onClick={() => onOpenFulfilment(parcel)}
                               className="px-2.5 py-1 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1"
                             >
                               <Zap className="w-3 h-3" />
-                              Gen AWB
+                              Fulfil Order
                             </button>
                           ) : (
                             <button
@@ -721,39 +727,12 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
         </div>
       )}
       {manualStatusParcel && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-5 shadow-2xl dark:border-neutral-800 dark:bg-neutral-900">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-sm font-bold text-neutral-900 dark:text-white">Update Manual Shipment</h3>
-                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">#{manualStatusParcel.orderNumber} · {manualStatusParcel.trackingNumber || 'No tracking number'}</p>
-              </div>
-              <button type="button" onClick={() => setManualStatusParcel(null)} className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" aria-label="Close status update">×</button>
-            </div>
-            <div className="mt-5 space-y-4">
-              <div>
-                <label className="mb-1 block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">Next shipment status</label>
-                <select value={manualStatus} onChange={(event) => { setManualStatus(event.target.value as ShipmentParcel['status']); setManualVoidConfirmed(false); }} className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100">
-                  {manualStatusOptions(manualStatusParcel.status).map((status) => <option key={status} value={status}>{status === 'cancelled' ? 'Void & mark cancelled' : status.replaceAll('_', ' ')}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">Status reason / audit note</label>
-                <textarea rows={3} value={manualStatusReason} onChange={(event) => setManualStatusReason(event.target.value)} placeholder="Describe the warehouse confirmation or delivery update." className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100" />
-              </div>
-              {manualStatus === 'cancelled' && (
-                <label className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200">
-                  <input type="checkbox" checked={manualVoidConfirmed} onChange={(event) => setManualVoidConfirmed(event.target.checked)} className="mt-0.5" />
-                  <span>I confirm this parcel has not been handed to a courier. This will void the Manual shipment and write a permanent audit event.</span>
-                </label>
-              )}
-              <div className="flex justify-end gap-2 pt-1">
-                <button type="button" onClick={() => setManualStatusParcel(null)} className="rounded-xl px-3 py-2 text-xs font-semibold text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800">Cancel</button>
-                <button type="button" disabled={!manualStatusReason.trim() || (manualStatus === 'cancelled' && !manualVoidConfirmed)} onClick={submitManualStatus} className="rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">Save status</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <UpdateShipmentStatusModal
+          isOpen={true}
+          parcel={manualStatusParcel}
+          onClose={() => setManualStatusParcel(null)}
+          onUpdateStatus={onUpdateStatus}
+        />
       )}
     </div>
   );
