@@ -18,7 +18,8 @@ import {
   Zap,
   Download,
   Calendar,
-  Layers
+  Layers,
+  Edit3
 } from 'lucide-react';
 import { ShipmentParcel, CourierCode } from '../../types/shipping';
 import type { EasyParcelRecoveryConfirmationOutcome, EasyParcelStatusRefreshOutcome } from '../../integration/shipmentData';
@@ -38,6 +39,8 @@ interface ShippingFulfillmentTabProps {
   onRefreshEasyParcelStatus: (parcelId: string) => Promise<EasyParcelStatusRefreshOutcome>;
   onRefreshAllEasyParcelStatuses: () => Promise<EasyParcelStatusRefreshOutcome[]>;
   onConfirmEasyParcelProviderFailure: (parcelId: string, reason: string) => Promise<EasyParcelRecoveryConfirmationOutcome>;
+  onOpenCorrection?: (parcel: ShipmentParcel) => void;
+  onOpenAmendDeliveryDetails?: (parcel: ShipmentParcel) => void;
 }
 
 export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
@@ -53,6 +56,8 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   onRefreshEasyParcelStatus,
   onRefreshAllEasyParcelStatuses,
   onConfirmEasyParcelProviderFailure,
+  onOpenCorrection,
+  onOpenAmendDeliveryDetails,
 }) => {
   const [activeStatusFilter, setActiveStatusFilter] = useState<'all' | 'pending' | 'ready_to_ship' | 'in_transit' | 'delivered' | 'failed_delivery'>('all');
   const [regionFilter, setRegionFilter] = useState<'all' | 'peninsular' | 'east_malaysia'>('all');
@@ -426,6 +431,12 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                     && (parcel.status === 'cancelled' || parcel.status === 'booking_failed')
                     && parcel.easyParcelRecovery?.readyToRebook
                     && rebookParcel !== undefined;
+                  const isAwaitingReplacement = parcel.source === 'pending'
+                    && parcel.activeCorrection?.status === 'awaiting_replacement'
+                    && parcel.activeCorrection.readyToResume;
+                  const isTeamManaged = parcel.managementMode === 'team_managed'
+                    || parcel.fulfillmentMethod === 'external_courier'
+                    || parcel.fulfillmentMethod === 'manual_delivery';
 
                   return (
                     <tr 
@@ -463,6 +474,16 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                           <span className="font-bold font-mono text-neutral-900 dark:text-neutral-100">
                             Recipient details restricted
                           </span>
+                          {onOpenAmendDeliveryDetails && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenAmendDeliveryDetails(parcel)}
+                              className="p-1 rounded text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition cursor-pointer"
+                              title="Amend Delivery Details for Order"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                         <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5 truncate max-w-[200px]">
                           Open the authorized order workflow for delivery details.
@@ -557,7 +578,23 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                             </button>
                           )}
 
-                          {canRebook ? (
+                          {isAwaitingReplacement ? (
+                            <button
+                              onClick={() => onOpenFulfilment(parcel)}
+                              className="px-2.5 py-1 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              Resume Fulfilment
+                            </button>
+                          ) : parcel.source === 'pending' ? (
+                            <button
+                              onClick={() => onOpenFulfilment(parcel)}
+                              className="px-2.5 py-1 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1"
+                            >
+                              <Zap className="w-3 h-3" />
+                              Fulfil Order
+                            </button>
+                          ) : canRebook ? (
                             <button
                               onClick={() => onOpenEasyParcelBooking(rebookParcel)}
                               className="px-2.5 py-1 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1"
@@ -569,36 +606,43 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                             <span className="px-2.5 py-1 text-[11px] font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-lg">
                               Recovery Review
                             </span>
-                          ) : parcel.source === 'easyparcel' && !parcel.hasLabel ? (
-                            <span className="px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-                              AWB Pending
-                            </span>
-                          ) : parcel.source === 'manual' ? (
-                            <button
-                              type="button"
-                              onClick={() => openManualStatusModal(parcel)}
-                              disabled={manualStatusOptions(parcel.status).length === 0}
-                              className="px-2.5 py-1 text-xs font-bold text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                              title="Update manual shipment status"
-                            >
-                              Update status
-                            </button>
-                          ) : parcel.source === 'pending' ? (
-                            <button
-                              onClick={() => onOpenFulfilment(parcel)}
-                              className="px-2.5 py-1 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1"
-                            >
-                              <Zap className="w-3 h-3" />
-                              Fulfil Order
-                            </button>
                           ) : (
-                            <button
-                              onClick={() => onOpenAWBModal(parcel)}
-                              className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer"
-                              title="Open Official EasyParcel AWB"
-                            >
-                              <Printer className="w-3.5 h-3.5" />
-                            </button>
+                            <>
+                              {parcel.status !== 'delivered' && onOpenCorrection && (
+                                <button
+                                  type="button"
+                                  onClick={() => onOpenCorrection(parcel)}
+                                  className="px-2.5 py-1 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-800 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                                >
+                                  <RotateCcw className="w-3 h-3" />
+                                  Correct Fulfilment
+                                </button>
+                              )}
+                              {isTeamManaged && (
+                                <button
+                                  type="button"
+                                  onClick={() => openManualStatusModal(parcel)}
+                                  disabled={manualStatusOptions(parcel.status).length === 0}
+                                  className="px-2.5 py-1 text-xs font-bold text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                  title="Update team-managed shipment status"
+                                >
+                                  Update Status
+                                </button>
+                              )}
+                              {parcel.source === 'easyparcel' && !parcel.hasLabel ? (
+                                <span className="px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                                  AWB Pending
+                                </span>
+                              ) : parcel.hasLabel ? (
+                                <button
+                                  onClick={() => onOpenAWBModal(parcel)}
+                                  className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer"
+                                  title="Open Official EasyParcel AWB"
+                                >
+                                  <Printer className="w-3.5 h-3.5" />
+                                </button>
+                              ) : null}
+                            </>
                           )}
 
                           <button

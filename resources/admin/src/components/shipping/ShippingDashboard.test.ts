@@ -800,6 +800,47 @@ describe('ShippingDashboard provider action binding', () => {
     },
   );
 
+  it('exposes approved correction, resume, and address actions without offering correction for delivered shipments', async () => {
+    const base = INITIAL_SHIPMENT_PARCELS[0];
+    const activeRows: ShipmentParcel[] = [
+      { ...base, id: 'manual-active', orderId: 'order-manual', orderNumber: 'JW-MANUAL', source: 'manual', fulfillmentMethod: 'manual_delivery', managementMode: 'team_managed', courier: 'manual', trackingNumber: 'MANUAL-1', status: 'in_transit' },
+      { ...base, id: 'external-active', orderId: 'order-external', orderNumber: 'JW-EXTERNAL', source: 'manual', fulfillmentMethod: 'external_courier', managementMode: 'team_managed', courier: 'jnt', trackingNumber: 'JNT-1', status: 'in_transit' },
+      { ...base, id: 'easyparcel-active', orderId: 'order-easyparcel', orderNumber: 'JW-EASYPARCEL', source: 'easyparcel', fulfillmentMethod: 'easyparcel', managementMode: 'provider_managed', courier: 'easyparcel', trackingNumber: 'EP-1', status: 'in_transit' },
+      { ...base, id: 'delivered-attempt', orderId: 'order-delivered', orderNumber: 'JW-DELIVERED', source: 'manual', fulfillmentMethod: 'manual_delivery', managementMode: 'team_managed', courier: 'manual', trackingNumber: 'DONE-1', status: 'delivered' },
+      { ...base, id: 'pending-order-resume', orderId: 'order-resume', orderNumber: 'JW-RESUME', source: 'pending', fulfillmentMethod: null, managementMode: null, courier: 'manual', trackingNumber: '', status: 'pending', activeCorrection: { id: 'correction-1', sourceShipmentId: 'old-attempt', replacementShipmentId: null, reasonCode: 'wrong_fulfilment_method', externalActionState: 'not_required', status: 'awaiting_replacement', readyToResume: true } },
+    ];
+    const onOpenCorrection = vi.fn();
+    const onOpenFulfilment = vi.fn();
+    const onOpenAmendDeliveryDetails = vi.fn();
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    mountedRoots.push({ root, host });
+
+    await act(async () => root.render(React.createElement(ShippingFulfillmentTab, {
+      parcels: activeRows,
+      onGenerateAWB: vi.fn(), onBatchGenerateAWB: vi.fn(), onOpenAWBModal: vi.fn(), onOpenTrackingModal: vi.fn(),
+      onOpenPickupModal: vi.fn(), onUpdateStatus: vi.fn(), onOpenFulfilment, onOpenEasyParcelBooking: vi.fn(),
+      onRefreshEasyParcelStatus: vi.fn(), onRefreshAllEasyParcelStatuses: vi.fn(), onConfirmEasyParcelProviderFailure: vi.fn(),
+      onOpenCorrection, onOpenAmendDeliveryDetails,
+    } as any)));
+
+    const correctionButtons = Array.from(host.querySelectorAll('button')).filter(button => button.textContent?.trim() === 'Correct Fulfilment');
+    expect(correctionButtons).toHaveLength(3);
+    await act(async () => (correctionButtons[0] as HTMLButtonElement).click());
+    expect(onOpenCorrection).toHaveBeenCalledWith(expect.objectContaining({ id: 'manual-active' }));
+
+    const resume = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Resume Fulfilment') as HTMLButtonElement;
+    expect(resume).toBeTruthy();
+    await act(async () => resume.click());
+    expect(onOpenFulfilment).toHaveBeenCalledWith(expect.objectContaining({ id: 'pending-order-resume' }));
+
+    const addressActions = Array.from(host.querySelectorAll('button')).filter(button => button.title === 'Amend Delivery Details for Order');
+    expect(addressActions).toHaveLength(5);
+    await act(async () => (addressActions[0] as HTMLButtonElement).click());
+    expect(onOpenAmendDeliveryDetails).toHaveBeenCalledWith(expect.objectContaining({ id: 'manual-active' }));
+  });
+
   it('counts canonical shipped parcels in the ShippingOverview in-transit metric', () => {
     const html = renderToStaticMarkup(React.createElement(ShippingOverviewTab, {
       parcels: [{

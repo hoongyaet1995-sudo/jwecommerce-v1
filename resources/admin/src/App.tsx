@@ -33,21 +33,10 @@ import { CustomerSupportHub } from './components/support/CustomerSupportHub';
 import { ReportsHub } from './components/reports/ReportsHub';
 import { AIAutoReplyStudioHub } from './components/ai-auto-reply/AIAutoReplyStudioHub';
 import { PromotionsHub } from './components/promotions/PromotionsHub';
-import { CorrectFulfilmentModal } from './components/shipping/CorrectFulfilmentModal';
-import { AmendDeliveryDetailsModal } from './components/orders/AmendDeliveryDetailsModal';
 
 const AdminLayoutContent: React.FC = () => {
-  const { currentSection, isSidebarCollapsed, shipmentParcels, orders } = useAdmin();
+  const { currentSection, isSidebarCollapsed } = useAdmin();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const preview = new URLSearchParams(window.location.search).get('fulfilment-preview');
-  const previewParcel = shipmentParcels.find(parcel => parcel.source !== 'pending') ?? null;
-  const previewOrder = orders.find(order => order.id === previewParcel?.orderId) ?? orders[0] ?? null;
-  const closePreview = () => {
-    const url = new URL(window.location.href);
-    url.searchParams.delete('fulfilment-preview');
-    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
-    window.location.reload();
-  };
 
   const renderActiveSection = () => {
     // Check if currentSection is settings or starts with settings-
@@ -147,21 +136,6 @@ const AdminLayoutContent: React.FC = () => {
       <CommandPalette />
       <NotificationDrawer />
       <ToastContainer />
-      <CorrectFulfilmentModal
-        isOpen={preview === 'correct'}
-        parcel={previewParcel}
-        isOrderCancelled={previewOrder?.fulfillmentStatus === 'cancelled'}
-        onClose={closePreview}
-        onConfirmVoidAndReplace={async () => undefined}
-        onConfirmCorrectDetailsOnly={async () => undefined}
-      />
-      <AmendDeliveryDetailsModal
-        isOpen={preview === 'address'}
-        order={previewOrder}
-        hasActiveShipment={Boolean(previewParcel)}
-        onClose={closePreview}
-        onSave={async () => undefined}
-      />
     </div>
   );
 };

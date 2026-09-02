@@ -3,6 +3,7 @@ import { useAdmin } from '../../context/AdminContext';
 import { Order, FulfillmentStatus, NotificationEventKey, OrderNotificationSummary, PaymentStatus } from '../../types';
 import { OrderNotificationPanel } from './OrderNotificationPanel';
 import { OrderPaymentProofPreviewModal } from './OrderPaymentProofPreviewModal';
+import { AmendDeliveryDetailsModal } from './AmendDeliveryDetailsModal';
 import {
   ShoppingBag,
   Search,
@@ -51,7 +52,7 @@ export const notificationEventKeyForStatus = (code: string): NotificationEventKe
   NOTIFICATION_EVENT_BY_STATUS_CODE.get(code) ?? null;
 
 export const OrderAdmin: React.FC = () => {
-  const { orders, updateOrderStatus, updateOrderTracking, reviewPaymentProof, orderStatuses, setCurrentSection, notificationPermissions } = useAdmin();
+  const { orders, shipmentParcels = [], updateOrderStatus, updateOrderTracking, reviewPaymentProof, amendOrderDeliveryDetails, orderStatuses, setCurrentSection, notificationPermissions } = useAdmin();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -59,6 +60,7 @@ export const OrderAdmin: React.FC = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isProofPreviewOpen, setIsProofPreviewOpen] = useState(false);
   const [isRejectBoxOpen, setIsRejectBoxOpen] = useState(false);
+  const [isAmendDeliveryOpen, setIsAmendDeliveryOpen] = useState(false);
   const [rejectionReasonInput, setRejectionReasonInput] = useState('');
 
   // Status Change Workflow State
@@ -128,6 +130,14 @@ export const OrderAdmin: React.FC = () => {
     selectedOrderRef.current = null;
     setIsUpdatingStatus(false);
     setIsDetailOpen(false);
+    setIsAmendDeliveryOpen(false);
+  };
+
+  const deliveryReasonCode = (reason: string) => {
+    if (reason.startsWith('Customer requested')) return 'customer_request' as const;
+    if (reason.startsWith('Mobile contact') || reason.startsWith('Recipient name')) return 'invalid_receiver_details' as const;
+    if (reason.includes('Typo') || reason.includes('Postcode') || reason.includes('Building')) return 'address_typo' as const;
+    return 'other' as const;
   };
 
   const handlePaymentProofReview = async (decision: 'verified' | 'rejected') => {
@@ -662,9 +672,19 @@ export const OrderAdmin: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Shipping Address */}
               <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/40 space-y-2 text-xs">
-                <div className="flex items-center gap-1.5 font-bold text-neutral-900 dark:text-white">
-                  <MapPin className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>Shipping Address</span>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 font-bold text-neutral-900 dark:text-white">
+                    <MapPin className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Shipping Address</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsAmendDeliveryOpen(true)}
+                    className="px-2 py-1 text-[10px] font-bold rounded-lg border border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition cursor-pointer flex items-center gap-1"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                    Amend Delivery Details
+                  </button>
                 </div>
                 <div className="text-neutral-700 dark:text-neutral-300 leading-relaxed font-mono text-[11px]">
                   <div>{selectedOrder.shippingAddress.firstName} {selectedOrder.shippingAddress.lastName}</div>
@@ -746,6 +766,32 @@ export const OrderAdmin: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+      {selectedOrder && (
+        <AmendDeliveryDetailsModal
+          isOpen={isAmendDeliveryOpen}
+          order={selectedOrder}
+          hasActiveShipment={shipmentParcels.some(parcel => parcel.orderId === selectedOrder.id && parcel.status !== 'delivered' && parcel.status !== 'cancelled')}
+          onClose={() => setIsAmendDeliveryOpen(false)}
+          onSave={async (orderId, updatedAddress, metadata) => {
+            const saved = await amendOrderDeliveryDetails(orderId, {
+              firstName: updatedAddress.firstName,
+              lastName: updatedAddress.lastName,
+              phone: updatedAddress.phone,
+              address1: updatedAddress.address1,
+              address2: updatedAddress.address2,
+              postalCode: updatedAddress.postalCode,
+              city: updatedAddress.city,
+              state: updatedAddress.province,
+              country: updatedAddress.country,
+              reasonCode: deliveryReasonCode(metadata.reason),
+              internalNote: metadata.internalNote,
+              syncAddressBook: metadata.saveToAddressBook,
+            });
+            selectedOrderRef.current = saved;
+            setSelectedOrder(saved);
+          }}
+        />
       )}
       {selectedOrder && (
         <OrderPaymentProofPreviewModal

@@ -784,6 +784,44 @@ describe('OrderAdmin notification mutation binding', () => {
     await vi.waitFor(() => expect(auditFetch.mock.calls.filter(([url]) => String(url).endsWith('/notification-dispatches'))).toHaveLength(2));
   });
 
+  it('opens the approved delivery amendment workflow from the order shipping-address card', async () => {
+    const amendOrderDeliveryDetails = vi.fn().mockResolvedValue(baseOrder({
+      shippingAddress: { ...address, phone: '0123456789', address1: '2 Corrected Street' },
+    }));
+    mockedAdminContext.value = {
+      ...mockedAdminContext.value,
+      shipmentParcels: [],
+      amendOrderDeliveryDetails,
+    };
+    const { host } = await mountOrderAdmin();
+
+    await act(async () => exactButton(host, 'Details').click());
+    const amend = exactButton(host, 'Amend Delivery Details');
+    await act(async () => amend.click());
+
+    expect(host.textContent).toContain('Update recipient contact and destination address with immutable audit trail.');
+    const phone = Array.from(host.querySelectorAll('input')).find(input => input.placeholder.includes('+60123456789')) as HTMLInputElement;
+    const address1 = Array.from(host.querySelectorAll('input')).find(input => input.placeholder.includes('Unit 12-03')) as HTMLInputElement;
+    const note = host.querySelector('textarea[placeholder^="e.g. Customer contacted via WhatsApp"]') as HTMLTextAreaElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(phone, '0123456789');
+      phone.dispatchEvent(new Event('input', { bubbles: true }));
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(address1, '2 Corrected Street');
+      address1.dispatchEvent(new Event('input', { bubbles: true }));
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(note, 'Customer confirmed the corrected destination.');
+      note.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => exactButton(host, 'Save Delivery Details').click());
+
+    expect(amendOrderDeliveryDetails).toHaveBeenCalledWith('17', expect.objectContaining({
+      phone: '0123456789',
+      address1: '2 Corrected Street',
+      reasonCode: 'customer_request',
+      internalNote: 'Customer confirmed the corrected destination.',
+      syncAddressBook: false,
+    }));
+  });
+
   it('never calls the protected audit after a non-status producer when view permission is absent', async () => {
     const updateOrderTracking = vi.fn(async () => baseOrder({
       trackingCarrier: 'Ninja Van',

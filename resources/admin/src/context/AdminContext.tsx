@@ -6,10 +6,11 @@ import { clonePage, createPage, fetchPages, removePage, savePageDraft } from '..
 import { deleteCatalogEntity, fetchCatalog, saveCatalogEntity } from '../integration/catalogData';
 import { fetchMenus, saveMenuDocument } from '../integration/menuData';
 import { customerDirectoryToCustomers, deleteCustomerData, fetchCustomerDirectoryData, saveCustomerData } from '../integration/customerDirectoryData';
-import { fetchOrders, processOrderRefundData, reviewPaymentProofData, updateOrderStatusData, updateOrderTrackingData } from '../integration/orderData';
+import { amendOrderDeliveryDetails as amendOrderDeliveryDetailsData, fetchOrders, processOrderRefundData, reviewPaymentProofData, updateOrderStatusData, updateOrderTrackingData, type AmendOrderDeliveryDetailsInput } from '../integration/orderData';
 import { LatestOrderMutationCoordinator } from './LatestOrderMutationCoordinator';
 import {
   appendShipmentEvent,
+  amendShipmentOperationalDetails as amendShipmentOperationalDetailsData,
   confirmEasyParcelProviderFailureWithReload,
   easyParcelShipmentStatusDiagnostic,
   fetchShipments,
@@ -18,6 +19,7 @@ import {
   refreshEasyParcelShipmentStatusWithReload,
   recordExternalCourierDispatch as recordExternalCourierDispatchData,
   recordManualDeliveryDispatch as recordManualDeliveryDispatchData,
+  startShipmentCorrection as startShipmentCorrectionData,
   type EasyParcelRecoveryConfirmationOutcome,
   type EasyParcelShipmentStatusRefresh,
   type EasyParcelStatusRefreshOutcome,
@@ -84,6 +86,9 @@ import {
   CourierConfig,
   SmartRoutingRule,
   ShipmentParcel,
+  AmendShipmentOperationalDetailsInput,
+  StartShipmentCorrectionInput,
+  StartShipmentCorrectionResult,
   EasyParcelWebhookReceiptRow,
   EasyParcelWebhookAuditStatus,
   EasyParcelWebhookAuditSnapshot,
@@ -273,6 +278,7 @@ interface AdminContextType {
   updateOrderTracking: (orderId: string, carrier: string, trackingNumber: string) => Promise<Order | null>;
   processOrderRefund: (orderId: string, amount: number, reason: string) => Promise<Order | null>;
   reviewPaymentProof: (orderId: string, paymentId: string, decision: 'verified' | 'rejected', reason?: string) => Promise<Order | null>;
+  amendOrderDeliveryDetails: (orderId: string, input: AmendOrderDeliveryDetailsInput) => Promise<Order>;
 
   // Settings & Staff RBAC
   staffUsers: StaffUser[];
@@ -349,6 +355,8 @@ interface AdminContextType {
   updateShipmentStatus: (parcelId: string, status: ShipmentParcel['status'], eventDesc?: string, location?: string, voidConfirmed?: boolean) => Promise<void>;
   recordExternalCourierDispatch: (parcelId: string, data: { courierCode: string; courierName: string; trackingNumber: string; trackingUrl?: string; auditNote: string }) => Promise<void>;
   recordManualDeliveryDispatch: (parcelId: string, data: { driverName: string; handoffReference?: string; auditNote: string }) => Promise<void>;
+  startShipmentCorrection: (parcelId: string, input: StartShipmentCorrectionInput) => Promise<{ result: StartShipmentCorrectionResult; replacementParcel: ShipmentParcel }>;
+  amendShipmentOperationalDetails: (parcelId: string, input: AmendShipmentOperationalDetailsInput) => Promise<void>;
   requestRedelivery: (parcelId: string) => void;
   createRMAReturnShipment: (orderNumber: string, reason: string) => void;
   simulateCourierWebhookEvent: (parcelId: string, eventType: string, location: string, description: string) => void;
@@ -1466,6 +1474,25 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const amendOrderDeliveryDetails = async (orderId: string, input: AmendOrderDeliveryDetailsInput): Promise<Order> => {
+    try {
+      await amendOrderDeliveryDetailsData(laravelBootstrap, orderId, input);
+      const [refreshedOrders, refreshedShipments] = await Promise.all([
+        fetchOrders(laravelBootstrap),
+        fetchShipments(laravelBootstrap),
+      ]);
+      setOrders(refreshedOrders);
+      setShipmentParcels(refreshedShipments);
+      const saved = refreshedOrders.find(order => order.id === orderId);
+      if (!saved) throw new Error('Updated order could not be reloaded.');
+      addToast({ type: 'success', title: 'Delivery Details Amended', message: 'The current order destination and immutable audit were updated.' });
+      return saved;
+    } catch (error) {
+      addToast({ type: 'error', title: 'Delivery Amendment Failed', message: error instanceof Error ? error.message : 'Unable to amend delivery details.' });
+      throw error;
+    }
+  };
+
   // Staff User Login Management (RBAC)
   const saveStaffUser = (staff: StaffUser) => {
     setStaffUsers(prev => {
@@ -2415,6 +2442,37 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     await recordManualDeliveryDispatchData(laravelBootstrap, parcel.orderId, data);
     setShipmentParcels(await fetchShipments(laravelBootstrap));
     addToast({ type: 'success', title: 'Manual delivery recorded', message: 'The driver assignment and immutable dispatch audit are now stored.' });
+  };
+
+  const startShipmentCorrection = async (parcelId: string, input: StartShipmentCorrectionInput): Promise<{ result: StartShipmentCorrectionResult; replacementParcel: ShipmentParcel }> => {
+    try {
+      const result = await startShipmentCorrectionData(laravelBootstrap, parcelId, input);
+      const refreshed = await fetchShipments(laravelBootstrap);
+      setShipmentParcels(refreshed);
+      const replacementParcel = refreshed.find(parcel => (
+        parcel.source === 'pending'
+        && parcel.orderId === result.orderId
+        && parcel.activeCorrection?.id === result.id
+        && parcel.activeCorrection.readyToResume
+      ));
+      if (!replacementParcel) throw new Error('Replacement fulfilment draft could not be reloaded.');
+      addToast({ type: 'info', title: 'Attempt Voided — Select Replacement', message: 'The original attempt remains in history. Choose the replacement fulfilment method.' });
+      return { result, replacementParcel };
+    } catch (error) {
+      addToast({ type: 'error', title: 'Fulfilment Correction Failed', message: error instanceof Error ? error.message : 'Unable to start fulfilment correction.' });
+      throw error;
+    }
+  };
+
+  const amendShipmentOperationalDetails = async (parcelId: string, input: AmendShipmentOperationalDetailsInput): Promise<void> => {
+    try {
+      await amendShipmentOperationalDetailsData(laravelBootstrap, parcelId, input);
+      setShipmentParcels(await fetchShipments(laravelBootstrap));
+      addToast({ type: 'success', title: 'Dispatch Details Corrected', message: 'Operational details and the immutable audit were updated.' });
+    } catch (error) {
+      addToast({ type: 'error', title: 'Dispatch Correction Failed', message: error instanceof Error ? error.message : 'Unable to correct shipment details.' });
+      throw error;
+    }
   };
 
   const requestRedelivery = (_parcelId: string) => {
@@ -3986,6 +4044,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
         updateOrderTracking,
         processOrderRefund,
         reviewPaymentProof,
+        amendOrderDeliveryDetails,
         staffUsers,
         saveStaffUser,
         deleteStaffUser,
@@ -4051,6 +4110,8 @@ Would you like me to drill down into customer records, inventory allocation, or 
         updateShipmentStatus,
         recordExternalCourierDispatch,
         recordManualDeliveryDispatch,
+        startShipmentCorrection,
+        amendShipmentOperationalDetails,
         requestRedelivery,
         createRMAReturnShipment,
         simulateCourierWebhookEvent,

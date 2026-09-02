@@ -50,12 +50,12 @@
 
 | Flow/state | Source trigger | Expected visible behavior | Data classification |
 | --- | --- | --- | --- |
-| Open correction | `Correct Fulfilment` row action | current shipment snapshot and two recovery modes | Laravel API and adapter available; official trigger awaits preview acceptance |
+| Open correction | `Correct Fulfilment` row action | current shipment snapshot and two recovery modes | operational on the official localhost Shipping route |
 | Void and replace | primary correction action | validated acknowledgement, success, then existing method chooser | Laravel transaction and replacement adapter available; no live provider booking used in preview |
 | Correct details only | second modal mode | method-specific fields, before/after-safe mutation feedback | protected Laravel API and immutable amendment audit available |
 | Resume correction | `Resume Fulfilment` row action | reopen existing method chooser | active-correction projection and replacement completion available |
 | Amend destination | Shipping row or Order detail action | validated address form and before/after diff | protected Laravel API and immutable address audit available |
-| Delivered/cancelled hard block | open modal for ineligible state | approved blocking alert and no mutation action | available adapter after API eligibility projection |
+| Delivered/cancelled hard block | open modal for ineligible state | approved blocking alert and no mutation action | operational; Delivered rows omit replacement action and cancelled orders remain blocked |
 | Permission/loading/validation/failure | mutation lifecycle | approved source states | available adapter after API integration |
 | Prototype permission toggles | source-only developer controls | simulate errors locally | excluded from official UI; real HTTP 403 drives the same visible error state |
 
@@ -76,10 +76,21 @@
 
 - Removed only the two prototype-only controls `Simulate Permission Denied` and `Toggle Unconfirmed Provider State`; real API errors populate the preserved error banners.
 - Corrected the source prop-name mismatch by using `onOpenAmendDeliveryDetails`, matching the modal's declared contract. This changes no visible DOM or styling.
-- Added real Laravel/Admin view-model adapters and the two query-gated preview mounts. No ZIP wrapper, layout, Tailwind class, responsive behavior, or user-facing copy was redesigned.
+- Added real Laravel/Admin view-model adapters. The temporary query-gated preview mounts were removed after official-route acceptance. No ZIP wrapper, layout, Tailwind class, responsive behavior, or user-facing copy was redesigned.
+
+## Official localhost cutover evidence
+
+- Shipping route: `http://127.0.0.1:8500/admin/shipping`
+- Orders route: `http://127.0.0.1:8500/admin/orders`
+- Authenticated browser acceptance: 8 shipment rows and 23 order-detail triggers loaded from localhost MySQL-backed APIs.
+- Shipping row acceptance: `Correct Fulfilment` rendered for the eligible non-delivered team-managed attempt; Delivered rows did not expose it; every shipment row exposed the approved delivery-amendment pencil action.
+- Correction modal acceptance: the official row action opened the source-faithful modal and truthfully hard-blocked replacement because the sampled parent order was cancelled.
+- Address acceptance: both the Shipping row action and Order Details shipping-address card opened the same source-faithful modal with the persisted address; blank required phone/audit note blocked saving locally.
+- Safety boundary: no correction, address mutation, provider cancellation, quote, booking, or status refresh was submitted during browser acceptance.
+- Browser console: zero errors observed after both official-route interactions.
 
 ## Approval record
 
 - Initial source boundary approved by: user, through the confirmed design and supplied ZIP (20)
 - Dependency expansion approved by: no expansion required
-- Official route cutover approved by: not yet; localhost isolated preview acceptance is required before exposing the new actions on official Admin routes
+- Official route cutover approved by: user on 2026-09-02 (`批准接入正式入口`)

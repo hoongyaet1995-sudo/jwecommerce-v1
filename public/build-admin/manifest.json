@@ -1,31 +1,31 @@
 {
-  "_index-CBxAXzLQ.js": {
-    "file": "assets/index-CBxAXzLQ.js",
+  "_index-C2wUS2hC.css": {
+    "file": "assets/index-C2wUS2hC.css",
+    "src": "_index-C2wUS2hC.css"
+  },
+  "_index-fx-lIKAL.js": {
+    "file": "assets/index-fx-lIKAL.js",
     "name": "index",
     "css": [
-      "assets/index-CFZnH2G-.css"
+      "assets/index-C2wUS2hC.css"
     ]
   },
-  "_index-CFZnH2G-.css": {
-    "file": "assets/index-CFZnH2G-.css",
-    "src": "_index-CFZnH2G-.css"
-  },
   "src/main.tsx": {
-    "file": "assets/main-v6LY3gLW.js",
+    "file": "assets/main-Cr-WohLR.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
     "imports": [
-      "_index-CBxAXzLQ.js"
+      "_index-fx-lIKAL.js"
     ]
   },
   "src/public-page.tsx": {
-    "file": "assets/public-page-DSu0tUSR.js",
+    "file": "assets/public-page-BoD5nL0K.js",
     "name": "public-page",
     "src": "src/public-page.tsx",
     "isEntry": true,
     "imports": [
-      "_index-CBxAXzLQ.js"
+      "_index-fx-lIKAL.js"
     ]
   }
 }

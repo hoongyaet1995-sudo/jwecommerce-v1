@@ -45,6 +45,8 @@ import { GeneralShippingRateModal } from './GeneralShippingRateModal';
 import { EasyParcelOAuthModal } from './EasyParcelOAuthModal';
 import { EasyParcelBookingModal } from './EasyParcelBookingModal';
 import { ChooseFulfillmentMethodModal } from './ChooseFulfillmentMethodModal';
+import { CorrectFulfilmentModal } from './CorrectFulfilmentModal';
+import { AmendDeliveryDetailsModal } from '../orders/AmendDeliveryDetailsModal';
 
 export type ShippingTabType = 
   | 'overview' 
@@ -74,6 +76,7 @@ export const ShippingDashboard: React.FC = () => {
     toggleSmartRoutingRule,
     reorderSmartRoutingRules,
     shipmentParcels = [],
+    orders = [],
     refreshEasyParcelShipmentStatus,
     refreshAllEasyParcelShipmentStatuses,
     confirmEasyParcelProviderFailure,
@@ -86,6 +89,9 @@ export const ShippingDashboard: React.FC = () => {
     updateShipmentStatus,
     recordExternalCourierDispatch,
     recordManualDeliveryDispatch,
+    startShipmentCorrection,
+    amendShipmentOperationalDetails,
+    amendOrderDeliveryDetails,
     requestRedelivery,
     simulateCourierWebhookEvent,
     pickupRequests = [],
@@ -113,6 +119,9 @@ export const ShippingDashboard: React.FC = () => {
   const [isEasyParcelOAuthOpen, setIsEasyParcelOAuthOpen] = useState(false);
   const [easyParcelBookingParcel, setEasyParcelBookingParcel] = useState<ShipmentParcel | null>(null);
   const [fulfilmentParcel, setFulfilmentParcel] = useState<ShipmentParcel | null>(null);
+  const [correctionParcel, setCorrectionParcel] = useState<ShipmentParcel | null>(null);
+  const [pendingReplacementParcel, setPendingReplacementParcel] = useState<ShipmentParcel | null>(null);
+  const [amendDeliveryOrderId, setAmendDeliveryOrderId] = useState<string | null>(null);
   const [easyParcelCallbackState, setEasyParcelCallbackState] = useState(window.__JW_ADMIN__?.easyParcelConnection?.state ?? null);
 
   useEffect(() => {
@@ -182,6 +191,29 @@ export const ShippingDashboard: React.FC = () => {
 
   const explainPickupUnavailable = () => {
     addToast({ type: 'error', title: 'Pickup scheduling unavailable', message: 'EasyParcel provider booking is not connected yet, so no pickup has been created.' });
+  };
+
+  const amendDeliveryOrder = orders.find(order => order.id === amendDeliveryOrderId) ?? null;
+
+  const openDeliveryAmendment = (parcel: ShipmentParcel) => {
+    const order = orders.find(candidate => candidate.id === parcel.orderId || candidate.orderNumber === parcel.orderNumber);
+    if (order) setAmendDeliveryOrderId(order.id);
+    else addToast({ type: 'error', title: 'Order unavailable', message: 'The authorized order record could not be opened for delivery amendment.' });
+  };
+
+  const correctionReasonCode = (reason: string) => {
+    if (['wrong_fulfillment_method', 'wrong_easyparcel_courier', 'wrong_external_courier'].includes(reason)) return 'wrong_fulfilment_method' as const;
+    if (reason === 'incorrect_receiver_details') return 'incorrect_delivery_details' as const;
+    if (reason === 'duplicate_accidental_dispatch') return 'duplicate_booking' as const;
+    if (reason === 'customer_requested_change') return 'customer_request' as const;
+    return 'other' as const;
+  };
+
+  const deliveryReasonCode = (reason: string) => {
+    if (reason.startsWith('Customer requested')) return 'customer_request' as const;
+    if (reason.startsWith('Mobile contact') || reason.startsWith('Recipient name')) return 'invalid_receiver_details' as const;
+    if (reason.includes('Typo') || reason.includes('Postcode') || reason.includes('Building')) return 'address_typo' as const;
+    return 'other' as const;
   };
 
   return (
@@ -390,6 +422,8 @@ export const ShippingDashboard: React.FC = () => {
             onRefreshEasyParcelStatus={refreshEasyParcelShipmentStatus}
             onRefreshAllEasyParcelStatuses={refreshAllEasyParcelShipmentStatuses}
             onConfirmEasyParcelProviderFailure={confirmEasyParcelProviderFailure}
+            onOpenCorrection={(parcel) => setCorrectionParcel(parcel)}
+            onOpenAmendDeliveryDetails={openDeliveryAmendment}
           />
         )}
 
@@ -540,6 +574,75 @@ export const ShippingDashboard: React.FC = () => {
           onConfirmManualDelivery={recordManualDeliveryDispatch}
         />
       )}
+
+      <CorrectFulfilmentModal
+        isOpen={Boolean(correctionParcel)}
+        parcel={correctionParcel}
+        isOrderCancelled={orders.find(order => order.id === correctionParcel?.orderId || order.orderNumber === correctionParcel?.orderNumber)?.fulfillmentStatus === 'cancelled'}
+        onClose={() => {
+          setCorrectionParcel(null);
+          if (pendingReplacementParcel) {
+            setFulfilmentParcel(pendingReplacementParcel);
+            setPendingReplacementParcel(null);
+          }
+        }}
+        onOpenAmendDeliveryDetails={() => {
+          if (correctionParcel) {
+            openDeliveryAmendment(correctionParcel);
+            setCorrectionParcel(null);
+          }
+        }}
+        onConfirmVoidAndReplace={async (parcelId, data) => {
+          if (!correctionParcel) return;
+          const providerManaged = correctionParcel.managementMode === 'provider_managed' || correctionParcel.courier === 'easyparcel';
+          const outcome = await startShipmentCorrection(parcelId, {
+            reasonCode: correctionReasonCode(data.reason),
+            internalNote: data.auditNote,
+            externalActionState: providerManaged ? 'staff_confirmed_external' : 'not_required',
+            externalActionNote: providerManaged ? data.auditNote : undefined,
+          });
+          setPendingReplacementParcel(outcome.replacementParcel);
+        }}
+        onConfirmCorrectDetailsOnly={async (parcelId, data) => {
+          const reasonCode = data.driverName !== (correctionParcel?.driverName ?? undefined) ? 'driver_correction'
+            : data.handoffReference !== (correctionParcel?.handoffReference ?? undefined) ? 'handoff_correction'
+              : data.externalCourierName !== (correctionParcel?.externalCourierName ?? undefined) ? 'courier_correction'
+                : data.trackingNumber !== (correctionParcel?.trackingNumber || undefined) || data.trackingUrl !== (correctionParcel?.trackingUrl ?? undefined) ? 'tracking_typo'
+                  : 'other';
+          await amendShipmentOperationalDetails(parcelId, {
+            trackingNumber: data.trackingNumber,
+            trackingUrl: data.trackingUrl,
+            driverName: data.driverName,
+            handoffReference: data.handoffReference,
+            courierName: data.externalCourierName,
+            reasonCode,
+            internalNote: data.auditNote,
+          });
+        }}
+      />
+
+      <AmendDeliveryDetailsModal
+        isOpen={Boolean(amendDeliveryOrder)}
+        order={amendDeliveryOrder}
+        hasActiveShipment={shipmentParcels.some(parcel => parcel.orderId === amendDeliveryOrder?.id && parcel.status !== 'delivered' && parcel.status !== 'cancelled')}
+        onClose={() => setAmendDeliveryOrderId(null)}
+        onSave={async (orderId, updatedAddress, metadata) => {
+          await amendOrderDeliveryDetails(orderId, {
+            firstName: updatedAddress.firstName,
+            lastName: updatedAddress.lastName,
+            phone: updatedAddress.phone,
+            address1: updatedAddress.address1,
+            address2: updatedAddress.address2,
+            postalCode: updatedAddress.postalCode,
+            city: updatedAddress.city,
+            state: updatedAddress.province,
+            country: updatedAddress.country,
+            reasonCode: deliveryReasonCode(metadata.reason),
+            internalNote: metadata.internalNote,
+            syncAddressBook: metadata.saveToAddressBook,
+          });
+        }}
+      />
 
       {isRateModalOpen && (
         <GeneralShippingRateModal
