@@ -56,6 +56,7 @@ export interface LaravelAdminBootstrap {
   taxSettingsUrl?: string;
   taxClassesUrl?: string;
   storefrontShellSettingsUrl?: string;
+  catalogListingSettingsUrl?: string;
 }
 
 declare global {
@@ -178,6 +179,8 @@ export interface Collection {
   title: string;
   slug: string;
   description?: string;
+  subtitle?: string;
+  badge?: string;
   coverImage?: string;
   type: 'manual' | 'dynamic';
   matchType?: 'all' | 'any';

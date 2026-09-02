@@ -393,6 +393,63 @@ class ShipmentApiTest extends TestCase
         $this->assertDatabaseCount('shipment_events', 4);
     }
 
+    public function test_authorized_staff_can_void_a_manual_shipment_before_courier_handoff(): void
+    {
+        $admin = $this->superAdmin();
+        $order = $this->processingOrder();
+
+        $this->actingAs($admin)->postJson('/admin/api/shipping/orders/'.$order->id.'/dispatch', [
+            'carrierName' => 'Manual warehouse',
+            'trackingNumber' => 'VOID-MANUAL-1001',
+        ])->assertCreated();
+
+        $shipment = Shipment::query()->sole();
+
+        $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/events', [
+                'status' => 'cancelled',
+                'description' => 'Void confirmed before the parcel was handed to the courier.',
+                'voidConfirmed' => true,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'cancelled');
+
+        $this->assertDatabaseHas('shipments', [
+            'id' => $shipment->id,
+            'status' => 'cancelled',
+        ]);
+        $this->assertNotNull($shipment->fresh()->cancelled_at);
+        $this->assertDatabaseHas('shipment_events', [
+            'shipment_id' => $shipment->id,
+            'status' => 'cancelled',
+            'source' => 'manual',
+        ]);
+    }
+
+    public function test_manual_void_requires_an_explicit_handoff_confirmation(): void
+    {
+        $admin = $this->superAdmin();
+        $order = $this->processingOrder();
+
+        $this->actingAs($admin)->postJson('/admin/api/shipping/orders/'.$order->id.'/dispatch', [
+            'carrierName' => 'Manual warehouse',
+            'trackingNumber' => 'VOID-CONFIRM-1001',
+        ])->assertCreated();
+
+        $shipment = Shipment::query()->sole();
+
+        $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/shipments/'.$shipment->id.'/events', [
+                'status' => 'cancelled',
+                'description' => 'This must not void a parcel without a staff confirmation.',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('voidConfirmed');
+
+        $this->assertSame('shipped', $shipment->fresh()->status);
+        $this->assertNull($shipment->fresh()->cancelled_at);
+    }
+
     public function test_manual_event_endpoint_cannot_mutate_easyparcel_provider_truth(): void
     {
         $order = $this->processingOrder();

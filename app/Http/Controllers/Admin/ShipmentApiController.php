@@ -251,9 +251,10 @@ class ShipmentApiController extends Controller
         abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::UPDATE_STATUS), 403);
 
         $validated = $request->validate([
-            'status' => ['required', 'in:in_transit,out_for_delivery,delivered,failed_delivery,returned'],
+            'status' => ['required', 'in:in_transit,out_for_delivery,delivered,failed_delivery,returned,cancelled'],
             'description' => ['required', 'string', 'max:2000'],
             'location' => ['nullable', 'string', 'max:255'],
+            'voidConfirmed' => ['accepted_if:status,cancelled'],
         ]);
 
         try {

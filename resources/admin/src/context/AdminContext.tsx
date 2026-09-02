@@ -27,6 +27,7 @@ import { fetchCommerceSettings, saveBankTransferConfiguration, saveCodConfigurat
 import { deleteTaxRule as deleteTaxRuleData, deleteTaxZone as deleteTaxZoneData, globalTaxEngineFromConfiguration, saveTaxConfiguration, saveTaxRule, saveTaxZone, type TaxSettingsDocument } from '../integration/taxSettingsData';
 import { activateTaxClass as activateTaxClassData, createTaxClass, deactivateTaxClass as deactivateTaxClassData, deleteTaxClass as deleteSimpleTaxClassData, fetchTaxClasses, updateTaxClass } from '../integration/taxClassData';
 import { loadStorefrontShellSettings, saveStorefrontShellSettingsData } from '../integration/storefrontShellSettingsData';
+import { loadCatalogListingSettings, saveCatalogListingSettings, type CatalogListingSettings } from '../integration/catalogListingSettingsData';
 import {
   bulkModerateReviews as bulkModerateReviewsData,
   fetchReviewAudit as fetchReviewAuditData,
@@ -213,6 +214,8 @@ interface AdminContextType {
   storefrontShellSettings: StorefrontShellSettings;
   refreshStorefrontShellSettings: () => Promise<void>;
   saveStorefrontShellSettings: (settings: StorefrontShellSettings) => Promise<StorefrontShellSettings | null>;
+  catalogListingSettings: CatalogListingSettings;
+  saveCatalogListingSettings: (settings: CatalogListingSettings) => Promise<CatalogListingSettings | null>;
 
   // Catalog CRUD
   categories: Category[];
@@ -341,7 +344,7 @@ interface AdminContextType {
   setSelectedParcelId: (id: string | null) => void;
   generateShipmentAWB: (parcelId: string, courierCode?: string) => void;
   batchGenerateAWB: (parcelIds: string[]) => void;
-  updateShipmentStatus: (parcelId: string, status: ShipmentParcel['status'], eventDesc?: string, location?: string) => void;
+  updateShipmentStatus: (parcelId: string, status: ShipmentParcel['status'], eventDesc?: string, location?: string, voidConfirmed?: boolean) => void;
   requestRedelivery: (parcelId: string) => void;
   createRMAReturnShipment: (orderNumber: string, reason: string) => void;
   simulateCourierWebhookEvent: (parcelId: string, eventType: string, location: string, description: string) => void;
@@ -737,6 +740,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [headerMenus, setHeaderMenus] = useState<HeaderMenuL1[]>([]);
   const [footerMenus, setFooterMenus] = useState<FooterMenuL1[]>([]);
   const [storefrontShellSettings, setStorefrontShellSettings] = useState<StorefrontShellSettings>(DEFAULT_STOREFRONT_SHELL_SETTINGS);
+  const [catalogListingSettings, setCatalogListingSettings] = useState<CatalogListingSettings>({ eyebrow: '', title: '', description: '' });
   const [categories, setCategories] = useState<Category[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -896,6 +900,18 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (e) {
       console.warn('LocalStorage error:', e);
     }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void loadCatalogListingSettings(laravelBootstrap).then((settings) => {
+      if (active) setCatalogListingSettings(settings);
+    }).catch(() => {
+      if (active) addToast({ type: 'error', title: 'Catalog Listing Unavailable', message: 'Unable to load public catalog listing copy from Laravel.' });
+    });
+    return () => { active = false; };
+  // Laravel emits this immutable bootstrap once per admin app load.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Save changes
@@ -2361,8 +2377,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addToast({ type: 'error', title: 'Courier label issuance unavailable', message: 'Batch AWB generation remains disabled until EasyParcel is connected.' });
   };
 
-  const updateShipmentStatus = (parcelId: string, status: ShipmentParcel['status'], eventDesc?: string, location?: string) => {
-    const permittedStatuses = ['in_transit', 'out_for_delivery', 'delivered', 'failed_delivery', 'returned'] as const;
+  const updateShipmentStatus = (parcelId: string, status: ShipmentParcel['status'], eventDesc?: string, location?: string, voidConfirmed = false) => {
+    const permittedStatuses = ['in_transit', 'out_for_delivery', 'delivered', 'failed_delivery', 'returned', 'cancelled'] as const;
     if (!permittedStatuses.includes(status as typeof permittedStatuses[number])) {
       addToast({ type: 'error', title: 'Unsupported shipment action', message: 'This status requires a courier integration and cannot be fabricated locally.' });
       return;
@@ -2373,6 +2389,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       status as typeof permittedStatuses[number],
       eventDesc?.trim() || `Shipment marked ${status.replaceAll('_', ' ')} by warehouse staff.`,
       location,
+      voidConfirmed,
     ).then(() => fetchShipments(laravelBootstrap)).then(setShipmentParcels).then(() => {
       addToast({ type: 'success', title: 'Shipment event recorded', message: 'The event was saved to the immutable shipment audit trail.' });
     }).catch((error) => {
@@ -3800,6 +3817,24 @@ Would you like me to drill down into customer records, inventory allocation, or 
     }
   };
 
+  const persistCatalogListingSettings = async (
+    settings: CatalogListingSettings,
+  ): Promise<CatalogListingSettings | null> => {
+    try {
+      const saved = await saveCatalogListingSettings(laravelBootstrap, settings);
+      setCatalogListingSettings(saved);
+      addToast({ type: 'success', title: 'Catalog Listing Saved', message: 'The /shop listing copy is now live.' });
+      return saved;
+    } catch (error) {
+      addToast({
+        type: 'error',
+        title: 'Catalog Listing Save Failed',
+        message: error instanceof Error ? error.message : 'Unable to save catalog listing copy.',
+      });
+      return null;
+    }
+  };
+
   const resetToDefaults = () => {
     void fetchMenus(laravelBootstrap).then(menus => {
       setHeaderMenus(menus.headerMenus);
@@ -3815,6 +3850,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
     void fetchCustomerDirectoryData(laravelBootstrap).then(data => data && setCustomers(customerDirectoryToCustomers(data))).catch(() => undefined);
     void fetchOrders(laravelBootstrap).then(setOrders).catch(() => undefined);
     void loadStorefrontShellSettings(laravelBootstrap).then(setStorefrontShellSettings).catch(() => undefined);
+    void loadCatalogListingSettings(laravelBootstrap).then(setCatalogListingSettings).catch(() => undefined);
     setReviewFilterProductId(null);
     setStaffUsers(INITIAL_STAFF_USERS);
     setShopSettings(INITIAL_SHOP_SETTINGS);
@@ -3887,6 +3923,8 @@ Would you like me to drill down into customer records, inventory allocation, or 
         storefrontShellSettings,
         refreshStorefrontShellSettings,
         saveStorefrontShellSettings,
+        catalogListingSettings,
+        saveCatalogListingSettings: persistCatalogListingSettings,
         categories,
         saveCategory,
         deleteCategory,

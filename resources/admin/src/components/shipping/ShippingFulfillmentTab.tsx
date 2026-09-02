@@ -31,7 +31,7 @@ interface ShippingFulfillmentTabProps {
   onOpenAWBModal: (parcel: ShipmentParcel) => void;
   onOpenTrackingModal: (parcel: ShipmentParcel) => void;
   onOpenPickupModal: () => void;
-  onUpdateStatus: (parcelId: string, status: ShipmentParcel['status'], desc?: string) => void;
+  onUpdateStatus: (parcelId: string, status: ShipmentParcel['status'], desc?: string, location?: string, voidConfirmed?: boolean) => void;
   onOpenEasyParcelBooking: (parcel: ShipmentParcel) => void;
   onRefreshEasyParcelStatus: (parcelId: string) => Promise<EasyParcelStatusRefreshOutcome>;
   onRefreshAllEasyParcelStatuses: () => Promise<EasyParcelStatusRefreshOutcome[]>;
@@ -67,6 +67,10 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   const [recoveryReason, setRecoveryReason] = useState('');
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [isConfirmingRecovery, setIsConfirmingRecovery] = useState(false);
+  const [manualStatusParcel, setManualStatusParcel] = useState<ShipmentParcel | null>(null);
+  const [manualStatus, setManualStatus] = useState<ShipmentParcel['status']>('in_transit');
+  const [manualStatusReason, setManualStatusReason] = useState('');
+  const [manualVoidConfirmed, setManualVoidConfirmed] = useState(false);
   const visibleParcels = parcels.filter((parcel) => !(
     parcel.source === 'pending'
     && parcel.easyParcelRecovery?.readyToRebook
@@ -96,6 +100,28 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   const openReplacementBooking = (replacementParcel: ShipmentParcel) => {
     setRecoveryGuidance(null);
     onOpenEasyParcelBooking(replacementParcel);
+  };
+
+  const manualStatusOptions = (status: ShipmentParcel['status']): ShipmentParcel['status'][] => {
+    if (status === 'shipped') return ['in_transit', 'failed_delivery', 'returned', 'cancelled'];
+    if (status === 'in_transit') return ['out_for_delivery', 'failed_delivery', 'returned'];
+    if (status === 'out_for_delivery') return ['delivered', 'failed_delivery', 'returned'];
+    return [];
+  };
+
+  const openManualStatusModal = (parcel: ShipmentParcel) => {
+    const options = manualStatusOptions(parcel.status);
+    if (options.length === 0) return;
+    setManualStatusParcel(parcel);
+    setManualStatus(options[0]);
+    setManualStatusReason('');
+    setManualVoidConfirmed(false);
+  };
+
+  const submitManualStatus = () => {
+    if (!manualStatusParcel || !manualStatusReason.trim() || (manualStatus === 'cancelled' && !manualVoidConfirmed)) return;
+    onUpdateStatus(manualStatusParcel.id, manualStatus, manualStatusReason.trim(), undefined, manualStatus === 'cancelled' && manualVoidConfirmed);
+    setManualStatusParcel(null);
   };
 
   const handleRefreshAllEasyParcelStatuses = async () => {
@@ -542,9 +568,15 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                               AWB Pending
                             </span>
                           ) : parcel.source === 'manual' ? (
-                            <span className="px-2.5 py-1 text-[11px] font-semibold text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg">
-                              Manual Dispatch
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => openManualStatusModal(parcel)}
+                              disabled={manualStatusOptions(parcel.status).length === 0}
+                              className="px-2.5 py-1 text-xs font-bold text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                              title="Update manual shipment status"
+                            >
+                              Update status
+                            </button>
                           ) : !parcel.trackingNumber ? (
                             <button
                               onClick={() => onOpenEasyParcelBooking(parcel)}
@@ -684,6 +716,41 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                   {recoveryError}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {manualStatusParcel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-5 shadow-2xl dark:border-neutral-800 dark:bg-neutral-900">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-bold text-neutral-900 dark:text-white">Update Manual Shipment</h3>
+                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">#{manualStatusParcel.orderNumber} · {manualStatusParcel.trackingNumber || 'No tracking number'}</p>
+              </div>
+              <button type="button" onClick={() => setManualStatusParcel(null)} className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" aria-label="Close status update">×</button>
+            </div>
+            <div className="mt-5 space-y-4">
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">Next shipment status</label>
+                <select value={manualStatus} onChange={(event) => { setManualStatus(event.target.value as ShipmentParcel['status']); setManualVoidConfirmed(false); }} className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100">
+                  {manualStatusOptions(manualStatusParcel.status).map((status) => <option key={status} value={status}>{status === 'cancelled' ? 'Void & mark cancelled' : status.replaceAll('_', ' ')}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">Status reason / audit note</label>
+                <textarea rows={3} value={manualStatusReason} onChange={(event) => setManualStatusReason(event.target.value)} placeholder="Describe the warehouse confirmation or delivery update." className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100" />
+              </div>
+              {manualStatus === 'cancelled' && (
+                <label className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200">
+                  <input type="checkbox" checked={manualVoidConfirmed} onChange={(event) => setManualVoidConfirmed(event.target.checked)} className="mt-0.5" />
+                  <span>I confirm this parcel has not been handed to a courier. This will void the Manual shipment and write a permanent audit event.</span>
+                </label>
+              )}
+              <div className="flex justify-end gap-2 pt-1">
+                <button type="button" onClick={() => setManualStatusParcel(null)} className="rounded-xl px-3 py-2 text-xs font-semibold text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800">Cancel</button>
+                <button type="button" disabled={!manualStatusReason.trim() || (manualStatus === 'cancelled' && !manualVoidConfirmed)} onClick={submitManualStatus} className="rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">Save status</button>
+              </div>
             </div>
           </div>
         </div>

@@ -30,6 +30,8 @@ export const CollectionAdmin: React.FC = () => {
       title: '',
       slug: '',
       description: '',
+      subtitle: '',
+      badge: '',
       coverImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80',
       type: 'dynamic',
       matchType: 'all',
@@ -263,6 +265,17 @@ export const CollectionAdmin: React.FC = () => {
                   onChange={(e) => setEditingCollection({ ...editingCollection, description: e.target.value })}
                   className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Public Listing Eyebrow</label>
+                  <input type="text" value={editingCollection.badge || ''} onChange={(e) => setEditingCollection({ ...editingCollection, badge: e.target.value })} placeholder="e.g. Limited release" className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Public Listing Introduction</label>
+                  <input type="text" value={editingCollection.subtitle || ''} onChange={(e) => setEditingCollection({ ...editingCollection, subtitle: e.target.value })} placeholder="Short collection introduction" className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white" />
+                </div>
               </div>
 
               {/* Collection Type Selector */}

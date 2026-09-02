@@ -94,16 +94,25 @@ export const SettingNavBar: React.FC<{ currentSection: NavSection; setCurrentSec
 };
 
 export const ShopSettingsHub: React.FC = () => {
-  const { currentSection, setCurrentSection, shopSettings, saveShopSettings, addToast } = useAdmin();
+  const { currentSection, setCurrentSection, shopSettings, saveShopSettings, addToast, catalogListingSettings, saveCatalogListingSettings } = useAdmin();
 
   // Local form state for General & Shop Settings
   const [formData, setFormData] = useState({ ...shopSettings });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [catalogListingForm, setCatalogListingForm] = useState(catalogListingSettings);
 
   useEffect(() => {
     setFormData({ ...shopSettings });
   }, [shopSettings]);
+
+  useEffect(() => {
+    setCatalogListingForm(catalogListingSettings);
+  }, [catalogListingSettings]);
+
+  const handleCatalogListingSave = async () => {
+    await saveCatalogListingSettings(catalogListingForm);
+  };
 
   const handleFileUpload = (file: File) => {
     if (!file) return;
@@ -429,6 +438,36 @@ export const ShopSettingsHub: React.FC = () => {
                 placeholder="e.g. Enterprise AI & Omnichannel Commerce Studio"
                 className="w-full px-3.5 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs"
               />
+            </div>
+
+            <div className="p-5 rounded-2xl bg-neutral-50 dark:bg-neutral-950/50 border border-neutral-200 dark:border-neutral-800 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-neutral-900 dark:text-white flex items-center gap-1.5">
+                  <Store className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  Public Catalog Listing Copy
+                </label>
+                <p className="text-[11px] text-neutral-500 mt-0.5">This controls the eyebrow, title, and introduction on the global /shop page. Collection pages use their own collection settings.</p>
+              </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Listing Eyebrow</label>
+                    <input type="text" value={catalogListingForm.eyebrow} onChange={e => setCatalogListingForm({ ...catalogListingForm, eyebrow: e.target.value })} placeholder="Catalog & Product Listing" className="w-full px-3.5 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Listing Title</label>
+                    <input type="text" value={catalogListingForm.title} onChange={e => setCatalogListingForm({ ...catalogListingForm, title: e.target.value })} placeholder="All JW Studio Collections" className="w-full px-3.5 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Listing Description</label>
+                  <textarea rows={3} value={catalogListingForm.description} onChange={e => setCatalogListingForm({ ...catalogListingForm, description: e.target.value })} placeholder="Describe the global catalog selection." className="w-full px-3.5 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs" />
+                </div>
+                <button type="button" onClick={() => void handleCatalogListingSave()} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition cursor-pointer shadow-md shadow-indigo-500/20">
+                  <Save className="w-4 h-4" />
+                  Save Public Catalog Copy
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

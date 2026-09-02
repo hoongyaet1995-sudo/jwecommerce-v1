@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AdminAppController;
 use App\Http\Controllers\Admin\CatalogApiController;
+use App\Http\Controllers\Admin\CatalogListingSettingsApiController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CmsFormContractsController;
 use App\Http\Controllers\Admin\CmsMediaAssetController;
@@ -158,6 +159,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/pages/{page}/preview', PagePreviewController::class)->name('pages.preview');
     Route::get('/cms-canary/pages/{page}', [StorefrontPageController::class, 'forPublished'])->name('cms-canary.pages.show');
     Route::get('/api/catalog', [CatalogApiController::class, 'index'])->name('api.catalog.index');
+    Route::get('/api/catalog-listing-settings', [CatalogListingSettingsApiController::class, 'show'])->name('api.catalog-listing-settings.show');
+    Route::put('/api/catalog-listing-settings', [CatalogListingSettingsApiController::class, 'update'])->name('api.catalog-listing-settings.update');
     Route::post('/api/catalog/categories', [CatalogApiController::class, 'storeCategory']);
     Route::patch('/api/catalog/categories/{category}', [CatalogApiController::class, 'updateCategory']);
     Route::delete('/api/catalog/categories/{category}', [CatalogApiController::class, 'destroyCategory']);

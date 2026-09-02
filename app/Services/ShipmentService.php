@@ -147,6 +147,7 @@ class ShipmentService
             $lockedShipment->update([
                 'status' => $status,
                 'delivered_at' => $status === 'delivered' ? $occurredAt : $lockedShipment->delivered_at,
+                'cancelled_at' => $status === 'cancelled' ? $occurredAt : $lockedShipment->cancelled_at,
             ]);
 
             if ($status === 'delivered' && $lockedShipment->order->status !== 'delivered') {
@@ -406,7 +407,7 @@ class ShipmentService
     private function allowedNextStatuses(string $status): array
     {
         return match ($status) {
-            'shipped' => ['in_transit', 'failed_delivery', 'returned'],
+            'shipped' => ['in_transit', 'failed_delivery', 'returned', 'cancelled'],
             'in_transit' => ['out_for_delivery', 'failed_delivery', 'returned'],
             'out_for_delivery' => ['delivered', 'failed_delivery', 'returned'],
             default => [],

@@ -1,10 +1,11 @@
 @php
     $collectionTitle = $collection?->title;
-    $listingTitle = $collectionTitle ?? ($category ? ($categories->firstWhere('slug', $category)?->name ?? 'Category Collection') : 'All '.$shopBrandName.' Collections');
-    $listingEyebrow = 'Catalog & Product Listing'
+    $isGlobalCatalogListing = ! $collection && ! $category;
+    $listingTitle = $collectionTitle ?? ($category ? ($categories->firstWhere('slug', $category)?->name ?? 'Category Collection') : (filled($catalogListingSettings['title'] ?? null) ? $catalogListingSettings['title'] : 'All '.$shopBrandName.' Collections'));
+    $listingEyebrow = ($isGlobalCatalogListing && filled($catalogListingSettings['eyebrow'] ?? null) ? $catalogListingSettings['eyebrow'] : 'Catalog & Product Listing')
         . ($collection ? ' • ' . ($collection->badge ?: $collection->title) : '')
         . ' • ' . $products->total() . ' Items Found';
-    $listingDescription = $collection?->subtitle ?: 'Precision engineered audio systems, ergonomic desk architectures, titanium watches, and weatherproof carry systems.';
+    $listingDescription = $collection?->subtitle ?: ($isGlobalCatalogListing && filled($catalogListingSettings['description'] ?? null) ? $catalogListingSettings['description'] : 'Precision engineered audio systems, ergonomic desk architectures, titanium watches, and weatherproof carry systems.');
     $filterQuery = request()->except('page');
     $filterUrl = function (array $remove = [], array $replace = []) use ($listingRouteName, $listingRouteParameters, $filterQuery) {
         $query = $filterQuery;

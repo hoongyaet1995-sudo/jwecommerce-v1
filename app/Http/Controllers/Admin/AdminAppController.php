@@ -51,6 +51,7 @@ class AdminAppController extends Controller
             'pagesUrl' => route('admin.api.pages.index'),
             'mediaAssetsUrl' => route('admin.api.media-assets.store'),
             'catalogUrl' => route('admin.api.catalog.index'),
+            'catalogListingSettingsUrl' => route('admin.api.catalog-listing-settings.show'),
             'menusUrl' => route('admin.api.menus.index'),
             'ordersUrl' => route('admin.api.orders.index'),
             'notificationTemplatesUrl' => route('admin.api.notification-templates.index'),

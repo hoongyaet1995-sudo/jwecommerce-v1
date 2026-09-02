@@ -99,15 +99,16 @@ export const fetchShipments = async (bootstrap: LaravelAdminBootstrap): Promise<
 export const appendShipmentEvent = async (
   bootstrap: LaravelAdminBootstrap,
   shipmentId: string,
-  status: 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed_delivery' | 'returned',
+  status: 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed_delivery' | 'returned' | 'cancelled',
   description: string,
   location?: string,
+  voidConfirmed?: boolean,
 ): Promise<void> => {
   if (!bootstrap.shipmentsUrl) throw new Error('Shipment API is unavailable.');
   const response = await window.fetch(`${bootstrap.shipmentsUrl}/${encodeURIComponent(shipmentId)}/events`, {
     method: 'POST', credentials: 'same-origin',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': bootstrap.csrfToken },
-    body: JSON.stringify({ status, description, location }),
+    body: JSON.stringify({ status, description, location, ...(status === 'cancelled' ? { voidConfirmed } : {}) }),
   });
   const payload = await response.json().catch(() => null) as ErrorResponse | null;
   if (!response.ok) throw new Error(errorMessage(payload, 'Shipment event could not be recorded.'));

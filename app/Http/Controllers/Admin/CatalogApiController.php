@@ -188,7 +188,7 @@ class CatalogApiController extends Controller
     {
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'], 'slug' => ['nullable', 'alpha_dash', 'max:255', Rule::unique('collections', 'slug')->ignore($collection)],
-            'description' => ['nullable', 'string', 'max:5000'], 'coverImage' => ['nullable', 'string', 'max:2048'],
+            'description' => ['nullable', 'string', 'max:5000'], 'subtitle' => ['nullable', 'string', 'max:1000'], 'badge' => ['nullable', 'string', 'max:255'], 'coverImage' => ['nullable', 'string', 'max:2048'],
             'type' => ['required', Rule::in(['manual', 'dynamic'])], 'matchType' => ['nullable', Rule::in(['all', 'any'])],
             'dynamicRules' => ['nullable', 'array', 'max:100'], 'dynamicRules.*.id' => ['required', 'string', 'max:100'],
             'dynamicRules.*.field' => ['required', Rule::in(['price', 'category', 'tag', 'vendor', 'inventory'])],
@@ -206,7 +206,7 @@ class CatalogApiController extends Controller
 
     private function collectionAttributes(array $data): array
     {
-        return ['title' => $data['title'], 'slug' => $data['slug'], 'description' => $data['description'] ?? null,
+        return ['title' => $data['title'], 'slug' => $data['slug'], 'description' => $data['description'] ?? null, 'subtitle' => $data['subtitle'] ?? null, 'badge' => $data['badge'] ?? null,
             'cover_image' => $data['coverImage'] ?? null, 'type' => $data['type'], 'match_type' => $data['matchType'] ?? null,
             'dynamic_rules' => $data['dynamicRules'] ?? [], 'status' => $data['status'], 'is_active' => $data['status'] === 'active'];
     }
@@ -361,7 +361,7 @@ class CatalogApiController extends Controller
 
     private function collectionData(Collection $collection): array
     {
-        return ['id' => (string) $collection->id, 'title' => $collection->title, 'slug' => $collection->slug, 'description' => $collection->description, 'coverImage' => $collection->cover_image, 'type' => $collection->type, 'matchType' => $collection->match_type, 'dynamicRules' => $collection->dynamic_rules ?? [], 'manualProductIds' => $collection->relationLoaded('products') ? $collection->products->pluck('id')->map(fn ($id) => (string) $id)->all() : [], 'status' => $collection->status, 'productCount' => $collection->products_count ?? $collection->products()->count(), 'createdAt' => $collection->created_at?->toDateString()];
+        return ['id' => (string) $collection->id, 'title' => $collection->title, 'slug' => $collection->slug, 'description' => $collection->description, 'subtitle' => $collection->subtitle, 'badge' => $collection->badge, 'coverImage' => $collection->cover_image, 'type' => $collection->type, 'matchType' => $collection->match_type, 'dynamicRules' => $collection->dynamic_rules ?? [], 'manualProductIds' => $collection->relationLoaded('products') ? $collection->products->pluck('id')->map(fn ($id) => (string) $id)->all() : [], 'status' => $collection->status, 'productCount' => $collection->products_count ?? $collection->products()->count(), 'createdAt' => $collection->created_at?->toDateString()];
     }
 
     private function productData(Product $product): array

@@ -10,6 +10,7 @@ use App\Models\ProductHandleRedirect;
 use App\Models\SocialLink;
 use App\Models\StoreSetting;
 use App\Services\CatalogFilterService;
+use App\Services\CatalogListingSettingsService;
 use App\Services\PaymentConfigurationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class StorefrontController extends Controller
 {
     public function __construct(
         private readonly CatalogFilterService $catalogFilters,
+        private readonly CatalogListingSettingsService $catalogListingSettings,
         private readonly PaymentConfigurationService $paymentConfiguration,
     )
     {
@@ -55,7 +57,9 @@ class StorefrontController extends Controller
 
     private function listingData(Request $request, $query, ?string $forcedCategory = null): array
     {
-        return $this->catalogFilters->for($request, $query, $forcedCategory)->toViewData();
+        return $this->catalogFilters->for($request, $query, $forcedCategory)->toViewData() + [
+            'catalogListingSettings' => $this->catalogListingSettings->live(),
+        ];
     }
 
     public function show(Request $request, string $handle): View|RedirectResponse
