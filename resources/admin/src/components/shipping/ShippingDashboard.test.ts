@@ -248,7 +248,7 @@ describe('ShippingDashboard provider action binding', () => {
     expect(source).toContain('refreshEasyParcelProvider,');
   });
 
-  it('renders an unavailable EasyParcel wallet as inert rather than a fabricated balance', () => {
+  it('does not offer EasyParcel wallet top-up from the generic courier modal', () => {
     const courier = {
       id: 'cfg_easyparcel',
       courierCode: 'easyparcel',
@@ -282,12 +282,10 @@ describe('ShippingDashboard provider action binding', () => {
       onClose: () => undefined,
       onSave: () => undefined,
       onPing: async () => 0,
-      onTopUpWallet: () => undefined,
     }));
 
-    expect(html).toContain('Unavailable');
-    expect(html).not.toContain('RM 0.00');
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*title="Wallet top-up is not available through this integration"/);
+    expect(html).not.toContain('EasyParcel Prepaid Shipping Wallet Balance');
+    expect(html).not.toContain('Top-Up');
   });
 
   it('opens recovery guidance for an aged pending AWB and starts a fresh quote only after confirmation', async () => {
@@ -908,7 +906,7 @@ describe('ShippingDashboard provider action binding', () => {
     expect(fulfillment).toContain('Provider Review');
   });
 
-  it('renders the unavailable EasyParcel card top-up control as disabled', () => {
+  it('does not render EasyParcel wallet or top-up controls on the courier card', () => {
     const courier = {
       id: 'cfg_easyparcel',
       courierCode: 'easyparcel',
@@ -941,11 +939,10 @@ describe('ShippingDashboard provider action binding', () => {
       onToggleCourier: () => undefined,
       onOpenConfigModal: () => undefined,
       onPingCourier: async () => 0,
-      onTopUpEasyParcel: () => undefined,
     }));
 
-    expect(html).toContain('Unavailable');
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*title="Wallet top-up is not available through this integration"/);
+    expect(html).not.toContain('Prepaid Wallet');
+    expect(html).not.toContain('+ RM100');
   });
 
   it('binds sanitized provider receipts into the existing manual audit feed language', () => {

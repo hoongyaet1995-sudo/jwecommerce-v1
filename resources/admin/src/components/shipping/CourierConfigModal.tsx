@@ -12,8 +12,7 @@ import {
   AlertCircle, 
   MapPin, 
   Building,
-  DollarSign,
-  Plus
+  DollarSign
 } from 'lucide-react';
 import { CourierConfig } from '../../types/shipping';
 
@@ -23,7 +22,6 @@ interface CourierConfigModalProps {
   onClose: () => void;
   onSave: (config: CourierConfig) => void;
   onPing: (id: string) => Promise<number>;
-  onTopUpWallet?: (amountRM: number) => void;
 }
 
 export const CourierConfigModal: React.FC<CourierConfigModalProps> = ({
@@ -31,12 +29,10 @@ export const CourierConfigModal: React.FC<CourierConfigModalProps> = ({
   config,
   onClose,
   onSave,
-  onPing,
-  onTopUpWallet
+  onPing
 }) => {
   if (!isOpen || !config) return null;
 
-  const walletAvailable = typeof config.walletBalance === 'number';
   const [environment, setEnvironment] = useState<'sandbox' | 'production'>(config.environment || 'production');
   const [apiKey, setApiKey] = useState(config.apiKey || (config as any).credentials?.apiKey || '');
   const [apiSecret, setApiSecret] = useState(config.apiSecret || (config as any).credentials?.secretKey || (config as any).credentials?.apiSecret || '');
@@ -49,7 +45,6 @@ export const CourierConfigModal: React.FC<CourierConfigModalProps> = ({
   const [supportsAirFreightHazmat, setSupportsAirFreightHazmat] = useState(config.supportsAirFreightHazmat ?? false);
   const [autoRetryQueue, setAutoRetryQueue] = useState(config.autoRetryQueue ?? true);
 
-  const [topUpAmount, setTopUpAmount] = useState('100');
   const [isCopied, setIsCopied] = useState(false);
   const [isTestingPing, setIsTestingPing] = useState(false);
   const [pingResult, setPingResult] = useState<number | null>(config.lastPingLatency || null);
@@ -172,48 +167,6 @@ export const CourierConfigModal: React.FC<CourierConfigModalProps> = ({
               </div>
             </div>
           </div>
-
-          {/* EasyParcel Wallet Box if easyparcel */}
-          {config.courierCode === 'easyparcel' && (
-            <div className="p-4 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-xl flex items-center justify-between">
-              <div>
-                <div className="text-xs font-semibold text-pink-900 dark:text-pink-200">
-                  EasyParcel Prepaid Shipping Wallet Balance
-                </div>
-                <div className="text-xl font-bold font-mono text-pink-700 dark:text-pink-300 mt-0.5">
-                  {walletAvailable ? `RM ${config.walletBalance.toFixed(2)}` : 'Unavailable'}
-                </div>
-              </div>
-
-              {onTopUpWallet && (
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <span className="absolute left-2.5 top-2 text-xs text-neutral-500 font-semibold">RM</span>
-                    <input
-                      type="number"
-                      value={walletAvailable ? topUpAmount : ''}
-                      disabled={!walletAvailable}
-                      onChange={(e) => setTopUpAmount(e.target.value)}
-                      className="w-24 pl-8 pr-2 py-1.5 text-xs font-mono rounded-lg border border-pink-300 dark:border-pink-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const val = parseFloat(topUpAmount);
-                      if (walletAvailable && val > 0) onTopUpWallet(val);
-                    }}
-                    disabled={!walletAvailable}
-                    title={walletAvailable ? undefined : 'Wallet top-up is not available through this integration'}
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-pink-600 hover:bg-pink-700 rounded-lg transition-colors cursor-pointer shadow-sm"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Top-Up
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* API Credentials */}
           <div className="space-y-3">

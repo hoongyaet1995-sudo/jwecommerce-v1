@@ -1,18 +1,5 @@
 import React from 'react';
-import { 
-  Server, 
-  Key, 
-  Settings, 
-  Zap, 
-  ShieldCheck, 
-  AlertCircle, 
-  Wallet, 
-  Plus, 
-  ExternalLink, 
-  Globe,
-  Lock,
-  Radio
-} from 'lucide-react';
+import { Lock, Server, Settings, Zap } from 'lucide-react';
 import { CourierConfig } from '../../types/shipping';
 
 interface CourierConfigTabProps {
@@ -20,15 +7,13 @@ interface CourierConfigTabProps {
   onToggleCourier: (id: string, isEnabled: boolean) => void;
   onOpenConfigModal: (courier: CourierConfig) => void;
   onPingCourier: (id: string) => Promise<number>;
-  onTopUpEasyParcel: (amount: number) => void;
 }
 
 export const CourierConfigTab: React.FC<CourierConfigTabProps> = ({
   couriers,
   onToggleCourier,
   onOpenConfigModal,
-  onPingCourier,
-  onTopUpEasyParcel
+  onPingCourier
 }) => {
   const easyParcel = couriers.find((courier) => courier.courierCode === 'easyparcel');
   const gatewayHealthy = easyParcel?.status === 'connected';
@@ -62,8 +47,6 @@ export const CourierConfigTab: React.FC<CourierConfigTabProps> = ({
       {/* Courier Gateway Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {couriers.map((courier) => {
-          const isEasyParcel = courier.courierCode === 'easyparcel';
-          const walletAvailable = typeof courier.walletBalance === 'number';
           const supportsCod = courier.supportsCOD ?? (courier as any).features?.supportsCod ?? false;
           const supportsEM = courier.supportsEastMalaysia ?? (courier as any).features?.supportsEastMalaysia ?? false;
           const autoQueue = courier.autoRetryQueue ?? (courier as any).features?.autoAwbGeneration ?? false;
@@ -116,26 +99,6 @@ export const CourierConfigTab: React.FC<CourierConfigTabProps> = ({
                     <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-neutral-600 peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
-
-                {/* EasyParcel wallet specific display */}
-                {isEasyParcel && (
-                  <div className="mt-4 p-3 rounded-xl bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] text-pink-700 dark:text-pink-300 block font-medium">Prepaid Wallet</span>
-                      <span className="font-mono font-bold text-base text-pink-900 dark:text-pink-200">
-                        {walletAvailable ? `RM ${courier.walletBalance.toFixed(2)}` : 'Unavailable'}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => { if (walletAvailable) onTopUpEasyParcel(100); }}
-                      disabled={!walletAvailable}
-                      title={walletAvailable ? undefined : 'Wallet top-up is not available through this integration'}
-                      className="px-2.5 py-1 text-[11px] font-bold text-white bg-pink-600 hover:bg-pink-700 rounded-lg transition-colors cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      + RM100
-                    </button>
-                  </div>
-                )}
 
                 {/* Features Badges */}
                 <div className="mt-4 space-y-1.5 text-xs text-neutral-600 dark:text-neutral-400">

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LaravelAdminBootstrap } from '../types';
-import { disconnectEasyParcelStore, saveEasyParcelSenderProfile, startEasyParcelAuthorization } from './easyParcelProviderData';
+import { courierConfigsFromEasyParcel, disconnectEasyParcelStore, saveEasyParcelSenderProfile, startEasyParcelAuthorization } from './easyParcelProviderData';
 
 const bootstrap = {
   user: { name: 'Admin', email: 'admin@example.test', avatar: null },
@@ -13,6 +13,20 @@ const bootstrap = {
 
 describe('EasyParcel provider client', () => {
   afterEach(() => vi.unstubAllGlobals());
+
+  it('presents the provider operating environment on the EasyParcel courier card', () => {
+    const [easyParcel] = courierConfigsFromEasyParcel({
+      provider: 'easyparcel',
+      environment: 'production',
+      configured: true,
+      enabled: true,
+      connectionState: 'connected',
+      lastVerifiedAt: '2026-08-31T05:51:58+00:00',
+      lastError: null,
+    });
+
+    expect(easyParcel.environment).toBe('production');
+  });
 
   it('disconnects the authorized store without sending platform credentials from the browser', async () => {
     const fetch = vi.fn().mockResolvedValue({

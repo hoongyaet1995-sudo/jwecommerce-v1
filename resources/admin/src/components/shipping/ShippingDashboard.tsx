@@ -69,7 +69,6 @@ export const ShippingDashboard: React.FC = () => {
     bookEasyParcelShipment,
     toggleCourierStatus,
     pingCourierAPI,
-    topUpEasyParcelWallet,
     smartRoutingRules = [],
     saveSmartRoutingRule,
     deleteSmartRoutingRule,
@@ -445,7 +444,6 @@ export const ShippingDashboard: React.FC = () => {
             onToggleCourier={(id) => toggleCourierStatus(id)}
             onOpenConfigModal={handleOpenCourierConfig}
             onPingCourier={pingCourierAPI}
-            onTopUpEasyParcel={topUpEasyParcelWallet}
           />
         )}
 
@@ -530,7 +528,6 @@ export const ShippingDashboard: React.FC = () => {
           }}
           onSave={handleSaveCourier}
           onPing={pingCourierAPI}
-          onTopUpWallet={topUpEasyParcelWallet}
         />
       )}
 

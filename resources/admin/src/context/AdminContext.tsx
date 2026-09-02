@@ -332,7 +332,6 @@ interface AdminContextType {
   bookEasyParcelShipment: (parcel: ShipmentParcel, quote: EasyParcelQuote, serviceCode: string) => Promise<EasyParcelBooking>;
   toggleCourierStatus: (id: string) => void;
   pingCourierAPI: (id: string, environment?: 'sandbox' | 'production') => Promise<number>;
-  topUpEasyParcelWallet: (amountRM: number) => void;
 
   smartRoutingRules: SmartRoutingRule[];
   saveSmartRoutingRule: (rule: SmartRoutingRule) => void;
@@ -2380,10 +2379,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return 0;
   };
 
-  const topUpEasyParcelWallet = (_amountRM: number) => {
-    addToast({ type: 'error', title: 'EasyParcel top-up unavailable', message: 'Wallet transactions are unavailable until the provider integration is configured.' });
-  };
-
   const saveSmartRoutingRule = (_rule: SmartRoutingRule) => {
     addToast({ type: 'error', title: 'Smart routing unavailable', message: 'Routing rules are not saved locally; connect a courier provider before enabling routing.' });
   };
@@ -4089,7 +4084,6 @@ Would you like me to drill down into customer records, inventory allocation, or 
         bookEasyParcelShipment,
         toggleCourierStatus,
         pingCourierAPI,
-        topUpEasyParcelWallet,
         smartRoutingRules,
         saveSmartRoutingRule,
         deleteSmartRoutingRule,

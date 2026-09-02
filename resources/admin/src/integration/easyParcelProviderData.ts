@@ -140,6 +140,7 @@ export const courierConfigsFromEasyParcel = (status: EasyParcelProviderStatus): 
   {
     ...presentationCourier('cfg_easyparcel', 'easyparcel', 'EasyParcel Multi-Carrier'),
     isEnabled: status.enabled,
+    environment: status.environment,
     status: status.connectionState === 'connected' ? 'connected' : status.connectionState === 'failed' ? 'error' : 'pending_keys',
   },
   presentationCourier('cfg_jnt', 'jnt', 'J&T Express MY'),
