@@ -131,6 +131,8 @@ class NotificationContextFactoryTest extends TestCase
 
         $context = app(NotificationContextFactory::class)->forOrder($order);
 
+        $this->assertSame('Customer', $context['customer_name']);
+        $this->assertSame('Customer', $context['customer_first_name']);
         $this->assertSame('Address not available', $context['shipping_address']);
     }
 }

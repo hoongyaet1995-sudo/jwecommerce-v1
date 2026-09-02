@@ -189,7 +189,7 @@ export const ShippingDashboard: React.FC = () => {
   };
 
   const explainPickupUnavailable = () => {
-    addToast({ type: 'error', title: 'Pickup scheduling unavailable', message: 'EasyParcel provider booking is not connected yet, so no pickup has been created.' });
+    addToast({ type: 'info', title: 'Pickup scheduling is dashboard-managed', message: 'JW Studio does not create or cancel EasyParcel pickup requests. Continue in the official EasyParcel Dashboard.' });
   };
 
   const amendDeliveryOrder = orders.find(order => order.id === amendDeliveryOrderId) ?? null;
@@ -241,7 +241,7 @@ export const ShippingDashboard: React.FC = () => {
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer shadow-sm"
           >
             <Truck className="w-3.5 h-3.5" />
-            Schedule Driver Pickup
+            Manage Pickup in EasyParcel
           </button>
           <button
             onClick={() => setActiveTab('fulfillment')}

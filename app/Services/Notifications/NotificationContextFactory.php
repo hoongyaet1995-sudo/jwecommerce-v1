@@ -97,15 +97,17 @@ class NotificationContextFactory
 
     private function customerName(Order $order, ?OrderAddress $shippingAddress): string
     {
-        return trim(implode(' ', array_filter([
+        $name = trim(implode(' ', array_filter([
             $order->customer?->first_name ?: $shippingAddress?->first_name,
             $order->customer?->last_name ?: $shippingAddress?->last_name,
         ])));
+
+        return $name !== '' ? $name : 'Customer';
     }
 
     private function customerFirstName(Order $order, ?OrderAddress $shippingAddress): string
     {
-        return (string) ($order->customer?->first_name ?: $shippingAddress?->first_name ?: '');
+        return (string) ($order->customer?->first_name ?: $shippingAddress?->first_name ?: 'Customer');
     }
 
     private function shippingAddress(?OrderAddress $address): string

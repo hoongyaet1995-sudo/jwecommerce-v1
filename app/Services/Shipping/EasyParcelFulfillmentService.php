@@ -40,10 +40,10 @@ final class EasyParcelFulfillmentService
         try {
             $providerSession = $this->providerSessions->connected();
         } catch (Throwable) {
-            throw new InvalidArgumentException('The EasyParcel Sandbox connection is unavailable.');
+            throw new InvalidArgumentException('The EasyParcel provider connection is unavailable.');
         }
         if ($providerSession === null) {
-            throw new InvalidArgumentException('The EasyParcel Sandbox connection is unavailable.');
+            throw new InvalidArgumentException('The EasyParcel provider connection is unavailable.');
         }
         $context = $this->quoteContext($order, $package, $providerSession);
 
@@ -54,12 +54,12 @@ final class EasyParcelFulfillmentService
                 ->timeout(10)
                 ->post(self::QUOTATION_URL, $context['quote_payload']);
         } catch (Throwable) {
-            throw new InvalidArgumentException('EasyParcel Sandbox could not provide a quotation.');
+            throw new InvalidArgumentException('EasyParcel could not provide a quotation.');
         }
 
         $payload = $response->json();
         if (! $response->successful() || ! is_array($payload)) {
-            throw new InvalidArgumentException('EasyParcel Sandbox could not provide a quotation.');
+            throw new InvalidArgumentException('EasyParcel could not provide a quotation.');
         }
 
         $responseSnapshot = $this->normalizeQuotation($payload);
@@ -73,7 +73,7 @@ final class EasyParcelFulfillmentService
             if (! $provider->enabled
                 || $provider->connection_state !== 'connected'
                 || $provider->configuration_version !== $context['provider_configuration_version']) {
-                throw new InvalidArgumentException('The EasyParcel Sandbox connection changed while quoting.');
+                throw new InvalidArgumentException('The EasyParcel provider connection changed while quoting.');
             }
 
             $this->providerSessions->assertCurrent($providerSession);
@@ -104,10 +104,10 @@ final class EasyParcelFulfillmentService
         try {
             $providerSession = $this->providerSessions->connected();
         } catch (Throwable) {
-            throw new InvalidArgumentException('The EasyParcel Sandbox connection is unavailable.');
+            throw new InvalidArgumentException('The EasyParcel provider connection is unavailable.');
         }
         if ($providerSession === null) {
-            throw new InvalidArgumentException('The EasyParcel Sandbox connection is unavailable.');
+            throw new InvalidArgumentException('The EasyParcel provider connection is unavailable.');
         }
 
         $claim = $this->claimBooking($order, $quote, $serviceCode, $providerSession);
@@ -207,10 +207,10 @@ final class EasyParcelFulfillmentService
                 ->lockForUpdate()
                 ->first();
             if ($provider === null) {
-                throw new InvalidArgumentException('The EasyParcel Sandbox connection is unavailable.');
+                throw new InvalidArgumentException('The EasyParcel provider connection is unavailable.');
             }
             if ($provider->id !== $providerSession->providerId) {
-                throw new InvalidArgumentException('The EasyParcel Sandbox connection changed while quoting.');
+                throw new InvalidArgumentException('The EasyParcel provider connection changed while quoting.');
             }
             $this->providerSessions->assertCurrent($providerSession);
             $sender = $this->sender($providerSession->senderProfile);
@@ -299,7 +299,7 @@ final class EasyParcelFulfillmentService
 
             if ($lockedQuote->provider !== ShippingProviderConfigurationService::PROVIDER
                 || $lockedQuote->environment !== ShippingProviderConfigurationService::operationalEnvironment()) {
-                throw new InvalidArgumentException('The selected quote is not an EasyParcel Sandbox quote.');
+                throw new InvalidArgumentException('The selected quote is not for the active EasyParcel environment.');
             }
 
             if ($lockedQuote->expires_at === null || ! $lockedQuote->expires_at->isFuture()) {
@@ -322,7 +322,7 @@ final class EasyParcelFulfillmentService
                 || $provider->environment !== ShippingProviderConfigurationService::operationalEnvironment()
                 || $provider->configuration_version !== $lockedQuote->provider_configuration_version
                 || $provider->id !== $providerSession->providerId) {
-                throw new InvalidArgumentException('The EasyParcel Sandbox connection changed after this quote was created.');
+                throw new InvalidArgumentException('The EasyParcel provider connection changed after this quote was created.');
             }
             $this->providerSessions->assertCurrent($providerSession);
             $claimKey = ShippingProviderConfigurationService::PROVIDER.':order:'.$lockedOrder->id;
@@ -549,7 +549,7 @@ final class EasyParcelFulfillmentService
             || ($data['status'] ?? null) !== 'success'
             || ! is_array($quotations)
             || $quotations === []) {
-            throw new InvalidArgumentException('EasyParcel Sandbox returned no available quotation.');
+            throw new InvalidArgumentException('EasyParcel returned no available quotation.');
         }
 
         $services = [];
@@ -557,7 +557,7 @@ final class EasyParcelFulfillmentService
             if (! is_array($quotation)
                 || ! is_array($quotation['courier'] ?? null)
                 || ! is_array($quotation['pricing'] ?? null)) {
-                throw new InvalidArgumentException('EasyParcel Sandbox returned an invalid quotation.');
+                throw new InvalidArgumentException('EasyParcel returned an invalid quotation.');
             }
 
             $courier = $quotation['courier'];
@@ -576,7 +576,7 @@ final class EasyParcelFulfillmentService
             ];
 
             if (array_key_exists($service['service_code'], $services)) {
-                throw new InvalidArgumentException('EasyParcel Sandbox returned duplicate service identifiers.');
+                throw new InvalidArgumentException('EasyParcel returned duplicate service identifiers.');
             }
             $services[$service['service_code']] = $service;
         }

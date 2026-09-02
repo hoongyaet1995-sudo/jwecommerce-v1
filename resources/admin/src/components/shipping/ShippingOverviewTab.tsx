@@ -42,7 +42,8 @@ export const ShippingOverviewTab: React.FC<ShippingOverviewTabProps> = ({
   const totalCodAmount = parcels.filter(p => p.paymentMode === 'cod').reduce((sum, p) => sum + (p.codAmount || 0), 0);
 
   const easyParcelConfig = couriers.find(c => c.courierCode === 'easyparcel');
-  const easyParcelBalance = easyParcelConfig?.walletBalance ?? null;
+  const easyParcelConnected = easyParcelConfig?.status === 'connected' && easyParcelConfig.isEnabled;
+  const easyParcelEnvironment = easyParcelConfig?.environment === 'production' ? 'Live Production' : 'Sandbox';
 
   // Courier Volume Breakdown
   const courierCounts = couriers.map(c => {
@@ -154,7 +155,7 @@ export const ShippingOverviewTab: React.FC<ShippingOverviewTabProps> = ({
         </div>
       </div>
 
-      {/* Quick Action Hub & EasyParcel Wallet Row */}
+      {/* Quick Action Hub & EasyParcel Provider Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Quick Dispatch Action Bar */}
         <div className="lg:col-span-2 p-5 bg-gradient-to-r from-blue-900/90 to-indigo-950 text-white rounded-2xl shadow-md flex flex-col justify-between">
@@ -169,7 +170,7 @@ export const ShippingOverviewTab: React.FC<ShippingOverviewTabProps> = ({
               Shipment Dispatch & Event Audit Workspace
             </h3>
             <p className="text-xs text-blue-100/80 mt-1 max-w-xl">
-              Dispatch processing orders with a carrier and tracking number, then retain each warehouse milestone as an append-only shipment event. Provider labels, pickups, webhooks, and billing remain unavailable until a carrier integration is configured.
+              Dispatch processing orders with a carrier and tracking number, then retain each warehouse milestone as an append-only shipment event. EasyParcel quotes, labels, and webhooks follow the connected provider; pickup scheduling remains dashboard-managed.
             </p>
           </div>
 
@@ -186,7 +187,7 @@ export const ShippingOverviewTab: React.FC<ShippingOverviewTabProps> = ({
               className="flex items-center gap-1.5 px-4 py-2 bg-blue-700/80 hover:bg-blue-600 text-white text-xs font-semibold rounded-xl transition-colors border border-blue-400/30 cursor-pointer"
             >
               <Truck className="w-3.5 h-3.5" />
-              Carrier Pickup Unavailable
+              Manage Pickup in EasyParcel
             </button>
             <button
               onClick={() => onNavigateTab('routing')}
@@ -198,7 +199,7 @@ export const ShippingOverviewTab: React.FC<ShippingOverviewTabProps> = ({
           </div>
         </div>
 
-        {/* EasyParcel / Aggregator Wallet & COD summary */}
+        {/* EasyParcel provider & COD summary */}
         <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex flex-col justify-between shadow-sm">
           <div>
             <div className="flex items-center justify-between">
@@ -210,7 +211,7 @@ export const ShippingOverviewTab: React.FC<ShippingOverviewTabProps> = ({
                   <h4 className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
                     EasyParcel Provider Status
                   </h4>
-                  <span className="text-[10px] text-neutral-400">Provider integration required</span>
+                  <span className="text-[10px] text-neutral-400">{easyParcelConnected ? easyParcelEnvironment : 'Provider integration required'}</span>
                 </div>
               </div>
               <button
@@ -218,16 +219,16 @@ export const ShippingOverviewTab: React.FC<ShippingOverviewTabProps> = ({
                 className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/30 hover:bg-pink-100 rounded-lg transition-colors border border-pink-200 dark:border-pink-800 cursor-pointer"
               >
                 <Plus className="w-3 h-3" />
-                Configure Provider
+                {easyParcelConnected ? 'Manage Provider' : 'Configure Provider'}
               </button>
             </div>
 
             <div className="mt-3">
               <div className="text-2xl font-black font-mono text-neutral-900 dark:text-neutral-100">
-                {easyParcelBalance === null ? 'Not connected' : `RM ${easyParcelBalance.toFixed(2)}`}
+                {easyParcelConnected ? 'Connected' : 'Not connected'}
               </div>
               <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
-                {easyParcelBalance === null ? 'No wallet balance is shown until the EasyParcel provider is connected.' : 'Provider-reported balance'}
+                {easyParcelConnected ? 'Ready for provider-managed quotes, AWBs, and tracking updates.' : 'Connect EasyParcel before requesting provider-managed fulfilment.'}
               </p>
             </div>
           </div>
@@ -311,7 +312,7 @@ export const ShippingOverviewTab: React.FC<ShippingOverviewTabProps> = ({
                 onClick={onOpenPickupModal}
                 className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
               >
-                Provider Required
+                Managed in EasyParcel Dashboard
               </button>
             </div>
 
@@ -351,8 +352,8 @@ export const ShippingOverviewTab: React.FC<ShippingOverviewTabProps> = ({
           </div>
 
           <div className="mt-4 pt-3 border-t border-neutral-200 dark:border-neutral-800 text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center justify-between">
-            <span>Carrier collection cut-off is configured by the connected provider.</span>
-            <span className="font-mono">Provider not connected</span>
+            <span>JW Studio does not create or cancel EasyParcel pickup requests.</span>
+            <span className="font-mono">EasyParcel Dashboard</span>
           </div>
         </div>
       </div>

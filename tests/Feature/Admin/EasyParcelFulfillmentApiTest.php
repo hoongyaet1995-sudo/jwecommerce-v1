@@ -32,6 +32,21 @@ class EasyParcelFulfillmentApiTest extends TestCase
 {
     use UsesIsolatedDatabaseMigrations;
 
+    public function test_production_quote_failure_does_not_report_a_sandbox_connection(): void
+    {
+        Config::set('services.easyparcel.operating_environment', 'production');
+        Http::preventStrayRequests();
+
+        $this->actingAs($this->superAdmin())
+            ->postJson('/admin/api/shipping/orders/'.$this->processingOrder()->id.'/easyparcel/quotes', [
+                'package' => $this->actualPackage(),
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'The EasyParcel provider connection is unavailable.');
+
+        Http::assertNothingSent();
+    }
+
     #[DataProvider('malaysianReceiverPhoneProvider')]
     public function test_quote_snapshot_keeps_malaysian_receiver_mobile_in_local_format(
         string $input,

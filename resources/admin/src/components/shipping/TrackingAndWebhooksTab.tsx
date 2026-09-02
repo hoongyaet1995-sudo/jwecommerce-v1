@@ -315,7 +315,7 @@ export const TrackingAndWebhooksTab: React.FC<TrackingAndWebhooksTabProps> = ({
                             <div className="flex items-center gap-3 text-[10px] text-neutral-400 mt-1">
                               <span className="flex items-center gap-1">
                                 <MapPin className="w-3 h-3" />
-                                EasyParcel sandbox receipt
+                                EasyParcel provider receipt
                               </span>
                               <span>•</span>
                               <span>{receipt.orderNumber ? `Order #${receipt.orderNumber}` : 'Shipment not matched'}</span>

@@ -688,7 +688,7 @@ export const ShopSettingsHub: React.FC = () => {
             </div>
             <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 space-y-2">
               <div className="font-bold text-xs text-neutral-900 dark:text-neutral-100">Aggregator Multi-Carrier</div>
-              <p className="text-[11px] text-neutral-500">EasyParcel & Delyva with prepaid wallet auto-topup and single-wallet multiple courier rate quoting</p>
+              <p className="text-[11px] text-neutral-500">EasyParcel multi-carrier rate quoting and official airway bill generation; account funding remains in the EasyParcel Dashboard</p>
             </div>
             <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 space-y-2">
               <div className="font-bold text-xs text-neutral-900 dark:text-neutral-100">Postage Calculation Modes</div>

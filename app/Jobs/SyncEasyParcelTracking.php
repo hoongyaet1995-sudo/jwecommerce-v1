@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Services\Shipping\EasyParcelTrackingService;
+use App\Services\Shipping\ShippingProviderConfigurationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -33,7 +34,7 @@ final class SyncEasyParcelTracking implements ShouldBeUnique, ShouldQueue
 
     public function uniqueId(): string
     {
-        return 'easyparcel-tracking-sandbox';
+        return 'easyparcel-tracking-'.ShippingProviderConfigurationService::operationalEnvironment();
     }
 
     public function handle(EasyParcelTrackingService $tracking): void

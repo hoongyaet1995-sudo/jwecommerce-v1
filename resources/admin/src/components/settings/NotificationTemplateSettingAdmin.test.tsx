@@ -265,6 +265,12 @@ beforeEach(() => {
       whatsapp: '+60 12-345 6789',
     },
     saveShopSettings: vi.fn(),
+    catalogListingSettings: {
+      eyebrow: 'Catalog & Product Listing',
+      title: 'All JW Studio Collections',
+      description: 'Operational catalog copy.',
+    },
+    saveCatalogListingSettings: vi.fn(),
     addToast: vi.fn(),
   };
   (mockedAdminContext.value as { api?: NotificationTemplateApi }).api = api;

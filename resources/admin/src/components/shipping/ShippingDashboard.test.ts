@@ -690,6 +690,41 @@ describe('ShippingDashboard provider action binding', () => {
     expect(html).not.toContain('Batch Print AWB');
   });
 
+  it('routes pickup scheduling to the EasyParcel Dashboard without claiming the provider is disconnected', async () => {
+    const addToast = vi.fn();
+    mockedAdminContext.value = {
+      courierConfigs: [],
+      smartRoutingRules: [],
+      shipmentParcels: [],
+      easyParcelWebhookReceipts: [],
+      easyParcelWebhookAuditStatus: 'ready',
+      easyParcelWebhookAuditError: null,
+      refreshEasyParcelWebhookReceipts: async () => undefined,
+      pickupRequests: [],
+      billingReconciliations: [],
+      shippingRates: [],
+      addToast,
+    };
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    mountedRoots.push({ root, host });
+
+    await act(async () => {
+      root.render(React.createElement(ShippingDashboard));
+    });
+    expect(host.textContent).not.toContain('Schedule Driver Pickup');
+    const pickup = Array.from(host.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('Manage Pickup in EasyParcel')) as HTMLButtonElement;
+    await act(async () => pickup.click());
+
+    expect(addToast).toHaveBeenCalledWith({
+      type: 'info',
+      title: 'Pickup scheduling is dashboard-managed',
+      message: 'JW Studio does not create or cancel EasyParcel pickup requests. Continue in the official EasyParcel Dashboard.',
+    });
+  });
+
   it('offers printing only when an EasyParcel shipment has an official provider label', () => {
     const withoutLabel = renderToStaticMarkup(React.createElement(ShippingFulfillmentTab, {
       parcels: [{
@@ -855,6 +890,49 @@ describe('ShippingDashboard provider action binding', () => {
     expect(metricCardText(html, 'In-Transit Shipments')).toContain('1');
   });
 
+  it('shows the connected production provider truth in ShippingOverview without wallet claims', () => {
+    const html = renderToStaticMarkup(React.createElement(ShippingOverviewTab, {
+      parcels: [],
+      couriers: [{
+        id: 'cfg_easyparcel',
+        courierCode: 'easyparcel',
+        name: 'EasyParcel Multi-Carrier',
+        displayName: 'EasyParcel Multi-Carrier',
+        logo: '',
+        category: 'aggregator_api',
+        isEnabled: true,
+        environment: 'production',
+        apiKey: '',
+        apiSecret: '',
+        senderHubName: '',
+        senderHubAddress: '',
+        senderHubPostcode: '',
+        senderHubState: '',
+        senderContactPhone: '',
+        supportsCOD: false,
+        codFeePercent: 0,
+        supportsEastMalaysia: false,
+        supportsAirFreightHazmat: false,
+        supportedServices: [],
+        status: 'connected',
+        webhookEndpointUrl: '',
+        autoRetryQueue: false,
+        maxRetryAttempts: 0,
+      } satisfies CourierConfig],
+      pickupRequests: [],
+      onNavigateTab: () => undefined,
+      onOpenPickupModal: () => undefined,
+    }));
+
+    expect(html).toContain('Connected');
+    expect(html).toContain('Live Production');
+    expect(html).toContain('Managed in EasyParcel Dashboard');
+    expect(html).not.toContain('Not connected');
+    expect(html).not.toContain('Provider integration required');
+    expect(html).not.toContain('wallet balance');
+    expect(html).not.toContain('Provider Required');
+  });
+
   it('counts returned parcels in the ShippingOverview exceptions metric', () => {
     const html = renderToStaticMarkup(React.createElement(ShippingOverviewTab, {
       parcels: [{
@@ -956,6 +1034,8 @@ describe('ShippingDashboard provider action binding', () => {
     expect(html).toContain('AWB-1009');
     expect(html).toContain('Provider authorized');
     expect(html).toContain('Webhook endpoint configured');
+    expect(html).toContain('EasyParcel provider receipt');
+    expect(html).not.toContain('EasyParcel sandbox receipt');
     expect(html).not.toContain('provider webhooks remain unavailable');
     expect(html).not.toContain('Manual audit mode');
     expect(html).not.toContain('Not connected');

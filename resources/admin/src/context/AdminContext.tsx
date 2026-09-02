@@ -2219,10 +2219,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const saveCourierConfig = (config: CourierConfig) => {
     if (config.courierCode !== 'easyparcel') {
-      addToast({ type: 'error', title: 'Courier not configured', message: 'Only EasyParcel Sandbox is available for this store. This courier has no provider integration.' });
+      addToast({ type: 'error', title: 'Courier not configured', message: 'Only EasyParcel currently has a provider integration for this store. This courier is not connected.' });
       return;
     }
-    addToast({ type: 'info', title: 'Platform OAuth', message: 'Use Connect EasyParcel Store to authorize the server-managed Sandbox integration.' });
+    addToast({ type: 'info', title: 'Platform OAuth', message: 'Open the EasyParcel provider settings to manage the server-side authorization.' });
   };
 
   const disconnectEasyParcel = async (environment: 'sandbox' | 'production' = 'sandbox'): Promise<void> => {
@@ -2396,11 +2396,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const generateShipmentAWB = (_parcelId: string, _courierCode?: string) => {
-    addToast({ type: 'error', title: 'Courier label issuance unavailable', message: 'A tracking number must be assigned through the real courier workflow. EasyParcel label issuance is not connected yet.' });
+    addToast({ type: 'error', title: 'Courier label issuance unavailable', message: 'Use Fulfil Order to book EasyParcel or record a team-managed tracking number.' });
   };
 
   const batchGenerateAWB = (_parcelIds: string[]) => {
-    addToast({ type: 'error', title: 'Courier label issuance unavailable', message: 'Batch AWB generation remains disabled until EasyParcel is connected.' });
+    addToast({ type: 'error', title: 'Courier label issuance unavailable', message: 'Batch AWB generation is not supported. Open each shipment to use its official fulfilment workflow.' });
   };
 
   const updateShipmentStatus = async (parcelId: string, status: ShipmentParcel['status'], eventDesc?: string, location?: string, voidConfirmed = false): Promise<void> => {
@@ -3591,7 +3591,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 - **Pos Malaysia Express**: **98.4% On-Time**. Best performance in Klang Valley & East Coast routes.
 - **Ninja Van Malaysia**: **96.8% On-Time**. 99.1% COD collection accuracy.
 - **J&T Express**: **95.2% On-Time**. Peak parcel dispatch speed in Southern Region (Johor).
-- **EasyParcel Multi-Carrier Engine**: All API webhooks active with 18ms latency.`;
+- **EasyParcel Multi-Carrier Engine**: Open Shipping & Logistics to view the current authorized provider and webhook audit state.`;
       references = [
         { type: 'courier_sla', title: 'Pos Malaysia SLA', value: '98.4%', change: 'Excellent' },
         { type: 'courier_sla', title: 'Ninja Van COD Rate', value: '99.1%', change: 'Normal' }

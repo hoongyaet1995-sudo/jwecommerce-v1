@@ -23,6 +23,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -965,6 +966,7 @@ class EasyParcelTrackingLifecycleTest extends TestCase
 
     public function test_tracking_job_has_a_bounded_unique_queue_retry_contract(): void
     {
+        Config::set('services.easyparcel.operating_environment', 'production');
         $job = new SyncEasyParcelTracking;
 
         self::assertInstanceOf(ShouldQueue::class, $job);
@@ -973,7 +975,7 @@ class EasyParcelTrackingLifecycleTest extends TestCase
         self::assertSame(30, $job->timeout);
         self::assertSame([60, 300], $job->backoff());
         self::assertSame(900, $job->uniqueFor);
-        self::assertSame('easyparcel-tracking-sandbox', $job->uniqueId());
+        self::assertSame('easyparcel-tracking-production', $job->uniqueId());
 
         $scheduled = collect(app(Schedule::class)->events())
             ->first(fn ($event): bool => $event->description === SyncEasyParcelTracking::class);
