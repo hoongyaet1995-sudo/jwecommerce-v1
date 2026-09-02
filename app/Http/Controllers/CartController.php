@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Coupon;
 use App\Models\ProductVariant;
 use App\Services\CartViewData;
+use App\Services\CustomerCouponEligibilityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -63,21 +63,14 @@ class CartController extends Controller
         return redirect()->route('cart.show');
     }
 
-    public function applyCoupon(Request $request, CartViewData $cartViewData): RedirectResponse
+    public function applyCoupon(Request $request, CustomerCouponEligibilityService $coupons): RedirectResponse
     {
         $data = $request->validate(['code' => ['required', 'string']]);
-        $coupon = Coupon::query()->currentlyValid()->whereRaw('lower(code) = ?', [strtolower($data['code'])])->first();
         $returnTo = $this->couponReturnRoute($request);
+        $result = $coupons->apply($request->user('customer')?->customer, $data['code'], $request);
 
-        if (! $coupon) {
-            $request->session()->flash('coupon_error', 'Coupon code is not valid.');
-        } elseif ((int) $coupon->min_spend > (int) data_get($cartViewData->for($request), 'summary.subtotal', 0)) {
-            $request->session()->flash(
-                'coupon_error',
-                'Coupon requires a minimum spend of '.app(\App\Support\StorefrontCurrencyContext::class)->format($coupon->min_spend).'.'
-            );
-        } else {
-            $request->session()->put('coupon_code', $coupon->code);
+        if (! $result->applied) {
+            $request->session()->flash('coupon_error', $result->message);
         }
 
         return redirect()->to($returnTo);

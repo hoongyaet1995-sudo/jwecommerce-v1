@@ -58,7 +58,7 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
             ->assertSee('My Address')
             ->assertSee('Latest Purchase')
             ->assertSee('Purchase History')
-            ->assertSee('Eligible Voucher')
+            ->assertSee('Available Coupons')
             ->assertSee('data-original-account-workspace', false);
     }
 
@@ -155,7 +155,7 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
             ->assertOk()
             ->assertViewIs('storefront.account')
             ->assertViewHas('accountPayload', function (array $payload) use ($owner, $ownerOrder, $ownerAddress, $ownerItem, $ownerOrderAddress, $ownerPayment, $ownerReview, $otherReview): bool {
-                self::assertSame(['user', 'orders', 'addresses', 'wishlist', 'dashboard', 'gaps'], array_keys($payload));
+                self::assertSame(['user', 'orders', 'addresses', 'wishlist', 'dashboard', 'vouchers', 'gaps'], array_keys($payload));
                 self::assertSame($owner->user_id, data_get($payload, 'user.id'));
                 self::assertSame($ownerOrder->number, data_get($payload, 'orders.0.number'));
                 self::assertSame($ownerItem->sku, data_get($payload, 'orders.0.items.0.sku'));

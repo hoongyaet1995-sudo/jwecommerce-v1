@@ -37,6 +37,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CustomerAccountController;
 use App\Http\Controllers\CustomerAuthController;
+use App\Http\Controllers\CustomerCouponController;
 use App\Http\Controllers\CustomerProductReviewController;
 use App\Http\Controllers\EasyParcelWebhookController;
 use App\Http\Controllers\OrderTrackingController;
@@ -107,6 +108,7 @@ Route::middleware('guest:customer')->prefix('account')->name('customer.')->group
 });
 Route::middleware(['auth:customer', 'customer'])->prefix('account')->name('customer.')->group(function (): void {
     Route::get('/', [CustomerAccountController::class, 'show'])->name('account');
+    Route::post('/coupons/apply', [CustomerCouponController::class, 'apply'])->name('coupons.apply');
     Route::patch('/profile', [CustomerAccountController::class, 'updateProfile'])->name('profile.update');
     Route::post('/addresses', [CustomerAccountController::class, 'storeAddress'])->name('addresses.store');
     Route::post('/wishlist/{product}', [CustomerAccountController::class, 'storeWishlist'])->name('wishlist.store');

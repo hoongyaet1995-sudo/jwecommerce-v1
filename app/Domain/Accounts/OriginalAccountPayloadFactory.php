@@ -10,6 +10,9 @@ use App\Models\WishlistItem;
 
 class OriginalAccountPayloadFactory
 {
+    public function __construct(private readonly CustomerCouponViewModelFactory $vouchers)
+    {
+    }
     /**
      * @return array{
      *     user: array<string, mixed>,
@@ -39,7 +42,8 @@ class OriginalAccountPayloadFactory
             'addresses' => $this->addressPayloads($customer),
             'wishlist' => $this->wishlistPayloads($customer),
             'dashboard' => $this->dashboardPayload($customer),
-            'gaps' => ['password', 'vouchers', 'two_factor', 'sessions', 'membership_points'],
+            'vouchers' => $this->vouchers->for($customer),
+            'gaps' => ['password', 'two_factor', 'sessions', 'membership_points'],
         ];
     }
 
