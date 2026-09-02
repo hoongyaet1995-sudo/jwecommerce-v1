@@ -63,23 +63,37 @@ class CartController extends Controller
         return redirect()->route('cart.show');
     }
 
-    public function applyCoupon(Request $request): RedirectResponse
+    public function applyCoupon(Request $request, CartViewData $cartViewData): RedirectResponse
     {
         $data = $request->validate(['code' => ['required', 'string']]);
         $coupon = Coupon::query()->currentlyValid()->whereRaw('lower(code) = ?', [strtolower($data['code'])])->first();
-        if ($coupon) {
-            $request->session()->put('coupon_code', $coupon->code);
-        } else {
+        $returnTo = $this->couponReturnRoute($request);
+
+        if (! $coupon) {
             $request->session()->flash('coupon_error', 'Coupon code is not valid.');
+        } elseif ((int) $coupon->min_spend > (int) data_get($cartViewData->for($request), 'summary.subtotal', 0)) {
+            $request->session()->flash(
+                'coupon_error',
+                'Coupon requires a minimum spend of '.app(\App\Support\StorefrontCurrencyContext::class)->format($coupon->min_spend).'.'
+            );
+        } else {
+            $request->session()->put('coupon_code', $coupon->code);
         }
 
-return redirect()->route('cart.show');
+        return redirect()->to($returnTo);
     }
 
     public function removeCoupon(Request $request): RedirectResponse
     {
         $request->session()->forget('coupon_code');
 
-        return redirect()->route('cart.show');
+        return redirect()->to($this->couponReturnRoute($request));
+    }
+
+    private function couponReturnRoute(Request $request): string
+    {
+        return $request->input('return_to') === 'checkout'
+            ? route('checkout.create')
+            : route('cart.show');
     }
 }

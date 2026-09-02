@@ -4,6 +4,7 @@ namespace App\Services\Shipping;
 
 use App\Models\ShippingProvider;
 use App\Models\ShippingProviderCredential;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\DB;
 
 final class ShippingProviderConfigurationService
@@ -41,6 +42,45 @@ final class ShippingProviderConfigurationService
             : self::operationalEnvironment();
 
         return $this->dto($this->findProvider($environment), $environment);
+    }
+
+    /**
+     * Removes a credential blob that this Laravel environment can no longer decrypt.
+     * This is deliberately called only after a super-admin has started a fresh OAuth flow.
+     */
+    public function prepareForAuthorization(string $environment): void
+    {
+        if (! self::isSupportedEnvironment($environment)) {
+            return;
+        }
+
+        DB::transaction(function () use ($environment): void {
+            $provider = ShippingProvider::query()
+                ->where('provider', self::PROVIDER)
+                ->where('environment', $environment)
+                ->lockForUpdate()
+                ->first();
+            if ($provider === null) {
+                return;
+            }
+            $credential = ShippingProviderCredential::query()
+                ->where('shipping_provider_id', $provider->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($credential === null || $this->credentialIsReadable($credential)) {
+                return;
+            }
+
+            $credential->delete();
+            $provider->forceFill([
+                'enabled' => false,
+                'connection_state' => 'unverified',
+                'configuration_version' => $provider->configuration_version + 1,
+                'last_verified_at' => null,
+                'last_error' => 'credentials_reset_for_reauthorization',
+            ])->save();
+        });
     }
 
     /** @return array<string, bool|string|null> */
@@ -398,17 +438,21 @@ final class ShippingProviderConfigurationService
     /** @return array<string, bool|string|null> */
     private function dto(?ShippingProvider $provider, string $environment): array
     {
-        $senderProfile = $provider?->credential?->credentials['sender_profile'] ?? [];
+        $credential = $provider?->credential;
+        $credentialIsReadable = $credential === null || $this->credentialIsReadable($credential);
+        $credentials = $credentialIsReadable && $credential !== null ? $credential->credentials : [];
+        $senderProfile = is_array($credentials) ? ($credentials['sender_profile'] ?? []) : [];
         $senderProfile = is_array($senderProfile) ? $senderProfile : [];
+        $hasUnreadableCredential = $credential !== null && ! $credentialIsReadable;
 
         return [
             'provider' => self::PROVIDER,
             'environment' => $environment,
             'configured' => $this->platformCredentials($environment) !== null,
-            'enabled' => $provider?->enabled ?? false,
-            'connectionState' => $provider?->connection_state ?? 'unconfigured',
+            'enabled' => $hasUnreadableCredential ? false : ($provider?->enabled ?? false),
+            'connectionState' => $hasUnreadableCredential ? 'unverified' : ($provider?->connection_state ?? 'unconfigured'),
             'lastVerifiedAt' => $provider?->last_verified_at?->toIso8601String(),
-            'lastError' => $provider?->last_error,
+            'lastError' => $hasUnreadableCredential ? 'credentials_unreadable' : $provider?->last_error,
             'senderProfile' => $senderProfile,
             'senderProfileComplete' => $this->senderProfileComplete($senderProfile),
             'environments' => [
@@ -434,13 +478,25 @@ final class ShippingProviderConfigurationService
     private function environmentStatus(string $environment): array
     {
         $provider = $this->findProvider($environment);
+        $hasUnreadableCredential = $provider?->credential !== null && ! $this->credentialIsReadable($provider->credential);
 
         return [
             'authorizationEnabled' => $this->authorizationEnabled($environment),
             'configured' => $this->platformCredentials($environment) !== null,
-            'connectionState' => $provider?->connection_state ?? 'unconfigured',
-            'enabled' => $provider?->enabled ?? false,
+            'connectionState' => $hasUnreadableCredential ? 'unverified' : ($provider?->connection_state ?? 'unconfigured'),
+            'enabled' => $hasUnreadableCredential ? false : ($provider?->enabled ?? false),
         ];
+    }
+
+    private function credentialIsReadable(ShippingProviderCredential $credential): bool
+    {
+        try {
+            $credentials = $credential->credentials;
+
+            return is_array($credentials);
+        } catch (DecryptException) {
+            return false;
+        }
     }
 
     private function authorizationEnabled(string $environment): bool

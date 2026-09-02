@@ -138,6 +138,64 @@ class EasyParcelProviderApiTest extends TestCase
         $this->assertDatabaseCount('shipping_provider_credentials', 0);
     }
 
+    public function test_unreadable_imported_credentials_do_not_hide_the_easyparcel_integration(): void
+    {
+        $this->platform();
+        $provider = ShippingProvider::query()->create([
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'enabled' => true,
+            'connection_state' => 'connected',
+            'configuration_version' => 3,
+        ]);
+        DB::table('shipping_provider_credentials')->insert([
+            'shipping_provider_id' => $provider->id,
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'credentials' => 'unreadable-imported-ciphertext',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($this->superAdmin())
+            ->getJson('/admin/api/shipping/providers/easyparcel')
+            ->assertOk()
+            ->assertJsonPath('data.provider', 'easyparcel')
+            ->assertJsonPath('data.enabled', false)
+            ->assertJsonPath('data.connectionState', 'unverified')
+            ->assertJsonPath('data.lastError', 'credentials_unreadable');
+    }
+
+    public function test_starting_a_new_authorization_explicitly_resets_unreadable_imported_credentials(): void
+    {
+        $this->withoutMiddleware(ValidateCsrfToken::class);
+        $this->platform();
+        $provider = ShippingProvider::query()->create([
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'enabled' => true,
+            'connection_state' => 'connected',
+            'configuration_version' => 3,
+        ]);
+        DB::table('shipping_provider_credentials')->insert([
+            'shipping_provider_id' => $provider->id,
+            'provider' => 'easyparcel',
+            'environment' => 'sandbox',
+            'credentials' => 'unreadable-imported-ciphertext',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($this->superAdmin())
+            ->post('/admin/api/shipping/providers/easyparcel/authorize')
+            ->assertRedirect();
+
+        $this->assertDatabaseCount('shipping_provider_credentials', 0);
+        $this->assertSame('unverified', $provider->fresh()->connection_state);
+        $this->assertFalse($provider->fresh()->enabled);
+        $this->assertSame('credentials_reset_for_reauthorization', $provider->fresh()->last_error);
+    }
+
     public function test_super_admin_can_save_a_manual_sender_profile_without_replacing_oauth_tokens(): void
     {
         $this->platform();

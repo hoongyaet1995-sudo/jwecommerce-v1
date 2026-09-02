@@ -72,13 +72,16 @@ class ShippingProviderApiController extends Controller
     {
         $this->authorizeAdmin($request);
 
+        $environment = $this->requestedEnvironment($request);
+
         try {
+            $this->configuration->prepareForAuthorization($environment);
             $sessionBinding = bin2hex(random_bytes(32));
             $authorizationUrl = $this->authorization->begin(
                 $request->user()->id,
                 $sessionBinding,
                 (string) config('services.easyparcel.redirect_uri'),
-                $this->requestedEnvironment($request),
+                $environment,
             );
         } catch (Throwable) {
             return $this->callbackRedirect('failed');

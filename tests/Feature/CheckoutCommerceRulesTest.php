@@ -33,6 +33,61 @@ class CheckoutCommerceRulesTest extends TestCase
         $this->post('/cart/coupon', ['code'=>'ONEUSE'])->assertSessionHas('coupon_error');
     }
 
+    public function test_checkout_coupon_application_returns_to_checkout_and_renders_the_drawer_coupon_controls(): void
+    {
+        $variant = $this->variant();
+        Coupon::query()->create([
+            'code' => 'CHECKOUT10',
+            'name' => 'Checkout ten percent',
+            'discount_type' => 'percentage',
+            'value' => 10,
+            'is_active' => true,
+        ]);
+
+        $response = $this->withSession(['cart' => [$variant->id => 1]])
+            ->post('/cart/coupon', ['code' => 'checkout10', 'return_to' => 'checkout']);
+
+        $response->assertRedirect('/checkout');
+        $response->assertSessionHas('coupon_code', 'CHECKOUT10');
+
+        $this->withSession(['cart' => [$variant->id => 1], 'coupon_code' => 'CHECKOUT10'])
+            ->get('/checkout')
+            ->assertOk()
+            ->assertSee('data-checkout-coupon-form', false)
+            ->assertSee('Coupon (e.g. WELCOME10)')
+            ->assertSee('CHECKOUT10')
+            ->assertSee('Remove');
+    }
+
+    public function test_checkout_coupon_application_rejects_a_coupon_below_its_minimum_spend(): void
+    {
+        $variant = $this->variant();
+        Coupon::query()->create([
+            'code' => 'MIN500',
+            'name' => 'Minimum spend coupon',
+            'discount_type' => 'percentage',
+            'value' => 10,
+            'min_spend' => 50000,
+            'is_active' => true,
+        ]);
+
+        $response = $this->withSession(['cart' => [$variant->id => 1]])
+            ->post('/cart/coupon', ['code' => 'MIN500', 'return_to' => 'checkout']);
+
+        $response->assertRedirect('/checkout');
+        $response->assertSessionMissing('coupon_code');
+        $response->assertSessionHas('coupon_error', 'Coupon requires a minimum spend of RM 500.00.');
+    }
+
+    public function test_checkout_coupon_removal_returns_to_checkout(): void
+    {
+        $response = $this->withSession(['coupon_code' => 'CHECKOUT10'])
+            ->delete('/cart/coupon', ['return_to' => 'checkout']);
+
+        $response->assertRedirect('/checkout');
+        $response->assertSessionMissing('coupon_code');
+    }
+
     public function test_checkout_rejects_a_disabled_configured_payment_method(): void
     {
         $variant = $this->variant();
