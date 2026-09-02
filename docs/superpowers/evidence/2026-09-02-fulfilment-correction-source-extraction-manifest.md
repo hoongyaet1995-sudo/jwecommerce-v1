@@ -50,14 +50,33 @@
 
 | Flow/state | Source trigger | Expected visible behavior | Data classification |
 | --- | --- | --- | --- |
-| Open correction | `Correct Fulfilment` row action | current shipment snapshot and two recovery modes | backend contract gap until correction API exists |
-| Void and replace | primary correction action | validated acknowledgement, success, then existing method chooser | backend contract gap |
-| Correct details only | second modal mode | method-specific fields, before/after-safe mutation feedback | backend contract gap |
-| Resume correction | `Resume Fulfilment` row action | reopen existing method chooser | backend contract gap |
-| Amend destination | Shipping row or Order detail action | validated address form and before/after diff | backend contract gap |
+| Open correction | `Correct Fulfilment` row action | current shipment snapshot and two recovery modes | Laravel API and adapter available; official trigger awaits preview acceptance |
+| Void and replace | primary correction action | validated acknowledgement, success, then existing method chooser | Laravel transaction and replacement adapter available; no live provider booking used in preview |
+| Correct details only | second modal mode | method-specific fields, before/after-safe mutation feedback | protected Laravel API and immutable amendment audit available |
+| Resume correction | `Resume Fulfilment` row action | reopen existing method chooser | active-correction projection and replacement completion available |
+| Amend destination | Shipping row or Order detail action | validated address form and before/after diff | protected Laravel API and immutable address audit available |
 | Delivered/cancelled hard block | open modal for ineligible state | approved blocking alert and no mutation action | available adapter after API eligibility projection |
 | Permission/loading/validation/failure | mutation lifecycle | approved source states | available adapter after API integration |
 | Prototype permission toggles | source-only developer controls | simulate errors locally | excluded from official UI; real HTTP 403 drives the same visible error state |
+
+## Laravel isolated preview evidence
+
+- Preview URL: `http://127.0.0.1:8500/admin/shipping?fulfilment-preview=correct`
+- Preview URL: `http://127.0.0.1:8500/admin/shipping?fulfilment-preview=address`
+- Correct Fulfilment desktop: `C:\Users\User\AppData\Local\Temp\jw-fulfilment-preview-2026-09-02\correct-desktop.png`
+- Correct Details Only desktop state: `C:\Users\User\AppData\Local\Temp\jw-fulfilment-preview-2026-09-02\correct-details-desktop.png`
+- Amend Delivery Details desktop: `C:\Users\User\AppData\Local\Temp\jw-fulfilment-preview-2026-09-02\address-desktop.png`
+- Address Before vs. After desktop state: `C:\Users\User\AppData\Local\Temp\jw-fulfilment-preview-2026-09-02\address-diff-desktop.png`
+- Correct Fulfilment 390x844: `C:\Users\User\AppData\Local\Temp\jw-fulfilment-preview-2026-09-02\correct-mobile.png`
+- Amend Delivery Details 390x844: `C:\Users\User\AppData\Local\Temp\jw-fulfilment-preview-2026-09-02\address-mobile.png`
+- Browser acceptance: authenticated Chrome session, meaningful DOM rendered, both mode switch and address diff interaction verified, and no console errors observed.
+- Safety boundary: isolated preview callbacks deliberately do not persist or call a courier provider. The visual success path is not used as operational acceptance evidence.
+
+## Allowed source deviations
+
+- Removed only the two prototype-only controls `Simulate Permission Denied` and `Toggle Unconfirmed Provider State`; real API errors populate the preserved error banners.
+- Corrected the source prop-name mismatch by using `onOpenAmendDeliveryDetails`, matching the modal's declared contract. This changes no visible DOM or styling.
+- Added real Laravel/Admin view-model adapters and the two query-gated preview mounts. No ZIP wrapper, layout, Tailwind class, responsive behavior, or user-facing copy was redesigned.
 
 ## Approval record
 

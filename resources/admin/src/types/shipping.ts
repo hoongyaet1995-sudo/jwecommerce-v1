@@ -129,6 +129,14 @@ export type ShipmentStatus =
 
 export type FulfillmentMethodType = 'easyparcel' | 'external_courier' | 'manual_delivery';
 export type ManagementModeType = 'provider_managed' | 'team_managed';
+export type CorrectionReasonType = 'wrong_fulfillment_method' | 'wrong_easyparcel_courier' | 'wrong_external_courier' | 'incorrect_package_info' | 'incorrect_receiver_details' | 'duplicate_accidental_dispatch' | 'customer_requested_change' | 'other_operational_error';
+export interface ShipmentCorrectionRecord {
+  id:string; timestamp:string; performedBy:string; reason:CorrectionReasonType|string; reasonLabel:string; auditNote:string;
+  actionType:'void_and_replace'|'correct_details_only'; previousMethod?:FulfillmentMethodType; previousCourier?:CourierCode;
+  previousTrackingNumber?:string; previousHandoffReference?:string; previousDriverName?:string;
+  providerCancellationStatus?:'confirmed'|'pending_acknowledgement'|'not_applicable';
+  impactSummary:{orderStatusKeptActive:boolean;inventoryUnchanged:boolean;paymentUnchanged:boolean;orderCancellationEmailSuppressed:boolean};
+}
 
 export interface ShipmentTrackingEvent {
   timestamp: string;
