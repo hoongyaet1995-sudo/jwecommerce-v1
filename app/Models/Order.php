@@ -68,6 +68,16 @@ class Order extends Model
         return $this->hasMany(EasyParcelShipmentRecovery::class)->latest('id');
     }
 
+    public function shipmentCorrections(): HasMany
+    {
+        return $this->hasMany(ShipmentCorrection::class)->latest('id');
+    }
+
+    public function addressAmendments(): HasMany
+    {
+        return $this->hasMany(OrderAddressAmendment::class)->latest('id');
+    }
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);

@@ -63,4 +63,19 @@ class Shipment extends Model
     {
         return $this->hasOne(EasyParcelShipmentRecovery::class, 'replacement_shipment_id');
     }
+
+    public function corrections(): HasMany
+    {
+        return $this->hasMany(ShipmentCorrection::class, 'source_shipment_id')->latest('id');
+    }
+
+    public function replacementCorrection(): HasOne
+    {
+        return $this->hasOne(ShipmentCorrection::class, 'replacement_shipment_id');
+    }
+
+    public function operationalAmendments(): HasMany
+    {
+        return $this->hasMany(ShipmentOperationalAmendment::class)->latest('id');
+    }
 }
