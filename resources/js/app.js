@@ -1482,7 +1482,12 @@ const installQuickAddVariantModals = () => {
             const submitter = modal.querySelector('[data-quick-add-confirm]');
             setConfirmState('loading');
             try {
-                const response = await fetch(form.action, { method: form.method || 'POST', body: new FormData(form), headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+                const csrfResponse = await fetch('/csrf-token', { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+                const csrfPayload = csrfResponse.ok ? await csrfResponse.json() : null;
+                const csrfInput = form.querySelector('input[name="_token"]');
+                const csrfToken = csrfPayload?.token || csrfInput?.value || '';
+                if (csrfPayload?.token && csrfInput) csrfInput.value = csrfPayload.token;
+                const response = await fetch(form.action, { method: form.method || 'POST', body: new FormData(form), headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken }, credentials: 'same-origin' });
                 if (!response.ok) {
                     const payload = await response.json().catch(() => null);
                     throw new Error(payload?.errors?.quantity?.[0] || payload?.errors?.variant_id?.[0] || 'Unable to add the item to the cart.');

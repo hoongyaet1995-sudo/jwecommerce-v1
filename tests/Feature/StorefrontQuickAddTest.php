@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
@@ -27,6 +28,60 @@ class StorefrontQuickAddTest extends TestCase
             ->assertDontSee('Dispatches Today')
             ->assertDontSee('Verified Studio Reviews')
             ->assertDontSee('2-Year Atelier Warranty');
+    }
+
+    public function test_success_recommendations_use_the_same_quick_add_modal_contract_as_the_plp(): void
+    {
+        $product = $this->multiSkuProduct();
+        $order = $this->order();
+
+        $this->withSession(['last_order_id' => $order->id])
+            ->get('/order/success')
+            ->assertOk()
+            ->assertSee('data-storefront-product-card', false)
+            ->assertSee('data-quick-add-trigger', false)
+            ->assertSee('data-quick-add-product-id="'.$product->id.'"', false)
+            ->assertSee('data-quick-add-modal', false)
+            ->assertDontSee('action="'.route('cart.items.store').'" class="mt-3"', false);
+    }
+
+    public function test_home_featured_products_use_the_same_quick_add_modal_contract_as_the_plp(): void
+    {
+        $product = $this->multiSkuProduct();
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('data-storefront-product-card', false)
+            ->assertSee('data-quick-add-trigger', false)
+            ->assertSee('data-quick-add-product-id="'.$product->id.'"', false)
+            ->assertSee('data-quick-add-modal', false);
+    }
+
+    public function test_pdp_companion_products_use_the_same_quick_add_modal_contract_as_the_plp(): void
+    {
+        $companion = $this->multiSkuProduct();
+        $primary = Product::query()->create([
+            'handle' => 'quick-add-primary',
+            'title' => 'Quick Add Primary',
+            'base_price' => 19900,
+            'status' => 'active',
+        ]);
+        $primary->variants()->create(['sku' => 'QUICK-PRIMARY', 'title' => 'Default', 'price' => 19900, 'stock' => 2, 'enabled' => true]);
+        $primary->pdpRelatedProducts()->create(['related_product_id' => $companion->id, 'sort_order' => 0]);
+
+        $this->get('/products/'.$primary->handle)
+            ->assertOk()
+            ->assertSee('data-storefront-product-card', false)
+            ->assertSee('data-quick-add-trigger', false)
+            ->assertSee('data-quick-add-product-id="'.$companion->id.'"', false)
+            ->assertSee('data-quick-add-modal', false);
+    }
+
+    public function test_cart_quick_add_can_request_a_fresh_same_session_csrf_token(): void
+    {
+        $this->getJson('/csrf-token')
+            ->assertOk()
+            ->assertJsonStructure(['token']);
     }
 
     public function test_cart_store_rejects_an_out_of_stock_sku_without_creating_a_cart_line(): void
@@ -116,5 +171,20 @@ class StorefrontQuickAddTest extends TestCase
         ]);
 
         return $product->fresh('variants');
+    }
+
+    private function order(): Order
+    {
+        return Order::query()->create([
+            'number' => 'JW-QUICK-ADD-001',
+            'email' => 'buyer@example.test',
+            'currency' => 'MYR',
+            'status' => 'pending_payment',
+            'subtotal' => 10000,
+            'discount_amount' => 0,
+            'shipping_amount' => 0,
+            'tax_amount' => 0,
+            'total' => 10000,
+        ]);
     }
 }

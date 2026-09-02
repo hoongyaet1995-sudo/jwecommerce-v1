@@ -29,12 +29,10 @@
         @if($recommendations->isNotEmpty())
             <section class="space-y-6 border-t border-zinc-200 pt-8 dark:border-zinc-900">
                 <div class="flex items-center justify-between"><div><span class="font-mono text-xs font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400">More From The Shop</span><h2 class="mt-0.5 font-serif text-xl font-bold text-zinc-900 dark:text-white">Explore More Products</h2></div><a href="{{ route('storefront.index') }}" class="flex items-center gap-1 text-xs font-medium text-zinc-500 transition-colors hover:text-amber-600 dark:text-zinc-400 dark:hover:text-amber-300">Explore All <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></a></div>
-                <div class="grid gap-6 sm:grid-cols-3">
-                    @foreach($recommendations as $product)
-                        @php($variant = $product->variants->first())
-                        <article class="group flex flex-col justify-between overflow-hidden rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-all hover:border-amber-400 dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:border-zinc-700"><a href="{{ route('storefront.products.show', ['handle' => $product->handle]) }}" class="block"><div class="mb-3 aspect-square overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-950">@if($product->images->first())<img src="{{ $product->images->first()->path }}" alt="{{ $product->title }}" class="h-full w-full object-cover transition-transform group-hover:scale-105">@endif</div><div class="space-y-1"><span class="font-mono text-[10px] uppercase text-zinc-400 dark:text-zinc-500">{{ $product->category?->name ?? 'Atelier' }}</span><h3 class="truncate text-xs font-bold text-zinc-900 transition-colors group-hover:text-amber-600 dark:text-white dark:group-hover:text-amber-300">{{ $product->title }}</h3><span class="font-mono text-xs font-bold text-amber-600 dark:text-amber-400">@storefrontMoney($variant?->price ?? $product->base_price)</span></div></a>@if($variant)<form method="POST" action="{{ route('cart.items.store') }}" class="mt-3">@csrf<input type="hidden" name="variant_id" value="{{ $variant->id }}"><input type="hidden" name="quantity" value="1"><button class="flex w-full items-center justify-center gap-1.5 rounded-lg bg-zinc-100 py-2 text-xs font-semibold text-zinc-900 transition-colors hover:bg-amber-400 hover:text-zinc-950 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-amber-400"><i data-lucide="shopping-bag" class="h-3.5 w-3.5"></i>Quick Add</button></form>@endif</article>
-                    @endforeach
+                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                    @foreach($recommendations as $product)<x-storefront.product-card-grid :product="$product" />@endforeach
                 </div>
+                @foreach($recommendations as $product)@if($product->variants->isNotEmpty())<x-storefront.quick-add-variant-modal :product="$product" :variants="$product->variants" :images="$product->images" />@endif @endforeach
             </section>
         @endif
     </main>

@@ -54,6 +54,8 @@ Route::get('/categories/{category:slug}', [StorefrontController::class, 'categor
 Route::get('/collections/{collection:slug}', [StorefrontController::class, 'collection'])->name('storefront.collections.show');
 Route::get('/products/{handle}', [StorefrontController::class, 'show'])->name('storefront.products.show');
 Route::post('/currency', StorefrontCurrencyController::class)->name('storefront.currency.update');
+Route::get('/csrf-token', fn () => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'))
+    ->name('storefront.csrf-token');
 Route::get('/cart', [CartController::class, 'show'])->name('cart.show');
 Route::get('/cart/drawer', [CartController::class, 'drawer'])->name('cart.drawer');
 Route::post('/cart/items', [CartController::class, 'store'])->name('cart.items.store');

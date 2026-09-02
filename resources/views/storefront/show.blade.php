@@ -154,16 +154,10 @@
             @if($companions->isNotEmpty())<section class="mt-20 border-t border-zinc-200 pt-12 dark:border-zinc-900">
                 <p class="font-mono text-sm font-bold uppercase tracking-[0.16em] text-amber-600 dark:text-amber-300">Modular Synergy</p>
                 <h2 class="mt-2 font-serif text-4xl font-black text-zinc-900 dark:text-white">Frequently Paired With This Model</h2>
-                <div class="mt-7 grid gap-5 md:grid-cols-2">
-                    @foreach($companions as $companion)
-                        @php($companionVariant = $companion->variants->first())
-                        <article class="min-w-0 flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-all hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:border-zinc-700">
-                            @if($companion->images->first())<img src="{{ $companion->images->first()->path }}" alt="{{ $companion->title }}" class="h-24 w-24 rounded-xl object-cover" />@endif
-                            <div class="min-w-0 flex-1"><p class="font-mono text-[10px] uppercase text-zinc-500 dark:text-zinc-400">{{ $companion->brand }}</p><a href="{{ route('storefront.products.show', ['handle' => $companion->handle]) }}" class="mt-1 block truncate text-sm font-bold text-zinc-900 dark:text-white">{{ $companion->title }}</a><p class="mt-1 text-xs font-bold text-amber-600 dark:text-amber-300">@storefrontMoney($companionVariant?->price ?? $companion->base_price)</p></div>
-                            @if($companionVariant)<form method="POST" action="{{ route('cart.items.store') }}" class="shrink-0">@csrf<input type="hidden" name="variant_id" value="{{ $companionVariant->id }}"><input type="hidden" name="quantity" value="1"><button class="flex items-center gap-1 rounded-lg bg-zinc-100 px-3 py-2 text-xs font-semibold text-zinc-800 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"><i data-lucide="shopping-bag" class="h-3.5 w-3.5"></i>Add Pair</button></form>@endif
-                        </article>
-                    @endforeach
+                <div class="mt-7 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                    @foreach($companions as $companion)<x-storefront.product-card-grid :product="$companion" />@endforeach
                 </div>
+                @foreach($companions as $companion)@if($companion->variants->isNotEmpty())<x-storefront.quick-add-variant-modal :product="$companion" :variants="$companion->variants" :images="$companion->images" />@endif @endforeach
             </section>@endif
         </main>
         <x-storefront.footer />
