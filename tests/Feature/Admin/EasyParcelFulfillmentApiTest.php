@@ -24,12 +24,54 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use InvalidArgumentException;
 use Mockery;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\UsesIsolatedDatabaseMigrations;
 use Tests\TestCase;
 
 class EasyParcelFulfillmentApiTest extends TestCase
 {
     use UsesIsolatedDatabaseMigrations;
+
+    #[DataProvider('malaysianReceiverPhoneProvider')]
+    public function test_quote_snapshot_keeps_malaysian_receiver_mobile_in_local_format(
+        string $input,
+        string $expected,
+    ): void {
+        Http::preventStrayRequests();
+        $this->configureSender();
+        $this->connectedProvider();
+        $order = $this->processingOrder();
+        $order->addresses()->where('type', 'shipping')->update(['phone' => $input]);
+        $admin = $this->superAdmin();
+
+        Http::fake([
+            'https://api.easyparcel.com/open_api/2026-06/shipment/quotations' => Http::response($this->quotationResponse()),
+        ]);
+
+        $quoteId = $this->actingAs($admin)
+            ->postJson('/admin/api/shipping/orders/'.$order->id.'/easyparcel/quotes', [
+                'package' => $this->actualPackage(),
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $quote = ShipmentQuote::query()->findOrFail($quoteId);
+
+        $this->assertSame(
+            $expected,
+            data_get($quote->request_snapshot, 'booking.receiver.phone_number'),
+        );
+    }
+
+    /** @return array<string, array{string, string}> */
+    public static function malaysianReceiverPhoneProvider(): array
+    {
+        return [
+            'local mobile number' => ['0143323862', '0143323862'],
+            'international number with plus sign' => ['+60143323862', '0143323862'],
+            'international number without plus sign' => ['60143323862', '0143323862'],
+        ];
+    }
 
     public function test_quote_refreshes_an_expiring_provider_session_before_the_locked_snapshot_commit(): void
     {

@@ -881,9 +881,9 @@ final class EasyParcelFulfillmentService
         $digits = preg_replace('/\D+/', '', $value) ?? '';
         if (strtoupper($country) === 'MY') {
             if (str_starts_with($digits, '60')) {
-                $digits = substr($digits, 2);
-            } elseif (str_starts_with($digits, '0')) {
-                $digits = substr($digits, 1);
+                $digits = '0'.substr($digits, 2);
+            } elseif (! str_starts_with($digits, '0')) {
+                $digits = '0'.$digits;
             }
         }
 
