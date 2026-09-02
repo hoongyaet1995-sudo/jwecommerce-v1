@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LaravelAdminBootstrap, Order } from '../types';
-import { fetchOrders, reviewPaymentProofData, updateOrderStatusData } from './orderData';
+import { amendOrderDeliveryDetails, fetchOrders, reviewPaymentProofData, updateOrderStatusData } from './orderData';
 
 const bootstrap: LaravelAdminBootstrap = {
   user: { name: 'Payments Admin', email: 'payments@example.test', avatar: null },
@@ -28,6 +28,18 @@ const queuedNotificationSummary = {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('Laravel payment-proof order adapter', () => {
+  it('patches audited delivery details without treating the response as a complete order', async () => {
+    const result = { shippingAddress: { firstName: 'Tee', lastName: 'Jing', phone: '0143323862', address1: 'New address', postalCode: '40150', city: 'Shah Alam', state: 'Selangor', country: 'Malaysia' }, addressBookSyncResult: 'not_requested', requiresReplacement: false };
+    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: result }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    vi.stubGlobal('window', { fetch: request });
+
+    await expect(amendOrderDeliveryDetails(bootstrap, '17', {
+      firstName: 'Tee', lastName: 'Jing', phone: '0143323862', address1: 'New address', address2: null,
+      postalCode: '40150', city: 'Shah Alam', state: 'Selangor', country: 'Malaysia', reasonCode: 'customer_request',
+      internalNote: 'Customer verified address.', syncAddressBook: false,
+    })).resolves.toEqual(result);
+    expect(request).toHaveBeenCalledWith('/admin/api/orders/17/delivery-details', expect.objectContaining({ method: 'PATCH', headers: expect.objectContaining({ 'X-CSRF-TOKEN': 'csrf-token' }) }));
+  });
   it('rejects an order collection entry without the mandatory notification context fingerprint', async () => {
     const { notificationContextFingerprint: _notificationContextFingerprint, ...orderWithoutContextFingerprint } = order;
     const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({ orders: [orderWithoutContextFingerprint] }), {

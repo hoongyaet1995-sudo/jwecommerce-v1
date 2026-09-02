@@ -1,5 +1,5 @@
 import type { LaravelAdminBootstrap } from '../types';
-import type { EasyParcelRecoverySnapshot, ShipmentParcel } from '../types/shipping';
+import type { AmendShipmentOperationalDetailsInput, EasyParcelRecoverySnapshot, ShipmentParcel, StartShipmentCorrectionInput, StartShipmentCorrectionResult } from '../types/shipping';
 
 type ShipmentResponse = { data: ShipmentParcel[] };
 type TeamManagedDispatchResponse = { data: { id: string } };
@@ -91,6 +91,7 @@ const shipmentListParcel = (row: ShipmentParcel): ShipmentParcel => ({
   exceptionReason: row.exceptionReason,
   exceptionAttempts: row.exceptionAttempts,
   easyParcelRecovery: recoverySnapshot(row.easyParcelRecovery),
+  activeCorrection: row.activeCorrection ?? null,
   pickupRequestId: row.pickupRequestId,
   trackingEvents: row.trackingEvents,
 });
@@ -150,6 +151,24 @@ export const recordManualDeliveryDispatch = (
   orderId: string,
   data: { driverName: string; handoffReference?: string; auditNote: string },
 ): Promise<string> => dispatchTeamManaged(bootstrap, orderId, { fulfillmentMethod: 'manual_delivery', ...data });
+
+const mutateShipment = async <T>(bootstrap: LaravelAdminBootstrap, shipmentId: string, suffix: string, method: 'POST' | 'PATCH', body: unknown): Promise<T> => {
+  if (!bootstrap.shipmentsUrl) throw new Error('Shipment API is unavailable.');
+  const response = await window.fetch(`${bootstrap.shipmentsUrl}/${encodeURIComponent(shipmentId)}/${suffix}`, {
+    method, credentials: 'same-origin',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': bootstrap.csrfToken },
+    body: JSON.stringify(body),
+  });
+  const payload = await response.json().catch(() => null) as { data?: T } & ErrorResponse | null;
+  if (!response.ok || !payload?.data) throw new Error(errorMessage(payload, 'Shipment correction could not be saved.'));
+  return payload.data;
+};
+
+export const startShipmentCorrection = (bootstrap: LaravelAdminBootstrap, shipmentId: string, input: StartShipmentCorrectionInput): Promise<StartShipmentCorrectionResult> =>
+  mutateShipment(bootstrap, shipmentId, 'corrections', 'POST', input);
+
+export const amendShipmentOperationalDetails = (bootstrap: LaravelAdminBootstrap, shipmentId: string, input: AmendShipmentOperationalDetailsInput): Promise<{ id: string; trackingNumber: string | null; courierName: string | null; driverName: string | null; handoffReference: string | null }> =>
+  mutateShipment(bootstrap, shipmentId, 'operational-details', 'PATCH', input);
 
 export const refreshEasyParcelShipmentStatus = async (
   bootstrap: LaravelAdminBootstrap,

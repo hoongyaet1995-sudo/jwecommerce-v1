@@ -148,6 +148,39 @@ export interface EasyParcelRecoverySnapshot {
   readyToRebook: boolean;
 }
 
+export interface ShipmentCorrectionSnapshot {
+  id: string;
+  sourceShipmentId: string;
+  replacementShipmentId: string | null;
+  reasonCode: string;
+  externalActionState: 'provider_confirmed' | 'staff_confirmed_external' | 'not_required';
+  status: 'awaiting_replacement' | 'completed' | 'closed_without_replacement';
+  readyToResume: boolean;
+}
+
+export interface StartShipmentCorrectionInput {
+  reasonCode: 'wrong_fulfilment_method' | 'incorrect_delivery_details' | 'duplicate_booking' | 'customer_request' | 'sender_information_error' | 'other';
+  internalNote: string;
+  externalActionState: 'provider_confirmed' | 'staff_confirmed_external' | 'not_required';
+  externalActionNote?: string;
+}
+
+export interface StartShipmentCorrectionResult {
+  id: string;
+  orderId: string;
+  sourceShipmentId: string;
+  status: 'awaiting_replacement';
+  externalActionState: StartShipmentCorrectionInput['externalActionState'];
+}
+
+export interface AmendShipmentOperationalDetailsInput {
+  courierCode?: string | null; courierName?: string | null; serviceName?: string | null;
+  trackingNumber?: string | null; trackingUrl?: string | null; driverName?: string | null;
+  handoffReference?: string | null;
+  reasonCode: 'tracking_typo' | 'courier_correction' | 'driver_correction' | 'handoff_correction' | 'other';
+  internalNote: string;
+}
+
 export interface ShipmentParcel {
   id: string;
   source?: 'manual' | 'easyparcel' | 'pending';
@@ -198,6 +231,7 @@ export interface ShipmentParcel {
   exceptionReason?: string; // e.g. "NITC - Recipient unreachable", "Incorrect Postcode", "Address not found"
   exceptionAttempts?: number;
   easyParcelRecovery?: EasyParcelRecoverySnapshot | null;
+  activeCorrection?: ShipmentCorrectionSnapshot | null;
   pickupRequestId?: string;
   trackingEvents: ShipmentTrackingEvent[];
 }

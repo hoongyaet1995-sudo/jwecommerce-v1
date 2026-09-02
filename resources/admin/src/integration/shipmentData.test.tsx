@@ -16,6 +16,8 @@ import {
   refreshEasyParcelShipmentStatusWithReload,
   recordExternalCourierDispatch,
   recordManualDeliveryDispatch,
+  startShipmentCorrection,
+  amendShipmentOperationalDetails,
 } from './shipmentData';
 
 const bootstrap = {
@@ -134,6 +136,23 @@ describe('redacted shipment-list client contract', () => {
     expect(fetch).toHaveBeenNthCalledWith(2, '/admin/api/shipping/orders/12/dispatch', expect.objectContaining({
       method: 'POST', body: expect.stringContaining('manual_delivery'),
     }));
+  });
+
+  it('starts and amends fulfilment correction through CSRF-protected shipment endpoints', async () => {
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { id: '4', orderId: '11', sourceShipmentId: '1', status: 'awaiting_replacement', externalActionState: 'not_required' } }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { id: '1', trackingNumber: 'NEW-1', courierName: 'Ninja Van', driverName: null, handoffReference: null } }) });
+    vi.stubGlobal('window', { fetch });
+
+    await expect(startShipmentCorrection(bootstrap, '1', {
+      reasonCode: 'wrong_fulfilment_method', internalNote: 'Wrong method.', externalActionState: 'not_required',
+    })).resolves.toMatchObject({ id: '4', status: 'awaiting_replacement' });
+    await expect(amendShipmentOperationalDetails(bootstrap, '1', {
+      courierName: 'Ninja Van', trackingNumber: 'NEW-1', reasonCode: 'tracking_typo', internalNote: 'Corrected AWB.',
+    })).resolves.toMatchObject({ trackingNumber: 'NEW-1' });
+
+    expect(fetch).toHaveBeenNthCalledWith(1, '/admin/api/shipping/shipments/1/corrections', expect.objectContaining({ method: 'POST', headers: expect.objectContaining({ 'X-CSRF-TOKEN': 'csrf-token' }) }));
+    expect(fetch).toHaveBeenNthCalledWith(2, '/admin/api/shipping/shipments/1/operational-details', expect.objectContaining({ method: 'PATCH', headers: expect.objectContaining({ 'X-CSRF-TOKEN': 'csrf-token' }) }));
   });
 
   it('posts an employee reason to the protected failed-booking recovery endpoint', async () => {

@@ -4,6 +4,18 @@ type OrderCollectionResponse = { orders: Order[] };
 type OrderResponse = { data: Order };
 type ErrorResponse = { message?: string; errors?: Record<string, string[]> };
 
+export type AmendOrderDeliveryDetailsInput = {
+  firstName: string; lastName: string; phone: string; address1: string; address2?: string | null;
+  postalCode: string; city: string; state: string; country: string;
+  reasonCode: 'customer_request' | 'invalid_receiver_details' | 'address_typo' | 'other';
+  internalNote: string; syncAddressBook: boolean;
+};
+export type AmendOrderDeliveryDetailsResult = {
+  shippingAddress: { firstName: string; lastName: string; phone: string; address1: string; address2?: string | null; postalCode: string; city: string; state: string; country: string };
+  addressBookSyncResult: 'not_requested' | 'updated' | 'no_matching_address';
+  requiresReplacement: boolean;
+};
+
 const errorMessage = (payload: ErrorResponse | null, fallback: string): string =>
   payload?.errors ? Object.values(payload.errors).flat().join(' ') : payload?.message ?? fallback;
 
@@ -77,3 +89,15 @@ export const reviewPaymentProofData = (
   'POST',
   { decision, reason },
 );
+
+export const amendOrderDeliveryDetails = async (bootstrap: LaravelAdminBootstrap, orderId: string, input: AmendOrderDeliveryDetailsInput): Promise<AmendOrderDeliveryDetailsResult> => {
+  if (!bootstrap.ordersUrl) throw new Error('Order API is unavailable.');
+  const response = await window.fetch(`${bootstrap.ordersUrl}/${encodeURIComponent(orderId)}/delivery-details`, {
+    method: 'PATCH', credentials: 'same-origin',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': bootstrap.csrfToken },
+    body: JSON.stringify(input),
+  });
+  const payload = await response.json().catch(() => null) as { data?: AmendOrderDeliveryDetailsResult } & ErrorResponse | null;
+  if (!response.ok || !payload?.data) throw new Error(errorMessage(payload, 'Delivery details could not be amended.'));
+  return payload.data;
+};
