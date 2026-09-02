@@ -5,6 +5,7 @@ namespace App\Services\Admin;
 use App\Models\EasyParcelShipmentRecovery;
 use App\Models\Order;
 use App\Models\Shipment;
+use App\Models\ShipmentCorrection;
 use Illuminate\Support\Collection;
 
 class ShipmentDataService
@@ -16,13 +17,13 @@ class ShipmentDataService
     public function collection(): Collection
     {
         $shipments = Shipment::query()
-            ->with(['order.customer', 'order.items', 'order.addresses', 'order.payments', 'events', 'failedBookingRecovery'])
+            ->with(['order.customer', 'order.items', 'order.addresses', 'order.payments', 'order.shipmentCorrections', 'events', 'failedBookingRecovery'])
             ->latest('id')
             ->get()
             ->map(fn (Shipment $shipment): array => $this->data($shipment));
 
         $pending = Order::query()
-            ->with(['customer', 'items', 'addresses', 'payments', 'easyParcelShipmentRecoveries'])
+            ->with(['customer', 'items', 'addresses', 'payments', 'easyParcelShipmentRecoveries', 'shipmentCorrections'])
             ->where('status', 'processing')
             ->whereDoesntHave('shipments', fn ($query) => $query
                 ->where('source', 'easyparcel')
@@ -39,7 +40,7 @@ class ShipmentDataService
 
     public function data(Shipment $shipment): array
     {
-        $shipment->loadMissing(['order.customer', 'order.items', 'order.addresses', 'order.payments', 'events', 'failedBookingRecovery']);
+        $shipment->loadMissing(['order.customer', 'order.items', 'order.addresses', 'order.payments', 'order.shipmentCorrections', 'events', 'failedBookingRecovery']);
         $order = $shipment->order;
         $address = $order->addresses->firstWhere('type', 'shipping') ?? $order->addresses->first();
         $name = trim(($order->customer?->first_name ?? $address?->first_name ?? '').' '.($order->customer?->last_name ?? $address?->last_name ?? ''));
@@ -95,6 +96,9 @@ class ShipmentDataService
                 : data_get($shipment->quote_snapshot, 'service.amount_minor') / 100,
             'isWeightDiscrepancy' => false,
             'easyParcelRecovery' => $this->recoveryData($shipment->failedBookingRecovery),
+            'activeCorrection' => $this->correctionData(
+                $order->shipmentCorrections->first(fn (ShipmentCorrection $correction): bool => $correction->status === 'awaiting_replacement'),
+            ),
             'trackingEvents' => $shipment->events->map(fn ($event): array => [
                 'id' => (string) $event->id,
                 'timestamp' => $event->occurred_at?->toIso8601String(),
@@ -153,6 +157,9 @@ class ShipmentDataService
                 $order->easyParcelShipmentRecoveries
                     ->first(fn (EasyParcelShipmentRecovery $recovery): bool => $recovery->state !== 'complete'),
             ),
+            'activeCorrection' => $this->correctionData(
+                $order->shipmentCorrections->first(fn (ShipmentCorrection $correction): bool => $correction->status === 'awaiting_replacement'),
+            ),
             'trackingEvents' => [],
         ];
     }
@@ -173,6 +180,27 @@ class ShipmentDataService
             'replacementOrderId' => (string) $recovery->order_id,
             'readyToRebook' => $recovery->state === 'awaiting_replacement'
                 && $recovery->replacement_shipment_id === null,
+        ];
+    }
+
+    /** @return array<string, mixed>|null */
+    public function correctionData(?ShipmentCorrection $correction): ?array
+    {
+        if (! $correction instanceof ShipmentCorrection) {
+            return null;
+        }
+
+        return [
+            'id' => (string) $correction->id,
+            'sourceShipmentId' => (string) $correction->source_shipment_id,
+            'replacementShipmentId' => $correction->replacement_shipment_id === null
+                ? null
+                : (string) $correction->replacement_shipment_id,
+            'reasonCode' => $correction->reason_code,
+            'externalActionState' => $correction->external_action_state,
+            'status' => $correction->status,
+            'readyToResume' => $correction->status === 'awaiting_replacement'
+                && $correction->replacement_shipment_id === null,
         ];
     }
 

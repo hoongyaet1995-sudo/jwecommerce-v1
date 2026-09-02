@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\Notifications\OrderNotificationMilestoneService;
 use App\Services\Shipping\EasyParcelBookingGuard;
 use App\Services\Shipping\EasyParcelStatusNormalizer;
+use App\Services\Shipping\FulfilmentCorrectionService;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -51,6 +52,7 @@ class ShipmentService
         private readonly EasyParcelBookingGuard $easyParcelBookings,
         private readonly EasyParcelStatusNormalizer $easyParcelStatuses,
         private readonly OrderNotificationMilestoneService $notifications,
+        private readonly FulfilmentCorrectionService $fulfilmentCorrections,
     ) {}
 
     public function dispatchManually(Order $order, User $actor, string $carrierName, string $trackingNumber): Shipment
@@ -82,12 +84,17 @@ class ShipmentService
             $shipment = Shipment::query()
                 ->where('order_id', $lockedOrder->id)
                 ->where('source', 'manual')
+                ->whereNotIn('status', ['cancelled', 'booking_failed'])
                 ->lockForUpdate()
                 ->first();
 
+            $nextSequence = ((int) Shipment::query()
+                ->where('order_id', $lockedOrder->id)
+                ->max('sequence')) + 1;
+
             $trackingNumber = trim((string) ($details['tracking_number'] ?? ''));
             if ($details['fulfillment_method'] === 'manual_delivery' && $trackingNumber === '') {
-                $trackingNumber = 'JW-MANUAL-'.$lockedOrder->id.'-1';
+                $trackingNumber = 'JW-MANUAL-'.$lockedOrder->id.'-'.$nextSequence;
             }
 
             if ($shipment && $shipment->tracking_number && $shipment->tracking_number !== $trackingNumber) {
@@ -102,7 +109,7 @@ class ShipmentService
                 throw new InvalidArgumentException('This tracking number is already assigned to another shipment.');
             }
 
-            $shipment ??= new Shipment(['order_id' => $lockedOrder->id, 'sequence' => 1]);
+            $shipment ??= new Shipment(['order_id' => $lockedOrder->id, 'sequence' => $nextSequence]);
             $shipment->fill([
                 'source' => 'manual',
                 'fulfillment_method' => $details['fulfillment_method'],
@@ -121,6 +128,7 @@ class ShipmentService
                 'created_by' => $actor->id,
             ]);
             $shipment->save();
+            $this->fulfilmentCorrections->completeForReplacement($shipment);
 
             $dispatchEvent = ShipmentEvent::query()->create([
                 'shipment_id' => $shipment->id,

@@ -200,6 +200,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/shipping/orders/{order}/easyparcel/reconciliation', [ShipmentApiController::class, 'reconcileEasyParcel'])
         ->name('api.shipping.easyparcel.reconciliation.store');
     Route::get('/api/shipping/shipments', [ShipmentApiController::class, 'index'])->name('api.shipping.shipments.index');
+    Route::post('/api/shipping/shipments/{shipment}/corrections', [ShipmentApiController::class, 'startCorrection'])
+        ->name('api.shipping.shipments.corrections.store');
     Route::get('/api/shipping/shipments/{shipment}/label', [ShipmentApiController::class, 'showEasyParcelLabel'])
         ->name('api.shipping.shipments.label.show');
     Route::get('/api/shipping/shipments/{shipment}/label/download', [ShipmentApiController::class, 'downloadEasyParcelLabel'])

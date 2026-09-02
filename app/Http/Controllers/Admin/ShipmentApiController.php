@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Shipping\ShippingPermission;
+use App\Exceptions\ActiveShipmentCorrectionExists;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StartShipmentCorrectionRequest;
 use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\ShipmentQuote;
@@ -17,6 +19,7 @@ use App\Services\Shipping\EasyParcelReconciliationTaskService;
 use App\Services\Shipping\EasyParcelShipmentDetailsService;
 use App\Services\Shipping\EasyParcelStatusNormalizer;
 use App\Services\Shipping\EasyParcelTrackingException;
+use App\Services\Shipping\FulfilmentCorrectionService;
 use App\Services\Shipping\PackageSpec;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,6 +30,38 @@ use Throwable;
 
 class ShipmentApiController extends Controller
 {
+    public function startCorrection(
+        StartShipmentCorrectionRequest $request,
+        Shipment $shipment,
+        FulfilmentCorrectionService $corrections,
+    ): JsonResponse {
+        abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::DISPATCH), 403);
+
+        try {
+            $correction = $corrections->start($shipment, $request->user(), [
+                'reason_code' => $request->string('reasonCode')->toString(),
+                'internal_note' => $request->string('internalNote')->toString(),
+                'external_action_state' => $request->string('externalActionState')->toString(),
+                'external_action_note' => $request->filled('externalActionNote')
+                    ? $request->string('externalActionNote')->toString()
+                    : null,
+            ]);
+        } catch (ActiveShipmentCorrectionExists $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+                'code' => 'active_correction_exists',
+            ], 409);
+        }
+
+        return response()->json(['data' => [
+            'id' => (string) $correction->id,
+            'orderId' => (string) $correction->order_id,
+            'sourceShipmentId' => (string) $correction->source_shipment_id,
+            'status' => $correction->status,
+            'externalActionState' => $correction->external_action_state,
+        ]], 201);
+    }
+
     public function index(Request $request, ShipmentDataService $data): JsonResponse
     {
         abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::VIEW), 403);

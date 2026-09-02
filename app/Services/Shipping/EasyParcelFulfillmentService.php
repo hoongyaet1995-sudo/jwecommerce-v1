@@ -32,6 +32,7 @@ final class EasyParcelFulfillmentService
         private readonly EasyParcelReconciliationPublisher $reconciliationPublisher,
         private readonly EasyParcelFailedBookingRecoveryService $failedBookingRecoveries,
         private readonly OrderNotificationMilestoneService $notifications,
+        private readonly FulfilmentCorrectionService $fulfilmentCorrections,
     ) {}
 
     public function quote(Order $order, PackageSpec $package, User $actor): ShipmentQuote
@@ -486,6 +487,7 @@ final class EasyParcelFulfillmentService
             ])->save();
 
             $this->failedBookingRecoveries->completeForReplacement($shipment);
+            $this->fulfilmentCorrections->completeForReplacement($shipment);
 
             if (filled($shipment->tracking_number)) {
                 $this->notifications->record(
