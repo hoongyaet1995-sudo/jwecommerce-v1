@@ -18,7 +18,7 @@ class Shipment extends Model
     protected $fillable = [
         'order_id', 'sequence', 'source', 'fulfillment_method', 'carrier_code', 'carrier_name', 'service_code', 'service_name',
         'tracking_number', 'status', 'shipping_cost', 'currency', 'label_path', 'provider_reference',
-        'provider_order_reference', 'tracking_url', 'driver_name', 'handoff_reference', 'shipment_quote_id', 'quote_snapshot', 'package_snapshot',
+        'provider_order_reference', 'tracking_url', 'driver_name', 'handoff_reference', 'shipment_quote_id', 'quote_snapshot', 'package_snapshot', 'destination_snapshot',
         'dispatched_at', 'delivered_at', 'cancelled_at', 'created_by',
     ];
 
@@ -30,6 +30,7 @@ class Shipment extends Model
             'cancelled_at' => 'datetime',
             'quote_snapshot' => 'array',
             'package_snapshot' => 'array',
+            'destination_snapshot' => 'array',
             'tracking_polled_at' => 'datetime',
         ];
     }

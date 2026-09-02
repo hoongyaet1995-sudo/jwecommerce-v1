@@ -6,6 +6,7 @@ use App\Domain\Shipping\ShippingPermission;
 use App\Exceptions\ActiveShipmentCorrectionExists;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StartShipmentCorrectionRequest;
+use App\Http\Requests\Admin\UpdateShipmentOperationalDetailsRequest;
 use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\ShipmentQuote;
@@ -20,6 +21,7 @@ use App\Services\Shipping\EasyParcelShipmentDetailsService;
 use App\Services\Shipping\EasyParcelStatusNormalizer;
 use App\Services\Shipping\EasyParcelTrackingException;
 use App\Services\Shipping\FulfilmentCorrectionService;
+use App\Services\Shipping\ShipmentOperationalDetailsService;
 use App\Services\Shipping\PackageSpec;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,6 +32,18 @@ use Throwable;
 
 class ShipmentApiController extends Controller
 {
+    public function updateOperationalDetails(UpdateShipmentOperationalDetailsRequest $request, Shipment $shipment, ShipmentOperationalDetailsService $details): JsonResponse
+    {
+        abort_unless(ShippingPermission::allows($request->user(), ShippingPermission::UPDATE_STATUS), 403);
+        $map = ['courierCode'=>'carrier_code','courierName'=>'carrier_name','serviceName'=>'service_name','trackingNumber'=>'tracking_number','trackingUrl'=>'tracking_url','driverName'=>'driver_name','handoffReference'=>'handoff_reference'];
+        $input = ['reason_code'=>$request->string('reasonCode')->toString(),'internal_note'=>$request->string('internalNote')->toString()];
+        foreach ($map as $external => $internal) {
+            if ($request->exists($external)) $input[$internal] = $request->input($external);
+        }
+        $saved = $details->amend($shipment, $request->user(), $input);
+        return response()->json(['data'=>['id'=>(string)$saved->id,'trackingNumber'=>$saved->tracking_number,'courierName'=>$saved->carrier_name,'driverName'=>$saved->driver_name,'handoffReference'=>$saved->handoff_reference]]);
+    }
+
     public function startCorrection(
         StartShipmentCorrectionRequest $request,
         Shipment $shipment,

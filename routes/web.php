@@ -192,6 +192,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/orders/{order}/payments/{payment}/proof/review', [OrderApiController::class, 'reviewPaymentProof'])->name('api.orders.payments.proof.review');
     Route::patch('/api/orders/{order}/status', [OrderApiController::class, 'updateStatus']);
     Route::patch('/api/orders/{order}/tracking', [OrderApiController::class, 'tracking']);
+    Route::patch('/api/orders/{order}/delivery-details', [OrderApiController::class, 'updateDeliveryDetails'])
+        ->name('api.orders.delivery-details.update');
     Route::post('/api/shipping/orders/{order}/dispatch', [ShipmentApiController::class, 'dispatch']);
     Route::post('/api/shipping/orders/{order}/easyparcel/quotes', [ShipmentApiController::class, 'quoteEasyParcel'])
         ->name('api.shipping.easyparcel.quotes.store');
@@ -202,6 +204,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/shipping/shipments', [ShipmentApiController::class, 'index'])->name('api.shipping.shipments.index');
     Route::post('/api/shipping/shipments/{shipment}/corrections', [ShipmentApiController::class, 'startCorrection'])
         ->name('api.shipping.shipments.corrections.store');
+    Route::patch('/api/shipping/shipments/{shipment}/operational-details', [ShipmentApiController::class, 'updateOperationalDetails'])
+        ->name('api.shipping.shipments.operational-details.update');
     Route::get('/api/shipping/shipments/{shipment}/label', [ShipmentApiController::class, 'showEasyParcelLabel'])
         ->name('api.shipping.shipments.label.show');
     Route::get('/api/shipping/shipments/{shipment}/label/download', [ShipmentApiController::class, 'downloadEasyParcelLabel'])
