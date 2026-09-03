@@ -14,8 +14,8 @@
 - Source startup/build command: `npm install`, `npm run lint`, `npm run build`
 - Build result: passed on 2026-09-03; Vite emitted a non-blocking chunk-size warning
 - Runtime note: ZIP resolved `@vitejs/plugin-react` 5.2.0, which warns that Node 20.17.0 is below its preferred 20.19.0 floor
-- Desktop viewport and baseline path: pending screenshot capture before Blade conversion
-- Mobile viewport and baseline path: pending screenshot capture before Blade conversion
+- Desktop source baselines: `output/playwright/payment-proof/source/hero-*-desktop.png` and `output/playwright/payment-proof/source/compact-missing-desktop.png`
+- Mobile source baselines: `output/playwright/payment-proof/source/hero-missing-mobile.png` and `output/playwright/payment-proof/source/compact-missing-mobile.png` at 390 px width
 - Known source-only controls: `showDemoStateBar={true}` is QA-only and must be disabled on official Laravel routes
 
 ## Exact selected source
@@ -57,5 +57,13 @@
 
 - Initial source boundary approved by: user, 2026-09-03
 - Dependency expansion approved by: not required; no expansion beyond selected source
-- Official route cutover approved by: not yet; requires local source-fidelity acceptance
+- Official route cutover approved by: user, 2026-09-03
 
+## Final fidelity record
+
+- Source screenshots cover hero missing, selected, uploading, uploaded, rejected, verified, validation-error, plus compact desktop/mobile missing states.
+- Laravel screenshots cover success hero missing/selected/uploaded on desktop and mobile, and compact uploaded/rejected/verified/inline-error states in Purchase History.
+- Source-faithful DOM, Tailwind utilities, icon identity, copy hierarchy, responsive stacking, and interaction states were retained.
+- Deliberate adapter-only differences are limited to real MYR/order/customer data, hidden form/data attributes, Laravel CSRF handling, and removal of the source-only QA state switcher.
+- Source runtime console finding: one harmless missing `/favicon.ico` request. Laravel proof flows produced zero browser console errors; the account shell retains pre-existing non-error warnings.
+- No ZIP mock order, mock proof, catalog, shell, or admin data was imported into Laravel runtime.

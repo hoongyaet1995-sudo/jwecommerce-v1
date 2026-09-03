@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Payments\CustomerPaymentProofViewModelFactory;
+use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderPayment;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Models\Coupon;
 use App\Services\CartPricingService;
 use App\Services\CheckoutService;
-use App\Services\PaymentConfigurationService;
 use App\Services\PaymentAttemptService;
-use App\Services\ShippingConfigurationService;
+use App\Services\PaymentConfigurationService;
 use App\Services\Payments\HostedPaymentGatewayManager;
+use App\Services\ShippingConfigurationService;
 use App\Support\StorefrontCurrencyContext;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -24,6 +25,7 @@ class CheckoutController extends Controller
     private function items(Request $request)
     {
         $quantities = $request->session()->get('cart', []);
+
         return ProductVariant::query()->with('product')->whereKey(array_keys($quantities))->get()->map(fn (ProductVariant $variant) => ['variant' => $variant, 'quantity' => (int) $quantities[$variant->id]]);
     }
 
@@ -33,8 +35,7 @@ class CheckoutController extends Controller
         PaymentConfigurationService $payments,
         ShippingConfigurationService $shipping,
         StorefrontCurrencyContext $currency,
-    ): View|RedirectResponse
-    {
+    ): View|RedirectResponse {
         return $this->checkoutView($request, $pricing, $payments, $shipping, $currency);
     }
 
@@ -99,7 +100,9 @@ class CheckoutController extends Controller
         ?array $hostedReturn = null,
     ): View|RedirectResponse {
         $items = $this->items($request);
-        if ($items->isEmpty()) return redirect()->route('storefront.index');
+        if ($items->isEmpty()) {
+            return redirect()->route('storefront.index');
+        }
         $coupon = Coupon::query()->currentlyValid()->where('code', $request->session()->get('coupon_code'))->first();
         $customerUser = $request->user('customer');
         $customer = $customerUser?->customer;
@@ -213,10 +216,15 @@ class CheckoutController extends Controller
             'country' => $this->normalizeCountryCode((string) $request->input('country', '')),
         ]);
 
-        $data = $request->validate(['email' => ['required', 'email'], 'first_name' => ['required', 'string', 'max:255'], 'last_name' => ['required', 'string', 'max:255'], 'phone' => ['nullable', 'string', 'max:50'], 'line_1' => ['required', 'string', 'max:255'], 'line_2' => ['nullable', 'string', 'max:255'], 'city' => ['required', 'string', 'max:255'], 'state' => ['nullable', 'string', 'max:255'], 'postal_code' => ['required', 'string', 'max:50'], 'country' => ['required', 'string', 'size:2'], 'delivery' => ['required', 'string', 'max:100'], 'payment_method' => ['required', 'string', 'max:50'], 'bank_account_id' => ['nullable', 'string', 'max:100'], 'payment_proof' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:10240']]); $items = $this->items($request);
-        if ($items->isEmpty()) return redirect()->route('storefront.index');
+        $data = $request->validate(['email' => ['required', 'email'], 'first_name' => ['required', 'string', 'max:255'], 'last_name' => ['required', 'string', 'max:255'], 'phone' => ['nullable', 'string', 'max:50'], 'line_1' => ['required', 'string', 'max:255'], 'line_2' => ['nullable', 'string', 'max:255'], 'city' => ['required', 'string', 'max:255'], 'state' => ['nullable', 'string', 'max:255'], 'postal_code' => ['required', 'string', 'max:50'], 'country' => ['required', 'string', 'size:2'], 'delivery' => ['required', 'string', 'max:100'], 'payment_method' => ['required', 'string', 'max:50'], 'bank_account_id' => ['nullable', 'string', 'max:100'], 'payment_proof' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:10240']]);
+        $items = $this->items($request);
+        if ($items->isEmpty()) {
+            return redirect()->route('storefront.index');
+        }
         $coupon = Coupon::query()->currentlyValid()->where('code', $request->session()->get('coupon_code'))->first();
-        if ($customerUser = $request->user('customer')) $data['email'] = $customerUser->email;
+        if ($customerUser = $request->user('customer')) {
+            $data['email'] = $customerUser->email;
+        }
         $order = $checkout->checkout($data['email'], $items, $coupon, collect($data)->except(['email', 'payment_method', 'delivery', 'bank_account_id', 'payment_proof'])->all(), $data['payment_method'], $data['delivery'], $currency->snapshot(), $request->file('payment_proof'), $data['bank_account_id'] ?? null);
         if (in_array($data['payment_method'], ['stripe', 'paypal', 'billplz'], true)) {
             $payment = $order->payments()->latest('id')->firstOrFail();
@@ -230,16 +238,22 @@ class CheckoutController extends Controller
                 return redirect()->route('checkout.payment-return', ['payment' => $payment, 'state' => 'failed']);
             }
         }
-        $request->session()->forget(['cart', 'coupon_code']); $request->session()->put('last_order_id', $order->id);
+        $request->session()->forget(['cart', 'coupon_code']);
+        $request->session()->put('last_order_id', $order->id);
+
         return redirect()->route('checkout.success');
     }
 
-    public function success(Request $request): View|RedirectResponse
+    public function success(Request $request, CustomerPaymentProofViewModelFactory $proofViewModels): View|RedirectResponse
     {
         $order = Order::query()->with(['items', 'addresses', 'payments', 'taxLines'])->find($request->session()->get('last_order_id'));
-        if (! $order) return redirect()->route('storefront.index');
+        if (! $order) {
+            return redirect()->route('storefront.index');
+        }
+
         return view('storefront.success', [
             'order' => $order,
+            'paymentProof' => $proofViewModels->for($order, $order->payments->where('gateway', 'bank_transfer')->sortByDesc('id')->first()),
             'taxLine' => $order->taxLines->sortBy('id')->first(),
             'recommendations' => Product::query()
                 ->where('status', 'active')

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Accounts;
 
+use App\Domain\Payments\CustomerPaymentProofViewModelFactory;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -10,9 +11,11 @@ use App\Models\WishlistItem;
 
 class OriginalAccountPayloadFactory
 {
-    public function __construct(private readonly CustomerCouponViewModelFactory $vouchers)
-    {
-    }
+    public function __construct(
+        private readonly CustomerCouponViewModelFactory $vouchers,
+        private readonly CustomerPaymentProofViewModelFactory $paymentProofs,
+    ) {}
+
     /**
      * @return array{
      *     user: array<string, mixed>,
@@ -108,6 +111,10 @@ class OriginalAccountPayloadFactory
                     'paymentMethod' => data_get($payment->payload, 'payment_method') ?: $payment->gateway,
                     'lastFour' => data_get($payment->payload, 'last_four'),
                 ])->values()->all(),
+                'paymentProof' => $this->paymentProofs->for(
+                    $order,
+                    $order->payments->where('gateway', 'bank_transfer')->sortByDesc('id')->first(),
+                ),
                 'addresses' => $order->addresses->map(fn ($address) => [
                     'type' => $address->type,
                     'firstName' => $address->first_name,

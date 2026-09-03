@@ -23,6 +23,8 @@ class PaymentProofService
 
     public function storeCheckoutUpload(OrderPayment $payment, UploadedFile $file): OrderPayment
     {
+        $previousDisk = $payment->proof_disk;
+        $previousPath = $payment->proof_path;
         $mime = $this->validatedMime($file);
         $extension = match ($mime) {
             'image/jpeg' => 'jpg',
@@ -40,17 +42,27 @@ class PaymentProofService
         }
 
         $checksum = hash_file('sha256', $file->getRealPath());
-        $payment->update([
-            'proof_path' => $path,
-            'proof_disk' => self::PRIVATE_DISK,
-            'proof_original_name' => basename((string) $file->getClientOriginalName()),
-            'proof_mime_type' => $mime,
-            'proof_size' => $file->getSize(),
-            'proof_sha256' => is_string($checksum) ? $checksum : null,
-            'proof_status' => 'uploaded',
-            'proof_uploaded_at' => now(),
-            'proof_reviewed_at' => null,
-        ]);
+        try {
+            $payment->update([
+                'proof_path' => $path,
+                'proof_disk' => self::PRIVATE_DISK,
+                'proof_original_name' => basename((string) $file->getClientOriginalName()),
+                'proof_mime_type' => $mime,
+                'proof_size' => $file->getSize(),
+                'proof_sha256' => is_string($checksum) ? $checksum : null,
+                'proof_status' => 'uploaded',
+                'proof_uploaded_at' => now(),
+                'proof_reviewed_at' => null,
+            ]);
+        } catch (\Throwable $exception) {
+            Storage::disk(self::PRIVATE_DISK)->delete($path);
+            throw $exception;
+        }
+
+        if ($previousDisk && $previousPath && ($previousDisk !== self::PRIVATE_DISK || $previousPath !== $path)) {
+            Storage::disk($previousDisk)->delete($previousPath);
+        }
+
         $this->appendEvent($payment->fresh(), 'uploaded');
 
         return $payment->fresh();

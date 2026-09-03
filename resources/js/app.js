@@ -57,6 +57,9 @@ import {
     Zap,
     User,
     UserPlus,
+    UploadCloud,
+    Loader2,
+    RefreshCw,
     createIcons,
 } from 'lucide';
 
@@ -120,6 +123,9 @@ const renderIcons = () => {
             Zap,
             User,
             UserPlus,
+            UploadCloud,
+            Loader2,
+            RefreshCw,
         },
         attrs: {
             'aria-hidden': 'true',
@@ -1532,6 +1538,160 @@ const installCustomerAccountTabs = () => {
     });
 };
 
+const installBankPaymentProofPanels = () => {
+    document.querySelectorAll('[data-bank-payment-proof]').forEach((panel) => {
+        const form = panel.querySelector('[data-proof-form]');
+        const input = panel.querySelector('[data-proof-input]');
+        const editor = panel.querySelector('[data-proof-editor]');
+        const serverState = panel.querySelector('[data-proof-server-state]');
+        const missing = panel.querySelector('[data-proof-missing]');
+        const drop = panel.querySelector('[data-proof-drop]');
+        const selected = panel.querySelector('[data-proof-selected]');
+        const fileName = panel.querySelector('[data-proof-file-name]');
+        const fileSize = panel.querySelector('[data-proof-file-size]');
+        const error = panel.querySelector('[data-proof-error]');
+        const errorMessage = panel.querySelector('[data-proof-error-message]');
+        const submit = panel.querySelector('[data-proof-submit]');
+        const submitLabel = panel.querySelector('[data-proof-submit-label]');
+        const remove = panel.querySelector('[data-proof-remove]');
+        const replace = panel.querySelector('[data-proof-replace]');
+        const resubmit = panel.querySelector('[data-proof-resubmit]');
+        const chooseAnother = panel.querySelector('[data-proof-choose-another]');
+        const progress = panel.querySelector('[data-proof-progress]');
+        const progressBar = panel.querySelector('[data-proof-progress-bar]');
+        const progressLabel = panel.querySelector('[data-proof-progress-label]');
+        const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+        const maxBytes = 10 * 1024 * 1024;
+        let progressTimer;
+
+        const showError = (message = '') => {
+            if (!error) return;
+            if (errorMessage) errorMessage.textContent = message;
+            error.classList.toggle('hidden', !message);
+        };
+        const clear = () => {
+            if (input) input.value = '';
+            selected?.classList.add('hidden');
+            missing?.classList.remove('hidden');
+            submit?.setAttribute('disabled', 'disabled');
+            showError();
+        };
+        const choose = (file) => {
+            if (!file) return;
+            if (!validTypes.includes(file.type)) {
+                showError('Unsupported file format. Please upload a PDF, JPG, or PNG file.');
+                submit?.setAttribute('disabled', 'disabled');
+                return;
+            }
+            if (file.size > maxBytes) {
+                showError(`File size (${(file.size / 1048576).toFixed(1)} MB) exceeds the maximum allowed 10 MB limit.`);
+                submit?.setAttribute('disabled', 'disabled');
+                return;
+            }
+            showError();
+            if (fileName) fileName.textContent = file.name;
+            if (fileSize) fileSize.textContent = `Ready for verification • ${file.size < 1048576 ? (file.size / 1024).toFixed(1) + ' KB' : (file.size / 1048576).toFixed(1) + ' MB'}`;
+            serverState?.classList.add('hidden');
+            editor?.classList.remove('hidden');
+            missing?.classList.add('hidden');
+            selected?.classList.remove('hidden');
+            submit?.removeAttribute('disabled');
+        };
+        const openEditor = () => {
+            serverState?.classList.add('hidden');
+            editor?.classList.remove('hidden');
+            clear();
+            window.setTimeout(() => input?.click(), 100);
+        };
+        const setProgress = (value) => {
+            if (progressBar) progressBar.style.width = `${value}%`;
+            if (progressLabel) progressLabel.textContent = `${value}%`;
+        };
+
+        drop?.addEventListener('click', () => input?.click());
+        drop?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); input?.click(); }
+        });
+        drop?.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            drop.classList.add('border-amber-500', 'bg-amber-500/10', 'text-amber-700', 'dark:text-amber-300');
+        });
+        drop?.addEventListener('dragleave', () => drop.classList.remove('border-amber-500', 'bg-amber-500/10', 'text-amber-700', 'dark:text-amber-300'));
+        drop?.addEventListener('drop', (event) => {
+            event.preventDefault();
+            drop.classList.remove('border-amber-500', 'bg-amber-500/10', 'text-amber-700', 'dark:text-amber-300');
+            const file = event.dataTransfer?.files?.[0];
+            if (!file || !input) return;
+            const transfer = new DataTransfer();
+            transfer.items.add(file);
+            input.files = transfer.files;
+            choose(file);
+        });
+        input?.addEventListener('change', () => choose(input.files?.[0]));
+        remove?.addEventListener('click', clear);
+        chooseAnother?.addEventListener('click', () => { clear(); input?.click(); });
+        replace?.addEventListener('click', openEditor);
+        resubmit?.addEventListener('click', openEditor);
+        panel.querySelector('[data-proof-copy]')?.addEventListener('click', async () => {
+            await navigator.clipboard.writeText(panel.querySelector('[data-proof-reference]')?.textContent?.trim() || '');
+            const copy = panel.querySelector('[data-proof-copy]');
+            if (copy) {
+                copy.innerHTML = '<i data-lucide="check" class="w-3 h-3 text-emerald-600 dark:text-emerald-400"></i>';
+                renderIcons();
+                window.setTimeout(() => { copy.innerHTML = '<i data-lucide="copy" class="w-3 h-3"></i>'; renderIcons(); }, 2000);
+            }
+        });
+        form?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (!input?.files?.[0] || submit?.disabled) return;
+            submit.setAttribute('disabled', 'disabled');
+            remove?.setAttribute('disabled', 'disabled');
+            chooseAnother?.setAttribute('disabled', 'disabled');
+            if (fileSize) fileSize.textContent = `Uploading proof • ${input.files[0].size < 1048576 ? (input.files[0].size / 1024).toFixed(1) + ' KB' : (input.files[0].size / 1048576).toFixed(1) + ' MB'}`;
+            if (submitLabel) submitLabel.textContent = 'Submitting Proof...';
+            const activeSubmitIcon = panel.querySelector('[data-proof-submit-icon]');
+            if (activeSubmitIcon) {
+                activeSubmitIcon.setAttribute('data-lucide', 'loader-2');
+                activeSubmitIcon.classList.add('animate-spin');
+                renderIcons();
+            }
+            progress?.classList.remove('hidden');
+            setProgress(15);
+            let currentProgress = 15;
+            progressTimer = window.setInterval(() => {
+                currentProgress = Math.min(90, currentProgress + 15);
+                setProgress(currentProgress);
+            }, 180);
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST', body: new FormData(form), credentials: 'same-origin',
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                const payload = await response.json().catch(() => null);
+                if (!response.ok) throw new Error(payload?.errors?.payment_proof?.[0] || 'Failed to upload receipt. Please try again.');
+                window.clearInterval(progressTimer);
+                setProgress(100);
+                window.location.reload();
+            } catch (exception) {
+                window.clearInterval(progressTimer);
+                showError(exception instanceof Error ? exception.message : 'Failed to upload receipt. Please try again.');
+                progress?.classList.add('hidden');
+                submit.removeAttribute('disabled');
+                remove?.removeAttribute('disabled');
+                chooseAnother?.removeAttribute('disabled');
+                if (submitLabel) submitLabel.textContent = 'Submit Payment Proof';
+                const failedSubmitIcon = panel.querySelector('[data-proof-submit-icon]');
+                if (failedSubmitIcon) {
+                    failedSubmitIcon.setAttribute('data-lucide', 'upload-cloud');
+                    failedSubmitIcon.classList.remove('animate-spin');
+                    renderIcons();
+                }
+            }
+        });
+        submit?.setAttribute('disabled', 'disabled');
+    });
+};
+
 const installOrderTracking = () => {
     document.querySelectorAll('[data-order-tracking-verify]').forEach((form) => {
         const cells = [...form.querySelectorAll('[data-order-tracking-code-cell]')];
@@ -1599,5 +1759,6 @@ document.addEventListener('DOMContentLoaded', () => {
     installProductCardVariantPreviews();
     installQuickAddVariantModals();
     installCustomerAccountTabs();
+    installBankPaymentProofPanels();
     installOrderTracking();
 });

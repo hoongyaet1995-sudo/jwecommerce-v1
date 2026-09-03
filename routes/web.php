@@ -38,6 +38,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CustomerAccountController;
 use App\Http\Controllers\CustomerAuthController;
 use App\Http\Controllers\CustomerCouponController;
+use App\Http\Controllers\CustomerPaymentProofController;
 use App\Http\Controllers\CustomerProductReviewController;
 use App\Http\Controllers\EasyParcelWebhookController;
 use App\Http\Controllers\OrderTrackingController;
@@ -80,6 +81,9 @@ Route::post('/webhooks/easyparcel/{token}', [EasyParcelWebhookController::class,
     ->middleware('throttle:60,1')
     ->name('webhooks.easyparcel.legacy');
 Route::get('/order/success', [CheckoutController::class, 'success'])->name('checkout.success');
+Route::post('/orders/{order}/payments/{payment}/proof', [CustomerPaymentProofController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('customer.payment-proofs.store');
 Route::get('/order-tracking', [OrderTrackingController::class, 'preview'])->name('order-tracking.show');
 Route::redirect('/order-tracking/preview', '/order-tracking');
 Route::post('/order-tracking/request', [OrderTrackingController::class, 'requestCode'])

@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-03-bank-transfer-payment-proof-closure-design.md`
 
+**Execution status:** Completed locally on 2026-09-03. The checklist below is retained as the implementation procedure; completion evidence is recorded in `docs/acceptance/2026-09-03-bank-transfer-payment-proof-closure.md`.
+
 ## Global Constraints
 
 - Develop only in `C:\xampp\htdocs\jwstudio-ecommerce`; never modify a backup copy.
