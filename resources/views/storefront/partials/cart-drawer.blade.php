@@ -54,7 +54,7 @@
                             <button type="submit" aria-label="Remove {{ $product->title }}" class="p-0.5 text-zinc-500 transition hover:text-rose-500 dark:hover:text-rose-400"><i data-lucide="trash-2" class="h-3.5 w-3.5"></i></button>
                         </form>
                     </div>
-                    <p class="text-[11px] text-zinc-500 dark:text-zinc-400">{{ $variant->color_name ?: $variant->title }} • SKU: <span class="font-mono">{{ str($variant->sku)->limit(15, '') }}</span></p>
+                    <p class="text-[11px] text-zinc-500 dark:text-zinc-400">{{ $variant->color_name ?: $variant->title }} • SKU: <span class="font-mono">{{ $variant->sku }}</span></p>
                     <div class="flex items-center justify-between pt-1">
                         <form method="POST" action="{{ route('cart.items.update', $variant) }}" data-cart-drawer-form class="flex items-center rounded-lg border border-zinc-200 bg-white p-0.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                             @csrf @method('PATCH')

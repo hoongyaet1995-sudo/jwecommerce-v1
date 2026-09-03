@@ -5,6 +5,7 @@
         $fallbackImage = asset('images/image-not-found.png');
         $price = $selectedVariant?->price ?? $product->base_price;
         $compareAt = $selectedVariant?->compare_at_price ?? $product->compare_at_price;
+        $hasSavings = $compareAt > $price;
         $pdpContent = $product->pdpContent;
         $pdpHighlights = collect($pdpContent?->highlights ?? [])
             ->filter(fn ($highlight) => filled(is_array($highlight) ? ($highlight['text'] ?? null) : $highlight))
@@ -100,7 +101,7 @@
                     <div class="space-y-2 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/90">
                         <div class="flex items-baseline gap-3">
                             <strong data-pdp-price class="font-serif text-3xl font-bold text-zinc-900 dark:text-white">@storefrontMoney($price)</strong>
-                            @if($compareAt)<del data-pdp-compare-at class="text-sm text-zinc-400 dark:text-zinc-500">@storefrontMoney($compareAt)</del><span data-pdp-save class="rounded bg-amber-400 px-2 py-0.5 text-xs font-bold uppercase text-zinc-950">SAVE @storefrontMoney($compareAt - $price)</span>@else <del data-pdp-compare-at class="hidden text-sm text-zinc-400 dark:text-zinc-500"></del><span data-pdp-save class="hidden rounded bg-amber-400 px-2 py-0.5 text-xs font-bold uppercase text-zinc-950"></span>@endif
+                            @if($hasSavings)<del data-pdp-compare-at class="text-sm text-zinc-400 dark:text-zinc-500">@storefrontMoney($compareAt)</del><span data-pdp-save class="rounded bg-amber-400 px-2 py-0.5 text-xs font-bold uppercase text-zinc-950">SAVE @storefrontMoney($compareAt - $price)</span>@else <del data-pdp-compare-at class="hidden text-sm text-zinc-400 dark:text-zinc-500"></del><span data-pdp-save class="hidden rounded bg-amber-400 px-2 py-0.5 text-xs font-bold uppercase text-zinc-950"></span>@endif
                         </div>
                         @if($pdpPaymentMethods !== [])<p class="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400"><i data-lucide="zap" class="h-3.5 w-3.5 text-amber-500 dark:text-amber-400"></i>Payment methods available at checkout: <strong>{{ implode(' · ', $pdpPaymentMethods) }}</strong>.</p>@endif
                     </div>

@@ -1163,13 +1163,14 @@ const installStorefrontVariantSelectors = () => {
             document.querySelectorAll('[data-pdp-sticky-label]').forEach((target) => target.replaceChildren(label));
             const compareAt = document.querySelector('[data-pdp-compare-at]');
             const save = document.querySelector('[data-pdp-save]');
+            const hasSavings = Number(variant.compareAt || 0) > Number(variant.price || 0);
             if (compareAt) {
-                compareAt.textContent = variant.compareAt ? storefrontMoney(variant.compareAt) : '';
-                compareAt.classList.toggle('hidden', !variant.compareAt);
+                compareAt.textContent = hasSavings ? storefrontMoney(variant.compareAt) : '';
+                compareAt.classList.toggle('hidden', !hasSavings);
             }
             if (save) {
-                save.textContent = variant.compareAt ? `SAVE ${storefrontMoney(Number(variant.compareAt) - Number(variant.price))}` : '';
-                save.classList.toggle('hidden', !variant.compareAt);
+                save.textContent = hasSavings ? `SAVE ${storefrontMoney(Number(variant.compareAt) - Number(variant.price))}` : '';
+                save.classList.toggle('hidden', !hasSavings);
             }
 
             const specs = selector.querySelector('[data-pdp-specs]');
@@ -1278,9 +1279,10 @@ const installProductCardVariantPreviews = () => {
                 const outOfStock = Number(variant.stock) < 1;
                 card.querySelectorAll('[data-card-variant-input]').forEach((input) => { input.value = variant.id; });
                 card.querySelectorAll('[data-card-price]').forEach((target) => target.replaceChildren(storefrontMoney(variant.price)));
+                const hasSavings = Number(variant.compareAt || 0) > Number(variant.price || 0);
                 card.querySelectorAll('[data-card-compare-at]').forEach((target) => {
-                    target.textContent = variant.compareAt ? storefrontMoney(variant.compareAt) : '';
-                    target.classList.toggle('hidden', !variant.compareAt);
+                    target.textContent = hasSavings ? storefrontMoney(variant.compareAt) : '';
+                    target.classList.toggle('hidden', !hasSavings);
                 });
                 if (variant.optionImage) card.querySelectorAll('[data-card-image]').forEach((image) => { image.src = variant.optionImage; });
                 preview.querySelectorAll('[data-card-variant-id]').forEach((candidate) => {
