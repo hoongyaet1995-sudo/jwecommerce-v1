@@ -10,6 +10,13 @@ export interface CommerceSettingsDocument {
   bankTransfer: ManualBankTransferConfig | Record<string, never>;
   codConfig: CashOnDeliveryConfig | Record<string, never>;
   currencies: CurrencySetting[];
+  returnPolicy: ReturnPolicySettings;
+}
+
+export interface ReturnPolicySettings {
+  enabled: boolean;
+  returnWindowDays: number;
+  policySummary: string;
 }
 
 type ResponsePayload = { data: CommerceSettingsDocument; message?: string; errors?: Record<string, string[]> };
@@ -21,7 +28,7 @@ export const fetchCommerceSettings = async (bootstrap: LaravelAdminBootstrap): P
   return (await response.json() as ResponsePayload).data;
 };
 
-export const saveCommerceSettings = async (bootstrap: LaravelAdminBootstrap, document: CommerceSettingsDocument): Promise<CommerceSettingsDocument> => {
+export const saveCommerceSettings = async (bootstrap: LaravelAdminBootstrap, document: Omit<CommerceSettingsDocument, 'returnPolicy'> & { returnPolicy?: ReturnPolicySettings }): Promise<CommerceSettingsDocument> => {
   if (!bootstrap.commerceSettingsUrl) throw new Error('Commerce settings API is unavailable.');
   const response = await window.fetch(bootstrap.commerceSettingsUrl, { method: 'PUT', credentials: 'same-origin', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': bootstrap.csrfToken }, body: JSON.stringify(document) });
   const payload = await response.json().catch(() => null) as ResponsePayload | null;
@@ -60,3 +67,18 @@ export const saveShippingConfiguration = async (
   bootstrap: LaravelAdminBootstrap,
   shippingRates: GeneralShippingRate[],
 ): Promise<CommerceSettingsDocument> => saveOfflinePaymentSetting(bootstrap, 'shipping', { shippingRates });
+
+export const saveReturnPolicyConfiguration = async (
+  bootstrap: LaravelAdminBootstrap,
+  returnPolicy: ReturnPolicySettings,
+): Promise<CommerceSettingsDocument> => {
+  if (!bootstrap.commerceSettingsUrl) throw new Error('Commerce settings API is unavailable.');
+  const response = await window.fetch(`${bootstrap.commerceSettingsUrl}/return-policy`, {
+    method: 'PUT', credentials: 'same-origin',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': bootstrap.csrfToken },
+    body: JSON.stringify({ returnPolicy }),
+  });
+  const payload = await response.json().catch(() => null) as ResponsePayload | null;
+  if (!response.ok || !payload?.data) throw new Error(payload?.errors ? Object.values(payload.errors).flat().join(' ') : payload?.message ?? 'Return policy save failed.');
+  return payload.data;
+};

@@ -7,30 +7,39 @@ use App\Models\OrderItem;
 use App\Models\OrderRefund;
 use App\Models\ReturnRequest;
 use App\Models\User;
+use App\Support\ReturnPolicySettings;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ReturnRequestService
 {
+    public function __construct(private readonly ReturnPolicySettings $policySettings) {}
+
     public function create(int $customerId, OrderItem $item, array $data, array $files): ReturnRequest
     {
+        $policy = $this->policySettings->get();
+        if (! $policy['enabled']) {
+            throw ValidationException::withMessages(['returns' => 'Returns and exchanges are currently unavailable.']);
+        }
         $item->loadMissing('order.statusHistory');
         abort_unless((int) $item->order->customer_id === $customerId, 404);
         $deliveredAt = $item->order->statusHistory->where('to_status', 'delivered')->sortByDesc('created_at')->first()?->created_at;
-        if ($item->order->status !== 'delivered' || ! $deliveredAt || $deliveredAt->copy()->addDays(30)->isPast()) {
-            throw ValidationException::withMessages(['order_item_id' => 'This item is outside the 30-day return window.']);
+        if ($item->order->status !== 'delivered' || ! $deliveredAt || $deliveredAt->copy()->addDays($policy['returnWindowDays'])->isPast()) {
+            throw ValidationException::withMessages(['order_item_id' => "This item is outside the {$policy['returnWindowDays']}-day return window."]);
         }
         $already = (int) ReturnRequest::query()->where('order_item_id', $item->id)->whereNotIn('status', ['rejected'])->sum('quantity');
         if ($data['quantity'] > $item->quantity - $already) {
             throw ValidationException::withMessages(['quantity' => 'Requested quantity exceeds the remaining eligible quantity.']);
         }
 
-        return DB::transaction(function () use ($customerId, $item, $data, $files, $deliveredAt): ReturnRequest {
+        return DB::transaction(function () use ($customerId, $item, $data, $files, $deliveredAt, $policy): ReturnRequest {
             $request = ReturnRequest::query()->create([
                 'order_id' => $item->order_id, 'order_item_id' => $item->id, 'customer_id' => $customerId, 'status' => 'requested',
                 'resolution' => $data['resolution'], 'quantity' => $data['quantity'], 'reason' => $data['reason'], 'details' => $data['details'] ?? null,
-                'eligible_until' => $deliveredAt->copy()->addDays(30),
+                'eligible_until' => $deliveredAt->copy()->addDays($policy['returnWindowDays']),
+                'policy_window_days' => $policy['returnWindowDays'],
+                'policy_summary_snapshot' => $policy['policySummary'],
             ]);
             $request->update(['number' => 'RMA-'.now()->format('Y').'-'.str_pad((string) $request->id, 6, '0', STR_PAD_LEFT)]);
             foreach ($files as $file) {
@@ -73,9 +82,9 @@ class ReturnRequestService
                 if (! in_array($payment->status, ['paid', 'partially_refunded'], true) || $amount > $r->order->total - $refunded) {
                     throw ValidationException::withMessages(['status' => 'The order does not have enough refundable paid balance.']);
                 }
-                $refund = OrderRefund::query()->create(['order_id' => $r->order_id, 'order_payment_id' => $payment->id, 'user_id' => $actor->id, 'amount' => $amount, 'reason' => "Return {$r->number}", 'status' => 'completed']);
+                $refund = OrderRefund::query()->create(['order_id' => $r->order_id, 'order_payment_id' => $payment->id, 'user_id' => $actor->id, 'amount' => $amount, 'reason' => "Externally completed refund for return {$r->number}; reference {$data['external_refund_reference']}", 'status' => 'completed']);
                 $payment->update(['status' => $amount === $r->order->total - $refunded ? 'refunded' : 'partially_refunded']);
-                $updates += ['resolved_refund_id' => $refund->id, 'resolved_at' => now()];
+                $updates += ['resolved_refund_id' => $refund->id, 'external_refund_reference' => $data['external_refund_reference'], 'manual_refund_note' => $data['refund_note'], 'resolved_at' => now()];
             }
             if ($action === 'resolve_replacement') {
                 $replacement = $this->replacementOrder($r);

@@ -24,9 +24,9 @@ const archiveCompanionFiles = [
 ];
 
 describe('Google AI Studio component inventory', () => {
-  it('is a reproducible exact inventory of all 120 current source components', () => {
+  it('is a reproducible exact inventory of all 123 current source components', () => {
     expect(manifest).toContain('npm run inventory:components');
-    expect(componentFiles).toHaveLength(120);
+    expect(componentFiles).toHaveLength(123);
     expect(componentFiles).toEqual(collectComponentPaths(componentsRoot, process.cwd()));
     expect(() => assertInventoryCompleteness(componentFiles, requiredComponents)).not.toThrow();
     expect(componentFiles.filter((file) => !existsSync(resolve(process.cwd(), file)))).toEqual([]);

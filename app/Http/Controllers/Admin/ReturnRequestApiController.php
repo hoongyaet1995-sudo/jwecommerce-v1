@@ -38,8 +38,12 @@ class ReturnRequestApiController extends Controller
     public function resolveRefund(Request $q, ReturnRequest $returnRequest, ReturnRequestService $s, OrderDataService $d): JsonResponse
     {
         abort_unless($returnRequest->resolution === 'refund', 422);
+        $v = $q->validate([
+            'external_refund_reference' => ['required', 'string', 'max:255'],
+            'refund_note' => ['required', 'string', 'max:2000'],
+        ]);
 
-        return $this->respond($s->transition($returnRequest, 'resolve_refund', $q->user()), $d);
+        return $this->respond($s->transition($returnRequest, 'resolve_refund', $q->user(), $v), $d);
     }
 
     public function resolveReplacement(Request $q, ReturnRequest $returnRequest, ReturnRequestService $s, OrderDataService $d): JsonResponse

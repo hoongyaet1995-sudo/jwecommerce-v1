@@ -489,7 +489,7 @@ export type ReturnRequestStatus = 'requested'|'approved'|'received'|'resolved_re
 export interface ReturnRequestView {
   id:string; number:string; status:ReturnRequestStatus; resolution:'refund'|'replacement'; quantity:number; reason:string; details?:string|null;
   receivedQuantity?:number|null; condition?:'restockable'|'damaged'|null; warehouseNote?:string|null; rejectionReason?:string|null;
-  replacementOrderId?:string|null; replacementOrderNumber?:string|null; refundedAmount?:number|null; createdAt:string;
+  replacementOrderId?:string|null; replacementOrderNumber?:string|null; refundedAmount?:number|null; externalRefundReference?:string|null; manualRefundNote?:string|null; createdAt:string;
   item:{id:string;title:string;variantTitle?:string|null;sku:string;image?:string|null;unitPrice:number};
   evidence:Array<{id:string;name:string;mimeType:string}>; events:Array<{id:string;type:string;actorType:string;note?:string|null;at:string}>;
 }

@@ -12,13 +12,18 @@ vi.mock('../../context/AdminContext', () => ({
   useAdmin: () => mockedAdminContext.value,
 }));
 
-import { notificationEventKeyForStatus, OrderAdmin } from './OrderAdmin';
+import { notificationEventKeyForStatus, OrderAdmin, shouldShowReturnsWorkbench } from './OrderAdmin';
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const source = readFileSync(resolve(process.cwd(), 'src/components/orders/OrderAdmin.tsx'), 'utf8');
 
 describe('OrderAdmin manual fulfillment source fidelity', () => {
+  it('hides an unused disabled workbench but preserves historical RMA access', () => {
+    expect(shouldShowReturnsWorkbench(false, 0)).toBe(false);
+    expect(shouldShowReturnsWorkbench(false, 1)).toBe(true);
+    expect(shouldShowReturnsWorkbench(true, 0)).toBe(true);
+  });
   it('keeps one MySQL-backed reload control in the header without duplicating it in filters', () => {
     expect(source).toContain('Reload Stream');
     expect(source).not.toContain(": 'Reload'}</button>");

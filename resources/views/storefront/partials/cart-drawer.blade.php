@@ -4,6 +4,7 @@
     $hasShippingProgress = $shippingThreshold > 0;
     $amountToFreeShipping = $hasShippingProgress ? max(0, $shippingThreshold - $summary['subtotal']) : 0;
     $shippingProgress = $hasShippingProgress ? min(100, (int) round(($summary['subtotal'] / $shippingThreshold) * 100)) : 0;
+    $returnPolicy = app(\App\Support\ReturnPolicySettings::class)->get();
 @endphp
 
 <section id="cart-drawer-content" data-cart-count="{{ $itemCount }}" class="flex h-full flex-col bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">
@@ -113,7 +114,7 @@
             @php($taxLabel = ($taxQuote['label'] ?? 'Tax').' ('.($taxRate === '' ? '0' : $taxRate).'%)')
             <dl class="space-y-1.5 border-t border-zinc-200 pt-2 font-mono text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400"><div class="flex justify-between"><dt>Subtotal</dt><dd class="text-zinc-800 dark:text-zinc-200">@storefrontMoney($summary['subtotal'])</dd></div>@if($coupon)<div class="flex justify-between text-emerald-600 dark:text-emerald-400"><dt>Coupon Discount</dt><dd>-@storefrontMoney($summary['discount'])</dd></div>@endif<div class="flex justify-between"><dt>Estimated Shipping</dt><dd class="{{ $shippingEstimateAvailable && $summary['shipping'] === 0 ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'text-zinc-800 dark:text-zinc-200' }}">{{ ! $shippingEstimateAvailable ? 'Shipping calculated at checkout' : ($summary['shipping'] === 0 ? 'FREE' : app(\App\Support\StorefrontCurrencyContext::class)->format($summary['shipping'])) }}</dd></div>@if($taxRowVisible)<div class="flex justify-between" data-store-tax-row><dt data-store-tax-label>{{ $taxLabel }}</dt><dd data-store-tax-amount class="text-zinc-800 dark:text-zinc-200">@storefrontMoney($summary['tax'])</dd></div>@endif<div class="flex justify-between border-t border-zinc-200 pt-2 text-sm font-bold text-zinc-900 dark:border-zinc-800 dark:text-white"><dt>Estimated Total</dt><dd class="font-serif text-base text-amber-600 dark:text-amber-400">@storefrontMoney($summary['total'])</dd></div></dl>
             <a href="{{ route('checkout.create') }}" class="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 py-3.5 text-xs font-bold text-white shadow-lg transition hover:bg-amber-400 hover:text-zinc-950 dark:bg-zinc-100 dark:text-zinc-950 sm:text-sm"><span>Proceed to Checkout</span><i data-lucide="arrow-right" class="h-4 w-4"></i></a>
-            <p class="flex items-center justify-center gap-3 font-mono text-[10px] text-zinc-500 dark:text-zinc-400"><span class="flex items-center gap-1"><i data-lucide="lock-keyhole" class="h-3 w-3 text-amber-600 dark:text-amber-400"></i>256-Bit Encrypted</span><span>•</span><span>30-Day Money-Back Guarantee</span></p>
+            <p class="flex items-center justify-center gap-3 font-mono text-[10px] text-zinc-500 dark:text-zinc-400"><span class="flex items-center gap-1"><i data-lucide="lock-keyhole" class="h-3 w-3 text-amber-600 dark:text-amber-400"></i>256-Bit Encrypted</span>@if($returnPolicy['enabled'])<span>•</span><span>{{ $returnPolicy['returnWindowDays'] }}-Day Money-Back Guarantee</span>@endif</p>
         </footer>
     @endif
 </section>

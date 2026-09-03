@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PaymentGatewayCredential;
 use App\Models\StoreSetting;
 use App\Support\CurrencySettings;
+use App\Support\ReturnPolicySettings;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -109,6 +110,18 @@ class CommerceSettingsApiController extends Controller
         return response()->json(['data' => $this->document()]);
     }
 
+    public function updateReturnPolicy(Request $request, ReturnPolicySettings $settings): JsonResponse
+    {
+        $data = $request->validate([
+            'returnPolicy.enabled' => ['required', 'boolean'],
+            'returnPolicy.returnWindowDays' => ['required', 'integer', 'min:1', 'max:365'],
+            'returnPolicy.policySummary' => ['required', 'string', 'max:4000'],
+        ]);
+        $settings->put($data['returnPolicy']);
+
+        return response()->json(['data' => $this->document()]);
+    }
+
     private function document(): array
     {
         $settings = StoreSetting::query()->whereIn('key', ['shipping_rates', 'payment_gateways', 'global_payment', 'bank_transfer', 'cod_config'])->pluck('value', 'key');
@@ -122,6 +135,7 @@ class CommerceSettingsApiController extends Controller
             'bankTransfer' => data_get($settings->get('bank_transfer'), 'data', []),
             'codConfig' => data_get($settings->get('cod_config'), 'data', []),
             'currencies' => app(CurrencySettings::class)->all(),
+            'returnPolicy' => app(ReturnPolicySettings::class)->get(),
         ];
     }
 

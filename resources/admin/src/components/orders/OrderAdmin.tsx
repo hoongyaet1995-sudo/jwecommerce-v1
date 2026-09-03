@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { Order, FulfillmentStatus, NotificationEventKey, OrderNotificationSummary, PaymentStatus } from '../../types';
 import { OrderNotificationPanel } from './OrderNotificationPanel';
@@ -6,6 +6,7 @@ import { OrderPaymentProofPreviewModal } from './OrderPaymentProofPreviewModal';
 import { AmendDeliveryDetailsModal } from './AmendDeliveryDetailsModal';
 import { OrderReturnRequestCard } from './OrderReturnRequestCard';
 import { mutateReturnRequestData } from '../../integration/orderData';
+import { fetchCommerceSettings } from '../../integration/commerceSettingsData';
 import {
   ShoppingBag,
   Search,
@@ -54,6 +55,8 @@ const FULFILLMENT_BY_STATUS_CODE = new Map<string, FulfillmentStatus>([
 export const notificationEventKeyForStatus = (code: string): NotificationEventKey | null =>
   NOTIFICATION_EVENT_BY_STATUS_CODE.get(code) ?? null;
 
+export const shouldShowReturnsWorkbench = (enabled: boolean, historicalCount: number): boolean => enabled || historicalCount > 0;
+
 export const OrderAdmin: React.FC = () => {
   const { laravelBootstrap, orders, shipmentParcels = [], updateOrderStatus, updateOrderTracking, reviewPaymentProof, amendOrderDeliveryDetails, reloadOrders, orderStatuses, setCurrentSection, notificationPermissions } = useAdmin();
   const [isReloading, setIsReloading] = useState(false);
@@ -69,6 +72,7 @@ export const OrderAdmin: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [returnsEnabled, setReturnsEnabled] = useState(true);
   const [rmaBusy,setRmaBusy]=useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -76,6 +80,20 @@ export const OrderAdmin: React.FC = () => {
   const [isRejectBoxOpen, setIsRejectBoxOpen] = useState(false);
   const [isAmendDeliveryOpen, setIsAmendDeliveryOpen] = useState(false);
   const [rejectionReasonInput, setRejectionReasonInput] = useState('');
+  const returnHistoryCount = orders.filter(order => order.returnRequest).length;
+  const showReturnsWorkbench = shouldShowReturnsWorkbench(returnsEnabled, returnHistoryCount);
+
+  useEffect(() => {
+    let active = true;
+    void fetchCommerceSettings(laravelBootstrap).then(document => {
+      if (active) setReturnsEnabled(document.returnPolicy?.enabled ?? true);
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [laravelBootstrap]);
+
+  useEffect(() => {
+    if (!showReturnsWorkbench && (selectedStatus === 'returns' || selectedStatus.startsWith('rma:'))) setSelectedStatus('all');
+  }, [selectedStatus, showReturnsWorkbench]);
 
   // Status Change Workflow State
   const [chosenStatusId, setChosenStatusId] = useState<string>('');
@@ -345,14 +363,14 @@ export const OrderAdmin: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button type="button" onClick={()=>setSelectedStatus(selectedStatus==='returns'?'all':'returns')} className="px-3 py-2 text-xs font-bold rounded-xl border border-neutral-200 dark:border-neutral-700">Returns ({orders.filter(o=>o.returnRequest).length})</button>
+          {showReturnsWorkbench&&<button type="button" onClick={()=>setSelectedStatus(selectedStatus==='returns'?'all':'returns')} className="px-3 py-2 text-xs font-bold rounded-xl border border-neutral-200 dark:border-neutral-700">Returns ({returnHistoryCount})</button>}
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
             className="px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
           >
             <option value="all">All Fulfillment Statuses</option>
-            <option value="returns">Returns: All</option><option value="rma:requested">RMA: New Request</option><option value="rma:approved">RMA: Awaiting Return</option><option value="rma:received">RMA: Item Received</option><option value="rma:resolved_refund">RMA: Resolved</option><option value="rma:resolved_replacement">RMA: Resolved Replacement</option><option value="rma:rejected">RMA: Rejected</option>
+            {showReturnsWorkbench&&<><option value="returns">Returns: All</option><option value="rma:requested">RMA: New Request</option><option value="rma:approved">RMA: Awaiting Return</option><option value="rma:received">RMA: Item Received</option><option value="rma:resolved_refund">RMA: Resolved</option><option value="rma:resolved_replacement">RMA: Resolved Replacement</option><option value="rma:rejected">RMA: Rejected</option></>}
             <option value="unfulfilled">Unfulfilled</option>
             <option value="processing">Processing</option>
             <option value="shipped">Shipped</option>

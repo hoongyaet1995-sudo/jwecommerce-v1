@@ -13,6 +13,7 @@ import { OrderTotalSettingAdmin } from './OrderTotalSettingAdmin';
 import { TaxClassesSettingAdmin } from './TaxClassesSettingAdmin';
 import { CouriersSettingAdmin } from './CouriersSettingAdmin';
 import { NotificationTemplateSettingAdmin } from './NotificationTemplateSettingAdmin';
+import { ReturnPolicySettingCard } from './ReturnPolicySettingCard';
 import { AIAutoReplyStudioHub } from '../ai-auto-reply/AIAutoReplyStudioHub';
 import {
   Store,
@@ -267,6 +268,7 @@ export const ShopSettingsHub: React.FC = () => {
       )}
 
       {currentSection === 'settings-shop' && (
+        <>
         <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6 sm:p-8 shadow-sm space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-200 dark:border-neutral-800">
             <div>
@@ -544,6 +546,8 @@ export const ShopSettingsHub: React.FC = () => {
             </div>
           </form>
         </div>
+        <ReturnPolicySettingCard />
+        </>
       )}
 
       {currentSection === 'settings-points' && (

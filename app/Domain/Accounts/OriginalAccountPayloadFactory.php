@@ -9,6 +9,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\WishlistItem;
 use App\Domain\Returns\ReturnRequestViewModelFactory;
+use App\Support\ReturnPolicySettings;
 
 class OriginalAccountPayloadFactory
 {
@@ -16,6 +17,7 @@ class OriginalAccountPayloadFactory
         private readonly CustomerCouponViewModelFactory $vouchers,
         private readonly CustomerPaymentProofViewModelFactory $paymentProofs,
         private readonly ReturnRequestViewModelFactory $returns,
+        private readonly ReturnPolicySettings $returnPolicy,
     ) {}
 
     /**
@@ -30,6 +32,7 @@ class OriginalAccountPayloadFactory
      */
     public function for(Customer $customer): array
     {
+        $returnPolicy = $this->returnPolicy->get();
         $customer->loadMissing([
             'user',
             'orders.items.reviews', 'orders.items.returnRequests.evidence', 'orders.items.returnRequests.events', 'orders.items.returnRequests.replacementOrder', 'orders.items.returnRequests.resolvedRefund',
@@ -48,6 +51,7 @@ class OriginalAccountPayloadFactory
             'wishlist' => $this->wishlistPayloads($customer),
             'dashboard' => $this->dashboardPayload($customer),
             'vouchers' => $this->vouchers->for($customer),
+            'returnPolicy' => $returnPolicy,
             'gaps' => ['password', 'two_factor', 'sessions', 'membership_points'],
         ];
     }
@@ -70,6 +74,8 @@ class OriginalAccountPayloadFactory
     /** @return list<array<string, mixed>> */
     private function orderPayloads(Customer $customer): array
     {
+        $returnPolicy = $this->returnPolicy->get();
+
         return $customer->orders
             ->sortByDesc('created_at')
             ->map(fn (Order $order) => [
@@ -105,7 +111,7 @@ class OriginalAccountPayloadFactory
                         'attemptNumber' => $review->attempt_number,
                     ])->values()->all(),
                     'returnRequest' => $this->returns->make($item->returnRequests->sortByDesc('id')->first()),
-                    'returnEligibleUntil' => $order->status === 'delivered' ? $order->statusHistory->where('to_status','delivered')->sortByDesc('created_at')->first()?->created_at?->copy()->addDays(30)->toIso8601String() : null,
+                    'returnEligibleUntil' => $returnPolicy['enabled'] && $order->status === 'delivered' ? $order->statusHistory->where('to_status','delivered')->sortByDesc('created_at')->first()?->created_at?->copy()->addDays($returnPolicy['returnWindowDays'])->toIso8601String() : null,
                 ])->values()->all(),
                 'payments' => $order->payments->map(fn ($payment) => [
                     'id' => $payment->id,

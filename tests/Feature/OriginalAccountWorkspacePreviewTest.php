@@ -155,7 +155,9 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
             ->assertOk()
             ->assertViewIs('storefront.account')
             ->assertViewHas('accountPayload', function (array $payload) use ($owner, $ownerOrder, $ownerAddress, $ownerItem, $ownerOrderAddress, $ownerPayment, $ownerReview, $otherReview): bool {
-                self::assertSame(['user', 'orders', 'addresses', 'wishlist', 'dashboard', 'vouchers', 'gaps'], array_keys($payload));
+                self::assertSame(['user', 'orders', 'addresses', 'wishlist', 'dashboard', 'vouchers', 'returnPolicy', 'gaps'], array_keys($payload));
+                self::assertTrue(data_get($payload, 'returnPolicy.enabled'));
+                self::assertSame(30, data_get($payload, 'returnPolicy.returnWindowDays'));
                 self::assertSame($owner->user_id, data_get($payload, 'user.id'));
                 self::assertSame($ownerOrder->number, data_get($payload, 'orders.0.number'));
                 self::assertSame($ownerItem->sku, data_get($payload, 'orders.0.items.0.sku'));

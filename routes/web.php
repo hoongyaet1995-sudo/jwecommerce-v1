@@ -244,6 +244,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/api/commerce-settings/bank-transfer', [CommerceSettingsApiController::class, 'updateBankTransfer']);
     Route::put('/api/commerce-settings/cod', [CommerceSettingsApiController::class, 'updateCod']);
     Route::put('/api/commerce-settings/shipping', [CommerceSettingsApiController::class, 'updateShipping']);
+    Route::put('/api/commerce-settings/return-policy', [CommerceSettingsApiController::class, 'updateReturnPolicy']);
     Route::get('/api/tax-classes', [TaxClassApiController::class, 'index'])->name('api.tax-classes.index');
     Route::post('/api/tax-classes', [TaxClassApiController::class, 'store'])->name('api.tax-classes.store');
     Route::patch('/api/tax-classes/{taxClass}', [TaxClassApiController::class, 'update'])->name('api.tax-classes.update');

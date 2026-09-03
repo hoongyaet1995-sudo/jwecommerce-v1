@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ReturnRequest extends Model
 {
-    protected $fillable = ['number', 'order_id', 'order_item_id', 'customer_id', 'replacement_order_id', 'resolved_refund_id', 'status', 'resolution', 'quantity', 'reason', 'details', 'eligible_until', 'received_quantity', 'condition', 'warehouse_note', 'rejection_reason', 'approved_at', 'received_at', 'resolved_at'];
+    protected $fillable = ['number', 'order_id', 'order_item_id', 'customer_id', 'replacement_order_id', 'resolved_refund_id', 'external_refund_reference', 'manual_refund_note', 'status', 'resolution', 'quantity', 'reason', 'details', 'eligible_until', 'policy_window_days', 'policy_summary_snapshot', 'received_quantity', 'condition', 'warehouse_note', 'rejection_reason', 'approved_at', 'received_at', 'resolved_at'];
 
     protected function casts(): array
     {
