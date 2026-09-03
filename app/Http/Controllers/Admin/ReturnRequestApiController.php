@@ -1,0 +1,56 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\ReturnRequest;
+use App\Services\Admin\OrderDataService;
+use App\Services\Returns\ReturnRequestService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+
+class ReturnRequestApiController extends Controller
+{
+    public function approve(Request $q, ReturnRequest $returnRequest, ReturnRequestService $s, OrderDataService $d): JsonResponse
+    {
+        return $this->respond($s->transition($returnRequest, 'approve', $q->user()), $d);
+    }
+
+    public function reject(Request $q, ReturnRequest $returnRequest, ReturnRequestService $s, OrderDataService $d): JsonResponse
+    {
+        $v = $q->validate(['reason' => ['required', 'string', 'max:2000']]);
+
+        return $this->respond($s->transition($returnRequest, 'reject', $q->user(), $v), $d);
+    }
+
+    public function receive(Request $q, ReturnRequest $returnRequest, ReturnRequestService $s, OrderDataService $d): JsonResponse
+    {
+        $v = $q->validate([
+            'received_quantity' => ['required', 'integer', 'min:1', 'max:'.$returnRequest->quantity],
+            'condition' => ['required', Rule::in(['restockable', 'damaged'])],
+            'warehouse_note' => [Rule::requiredIf($q->input('condition') === 'damaged'), 'nullable', 'string', 'max:2000'],
+        ]);
+
+        return $this->respond($s->transition($returnRequest, 'receive', $q->user(), $v), $d);
+    }
+
+    public function resolveRefund(Request $q, ReturnRequest $returnRequest, ReturnRequestService $s, OrderDataService $d): JsonResponse
+    {
+        abort_unless($returnRequest->resolution === 'refund', 422);
+
+        return $this->respond($s->transition($returnRequest, 'resolve_refund', $q->user()), $d);
+    }
+
+    public function resolveReplacement(Request $q, ReturnRequest $returnRequest, ReturnRequestService $s, OrderDataService $d): JsonResponse
+    {
+        abort_unless($returnRequest->resolution === 'replacement', 422);
+
+        return $this->respond($s->transition($returnRequest, 'resolve_replacement', $q->user()), $d);
+    }
+
+    private function respond(ReturnRequest $r, OrderDataService $d): JsonResponse
+    {
+        return response()->json(['data' => $d->data($r->order()->firstOrFail())]);
+    }
+}

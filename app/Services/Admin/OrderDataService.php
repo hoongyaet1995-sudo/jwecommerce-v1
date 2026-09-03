@@ -11,16 +11,17 @@ use App\Models\User;
 use App\Services\Notifications\NotificationContextFactory;
 use App\Services\Payments\PaymentProofService;
 use Illuminate\Support\Collection;
+use App\Domain\Returns\ReturnRequestViewModelFactory;
 
 class OrderDataService
 {
-    public function __construct(private readonly NotificationContextFactory $notificationContexts) {}
+    public function __construct(private readonly NotificationContextFactory $notificationContexts, private readonly ReturnRequestViewModelFactory $returns) {}
 
     public function collection(): Collection
     {
         return Order::query()->with([
             'customer', 'items', 'addresses', 'payments.proofEvents.user', 'statusHistory', 'refunds', 'taxLines',
-            'shipments', 'shipmentQuotes',
+            'shipments', 'shipmentQuotes', 'returnRequests.item', 'returnRequests.evidence', 'returnRequests.events', 'returnRequests.replacementOrder', 'returnRequests.resolvedRefund',
         ])->latest()->get()->map(fn (Order $order): array => $this->data($order));
     }
 
@@ -28,7 +29,7 @@ class OrderDataService
     {
         $order->loadMissing([
             'customer', 'items', 'addresses', 'payments.proofEvents.user', 'statusHistory', 'refunds', 'taxLines',
-            'shipments', 'shipmentQuotes',
+            'shipments', 'shipmentQuotes', 'returnRequests.item', 'returnRequests.evidence', 'returnRequests.events', 'returnRequests.replacementOrder', 'returnRequests.resolvedRefund',
         ]);
         $payment = $order->payments->sortByDesc('id')->first();
         $viewer = request()->user();
@@ -123,6 +124,7 @@ class OrderDataService
                 'source' => $notificationDispatch->source,
                 'queuedAt' => $notificationDispatch->queued_at?->toIso8601String(),
             ],
+            'returnRequest' => $this->returns->make($order->returnRequests->sortByDesc('id')->first()),
             'timeline' => $history->sortByDesc('timestamp')->values(),
         ];
     }

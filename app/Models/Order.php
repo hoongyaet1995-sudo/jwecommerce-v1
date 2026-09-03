@@ -43,6 +43,11 @@ class Order extends Model
         return $this->hasMany(OrderRefund::class);
     }
 
+    public function returnRequests(): HasMany
+    {
+        return $this->hasMany(ReturnRequest::class);
+    }
+
     public function taxLines(): HasMany
     {
         return $this->hasMany(OrderTaxLine::class);

@@ -8,12 +8,14 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\WishlistItem;
+use App\Domain\Returns\ReturnRequestViewModelFactory;
 
 class OriginalAccountPayloadFactory
 {
     public function __construct(
         private readonly CustomerCouponViewModelFactory $vouchers,
         private readonly CustomerPaymentProofViewModelFactory $paymentProofs,
+        private readonly ReturnRequestViewModelFactory $returns,
     ) {}
 
     /**
@@ -30,7 +32,7 @@ class OriginalAccountPayloadFactory
     {
         $customer->loadMissing([
             'user',
-            'orders.items.reviews',
+            'orders.items.reviews', 'orders.items.returnRequests.evidence', 'orders.items.returnRequests.events', 'orders.items.returnRequests.replacementOrder', 'orders.items.returnRequests.resolvedRefund',
             'orders.items.productVariant.product',
             'orders.addresses',
             'orders.payments',
@@ -102,6 +104,8 @@ class OriginalAccountPayloadFactory
                         'status' => $review->status,
                         'attemptNumber' => $review->attempt_number,
                     ])->values()->all(),
+                    'returnRequest' => $this->returns->make($item->returnRequests->sortByDesc('id')->first()),
+                    'returnEligibleUntil' => $order->status === 'delivered' ? $order->statusHistory->where('to_status','delivered')->sortByDesc('created_at')->first()?->created_at?->copy()->addDays(30)->toIso8601String() : null,
                 ])->values()->all(),
                 'payments' => $order->payments->map(fn ($payment) => [
                     'id' => $payment->id,

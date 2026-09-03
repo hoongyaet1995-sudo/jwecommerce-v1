@@ -485,6 +485,15 @@ export interface OrderNotificationSummary {
   queuedAt: string | null;
 }
 
+export type ReturnRequestStatus = 'requested'|'approved'|'received'|'resolved_refund'|'resolved_replacement'|'rejected';
+export interface ReturnRequestView {
+  id:string; number:string; status:ReturnRequestStatus; resolution:'refund'|'replacement'; quantity:number; reason:string; details?:string|null;
+  receivedQuantity?:number|null; condition?:'restockable'|'damaged'|null; warehouseNote?:string|null; rejectionReason?:string|null;
+  replacementOrderId?:string|null; replacementOrderNumber?:string|null; refundedAmount?:number|null; createdAt:string;
+  item:{id:string;title:string;variantTitle?:string|null;sku:string;image?:string|null;unitPrice:number};
+  evidence:Array<{id:string;name:string;mimeType:string}>; events:Array<{id:string;type:string;actorType:string;note?:string|null;at:string}>;
+}
+
 export interface Order {
   id: string;
   orderNumber: string; // e.g. "ORD-9842"
@@ -516,6 +525,7 @@ export interface Order {
   internalNote?: string;
   notificationContextFingerprint: string;
   notificationSummary: OrderNotificationSummary | null;
+  returnRequest?: ReturnRequestView | null;
   customStatusId?: string;
   customStatusName?: string;
   timeline: OrderEvent[];

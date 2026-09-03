@@ -4,6 +4,8 @@ import { Order, FulfillmentStatus, NotificationEventKey, OrderNotificationSummar
 import { OrderNotificationPanel } from './OrderNotificationPanel';
 import { OrderPaymentProofPreviewModal } from './OrderPaymentProofPreviewModal';
 import { AmendDeliveryDetailsModal } from './AmendDeliveryDetailsModal';
+import { OrderReturnRequestCard } from './OrderReturnRequestCard';
+import { mutateReturnRequestData } from '../../integration/orderData';
 import {
   ShoppingBag,
   Search,
@@ -53,7 +55,7 @@ export const notificationEventKeyForStatus = (code: string): NotificationEventKe
   NOTIFICATION_EVENT_BY_STATUS_CODE.get(code) ?? null;
 
 export const OrderAdmin: React.FC = () => {
-  const { orders, shipmentParcels = [], updateOrderStatus, updateOrderTracking, reviewPaymentProof, amendOrderDeliveryDetails, reloadOrders, orderStatuses, setCurrentSection, notificationPermissions } = useAdmin();
+  const { laravelBootstrap, orders, shipmentParcels = [], updateOrderStatus, updateOrderTracking, reviewPaymentProof, amendOrderDeliveryDetails, reloadOrders, orderStatuses, setCurrentSection, notificationPermissions } = useAdmin();
   const [isReloading, setIsReloading] = useState(false);
   const reloadStream = async () => {
     if (isReloading) return;
@@ -67,6 +69,7 @@ export const OrderAdmin: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [rmaBusy,setRmaBusy]=useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isProofPreviewOpen, setIsProofPreviewOpen] = useState(false);
@@ -100,13 +103,14 @@ export const OrderAdmin: React.FC = () => {
       o.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.customerEmail.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRma = o.returnRequest?.number.toLowerCase().includes(searchTerm.toLowerCase()) || o.returnRequest?.item.sku.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus =
-      selectedStatus === 'all' ||
+      selectedStatus === 'all' || selectedStatus === 'returns' && Boolean(o.returnRequest) || selectedStatus.startsWith('rma:') && o.returnRequest?.status === selectedStatus.slice(4) ||
       o.fulfillmentStatus === selectedStatus ||
       o.customStatusId === selectedStatus;
 
-    return matchesSearch && matchesStatus;
+    return (matchesSearch || Boolean(matchesRma)) && matchesStatus;
   });
 
   const handleOpenDetail = (order: Order) => {
@@ -341,12 +345,14 @@ export const OrderAdmin: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <button type="button" onClick={()=>setSelectedStatus(selectedStatus==='returns'?'all':'returns')} className="px-3 py-2 text-xs font-bold rounded-xl border border-neutral-200 dark:border-neutral-700">Returns ({orders.filter(o=>o.returnRequest).length})</button>
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
             className="px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
           >
             <option value="all">All Fulfillment Statuses</option>
+            <option value="returns">Returns: All</option><option value="rma:requested">RMA: New Request</option><option value="rma:approved">RMA: Awaiting Return</option><option value="rma:received">RMA: Item Received</option><option value="rma:resolved_refund">RMA: Resolved</option><option value="rma:resolved_replacement">RMA: Resolved Replacement</option><option value="rma:rejected">RMA: Rejected</option>
             <option value="unfulfilled">Unfulfilled</option>
             <option value="processing">Processing</option>
             <option value="shipped">Shipped</option>
@@ -376,7 +382,7 @@ export const OrderAdmin: React.FC = () => {
               {filteredOrders.map((ord) => (
                 <tr key={ord.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-800/50 transition-colors">
                   <td className="py-3.5 px-4 font-mono font-bold text-neutral-900 dark:text-white">
-                    {ord.orderNumber}
+                    {ord.orderNumber}{ord.returnRequest&&<div className="mt-1 inline-flex px-2 py-0.5 rounded-full text-[9px] bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">RMA: {ord.returnRequest.status.replaceAll('_',' ')}</div>}
                   </td>
 
                   <td className="py-3.5 px-4">
@@ -449,6 +455,8 @@ export const OrderAdmin: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            <OrderReturnRequestCard order={selectedOrder} busy={rmaBusy} onAction={async(action,body)=>{if(!selectedOrder.returnRequest)return;setRmaBusy(true);try{const saved=await mutateReturnRequestData(laravelBootstrap,selectedOrder.returnRequest.id,action,body);selectedOrderRef.current=saved;setSelectedOrder(saved);await reloadOrders();}finally{setRmaBusy(false);}}}/>
 
             <OrderNotificationPanel
               order={selectedOrder}

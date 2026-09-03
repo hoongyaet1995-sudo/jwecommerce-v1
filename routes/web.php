@@ -40,6 +40,8 @@ use App\Http\Controllers\CustomerAuthController;
 use App\Http\Controllers\CustomerCouponController;
 use App\Http\Controllers\CustomerPaymentProofController;
 use App\Http\Controllers\CustomerProductReviewController;
+use App\Http\Controllers\CustomerReturnRequestController;
+use App\Http\Controllers\Admin\ReturnRequestApiController;
 use App\Http\Controllers\EasyParcelWebhookController;
 use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\PaymentWebhookController;
@@ -119,6 +121,7 @@ Route::middleware(['auth:customer', 'customer'])->prefix('account')->name('custo
     Route::delete('/wishlist/{product}', [CustomerAccountController::class, 'destroyWishlist'])->name('wishlist.destroy');
     Route::get('/reviews/media/{media}', [ProductReviewMediaController::class, 'showForCustomer'])->name('reviews.media.show');
     Route::post('/reviews', [CustomerProductReviewController::class, 'store'])->name('reviews.store');
+    Route::post('/returns', [CustomerReturnRequestController::class, 'store'])->name('returns.store');
     Route::get('/preview/reviews', [CustomerProductReviewController::class, 'preview'])->name('reviews.preview');
     Route::post('/logout', [CustomerAuthController::class, 'destroy'])->name('logout');
 });
@@ -181,6 +184,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/storefront-shell-settings', [StorefrontShellSettingsApiController::class, 'show'])->name('api.storefront-shell-settings.show');
     Route::put('/api/storefront-shell-settings', [StorefrontShellSettingsApiController::class, 'update'])->name('api.storefront-shell-settings.update');
     Route::get('/api/orders', [OrderApiController::class, 'index'])->name('api.orders.index');
+    Route::post('/api/returns/{returnRequest}/approve', [ReturnRequestApiController::class, 'approve']);
+    Route::post('/api/returns/{returnRequest}/reject', [ReturnRequestApiController::class, 'reject']);
+    Route::post('/api/returns/{returnRequest}/receive', [ReturnRequestApiController::class, 'receive']);
+    Route::post('/api/returns/{returnRequest}/resolve-refund', [ReturnRequestApiController::class, 'resolveRefund']);
+    Route::post('/api/returns/{returnRequest}/resolve-replacement', [ReturnRequestApiController::class, 'resolveReplacement']);
     Route::get('/api/notification-templates', [NotificationTemplateApiController::class, 'index'])->name('api.notification-templates.index');
     Route::put('/api/notification-templates/{eventKey}', [NotificationTemplateApiController::class, 'update'])->name('api.notification-templates.update');
     Route::post('/api/notification-templates/reset', [NotificationTemplateApiController::class, 'reset'])->name('api.notification-templates.reset');

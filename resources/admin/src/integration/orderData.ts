@@ -77,6 +77,13 @@ export const updateOrderTrackingData = (bootstrap: LaravelAdminBootstrap, orderI
 export const processOrderRefundData = (bootstrap: LaravelAdminBootstrap, orderId: string, amount: number, reason: string): Promise<Order> =>
   mutateOrder(bootstrap, `${encodeURIComponent(orderId)}/refund`, 'POST', { amount, reason });
 
+export const mutateReturnRequestData = async (bootstrap: LaravelAdminBootstrap, requestId: string, action: string, body: unknown = {}): Promise<Order> => {
+  const response = await window.fetch(`/admin/api/returns/${encodeURIComponent(requestId)}/${action}`, {method:'POST',credentials:'same-origin',headers:{Accept:'application/json','Content-Type':'application/json','X-CSRF-TOKEN':bootstrap.csrfToken},body:JSON.stringify(body)});
+  const payload = await response.json().catch(()=>null) as (OrderResponse & ErrorResponse)|null;
+  if (!response.ok || !payload?.data) throw new Error(errorMessage(payload,'Return request update failed.'));
+  return payload.data;
+};
+
 export const reviewPaymentProofData = (
   bootstrap: LaravelAdminBootstrap,
   orderId: string,
