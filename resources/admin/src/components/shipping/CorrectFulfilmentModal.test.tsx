@@ -8,6 +8,8 @@ const parcel = {
   id:'7',source:'manual',fulfillmentMethod:'external_courier',managementMode:'team_managed',externalCourierName:'J&T Express',
   orderId:'4',orderNumber:'JW-1004',customerName:'Buyer',items:[],totalWeightKg:1,volumetricWeightKg:null,dimensionsCm:null,
   courier:'jnt',serviceType:'Standard',trackingNumber:'JNT-7',hasLabel:false,routingSortCode:'',status:'in_transit',paymentMode:'prepaid',
+  lifecycleStage:'in_transit',labelState:'not_required',recoveryState:'none',primaryAction:'updateStatus',
+  capabilities:{fulfil:false,resume:false,printLabel:false,viewTimeline:true,correct:false,amendAddress:false,updateStatus:true,refreshProvider:false,copyTracking:true},
   isEastMalaysiaAirRestricted:false,postcodeValidationStatus:'valid',createdAt:'2026-09-02T00:00:00Z',systemQuotedCharge:null,isWeightDiscrepancy:false,trackingEvents:[],
 } satisfies ShipmentParcel;
 

@@ -129,6 +129,22 @@ export type ShipmentStatus =
 
 export type FulfillmentMethodType = 'easyparcel' | 'external_courier' | 'manual_delivery';
 export type ManagementModeType = 'provider_managed' | 'team_managed';
+export type ShipmentLifecycleStage = 'pending_fulfilment' | 'ready_to_ship' | 'in_transit' | 'delivered' | 'action_required';
+export type ShipmentLabelState = 'not_required' | 'pending' | 'available' | 'failed';
+export type ShipmentRecoveryState = 'none' | 'replacement_required' | 'rebooking_ready' | 'review_required';
+export type ShipmentPrimaryAction = 'fulfil' | 'resume' | 'printLabel' | 'updateStatus' | 'reviewRecovery' | null;
+
+export interface ShipmentActionCapabilities {
+  fulfil: boolean;
+  resume: boolean;
+  printLabel: boolean;
+  viewTimeline: boolean;
+  correct: boolean;
+  amendAddress: boolean;
+  updateStatus: boolean;
+  refreshProvider: boolean;
+  copyTracking: boolean;
+}
 export type CorrectionReasonType = 'wrong_fulfillment_method' | 'wrong_easyparcel_courier' | 'wrong_external_courier' | 'incorrect_package_info' | 'incorrect_receiver_details' | 'duplicate_accidental_dispatch' | 'customer_requested_change' | 'other_operational_error';
 export interface ShipmentCorrectionRecord {
   id:string; timestamp:string; performedBy:string; reason:CorrectionReasonType|string; reasonLabel:string; auditNote:string;
@@ -224,6 +240,11 @@ export interface ShipmentParcel {
   hasLabel: boolean;
   routingSortCode: string; // e.g. KUL-HUB-04, BKI-A1
   status: ShipmentStatus;
+  lifecycleStage: ShipmentLifecycleStage;
+  labelState: ShipmentLabelState;
+  recoveryState: ShipmentRecoveryState;
+  primaryAction: ShipmentPrimaryAction;
+  capabilities: ShipmentActionCapabilities;
   paymentMode: 'prepaid' | 'cod';
   codAmount?: number;
   isEastMalaysiaAirRestricted: boolean;

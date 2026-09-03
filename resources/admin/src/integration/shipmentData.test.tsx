@@ -43,6 +43,15 @@ const redactedParcel = {
   hasLabel: false,
   routingSortCode: '',
   status: 'pending',
+  lifecycleStage: 'pending_fulfilment',
+  labelState: 'not_required',
+  recoveryState: 'none',
+  primaryAction: 'fulfil',
+  capabilities: {
+    fulfil: true, resume: false, printLabel: false, viewTimeline: false,
+    correct: false, amendAddress: true, updateStatus: false,
+    refreshProvider: false, copyTracking: false,
+  },
   paymentMode: 'prepaid',
   isEastMalaysiaAirRestricted: false,
   postcodeValidationStatus: 'unknown',
@@ -60,6 +69,15 @@ describe('redacted shipment-list client contract', () => {
   it('projects fetched rows onto the safe DTO even if an upstream response includes recipient PII', async () => {
     const responseRow = {
       ...redactedParcel,
+      lifecycleStage: 'pending_fulfilment',
+      labelState: 'not_required',
+      recoveryState: 'none',
+      primaryAction: 'fulfil',
+      capabilities: {
+        fulfil: true, resume: false, printLabel: false, viewTimeline: false,
+        correct: false, amendAddress: true, updateStatus: false,
+        refreshProvider: false, copyTracking: false,
+      },
       customerPhone: '+60 12-345 6789',
       customerEmail: 'buyer@example.test',
       recipientAddress: {
@@ -81,6 +99,13 @@ describe('redacted shipment-list client contract', () => {
     const [parcel] = await fetchShipments(bootstrap);
 
     expect(parcel).toMatchObject({ id: '1', orderNumber: 'JW-10011', customerName: 'Customer' });
+    expect(parcel).toMatchObject({
+      lifecycleStage: 'pending_fulfilment',
+      labelState: 'not_required',
+      recoveryState: 'none',
+      primaryAction: 'fulfil',
+      capabilities: { fulfil: true, amendAddress: true, correct: false },
+    });
     expect(parcel).not.toHaveProperty('customerPhone');
     expect(parcel).not.toHaveProperty('customerEmail');
     expect(parcel).not.toHaveProperty('recipientAddress');
@@ -403,6 +428,14 @@ describe('redacted shipment-list client contract', () => {
       courier: 'easyparcel',
       trackingNumber: 'AWB-LATEST-STATUS-1001',
       status: 'ready_to_ship' as const,
+      lifecycleStage: 'ready_to_ship' as const,
+      labelState: 'pending' as const,
+      primaryAction: null,
+      capabilities: {
+        fulfil: false, resume: false, printLabel: false, viewTimeline: true,
+        correct: true, amendAddress: true, updateStatus: false,
+        refreshProvider: true, copyTracking: true,
+      },
     };
     const html = renderToStaticMarkup(
       <ShippingFulfillmentTab
@@ -432,6 +465,14 @@ describe('redacted shipment-list client contract', () => {
       courier: 'easyparcel',
       trackingNumber: '',
       status: 'pending' as const,
+      lifecycleStage: 'pending_fulfilment' as const,
+      labelState: 'pending' as const,
+      primaryAction: null,
+      capabilities: {
+        fulfil: false, resume: false, printLabel: false, viewTimeline: false,
+        correct: false, amendAddress: false, updateStatus: false,
+        refreshProvider: true, copyTracking: false,
+      },
     };
     const html = renderToStaticMarkup(
       <ShippingFulfillmentTab

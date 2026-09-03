@@ -25,6 +25,7 @@ import {
 import { ShipmentParcel, CourierCode } from '../../types/shipping';
 import type { EasyParcelRecoveryConfirmationOutcome, EasyParcelStatusRefreshOutcome } from '../../integration/shipmentData';
 import { easyParcelRecoveryCanRebook, easyParcelShipmentStatusDiagnostic } from '../../integration/shipmentData';
+import { visibleShipmentParcels } from '../../integration/shipmentQueue';
 import { UpdateShipmentStatusModal } from './UpdateShipmentStatusModal';
 
 interface ShippingFulfillmentTabProps {
@@ -60,7 +61,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   onOpenCorrection,
   onOpenAmendDeliveryDetails,
 }) => {
-  const [activeStatusFilter, setActiveStatusFilter] = useState<'all' | 'pending' | 'ready_to_ship' | 'in_transit' | 'delivered' | 'failed_delivery'>('all');
+  const [activeStatusFilter, setActiveStatusFilter] = useState<'all' | ShipmentParcel['lifecycleStage']>('all');
   const [regionFilter, setRegionFilter] = useState<'all' | 'peninsular' | 'east_malaysia'>('all');
   const [courierFilter, setCourierFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,18 +80,9 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   const [manualStatusParcel, setManualStatusParcel] = useState<ShipmentParcel | null>(null);
   const [activeActionMenuId, setActiveActionMenuId] = useState<string | null>(null);
   const [actionMenuPosition, setActionMenuPosition] = useState<{ left: number; top: number; opensUpward: boolean } | null>(null);
-  const visibleParcels = parcels.filter((parcel) => !(
-    parcel.source === 'pending'
-    && parcel.easyParcelRecovery?.readyToRebook
-  ));
+  const visibleParcels = visibleShipmentParcels(parcels);
 
-  const refreshableEasyParcelCount = visibleParcels.filter((parcel) => (
-    parcel.source === 'easyparcel'
-    && parcel.status !== 'delivered'
-    && parcel.status !== 'returned'
-    && parcel.status !== 'booking_failed'
-    && parcel.status !== 'cancelled'
-  )).length;
+  const refreshableEasyParcelCount = visibleParcels.filter(parcel => parcel.capabilities.refreshProvider).length;
 
   const showRecoveryGuidance = (outcomes: EasyParcelStatusRefreshOutcome[]) => {
     const outcome = outcomes.find(candidate => (
@@ -175,15 +167,7 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
   // Filter logic
   const filteredParcels = visibleParcels.filter(p => {
     // Status
-    if (activeStatusFilter !== 'all') {
-      if (activeStatusFilter === 'in_transit') {
-        if (p.status !== 'shipped' && p.status !== 'in_transit' && p.status !== 'picked_up' && p.status !== 'out_for_delivery') return false;
-      } else if (activeStatusFilter === 'failed_delivery') {
-        if (!['failed_delivery', 'returned', 'booking_failed', 'cancelled', 'on_hold', 'provider_update'].includes(p.status)) return false;
-      } else if (p.status !== activeStatusFilter) {
-        return false;
-      }
-    }
+    if (activeStatusFilter !== 'all' && p.lifecycleStage !== activeStatusFilter) return false;
 
     // Courier
     if (courierFilter !== 'all' && p.courier !== courierFilter) return false;
@@ -257,10 +241,16 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
     }
   };
 
-  const getStatusBadge = (status: ShipmentParcel['status']) => {
-    switch (status) {
+  const getStatusBadge = (parcel: ShipmentParcel) => {
+    if (parcel.recoveryState === 'replacement_required') {
+      return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">Replacement Required</span>;
+    }
+    if (parcel.recoveryState === 'rebooking_ready') {
+      return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">Rebooking Ready</span>;
+    }
+    switch (parcel.status) {
       case 'pending':
-        return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">Pending AWB</span>;
+        return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">{parcel.labelState === 'pending' ? 'AWB Pending' : 'Pending Fulfilment'}</span>;
       case 'ready_to_ship':
         return <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">Ready to Ship</span>;
       case 'shipped':
@@ -297,11 +287,11 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
         <div className="flex flex-wrap items-center gap-1.5 border-b border-neutral-200 dark:border-neutral-800 pb-3">
           {[
             { id: 'all', label: 'All Shipments', count: visibleParcels.length },
-            { id: 'pending', label: 'Pending AWB', count: visibleParcels.filter(p => p.status === 'pending').length },
-            { id: 'ready_to_ship', label: 'Ready to Ship', count: visibleParcels.filter(p => p.status === 'ready_to_ship').length },
-            { id: 'in_transit', label: 'In Transit', count: visibleParcels.filter(p => p.status === 'shipped' || p.status === 'in_transit' || p.status === 'picked_up' || p.status === 'out_for_delivery').length },
-            { id: 'delivered', label: 'Delivered', count: visibleParcels.filter(p => p.status === 'delivered').length },
-            { id: 'failed_delivery', label: 'Exceptions (NITC)', count: visibleParcels.filter(p => ['failed_delivery', 'returned', 'booking_failed', 'cancelled', 'on_hold', 'provider_update'].includes(p.status)).length },
+            { id: 'pending_fulfilment', label: 'Pending Fulfilment', count: visibleParcels.filter(p => p.lifecycleStage === 'pending_fulfilment').length },
+            { id: 'ready_to_ship', label: 'Ready to Ship', count: visibleParcels.filter(p => p.lifecycleStage === 'ready_to_ship').length },
+            { id: 'in_transit', label: 'In Transit', count: visibleParcels.filter(p => p.lifecycleStage === 'in_transit').length },
+            { id: 'delivered', label: 'Delivered', count: visibleParcels.filter(p => p.lifecycleStage === 'delivered').length },
+            { id: 'action_required', label: 'Action Required', count: visibleParcels.filter(p => p.lifecycleStage === 'action_required').length },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -442,22 +432,14 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
               ) : (
                 filteredParcels.map((parcel) => {
                   const isSelected = selectedParcelIds.includes(parcel.id);
-                  const rebookParcel = parcels.find((candidate) => (
-                    candidate.source === 'pending'
-                    && candidate.orderId === parcel.orderId
-                    && candidate.easyParcelRecovery?.recoveryId === parcel.easyParcelRecovery?.recoveryId
-                    && candidate.easyParcelRecovery?.readyToRebook
-                  ));
-                  const canRebook = parcel.source === 'easyparcel'
-                    && (parcel.status === 'cancelled' || parcel.status === 'booking_failed')
-                    && parcel.easyParcelRecovery?.readyToRebook
-                    && rebookParcel !== undefined;
-                  const isAwaitingReplacement = parcel.source === 'pending'
-                    && parcel.activeCorrection?.status === 'awaiting_replacement'
-                    && parcel.activeCorrection.readyToResume;
-                  const isTeamManaged = parcel.managementMode === 'team_managed'
-                    || parcel.fulfillmentMethod === 'external_courier'
-                    || parcel.fulfillmentMethod === 'manual_delivery';
+                  const capabilities = parcel.capabilities;
+                  const hasSecondaryActions = capabilities.viewTimeline
+                    || capabilities.refreshProvider
+                    || (capabilities.updateStatus && parcel.primaryAction !== 'updateStatus')
+                    || (capabilities.correct && onOpenCorrection !== undefined)
+                    || (capabilities.amendAddress && onOpenAmendDeliveryDetails !== undefined)
+                    || capabilities.copyTracking
+                    || (capabilities.printLabel && parcel.primaryAction !== 'printLabel');
 
                   return (
                     <tr 
@@ -555,32 +537,30 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                         {parcel.trackingNumber ? (
                           <div className="space-y-1">
                             <div className="flex items-center gap-1 font-mono font-semibold text-neutral-900 dark:text-neutral-100">
-                              <button
-                                type="button"
-                                onClick={() => onOpenTrackingModal(parcel)}
-                                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
-                                title="View Tracking Timeline"
-                              >
-                                {parcel.trackingNumber}
-                              </button>
-                              <button
+                              {capabilities.viewTimeline ? <button
+                                  type="button"
+                                  onClick={() => onOpenTrackingModal(parcel)}
+                                  className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                                  title="View Tracking Timeline"
+                                >{parcel.trackingNumber}</button> : <span>{parcel.trackingNumber}</span>}
+                              {capabilities.copyTracking && <button
                                 onClick={() => handleCopy(parcel.trackingNumber!, parcel.id)}
                                 className="p-1 text-neutral-400 hover:text-neutral-600 cursor-pointer"
                                 title="Copy tracking"
                               >
                                 {copiedId === parcel.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                              </button>
+                              </button>}
                             </div>
-                            <button type="button" onClick={() => onOpenTrackingModal(parcel)} title="View Tracking Timeline" className="cursor-pointer">
-                              {getStatusBadge(parcel.status)}
-                            </button>
+                            {capabilities.viewTimeline
+                              ? <button type="button" onClick={() => onOpenTrackingModal(parcel)} title="View Tracking Timeline" className="cursor-pointer">{getStatusBadge(parcel)}</button>
+                              : getStatusBadge(parcel)}
                           </div>
                         ) : (
                           <div className="space-y-1">
                             <span className="text-[11px] text-neutral-400 italic">No Tracking Assigned</span>
-                            <button type="button" onClick={() => onOpenTrackingModal(parcel)} title="View Tracking Timeline" className="cursor-pointer">
-                              {getStatusBadge(parcel.status)}
-                            </button>
+                            {capabilities.viewTimeline
+                              ? <button type="button" onClick={() => onOpenTrackingModal(parcel)} title="View Tracking Timeline" className="cursor-pointer">{getStatusBadge(parcel)}</button>
+                              : getStatusBadge(parcel)}
                           </div>
                         )}
                       </td>
@@ -588,15 +568,15 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                       {/* Actions */}
                       <td className="p-3.5 text-right relative whitespace-nowrap">
                         <div className="inline-flex items-center justify-end gap-1.5">
-                          {isAwaitingReplacement ? (
+                          {parcel.primaryAction === 'resume' ? (
                             <button
-                              onClick={() => onOpenFulfilment(parcel)}
+                              onClick={() => parcel.activeCorrection?.readyToResume ? onOpenFulfilment(parcel) : onOpenEasyParcelBooking(parcel)}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-xs transition-colors cursor-pointer"
                             >
                               <RotateCcw className="w-3.5 h-3.5" />
                               <span>Resume</span>
                             </button>
-                          ) : parcel.source === 'pending' ? (
+                          ) : parcel.primaryAction === 'fulfil' ? (
                             <button
                               onClick={() => onOpenFulfilment(parcel)}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition-colors cursor-pointer"
@@ -604,19 +584,11 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                               <Package className="w-3.5 h-3.5" />
                               <span>Fulfil Order</span>
                             </button>
-                          ) : canRebook ? (
-                            <button
-                              onClick={() => onOpenEasyParcelBooking(rebookParcel)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-xs transition-colors cursor-pointer"
-                            >
-                              <RotateCcw className="w-3.5 h-3.5" />
-                              <span>Resume</span>
-                            </button>
-                          ) : parcel.source === 'easyparcel' && (parcel.status === 'cancelled' || parcel.status === 'booking_failed') ? (
+                          ) : parcel.primaryAction === 'reviewRecovery' ? (
                             <span className="px-2.5 py-1 text-[11px] font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-lg">
                               Recovery Review
                             </span>
-                          ) : parcel.hasLabel ? (
+                          ) : parcel.primaryAction === 'printLabel' ? (
                             <button
                               onClick={() => onOpenAWBModal(parcel)}
                               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-750 text-neutral-800 dark:text-neutral-200 transition-colors cursor-pointer shadow-xs"
@@ -625,12 +597,16 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                               <Printer className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" />
                               <span>Print AWB</span>
                             </button>
-                          ) : (
-                            <span className="px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-                              AWB Pending
-                            </span>
-                          )}
-                          <button
+                          ) : parcel.primaryAction === 'updateStatus' ? (
+                            <button
+                              onClick={() => openManualStatusModal(parcel)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition-colors cursor-pointer"
+                            >
+                              <Truck className="w-3.5 h-3.5" />
+                              <span>Update Status</span>
+                            </button>
+                          ) : null}
+                          {hasSecondaryActions && <button
                             type="button"
                             onClick={(event) => toggleActionMenu(parcel.id, event.currentTarget)}
                             className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
@@ -642,19 +618,19 @@ export const ShippingFulfillmentTab: React.FC<ShippingFulfillmentTabProps> = ({
                             title="More shipment operations"
                           >
                             <MoreHorizontal className="w-4 h-4" />
-                          </button>
+                          </button>}
                           {activeActionMenuId === parcel.id && actionMenuPosition && createPortal(
                             <>
                               <div className="fixed inset-0 z-30" onClick={() => { setActiveActionMenuId(null); setActionMenuPosition(null); }} aria-hidden="true" />
                               <div className={`fixed z-40 w-52 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xl py-1 text-left animate-in fade-in zoom-in-95 duration-100 ${actionMenuPosition.opensUpward ? '-translate-y-full origin-bottom-right' : 'origin-top-right'}`} style={{ left: actionMenuPosition.left, top: actionMenuPosition.top }}>
-                                <button type="button" onClick={() => { setActiveActionMenuId(null); onOpenTrackingModal(parcel); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer"><Eye className="w-3.5 h-3.5 text-neutral-400" /><span>View Tracking Timeline</span></button>
-                                {parcel.source === 'easyparcel' && <button type="button" onClick={() => { setActiveActionMenuId(null); void handleRefreshEasyParcelStatus(parcel.id); }} disabled={isRefreshingAll || refreshingParcelId !== null} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"><RotateCcw className="w-3.5 h-3.5 text-amber-500" /><span>Refresh EasyParcel Status</span></button>}
-                                {isTeamManaged && manualStatusOptions(parcel.status).length > 0 && <button type="button" onClick={() => { setActiveActionMenuId(null); openManualStatusModal(parcel); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer"><Truck className="w-3.5 h-3.5 text-amber-500" /><span>Update Status</span></button>}
-                                {parcel.status !== 'delivered' && onOpenCorrection && <button type="button" onClick={() => { setActiveActionMenuId(null); onOpenCorrection(parcel); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer"><RotateCcw className="w-3.5 h-3.5 text-purple-500" /><span>Correct Fulfilment</span></button>}
-                                {onOpenAmendDeliveryDetails && <button type="button" onClick={() => { setActiveActionMenuId(null); onOpenAmendDeliveryDetails(parcel); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer"><MapPin className="w-3.5 h-3.5 text-indigo-500" /><span>Amend Delivery Details</span></button>}
+                                {capabilities.viewTimeline && <button type="button" onClick={() => { setActiveActionMenuId(null); onOpenTrackingModal(parcel); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer"><Eye className="w-3.5 h-3.5 text-neutral-400" /><span>View Tracking Timeline</span></button>}
+                                {capabilities.refreshProvider && <button type="button" onClick={() => { setActiveActionMenuId(null); void handleRefreshEasyParcelStatus(parcel.id); }} disabled={isRefreshingAll || refreshingParcelId !== null} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"><RotateCcw className="w-3.5 h-3.5 text-amber-500" /><span>Refresh EasyParcel Status</span></button>}
+                                {capabilities.updateStatus && parcel.primaryAction !== 'updateStatus' && <button type="button" onClick={() => { setActiveActionMenuId(null); openManualStatusModal(parcel); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer"><Truck className="w-3.5 h-3.5 text-amber-500" /><span>Update Status</span></button>}
+                                {capabilities.correct && onOpenCorrection && <button type="button" onClick={() => { setActiveActionMenuId(null); onOpenCorrection(parcel); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer"><RotateCcw className="w-3.5 h-3.5 text-purple-500" /><span>Correct Fulfilment</span></button>}
+                                {capabilities.amendAddress && onOpenAmendDeliveryDetails && <button type="button" onClick={() => { setActiveActionMenuId(null); onOpenAmendDeliveryDetails(parcel); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer"><MapPin className="w-3.5 h-3.5 text-indigo-500" /><span>Amend Delivery Details</span></button>}
                                 <div className="my-1 border-t border-neutral-100 dark:border-neutral-800" />
-                                {parcel.trackingNumber && <button type="button" onClick={() => { handleCopy(parcel.trackingNumber!, parcel.id); setActiveActionMenuId(null); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer"><Copy className="w-3.5 h-3.5 text-neutral-400" /><span>Copy Tracking Number</span></button>}
-                                {parcel.hasLabel && <button type="button" onClick={() => { setActiveActionMenuId(null); onOpenAWBModal(parcel); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer"><Printer className="w-3.5 h-3.5 text-blue-500" /><span>Print Thermal AWB</span></button>}
+                                {capabilities.copyTracking && <button type="button" onClick={() => { handleCopy(parcel.trackingNumber!, parcel.id); setActiveActionMenuId(null); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer"><Copy className="w-3.5 h-3.5 text-neutral-400" /><span>Copy Tracking Number</span></button>}
+                                {capabilities.printLabel && parcel.primaryAction !== 'printLabel' && <button type="button" onClick={() => { setActiveActionMenuId(null); onOpenAWBModal(parcel); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer"><Printer className="w-3.5 h-3.5 text-blue-500" /><span>Print Thermal AWB</span></button>}
                               </div>
                             </>,
                             document.body,

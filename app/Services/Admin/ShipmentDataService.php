@@ -14,6 +14,8 @@ class ShipmentDataService
 
     private const DEFAULT_PACKAGE_DIMENSION_CM = 1.0;
 
+    public function __construct(private readonly ShipmentActionPolicy $actionPolicy) {}
+
     public function collection(): Collection
     {
         $shipments = Shipment::query()
@@ -45,7 +47,7 @@ class ShipmentDataService
         $address = $order->addresses->firstWhere('type', 'shipping') ?? $order->addresses->first();
         $name = trim(($order->customer?->first_name ?? $address?->first_name ?? '').' '.($order->customer?->last_name ?? $address?->last_name ?? ''));
 
-        return [
+        $row = [
             'id' => (string) $shipment->id,
             'source' => $shipment->source,
             'fulfillmentMethod' => $shipment->source === 'easyparcel'
@@ -108,6 +110,8 @@ class ShipmentDataService
                 'source' => $event->source,
             ])->values(),
         ];
+
+        return [...$row, ...$this->actionPolicy->forRow($row)];
     }
 
     /** @return array<string, mixed> */
@@ -117,7 +121,7 @@ class ShipmentDataService
         $name = trim(($order->customer?->first_name ?? $address?->first_name ?? '').' '.($order->customer?->last_name ?? $address?->last_name ?? ''));
         $package = $this->initialPackage($order);
 
-        return [
+        $row = [
             'id' => 'pending-order-'.$order->id,
             'source' => 'pending',
             'fulfillmentMethod' => null,
@@ -162,6 +166,8 @@ class ShipmentDataService
             ),
             'trackingEvents' => [],
         ];
+
+        return [...$row, ...$this->actionPolicy->forRow($row)];
     }
 
     /** @return array<string, mixed>|null */

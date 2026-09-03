@@ -70,6 +70,9 @@ describe('catalogHubMetrics', () => {
 
     expect(appSource).toContain("case 'catalog-reviews':");
     expect(sidebarSource).toContain("{ id: 'catalog-reviews' as NavSection, label: 'Product Reviews' }");
+    expect(sidebarSource).toContain("p.lifecycleStage === 'pending_fulfilment' || p.lifecycleStage === 'action_required'");
+    expect(sidebarSource).toContain('`${openFulfilmentCount} Tasks`');
+    expect(sidebarSource).not.toContain('`${pendingAwbCount} AWB`');
     expect(catalogHubSource).toContain('pendingReviewsCount');
     expect(reviewAdminSource).not.toContain("if (publishedCount === 0) return '5.0'");
   });

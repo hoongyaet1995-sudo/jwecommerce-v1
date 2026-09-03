@@ -421,6 +421,52 @@ class ShipmentApiTest extends TestCase
             ->assertJsonPath('data.0.trackingNumber', 'READMODEL-1001');
     }
 
+    public function test_shipment_index_exposes_initial_pending_fulfilment_capabilities(): void
+    {
+        $order = $this->processingOrder('pending-capability@example.test', 'JW-PENDING-CAPABILITY');
+
+        $this->actingAs($this->superAdmin())
+            ->getJson('/admin/api/shipping/shipments')
+            ->assertOk()
+            ->assertJsonPath('data.0.orderId', (string) $order->id)
+            ->assertJsonPath('data.0.lifecycleStage', 'pending_fulfilment')
+            ->assertJsonPath('data.0.labelState', 'not_required')
+            ->assertJsonPath('data.0.recoveryState', 'none')
+            ->assertJsonPath('data.0.primaryAction', 'fulfil')
+            ->assertJsonPath('data.0.capabilities.fulfil', true)
+            ->assertJsonPath('data.0.capabilities.resume', false)
+            ->assertJsonPath('data.0.capabilities.correct', false)
+            ->assertJsonPath('data.0.capabilities.amendAddress', true);
+    }
+
+    public function test_delivered_manual_shipment_reports_that_an_awb_is_not_required(): void
+    {
+        $order = $this->processingOrder('manual-delivered-capability@example.test', 'JW-MANUAL-DELIVERED-CAPABILITY');
+        Shipment::query()->create([
+            'order_id' => $order->id,
+            'sequence' => 1,
+            'source' => 'manual',
+            'fulfillment_method' => 'manual_delivery',
+            'carrier_code' => 'manual',
+            'carrier_name' => 'Manual / Own Delivery',
+            'tracking_number' => 'JW-MANUAL-CAPABILITY-1',
+            'status' => 'delivered',
+            'delivered_at' => now(),
+            'currency' => 'MYR',
+        ]);
+
+        $this->actingAs($this->superAdmin())
+            ->getJson('/admin/api/shipping/shipments')
+            ->assertOk()
+            ->assertJsonPath('data.0.lifecycleStage', 'delivered')
+            ->assertJsonPath('data.0.labelState', 'not_required')
+            ->assertJsonPath('data.0.primaryAction', null)
+            ->assertJsonPath('data.0.capabilities.printLabel', false)
+            ->assertJsonPath('data.0.capabilities.correct', false)
+            ->assertJsonPath('data.0.capabilities.amendAddress', false)
+            ->assertJsonPath('data.0.capabilities.viewTimeline', true);
+    }
+
     public function test_pending_order_defaults_missing_product_package_specs_for_quote_confirmation(): void
     {
         $order = $this->processingOrder('legacy-package@example.com', 'JW-LEGACY-PACKAGE-1001');

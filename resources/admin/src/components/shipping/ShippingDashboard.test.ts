@@ -15,7 +15,7 @@ import { ShippingDashboard } from './ShippingDashboard';
 import { ShippingFulfillmentTab } from './ShippingFulfillmentTab';
 import { ShippingOverviewTab } from './ShippingOverviewTab';
 import { TrackingAndWebhooksTab } from './TrackingAndWebhooksTab';
-import type { CourierConfig, EasyParcelWebhookReceiptRow, ShipmentParcel } from '../../types/shipping';
+import type { CourierConfig, EasyParcelWebhookReceiptRow, ShipmentActionCapabilities, ShipmentParcel } from '../../types/shipping';
 import { INITIAL_SHIPMENT_PARCELS } from '../../data/shippingData';
 
 const source = readFileSync(resolve(process.cwd(), 'src/components/shipping/ShippingDashboard.tsx'), 'utf8');
@@ -50,6 +50,12 @@ const trackingProps = (overrides: Record<string, unknown> = {}) => ({
 });
 
 const mountedRoots: Array<{ root: Root; host: HTMLDivElement }> = [];
+
+const actionCapabilities = (enabled: Partial<ShipmentActionCapabilities> = {}): ShipmentActionCapabilities => ({
+  fulfil: false, resume: false, printLabel: false, viewTimeline: false, correct: false,
+  amendAddress: false, updateStatus: false, refreshProvider: false, copyTracking: false,
+  ...enabled,
+});
 
 const metricCardText = (html: string, label: string): string => {
   const host = document.createElement('div');
@@ -313,6 +319,11 @@ describe('ShippingDashboard provider action binding', () => {
       courier: 'easyparcel' as const,
       trackingNumber: '',
       status: 'pending' as const,
+      lifecycleStage: 'pending_fulfilment' as const,
+      labelState: 'pending' as const,
+      recoveryState: 'none' as const,
+      primaryAction: null,
+      capabilities: actionCapabilities({ refreshProvider: true }),
     };
     const onOpenEasyParcelBooking = vi.fn();
     const recovery = {
@@ -329,6 +340,11 @@ describe('ShippingDashboard provider action binding', () => {
       id: `pending-order-${parcel.orderId}`,
       source: 'pending' as const,
       easyParcelRecovery: recovery,
+      lifecycleStage: 'action_required' as const,
+      labelState: 'not_required' as const,
+      recoveryState: 'rebooking_ready' as const,
+      primaryAction: 'resume' as const,
+      capabilities: actionCapabilities({ resume: true, amendAddress: true }),
     };
     const onConfirmEasyParcelProviderFailure = vi.fn().mockResolvedValue({
       result: {
@@ -449,6 +465,11 @@ describe('ShippingDashboard provider action binding', () => {
       courier: 'easyparcel' as const,
       trackingNumber: '',
       status: 'pending' as const,
+      lifecycleStage: 'pending_fulfilment' as const,
+      labelState: 'pending' as const,
+      recoveryState: 'none' as const,
+      primaryAction: null,
+      capabilities: actionCapabilities({ refreshProvider: true }),
     };
     const recovery = {
       recoveryId: 'global-recovery-94',
@@ -465,6 +486,11 @@ describe('ShippingDashboard provider action binding', () => {
       source: 'pending' as const,
       status: 'pending' as const,
       easyParcelRecovery: recovery,
+      lifecycleStage: 'action_required' as const,
+      labelState: 'not_required' as const,
+      recoveryState: 'rebooking_ready' as const,
+      primaryAction: 'resume' as const,
+      capabilities: actionCapabilities({ resume: true, amendAddress: true }),
     };
     const onOpenEasyParcelBooking = vi.fn();
     const host = document.createElement('div');
@@ -524,8 +550,13 @@ describe('ShippingDashboard provider action binding', () => {
       courier: 'easyparcel' as const,
       trackingNumber: '',
       status: 'pending' as const,
+      lifecycleStage: 'pending_fulfilment' as const,
+      labelState: 'pending' as const,
+      recoveryState: 'none' as const,
+      primaryAction: null,
+      capabilities: actionCapabilities({ refreshProvider: true }),
     };
-    const onHold = { ...pending, status: 'on_hold' as const };
+    const onHold = { ...pending, status: 'on_hold' as const, lifecycleStage: 'action_required' as const, recoveryState: 'review_required' as const, primaryAction: 'reviewRecovery' as const };
     const host = document.createElement('div');
     document.body.append(host);
     const root = createRoot(host);
@@ -589,6 +620,11 @@ describe('ShippingDashboard provider action binding', () => {
       status: 'pending' as const,
       totalWeightKg: 99,
       dimensionsCm: { length: 99, width: 99, height: 99 },
+      lifecycleStage: 'pending_fulfilment' as const,
+      labelState: 'pending' as const,
+      recoveryState: 'none' as const,
+      primaryAction: null,
+      capabilities: actionCapabilities({ refreshProvider: true }),
     };
     const recovery = {
       recoveryId: 'provider-recovery-93',
@@ -607,6 +643,11 @@ describe('ShippingDashboard provider action binding', () => {
       totalWeightKg: 1.5,
       dimensionsCm: { length: 31, width: 21, height: 11 },
       easyParcelRecovery: recovery,
+      lifecycleStage: 'action_required' as const,
+      labelState: 'not_required' as const,
+      recoveryState: 'rebooking_ready' as const,
+      primaryAction: 'resume' as const,
+      capabilities: actionCapabilities({ resume: true, amendAddress: true }),
     };
     const onOpenEasyParcelBooking = vi.fn();
     const host = document.createElement('div');
@@ -690,7 +731,7 @@ describe('ShippingDashboard provider action binding', () => {
     expect(html).toContain('1 In-Transit');
   });
 
-  it('labels the global waybill shortcut as navigation instead of claiming batch printing', () => {
+  it('labels the global fulfilment shortcut as the open work queue instead of an AWB queue', () => {
     mockedAdminContext.value = {
       courierConfigs: [],
       smartRoutingRules: [],
@@ -707,7 +748,8 @@ describe('ShippingDashboard provider action binding', () => {
 
     const html = renderToStaticMarkup(React.createElement(ShippingDashboard));
 
-    expect(html).toContain('View Pending AWBs');
+    expect(html).toContain('View Open Fulfilment (0)');
+    expect(html).not.toContain('View Pending AWBs');
     expect(html).not.toContain('Batch Print AWB');
   });
 
@@ -754,6 +796,12 @@ describe('ShippingDashboard provider action binding', () => {
         source: 'easyparcel' as const,
         trackingNumber: 'EPSAMPLE-WITHOUT-LABEL',
         hasLabel: false,
+        status: 'pending' as const,
+        lifecycleStage: 'pending_fulfilment' as const,
+        labelState: 'pending' as const,
+        recoveryState: 'none' as const,
+        primaryAction: null,
+        capabilities: actionCapabilities({ viewTimeline: true, refreshProvider: true, copyTracking: true }),
       }],
       onGenerateAWB: vi.fn(),
       onBatchGenerateAWB: vi.fn(),
@@ -773,6 +821,12 @@ describe('ShippingDashboard provider action binding', () => {
         source: 'easyparcel' as const,
         trackingNumber: 'EPSAMPLE-WITH-LABEL',
         hasLabel: true,
+        status: 'ready_to_ship' as const,
+        lifecycleStage: 'ready_to_ship' as const,
+        labelState: 'available' as const,
+        recoveryState: 'none' as const,
+        primaryAction: 'printLabel' as const,
+        capabilities: actionCapabilities({ printLabel: true, viewTimeline: true, correct: true, amendAddress: true, refreshProvider: true, copyTracking: true }),
       }],
       onGenerateAWB: vi.fn(),
       onBatchGenerateAWB: vi.fn(),
@@ -812,6 +866,11 @@ describe('ShippingDashboard provider action binding', () => {
       hasLabel: false,
       status: 'pending' as const,
       easyParcelRecovery: recovery,
+      lifecycleStage: 'action_required' as const,
+      labelState: 'not_required' as const,
+      recoveryState: 'rebooking_ready' as const,
+      primaryAction: 'resume' as const,
+      capabilities: actionCapabilities({ resume: true, amendAddress: true }),
     };
     const cancelled = {
       ...INITIAL_SHIPMENT_PARCELS[0],
@@ -822,6 +881,11 @@ describe('ShippingDashboard provider action binding', () => {
       hasLabel: true,
       status,
       easyParcelRecovery: recovery,
+      lifecycleStage: 'action_required' as const,
+      labelState: 'available' as const,
+      recoveryState: 'rebooking_ready' as const,
+      primaryAction: 'resume' as const,
+      capabilities: actionCapabilities({ resume: true, viewTimeline: true, copyTracking: true, printLabel: true }),
     };
     const onOpenEasyParcelBooking = vi.fn();
     const host = document.createElement('div');
@@ -844,7 +908,8 @@ describe('ShippingDashboard provider action binding', () => {
     })));
 
     expect(host.textContent).toContain('All Shipments1');
-    expect(host.textContent).toContain('Pending AWB0');
+    expect(host.textContent).toContain('Pending Fulfilment0');
+    expect(host.textContent).toContain('Action Required1');
     expect(host.textContent).not.toContain('Cancelled AWB');
     expect(host.innerHTML).not.toContain('title="Open Official EasyParcel AWB"');
     const rebook = Array.from(host.querySelectorAll('button'))
@@ -857,11 +922,11 @@ describe('ShippingDashboard provider action binding', () => {
   it('exposes approved correction, resume, and address actions without offering correction for delivered shipments', async () => {
     const base = INITIAL_SHIPMENT_PARCELS[0];
     const activeRows: ShipmentParcel[] = [
-      { ...base, id: 'manual-active', orderId: 'order-manual', orderNumber: 'JW-MANUAL', source: 'manual', fulfillmentMethod: 'manual_delivery', managementMode: 'team_managed', courier: 'manual', trackingNumber: 'MANUAL-1', status: 'in_transit' },
-      { ...base, id: 'external-active', orderId: 'order-external', orderNumber: 'JW-EXTERNAL', source: 'manual', fulfillmentMethod: 'external_courier', managementMode: 'team_managed', courier: 'jnt', trackingNumber: 'JNT-1', status: 'in_transit' },
-      { ...base, id: 'easyparcel-active', orderId: 'order-easyparcel', orderNumber: 'JW-EASYPARCEL', source: 'easyparcel', fulfillmentMethod: 'easyparcel', managementMode: 'provider_managed', courier: 'easyparcel', trackingNumber: 'EP-1', status: 'in_transit' },
-      { ...base, id: 'delivered-attempt', orderId: 'order-delivered', orderNumber: 'JW-DELIVERED', source: 'manual', fulfillmentMethod: 'manual_delivery', managementMode: 'team_managed', courier: 'manual', trackingNumber: 'DONE-1', status: 'delivered' },
-      { ...base, id: 'pending-order-resume', orderId: 'order-resume', orderNumber: 'JW-RESUME', source: 'pending', fulfillmentMethod: null, managementMode: null, courier: 'manual', trackingNumber: '', status: 'pending', activeCorrection: { id: 'correction-1', sourceShipmentId: 'old-attempt', replacementShipmentId: null, reasonCode: 'wrong_fulfilment_method', externalActionState: 'not_required', status: 'awaiting_replacement', readyToResume: true } },
+      { ...base, id: 'ready-attempt', orderId: 'order-ready', orderNumber: 'JW-READY', source: 'easyparcel', fulfillmentMethod: 'easyparcel', managementMode: 'provider_managed', courier: 'easyparcel', trackingNumber: 'EP-READY', hasLabel: true, status: 'ready_to_ship', lifecycleStage: 'ready_to_ship', labelState: 'available', recoveryState: 'none', primaryAction: 'printLabel', capabilities: actionCapabilities({ printLabel: true, viewTimeline: true, correct: true, amendAddress: true, refreshProvider: true, copyTracking: true }) },
+      { ...base, id: 'manual-active', orderId: 'order-manual', orderNumber: 'JW-MANUAL', source: 'manual', fulfillmentMethod: 'manual_delivery', managementMode: 'team_managed', courier: 'manual', trackingNumber: 'MANUAL-1', status: 'in_transit', lifecycleStage: 'in_transit', labelState: 'not_required', recoveryState: 'none', primaryAction: 'updateStatus', capabilities: actionCapabilities({ viewTimeline: true, updateStatus: true, copyTracking: true }) },
+      { ...base, id: 'delivered-attempt', orderId: 'order-delivered', orderNumber: 'JW-DELIVERED', source: 'manual', fulfillmentMethod: 'manual_delivery', managementMode: 'team_managed', courier: 'manual', trackingNumber: 'DONE-1', status: 'delivered', lifecycleStage: 'delivered', labelState: 'not_required', recoveryState: 'none', primaryAction: null, capabilities: actionCapabilities({ viewTimeline: true, copyTracking: true }) },
+      { ...base, id: 'pending-order-new', orderId: 'order-new', orderNumber: 'JW-NEW', source: 'pending', fulfillmentMethod: null, managementMode: null, courier: 'unassigned', trackingNumber: '', status: 'pending', lifecycleStage: 'pending_fulfilment', labelState: 'not_required', recoveryState: 'none', primaryAction: 'fulfil', capabilities: actionCapabilities({ fulfil: true, amendAddress: true }) },
+      { ...base, id: 'pending-order-resume', orderId: 'order-resume', orderNumber: 'JW-RESUME', source: 'pending', fulfillmentMethod: null, managementMode: null, courier: 'unassigned', trackingNumber: '', status: 'pending', lifecycleStage: 'action_required', labelState: 'not_required', recoveryState: 'replacement_required', primaryAction: 'resume', capabilities: actionCapabilities({ resume: true, amendAddress: true }), activeCorrection: { id: 'correction-1', sourceShipmentId: 'old-attempt', replacementShipmentId: null, reasonCode: 'wrong_fulfilment_method', externalActionState: 'not_required', status: 'awaiting_replacement', readyToResume: true } },
     ];
     const onOpenCorrection = vi.fn();
     const onOpenFulfilment = vi.fn();
@@ -879,24 +944,90 @@ describe('ShippingDashboard provider action binding', () => {
       onOpenCorrection, onOpenAmendDeliveryDetails,
     } as any)));
 
-    const actionMenus = Array.from(host.querySelectorAll('button')).filter(button => button.getAttribute('aria-label') === 'More shipment operations');
-    expect(actionMenus).toHaveLength(5);
-    await act(async () => (actionMenus[0] as HTMLButtonElement).click());
+    const rowFor = (orderNumber: string) => Array.from(host.querySelectorAll('tr')).find(row => row.textContent?.includes(orderNumber)) as HTMLTableRowElement;
+    const menuFor = (orderNumber: string) => rowFor(orderNumber).querySelector('button[aria-label="More shipment operations"]') as HTMLButtonElement;
+
+    await act(async () => menuFor('JW-READY').click());
     const correctionButtons = Array.from(document.body.querySelectorAll('button')).filter(button => button.textContent?.trim() === 'Correct Fulfilment');
     expect(correctionButtons).toHaveLength(1);
     await act(async () => (correctionButtons[0] as HTMLButtonElement).click());
-    expect(onOpenCorrection).toHaveBeenCalledWith(expect.objectContaining({ id: 'manual-active' }));
+    expect(onOpenCorrection).toHaveBeenCalledWith(expect.objectContaining({ id: 'ready-attempt' }));
 
     const resume = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Resume') as HTMLButtonElement;
     expect(resume).toBeTruthy();
     await act(async () => resume.click());
     expect(onOpenFulfilment).toHaveBeenCalledWith(expect.objectContaining({ id: 'pending-order-resume' }));
 
-    await act(async () => (actionMenus[0] as HTMLButtonElement).click());
+    await act(async () => menuFor('JW-READY').click());
     const addressActions = Array.from(document.body.querySelectorAll('button')).filter(button => button.textContent?.trim() === 'Amend Delivery Details');
     expect(addressActions).toHaveLength(1);
     await act(async () => (addressActions[0] as HTMLButtonElement).click());
-    expect(onOpenAmendDeliveryDetails).toHaveBeenCalledWith(expect.objectContaining({ id: 'manual-active' }));
+    expect(onOpenAmendDeliveryDetails).toHaveBeenCalledWith(expect.objectContaining({ id: 'ready-attempt' }));
+
+    await act(async () => menuFor('JW-MANUAL').click());
+    expect(document.body.textContent).not.toContain('Correct Fulfilment');
+    expect(document.body.textContent).not.toContain('Amend Delivery Details');
+
+    await act(async () => menuFor('JW-NEW').click());
+    expect(document.body.textContent).not.toContain('Correct Fulfilment');
+    expect(document.body.textContent).toContain('Amend Delivery Details');
+  });
+
+  it('separates replacement work from initial pending fulfilment in the status tabs', () => {
+    const base = INITIAL_SHIPMENT_PARCELS[0];
+    const replacement = {
+      ...base,
+      id: 'pending-order-replacement', orderId: 'replacement-order', orderNumber: 'JW-REPLACEMENT',
+      source: 'pending' as const, fulfillmentMethod: null, managementMode: null,
+      courier: 'unassigned' as const, trackingNumber: '', hasLabel: false, status: 'pending' as const,
+      lifecycleStage: 'action_required' as const, labelState: 'not_required' as const,
+      recoveryState: 'replacement_required' as const, primaryAction: 'resume' as const,
+      capabilities: {
+        fulfil: false, resume: true, printLabel: false, viewTimeline: false,
+        correct: false, amendAddress: true, updateStatus: false,
+        refreshProvider: false, copyTracking: false,
+      },
+      activeCorrection: { id: 'correction-1', sourceShipmentId: 'old-attempt', replacementShipmentId: null, reasonCode: 'wrong_fulfilment_method', externalActionState: 'not_required' as const, status: 'awaiting_replacement' as const, readyToResume: true },
+    };
+    const html = renderToStaticMarkup(React.createElement(ShippingFulfillmentTab, {
+      parcels: [replacement],
+      onGenerateAWB: vi.fn(), onBatchGenerateAWB: vi.fn(), onOpenAWBModal: vi.fn(), onOpenTrackingModal: vi.fn(),
+      onOpenPickupModal: vi.fn(), onUpdateStatus: vi.fn(), onOpenFulfilment: vi.fn(), onOpenEasyParcelBooking: vi.fn(),
+      onRefreshEasyParcelStatus: vi.fn(), onRefreshAllEasyParcelStatuses: vi.fn(), onConfirmEasyParcelProviderFailure: vi.fn(),
+    }));
+
+    expect(html).toMatch(/<span>Pending Fulfilment<\/span><span[^>]*>0<\/span>/);
+    expect(html).toMatch(/<span>Action Required<\/span><span[^>]*>1<\/span>/);
+    expect(html).toContain('Resume');
+  });
+
+  it('does not render AWB Pending or operational actions for a delivered manual shipment', () => {
+    const base = INITIAL_SHIPMENT_PARCELS[0];
+    const delivered = {
+      ...base,
+      id: 'manual-delivered-no-awb', source: 'manual' as const, fulfillmentMethod: 'manual_delivery' as const,
+      managementMode: 'team_managed' as const, courier: 'manual' as const, status: 'delivered' as const,
+      trackingNumber: 'JW-MANUAL-14-1', hasLabel: false,
+      lifecycleStage: 'delivered' as const, labelState: 'not_required' as const,
+      recoveryState: 'none' as const, primaryAction: null,
+      capabilities: {
+        fulfil: false, resume: false, printLabel: false, viewTimeline: true,
+        correct: false, amendAddress: false, updateStatus: false,
+        refreshProvider: false, copyTracking: true,
+      },
+    };
+    const html = renderToStaticMarkup(React.createElement(ShippingFulfillmentTab, {
+      parcels: [delivered],
+      onGenerateAWB: vi.fn(), onBatchGenerateAWB: vi.fn(), onOpenAWBModal: vi.fn(), onOpenTrackingModal: vi.fn(),
+      onOpenPickupModal: vi.fn(), onUpdateStatus: vi.fn(), onOpenFulfilment: vi.fn(), onOpenEasyParcelBooking: vi.fn(),
+      onRefreshEasyParcelStatus: vi.fn(), onRefreshAllEasyParcelStatuses: vi.fn(), onConfirmEasyParcelProviderFailure: vi.fn(),
+      onOpenCorrection: vi.fn(), onOpenAmendDeliveryDetails: vi.fn(),
+    }));
+
+    expect(html).not.toContain('AWB Pending');
+    expect(html).not.toContain('Print AWB');
+    expect(html).not.toContain('Correct Fulfilment');
+    expect(html).not.toContain('Amend Delivery Details');
   });
 
   it('counts canonical shipped parcels in the ShippingOverview in-transit metric', () => {
@@ -978,7 +1109,15 @@ describe('ShippingDashboard provider action binding', () => {
     const exceptionParcels = (['booking_failed', 'cancelled', 'on_hold', 'provider_update'] as const).map((status, index) => ({
       ...INITIAL_SHIPMENT_PARCELS[0],
       id: `easyparcel-exception-${index}`,
+      source: 'easyparcel' as const,
+      fulfillmentMethod: 'easyparcel' as const,
+      managementMode: 'provider_managed' as const,
       status,
+      lifecycleStage: 'action_required' as const,
+      labelState: status === 'booking_failed' ? 'failed' as const : 'pending' as const,
+      recoveryState: 'review_required' as const,
+      primaryAction: 'reviewRecovery' as const,
+      capabilities: actionCapabilities({ viewTimeline: true, refreshProvider: status === 'on_hold' || status === 'provider_update', copyTracking: true }),
     })) as ShipmentParcel[];
     const overview = renderToStaticMarkup(React.createElement(ShippingOverviewTab, {
       parcels: exceptionParcels,
@@ -1002,7 +1141,7 @@ describe('ShippingDashboard provider action binding', () => {
     }));
 
     expect(metricCardText(overview, 'Exceptions & NITC')).toContain('4');
-    expect(fulfillment).toMatch(/Exceptions \(NITC\)<\/span><span[^>]*>4<\/span>/);
+    expect(fulfillment).toMatch(/Action Required<\/span><span[^>]*>4<\/span>/);
     expect(fulfillment).toContain('Booking Failed');
     expect(fulfillment).toContain('Cancelled');
     expect(fulfillment).toContain('On Hold');

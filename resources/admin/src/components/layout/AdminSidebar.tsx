@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { NavSection } from '../../types';
+import { visibleShipmentParcels } from '../../integration/shipmentQueue';
 import {
   LayoutDashboard,
   Store,
@@ -55,7 +56,9 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
   const safeMpOrders = marketplaceOrders || [];
   const safeOrders = orders || [];
   const safeShipmentParcels = shipmentParcels || [];
-  const pendingAwbCount = safeShipmentParcels.filter(p => p.status === 'pending').length;
+  const openFulfilmentCount = visibleShipmentParcels(safeShipmentParcels).filter(p => (
+    p.lifecycleStage === 'pending_fulfilment' || p.lifecycleStage === 'action_required'
+  )).length;
   const activeGatewaysCount = paymentGateways.filter(g => g.isEnabled).length;
   const unreadSupportCount = supportConversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
   const pendingReviewsCount = reviews.filter((review) => review.status === 'pending').length;
@@ -169,8 +172,8 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
       label: 'Shipping & Logistics',
       icon: Truck,
       isActive: isShippingActive,
-      badge: pendingAwbCount > 0 ? `${pendingAwbCount} AWB` : 'Manual',
-      badgeVariant: pendingAwbCount > 0 ? 'warning' : 'success',
+      badge: openFulfilmentCount > 0 ? `${openFulfilmentCount} Tasks` : 'Clear',
+      badgeVariant: openFulfilmentCount > 0 ? 'warning' : 'success',
     },
     {
       id: 'catalog' as NavSection,
