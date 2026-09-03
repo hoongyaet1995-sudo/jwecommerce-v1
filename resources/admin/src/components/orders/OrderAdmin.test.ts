@@ -19,6 +19,10 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const source = readFileSync(resolve(process.cwd(), 'src/components/orders/OrderAdmin.tsx'), 'utf8');
 
 describe('OrderAdmin manual fulfillment source fidelity', () => {
+  it('keeps one MySQL-backed reload control in the header without duplicating it in filters', () => {
+    expect(source).toContain('Reload Stream');
+    expect(source).not.toContain(": 'Reload'}</button>");
+  });
   it('retains the approved manual dispatch controls and awaits the persisted tracking adapter', () => {
     expect(source).toContain('Carrier / hand-off partner');
     expect(source).toContain('Tracking reference');

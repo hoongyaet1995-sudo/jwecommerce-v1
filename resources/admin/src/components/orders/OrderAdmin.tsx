@@ -27,7 +27,8 @@ import {
   Layers,
   Download,
   FileText,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 
 const NOTIFICATION_EVENT_BY_STATUS_CODE = new Map<string, NotificationEventKey>([
@@ -52,7 +53,17 @@ export const notificationEventKeyForStatus = (code: string): NotificationEventKe
   NOTIFICATION_EVENT_BY_STATUS_CODE.get(code) ?? null;
 
 export const OrderAdmin: React.FC = () => {
-  const { orders, shipmentParcels = [], updateOrderStatus, updateOrderTracking, reviewPaymentProof, amendOrderDeliveryDetails, orderStatuses, setCurrentSection, notificationPermissions } = useAdmin();
+  const { orders, shipmentParcels = [], updateOrderStatus, updateOrderTracking, reviewPaymentProof, amendOrderDeliveryDetails, reloadOrders, orderStatuses, setCurrentSection, notificationPermissions } = useAdmin();
+  const [isReloading, setIsReloading] = useState(false);
+  const reloadStream = async () => {
+    if (isReloading) return;
+    setIsReloading(true);
+    try {
+      await reloadOrders();
+    } finally {
+      setIsReloading(false);
+    }
+  };
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -305,13 +316,15 @@ export const OrderAdmin: React.FC = () => {
           </p>
         </div>
 
+        <div className="flex items-center gap-2">
+        <button type="button" onClick={() => void reloadStream()} disabled={isReloading} className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-xs font-semibold disabled:opacity-60"><RefreshCw className={`w-3.5 h-3.5 ${isReloading ? 'animate-spin' : ''}`} />{isReloading ? 'Reloading...' : 'Reload Stream'}</button>
         <button
           onClick={() => setCurrentSection('shipping-malaysia')}
           className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition cursor-pointer self-start sm:self-auto"
         >
           <Truck className="w-4 h-4" />
           Malaysia Multi-Courier Hub →
-        </button>
+        </button></div>
       </div>
 
       {/* Filter Bar */}

@@ -19,6 +19,7 @@ import type { CourierConfig, EasyParcelWebhookReceiptRow, ShipmentParcel } from 
 import { INITIAL_SHIPMENT_PARCELS } from '../../data/shippingData';
 
 const source = readFileSync(resolve(process.cwd(), 'src/components/shipping/ShippingDashboard.tsx'), 'utf8');
+const fulfillmentSource = readFileSync(resolve(process.cwd(), 'src/components/shipping/ShippingFulfillmentTab.tsx'), 'utf8');
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const receipt = (overrides: Partial<EasyParcelWebhookReceiptRow> = {}): EasyParcelWebhookReceiptRow => ({
@@ -67,6 +68,20 @@ afterEach(() => {
 });
 
 describe('ShippingDashboard provider action binding', () => {
+  it('renders More Actions through a portal so the table scroller cannot clip it', () => {
+    expect(fulfillmentSource).toContain("from 'react-dom'");
+    expect(fulfillmentSource).toContain('createPortal(');
+  });
+
+  it('preserves the selected Google AI Studio Actions visual primitives', () => {
+    expect(fulfillmentSource).toContain('bg-indigo-600 hover:bg-indigo-700');
+    expect(fulfillmentSource).toContain('<MoreHorizontal className="w-4 h-4" />');
+    expect(fulfillmentSource).toContain('flex items-center gap-2.5 px-3 py-2');
+  });
+
+  it('keeps the approved logistics reload and single-line shipment action affordances', () => {
+    expect(source).toContain('Reload Logistics');
+  });
   it('shows the stable EasyParcel callback URL using the existing courier callback presentation', () => {
     const html = renderToStaticMarkup(React.createElement(EasyParcelOAuthModal, {
       isOpen: true,
@@ -364,7 +379,9 @@ describe('ShippingDashboard provider action binding', () => {
       onConfirmEasyParcelProviderFailure,
     })));
 
-    const refresh = host.querySelector('button[aria-label="Get Latest Status"]') as HTMLButtonElement;
+    const more = host.querySelector('button[aria-label="More shipment operations"]') as HTMLButtonElement;
+    await act(async () => more.click());
+    const refresh = Array.from(document.body.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Refresh EasyParcel Status') as HTMLButtonElement;
     await act(async () => refresh.click());
 
     expect(host.textContent).toContain('EasyParcel reports Schedule In Arrangement (code 7); AWB is still unavailable. Checked 2026-08-30T10:00:00+08:00.');
@@ -550,7 +567,9 @@ describe('ShippingDashboard provider action binding', () => {
     };
     await act(async () => root.render(React.createElement(Harness)));
 
-    const refresh = host.querySelector('button[aria-label="Get Latest Status"]') as HTMLButtonElement;
+    const more = host.querySelector('button[aria-label="More shipment operations"]') as HTMLButtonElement;
+    await act(async () => more.click());
+    const refresh = Array.from(document.body.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Refresh EasyParcel Status') as HTMLButtonElement;
     await act(async () => refresh.click());
 
     expect(host.textContent).toContain('On Hold');
@@ -624,7 +643,9 @@ describe('ShippingDashboard provider action binding', () => {
       onConfirmEasyParcelProviderFailure: vi.fn(),
     })));
 
-    const refresh = host.querySelector('button[aria-label="Get Latest Status"]') as HTMLButtonElement;
+    const more = host.querySelector('button[aria-label="More shipment operations"]') as HTMLButtonElement;
+    await act(async () => more.click());
+    const refresh = Array.from(document.body.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Refresh EasyParcel Status') as HTMLButtonElement;
     await act(async () => refresh.click());
     const overlay = host.querySelector('#easyparcel-recovery-modal-overlay') as HTMLDivElement;
     expect(overlay).not.toBeNull();
@@ -766,8 +787,8 @@ describe('ShippingDashboard provider action binding', () => {
     }));
 
     expect(withoutLabel).toContain('AWB Pending');
-    expect(withoutLabel).not.toContain('title="Open Official EasyParcel AWB"');
-    expect(withLabel).toContain('title="Open Official EasyParcel AWB"');
+    expect(withoutLabel).not.toContain('title="Print 4x6 Thermal AWB / Dispatch Consignment Note"');
+    expect(withLabel).toContain('title="Print 4x6 Thermal AWB / Dispatch Consignment Note"');
   });
 
   it.each(['cancelled', 'booking_failed'] as const)(
@@ -827,7 +848,7 @@ describe('ShippingDashboard provider action binding', () => {
     expect(host.textContent).not.toContain('Cancelled AWB');
     expect(host.innerHTML).not.toContain('title="Open Official EasyParcel AWB"');
     const rebook = Array.from(host.querySelectorAll('button'))
-      .find(button => button.textContent?.trim() === 'Rebook') as HTMLButtonElement;
+      .find(button => button.textContent?.trim() === 'Resume') as HTMLButtonElement;
     await act(async () => rebook.click());
     expect(onOpenEasyParcelBooking).toHaveBeenCalledWith(rebookParcel);
     },
@@ -858,18 +879,22 @@ describe('ShippingDashboard provider action binding', () => {
       onOpenCorrection, onOpenAmendDeliveryDetails,
     } as any)));
 
-    const correctionButtons = Array.from(host.querySelectorAll('button')).filter(button => button.textContent?.trim() === 'Correct Fulfilment');
-    expect(correctionButtons).toHaveLength(3);
+    const actionMenus = Array.from(host.querySelectorAll('button')).filter(button => button.getAttribute('aria-label') === 'More shipment operations');
+    expect(actionMenus).toHaveLength(5);
+    await act(async () => (actionMenus[0] as HTMLButtonElement).click());
+    const correctionButtons = Array.from(document.body.querySelectorAll('button')).filter(button => button.textContent?.trim() === 'Correct Fulfilment');
+    expect(correctionButtons).toHaveLength(1);
     await act(async () => (correctionButtons[0] as HTMLButtonElement).click());
     expect(onOpenCorrection).toHaveBeenCalledWith(expect.objectContaining({ id: 'manual-active' }));
 
-    const resume = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Resume Fulfilment') as HTMLButtonElement;
+    const resume = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Resume') as HTMLButtonElement;
     expect(resume).toBeTruthy();
     await act(async () => resume.click());
     expect(onOpenFulfilment).toHaveBeenCalledWith(expect.objectContaining({ id: 'pending-order-resume' }));
 
-    const addressActions = Array.from(host.querySelectorAll('button')).filter(button => button.title === 'Amend Delivery Details for Order');
-    expect(addressActions).toHaveLength(5);
+    await act(async () => (actionMenus[0] as HTMLButtonElement).click());
+    const addressActions = Array.from(document.body.querySelectorAll('button')).filter(button => button.textContent?.trim() === 'Amend Delivery Details');
+    expect(addressActions).toHaveLength(1);
     await act(async () => (addressActions[0] as HTMLButtonElement).click());
     expect(onOpenAmendDeliveryDetails).toHaveBeenCalledWith(expect.objectContaining({ id: 'manual-active' }));
   });

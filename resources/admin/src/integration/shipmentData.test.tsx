@@ -396,7 +396,7 @@ describe('redacted shipment-list client contract', () => {
     expect(html).not.toContain('Gen AWB');
   });
 
-  it('renders unified and per-row Get Latest Status controls for an EasyParcel AWB', () => {
+  it('renders unified status refresh and keeps the per-shipment refresh inside More Actions', () => {
     const parcel = {
       ...redactedParcel,
       source: 'easyparcel',
@@ -422,7 +422,7 @@ describe('redacted shipment-list client contract', () => {
     );
 
     expect(html).toContain('Get Latest Status');
-    expect(html).toContain('Refresh this EasyParcel shipment status');
+    expect(html).toContain('More shipment operations');
   });
 
   it('uses status reconciliation instead of offering a duplicate booking while an EasyParcel AWB is pending', () => {

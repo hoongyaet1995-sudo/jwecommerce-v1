@@ -75,6 +75,7 @@ export const ShippingDashboard: React.FC = () => {
     toggleSmartRoutingRule,
     reorderSmartRoutingRules,
     shipmentParcels = [],
+    reloadShipmentParcels,
     orders = [],
     refreshEasyParcelShipmentStatus,
     refreshAllEasyParcelShipmentStatuses,
@@ -104,6 +105,8 @@ export const ShippingDashboard: React.FC = () => {
   } = useAdmin();
 
   const [activeTab, setActiveTab] = useState<ShippingTabType>('overview');
+  const [isReloadingShipping, setIsReloadingShipping] = useState(false);
+  const reloadLogistics = async () => { if (isReloadingShipping) return; setIsReloadingShipping(true); try { await reloadShipmentParcels(); } finally { setIsReloadingShipping(false); } };
 
   // Modals state
   const [activeAWBParcel, setActiveAWBParcel] = useState<ShipmentParcel | null>(null);
@@ -236,6 +239,7 @@ export const ShippingDashboard: React.FC = () => {
 
         {/* Global Quick Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
+          <button type="button" onClick={() => void reloadLogistics()} disabled={isReloadingShipping} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 disabled:opacity-60"><RefreshCw className={`w-3.5 h-3.5 ${isReloadingShipping ? 'animate-spin' : ''}`} />{isReloadingShipping ? 'Reloading...' : 'Reload Logistics'}</button>
           <button
             onClick={explainPickupUnavailable}
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer shadow-sm"

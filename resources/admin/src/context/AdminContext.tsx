@@ -149,6 +149,8 @@ import {
 } from '../types/aiAutoReply';
 import { DEFAULT_AI_AUTO_REPLY_CONFIG } from '../data/defaultAIAutoReply';
 
+const ORDERS_POLL_INTERVAL_MS = 15_000;
+
 interface Toast {
   id: string;
   type: 'success' | 'info' | 'warning' | 'error';
@@ -272,6 +274,7 @@ interface AdminContextType {
 
   // Orders
   orders: Order[];
+  reloadOrders: () => Promise<void>;
   selectedOrderId: string | null;
   setSelectedOrderId: (id: string | null) => void;
   updateOrderStatus: (orderId: string, paymentStatus?: PaymentStatus, fulfillmentStatus?: FulfillmentStatus, note?: string, notifyCustomer?: boolean) => Promise<Order | null>;
@@ -279,6 +282,7 @@ interface AdminContextType {
   processOrderRefund: (orderId: string, amount: number, reason: string) => Promise<Order | null>;
   reviewPaymentProof: (orderId: string, paymentId: string, decision: 'verified' | 'rejected', reason?: string) => Promise<Order | null>;
   amendOrderDeliveryDetails: (orderId: string, input: AmendOrderDeliveryDetailsInput) => Promise<Order>;
+  reloadShipmentParcels: () => Promise<void>;
 
   // Settings & Staff RBAC
   staffUsers: StaffUser[];
@@ -610,6 +614,30 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Laravel emits this immutable bootstrap once per admin app load.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (currentSection !== 'orders') return;
+
+    let active = true;
+    const refreshOrders = () => {
+      if (document.visibilityState !== 'visible') return;
+
+      void fetchOrders(laravelBootstrap)
+        .then(loaded => { if (active) setOrders(loaded); })
+        .catch(() => undefined);
+    };
+
+    const timer = window.setInterval(refreshOrders, ORDERS_POLL_INTERVAL_MS);
+    document.addEventListener('visibilitychange', refreshOrders);
+
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshOrders);
+    };
+  // Laravel emits this immutable bootstrap once per admin app load.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSection]);
 
   useEffect(() => {
     let active = true;
@@ -1491,6 +1519,9 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       throw error;
     }
   };
+
+  const reloadOrders = async (): Promise<void> => { setOrders(await fetchOrders(laravelBootstrap)); };
+  const reloadShipmentParcels = async (): Promise<void> => { setShipmentParcels(await fetchShipments(laravelBootstrap)); };
 
   // Staff User Login Management (RBAC)
   const saveStaffUser = (staff: StaffUser) => {
@@ -4033,6 +4064,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
         saveCustomer,
         deleteCustomer,
         orders,
+        reloadOrders,
         selectedOrderId,
         setSelectedOrderId,
         updateOrderStatus,
@@ -4040,6 +4072,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
         processOrderRefund,
         reviewPaymentProof,
         amendOrderDeliveryDetails,
+        reloadShipmentParcels,
         staffUsers,
         saveStaffUser,
         deleteStaffUser,

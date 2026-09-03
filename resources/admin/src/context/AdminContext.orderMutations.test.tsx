@@ -124,6 +124,25 @@ afterEach(() => {
 });
 
 describe('AdminProvider whole-order mutation ownership', () => {
+  it('refreshes the Orders stream while the Orders page is visible', async () => {
+    vi.useFakeTimers();
+    window.history.replaceState(null, '', '/admin/orders');
+    const incoming = order({ id: '18', orderNumber: 'JW-10018', customerEmail: 'new-order@example.test' });
+    orderApi.fetchOrders
+      .mockResolvedValueOnce([order()])
+      .mockResolvedValueOnce([incoming, order()]);
+
+    await mountProvider();
+    expect(orderApi.fetchOrders).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(15_000);
+    });
+
+    expect(orderApi.fetchOrders).toHaveBeenCalledTimes(2);
+    expect(currentAdmin!.orders.map(item => item.orderNumber)).toContain('JW-10018');
+  });
+
   it('does not let a delayed status response revert a newer proof review or a reopened order', async () => {
     const oldStatus = deferred<Order>();
     const newerProof = deferred<Order>();
