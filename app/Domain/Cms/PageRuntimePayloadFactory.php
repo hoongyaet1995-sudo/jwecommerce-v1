@@ -69,7 +69,7 @@ final class PageRuntimePayloadFactory
             ],
             'context' => [
                 'mode' => $mode,
-                'currency' => (string) config('app.currency', 'USD'),
+                'currency' => (string) app(\App\Support\CurrencySettings::class)->default()['code'],
             ],
         ];
     }

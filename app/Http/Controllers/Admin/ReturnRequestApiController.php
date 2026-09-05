@@ -39,6 +39,7 @@ class ReturnRequestApiController extends Controller
     {
         abort_unless($returnRequest->resolution === 'refund', 422);
         $v = $q->validate([
+            'refund_amount' => ['required', 'numeric', 'gt:0', 'decimal:0,2'],
             'external_refund_reference' => ['required', 'string', 'max:255'],
             'refund_note' => ['required', 'string', 'max:2000'],
         ]);

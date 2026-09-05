@@ -1,3 +1,4 @@
+import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React, { useRef } from 'react';
 import {listingSources} from '../../cms/listingSources';
 import {
@@ -1206,6 +1207,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
   onClose,
   onToggleCollapse
 }) => {
+  const { money, currencyCode } = useAdminCurrency();
   const { products, categories, collections, addToast } = useAdmin();
   const listingCatalog = React.useMemo(() => listingSources(categories, collections, products), [categories, collections, products]);
   const [couponPromotions, setCouponPromotions] = React.useState<Promotion[]>([]);
@@ -1683,7 +1685,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             <div className="grid grid-cols-2 gap-2">
               {hasSectionField('cardPrice') && (
               <div>
-                <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">Price ($)</span>
+                <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">Price ({currencyCode})</span>
                 <input
                   type="text"
                   value={section.cardPrice ?? ''}
@@ -1802,7 +1804,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-xs truncate">{p.title}</p>
-                      <p className="text-[10px] text-neutral-400">${p.basePrice}</p>
+                      <p className="text-[10px] text-neutral-400">{money(p.basePrice)}</p>
                     </div>
                   </label>
                 );
@@ -2930,7 +2932,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
 
                         {section.type === 'pricing_table' && hasItemField(item, 'price') && (
                           <div>
-                            <span className="text-[10px] text-neutral-400 block mb-0.5">Price ($)</span>
+                            <span className="text-[10px] text-neutral-400 block mb-0.5">Price ({currencyCode})</span>
                             <input
                               type="number"
                               value={item.price ?? 299}

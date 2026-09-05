@@ -20,6 +20,11 @@ export const EasyParcelOAuthModal: React.FC<Props> = ({ isOpen, provider, webhoo
   const [selectedEnvironment, setSelectedEnvironment] = useState<EasyParcelEnvironment>(provider?.environment ?? 'sandbox');
   const [disconnecting, setDisconnecting] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  useEffect(() => {
+    if (!isCopied) return;
+    const timer = setTimeout(() => setIsCopied(false), 2000);
+    return () => clearTimeout(timer);
+  }, [isCopied]);
   const [senderProfile, setSenderProfile] = useState<EasyParcelSenderProfile>(provider?.senderProfile ?? {});
   const [savingSender, setSavingSender] = useState(false);
   const [senderError, setSenderError] = useState<string | null>(null);
@@ -41,7 +46,7 @@ export const EasyParcelOAuthModal: React.FC<Props> = ({ isOpen, provider, webhoo
 
   const authorize = () => { setModalState('authorizing'); onAuthorize(selectedEnvironment); };
   const disconnect = async () => { setDisconnecting(true); try { await onDisconnect(selectedEnvironment); setModalState('idle'); } finally { setDisconnecting(false); } };
-  const copyWebhook = () => { if (webhookCallbackUrl) { navigator.clipboard.writeText(webhookCallbackUrl); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); } };
+  const copyWebhook = () => { if (webhookCallbackUrl) { navigator.clipboard.writeText(webhookCallbackUrl); setIsCopied(true); } };
   const updateSenderField = (field: keyof EasyParcelSenderProfile, value: string) => setSenderProfile(current => ({ ...current, [field]: value }));
   const saveSender = async (event: React.FormEvent) => {
     event.preventDefault();

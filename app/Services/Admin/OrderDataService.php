@@ -76,6 +76,7 @@ class OrderDataService
             },
             'shippingSource' => $this->shippingSource($order, $shipment, $shipmentQuote),
             'currency' => $order->currency,
+            'currencyExchangeRate' => (float) ($order->currency_exchange_rate ?? 1),
             'items' => $order->items->map(fn ($item): array => ['id' => (string) $item->id, 'productId' => '', 'variantId' => $item->product_variant_id ? (string) $item->product_variant_id : null, 'title' => $item->title, 'variantTitle' => $item->variant_title, 'sku' => $item->sku, 'price' => $item->unit_price / 100, 'quantity' => $item->quantity, 'image' => $item->image_url ?: ''])->values(),
             'subtotal' => $order->subtotal / 100,
             'taxAmount' => $order->tax_amount / 100,
@@ -138,6 +139,7 @@ class OrderDataService
     {
         return match ($gateway) {
             'bank_transfer' => 'Bank In / DuitNow',
+            'cod' => 'Cash on Delivery',
             'paypal' => 'PayPal',
             'apple_pay' => 'Apple Pay',
             'stripe' => 'Stripe',

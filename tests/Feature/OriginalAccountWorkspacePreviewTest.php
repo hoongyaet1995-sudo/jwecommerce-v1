@@ -347,6 +347,18 @@ class OriginalAccountWorkspacePreviewTest extends TestCase
             ->assertDontSee('Total Paid:');
     }
 
+    public function test_account_money_uses_historical_currency_and_rate_instead_of_the_current_shopper_currency(): void
+    {
+        [$customer, $order] = $this->customerWithOrder('paid');
+        $order->update(['currency' => 'USD', 'currency_exchange_rate' => 0.25]);
+        $this->actingAs($customer->user, 'customer')
+            ->withSession(['storefront_currency' => 'MYR'])
+            ->get(route('customer.account'))
+            ->assertOk()
+            ->assertSee('$30.00 USD')
+            ->assertDontSee('$120.00 USD');
+    }
+
     private function customerUser(): User
     {
         $user = User::factory()->create(['is_admin' => false]);

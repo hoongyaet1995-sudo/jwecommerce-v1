@@ -1,3 +1,4 @@
+import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { Customer } from '../../types';
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 
 export const CustomerAdmin: React.FC = () => {
+  const { money, currencyCode } = useAdminCurrency();
   const { customers, saveCustomer, deleteCustomer, orders } = useAdmin();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -176,7 +178,7 @@ export const CustomerAdmin: React.FC = () => {
                   </td>
 
                   <td className="py-3.5 px-4 font-mono font-bold text-neutral-900 dark:text-white text-xs">
-                    ${cust.totalSpent.toFixed(2)}
+                    {money(cust.totalSpent)}
                   </td>
 
                   <td className="py-3.5 px-4">
@@ -227,7 +229,7 @@ export const CustomerAdmin: React.FC = () => {
         isOpen={!!customerToDelete}
         itemType="Customer Account"
         itemName={customerToDelete?.name}
-        itemDetails={`Email: ${customerToDelete?.email} • Total Orders: ${customerToDelete?.totalOrders} • Lifetime Spend: $${customerToDelete?.totalSpent.toFixed(2)}`}
+        itemDetails={`Email: ${customerToDelete?.email} • Total Orders: ${customerToDelete?.totalOrders} • Lifetime Spend: ${money(customerToDelete?.totalSpent)}`}
         warningMessage={`Are you sure you want to permanently delete the profile for "${customerToDelete?.name}"?`}
         impactItems={[
           'Customer login credentials and shipping address book will be removed.',

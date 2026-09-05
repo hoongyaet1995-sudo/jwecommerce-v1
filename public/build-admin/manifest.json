@@ -1,31 +1,31 @@
 {
-  "_index-BT0VK8U4.js": {
-    "file": "assets/index-BT0VK8U4.js",
+  "_index-DPZXQOyJ.css": {
+    "file": "assets/index-DPZXQOyJ.css",
+    "src": "_index-DPZXQOyJ.css"
+  },
+  "_index-G2l-11lj.js": {
+    "file": "assets/index-G2l-11lj.js",
     "name": "index",
     "css": [
       "assets/index-DPZXQOyJ.css"
     ]
   },
-  "_index-DPZXQOyJ.css": {
-    "file": "assets/index-DPZXQOyJ.css",
-    "src": "_index-DPZXQOyJ.css"
-  },
   "src/main.tsx": {
-    "file": "assets/main-CcWY6JWD.js",
+    "file": "assets/main-DXO0barL.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
     "imports": [
-      "_index-BT0VK8U4.js"
+      "_index-G2l-11lj.js"
     ]
   },
   "src/public-page.tsx": {
-    "file": "assets/public-page-SWCW54e5.js",
+    "file": "assets/public-page-DGOt583Q.js",
     "name": "public-page",
     "src": "src/public-page.tsx",
     "isEntry": true,
     "imports": [
-      "_index-BT0VK8U4.js"
+      "_index-G2l-11lj.js"
     ]
   }
 }

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { initialSectionFromLocation, navigateToSection, subscribeToSectionChanges } from '../integration/adminRoutes';
 import { readAdminBootstrap } from '../integration/adminBootstrap';
+import { formatAdminMoney } from '../integration/adminMoney';
 import { submitLaravelLogout } from '../integration/laravelSession';
 import { clonePage, createPage, fetchPages, removePage, savePageDraft } from '../integration/pageData';
 import { deleteCatalogEntity, fetchCatalog, saveCatalogEntity } from '../integration/catalogData';
@@ -1474,7 +1475,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         current => setOrders(prev => prev.map(order => order.id === current.id ? current : order)),
       );
       if (saved === null) return null;
-      addToast({ type: 'warning', title: 'Refund Completed', message: `Processed refund of $${amount.toFixed(2)}.` });
+      addToast({ type: 'warning', title: 'Refund Completed', message: `Processed refund of ${formatAdminMoney(amount, currenciesSetting)}.` });
       return saved;
     } catch (error) {
       addToast({ type: 'error', title: 'Refund Failed', message: error instanceof Error ? error.message : 'Unable to process refund.' });

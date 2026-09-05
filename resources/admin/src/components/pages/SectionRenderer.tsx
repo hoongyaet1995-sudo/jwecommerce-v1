@@ -465,7 +465,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               </div>
               <div className="text-right shrink-0">
                 <span className="text-base sm:text-lg font-black text-white block">
-                  ${section.cardPrice ?? 499}
+                  {listingMoney(Number(section.cardPrice ?? 499))}
                 </span>
                 <span className="text-[10px] text-emerald-400 font-semibold block">
                   {section.cardExtra || 'Free Express DHL'}
@@ -1024,11 +1024,11 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                 <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
                   <div>
                     <span className="text-lg font-black text-white">
-                      ${prod.basePrice}
+                      {listingMoney(Number(prod.basePrice))}
                     </span>
                     {prod.baseCompareAtPrice && (
                       <span className="text-xs text-neutral-500 line-through ml-2">
-                        ${prod.baseCompareAtPrice}
+                        {listingMoney(Number(prod.baseCompareAtPrice))}
                       </span>
                     )}
                   </div>
@@ -1438,7 +1438,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                   </span>
                   <h4 style={getTitleStyle()} className="text-sm font-bold text-white truncate">{prod.title}</h4>
                   <p style={getContentStyle()} className="text-xs text-neutral-400 line-clamp-1">{prod.summary}</p>
-                  <div style={getTitleStyle()} className="mt-1 font-bold text-white text-sm">${prod.basePrice}</div>
+                  <div style={getTitleStyle()} className="mt-1 font-bold text-white text-sm">{listingMoney(Number(prod.basePrice))}</div>
                 </div>
               </a>
             ))
@@ -1600,7 +1600,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                 </div>
 
                 <div className="mb-4">
-                  <span style={getTitleStyle()} className="text-4xl font-black text-white">${item.price}</span>
+                  <span style={getTitleStyle()} className="text-4xl font-black text-white">{listingMoney(Number(item.price))}</span>
                   <span className="text-xs text-neutral-400 ml-1">/ one-time</span>
                 </div>
 

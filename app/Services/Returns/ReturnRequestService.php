@@ -72,14 +72,21 @@ class ReturnRequestService
                 } $updates += ['rejection_reason' => $data['reason'], 'resolved_at' => now()];
             }
             if ($action === 'receive') {
+                if ($data['condition'] === 'restockable' && $r->item->product_variant_id) {
+                    \App\Models\ProductVariant::query()->whereKey($r->item->product_variant_id)->increment('stock', $data['received_quantity']);
+                }
                 $updates += ['received_quantity' => $data['received_quantity'], 'condition' => $data['condition'], 'warehouse_note' => $data['warehouse_note'] ?? null, 'received_at' => now()];
             }
             if ($action === 'resolve_refund') {
                 $r->loadMissing('order.payments', 'item');
                 $payment = $r->order->payments()->latest('id')->lockForUpdate()->firstOrFail();
-                $amount = $r->item->unit_price * $r->quantity;
+                $rate = (float) ($r->order->currency_exchange_rate ?? 1);
+                if ($rate <= 0) {
+                    throw ValidationException::withMessages(['refund_amount' => 'The historical currency rate is invalid.']);
+                }
+                $amount = (int) round(((float) ($data['refund_amount'] ?? 0)) * 100 / $rate);
                 $refunded = (int) $r->order->refunds()->where('status', 'completed')->sum('amount');
-                if (! in_array($payment->status, ['paid', 'partially_refunded'], true) || $amount > $r->order->total - $refunded) {
+                if ($amount <= 0 || ! in_array($payment->status, ['paid', 'partially_refunded'], true) || ((float) $data['refund_amount']) * 100 > round(($r->order->total - $refunded) * $rate) || $amount > $r->order->total - $refunded) {
                     throw ValidationException::withMessages(['status' => 'The order does not have enough refundable paid balance.']);
                 }
                 $refund = OrderRefund::query()->create(['order_id' => $r->order_id, 'order_payment_id' => $payment->id, 'user_id' => $actor->id, 'amount' => $amount, 'reason' => "Externally completed refund for return {$r->number}; reference {$data['external_refund_reference']}", 'status' => 'completed']);

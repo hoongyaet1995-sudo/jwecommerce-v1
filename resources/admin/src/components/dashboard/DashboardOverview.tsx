@@ -1,3 +1,4 @@
+import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { primaryProductImage } from '../../catalogMedia';
@@ -49,6 +50,7 @@ const CATEGORY_DISTRIBUTION = [
 ];
 
 export const DashboardOverview: React.FC = () => {
+  const { money, currencyCode } = useAdminCurrency();
   const { products, orders, customers, setCurrentSection, setSelectedOrderId, theme } = useAdmin();
   const bootstrap = React.useMemo(() => readAdminBootstrap(), []);
   const [dashboardData, setDashboardData] = React.useState<DashboardData | null>(null);
@@ -176,7 +178,7 @@ export const DashboardOverview: React.FC = () => {
           </div>
           <div className="mt-3 flex items-baseline justify-between">
             <span className="text-2xl font-black text-neutral-900 dark:text-white tracking-tight">
-              ${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {money(totalRevenue)}
             </span>
             <span className="flex items-center text-xs font-bold text-emerald-600 dark:text-emerald-400">
               <ArrowUpRight className="w-3.5 h-3.5" /> +14.8%
@@ -233,10 +235,10 @@ export const DashboardOverview: React.FC = () => {
           </div>
           <div className="mt-3 flex items-baseline justify-between">
             <span className="text-2xl font-black text-neutral-900 dark:text-white tracking-tight">
-              ${averageOrderValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {money(averageOrderValue)}
             </span>
             <span className="flex items-center text-xs font-bold text-emerald-600 dark:text-emerald-400">
-              <ArrowUpRight className="w-3.5 h-3.5" /> +$8.40
+              <ArrowUpRight className="w-3.5 h-3.5" /> +{money(8.40)}
             </span>
           </div>
           <p className="text-[11px] text-neutral-400 mt-1">Across 18 global currencies</p>
@@ -254,7 +256,7 @@ export const DashboardOverview: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <span className="flex items-center gap-1.5 text-xs text-indigo-500 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Daily Revenue ($)
+                <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Daily Revenue ({currencyCode})
               </span>
             </div>
           </div>
@@ -270,7 +272,7 @@ export const DashboardOverview: React.FC = () => {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#33333320" vertical={false} />
                 <XAxis dataKey="day" stroke="#888888" fontSize={11} tickLine={false} />
-                <YAxis stroke="#888888" fontSize={11} tickLine={false} tickFormatter={(v) => `$${v / 1000}k`} />
+                <YAxis stroke="#888888" fontSize={11} tickLine={false} tickFormatter={(v) => money(Number(v))} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: tooltipBg,
@@ -280,7 +282,7 @@ export const DashboardOverview: React.FC = () => {
                     fontSize: '12px',
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                   }}
-                  formatter={(val: number) => [`$${val.toLocaleString()}`, 'Revenue']}
+                  formatter={(val: number) => [`${money(val)}`, 'Revenue']}
                 />
                 <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
               </AreaChart>
@@ -418,7 +420,7 @@ export const DashboardOverview: React.FC = () => {
                       <span className="text-xs font-bold text-neutral-900 dark:text-white">{o.orderNumber}</span>
                       <span className="text-[10px] text-neutral-400">• {o.customerName}</span>
                     </div>
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400">{o.itemCount} item(s) • ${o.totalAmount.toFixed(2)}</p>
+                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400">{o.itemCount} item(s) • {money(o.totalAmount, o.currency, o.currencyExchangeRate)}</p>
                   </div>
                 </div>
 

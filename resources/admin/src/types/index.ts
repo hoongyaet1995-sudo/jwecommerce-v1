@@ -511,6 +511,7 @@ export interface Order {
   fulfillmentStatus: FulfillmentStatus;
   shippingSource?: OrderShippingSource;
   currency: string;
+  currencyExchangeRate?: number;
   items: OrderItem[];
   subtotal: number;
   taxAmount: number;

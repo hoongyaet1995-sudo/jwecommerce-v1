@@ -4,6 +4,8 @@ import {
     ArrowRight,
     Award,
     Briefcase,
+    Building2,
+    Banknote,
     Check,
     CircleCheck,
     CircleAlert,
@@ -70,6 +72,8 @@ const renderIcons = () => {
             ArrowRight,
             Award,
             Briefcase,
+            Building2,
+            Banknote,
             Check,
             CircleCheck,
             CircleAlert,
@@ -547,9 +551,8 @@ const installDeliveryMatrix = () => {
             if (shippingDefinition) shippingDefinition.textContent = shipping ? money(shipping) : 'FREE';
             if (taxDefinition) taxDefinition.textContent = money(tax);
             if (totalDefinition) totalDefinition.textContent = money(total);
-            const checkoutSubmit = form?.querySelector('[data-checkout-submit]')
-                || form?.querySelector('aside button:not([type="button"])');
-            checkoutSubmit?.replaceChildren(`Authorize & Place Order (${money(total)})`);
+            const checkoutSubmitLabel = form?.querySelector('[data-checkout-submit-label]');
+            if (checkoutSubmitLabel) checkoutSubmitLabel.textContent = `Authorize & Place Order (${money(total)})`;
             matrix.querySelectorAll('[data-delivery-option]').forEach((element) => {
                 element.classList.toggle('border-amber-400', element === option);
                 element.classList.toggle('bg-amber-400/10', element === option);

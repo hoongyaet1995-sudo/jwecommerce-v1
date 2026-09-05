@@ -1,3 +1,4 @@
+import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import {
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 
 export const CommerceHub: React.FC = () => {
+  const { money, currencyCode } = useAdminCurrency();
   const { setCurrentSection, orders = [], customers = [] } = useAdmin();
 
   const safeOrders = orders || [];
@@ -37,7 +39,7 @@ export const CommerceHub: React.FC = () => {
       badgeColor: pendingFulfillment > 0 ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
       highlights: [
         `${safeOrders.length} Direct Store Orders`,
-        `$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })} Total Revenue`,
+        `${money(totalRevenue)} Total Revenue`,
         'Courier Tracking & Shipping Labels',
         'Payment Verification & Tax Records',
       ],
@@ -96,7 +98,7 @@ export const CommerceHub: React.FC = () => {
           </div>
           <div className="p-3 rounded-xl bg-white/5 border border-white/5">
             <p className="text-[11px] font-medium text-neutral-400">Direct Store Sales</p>
-            <p className="text-xl font-bold text-white mt-0.5">${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 0 })}</p>
+            <p className="text-xl font-bold text-white mt-0.5">{money(totalRevenue)}</p>
             <span className="text-[10px] text-emerald-400">Paid volume</span>
           </div>
         </div>

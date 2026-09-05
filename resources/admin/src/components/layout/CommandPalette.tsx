@@ -1,3 +1,4 @@
+import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React, { useState, useEffect, useRef } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { primaryProductImage } from '../../catalogMedia';
@@ -27,6 +28,7 @@ import {
 import { NavSection } from '../../types';
 
 export const CommandPalette: React.FC = () => {
+  const { money, currencyCode } = useAdminCurrency();
   const {
     isCommandPaletteOpen,
     setIsCommandPaletteOpen,
@@ -398,7 +400,7 @@ export const CommandPalette: React.FC = () => {
                       <img src={primaryProductImage(p)} alt={p.title} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
                       <div className="truncate">
                         <div className="truncate font-semibold">{p.title}</div>
-                        <div className="text-[10px] text-neutral-500">{p.brand} • ${p.basePrice} • {p.variants.length} Variants</div>
+                        <div className="text-[10px] text-neutral-500">{p.brand} • {money(p.basePrice)} • {p.variants.length} Variants</div>
                       </div>
                     </div>
                     <ArrowRight className="w-3.5 h-3.5 text-neutral-400" />
@@ -423,7 +425,7 @@ export const CommandPalette: React.FC = () => {
                       <ShoppingBag className="w-4 h-4 text-indigo-500" />
                       <div>
                         <div className="font-semibold">{o.orderNumber} - {o.customerName}</div>
-                        <div className="text-[10px] text-neutral-500">${o.totalAmount.toFixed(2)} • {o.fulfillmentStatus}</div>
+                        <div className="text-[10px] text-neutral-500">{money(o.totalAmount, o.currency, o.currencyExchangeRate)} • {o.fulfillmentStatus}</div>
                       </div>
                     </div>
                     <ArrowRight className="w-3.5 h-3.5 text-neutral-400" />
@@ -448,7 +450,7 @@ export const CommandPalette: React.FC = () => {
                       <img src={c.avatar} alt={c.name} className="w-6 h-6 rounded-full object-cover" referrerPolicy="no-referrer" />
                       <div>
                         <div className="font-semibold">{c.name}</div>
-                        <div className="text-[10px] text-neutral-500">{c.email} • {c.totalOrders} orders (${c.totalSpent})</div>
+                        <div className="text-[10px] text-neutral-500">{c.email} • {c.totalOrders} orders ({money(c.totalSpent)})</div>
                       </div>
                     </div>
                     <ArrowRight className="w-3.5 h-3.5 text-neutral-400" />

@@ -1,3 +1,5 @@
+import { paymentStatusLabel } from '../../integration/paymentStatusLabel';
+import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React, { useEffect, useRef, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { Order, FulfillmentStatus, NotificationEventKey, OrderNotificationSummary, PaymentStatus } from '../../types';
@@ -58,6 +60,7 @@ export const notificationEventKeyForStatus = (code: string): NotificationEventKe
 export const shouldShowReturnsWorkbench = (enabled: boolean, historicalCount: number): boolean => enabled || historicalCount > 0;
 
 export const OrderAdmin: React.FC = () => {
+  const { money, currencyCode } = useAdminCurrency();
   const { laravelBootstrap, orders, shipmentParcels = [], updateOrderStatus, updateOrderTracking, reviewPaymentProof, amendOrderDeliveryDetails, reloadOrders, orderStatuses, setCurrentSection, notificationPermissions } = useAdmin();
   const [isReloading, setIsReloading] = useState(false);
   const reloadStream = async () => {
@@ -315,7 +318,7 @@ export const OrderAdmin: React.FC = () => {
       case 'refunded':
         return <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400">Refunded</span>;
       default:
-        return <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">Pending</span>;
+        return <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">{paymentStatusLabel(status)}</span>;
     }
   };
 
@@ -422,7 +425,7 @@ export const OrderAdmin: React.FC = () => {
                   </td>
 
                   <td className="py-3.5 px-4 font-mono font-bold text-neutral-900 dark:text-white text-xs">
-                    ${ord.totalAmount.toFixed(2)}
+                    {money(ord.totalAmount, ord.currency, ord.currencyExchangeRate)}
                   </td>
 
                   <td className="py-3.5 px-4">
@@ -696,10 +699,10 @@ export const OrderAdmin: React.FC = () => {
 
                     <div className="text-right font-mono">
                       <div className="font-bold text-xs text-neutral-900 dark:text-white">
-                        ${(item.price * item.quantity).toFixed(2)}
+                        {money((item.price * item.quantity), selectedOrder.currency, selectedOrder.currencyExchangeRate)}
                       </div>
                       <div className="text-[10px] text-neutral-400">
-                        ${item.price} × {item.quantity}
+                        {money(item.price, selectedOrder.currency, selectedOrder.currencyExchangeRate)} × {item.quantity}
                       </div>
                     </div>
                   </div>
@@ -776,19 +779,19 @@ export const OrderAdmin: React.FC = () => {
                 <div className="space-y-1 text-[11px] font-mono text-neutral-600 dark:text-neutral-300">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>${selectedOrder.subtotal.toFixed(2)}</span>
+                    <span>{money(selectedOrder.subtotal, selectedOrder.currency, selectedOrder.currencyExchangeRate)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Tax:</span>
-                    <span>${selectedOrder.taxAmount.toFixed(2)}</span>
+                    <span>{money(selectedOrder.taxAmount, selectedOrder.currency, selectedOrder.currencyExchangeRate)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Shipping:</span>
-                    <span>${selectedOrder.shippingAmount.toFixed(2)}</span>
+                    <span>{money(selectedOrder.shippingAmount, selectedOrder.currency, selectedOrder.currencyExchangeRate)}</span>
                   </div>
                   <div className="flex justify-between font-bold text-xs text-neutral-900 dark:text-white pt-1 border-t border-neutral-200 dark:border-neutral-700">
                     <span>Grand Total:</span>
-                    <span>${selectedOrder.totalAmount.toFixed(2)}</span>
+                    <span>{money(selectedOrder.totalAmount, selectedOrder.currency, selectedOrder.currencyExchangeRate)}</span>
                   </div>
                 </div>
               </div>

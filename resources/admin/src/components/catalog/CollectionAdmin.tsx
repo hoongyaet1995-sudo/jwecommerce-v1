@@ -1,3 +1,4 @@
+import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { CatalogImageUploadField } from './CatalogImageUploadField';
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 
 export const CollectionAdmin: React.FC = () => {
+  const { money, currencyCode } = useAdminCurrency();
   const { collections, saveCollection, deleteCollection, products } = useAdmin();
   const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -96,7 +98,7 @@ export const CollectionAdmin: React.FC = () => {
             Collection Management (CRUD)
           </h2>
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-            Group products by promotional campaigns, seasonal sales, or smart automated rules (e.g. Price &gt; $50 AND Tag = &apos;summer&apos;).
+            Group products by promotional campaigns, seasonal sales, or smart automated rules (e.g. Price &gt; {money(50)} AND Tag = &apos;summer&apos;).
           </p>
         </div>
 
@@ -412,7 +414,7 @@ export const CollectionAdmin: React.FC = () => {
                               <span className="font-medium text-neutral-900 dark:text-white truncate">{p.title}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-neutral-400 font-mono">${p.basePrice}</span>
+                              <span className="text-neutral-400 font-mono">{money(p.basePrice)}</span>
                               <input
                                 type="checkbox"
                                 checked={isSelected}

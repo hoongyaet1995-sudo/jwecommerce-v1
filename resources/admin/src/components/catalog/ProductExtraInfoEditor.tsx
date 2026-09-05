@@ -1,3 +1,4 @@
+import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import {
@@ -47,6 +48,7 @@ export const ProductExtraInfoEditor: React.FC<ProductExtraInfoEditorProps> = ({
   onChange,
   allProducts
 }) => {
+  const { money, currencyCode } = useAdminCurrency();
   const { reviews: allModerationReviews = [], setReviewFilterProductId, setCurrentSection } = useAdmin();
   const [subSection, setSubSection] = useState<'highlights' | 'specs' | 'shipping' | 'accordions' | 'cross_sell' | 'reviews'>('highlights');
 
@@ -880,7 +882,7 @@ export const ProductExtraInfoEditor: React.FC<ProductExtraInfoEditorProps> = ({
                   <div className="min-w-0 flex-1">
                     <span className="text-[10px] text-neutral-400 font-mono block uppercase truncate">{p.brand}</span>
                     <h5 className="text-xs font-bold text-neutral-900 dark:text-white truncate">{p.title}</h5>
-                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 font-mono">${p.basePrice}</span>
+                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 font-mono">{money(p.basePrice)}</span>
                   </div>
 
                   <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${

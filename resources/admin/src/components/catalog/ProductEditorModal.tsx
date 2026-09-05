@@ -1,3 +1,4 @@
+import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { Product, ProductOption, ProductVariant, VariantVisual } from '../../types';
@@ -39,6 +40,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   isOpen,
   onClose
 }) => {
+  const { money, currencyCode } = useAdminCurrency();
   const { categories, collections, products, taxClasses, saveProduct } = useAdmin();
 
   const [activeTab, setActiveTab] = useState<'basic' | 'variants' | 'media' | 'extra_info' | 'seo'>('basic');
@@ -499,7 +501,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                    Base Retail Price ($)
+                    Base Retail Price ({currencyCode})
                   </label>
                   <input
                     type="number"
@@ -682,7 +684,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                   <div className="flex items-center gap-1">
                     <input
                       type="number"
-                      placeholder="Set Price ($)"
+                      placeholder={`Set Price (${currencyCode})`}
                       value={batchPrice}
                       onChange={(e) => setBatchPrice(e.target.value)}
                       className="w-24 px-2 py-1 text-xs rounded-lg border bg-white dark:bg-neutral-900 border-indigo-300 dark:border-indigo-800 font-mono"
@@ -741,9 +743,9 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                         <th className="py-2.5 px-3">Variant (Combination)</th>
                         <th className="py-2.5 px-3">Visual Swatch (2 选 1)</th>
                         <th className="py-2.5 px-3">SKU Code</th>
-                        <th className="py-2.5 px-3">Price ($)</th>
-                        <th className="py-2.5 px-3">Compare At ($)</th>
-                        <th className="py-2.5 px-3">Cost ($)</th>
+                        <th className="py-2.5 px-3">Price ({currencyCode})</th>
+                        <th className="py-2.5 px-3">Compare At ({currencyCode})</th>
+                        <th className="py-2.5 px-3">Cost ({currencyCode})</th>
                         <th className="py-2.5 px-3">Stock Qty</th>
                         <th className="py-2.5 px-3">Weight (g)</th>
                         <th className="py-2.5 px-3">Package (cm)</th>

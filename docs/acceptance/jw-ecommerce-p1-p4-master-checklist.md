@@ -61,7 +61,7 @@ Goal: a merchant can publish real catalog content and a customer can discover, c
 | P1-013 | `[x]` | Customer order tracking read model and verification | `docs/superpowers/reports/2026-08-27-order-tracking-closure-mapping.md`; order tracking tests | Regression only. |
 | P1-014 | `[x]` | Product review authorization, persistence and operational moderation | Product review closure tests and Admin review bindings | Regression only. |
 | P1-015 | `[x]` | CMS pages, drafts, publication, media and shared public renderer | CMS/Admin page feature tests and Admin React CMS tests | Regression only. |
-| P1-016 | `[~]` | Full P1 browser journey matrix: guest + signed-in, desktop + mobile, success + failure | `docs/acceptance/2026-09-03-p1-browser-acceptance-live.md`; focused feature suite (36 passed / 223 assertions) | Live guest execution proved the order persists but exposed stale Admin Orders polling, Admin campaign producer, catalog quality, and cart variant/state defects. Repair and repeat the matrix before closure. |
+| P1-016 | `[~]` | Full P1 browser journey matrix: guest + signed-in, desktop + mobile, success + failure | `docs/acceptance/2026-09-03-p1-browser-acceptance-live.md`; `docs/acceptance/2026-09-05-p1-016-minimal-browser-reacceptance.md`; `docs/acceptance/2026-09-05-admin-currency-display.md` | Controlled checkout, correct SKU/cart state, coupon/tax total, and Admin persistence passed. The currency/icon defects are repaired locally and tested; existing-page polling and final customer browser re-acceptance remain to be recorded before full closure. |
 
 ## P2 - Post-order operations, fulfilment, accounting correctness
 

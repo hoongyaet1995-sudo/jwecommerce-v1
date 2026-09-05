@@ -17,6 +17,41 @@ class ReturnRequestOperationalClosureTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_restockable_receipt_restores_variant_once(): void
+    {
+        [$customer, $order, $item] = $this->deliveredOrder('STOCK');
+        $product = \App\Models\Product::query()->create(['handle'=>'return-stock','title'=>'Return stock','base_price'=>20000,'status'=>'active']);
+        $variant = $product->variants()->create(['sku'=>'RETURN-STOCK','title'=>'Black','price'=>20000,'stock'=>4]);
+        $item->update(['product_variant_id'=>$variant->id]);
+        $admin = User::factory()->create(['is_admin'=>true,'is_super_admin'=>true]);
+        $this->actingAs($customer,'customer')->post('/account/returns',['order_item_id'=>$item->id,'quantity'=>1,'resolution'=>'refund','reason'=>'defective']);
+        $r = $order->returnRequests()->firstOrFail();
+        $this->actingAs($admin)->postJson("/admin/api/returns/{$r->id}/approve")->assertOk();
+        $this->postJson("/admin/api/returns/{$r->id}/receive",['received_quantity'=>1,'condition'=>'restockable'])->assertOk();
+        $this->assertSame(5, $variant->fresh()->stock);
+        $this->postJson("/admin/api/returns/{$r->id}/receive",['received_quantity'=>1,'condition'=>'restockable'])->assertUnprocessable();
+        $this->assertSame(5, $variant->fresh()->stock);
+    }
+
+    public function test_manual_refund_records_actual_amount_including_tax_and_rejects_overpayment(): void
+    {
+        [$customer, $order, $item] = $this->deliveredOrder('ACTUAL');
+        $order->update(['tax_amount' => 1200, 'total' => 21200, 'currency_exchange_rate' => 2]);
+        $order->payments()->update(['gateway' => 'cod']);
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        $this->actingAs($customer, 'customer')->post('/account/returns', ['order_item_id'=>$item->id,'quantity'=>1,'resolution'=>'refund','reason'=>'defective']);
+        $r = $order->returnRequests()->firstOrFail();
+        $this->actingAs($admin)->postJson("/admin/api/returns/{$r->id}/approve")->assertOk();
+        $this->postJson("/admin/api/returns/{$r->id}/receive", ['received_quantity'=>1,'condition'=>'restockable'])->assertOk();
+        $data = ['external_refund_reference'=>'DEMO','refund_note'=>'External confirmation'];
+        $this->postJson("/admin/api/returns/{$r->id}/resolve-refund", $data)->assertUnprocessable();
+        $this->postJson("/admin/api/returns/{$r->id}/resolve-refund", $data+['refund_amount'=>'424.02'])->assertUnprocessable();
+        $this->postJson("/admin/api/returns/{$r->id}/resolve-refund", $data+['refund_amount'=>'424.00'])->assertOk()->assertJsonPath('data.paymentGateway','Cash on Delivery')->assertJsonPath('data.paymentGatewayStatus','refunded');
+        $this->assertDatabaseHas('order_refunds',['order_id'=>$order->id,'amount'=>21200]);
+        $this->postJson("/admin/api/returns/{$r->id}/resolve-refund", $data+['refund_amount'=>'212.00'])->assertUnprocessable();
+        $this->assertDatabaseCount('order_refunds',1);
+    }
+
     public function test_disabled_return_policy_blocks_new_requests_but_preserves_existing_history(): void
     {
         [$user, $order, $item] = $this->deliveredOrder('POLICY-OFF');
@@ -107,6 +142,7 @@ class ReturnRequestOperationalClosureTest extends TestCase
 
         $this->actingAs($admin)->postJson("/admin/api/returns/{$requestId}/resolve-refund", [
             'external_refund_reference' => 'STRIPE-RE-92841',
+            'refund_amount' => '200.00',
             'refund_note' => 'Refund completed manually in Stripe Dashboard.',
         ])->assertOk()->assertJsonPath('data.returnRequest.status', 'resolved_refund');
 
@@ -186,6 +222,7 @@ class ReturnRequestOperationalClosureTest extends TestCase
         ])->assertOk()->assertJsonPath('data.returnRequest.status', 'received');
         $this->actingAs($admin)->postJson("/admin/api/returns/{$requestId}/resolve-refund", [
             'external_refund_reference' => 'MANUAL-REFUND-001',
+            'refund_amount' => '200.00',
             'refund_note' => 'Refund completed in the external payment dashboard.',
         ])
             ->assertOk()->assertJsonPath('data.returnRequest.status', 'resolved_refund');

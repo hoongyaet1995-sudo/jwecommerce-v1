@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CmsPage, PageDocument, PageDraftPayload, PageSection } from '../../types';
 import { useAdmin } from '../../context/AdminContext';
+import { useAdminCurrency } from '../../context/useAdminCurrency';
 import { readAdminBootstrap } from '../../integration/adminBootstrap';
 import {
   archivePage,
@@ -85,6 +86,7 @@ export const PageAdmin: React.FC = () => {
     setSelectedPageId,
     addToast
   } = useAdmin();
+  const { currencyCode } = useAdminCurrency();
 
   // Mode state: null = Page Directory, non-null = Editing that Page ID
   const [editingPageId, setEditingPageId] = useState<string | null>(selectedPageId || null);
@@ -136,9 +138,9 @@ export const PageAdmin: React.FC = () => {
   };
   const activeSection = currentPage?.sections.find(s => s.id === activeSectionId) || null;
   const adminRuntimePayload = useMemo(() => currentPage
-    ? createAdminPageRuntimePayload(currentPage, { products, categories, collections }, shopSettings.currency)
+    ? createAdminPageRuntimePayload(currentPage, { products, categories, collections }, currencyCode)
     : null,
-  [currentPage, products, categories, collections, shopSettings.currency]);
+  [currentPage, products, categories, collections, currencyCode]);
 
   const toPageDocument = (page: CmsPage): PageDocument => ({
     title: page.title,

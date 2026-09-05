@@ -1,3 +1,4 @@
+import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { Product } from '../../types';
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 
 export const ProductAdmin: React.FC = () => {
+  const { money, currencyCode } = useAdminCurrency();
   const { products, categories, deleteProduct, saveProduct, addToast } = useAdmin();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -223,10 +225,10 @@ export const ProductAdmin: React.FC = () => {
 
                     {/* Base Retail Price */}
                     <td className="py-3.5 px-4 font-mono font-bold text-neutral-900 dark:text-white">
-                      ${prod.basePrice.toFixed(2)}
+                      {money(prod.basePrice)}
                       {prod.baseCompareAtPrice && (
                         <span className="text-[10px] text-neutral-400 line-through ml-1.5 font-normal">
-                          ${prod.baseCompareAtPrice.toFixed(2)}
+                          {money(prod.baseCompareAtPrice)}
                         </span>
                       )}
                     </td>
@@ -351,7 +353,7 @@ export const ProductAdmin: React.FC = () => {
         isOpen
         itemType="Product"
         itemName={pendingDeletion.title}
-        itemDetails={`${pendingDeletion.variants.length} SKU${pendingDeletion.variants.length === 1 ? '' : 's'} • $${pendingDeletion.basePrice.toFixed(2)}`}
+        itemDetails={`${pendingDeletion.variants.length} SKU${pendingDeletion.variants.length === 1 ? '' : 's'} • ${money(pendingDeletion.basePrice)}`}
         warningMessage="Archiving this product removes it from active storefront listings while retaining its order history."
         impactItems={[
           `${pendingDeletion.variants.length} SKU variant${pendingDeletion.variants.length === 1 ? '' : 's'} will no longer be available for new purchases.`,
