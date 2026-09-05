@@ -19,6 +19,7 @@ import { DeveloperSpecs } from './components/dev/DeveloperSpecs';
 import { PageAdmin } from './components/pages/PageAdmin';
 import { ShopSettingsHub } from './components/settings/ShopSettingsHub';
 import { MarketplaceHub } from './components/marketplace/MarketplaceHub';
+import { MarketplaceWorkspace } from './marketplace/MarketplaceWorkspace';
 import { MarketplaceAuthPage } from './components/marketplace/MarketplaceAuthPage';
 import { MarketplaceOMSPage } from './components/marketplace/MarketplaceOMSPage';
 import { MarketplaceInventoryPage } from './components/marketplace/MarketplaceInventoryPage';
@@ -62,15 +63,17 @@ const AdminLayoutContent: React.FC = () => {
       case 'shipping-malaysia':
         return <ShippingDashboard />;
       case 'marketplace':
-        return <MarketplaceHub />;
+        return <MarketplaceWorkspace />;
+      case 'marketplace-mapping':
+        return <MarketplaceWorkspace />;
       case 'marketplace-auth':
-        return <MarketplaceAuthPage />;
+        return <MarketplaceWorkspace />;
       case 'marketplace-oms':
-        return <MarketplaceOMSPage />;
+        return <MarketplaceWorkspace />;
       case 'marketplace-inventory':
-        return <MarketplaceInventoryPage />;
+        return <MarketplaceWorkspace />;
       case 'marketplace-sync':
-        return <MarketplaceSyncPage />;
+        return <MarketplaceWorkspace />;
       case 'storefront':
         return <StorefrontHub />;
       case 'storefront-header-announcement':

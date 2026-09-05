@@ -276,6 +276,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/catalog/categories', AdminAppController::class)->name('categories.index');
     Route::get('/catalog/collections', AdminAppController::class)->name('collections.index');
     Route::get('/promotions', AdminAppController::class)->name('coupons.index');
+    Route::get('/api/marketplace', [\App\Http\Controllers\Admin\MarketplaceApiController::class, 'index']);
+    Route::post('/api/marketplace/stores', [\App\Http\Controllers\Admin\MarketplaceApiController::class, 'save']);
+    Route::patch('/api/marketplace/stores/{store}', [\App\Http\Controllers\Admin\MarketplaceApiController::class, 'save'])->whereNumber('store');
+    Route::delete('/api/marketplace/stores/{store}', [\App\Http\Controllers\Admin\MarketplaceApiController::class, 'destroy'])->whereNumber('store');
+    Route::put('/api/marketplace/listings/{listing}/mapping', [\App\Http\Controllers\Admin\MarketplaceApiController::class, 'mapping'])->whereNumber('listing');
+    Route::delete('/api/marketplace/listings/{listing}/mapping', [\App\Http\Controllers\Admin\MarketplaceApiController::class, 'unlink'])->whereNumber('listing');
+    Route::post('/api/marketplace/remote/{operation}', [\App\Http\Controllers\Admin\MarketplaceApiController::class, 'unavailable'])->where('operation','fetch|publish|sync|import|authorize');
+    Route::get('/marketplace/mapping', AdminAppController::class)->name('marketplace.mapping');
     Route::get('/marketplace', AdminAppController::class)->name('marketplace');
     Route::get('/marketplace/auth', AdminAppController::class)->name('marketplace.auth');
     Route::get('/marketplace/oms', AdminAppController::class)->name('marketplace.oms');

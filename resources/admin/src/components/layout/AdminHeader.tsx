@@ -80,7 +80,8 @@ export const AdminHeader: React.FC<{ onToggleMobileSidebar: () => void }> = ({
     switch (currentSection) {
       case 'dashboard': return { category: 'Executive', title: 'Dashboard Overview' };
       case 'marketplace': return { category: 'Marketplace Ecosystem', title: 'Overview Hub' };
-      case 'marketplace-auth': return { category: 'Marketplace Ecosystem', title: 'Open Platform Auth' };
+      case 'marketplace-auth': return { category: 'Marketplace Ecosystem', title: 'Connect Store' };
+      case 'marketplace-mapping': return { category: 'Marketplace Ecosystem', title: 'Product & SKU Mapping' };
       case 'marketplace-oms': return { category: 'Marketplace Ecosystem', title: 'Marketplace Orders (OMS)' };
       case 'marketplace-inventory': return { category: 'Marketplace Ecosystem', title: 'Inventory & WMS Allocation' };
       case 'marketplace-sync': return { category: 'Marketplace Ecosystem', title: 'Webhooks & Sync Stream' };

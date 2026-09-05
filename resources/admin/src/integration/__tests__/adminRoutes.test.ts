@@ -15,6 +15,7 @@ const ALL_ADMIN_SECTIONS = [
   'shipping-malaysia',
   'marketplace',
   'marketplace-auth',
+  'marketplace-mapping',
   'marketplace-oms',
   'marketplace-inventory',
   'marketplace-sync',

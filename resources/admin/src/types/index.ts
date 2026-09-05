@@ -1055,6 +1055,7 @@ export type NavSection =
   | 'shipping-malaysia'
   | 'marketplace'
   | 'marketplace-auth'
+  | 'marketplace-mapping'
   | 'marketplace-oms'
   | 'marketplace-inventory'
   | 'marketplace-sync'

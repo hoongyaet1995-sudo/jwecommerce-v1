@@ -1,0 +1,75 @@
+[
+  {
+    "file": "components/marketplace/ChannelMappingModal.tsx",
+    "sourceSha256": "51814f02ecd4d6e6f2773ca225ecbe342543f50a2813c710e85fba349e2ac6a5",
+    "previewSha256": "b92dc4a9d19f02883733e3f2b439711ef1bda6d45e58da7ea8ddd192d4e52754",
+    "presentationEqual": true
+  },
+  {
+    "file": "components/marketplace/MarketplaceAuthPage.tsx",
+    "sourceSha256": "51f2eaa7ead2a23ef5439d79e45726cfcad7d90830d704becdbe5b9c093a9992",
+    "previewSha256": "a5f093845e57fff891dc8a88d5489392ff0714257acc8315d7ad7ad01f57fd95",
+    "presentationEqual": true
+  },
+  {
+    "file": "components/marketplace/MarketplaceHub.tsx",
+    "sourceSha256": "483deefb81de22c89bd2cca06d96349348786880e7dc03f2f864d73a3b4d9c41",
+    "previewSha256": "1c7237ddcdb9b69acefa2240a01547af18566ccc8d53fd2d1dc17f8aeb1d811c",
+    "presentationEqual": true
+  },
+  {
+    "file": "components/marketplace/MarketplaceInventoryPage.tsx",
+    "sourceSha256": "4ed867764f4842e78e735c47ca720f8ec13d65c8edeb23c68585140acac51cb8",
+    "previewSha256": "fae1c97c14e1dbe8f10aa7446edaf131d7c1c43acde7d18970d44f5f8f0f61b5",
+    "presentationEqual": true
+  },
+  {
+    "file": "components/marketplace/MarketplaceMappingPage.tsx",
+    "sourceSha256": "dd050aa15820109a56a556c7bb6decb2c1046364181044dac3f9b6887ffd0d81",
+    "previewSha256": "de53d3e6dd7e89d38fa417ae696bc1397665b8c37a66c7ec79c022363c33bb1e",
+    "presentationEqual": true
+  },
+  {
+    "file": "components/marketplace/MarketplaceOMSPage.tsx",
+    "sourceSha256": "a2323c8f77f0ae67fcd72af1fd520c5009b77e8a8bbf88422401cee073f22312",
+    "previewSha256": "160f1a2833ceaca0c9f57a74f58a30151f355856173624968af168cdfbfdf5d2",
+    "presentationEqual": true
+  },
+  {
+    "file": "components/marketplace/MarketplaceSyncPage.tsx",
+    "sourceSha256": "e450daff5623d9daf69573253b418ca93c5847c3e8afd688a50b1c2167bbcb45",
+    "previewSha256": "d14059669a08c2e2b51e0b2316a5d5c84f220573cc5d9e187894477e563be654",
+    "presentationEqual": true
+  },
+  {
+    "file": "components/marketplace/ProductMappingModal.tsx",
+    "sourceSha256": "5e806df816da70cc5e1ea704b679656c5e3e6b7ac231a61b7fcad40bd0406fc6",
+    "previewSha256": "edcb5b3becd4df1db2f9f05463299697cad73cfbd94865a9e01b8d9280fb467b",
+    "presentationEqual": true
+  },
+  {
+    "file": "components/marketplace/PublishProductModal.tsx",
+    "sourceSha256": "5aa20afb0990e984b9374ce808af924aee154684d4efb57d6b05ffdb0425d73b",
+    "previewSha256": "aaae9135759d2f4856c3c071676a8c45c0cc8b6581c3fcb4835f253c9b1cba06",
+    "presentationEqual": true
+  },
+  {
+    "file": "components/marketplace/ShippingLabelModal.tsx",
+    "sourceSha256": "b22c3191731755f8888b22a448eb1f2e32e2a1463655173aae67dbc0f5d426a2",
+    "previewSha256": "2103ebb2edad83e2a7be4d41059c3fd120be58cc5d86f0c51343c611b839df3c",
+    "presentationEqual": true
+  },
+  {
+    "file": "components/common/SubNavHeader.tsx",
+    "sourceSha256": "46c1b05dc82b79cafe341253a36747fb3bb57132b4684c60c91d5723fe54c9d1",
+    "previewSha256": "b13f10f71dbf164ba62382f677237bac1e204ac7db4c82441055181b31dd8809",
+    "presentationEqual": true
+  },
+  {
+    "file": "components/common/ToastContainer.tsx",
+    "sourceSha256": "0087488ac5b0a33183dd694246b2da5d19f93747be26520bac70c3cfff3307c6",
+    "previewSha256": "31e645b8ca15e8cfea3f2459fa5ed7b3b90c027aaf17b38896c5ba84583fcc6b",
+    "presentationEqual": true
+  }
+]
+

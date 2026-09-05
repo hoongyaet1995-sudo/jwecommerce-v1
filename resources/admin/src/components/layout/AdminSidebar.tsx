@@ -108,6 +108,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
   const isMarketplaceActive =
     currentSection === 'marketplace' ||
     currentSection === 'marketplace-auth' ||
+    currentSection === 'marketplace-mapping' ||
     currentSection === 'marketplace-oms' ||
     currentSection === 'marketplace-inventory' ||
     currentSection === 'marketplace-sync';
@@ -210,7 +211,8 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
       badgeVariant: pendingMpOrders > 0 ? 'warning' : 'success',
       subItems: [
         { id: 'marketplace' as NavSection, label: 'Overview Hub' },
-        { id: 'marketplace-auth' as NavSection, label: 'Open Platform Auth' },
+        { id: 'marketplace-auth' as NavSection, label: 'Connect Store' },
+        { id: 'marketplace-mapping' as NavSection, label: 'Product & SKU Mapping' },
         { id: 'marketplace-oms' as NavSection, label: 'Marketplace OMS' },
         { id: 'marketplace-inventory' as NavSection, label: 'Marketplace Inventory' },
         { id: 'marketplace-sync' as NavSection, label: 'Webhooks & Sync Stream' },

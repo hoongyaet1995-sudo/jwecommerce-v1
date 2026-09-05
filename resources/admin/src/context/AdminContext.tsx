@@ -809,10 +809,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [pages]);
 
   // Marketplace Ecosystem State
-  const [connections, setConnections] = useState<MarketplaceConnection[]>(INITIAL_MARKETPLACE_CONNECTIONS);
-  const [marketplaceOrders, setMarketplaceOrders] = useState<MarketplaceOrder[]>(INITIAL_MARKETPLACE_ORDERS);
-  const [marketplaceInventory, setMarketplaceInventory] = useState<MarketplaceInventoryItem[]>(INITIAL_MARKETPLACE_INVENTORY);
-  const [syncLogs, setSyncLogs] = useState<MarketplaceSyncLog[]>(INITIAL_MARKETPLACE_SYNC_LOGS);
+  const [connections, setConnections] = useState<MarketplaceConnection[]>([]);
+  const [marketplaceOrders, setMarketplaceOrders] = useState<MarketplaceOrder[]>([]);
+  const [marketplaceInventory, setMarketplaceInventory] = useState<MarketplaceInventoryItem[]>([]);
+  const [syncLogs, setSyncLogs] = useState<MarketplaceSyncLog[]>([]);
   const [selectedMarketplaceOrderId, setSelectedMarketplaceOrderId] = useState<string | null>(null);
 
   // Malaysia Shipping Module State
@@ -893,17 +893,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setStaffUsers(savedStaff);
 
 
-      const savedConns = safeParseArray(STORAGE_KEYS.MARKETPLACE_CONNECTIONS, INITIAL_MARKETPLACE_CONNECTIONS);
-      setConnections(savedConns);
-
-      const savedMpOrders = safeParseArray(STORAGE_KEYS.MARKETPLACE_ORDERS, INITIAL_MARKETPLACE_ORDERS);
-      setMarketplaceOrders(savedMpOrders);
-
-      const savedMpInv = safeParseArray(STORAGE_KEYS.MARKETPLACE_INVENTORY, INITIAL_MARKETPLACE_INVENTORY);
-      setMarketplaceInventory(savedMpInv);
-
-      const savedLogs = safeParseArray(STORAGE_KEYS.MARKETPLACE_SYNC_LOGS, INITIAL_MARKETPLACE_SYNC_LOGS);
-      setSyncLogs(savedLogs);
+      // Marketplace fixtures are retired. Authoritative records load in MarketplaceProvider.
 
       const savedStatuses = safeParseArray(STORAGE_KEYS.CUSTOM_ORDER_STATUSES, INITIAL_CUSTOM_ORDER_STATUSES);
       setOrderStatuses(savedStatuses);

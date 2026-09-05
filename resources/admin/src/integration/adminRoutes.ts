@@ -14,6 +14,7 @@ export const ADMIN_PATH_BY_SECTION = {
   promotions: '/admin/promotions',
   marketplace: '/admin/marketplace',
   'marketplace-auth': '/admin/marketplace/auth',
+  'marketplace-mapping': '/admin/marketplace/mapping',
   'marketplace-oms': '/admin/marketplace/oms',
   'marketplace-inventory': '/admin/marketplace/inventory',
   'marketplace-sync': '/admin/marketplace/sync',
