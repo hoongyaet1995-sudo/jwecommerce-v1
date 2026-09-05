@@ -33,10 +33,12 @@ final class PagePreviewController extends Controller
 
         $entry = $this->manifest->resolve('src/public-page.tsx');
         $document = $payload['page']['document'];
+        $quickAddProducts = app(\App\Domain\Cms\ProductListingPresentation::class)->prepare($payload);
 
         return response()->view('storefront.cms-page-react', [
             'entry' => $entry,
             'payload' => $payload,
+            'quickAddProducts' => $quickAddProducts,
             'title' => (($document['seoTitle'] ?? null) ?: ($document['title'] ?? 'Page')).' | '.app(\App\Support\ShopBrand::class)->name(),
             'description' => ($document['seoDescription'] ?? null) ?: ($document['description'] ?? null),
         ], $entry === null ? 503 : 200);

@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import {listingSources} from '../../cms/listingSources';
 import {
   PageSection,
   SectionItem,
@@ -1206,6 +1207,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
   onToggleCollapse
 }) => {
   const { products, categories, collections, addToast } = useAdmin();
+  const listingCatalog = React.useMemo(() => listingSources(categories, collections, products), [categories, collections, products]);
   const [couponPromotions, setCouponPromotions] = React.useState<Promotion[]>([]);
 
   React.useEffect(() => {
@@ -1805,6 +1807,220 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                   </label>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* Product Listing - Source Type, Catalog Selection, Product Limit & Slider Controls */}
+        {section.type === 'product_listing' && (
+          <div className="space-y-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
+            <div>
+              <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
+                Catalog Source & Dynamic Mapping
+              </label>
+              <span className="text-[10px] text-neutral-400">
+                Configure dynamic product feed, maximum display limit, and auto-slider settings.
+              </span>
+            </div>
+
+            {/* 1. Source Type Selector (Category vs Collection) */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 block">
+                Source Type & Catalog Selection
+              </label>
+              <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700/60">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const firstCat = listingCatalog.categories[0]?.id || '';
+                    onChange({
+                      ...section,
+                      sourceType: 'category',
+                      sourceId: firstCat
+                    });
+                  }}
+                  className={`py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    (section.sourceType || 'category') === 'category'
+                      ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-xs font-bold'
+                      : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Folder className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Category</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const firstCol = listingCatalog.collections[0]?.id || '';
+                    onChange({
+                      ...section,
+                      sourceType: 'collection',
+                      sourceId: firstCol
+                    });
+                  }}
+                  className={`py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    section.sourceType === 'collection'
+                      ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-xs font-bold'
+                      : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+                  }`}
+                >
+                  <FolderArchive className="w-3.5 h-3.5 text-purple-500" />
+                  <span>Collection</span>
+                </button>
+              </div>
+
+              {/* Searchable Source Selector */}
+              <SearchableSourcePicker
+                sourceType={section.sourceType || 'category'}
+                sourceId={section.sourceId || ''}
+                onChange={(sourceId) => {
+                  onChange({
+                    ...section,
+                    sourceId
+                  });
+                }}
+                categories={listingCatalog.categories}
+                collections={listingCatalog.collections}
+              />
+            </div>
+
+            {/* 2. Product Limit Selector */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 block">
+                  Product Limit
+                </label>
+                <span className="text-[10px] text-neutral-400 font-mono">
+                  Max {section.productLimit || 6} items
+                </span>
+              </div>
+              <div className="grid grid-cols-5 gap-1.5">
+                {([3, 4, 6, 8, 12] as const).map(limit => (
+                  <button
+                    key={limit}
+                    type="button"
+                    onClick={() => updateField('productLimit', limit)}
+                    className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      (section.productLimit || 6) === limit
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                    }`}
+                  >
+                    {limit}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. Slider Settings */}
+            <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800/80 space-y-3">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
+                Carousel & Sliding Navigation
+              </label>
+
+              {/* Auto Sliding Toggle */}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700/60">
+                <div>
+                  <div className="text-xs font-semibold text-neutral-900 dark:text-white">Auto Sliding</div>
+                  <div className="text-[10px] text-neutral-400">Automatically advance products on interval (pauses on hover)</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateField('autoSlide', section.autoSlide === false ? true : false)}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
+                    section.autoSlide !== false ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-700'
+                  }`}
+                >
+                  <div
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                      section.autoSlide !== false ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Auto Slide Interval */}
+              {section.autoSlide !== false && (
+                <div>
+                  <label className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 block mb-1">
+                    Auto Slide Interval
+                  </label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { label: '3s', val: 3 },
+                      { label: '3.5s', val: 3.5 },
+                      { label: '5s', val: 5 },
+                      { label: '7s', val: 7 },
+                    ].map(speed => (
+                      <button
+                        key={speed.val}
+                        type="button"
+                        onClick={() => updateField('autoSlideInterval', speed.val)}
+                        className={`py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          (section.autoSlideInterval || 3.5) === speed.val
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                        }`}
+                      >
+                        {speed.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Show Navigation Arrows */}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700/60">
+                <div>
+                  <div className="text-xs font-semibold text-neutral-900 dark:text-white">Side Preview & Next Buttons</div>
+                  <div className="text-[10px] text-neutral-400">Display circular interactive navigation arrows on left & right</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateField('showNavArrows', section.showNavArrows === false ? true : false)}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
+                    section.showNavArrows !== false ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-700'
+                  }`}
+                >
+                  <div
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                      section.showNavArrows !== false ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Desktop Items Per View */}
+              <div>
+                <label className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 block mb-1">
+                  Desktop Visible Items
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => updateField('columnsCount', 3)}
+                    className={`py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      (section.columnsCount || 3) === 3
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                    }`}
+                  >
+                    3 Products (Standard)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateField('columnsCount', 4)}
+                    className={`py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      section.columnsCount === 4
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                    }`}
+                  >
+                    4 Products (Compact)
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

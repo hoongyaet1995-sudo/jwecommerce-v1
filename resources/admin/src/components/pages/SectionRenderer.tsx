@@ -54,6 +54,26 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 }) => {
   const runtime = usePageRuntime();
   const runtimeSection = usePageSectionRuntime(section.id);
+  const [productListingIdx, setProductListingIdx] = useState(0);
+  const [listingVariantIds, setListingVariantIds] = useState<Record<string,string>>({});
+  const [isListingHovered, setIsListingHovered] = useState(false);
+  const listingTrackRef = useRef<HTMLDivElement>(null);
+  const listingItems = runtimeSection.listing?.products ?? [];
+  const listingCardsPerView = viewport === 'mobile' ? 1 : viewport === 'tablet' ? 2 : section.columnsCount === 4 ? 4 : 3;
+  const listingMaxIdx = Math.max(0, listingItems.length - listingCardsPerView);
+  const listingMoney = (amount: number) => {
+    const code = runtime.context.currency.trim().match(/^([A-Za-z]{3})(?:\s|$)/)?.[1].toUpperCase();
+    return code ? new Intl.NumberFormat('en-MY', {style:'currency',currency:code}).format(amount) : `${runtime.context.currency} ${amount.toFixed(2)}`;
+  };
+  useEffect(() => { setProductListingIdx(0); }, [section.sourceType, section.sourceId, section.productLimit, viewport, section.columnsCount]);
+  useEffect(() => {
+    if (section.type !== 'product_listing' || section.autoSlide === false || isListingHovered || listingMaxIdx <= 0) return;
+    const timer = setInterval(() => {
+      if (document.querySelector('[data-quick-add-modal][aria-hidden="false"]')) return;
+      setProductListingIdx(prev => prev >= listingMaxIdx ? 0 : prev + 1);
+    }, (section.autoSlideInterval || 3.5) * 1000);
+    return () => clearInterval(timer);
+  }, [section.type, section.autoSlide, section.autoSlideInterval, isListingHovered, listingMaxIdx]);
   const [openFaqIds, setOpenFaqIds] = useState<Record<string, boolean>>({
     [section.items?.[0]?.id || 'faq-1']: true
   });
@@ -1029,6 +1049,289 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   };
 
   // 9. Collection Tabs Showcase
+  const renderProductListing = () => {
+    const displayedItems = listingItems;
+    // Nordic Clean persists a white canvas. Use PLP's light tokens independently
+    // of the Admin shell theme, keeping the original source carousel geometry.
+    const lightCards = section.backgroundColor === 'bg-white';
+
+    // Visible cards per view calculation based on viewport and columnsCount
+    const desktopCols = section.columnsCount === 4 ? 4 : 3;
+    const cardsPerView = viewport === 'mobile' ? 1 : viewport === 'tablet' ? 2 : desktopCols;
+    const maxIdx = Math.max(0, displayedItems.length - cardsPerView);
+
+    // Navigation handlers
+    const handlePrev = (e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      setProductListingIdx(prev => (prev <= 0 ? maxIdx : prev - 1));
+    };
+
+    const handleNext = (e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      setProductListingIdx(prev => (prev >= maxIdx ? 0 : prev + 1));
+    };
+
+    // Helper to abbreviate variant names for chips (e.g., 'Obsidian' -> 'Obs', 'Rich Walnut' -> 'Ric')
+    const getVariantAbbr = (val: string) => {
+      if (!val) return 'Std';
+      const clean = val.trim();
+      return clean.length <= 3 ? clean : clean.substring(0, 3);
+    };
+
+    const isNavVisible = section.showNavArrows !== false && displayedItems.length > cardsPerView;
+
+    return (
+      <div
+        className={`max-w-7xl mx-auto px-6 ${getPaddingClass()}`}
+        onMouseEnter={() => setIsListingHovered(true)}
+        onMouseLeave={() => setIsListingHovered(false)}
+      >
+        {/* Section Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+          <div className={`${section.textAlignment === 'center' ? 'text-center md:text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-left'}`}>
+            {section.subtitle && (
+              <span
+                style={getEyebrowStyle()}
+                className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
+              >
+                {section.subtitle}
+              </span>
+            )}
+            <h2
+              style={getTitleStyle()}
+              className="text-2xl sm:text-4xl font-extrabold tracking-tight"
+            >
+              {section.title || 'Product Listing'}
+            </h2>
+            {section.content && (
+              <p
+                style={getContentStyle()}
+                className="text-sm sm:text-base opacity-80 mt-2 max-w-2xl"
+              >
+                {section.content}
+              </p>
+            )}
+          </div>
+
+          {/* Top-right Navigation Controls */}
+          {isNavVisible && (
+            <div className="flex items-center gap-2 self-end shrink-0">
+              <button
+                type="button"
+                onClick={handlePrev}
+                aria-label="Previous Products"
+                className="w-10 h-10 rounded-full bg-neutral-900 border border-neutral-800 hover:border-indigo-500 text-white flex items-center justify-center transition-all hover:bg-neutral-800 active:scale-95 shadow-md cursor-pointer"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleNext}
+                aria-label="Next Products"
+                className="w-10 h-10 rounded-full bg-neutral-900 border border-neutral-800 hover:border-indigo-500 text-white flex items-center justify-center transition-all hover:bg-neutral-800 active:scale-95 shadow-md cursor-pointer"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Carousel Container with Side Navigation Overlay Buttons */}
+        <div className="relative group/carousel">
+          {/* Side Overlay Arrow - Left */}
+          {isNavVisible && (
+            <button
+              type="button"
+              onClick={handlePrev}
+              aria-label="Previous Slide"
+              className="hidden md:flex absolute -left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-neutral-950/90 hover:bg-indigo-600 border border-neutral-800 hover:border-indigo-500 text-white items-center justify-center transition-all duration-300 shadow-xl backdrop-blur-md hover:scale-105 active:scale-95 cursor-pointer opacity-0 group-hover/carousel:opacity-100"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          )}
+
+          {/* Side Overlay Arrow - Right */}
+          {isNavVisible && (
+            <button
+              type="button"
+              onClick={handleNext}
+              aria-label="Next Slide"
+              className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-neutral-950/90 hover:bg-indigo-600 border border-neutral-800 hover:border-indigo-500 text-white items-center justify-center transition-all duration-300 shadow-xl backdrop-blur-md hover:scale-105 active:scale-95 cursor-pointer opacity-0 group-hover/carousel:opacity-100"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          )}
+
+          {/* Overflow Track */}
+          <div className="overflow-hidden -mx-3 px-1 py-2">
+            <div
+              ref={listingTrackRef}
+              data-product-listing-track
+              className="flex transition-transform duration-500 ease-out"
+              style={{
+                transform: `translateX(-${(Math.min(productListingIdx, maxIdx) * 100) / cardsPerView}%)`
+              }}
+            >
+              {displayedItems.map((prod, idx) => {
+                // Calculate discount percent
+                const commerce = prod.commerce;
+                const variants = commerce?.variants ?? [];
+                const selected = variants.find(v => v.id === listingVariantIds[prod.id]) ?? variants[0];
+                const price = selected?.price ?? commerce?.price ?? prod.basePrice;
+                const comparePrice = selected ? selected.compareAtPrice : commerce?.compareAtPrice;
+                const productHref = runtime.context.mode === 'public' ? `/products/${encodeURIComponent(prod.slug)}` : undefined;
+                const ImageLink = productHref ? 'a' : 'div';
+                const singleVariant = variants.length === 1;
+                const purchaseDisabled = runtime.context.mode !== 'public' || !commerce?.canChoose || (singleVariant && (!selected.enabled || selected.stock < 1));
+                const hasDiscount = comparePrice != null && comparePrice > price && price >= 0;
+                const discountPct = hasDiscount ? Math.round(((comparePrice! - price) / comparePrice!) * 100) : 0;
+
+                // SKU format
+                const skuCode = selected?.sku ?? commerce?.sku ?? '';
+
+                // Extract variant option tags (e.g., Obs, Lun, +5)
+                const rawOptions = variants.length > 1 ? variants.map(v => v.label) : [];
+                const optionPills = rawOptions.map(getVariantAbbr);
+
+                const visiblePills = optionPills.slice(0, 4);
+                const overflowCount = Math.max(0, optionPills.length - 4);
+
+                return (
+                  <div
+                    key={prod.id + '-' + idx}
+                    className="shrink-0 px-3 transition-all duration-300"
+                    style={{
+                      width: `${100 / cardsPerView}%`
+                    }}
+                  >
+                    <div className={`h-full rounded-2xl sm:rounded-3xl border transition-all duration-300 overflow-hidden flex flex-col justify-between group/card ${lightCards ? 'bg-white border-zinc-200 hover:border-zinc-300 shadow-sm hover:shadow-lg' : 'bg-[#121316] dark:bg-[#121316] border-neutral-800 hover:border-neutral-700 shadow-xl'}`}>
+                      {/* 1. Edge-to-edge square product image, matching the existing PLP. */}
+                      <ImageLink href={productHref} className="relative aspect-square w-full bg-white overflow-hidden rounded-t-2xl sm:rounded-t-3xl">
+                        {/* Red Discount Pill (e.g. SAVE 13%, SAVE 15%, SAVE 17%) */}
+                        {hasDiscount && <div className="absolute top-3.5 left-3.5 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-black tracking-wider uppercase bg-[#ff3b30] text-white shadow-md z-10">
+                          SAVE {discountPct}%
+                        </div>}
+
+                        {/* Centered Product Image */}
+                        <img
+                          src={(listingVariantIds[prod.id] && selected?.image) || prod.images[0] || '/images/image-not-found.png'}
+                          alt={prod.title}
+                          className="w-full h-full object-cover object-center group-hover/card:scale-105 transition-transform duration-500"
+                          referrerPolicy="no-referrer"
+                        />
+                      </ImageLink>
+
+                      {/* 2. Product Information Area */}
+                      <div className={`p-5 flex-1 flex flex-col justify-between space-y-3 ${lightCards ? 'bg-white' : 'bg-[#121316]'}`}>
+                        <div>
+                          {/* Brand and SKU Header Row */}
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <span className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-widest truncate max-w-[55%] ${lightCards ? 'text-zinc-500' : 'text-neutral-400'}`}>
+                              {prod.brand}
+                            </span>
+                            <span className={`text-[10px] sm:text-[11px] font-mono font-medium truncate max-w-[45%] ${lightCards ? 'text-emerald-600' : 'text-emerald-400 dark:text-emerald-400'}`}>
+                              SKU: {skuCode}
+                            </span>
+                          </div>
+
+                          {/* Bold Product Title */}
+                          <a href={productHref}><h3 className={`text-base sm:text-lg font-bold transition-colors line-clamp-1 ${lightCards ? 'text-zinc-900 group-hover/card:text-amber-600' : 'text-white group-hover/card:text-indigo-300'}`}>
+                            {prod.title}
+                          </h3></a>
+
+                          {/* Editorial Summary / Specs Subtitle */}
+                          <p className={`text-xs line-clamp-2 mt-1 leading-relaxed min-h-[36px] ${lightCards ? 'text-zinc-500' : 'text-neutral-400'}`}>
+                            {prod.summary}
+                          </p>
+                        </div>
+
+                        {/* Variant Chips Row (Screenshot 3: Active amber chip + subtle gray chips) */}
+                        <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                          {visiblePills.map((pill, pIdx) => (
+                            <button
+                              type="button"
+                              aria-label={`Select ${variants[pIdx].label}`}
+                              aria-pressed={selected?.id === variants[pIdx].id}
+                              title={`${variants[pIdx].label}${variants[pIdx].stock < 1 ? ' (Out of Stock)' : ''}`}
+                              disabled={runtime.context.mode !== 'public' || !variants[pIdx].enabled}
+                              onClick={() => setListingVariantIds(current => ({...current,[prod.id]:variants[pIdx].id}))}
+                              key={pIdx}
+                              className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
+                                lightCards ? (selected?.id === variants[pIdx].id ? 'border border-amber-500 bg-amber-500/15 text-amber-600 font-bold' : 'border border-zinc-200 text-zinc-600 hover:border-zinc-400 font-medium') : selected?.id === variants[pIdx].id
+                                  ? 'border border-amber-500/90 text-amber-400 bg-amber-500/10 font-bold'
+                                  : 'border border-neutral-800 text-neutral-400 bg-neutral-800/60 font-medium'
+                              }`}
+                            >
+                              {pill}
+                            </button>
+                          ))}
+                          {overflowCount > 0 && (
+                            <button type="button" disabled={runtime.context.mode !== 'public'} data-quick-add-trigger={runtime.context.mode === 'public' ? '' : undefined} data-quick-add-product-id={prod.id} data-quick-add-variant-id={selected?.id} aria-label={`View all options for ${prod.title}`} className={`px-1.5 py-0.5 rounded border text-[10px] font-medium ${lightCards ? 'border-zinc-200 text-zinc-500' : 'border-neutral-800 text-neutral-400 bg-neutral-800/60'}`}>
+                              +{overflowCount}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Price & Quick Cart Row (Screenshot 3: RM 389.00  RM 467.00  [Shopping Bag Button]) */}
+                        <div className={`pt-3 border-t flex items-center justify-between gap-2 ${lightCards ? 'border-zinc-200' : 'border-neutral-800/80'}`}>
+                          <div className="flex items-baseline gap-2">
+                            <span className={`text-base sm:text-lg font-black ${lightCards ? 'text-zinc-900' : 'text-white'}`}>
+                              {selected?.priceLabel ?? commerce?.priceLabel ?? listingMoney(price)}
+                            </span>
+                            {hasDiscount && <span className={`text-xs sm:text-sm line-through font-medium ${lightCards ? 'text-zinc-400' : 'text-neutral-500'}`}>
+                              {selected?.compareAtLabel ?? commerce?.compareAtLabel ?? listingMoney(comparePrice!)}
+                            </span>}
+                          </div>
+
+                          <form method="POST" action="/cart/items" onSubmit={event => { if (!singleVariant || purchaseDisabled) { event.preventDefault(); event.stopPropagation(); } }}>
+                          <input type="hidden" name="_token" value={typeof document === 'undefined' ? '' : document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? ''}/>
+                          <input type="hidden" name="variant_id" value={selected?.id ?? commerce?.variantId ?? ''}/>
+                          <input type="hidden" name="quantity" value="1"/>
+                          <button
+                            type={singleVariant ? 'submit' : 'button'}
+                            disabled={purchaseDisabled}
+                            data-quick-add-trigger={!singleVariant && runtime.context.mode === 'public' && commerce?.canChoose ? '' : undefined}
+                            data-quick-add-product-id={prod.id}
+                            data-quick-add-variant-id={selected?.id ?? commerce?.variantId ?? undefined}
+                            className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 active:scale-95 shrink-0 ${lightCards ? 'bg-zinc-100 text-zinc-700 hover:bg-amber-400 hover:text-zinc-950' : 'bg-neutral-800/90 hover:bg-indigo-600 hover:text-white border border-neutral-700/70 text-neutral-300 shadow-xs'}`}
+                            title={singleVariant ? (purchaseDisabled ? 'Out of Stock' : 'Add to Cart') : 'Quick Add to Cart'}
+                            aria-label={singleVariant ? `Add ${prod.title} to cart` : `Select options for ${prod.title}`}
+                          >
+                            <ShoppingBag className="w-4 h-4" />
+                          </button>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Dots Pagination Indicator (when multiple slides exist) */}
+          {maxIdx > 0 && (
+            <div className="flex items-center justify-center gap-1.5 mt-6">
+              {Array.from({ length: maxIdx + 1 }).map((_, dotIdx) => (
+                <button
+                  key={dotIdx}
+                  type="button"
+                  onClick={() => setProductListingIdx(dotIdx)}
+                  aria-label={`Go to slide ${dotIdx + 1}`}
+                  className={`transition-all rounded-full cursor-pointer ${
+                    productListingIdx === dotIdx
+                      ? 'w-6 h-2 bg-indigo-500'
+                      : 'w-2 h-2 bg-neutral-700 hover:bg-neutral-500'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderCollectionTabs = () => {
     // If section.tabs is configured, use it; otherwise fallback to legacy tabCategories or default labels
     const hasConfiguredTabs = Array.isArray(section.tabs) && section.tabs.length > 0;
@@ -2393,6 +2696,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       case 'timeline_story': return renderTimelineStory();
       case 'stats_counter': return renderStatsCounter();
       case 'product_grid': return renderProductGrid();
+      case 'product_listing': return renderProductListing();
       case 'collection_tabs': return renderCollectionTabs();
       case 'featured_deal': return renderFeaturedDeal();
       case 'pricing_table': return renderPricingTable();

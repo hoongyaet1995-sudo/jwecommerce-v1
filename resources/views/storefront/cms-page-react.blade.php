@@ -23,6 +23,9 @@
             @endif
         </main>
         <x-storefront.footer />
+        @foreach($quickAddProducts ?? [] as $quickAddProduct)
+            <x-storefront.quick-add-variant-modal :product="$quickAddProduct" :variants="$quickAddProduct->variants" :images="$quickAddProduct->images" />
+        @endforeach
     </div>
 
     @if($entry)

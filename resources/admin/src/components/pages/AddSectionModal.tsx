@@ -361,6 +361,32 @@ const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
     }
   },
   {
+    type: 'product_listing',
+    title: 'Product Listing Carousel',
+    category: 'Commerce & Shop',
+    description: 'Interactive product slider with auto-sliding, side navigation arrows, category/collection catalog mapping, and discount cards.',
+    icon: Sliders,
+    badge: 'New',
+    defaultData: {
+      type: 'product_listing',
+      title: 'Trending Hardware & Lifestyle Tech',
+      subtitle: 'FEATURED DISCOUNTS',
+      content: 'Explore limited-time promotional deals with instant dispatch and premium warranty.',
+      sourceType: 'category',
+      sourceId: '',
+      productLimit: 6,
+      autoSlide: true,
+      autoSlideInterval: 3.5,
+      showNavArrows: true,
+      columnsCount: 3,
+      textAlignment: 'left',
+      backgroundColor: 'bg-neutral-950',
+      textColor: 'light',
+      paddingY: 'normal',
+      isVisible: true
+    }
+  },
+  {
     type: 'collection_tabs',
     title: 'Category & Collection Tab Showcase',
     category: 'Commerce & Shop',

@@ -12,6 +12,7 @@ export interface PageRuntimeProduct {
   tags: string[];
   basePrice: number;
   baseCompareAtPrice: number | null;
+  commerce?: { variantId: string | null; sku: string; price: number; compareAtPrice: number | null; optionLabels: string[]; canChoose: boolean; priceLabel?: string; compareAtLabel?: string; variants?: Array<{id:string;label:string;sku:string;price:number;compareAtPrice:number|null;stock:number;enabled:boolean;image:string|null;priceLabel?:string;compareAtLabel?:string}> };
 }
 
 export interface PageRuntimeSource {
@@ -23,6 +24,7 @@ export interface PageRuntimeSource {
 }
 
 export interface PageRuntimeSectionFacts {
+  listing?: {sourceId: {valid: boolean}; source: PageRuntimeSource | null; products: PageRuntimeProduct[]};
   productIds?: {
     valid: boolean;
     products: PageRuntimeProduct[];
@@ -194,13 +196,13 @@ const isRuntimeForms = (value: unknown, page: PageRuntimePayload['page']): value
 };
 
 const runtimeProductFields = [
-  'id', 'title', 'slug', 'brand', 'summary', 'images', 'tags', 'basePrice', 'baseCompareAtPrice',
+  'id', 'title', 'slug', 'brand', 'summary', 'images', 'tags', 'basePrice', 'baseCompareAtPrice', 'commerce',
 ];
 const runtimeSourceFields = ['id', 'type', 'slug', 'label', 'image'];
 
 const sectionTypes = new Set([
   'hero_banner', 'split_hero', 'hero_slider', 'announcement_bar', 'rich_text',
-  'media_text_split', 'timeline_story', 'stats_counter', 'product_grid', 'collection_tabs',
+  'media_text_split', 'timeline_story', 'stats_counter', 'product_grid', 'product_listing', 'collection_tabs',
   'featured_deal', 'pricing_table', 'media_gallery', 'video_embed', 'before_after',
   'instagram_feed', 'feature_cards', 'icon_list', 'comparison_matrix', 'faq_accordion',
   'contact_form', 'store_locator', 'testimonials_slider', 'logo_cloud', 'cta_strip',
@@ -259,6 +261,12 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   isVisible: {kind: 'required-boolean'},
   items: {kind: 'nested'},
   productIds: {kind: 'nested'},
+  sourceType: {kind: 'optional-enum', values: ['category', 'collection']},
+  sourceId: {kind: 'optional-string'},
+  productLimit: {kind: 'optional-number'},
+  autoSlide: {kind: 'optional-boolean'},
+  autoSlideInterval: {kind: 'optional-number'},
+  showNavArrows: {kind: 'optional-boolean'},
   columnsCount: {kind: 'optional-enum', values: [2, 3, 4, 5, 6]},
   customCssClass: {kind: 'optional-string'},
   beforeImageUrl: {kind: 'optional-string'},
@@ -318,7 +326,20 @@ const isRuntimeProduct = (value: unknown): value is PageRuntimeProduct => isReco
   && isStringArray(value.images)
   && isStringArray(value.tags)
   && isFiniteNumber(value.basePrice)
-  && (value.baseCompareAtPrice === null || isFiniteNumber(value.baseCompareAtPrice));
+  && (value.baseCompareAtPrice === null || isFiniteNumber(value.baseCompareAtPrice))
+  && (!('commerce' in value) || (isRecord(value.commerce)
+    && hasOnlyKeys(value.commerce, ['variantId','sku','price','compareAtPrice','optionLabels','canChoose','priceLabel','compareAtLabel','variants'])
+    && (!('variants' in value.commerce) || (Array.isArray(value.commerce.variants) && value.commerce.variants.every(v => isRecord(v)
+      && hasOnlyKeys(v,['id','label','sku','price','compareAtPrice','stock','enabled','image','priceLabel','compareAtLabel'])
+      && typeof v.id === 'string' && typeof v.label === 'string' && typeof v.sku === 'string'
+      && isFiniteNumber(v.price) && (v.compareAtPrice === null || isFiniteNumber(v.compareAtPrice))
+      && isFiniteNumber(v.stock) && typeof v.enabled === 'boolean' && isNullableString(v.image)
+      && (!('priceLabel' in v) || typeof v.priceLabel === 'string') && (!('compareAtLabel' in v) || typeof v.compareAtLabel === 'string'))))
+    && isNullableString(value.commerce.variantId) && typeof value.commerce.sku === 'string'
+    && isFiniteNumber(value.commerce.price) && (value.commerce.compareAtPrice === null || isFiniteNumber(value.commerce.compareAtPrice))
+    && isStringArray(value.commerce.optionLabels) && typeof value.commerce.canChoose === 'boolean'
+    && (!('priceLabel' in value.commerce) || typeof value.commerce.priceLabel === 'string')
+    && (!('compareAtLabel' in value.commerce) || typeof value.commerce.compareAtLabel === 'string')));
 
 const isRuntimeSource = (value: unknown, type: PageRuntimeSource['type']): value is PageRuntimeSource => (
   isRecord(value)
@@ -404,7 +425,8 @@ const isRuntimeTabFacts = (value: unknown): boolean => (
 );
 
 const isRuntimeSectionFacts = (value: unknown): value is PageRuntimeSectionFacts => {
-  if (!isRecord(value) || !hasOnlyKeys(value, ['productIds', 'tabs', 'newsletterCouponId'])) return false;
+  if (!isRecord(value) || !hasOnlyKeys(value, ['productIds', 'tabs', 'newsletterCouponId', 'listing'])) return false;
+  if ('listing' in value && !isRuntimeTabFact(value.listing)) return false;
 
   if ('productIds' in value) {
     const fact = value.productIds;
@@ -521,6 +543,26 @@ export const createAdminPageRuntimePayload = (
 
   page.sections.forEach((section, sectionIndex) => {
     if (!section.isVisible) return;
+
+    if (section.type === 'product_listing') {
+      const type = section.sourceType ?? 'category';
+      const source = type === 'category' ? categoriesById.get(section.sourceId ?? '') : collectionsById.get(section.sourceId ?? '');
+      const items = source ? catalog.products.filter(product => product.status === 'active' && (type === 'category'
+        ? product.categoryId === source.id : product.collectionIds.includes(source.id))).sort((a,b) => Number(a.id)-Number(b.id)).slice(0,section.productLimit ?? 6) : [];
+      if (source) (type === 'category' ? resolvedCategoryIds : resolvedCollectionIds).add(source.id);
+      const products = items.map(product => {
+        resolvedProductIds.add(product.id);
+        const variant = product.variants?.[0];
+        return {...projectProduct(product), commerce: {
+          variantId: variant?.id ?? null, sku: variant?.sku ?? '', price: variant?.price ?? product.basePrice,
+          compareAtPrice: variant?.compareAtPrice ?? null, optionLabels: product.options?.[0]?.values ?? [], canChoose: Boolean(variant),
+        }};
+      });
+      runtimeSections[sectionIndex] = {listing:{sourceId:{valid:Boolean(source)}, source: source ? {
+        id:source.id, type, slug:source.slug, label:type === 'category' ? (source as Category).name : (source as Collection).title,
+        image:type === 'category' ? (source as Category).image ?? null : (source as Collection).coverImage ?? null,
+      } : null, products}};
+    }
 
     if (section.type === 'product_grid') {
       const requestedIds = section.productIds ?? [];

@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* CMS public pages share the existing Blade Quick Add. Include its complete
+   responsive utility set so this later stylesheet cannot override it partially. */
+@source "../../views/components/storefront/quick-add-variant-modal.blade.php";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -139,4 +142,3 @@
 .animate-marquee-fast:hover {
   animation-play-state: paused;
 }
-

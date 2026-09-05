@@ -24,8 +24,8 @@ describe('CMS section color defaults', () => {
     expect(DEFAULT_SECTION_COLORS).toEqual(manifest.definitions.sectionColorConfig.defaults);
   });
 
-  it('creates every one of the 26 source-supported section templates with the complete ZIP6 palette contract', () => {
-    expect(SECTION_TEMPLATES).toHaveLength(26);
+  it('creates all 27 source-supported templates including ZIP27 listing with the complete palette contract', () => {
+    expect(SECTION_TEMPLATES).toHaveLength(27);
 
     for (const template of SECTION_TEMPLATES) {
       expect(template.defaultData.customColors).toEqual(expectedDefaultColors);

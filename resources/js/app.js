@@ -1471,11 +1471,14 @@ const installQuickAddVariantModals = () => {
             modal.querySelector('[data-quick-add-close]')?.focus();
         };
 
-        document.querySelectorAll(`[data-quick-add-trigger][data-quick-add-product-id="${modal.dataset.quickAddProductId}"]`).forEach((trigger) => trigger.addEventListener('click', (event) => {
+        // Delegation also supports CMS React cards mounted after this initializer.
+        document.addEventListener('click', (event) => {
+            const trigger = event.target.closest?.('[data-quick-add-trigger]');
+            if (!trigger || trigger.dataset.quickAddProductId !== modal.dataset.quickAddProductId || trigger.disabled) return;
             event.preventDefault();
             const card = trigger.closest('[data-storefront-product-card]');
-            open(card?.querySelector('[data-card-variant-input]')?.value || variants[0].id, trigger);
-        }));
+            open(trigger.dataset.quickAddVariantId || card?.querySelector('[data-card-variant-input]')?.value || variants[0].id, trigger);
+        });
         modal.querySelectorAll('[data-quick-add-close], [data-quick-add-backdrop]').forEach((button) => button.addEventListener('click', close));
         modal.querySelectorAll('[data-quick-add-thumbnail]').forEach((button) => button.addEventListener('click', () => {
             setHeroImage(button.dataset.quickAddImage);

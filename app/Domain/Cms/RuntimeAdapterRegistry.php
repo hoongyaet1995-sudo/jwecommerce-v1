@@ -31,6 +31,9 @@ final class RuntimeAdapterRegistry
             $collections->keys()->all(),
         );
         $coupons = $this->validCoupons($references['couponIds']);
+        if ($products->isNotEmpty() && collect($document['sections'] ?? [])->contains(fn ($s) => ($s['type'] ?? null) === 'product_listing' && ($s['isVisible'] ?? false))) {
+            $products->load(['variants' => fn ($query) => $query->orderBy('id')]);
+        }
         $sectionFacts = [];
 
         foreach ($document['sections'] ?? [] as $sectionIndex => $section) {
@@ -40,6 +43,7 @@ final class RuntimeAdapterRegistry
 
             $facts = match ($section['type'] ?? null) {
                 'product_grid' => $this->productGridFacts($section, $products),
+                'product_listing' => $this->productListingFacts($section, $categories, $collections, $products),
                 'collection_tabs' => $this->collectionTabFacts($section, $categories, $collections, $products),
                 'newsletter_signup' => $this->newsletterFacts($section, $coupons),
                 default => [],
@@ -88,8 +92,8 @@ final class RuntimeAdapterRegistry
                 }
             }
 
-            if (($section['type'] ?? null) === 'collection_tabs') {
-                foreach ($section['tabs'] ?? [] as $tab) {
+            if (in_array($section['type'] ?? null, ['collection_tabs', 'product_listing'], true)) {
+                foreach (($section['type'] === 'product_listing' ? [$section] : ($section['tabs'] ?? [])) as $tab) {
                     if (! is_array($tab)) {
                         continue;
                     }
@@ -220,6 +224,7 @@ final class RuntimeAdapterRegistry
                 'products.base_price',
                 'products.compare_at_price',
                 'products.tags',
+                'products.options',
             ])
             ->keyBy('id');
     }
@@ -334,9 +339,42 @@ final class RuntimeAdapterRegistry
 
     /**
      * @param  array<string, mixed>  $section
-     * @param  SupportCollection<int, Coupon>  $coupons
+     * @param  SupportCollection<int, Category>  $categories
+     * @param  SupportCollection<int, Collection>  $collections
+     * @param  SupportCollection<int, Product>  $products
      * @return array<string, mixed>
      */
+    private function productListingFacts(array $section, SupportCollection $categories, SupportCollection $collections, SupportCollection $products): array
+    {
+        $section['productLimit'] ??= 6;
+        $facts = $this->collectionTabFacts(['tabs' => [$section]], $categories, $collections, $products)['tabs'][0];
+        $facts['products'] = array_map(function (array $item) use ($products): array {
+            $product = $products->get((int) $item['id']);
+            $variant = $product->variants->first();
+            $item['commerce'] = [
+                'variantId' => $variant ? (string) $variant->id : null,
+                'sku' => (string) ($variant?->sku ?? ''),
+                'price' => ($variant?->price ?? $product->base_price) / 100,
+                'compareAtPrice' => $variant?->compare_at_price !== null ? $variant->compare_at_price / 100 : null,
+                'optionLabels' => array_values(array_map('strval', data_get($product->options, '0.values', []))),
+                'canChoose' => $variant !== null,
+                'variants' => $product->variants->map(fn ($v) => [
+                    'id' => (string) $v->id,
+                    'label' => (string) ($v->color_name ?: $v->title),
+                    'sku' => (string) $v->sku,
+                    'price' => $v->price / 100,
+                    'compareAtPrice' => $v->compare_at_price === null ? null : $v->compare_at_price / 100,
+                    'stock' => (int) $v->stock,
+                    'enabled' => $v->enabled !== false,
+                    'image' => $v->option_image ?: $v->image_url ?: $product->images->firstWhere('product_variant_id', $v->id)?->path,
+                ])->values()->all(),
+            ];
+            return $item;
+        }, $facts['products']);
+        return ['listing' => $facts];
+    }
+
+    /** @return array<string, mixed> */
     private function newsletterFacts(array $section, SupportCollection $coupons): array
     {
         $couponReference = $section['newsletterCouponId'] ?? null;

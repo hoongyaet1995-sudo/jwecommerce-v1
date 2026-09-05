@@ -545,6 +545,7 @@ export type PageSectionType =
   | 'timeline_story'
   | 'stats_counter'
   | 'product_grid'
+  | 'product_listing'
   | 'collection_tabs'
   | 'featured_deal'
   | 'pricing_table'
@@ -643,6 +644,12 @@ export interface PageSection {
   isVisible: boolean;
   items?: SectionItem[];
   productIds?: string[];
+  sourceType?: 'category' | 'collection';
+  sourceId?: string;
+  productLimit?: number;
+  autoSlide?: boolean;
+  autoSlideInterval?: number;
+  showNavArrows?: boolean;
   columnsCount?: 2 | 3 | 4 | 5 | 6;
   customCssClass?: string;
 
