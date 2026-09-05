@@ -28,13 +28,14 @@ class PageApiController extends Controller
 
     public function index(): JsonResponse
     {
+        $homepageId = app(\App\Domain\Cms\HomepageSelection::class)->id();
         return response()->json([
             'data' => Page::query()
                 ->whereHas('draftDocument')
                 ->with(['draftDocument', 'publishedDocument'])
                 ->orderByDesc('updated_at')
                 ->get()
-                ->map(fn (Page $page): array => $this->pageSummary($page))
+                ->map(fn (Page $page): array => $this->pageSummary($page, $homepageId ?? ''))
                 ->values(),
         ]);
     }
@@ -112,7 +113,9 @@ class PageApiController extends Controller
         }
 
         try {
-            $page = $this->publication->publish($page, $input['lockVersion']);
+            $page = $request->routeIs('admin.api.pages.homepage')
+                ? app(\App\Domain\Cms\HomepageSelection::class)->select($page, $input['lockVersion'])
+                : $this->publication->publish($page, $input['lockVersion']);
         } catch (CmsVersionConflict $exception) {
             return $this->versionConflict($exception);
         } catch (CmsRuntimeReferenceInvalid $exception) {
@@ -165,7 +168,7 @@ class PageApiController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function pageSummary(Page $page): array
+    private function pageSummary(Page $page, ?string $homepageId = null): array
     {
         $draft = $this->requiredDraft($page);
         $published = $page->publishedDocument;
@@ -173,6 +176,7 @@ class PageApiController extends Controller
 
         return array_merge($document, [
             'id' => (string) $page->getKey(),
+            'isHomepage' => ($homepageId ?? app(\App\Domain\Cms\HomepageSelection::class)->id()) === (string) $page->getKey(),
             'status' => $page->status,
             'lockVersion' => $draft->lock_version,
             'hasPublishedSnapshot' => $published !== null,

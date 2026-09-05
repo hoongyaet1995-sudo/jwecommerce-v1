@@ -5,6 +5,7 @@
 @php($isAdmin = request()->routeIs('admin.*') && ! $isCmsStorefrontPreview)
 <html lang="en" @if($isStorefront) class="dark" data-atelier-theme-root data-atelier-theme="dark" @elseif($isAdmin) data-admin-root @endif>
 <head>
+    <x-brand-favicon />
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">

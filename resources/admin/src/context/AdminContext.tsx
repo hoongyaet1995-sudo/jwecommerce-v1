@@ -291,7 +291,7 @@ interface AdminContextType {
   toggleStaffStatus: (id: string) => void;
   resetStaffPassword: (id: string, newPass: string) => void;
   shopSettings: ShopGeneralSettings;
-  saveShopSettings: (settings: ShopGeneralSettings) => void;
+  saveShopSettings: (settings: ShopGeneralSettings) => Promise<void>;
 
   // Marketplace Ecosystem (OMS & WMS)
   connections: MarketplaceConnection[];
@@ -794,6 +794,14 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }
   const [staffUsers, setStaffUsers] = useState<StaffUser[]>(INITIAL_STAFF_USERS);
   const [shopSettings, setShopSettings] = useState<ShopGeneralSettings>(INITIAL_SHOP_SETTINGS);
+  const shopProfileLoaded = useRef(false);
+  useEffect(() => {
+    let active = true;
+    void loadShopBranding().then(profile => {
+      if (active) { setShopSettings(current => ({ ...current, ...profile, shopLogo: profile.shopLogo || INITIAL_SHOP_SETTINGS.shopLogo })); shopProfileLoaded.current = true; }
+    }).catch(error => { if (active) addToast({ type: 'error', title: 'Shop Profile Unavailable', message: error.message }); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     pagesRef.current = pages;
@@ -883,13 +891,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const savedStaff = safeParseArray(STORAGE_KEYS.STAFF_USERS, INITIAL_STAFF_USERS);
       setStaffUsers(savedStaff);
 
-      const savedShop = localStorage.getItem(STORAGE_KEYS.SHOP_SETTINGS);
-      if (savedShop) {
-        try {
-          const parsed = JSON.parse(savedShop);
-          if (parsed && typeof parsed === 'object') setShopSettings(parsed);
-        } catch {}
-      }
 
       const savedConns = safeParseArray(STORAGE_KEYS.MARKETPLACE_CONNECTIONS, INITIAL_MARKETPLACE_CONNECTIONS);
       setConnections(savedConns);
@@ -1587,10 +1588,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
-  const saveShopSettings = (settings: ShopGeneralSettings) => {
-    setShopSettings(settings);
-    localStorage.setItem(STORAGE_KEYS.SHOP_SETTINGS, JSON.stringify(settings));
-    addToast({ type: 'success', title: 'Settings Saved', message: 'Shop configuration parameters updated successfully.' });
+  const saveShopSettings = async (settings: ShopGeneralSettings) => {
+    if (!shopProfileLoaded.current) throw new Error('Reload the saved shop profile before saving.');
+    const saved = await persistShopBranding(laravelBootstrap, settings, shopSettings.shopLogo);
+    setShopSettings(current => ({ ...current, ...saved, shopLogo: saved.shopLogo || INITIAL_SHOP_SETTINGS.shopLogo }));
   };
 
   // ---------------------------
@@ -4251,3 +4252,4 @@ export const useAdmin = () => {
   }
   return context;
 };
+import { loadShopBranding, persistShopBranding } from '../integration/shopBrandingData';

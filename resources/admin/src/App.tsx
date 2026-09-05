@@ -35,7 +35,8 @@ import { AIAutoReplyStudioHub } from './components/ai-auto-reply/AIAutoReplyStud
 import { PromotionsHub } from './components/promotions/PromotionsHub';
 
 const AdminLayoutContent: React.FC = () => {
-  const { currentSection, isSidebarCollapsed } = useAdmin();
+  const { currentSection, isSidebarCollapsed, selectedPageId } = useAdmin();
+  const isPageEditorStandalone = currentSection === 'pages-builder' && Boolean(selectedPageId);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const renderActiveSection = () => {
@@ -106,13 +107,13 @@ const AdminLayoutContent: React.FC = () => {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-neutral-100 dark:bg-neutral-950 font-sans text-neutral-900 dark:text-neutral-100 antialiased selection:bg-indigo-500 selection:text-white">
       {/* Left Sidebar */}
-      <AdminSidebar
+      {!isPageEditorStandalone && <AdminSidebar
         isOpen={mobileSidebarOpen}
         onCloseMobile={() => setMobileSidebarOpen(false)}
-      />
+      />}
 
       {/* Mobile Backdrop Overlay */}
-      {mobileSidebarOpen && (
+      {!isPageEditorStandalone && mobileSidebarOpen && (
         <div
           onClick={() => setMobileSidebarOpen(false)}
           className="fixed inset-0 z-30 bg-black/60 backdrop-blur-xs lg:hidden transition-opacity"
@@ -120,12 +121,12 @@ const AdminLayoutContent: React.FC = () => {
       )}
 
       {/* Main Content Area (Offset by 72 on lg screens when not collapsed) */}
-      <div className={`flex flex-col flex-1 min-w-0 h-full overflow-hidden transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'lg:pl-0' : 'lg:pl-72'}`}>
+      <div className={`flex flex-col flex-1 min-w-0 h-full overflow-hidden transition-all duration-300 ease-in-out ${isPageEditorStandalone ? 'lg:pl-0' : isSidebarCollapsed ? 'lg:pl-0' : 'lg:pl-72'}`}>
         {/* Top Header */}
-        <AdminHeader onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
+        {!isPageEditorStandalone && <AdminHeader onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />}
 
         {/* Dynamic Route View */}
-        <main className={`flex-1 overflow-y-auto ${currentSection === 'pages-builder' ? 'p-2 sm:p-4' : 'p-4 sm:p-6 lg:p-8'} bg-neutral-100/70 dark:bg-neutral-950/70`}>
+        <main className={`flex-1 overflow-hidden ${isPageEditorStandalone ? 'p-0 m-0 w-full h-full' : currentSection === 'pages-builder' ? 'overflow-y-auto p-2 sm:p-4' : 'overflow-y-auto p-4 sm:p-6 lg:p-8'} bg-neutral-100/70 dark:bg-neutral-950/70`}>
           <div className={currentSection === 'pages-builder' ? 'w-full h-full' : 'max-w-7xl mx-auto'}>
             {renderActiveSection()}
           </div>

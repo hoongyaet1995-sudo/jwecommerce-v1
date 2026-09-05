@@ -101,6 +101,7 @@ export const ShopSettingsHub: React.FC = () => {
   const [formData, setFormData] = useState({ ...shopSettings });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [catalogListingForm, setCatalogListingForm] = useState(catalogListingSettings);
 
   useEffect(() => {
@@ -117,10 +118,10 @@ export const ShopSettingsHub: React.FC = () => {
 
   const handleFileUpload = (file: File) => {
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
+    if (!['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
       addToast({
         title: 'Invalid File Type',
-        message: 'Please upload an image file (PNG, JPG, SVG, or WebP).',
+          message: 'Please upload a PNG, JPG, SVG, or WebP image up to 5 MB.',
         type: 'error'
       });
       return;
@@ -141,14 +142,20 @@ export const ShopSettingsHub: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    saveShopSettings(formData);
+    if (savingProfile) return;
+    setSavingProfile(true);
+    try {
+    await saveShopSettings(formData);
     addToast({
       title: 'Shop Profile Saved',
       message: `${formData.shopName || 'JW Studio'} profile and company logo updated successfully.`,
       type: 'success'
     });
+    } catch (error) {
+      addToast({ type: 'error', title: 'Shop Profile Not Saved', message: error instanceof Error ? error.message : 'Please try again.' });
+    } finally { setSavingProfile(false); }
   };
 
   // Dedicated Setting Sub-Views
@@ -538,10 +545,11 @@ export const ShopSettingsHub: React.FC = () => {
             <div className="flex items-center gap-3 pt-2">
               <button
                 type="submit"
+                disabled={savingProfile}
                 className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition cursor-pointer shadow-md shadow-indigo-500/20"
               >
                 <Save className="w-4 h-4" />
-                Save Shop Profile & Logo
+                {savingProfile ? 'Saving Profile & Logo…' : 'Save Shop Profile & Logo'}
               </button>
             </div>
           </form>

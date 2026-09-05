@@ -90,6 +90,12 @@ const pagePath = (bootstrap: LaravelAdminBootstrap, id: string, suffix = ''): st
   return `${bootstrap.pagesUrl}/${encodeURIComponent(id)}${suffix}`;
 };
 
+export const selectHomepage = async (bootstrap: LaravelAdminBootstrap, id: string, lockVersion: number): Promise<CmsPage> => {
+  const result = await request<{ data: CmsPage }>(bootstrap, pagePath(bootstrap, id, '/homepage'), 'POST', { lockVersion });
+  if (!result) throw new Error('Homepage switch failed.');
+  return result.data;
+};
+
 export const fetchPageDraft = async (
   bootstrap: LaravelAdminBootstrap,
   id: string,

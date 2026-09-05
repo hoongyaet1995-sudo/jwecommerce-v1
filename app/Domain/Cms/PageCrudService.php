@@ -105,6 +105,7 @@ final class PageCrudService
     public function delete(Page $page): void
     {
         DB::transaction(function () use ($page): void {
+            app(HomepageSelection::class)->assertCanRetire($page);
             $lockedPage = Page::query()
                 ->lockForUpdate()
                 ->findOrFail($page->getKey());

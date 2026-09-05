@@ -686,6 +686,7 @@ export interface PageSection {
 }
 
 export interface CmsPage {
+  isHomepage?: boolean;
   id: string;
   title: string;
   slug: string; // e.g. 'brand-story', 'about-us', 'summer-lookbook'

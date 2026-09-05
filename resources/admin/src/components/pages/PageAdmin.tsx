@@ -4,6 +4,7 @@ import { useAdmin } from '../../context/AdminContext';
 import { readAdminBootstrap } from '../../integration/adminBootstrap';
 import {
   archivePage,
+  selectHomepage,
   fetchPageDraft,
   publishPage,
   savePageDraft,
@@ -51,7 +52,11 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Sun,
+  Moon,
+  Home,
+  Check
 } from 'lucide-react';
 
 type PageAutosaveTakeover = {
@@ -64,6 +69,8 @@ type PageAutosaveTakeover = {
 export const PageAdmin: React.FC = () => {
   const {
     pages,
+    theme,
+    toggleTheme,
     savePage,
     updatePageSection,
     updatePageLocal,
@@ -109,6 +116,24 @@ export const PageAdmin: React.FC = () => {
 
   // Currently active page being edited
   const currentPage = pages.find(p => p.id === editingPageId);
+  const activeHomepage = pages.find(p => p.isHomepage);
+  const homepageSwitchPending = useRef(false);
+  const setPageAsHomepage = async (id: string) => {
+    if (homepageSwitchPending.current) return;
+    homepageSwitchPending.current = true;
+    try {
+      if (!await flushCurrentPage()) return;
+      const version = id === editingPageId && autosaveRef.current
+        ? autosaveRef.current.getState().acknowledgedVersion
+        : pages.find(page => page.id === id)?.lockVersion;
+      if (version === undefined) throw new Error('Reload this page before selecting its homepage.');
+      const saved = await selectHomepage(laravelBootstrap, id, version);
+      pages.forEach(page => updatePageLocal(page.id, latest => ({ ...latest, isHomepage: page.id === saved.id })));
+      updatePageLocal(id, latest => ({ ...latest, status: saved.status, hasPublishedSnapshot: saved.hasPublishedSnapshot }));
+      addToast({ type: 'success', title: 'Homepage Updated', message: `${saved.title} is now the storefront homepage.` });
+    } catch (error) { reportSaveFailure(error); }
+    finally { homepageSwitchPending.current = false; }
+  };
   const activeSection = currentPage?.sections.find(s => s.id === activeSectionId) || null;
   const adminRuntimePayload = useMemo(() => currentPage
     ? createAdminPageRuntimePayload(currentPage, { products, categories, collections }, shopSettings.currency)
@@ -364,6 +389,7 @@ export const PageAdmin: React.FC = () => {
         replacePageLocal(hydrated);
         adoptAutosave(page.id, controller);
         setEditingPageId(page.id);
+        setSelectedPageId(page.id);
         setActiveSectionId(hydrated.sections[0]?.id ?? null);
         if (takeover.openPreview) setIsPreviewModalOpen(true);
         return;
@@ -773,6 +799,85 @@ export const PageAdmin: React.FC = () => {
           </div>
         </div>
 
+        {/* Designated Storefront Homepage (index.php) Routing Hub */}
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-neutral-900 via-indigo-950/50 to-neutral-900 border-2 border-indigo-500/40 shadow-xl shadow-indigo-500/5 relative overflow-hidden">
+          <div className="absolute right-0 top-0 bottom-0 w-96 bg-gradient-to-l from-indigo-600/10 to-transparent pointer-events-none" />
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-indigo-600/30">
+                <Home className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-indigo-400">
+                    Storefront Active Homepage
+                  </span>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Route: / (index.php)
+                  </span>
+                  <span className="text-[10px] text-neutral-400 bg-neutral-800/80 px-2 py-0.5 rounded-md border border-neutral-700/60">
+                    Single-Page Exclusive Routing
+                  </span>
+                </div>
+                <p className="text-base font-extrabold text-white mt-1 flex items-center gap-2 flex-wrap">
+                  {activeHomepage ? activeHomepage.title : 'No Homepage Designated'}
+                  {activeHomepage && (
+                    <span className="text-xs font-normal text-neutral-300">
+                      • {activeHomepage.sections.length} modular blocks • {activeHomepage.template} template
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap shrink-0">
+              {/* Quick Switch Homepage Dropdown */}
+              <div className="flex items-center gap-2 bg-neutral-950/80 border border-neutral-700/80 rounded-xl px-3 py-1.5 shadow-inner">
+                <span className="text-xs text-neutral-400 whitespace-nowrap font-medium">Switch Home:</span>
+                <select
+                  value={activeHomepage?.id || ''}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setPageAsHomepage(e.target.value);
+                    }
+                  }}
+                  className="bg-transparent text-xs font-bold text-indigo-300 focus:outline-none cursor-pointer pr-1"
+                >
+                  {!activeHomepage && <option value="" disabled className="bg-neutral-900 text-white">Select Homepage</option>}
+                  {pages.map((p) => (
+                    <option key={p.id} value={p.id} className="bg-neutral-900 text-white">
+                      {p.title} {p.status === 'draft' ? '(Draft → Auto-Publish)' : ''} {p.isHomepage ? '★ (Active)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {activeHomepage && (
+                <>
+                  <button
+                    onClick={() => {
+                      window.open('/', '_blank', 'noopener,noreferrer');
+                    }}
+                    className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center gap-1.5 cursor-pointer"
+                    title="Live preview customer view of index.php"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Preview index.php</span>
+                  </button>
+                  <button
+                    onClick={() => void hydrateEditor(activeHomepage)}
+                    className="px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md shadow-indigo-600/30 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit Layout</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Filter Bar */}
         <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-80">
@@ -808,7 +913,11 @@ export const PageAdmin: React.FC = () => {
           {filteredPages.map(page => (
             <div
               key={page.id}
-              className="rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs hover:shadow-xl hover:border-indigo-500/40 transition-all duration-300 flex flex-col overflow-hidden group"
+              className={`rounded-3xl bg-white dark:bg-neutral-900 border shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group relative ${
+                page.isHomepage
+                  ? 'border-indigo-500/80 ring-2 ring-indigo-500 dark:ring-indigo-400/90 shadow-lg shadow-indigo-500/10'
+                  : 'border-neutral-200 dark:border-neutral-800 hover:border-indigo-500/40'
+              }`}
             >
               {/* Card Header / Banner Preview */}
               <div className="relative h-40 bg-neutral-950 overflow-hidden">
@@ -827,18 +936,26 @@ export const PageAdmin: React.FC = () => {
 
                 <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent" />
 
-                {/* Status Badge */}
-                <div className="absolute top-3 left-3 flex items-center gap-2">
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full backdrop-blur-md shadow-md ${
-                    page.status === 'published'
-                      ? 'bg-emerald-500/90 text-white'
-                      : page.status === 'draft'
-                      ? 'bg-amber-500/90 text-white'
-                      : 'bg-neutral-800/90 text-neutral-300'
-                  }`}>
-                    {page.status}
-                  </span>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-black/60 text-neutral-300 backdrop-blur-md border border-white/10">
+                {/* Status Badges & Homepage Badge */}
+                <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {page.isHomepage && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md border border-indigo-300/30">
+                        <Home className="w-3 h-3" />
+                        Active Home (index.php)
+                      </span>
+                    )}
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full backdrop-blur-md shadow-md ${
+                      page.status === 'published'
+                        ? 'bg-emerald-500/90 text-white'
+                        : page.status === 'draft'
+                        ? 'bg-amber-500/90 text-white'
+                        : 'bg-neutral-800/90 text-neutral-300'
+                    }`}>
+                      {page.status}
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-black/60 text-neutral-300 backdrop-blur-md border border-white/10 shrink-0">
                     {page.sections.length} sections
                   </span>
                 </div>
@@ -853,9 +970,21 @@ export const PageAdmin: React.FC = () => {
                     </h3>
                   </div>
 
-                  <p className="text-xs font-mono text-neutral-400 dark:text-neutral-500 mb-2">
-                    /pages/{page.slug}
-                  </p>
+                  {page.isHomepage ? (
+                    <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                      <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/70 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800/80 flex items-center gap-1">
+                        <Home className="w-3 h-3" />
+                        / (index.php)
+                      </span>
+                      <span className="text-[11px] font-mono text-neutral-400">
+                        slug: /pages/{page.slug}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-xs font-mono text-neutral-400 dark:text-neutral-500 mb-2">
+                      /pages/{page.slug}
+                    </p>
+                  )}
 
                   <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2 leading-relaxed mb-4">
                     {page.description || 'No description provided.'}
@@ -880,36 +1009,75 @@ export const PageAdmin: React.FC = () => {
                 </div>
 
                 {/* Card Actions Footer */}
-                <div className="pt-4 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between">
-                  <span className="text-[10px] text-neutral-400 font-medium">
-                    Updated {page.updatedAt}
-                  </span>
+                <div className="pt-4 border-t border-neutral-100 dark:border-neutral-800/80 flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-2">
+                    {/* Homepage Action or Badge */}
+                    {page.isHomepage ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80">
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Primary Home</span>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setPageAsHomepage(page.id)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold text-neutral-600 dark:text-neutral-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-neutral-100 dark:bg-neutral-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 border border-neutral-200 dark:border-neutral-700/80 transition-all cursor-pointer group/btn"
+                        title="Set this layout as the primary Storefront Home Page (index.php)"
+                      >
+                        <Home className="w-3.5 h-3.5 text-neutral-400 group-hover/btn:text-indigo-500 transition-colors" />
+                        <span>Set as Home</span>
+                      </button>
+                    )}
 
-                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-neutral-400 font-medium">
+                      Updated {page.updatedAt}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-1.5">
                     <button
-                      onClick={() => { void hydrateEditor(page, true); }}
-                      className="p-2 rounded-xl text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                      onClick={() => {
+                        void hydrateEditor(page, true);
+                      }}
+                      className="p-2 rounded-xl text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                       title="Preview Live Page"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => duplicatePage(page.id)}
-                      className="p-2 rounded-xl text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                      className="p-2 rounded-xl text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                       title="Clone Page Layout"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => setPageToDelete(page)}
-                      className="p-2 rounded-xl text-neutral-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
-                      title="Delete Page"
+                      onClick={() => {
+                        if (page.isHomepage) {
+                          addToast({
+                            type: 'warning',
+                            title: 'Action Prevented',
+                            message: 'Cannot delete the active Storefront Homepage (index.php). Please designate another page as Homepage before deleting this page.'
+                          });
+                          return;
+                        }
+                        setPageToDelete(page);
+                      }}
+                      disabled={page.isHomepage}
+                      className={`p-2 rounded-xl transition-colors ${
+                        page.isHomepage
+                          ? 'text-neutral-300 dark:text-neutral-700 cursor-not-allowed opacity-40'
+                          : 'text-neutral-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer'
+                      }`}
+                      title={page.isHomepage ? 'Active Homepage cannot be deleted' : 'Delete Page'}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => { void hydrateEditor(page); }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-indigo-600 text-white hover:bg-indigo-500 transition-colors shadow-xs"
+                      onClick={() => {
+                        void hydrateEditor(page);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-indigo-600 text-white hover:bg-indigo-500 transition-colors shadow-xs cursor-pointer"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Edit Layout</span>
@@ -932,36 +1100,45 @@ export const PageAdmin: React.FC = () => {
       case 'mobile': return 'max-w-[390px]';
       case 'tablet': return 'max-w-[768px]';
       case 'desktop':
-      default: return 'max-w-full';
+      default: return 'max-w-[1280px] w-full';
     }
   };
 
   return (
-    <div id="page-visual-builder" className="h-[calc(100vh-6.5rem)] flex flex-col -mx-4 sm:-mx-6 lg:-mx-8 -mb-4 sm:-mb-6 lg:-mb-8 mt-3 sm:mt-4 pt-0.5 bg-neutral-100 dark:bg-neutral-950 overflow-hidden animate-in fade-in">
+    <div id="page-visual-builder" className={'w-full h-full flex flex-col bg-neutral-100 dark:bg-neutral-950 overflow-hidden animate-in fade-in'}>
       {/* 1. Top Builder Toolbar */}
-      <div className="h-16 px-4 sm:px-6 border-y border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md flex items-center justify-between z-20 shrink-0 shadow-2xs">
+      <div className={'h-14 sm:h-16 px-4 sm:px-6 border-b border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md flex items-center justify-between z-20 shrink-0 shadow-2xs'}>
         {/* Left: Back & Title Slug */}
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={() => { void handleBackToDirectory(); }}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            className={'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors cursor-pointer shadow-2xs group'}
+            title="Exit layout editor and return to Storefront Pages directory"
           >
-            <ChevronLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Pages</span>
+            <ChevronLeft className={'w-4 h-4 group-hover:-translate-x-0.5 transition-transform'} />
+            <span className={'font-semibold'}>{'Exit to Pages'}</span>
           </button>
 
-          <div className="h-6 w-px bg-neutral-200 dark:border-neutral-800" />
+          <div className={'h-6 w-px bg-neutral-200 dark:bg-neutral-800'} />
 
           <div className="flex items-center gap-2 min-w-0">
+            <span className="hidden xl:inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/80">Studio</span>
             <input
               type="text"
               value={currentPage.title}
               onChange={e => handleTitleChange(e.target.value)}
               className="font-bold text-sm sm:text-base text-neutral-900 dark:text-white bg-transparent border-b border-transparent hover:border-neutral-300 dark:hover:border-neutral-700 focus:border-indigo-500 focus:outline-hidden px-1 py-0.5 truncate"
             />
-            <span className="hidden md:inline-block text-[11px] font-mono text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-md">
-              /pages/{currentPage.slug}
-            </span>
+            {currentPage.isHomepage ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/70 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
+                <Home className="w-3 h-3" />
+                / (index.php)
+              </span>
+            ) : (
+              <span className="hidden md:inline-block text-[11px] font-mono text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-md">
+                /pages/{currentPage.slug}
+              </span>
+            )}
           </div>
         </div>
 
@@ -974,7 +1151,7 @@ export const PageAdmin: React.FC = () => {
                 ? 'bg-white dark:bg-neutral-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
                 : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
             }`}
-            title="Desktop Full Screen"
+            title={'Desktop 1280px'}
           >
             <Monitor className="w-3.5 h-3.5" />
             <span>Desktop</span>
@@ -1040,6 +1217,32 @@ export const PageAdmin: React.FC = () => {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-xl text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-neutral-600" />}
+          </button>
+          {currentPage.isHomepage ? (
+            <span
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-xs border border-indigo-400/30"
+              title="This layout is currently serving as the Storefront Home Page (index.php)"
+            >
+              <Home className="w-3.5 h-3.5" />
+              <span>Active Home (index.php)</span>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPageAsHomepage(currentPage.id)}
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-neutral-600 dark:text-neutral-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-neutral-100 dark:bg-neutral-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition-colors border border-neutral-200 dark:border-neutral-700 cursor-pointer"
+              title="Set this layout as the primary Storefront Home Page (index.php)"
+            >
+              <Home className="w-3.5 h-3.5 text-neutral-400" />
+              <span>Set as Home</span>
+            </button>
+          )}
           {/* Status selector */}
           <select
             value={currentPage.status}
@@ -1401,6 +1604,7 @@ export const PageAdmin: React.FC = () => {
         isOpen={isPreviewModalOpen}
         onClose={() => setIsPreviewModalOpen(false)}
         page={currentPage}
+        onSetHomepage={setPageAsHomepage}
       />
 
       {/* JSON Schema Exporter/Importer Modal */}

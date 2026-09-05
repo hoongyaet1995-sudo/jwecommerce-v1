@@ -163,6 +163,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/api/pages/{page}', [PageApiController::class, 'destroy'])->name('api.pages.destroy');
     Route::post('/api/pages/{page}/duplicate', [PageApiController::class, 'duplicate'])->name('api.pages.duplicate');
     Route::post('/api/pages/{page}/publish', [PageApiController::class, 'publish'])->name('api.pages.publish');
+    Route::post('/api/pages/{page}/homepage', [PageApiController::class, 'publish'])->name('api.pages.homepage');
     Route::post('/api/pages/{page}/unpublish', [PageApiController::class, 'unpublish'])->name('api.pages.unpublish');
     Route::post('/api/pages/{page}/archive', [PageApiController::class, 'archive'])->name('api.pages.archive');
     Route::get('/pages/{page}/preview', PagePreviewController::class)->name('pages.preview');
@@ -240,6 +241,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/api/coupons/{coupon}', [CouponApiController::class, 'update']);
     Route::delete('/api/coupons/{coupon}', [CouponApiController::class, 'destroy']);
     Route::get('/api/commerce-settings', [CommerceSettingsApiController::class, 'show'])->name('api.commerce-settings.show');
+    Route::get('/api/shop-branding', [\App\Http\Controllers\Admin\ShopBrandingController::class, 'show']);
+    Route::put('/api/shop-branding', [\App\Http\Controllers\Admin\ShopBrandingController::class, 'update']);
     Route::put('/api/commerce-settings', [CommerceSettingsApiController::class, 'update']);
     Route::put('/api/commerce-settings/bank-transfer', [CommerceSettingsApiController::class, 'updateBankTransfer']);
     Route::put('/api/commerce-settings/cod', [CommerceSettingsApiController::class, 'updateCod']);

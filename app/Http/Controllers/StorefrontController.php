@@ -26,8 +26,14 @@ class StorefrontController extends Controller
     {
     }
 
-    public function home(): View
+    public function home(): View|\Illuminate\Http\Response
     {
+        $homepageId = app(\App\Domain\Cms\HomepageSelection::class)->id();
+        if ($homepageId) {
+            $homepage = Page::with('publishedDocument')->findOrFail($homepageId);
+            abort_unless($homepage->status === 'published' && $homepage->publishedDocument, 404);
+            return app(StorefrontPageController::class)($homepage->publishedDocument->slug);
+        }
         $heroSection = Page::query()
             ->where('slug', 'home')
             ->where('is_published', true)

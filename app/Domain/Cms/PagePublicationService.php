@@ -93,6 +93,7 @@ final class PagePublicationService
     public function unpublish(Page $page): Page
     {
         return DB::transaction(function () use ($page): Page {
+            app(HomepageSelection::class)->assertCanRetire($page);
             $lockedPage = Page::query()
                 ->lockForUpdate()
                 ->findOrFail($page->getKey());
@@ -114,6 +115,7 @@ final class PagePublicationService
     public function archive(Page $page): Page
     {
         return DB::transaction(function () use ($page): Page {
+            app(HomepageSelection::class)->assertCanRetire($page);
             $lockedPage = Page::query()
                 ->lockForUpdate()
                 ->findOrFail($page->getKey());

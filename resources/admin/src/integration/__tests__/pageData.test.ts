@@ -7,6 +7,7 @@ import {
   fetchPagePreview,
   publishPage,
   savePageDraft,
+  selectHomepage,
   unpublishPage,
 } from '../pageData';
 
@@ -53,6 +54,20 @@ const jsonResponse = (payload: unknown, status = 200) => new Response(JSON.strin
 });
 
 describe('canonical page draft and lifecycle API', () => {
+  it('selects a homepage with CSRF and the viewed draft version, preserving server errors', async () => {
+    const saved = { ...document, id: '42', isHomepage: true, status: 'published' };
+    const fetcher = vi.fn().mockResolvedValueOnce(jsonResponse({ data: saved }))
+      .mockResolvedValueOnce(jsonResponse({ message: 'Version conflict', code: 'cms_version_conflict' }, 409));
+    vi.stubGlobal('window', { fetch: fetcher });
+    try {
+      await expect(selectHomepage(bootstrap, '42', 8)).resolves.toEqual(saved);
+      expect(fetcher).toHaveBeenCalledWith('/admin/api/pages/42/homepage', expect.objectContaining({
+        method: 'POST', credentials: 'same-origin', body: JSON.stringify({ lockVersion: 8 }),
+        headers: expect.objectContaining({ 'X-CSRF-TOKEN': 'csrf-token' }),
+      }));
+      await expect(selectHomepage(bootstrap, '42', 7)).rejects.toMatchObject({ status: 409 });
+    } finally { vi.unstubAllGlobals(); }
+  });
   it('reads and saves the complete draft envelope without changing object or list tokens', async () => {
     const request = vi.fn()
       .mockResolvedValueOnce(jsonResponse({ data: draftPayload }))
