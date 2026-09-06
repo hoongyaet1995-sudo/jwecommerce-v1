@@ -7,7 +7,7 @@ import {PreviewContext} from '../../context/ContextBridge';
 import {MarketplaceAuthPage} from './MarketplaceAuthPage';
 
 it('shows truthful operational availability without fake metrics or developer configuration',()=>{
- const value={connections:[{id:'1',platform:'shopee',shopName:'Verified',shopId:'1',status:'connected',tokenExpiresAt:'',lastSyncAt:''}],marketplaceOrders:[],marketplaceInventory:[],marketplaceStoreProducts:[],syncLogs:[],
+ const value={connections:[{id:'1',platform:'shopee',shopName:'Verified',shopId:'1',status:'connected',tokenExpiresAt:'2026-09-06T14:00:00Z',lastSyncAt:''}],marketplaceOrders:[],marketplaceInventory:[],marketplaceStoreProducts:[],syncLogs:[],
    setCurrentSection:vi.fn(),currentSection:'marketplace-auth'};
  const html=renderToStaticMarkup(<PreviewContext.Provider value={value as unknown as React.ContextType<typeof PreviewContext>}>
    <MarketplaceAuthPage operational oauthAvailability={{shopee:true}}/>
@@ -17,6 +17,7 @@ it('shows truthful operational availability without fake metrics or developer co
  expect(html).not.toContain('api.yourdomain.com');
  expect(html).not.toContain('OAuth 2.0 Handshake Active');
  expect(html).not.toContain('whsec_auto_generated');
+ expect(html).not.toContain('days remaining');
  expect(html).toContain('Not enabled');
 });
 

@@ -4,7 +4,7 @@ export type MarketplacePlatform = 'shopee' | 'lazada' | 'tiktok' | 'shopify';
 export type OAuthResult = {status: 'success' | 'failed' | 'cancelled'; store: {id: string; platform: MarketplacePlatform; shopId: string; shopName: string} | null};
 export interface StoreConnection {
   id: string; platform: MarketplacePlatform; shopName: string; shopId: string | null;
-  region: string; status: string; tokenExpiresAt: string | null;
+  region: string; status: string; tokenExpiresAt: string | null; lastSyncAt?: string | null;
   autoSyncStock: boolean; autoPullOrders: boolean;
 }
 export interface ProviderCapabilities {
@@ -66,6 +66,7 @@ export async function requestMarketplaceAuthorization(platform: MarketplacePlatf
   window.location.assign(officialShopeeAuthorizationUrl(url));
 }
 export const marketplaceOperations = {
+  orderSummary: (filters: Filters = {}) => marketplaceRequest<{total:number;statuses:Record<string,number>}>(`/orders/summary?${query(filters)}`),
   mappingContext: (listingId: string, variantIds: number[]) => {
     const params = new URLSearchParams();
     variantIds.forEach(id => params.append('variantIds[]', String(id)));

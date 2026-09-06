@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAdmin } from '../../context/ContextBridge';
 import type {CatalogSummary} from '../../../../integration/marketplaceOperations';
+import {checkMarketplaceMappingConflict} from '../../../../integration/marketplaceMappingConflict';
 import { MarketplacePlatform, MarketplaceStoreProduct, MarketplaceStoreVariant } from '../../types';
 import { SubNavHeader } from '../common/SubNavHeader';
 import { ProductMappingModal } from './ProductMappingModal';
@@ -13,6 +14,7 @@ export interface MappingPageQuery {
   page: number; per_page: number; view: 'grouped' | 'flat';
 }
 export interface MappingServerPage {
+  canFetch?:boolean;
   total: number; summary: CatalogSummary; loading: boolean; onQueryChange: (query: MappingPageQuery) => void;
 }
 export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> = ({serverPage}) => {
@@ -53,6 +55,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
 
   // Batch Selection State
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
+  React.useEffect(()=>{setSelectedProductIds(new Set());},[selectedPlatform,selectedConnectionId,searchQuery,statusFilter,currentPage,pageSize,viewMode]);
 
   // Modal States
   const [activeMappingModal, setActiveMappingModal] = useState<{
@@ -276,11 +279,11 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
         hubSection="marketplace"
         currentPageTitle="Product & SKU Mapping"
         tabs={[
-          { id: 'marketplace-auth', label: 'Connect Store', badge: `${connectedCount}/4 Active`, badgeVariant: 'success' },
+          { id: 'marketplace-auth', label: 'Connect Store', badge: serverPage ? `${connectedCount} Connected` : `${connectedCount}/4 Active`, badgeVariant: 'success' },
           { id: 'marketplace-mapping', label: 'Product & SKU Mapping', badge: unmappedVariantsCount > 0 ? `${unmappedVariantsCount} Needs Review` : 'Healthy', badgeVariant: unmappedVariantsCount > 0 ? 'warning' : 'success' },
           { id: 'marketplace-oms', label: 'Orders (OMS)', badge: pendingOrdersCount > 0 ? `${pendingOrdersCount} Pending` : undefined, badgeVariant: 'warning' },
-          { id: 'marketplace-inventory', label: 'Inventory & WMS', badge: `${safeMpInv.length} SKUs`, badgeVariant: 'info' },
-          { id: 'marketplace-sync', label: 'Webhooks & Logs', badge: `${syncLogs.length}`, badgeVariant: 'default' },
+          { id: 'marketplace-inventory', label: 'Inventory & WMS', badge: serverPage ? undefined : `${safeMpInv.length} SKUs`, badgeVariant: 'info' },
+          { id: 'marketplace-sync', label: 'Webhooks & Logs', badge: serverPage ? undefined : `${syncLogs.length}`, badgeVariant: 'default' },
         ]}
       />
 
@@ -292,11 +295,11 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
               Product & SKU Mapping
             </h1>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-              Bidirectional SKU Sync
+              {serverPage ? 'Catalog & SKU Mapping' : 'Bidirectional SKU Sync'}
             </span>
           </div>
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-            Manage high-volume catalog bindings: auto-filter exceptions, push master products to external stores, or 1-click import channel items to JW Master.
+            {serverPage ? 'Browse fetched store listings and link variants to JW SKUs. Import, publishing and AI suggestions are not enabled yet.' : 'Manage high-volume catalog bindings: auto-filter exceptions, push master products to external stores, or 1-click import channel items to JW Master.'}
           </p>
         </div>
 
@@ -305,6 +308,8 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
           <button
             id="btn-push-master-to-store"
             type="button"
+            disabled={!!serverPage}
+            title={serverPage ? 'Publishing is not enabled yet.' : undefined}
             onClick={() => setActivePublishModal({ isOpen: true, connectionId: selectedConnectionId === 'all' ? undefined : selectedConnectionId })}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm shadow-indigo-500/20 transition-all cursor-pointer"
           >
@@ -327,7 +332,8 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
           <button
             id="btn-refresh-channel-products"
             type="button"
-            disabled={isRefreshing}
+            disabled={isRefreshing || !!serverPage&&!serverPage.canFetch}
+            title={serverPage ? 'Select one connected store with catalog access' : undefined}
             onClick={handleRefresh}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-bold transition-colors cursor-pointer"
           >
@@ -410,7 +416,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
         </div>
 
         <div 
-          onClick={() => setStatusFilter('push_candidates')}
+          onClick={() => {if(!serverPage)setStatusFilter('push_candidates');}}
           className={`p-4 rounded-xl border cursor-pointer transition-all ${
             statusFilter === 'push_candidates'
               ? 'bg-indigo-500/10 border-indigo-500/40 ring-1 ring-indigo-500/30'
@@ -424,10 +430,10 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
             </span>
           </div>
           <div className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
-            {unlistedMasterProducts.length} <span className="text-xs font-normal text-neutral-500">Products</span>
+            {serverPage ? '—' : unlistedMasterProducts.length} <span className="text-xs font-normal text-neutral-500">Products</span>
           </div>
           <p className="text-[11px] text-neutral-400 mt-1">
-            Ready to Push to Marketplace Store
+            {serverPage ? 'Publishing is not enabled yet' : 'Ready to Push to Marketplace Store'}
           </p>
         </div>
 
@@ -466,7 +472,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
                   : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
               }`}
             >
-              All Platforms ({safeStoreProds.length})
+              All Platforms {serverPage ? '' : `(${safeStoreProds.length})`}
             </button>
             <button
               id="filter-platform-tiktok"
@@ -478,7 +484,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
               }`}
             >
               <MarketplaceLogo platform="tiktok" size={15} />
-              <span>TikTok Shop ({safeStoreProds.filter(p => p.platform === 'tiktok').length})</span>
+              <span>TikTok Shop {serverPage ? '' : `(${safeStoreProds.filter(p => p.platform === 'tiktok').length})`}</span>
             </button>
             <button
               id="filter-platform-shopee"
@@ -490,7 +496,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
               }`}
             >
               <MarketplaceLogo platform="shopee" size={15} />
-              <span>Shopee ({safeStoreProds.filter(p => p.platform === 'shopee').length})</span>
+              <span>Shopee {serverPage ? '' : `(${safeStoreProds.filter(p => p.platform === 'shopee').length})`}</span>
             </button>
             <button
               id="filter-platform-lazada"
@@ -502,7 +508,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
               }`}
             >
               <MarketplaceLogo platform="lazada" size={15} />
-              <span>Lazada ({safeStoreProds.filter(p => p.platform === 'lazada').length})</span>
+              <span>Lazada {serverPage ? '' : `(${safeStoreProds.filter(p => p.platform === 'lazada').length})`}</span>
             </button>
             <button
               id="filter-platform-shopify"
@@ -514,7 +520,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
               }`}
             >
               <MarketplaceLogo platform="shopify" size={15} />
-              <span>Shopify ({safeStoreProds.filter(p => p.platform === 'shopify').length})</span>
+              <span>Shopify {serverPage ? '' : `(${safeStoreProds.filter(p => p.platform === 'shopify').length})`}</span>
             </button>
           </div>
 
@@ -598,6 +604,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
               Action Required ({unmappedVariantsCount})
             </button>
             <button
+              disabled={!!serverPage}
               onClick={() => { setStatusFilter('suggested'); setCurrentPage(1); }}
               className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                 statusFilter === 'suggested'
@@ -618,6 +625,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
               Mapped ({mappedVariantsCount})
             </button>
             <button
+              disabled={!!serverPage}
               onClick={() => { setStatusFilter('push_candidates'); setCurrentPage(1); }}
               className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                 statusFilter === 'push_candidates'
@@ -625,7 +633,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
                   : 'text-neutral-500 hover:text-indigo-600'
               }`}
             >
-              Push to Store ({unlistedMasterProducts.length})
+              Push to Store ({serverPage ? '—' : unlistedMasterProducts.length})
             </button>
             <button
               onClick={() => { setStatusFilter('all'); setCurrentPage(1); }}
@@ -656,6 +664,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
           <div className="flex items-center gap-2">
             <button
               type="button"
+              disabled={!!serverPage}
               onClick={handleBatchAcceptSuggestionsSelected}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-colors cursor-pointer"
             >
@@ -665,6 +674,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
 
             <button
               type="button"
+              disabled={!!serverPage}
               onClick={handleBatchImportSelected}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors cursor-pointer"
             >
@@ -847,10 +857,10 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
                         </td>
                         <td className="py-3 px-3">
                           <div className="font-semibold text-neutral-900 dark:text-white">
-                            {variant.currency} {variant.price.toFixed(2)}
+                            {variant.currency} {variant.price?.toFixed(2) ?? '—'}
                           </div>
                           <div className="text-[11px] text-neutral-500">
-                            Stock: <strong>{variant.stock}</strong> units
+                            Stock: <strong>{variant.stock ?? '—'}</strong> units
                           </div>
                         </td>
                         <td className="py-3 px-3 whitespace-nowrap">
@@ -931,6 +941,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
                                 </button>
                                 <button
                                   type="button"
+                                  disabled={!!serverPage}
                                   onClick={() => importStoreProductToMaster(product.id, variant.id)}
                                   title="Import this variant into JW Master Catalog and auto-link"
                                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer"
@@ -1062,6 +1073,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
                       {hasUnmapped && (
                         <button
                           type="button"
+                          disabled={!!serverPage}
                           onClick={() => importStoreProductToMaster(prod.id)}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
                         >
@@ -1143,10 +1155,10 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
                               {/* Price & Stock */}
                               <td className="py-3 px-3">
                                 <div className="font-semibold text-neutral-900 dark:text-white">
-                                  {variant.currency} {variant.price.toFixed(2)}
+                                  {variant.currency} {variant.price?.toFixed(2) ?? '—'}
                                 </div>
                                 <div className="text-[11px] text-neutral-500">
-                                  Channel Stock: <strong className="text-neutral-700 dark:text-neutral-300">{variant.stock}</strong> units
+                                  Channel Stock: <strong className="text-neutral-700 dark:text-neutral-300">{variant.stock ?? '—'}</strong> units
                                 </div>
                               </td>
 
@@ -1289,6 +1301,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
                                       <button
                                         id={`btn-import-spec-${variant.id}`}
                                         type="button"
+                                        disabled={!!serverPage}
                                         onClick={() => importStoreProductToMaster(prod.id, variant.id)}
                                         title="Create this variant as a JW Master SKU and auto-link"
                                         className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
@@ -1360,7 +1373,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
             </div>
 
             <span className="hidden xl:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 font-mono text-[10px] text-neutral-500 border border-neutral-200 dark:border-neutral-700/60">
-              Laravel API: /api/v1/marketplace/products?page={currentPage}&per_page={pageSize}
+              {serverPage ? '' : `Laravel API: /api/v1/marketplace/products?page=${currentPage}&per_page=${pageSize}`}
             </span>
           </div>
 
@@ -1413,6 +1426,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
           onClose={() => setActiveMappingModal(null)}
           storeProduct={activeMappingModal.storeProduct}
           storeVariant={activeMappingModal.storeVariant}
+          checkConflict={serverPage ? checkMarketplaceMappingConflict : undefined}
         />
       )}
 

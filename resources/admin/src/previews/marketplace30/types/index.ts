@@ -320,9 +320,9 @@ export interface MarketplaceStoreVariant {
   channelSellerSku: string;
   title: string;
   specOptions?: Record<string, string>;
-  price: number;
+  price: number | null;
   currency: string;
-  stock: number;
+  stock: number | null;
   imageUrl?: string;
 
   // Mapping to JW product variant
@@ -354,7 +354,7 @@ export interface MarketplaceStoreProduct {
   title: string;
   imageUrl: string;
   categoryName: string;
-  status: 'active' | 'inactive' | 'delisted';
+  status: 'active' | 'inactive' | 'delisted' | 'unknown';
   updatedAt: string;
   variants: MarketplaceStoreVariant[];
 }

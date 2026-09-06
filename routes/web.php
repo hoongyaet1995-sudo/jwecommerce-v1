@@ -299,6 +299,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/marketplace/listings/{listing}/mapping-context', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'mappingContext'])->whereNumber('listing');
     Route::get('/api/marketplace/catalog/products', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'products']);
     Route::get('/api/marketplace/orders', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'index']);
+    Route::get('/api/marketplace/orders/summary', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'summary']);
     Route::get('/api/marketplace/orders/{order}', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'show'])->whereNumber('order');
     Route::post('/api/marketplace/stores/{store}/orders-fetch', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'fetch'])->whereNumber('store')->middleware('throttle:10,1');
     Route::get('/api/marketplace/order-runs/{run}', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'run'])->whereNumber('run');

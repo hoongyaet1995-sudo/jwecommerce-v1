@@ -17,6 +17,25 @@ class MarketplaceOrderTest extends TestCase
         config(['marketplace.operations_enabled'=>true]);
     }
 
+    public function test_order_summary_counts_all_matching_orders_without_inventing_fulfillment(): void
+    {
+        $store = DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee','shop_name'=>'Summary store',
+            'region'=>'MY','environment'=>'sandbox','status'=>'connected','created_at'=>now(),'updated_at'=>now()]);
+        $service = app(MarketplaceOrderSnapshotService::class);
+        foreach (['READY_TO_SHIP','SHIPPED','NEW_PROVIDER_STATE'] as $index=>$status) {
+            $service->saveShopee($store,['order_sn'=>'SUMMARY-'.$index,'update_time'=>200,'order_status'=>$status,
+                'currency'=>'MYR','total_amount'=>10,'recipient_address'=>['name'=>'PRIVATE'],'item_list'=>[]]);
+        }
+        $this->getJson('/admin/api/marketplace/orders/summary')->assertUnauthorized();
+        $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>true]));
+        $response=$this->getJson('/admin/api/marketplace/orders/summary?storeId='.$store.'&per_page=1&status=READY_TO_SHIP')
+            ->assertOk()->assertJsonPath('total',3)->assertJsonPath('statuses.READY_TO_SHIP',1)
+            ->assertJsonPath('statuses.SHIPPED',1)->assertJsonPath('statuses.NEW_PROVIDER_STATE',1);
+        $this->assertStringNotContainsString('PRIVATE',$response->getContent());
+        $this->getJson('/admin/api/marketplace/orders/summary?q=SUMMARY-1')->assertOk()->assertJsonPath('total',1);
+        $this->getJson('/admin/api/marketplace/orders/summary?platform=lazada')->assertOk()->assertJsonPath('total',0);
+    }
+
     public function test_failed_order_run_retry_preserves_cursor_and_rejects_duplicate_or_disconnected_retry(): void
     {
         config(['marketplace.shopee.enabled'=>true, 'marketplace.shopee.environment'=>'sandbox',

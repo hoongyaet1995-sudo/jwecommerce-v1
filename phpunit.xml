@@ -28,6 +28,8 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <env name="MARKETPLACE_OPERATIONS_ENABLED" value="false" force="true"/>
+        <env name="MARKETPLACE_READ_OPERATIONS_ENABLED" value="false" force="true"/>
         <env name="EASYPARCEL_OPERATING_ENVIRONMENT" value="sandbox"/>
         <env name="EASYPARCEL_PRODUCTION_AUTHORIZATION_ENABLED" value="false"/>
         <env name="PULSE_ENABLED" value="false"/>

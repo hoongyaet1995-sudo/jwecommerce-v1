@@ -1,12 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { useAdmin } from '../../context/AdminContext';
+import { useAdmin } from '../../context/ContextBridge';
 import { MarketplaceOrder, MarketplacePlatform, ChannelOrderStatus } from '../../types';
 import { ShippingLabelModal } from './ShippingLabelModal';
 import { MarketplaceLogo } from './MarketplaceLogo';
 import { SubNavHeader } from '../common/SubNavHeader';
+import {OrderSummaryRows} from './OrderSummaryRows';
+import type {OrderSummary,StoreConnection} from '../../../../integration/marketplaceOperations';
 import { Boxes, Search, Printer, PackageCheck, Truck, CheckCircle2, Clock, Download, Zap, Eye, X, User, MapPin, ArrowUpRight } from 'lucide-react';
 
-export const MarketplaceOMSPage: React.FC = () => {
+export interface OmsServerData {orders:OrderSummary[];summary:{total:number;statuses:Record<string,number>};onSelect:(id:string)=>void;onQuery:(query:{platform:string;status:string;q:string})=>void;stores?:StoreConnection[];storeId?:string;onStore?:(id:string)=>void;onFetch?:()=>void;canFetch?:boolean;}
+export const MarketplaceOMSPage: React.FC<{operational?:boolean;serverData?:OmsServerData}> = ({operational=false,serverData}) => {
   const {
     marketplaceOrders = [],
     marketplaceInventory = [],
@@ -34,6 +37,8 @@ export const MarketplaceOMSPage: React.FC = () => {
   const [selectedChannel, setSelectedChannel] = useState<string>('all');
   const [selectedStatusTab, setSelectedStatusTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const onQuery=serverData?.onQuery;
+  React.useEffect(()=>{onQuery?.({platform:selectedChannel,status:selectedStatusTab,q:searchQuery});},[onQuery,selectedChannel,selectedStatusTab,searchQuery]);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [activeAwbOrder, setActiveAwbOrder] = useState<MarketplaceOrder | null>(null);
   const [dispatchModalOrder, setDispatchModalOrder] = useState<MarketplaceOrder | null>(null);
@@ -134,6 +139,7 @@ export const MarketplaceOMSPage: React.FC = () => {
 
   // Open courier handover modal
   const openDispatchModal = (order: MarketplaceOrder) => {
+    if(operational)return;
     setDispatchModalOrder(order);
     setDispatchCarrier(order.trackingCarrier || (order.channel === 'tiktok' ? 'J&T Express' : order.channel === 'shopee' ? 'Shopee Xpress' : order.channel === 'lazada' ? 'LEX Express' : 'DHL Express'));
     setDispatchTrackingNum(order.trackingNumber || `${(order.channel || 'mp').substring(0, 2).toUpperCase()}${Math.floor(1000000000 + Math.random() * 9000000000)}MY`);
@@ -192,11 +198,11 @@ export const MarketplaceOMSPage: React.FC = () => {
         hubSection="marketplace"
         currentPageTitle="Marketplace Orders (OMS)"
         tabs={[
-          { id: 'marketplace-auth', label: 'Connect Store', badge: `${connectedCount}/4 Active`, badgeVariant: 'success' },
-          { id: 'marketplace-mapping', label: 'Product & SKU Mapping', badge: unmappedCount > 0 ? `${unmappedCount} Unmapped` : 'All Mapped', badgeVariant: unmappedCount > 0 ? 'warning' : 'success' },
+          { id: 'marketplace-auth', label: 'Connect Store', badge: operational ? undefined : `${connectedCount}/4 Active`, badgeVariant: 'success' },
+          { id: 'marketplace-mapping', label: 'Product & SKU Mapping', badge: operational ? undefined : unmappedCount > 0 ? `${unmappedCount} Unmapped` : 'All Mapped', badgeVariant: unmappedCount > 0 ? 'warning' : 'success' },
           { id: 'marketplace-oms', label: 'Orders (OMS)', badge: pendingOrdersCount > 0 ? `${pendingOrdersCount} Pending` : undefined, badgeVariant: 'warning' },
-          { id: 'marketplace-inventory', label: 'Inventory & WMS', badge: `${safeMpInv.length} SKUs`, badgeVariant: 'info' },
-          { id: 'marketplace-sync', label: 'Webhooks & Logs', badge: `${safeLogs.length}`, badgeVariant: 'default' },
+          { id: 'marketplace-inventory', label: 'Inventory & WMS', badge: operational ? undefined : `${safeMpInv.length} SKUs`, badgeVariant: 'info' },
+          { id: 'marketplace-sync', label: 'Webhooks & Logs', badge: operational ? undefined : `${safeLogs.length}`, badgeVariant: 'default' },
         ]}
       />
 
@@ -208,17 +214,17 @@ export const MarketplaceOMSPage: React.FC = () => {
               Marketplace Order Management System (OMS)
             </h1>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-              Omnichannel Fulfillment
+              {operational ? 'Platform Order Records' : 'Omnichannel Fulfillment'}
             </span>
           </div>
           <p className="text-xs text-neutral-500 mt-1">
-            Centralized fulfillment hub for TikTok Shop, Shopee, Lazada, and Shopify. One-click AWB label generation & courier handover.
+            {operational ? 'Inspect fetched platform orders and SKU mappings. Marketplace fulfillment is not enabled yet.' : 'Centralized fulfillment hub for TikTok Shop, Shopee, Lazada, and Shopify. One-click AWB label generation & courier handover.'}
           </p>
         </div>
 
         {/* Action buttons & Live Order Simulator */}
         <div className="flex flex-wrap items-center gap-2.5">
-          <div className="relative group">
+          {!operational && <div className="relative group">
             <button className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-bold shadow-xs transition-all cursor-pointer">
               <Zap className="w-3.5 h-3.5" />
               <span>Simulate Inbound Order</span>
@@ -255,14 +261,16 @@ export const MarketplaceOMSPage: React.FC = () => {
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-600 text-white font-mono">SPF</span>
               </button>
             </div>
-          </div>
+          </div>}
 
           <button
-            onClick={handleExportCSV}
+            disabled={operational&&!serverData?.canFetch}
+            title={operational ? 'Fetch the last 7 days for one connected store' : undefined}
+            onClick={operational ? serverData?.onFetch : handleExportCSV}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-semibold transition-colors cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
-            Export CSV
+            {operational ? 'Fetch Orders (7 days)' : 'Export CSV'}
           </button>
         </div>
       </div>
@@ -301,14 +309,14 @@ export const MarketplaceOMSPage: React.FC = () => {
       {/* Status Pipeline Filter Row */}
       <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-2 shadow-xs flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto">
-          {[
+          {(serverData ? [{id:'all',label:'All Orders',count:serverData.summary.total,highlight:false},...Object.entries(serverData.summary.statuses).map(([id,count])=>({id,label:id.replace(/_/g,' '),count,highlight:false}))] : [
             { id: 'all', label: 'All Orders', count: counts.total },
             { id: 'to_ship', label: 'To Ship / Ready', count: counts.toShip, highlight: counts.toShip > 0 },
             { id: 'in_transit', label: 'In Transit', count: counts.inTransit },
             { id: 'delivered', label: 'Delivered', count: counts.delivered },
             { id: 'unpaid', label: 'Unpaid', count: counts.unpaid },
             { id: 'cancelled', label: 'Cancelled', count: counts.cancelled },
-          ].map(tab => {
+          ]).map(tab => {
             const isActive = selectedStatusTab === tab.id;
             return (
               <button
@@ -338,13 +346,17 @@ export const MarketplaceOMSPage: React.FC = () => {
         </div>
 
         {/* Search Input */}
+        {serverData?.onStore&&<select aria-label="Filter orders by store" value={serverData.storeId} onChange={event=>serverData.onStore?.(event.target.value)} className="text-xs px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-white font-medium focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+          <option value="all">All Stores</option>
+          {serverData.stores?.map(store=><option key={store.id} value={store.id}>{store.shopName} ({store.platform})</option>)}
+        </select>}
         <div className="relative w-full sm:w-72">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search Order #, Channel Ref, Buyer, SKU..."
+            placeholder={operational ? 'Search platform order reference...' : 'Search Order #, Channel Ref, Buyer, SKU...'}
             className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 text-neutral-900 dark:text-white"
           />
         </div>
@@ -359,6 +371,7 @@ export const MarketplaceOMSPage: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <button
+              disabled={operational}
               onClick={() => {
                 batchPrintAWB(selectedOrderIds);
                 setSelectedOrderIds([]);
@@ -369,6 +382,7 @@ export const MarketplaceOMSPage: React.FC = () => {
               Batch Generate & Print AWBs
             </button>
             <button
+              disabled={operational}
               onClick={() => {
                 batchPackOrders(selectedOrderIds);
                 setSelectedOrderIds([]);
@@ -397,6 +411,7 @@ export const MarketplaceOMSPage: React.FC = () => {
                 <th className="py-3.5 px-4 w-10">
                   <input
                     type="checkbox"
+                    disabled={operational}
                     checked={selectedOrderIds.length > 0 && selectedOrderIds.length === filteredOrders.length}
                     onChange={handleSelectAll}
                     className="rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
@@ -413,18 +428,19 @@ export const MarketplaceOMSPage: React.FC = () => {
             </thead>
 
             <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
-              {filteredOrders.length === 0 ? (
+              {serverData ? <OrderSummaryRows orders={serverData.orders} onSelect={serverData.onSelect}/> : filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-neutral-400">
                     <Boxes className="w-8 h-8 mx-auto mb-2 text-neutral-300 dark:text-neutral-700" />
                     <p className="font-semibold">No marketplace orders found</p>
-                    <p className="text-xs text-neutral-500 mt-0.5">Try changing the channel filter or simulate an incoming order.</p>
+                    <p className="text-xs text-neutral-500 mt-0.5">{operational ? 'No fetched orders match these filters.' : 'Try changing the channel filter or simulate an incoming order.'}</p>
                   </td>
                 </tr>
               ) : (
                 filteredOrders.map(order => {
                   const plat = getPlatformBadge(order.channel);
                   const status = getStatusBadge(order.channelStatus);
+                  if(operational)status.label=order.channelStatus ? String(order.channelStatus).replace(/_/g,' ') : 'Unavailable';
                   const isSelected = selectedOrderIds.includes(order.id);
                   const totalQty = order.items.reduce((s, i) => s + i.quantity, 0);
 
@@ -540,6 +556,7 @@ export const MarketplaceOMSPage: React.FC = () => {
                           {/* Print/Gen AWB */}
                           {!order.airwayBillGenerated ? (
                             <button
+                              disabled={operational}
                               onClick={() => {
                                 generateAirwayBill(order.id);
                                 setActiveAwbOrder(order);
@@ -551,6 +568,7 @@ export const MarketplaceOMSPage: React.FC = () => {
                             </button>
                           ) : (
                             <button
+                              disabled={operational}
                               onClick={() => setActiveAwbOrder(order)}
                               className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900 border border-emerald-200 dark:border-emerald-800 transition-colors cursor-pointer"
                               title="Reprint AWB Shipping Label"
@@ -562,6 +580,7 @@ export const MarketplaceOMSPage: React.FC = () => {
                           {/* Mark Packed */}
                           {order.channelStatus === 'AWAITING_COLLECTION' && (
                             <button
+                              disabled={operational}
                               onClick={() => markOrderPacked(order.id, 'Warehouse Staff')}
                               className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 hover:bg-amber-100 border border-amber-200 dark:border-amber-800 transition-colors cursor-pointer"
                               title="Mark Picked & Packed"
@@ -573,6 +592,7 @@ export const MarketplaceOMSPage: React.FC = () => {
                           {/* Handover to Courier */}
                           {(order.channelStatus === 'AWAITING_COLLECTION' || order.channelStatus === 'READY_TO_SHIP') && (
                             <button
+                              disabled={operational}
                               onClick={() => openDispatchModal(order)}
                               className="p-1.5 rounded-lg bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-100 border border-cyan-200 dark:border-cyan-800 transition-colors cursor-pointer"
                               title="Dispatch / Courier Handover"
@@ -601,7 +621,7 @@ export const MarketplaceOMSPage: React.FC = () => {
       </div>
 
       {/* Order Inspection Drawer */}
-      {activeOrder && (
+      {!operational && activeOrder && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-xs">
           <div className="w-full max-w-xl bg-white dark:bg-neutral-900 h-full shadow-2xl flex flex-col border-l border-neutral-200 dark:border-neutral-800 overflow-hidden animate-in slide-in-from-right duration-200">
             {/* Drawer Header */}
@@ -814,4 +834,3 @@ export const MarketplaceOMSPage: React.FC = () => {
     </div>
   );
 };
-

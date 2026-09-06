@@ -148,6 +148,13 @@ class MarketplaceAuthorizationTest extends TestCase
             ->assertJsonPath('stores.0.status', 'connected')->assertJsonPath('capabilities.shopee.catalog', false);
         $this->assertArrayNotHasKey('access_token', $result->json('stores.0'));
         $this->assertArrayNotHasKey('refresh_token', $result->json('stores.0'));
+        $this->assertStringEndsWith('Z', $result->json('stores.0.tokenExpiresAt'));
+        $this->assertNull($result->json('stores.0.lastSyncAt'));
+        $storeId=(int)$result->json('stores.0.id');
+        DB::table('marketplace_catalog_runs')->insert(['store_id'=>$storeId,'status'=>'succeeded','finished_at'=>'2026-09-06 09:00:00']);
+        DB::table('marketplace_order_runs')->insert(['store_id'=>$storeId,'status'=>'succeeded','time_from'=>1,'time_to'=>2,'finished_at'=>'2026-09-06 10:00:00']);
+        DB::table('marketplace_catalog_runs')->insert(['store_id'=>$storeId,'status'=>'failed','finished_at'=>'2026-09-06 11:00:00']);
+        $this->getJson('/admin/api/marketplace/connections')->assertOk()->assertJsonPath('stores.0.lastSyncAt','2026-09-06T10:00:00.000000Z');
         $this->travel(5)->hours();
         $this->getJson('/admin/api/marketplace/connections')->assertOk()->assertJsonPath('stores.0.status', 'reauthorization_required');
     }

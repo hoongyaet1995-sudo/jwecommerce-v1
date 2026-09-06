@@ -300,7 +300,7 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
                     <div>
                       <span className="text-[11px] text-neutral-500 font-medium">OAuth Token Validity</span>
                       <p className={`font-semibold mt-0.5 ${isConnected ? 'text-neutral-800 dark:text-neutral-200' : 'text-neutral-400 line-through'}`}>
-                        {isConnected ? (Number.isFinite(daysLeft) ? `${daysLeft} days remaining` : 'Unavailable') : 'Revoked / Paused'}
+                        {isConnected ? (Number.isFinite(daysLeft) ? (operational ? expiresDate.toLocaleString() : `${daysLeft} days remaining`) : 'Unavailable') : 'Revoked / Paused'}
                       </p>
                     </div>
                     <div>

@@ -98,4 +98,20 @@ class MarketplaceOrderController extends Controller
         return response()->json($query->orderByDesc('o.platform_updated_at')->orderByDesc('o.id')
             ->paginate($filters['per_page'] ?? 50))->header('Cache-Control', 'no-store');
     }
+
+    public function summary(Request $request)
+    {
+        $filters = $request->validate(['storeId'=>'nullable|integer',
+            'platform'=>'nullable|in:shopee,lazada,tiktok,shopify','q'=>'nullable|string|max:100']);
+        $query = DB::table('marketplace_orders as o')->join('marketplace_stores as s','s.id','=','o.store_id');
+        if (isset($filters['storeId'])) $query->where('o.store_id',$filters['storeId']);
+        if (!empty($filters['platform'])) $query->where('s.platform',$filters['platform']);
+        if (!empty($filters['q'])) $query->where('o.external_order_id','like','%'.$filters['q'].'%');
+        // Status tabs describe the whole filtered scope, not the selected tab/page.
+        $counts = $query->select('o.platform_status')->selectRaw('COUNT(*) AS aggregate_count')
+            ->groupBy('o.platform_status')->get();
+        $statuses = $counts->mapWithKeys(fn ($row)=>[$row->platform_status=>(int)$row->aggregate_count]);
+        return response()->json(['total'=>$statuses->sum(),'statuses'=>(object)$statuses->all()])
+            ->header('Cache-Control','no-store');
+    }
 }

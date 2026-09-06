@@ -54,9 +54,14 @@ class MarketplaceOAuthController extends Controller
 
     public function connections(ShopeeClient $client)
     {
+        $successfulRuns = DB::table('marketplace_catalog_runs')->select('store_id','finished_at')->where('status','succeeded')
+            ->unionAll(DB::table('marketplace_order_runs')->select('store_id','finished_at')->where('status','succeeded'));
+        $lastSuccess = DB::query()->fromSub($successfulRuns,'successful_runs')->select('store_id')
+            ->selectRaw('MAX(finished_at) as last_success')->groupBy('store_id')->pluck('last_success','store_id');
+        $timestamp = fn($value) => $value ? \Illuminate\Support\Carbon::parse($value, config('app.timezone'))->utc()->toISOString() : null;
         // Select only public metadata; never load encrypted credentials into this response path.
         $stores = DB::table('marketplace_stores as s')->leftJoin('marketplace_store_tokens as t', 't.store_id', '=', 's.id')
-            ->select('s.*', 't.access_expires_at', 't.application_id')->orderBy('s.id')->get()->map(function ($store) {
+            ->select('s.*', 't.access_expires_at', 't.application_id')->orderBy('s.id')->get()->map(function ($store) use ($lastSuccess, $timestamp) {
                 $status = $store->status;
                 $applicationMatches = $store->platform === 'shopee'
                     && $store->environment === config('marketplace.shopee.environment')
@@ -67,7 +72,8 @@ class MarketplaceOAuthController extends Controller
                 }
                 return ['id'=>(string) $store->id, 'platform'=>$store->platform, 'shopName'=>$store->shop_name,
                     'shopId'=>$store->external_shop_id, 'region'=>$store->region, 'status'=>$status,
-                    'tokenExpiresAt'=>$store->access_expires_at, 'autoSyncStock'=>false, 'autoPullOrders'=>false];
+                    'tokenExpiresAt'=>$timestamp($store->access_expires_at), 'lastSyncAt'=>$timestamp($lastSuccess->get($store->id)),
+                    'autoSyncStock'=>false, 'autoPullOrders'=>false];
             });
         $unavailable = ['oauth'=>false, 'catalog'=>false, 'publish'=>false, 'orders'=>false, 'inventory'=>false, 'fulfillment'=>false];
         $readsEnabled = $client->isConfigured() && (config('marketplace.read_operations_enabled') === true

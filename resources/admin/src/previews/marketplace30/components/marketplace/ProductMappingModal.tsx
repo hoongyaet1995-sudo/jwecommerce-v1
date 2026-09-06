@@ -4,11 +4,13 @@ import { MarketplaceStoreProduct, MarketplaceStoreVariant, Product, ProductVaria
 import { MarketplaceLogo } from './MarketplaceLogo';
 import { X, Search, Check, Link2, Unlink, AlertCircle, AlertTriangle, ArrowRight, Tag, CheckCircle2, Store, ChevronDown, ChevronUp, PackageCheck, ShieldCheck, Info, Plus, DownloadCloud } from 'lucide-react';
 
+export type MappingConflict = {storeProductTitle:string;storeVariantTitle:string;channelSku:string;variantId:string};
 interface ProductMappingModalProps {
   isOpen: boolean;
   onClose: () => void;
   storeProduct: MarketplaceStoreProduct;
   storeVariant: MarketplaceStoreVariant;
+  checkConflict?: (listingId:string, jwVariantId:string)=>Promise<MappingConflict|null>;
 }
 
 export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
@@ -16,6 +18,7 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
   onClose,
   storeProduct,
   storeVariant,
+  checkConflict,
 }) => {
   const { 
     products = [], 
@@ -33,6 +36,18 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const [selectedProductId, setSelectedProductId] = useState<string>(storeVariant.mappedJwProductId || '');
   const [selectedVariantId, setSelectedVariantId] = useState<string>(storeVariant.mappedJwVariantId || '');
+  const [checked,setChecked]=useState<{key:string;conflict:MappingConflict|null;failed:boolean}|null>(null);
+  const conflictKey=`${storeVariant.id}:${selectedVariantId}`;
+  React.useEffect(()=>{
+    if(!checkConflict||!isOpen||!selectedVariantId)return;
+    let active=true;
+    setChecked(null);
+    checkConflict(storeVariant.id,selectedVariantId).then(conflict=>{
+      if(active)setChecked({key:conflictKey,conflict,failed:false});
+    }).catch(()=>{if(active)setChecked({key:conflictKey,conflict:null,failed:true});});
+    return()=>{active=false;};
+  },[checkConflict,isOpen,storeVariant.id,selectedVariantId,conflictKey]);
+  const conflictCheckBlocked=!!checkConflict&&(!checked||checked.key!==conflictKey||checked.failed);
   const [expandedProductIds, setExpandedProductIds] = useState<Record<string, boolean>>(() => {
     if (storeVariant.mappedJwProductId) {
       return { [storeVariant.mappedJwProductId]: true };
@@ -134,8 +149,9 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
 
   const selectedSameStoreConflict = useMemo(() => {
     if (!selectedVariantId) return null;
+    if(checkConflict)return checked?.key===conflictKey?checked.conflict:null;
     return variantMappingContext.sameStore.get(selectedVariantId) || null;
-  }, [selectedVariantId, variantMappingContext.sameStore]);
+  }, [selectedVariantId, variantMappingContext.sameStore,checkConflict,checked,conflictKey]);
 
   if (!isOpen) return null;
 
@@ -168,7 +184,7 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
   };
 
   const handleSaveMapping = () => {
-    if (!selectedProductId || !selectedVariantId || selectedSameStoreConflict) return;
+    if (!selectedProductId || !selectedVariantId || selectedSameStoreConflict || conflictCheckBlocked) return;
     void persistMapping(() => mapStoreVariantToJwSku(storeProduct.id, storeVariant.id, selectedProductId, selectedVariantId));
   };
 
@@ -256,10 +272,10 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
                       Channel SKU: {storeVariant.channelSellerSku}
                     </span>
                     <span className="font-semibold text-neutral-700 dark:text-neutral-300">
-                      Channel Price: {storeVariant.currency} {storeVariant.price.toFixed(2)}
+                      Channel Price: {storeVariant.currency} {storeVariant.price?.toFixed(2) ?? '—'}
                     </span>
                     <span className="text-neutral-500">
-                      Channel Stock: {storeVariant.stock} units
+                      Channel Stock: {storeVariant.stock ?? '—'} units
                     </span>
                   </div>
                 </div>
@@ -344,6 +360,7 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
               </div>
               <button
                 type="button"
+                disabled={!!checkConflict}
                 onClick={() => {
                   importStoreProductToMaster(storeProduct.id, storeVariant.id);
                   onClose();
@@ -625,7 +642,7 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
                       Channel SKU: {storeVariant.channelSellerSku}
                     </div>
                     <div className="text-[11px] text-neutral-600 dark:text-neutral-400 mt-1">
-                      Store Price: {storeVariant.currency} {storeVariant.price.toFixed(2)}
+                      Store Price: {storeVariant.currency} {storeVariant.price?.toFixed(2) ?? '—'}
                     </div>
                   </div>
 
@@ -705,7 +722,8 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
             <button
               id="btn-confirm-mapping"
               type="button"
-              disabled={isSaving || !selectedProductId || !selectedVariantId || !!selectedSameStoreConflict}
+              title={conflictCheckBlocked ? (checked?.failed ? 'Conflict check failed. Reopen this dialog to retry.' : 'Checking existing store mappings…') : undefined}
+              disabled={isSaving || conflictCheckBlocked || !selectedProductId || !selectedVariantId || !!selectedSameStoreConflict}
               onClick={handleSaveMapping}
               className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedSameStoreConflict

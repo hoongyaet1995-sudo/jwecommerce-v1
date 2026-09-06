@@ -32,7 +32,7 @@ export function OperationalConnectStore() {
       return true;
     } catch {admin.addToast({type:'error',title:'Disconnect failed',message:'The connection could not be updated. Please retry.'});return false;}
   };
-  const value={...admin,connections:stores.map(store=>({...store,tokenExpiresAt:store.tokenExpiresAt||'',lastSyncAt:'',
+  const value={...admin,connections:stores.map(store=>({...store,tokenExpiresAt:store.tokenExpiresAt||'',lastSyncAt:store.lastSyncAt||'',
     autoSyncStock:false,autoPullOrders:false})),marketplaceOrders:[],marketplaceInventory:[],marketplaceStoreProducts:[],syncLogs:[],
     deleteConnection:unavailable,toggleConnectionSync:unavailable,refreshToken:unavailable,syncAllMarketplaces:unavailable,disconnectConnection};
   if(loading)return <p role="status" className="text-sm text-neutral-500">Loading Marketplace settings…</p>;

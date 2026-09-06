@@ -17,6 +17,7 @@ it('keeps a server page visible on page two without slicing it a second time', a
     <MarketplaceMappingPage serverPage={{total:320,summary:{products:320,variants:640,mapped:320,unmapped:320},loading:false,onQueryChange:query}}/>
   </PreviewContext.Provider>));
   const next=Array.from(container.querySelectorAll('.lucide-chevron-right')).at(-1)?.closest('button');
+  expect(container.querySelector<HTMLButtonElement>('#btn-push-master-to-store')!.disabled).toBe(true);
   expect(next).toBeTruthy();
   await act(async()=>next!.click());
   expect(container.textContent).toContain('SERVER PAGE PRODUCT');
