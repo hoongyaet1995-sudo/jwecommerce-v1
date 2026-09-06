@@ -35,6 +35,13 @@ class ShopeeClientTest extends TestCase
         $this->assertSame('partner.shopeemobile.com', parse_url($url, PHP_URL_HOST));
     }
 
+    public function test_sandbox_v2_token_exchange_uses_official_sandbox_gateway(): void
+    {
+        Http::fake(['*'=>Http::response(['access_token'=>'access', 'refresh_token'=>'refresh', 'expire_in'=>14400])]);
+        app(ShopeeClient::class)->exchange('sandbox-code', '456');
+        Http::assertSent(fn ($request) => parse_url($request->url(), PHP_URL_HOST) === 'openplatform.sandbox.test-stable.shopee.sg');
+    }
+
     public function test_token_exchange_requires_complete_success_and_sends_signed_request(): void
     {
         Http::fake(['*' => Http::response(['access_token'=>'access', 'refresh_token'=>'refresh', 'expire_in'=>14400])]);

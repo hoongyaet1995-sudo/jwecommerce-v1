@@ -43,7 +43,7 @@ class ShopeeClient
     private function host(array $config): string
     {
         return $config['environment'] === 'production'
-            ? 'https://partner.shopeemobile.com' : 'https://partner.test-stable.shopeemobile.com';
+            ? 'https://partner.shopeemobile.com' : 'https://openplatform.sandbox.test-stable.shopee.sg';
     }
 
     private function signedQuery(array $config, string $path): array
@@ -61,10 +61,7 @@ class ShopeeClient
         $query = $this->signedQuery($config, $path);
         $query['redirect'] = $config['callback_url'].'?'.http_build_query(['state' => $state]);
 
-        // Sandbox seller authorization uses its Open Platform gateway. Keep API routing separate.
-        $host = $config['environment'] === 'sandbox'
-            ? 'https://openplatform.sandbox.test-stable.shopee.sg' : $this->host($config);
-        return $host.$path.'?'.http_build_query($query);
+        return $this->host($config).$path.'?'.http_build_query($query);
     }
 
     public function shopInfo(#[\SensitiveParameter] string $accessToken, string $shopId): array
