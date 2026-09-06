@@ -277,6 +277,36 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/catalog/collections', AdminAppController::class)->name('collections.index');
     Route::get('/promotions', AdminAppController::class)->name('coupons.index');
     Route::get('/api/marketplace', [\App\Http\Controllers\Admin\MarketplaceApiController::class, 'index']);
+    Route::get('/api/marketplace/connections', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'connections']);
+    Route::get('/api/marketplace/oauth-result', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'result']);
+    Route::get('/marketplace/oauth-acceptance', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'acceptance']);
+    Route::get('/marketplace/oauth-preview', function (\Illuminate\Http\Request $request) {
+        abort_unless(app()->environment('local'), 404);
+        $path = public_path('build-marketplace-preview/manifest.json');
+        abort_unless(is_file($path), 503, 'Build the isolated Marketplace OAuth preview first.');
+        $manifest = json_decode(file_get_contents($path), true);
+        $entry = $manifest['src/previews/marketplace30/oauth.tsx'] ?? null;
+        abort_unless($entry, 503);
+        return response()->view('admin.marketplace-oauth-preview', ['entry'=>$entry, 'bootstrap'=>[
+            'user'=>['name'=>$request->user()->name, 'email'=>$request->user()->email, 'avatar'=>null],
+            'csrfToken'=>csrf_token(), 'logoutUrl'=>route('logout'),
+        ]])->header('Cache-Control', 'no-store');
+    });
+    Route::middleware(\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class)->group(function () {
+    Route::get('/api/marketplace/catalog', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'index']);
+    Route::get('/api/marketplace/catalog/products', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'products']);
+    Route::get('/api/marketplace/orders', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'index']);
+    Route::post('/api/marketplace/stores/{store}/orders-fetch', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'fetch'])->whereNumber('store')->middleware('throttle:10,1');
+    Route::get('/api/marketplace/order-runs/{run}', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'run'])->whereNumber('run');
+    Route::post('/api/marketplace/listings/{listing}/import-product', [\App\Http\Controllers\Admin\MarketplaceImportController::class, 'product'])->whereNumber('listing')->middleware('throttle:10,1');
+    Route::post('/api/marketplace/order-runs/{run}/retry', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'retry'])->whereNumber('run')->middleware('throttle:10,1');
+    Route::post('/api/marketplace/stores/{store}/catalog-fetch', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'fetch'])->whereNumber('store')->middleware('throttle:10,1');
+    Route::get('/api/marketplace/catalog-runs/{run}', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'show'])->whereNumber('run');
+    Route::post('/api/marketplace/catalog-runs/{run}/retry', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'retry'])->whereNumber('run')->middleware('throttle:10,1');
+    });
+    Route::post('/api/marketplace/shopee/authorize', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'start'])->middleware('throttle:10,1');
+    Route::post('/api/marketplace/stores/{store}/disconnect', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'disconnect'])->whereNumber('store');
+    Route::get('/marketplace/shopee/callback', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'callback'])->middleware('throttle:20,1');
     Route::post('/api/marketplace/stores', [\App\Http\Controllers\Admin\MarketplaceApiController::class, 'save']);
     Route::patch('/api/marketplace/stores/{store}', [\App\Http\Controllers\Admin\MarketplaceApiController::class, 'save'])->whereNumber('store');
     Route::delete('/api/marketplace/stores/{store}', [\App\Http\Controllers\Admin\MarketplaceApiController::class, 'destroy'])->whereNumber('store');

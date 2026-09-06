@@ -45,7 +45,7 @@ class MarketplaceFoundationTest extends TestCase
         $this->assertDatabaseCount('marketplace_listing_variants',0);
     }
 
-    public function test_mapping_validates_parent_and_supports_many_external_variants_without_touching_stock(): void
+    public function test_mapping_enforces_per_store_uniqueness_and_allows_cross_store_reuse_without_touching_stock(): void
     {
         $this->actingAs($admin=User::factory()->create(['is_admin'=>true]));
         $product=\App\Models\Product::query()->create(['title'=>'Mapping test','handle'=>'mapping-test','base_price'=>10,'status'=>'active']);
@@ -54,13 +54,22 @@ class MarketplaceFoundationTest extends TestCase
         $ids=[];
         foreach(['one','two'] as $external) $ids[]=DB::table('marketplace_listing_variants')->insertGetId(['store_id'=>$store,'external_product_id'=>'p1','external_variant_id'=>$external,'observed_data'=>'{}','fetched_at'=>now(),'created_at'=>now(),'updated_at'=>now()]);
         $this->putJson('/admin/api/marketplace/listings/'.$ids[0].'/mapping',['productId'=>$product->id+100,'variantId'=>$variant->id])->assertUnprocessable();
-        foreach($ids as $id) $this->putJson('/admin/api/marketplace/listings/'.$id.'/mapping',['productId'=>$product->id,'variantId'=>$variant->id])->assertOk();
+        $this->putJson('/admin/api/marketplace/listings/'.$ids[0].'/mapping',['productId'=>$product->id,'variantId'=>$variant->id])->assertOk();
+        $this->putJson('/admin/api/marketplace/listings/'.$ids[1].'/mapping',['productId'=>$product->id,'variantId'=>$variant->id])->assertStatus(409);
+        $this->assertDatabaseCount('marketplace_variant_mappings',1);
+        $this->assertDatabaseCount('marketplace_mapping_events',1);
+        $otherStore=DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee','shop_name'=>'Other store','region'=>'MY','environment'=>'sandbox','status'=>'pending_auth','created_at'=>now(),'updated_at'=>now()]);
+        $otherListing=DB::table('marketplace_listing_variants')->insertGetId(['store_id'=>$otherStore,'external_product_id'=>'p1','external_variant_id'=>'one','observed_data'=>'{}','fetched_at'=>now(),'created_at'=>now(),'updated_at'=>now()]);
+        $this->putJson('/admin/api/marketplace/listings/'.$otherListing.'/mapping',['productId'=>$product->id,'variantId'=>$variant->id])->assertOk();
         $this->putJson('/admin/api/marketplace/listings/'.$ids[0].'/mapping',['productId'=>$product->id,'variantId'=>$variant->id])->assertOk();
         $this->assertDatabaseCount('marketplace_variant_mappings',2);
         $this->assertDatabaseCount('marketplace_mapping_events',2);
         $this->deleteJson('/admin/api/marketplace/listings/'.$ids[0].'/mapping')->assertOk();
         $this->assertDatabaseCount('marketplace_variant_mappings',1);
         $this->assertDatabaseCount('marketplace_mapping_events',3);
+        $this->putJson('/admin/api/marketplace/listings/'.$ids[1].'/mapping',['productId'=>$product->id,'variantId'=>$variant->id])->assertOk();
+        $this->assertDatabaseCount('marketplace_variant_mappings',2);
+        $this->assertDatabaseCount('marketplace_mapping_events',4);
         $this->assertEquals(7,$variant->fresh()->stock);
         $this->deleteJson('/admin/api/marketplace/stores/'.$store)->assertStatus(409);
     }

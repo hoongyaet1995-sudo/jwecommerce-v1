@@ -1,0 +1,1588 @@
+import { MarketplaceConnection, MarketplaceOrder, MarketplaceInventoryItem, MarketplaceSyncLog, MarketplaceStoreProduct } from '../types';
+export const INITIAL_MARKETPLACE_CONNECTIONS: MarketplaceConnection[] = [
+  {
+    id: 'conn-shopee-01',
+    platform: 'shopee',
+    shopName: 'Aurora Audio Flagship Mall',
+    shopNickname: 'Shopee Official MY',
+    shopId: '293849102',
+    partnerId: '849201',
+    sellerId: 'aurora_audio.os',
+    region: 'MY',
+    appKey: '4f81c9a03b554e2d83',
+    appSecret: '••••••••••••••••••••••••••••9e21',
+    accessToken: 'shopee_live_auth_91823910394857201948372',
+    refreshToken: 'shopee_refresh_token_09823419082391',
+    tokenExpiresAt: new Date(Date.now() + 29 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'connected',
+    connectedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    lastFetchedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+    autoSyncStock: true,
+    autoPullOrders: true,
+    webhookRegistered: true,
+    webhookSecret: 'whsec_shopee_3948201948201',
+    syncIntervalMinutes: 5,
+    scopes: ['orders.read_write', 'fulfillment.write', 'inventory.sync', 'pricing.manage'],
+    authorizedScopesSummary: ['Product Catalog Read', 'Order Retrieval & Status', 'Warehouse Stock Push', 'AWB Courier Generation'],
+    lastSyncAt: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
+    orderCount: 389,
+    productCount: 24,
+    priceMarkupPercent: 0,
+    stockBufferPercent: 10,
+    defaultCourier: 'Shopee Supported Logistics (SPX)',
+    environment: 'production',
+    shopAvatar: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=120&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'conn-lazada-01',
+    platform: 'lazada',
+    shopName: 'Aurora Audio LazMall Store',
+    shopNickname: 'Lazada LazMall MY',
+    shopId: 'MY102938482',
+    sellerId: 'seller_laz_aurora_my',
+    region: 'MY',
+    appKey: '10928301',
+    appSecret: '••••••••••••••••••••••••••••7c44',
+    accessToken: 'lazada_sec_tok_84920194830192847291',
+    refreshToken: 'lazada_ref_tok_10294820192847',
+    tokenExpiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'connected',
+    connectedAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
+    lastFetchedAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+    autoSyncStock: true,
+    autoPullOrders: true,
+    webhookRegistered: true,
+    webhookSecret: 'whsec_laz_9847201928374',
+    syncIntervalMinutes: 5,
+    scopes: ['orders.read_write', 'fulfillment.write', 'inventory.sync'],
+    authorizedScopesSummary: ['Catalog Read', 'Orders Sync', 'Inventory Push'],
+    lastSyncAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
+    orderCount: 98,
+    productCount: 16,
+    priceMarkupPercent: 0,
+    stockBufferPercent: 5,
+    defaultCourier: 'Lazada Logistics Express (LEX)',
+    environment: 'production',
+    shopAvatar: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=120&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'conn-shopee-02',
+    platform: 'shopee',
+    shopName: 'Aurora Audio Outlet Store',
+    shopNickname: 'Shopee Secondary Outlet',
+    shopId: '481029381',
+    partnerId: '849201',
+    sellerId: 'aurora_outlet.my',
+    region: 'MY',
+    appKey: '4f81c9a03b554e2d83',
+    appSecret: '••••••••••••••••••••••••••••9e21',
+    accessToken: 'shopee_expired_token_0019283',
+    refreshToken: 'shopee_refresh_token_expired',
+    tokenExpiresAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // Expired 2 days ago
+    status: 'expired',
+    connectedAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+    lastFetchedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    autoSyncStock: false,
+    autoPullOrders: false,
+    webhookRegistered: false,
+    syncIntervalMinutes: 5,
+    scopes: ['orders.read_write', 'inventory.sync'],
+    authorizedScopesSummary: ['Catalog Read', 'Order Sync', 'Inventory Push'],
+    lastSyncAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    orderCount: 42,
+    productCount: 8,
+    priceMarkupPercent: 0,
+    stockBufferPercent: 5,
+    defaultCourier: 'Shopee Supported Logistics (SPX)',
+    environment: 'production',
+    shopAvatar: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=120&auto=format&fit=crop&q=80'
+  }
+];
+export const INITIAL_MARKETPLACE_ORDERS: MarketplaceOrder[] = [
+  {
+    id: 'mord-tt-901',
+    orderNumber: 'ORD-TT-578491',
+    channel: 'tiktok',
+    channelStoreId: 'TTS_MY_748291038',
+    channelStoreName: 'Aurora Audio Official Shop',
+    channelOrderId: '578491029384729183',
+    marketplaceBuyerUsername: '@haikal_audiophile',
+    channelStatus: 'AWAITING_COLLECTION',
+    slaShipDeadline: new Date(Date.now() + 3.5 * 60 * 60 * 1000).toISOString(), // 3.5 hours left (URGENT)
+    isSlaBreachRisk: true,
+    airwayBillGenerated: true,
+    airwayBillUrl: 'https://labels.tiktokcdn.com/awb/578491029384729183.pdf',
+    pickupType: 'dropoff',
+    allocatedWarehouse: 'Warehouse Alpha (Central Hub - Cyberjaya)',
+    packedBy: 'Staff Hazim',
+    scannedItemsCount: 1,
+    createdAt: new Date(Date.now() - 21 * 60 * 60 * 1000).toISOString(),
+    customerId: 'cust-tt-01',
+    customerName: 'Ahmad Haikal Bin Razak',
+    customerEmail: 'haikal.razak@gmail.com',
+    customerPhone: '+60 12-883 9102',
+    paymentGateway: 'Credit Card',
+    paymentGatewayStatus: 'paid',
+    fulfillmentStatus: 'processing',
+    currency: 'MYR',
+    subtotal: 1899.00,
+    taxAmount: 0,
+    shippingAmount: 0,
+    discountAmount: 100.00,
+    totalAmount: 1799.00,
+    trackingNumber: 'JT6082918302MY',
+    trackingCarrier: 'J&T Express (TikTok Shipping)',
+    shippingAddress: {
+      id: 'addr-tt-01',
+      isDefault: true,
+      type: 'shipping',
+      firstName: 'Ahmad Haikal',
+      lastName: 'Bin Razak',
+      company: 'Petronas Digital',
+      address1: 'Level 14, Tower 3, KLCC',
+      city: 'Kuala Lumpur',
+      province: 'Wilayah Persekutuan',
+      country: 'Malaysia',
+      postalCode: '50088',
+      phone: '+60 12-883 9102'
+    },
+    billingAddress: {
+      id: 'addr-tt-01-b',
+      isDefault: true,
+      type: 'billing',
+      firstName: 'Ahmad Haikal',
+      lastName: 'Bin Razak',
+      address1: 'Level 14, Tower 3, KLCC',
+      city: 'Kuala Lumpur',
+      province: 'Wilayah Persekutuan',
+      country: 'Malaysia',
+      postalCode: '50088',
+      phone: '+60 12-883 9102'
+    },
+    customerNote: 'Please bubble wrap thickly! It is a birthday gift.',
+    internalNote: 'TikTok Campaign Voucher Auto-applied ($100 subsidised by TikTok)',
+    items: [
+      {
+        id: 'item-m-01',
+        productId: 'prod-01',
+        variantId: 'var-01-blk',
+        title: 'Aurora ANC Wireless Headphones',
+        variantTitle: 'Midnight Black / Titanium',
+        sku: 'AUR-ANC-01-BLK',
+        price: 1899.00,
+        quantity: 1,
+        image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&auto=format&fit=crop&q=80',
+        weightGrams: 420
+      }
+    ],
+    timeline: [
+      {
+        id: 'evt-1',
+        timestamp: new Date(Date.now() - 21 * 60 * 60 * 1000).toISOString(),
+        type: 'created',
+        title: 'TikTok Shop Order Inbound Received',
+        description: 'Order synchronized via TikTok Open API Webhook [Event: ORDER_STATUS_CHANGE]'
+      },
+      {
+        id: 'evt-2',
+        timestamp: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
+        type: 'paid',
+        title: 'Escrow Payment Confirmed by TikTok',
+        description: 'Payment captured securely in TikTok Shop Escrow'
+      },
+      {
+        id: 'evt-3',
+        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        type: 'fulfillment_updated',
+        title: 'Airway Bill Generated (J&T Express)',
+        description: 'AWB Tracking #JT6082918302MY registered with J&T Express pickup manifest'
+      }
+    ]
+  },
+  {
+    id: 'mord-sp-802',
+    orderNumber: 'ORD-SP-240817U9',
+    channel: 'shopee',
+    channelStoreId: '293849102',
+    channelStoreName: 'Aurora Audio Flagship Mall',
+    channelOrderId: '240817U9X381A2',
+    marketplaceBuyerUsername: 'chong_audiophile_my',
+    channelStatus: 'READY_TO_SHIP',
+    slaShipDeadline: new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString(), // 18 hours left
+    isSlaBreachRisk: false,
+    airwayBillGenerated: true,
+    airwayBillUrl: 'https://spx.shopee.com.my/awb/240817U9X381A2',
+    pickupType: 'pickup',
+    allocatedWarehouse: 'Warehouse Alpha (Central Hub - Cyberjaya)',
+    packedBy: 'Staff Mei Ling',
+    scannedItemsCount: 2,
+    createdAt: new Date(Date.now() - 14 * 60 * 60 * 1000).toISOString(),
+    customerId: 'cust-sp-02',
+    customerName: 'Marcus Chong Wei Lun',
+    customerEmail: 'marcus.chong@outlook.com',
+    customerPhone: '+60 16-449 2011',
+    paymentGateway: 'Credit Card',
+    paymentGatewayStatus: 'paid',
+    fulfillmentStatus: 'processing',
+    currency: 'MYR',
+    subtotal: 1398.00,
+    taxAmount: 0,
+    shippingAmount: 0,
+    discountAmount: 50.00,
+    totalAmount: 1348.00,
+    trackingNumber: 'SPXMY0482918402',
+    trackingCarrier: 'Shopee Supported Logistics (SPX Express)',
+    shippingAddress: {
+      id: 'addr-sp-02',
+      isDefault: true,
+      type: 'shipping',
+      firstName: 'Marcus',
+      lastName: 'Chong Wei Lun',
+      address1: 'No 45, Jalan Setia Nusantara U13/22',
+      address2: 'Setia Eco Park',
+      city: 'Shah Alam',
+      province: 'Selangor',
+      country: 'Malaysia',
+      postalCode: '40170',
+      phone: '+60 16-449 2011'
+    },
+    billingAddress: {
+      id: 'addr-sp-02-b',
+      isDefault: true,
+      type: 'billing',
+      firstName: 'Marcus',
+      lastName: 'Chong Wei Lun',
+      address1: 'No 45, Jalan Setia Nusantara U13/22',
+      city: 'Shah Alam',
+      province: 'Selangor',
+      country: 'Malaysia',
+      postalCode: '40170',
+      phone: '+60 16-449 2011'
+    },
+    customerNote: 'Leave at guardhouse if not home',
+    items: [
+      {
+        id: 'item-m-02',
+        productId: 'prod-02',
+        variantId: 'var-02-wht',
+        title: 'Aurora True Wireless Earbuds Pro',
+        variantTitle: 'Ceramic White / Silver',
+        sku: 'AUR-TWS-PRO-WHT',
+        price: 699.00,
+        quantity: 2,
+        image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=300&auto=format&fit=crop&q=80',
+        weightGrams: 180
+      }
+    ],
+    timeline: [
+      {
+        id: 'evt-sp-1',
+        timestamp: new Date(Date.now() - 14 * 60 * 60 * 1000).toISOString(),
+        type: 'created',
+        title: 'Shopee Order Synced',
+        description: 'Auto-pulled from Shopee v2.order.get_order_detail'
+      },
+      {
+        id: 'evt-sp-2',
+        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+        type: 'fulfillment_updated',
+        title: 'Item Picked & Verified',
+        description: 'Barcode verified by Mei Ling at Bin A-02-C1'
+      }
+    ]
+  },
+  {
+    id: 'mord-lz-703',
+    orderNumber: 'ORD-LZ-849201',
+    channel: 'lazada',
+    channelStoreId: 'MY102938482',
+    channelStoreName: 'Aurora Audio LazMall Store',
+    channelOrderId: '849201928471920',
+    marketplaceBuyerUsername: 'siti_nurhaliza_fan',
+    channelStatus: 'UNPACKED',
+    slaShipDeadline: new Date(Date.now() + 28 * 60 * 60 * 1000).toISOString(), // 28 hours left
+    isSlaBreachRisk: false,
+    airwayBillGenerated: false,
+    pickupType: 'dropoff',
+    allocatedWarehouse: 'Warehouse Alpha (Central Hub - Cyberjaya)',
+    scannedItemsCount: 0,
+    createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+    customerId: 'cust-lz-03',
+    customerName: 'Nurul Izzah Binti Kamaruddin',
+    customerEmail: 'izzah.k@gmail.com',
+    customerPhone: '+60 19-332 1948',
+    paymentGateway: 'Credit Card',
+    paymentGatewayStatus: 'paid',
+    fulfillmentStatus: 'unfulfilled',
+    currency: 'MYR',
+    subtotal: 1299.00,
+    taxAmount: 0,
+    shippingAmount: 0,
+    discountAmount: 0,
+    totalAmount: 1299.00,
+    shippingAddress: {
+      id: 'addr-lz-03',
+      isDefault: true,
+      type: 'shipping',
+      firstName: 'Nurul Izzah',
+      lastName: 'Binti Kamaruddin',
+      address1: 'Unit B-12-08, Residensi Suasana',
+      address2: 'Damansara Damai',
+      city: 'Petaling Jaya',
+      province: 'Selangor',
+      country: 'Malaysia',
+      postalCode: '47830',
+      phone: '+60 19-332 1948'
+    },
+    billingAddress: {
+      id: 'addr-lz-03-b',
+      isDefault: true,
+      type: 'billing',
+      firstName: 'Nurul Izzah',
+      lastName: 'Binti Kamaruddin',
+      address1: 'Unit B-12-08, Residensi Suasana',
+      city: 'Petaling Jaya',
+      province: 'Selangor',
+      country: 'Malaysia',
+      postalCode: '47830',
+      phone: '+60 19-332 1948'
+    },
+    items: [
+      {
+        id: 'item-m-03',
+        productId: 'prod-03',
+        variantId: 'var-03-slv',
+        title: 'Aurora Studio Hi-Fi DAC & Amp V2',
+        variantTitle: 'Brushed Silver / Dual ESS Sabre',
+        sku: 'AUR-DAC-V2-SLV',
+        price: 1299.00,
+        quantity: 1,
+        image: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=300&auto=format&fit=crop&q=80',
+        weightGrams: 850
+      }
+    ],
+    timeline: [
+      {
+        id: 'evt-lz-1',
+        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        type: 'created',
+        title: 'Lazada Open API Webhook Received',
+        description: 'New LazMall order recorded (Status: UNPACKED)'
+      }
+    ]
+  },
+  {
+    id: 'mord-sh-604',
+    orderNumber: 'ORD-SH-10492',
+    channel: 'shopify',
+    channelStoreId: 'aurora-global-direct.myshopify.com',
+    channelStoreName: 'Aurora Global Direct Store',
+    channelOrderId: '5849201948',
+    marketplaceBuyerUsername: 'david.miller.ny',
+    channelStatus: 'UNFULFILLED',
+    slaShipDeadline: new Date(Date.now() + 42 * 60 * 60 * 1000).toISOString(),
+    isSlaBreachRisk: false,
+    airwayBillGenerated: true,
+    airwayBillUrl: 'https://dhl.com/labels/9482910394.pdf',
+    pickupType: 'pickup',
+    allocatedWarehouse: 'Warehouse Alpha (Central Hub - Cyberjaya)',
+    packedBy: 'Staff Alex',
+    scannedItemsCount: 1,
+    createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+    customerId: 'cust-sh-04',
+    customerName: 'David Miller',
+    customerEmail: 'david.miller@studiobrooklyn.com',
+    customerPhone: '+1 (917) 555-0192',
+    paymentGateway: 'Stripe',
+    paymentGatewayStatus: 'paid',
+    fulfillmentStatus: 'processing',
+    currency: 'USD',
+    subtotal: 549.00,
+    taxAmount: 43.92,
+    shippingAmount: 25.00,
+    discountAmount: 0,
+    totalAmount: 617.92,
+    trackingNumber: 'DHL9482910394US',
+    trackingCarrier: 'DHL Express Worldwide',
+    shippingAddress: {
+      id: 'addr-sh-04',
+      isDefault: true,
+      type: 'shipping',
+      firstName: 'David',
+      lastName: 'Miller',
+      company: 'Brooklyn Soundworks',
+      address1: '240 Kent Avenue, Suite 4B',
+      city: 'Brooklyn',
+      province: 'NY',
+      country: 'United States',
+      postalCode: '11249',
+      phone: '+1 (917) 555-0192'
+    },
+    billingAddress: {
+      id: 'addr-sh-04-b',
+      isDefault: true,
+      type: 'billing',
+      firstName: 'David',
+      lastName: 'Miller',
+      address1: '240 Kent Avenue, Suite 4B',
+      city: 'Brooklyn',
+      province: 'NY',
+      country: 'United States',
+      postalCode: '11249',
+      phone: '+1 (917) 555-0192'
+    },
+    items: [
+      {
+        id: 'item-m-04',
+        productId: 'prod-04',
+        variantId: 'var-04-wal',
+        title: 'Aurora Studio Reference Monitors (Pair)',
+        variantTitle: 'Solid Walnut / Kevlar Cones',
+        sku: 'AUR-ST-MON-WAL',
+        price: 549.00,
+        quantity: 1,
+        image: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=300&auto=format&fit=crop&q=80',
+        weightGrams: 6200
+      }
+    ],
+    timeline: [
+      {
+        id: 'evt-sh-1',
+        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+        type: 'created',
+        title: 'Shopify Webhook `orders/create` Triggered',
+        description: 'Direct international order received via Shopify Admin API'
+      }
+    ]
+  },
+  {
+    id: 'mord-tt-905',
+    orderNumber: 'ORD-TT-578499',
+    channel: 'tiktok',
+    channelStoreId: 'TTS_MY_748291038',
+    channelStoreName: 'Aurora Audio Official Shop',
+    channelOrderId: '578499019284729199',
+    marketplaceBuyerUsername: '@kenji_gamer',
+    channelStatus: 'IN_TRANSIT',
+    slaShipDeadline: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
+    isSlaBreachRisk: false,
+    airwayBillGenerated: true,
+    pickupType: 'dropoff',
+    allocatedWarehouse: 'Warehouse Alpha (Central Hub - Cyberjaya)',
+    createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+    customerId: 'cust-tt-05',
+    customerName: 'Kenji Tan Jin Wei',
+    customerEmail: 'kenji.tan@gmail.com',
+    customerPhone: '+60 17-293 8471',
+    paymentGateway: 'Credit Card',
+    paymentGatewayStatus: 'paid',
+    fulfillmentStatus: 'shipped',
+    currency: 'MYR',
+    subtotal: 1899.00,
+    taxAmount: 0,
+    shippingAmount: 0,
+    discountAmount: 50.00,
+    totalAmount: 1849.00,
+    trackingNumber: 'JT6082998811MY',
+    trackingCarrier: 'J&T Express (TikTok Shipping)',
+    shippingAddress: {
+      id: 'addr-tt-05',
+      isDefault: true,
+      type: 'shipping',
+      firstName: 'Kenji',
+      lastName: 'Tan Jin Wei',
+      address1: 'No 12, Lorong Batu Nilam 21A',
+      city: 'Klang',
+      province: 'Selangor',
+      country: 'Malaysia',
+      postalCode: '41200',
+      phone: '+60 17-293 8471'
+    },
+    billingAddress: {
+      id: 'addr-tt-05-b',
+      isDefault: true,
+      type: 'billing',
+      firstName: 'Kenji',
+      lastName: 'Tan Jin Wei',
+      address1: 'No 12, Lorong Batu Nilam 21A',
+      city: 'Klang',
+      province: 'Selangor',
+      country: 'Malaysia',
+      postalCode: '41200',
+      phone: '+60 17-293 8471'
+    },
+    items: [
+      {
+        id: 'item-m-05',
+        productId: 'prod-01',
+        variantId: 'var-01-sil',
+        title: 'Aurora ANC Wireless Headphones',
+        variantTitle: 'Silver Frost / Aluminum',
+        sku: 'AUR-ANC-01-SIL',
+        price: 1899.00,
+        quantity: 1,
+        image: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=300&auto=format&fit=crop&q=80',
+        weightGrams: 420
+      }
+    ],
+    timeline: [
+      {
+        id: 'evt-5-1',
+        timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+        type: 'created',
+        title: 'Order Placed on TikTok LIVE Stream',
+        description: 'Affiliate Creator: @techreview_my'
+      },
+      {
+        id: 'evt-5-2',
+        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        type: 'fulfillment_updated',
+        title: 'Handed Over to Courier at Hub',
+        description: 'J&T Express Dropoff scan confirmed'
+      }
+    ]
+  }
+];
+export const INITIAL_MARKETPLACE_INVENTORY: MarketplaceInventoryItem[] = [
+  {
+    id: 'inv-01',
+    masterSku: 'AUR-ANC-01-BLK',
+    barcode: '8809281938012',
+    productName: 'Aurora ANC Wireless Headphones',
+    variantName: 'Midnight Black / Titanium',
+    imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&auto=format&fit=crop&q=80',
+    warehouseLocation: 'Zone A - Rack 01 - Bin A1',
+    totalPhysicalStock: 150,
+    reservedStock: 18,
+    safetyStock: 10,
+    availableStock: 122, // 150 - 18 - 10
+    reorderPoint: 30,
+    costPrice: 850.00,
+    sellingPrice: 1899.00,
+    autoSyncEnabled: true,
+    lastBroadcastAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    channelMappings: {
+      tiktok: {
+        isLinked: true,
+        channelProductId: 'TTS_PRD_98492019',
+        channelSkuId: 'TTS_SKU_10293848',
+        channelStock: 122,
+        price: 1955.00, // +3% markup
+        lastSyncedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      },
+      shopee: {
+        isLinked: true,
+        channelItemId: 'SP_ITEM_2938491028',
+        channelModelId: 'SP_MOD_84920194',
+        channelStock: 122,
+        price: 1899.00,
+        lastSyncedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      },
+      lazada: {
+        isLinked: true,
+        channelSellerSku: 'LZ-AUR-ANC-BLK',
+        channelItemId: 'LZ_ITEM_98372819',
+        channelStock: 122,
+        price: 1899.00,
+        lastSyncedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      },
+      shopify: {
+        isLinked: true,
+        channelVariantId: 'gid://shopify/ProductVariant/449201928471',
+        channelProductId: 'gid://shopify/Product/8492019482',
+        channelStock: 122,
+        price: 499.00,
+        lastSyncedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      }
+    },
+    historyLog: [
+      {
+        id: 'hl-1',
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        action: 'ORDER_RESERVATION',
+        change: -1,
+        resultingStock: 122,
+        user: 'TikTok Webhook Listener',
+        reason: 'Order #ORD-TT-578491 placed by customer'
+      },
+      {
+        id: 'hl-2',
+        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        action: 'INBOUND_RECEIVING',
+        change: +50,
+        resultingStock: 123,
+        user: 'Warehouse Lead (Hazim)',
+        reason: 'Factory PO #PO-2026-081 Arrival Inspection Pass'
+      }
+    ]
+  },
+  {
+    id: 'inv-02',
+    masterSku: 'AUR-ANC-01-SIL',
+    barcode: '8809281938029',
+    productName: 'Aurora ANC Wireless Headphones',
+    variantName: 'Silver Frost / Aluminum',
+    imageUrl: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=200&auto=format&fit=crop&q=80',
+    warehouseLocation: 'Zone A - Rack 01 - Bin A2',
+    totalPhysicalStock: 85,
+    reservedStock: 12,
+    safetyStock: 8,
+    availableStock: 65, // 85 - 12 - 8
+    reorderPoint: 25,
+    costPrice: 850.00,
+    sellingPrice: 1899.00,
+    autoSyncEnabled: true,
+    lastBroadcastAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+    channelMappings: {
+      tiktok: {
+        isLinked: true,
+        channelProductId: 'TTS_PRD_98492019',
+        channelSkuId: 'TTS_SKU_10293849',
+        channelStock: 65,
+        price: 1955.00,
+        lastSyncedAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      },
+      shopee: {
+        isLinked: true,
+        channelItemId: 'SP_ITEM_2938491028',
+        channelModelId: 'SP_MOD_84920195',
+        channelStock: 65,
+        price: 1899.00,
+        lastSyncedAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      },
+      lazada: {
+        isLinked: true,
+        channelSellerSku: 'LZ-AUR-ANC-SIL',
+        channelItemId: 'LZ_ITEM_98372819',
+        channelStock: 65,
+        price: 1899.00,
+        lastSyncedAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      },
+      shopify: {
+        isLinked: true,
+        channelVariantId: 'gid://shopify/ProductVariant/449201928472',
+        channelProductId: 'gid://shopify/Product/8492019482',
+        channelStock: 65,
+        price: 499.00,
+        lastSyncedAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      }
+    },
+    historyLog: [
+      {
+        id: 'hl-sil-1',
+        timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+        action: 'ORDER_RESERVATION',
+        change: -1,
+        resultingStock: 65,
+        user: 'Shopee Webhook Listener',
+        reason: 'Order #ORD-SP-240817U9 placed'
+      }
+    ]
+  },
+  {
+    id: 'inv-03',
+    masterSku: 'AUR-TWS-PRO-WHT',
+    barcode: '8809281938036',
+    productName: 'Aurora True Wireless Earbuds Pro',
+    variantName: 'Ceramic White / Silver',
+    imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=200&auto=format&fit=crop&q=80',
+    warehouseLocation: 'Zone A - Rack 02 - Bin C1',
+    totalPhysicalStock: 240,
+    reservedStock: 35,
+    safetyStock: 15,
+    availableStock: 190,
+    reorderPoint: 50,
+    costPrice: 280.00,
+    sellingPrice: 699.00,
+    autoSyncEnabled: true,
+    lastBroadcastAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+    channelMappings: {
+      tiktok: {
+        isLinked: true,
+        channelProductId: 'TTS_PRD_77492011',
+        channelSkuId: 'TTS_SKU_33019284',
+        channelStock: 190,
+        price: 720.00,
+        lastSyncedAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      },
+      shopee: {
+        isLinked: true,
+        channelItemId: 'SP_ITEM_1029384729',
+        channelModelId: 'SP_MOD_33920194',
+        channelStock: 190,
+        price: 699.00,
+        lastSyncedAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      },
+      lazada: {
+        isLinked: true,
+        channelSellerSku: 'LZ-AUR-TWS-WHT',
+        channelItemId: 'LZ_ITEM_77281920',
+        channelStock: 190,
+        price: 699.00,
+        lastSyncedAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      },
+      shopify: {
+        isLinked: true,
+        channelVariantId: 'gid://shopify/ProductVariant/5501928374',
+        channelProductId: 'gid://shopify/Product/772819201',
+        channelStock: 190,
+        price: 179.00,
+        lastSyncedAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      }
+    },
+    historyLog: [
+      {
+        id: 'hl-tws-1',
+        timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+        action: 'ORDER_RESERVATION',
+        change: -2,
+        resultingStock: 190,
+        user: 'Shopee Webhook Listener',
+        reason: 'Order #ORD-SP-240817U9 (Qty: 2)'
+      }
+    ]
+  },
+  {
+    id: 'inv-04',
+    masterSku: 'AUR-DAC-V2-SLV',
+    barcode: '8809281938043',
+    productName: 'Aurora Studio Hi-Fi DAC & Amp V2',
+    variantName: 'Brushed Silver / Dual ESS Sabre',
+    imageUrl: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=200&auto=format&fit=crop&q=80',
+    warehouseLocation: 'Zone B - Rack 04 - Bin D3',
+    totalPhysicalStock: 42,
+    reservedStock: 8,
+    safetyStock: 5,
+    availableStock: 29, // 42 - 8 - 5 (Low Stock Alert)
+    reorderPoint: 30,
+    costPrice: 580.00,
+    sellingPrice: 1299.00,
+    autoSyncEnabled: true,
+    lastBroadcastAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
+    channelMappings: {
+      tiktok: {
+        isLinked: true,
+        channelProductId: 'TTS_PRD_33910284',
+        channelSkuId: 'TTS_SKU_88291039',
+        channelStock: 29,
+        price: 1339.00,
+        lastSyncedAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      },
+      shopee: {
+        isLinked: true,
+        channelItemId: 'SP_ITEM_5592819482',
+        channelModelId: 'SP_MOD_11928472',
+        channelStock: 29,
+        price: 1299.00,
+        lastSyncedAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      },
+      lazada: {
+        isLinked: true,
+        channelSellerSku: 'LZ-AUR-DAC-SLV',
+        channelItemId: 'LZ_ITEM_33910293',
+        channelStock: 29,
+        price: 1299.00,
+        lastSyncedAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      },
+      shopify: {
+        isLinked: true,
+        channelVariantId: 'gid://shopify/ProductVariant/6619283749',
+        channelProductId: 'gid://shopify/Product/991827364',
+        channelStock: 29,
+        price: 349.00,
+        lastSyncedAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      }
+    },
+    historyLog: [
+      {
+        id: 'hl-dac-1',
+        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        action: 'ORDER_RESERVATION',
+        change: -1,
+        resultingStock: 29,
+        user: 'Lazada Open Platform',
+        reason: 'Order #ORD-LZ-849201 reservation'
+      }
+    ]
+  },
+  {
+    id: 'inv-05',
+    masterSku: 'AUR-ST-MON-WAL',
+    barcode: '8809281938050',
+    productName: 'Aurora Studio Reference Monitors (Pair)',
+    variantName: 'Solid Walnut / Kevlar Cones',
+    imageUrl: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=200&auto=format&fit=crop&q=80',
+    warehouseLocation: 'Zone C - Heavy Pallet Rack 02',
+    totalPhysicalStock: 28,
+    reservedStock: 4,
+    safetyStock: 4,
+    availableStock: 20,
+    reorderPoint: 15,
+    costPrice: 980.00,
+    sellingPrice: 2499.00,
+    autoSyncEnabled: true,
+    lastBroadcastAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+    channelMappings: {
+      tiktok: {
+        isLinked: false,
+        channelProductId: '',
+        channelSkuId: '',
+        channelStock: 0,
+        price: 0,
+        lastSyncedAt: '',
+        syncStatus: 'pending',
+        errorMessage: 'Heavy item over 5kg: Courier shipping profile mapping required'
+      },
+      shopee: {
+        isLinked: true,
+        channelItemId: 'SP_ITEM_8839201948',
+        channelModelId: 'SP_MOD_44920184',
+        channelStock: 20,
+        price: 2499.00,
+        lastSyncedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      },
+      lazada: {
+        isLinked: true,
+        channelSellerSku: 'LZ-AUR-MON-WAL',
+        channelItemId: 'LZ_ITEM_55920194',
+        channelStock: 20,
+        price: 2499.00,
+        lastSyncedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      },
+      shopify: {
+        isLinked: true,
+        channelVariantId: 'gid://shopify/ProductVariant/7729103849',
+        channelProductId: 'gid://shopify/Product/110293847',
+        channelStock: 20,
+        price: 549.00,
+        lastSyncedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        syncStatus: 'synced'
+      }
+    },
+    historyLog: [
+      {
+        id: 'hl-mon-1',
+        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+        action: 'ORDER_RESERVATION',
+        change: -1,
+        resultingStock: 20,
+        user: 'Shopify Webhook Listener',
+        reason: 'Order #ORD-SH-10492 reservation'
+      }
+    ]
+  }
+];
+export const INITIAL_MARKETPLACE_SYNC_LOGS: MarketplaceSyncLog[] = [
+  {
+    id: 'log-01',
+    timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+    platform: 'tiktok',
+    shopName: 'Aurora Audio Official Shop',
+    eventType: 'order_status_update',
+    status: 'success',
+    referenceId: '578491029384729183',
+    message: 'AWB Tracking #JT6082918302MY synced back to TikTok Open API successfully (HTTP 200)',
+    payloadJson: JSON.stringify({
+      order_id: '578491029384729183',
+      tracking_number: 'JT6082918302MY',
+      shipping_provider_id: 'JT_EXPRESS_MY',
+      status: 'AWAITING_COLLECTION'
+    }, null, 2),
+    latencyMs: 142
+  },
+  {
+    id: 'log-02',
+    timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    platform: 'shopee',
+    shopName: 'Aurora Audio Flagship Mall',
+    eventType: 'inventory_sync',
+    status: 'success',
+    referenceId: 'AUR-ANC-01-BLK',
+    message: 'Master Stock 122 broadcasted to Shopee Item #2938491028 model #84920194',
+    payloadJson: JSON.stringify({
+      item_id: 2938491028,
+      model_id: 84920194,
+      stock: 122,
+      price: 1899.00
+    }, null, 2),
+    latencyMs: 218
+  },
+  {
+    id: 'log-03',
+    timestamp: new Date(Date.now() - 9 * 60 * 1000).toISOString(),
+    platform: 'shopify',
+    shopName: 'Aurora Global Direct Store',
+    eventType: 'order_created',
+    status: 'success',
+    referenceId: 'ORD-SH-10492',
+    message: 'Webhook orders/create handled. Inventory auto-reserved and order routed to WMS queue',
+    payloadJson: JSON.stringify({
+      id: 5849201948,
+      name: '#10492',
+      currency: 'USD',
+      total_price: '617.92',
+      line_items: [{ sku: 'AUR-ST-MON-WAL', quantity: 1 }]
+    }, null, 2),
+    latencyMs: 89
+  },
+  {
+    id: 'log-04',
+    timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+    platform: 'lazada',
+    shopName: 'Aurora Audio LazMall Store',
+    eventType: 'price_push',
+    status: 'success',
+    referenceId: 'AUR-DAC-V2-SLV',
+    message: 'Price parity check confirmed (MYR 1,299.00)',
+    payloadJson: JSON.stringify({
+      seller_sku: 'LZ-AUR-DAC-SLV',
+      price: 1299.00,
+      special_price: null
+    }, null, 2),
+    latencyMs: 165
+  },
+  {
+    id: 'log-05',
+    timestamp: new Date(Date.now() - 32 * 60 * 1000).toISOString(),
+    platform: 'tiktok',
+    shopName: 'Aurora Audio Official Shop',
+    eventType: 'token_refresh',
+    status: 'success',
+    referenceId: 'TTS_MY_748291038',
+    message: 'OAuth 2.0 Access Token renewed automatically via TikTok Refresh Token API',
+    payloadJson: JSON.stringify({
+      grant_type: 'refresh_token',
+      expires_in: 2592000,
+      status: 'token_refreshed'
+    }, null, 2),
+    latencyMs: 310
+  }
+];
+export const INITIAL_MARKETPLACE_STORE_PRODUCTS: MarketplaceStoreProduct[] = [
+  // 1. Shopee Mall: Aurora Audio Flagship Mall (conn-shopee-01) - Audio Category
+  {
+    id: 'ext-prod-tt-01',
+    connectionId: 'conn-shopee-01',
+    platform: 'shopee',
+    shopId: '293849102',
+    shopName: 'Aurora Audio Flagship Mall',
+    channelProductId: 'SP_PRD_98492019',
+    title: 'Aurora Studio Pro Wireless Headphones Planar ANC (Special Edition)',
+    imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80',
+    categoryName: 'Electronics & Audio > Over-Ear Headphones',
+    status: 'active',
+    updatedAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
+    variants: [
+      {
+        id: 'ext-var-tt-101',
+        channelSkuId: 'TTS_SKU_10293848',
+        channelSellerSku: 'AUR-BLK-ANC-TT',
+        title: 'Midnight Black / Studio Master ANC',
+        specOptions: { 'Color': 'Midnight Black', 'Edition': 'Studio Master ANC' },
+        price: 349.00,
+        currency: 'MYR',
+        stock: 45,
+        imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'mapped',
+        mappedJwProductId: 'prod-01',
+        mappedJwVariantId: 'var-102',
+        mappedJwSku: 'AUR-BLK-ANC',
+        mappedJwProductName: 'Aurora Studio Pro Wireless Headphones',
+        mappedJwVariantTitle: 'Midnight Black / Studio Master ANC',
+        mappedJwVariantImage: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80',
+        mappedJwStock: 45,
+        mappedJwPrice: 349.00,
+        mappedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        mappedBy: 'Hazim (Lead Ops)'
+      },
+      {
+        id: 'ext-var-tt-102',
+        channelSkuId: 'TTS_SKU_10293849',
+        channelSellerSku: 'AUR-WHT-STD-TT',
+        title: 'Arctic White / Standard Audio',
+        specOptions: { 'Color': 'Arctic White', 'Edition': 'Standard Audio' },
+        price: 299.00,
+        currency: 'MYR',
+        stock: 40,
+        imageUrl: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'mapped',
+        mappedJwProductId: 'prod-01',
+        mappedJwVariantId: 'var-103',
+        mappedJwSku: 'AUR-WHT-STD',
+        mappedJwProductName: 'Aurora Studio Pro Wireless Headphones',
+        mappedJwVariantTitle: 'Arctic White / Standard Audio',
+        mappedJwVariantImage: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400&auto=format&fit=crop&q=80',
+        mappedJwStock: 40,
+        mappedJwPrice: 299.00,
+        mappedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        mappedBy: 'Hazim (Lead Ops)'
+      },
+      {
+        id: 'ext-var-tt-103',
+        channelSkuId: 'TTS_SKU_10293850',
+        channelSellerSku: 'AUR-PINE-ANC-TT',
+        title: 'Forest Pine / Studio Master ANC',
+        specOptions: { 'Color': 'Forest Pine', 'Edition': 'Studio Master ANC' },
+        price: 349.00,
+        currency: 'MYR',
+        stock: 25,
+        imageUrl: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'unmapped',
+        suggestedMatch: {
+          productId: 'prod-01',
+          variantId: 'var-105',
+          sku: 'AUR-PINE-ANC',
+          productName: 'Aurora Studio Pro Wireless Headphones',
+          variantTitle: 'Forest Pine / Studio Master ANC',
+          imageUrl: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&auto=format&fit=crop&q=80',
+          stock: 25,
+          price: 349.00,
+          confidenceScore: 99,
+          matchReason: 'SKU 前缀完全匹配且规格属性（Forest Pine / ANC）100% 一致'
+        }
+      }
+    ]
+  },
+  {
+    id: 'ext-prod-tt-02',
+    connectionId: 'conn-lazada-01',
+    platform: 'lazada',
+    shopId: 'MY102938482',
+    shopName: 'Aurora Audio LazMall Store',
+    channelProductId: 'LZ_PRD_77492011',
+    title: 'Apex Ergonomic Low-Profile Mechanical Keyboard RGB Hot-Swap',
+    imageUrl: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400&auto=format&fit=crop&q=80',
+    categoryName: 'Computers & Gaming > Keyboards',
+    status: 'active',
+    updatedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    variants: [
+      {
+        id: 'ext-var-tt-201',
+        channelSkuId: 'TTS_SKU_44920188',
+        channelSellerSku: 'APX-KB-RED-TT',
+        title: 'Phantom Black / Cherry MX Red (Linear)',
+        specOptions: { 'Color': 'Phantom Black', 'Switch': 'Cherry MX Red' },
+        price: 199.00,
+        currency: 'MYR',
+        stock: 55,
+        imageUrl: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'unmapped',
+        suggestedMatch: {
+          productId: 'prod-04',
+          variantId: 'var-401',
+          sku: 'APX-KB-RED',
+          productName: 'Apex Ergonomic Mechanical Keyboard',
+          variantTitle: 'Phantom Black / Cherry MX Red (Linear)',
+          imageUrl: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400&auto=format&fit=crop&q=80',
+          stock: 55,
+          price: 199.00,
+          confidenceScore: 96,
+          matchReason: '商品名称与轴体型号 (Cherry MX Red) 完全吻合'
+        }
+      },
+      {
+        id: 'ext-var-tt-202',
+        channelSkuId: 'TTS_SKU_44920189',
+        channelSellerSku: 'APX-KB-BLU-TT',
+        title: 'Lunar White / Cherry MX Blue (Clicky)',
+        specOptions: { 'Color': 'Lunar White', 'Switch': 'Cherry MX Blue' },
+        price: 199.00,
+        currency: 'MYR',
+        stock: 35,
+        imageUrl: 'https://images.unsplash.com/photo-1595225476474-87563907a212?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'unmapped',
+        suggestedMatch: {
+          productId: 'prod-04',
+          variantId: 'var-403',
+          sku: 'APX-KB-BLU',
+          productName: 'Apex Ergonomic Mechanical Keyboard',
+          variantTitle: 'Lunar White / Cherry MX Blue (Clicky)',
+          imageUrl: 'https://images.unsplash.com/photo-1595225476474-87563907a212?w=400&auto=format&fit=crop&q=80',
+          stock: 35,
+          price: 199.00,
+          confidenceScore: 95,
+          matchReason: '商品名称与白青轴 (Lunar White / Blue) 智能比对吻合'
+        }
+      }
+    ]
+  },
+  {
+    id: 'ext-prod-tt-03',
+    connectionId: 'conn-shopee-02',
+    platform: 'shopee',
+    shopId: '481029381',
+    shopName: 'Aurora Audio Outlet Store',
+    channelProductId: 'SP_OUTLET_33910284',
+    title: 'SoundPulse Ultra Portable Wireless Waterproof Speaker IP67',
+    imageUrl: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=400&auto=format&fit=crop&q=80',
+    categoryName: 'Electronics & Audio > Bluetooth Speakers',
+    status: 'active',
+    updatedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+    variants: [
+      {
+        id: 'ext-var-tt-301',
+        channelSkuId: 'TTS_SKU_22091847',
+        channelSellerSku: 'SP-BLU-STD-TT',
+        title: 'Ocean Blue / Standard IP67',
+        specOptions: { 'Color': 'Ocean Blue', 'Waterproof': 'IP67' },
+        price: 129.00,
+        currency: 'MYR',
+        stock: 80,
+        imageUrl: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'mapped',
+        mappedJwProductId: 'prod-03',
+        mappedJwVariantId: 'var-301',
+        mappedJwSku: 'SP-BLU-STD',
+        mappedJwProductName: 'SoundPulse Portable Waterproof Speaker',
+        mappedJwVariantTitle: 'Ocean Blue / Standard IP67',
+        mappedJwVariantImage: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=400&auto=format&fit=crop&q=80',
+        mappedJwStock: 80,
+        mappedJwPrice: 129.00,
+        mappedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        mappedBy: 'Hazim (Lead Ops)'
+      },
+      {
+        id: 'ext-var-tt-302',
+        channelSkuId: 'TTS_SKU_22091848',
+        channelSellerSku: 'SP-GRY-V2-TT',
+        title: 'Matte Gray / Special Outdoor Edition',
+        specOptions: { 'Color': 'Matte Gray', 'Edition': 'Special Outdoor' },
+        price: 149.00,
+        currency: 'MYR',
+        stock: 15,
+        imageUrl: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'conflict',
+        conflictReason: '原关联的 JW SKU [SP-GRY-OLD] 已在本地商品库中停用或删除，无法核对库存，需重新指定有效规格'
+      }
+    ]
+  },
+
+  // 2. Shopee: Aurora Audio Flagship Mall (conn-shopee-01)
+  {
+    id: 'ext-prod-sp-01',
+    connectionId: 'conn-shopee-01',
+    platform: 'shopee',
+    shopId: '293849102',
+    shopName: 'Aurora Audio Flagship Mall',
+    channelProductId: 'SP_ITEM_2938491028',
+    title: '【Shopee Mall 官方正品】Aurora Studio Pro 旗舰降噪头戴式无线耳机 60h长续航',
+    imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80',
+    categoryName: 'Audio > Over-Ear Headphones',
+    status: 'active',
+    updatedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+    variants: [
+      {
+        id: 'ext-var-sp-101',
+        channelSkuId: 'SP_MOD_84920194',
+        channelSellerSku: 'SHP-AUR-BLK-ANC',
+        title: 'Midnight Black / Studio Master ANC',
+        specOptions: { 'Color': 'Midnight Black', 'Type': 'ANC Flagship' },
+        price: 349.00,
+        currency: 'MYR',
+        stock: 45,
+        imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'mapped',
+        mappedJwProductId: 'prod-01',
+        mappedJwVariantId: 'var-102',
+        mappedJwSku: 'AUR-BLK-ANC',
+        mappedJwProductName: 'Aurora Studio Pro Wireless Headphones',
+        mappedJwVariantTitle: 'Midnight Black / Studio Master ANC',
+        mappedJwVariantImage: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80',
+        mappedJwStock: 45,
+        mappedJwPrice: 349.00,
+        mappedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        mappedBy: 'Nurul (Ops Manager)'
+      },
+      {
+        id: 'ext-var-sp-102',
+        channelSkuId: 'SP_MOD_84920195',
+        channelSellerSku: 'SHP-AUR-WHT-STD',
+        title: 'Arctic White / Standard Audio',
+        specOptions: { 'Color': 'Arctic White', 'Type': 'Standard' },
+        price: 299.00,
+        currency: 'MYR',
+        stock: 40,
+        imageUrl: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'mapped',
+        mappedJwProductId: 'prod-01',
+        mappedJwVariantId: 'var-103',
+        mappedJwSku: 'AUR-WHT-STD',
+        mappedJwProductName: 'Aurora Studio Pro Wireless Headphones',
+        mappedJwVariantTitle: 'Arctic White / Standard Audio',
+        mappedJwVariantImage: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400&auto=format&fit=crop&q=80',
+        mappedJwStock: 40,
+        mappedJwPrice: 299.00,
+        mappedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        mappedBy: 'Nurul (Ops Manager)'
+      }
+    ]
+  },
+  {
+    id: 'ext-prod-sp-02',
+    connectionId: 'conn-shopee-01',
+    platform: 'shopee',
+    shopId: '293849102',
+    shopName: 'Aurora Audio Flagship Mall',
+    channelProductId: 'SP_ITEM_8839201948',
+    title: 'Solis 实木模块化桌面增高架 双显示器实木置物支架 航空铝合金支脚',
+    imageUrl: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=400&auto=format&fit=crop&q=80',
+    categoryName: 'Home & Living > Desk Organizers',
+    status: 'active',
+    updatedAt: new Date(Date.now() - 48 * 60 * 1000).toISOString(),
+    variants: [
+      {
+        id: 'ext-var-sp-201',
+        channelSkuId: 'SP_MOD_44920184',
+        channelSellerSku: 'SHP-SLS-WAL-105',
+        title: 'Solid Walnut / Aluminum Riser (105cm)',
+        specOptions: { 'Wood': 'Solid Walnut', 'Length': '105cm' },
+        price: 189.00,
+        currency: 'MYR',
+        stock: 25,
+        imageUrl: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'unmapped',
+        suggestedMatch: {
+          productId: 'prod-05',
+          variantId: 'var-501',
+          sku: 'SLS-DSK-WAL',
+          productName: 'Solis Modular Desk Shelf',
+          variantTitle: 'Solid Walnut / Aluminum Riser (105cm)',
+          imageUrl: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=400&auto=format&fit=crop&q=80',
+          stock: 25,
+          price: 189.00,
+          confidenceScore: 94,
+          matchReason: '商品材质与尺寸规格（Solid Walnut / 105cm）属性完全匹配'
+        }
+      },
+      {
+        id: 'ext-var-sp-202',
+        channelSkuId: 'SP_MOD_44920185',
+        channelSellerSku: 'SHP-SLS-OAK-105',
+        title: 'Natural Oak / Aluminum Riser (105cm)',
+        specOptions: { 'Wood': 'Natural Oak', 'Length': '105cm' },
+        price: 189.00,
+        currency: 'MYR',
+        stock: 20,
+        imageUrl: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'unmapped',
+        suggestedMatch: {
+          productId: 'prod-05',
+          variantId: 'var-502',
+          sku: 'SLS-DSK-OAK',
+          productName: 'Solis Modular Desk Shelf',
+          variantTitle: 'Natural Oak / Aluminum Riser (105cm)',
+          imageUrl: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=400&auto=format&fit=crop&q=80',
+          stock: 20,
+          price: 189.00,
+          confidenceScore: 94,
+          matchReason: '橡木规格属性（Natural Oak / 105cm）对应 JW SKU'
+        }
+      }
+    ]
+  },
+  {
+    id: 'ext-prod-sp-03',
+    connectionId: 'conn-shopee-01',
+    platform: 'shopee',
+    shopId: '293849102',
+    shopName: 'Aurora Audio Flagship Mall',
+    channelProductId: 'SP_ITEM_1928374650',
+    title: 'Chronos 极简包豪斯钛金属石英腕表 蓝宝石防刮镜面 40mm',
+    imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80',
+    categoryName: 'Watches > Men Watches',
+    status: 'active',
+    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    variants: [
+      {
+        id: 'ext-var-sp-301',
+        channelSkuId: 'SP_MOD_11223344',
+        channelSellerSku: 'SHP-CHR-TIT-BLK',
+        title: 'Matte Titanium / Black Leather Strap (40mm)',
+        specOptions: { 'Case': 'Matte Titanium', 'Strap': 'Black Leather' },
+        price: 249.00,
+        currency: 'MYR',
+        stock: 30,
+        imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'unmapped',
+        suggestedMatch: {
+          productId: 'prod-06',
+          variantId: 'var-601',
+          sku: 'CHR-TIT-BLK',
+          productName: 'Chronos Minimalist Watch',
+          variantTitle: 'Matte Titanium / Black Leather Strap (40mm)',
+          imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80',
+          stock: 30,
+          price: 249.00,
+          confidenceScore: 97,
+          matchReason: 'SKU 前缀完全匹配且表带表壳规格属性完全一致'
+        }
+      },
+      {
+        id: 'ext-var-sp-302',
+        channelSkuId: 'SP_MOD_11223345',
+        channelSellerSku: 'SHP-CHR-TIT-MSH',
+        title: 'Raw Titanium / Milanese Mesh Band (40mm)',
+        specOptions: { 'Case': 'Raw Titanium', 'Strap': 'Milanese Mesh' },
+        price: 269.00,
+        currency: 'MYR',
+        stock: 20,
+        imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'unmapped',
+        suggestedMatch: {
+          productId: 'prod-06',
+          variantId: 'var-602',
+          sku: 'CHR-TIT-MSH',
+          productName: 'Chronos Minimalist Watch',
+          variantTitle: 'Raw Titanium / Milanese Mesh Band (40mm)',
+          imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80',
+          stock: 20,
+          price: 269.00,
+          confidenceScore: 97,
+          matchReason: '米兰尼斯金属表带规格与 JW SKU 匹配'
+        }
+      }
+    ]
+  },
+
+  // 3. Lazada: Aurora Audio LazMall Store (conn-lazada-01)
+  {
+    id: 'ext-prod-lz-01',
+    connectionId: 'conn-lazada-01',
+    platform: 'lazada',
+    shopId: 'MY102938482',
+    shopName: 'Aurora Audio LazMall Store',
+    channelProductId: 'LZ_ITEM_98372819',
+    title: 'Aurora Studio Pro ANC Wireless Over-Ear Headphones (LazMall Certified)',
+    imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80',
+    categoryName: 'Audio > Over The Ear Headphones',
+    status: 'active',
+    updatedAt: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
+    variants: [
+      {
+        id: 'ext-var-lz-101',
+        channelSkuId: 'LZ_SKU_9948201',
+        channelSellerSku: 'LZ-AUR-ANC-BLK',
+        title: 'Midnight Black / Studio Master ANC',
+        specOptions: { 'Color': 'Midnight Black', 'Edition': 'Studio Master ANC' },
+        price: 349.00,
+        currency: 'MYR',
+        stock: 42,
+        imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'mapped',
+        mappedJwProductId: 'prod-01',
+        mappedJwVariantId: 'var-102',
+        mappedJwSku: 'AUR-BLK-ANC',
+        mappedJwProductName: 'Aurora Studio Pro Wireless Headphones',
+        mappedJwVariantTitle: 'Midnight Black / Studio Master ANC',
+        mappedJwVariantImage: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80',
+        mappedJwStock: 45,
+        mappedJwPrice: 349.00,
+        mappedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+        mappedBy: 'Hazim (Lead Ops)'
+      },
+      {
+        id: 'ext-var-lz-102',
+        channelSkuId: 'LZ_SKU_9948202',
+        channelSellerSku: 'LZ-AUR-ANC-WHT',
+        title: 'Arctic White / Studio Master ANC',
+        specOptions: { 'Color': 'Arctic White', 'Edition': 'Studio Master ANC' },
+        price: 349.00,
+        currency: 'MYR',
+        stock: 35,
+        imageUrl: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'mapped',
+        mappedJwProductId: 'prod-01',
+        mappedJwVariantId: 'var-104',
+        mappedJwSku: 'AUR-WHT-ANC',
+        mappedJwProductName: 'Aurora Studio Pro Wireless Headphones',
+        mappedJwVariantTitle: 'Arctic White / Studio Master ANC',
+        mappedJwVariantImage: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400&auto=format&fit=crop&q=80',
+        mappedJwStock: 35,
+        mappedJwPrice: 349.00,
+        mappedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+        mappedBy: 'Hazim (Lead Ops)'
+      }
+    ]
+  },
+  {
+    id: 'ext-prod-lz-02',
+    connectionId: 'conn-lazada-01',
+    platform: 'lazada',
+    shopId: 'MY102938482',
+    shopName: 'Aurora Audio LazMall Store',
+    channelProductId: 'LZ_ITEM_55920194',
+    title: 'AeroFit Open-Ear Wireless Earbuds Bluetooth 5.4 Ergonomic Sport Hooks',
+    imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&auto=format&fit=crop&q=80',
+    categoryName: 'Audio > In-Ear Earbuds',
+    status: 'active',
+    updatedAt: new Date(Date.now() - 75 * 60 * 1000).toISOString(),
+    variants: [
+      {
+        id: 'ext-var-lz-201',
+        channelSkuId: 'LZ_SKU_5549201',
+        channelSellerSku: 'LZ-AFT-CHR',
+        title: 'Cosmic Charcoal / Standard Edition',
+        specOptions: { 'Color': 'Cosmic Charcoal' },
+        price: 149.00,
+        currency: 'MYR',
+        stock: 55,
+        imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'unmapped',
+        suggestedMatch: {
+          productId: 'prod-02',
+          variantId: 'var-201',
+          sku: 'AFT-EAR-CHR',
+          productName: 'AeroFit Open-Ear Wireless Earbuds',
+          variantTitle: 'Cosmic Charcoal / Standard Edition',
+          imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&auto=format&fit=crop&q=80',
+          stock: 60,
+          price: 149.00,
+          confidenceScore: 98,
+          matchReason: '型号 (AeroFit) 及配色 (Cosmic Charcoal) 高度匹配'
+        }
+      },
+      {
+        id: 'ext-var-lz-202',
+        channelSkuId: 'LZ_SKU_5549202',
+        channelSellerSku: 'LZ-AFT-GLC',
+        title: 'Glacier Silver / Standard Edition',
+        specOptions: { 'Color': 'Glacier Silver' },
+        price: 149.00,
+        currency: 'MYR',
+        stock: 40,
+        imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'unmapped',
+        suggestedMatch: {
+          productId: 'prod-02',
+          variantId: 'var-202',
+          sku: 'AFT-EAR-GLC',
+          productName: 'AeroFit Open-Ear Wireless Earbuds',
+          variantTitle: 'Glacier Silver / Standard Edition',
+          imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&auto=format&fit=crop&q=80',
+          stock: 50,
+          price: 149.00,
+          confidenceScore: 98,
+          matchReason: '型号及冰川银配色 (Glacier Silver) 完全匹配'
+        }
+      }
+    ]
+  },
+
+  // 4. Lazada: Aurora Audio LazMall Store (conn-lazada-01) - Lifestyle Audio
+  {
+    id: 'ext-prod-sh-01',
+    connectionId: 'conn-lazada-01',
+    platform: 'lazada',
+    shopId: 'MY102938482',
+    shopName: 'Aurora Audio LazMall Store',
+    channelProductId: 'LZ_PRD_8492019482',
+    title: 'Aurora Studio Pro Headphones - LazMall Catalog Edition',
+    imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80',
+    categoryName: 'Headphones',
+    status: 'active',
+    updatedAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    variants: [
+      {
+        id: 'ext-var-sh-101',
+        channelSkuId: 'LZ_MOD_449201928471',
+        channelSellerSku: 'LZ-AUR-BLK-ANC',
+        title: 'Midnight Black / Studio Master ANC',
+        specOptions: { 'Color': 'Midnight Black', 'Edition': 'Studio Master ANC' },
+        price: 349.00,
+        currency: 'MYR',
+        stock: 45,
+        imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'mapped',
+        mappedJwProductId: 'prod-01',
+        mappedJwVariantId: 'var-102',
+        mappedJwSku: 'AUR-BLK-ANC',
+        mappedJwProductName: 'Aurora Studio Pro Wireless Headphones',
+        mappedJwVariantTitle: 'Midnight Black / Studio Master ANC',
+        mappedJwVariantImage: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80',
+        mappedJwStock: 45,
+        mappedJwPrice: 349.00,
+        mappedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        mappedBy: 'Nurul (Ops Manager)'
+      },
+      {
+        id: 'ext-var-sh-102',
+        channelSkuId: 'LZ_MOD_449201928472',
+        channelSellerSku: 'LZ-AUR-WHT-ANC',
+        title: 'Arctic White / Studio Master ANC',
+        specOptions: { 'Color': 'Arctic White', 'Edition': 'Studio Master ANC' },
+        price: 349.00,
+        currency: 'MYR',
+        stock: 35,
+        imageUrl: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'mapped',
+        mappedJwProductId: 'prod-01',
+        mappedJwVariantId: 'var-104',
+        mappedJwSku: 'AUR-WHT-ANC',
+        mappedJwProductName: 'Aurora Studio Pro Wireless Headphones',
+        mappedJwVariantTitle: 'Arctic White / Studio Master ANC',
+        mappedJwVariantImage: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400&auto=format&fit=crop&q=80',
+        mappedJwStock: 35,
+        mappedJwPrice: 349.00,
+        mappedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        mappedBy: 'Nurul (Ops Manager)'
+      }
+    ]
+  },
+  {
+    id: 'ext-prod-sh-02',
+    connectionId: 'conn-shopee-01',
+    platform: 'shopee',
+    shopId: '293849102',
+    shopName: 'Aurora Audio Flagship Mall',
+    channelProductId: 'SP_ITEM_110293847',
+    title: 'Vantage Carbon Fiber Commuter Backpack 22L Waterproof Laptop Compartment',
+    imageUrl: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&auto=format&fit=crop&q=80',
+    categoryName: 'Bags & Accessories',
+    status: 'active',
+    updatedAt: new Date(Date.now() - 150 * 60 * 1000).toISOString(),
+    variants: [
+      {
+        id: 'ext-var-sh-201',
+        channelSkuId: 'gid://shopify/ProductVariant/7729103849',
+        channelSellerSku: 'SPF-VNTG-22L',
+        title: 'Stealth Matte Carbon / 22L Daily Commuter',
+        specOptions: { 'Color': 'Stealth Matte Carbon', 'Capacity': '22L' },
+        price: 219.00,
+        currency: 'MYR',
+        stock: 35,
+        imageUrl: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=200&auto=format&fit=crop&q=80',
+        mappingStatus: 'unmapped',
+        suggestedMatch: {
+          productId: 'prod-08',
+          variantId: 'var-801',
+          sku: 'VNTG-BP-22L',
+          productName: 'Vantage Carbon Fiber Backpack',
+          variantTitle: 'Stealth Matte Carbon / 22L Daily Commuter',
+          imageUrl: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&auto=format&fit=crop&q=80',
+          stock: 35,
+          price: 219.00,
+          confidenceScore: 97,
+          matchReason: '背包型号与容量规格（22L / Carbon）完全对应'
+        }
+      }
+    ]
+  }
+];

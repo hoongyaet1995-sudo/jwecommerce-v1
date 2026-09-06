@@ -1,0 +1,89 @@
+// @vitest-environment jsdom
+import React, {act} from 'react';
+import {createRoot} from 'react-dom/client';
+import {expect, it, vi} from 'vitest';
+import {ConnectStoreModal} from './ConnectStoreModal';
+
+// Operational modal must render without loading or mounting the demo AdminProvider.
+
+it('renders server-confirmed connection without claiming automatic sync or a fixed token lifetime', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  await act(async () => root.render(<ConnectStoreModal isOpen onClose={() => {}} requestAuthorization={vi.fn()}
+    authorizationResult={{status:'success', store:{id:'7', platform:'shopee', shopId:'227482706', shopName:'Verified Sandbox'}}}/>));
+  expect(container.textContent).toContain('Store Connected Successfully!');
+  expect(container.textContent).toContain('Verified Sandbox');
+  expect(container.textContent).toContain('227482706');
+  expect(container.textContent).not.toContain('365 Days');
+  expect(container.textContent).not.toContain('synchronization is now active');
+  expect(container.textContent).not.toContain('Catalog pull & webhook listeners');
+  await act(async () => root.render(<ConnectStoreModal isOpen onClose={() => {}} requestAuthorization={vi.fn()}
+    authorizationResult={{status:'failed', store:null}}/>));
+  expect(container.textContent).toContain('OAuth Handshake Failed');
+  expect(container.textContent).not.toContain('Store Connected Successfully!');
+  await act(async () => root.unmount());
+  vi.unstubAllGlobals();
+});
+
+it('uses injected authorization without entering simulated seller consent', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  const authorize = vi.fn().mockResolvedValue(undefined);
+  await act(async () => root.render(<ConnectStoreModal isOpen onClose={() => {}} requestAuthorization={authorize} oauthAvailability={{shopee: true}}/>));
+  const button = Array.from(container.querySelectorAll('button')).find(b => b.textContent?.includes('Proceed to Official Authorization'))!;
+  await act(async () => button.click());
+  expect(authorize).toHaveBeenCalledWith('shopee', undefined);
+  expect(container.textContent).not.toContain('Permissions Requested by JW ERP');
+  expect(container.textContent).not.toContain('Store Connected Successfully!');
+  await act(async () => root.unmount());
+  container.remove();
+  vi.unstubAllGlobals();
+});
+
+it('retries real authorization after failure without exposing simulated consent', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  const authorize = vi.fn().mockRejectedValue(new Error('Contact the system administrator.'));
+  await act(async () => root.render(<ConnectStoreModal isOpen onClose={() => {}} requestAuthorization={authorize} oauthAvailability={{shopee: true}}/>));
+  const click = async (label: string) => {
+    const button = Array.from(container.querySelectorAll('button')).find(b => b.textContent?.includes(label))!;
+    await act(async () => button.click());
+  };
+  await click('Proceed to Official Authorization');
+  await click('Retry Handshake');
+  expect(authorize).toHaveBeenCalledTimes(2);
+  expect(container.textContent).not.toContain('Permissions Requested by JW ERP');
+  expect(container.textContent).not.toContain('Developer Handshake Simulation');
+  expect(container.textContent).not.toContain('.env');
+  await act(async () => root.unmount());
+  vi.unstubAllGlobals();
+});
+
+it('fails closed until backend declares OAuth available and keeps unavailable platforms disabled', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  const authorize = vi.fn();
+  await act(async () => root.render(<ConnectStoreModal isOpen onClose={() => {}} requestAuthorization={authorize}/>));
+  const proceed = () => Array.from(container.querySelectorAll('button')).find(b => b.textContent?.includes('Proceed to Official Authorization'))!;
+  expect(proceed().disabled).toBe(true);
+  expect(container.textContent).not.toContain('Live R1');
+  await act(async () => proceed().click());
+  expect(authorize).not.toHaveBeenCalled();
+  await act(async () => root.render(<ConnectStoreModal isOpen onClose={() => {}} requestAuthorization={authorize} oauthAvailability={{shopee: true, lazada: false}}/>));
+  expect(proceed().disabled).toBe(false);
+  const lazada = Array.from(container.querySelectorAll('button')).find(b => b.textContent?.includes('Lazada'))!;
+  expect(lazada.disabled).toBe(true);
+  expect(lazada.textContent).toContain('Unavailable');
+  expect(container.querySelector('select')?.disabled).toBe(true);
+  const identityInputs = Array.from(container.querySelectorAll('input'));
+  expect(identityInputs).toHaveLength(2);
+  expect(identityInputs.every(input => input.readOnly)).toBe(true);
+  expect(identityInputs.every(input => input.placeholder.includes('authorization'))).toBe(true);
+  await act(async () => root.unmount());
+  vi.unstubAllGlobals();
+});

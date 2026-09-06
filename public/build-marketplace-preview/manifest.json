@@ -1,0 +1,11 @@
+{
+  "src/previews/marketplace30/oauth.tsx": {
+    "file": "assets/oauth-DKQwHYIX.js",
+    "name": "oauth",
+    "src": "src/previews/marketplace30/oauth.tsx",
+    "isEntry": true,
+    "css": [
+      "assets/oauth-C3U2LsF9.css"
+    ]
+  }
+}

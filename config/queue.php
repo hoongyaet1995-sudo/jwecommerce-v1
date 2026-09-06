@@ -31,6 +31,15 @@ return [
 
     'connections' => [
 
+        'marketplace' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => 'jobs',
+            'queue' => 'marketplace',
+            'retry_after' => 1500,
+            'after_commit' => true,
+        ],
+
         'sync' => [
             'driver' => 'sync',
         ],
