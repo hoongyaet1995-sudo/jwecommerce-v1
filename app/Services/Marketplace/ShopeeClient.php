@@ -61,7 +61,10 @@ class ShopeeClient
         $query = $this->signedQuery($config, $path);
         $query['redirect'] = $config['callback_url'].'?'.http_build_query(['state' => $state]);
 
-        return $this->host($config).$path.'?'.http_build_query($query);
+        // Sandbox seller authorization uses its Open Platform gateway. Keep API routing separate.
+        $host = $config['environment'] === 'sandbox'
+            ? 'https://openplatform.sandbox.test-stable.shopee.sg' : $this->host($config);
+        return $host.$path.'?'.http_build_query($query);
     }
 
     public function shopInfo(#[\SensitiveParameter] string $accessToken, string $shopId): array

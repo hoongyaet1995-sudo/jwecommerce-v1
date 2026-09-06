@@ -21,11 +21,18 @@ class ShopeeClientTest extends TestCase
     {
         $this->freezeTime();
         $url = app(ShopeeClient::class)->authorizationUrl(str_repeat('a', 64));
-        $this->assertSame('partner.test-stable.shopeemobile.com', parse_url($url, PHP_URL_HOST));
+        $this->assertSame('openplatform.sandbox.test-stable.shopee.sg', parse_url($url, PHP_URL_HOST));
         parse_str(parse_url($url, PHP_URL_QUERY), $query);
         $this->assertSame(hash_hmac('sha256', '123/api/v2/shop/auth_partner'.now()->timestamp, 'test-secret'), $query['sign']);
         $this->assertSame('https://example.test/callback?state='.str_repeat('a', 64), $query['redirect']);
         $this->assertStringNotContainsString('test-secret', $url);
+    }
+
+    public function test_live_authorization_host_is_unchanged(): void
+    {
+        config(['marketplace.shopee.environment'=>'production']);
+        $url = app(ShopeeClient::class)->authorizationUrl(str_repeat('b', 64));
+        $this->assertSame('partner.shopeemobile.com', parse_url($url, PHP_URL_HOST));
     }
 
     public function test_token_exchange_requires_complete_success_and_sends_signed_request(): void

@@ -36,7 +36,7 @@ const idPath = (id: string) => encodeURIComponent(id);
 export function officialShopeeAuthorizationUrl(value: string): string {
   const url = new URL(value);
   if (url.protocol !== 'https:' || url.username || url.password || url.port || url.hash
-    || !['partner.shopeemobile.com', 'partner.test-stable.shopeemobile.com'].includes(url.hostname)
+    || !['partner.shopeemobile.com', 'openplatform.sandbox.test-stable.shopee.sg'].includes(url.hostname)
     || url.pathname !== '/api/v2/shop/auth_partner') throw new Error('Unexpected authorization destination.');
   return url.href;
 }
