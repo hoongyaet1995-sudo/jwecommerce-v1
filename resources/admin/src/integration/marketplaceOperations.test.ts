@@ -1,10 +1,27 @@
-import {describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {marketplaceRequest} from './marketplaceData';
 import {marketplaceOperations, officialShopeeAuthorizationUrl} from './marketplaceOperations';
 
 vi.mock('./marketplaceData', () => ({marketplaceRequest: vi.fn().mockResolvedValue({})}));
 
 describe('marketplace operational contract', () => {
+  beforeEach(() => vi.mocked(marketplaceRequest).mockReset().mockResolvedValue({}));
+  it('loads persisted order detail without inventing mapping or missing price information', async () => {
+    const detail = {data: {id: 8, external_order_id: 'TEST-ORDER', lines: [{external_sku: 'JWSTORE1PS5-500GB',
+      quantity: 1, unit_price: null, mapping_status: 'unmapped', jw_variant_id: null, jw_sku: null}]}};
+    vi.mocked(marketplaceRequest).mockResolvedValueOnce(detail);
+    const result = await marketplaceOperations.orderDetail('8');
+    expect(marketplaceRequest).toHaveBeenLastCalledWith('/orders/8');
+    expect(result.data.lines[0].mapping_status).toBe('unmapped');
+    expect(result.data.lines[0].unit_price).toBeNull();
+    expect(result.data.lines[0].jw_variant_id).toBeNull();
+  });
+  it('requests recipient data explicitly only for the selected order detail', async () => {
+    await marketplaceOperations.orderDetail('8', {includeRecipient: true});
+    expect(marketplaceRequest).toHaveBeenLastCalledWith('/orders/8?includeRecipient=1');
+    await marketplaceOperations.orderDetail('8', {includeRecipient: false});
+    expect(marketplaceRequest).toHaveBeenLastCalledWith('/orders/8');
+  });
   it('loads grouped products without flattening variants or inventing unknown values', async () => {
     const page = {total: 1, current_page: 1, last_page: 1, per_page: 15, data: [{store_id: 7, external_product_id: '100',
       variants: [{id: 11, observed_data: {price: null, stock: null, productImage: null}}]}]};

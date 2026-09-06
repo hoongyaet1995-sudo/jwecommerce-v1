@@ -2,6 +2,7 @@
 
 return [
     'operations_enabled' => env('MARKETPLACE_OPERATIONS_ENABLED', false),
+    'read_operations_enabled' => env('MARKETPLACE_READ_OPERATIONS_ENABLED', false),
     'oauth_acceptance_enabled' => env('MARKETPLACE_OAUTH_ACCEPTANCE_ENABLED', false),
     'shopee' => [
         'enabled' => env('MARKETPLACE_SHOPEE_ENABLED', false),

@@ -42,6 +42,9 @@ class MarketplaceImportTest extends TestCase
         $productId = $service->importProduct($store, '100', 42);
         $product = Product::findOrFail($productId);
         $this->assertSame('draft', $product->status);
+        $this->assertSame('<p>Source &amp; details</p>', $product->description);
+        $this->assertSame('Source Brand', $product->brand);
+        $this->assertNull($product->category_id);
         $this->get('/products/'.$product->handle)->assertNotFound();
         $this->assertEquals(1234, $product->base_price);
         $this->assertEquals(0, $product->variants()->sum('stock'));
@@ -75,7 +78,7 @@ class MarketplaceImportTest extends TestCase
         $this->actingAs(\App\Models\User::findOrFail(42));
         $rows = DB::table('marketplace_listing_variants')->orderBy('id')->get();
         $original = json_decode($rows[1]->observed_data, true);
-        foreach ([['currency'=>'USD'], ['sku'=>''], ['price'=>null], ['price'=>'12.345'], ['title'=>'']] as $invalid) {
+        foreach ([['currency'=>'USD'], ['sku'=>''], ['price'=>null], ['price'=>'12.345'], ['title'=>''], ['descriptionType'=>'unsupported'], ['brand'=>['bad']], ['brand'=>str_repeat('x', 256)]] as $invalid) {
             DB::table('marketplace_listing_variants')->where('id', $rows[1]->id)
                 ->update(['observed_data'=>json_encode(array_replace($original, $invalid))]);
             $this->postJson('/admin/api/marketplace/listings/'.$rows[0]->id.'/import-product')->assertUnprocessable();
@@ -88,6 +91,69 @@ class MarketplaceImportTest extends TestCase
         $this->assertDatabaseCount('products', 1);
     }
 
+    public function test_import_preserves_safe_channel_main_image_without_fetching_or_duplicating_it(): void
+    {
+        $store = $this->catalog();
+        \Illuminate\Support\Facades\Http::preventStrayRequests();
+        foreach (DB::table('marketplace_listing_variants')->get() as $row) {
+            $data = json_decode($row->observed_data, true);
+            $data['productImage'] = 'https://down-my.img.susercontent.com/file/local-fixture';
+            DB::table('marketplace_listing_variants')->where('id', $row->id)->update(['observed_data'=>json_encode($data)]);
+        }
+        $service = app(MarketplaceImportService::class);
+        $id = $service->importProduct($store, '100', 42);
+        $this->assertDatabaseHas('product_images', ['product_id'=>$id, 'path'=>'https://down-my.img.susercontent.com/file/local-fixture',
+            'alt'=>'Imported Product', 'position'=>0]);
+        $this->assertSame($id, $service->importProduct($store, '100', 42));
+        $this->assertDatabaseCount('product_images', 1);
+        $this->assertDatabaseHas('products', ['id'=>$id, 'status'=>'draft']);
+        $this->assertEquals(0, DB::table('product_variants')->sum('stock'));
+    }
+
+    public function test_import_rejects_unsafe_channel_image_before_creating_product(): void
+    {
+        $this->catalog();
+        $this->actingAs(\App\Models\User::findOrFail(42));
+        $row = DB::table('marketplace_listing_variants')->orderBy('id')->first();
+        $original = json_decode($row->observed_data, true);
+        foreach (['javascript:alert(1)', 'https://127.0.0.1/private', 'http://cdn.shop.com/image', ['malformed']] as $image) {
+            DB::table('marketplace_listing_variants')->where('id', $row->id)
+                ->update(['observed_data'=>json_encode(array_replace($original, ['productImage'=>$image]))]);
+            $this->postJson('/admin/api/marketplace/listings/'.$row->id.'/import-product')->assertUnprocessable();
+            foreach (['products', 'product_images', 'product_variants', 'marketplace_product_imports', 'marketplace_variant_mappings'] as $table) {
+                $this->assertDatabaseCount($table, 0);
+            }
+        }
+    }
+
+    public function test_import_preserves_gallery_order_and_deduplicates_repeated_variant_observations(): void
+    {
+        $store = $this->catalog();
+        foreach (DB::table('marketplace_listing_variants')->get() as $row) {
+            $data = json_decode($row->observed_data, true);
+            $data['productImages'] = ['https://down-my.img.susercontent.com/file/front', 'https://down-my.img.susercontent.com/file/back', 'https://down-my.img.susercontent.com/file/front'];
+            DB::table('marketplace_listing_variants')->where('id', $row->id)->update(['observed_data'=>json_encode($data)]);
+        }
+        $id = app(MarketplaceImportService::class)->importProduct($store, '100', 42);
+        $this->assertSame(['https://down-my.img.susercontent.com/file/front', 'https://down-my.img.susercontent.com/file/back'],
+            DB::table('product_images')->where('product_id', $id)->orderBy('position')->pluck('path')->all());
+    }
+
+    public function test_import_rejects_invalid_gallery_without_partial_images_or_product(): void
+    {
+        $this->catalog();
+        $this->actingAs(\App\Models\User::findOrFail(42));
+        $row = DB::table('marketplace_listing_variants')->orderBy('id')->first();
+        $data = json_decode($row->observed_data, true);
+        foreach (['not-a-list', ['https://down-my.img.susercontent.com/file/front', 'https://127.0.0.1/private']] as $gallery) {
+            $data['productImages'] = $gallery;
+            DB::table('marketplace_listing_variants')->where('id', $row->id)->update(['observed_data'=>json_encode($data)]);
+            $this->postJson('/admin/api/marketplace/listings/'.$row->id.'/import-product')->assertUnprocessable();
+            $this->assertDatabaseCount('products', 0);
+            $this->assertDatabaseCount('product_images', 0);
+        }
+    }
+
     private function catalog(): int
     {
         \App\Models\User::factory()->create(['id'=>42, 'is_admin'=>true]);
@@ -96,6 +162,8 @@ class MarketplaceImportTest extends TestCase
         foreach ([1, 2] as $variant) {
             DB::table('marketplace_listing_variants')->insert(['store_id'=>$store, 'external_product_id'=>'100',
                 'external_variant_id'=>(string) $variant, 'observed_data'=>json_encode(['productTitle'=>'Imported Product',
+                    'descriptionType'=>'normal', 'description'=>'Source & details',
+                    'brand'=>'Source Brand', 'externalCategoryId'=>555,
                     'title'=>'Variant '.$variant, 'sku'=>'SOURCE-'.$variant, 'price'=>'12.34', 'currency'=>'MYR', 'stock'=>500]),
                 'fetched_at'=>now(), 'created_at'=>now(), 'updated_at'=>now()]);
         }

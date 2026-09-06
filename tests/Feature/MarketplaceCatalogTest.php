@@ -41,6 +41,7 @@ class MarketplaceCatalogTest extends TestCase
 
     public function test_catalog_page_is_idempotent_and_does_not_create_master_products(): void
     {
+        config(['marketplace.operations_enabled'=>false, 'marketplace.read_operations_enabled'=>true]);
         config(['marketplace.shopee.enabled'=>true, 'marketplace.shopee.environment'=>'sandbox',
             'marketplace.shopee.partner_id'=>'123', 'marketplace.shopee.partner_key'=>'secret',
             'marketplace.shopee.callback_url'=>'https://example.test/callback']);
@@ -51,7 +52,10 @@ class MarketplaceCatalogTest extends TestCase
         MarketplaceStoreToken::create(['store_id'=>$id, 'application_id'=>'123', 'access_token'=>'access', 'refresh_token'=>'refresh', 'access_expires_at'=>now()->addHours(4)]);
         Http::fake([
             '*/get_item_list*'=>Http::response(['response'=>['item'=>[['item_id'=>100]], 'has_next_page'=>false]]),
-            '*/get_item_base_info*'=>Http::response(['response'=>['item_list'=>[['item_id'=>100, 'has_model'=>true, 'item_name'=>'Headphones']]]]),
+            '*/get_item_base_info*'=>Http::response(['response'=>['item_list'=>[['item_id'=>100, 'has_model'=>true, 'item_name'=>'Headphones',
+                'description_type'=>'normal', 'description'=>'Source description',
+                'brand'=>['brand_id'=>123, 'original_brand_name'=>'Source Brand'], 'category_id'=>555,
+                'image'=>['image_url_list'=>['https://down-my.img.susercontent.com/file/front', 'https://down-my.img.susercontent.com/file/back']]]]]]),
             '*/get_model_list*'=>Http::response(['response'=>['model'=>[['model_id'=>200, 'model_sku'=>'BLUE', 'model_name'=>'Blue']]]]),
         ]);
         $before = DB::table('products')->count();
@@ -65,9 +69,16 @@ class MarketplaceCatalogTest extends TestCase
         $this->postJson('/admin/api/marketplace/stores/'.$id.'/catalog-fetch')->assertStatus(202)->assertJsonPath('runId', $first);
         $this->getJson('/admin/api/marketplace/catalog-runs/'.$first)->assertOk()->assertJsonPath('status', 'queued');
         \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\PullShopeeCatalog::class, 1);
+        (new \App\Jobs\PullShopeeCatalog($first))->handle($service);
+        $this->assertDatabaseHas('marketplace_catalog_runs', ['id'=>$first, 'status'=>'succeeded']);
         $this->assertDatabaseHas('marketplace_listing_variants', ['store_id'=>$id, 'external_product_id'=>'100', 'external_variant_id'=>'200']);
         $data = json_decode(DB::table('marketplace_listing_variants')->value('observed_data'), true);
         $this->assertSame('BLUE', $data['sku']);
+        $this->assertSame('normal', $data['descriptionType']);
+        $this->assertSame('Source description', $data['description']);
+        $this->assertSame('Source Brand', $data['brand']);
+        $this->assertSame(555, $data['externalCategoryId']);
+        $this->assertSame(['https://down-my.img.susercontent.com/file/front', 'https://down-my.img.susercontent.com/file/back'], $data['productImages']);
         $this->assertNull($data['price']);
         $this->assertNull($data['stock']);
         $this->assertSame($before, DB::table('products')->count());
@@ -79,6 +90,31 @@ class MarketplaceCatalogTest extends TestCase
         (new \App\Jobs\PullShopeeCatalog($runId))->handle($service);
         $this->assertDatabaseHas('marketplace_catalog_runs', ['id'=>$runId, 'status'=>'succeeded', 'pages_completed'=>1]);
         $this->assertDatabaseCount('marketplace_listing_variants', 1);
+    }
+
+    public function test_catalog_rejects_an_environment_change_during_fetch_without_advancing_run(): void
+    {
+        config(['marketplace.shopee.enabled'=>true, 'marketplace.shopee.environment'=>'sandbox',
+            'marketplace.shopee.partner_id'=>'123', 'marketplace.shopee.partner_key'=>'secret',
+            'marketplace.shopee.callback_url'=>'https://example.test/callback']);
+        Http::preventStrayRequests();
+        $id = DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee', 'shop_name'=>'Store',
+            'external_shop_id'=>'456', 'region'=>'MY', 'environment'=>'sandbox', 'status'=>'connected']);
+        MarketplaceStoreToken::create(['store_id'=>$id, 'application_id'=>'123', 'access_token'=>'access',
+            'refresh_token'=>'refresh', 'access_expires_at'=>now()->addHours(4)]);
+        Http::fake([
+            '*/get_item_list*'=>Http::response(['response'=>['item'=>[['item_id'=>100]], 'has_next_page'=>false]]),
+            '*/get_item_base_info*'=>function () use ($id) {
+                DB::table('marketplace_stores')->where('id', $id)->update(['environment'=>'live']);
+                return Http::response(['response'=>['item_list'=>[['item_id'=>100, 'has_model'=>false, 'item_name'=>'Sandbox item']]]]);
+            },
+        ]);
+        $run = DB::table('marketplace_catalog_runs')->insertGetId(['store_id'=>$id, 'status'=>'queued',
+            'pages_completed'=>1, 'next_offset'=>50, 'items_processed'=>50]);
+        (new \App\Jobs\PullShopeeCatalog($run, 1))->handle(app(ShopeeCatalogService::class));
+        $this->assertDatabaseHas('marketplace_catalog_runs', ['id'=>$run, 'status'=>'failed',
+            'pages_completed'=>1, 'next_offset'=>50, 'items_processed'=>50, 'error_code'=>'catalog_page_failed']);
+        $this->assertDatabaseCount('marketplace_listing_variants', 0);
     }
 
     public function test_retry_resumes_failed_offset_without_clearing_progress(): void

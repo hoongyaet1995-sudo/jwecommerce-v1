@@ -102,6 +102,11 @@ class ShopeeClient
         $payload = $this->readShop('/api/v2/product/get_item_list', $accessToken, $shopId,
             ['offset'=>$offset, 'page_size'=>50, 'item_status'=>$status]);
         $page = $payload['response'] ?? null;
+        // Shopee omits item for a confirmed empty catalog (observed in Sandbox V2).
+        if (is_array($page) && !array_key_exists('item', $page)
+            && ($page['total_count'] ?? null) === 0 && ($page['has_next_page'] ?? null) === false) {
+            $page['item'] = [];
+        }
         if (!is_array($page) || !is_array($page['item'] ?? null) || !is_bool($page['has_next_page'] ?? null)) {
             throw new RuntimeException('Shopee catalog response was incomplete.');
         }

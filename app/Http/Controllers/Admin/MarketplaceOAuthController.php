@@ -70,9 +70,11 @@ class MarketplaceOAuthController extends Controller
                     'tokenExpiresAt'=>$store->access_expires_at, 'autoSyncStock'=>false, 'autoPullOrders'=>false];
             });
         $unavailable = ['oauth'=>false, 'catalog'=>false, 'publish'=>false, 'orders'=>false, 'inventory'=>false, 'fulfillment'=>false];
+        $readsEnabled = $client->isConfigured() && (config('marketplace.read_operations_enabled') === true
+            || config('marketplace.operations_enabled') === true);
 
         return response()->json(['stores'=>$stores, 'capabilities'=>[
-            'shopee'=>array_replace($unavailable, ['oauth'=>$client->isAuthorizationReady()]),
+            'shopee'=>array_replace($unavailable, ['oauth'=>$client->isAuthorizationReady(), 'catalog'=>$readsEnabled, 'orders'=>$readsEnabled]),
             'lazada'=>$unavailable, 'tiktok'=>$unavailable, 'shopify'=>$unavailable,
         ]])->header('Cache-Control', 'no-store');
     }

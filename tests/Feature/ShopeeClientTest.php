@@ -106,6 +106,32 @@ class ShopeeClientTest extends TestCase
         app(ShopeeClient::class)->catalogPage('access', '456', 0);
     }
 
+    public function test_catalog_accepts_confirmed_empty_response_without_item_field(): void
+    {
+        Http::fake(['*'=>Http::response(['error'=>'', 'response'=>['total_count'=>0, 'has_next_page'=>false, 'next'=>0]])]);
+        $page = app(ShopeeClient::class)->catalogPage('access', '456', 0, 'UNLIST');
+        $this->assertSame([], $page['item']);
+        $this->assertFalse($page['has_next_page']);
+    }
+
+    public function test_catalog_rejects_missing_items_without_unambiguous_empty_evidence(): void
+    {
+        foreach ([
+            ['has_next_page'=>false],
+            ['total_count'=>1, 'has_next_page'=>false],
+            ['total_count'=>0, 'has_next_page'=>true],
+            ['total_count'=>0, 'has_next_page'=>false, 'item'=>'invalid'],
+        ] as $response) {
+            Http::fake(['*'=>Http::response(['error'=>'', 'response'=>$response])]);
+            try {
+                app(ShopeeClient::class)->catalogPage('access', '456', 0);
+                $this->fail('Malformed catalog must not become empty success.');
+            } catch (\RuntimeException $exception) {
+                $this->assertSame('Shopee catalog response was incomplete.', $exception->getMessage());
+            }
+        }
+    }
+
     public function test_product_details_require_all_requested_items_and_models_are_read_separately(): void
     {
         Http::fake(['*'=>Http::sequence()

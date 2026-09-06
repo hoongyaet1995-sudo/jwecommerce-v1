@@ -28,7 +28,7 @@ class PullShopeeCatalog implements ShouldQueue
             ->update(['status'=>'running', 'updated_at'=>now()])) {
             return;
         }
-        if (config('marketplace.operations_enabled') !== true) {
+        if (config('marketplace.operations_enabled') !== true && config('marketplace.read_operations_enabled') !== true) {
             DB::table('marketplace_catalog_runs')->where('id', $this->runId)
                 ->where('status', 'running')->where('pages_completed', $this->expectedPage)
                 ->update(['status'=>'failed', 'error_code'=>'marketplace_operations_disabled',

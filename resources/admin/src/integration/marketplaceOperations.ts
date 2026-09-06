@@ -25,6 +25,19 @@ export interface OrderSummary {
   platform: MarketplacePlatform; shop_name: string; currency: string | null; total_amount: string | null;
   platform_updated_at: number; fetched_at: string;
 }
+export interface MarketplaceOrderLine {
+  external_product_id: string | null; external_variant_id: string | null;
+  title: string | null; variant_title: string | null; external_sku: string | null;
+  quantity: number | null; unit_price: number | string | null;
+  mapping_status: 'mapped' | 'unmapped'; jw_variant_id: number | null; jw_sku: string | null;
+}
+export interface MarketplaceOrderDetail extends OrderSummary {
+  lines: MarketplaceOrderLine[];
+  shipping_carrier: string | null;
+  packages: {package_number: string | null; logistics_status: string | null; shipping_carrier: string | null}[];
+  capabilities: {fulfillment: boolean; airway_bill: boolean};
+  recipient?: Record<'name' | 'phone' | 'town' | 'district' | 'city' | 'state' | 'region' | 'zipcode' | 'full_address', string | null>;
+}
 export interface SyncRun {id: number; store_id: number; status: 'queued' | 'running' | 'succeeded' | 'failed'; pages_completed: number; error_code: string | null; finished_at: string | null}
 type Filters = {storeId?: string; platform?: MarketplacePlatform; q?: string; status?: string; page?: number; per_page?: number};
 function query(filters: Filters): string {
@@ -58,6 +71,7 @@ export const marketplaceOperations = {
   catalogRun: (id: string) => marketplaceRequest<SyncRun>(`/catalog-runs/${idPath(id)}`),
   retryCatalog: (id: string) => marketplaceRequest<{runId: number}>(`/catalog-runs/${idPath(id)}/retry`, 'POST'),
   orders: (filters: Filters = {}) => marketplaceRequest<Page<OrderSummary>>(`/orders?${query(filters)}`),
+  orderDetail: (id: string, options: {includeRecipient?: boolean} = {}) => marketplaceRequest<{data: MarketplaceOrderDetail}>(`/orders/${idPath(id)}${options.includeRecipient ? '?includeRecipient=1' : ''}`),
   fetchOrders: (id: string, from: number, to: number) => marketplaceRequest<{runId: number}>(`/stores/${idPath(id)}/orders-fetch`, 'POST', {from, to}),
   orderRun: (id: string) => marketplaceRequest<SyncRun>(`/order-runs/${idPath(id)}`),
 };

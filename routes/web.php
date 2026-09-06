@@ -280,6 +280,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/marketplace/connections', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'connections']);
     Route::get('/api/marketplace/oauth-result', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'result']);
     Route::get('/marketplace/oauth-acceptance', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'acceptance']);
+    Route::get('/marketplace/orders/{order}/preview', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'preview'])->whereNumber('order');
     Route::get('/marketplace/oauth-preview', function (\Illuminate\Http\Request $request) {
         abort_unless(app()->environment('local'), 404);
         $path = public_path('build-marketplace-preview/manifest.json');
@@ -292,18 +293,20 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             'csrfToken'=>csrf_token(), 'logoutUrl'=>route('logout'),
         ]])->header('Cache-Control', 'no-store');
     });
-    Route::middleware(\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class)->group(function () {
+    Route::middleware(\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':read')->group(function () {
     Route::get('/api/marketplace/catalog', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'index']);
     Route::get('/api/marketplace/catalog/products', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'products']);
     Route::get('/api/marketplace/orders', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'index']);
+    Route::get('/api/marketplace/orders/{order}', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'show'])->whereNumber('order');
     Route::post('/api/marketplace/stores/{store}/orders-fetch', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'fetch'])->whereNumber('store')->middleware('throttle:10,1');
     Route::get('/api/marketplace/order-runs/{run}', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'run'])->whereNumber('run');
-    Route::post('/api/marketplace/listings/{listing}/import-product', [\App\Http\Controllers\Admin\MarketplaceImportController::class, 'product'])->whereNumber('listing')->middleware('throttle:10,1');
     Route::post('/api/marketplace/order-runs/{run}/retry', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'retry'])->whereNumber('run')->middleware('throttle:10,1');
     Route::post('/api/marketplace/stores/{store}/catalog-fetch', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'fetch'])->whereNumber('store')->middleware('throttle:10,1');
     Route::get('/api/marketplace/catalog-runs/{run}', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'show'])->whereNumber('run');
     Route::post('/api/marketplace/catalog-runs/{run}/retry', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'retry'])->whereNumber('run')->middleware('throttle:10,1');
     });
+    Route::post('/api/marketplace/listings/{listing}/import-product', [\App\Http\Controllers\Admin\MarketplaceImportController::class, 'product'])->whereNumber('listing')
+        ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class, 'throttle:10,1']);
     Route::post('/api/marketplace/shopee/authorize', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'start'])->middleware('throttle:10,1');
     Route::post('/api/marketplace/stores/{store}/disconnect', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'disconnect'])->whereNumber('store');
     Route::get('/marketplace/shopee/callback', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'callback'])->middleware('throttle:20,1');

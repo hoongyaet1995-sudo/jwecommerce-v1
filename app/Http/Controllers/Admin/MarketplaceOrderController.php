@@ -8,6 +8,27 @@ use Illuminate\Support\Facades\DB;
 
 class MarketplaceOrderController extends Controller
 {
+    public function preview(Request $request, int $order)
+    {
+        abort_unless(app()->environment('local'), 404);
+        abort_unless(DB::table('marketplace_orders')->where('id', $order)->exists(), 404);
+        $manifestPath = public_path('build-marketplace-orders-preview/manifest.json');
+        abort_unless(is_file($manifestPath), 503, 'Build the local order preview first.');
+        $manifest = json_decode(file_get_contents($manifestPath), true);
+        $entry = $manifest['src/previews/marketplace30/order.tsx'] ?? null;
+        abort_unless($entry, 503);
+        return response()->view('admin.marketplace-order-preview', ['entry'=>$entry, 'bootstrap'=>[
+            'user'=>['name'=>$request->user()->name, 'email'=>$request->user()->email, 'avatar'=>null],
+            'csrfToken'=>csrf_token(), 'logoutUrl'=>route('logout'),
+        ]])->header('Cache-Control', 'no-store')->header('Referrer-Policy', 'no-referrer');
+    }
+
+    public function show(Request $request, int $order, \App\Services\Marketplace\MarketplaceOrderDetailService $details)
+    {
+        $request->validate(['includeRecipient'=>'sometimes|boolean']);
+        return response()->json(['data'=>$details->read($order, $request->boolean('includeRecipient'))])->header('Cache-Control', 'no-store');
+    }
+
     public function fetch(Request $request, int $store, \App\Services\Marketplace\ShopeeClient $client)
     {
         $data = $request->validate(['from'=>'required|integer|min:0', 'to'=>'required|integer|gt:from']);

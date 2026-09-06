@@ -2,6 +2,7 @@
 
 namespace App\Services\Marketplace;
 
+use App\Domain\Cms\MediaUrlPolicy;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Support\CurrencySettings;
@@ -10,7 +11,8 @@ use Illuminate\Support\Str;
 
 class MarketplaceImportService
 {
-    public function __construct(private MarketplaceFoundationService $mappings, private CurrencySettings $currencies) {}
+    public function __construct(private MarketplaceFoundationService $mappings, private CurrencySettings $currencies,
+        private MarketplaceProductDescription $descriptions) {}
 
     public function importProduct(int $storeId, string $externalProductId, int $actorId): int
     {
@@ -28,8 +30,24 @@ class MarketplaceImportService
             $currency = $this->currencies->default()['code'];
             $prepared = [];
             $skus = [];
+            $images = [];
             foreach ($listings as $listing) {
                 $data = json_decode($listing->observed_data, true, 512, JSON_THROW_ON_ERROR);
+                $description = $this->descriptions->render($data);
+                $brand = $data['brand'] ?? null;
+                abort_unless($brand === null || (is_string($brand) && mb_strlen($brand) <= 255),
+                    422, 'Review the channel brand before import.');
+                $brand = $brand === null ? null : (trim($brand) ?: null);
+                $gallery = $data['productImages'] ?? [];
+                abort_unless(is_array($gallery) && array_is_list($gallery), 422, 'Review the channel image list before import.');
+                if (!$gallery && isset($data['productImage']) && $data['productImage'] !== '') {
+                    $gallery = [$data['productImage']];
+                }
+                foreach ($gallery as $image) {
+                    abort_unless(is_string($image) && $image !== '' && strlen($image) <= 255 && MediaUrlPolicy::isSafe($image),
+                        422, 'Review the channel image URL before import.');
+                    if (!in_array($image, $images, true)) $images[] = $image;
+                }
                 $sku = trim((string) ($data['sku'] ?? ''));
                 $title = trim((string) ($data['title'] ?? ''));
                 $productTitle = trim((string) ($data['productTitle'] ?? ''));
@@ -44,11 +62,15 @@ class MarketplaceImportService
                 abort_if(in_array(mb_strtolower($sku), $skus, true) || ProductVariant::where('sku', $sku)->exists(),
                     409, 'A SKU already exists. Link the existing JW variant instead of importing a duplicate.');
                 $skus[] = mb_strtolower($sku);
-                $prepared[] = compact('listing', 'sku', 'title', 'productTitle', 'cents');
+                $prepared[] = compact('listing', 'sku', 'title', 'productTitle', 'cents', 'description', 'brand');
             }
             $product = Product::create(['title'=>$prepared[0]['productTitle'],
                 'handle'=>'marketplace-'.Str::uuid(), 'base_price'=>min(array_column($prepared, 'cents')),
-                'status'=>'draft', 'has_variants'=>count($prepared) > 1, 'is_featured'=>false]);
+                'status'=>'draft', 'has_variants'=>count($prepared) > 1, 'is_featured'=>false,
+                'description'=>$prepared[0]['description'], 'brand'=>$prepared[0]['brand']]);
+            foreach ($images as $position => $image) {
+                $product->images()->create(['path'=>$image, 'alt'=>$prepared[0]['productTitle'], 'position'=>$position]);
+            }
             foreach ($prepared as $row) {
                 $variant = $product->variants()->create(['sku'=>$row['sku'], 'title'=>$row['title'],
                     'price'=>$row['cents'], 'stock'=>0, 'enabled'=>true]);

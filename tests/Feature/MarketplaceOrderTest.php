@@ -66,8 +66,47 @@ class MarketplaceOrderTest extends TestCase
         $this->assertStringNotContainsString('PRIVATE CUSTOMER', $response->getContent());
     }
 
+    public function test_order_detail_resolves_only_same_store_mapping_and_does_not_expose_raw_payload(): void
+    {
+        $store = DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee', 'shop_name'=>'Sandbox',
+            'external_shop_id'=>'227482706', 'region'=>'MY', 'environment'=>'sandbox', 'status'=>'connected',
+            'created_at'=>now(), 'updated_at'=>now()]);
+        $other = DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee', 'shop_name'=>'Other',
+            'region'=>'MY', 'environment'=>'sandbox', 'status'=>'connected', 'created_at'=>now(), 'updated_at'=>now()]);
+        $product = \App\Models\Product::create(['title'=>'PS5', 'handle'=>'detail-ps5', 'base_price'=>1400, 'status'=>'active']);
+        $variant = $product->variants()->create(['sku'=>'JW-PS5', 'title'=>'White', 'price'=>1400, 'stock'=>7, 'enabled'=>true]);
+        $id = app(MarketplaceOrderSnapshotService::class)->saveShopee($store, [
+            'order_sn'=>'TEST-ORDER', 'order_status'=>'READY_TO_SHIP', 'update_time'=>200,
+            'currency'=>'MYR', 'total_amount'=>1407.31, 'recipient_address'=>['name'=>'PRIVATE'], 'access_token'=>'NEVER-RETURN',
+            'item_list'=>[['item_id'=>846055463, 'model_id'=>12983425, 'item_name'=>'PS5', 'model_name'=>'White,500GB',
+                'model_sku'=>'JWSTORE1PS5-500GB', 'model_quantity_purchased'=>1]],
+        ]);
+        $url = '/admin/api/marketplace/orders/'.$id;
+        $this->getJson($url)->assertUnauthorized();
+        $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>true]));
+        foreach ([$other, $store] as $listingStore) {
+            $listing = DB::table('marketplace_listing_variants')->insertGetId(['store_id'=>$listingStore,
+                'external_product_id'=>'846055463', 'external_variant_id'=>'12983425', 'observed_data'=>'{}',
+                'created_at'=>now(), 'updated_at'=>now(), 'fetched_at'=>now()]);
+            $this->putJson('/admin/api/marketplace/listings/'.$listing.'/mapping', ['productId'=>$product->id, 'variantId'=>$variant->id])->assertOk();
+            $response = $this->getJson($url)->assertOk()->assertJsonPath('data.external_order_id', 'TEST-ORDER')
+                ->assertJsonPath('data.lines.0.quantity', 1)
+                ->assertJsonPath('data.lines.0.mapping_status', $listingStore === $store ? 'mapped' : 'unmapped');
+            $this->assertStringNotContainsString('NEVER-RETURN', $response->getContent());
+            $this->assertStringNotContainsString('PRIVATE', $response->getContent());
+            $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+        }
+        $response->assertJsonPath('data.lines.0.jw_sku', 'JW-PS5');
+        $this->assertEquals(7, $variant->fresh()->stock);
+        $this->assertDatabaseCount('orders', 0);
+        $this->getJson('/admin/api/marketplace/orders/999999')->assertNotFound();
+        config(['marketplace.operations_enabled'=>false]);
+        $this->getJson($url)->assertStatus(503);
+    }
+
     public function test_order_pull_reads_details_and_saves_without_creating_self_store_orders(): void
     {
+        config(['marketplace.operations_enabled'=>false, 'marketplace.read_operations_enabled'=>true]);
         config(['marketplace.shopee.enabled'=>true, 'marketplace.shopee.environment'=>'sandbox',
             'marketplace.shopee.partner_id'=>'123', 'marketplace.shopee.partner_key'=>'secret',
             'marketplace.shopee.callback_url'=>'https://example.test/callback']);
@@ -96,5 +135,34 @@ class MarketplaceOrderTest extends TestCase
         $this->postJson('/admin/api/marketplace/stores/'.$id.'/orders-fetch', ['from'=>100, 'to'=>300])->assertStatus(202)->assertJsonPath('runId', $task);
         $this->getJson('/admin/api/marketplace/order-runs/'.$task)->assertOk()->assertJsonPath('status', 'queued');
         \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\PullShopeeOrders::class, 1);
+    }
+
+    public function test_recipient_is_opt_in_allowlisted_and_packages_do_not_claim_fulfillment(): void
+    {
+        $store = DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee', 'shop_name'=>'Test',
+            'region'=>'MY', 'environment'=>'sandbox', 'status'=>'connected', 'created_at'=>now(), 'updated_at'=>now()]);
+        $id = app(MarketplaceOrderSnapshotService::class)->saveShopee($store, [
+            'order_sn'=>'RECIPIENT-TEST', 'order_status'=>'READY_TO_SHIP', 'update_time'=>200, 'item_list'=>[],
+            'recipient_address'=>['name'=>'Test Recipient', 'phone'=>'MASKED', 'full_address'=>'Test Street',
+                'region'=>'MY', 'unapproved_field'=>'HIDDEN-VALUE'],
+            'shipping_carrier'=>'Platform Carrier',
+            'package_list'=>[['package_number'=>'PKG1', 'logistics_status'=>'LOGISTICS_READY', 'shipping_carrier'=>'Platform Carrier', 'unapproved_field'=>'HIDDEN-VALUE']],
+        ]);
+        $url = '/admin/api/marketplace/orders/'.$id;
+        $this->getJson($url.'?includeRecipient=1')->assertUnauthorized();
+        $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>true]));
+        $this->getJson($url)->assertOk()->assertJsonMissingPath('data.recipient');
+        $response = $this->getJson($url.'?includeRecipient=1')->assertOk()
+            ->assertJsonPath('data.recipient.name', 'Test Recipient')
+            ->assertJsonPath('data.recipient.phone', 'MASKED')
+            ->assertJsonPath('data.recipient.city', null)
+            ->assertJsonPath('data.packages.0.package_number', 'PKG1')
+            ->assertJsonPath('data.packages.0.logistics_status', 'LOGISTICS_READY')
+            ->assertJsonPath('data.capabilities.fulfillment', false);
+        $this->assertStringNotContainsString('HIDDEN-VALUE', $response->getContent());
+        $this->assertStringNotContainsString('Test Recipient', $this->getJson('/admin/api/marketplace/orders')->getContent());
+        $this->getJson($url.'?includeRecipient=invalid')->assertUnprocessable();
+        DB::table('marketplace_stores')->where('id', $store)->update(['status'=>'disconnected']);
+        $this->getJson($url.'?includeRecipient=1')->assertOk()->assertJsonPath('data.capabilities.fulfillment', false);
     }
 }

@@ -30,6 +30,12 @@ class ShopeeCatalogService
                     'external_variant_id'=>$item['has_model'] ? (string) $model['model_id'] : '0',
                     'observed_data'=>json_encode([
                         'productTitle'=>$item['item_name'] ?? null, 'productImage'=>data_get($item, 'image.image_url_list.0'),
+                        'productImages'=>data_get($item, 'image.image_url_list', []),
+                        'descriptionType'=>$item['description_type'] ?? null,
+                        'description'=>$item['description'] ?? null,
+                        'descriptionFields'=>data_get($item, 'description_info.extended_description.field_list'),
+                        'brand'=>data_get($item, 'brand.original_brand_name'),
+                        'externalCategoryId'=>$item['category_id'] ?? null,
                         'title'=>$model['model_name'] ?? $item['item_name'] ?? null,
                         'sku'=>$model['model_sku'] ?? $item['item_sku'] ?? null,
                         'price'=>data_get($model, 'price_info.0.current_price'),
@@ -45,8 +51,9 @@ class ShopeeCatalogService
         }
         DB::transaction(function () use ($storeId, $store, $rows) {
             $current = DB::table('marketplace_stores')->where('id', $storeId)->lockForUpdate()->first();
-            if (!$current || $current->status !== 'connected' || $current->external_shop_id !== $store->external_shop_id) {
-                throw new RuntimeException('Store disconnected during catalog fetch.');
+            if (!$current || $current->status !== 'connected' || $current->external_shop_id !== $store->external_shop_id
+                || $current->environment !== $store->environment) {
+                throw new RuntimeException('Store connection changed during catalog fetch.');
             }
             foreach ($rows as $row) {
                 $identity = ['store_id'=>$storeId, 'external_product_id'=>$row['external_product_id'], 'external_variant_id'=>$row['external_variant_id']];
