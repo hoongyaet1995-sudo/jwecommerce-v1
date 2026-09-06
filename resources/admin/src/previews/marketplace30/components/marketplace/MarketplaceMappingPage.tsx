@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { useAdmin } from '../../context/AdminContext';
+import { useAdmin } from '../../context/ContextBridge';
+import type {CatalogSummary} from '../../../../integration/marketplaceOperations';
 import { MarketplacePlatform, MarketplaceStoreProduct, MarketplaceStoreVariant } from '../../types';
 import { SubNavHeader } from '../common/SubNavHeader';
 import { ProductMappingModal } from './ProductMappingModal';
@@ -7,7 +8,14 @@ import { PublishProductModal } from './PublishProductModal';
 import { MarketplaceLogo } from './MarketplaceLogo';
 import { Link2, Unlink, Search, RefreshCw, Sparkles, CheckCircle2, AlertTriangle, AlertCircle, Store, Boxes, ChevronRight, Check, DownloadCloud, UploadCloud, LayoutGrid, List, ChevronLeft, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
-export const MarketplaceMappingPage: React.FC = () => {
+export interface MappingPageQuery {
+  platform: MarketplacePlatform | 'all'; storeId: string; q: string; status: string;
+  page: number; per_page: number; view: 'grouped' | 'flat';
+}
+export interface MappingServerPage {
+  total: number; summary: CatalogSummary; loading: boolean; onQueryChange: (query: MappingPageQuery) => void;
+}
+export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> = ({serverPage}) => {
   const {
     products = [],
     connections = [],
@@ -37,6 +45,11 @@ export const MarketplaceMappingPage: React.FC = () => {
   // Pagination State (Essential for 300+ items)
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(15);
+  const onQueryChange = serverPage?.onQueryChange;
+  React.useEffect(() => {
+    onQueryChange?.({platform:selectedPlatform,storeId:selectedConnectionId,q:searchQuery,status:statusFilter,
+      page:currentPage,per_page:pageSize,view:viewMode});
+  }, [onQueryChange,selectedPlatform,selectedConnectionId,searchQuery,statusFilter,currentPage,pageSize,viewMode]);
 
   // Batch Selection State
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
@@ -65,12 +78,12 @@ export const MarketplaceMappingPage: React.FC = () => {
   ).length;
 
   // Global counts across all store products
-  const totalVariants = safeStoreProds.reduce((acc, p) => acc + p.variants.length, 0);
-  const mappedVariantsCount = safeStoreProds.reduce(
+  const totalVariants = serverPage?.summary.variants ?? safeStoreProds.reduce((acc, p) => acc + p.variants.length, 0);
+  const mappedVariantsCount = serverPage?.summary.mapped ?? safeStoreProds.reduce(
     (acc, p) => acc + p.variants.filter(v => v.mappingStatus === 'mapped').length, 
     0
   );
-  const unmappedVariantsCount = safeStoreProds.reduce(
+  const unmappedVariantsCount = serverPage?.summary.unmapped ?? safeStoreProds.reduce(
     (acc, p) => acc + p.variants.filter(v => v.mappingStatus === 'unmapped').length, 
     0
   );
@@ -116,6 +129,7 @@ export const MarketplaceMappingPage: React.FC = () => {
 
   // Filtered store products
   const filteredProducts = useMemo(() => {
+    if (serverPage) return safeStoreProds;
     return safeStoreProds.filter(prod => {
       // Platform filter
       if (selectedPlatform !== 'all' && prod.platform !== selectedPlatform) {
@@ -160,7 +174,7 @@ export const MarketplaceMappingPage: React.FC = () => {
 
       return true;
     });
-  }, [safeStoreProds, selectedPlatform, selectedConnectionId, statusFilter, searchQuery]);
+  }, [safeStoreProds, selectedPlatform, selectedConnectionId, statusFilter, searchQuery, serverPage]);
 
   // Flat variants list for flat table view
   const flatVariants = useMemo(() => {
@@ -178,29 +192,31 @@ export const MarketplaceMappingPage: React.FC = () => {
   }, [filteredProducts, statusFilter]);
 
   // Total count based on view mode
-  const totalItemCount = statusFilter === 'push_candidates'
+  const totalItemCount = serverPage?.total ?? (statusFilter === 'push_candidates'
     ? unlistedMasterProducts.length
-    : (viewMode === 'grouped' ? filteredProducts.length : flatVariants.length);
+    : (viewMode === 'grouped' ? filteredProducts.length : flatVariants.length));
 
   const totalPages = Math.max(1, Math.ceil(totalItemCount / pageSize));
 
   // Reset page if out of bounds
   React.useEffect(() => {
-    if (currentPage > totalPages) {
+    if (!serverPage?.loading && currentPage > totalPages) {
       setCurrentPage(1);
     }
-  }, [totalPages, currentPage]);
+  }, [totalPages, currentPage, serverPage?.loading]);
 
   // Paginated slices
   const paginatedProducts = useMemo(() => {
+    if (serverPage) return filteredProducts;
     const start = (currentPage - 1) * pageSize;
     return filteredProducts.slice(start, start + pageSize);
-  }, [filteredProducts, currentPage, pageSize]);
+  }, [filteredProducts, currentPage, pageSize, serverPage]);
 
   const paginatedFlatVariants = useMemo(() => {
+    if (serverPage) return flatVariants;
     const start = (currentPage - 1) * pageSize;
     return flatVariants.slice(start, start + pageSize);
-  }, [flatVariants, currentPage, pageSize]);
+  }, [flatVariants, currentPage, pageSize, serverPage]);
 
   const paginatedUnlistedMasterProducts = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -428,7 +444,7 @@ export const MarketplaceMappingPage: React.FC = () => {
             <Boxes className="w-4 h-4 text-neutral-400" />
           </div>
           <div className="text-2xl font-black text-neutral-900 dark:text-white">
-            {safeStoreProds.length} <span className="text-xs font-normal text-neutral-500">Products</span>
+            {serverPage?.summary.products ?? safeStoreProds.length} <span className="text-xs font-normal text-neutral-500">Products</span>
           </div>
           <p className="text-[11px] text-neutral-400 mt-1">
             Across {totalVariants} channel variants
@@ -1410,4 +1426,3 @@ export const MarketplaceMappingPage: React.FC = () => {
     </div>
   );
 };
-

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAdmin } from '../../context/AdminContext';
+import { useAdmin } from '../../context/ContextBridge';
 import { MarketplaceConnection } from '../../types';
 import { MarketplaceLogo, getPlatformMeta } from './MarketplaceLogo';
 import { X, AlertTriangle, ShieldCheck, PowerOff, RotateCcw } from 'lucide-react';
@@ -15,7 +15,8 @@ export const DisconnectStoreModal: React.FC<DisconnectStoreModalProps> = ({
   onClose,
   connection
 }) => {
-  const { disconnectConnection } = useAdmin();
+  const { disconnectConnection, addToast } = useAdmin();
+  const busy = React.useRef(false);
   const [reason, setReason] = useState<string>('Temporary Store Maintenance / Pause Sync');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -23,13 +24,19 @@ export const DisconnectStoreModal: React.FC<DisconnectStoreModalProps> = ({
 
   const platformMeta = getPlatformMeta(connection.platform);
 
-  const handleConfirmDisconnect = () => {
+  const handleConfirmDisconnect = async () => {
+    if (busy.current) return;
+    busy.current = true;
     setIsProcessing(true);
-    setTimeout(() => {
-      disconnectConnection(connection.id, reason);
+    try {
+      const result: unknown = await disconnectConnection(connection.id, reason);
+      if (result !== false) onClose();
+    } catch {
+      addToast({type:'error',title:'Disconnect failed',message:'The store could not be disconnected. Please retry.'});
+    } finally {
+      busy.current = false;
       setIsProcessing(false);
-      onClose();
-    }, 400);
+    }
   };
 
   return (
@@ -156,4 +163,3 @@ export const DisconnectStoreModal: React.FC<DisconnectStoreModalProps> = ({
     </div>
   );
 };
-

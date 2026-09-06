@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useAdmin } from '../../context/AdminContext';
+import { useAdmin } from '../../context/ContextBridge';
 import { MarketplaceStoreProduct, MarketplaceStoreVariant, Product, ProductVariant } from '../../types';
 import { MarketplaceLogo } from './MarketplaceLogo';
 import { X, Search, Check, Link2, Unlink, AlertCircle, AlertTriangle, ArrowRight, Tag, CheckCircle2, Store, ChevronDown, ChevronUp, PackageCheck, ShieldCheck, Info, Plus, DownloadCloud } from 'lucide-react';
@@ -23,8 +23,11 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
     mapStoreVariantToJwSku, 
     unmapStoreVariant,
     marketplaceStoreProducts = [],
-    importStoreProductToMaster
+    importStoreProductToMaster,
+    addToast
   } = useAdmin();
+  const [isSaving, setIsSaving] = useState(false);
+  const savingRef = React.useRef(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
@@ -149,15 +152,28 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
     setExpandedProductIds(prev => ({ ...prev, [product.id]: true }));
   };
 
+  const persistMapping = async (operation: () => unknown) => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setIsSaving(true);
+    try {
+      const saved = await operation();
+      if (saved !== false) onClose();
+    } catch {
+      addToast({type:'error',title:'Mapping failed',message:'The mapping could not be saved. Please retry.'});
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
+    }
+  };
+
   const handleSaveMapping = () => {
     if (!selectedProductId || !selectedVariantId || selectedSameStoreConflict) return;
-    mapStoreVariantToJwSku(storeProduct.id, storeVariant.id, selectedProductId, selectedVariantId);
-    onClose();
+    void persistMapping(() => mapStoreVariantToJwSku(storeProduct.id, storeVariant.id, selectedProductId, selectedVariantId));
   };
 
   const handleUnmap = () => {
-    unmapStoreVariant(storeProduct.id, storeVariant.id);
-    onClose();
+    void persistMapping(() => unmapStoreVariant(storeProduct.id, storeVariant.id));
   };
 
   const platformBadgeColor = {
@@ -203,6 +219,7 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
 
           <button
             id="btn-close-mapping-modal"
+            disabled={isSaving}
             onClick={onClose}
             className="p-2 rounded-xl text-neutral-400 hover:text-neutral-700 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
           >
@@ -660,6 +677,7 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
             {storeVariant.mappingStatus === 'mapped' ? (
               <button
                 id="btn-unlink-variant"
+                disabled={isSaving}
                 type="button"
                 onClick={handleUnmap}
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900 transition-colors cursor-pointer"
@@ -677,6 +695,7 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
           <div className="flex items-center gap-3">
             <button
               id="btn-cancel-mapping-modal"
+              disabled={isSaving}
               type="button"
               onClick={onClose}
               className="px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs font-bold hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
@@ -686,7 +705,7 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
             <button
               id="btn-confirm-mapping"
               type="button"
-              disabled={!selectedProductId || !selectedVariantId || !!selectedSameStoreConflict}
+              disabled={isSaving || !selectedProductId || !selectedVariantId || !!selectedSameStoreConflict}
               onClick={handleSaveMapping}
               className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedSameStoreConflict
@@ -714,4 +733,3 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
     </div>
   );
 };
-

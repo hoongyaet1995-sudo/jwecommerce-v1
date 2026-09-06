@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 class MarketplaceCatalogController extends Controller
 {
-    private function filteredQuery(Request $request)
+    private function filteredQuery(Request $request, bool $includeStatus = true)
     {
         $data = $request->validate([
             'storeId'=>'nullable|integer', 'platform'=>'nullable|in:shopee,lazada,tiktok,shopify',
@@ -21,12 +21,14 @@ class MarketplaceCatalogController extends Controller
             ->join('marketplace_stores as s', 's.id', '=', 'l.store_id')
             ->leftJoin('marketplace_variant_mappings as m', 'm.listing_variant_id', '=', 'l.id')
             ->leftJoin('product_variants as v', 'v.id', '=', 'm.product_variant_id')
+            ->leftJoin('products as p', 'p.id', '=', 'v.product_id')
             ->select('l.id', 'l.store_id', 'l.external_product_id', 'l.external_variant_id', 'l.observed_data', 'l.fetched_at',
-                's.platform', 's.shop_name', 'm.product_variant_id as jw_variant_id', 'v.sku as jw_sku');
+                's.platform', 's.shop_name', 'm.product_variant_id as jw_variant_id', 'v.sku as jw_sku',
+                'v.product_id as jw_product_id', 'p.title as jw_product_title', 'v.title as jw_variant_title', 'm.updated_at as mapped_at');
         if (isset($data['storeId'])) $query->where('l.store_id', $data['storeId']);
         if (!empty($data['platform'])) $query->where('s.platform', $data['platform']);
-        if (($data['status'] ?? '') === 'mapped') $query->whereNotNull('m.id');
-        if (($data['status'] ?? '') === 'unmapped') $query->whereNull('m.id');
+        if ($includeStatus && ($data['status'] ?? '') === 'mapped') $query->whereNotNull('m.id');
+        if ($includeStatus && ($data['status'] ?? '') === 'unmapped') $query->whereNull('m.id');
         if (!empty($data['q'])) {
             $term = '%'.$data['q'].'%';
             $query->where(function ($q) use ($term) {
@@ -36,6 +38,42 @@ class MarketplaceCatalogController extends Controller
             });
         }
         return $query;
+    }
+
+    public function summary(Request $request)
+    {
+        // Counts describe the search/store scope, never just the visible page or status tab.
+        $query = $this->filteredQuery($request, false);
+        $counts = (clone $query)->select([])->selectRaw('COUNT(*) as variants, COUNT(m.id) as mapped')->first();
+        $products = DB::query()->fromSub((clone $query)->select('l.store_id', 'l.external_product_id')->distinct(), 'catalog_products')->count();
+
+        return response()->json(['products'=>$products, 'variants'=>(int)$counts->variants,
+            'mapped'=>(int)$counts->mapped, 'unmapped'=>(int)$counts->variants - (int)$counts->mapped])
+            ->header('Cache-Control', 'no-store');
+    }
+
+    public function mappingContext(Request $request, int $listing)
+    {
+        $data = $request->validate(['variantIds'=>'required|array|min:1|max:100', 'variantIds.*'=>'required|integer|min:1|distinct']);
+        $target = DB::table('marketplace_listing_variants')->find($listing);
+        abort_unless($target, 404);
+        // Inspect persisted same-store mappings, not the currently visible catalog page.
+        $conflicts = DB::table('marketplace_variant_mappings as m')
+            ->join('marketplace_listing_variants as l', 'l.id', '=', 'm.listing_variant_id')
+            ->where('m.store_id', $target->store_id)->where('l.id', '!=', $listing)
+            ->whereIn('m.product_variant_id', $data['variantIds'])
+            ->get(['m.product_variant_id', 'l.id as listing_id', 'l.external_product_id', 'l.external_variant_id', 'l.observed_data'])
+            ->keyBy('product_variant_id');
+        $rows = DB::table('product_variants')->whereIn('id', $data['variantIds'])->orderBy('id')->get(['id'])->map(function ($variant) use ($conflicts) {
+            $conflict = $conflicts->get($variant->id);
+            $observed = $conflict ? (json_decode($conflict->observed_data, true) ?? []) : [];
+            return ['jw_variant_id'=>$variant->id, 'same_store_conflict'=>$conflict ? [
+                'listing_id'=>$conflict->listing_id, 'external_product_id'=>$conflict->external_product_id,
+                'external_variant_id'=>$conflict->external_variant_id, 'product_title'=>$observed['productTitle'] ?? null,
+                'variant_title'=>$observed['title'] ?? null, 'sku'=>$observed['sku'] ?? null,
+            ] : null];
+        });
+        return response()->json(['data'=>$rows])->header('Cache-Control', 'no-store');
     }
 
     public function index(Request $request)
@@ -61,7 +99,9 @@ class MarketplaceCatalogController extends Controller
             $variants = DB::table('marketplace_listing_variants as l')
                 ->leftJoin('marketplace_variant_mappings as m', 'm.listing_variant_id', '=', 'l.id')
                 ->leftJoin('product_variants as v', 'v.id', '=', 'm.product_variant_id')
-                ->select('l.*', 'm.product_variant_id as jw_variant_id', 'v.sku as jw_sku')
+                ->leftJoin('products as p', 'p.id', '=', 'v.product_id')
+                ->select('l.*', 'm.product_variant_id as jw_variant_id', 'v.sku as jw_sku',
+                    'v.product_id as jw_product_id', 'p.title as jw_product_title', 'v.title as jw_variant_title', 'm.updated_at as mapped_at')
                 ->where(function ($query) use ($page) {
                     foreach ($page->items() as $product) {
                         $query->orWhere(function ($pair) use ($product) {

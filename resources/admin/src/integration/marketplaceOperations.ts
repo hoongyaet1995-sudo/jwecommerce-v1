@@ -11,9 +11,16 @@ export interface ProviderCapabilities {
   oauth: boolean; catalog: boolean; publish: boolean; orders: boolean; inventory: boolean; fulfillment: boolean;
 }
 export interface Page<T> {data: T[]; total: number; current_page: number; last_page: number; per_page: number}
+export interface CatalogSummary {products: number; variants: number; mapped: number; unmapped: number}
+export interface MappingContext {
+  jw_variant_id: number;
+  same_store_conflict: null | {listing_id: number; external_product_id: string; external_variant_id: string;
+    product_title: string | null; variant_title: string | null; sku: string | null};
+}
 export interface CatalogVariant {
   id: number; store_id: number; external_product_id: string; external_variant_id: string;
   platform: MarketplacePlatform; shop_name: string; jw_variant_id: number | null; jw_sku: string | null;
+  jw_product_id: number | null; jw_product_title: string | null; jw_variant_title: string | null; mapped_at: string | null;
   fetched_at: string; observed_data: {productTitle?: string | null; productImage?: string | null; title?: string | null; sku?: string | null; price?: number | string | null; stock?: number | null; currency?: string | null; status?: string | null};
 }
 export interface CatalogProduct {
@@ -59,6 +66,12 @@ export async function requestMarketplaceAuthorization(platform: MarketplacePlatf
   window.location.assign(officialShopeeAuthorizationUrl(url));
 }
 export const marketplaceOperations = {
+  mappingContext: (listingId: string, variantIds: number[]) => {
+    const params = new URLSearchParams();
+    variantIds.forEach(id => params.append('variantIds[]', String(id)));
+    return marketplaceRequest<{data: MappingContext[]}>(`/listings/${idPath(listingId)}/mapping-context?${params}`);
+  },
+  catalogSummary: (filters: Filters = {}) => marketplaceRequest<CatalogSummary>(`/catalog/summary?${query(filters)}`),
   oauthResult: () => marketplaceRequest<{result: OAuthResult | null}>('/oauth-result'),
   catalogProducts: (filters: Filters = {}) => marketplaceRequest<Page<CatalogProduct>>(`/catalog/products?${query(filters)}`),
   importProduct: (listingId: string) => marketplaceRequest<{productId: number; status: string}>(`/listings/${idPath(listingId)}/import-product`, 'POST'),

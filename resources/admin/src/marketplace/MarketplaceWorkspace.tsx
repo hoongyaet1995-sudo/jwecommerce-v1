@@ -1,4 +1,5 @@
 import React from 'react';
+import {OperationalConnectStore} from './OperationalConnectStore';
 import {MarketplaceProvider,useAdmin} from './context/AdminContext';
 import {MarketplaceMappingPage} from './components/marketplace/MarketplaceMappingPage';
 import {MarketplaceHub} from './components/marketplace/MarketplaceHub';
@@ -8,6 +9,7 @@ import {MarketplaceInventoryPage} from './components/marketplace/MarketplaceInve
 import {MarketplaceSyncPage} from './components/marketplace/MarketplaceSyncPage';
 function Content(){
  const {currentSection,loading,error,reload}=useAdmin();
+ if(currentSection==='marketplace-auth')return <OperationalConnectStore/>;
  if(loading)return <p role="status" className="text-sm text-neutral-500">Loading Marketplace settings…</p>;
  if(error)return <div role="alert" className="text-sm text-rose-500">{error}<button className="ml-3 underline" onClick={()=>void reload()}>Retry</button></div>;
  const Page=currentSection==='marketplace-mapping'?MarketplaceMappingPage:currentSection==='marketplace-auth'?MarketplaceAuthPage:currentSection==='marketplace-oms'?MarketplaceOMSPage:currentSection==='marketplace-inventory'?MarketplaceInventoryPage:currentSection==='marketplace-sync'?MarketplaceSyncPage:MarketplaceHub;

@@ -295,6 +295,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     });
     Route::middleware(\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':read')->group(function () {
     Route::get('/api/marketplace/catalog', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'index']);
+    Route::get('/api/marketplace/catalog/summary', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'summary']);
+    Route::get('/api/marketplace/listings/{listing}/mapping-context', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'mappingContext'])->whereNumber('listing');
     Route::get('/api/marketplace/catalog/products', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'products']);
     Route::get('/api/marketplace/orders', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'index']);
     Route::get('/api/marketplace/orders/{order}', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'show'])->whereNumber('order');

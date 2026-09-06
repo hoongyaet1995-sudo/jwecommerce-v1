@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useAdmin } from '../../context/AdminContext';
+import { useAdmin } from '../../context/ContextBridge';
+import {requestMarketplaceAuthorization, OAuthResult} from '../../../../integration/marketplaceOperations';
 import { MarketplacePlatform, MarketplaceConnection } from '../../types';
 import { MarketplaceLogo, getPlatformMeta } from './MarketplaceLogo';
 import { SubNavHeader } from '../common/SubNavHeader';
@@ -7,7 +8,7 @@ import { ConnectStoreModal } from './ConnectStoreModal';
 import { DisconnectStoreModal } from './DisconnectStoreModal';
 import { KeyRound, ShieldCheck, CheckCircle2, AlertTriangle, RefreshCw, Plus, Trash2, Copy, Check, Store, Radio, Clock, Globe2, Activity, Lock, Sparkles, PowerOff, RotateCcw } from 'lucide-react';
 
-export const MarketplaceAuthPage: React.FC = () => {
+export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailability?: Partial<Record<MarketplacePlatform,boolean>>; authorizationResult?: OAuthResult|null}> = ({operational=false,oauthAvailability={},authorizationResult=null}) => {
   const {
     connections = [],
     marketplaceOrders = [],
@@ -29,6 +30,10 @@ export const MarketplaceAuthPage: React.FC = () => {
 
   // Modals state
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+  const [visibleResult,setVisibleResult]=useState<OAuthResult|null>(null);
+  React.useEffect(()=>{
+    if(operational && authorizationResult){setVisibleResult(authorizationResult);setIsConnectModalOpen(true);}
+  },[operational,authorizationResult]);
   const [connectModalMode, setConnectModalMode] = useState<'connect' | 'reauthorize'>('connect');
   const [selectedConnection, setSelectedConnection] = useState<MarketplaceConnection | null>(null);
 
@@ -39,6 +44,7 @@ export const MarketplaceAuthPage: React.FC = () => {
 
   // Open modal in "connect" mode
   const handleOpenConnect = (plat?: MarketplacePlatform) => {
+    setVisibleResult(null);
     setSelectedConnection(null);
     setConnectModalMode('connect');
     setIsConnectModalOpen(true);
@@ -46,6 +52,7 @@ export const MarketplaceAuthPage: React.FC = () => {
 
   // Open modal in "reauthorize" mode
   const handleOpenReauthorize = (conn: MarketplaceConnection) => {
+    setVisibleResult(null);
     setSelectedConnection(conn);
     setConnectModalMode('reauthorize');
     setIsConnectModalOpen(true);
@@ -75,11 +82,11 @@ export const MarketplaceAuthPage: React.FC = () => {
         hubSection="marketplace"
         currentPageTitle="Connect Store"
         tabs={[
-          { id: 'marketplace-auth', label: 'Connect Store', badge: `${totalConnected}/4 Active`, badgeVariant: 'success' },
-          { id: 'marketplace-mapping', label: 'Product & SKU Mapping', badge: unmappedCount > 0 ? `${unmappedCount} Unmapped` : 'All Mapped', badgeVariant: unmappedCount > 0 ? 'warning' : 'success' },
+          { id: 'marketplace-auth', label: 'Connect Store', badge: operational ? `${totalConnected} Connected` : `${totalConnected}/4 Active`, badgeVariant: 'success' },
+          { id: 'marketplace-mapping', label: 'Product & SKU Mapping', badge: operational ? undefined : unmappedCount > 0 ? `${unmappedCount} Unmapped` : 'All Mapped', badgeVariant: unmappedCount > 0 ? 'warning' : 'success' },
           { id: 'marketplace-oms', label: 'Orders (OMS)', badge: pendingOrdersCount > 0 ? `${pendingOrdersCount} Pending` : undefined, badgeVariant: 'warning' },
-          { id: 'marketplace-inventory', label: 'Inventory & WMS', badge: `${safeMpInv.length} SKUs`, badgeVariant: 'info' },
-          { id: 'marketplace-sync', label: 'Webhooks & Logs', badge: `${safeLogs.length}`, badgeVariant: 'default' },
+          { id: 'marketplace-inventory', label: 'Inventory & WMS', badge: operational ? undefined : `${safeMpInv.length} SKUs`, badgeVariant: 'info' },
+          { id: 'marketplace-sync', label: 'Webhooks & Logs', badge: operational ? undefined : `${safeLogs.length}`, badgeVariant: 'default' },
         ]}
       />
 
@@ -95,7 +102,7 @@ export const MarketplaceAuthPage: React.FC = () => {
             Marketplace Store Authorization
           </h1>
           <p className="text-sm text-neutral-300 leading-relaxed">
-            Connect and authorize your marketplace stores via official OAuth 2.0 seller portals. Enjoy automatic inventory broadcasting (ATP), real-time order ingestion, and multi-carrier AWB label generation without managing developer keys.
+            {operational ? 'Connect your stores through official seller authorization. Connecting a store does not automatically enable inventory or fulfillment writes.' : 'Connect and authorize your marketplace stores via official OAuth 2.0 seller portals. Enjoy automatic inventory broadcasting (ATP), real-time order ingestion, and multi-carrier AWB label generation without managing developer keys.'}
           </p>
         </div>
 
@@ -103,6 +110,7 @@ export const MarketplaceAuthPage: React.FC = () => {
           <button
             type="button"
             onClick={syncAllMarketplaces}
+            disabled={operational}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 text-xs font-semibold transition-colors cursor-pointer"
           >
             <RefreshCw className="w-4 h-4" />
@@ -133,7 +141,7 @@ export const MarketplaceAuthPage: React.FC = () => {
           </div>
           <div className="mt-3 flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>OAuth 2.0 Handshake Active</span>
+            <span>{operational ? (totalConnected ? 'Authorized stores available' : 'No authorized stores') : 'OAuth 2.0 Handshake Active'}</span>
           </div>
         </div>
 
@@ -143,12 +151,12 @@ export const MarketplaceAuthPage: React.FC = () => {
             <KeyRound className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">100%</span>
+            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{operational ? 'Encrypted' : '100%'}</span>
             <span className="text-xs text-neutral-400">Encrypted AES-256</span>
           </div>
           <div className="mt-3 flex items-center gap-1.5 text-[11px] text-neutral-500 font-medium">
             <Clock className="w-3.5 h-3.5" />
-            <span>Auto-refresh enabled via Laravel</span>
+            <span>{operational ? 'Credentials remain on the server' : 'Auto-refresh enabled via Laravel'}</span>
           </div>
         </div>
 
@@ -158,12 +166,12 @@ export const MarketplaceAuthPage: React.FC = () => {
             <Radio className="w-4 h-4 text-violet-500" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-neutral-900 dark:text-white">Active</span>
-            <span className="text-xs text-emerald-500 font-bold">200 OK (0.12s)</span>
+            <span className="text-2xl font-black text-neutral-900 dark:text-white">{operational ? 'Not enabled' : 'Active'}</span>
+            <span className="text-xs text-emerald-500 font-bold">{operational ? 'Pending integration' : '200 OK (0.12s)'}</span>
           </div>
           <div className="mt-3 flex items-center gap-1.5 text-[11px] text-neutral-500 font-medium">
             <Activity className="w-3.5 h-3.5 text-violet-400" />
-            <span>Listening for Order & Stock webhooks</span>
+            <span>{operational ? 'No webhook health result available' : 'Listening for Order & Stock webhooks'}</span>
           </div>
         </div>
 
@@ -173,11 +181,11 @@ export const MarketplaceAuthPage: React.FC = () => {
             <Globe2 className="w-4 h-4 text-cyan-500" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-neutral-900 dark:text-white">96.8%</span>
+            <span className="text-2xl font-black text-neutral-900 dark:text-white">{operational ? 'Unavailable' : '96.8%'}</span>
             <span className="text-xs text-neutral-400">Quota Remaining</span>
           </div>
           <div className="mt-3 flex items-center gap-1.5 text-[11px] text-neutral-500 font-medium">
-            <span>Rate-limit safe across all channels</span>
+            <span>{operational ? 'No platform quota report available' : 'Rate-limit safe across all channels'}</span>
           </div>
         </div>
       </div>
@@ -256,7 +264,7 @@ export const MarketplaceAuthPage: React.FC = () => {
 
                   {/* Scopes Chips */}
                   <div className="mt-4 flex flex-wrap gap-1.5">
-                    {(conn.authorizedScopesSummary || conn.scopes || [
+                    {(operational ? ['Official authorization'] : conn.authorizedScopesSummary || conn.scopes || [
                       'Catalog & Listings',
                       'Inventory ATP Sync',
                       'Orders & Fulfillments',
@@ -292,13 +300,13 @@ export const MarketplaceAuthPage: React.FC = () => {
                     <div>
                       <span className="text-[11px] text-neutral-500 font-medium">OAuth Token Validity</span>
                       <p className={`font-semibold mt-0.5 ${isConnected ? 'text-neutral-800 dark:text-neutral-200' : 'text-neutral-400 line-through'}`}>
-                        {isConnected ? `${daysLeft} days remaining` : 'Revoked / Paused'}
+                        {isConnected ? (Number.isFinite(daysLeft) ? `${daysLeft} days remaining` : 'Unavailable') : 'Revoked / Paused'}
                       </p>
                     </div>
                     <div>
                       <span className="text-[11px] text-neutral-500 font-medium">Last Sync Cycle</span>
                       <p className="font-semibold text-neutral-800 dark:text-neutral-200 mt-0.5">
-                        {new Date(conn.lastSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        {conn.lastSyncAt && Number.isFinite(Date.parse(conn.lastSyncAt)) ? new Date(conn.lastSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Unavailable'}
                       </p>
                     </div>
                   </div>
@@ -314,6 +322,7 @@ export const MarketplaceAuthPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => toggleConnectionSync(conn.id, 'autoSyncStock')}
+                          disabled={operational}
                           className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
                             conn.autoSyncStock ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-700'
                           }`}
@@ -334,6 +343,7 @@ export const MarketplaceAuthPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => toggleConnectionSync(conn.id, 'autoPullOrders')}
+                          disabled={operational}
                           className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
                             conn.autoPullOrders ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-700'
                           }`}
@@ -349,6 +359,7 @@ export const MarketplaceAuthPage: React.FC = () => {
                   )}
 
                   {/* Webhook Secret Quick Copy */}
+                  {!operational && (
                   <div className="flex items-center justify-between p-2.5 bg-neutral-100 dark:bg-neutral-800/60 rounded-xl font-mono text-[11px]">
                     <div className="flex items-center gap-2 truncate">
                       <Lock className="w-3.5 h-3.5 text-neutral-400" />
@@ -366,6 +377,7 @@ export const MarketplaceAuthPage: React.FC = () => {
                       {copiedKey === `${conn.shopName} Webhook Secret` ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                   </div>
+                  )}
                 </div>
 
                 {/* Footer Toolbar */}
@@ -384,6 +396,7 @@ export const MarketplaceAuthPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => refreshToken(conn.id)}
+                          disabled={operational}
                           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 transition-colors cursor-pointer"
                         >
                           <RefreshCw className="w-3.5 h-3.5 text-neutral-500" />
@@ -430,6 +443,7 @@ export const MarketplaceAuthPage: React.FC = () => {
       </div>
 
       {/* Developer Webhook & Backend Reference Card */}
+      {!operational && (
       <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -494,8 +508,12 @@ export const MarketplaceAuthPage: React.FC = () => {
         </div>
       </div>
 
+      )}
       {/* Connect & Re-authorize Store Modal */}
       <ConnectStoreModal
+        authorizationResult={visibleResult}
+        requestAuthorization={operational ? requestMarketplaceAuthorization : undefined}
+        oauthAvailability={operational ? oauthAvailability : undefined}
         isOpen={isConnectModalOpen}
         onClose={() => setIsConnectModalOpen(false)}
         mode={connectModalMode}
@@ -511,4 +529,3 @@ export const MarketplaceAuthPage: React.FC = () => {
     </div>
   );
 };
-

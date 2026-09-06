@@ -18,7 +18,7 @@ try {
     DB::connection('mysql')->statement("CREATE DATABASE `$schema`");
     $created = true;
     $process = new Process([PHP_BINARY, 'artisan', 'test', '--filter',
-        'MarketplaceImportTest|test_database_rejects_a_second_mapping_for_the_same_store_and_jw_variant|test_mapping_enforces_per_store_uniqueness_and_allows_cross_store_reuse_without_touching_stock|test_duplicate_and_older_order_snapshots_do_not_duplicate_or_regress'],
+        'MarketplaceCatalogSummaryTest|MarketplaceImportTest|test_database_rejects_a_second_mapping_for_the_same_store_and_jw_variant|test_mapping_enforces_per_store_uniqueness_and_allows_cross_store_reuse_without_touching_stock|test_duplicate_and_older_order_snapshots_do_not_duplicate_or_regress'],
         base_path(), ['APP_ENV'=>'testing', 'DB_CONNECTION'=>'mysql', 'DB_URL'=>'', 'DB_HOST'=>$connection['host'],
             'DB_PORT'=>(string) $connection['port'], 'DB_DATABASE'=>$schema, 'DB_USERNAME'=>$connection['username'],
             'DB_PASSWORD'=>$connection['password'], 'CACHE_STORE'=>'array', 'SESSION_DRIVER'=>'array']);

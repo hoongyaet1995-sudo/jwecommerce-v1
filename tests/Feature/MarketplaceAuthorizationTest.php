@@ -208,11 +208,11 @@ class MarketplaceAuthorizationTest extends TestCase
         $this->get('/admin/marketplace/oauth-acceptance')->assertNotFound();
     }
 
-    public function test_enabled_sandbox_callback_returns_to_acceptance_not_official_auth_page(): void
+    public function test_sandbox_callback_returns_to_approved_official_entry_even_with_legacy_acceptance_enabled(): void
     {
         $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>true]));
         config(['marketplace.oauth_acceptance_enabled'=>true]);
-        $this->get('/admin/marketplace/shopee/callback')->assertRedirect('/admin/marketplace/oauth-acceptance');
+        $this->get('/admin/marketplace/shopee/callback')->assertRedirect('/admin/marketplace/auth?connection=failed');
         $this->getJson('/admin/api/marketplace/oauth-result')->assertJsonPath('result.status','failed');
     }
 

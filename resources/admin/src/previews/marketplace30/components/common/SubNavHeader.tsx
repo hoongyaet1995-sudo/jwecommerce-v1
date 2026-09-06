@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAdmin } from '../../context/AdminContext';
+import { useAdmin } from '../../context/ContextBridge';
 import { NavSection } from '../../types';
 import { ChevronLeft, ChevronRight, LayoutGrid } from 'lucide-react';
 
@@ -97,4 +97,3 @@ export const SubNavHeader: React.FC<SubNavHeaderProps> = ({
     </div>
   );
 };
-

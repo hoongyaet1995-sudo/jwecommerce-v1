@@ -144,7 +144,7 @@ class MarketplaceOAuthController extends Controller
         // Keep it briefly across reloads/React effect retries; bind it to the initiating admin.
         $request->session()->put('marketplace.oauth_result', ['status'=>$result, 'storeId'=>$storeId,
             'actorId'=>$request->user()->id, 'expiresAt'=>now()->addMinutes(10)->timestamp]);
-        return redirect($this->acceptanceEnabled() ? '/admin/marketplace/oauth-acceptance' : '/admin/marketplace/auth?connection='.$result)
+        return redirect('/admin/marketplace/auth?connection='.$result)
             ->header('Cache-Control', 'no-store')->header('Referrer-Policy', 'no-referrer');
     }
 }
