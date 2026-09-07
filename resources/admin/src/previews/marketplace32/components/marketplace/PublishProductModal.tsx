@@ -4,6 +4,7 @@ import { Product, MarketplacePlatform, PublishListingOptions, PublishAsyncStatus
 import { MarketplaceLogo } from './MarketplaceLogo';
 import {useMarketplacePublishingTask} from '../../../../marketplace/useMarketplacePublishingTask';
 import {useMarketplaceListingCategories} from '../../../../marketplace/useMarketplaceListingCategories';
+import {useMarketplaceListingBrands} from '../../../../marketplace/useMarketplaceListingBrands';
 import {
   X,
   Search,
@@ -73,7 +74,11 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
     && connections.some(c => c.id === selectedConnectionId && c.platform === 'shopee' && c.status === 'connected')
     ? selectedConnectionId : null);
   useEffect(() => {if (readOnlyMetadata) setSelectedCategory('');},[readOnlyMetadata,selectedConnectionId]);
-  const [brandName, setBrandName] = useState('JW Audio');
+  const [brandName, setBrandName] = useState(readOnlyMetadata ? '' : 'JW Audio');
+  const brandMetadata = useMarketplaceListingBrands(readOnlyMetadata && isOpen && !taskId ? selectedConnectionId : null,
+    readOnlyMetadata && categoryMetadata.categories.some(category=>String(category.category_id)===selectedCategory && !category.has_children) ? selectedCategory : null);
+  const brandLabel=(brand:{original_brand_name:string;brand_id:number})=>`${brand.original_brand_name} (#${brand.brand_id})`;
+  useEffect(()=>{if(readOnlyMetadata)setBrandName('');},[readOnlyMetadata,selectedConnectionId,selectedCategory]);
   const [packageWeightKg, setPackageWeightKg] = useState<number>(0.45);
   const [lengthCm, setLengthCm] = useState<number>(18);
   const [widthCm, setWidthCm] = useState<number>(14);
@@ -159,13 +164,15 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
       errors.push('Publishing is not enabled in this metadata review.');
       if (categoryMetadata.loading) errors.push('Loading store categories...');
       if (categoryMetadata.error) errors.push(categoryMetadata.error);
+      if (brandMetadata.error) errors.push(brandMetadata.error);
+      if (brandName && !brandMetadata.brands.some(brand=>brandLabel(brand)===brandName)) errors.push('Choose a verified platform brand from the available choices.');
     }
     if (!brandName.trim()) errors.push('Brand name is required by marketplace policies.');
     if (!packageWeightKg || packageWeightKg <= 0) errors.push('Package weight (kg) is mandatory for courier fee calculation.');
     if (!lengthCm || !widthCm || !heightCm) errors.push('Package dimensions (L x W x H cm) are mandatory for volumetric shipping.');
     if (!selectedCategory) errors.push('Marketplace category is required.');
     return errors;
-  }, [brandName, packageWeightKg, lengthCm, widthCm, heightCm, selectedCategory,readOnlyMetadata,categoryMetadata.loading,categoryMetadata.error]);
+  }, [brandName, packageWeightKg, lengthCm, widthCm, heightCm, selectedCategory,readOnlyMetadata,categoryMetadata.loading,categoryMetadata.error,brandMetadata.error,brandMetadata.brands]);
 
   const isValidForPublish = validationErrors.length === 0 && !!targetProduct && !!targetConnection;
 
@@ -731,12 +738,21 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                       <input
                         type="text"
                         value={brandName}
+                        list={readOnlyMetadata ? 'marketplace-publish-brand-options' : undefined}
+                        disabled={readOnlyMetadata && (!selectedCategory || brandMetadata.loading)}
                         onChange={e => setBrandName(e.target.value)}
                         className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-indigo-500"
                         placeholder="e.g. JW Audio or No Brand"
                       />
+                      {readOnlyMetadata && <datalist id="marketplace-publish-brand-options">
+                        {brandMetadata.brands.map(brand=><option key={brand.brand_id} value={brandLabel(brand)}>{brand.original_brand_name}</option>)}
+                      </datalist>}
                       <div className="text-[10px] text-slate-400">
-                        Use "No Brand / OEM" if you don't possess a brand authorization letter.
+                        {readOnlyMetadata ? <>
+                          {brandMetadata.loading ? 'Loading platform brands...' : 'Choose the platform brand and ID; do not substitute an unverified brand name.'}
+                          {brandMetadata.hasMore && <button type="button" onClick={brandMetadata.loadMore}>Load more brands</button>}
+                          {brandMetadata.error && <button type="button" onClick={brandMetadata.retry}>Retry brands</button>}
+                        </> : <>Use "No Brand / OEM" if you don't possess a brand authorization letter.</>}
                       </div>
                     </div>
 

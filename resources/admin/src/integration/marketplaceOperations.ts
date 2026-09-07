@@ -72,10 +72,18 @@ export function officialShopeeAuthorizationUrl(value: string): string {
     || url.pathname !== '/api/v2/shop/auth_partner') throw new Error('Unexpected authorization destination.');
   return url.href;
 }
+export function officialLazadaAuthorizationUrl(value: string): string {
+  const url = new URL(value);
+  if (url.protocol !== 'https:' || url.username || url.password || url.port || url.hash
+    || url.hostname !== 'auth.lazada.com' || url.pathname !== '/oauth/authorize') {
+    throw new Error('Unexpected authorization destination.');
+  }
+  return url.href;
+}
 export async function requestMarketplaceAuthorization(platform: MarketplacePlatform, reconnectId?: string): Promise<void> {
-  if (platform !== 'shopee') throw new Error('This platform is not available yet.');
-  const {url} = await marketplaceOperations.authorize(reconnectId);
-  window.location.assign(officialShopeeAuthorizationUrl(url));
+  if (platform !== 'shopee' && platform !== 'lazada') throw new Error('This platform is not available yet.');
+  const {url} = await marketplaceOperations.authorize(reconnectId, platform);
+  window.location.assign(platform === 'lazada' ? officialLazadaAuthorizationUrl(url) : officialShopeeAuthorizationUrl(url));
 }
 export const marketplaceOperations = {
   attributeValues: (storeId:string,attributeId:number,keyword='',cursor=0) => {
@@ -113,7 +121,7 @@ export const marketplaceOperations = {
     : marketplaceRequest<ProductImportResult>(`/listings/${idPath(listingId)}/import-product`, 'POST', review),
   retryOrders: (id: string) => marketplaceRequest<{runId: number}>(`/order-runs/${idPath(id)}/retry`, 'POST'),
   connections: () => marketplaceRequest<{stores: StoreConnection[]; capabilities: Record<MarketplacePlatform, ProviderCapabilities>; localCapabilities?:{importProducts:boolean}}>('/connections'),
-  authorize: (reconnectId?: string) => marketplaceRequest<{url: string}>('/shopee/authorize', 'POST', reconnectId ? {reconnectStoreId: Number(reconnectId)} : {}),
+  authorize: (reconnectId?: string, platform: 'shopee' | 'lazada' = 'shopee') => marketplaceRequest<{url: string}>(`/${platform}/authorize`, 'POST', reconnectId ? {reconnectStoreId: Number(reconnectId)} : {}),
   disconnect: (id: string) => marketplaceRequest<{status: string; providerRevocationConfirmed: boolean}>(`/stores/${idPath(id)}/disconnect`, 'POST'),
   catalog: (filters: Filters = {}) => marketplaceRequest<Page<CatalogVariant>>(`/catalog?${query(filters)}`),
   fetchCatalog: (id: string) => marketplaceRequest<{runId: number}>(`/stores/${idPath(id)}/catalog-fetch`, 'POST'),

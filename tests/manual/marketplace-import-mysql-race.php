@@ -12,6 +12,7 @@ use App\Services\Marketplace\MarketplaceImportService;
 if (!app()->environment('local') || !in_array(config('database.connections.mysql.host'), ['localhost', '127.0.0.1'], true)) exit(2);
 $worker = ($argv[1] ?? '') === 'worker';
 $newParent = ($worker ? ($argv[3] ?? '') : ($argv[1] ?? '')) === 'new-parent';
+$mixed = ($worker ? ($argv[3] ?? '') : ($argv[1] ?? '')) === 'mixed';
 $schema = $worker ? ($argv[2] ?? '') : 'jw_import_race_'.bin2hex(random_bytes(6));
 if (!preg_match('/^jw_import_race_[a-f0-9]{12}$/D', $schema) || $schema === config('database.connections.mysql.database')) exit(2);
 $connection = config('database.connections.mysql');
@@ -38,7 +39,13 @@ try {
     if ($worker) {
         echo "ready\n"; flush();
         $service = app(MarketplaceImportService::class);
-        $id = $newParent ? $service->importVariantAsProduct(1, 1) : $service->importVariant(1, 1, 1);
+        if ($mixed) {
+            $result=app(\App\Services\Marketplace\MarketplaceReviewedImportService::class)->import(1,'fixture',1,[],[1=>['productId'=>1,'variantId'=>1]]);
+            if ($result['createdVariants']!==1 || $result['linkedVariants']!==1) throw new RuntimeException('Incorrect receipt counts');
+            $id=$result['productId'];
+        } else {
+            $id = $newParent ? $service->importVariantAsProduct(1, 1) : $service->importVariant(1, 1, 1);
+        }
         echo "variant:$id\n";
         exit(0);
     }
@@ -47,10 +54,15 @@ try {
     DB::table('marketplace_stores')->insert(['id'=>1, 'platform'=>'shopee', 'shop_name'=>'Fixture store', 'region'=>'MY', 'environment'=>'sandbox']);
     DB::table('marketplace_listing_variants')->insert(['id'=>1, 'store_id'=>1, 'external_product_id'=>'fixture', 'external_variant_id'=>'one',
         'observed_data'=>json_encode(['productTitle'=>'Source product', 'title'=>'Selected', 'sku'=>'IMPORT-RACE', 'currency'=>'MYR', 'price'=>'12.34', 'stock'=>500]), 'fetched_at'=>now()]);
+    if ($mixed) {
+        DB::table('product_variants')->insert(['id'=>1,'product_id'=>1,'sku'=>'IMPORT-RACE','title'=>'Existing','price'=>999,'stock'=>39,'enabled'=>true]);
+        DB::table('marketplace_listing_variants')->insert(['id'=>2,'store_id'=>1,'external_product_id'=>'fixture','external_variant_id'=>'two',
+            'observed_data'=>json_encode(['productTitle'=>'Source product','title'=>'New','sku'=>'IMPORT-RACE-NEW','currency'=>'MYR','price'=>'12.34','stock'=>500]),'fetched_at'=>now()]);
+    }
     DB::beginTransaction();
     DB::table('marketplace_stores')->where('id', 1)->lockForUpdate()->first();
     for ($i=0; $i<2; $i++) {
-        $process = new Process([PHP_BINARY, __FILE__, 'worker', $schema, $newParent ? 'new-parent' : 'existing-parent'], base_path());
+        $process = new Process([PHP_BINARY, __FILE__, 'worker', $schema, $mixed ? 'mixed' : ($newParent ? 'new-parent' : 'existing-parent')], base_path());
         $process->setTimeout(30);
         $process->start();
         $processes[] = $process;
@@ -71,15 +83,21 @@ try {
         $ids[] = (int) $match[1];
     }
     if ($ids[0] !== $ids[1]) throw new RuntimeException('Duplicate identity');
-    foreach (['products', 'product_variants', 'marketplace_variant_imports', 'marketplace_variant_mappings', 'marketplace_mapping_events'] as $table) {
-        if (DB::table($table)->count() !== 1) throw new RuntimeException('Duplicate record');
+    $counts=$mixed ? ['products'=>2,'product_variants'=>2,'marketplace_variant_imports'=>1,'marketplace_variant_mappings'=>2,'marketplace_mapping_events'=>2,'marketplace_reviewed_imports'=>1]
+        : array_fill_keys(['products','product_variants','marketplace_variant_imports','marketplace_variant_mappings','marketplace_mapping_events'],1);
+    foreach ($counts as $table=>$expected) {
+        if (DB::table($table)->count() !== $expected) throw new RuntimeException('Duplicate record in '.$table);
     }
-    if ((int) DB::table('product_variants')->sum('stock') !== 0) throw new RuntimeException('Stock copied');
+    if ((int) DB::table('product_variants')->sum('stock') !== ($mixed ? 39 : 0)) throw new RuntimeException('Stock changed');
+    if ($mixed && ((int)DB::table('product_variants')->where('id',1)->value('stock')!==39
+        || (int)DB::table('product_variants')->where('id',1)->value('price')!==999
+        || DB::table('products')->where('id',$ids[0])->value('status')!=='draft')) throw new RuntimeException('Existing inventory or new draft changed');
     if ($newParent && (DB::table('products')->value('status') !== 'draft' || (int) DB::table('products')->value('base_price') !== 1234)) {
         throw new RuntimeException('Incorrect imported draft');
     }
-    echo 'Mode: '.($newParent ? 'new-parent' : 'existing-parent')."\n";
-    echo "PASS: two concurrent imports return the same variant; one variant, identity, mapping and audit event; zero stock.\n";
+    echo 'Mode: '.($mixed ? 'mixed' : ($newParent ? 'new-parent' : 'existing-parent'))."\n";
+    echo $mixed ? "PASS: both workers returned one reviewed draft; one new zero-stock variant, one existing link, one receipt; existing stock and price unchanged.\n"
+        : "PASS: two concurrent imports return the same variant; one variant, identity, mapping and audit event; zero stock.\n";
 } catch (Throwable $e) {
     fwrite(STDERR, 'FAIL: '.get_class($e)." (private connection details suppressed)\n");
     if (get_class($e) === RuntimeException::class) fwrite(STDERR, $e->getMessage()."\n");

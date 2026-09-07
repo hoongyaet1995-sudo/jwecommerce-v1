@@ -294,6 +294,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         ]])->header('Cache-Control', 'no-store');
     });
     Route::middleware(\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':read')->group(function () {
+    Route::get('/api/marketplace/inventory', [\App\Http\Controllers\Admin\MarketplaceInventoryController::class, 'index']);
+    Route::get('/api/marketplace/inventory/exceptions', [\App\Http\Controllers\Admin\MarketplaceInventoryController::class, 'exceptions']);
     Route::get('/api/marketplace/publishing-tasks/{task}', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'show'])->whereNumber('task');
     Route::get('/api/marketplace/catalog', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'index']);
     Route::get('/api/marketplace/stores/{store}/listing-attribute-values', [\App\Http\Controllers\Admin\MarketplaceListingMetadataController::class, 'attributeValues'])->whereNumber('store')->middleware('throttle:10,1');
@@ -323,6 +325,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/marketplace/listings/{listing}/import-variant', [\App\Http\Controllers\Admin\MarketplaceImportController::class, 'variant'])->whereNumber('listing')
         ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':import', 'throttle:10,1']);
     Route::post('/api/marketplace/shopee/authorize', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'start'])->middleware('throttle:10,1');
+    Route::post('/api/marketplace/lazada/authorize', [\App\Http\Controllers\Admin\LazadaOAuthController::class, 'start'])->middleware('throttle:10,1');
+    Route::get('/marketplace/oauth/lazada/callback', [\App\Http\Controllers\Admin\LazadaOAuthController::class, 'callback'])->middleware('throttle:20,1');
     Route::post('/api/marketplace/stores/{store}/disconnect', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'disconnect'])->whereNumber('store');
     Route::get('/marketplace/shopee/callback', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'callback'])->middleware('throttle:20,1');
     Route::post('/api/marketplace/stores', [\App\Http\Controllers\Admin\MarketplaceApiController::class, 'save']);

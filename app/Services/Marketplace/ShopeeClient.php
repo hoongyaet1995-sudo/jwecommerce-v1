@@ -287,7 +287,7 @@ class ShopeeClient
         }
         $payload = $this->readShop('/api/v2/order/get_order_detail', $accessToken, $shopId, [
             'order_sn_list'=>implode(',', $orderNumbers),
-            'response_optional_fields'=>'item_list,total_amount,payment_method,recipient_address,shipping_carrier,package_list',
+            'response_optional_fields'=>'item_list,total_amount,payment_method,recipient_address,shipping_carrier,package_list,fulfillment_flag',
         ]);
         $orders = $payload['response']['order_list'] ?? null;
         if (!is_array($orders) || array_diff($orderNumbers, array_column($orders, 'order_sn'))) {

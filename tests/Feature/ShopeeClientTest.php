@@ -361,6 +361,10 @@ class ShopeeClientTest extends TestCase
             ->push(['response'=>['order_list'=>[]]])]);
         $client = app(ShopeeClient::class);
         $this->assertSame('READY_TO_SHIP', $client->orderDetails('access', '456', ['ORDER1'])[0]['order_status']);
+        Http::assertSent(function ($request) {
+            parse_str(parse_url($request->url(), PHP_URL_QUERY), $query);
+            return in_array('fulfillment_flag', explode(',', $query['response_optional_fields'] ?? ''), true);
+        });
         $this->expectExceptionMessage('Shopee did not return every requested order.');
         $client->orderDetails('access', '456', ['ORDER1']);
     }

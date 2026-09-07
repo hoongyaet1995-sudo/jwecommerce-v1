@@ -55,6 +55,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
   const [isImporting, setIsImporting] = useState(false);
   const submitted = useRef(new Set<string>());
   const submitting = useRef(false);
+  const assignedSkus = useRef(new Map<string,string>());
 
   // Analyze all variants across productsToImport
   const analysisList = useMemo(() => {
@@ -91,9 +92,11 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
         const defaultAction: SkuAction = hasConflict ? 'link_existing' : 'create_as_is';
         const currentAction = skuActions[variant.id] || defaultAction;
 
-        const fallbackSku = isMissingSku 
-          ? `JW-${prod.platform.toUpperCase().substring(0, 2)}-${Math.floor(1000 + Math.random() * 9000)}`
-          : rawSku;
+        const sourceIdentity = JSON.stringify([prod.connectionId,prod.id,variant.id]);
+        if (isMissingSku && !assignedSkus.current.has(sourceIdentity)) {
+          assignedSkus.current.set(sourceIdentity,`JW-${prod.platform.toUpperCase().substring(0, 2)}-${Math.floor(1000 + Math.random() * 9000)}`);
+        }
+        const fallbackSku = isMissingSku ? assignedSkus.current.get(sourceIdentity)! : rawSku;
 
         list.push({
           variant,
@@ -116,6 +119,8 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
   const missingSkuCount = analysisList.filter(a => a.isMissingSku).length;
   const linkExistingCount = analysisList.filter(a => a.selectedAction === 'link_existing' && a.hasConflict).length;
   const newVariantsCount = analysisList.filter(a => a.selectedAction !== 'link_existing').length;
+  const draftProductIds = new Set(analysisList.filter(a => a.selectedAction !== 'link_existing').map(a => a.product.id));
+  const newDraftCount = draftProductIds.size;
 
   const handleActionChange = (variantId: string, action: SkuAction) => {
     setSkuActions(prev => ({ ...prev, [variantId]: action }));
@@ -315,7 +320,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50">
                   <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Products to Import</span>
-                  <span className="text-lg font-bold text-slate-900 dark:text-white mt-0.5 block">{productsToImport.length} Drafts</span>
+                  <span className="text-lg font-bold text-slate-900 dark:text-white mt-0.5 block">{newDraftCount} Drafts</span>
                   <span className="text-[10px] text-slate-500 dark:text-slate-400">No silent merges</span>
                 </div>
 
@@ -383,7 +388,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                               <span>•</span>
                               <span>Category: {prod.categoryName}</span>
                               <span>•</span>
-                              <span className="text-emerald-700 dark:text-emerald-400 font-medium">Will create: New JW Draft</span>
+                              <span className="text-emerald-700 dark:text-emerald-400 font-medium">{draftProductIds.has(prod.id) ? 'Will create: New JW Draft' : 'Will link: Existing JW SKUs'}</span>
                             </div>
                           </div>
                         </div>
@@ -391,7 +396,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                         <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
                           <span className="px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 text-xs font-semibold flex items-center gap-1">
                             <EyeOff className="w-3.5 h-3.5" />
-                            Draft on Import
+                            {draftProductIds.has(prod.id) ? 'Draft on Import' : 'Link Existing'}
                           </span>
                         </div>
                       </div>
@@ -563,7 +568,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
               <Info className="w-4 h-4 text-slate-400 shrink-0" />
               <span>
-                Confirms creation of {productsToImport.length} JW draft item(s). Does not publish to live storefront.
+                Confirms {newDraftCount} new JW draft item(s) and {linkExistingCount} existing SKU link(s). Does not publish to live storefront.
               </span>
             </div>
 
@@ -583,7 +588,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                 className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
               >
                 <DownloadCloud className="w-4 h-4" />
-                Confirm Import as JW Drafts
+                {newDraftCount ? 'Confirm Import as JW Drafts' : 'Confirm SKU Links'}
               </button>
             </div>
           </div>

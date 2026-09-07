@@ -15,6 +15,43 @@ class CheckoutCommerceRulesTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_checkout_cannot_sell_units_held_by_a_marketplace_allocation(): void
+    {
+        $variant = $this->variant();
+        $this->configureStandardShipping();
+        $this->configureBankTransfer();
+        $service = app(\App\Services\Inventory\StockAllocationService::class);
+        $allocation = $service->reserve('marketplace_order', 99, 'line-1', $variant->id, 9);
+
+        $this->withSession(['cart'=>[$variant->id=>2]])
+            ->post('/checkout', $this->checkoutData('bank_transfer'));
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertEquals(1, $variant->fresh()->stock);
+
+        $service->release($allocation);
+        $this->withSession(['cart'=>[$variant->id=>2]])
+            ->post('/checkout', $this->checkoutData('bank_transfer'))
+            ->assertRedirect('/order/success');
+        $this->assertDatabaseCount('orders', 1);
+        $this->assertEquals(8, $variant->fresh()->stock);
+    }
+
+    public function test_self_operated_cancellation_does_not_release_marketplace_reserved_units(): void
+    {
+        $variant = $this->variant();
+        $this->configureStandardShipping();
+        $this->configureBankTransfer();
+        $allocation = app(\App\Services\Inventory\StockAllocationService::class)
+            ->reserve('marketplace_order', 99, 'line-1', $variant->id, 3);
+        $this->withSession(['cart'=>[$variant->id=>2]])
+            ->post('/checkout', $this->checkoutData('bank_transfer'))
+            ->assertRedirect('/order/success');
+        $this->assertEquals(5, $variant->fresh()->stock);
+        app(\App\Services\CheckoutService::class)->transition(\App\Models\Order::query()->sole(), 'cancelled');
+        $this->assertEquals(7, $variant->fresh()->stock);
+        $this->assertDatabaseHas('stock_allocations', ['id'=>$allocation, 'status'=>'reserved']);
+    }
+
     public function test_checkout_snapshots_coupon_usage_shipping_rate_and_simulated_payment(): void
     {
         $variant = $this->variant();

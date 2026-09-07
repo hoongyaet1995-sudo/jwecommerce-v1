@@ -6,6 +6,40 @@ import {ImportProductReviewModal} from './components/marketplace/ImportProductRe
 import {JourneyProvider,type MarketplaceJourneyContext} from './context/AdminContext';
 import {INITIAL_MARKETPLACE_STORE_PRODUCTS} from './fixtures';
 
+it('keeps an auto-assigned missing SKU stable when catalog props refresh during review',async()=>{
+ vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+ const random=vi.spyOn(Math,'random').mockReturnValueOnce(0.1).mockReturnValue(0.9);
+ const external={...INITIAL_MARKETPLACE_STORE_PRODUCTS[0],variants:[{...INITIAL_MARKETPLACE_STORE_PRODUCTS[0].variants[0],channelSellerSku:''}]};
+ const context:MarketplaceJourneyContext={products:[],categories:[],connections:[],marketplaceStoreProducts:[],
+  importStoreProductToMaster:vi.fn(),addToast:vi.fn(),setActiveSection:vi.fn(),publishMasterProductToStore:vi.fn(),mapStoreVariantToJwSku:vi.fn(),unmapStoreVariant:vi.fn()};
+ const container=document.createElement('div');const root=createRoot(container);
+ const render=(value:MarketplaceJourneyContext)=><JourneyProvider value={value}><ImportProductReviewModal isOpen onClose={vi.fn()} productsToImport={[external]}/></JourneyProvider>;
+ try {
+  await act(async()=>root.render(render(context)));
+  const reviewed=container.querySelector<HTMLInputElement>('input[type="text"]')!.value;
+  expect(reviewed).not.toBe('');
+  await act(async()=>root.render(render({...context,products:[]})));
+  expect(container.querySelector<HTMLInputElement>('input[type="text"]')!.value).toBe(reviewed);
+ } finally {await act(async()=>root.unmount());random.mockRestore();vi.unstubAllGlobals();}
+});
+
+it('reviews an existing-SKU-only operation as links rather than draft creation',async()=>{
+ vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+ const external={...INITIAL_MARKETPLACE_STORE_PRODUCTS[0],variants:[{...INITIAL_MARKETPLACE_STORE_PRODUCTS[0].variants[0],channelSellerSku:'EXISTING'}]};
+ const context={products:[{id:'9',title:'Existing product',variants:[{id:'90',sku:'EXISTING',title:'Existing variant',price:20,inventoryQuantity:39}]}],
+  categories:[],connections:[],marketplaceStoreProducts:[],importStoreProductToMaster:vi.fn(),addToast:vi.fn(),setActiveSection:vi.fn(),
+  publishMasterProductToStore:vi.fn(),mapStoreVariantToJwSku:vi.fn(),unmapStoreVariant:vi.fn()} as MarketplaceJourneyContext;
+ const container=document.createElement('div');const root=createRoot(container);
+ try {
+  await act(async()=>root.render(<JourneyProvider value={context}><ImportProductReviewModal isOpen onClose={vi.fn()} productsToImport={[external]}/></JourneyProvider>));
+  expect(container.textContent).toContain('0 Drafts');
+  expect(container.textContent).toContain('Will link: Existing JW SKUs');
+  expect(container.textContent).not.toContain('Will create: New JW Draft');
+  expect(container.textContent).toContain('0 new JW draft item(s) and 1 existing SKU link(s)');
+  expect(container.textContent).toContain('Confirm SKU Links');
+ } finally {await act(async()=>root.unmount());vi.unstubAllGlobals();}
+});
+
 it('does not claim batch completion on failure and retries only unfinished products',async()=>{
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
   const submit=vi.fn().mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('Conflict')).mockResolvedValueOnce(undefined);

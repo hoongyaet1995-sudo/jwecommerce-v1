@@ -265,12 +265,12 @@ export const MarketplaceOMSPage: React.FC<{operational?:boolean;serverData?:OmsS
 
           <button
             disabled={operational&&!serverData?.canFetch}
-            title={operational ? 'Fetch the last 7 days for one connected store' : undefined}
+            title={operational ? 'Fetch the last 30 days for one connected store' : undefined}
             onClick={operational ? serverData?.onFetch : handleExportCSV}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-semibold transition-colors cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
-            {operational ? 'Fetch Orders (7 days)' : 'Export CSV'}
+            {operational ? 'Fetch Orders (30 days)' : 'Export CSV'}
           </button>
         </div>
       </div>

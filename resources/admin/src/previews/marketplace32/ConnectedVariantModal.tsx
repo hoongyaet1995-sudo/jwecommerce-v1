@@ -7,6 +7,7 @@ import type {MarketplaceStoreProduct, Product, Category} from './types';
 
 interface Props {
   isOpen: boolean;
+  startWithImport?: boolean;
   canImport: boolean;
   storeProduct: MarketplaceStoreProduct;
   variantId: string;
@@ -53,6 +54,6 @@ export function ConnectedVariantModal(props: Props) {
       refresh();
     },
   };
-  return <JourneyProvider value={context}><ProductMappingModal isOpen={props.isOpen}
+  return <JourneyProvider value={context}><ProductMappingModal isOpen={props.isOpen} startWithImport={props.canImport && props.startWithImport}
     onClose={props.onClose} storeProduct={props.storeProduct} storeVariant={variant}/></JourneyProvider>;
 }

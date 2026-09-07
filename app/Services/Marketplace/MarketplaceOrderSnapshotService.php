@@ -8,6 +8,8 @@ use RuntimeException;
 
 class MarketplaceOrderSnapshotService
 {
+    public function __construct(private MarketplaceOrderInventoryService $inventory) {}
+
     public function saveShopee(int $storeId, #[\SensitiveParameter] array $order): int
     {
         if (!is_string($order['order_sn'] ?? null) || $order['order_sn'] === '' || strlen($order['order_sn']) > 100
@@ -24,6 +26,7 @@ class MarketplaceOrderSnapshotService
             $key = ['store_id'=>$storeId, 'external_order_id'=>$order['order_sn']];
             $existing = DB::table('marketplace_orders')->where($key)->first();
             if ($existing && $existing->platform_updated_at >= $order['update_time']) {
+                $this->inventory->process((int) $existing->id);
                 return $existing->id;
             }
             $values = ['platform_status'=>$order['order_status'], 'platform_updated_at'=>$order['update_time'],
@@ -32,10 +35,13 @@ class MarketplaceOrderSnapshotService
                 'fetched_at'=>now(), 'updated_at'=>now()];
             if ($existing) {
                 DB::table('marketplace_orders')->where('id', $existing->id)->update($values);
+                $this->inventory->process((int) $existing->id);
                 return $existing->id;
             }
 
-            return DB::table('marketplace_orders')->insertGetId($key + $values + ['created_at'=>now()]);
+            $id = DB::table('marketplace_orders')->insertGetId($key + $values + ['created_at'=>now()]);
+            $this->inventory->process($id);
+            return $id;
         });
     }
 }

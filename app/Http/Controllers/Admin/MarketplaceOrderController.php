@@ -32,7 +32,7 @@ class MarketplaceOrderController extends Controller
     public function fetch(Request $request, int $store, \App\Services\Marketplace\ShopeeClient $client)
     {
         $data = $request->validate(['from'=>'required|integer|min:0', 'to'=>'required|integer|gt:from']);
-        abort_if($data['to'] - $data['from'] > 14 * 86400 || $data['to'] > now()->timestamp, 422, 'Choose a past interval of at most 14 days.');
+        abort_if($data['to'] - $data['from'] > 30 * 86400 || $data['to'] > now()->timestamp, 422, 'Choose a past interval of at most 30 days.');
         abort_unless($client->isConfigured(), 409, 'Shopee is not configured.');
         $id = DB::transaction(function () use ($store, $data) {
             $row = DB::table('marketplace_stores')->where('id', $store)->lockForUpdate()->first();
@@ -42,8 +42,11 @@ class MarketplaceOrderController extends Controller
             $active = DB::table('marketplace_order_runs')->where('store_id', $store)->whereIn('status', ['queued', 'running'])->first();
             if ($active) return $active->id;
             $id = DB::table('marketplace_order_runs')->insertGetId(['store_id'=>$store, 'status'=>'queued',
-                'time_from'=>$data['from'], 'time_to'=>$data['to'], 'created_at'=>now(), 'updated_at'=>now()]);
-            \App\Jobs\PullShopeeOrders::dispatch($id)->afterCommit();
+                'time_from'=>$data['from'], 'time_to'=>min($data['to'], $data['from'] + 14 * 86400),
+                'requested_time_from'=>$data['from'], 'requested_time_to'=>$data['to'],
+                'created_at'=>now(), 'updated_at'=>now()]);
+            $this->assertAtomicQueue();
+            \App\Jobs\PullShopeeOrders::dispatch($id)->beforeCommit();
             return $id;
         });
 
@@ -74,10 +77,20 @@ class MarketplaceOrderController extends Controller
             DB::table('marketplace_order_runs')->where('id', $run)->update([
                 'status'=>'queued', 'error_code'=>null, 'finished_at'=>null, 'updated_at'=>now(),
             ]);
-            \App\Jobs\PullShopeeOrders::dispatch($run, $row->pages_completed)->afterCommit();
+            $this->assertAtomicQueue();
+            \App\Jobs\PullShopeeOrders::dispatch($run, $row->pages_completed)->beforeCommit();
         });
 
         return response()->json(['runId'=>$run], 202);
+    }
+
+    private function assertAtomicQueue(): void
+    {
+        $queue = config('queue.connections.marketplace');
+        if (($queue['driver'] ?? null) !== 'database'
+            || ($queue['connection'] ?? config('database.default')) !== DB::connection()->getName()) {
+            throw new \RuntimeException('Order scheduling requires the application database queue.');
+        }
     }
 
     public function index(Request $request)

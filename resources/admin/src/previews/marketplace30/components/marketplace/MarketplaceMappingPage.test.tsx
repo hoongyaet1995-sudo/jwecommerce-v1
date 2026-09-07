@@ -46,5 +46,12 @@ it('keeps a server page visible on page two without slicing it a second time', a
   expect(publishReview.title).toContain('read-only');
   await act(async()=>publishReview.click());
   expect(reviewPublishing).toHaveBeenCalledWith(undefined);
+  await act(async()=>root.render(<PreviewContext.Provider value={context as unknown as React.ContextType<typeof PreviewContext>}>
+    <MarketplaceMappingPage renderVariantModal={previewModal} serverPage={{total:320,summary:{products:320,variants:640,mapped:320,unmapped:320},loading:false,onQueryChange:query,canImport:true}}/>
+  </PreviewContext.Provider>));
+  const importVariant=container.querySelector<HTMLButtonElement>('#btn-import-spec-1')!;
+  expect(importVariant.disabled).toBe(false);
+  await act(async()=>importVariant.click());
+  expect(previewModal).toHaveBeenLastCalledWith(expect.objectContaining({intent:'import',storeVariant:expect.objectContaining({id:'1'})}),expect.any(Function));
   await act(async()=>root.unmount()); vi.unstubAllGlobals();
 });

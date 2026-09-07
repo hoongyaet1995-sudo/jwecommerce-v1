@@ -6,6 +6,26 @@ vi.mock('../context/AdminContext',()=>({useAdmin:()=>({})}));
 import {marketplaceOperations} from '../integration/marketplaceOperations';
 import {OperationalOrders} from './OperationalOrders';
 afterEach(()=>{vi.restoreAllMocks();vi.unstubAllGlobals();});
+it('fetches thirty days only after an eligible store is selected',async()=>{
+ vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+ vi.spyOn(Date,'now').mockReturnValue(1800000000000);
+ vi.spyOn(marketplaceOperations,'connections').mockResolvedValue({stores:[{id:'7',platform:'shopee',shopName:'Selected store',status:'connected'} as any],capabilities:{shopee:{orders:true}} as any});
+ vi.spyOn(marketplaceOperations,'orders').mockResolvedValue({data:[],total:0,current_page:1,last_page:1,per_page:15});
+ vi.spyOn(marketplaceOperations,'orderSummary').mockResolvedValue({total:0,statuses:{}});
+ const fetch=vi.spyOn(marketplaceOperations,'fetchOrders').mockResolvedValue({runId:5});
+ vi.spyOn(marketplaceOperations,'orderRun').mockResolvedValue({id:5,status:'succeeded',pages_completed:3,orders_processed:0} as any);
+ const container=document.createElement('div');const root=createRoot(container);
+ try{
+  await act(async()=>root.render(<OperationalOrders/>));
+  const button=Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Fetch Orders'))!;
+  expect(button.disabled).toBe(true);
+  const selector=container.querySelector<HTMLSelectElement>('[aria-label="Filter orders by store"]')!;
+  await act(async()=>{selector.value='7';selector.dispatchEvent(new Event('change',{bubbles:true}));});
+  await act(async()=>button.click());
+  expect(fetch).toHaveBeenCalledExactlyOnceWith('7',1797408000,1800000000);
+  expect(button.textContent).toContain('30 days');
+ }finally{await act(async()=>root.unmount());}
+});
 it('reports connection failure instead of presenting an empty connected-store fact',async()=>{
  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
  vi.spyOn(marketplaceOperations,'connections').mockRejectedValue(new Error('unavailable'));

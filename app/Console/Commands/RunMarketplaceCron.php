@@ -24,6 +24,7 @@ final class RunMarketplaceCron extends Command
             return self::SUCCESS;
         }
         try {
+            app(\App\Services\Marketplace\MarketplaceAutomaticOrders::class)->enqueueDue();
             return $this->call('queue:work', [
                 'connection'=>'marketplace', '--queue'=>'marketplace',
                 '--stop-when-empty'=>true, '--max-jobs'=>1,

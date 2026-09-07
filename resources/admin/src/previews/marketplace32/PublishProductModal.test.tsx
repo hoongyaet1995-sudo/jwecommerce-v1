@@ -10,7 +10,9 @@ vi.mock('../../integration/marketplaceData',()=>({marketplaceRequest:vi.fn()}));
 vi.mock('../../integration/marketplaceOperations',()=>({marketplaceOperations:{publishingTask:vi.fn()}}));
 it('shows destination categories without demo options and cannot publish from metadata review',async()=>{
  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
- vi.mocked(marketplaceRequest).mockResolvedValue({storeId:1,data:[
+ vi.mocked(marketplaceRequest).mockImplementation(async(path)=>String(path).includes('listing-brands')
+  ? {storeId:1,categoryId:11,data:{brand_list:[{brand_id:2,original_brand_name:'Sony'}],has_next_page:false,next_offset:0,is_mandatory:true,input_type:'DROP_DOWN'}}
+  : {storeId:1,data:[
   {category_id:10,parent_category_id:0,display_category_name:'Electronics',original_category_name:'Electronics',has_children:true},
   {category_id:11,parent_category_id:10,display_category_name:'Game Consoles',original_category_name:'Game Consoles',has_children:false},
  ]});
@@ -28,6 +30,9 @@ it('shows destination categories without demo options and cannot publish from me
   expect(select.textContent).not.toContain('Headphones');
   expect(select.querySelector('option[value="10"]')?.hasAttribute('disabled')).toBe(true);
   expect(select.value).toBe('');
+  await act(async()=>{select.value='11';select.dispatchEvent(new Event('change',{bubbles:true}));});
+  expect(container.querySelector('datalist')?.textContent).toContain('Sony');
+  expect(container.querySelector<HTMLInputElement>('input[list]')?.value).toBe('');
   expect(container.textContent).toContain('Publishing is not enabled in this metadata review.');
   expect(submit).not.toHaveBeenCalled();
  } finally {await act(async()=>root.unmount());vi.unstubAllGlobals();}

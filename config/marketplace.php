@@ -1,6 +1,14 @@
 <?php
 
 return [
+    'lazada' => [
+        'enabled' => env('MARKETPLACE_LAZADA_ENABLED', false),
+        'app_key' => env('MARKETPLACE_LAZADA_APP_KEY'),
+        'app_secret' => env('MARKETPLACE_LAZADA_APP_SECRET'),
+        'callback_url' => env('MARKETPLACE_LAZADA_CALLBACK_URL'),
+    ],
+    'automatic_orders_enabled' => env('MARKETPLACE_AUTOMATIC_ORDERS_ENABLED', false),
+    'inventory_accounting_enabled' => env('MARKETPLACE_INVENTORY_ACCOUNTING_ENABLED', false),
     'publish_operations_enabled' => env('MARKETPLACE_PUBLISH_OPERATIONS_ENABLED', false),
     'operations_enabled' => env('MARKETPLACE_OPERATIONS_ENABLED', false),
     'read_operations_enabled' => env('MARKETPLACE_READ_OPERATIONS_ENABLED', false),

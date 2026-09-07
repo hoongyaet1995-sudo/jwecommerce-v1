@@ -84,9 +84,9 @@ export function OperationalMapping(){
     <PublishProductModal isOpen readOnlyMetadata preselectedConnectionId={publishReview.storeId}
       onClose={()=>setPublishReview(null)}/>
   </JourneyProvider>}
-  <MarketplaceMappingPage renderVariantModal={(selection,onClose)=><ConnectedVariantModal
-    isOpen canImport={canImport} storeProduct={selection.storeProduct} variantId={selection.storeVariant.id}
-    products={value.products} categories={admin.categories} onClose={onClose} onImported={catalog.reload} addToast={admin.addToast}/>}
+  <MarketplaceMappingPage renderVariantModal={(selection,onClose)=><React.Fragment key={`${selection.storeVariant.id}:${selection.intent ?? 'link'}`}><ConnectedVariantModal
+    isOpen canImport={canImport} startWithImport={selection.intent==='import'} storeProduct={selection.storeProduct} variantId={selection.storeVariant.id}
+    products={value.products} categories={admin.categories} onClose={onClose} onImported={catalog.reload} addToast={admin.addToast}/></React.Fragment>}
     serverPage={{total:catalog.total,summary:catalog.summary,loading:catalog.loading,onQueryChange:setQuery,canFetch,canImport,importing:importer.busy,onImport:importProducts,
       onReviewPublishing:journeyPreview ? storeId=>setPublishReview({storeId}) : undefined}}/>
  </PreviewContext.Provider>;

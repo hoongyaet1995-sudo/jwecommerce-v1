@@ -34,6 +34,7 @@ interface ProductMappingModalProps {
   onClose: () => void;
   storeProduct: MarketplaceStoreProduct;
   storeVariant: MarketplaceStoreVariant;
+  startWithImport?: boolean;
 }
 
 export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
@@ -41,6 +42,7 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
   onClose,
   storeProduct,
   storeVariant,
+  startWithImport = false,
 }) => {
   const { 
     products = [], 
@@ -66,7 +68,7 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
   });
 
   // State for "Create Master SKU & Link" drawer
-  const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
+  const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(startWithImport);
   const [createMode, setCreateMode] = useState<'new_product' | 'append_variant'>('new_product');
   const [targetAppendProductId, setTargetAppendProductId] = useState<string>('');
   const [customMasterSku, setCustomMasterSku] = useState(storeVariant.channelSellerSku || '');

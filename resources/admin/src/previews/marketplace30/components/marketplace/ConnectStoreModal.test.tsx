@@ -6,6 +6,49 @@ import {ConnectStoreModal} from './ConnectStoreModal';
 
 // Operational modal must render without loading or mounting the demo AdminProvider.
 
+it('keeps Lazada reconnect bound to the existing store and platform', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  const authorize = vi.fn().mockResolvedValue(undefined);
+  try {
+    await act(async () => root.render(<ConnectStoreModal isOpen onClose={() => {}} mode="reauthorize"
+      existingConnection={{id:'42', platform:'lazada', shopName:'Existing MY Store', shopId:'7001', region:'MY',
+        status:'expired', appKey:'', appSecret:'', accessToken:'', refreshToken:'', tokenExpiresAt:'',
+        lastSyncAt:'', autoSyncStock:false, autoPullOrders:false}}
+      requestAuthorization={authorize} oauthAvailability={{shopee:true, lazada:true}}/>));
+    const button = (label: string) => Array.from(container.querySelectorAll('button')).find(b => b.textContent?.includes(label))!;
+    expect(button('Shopee').disabled).toBe(true);
+    await act(async () => button('Proceed to Official Authorization').click());
+    expect(authorize).toHaveBeenCalledExactlyOnceWith('lazada', '42');
+    expect(container.textContent).not.toContain('Store Connected Successfully!');
+  } finally {
+    await act(async () => root.unmount());
+    vi.unstubAllGlobals();
+  }
+});
+
+it('selects available Lazada and submits its authorization without simulating a connection', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  const authorize = vi.fn().mockResolvedValue(undefined);
+  try {
+    await act(async () => root.render(<ConnectStoreModal isOpen onClose={() => {}}
+      requestAuthorization={authorize} oauthAvailability={{shopee: true, lazada: true}}/>));
+    const button = (label: string) => Array.from(container.querySelectorAll('button')).find(b => b.textContent?.includes(label))!;
+    expect(button('Lazada').disabled).toBe(false);
+    await act(async () => button('Lazada').click());
+    await act(async () => button('Proceed to Official Authorization').click());
+    expect(authorize).toHaveBeenCalledExactlyOnceWith('lazada', undefined);
+    expect(container.textContent).not.toContain('Store Connected Successfully!');
+    expect(container.textContent).not.toContain('Permissions Requested by JW ERP');
+  } finally {
+    await act(async () => root.unmount());
+    vi.unstubAllGlobals();
+  }
+});
+
 it('renders server-confirmed connection without claiming automatic sync or a fixed token lifetime', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   const container = document.createElement('div');

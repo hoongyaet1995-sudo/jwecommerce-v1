@@ -37,12 +37,25 @@ class PullShopeeOrders implements ShouldQueue
         try {
             $page = $orders->pullPage($run->store_id, $run->time_from, $run->time_to, $run->next_cursor ?? '');
             DB::transaction(function () use ($run, $page) {
+                $end = $run->requested_time_to ?? $run->time_to;
+                $nextWindow = !$page['has_more'] && $run->time_to < $end;
+                $continue = $page['has_more'] || $nextWindow;
+                // Deliberately overlap the boundary second; snapshots deduplicate.
+                $window = $nextWindow ? ['time_from'=>$run->time_to, 'time_to'=>min($end, $run->time_to + 14 * 86400)] : [];
                 DB::table('marketplace_order_runs')->where('id', $this->runId)->update([
-                    'status'=>$page['has_more'] ? 'queued' : 'succeeded', 'next_cursor'=>$page['next_cursor'],
+                    'status'=>$continue ? 'queued' : 'succeeded', 'next_cursor'=>$nextWindow ? '' : $page['next_cursor'],
                     'pages_completed'=>$run->pages_completed + 1, 'orders_processed'=>$run->orders_processed + $page['orders'],
-                    'finished_at'=>$page['has_more'] ? null : now(), 'updated_at'=>now(),
-                ]);
-                if ($page['has_more']) self::dispatch($this->runId, $run->pages_completed + 1)->afterCommit();
+                    'finished_at'=>$continue ? null : now(), 'updated_at'=>now(),
+                ] + $window);
+                if ($continue) {
+                    // The queue insert must participate in this page's transaction.
+                    $queue = config('queue.connections.marketplace');
+                    if (($queue['driver'] ?? null) !== 'database'
+                        || ($queue['connection'] ?? config('database.default')) !== DB::connection()->getName()) {
+                        throw new \RuntimeException('Order continuation requires the application database queue.');
+                    }
+                    self::dispatch($this->runId, $run->pages_completed + 1)->beforeCommit();
+                }
             });
         } catch (Throwable) {
             $this->failed();

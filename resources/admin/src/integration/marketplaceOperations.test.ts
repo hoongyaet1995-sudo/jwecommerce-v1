@@ -1,10 +1,37 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {marketplaceRequest} from './marketplaceData';
-import {marketplaceOperations, officialShopeeAuthorizationUrl} from './marketplaceOperations';
+import {marketplaceOperations, officialShopeeAuthorizationUrl, officialLazadaAuthorizationUrl, requestMarketplaceAuthorization} from './marketplaceOperations';
 
 vi.mock('./marketplaceData', () => ({marketplaceRequest: vi.fn().mockResolvedValue({})}));
 
 describe('marketplace operational contract', () => {
+  it('navigates Lazada authorization only after validating the server destination', async () => {
+    const assign = vi.fn();
+    vi.stubGlobal('window', {location: {assign}});
+    try {
+      const url = 'https://auth.lazada.com/oauth/authorize?state=test';
+      vi.mocked(marketplaceRequest).mockResolvedValueOnce({url});
+      await requestMarketplaceAuthorization('lazada', '42');
+      expect(marketplaceRequest).toHaveBeenLastCalledWith('/lazada/authorize', 'POST', {reconnectStoreId:42});
+      expect(assign).toHaveBeenCalledExactlyOnceWith(url);
+      assign.mockClear();
+      vi.mocked(marketplaceRequest).mockResolvedValueOnce({url:'https://attacker.test/oauth/authorize'});
+      await expect(requestMarketplaceAuthorization('lazada')).rejects.toThrow('Unexpected authorization destination');
+      expect(assign).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+  it('routes Lazada reconnect to its provider and rejects lookalike authorization hosts', async () => {
+    await marketplaceOperations.authorize('7', 'lazada');
+    expect(marketplaceRequest).toHaveBeenLastCalledWith('/lazada/authorize', 'POST', {reconnectStoreId:7});
+    expect(officialLazadaAuthorizationUrl('https://auth.lazada.com/oauth/authorize?state=test'))
+      .toBe('https://auth.lazada.com/oauth/authorize?state=test');
+    for (const url of ['https://auth.lazada.com.attacker.test/oauth/authorize', 'http://auth.lazada.com/oauth/authorize',
+      'https://user@auth.lazada.com/oauth/authorize', 'https://auth.lazada.com/other']) {
+      expect(()=>officialLazadaAuthorizationUrl(url)).toThrow();
+    }
+  });
   it('scopes attribute searches to the selected store and encodes keywords', async () => {
     const result={storeId:7,attributeId:123,data:{value_list:[{value_id:42,value_name:'Blue'}],page_info:{cursor:42,has_next:false}}};
     vi.mocked(marketplaceRequest).mockResolvedValueOnce(result);

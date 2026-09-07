@@ -33,7 +33,7 @@ it('unlinks the selected persisted listing through the mapping endpoint',async()
   } finally {await act(async()=>root.unmount());vi.restoreAllMocks();vi.unstubAllGlobals();}
 });
 
-it('submits the selected saved identity and closes only after API confirmation',async()=>{
+it('opens direct import review without writing, then submits the selected identity only on confirmation',async()=>{
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
   let finish!:(value:{variantId:number;productId:number})=>void;
   const api=vi.spyOn(marketplaceOperations,'importVariant').mockImplementation(()=>new Promise(resolve=>{finish=resolve;}));
@@ -43,9 +43,10 @@ it('submits the selected saved identity and closes only after API confirmation',
   const container=document.createElement('div');document.body.append(container);const root=createRoot(container);
   const click=(label:string)=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes(label))!.click();
   try {
-    await act(async()=>root.render(<ConnectedVariantModal isOpen canImport storeProduct={product} variantId="12"
+    await act(async()=>root.render(<ConnectedVariantModal isOpen canImport startWithImport storeProduct={product} variantId="12"
       products={[]} categories={[]} onClose={close} onImported={reload} addToast={vi.fn()}/>));
-    await act(async()=>click('Create Master SKU & Link'));
+    expect(container.textContent).toContain('Confirm Master SKU Creation');
+    expect(api).not.toHaveBeenCalled();
     await act(async()=>click('Confirm Master SKU Creation'));
     expect(api).toHaveBeenCalledWith('12',{newProduct:true,sku:'JW-TEST'});
     expect(close).not.toHaveBeenCalled();expect(reload).not.toHaveBeenCalled();

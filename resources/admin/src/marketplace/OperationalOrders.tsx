@@ -18,7 +18,7 @@ export function OperationalOrders(){
  const task=useMarketplaceReadTask('orders',()=>setRevision(value=>value+1));
  const selectedStore=stores.find(store=>store.id===storeId);
  const canFetch=!!selectedStore&&selectedStore.status==='connected'&&orderPlatforms.includes(selectedStore.platform)&&!task.busy;
- const fetchOrders=()=>{if(!canFetch)return;const to=Math.floor(Date.now()/1000);void task.start(()=>marketplaceOperations.fetchOrders(storeId,to-7*86400,to));};
+ const fetchOrders=()=>{if(!canFetch)return;const to=Math.floor(Date.now()/1000);void task.start(()=>marketplaceOperations.fetchOrders(storeId,to-30*86400,to));};
  const [selected,setSelected]=useState<string|null>(null);
  const [detail,setDetail]=useState<MarketplaceOrderDetail|null>(null);const [detailError,setDetailError]=useState('');
  const onQuery=useCallback((value:typeof query)=>{setQuery(value);setPage(1);},[]);

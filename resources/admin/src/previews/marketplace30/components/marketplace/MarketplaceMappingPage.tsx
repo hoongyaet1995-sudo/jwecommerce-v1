@@ -21,7 +21,7 @@ export interface MappingServerPage {
   total: number; summary: CatalogSummary; loading: boolean; onQueryChange: (query: MappingPageQuery) => void;
 }
 export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage;
-  renderVariantModal?: (selection:{storeProduct:MarketplaceStoreProduct;storeVariant:MarketplaceStoreVariant},onClose:()=>void)=>React.ReactNode;
+  renderVariantModal?: (selection:{storeProduct:MarketplaceStoreProduct;storeVariant:MarketplaceStoreVariant;intent?:'import'},onClose:()=>void)=>React.ReactNode;
 }> = ({serverPage,renderVariantModal}) => {
   const {
     products = [],
@@ -66,6 +66,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage;
   const [activeMappingModal, setActiveMappingModal] = useState<{
     storeProduct: MarketplaceStoreProduct;
     storeVariant: MarketplaceStoreVariant;
+    intent?: 'import';
   } | null>(null);
 
   const [activePublishModal, setActivePublishModal] = useState<{
@@ -956,8 +957,8 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage;
                                 </button>
                                 <button
                                   type="button"
-                                  disabled={!!serverPage}
-                                  onClick={() => importStoreProductToMaster(product.id, variant.id)}
+                                  disabled={!!serverPage && (!serverPage.canImport || !renderVariantModal)}
+                                  onClick={() => serverPage ? setActiveMappingModal({storeProduct:product,storeVariant:variant,intent:'import'}) : importStoreProductToMaster(product.id, variant.id)}
                                   title="Import this variant into JW Master Catalog and auto-link"
                                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer"
                                 >
@@ -1316,8 +1317,8 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage;
                                       <button
                                         id={`btn-import-spec-${variant.id}`}
                                         type="button"
-                                        disabled={!!serverPage}
-                                        onClick={() => importStoreProductToMaster(prod.id, variant.id)}
+                                        disabled={!!serverPage && (!serverPage.canImport || !renderVariantModal)}
+                                        onClick={() => serverPage ? setActiveMappingModal({storeProduct:prod,storeVariant:variant,intent:'import'}) : importStoreProductToMaster(prod.id, variant.id)}
                                         title="Create this variant as a JW Master SKU and auto-link"
                                         className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
                                       >
