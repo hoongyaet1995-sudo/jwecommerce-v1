@@ -16,7 +16,8 @@ class MarketplaceAuthorizationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['marketplace.oauth_acceptance_enabled'=>false]);
+        config(['marketplace.oauth_acceptance_enabled'=>false,
+            'marketplace.read_operations_enabled'=>false, 'marketplace.operations_enabled'=>false]);
         config(['app.url'=>'https://example.test', 'marketplace.shopee.enabled'=>true, 'marketplace.shopee.environment'=>'sandbox',
             'marketplace.shopee.partner_id'=>'123', 'marketplace.shopee.partner_key'=>'secret',
             'marketplace.shopee.callback_url'=>'https://example.test/admin/marketplace/shopee/callback']);
@@ -156,6 +157,12 @@ class MarketplaceAuthorizationTest extends TestCase
         DB::table('marketplace_catalog_runs')->insert(['store_id'=>$storeId,'status'=>'failed','finished_at'=>'2026-09-06 11:00:00']);
         $this->getJson('/admin/api/marketplace/connections')->assertOk()->assertJsonPath('stores.0.lastSyncAt','2026-09-06T10:00:00.000000Z');
         $this->travel(5)->hours();
+        $this->getJson('/admin/api/marketplace/connections')->assertOk()->assertJsonPath('stores.0.status', 'connected');
+        // Metadata must not refresh tokens or expose their encrypted storage.
+        Http::assertSentCount(2);
+        DB::table('marketplace_store_tokens')->update(['refresh_expires_at'=>now()->subSecond()]);
+        $this->getJson('/admin/api/marketplace/connections')->assertOk()->assertJsonPath('stores.0.status', 'reauthorization_required');
+        DB::table('marketplace_store_tokens')->update(['refresh_expires_at'=>null,'refresh_token'=>null]);
         $this->getJson('/admin/api/marketplace/connections')->assertOk()->assertJsonPath('stores.0.status', 'reauthorization_required');
     }
 
@@ -190,6 +197,32 @@ class MarketplaceAuthorizationTest extends TestCase
         try { $manager->accessToken($id); $this->fail('Disconnected token returned'); }
         catch (\RuntimeException $e) { $this->assertSame('Store is not connected to the configured Shopee environment.', $e->getMessage()); }
         Http::assertSentCount(1);
+    }
+
+    public function test_failed_refresh_preserves_credentials_and_explicit_retry_rotates_them(): void
+    {
+        $state = app(OAuthStateService::class)->issue(42, 'shopee', config('app.url'), null);
+        $id = app(ShopeeAuthorizationService::class)->complete($state, 42, 'code', '456');
+        $this->travel(5)->hours();
+        $before = DB::table('marketplace_store_tokens')->where('store_id', $id)->first();
+        Http::fake(['*/auth/access_token/get*'=>Http::sequence()
+            ->push(['error'=>'temporary_error'], 503)
+            ->push(['access_token'=>'retry-access', 'refresh_token'=>'retry-refresh', 'expire_in'=>14400])]);
+        $manager = app(\App\Services\Marketplace\ShopeeTokenManager::class);
+        try { $manager->accessToken($id); $this->fail('Failed refresh accepted'); }
+        catch (\RuntimeException $e) { $this->assertSame('Shopee token exchange failed. Re-authorize the store.', $e->getMessage()); }
+        Http::assertSentCount(1);
+        $after = DB::table('marketplace_store_tokens')->where('store_id', $id)->first();
+        $this->assertSame($before->access_token, $after->access_token);
+        $this->assertSame($before->refresh_token, $after->refresh_token);
+        $this->assertSame($before->access_expires_at, $after->access_expires_at);
+        $this->assertDatabaseHas('marketplace_stores', ['id'=>$id, 'status'=>'connected']);
+        $this->assertSame('retry-access', $manager->accessToken($id));
+        $this->assertSame('retry-access', $manager->accessToken($id));
+        Http::assertSentCount(2);
+        $token = \App\Models\MarketplaceStoreToken::where('store_id', $id)->firstOrFail();
+        $this->assertSame('retry-refresh', $token->refresh_token);
+        $this->assertTrue($token->access_expires_at->gt(now()));
     }
 
     public function test_isolated_preview_is_not_available_in_production(): void

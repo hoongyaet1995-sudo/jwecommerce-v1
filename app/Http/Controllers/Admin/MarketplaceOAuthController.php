@@ -61,13 +61,19 @@ class MarketplaceOAuthController extends Controller
         $timestamp = fn($value) => $value ? \Illuminate\Support\Carbon::parse($value, config('app.timezone'))->utc()->toISOString() : null;
         // Select only public metadata; never load encrypted credentials into this response path.
         $stores = DB::table('marketplace_stores as s')->leftJoin('marketplace_store_tokens as t', 't.store_id', '=', 's.id')
-            ->select('s.*', 't.access_expires_at', 't.application_id')->orderBy('s.id')->get()->map(function ($store) use ($lastSuccess, $timestamp) {
+            ->select('s.*', 't.access_expires_at', 't.refresh_expires_at', 't.application_id')
+            ->selectRaw("CASE WHEN t.refresh_token IS NOT NULL AND t.refresh_token <> '' THEN 1 ELSE 0 END AS has_refresh_token")
+            ->orderBy('s.id')->get()->map(function ($store) use ($lastSuccess, $timestamp) {
                 $status = $store->status;
                 $applicationMatches = $store->platform === 'shopee'
                     && $store->environment === config('marketplace.shopee.environment')
                     && $store->application_id !== null
                     && $store->application_id === (string) config('marketplace.shopee.partner_id');
-                if ($status === 'connected' && (!$applicationMatches || !$store->access_expires_at || now()->gte($store->access_expires_at))) {
+                // Match the token manager's refresh window without reading credentials or making HTTP calls.
+                $accessUsable = $store->access_expires_at && now()->addMinutes(5)->lt($store->access_expires_at);
+                $canRefresh = (bool) $store->has_refresh_token
+                    && (!$store->refresh_expires_at || now()->lt($store->refresh_expires_at));
+                if ($status === 'connected' && (!$applicationMatches || (!$accessUsable && !$canRefresh))) {
                     $status = 'reauthorization_required';
                 }
                 return ['id'=>(string) $store->id, 'platform'=>$store->platform, 'shopName'=>$store->shop_name,
