@@ -8,6 +8,202 @@ use Tests\TestCase;
 
 class ShopeeClientTest extends TestCase
 {
+    public function test_searchable_attribute_values_use_signed_post_and_validate_pagination(): void
+    {
+        Http::fake(['*'=>Http::sequence()->push(['error'=>'','response'=>[
+            'value_list'=>[['value_id'=>42,'value_name'=>'Example']], 'page_info'=>['cursor'=>42,'has_next'=>true],
+        ]])->push(['error'=>'','response'=>['value_list'=>[], 'page_info'=>['cursor'=>42,'has_next'=>true]]])]);
+        $result=app(ShopeeClient::class)->searchAttributeValues('access','456',123,'Example',0);
+        $this->assertSame(42,$result['value_list'][0]['value_id']);
+        Http::assertSent(fn ($request)=>$request->method()==='POST'
+            && str_contains($request->url(),'/product/search_attribute_value_list?')
+            && str_contains($request->url(),'access_token=access')
+            && $request['attribute_id']===123 && $request['value_name']==='Example'
+            && $request['cursor']===0 && $request['limit']===100);
+        $this->expectException(\RuntimeException::class);
+        app(ShopeeClient::class)->searchAttributeValues('access','456',123,'Example',42);
+    }
+
+    public function test_create_item_is_gated_and_requires_confirmed_external_id(): void
+    {
+        $this->freezeTime();
+        Http::fake(['*'=>Http::sequence()->push(['error'=>'','response'=>['item_id'=>846055463]])
+            ->push(['error'=>'','response'=>[]])]);
+        try {app(ShopeeClient::class)->createItem('access','456',['item_name'=>'Test']);$this->fail('Write gate must block.');}
+        catch (\RuntimeException $exception) {$this->assertNotEmpty($exception->getMessage());}
+        Http::assertNothingSent();
+        config(['marketplace.publish_operations_enabled'=>true]);
+        $this->assertSame('846055463',app(ShopeeClient::class)->createItem('access','456',['item_name'=>'Test']));
+        Http::assertSent(function ($request) {
+            parse_str(parse_url($request->url(),PHP_URL_QUERY),$query);
+            return $request->method()==='POST' && $request['item_name']==='Test'
+                && parse_url($request->url(),PHP_URL_PATH)==='/api/v2/product/add_item'
+                && $query['shop_id']==='456' && $query['access_token']==='access'
+                && $query['sign']===hash_hmac('sha256','123/api/v2/product/add_item'.now()->timestamp.'access456','test-secret');
+        });
+        $this->expectException(\App\Services\Marketplace\PublishingResultUncertain::class);
+        app(ShopeeClient::class)->createItem('access','456',['item_name'=>'Test']);
+    }
+
+    public function test_create_timeout_does_not_retry_or_expose_credentials(): void
+    {
+        config(['marketplace.publish_operations_enabled'=>true]);
+        $calls=0;
+        Http::fake(function () use (&$calls) {
+            $calls++;
+            throw new \Illuminate\Http\Client\ConnectionException('access_token=private');
+        });
+        try {app(ShopeeClient::class)->createItem('access','456',['item_name'=>'Test']);$this->fail('Timeout must not succeed.');}
+        catch (\App\Services\Marketplace\PublishingResultUncertain $exception) {
+            $this->assertStringNotContainsString('private',$exception->getMessage());
+            $this->assertNull($exception->getPrevious());
+        }
+        $this->assertSame(1,$calls);
+    }
+
+    public function test_image_upload_requires_valid_image_and_returns_confirmed_id(): void
+    {
+        $this->freezeTime();
+        Http::fake(['*'=>Http::response(['error'=>'','response'=>['image_info'=>['image_id'=>'confirmed-image']]])]);
+        $png=base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=');
+        $this->assertSame('confirmed-image',app(ShopeeClient::class)->uploadImage($png));
+        Http::assertSent(function ($request) {
+            parse_str(parse_url($request->url(),PHP_URL_QUERY),$query);
+            return $request->method()==='POST'
+                && parse_url($request->url(),PHP_URL_PATH)==='/api/v2/media_space/upload_image'
+                && $query['partner_id']==='123' && (int)$query['timestamp']===now()->timestamp
+                && $query['sign']===hash_hmac('sha256','123/api/v2/media_space/upload_image'.now()->timestamp,'test-secret')
+                && !array_key_exists('access_token',$query) && !array_key_exists('shop_id',$query);
+        });
+        Http::fake();
+        try {app(ShopeeClient::class)->uploadImage('<svg></svg>');$this->fail('Unsupported file must fail.');}
+        catch (\RuntimeException $exception) {$this->assertNotEmpty($exception->getMessage());}
+        Http::assertNothingSent();
+    }
+
+    public function test_image_upload_timeout_is_sanitized_and_not_retried(): void
+    {
+        $calls=0;
+        Http::fake(function () use (&$calls) {
+            $calls++;
+            throw new \Illuminate\Http\Client\ConnectionException('Sensitive signed request URL');
+        });
+        $png=base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=');
+        try {app(ShopeeClient::class)->uploadImage($png);$this->fail('Timeout must not succeed.');}
+        catch (\RuntimeException $exception) {
+            $this->assertStringNotContainsString('Sensitive',$exception->getMessage());
+            $this->assertNull($exception->getPrevious());
+        }
+        $this->assertSame(1,$calls);
+    }
+
+    public function test_logistics_read_preserves_disabled_channels_and_package_constraints(): void
+    {
+        $channels = [['logistics_channel_id'=>40018, 'logistics_channel_name'=>'Fixture carrier', 'enabled'=>false,
+            'fee_type'=>'SIZE_INPUT', 'weight_limit'=>['item_max_weight'=>50, 'item_min_weight'=>0],
+            'item_max_dimension'=>['height'=>150, 'width'=>150, 'length'=>150, 'unit'=>'cm'], 'mask_channel_id'=>4000]];
+        Http::fake(['*'=>Http::response(['response'=>['logistics_channel_list'=>$channels]])]);
+        $this->assertSame($channels, app(ShopeeClient::class)->logisticsChannels('access', '456'));
+        Http::assertSent(fn ($request)=>$request->method() === 'GET'
+            && parse_url($request->url(), PHP_URL_PATH) === '/api/v2/logistics/get_channel_list');
+    }
+
+    public function test_logistics_read_does_not_treat_incomplete_response_as_no_channels(): void
+    {
+        Http::fake(['*'=>Http::response(['response'=>[]])]);
+        $this->expectException(\RuntimeException::class);
+        app(ShopeeClient::class)->logisticsChannels('access', '456');
+    }
+
+    public function test_brand_page_preserves_pagination_and_category_requirements(): void
+    {
+        $page = ['brand_list'=>[['brand_id'=>2500139861, 'original_brand_name'=>'Example', 'display_brand_name'=>'Example']],
+            'has_next_page'=>true, 'next_offset'=>100, 'is_mandatory'=>true, 'input_type'=>'DROP_DOWN'];
+        Http::fake(['*'=>Http::response(['response'=>$page])]);
+        $this->assertSame($page, app(ShopeeClient::class)->brandPage('access', '456', 106511, 0));
+        Http::assertSent(fn ($request)=>$request->method() === 'GET'
+            && parse_url($request->url(), PHP_URL_PATH) === '/api/v2/product/get_brand_list'
+            && (int)$request['category_id'] === 106511 && (int)$request['status'] === 1
+            && (int)$request['page_size'] === 100 && (int)$request['offset'] === 0);
+    }
+
+    public function test_brand_page_rejects_missing_requirements_and_nonadvancing_cursor(): void
+    {
+        $valid = ['brand_list'=>[], 'has_next_page'=>false, 'next_offset'=>0, 'is_mandatory'=>false, 'input_type'=>'DROP_DOWN'];
+        foreach ([[], array_replace($valid, ['has_next_page'=>true]), array_replace($valid, ['is_mandatory'=>null])]
+            as $page) {
+            Http::fake(['*'=>Http::response(['response'=>$page])]);
+            try {
+                app(ShopeeClient::class)->brandPage('access', '456', 106511, 0);
+                $this->fail('Incomplete brand response accepted');
+            } catch (\RuntimeException $error) {
+                $this->assertStringContainsString('brand', $error->getMessage());
+            }
+        }
+    }
+
+    public function test_attribute_tree_preserves_conditional_requirements_and_queries_selected_category(): void
+    {
+        $tree = [['attribute_id'=>10, 'mandatory'=>true, 'name'=>'Material',
+            'attribute_info'=>['input_type'=>1, 'attribute_unit_list'=>[], 'max_value_count'=>1],
+            'attribute_value_list'=>[['value_id'=>20, 'name'=>'Metal', 'value_unit'=>'',
+                'child_attribute_list'=>[['attribute_id'=>11, 'name'=>'Weight', 'mandatory'=>true,
+                    'attribute_info'=>['input_type'=>3, 'attribute_unit_list'=>['g']], 'attribute_value_list'=>[]]]]]]];
+        Http::fake(['*'=>Http::response(['response'=>['list'=>[['category_id'=>106511, 'attribute_tree'=>$tree]]]])]);
+        $result = app(ShopeeClient::class)->attributeTree('access', '456', 106511);
+        $this->assertSame($tree, $result);
+        Http::assertSent(fn ($request)=>$request->method() === 'GET'
+            && parse_url($request->url(), PHP_URL_PATH) === '/api/v2/product/get_attribute_tree'
+            && $request['category_id_list'] === '106511' && $request['language'] === 'en');
+    }
+
+    public function test_attribute_tree_rejects_wrong_category_and_partial_results(): void
+    {
+        foreach ([[], [['category_id'=>999, 'attribute_tree'=>[]]], [['category_id'=>106511]],
+            [['category_id'=>106511, 'attribute_tree'=>[], 'warning'=>'Category unavailable']]] as $rows) {
+            Http::fake(['*'=>Http::response(['response'=>['list'=>$rows]])]);
+            try {
+                app(ShopeeClient::class)->attributeTree('access', '456', 106511);
+                $this->fail('Incomplete attribute response accepted');
+            } catch (\RuntimeException $error) {
+                $this->assertStringContainsString('attribute', $error->getMessage());
+            }
+        }
+    }
+
+    public function test_category_tree_preserves_platform_hierarchy_and_uses_shop_bound_read(): void
+    {
+        $this->freezeTime();
+        Http::fake(['*'=>Http::response(['error'=>'', 'response'=>['category_list'=>[
+            ['category_id'=>100, 'parent_category_id'=>0, 'original_category_name'=>'Electronics', 'display_category_name'=>'Electronics', 'has_children'=>true],
+            ['category_id'=>101, 'parent_category_id'=>100, 'original_category_name'=>'Consoles', 'display_category_name'=>'Consoles', 'has_children'=>false],
+        ]]])]);
+        $rows = app(ShopeeClient::class)->categoryTree('access', '456');
+        $this->assertCount(2, $rows);
+        $this->assertSame(100, $rows[1]['parent_category_id']);
+        $this->assertFalse($rows[1]['has_children']);
+        Http::assertSent(function ($request) {
+            parse_str(parse_url($request->url(), PHP_URL_QUERY), $query);
+            return $request->method() === 'GET'
+                && parse_url($request->url(), PHP_URL_PATH) === '/api/v2/product/get_category'
+                && $query['language'] === 'en' && $query['shop_id'] === '456'
+                && $query['sign'] === hash_hmac('sha256', '123/api/v2/product/get_category'.now()->timestamp.'access456', 'test-secret');
+        });
+    }
+
+    public function test_category_tree_rejects_missing_or_malformed_data_instead_of_empty_success(): void
+    {
+        foreach ([[], ['category_list'=>null], ['category_list'=>[['category_id'=>100]]]] as $response) {
+            Http::fake(['*'=>Http::response(['error'=>'', 'response'=>$response])]);
+            try {
+                app(ShopeeClient::class)->categoryTree('access', '456');
+                $this->fail('Incomplete category response accepted');
+            } catch (\RuntimeException $error) {
+                $this->assertStringContainsString('category', $error->getMessage());
+            }
+        }
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

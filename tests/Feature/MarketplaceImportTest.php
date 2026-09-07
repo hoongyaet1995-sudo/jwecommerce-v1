@@ -173,6 +173,295 @@ class MarketplaceImportTest extends TestCase
         }
     }
 
+    public function test_single_variant_import_preserves_destination_and_siblings_and_retry_identity(): void
+    {
+        $this->catalog();
+        $destination = Product::create(['title'=>'Existing parent', 'handle'=>'parent', 'base_price'=>900, 'status'=>'draft']);
+        $destination->variants()->create(['sku'=>'EXISTING', 'title'=>'Original', 'price'=>900, 'stock'=>7]);
+        $listing = DB::table('marketplace_listing_variants')->orderBy('id')->value('id');
+        $service = app(MarketplaceImportService::class);
+        $variantId = $service->importVariant($listing, $destination->id, 42);
+        $this->assertDatabaseHas('product_variants', ['id'=>$variantId, 'product_id'=>$destination->id, 'sku'=>'SOURCE-1', 'price'=>1234, 'stock'=>0]);
+        $this->assertDatabaseMissing('product_variants', ['sku'=>'SOURCE-2']);
+        $this->assertDatabaseHas('products', ['id'=>$destination->id, 'title'=>'Existing parent', 'base_price'=>900, 'status'=>'draft']);
+        $this->assertDatabaseCount('marketplace_variant_mappings', 1);
+        DB::table('marketplace_variant_mappings')->delete();
+        $this->assertSame($variantId, $service->importVariant($listing, $destination->id, 42));
+        $this->assertDatabaseCount('product_variants', 2);
+        $this->assertDatabaseCount('marketplace_variant_mappings', 0);
+        $this->assertEquals(7, DB::table('product_variants')->sum('stock'));
+    }
+
+    public function test_single_variant_endpoint_checks_permissions_input_and_import_gate(): void
+    {
+        $this->catalog();
+        $parent = Product::create(['title'=>'Target', 'handle'=>'target', 'base_price'=>900, 'status'=>'draft']);
+        $listing = DB::table('marketplace_listing_variants')->orderBy('id')->value('id');
+        $url = '/admin/api/marketplace/listings/'.$listing.'/import-variant';
+        $this->postJson($url, ['productId'=>$parent->id])->assertUnauthorized();
+        $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>false]))
+            ->postJson($url, ['productId'=>$parent->id])->assertUnauthorized();
+        $this->actingAs(\App\Models\User::findOrFail(42));
+        config(['marketplace.operations_enabled'=>false, 'marketplace.import_operations_enabled'=>false]);
+        $this->postJson($url, ['productId'=>$parent->id])->assertStatus(503);
+        config(['marketplace.import_operations_enabled'=>true]);
+        $this->postJson($url)->assertUnprocessable();
+        $this->postJson($url, ['productId'=>$parent->id, 'stock'=>10])->assertUnprocessable();
+        $this->postJson($url, ['productId'=>99999])->assertUnprocessable();
+        $variant = $this->postJson($url, ['productId'=>$parent->id])->assertOk()->json('variantId');
+        $this->assertIsInt($variant);
+        $this->assertDatabaseHas('marketplace_variant_imports', ['product_variant_id'=>$variant, 'actor_id'=>42]);
+        $this->assertDatabaseHas('product_variants', ['id'=>$variant, 'stock'=>0]);
+        $this->postJson($url, ['productId'=>$parent->id])->assertOk()->assertJsonPath('variantId', $variant);
+    }
+
+    public function test_single_variant_rejects_duplicate_sku_and_changed_retry_destination_without_side_effects(): void
+    {
+        $this->catalog();
+        $this->actingAs(\App\Models\User::findOrFail(42));
+        $first = Product::create(['title'=>'First', 'handle'=>'first', 'base_price'=>100, 'status'=>'draft']);
+        $second = Product::create(['title'=>'Second', 'handle'=>'second', 'base_price'=>200, 'status'=>'draft']);
+        $listings = DB::table('marketplace_listing_variants')->orderBy('id')->pluck('id');
+        $url = '/admin/api/marketplace/listings/'.$listings[0].'/import-variant';
+        $variantId = $this->postJson($url, ['productId'=>$first->id])->assertOk()->json('variantId');
+        $this->postJson($url, ['productId'=>$second->id])->assertConflict();
+        $other = DB::table('marketplace_listing_variants')->find($listings[1]);
+        $data = json_decode($other->observed_data, true);
+        $data['sku'] = 'SOURCE-1';
+        DB::table('marketplace_listing_variants')->where('id', $other->id)->update(['observed_data'=>json_encode($data)]);
+        $this->postJson('/admin/api/marketplace/listings/'.$other->id.'/import-variant', ['productId'=>$second->id])->assertConflict();
+        $this->assertDatabaseCount('product_variants', 1);
+        $this->assertDatabaseCount('marketplace_variant_imports', 1);
+        $this->assertDatabaseCount('marketplace_mapping_events', 1);
+        $this->assertDatabaseHas('product_variants', ['id'=>$variantId, 'product_id'=>$first->id, 'stock'=>0]);
+    }
+
+    public function test_single_variant_invalid_observation_does_not_change_destination(): void
+    {
+        $this->catalog();
+        $this->actingAs(\App\Models\User::findOrFail(42));
+        $parent = Product::create(['title'=>'Parent', 'handle'=>'parent-invalid', 'base_price'=>100, 'status'=>'active']);
+        $source = DB::table('marketplace_listing_variants')->orderBy('id')->first();
+        $original = json_decode($source->observed_data, true);
+        foreach ([['sku'=>[]], ['title'=>''], ['currency'=>'USD'], ['price'=>'1.234'], ['price'=>null]] as $invalid) {
+            DB::table('marketplace_listing_variants')->where('id', $source->id)->update(['observed_data'=>json_encode(array_replace($original, $invalid))]);
+            $this->postJson('/admin/api/marketplace/listings/'.$source->id.'/import-variant', ['productId'=>$parent->id])->assertUnprocessable();
+            $this->assertDatabaseCount('product_variants', 0);
+            $this->assertDatabaseCount('marketplace_variant_imports', 0);
+            $this->assertDatabaseCount('marketplace_variant_mappings', 0);
+        }
+        $this->assertDatabaseHas('products', ['id'=>$parent->id, 'title'=>'Parent', 'status'=>'active', 'base_price'=>100]);
+    }
+
+    public function test_whole_product_import_does_not_duplicate_a_previously_imported_unlinked_renamed_variant(): void
+    {
+        $store = $this->catalog();
+        $parent = Product::create(['title'=>'Existing', 'handle'=>'retained-parent', 'base_price'=>100, 'status'=>'draft']);
+        $listing = DB::table('marketplace_listing_variants')->orderBy('id')->value('id');
+        $service = app(MarketplaceImportService::class);
+        $variant = $service->importVariant($listing, $parent->id, 42);
+        DB::table('marketplace_variant_mappings')->delete();
+        DB::table('product_variants')->where('id', $variant)->update(['sku'=>'RENAMED-BY-EMPLOYEE']);
+        $this->actingAs(\App\Models\User::findOrFail(42))
+            ->postJson('/admin/api/marketplace/listings/'.$listing.'/import-product')->assertConflict();
+        $this->assertDatabaseCount('products', 1);
+        $this->assertDatabaseCount('product_variants', 1);
+        $this->assertDatabaseCount('marketplace_variant_mappings', 0);
+    }
+
+    public function test_single_variant_can_create_a_new_draft_without_importing_siblings(): void
+    {
+        $this->catalog();
+        $listing = DB::table('marketplace_listing_variants')->orderBy('id')->value('id');
+        $service = app(MarketplaceImportService::class);
+        $id = $service->importVariantAsProduct($listing, 42);
+        $variant = \App\Models\ProductVariant::findOrFail($id);
+        $this->assertSame('draft', $variant->product->status);
+        $this->assertSame('Imported Product', $variant->product->title);
+        $this->assertEquals(1234, $variant->product->base_price);
+        $this->assertSame('<p>Source &amp; details</p>', $variant->product->description);
+        $this->assertDatabaseCount('products', 1);
+        $this->assertDatabaseCount('product_variants', 1);
+        $this->assertDatabaseMissing('product_variants', ['sku'=>'SOURCE-2']);
+        $this->assertSame($id, $service->importVariantAsProduct($listing, 42));
+        $this->assertDatabaseCount('products', 1);
+        $this->get('/products/'.$variant->product->handle)->assertNotFound();
+    }
+
+    public function test_new_draft_variant_endpoint_requires_explicit_destination_and_rolls_back_invalid_source(): void
+    {
+        $this->catalog();
+        $this->actingAs(\App\Models\User::findOrFail(42));
+        config(['marketplace.import_operations_enabled'=>true]);
+        $source = DB::table('marketplace_listing_variants')->orderBy('id')->first();
+        $url = '/admin/api/marketplace/listings/'.$source->id.'/import-variant';
+        $this->postJson($url, ['newProduct'=>true, 'productId'=>1])->assertUnprocessable();
+        $this->postJson($url, ['newProduct'=>false])->assertUnprocessable();
+        $data = json_decode($source->observed_data, true);
+        DB::table('marketplace_listing_variants')->where('id', $source->id)
+            ->update(['observed_data'=>json_encode(array_replace($data, ['price'=>'invalid']))]);
+        $this->postJson($url, ['newProduct'=>true])->assertUnprocessable();
+        $this->assertDatabaseCount('products', 0);
+        $this->assertDatabaseCount('product_variants', 0);
+        $this->assertDatabaseCount('marketplace_variant_imports', 0);
+        DB::table('marketplace_listing_variants')->where('id', $source->id)->update(['observed_data'=>json_encode($data)]);
+        $response = $this->postJson($url, ['newProduct'=>true])->assertOk();
+        $id = $response->json('variantId');
+        $this->assertDatabaseHas('product_variants', ['id'=>$id, 'product_id'=>$response->json('productId'), 'stock'=>0]);
+        $this->assertDatabaseHas('products', ['id'=>$response->json('productId'), 'status'=>'draft']);
+        $this->postJson($url, ['newProduct'=>true])->assertOk()->assertJsonPath('variantId', $id);
+        $this->assertDatabaseCount('products', 1);
+        $this->assertDatabaseCount('product_variants', 1);
+    }
+
+    public function test_reviewed_sku_is_used_without_changing_channel_snapshot_and_retry_does_not_rename(): void
+    {
+        $this->catalog();
+        $this->actingAs(\App\Models\User::findOrFail(42));
+        config(['marketplace.import_operations_enabled'=>true]);
+        $source = DB::table('marketplace_listing_variants')->orderBy('id')->first();
+        $url = '/admin/api/marketplace/listings/'.$source->id.'/import-variant';
+        foreach (['', ' ', null, [], str_repeat('a', 256)] as $invalid) {
+            $this->postJson($url, ['newProduct'=>true, 'sku'=>$invalid])->assertUnprocessable();
+        }
+        $this->assertDatabaseCount('products', 0);
+        $response = $this->postJson($url, ['newProduct'=>true, 'sku'=>' JW-REVIEWED-1 '])->assertOk();
+        $id = $response->json('variantId');
+        $this->assertDatabaseHas('product_variants', ['id'=>$id, 'sku'=>'JW-REVIEWED-1', 'stock'=>0]);
+        $this->assertSame($source->observed_data, DB::table('marketplace_listing_variants')->where('id', $source->id)->value('observed_data'));
+        $this->postJson($url, ['newProduct'=>true, 'sku'=>'SECOND-CODE'])->assertOk()->assertJsonPath('variantId', $id);
+        $this->assertDatabaseHas('product_variants', ['id'=>$id, 'sku'=>'JW-REVIEWED-1']);
+        $this->assertDatabaseCount('product_variants', 1);
+    }
+
+    public function test_reviewed_sku_conflict_rolls_back_new_draft_and_can_be_resolved_by_appending(): void
+    {
+        $this->catalog();
+        $this->actingAs(\App\Models\User::findOrFail(42));
+        config(['marketplace.import_operations_enabled'=>true]);
+        $parent = Product::create(['title'=>'Keep parent', 'handle'=>'keep-parent', 'base_price'=>900, 'status'=>'draft']);
+        $existing = $parent->variants()->create(['sku'=>'OCCUPIED', 'title'=>'Original', 'price'=>900, 'stock'=>7]);
+        $listing = DB::table('marketplace_listing_variants')->orderBy('id')->value('id');
+        $url = '/admin/api/marketplace/listings/'.$listing.'/import-variant';
+        $this->postJson($url, ['newProduct'=>true, 'sku'=>'OCCUPIED'])->assertConflict();
+        $this->assertDatabaseCount('products', 1);
+        $this->assertDatabaseCount('product_variants', 1);
+        $this->assertDatabaseCount('marketplace_variant_imports', 0);
+        $this->assertDatabaseCount('marketplace_variant_mappings', 0);
+        $this->assertDatabaseCount('marketplace_mapping_events', 0);
+        $response = $this->postJson($url, ['productId'=>$parent->id, 'sku'=>'REVIEWED-APPEND'])->assertOk();
+        $this->assertDatabaseHas('product_variants', ['id'=>$response->json('variantId'),
+            'product_id'=>$parent->id, 'sku'=>'REVIEWED-APPEND', 'stock'=>0, 'price'=>1234]);
+        $this->assertDatabaseHas('product_variants', ['id'=>$existing->id, 'sku'=>'OCCUPIED', 'stock'=>7]);
+        $this->assertDatabaseHas('products', ['id'=>$parent->id, 'title'=>'Keep parent', 'base_price'=>900]);
+        $this->assertDatabaseCount('products', 1);
+        $this->assertDatabaseCount('marketplace_variant_imports', 1);
+        $this->assertDatabaseCount('marketplace_variant_mappings', 1);
+        $this->assertDatabaseCount('marketplace_mapping_events', 1);
+    }
+
+    public function test_whole_import_accepts_reviewed_skus_only_for_its_own_variants(): void
+    {
+        $this->catalog();
+        $this->actingAs(\App\Models\User::findOrFail(42));
+        $ids=DB::table('marketplace_listing_variants')->orderBy('id')->pluck('id');
+        $url='/admin/api/marketplace/listings/'.$ids[0].'/import-product';
+        $this->postJson($url,['skuOverrides'=>['999999'=>'OTHER']])->assertUnprocessable();
+        $this->postJson($url,['skuOverrides'=>[(string)$ids[0]=>'SAME',(string)$ids[1]=>'SAME']])->assertConflict();
+        $this->assertDatabaseCount('products',0);
+        $this->assertDatabaseCount('marketplace_variant_mappings',0);
+        $response=$this->postJson($url,['skuOverrides'=>[(string)$ids[0]=>'REVIEWED-FIRST']])->assertOk();
+        $this->assertDatabaseHas('product_variants',['product_id'=>$response->json('productId'),'sku'=>'REVIEWED-FIRST','stock'=>0]);
+        $this->assertDatabaseHas('product_variants',['product_id'=>$response->json('productId'),'sku'=>'SOURCE-2','stock'=>0]);
+        $this->assertDatabaseCount('product_variants',2);
+    }
+
+    public function test_mixed_review_links_existing_sku_and_creates_only_missing_draft_variant(): void
+    {
+        $store=$this->catalog();
+        $parent=Product::create(['title'=>'Existing','handle'=>'existing','base_price'=>999,'status'=>'active']);
+        $existing=$parent->variants()->create(['sku'=>'SOURCE-1','title'=>'Original','price'=>999,'stock'=>7,'enabled'=>true]);
+        $ids=DB::table('marketplace_listing_variants')->orderBy('id')->pluck('id');
+        $service=app(\App\Services\Marketplace\MarketplaceReviewedImportService::class);
+        $review=[(string)$ids[0]=>['productId'=>$parent->id,'variantId'=>$existing->id]];
+        $result=$service->import($store,'100',42,[],$review);
+        $this->assertSame(1,$result['createdVariants']);
+        $this->assertSame(1,$result['linkedVariants']);
+        $this->assertDatabaseCount('products',2);
+        $this->assertDatabaseCount('product_variants',2);
+        $this->assertDatabaseHas('product_variants',['id'=>$existing->id,'stock'=>7,'price'=>999]);
+        $this->assertDatabaseHas('products',['id'=>$result['productId'],'status'=>'draft']);
+        $this->assertDatabaseHas('product_variants',['product_id'=>$result['productId'],'sku'=>'SOURCE-2','stock'=>0]);
+        DB::table('marketplace_variant_mappings')->delete();
+        $this->assertSame($result,$service->import($store,'100',42,[],$review));
+        $this->assertDatabaseCount('marketplace_variant_mappings',0);
+        $this->assertDatabaseCount('products',2);
+    }
+
+    public function test_mixed_review_conflict_rolls_back_prior_draft_creation(): void
+    {
+        $store=$this->catalog();
+        $parent=Product::create(['title'=>'Existing','handle'=>'existing-conflict','base_price'=>999,'status'=>'active']);
+        $existing=$parent->variants()->create(['sku'=>'SOURCE-2','title'=>'Original','price'=>999,'stock'=>7,'enabled'=>true]);
+        $ids=DB::table('marketplace_listing_variants')->orderBy('id')->pluck('id');
+        $service=app(\App\Services\Marketplace\MarketplaceReviewedImportService::class);
+        try {
+            $service->import($store,'100',42,[],[(string)$ids[1]=>['productId'=>$parent->id+100,'variantId'=>$existing->id]]);
+            $this->fail('Invalid parent must reject the entire review.');
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $exception) {
+            $this->assertContains($exception->getStatusCode(),[404,422]);
+        }
+        $this->assertDatabaseCount('products',1);
+        $this->assertDatabaseCount('product_variants',1);
+        $this->assertDatabaseCount('marketplace_variant_imports',0);
+        $this->assertDatabaseCount('marketplace_variant_mappings',0);
+        $this->assertDatabaseCount('marketplace_mapping_events',0);
+        $this->assertDatabaseCount('marketplace_reviewed_imports',0);
+        $this->assertDatabaseHas('product_variants',['id'=>$existing->id,'stock'=>7]);
+    }
+
+    public function test_reviewed_import_endpoint_accepts_explicit_existing_links(): void
+    {
+        $this->catalog();
+        $this->actingAs(\App\Models\User::findOrFail(42));
+        $parent=Product::create(['title'=>'Existing','handle'=>'endpoint-existing','base_price'=>999,'status'=>'active']);
+        $variant=$parent->variants()->create(['sku'=>'SOURCE-1','title'=>'Original','price'=>999,'stock'=>7,'enabled'=>true]);
+        $id=DB::table('marketplace_listing_variants')->orderBy('id')->value('id');
+        $url='/admin/api/marketplace/listings/'.$id.'/import-product';
+        $this->postJson($url,['existingLinks'=>[(string)$id=>['productId'=>$parent->id,'variantId'=>$variant->id]]])
+            ->assertOk()->assertJsonPath('createdVariants',1)->assertJsonPath('linkedVariants',1)->assertJsonPath('status','draft');
+        $this->assertDatabaseHas('product_variants',['id'=>$variant->id,'stock'=>7]);
+    }
+
+    public function test_all_existing_review_creates_no_empty_draft_and_rejects_same_store_reuse(): void
+    {
+        $store=$this->catalog();
+        $parent=Product::create(['title'=>'Existing','handle'=>'all-existing','base_price'=>999,'status'=>'active']);
+        $first=$parent->variants()->create(['sku'=>'SOURCE-1','title'=>'First','price'=>999,'stock'=>7,'enabled'=>true]);
+        $second=$parent->variants()->create(['sku'=>'SOURCE-2','title'=>'Second','price'=>888,'stock'=>8,'enabled'=>true]);
+        $ids=DB::table('marketplace_listing_variants')->orderBy('id')->pluck('id');
+        $service=app(\App\Services\Marketplace\MarketplaceReviewedImportService::class);
+        $target=['productId'=>$parent->id,'variantId'=>$first->id];
+        try {
+            $service->import($store,'100',42,[],[(string)$ids[0]=>$target,(string)$ids[1]=>$target]);
+            $this->fail('Same-store duplicate must fail.');
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $exception) {
+            $this->assertSame(409,$exception->getStatusCode());
+        }
+        $this->assertDatabaseCount('marketplace_variant_mappings',0);
+        $this->assertDatabaseCount('marketplace_mapping_events',0);
+        $this->assertDatabaseCount('marketplace_reviewed_imports',0);
+        $result=$service->import($store,'100',42,[],[(string)$ids[0]=>$target,
+            (string)$ids[1]=>['productId'=>$parent->id,'variantId'=>$second->id]]);
+        $this->assertSame(['productId'=>null,'createdVariants'=>0,'linkedVariants'=>2],$result);
+        $this->assertDatabaseCount('products',1);
+        $this->assertDatabaseCount('product_variants',2);
+        $this->assertDatabaseCount('marketplace_variant_imports',0);
+        $this->assertDatabaseCount('marketplace_variant_mappings',2);
+        $this->assertDatabaseHas('product_variants',['id'=>$first->id,'stock'=>7,'price'=>999]);
+        $this->assertDatabaseHas('product_variants',['id'=>$second->id,'stock'=>8,'price'=>888]);
+    }
+
     private function catalog(): int
     {
         \App\Models\User::factory()->create(['id'=>42, 'is_admin'=>true]);

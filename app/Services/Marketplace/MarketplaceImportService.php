@@ -11,12 +11,102 @@ use Illuminate\Support\Str;
 
 class MarketplaceImportService
 {
+    public function importVariantAsProduct(int $listingId, int $actorId, ?string $reviewedSku = null): int
+    {
+        $source = DB::table('marketplace_listing_variants')->find($listingId);
+        abort_unless($source, 404);
+        return DB::transaction(function () use ($listingId, $actorId, $source, $reviewedSku) {
+            abort_unless(DB::table('marketplace_stores')->where('id', $source->store_id)->lockForUpdate()->first(), 404);
+            $source = DB::table('marketplace_listing_variants')->where('id', $listingId)
+                ->where('store_id', $source->store_id)->lockForUpdate()->first();
+            abort_unless($source, 404);
+            $identity = DB::table('marketplace_variant_imports')->where('listing_variant_id', $listingId)->lockForUpdate()->first();
+            // A retry must never create a second parent or restore a removed mapping.
+            if ($identity) return (int) $identity->product_variant_id;
+            abort_if(DB::table('marketplace_product_imports')->where('store_id', $source->store_id)
+                ->where('external_product_id', $source->external_product_id)->exists(),
+                409, 'This product was already imported. Select its existing JW product.');
+            $data = json_decode($source->observed_data, true, 512, JSON_THROW_ON_ERROR);
+            $title = $data['productTitle'] ?? null;
+            $brand = $data['brand'] ?? null;
+            abort_unless(is_string($title) && trim($title) !== '' && mb_strlen($title) <= 255,
+                422, 'Review the channel product title before import.');
+            abort_unless($brand === null || (is_string($brand) && mb_strlen($brand) <= 255),
+                422, 'Review the channel brand before import.');
+            $images = $data['productImages'] ?? [];
+            abort_unless(is_array($images) && array_is_list($images), 422, 'Review the channel image list before import.');
+            if (!$images && !empty($data['productImage'])) $images = [$data['productImage']];
+            foreach ($images as $image) {
+                abort_unless(is_string($image) && $image !== '' && strlen($image) <= 255 && MediaUrlPolicy::isSafe($image),
+                    422, 'Review the channel image URL before import.');
+            }
+            $product = Product::create(['title'=>trim($title), 'handle'=>'marketplace-'.Str::uuid(),
+                'base_price'=>0, 'status'=>'draft', 'has_variants'=>false, 'is_featured'=>false,
+                'description'=>$this->descriptions->render($data), 'brand'=>$brand === null ? null : (trim($brand) ?: null)]);
+            $variantId = $this->importVariant($listingId, $product->id, $actorId, $reviewedSku);
+            $product->update(['base_price'=>ProductVariant::findOrFail($variantId)->price]);
+            foreach (array_values(array_unique($images)) as $position => $image) {
+                $product->images()->create(['path'=>$image, 'alt'=>trim($title), 'position'=>$position]);
+            }
+            return $variantId;
+        });
+    }
+
+    public function importVariant(int $listingId, int $destinationProductId, int $actorId, ?string $reviewedSku = null): int
+    {
+        $source = DB::table('marketplace_listing_variants')->find($listingId);
+        abort_unless($source, 404);
+        return DB::transaction(function () use ($listingId, $destinationProductId, $actorId, $source, $reviewedSku) {
+            // Match the mapping service's store-first lock order.
+            abort_unless(DB::table('marketplace_stores')->where('id', $source->store_id)->lockForUpdate()->first(), 404);
+            $source = DB::table('marketplace_listing_variants')->where('id', $listingId)->where('store_id', $source->store_id)->lockForUpdate()->first();
+            abort_unless($source, 404);
+            $identity = DB::table('marketplace_variant_imports')->where('listing_variant_id', $listingId)->lockForUpdate()->first();
+            if ($identity) {
+                $variant = ProductVariant::findOrFail($identity->product_variant_id);
+                abort_unless((int) $variant->product_id === $destinationProductId, 409, 'This variant was imported into another JW product.');
+                return (int) $variant->id;
+            }
+            abort_if(DB::table('marketplace_variant_mappings')->where('listing_variant_id', $listingId)->exists(),
+                409, 'This external variant is already linked.');
+            $parentImport = DB::table('marketplace_product_imports')->where('store_id', $source->store_id)
+                ->where('external_product_id', $source->external_product_id)->first();
+            abort_if($parentImport && (int) $parentImport->product_id !== $destinationProductId,
+                409, 'The imported parent belongs to another JW product.');
+            $product = Product::whereKey($destinationProductId)->lockForUpdate()->firstOrFail();
+            $data = json_decode($source->observed_data, true, 512, JSON_THROW_ON_ERROR);
+            $sku = $reviewedSku ?? ($data['sku'] ?? null);
+            $title = $data['title'] ?? null;
+            abort_unless(is_string($sku) && trim($sku) !== '' && mb_strlen($sku) <= 255
+                && is_string($title) && trim($title) !== '' && mb_strlen($title) <= 255,
+                422, 'Review the variant title and SKU before import.');
+            $sku = trim($sku);
+            abort_unless(($data['currency'] ?? null) === $this->currencies->default()['code'],
+                422, 'Channel currency differs from JW currency.');
+            $price = $data['price'] ?? null;
+            abort_unless(is_scalar($price) && preg_match('/^\d{1,8}(?:\.\d{1,2})?$/D', (string) $price),
+                422, 'Review the channel price before import.');
+            [$major, $minor] = array_pad(explode('.', (string) $price, 2), 2, '');
+            $cents = (int) $major * 100 + (int) str_pad($minor, 2, '0');
+            abort_if($cents > 4294967295, 422, 'Channel price exceeds the supported range.');
+            abort_if(ProductVariant::where('sku', $sku)->exists(), 409, 'Link the existing JW SKU instead.');
+            $variant = $product->variants()->create(['sku'=>$sku, 'title'=>trim($title), 'price'=>$cents, 'stock'=>0, 'enabled'=>true]);
+            $this->mappings->map($listingId, $variant->id, $product->id, $actorId);
+            DB::table('marketplace_variant_imports')->insert(['listing_variant_id'=>$listingId,
+                'product_variant_id'=>$variant->id, 'actor_id'=>$actorId, 'created_at'=>now(), 'updated_at'=>now()]);
+            if ($product->variants()->count() > 1 && !$product->has_variants) {
+                $product->update(['has_variants'=>true]);
+            }
+            return (int) $variant->id;
+        });
+    }
+
     public function __construct(private MarketplaceFoundationService $mappings, private CurrencySettings $currencies,
         private MarketplaceProductDescription $descriptions) {}
 
-    public function importProduct(int $storeId, string $externalProductId, int $actorId): int
+    public function importProduct(int $storeId, string $externalProductId, int $actorId, array $skuOverrides = []): int
     {
-        return DB::transaction(function () use ($storeId, $externalProductId, $actorId) {
+        return DB::transaction(function () use ($storeId, $externalProductId, $actorId, $skuOverrides) {
             abort_unless(DB::table('marketplace_stores')->where('id', $storeId)->lockForUpdate()->first(), 404);
             $import = DB::table('marketplace_product_imports')->where('store_id', $storeId)
                 ->where('external_product_id', $externalProductId)->first();
@@ -25,6 +115,10 @@ class MarketplaceImportService
             $listings = DB::table('marketplace_listing_variants')->where('store_id', $storeId)
                 ->where('external_product_id', $externalProductId)->orderBy('id')->lockForUpdate()->get();
             abort_if($listings->isEmpty(), 404, 'Fetch this product before importing it.');
+            abort_if(array_diff(array_map('strval',array_keys($skuOverrides)), $listings->pluck('id')->map(fn($id)=>(string)$id)->all()),
+                422, 'SKU overrides must belong to this product.');
+            abort_if(DB::table('marketplace_variant_imports')->whereIn('listing_variant_id', $listings->pluck('id'))->exists(),
+                409, 'A variant was already imported. Review its existing JW product and import only missing variants.');
             abort_if(DB::table('marketplace_variant_mappings')->whereIn('listing_variant_id', $listings->pluck('id'))->exists(),
                 409, 'This product already has mappings. Review its existing JW product before importing.');
             $currency = $this->currencies->default()['code'];
@@ -48,7 +142,9 @@ class MarketplaceImportService
                         422, 'Review the channel image URL before import.');
                     if (!in_array($image, $images, true)) $images[] = $image;
                 }
-                $sku = trim((string) ($data['sku'] ?? ''));
+                $rawSku = $skuOverrides[$listing->id] ?? ($data['sku'] ?? '');
+                abort_unless(is_string($rawSku), 422, 'Review the SKU code before import.');
+                $sku = trim($rawSku);
                 $title = trim((string) ($data['title'] ?? ''));
                 $productTitle = trim((string) ($data['productTitle'] ?? ''));
                 abort_if($sku === '' || mb_strlen($sku) > 255 || $title === '' || mb_strlen($title) > 255

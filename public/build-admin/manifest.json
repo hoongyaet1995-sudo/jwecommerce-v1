@@ -1,31 +1,31 @@
 {
-  "_index-BluaIQnX.js": {
-    "file": "assets/index-BluaIQnX.js",
+  "_index-23KzvkxZ.js": {
+    "file": "assets/index-23KzvkxZ.js",
     "name": "index",
     "css": [
-      "assets/index-P5c7fGHV.css"
+      "assets/index-vBPUgCab.css"
     ]
   },
-  "_index-P5c7fGHV.css": {
-    "file": "assets/index-P5c7fGHV.css",
-    "src": "_index-P5c7fGHV.css"
+  "_index-vBPUgCab.css": {
+    "file": "assets/index-vBPUgCab.css",
+    "src": "_index-vBPUgCab.css"
   },
   "src/main.tsx": {
-    "file": "assets/main-Dzb3sJRI.js",
+    "file": "assets/main-BhZMiV5w.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
     "imports": [
-      "_index-BluaIQnX.js"
+      "_index-23KzvkxZ.js"
     ]
   },
   "src/public-page.tsx": {
-    "file": "assets/public-page-3pyF-wFy.js",
+    "file": "assets/public-page-WJJ8LDZB.js",
     "name": "public-page",
     "src": "src/public-page.tsx",
     "isEntry": true,
     "imports": [
-      "_index-BluaIQnX.js"
+      "_index-23KzvkxZ.js"
     ]
   }
 }

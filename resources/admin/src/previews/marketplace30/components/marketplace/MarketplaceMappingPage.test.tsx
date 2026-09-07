@@ -31,5 +31,20 @@ it('keeps a server page visible on page two without slicing it a second time', a
   expect(importButton.disabled).toBe(false);
   await act(async()=>importButton.click());
   expect(importProducts).toHaveBeenCalledWith(['1:p']);
+  const previewModal=vi.fn(()=>null);
+  await act(async()=>root.render(<PreviewContext.Provider value={context as unknown as React.ContextType<typeof PreviewContext>}>
+    <MarketplaceMappingPage renderVariantModal={previewModal} serverPage={{total:320,summary:{products:320,variants:640,mapped:320,unmapped:320},loading:false,onQueryChange:query}}/>
+  </PreviewContext.Provider>));
+  await act(async()=>container.querySelector<HTMLButtonElement>('#btn-link-spec-1')!.click());
+  expect(previewModal).toHaveBeenCalledWith(expect.objectContaining({storeProduct:expect.objectContaining({id:'1:p'}),storeVariant:expect.objectContaining({id:'1'})}),expect.any(Function));
+  const reviewPublishing=vi.fn();
+  await act(async()=>root.render(<PreviewContext.Provider value={context as unknown as React.ContextType<typeof PreviewContext>}>
+    <MarketplaceMappingPage serverPage={{total:320,summary:{products:320,variants:640,mapped:320,unmapped:320},loading:false,onQueryChange:query,onReviewPublishing:reviewPublishing}}/>
+  </PreviewContext.Provider>));
+  const publishReview=container.querySelector<HTMLButtonElement>('#btn-push-master-to-store')!;
+  expect(publishReview.disabled).toBe(false);
+  expect(publishReview.title).toContain('read-only');
+  await act(async()=>publishReview.click());
+  expect(reviewPublishing).toHaveBeenCalledWith(undefined);
   await act(async()=>root.unmount()); vi.unstubAllGlobals();
 });

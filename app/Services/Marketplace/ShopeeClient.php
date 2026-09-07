@@ -8,6 +8,143 @@ use RuntimeException;
 
 class ShopeeClient
 {
+    public function searchAttributeValues(#[\SensitiveParameter] string $accessToken, string $shopId,
+        int $attributeId, string $keyword = '', int $cursor = 0): array
+    {
+        if ($attributeId<=0 || $cursor<0) throw new RuntimeException('Invalid attribute search.');
+        $payload=$this->readShop('/api/v2/product/search_attribute_value_list',$accessToken,$shopId,
+            ['attribute_id'=>$attributeId,'value_name'=>$keyword,'cursor'=>$cursor,'limit'=>100],true);
+        $page=$payload['response'] ?? null;
+        if (!is_array($page) || !is_array($page['value_list'] ?? null) || !array_is_list($page['value_list'])
+            || !is_int($page['page_info']['cursor'] ?? null) || !is_bool($page['page_info']['has_next'] ?? null)
+            || ($page['page_info']['has_next'] && $page['page_info']['cursor']<=$cursor)) {
+            throw new RuntimeException('Shopee attribute search response was incomplete or pagination did not advance.');
+        }
+        $values=[];
+        foreach ($page['value_list'] as $value) {
+            if (!is_array($value) || !is_int($value['value_id'] ?? null) || $value['value_id']<=0
+                || !is_string($value['value_name'] ?? null)) throw new RuntimeException('Shopee attribute value was incomplete.');
+            $values[]=['value_id'=>$value['value_id'],'value_name'=>$value['value_name']];
+        }
+        return ['value_list'=>$values,'page_info'=>['cursor'=>$page['page_info']['cursor'],'has_next'=>$page['page_info']['has_next']]];
+    }
+
+    /** Transport only: the caller must validate the reviewed listing payload before dispatch. */
+    public function createItem(#[\SensitiveParameter] string $accessToken, string $shopId, array $item): string
+    {
+        if (!config('marketplace.publish_operations_enabled',false)) throw new RuntimeException('Marketplace publishing is disabled.');
+        $config=$this->configuration();
+        if ($accessToken==='' || !ctype_digit($shopId) || (int)$shopId<=0) throw new RuntimeException('Invalid Shopee store credentials.');
+        $path='/api/v2/product/add_item';
+        $timestamp=now()->timestamp;
+        $query=['partner_id'=>(int)$config['partner_id'],'timestamp'=>$timestamp,'access_token'=>$accessToken,'shop_id'=>(int)$shopId,
+            'sign'=>hash_hmac('sha256',$config['partner_id'].$path.$timestamp.$accessToken.$shopId,$config['partner_key'])];
+        try {
+            $response=Http::acceptJson()->connectTimeout(10)->timeout(40)->withoutRedirecting()
+                ->post($this->host($config).$path.'?'.http_build_query($query),$item);
+        } catch (ConnectionException) {
+            throw new PublishingResultUncertain('Shopee creation result is unknown. Reconcile before retrying.');
+        }
+        $payload=$response->json();
+        // Conservatively retain ambiguity for all unverified error responses.
+        if (!$response->successful() || !is_array($payload) || ($payload['error'] ?? null)!==''
+            || !is_int($payload['response']['item_id'] ?? null) || $payload['response']['item_id']<=0) {
+            throw new PublishingResultUncertain('Shopee creation was not confirmed. Reconcile before retrying.');
+        }
+        return (string)$payload['response']['item_id'];
+    }
+
+    public function uploadImage(#[\SensitiveParameter] string $bytes): string
+    {
+        if ($bytes==='' || strlen($bytes)>10000000) throw new RuntimeException('Image must be no larger than 10 MB.');
+        $info=@getimagesizefromstring($bytes);
+        $mime=$info['mime'] ?? null;
+        if (!in_array($mime,['image/jpeg','image/png'],true)) throw new RuntimeException('Shopee requires a JPEG or PNG image.');
+        $config=$this->configuration();
+        $path='/api/v2/media_space/upload_image';
+        try {
+            $response=Http::acceptJson()->connectTimeout(10)->timeout(40)->withoutRedirecting()
+                ->attach('image',$bytes,$mime==='image/png'?'product.png':'product.jpg',['Content-Type'=>$mime])
+                ->post($this->host($config).$path.'?'.http_build_query($this->signedQuery($config,$path)),['scene'=>'normal']);
+        } catch (ConnectionException) {
+            throw new RuntimeException('Shopee image upload could not be confirmed.');
+        }
+        if (!$response->successful() || !is_array($response->json())) throw new RuntimeException('Shopee image upload could not be confirmed.');
+        return ShopeeUploadedImage::identity($response->json());
+    }
+
+    public function logisticsChannels(#[\SensitiveParameter] string $accessToken, string $shopId): array
+    {
+        $payload = $this->readShop('/api/v2/logistics/get_channel_list', $accessToken, $shopId, []);
+        $channels = $payload['response']['logistics_channel_list'] ?? null;
+        if (!is_array($channels) || !array_is_list($channels)) {
+            throw new RuntimeException('Shopee logistics response was incomplete.');
+        }
+        foreach ($channels as $channel) {
+            if (!is_array($channel) || !is_int($channel['logistics_channel_id'] ?? null) || $channel['logistics_channel_id'] <= 0
+                || !is_string($channel['logistics_channel_name'] ?? null) || !is_bool($channel['enabled'] ?? null)
+                || !is_string($channel['fee_type'] ?? null)) {
+                throw new RuntimeException('Shopee logistics response was incomplete.');
+            }
+        }
+        return $channels;
+    }
+
+    public function brandPage(#[\SensitiveParameter] string $accessToken, string $shopId, int $categoryId, int $offset = 0): array
+    {
+        if ($categoryId <= 0 || $offset < 0) throw new RuntimeException('Invalid Shopee brand filter.');
+        $payload = $this->readShop('/api/v2/product/get_brand_list', $accessToken, $shopId,
+            ['category_id'=>$categoryId, 'offset'=>$offset, 'page_size'=>100, 'status'=>1, 'language'=>'en']);
+        $page = $payload['response'] ?? null;
+        if (!is_array($page) || !is_array($page['brand_list'] ?? null) || !array_is_list($page['brand_list'])
+            || !is_bool($page['has_next_page'] ?? null) || !is_bool($page['is_mandatory'] ?? null)
+            || !is_string($page['input_type'] ?? null)
+            || ($page['has_next_page'] && (!is_int($page['next_offset'] ?? null) || $page['next_offset'] <= $offset))) {
+            throw new RuntimeException('Shopee brand response was incomplete or pagination did not advance.');
+        }
+        foreach ($page['brand_list'] as $brand) {
+            if (!is_array($brand) || !is_int($brand['brand_id'] ?? null) || $brand['brand_id'] < 0
+                || !is_string($brand['original_brand_name'] ?? null) || !is_string($brand['display_brand_name'] ?? null)) {
+                throw new RuntimeException('Shopee brand response was incomplete.');
+            }
+        }
+        return $page;
+    }
+
+    public function attributeTree(#[\SensitiveParameter] string $accessToken, string $shopId, int $categoryId): array
+    {
+        if ($categoryId <= 0) throw new RuntimeException('Invalid Shopee attribute category.');
+        $payload = $this->readShop('/api/v2/product/get_attribute_tree', $accessToken, $shopId,
+            ['category_id_list'=>(string) $categoryId, 'language'=>'en']);
+        $rows = $payload['response']['list'] ?? null;
+        if (!is_array($rows) || !array_is_list($rows) || count($rows) !== 1
+            || ($rows[0]['category_id'] ?? null) !== $categoryId || !empty($rows[0]['warning'])
+            || !is_array($rows[0]['attribute_tree'] ?? null) || !array_is_list($rows[0]['attribute_tree'])) {
+            throw new RuntimeException('Shopee attribute response was incomplete.');
+        }
+        // Preserve conditional child attributes, input types and units for the listing validator.
+        return $rows[0]['attribute_tree'];
+    }
+
+    public function categoryTree(#[\SensitiveParameter] string $accessToken, string $shopId): array
+    {
+        $payload = $this->readShop('/api/v2/product/get_category', $accessToken, $shopId, ['language'=>'en']);
+        $categories = $payload['response']['category_list'] ?? null;
+        if (!is_array($categories) || !array_is_list($categories)) {
+            throw new RuntimeException('Shopee category response was incomplete.');
+        }
+        foreach ($categories as $category) {
+            if (!is_array($category) || !is_int($category['category_id'] ?? null) || $category['category_id'] <= 0
+                || !is_int($category['parent_category_id'] ?? null) || $category['parent_category_id'] < 0
+                || !is_string($category['original_category_name'] ?? null)
+                || !is_string($category['display_category_name'] ?? null)
+                || !is_bool($category['has_children'] ?? null)) {
+                throw new RuntimeException('Shopee category response was incomplete.');
+            }
+        }
+        return $categories;
+    }
+
     public function isAuthorizationReady(): bool
     {
         // Direct callbacks only. A shared authorization gateway needs a separate reviewed contract.
@@ -199,7 +336,7 @@ class ShopeeClient
         return $models;
     }
 
-    private function readShop(string $path, #[\SensitiveParameter] string $accessToken, string $shopId, array $parameters): array
+    private function readShop(string $path, #[\SensitiveParameter] string $accessToken, string $shopId, array $parameters, bool $postSearch = false): array
     {
         $config = $this->configuration();
         if ($accessToken === '' || !ctype_digit($shopId) || (int) $shopId <= 0) {
@@ -207,12 +344,15 @@ class ShopeeClient
         }
         $timestamp = now()->timestamp;
         try {
-            $response = Http::acceptJson()->connectTimeout(10)->timeout(20)->withoutRedirecting()
-                ->get($this->host($config).$path, [
+            $query = [
                     'partner_id'=>(int) $config['partner_id'], 'timestamp'=>$timestamp,
                     'access_token'=>$accessToken, 'shop_id'=>$shopId,
                     'sign'=>hash_hmac('sha256', $config['partner_id'].$path.$timestamp.$accessToken.$shopId, $config['partner_key']),
-                ] + $parameters);
+                ];
+            $request = Http::acceptJson()->connectTimeout(10)->timeout(20)->withoutRedirecting();
+            $response = $postSearch
+                ? $request->post($this->host($config).$path.'?'.http_build_query($query),$parameters)
+                : $request->get($this->host($config).$path,$query + $parameters);
         } catch (ConnectionException) {
             throw new RuntimeException('Shopee read request could not reach the platform.');
         }

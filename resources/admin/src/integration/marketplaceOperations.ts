@@ -1,6 +1,18 @@
 import {marketplaceRequest} from './marketplaceData';
 
 export type MarketplacePlatform = 'shopee' | 'lazada' | 'tiktok' | 'shopify';
+export interface PublishingTask {
+  id: number; storeId: number; productId: number;
+  status: 'queued' | 'processing' | 'succeeded' | 'rejected' | 'uncertain';
+  externalItemId: string|null; createdAt: string; updatedAt: string;
+}
+export type VariantImportReview = ({newProduct: true; productId?: never} | {productId: number; newProduct?: never}) & {sku?: string};
+export interface ProductImportResult {
+  productId: number|null;
+  status: string|null;
+  createdVariants?: number;
+  linkedVariants?: number;
+}
 export type OAuthResult = {status: 'success' | 'failed' | 'cancelled'; store: {id: string; platform: MarketplacePlatform; shopId: string; shopName: string} | null};
 export interface StoreConnection {
   id: string; platform: MarketplacePlatform; shopName: string; shopId: string | null;
@@ -66,6 +78,27 @@ export async function requestMarketplaceAuthorization(platform: MarketplacePlatf
   window.location.assign(officialShopeeAuthorizationUrl(url));
 }
 export const marketplaceOperations = {
+  attributeValues: (storeId:string,attributeId:number,keyword='',cursor=0) => {
+    const params=new URLSearchParams({attributeId:String(attributeId),q:keyword,cursor:String(cursor)});
+    return marketplaceRequest<{storeId:number;attributeId:number;data:{
+      value_list:{value_id:number;value_name:string}[];page_info:{cursor:number;has_next:boolean}
+    }}>(`/stores/${idPath(storeId)}/listing-attribute-values?${params}`);
+  },
+  publishingTask: async (id: string): Promise<PublishingTask> => {
+    const task = await marketplaceRequest<PublishingTask>(`/publishing-tasks/${idPath(id)}`);
+    if (!task || !Number.isSafeInteger(task.id) || task.id <= 0 || String(task.id) !== id
+      || !Number.isSafeInteger(task.storeId) || task.storeId <= 0
+      || !Number.isSafeInteger(task.productId) || task.productId <= 0
+      || !['queued','processing','succeeded','rejected','uncertain'].includes(task.status)
+      || (task.externalItemId !== null && (typeof task.externalItemId !== 'string' || !task.externalItemId.trim()))
+      || (task.status === 'succeeded' && !task.externalItemId)
+      || typeof task.createdAt !== 'string' || typeof task.updatedAt !== 'string') {
+      throw new Error('Invalid publishing task response. Refresh to verify the saved result.');
+    }
+    return task;
+  },
+  importVariant: (listingId: string, review: VariantImportReview) =>
+    marketplaceRequest<{variantId: number; productId: number}>(`/listings/${idPath(listingId)}/import-variant`, 'POST', review),
   orderSummary: (filters: Filters = {}) => marketplaceRequest<{total:number;statuses:Record<string,number>}>(`/orders/summary?${query(filters)}`),
   mappingContext: (listingId: string, variantIds: number[]) => {
     const params = new URLSearchParams();
@@ -75,7 +108,9 @@ export const marketplaceOperations = {
   catalogSummary: (filters: Filters = {}) => marketplaceRequest<CatalogSummary>(`/catalog/summary?${query(filters)}`),
   oauthResult: () => marketplaceRequest<{result: OAuthResult | null}>('/oauth-result'),
   catalogProducts: (filters: Filters = {}) => marketplaceRequest<Page<CatalogProduct>>(`/catalog/products?${query(filters)}`),
-  importProduct: (listingId: string) => marketplaceRequest<{productId: number; status: string}>(`/listings/${idPath(listingId)}/import-product`, 'POST'),
+  importProduct: (listingId: string, review?: {skuOverrides: Record<string,string>; existingLinks?:Record<string,{productId:number;variantId:number}>}) => review === undefined
+    ? marketplaceRequest<ProductImportResult>(`/listings/${idPath(listingId)}/import-product`, 'POST')
+    : marketplaceRequest<ProductImportResult>(`/listings/${idPath(listingId)}/import-product`, 'POST', review),
   retryOrders: (id: string) => marketplaceRequest<{runId: number}>(`/order-runs/${idPath(id)}/retry`, 'POST'),
   connections: () => marketplaceRequest<{stores: StoreConnection[]; capabilities: Record<MarketplacePlatform, ProviderCapabilities>; localCapabilities?:{importProducts:boolean}}>('/connections'),
   authorize: (reconnectId?: string) => marketplaceRequest<{url: string}>('/shopee/authorize', 'POST', reconnectId ? {reconnectStoreId: Number(reconnectId)} : {}),

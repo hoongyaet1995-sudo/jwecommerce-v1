@@ -15,11 +15,14 @@ export interface MappingPageQuery {
   page: number; per_page: number; view: 'grouped' | 'flat';
 }
 export interface MappingServerPage {
+  onReviewPublishing?: (storeId?:string)=>void;
   canFetch?:boolean;
   canImport?:boolean; importing?:boolean; onImport?:(ids:string[])=>Promise<ImportResult[]>;
   total: number; summary: CatalogSummary; loading: boolean; onQueryChange: (query: MappingPageQuery) => void;
 }
-export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> = ({serverPage}) => {
+export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage;
+  renderVariantModal?: (selection:{storeProduct:MarketplaceStoreProduct;storeVariant:MarketplaceStoreVariant},onClose:()=>void)=>React.ReactNode;
+}> = ({serverPage,renderVariantModal}) => {
   const {
     products = [],
     connections = [],
@@ -316,9 +319,13 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
           <button
             id="btn-push-master-to-store"
             type="button"
-            disabled={!!serverPage}
-            title={serverPage ? 'Publishing is not enabled yet.' : undefined}
-            onClick={() => setActivePublishModal({ isOpen: true, connectionId: selectedConnectionId === 'all' ? undefined : selectedConnectionId })}
+            disabled={!!serverPage && !serverPage.onReviewPublishing}
+            title={serverPage ? serverPage.onReviewPublishing ? 'Open read-only listing metadata review. Publishing remains disabled.' : 'Publishing is not enabled yet.' : undefined}
+            onClick={() => {
+              const connectionId=selectedConnectionId === 'all' ? undefined : selectedConnectionId;
+              if (serverPage) {serverPage.onReviewPublishing?.(connectionId);return;}
+              setActivePublishModal({ isOpen: true, connectionId });
+            }}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm shadow-indigo-500/20 transition-all cursor-pointer"
           >
             <UploadCloud className="w-3.5 h-3.5" />
@@ -1428,7 +1435,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
       )}
 
       {/* Product Mapping Modal */}
-      {activeMappingModal && (
+      {activeMappingModal && (renderVariantModal ? renderVariantModal(activeMappingModal,()=>setActiveMappingModal(null)) : (
         <ProductMappingModal
           isOpen={Boolean(activeMappingModal)}
           onClose={() => setActiveMappingModal(null)}
@@ -1436,7 +1443,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
           storeVariant={activeMappingModal.storeVariant}
           checkConflict={serverPage ? checkMarketplaceMappingConflict : undefined}
         />
-      )}
+      ))}
 
       {/* Publish Master Product to Store Modal */}
       <PublishProductModal

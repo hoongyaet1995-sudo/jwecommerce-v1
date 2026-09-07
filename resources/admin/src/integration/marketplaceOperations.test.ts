@@ -5,7 +5,37 @@ import {marketplaceOperations, officialShopeeAuthorizationUrl} from './marketpla
 vi.mock('./marketplaceData', () => ({marketplaceRequest: vi.fn().mockResolvedValue({})}));
 
 describe('marketplace operational contract', () => {
+  it('scopes attribute searches to the selected store and encodes keywords', async () => {
+    const result={storeId:7,attributeId:123,data:{value_list:[{value_id:42,value_name:'Blue'}],page_info:{cursor:42,has_next:false}}};
+    vi.mocked(marketplaceRequest).mockResolvedValueOnce(result);
+    expect(await marketplaceOperations.attributeValues('7',123,'Blue&attributeId=999',0)).toEqual(result);
+    const url=new URL(vi.mocked(marketplaceRequest).mock.calls.at(-1)![0],'https://example.test');
+    expect(url.pathname).toBe('/stores/7/listing-attribute-values');
+    expect(url.searchParams.get('attributeId')).toBe('123');
+    expect(url.searchParams.get('q')).toBe('Blue&attributeId=999');
+    expect(url.searchParams.get('cursor')).toBe('0');
+  });
+  it('reads persisted publishing states without treating a parent checkpoint as success', async () => {
+    const task = {id: 12, storeId: 1, productId: 51, status: 'uncertain', externalItemId: '846055463',
+      createdAt: '2026-09-07 12:00:00', updatedAt: '2026-09-07 12:01:00'};
+    vi.mocked(marketplaceRequest).mockResolvedValueOnce(task);
+    expect(await marketplaceOperations.publishingTask('12')).toEqual(task);
+    expect(marketplaceRequest).toHaveBeenLastCalledWith('/publishing-tasks/12');
+    for (const invalid of [{...task, status: 'success'}, {...task, status: 'succeeded', externalItemId: null}, {...task, id: 13}]) {
+      vi.mocked(marketplaceRequest).mockResolvedValueOnce(invalid);
+      await expect(marketplaceOperations.publishingTask('12')).rejects.toThrow('Invalid publishing task response');
+    }
+  });
   beforeEach(() => vi.mocked(marketplaceRequest).mockReset().mockResolvedValue({}));
+  it('submits reviewed variant destination only and propagates rejection instead of reporting success', async () => {
+    vi.mocked(marketplaceRequest).mockResolvedValueOnce({variantId: 92, productId: 51});
+    const result = await marketplaceOperations.importVariant('12', {newProduct: true, sku: 'JW-REVIEWED'});
+    expect(marketplaceRequest).toHaveBeenLastCalledWith('/listings/12/import-variant', 'POST', {newProduct: true, sku: 'JW-REVIEWED'});
+    expect(result).toEqual({variantId: 92, productId: 51});
+    vi.mocked(marketplaceRequest).mockRejectedValueOnce(new Error('SKU conflict'));
+    await expect(marketplaceOperations.importVariant('12', {productId: 51, sku: 'TAKEN'})).rejects.toThrow('SKU conflict');
+    expect(marketplaceRequest).toHaveBeenLastCalledWith('/listings/12/import-variant', 'POST', {productId: 51, sku: 'TAKEN'});
+  });
   it('loads persisted order detail without inventing mapping or missing price information', async () => {
     const detail = {data: {id: 8, external_order_id: 'TEST-ORDER', lines: [{external_sku: 'JWSTORE1PS5-500GB',
       quantity: 1, unit_price: null, mapping_status: 'unmapped', jw_variant_id: null, jw_sku: null}]}};
@@ -37,6 +67,11 @@ describe('marketplace operational contract', () => {
   it('imports a saved listing without transmitting client product or inventory data', async () => {
     await marketplaceOperations.importProduct('12');
     expect(marketplaceRequest).toHaveBeenLastCalledWith('/listings/12/import-product', 'POST');
+  });
+  it('transmits reviewed whole-product SKU overrides to the import endpoint', async()=>{
+    await marketplaceOperations.importProduct('12',{skuOverrides:{'12':'JW-NEW','13':'JW-NEXT'}});
+    expect(marketplaceRequest).toHaveBeenLastCalledWith('/listings/12/import-product','POST',
+      {skuOverrides:{'12':'JW-NEW','13':'JW-NEXT'}});
   });
   it('retries an order run through the protected task endpoint', async () => {
     await marketplaceOperations.retryOrders('9');

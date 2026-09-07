@@ -294,7 +294,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         ]])->header('Cache-Control', 'no-store');
     });
     Route::middleware(\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':read')->group(function () {
+    Route::get('/api/marketplace/publishing-tasks/{task}', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'show'])->whereNumber('task');
     Route::get('/api/marketplace/catalog', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'index']);
+    Route::get('/api/marketplace/stores/{store}/listing-attribute-values', [\App\Http\Controllers\Admin\MarketplaceListingMetadataController::class, 'attributeValues'])->whereNumber('store')->middleware('throttle:10,1');
+    Route::get('/api/marketplace/stores/{store}/listing-categories', [\App\Http\Controllers\Admin\MarketplaceListingMetadataController::class, 'categories'])->whereNumber('store')
+        ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':read', 'throttle:10,1']);
+    Route::get('/api/marketplace/stores/{store}/listing-attributes', [\App\Http\Controllers\Admin\MarketplaceListingMetadataController::class, 'attributes'])->whereNumber('store')
+        ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':read', 'throttle:10,1']);
+    Route::get('/api/marketplace/stores/{store}/listing-brands', [\App\Http\Controllers\Admin\MarketplaceListingMetadataController::class, 'brands'])->whereNumber('store')
+        ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':read', 'throttle:10,1']);
+    Route::get('/api/marketplace/stores/{store}/listing-logistics', [\App\Http\Controllers\Admin\MarketplaceListingMetadataController::class, 'logistics'])->whereNumber('store')
+        ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':read', 'throttle:10,1']);
     Route::get('/api/marketplace/catalog/summary', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'summary']);
     Route::get('/api/marketplace/listings/{listing}/mapping-context', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'mappingContext'])->whereNumber('listing');
     Route::get('/api/marketplace/catalog/products', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'products']);
@@ -309,6 +319,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/marketplace/catalog-runs/{run}/retry', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'retry'])->whereNumber('run')->middleware('throttle:10,1');
     });
     Route::post('/api/marketplace/listings/{listing}/import-product', [\App\Http\Controllers\Admin\MarketplaceImportController::class, 'product'])->whereNumber('listing')
+        ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':import', 'throttle:10,1']);
+    Route::post('/api/marketplace/listings/{listing}/import-variant', [\App\Http\Controllers\Admin\MarketplaceImportController::class, 'variant'])->whereNumber('listing')
         ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':import', 'throttle:10,1']);
     Route::post('/api/marketplace/shopee/authorize', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'start'])->middleware('throttle:10,1');
     Route::post('/api/marketplace/stores/{store}/disconnect', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'disconnect'])->whereNumber('store');

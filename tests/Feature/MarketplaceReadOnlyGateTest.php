@@ -12,11 +12,13 @@ class MarketplaceReadOnlyGateTest extends TestCase
 
     public function test_read_release_exposes_catalog_and_orders_but_not_import(): void
     {
-        config(['marketplace.operations_enabled'=>false, 'marketplace.read_operations_enabled'=>true]);
+        config(['marketplace.operations_enabled'=>false, 'marketplace.read_operations_enabled'=>true,
+            'marketplace.import_operations_enabled'=>false]);
         $this->actingAs(User::factory()->create(['is_admin'=>true]));
         $this->getJson('/admin/api/marketplace/catalog')->assertOk();
         $this->getJson('/admin/api/marketplace/orders')->assertOk();
         $this->postJson('/admin/api/marketplace/listings/1/import-product')->assertStatus(503);
+        $this->postJson('/admin/api/marketplace/listings/1/import-variant')->assertStatus(503);
         // Reading does not make remote publishing available.
         $this->postJson('/admin/api/marketplace/remote/publish')->assertStatus(409);
         config(['marketplace.shopee.enabled'=>true, 'marketplace.shopee.environment'=>'sandbox',
