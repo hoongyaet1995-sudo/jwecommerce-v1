@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { CmsPage, PageDocument, PageDraftPayload, PageSection } from '../../types';
+import { SectionMotionPreset, CmsPage, PageDocument, PageDraftPayload, PageSection } from '../../types';
 import { useAdmin } from '../../context/AdminContext';
 import { useAdminCurrency } from '../../context/useAdminCurrency';
 import { readAdminBootstrap } from '../../integration/adminBootstrap';
@@ -22,6 +22,7 @@ import { AddSectionModal } from './AddSectionModal';
 import { PagePreviewModal } from './PagePreviewModal';
 import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 import {
+  Play,
   LayoutTemplate,
   Plus,
   Search,
@@ -87,6 +88,18 @@ export const PageAdmin: React.FC = () => {
     addToast
   } = useAdmin();
   const { currencyCode } = useAdminCurrency();
+
+  const [motionReplayCounter, setMotionReplayCounter] = useState(0);
+  const handleReplayMotion = () => setMotionReplayCounter(value => value + 1);
+  const handleApplyMotionToAll = (preset: SectionMotionPreset) => {
+    if (!currentPage) return;
+    const updated = updatePageLocal(currentPage.id, latest => ({ ...latest, sections: latest.sections.map(section => ({ ...section, motionPreset: preset })) }));
+    if (updated) {
+      schedulePage(updated);
+      handleReplayMotion();
+      addToast({ type: 'success', title: 'Motion Applied', message: 'Motion applied to all sections.' });
+    }
+  };
 
   // Mode state: null = Page Directory, non-null = Editing that Page ID
   const [editingPageId, setEditingPageId] = useState<string | null>(selectedPageId || null);
@@ -1280,6 +1293,10 @@ export const PageAdmin: React.FC = () => {
             <FileCode2 className="w-4 h-4" />
           </button>
 
+          {/* Replay Motion Trigger */}
+          <button onClick={handleReplayMotion} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-200 dark:border-indigo-800 transition-colors" title="Replay Entrance Motion across all sections">
+            <Play className="w-3.5 h-3.5 fill-indigo-500" /><span className="hidden sm:inline">Replay Motion</span>
+          </button>
           {/* Live Preview Button */}
           <button
             onClick={() => { void handlePreview(); }}
@@ -1480,7 +1497,7 @@ export const PageAdmin: React.FC = () => {
                 <PageRuntimeProvider payload={adminRuntimePayload}>
                   {currentPage.sections.map(section => (
                     <SectionRenderer
-                      key={section.id}
+                      key={`${section.id}-${motionReplayCounter}`}
                       section={section}
                       isEditingMode={true}
                       isSelected={activeSectionId === section.id}
@@ -1508,6 +1525,8 @@ export const PageAdmin: React.FC = () => {
               pageId={currentPage.id}
               section={activeSection}
               onChange={handleUpdateSection}
+              onReplayMotion={handleReplayMotion}
+              onApplyMotionToAll={handleApplyMotionToAll}
               onMediaUpload={(pageId, sectionId, updater) => {
                 void updatePageSection(pageId, sectionId, updater)
                   .then(updated => {

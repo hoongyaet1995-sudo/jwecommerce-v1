@@ -1,6 +1,7 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import { SECTION_TEMPLATES } from '../../components/pages/AddSectionModal';
 import {
   PageRuntimeProvider,
   PageRuntimeUnavailable,
@@ -100,6 +101,25 @@ const renderRuntimeOrFallback = (parsed: PageRuntimePayload | null) => renderToS
 ) : <PageRuntimeUnavailable />);
 
 describe('PageRuntimeContext', () => {
+  it.each(['subtle-lift', 'fade-in', 'smooth-zoom', 'dynamic-pop', 'none'] as const)('renders all section templates safely with %s without browser observers', (motionPreset) => {
+    const value = payload();
+    value.page.document.sections = SECTION_TEMPLATES.map((template, index) => ({ ...template.defaultData, id: 'motion-' + index, isVisible: true, motionPreset }));
+    expect(value.page.document.sections).toHaveLength(27);
+    expect(() => renderRuntimeOrFallback(value)).not.toThrow();
+  });
+
+  it.each(['subtle-lift', 'fade-in', 'smooth-zoom', 'dynamic-pop', 'none'] as const)('accepts %s from the saved public bootstrap', (motionPreset) => {
+    const value = payload();
+    value.page.document.sections[0].motionPreset = motionPreset;
+    expect(readBootstrapValue(value)?.page.document.sections[0].motionPreset).toBe(motionPreset);
+  });
+
+  it('rejects an unknown motion preset in the public bootstrap', () => {
+    const value = payload();
+    (value.page.document.sections[0] as unknown as Record<string, unknown>).motionPreset = 'unknown';
+    expect(readBootstrapValue(value)).toBeNull();
+  });
+
   it('reads one non-executable JSON bootstrap value without evaluating hostile text', () => {
     const value = payload();
     value.page.document.title = '</script><script>globalThis.pwned=true</script>\u2028\u2029';

@@ -234,6 +234,7 @@ type PageSectionFieldRule =
 // `satisfies Record<keyof PageSection, ...>` makes a PageSection type change fail compilation
 // until its browser-bootstrap rule is deliberately classified here.
 export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
+  motionPreset: {kind: 'optional-enum', values: ['subtle-lift', 'fade-in', 'smooth-zoom', 'dynamic-pop', 'none']},
   id: {kind: 'required-string'},
   type: {kind: 'section-type'},
   title: {kind: 'required-string'},

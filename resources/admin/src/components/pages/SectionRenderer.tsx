@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { CmsMotionWrapper, MotionItem, MotionMedia, MotionButton, MotionCard } from './motion/CmsMotionWrapper';
 import { PageSection, SectionItem } from '../../types';
 import { isCmsFormSubmissionContract, usePageRuntime, usePageSectionRuntime } from '../../cms/PageRuntimeContext';
 import {
@@ -316,12 +317,12 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       <div className="relative min-h-[480px] sm:min-h-[580px] flex items-center justify-center overflow-hidden">
         {/* Background Image/Media */}
         {section.mediaUrl && (
-          <img
+          <MotionMedia className="absolute inset-0 w-full h-full overflow-hidden"><img
             src={section.mediaUrl}
             alt={section.title}
             className="absolute inset-0 w-full h-full object-cover"
             referrerPolicy="no-referrer"
-          />
+          /></MotionMedia>
         )}
         {/* Overlay */}
         <div
@@ -334,50 +335,50 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
           section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
         }`}>
           {section.subtitle && (
-            <span
+            <MotionItem><span
               style={getEyebrowStyle()}
               className="inline-block px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-white/10 text-white backdrop-blur-md mb-4 border border-white/20"
             >
               {section.subtitle}
-            </span>
+            </span></MotionItem>
           )}
-          <h1
+          <MotionItem><h1
             style={getTitleStyle()}
             className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-tight mb-6"
           >
             {section.title}
-          </h1>
+          </h1></MotionItem>
           {section.content && (
-            <p
+            <MotionItem><p
               style={getContentStyle()}
               className="text-base sm:text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl mx-auto"
             >
               {section.content}
-            </p>
+            </p></MotionItem>
           )}
 
           <div className={`flex flex-wrap items-center gap-4 ${
             section.textAlignment === 'left' ? 'justify-start' : section.textAlignment === 'right' ? 'justify-end' : 'justify-center'
           }`}>
             {section.buttonText && (
-              <a
+              <MotionButton><a
                 href={section.buttonLink || '#'}
                 onClick={e => isEditingMode && e.preventDefault()}
                 style={getPrimaryBtnStyle()}
                 className="px-7 py-3.5 rounded-xl font-bold text-sm bg-indigo-600 hover:opacity-90 text-white shadow-xl shadow-indigo-600/30 transition-all duration-200 transform hover:-translate-y-0.5"
               >
                 {section.buttonText}
-              </a>
+              </a></MotionButton>
             )}
             {section.secondaryButtonText && (
-              <a
+              <MotionButton><a
                 href={section.secondaryButtonLink || '#'}
                 onClick={e => isEditingMode && e.preventDefault()}
                 style={getSecondaryBtnStyle()}
                 className="px-7 py-3.5 rounded-xl font-bold text-sm bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all duration-200"
               >
                 {section.secondaryButtonText}
-              </a>
+              </a></MotionButton>
             )}
           </div>
         </div>
@@ -392,55 +393,55 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         {/* Text Left */}
         <div className="lg:col-span-6 space-y-6">
           {section.subtitle && (
-            <span
+            <MotionItem><span
               style={getEyebrowStyle()}
               className="text-xs font-bold uppercase tracking-widest text-indigo-400 block"
             >
               {section.subtitle}
-            </span>
+            </span></MotionItem>
           )}
-          <h1
+          <MotionItem><h1
             style={getTitleStyle()}
             className="text-3xl sm:text-5xl font-black tracking-tight leading-tight text-white"
           >
             {section.title}
-          </h1>
+          </h1></MotionItem>
           {section.content && (
-            <p
+            <MotionItem><p
               style={getContentStyle()}
               className="text-base text-neutral-300 leading-relaxed"
             >
               {section.content}
-            </p>
+            </p></MotionItem>
           )}
 
           <div className="flex flex-wrap items-center gap-4 pt-2">
             {section.buttonText && (
-              <a
+              <MotionButton><a
                 href={section.buttonLink || '#'}
                 onClick={e => isEditingMode && e.preventDefault()}
                 style={getPrimaryBtnStyle()}
                 className="px-6 py-3 rounded-xl font-bold text-sm bg-indigo-600 hover:opacity-90 text-white shadow-lg shadow-indigo-600/30 transition-all"
               >
                 {section.buttonText}
-              </a>
+              </a></MotionButton>
             )}
             {section.secondaryButtonText && (
-              <a
+              <MotionButton><a
                 href={section.secondaryButtonLink || '#'}
                 onClick={e => isEditingMode && e.preventDefault()}
                 style={getSecondaryBtnStyle()}
                 className="px-6 py-3 rounded-xl font-bold text-sm bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-all"
               >
                 {section.secondaryButtonText}
-              </a>
+              </a></MotionButton>
             )}
           </div>
         </div>
 
         {/* Media Right */}
         <div className="lg:col-span-6 relative">
-          <div className="relative aspect-4/3 rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-neutral-900">
+          <MotionMedia className="relative aspect-4/3 rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-neutral-900">
             <img
               src={section.mediaUrl || 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=1000&auto=format&fit=crop&q=80'}
               alt={section.title}
@@ -448,7 +449,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               referrerPolicy="no-referrer"
             />
             {/* Dynamic Floating card customizable via Section Inspector */}
-            <div className="absolute bottom-6 left-6 right-6 p-4.5 rounded-2xl bg-neutral-950/85 backdrop-blur-md border border-white/15 text-white shadow-xl flex items-center justify-between gap-3">
+            <MotionItem className="absolute bottom-6 left-6 right-6 p-4.5 rounded-2xl bg-neutral-950/85 backdrop-blur-md border border-white/15 text-white shadow-xl flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <span
                   style={getEyebrowStyle()}
@@ -471,8 +472,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                   {section.cardExtra || 'Free Express DHL'}
                 </span>
               </div>
-            </div>
-          </div>
+            </MotionItem>
+          </MotionMedia>
         </div>
       </div>
     </div>
@@ -594,7 +595,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         }`}>
           {/* Eyebrow Tag / Badge */}
           {(currentSlide.badge || currentSlide.subtitle || section.subtitle) && (
-            <div className={`flex items-center gap-2 mb-4 ${
+            <MotionItem className={`flex items-center gap-2 mb-4 ${
               section.textAlignment === 'left' ? 'justify-start' : section.textAlignment === 'right' ? 'justify-end' : 'justify-center'
             }`}>
               <span
@@ -604,27 +605,27 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                 <Sparkles className="w-3.5 h-3.5" style={getEyebrowStyle()} />
                 {currentSlide.badge || currentSlide.subtitle || section.subtitle}
               </span>
-            </div>
+            </MotionItem>
           )}
 
           {/* Primary Headline */}
-          <h1
+          <MotionItem><h1
             style={getTitleStyle()}
             className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.1] mb-5 drop-shadow-md"
           >
             {currentSlide.title || section.title}
-          </h1>
+          </h1></MotionItem>
 
           {/* Editorial Content / Description */}
           {(currentSlide.description || currentSlide.subtitle || section.content) && (
-            <p
+            <MotionItem><p
               style={getContentStyle()}
               className={`text-sm sm:text-base md:text-lg text-neutral-200 leading-relaxed mb-8 max-w-2xl drop-shadow-sm ${
                 section.textAlignment === 'left' ? 'mr-auto' : section.textAlignment === 'right' ? 'ml-auto' : 'mx-auto'
               }`}
             >
               {currentSlide.description || section.content}
-            </p>
+            </p></MotionItem>
           )}
 
           {/* Action CTA Buttons */}
@@ -632,7 +633,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
             section.textAlignment === 'left' ? 'justify-start' : section.textAlignment === 'right' ? 'justify-end' : 'justify-center'
           }`}>
             {(currentSlide.buttonText || section.buttonText) && (
-              <a
+              <MotionButton><a
                 href={currentSlide.linkUrl || section.buttonLink || '#'}
                 onClick={e => isEditingMode && e.preventDefault()}
                 style={getPrimaryBtnStyle()}
@@ -640,17 +641,17 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               >
                 <span>{currentSlide.buttonText || section.buttonText}</span>
                 <ArrowRight className="w-4 h-4" />
-              </a>
+              </a></MotionButton>
             )}
             {(currentSlide.secondaryButtonText || section.secondaryButtonText) && (
-              <a
+              <MotionButton><a
                 href={currentSlide.secondaryButtonLink || section.secondaryButtonLink || '#'}
                 onClick={e => isEditingMode && e.preventDefault()}
                 style={getSecondaryBtnStyle()}
                 className="px-7 py-3.5 rounded-xl font-bold text-sm bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all duration-200 cursor-pointer"
               >
                 {currentSlide.secondaryButtonText || section.secondaryButtonText}
-              </a>
+              </a></MotionButton>
             )}
           </div>
         </div>
@@ -749,29 +750,29 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
     }`}>
       {section.subtitle && (
-        <span
+        <MotionItem><span
           style={getEyebrowStyle()}
           className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-3"
         >
           {section.subtitle}
-        </span>
+        </span></MotionItem>
       )}
-      <h2
+      <MotionItem><h2
         style={getTitleStyle()}
         className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-6"
       >
         {section.title}
-      </h2>
+      </h2></MotionItem>
       {section.content && (
-        <div
+        <MotionItem><div
           style={getContentStyle()}
           className="text-sm sm:text-base opacity-85 leading-relaxed space-y-4 max-w-3xl mx-auto"
         >
           <p>{section.content}</p>
-        </div>
+        </div></MotionItem>
       )}
       {section.quote && (
-        <blockquote
+        <MotionItem><blockquote
           style={getContentStyle()}
           className="my-8 p-6 rounded-2xl bg-white/5 border-l-4 border-indigo-500 text-base sm:text-lg italic font-serif opacity-90 text-left"
         >
@@ -781,7 +782,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               — {section.authorName}{section.authorRole ? `, ${section.authorRole}` : ''}
             </footer>
           )}
-        </blockquote>
+        </blockquote></MotionItem>
       )}
     </div>
   );
@@ -795,32 +796,32 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
           {/* Text Column */}
           <div className={`space-y-6 ${isMediaRight ? 'lg:col-span-6 lg:order-1' : 'lg:col-span-6 lg:order-2'}`}>
             {section.subtitle && (
-              <span
+              <MotionItem><span
                 style={getEyebrowStyle()}
                 className="text-xs font-bold uppercase tracking-widest text-indigo-400 block"
               >
                 {section.subtitle}
-              </span>
+              </span></MotionItem>
             )}
-            <h2
+            <MotionItem><h2
               style={getTitleStyle()}
               className="text-2xl sm:text-4xl font-extrabold tracking-tight"
             >
               {section.title}
-            </h2>
+            </h2></MotionItem>
             {section.content && (
-              <p
+              <MotionItem><p
                 style={getContentStyle()}
                 className="text-sm sm:text-base opacity-80 leading-relaxed"
               >
                 {section.content}
-              </p>
+              </p></MotionItem>
             )}
 
             {section.items && section.items.length > 0 && (
               <div className="space-y-3 pt-2">
                 {section.items.map((it, idx) => (
-                  <div key={it.id || idx} className="flex items-start gap-3">
+                  <MotionItem key={it.id || idx} className="flex items-start gap-3">
                     <div
                       style={customColors?.eyebrowColor ? { color: customColors.eyebrowColor } : {}}
                       className="p-1 rounded-lg bg-indigo-500/20 text-indigo-400 mt-0.5"
@@ -831,14 +832,14 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                       <h4 style={getTitleStyle()} className="text-xs sm:text-sm font-bold text-white">{it.title}</h4>
                       <p style={getContentStyle()} className="text-xs text-neutral-400">{it.description}</p>
                     </div>
-                  </div>
+                  </MotionItem>
                 ))}
               </div>
             )}
 
             {section.buttonText && (
               <div className="pt-2">
-                <a
+                <MotionButton><a
                   href={section.buttonLink || '#'}
                   onClick={e => isEditingMode && e.preventDefault()}
                   style={getPrimaryBtnStyle()}
@@ -846,21 +847,21 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                 >
                   <span>{section.buttonText}</span>
                   <ArrowRight className="w-4 h-4" />
-                </a>
+                </a></MotionButton>
               </div>
             )}
           </div>
 
           {/* Media Column */}
           <div className={`relative ${isMediaRight ? 'lg:col-span-6 lg:order-2' : 'lg:col-span-6 lg:order-1'}`}>
-            <div className="aspect-4/3 rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-neutral-900">
+            <MotionMedia className="aspect-4/3 rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-neutral-900">
               <img
                 src={section.mediaUrl || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1000&auto=format&fit=crop&q=80'}
                 alt={section.title}
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />
-            </div>
+            </MotionMedia>
           </div>
         </div>
       </div>
@@ -872,32 +873,32 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     <div className={`max-w-5xl mx-auto px-6 ${getPaddingClass()}`}>
       <div className={`mb-12 ${section.textAlignment === 'left' ? 'text-left' : 'text-center'}`}>
         {section.subtitle && (
-          <span
+          <MotionItem><span
             style={getEyebrowStyle()}
             className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
           >
             {section.subtitle}
-          </span>
+          </span></MotionItem>
         )}
-        <h2
+        <MotionItem><h2
           style={getTitleStyle()}
           className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
         >
           {section.title}
-        </h2>
+        </h2></MotionItem>
         {section.content && (
-          <p
+          <MotionItem><p
             style={getContentStyle()}
             className="text-sm sm:text-base opacity-80 max-w-2xl mx-auto"
           >
             {section.content}
-          </p>
+          </p></MotionItem>
         )}
       </div>
 
       <div className="relative border-l-2 border-indigo-500/30 ml-4 sm:ml-32 space-y-12">
         {section.items?.map((item, idx) => (
-          <div key={item.id || idx} className="relative pl-6 sm:pl-8 group">
+          <MotionItem key={item.id || idx} className="relative pl-6 sm:pl-8 group">
             {/* Timeline Dot */}
             <div
               style={customColors?.primaryBtnBg ? { borderColor: customColors.primaryBtnBg } : {}}
@@ -916,7 +917,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               <h3 style={getTitleStyle()} className="text-base font-bold text-white mb-2">{item.title}</h3>
               <p style={getContentStyle()} className="text-xs sm:text-sm text-neutral-300 leading-relaxed">{item.description}</p>
             </div>
-          </div>
+          </MotionItem>
         ))}
       </div>
     </div>
@@ -927,7 +928,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     <div className={`max-w-7xl mx-auto px-6 ${getPaddingClass()}`}>
       <div className={`grid ${getGridColsClass(section.columnsCount || 4)} gap-6 text-center`}>
         {section.items?.map((item, idx) => (
-          <div
+          <MotionCard
             key={item.id || idx}
             className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-indigo-500/40 transition-all flex flex-col justify-center min-w-0"
           >
@@ -944,7 +945,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               {item.title}
             </div>
             <p style={getContentStyle()} className="text-xs text-neutral-400 line-clamp-2">{item.description}</p>
-          </div>
+          </MotionCard>
         ))}
       </div>
     </div>
@@ -960,32 +961,32 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
           section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
         }`}>
           {section.subtitle && (
-            <span
+            <MotionItem><span
               style={getEyebrowStyle()}
               className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
             >
               {section.subtitle}
-            </span>
+            </span></MotionItem>
           )}
-          <h2
+          <MotionItem><h2
             style={getTitleStyle()}
             className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
           >
             {section.title}
-          </h2>
+          </h2></MotionItem>
           {section.content && (
-            <p
+            <MotionItem><p
               style={getContentStyle()}
               className="text-sm sm:text-base opacity-80 max-w-2xl mx-auto"
             >
               {section.content}
-            </p>
+            </p></MotionItem>
           )}
         </div>
 
         <div className={`grid ${getGridColsClass(section.columnsCount || 4)} gap-6`}>
           {featuredProds.map(prod => (
-            <div
+            <MotionCard
               key={prod.id}
               className="group rounded-2xl bg-white/5 border border-white/10 hover:border-indigo-500/50 transition-all duration-300 overflow-hidden flex flex-col justify-between"
             >
@@ -1041,7 +1042,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                   </a>
                 </div>
               </div>
-            </div>
+            </MotionCard>
           ))}
         </div>
       </div>
@@ -1090,32 +1091,32 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div className={`${section.textAlignment === 'center' ? 'text-center md:text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-left'}`}>
             {section.subtitle && (
-              <span
+              <MotionItem><span
                 style={getEyebrowStyle()}
                 className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
               >
                 {section.subtitle}
-              </span>
+              </span></MotionItem>
             )}
-            <h2
+            <MotionItem><h2
               style={getTitleStyle()}
               className="text-2xl sm:text-4xl font-extrabold tracking-tight"
             >
               {section.title || 'Product Listing'}
-            </h2>
+            </h2></MotionItem>
             {section.content && (
-              <p
+              <MotionItem><p
                 style={getContentStyle()}
                 className="text-sm sm:text-base opacity-80 mt-2 max-w-2xl"
               >
                 {section.content}
-              </p>
+              </p></MotionItem>
             )}
           </div>
 
           {/* Top-right Navigation Controls */}
           {isNavVisible && (
-            <div className="flex items-center gap-2 self-end shrink-0">
+            <MotionItem className="flex items-center gap-2 self-end shrink-0">
               <button
                 type="button"
                 onClick={handlePrev}
@@ -1132,7 +1133,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
-            </div>
+            </MotionItem>
           )}
         </div>
 
@@ -1197,7 +1198,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                 const overflowCount = Math.max(0, optionPills.length - 4);
 
                 return (
-                  <div
+                  <MotionCard
                     key={prod.id + '-' + idx}
                     className="shrink-0 px-3 transition-all duration-300"
                     style={{
@@ -1303,7 +1304,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </MotionCard>
                 );
               })}
             </div>
@@ -1352,30 +1353,30 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       <div className={`max-w-7xl mx-auto px-6 ${getPaddingClass()}`}>
         <div className={`mb-8 ${section.textAlignment === 'left' ? 'text-left' : 'text-center'}`}>
           {section.subtitle && (
-            <span
+            <MotionItem><span
               style={getEyebrowStyle()}
               className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
             >
               {section.subtitle}
-            </span>
+            </span></MotionItem>
           )}
-          <h2
+          <MotionItem><h2
             style={getTitleStyle()}
             className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
           >
             {section.title}
-          </h2>
+          </h2></MotionItem>
           {section.content && (
-            <p
+            <MotionItem><p
               style={getContentStyle()}
               className="text-sm sm:text-base opacity-80 max-w-2xl mx-auto"
             >
               {section.content}
-            </p>
+            </p></MotionItem>
           )}
 
           {/* Interactive Tabs */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
+          <MotionItem className="flex flex-wrap items-center justify-center gap-2 mt-6">
             {hasConfiguredTabs ? (
               section.tabs?.map((tab) => {
                 const isActive = currentTabItem?.id === tab.id;
@@ -1413,14 +1414,14 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                 );
               })
             )}
-          </div>
+          </MotionItem>
         </div>
 
         {/* Tab Items Grid */}
         <div className={`grid ${getGridColsClass(cols)} gap-6 pt-4`}>
           {tabProducts.length > 0 ? (
             tabProducts.map((prod, idx) => (
-              <a
+              <MotionCard key={prod.id + idx}><a
                 key={prod.id + idx}
                 href={`/products/${prod.slug}`}
                 onClick={e => isEditingMode && e.preventDefault()}
@@ -1440,7 +1441,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                   <p style={getContentStyle()} className="text-xs text-neutral-400 line-clamp-1">{prod.summary}</p>
                   <div style={getTitleStyle()} className="mt-1 font-bold text-white text-sm">{listingMoney(Number(prod.basePrice))}</div>
                 </div>
-              </a>
+              </a></MotionCard>
             ))
           ) : (
             <div className="col-span-full py-10 px-4 text-center rounded-2xl bg-white/5 border border-white/10 text-neutral-400">
@@ -1460,39 +1461,39 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-r from-indigo-950 via-purple-950 to-neutral-950 border border-indigo-500/30 shadow-2xl relative overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
           <div className="lg:col-span-7 space-y-5">
-            <div className="flex items-center gap-2">
+            <MotionItem className="flex items-center gap-2">
               <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1.5 animate-pulse">
                 <Flame className="w-3.5 h-3.5 text-rose-400" />
                 {section.dealBadge || 'Limited Time Flash Offer'}
               </span>
-            </div>
+            </MotionItem>
 
             {section.subtitle && (
-              <span
+              <MotionItem><span
                 style={getEyebrowStyle()}
                 className="text-xs font-bold uppercase tracking-widest text-indigo-400 block"
               >
                 {section.subtitle}
-              </span>
+              </span></MotionItem>
             )}
 
-            <h2
+            <MotionItem><h2
               style={getTitleStyle()}
               className="text-2xl sm:text-4xl font-black text-white tracking-tight"
             >
               {section.title}
-            </h2>
+            </h2></MotionItem>
             {section.content && (
-              <p
+              <MotionItem><p
                 style={getContentStyle()}
                 className="text-sm sm:text-base text-neutral-300 leading-relaxed"
               >
                 {section.content}
-              </p>
+              </p></MotionItem>
             )}
 
             {/* Countdown Timer with Real Ticking State */}
-            <div className="flex items-center gap-3 pt-2">
+            <MotionItem className="flex items-center gap-3 pt-2">
               <div className="p-3 rounded-xl bg-black/60 border border-white/10 text-center min-w-[64px]">
                 <span className="text-xl font-black text-white">{String(timeLeft.hours).padStart(2, '0')}</span>
                 <span className="text-[10px] text-neutral-400 block uppercase font-bold">Hours</span>
@@ -1507,10 +1508,10 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                 <span className="text-xl font-black text-rose-400">{String(timeLeft.seconds).padStart(2, '0')}</span>
                 <span className="text-[10px] text-neutral-400 block uppercase font-bold">Secs</span>
               </div>
-            </div>
+            </MotionItem>
 
             <div className="pt-2">
-              <a
+              <MotionButton><a
                 href={section.buttonLink || '#'}
                 onClick={e => isEditingMode && e.preventDefault()}
                 style={getPrimaryBtnStyle()}
@@ -1518,12 +1519,12 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               >
                 <span>{section.buttonText || 'Claim Deal'}</span>
                 <ArrowRight className="w-4 h-4" />
-              </a>
+              </a></MotionButton>
             </div>
           </div>
 
           <div className="lg:col-span-5">
-            <div className="relative rounded-2xl overflow-hidden border border-white/20 shadow-2xl">
+            <MotionMedia className="relative rounded-2xl overflow-hidden border border-white/20 shadow-2xl">
               <img
                 src={section.mediaUrl || 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=800&auto=format&fit=crop&q=80'}
                 alt={section.title}
@@ -1533,7 +1534,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               <div className="absolute top-4 right-4 px-3 py-1.5 rounded-xl bg-rose-600 text-white font-black text-sm shadow-lg">
                 {section.discountPercent ? `SAVE ${section.discountPercent}%` : 'SAVE 25%'}
               </div>
-            </div>
+            </MotionMedia>
           </div>
         </div>
       </div>
@@ -1545,26 +1546,26 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     <div className={`max-w-7xl mx-auto px-6 ${getPaddingClass()}`}>
       <div className={`mb-12 ${section.textAlignment === 'left' ? 'text-left' : 'text-center'}`}>
         {section.subtitle && (
-          <span
+          <MotionItem><span
             style={getEyebrowStyle()}
             className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
           >
             {section.subtitle}
-          </span>
+          </span></MotionItem>
         )}
-        <h2
+        <MotionItem><h2
           style={getTitleStyle()}
           className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
         >
           {section.title}
-        </h2>
+        </h2></MotionItem>
         {section.content && (
-          <p
+          <MotionItem><p
             style={getContentStyle()}
             className="text-sm sm:text-base opacity-80 max-w-2xl mx-auto"
           >
             {section.content}
-          </p>
+          </p></MotionItem>
         )}
       </div>
 
@@ -1572,7 +1573,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         {section.items?.map((item, idx) => {
           const isSpecial = item.isHighlighted;
           return (
-            <div
+            <MotionCard
               key={item.id || idx}
               className={`rounded-3xl p-7 flex flex-col justify-between transition-all ${
                 isSpecial
@@ -1630,7 +1631,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               >
                 Select {item.title}
               </a>
-            </div>
+            </MotionCard>
           );
         })}
       </div>
@@ -1644,32 +1645,32 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
       }`}>
         {section.subtitle && (
-          <span
+          <MotionItem><span
             style={getEyebrowStyle()}
             className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
           >
             {section.subtitle}
-          </span>
+          </span></MotionItem>
         )}
-        <h2
+        <MotionItem><h2
           style={getTitleStyle()}
           className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
         >
           {section.title}
-        </h2>
+        </h2></MotionItem>
         {section.content && (
-          <p
+          <MotionItem><p
             style={getContentStyle()}
             className="text-sm sm:text-base opacity-80 max-w-2xl mx-auto"
           >
             {section.content}
-          </p>
+          </p></MotionItem>
         )}
       </div>
 
       <div className={`grid ${getGridColsClass(section.columnsCount || 3)} gap-6`}>
         {section.items?.map((item, idx) => (
-          <div
+          <MotionCard
             key={item.id || idx}
             className="group relative aspect-4/3 rounded-2xl overflow-hidden border border-white/10 bg-neutral-900 min-w-0"
           >
@@ -1685,7 +1686,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                 <p style={getContentStyle()} className="text-xs text-neutral-300 line-clamp-2">{item.description}</p>
               )}
             </div>
-          </div>
+          </MotionCard>
         ))}
       </div>
     </div>
@@ -1695,29 +1696,29 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   const renderVideoEmbed = () => (
     <div className={`max-w-5xl mx-auto px-6 ${getPaddingClass()} text-center`}>
       {section.subtitle && (
-        <span
+        <MotionItem><span
           style={getEyebrowStyle()}
           className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
         >
           {section.subtitle}
-        </span>
+        </span></MotionItem>
       )}
-      <h2
+      <MotionItem><h2
         style={getTitleStyle()}
         className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-4"
       >
         {section.title}
-      </h2>
+      </h2></MotionItem>
       {section.content && (
-        <p
+        <MotionItem><p
           style={getContentStyle()}
           className="text-sm sm:text-base opacity-80 max-w-2xl mx-auto mb-8"
         >
           {section.content}
-        </p>
+        </p></MotionItem>
       )}
 
-      <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/15 shadow-2xl bg-neutral-950">
+      <MotionMedia className="relative aspect-video rounded-2xl overflow-hidden border border-white/15 shadow-2xl bg-neutral-950">
         {section.videoEmbedUrl ? (
           <iframe
             src={section.videoEmbedUrl}
@@ -1734,7 +1735,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
             <p className="text-sm font-semibold">Video Stream Container (Enter embed URL or upload video)</p>
           </div>
         )}
-      </div>
+      </MotionMedia>
     </div>
   );
 
@@ -1743,30 +1744,30 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     <div className={`max-w-5xl mx-auto px-6 ${getPaddingClass()}`}>
       <div className={`mb-10 ${section.textAlignment === 'left' ? 'text-left' : 'text-center'}`}>
         {section.subtitle && (
-          <span
+          <MotionItem><span
             style={getEyebrowStyle()}
             className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
           >
             {section.subtitle}
-          </span>
+          </span></MotionItem>
         )}
-        <h2
+        <MotionItem><h2
           style={getTitleStyle()}
           className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
         >
           {section.title}
-        </h2>
+        </h2></MotionItem>
         {section.content && (
-          <p
+          <MotionItem><p
             style={getContentStyle()}
             className="text-sm sm:text-base opacity-80 max-w-2xl mx-auto"
           >
             {section.content}
-          </p>
+          </p></MotionItem>
         )}
       </div>
 
-      <div
+      <MotionMedia
         ref={sliderContainerRef}
         onMouseMove={e => isDraggingSlider && handleSliderMove(e.clientX)}
         onTouchMove={e => isDraggingSlider && handleSliderMove(e.touches[0].clientX)}
@@ -1815,7 +1816,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
             <Sliders className="w-4 h-4 rotate-90" />
           </div>
         </div>
-      </div>
+      </MotionMedia>
     </div>
   );
 
@@ -1824,32 +1825,32 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     <div className={`max-w-7xl mx-auto px-6 ${getPaddingClass()}`}>
       <div className={`mb-10 ${section.textAlignment === 'left' ? 'text-left' : 'text-center'}`}>
         {section.subtitle && (
-          <span
+          <MotionItem><span
             style={getEyebrowStyle()}
             className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
           >
             {section.subtitle}
-          </span>
+          </span></MotionItem>
         )}
-        <h2
+        <MotionItem><h2
           style={getTitleStyle()}
           className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
         >
           {section.title}
-        </h2>
+        </h2></MotionItem>
         {section.content && (
-          <p
+          <MotionItem><p
             style={getContentStyle()}
             className="text-sm sm:text-base opacity-80 max-w-2xl mx-auto"
           >
             {section.content}
-          </p>
+          </p></MotionItem>
         )}
       </div>
 
       <div className={`grid ${viewport === 'mobile' ? 'grid-cols-2' : getGridColsClass(section.columnsCount || 4)} gap-4`}>
         {section.items?.map((item, idx) => (
-          <div
+          <MotionCard
             key={item.id || idx}
             className="group relative aspect-square rounded-2xl overflow-hidden bg-neutral-900 border border-white/10 min-w-0"
           >
@@ -1868,7 +1869,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                 <p style={getContentStyle()} className="text-[11px] text-neutral-300 line-clamp-1">{item.title}</p>
               </div>
             </div>
-          </div>
+          </MotionCard>
         ))}
       </div>
     </div>
@@ -1881,32 +1882,32 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
       }`}>
         {section.subtitle && (
-          <span
+          <MotionItem><span
             style={getEyebrowStyle()}
             className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
           >
             {section.subtitle}
-          </span>
+          </span></MotionItem>
         )}
-        <h2
+        <MotionItem><h2
           style={getTitleStyle()}
           className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
         >
           {section.title}
-        </h2>
+        </h2></MotionItem>
         {section.content && (
-          <p
+          <MotionItem><p
             style={getContentStyle()}
             className="text-sm sm:text-base opacity-80 max-w-2xl mx-auto"
           >
             {section.content}
-          </p>
+          </p></MotionItem>
         )}
       </div>
 
       <div className={`grid ${getGridColsClass(section.columnsCount || 4)} gap-6`}>
         {section.items?.map((item, idx) => (
-          <div
+          <MotionCard
             key={item.id || idx}
             className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-indigo-500/40 transition-all flex flex-col justify-between min-w-0"
           >
@@ -1931,7 +1932,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                 </span>
               </div>
             )}
-          </div>
+          </MotionCard>
         ))}
       </div>
     </div>
@@ -1942,7 +1943,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     <div className={`max-w-7xl mx-auto px-6 ${getPaddingClass()}`}>
       <div className={`grid ${getGridColsClass(section.columnsCount || 4)} gap-4 sm:gap-6`}>
         {section.items?.map((item, idx) => (
-          <div key={item.id || idx} className="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 border border-white/10 min-w-0">
+          <MotionCard key={item.id || idx} className="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 border border-white/10 min-w-0">
             <div
               style={customColors?.eyebrowColor ? { color: customColors.eyebrowColor } : {}}
               className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center shrink-0"
@@ -1953,7 +1954,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               <h4 style={getTitleStyle()} className="text-xs sm:text-sm font-bold text-white break-words">{item.title}</h4>
               <p style={getContentStyle()} className="text-xs text-neutral-300 line-clamp-2">{item.description}</p>
             </div>
-          </div>
+          </MotionCard>
         ))}
       </div>
     </div>
@@ -1964,30 +1965,30 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     <div className={`max-w-5xl mx-auto px-6 ${getPaddingClass()}`}>
       <div className={`mb-12 ${section.textAlignment === 'left' ? 'text-left' : 'text-center'}`}>
         {section.subtitle && (
-          <span
+          <MotionItem><span
             style={getEyebrowStyle()}
             className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
           >
             {section.subtitle}
-          </span>
+          </span></MotionItem>
         )}
-        <h2
+        <MotionItem><h2
           style={getTitleStyle()}
           className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
         >
           {section.title}
-        </h2>
+        </h2></MotionItem>
         {section.content && (
-          <p
+          <MotionItem><p
             style={getContentStyle()}
             className="text-sm sm:text-base opacity-80 max-w-2xl mx-auto"
           >
             {section.content}
-          </p>
+          </p></MotionItem>
         )}
       </div>
 
-      <div className="rounded-3xl border border-white/15 overflow-hidden bg-white/5 shadow-2xl overflow-x-auto">
+      <MotionItem className="rounded-3xl border border-white/15 overflow-hidden bg-white/5 shadow-2xl overflow-x-auto">
         <div className="min-w-[500px]">
           <div className="grid grid-cols-12 p-5 bg-black/40 border-b border-white/10 text-xs font-bold uppercase tracking-wider">
             <div className="col-span-5 text-neutral-400">
@@ -2014,7 +2015,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
             ))}
           </div>
         </div>
-      </div>
+      </MotionItem>
     </div>
   );
 
@@ -2025,26 +2026,26 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
       }`}>
         {section.subtitle && (
-          <span
+          <MotionItem><span
             style={getEyebrowStyle()}
             className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
           >
             {section.subtitle}
-          </span>
+          </span></MotionItem>
         )}
-        <h2
+        <MotionItem><h2
           style={getTitleStyle()}
           className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
         >
           {section.title}
-        </h2>
+        </h2></MotionItem>
         {section.content && (
-          <p
+          <MotionItem><p
             style={getContentStyle()}
             className="text-sm sm:text-base opacity-80 max-w-2xl mx-auto"
           >
             {section.content}
-          </p>
+          </p></MotionItem>
         )}
       </div>
 
@@ -2052,7 +2053,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         {section.items?.map((item, idx) => {
           const isOpen = !!openFaqIds[item.id || `faq-${idx}`];
           return (
-            <div
+            <MotionCard
               key={item.id || idx}
               className="rounded-xl border border-white/10 bg-white/5 overflow-hidden transition-colors"
             >
@@ -2072,7 +2073,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                   {item.description}
                 </div>
               )}
-            </div>
+            </MotionCard>
           );
         })}
       </div>
@@ -2098,29 +2099,29 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
           <div className="lg:col-span-5 space-y-4">
           {section.subtitle && (
-            <span
+            <MotionItem><span
               style={getEyebrowStyle()}
               className="text-xs font-bold uppercase tracking-widest text-indigo-400 block"
             >
               {section.subtitle}
-            </span>
+            </span></MotionItem>
           )}
-          <h2
+          <MotionItem><h2
             style={getTitleStyle()}
             className="text-2xl sm:text-4xl font-extrabold tracking-tight"
           >
             {section.title}
-          </h2>
+          </h2></MotionItem>
           {section.content && (
-            <p
+            <MotionItem><p
               style={getContentStyle()}
               className="text-sm sm:text-base opacity-80 leading-relaxed"
             >
               {section.content}
-            </p>
+            </p></MotionItem>
           )}
 
-            <div className="space-y-3 pt-4 text-xs text-neutral-300">
+            <MotionItem className="space-y-3 pt-4 text-xs text-neutral-300">
               <div className="flex items-center gap-3">
                 <Mail className="w-4 h-4 text-indigo-400 shrink-0" style={getEyebrowStyle()} />
                 <span className="break-all">{section.formEmail || 'concierge@aurora-audio.se'}</span>
@@ -2135,11 +2136,11 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                   <span>{section.contactAddress}</span>
                 </div>
               )}
-            </div>
+            </MotionItem>
           </div>
 
           <div className="lg:col-span-7">
-            <div className="p-6 sm:p-8 rounded-3xl bg-white/5 border border-white/15 backdrop-blur-md">
+            <MotionCard className="p-6 sm:p-8 rounded-3xl bg-white/5 border border-white/15 backdrop-blur-md">
               {contactSuccess ? (
                 <div className="text-center py-8 space-y-3">
                   <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
@@ -2251,7 +2252,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                   </button>
                 </form>
               )}
-            </div>
+            </MotionCard>
           </div>
         </div>
       </div>
@@ -2263,32 +2264,32 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     <div className={`max-w-7xl mx-auto px-6 ${getPaddingClass()}`}>
       <div className={`mb-12 ${section.textAlignment === 'left' ? 'text-left' : 'text-center'}`}>
         {section.subtitle && (
-          <span
+          <MotionItem><span
             style={getEyebrowStyle()}
             className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
           >
             {section.subtitle}
-          </span>
+          </span></MotionItem>
         )}
-        <h2
+        <MotionItem><h2
           style={getTitleStyle()}
           className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3"
         >
           {section.title}
-        </h2>
+        </h2></MotionItem>
         {section.content && (
-          <p
+          <MotionItem><p
             style={getContentStyle()}
             className="text-sm sm:text-base opacity-80 max-w-2xl mx-auto"
           >
             {section.content}
-          </p>
+          </p></MotionItem>
         )}
       </div>
 
       <div className={`grid ${getGridColsClass(section.columnsCount || 3)} gap-6`}>
         {section.items?.map((item, idx) => (
-          <div key={item.id || idx} className="p-6 rounded-3xl bg-white/5 border border-white/10 flex flex-col justify-between min-w-0">
+          <MotionCard key={item.id || idx} className="p-6 rounded-3xl bg-white/5 border border-white/10 flex flex-col justify-between min-w-0">
             <div>
               <div className="flex items-center justify-between mb-3">
                 <span style={getEyebrowStyle()} className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">{item.subtitle}</span>
@@ -2312,7 +2313,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
             >
               Book Listening Session
             </a>
-          </div>
+          </MotionCard>
         ))}
       </div>
     </div>
@@ -2339,26 +2340,26 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
           <div className={`${section.textAlignment === 'center' ? 'text-center sm:text-left' : ''}`}>
             {section.subtitle && (
-              <span
+              <MotionItem><span
                 style={getEyebrowStyle()}
                 className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
               >
                 {section.subtitle}
-              </span>
+              </span></MotionItem>
             )}
-            <h2
+            <MotionItem><h2
               style={getTitleStyle()}
               className="text-2xl sm:text-4xl font-extrabold tracking-tight"
             >
               {section.title}
-            </h2>
+            </h2></MotionItem>
             {section.content && (
-              <p
+              <MotionItem><p
                 style={getContentStyle()}
                 className="text-sm sm:text-base opacity-80 mt-2 max-w-xl"
               >
                 {section.content}
-              </p>
+              </p></MotionItem>
             )}
           </div>
 
@@ -2390,7 +2391,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         {/* Carousel Grid */}
         <div className={`grid ${getGridColsClass(itemsPerPage)} gap-6`}>
           {visibleItems.map((item, idx) => (
-            <div
+            <MotionCard
               key={item.id || idx}
               className="p-6 sm:p-7 rounded-3xl bg-white/5 border border-white/10 hover:border-indigo-500/40 transition-all flex flex-col justify-between min-w-0"
             >
@@ -2441,7 +2442,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                   </span>
                 )}
               </div>
-            </div>
+            </MotionCard>
           ))}
         </div>
 
@@ -2471,20 +2472,20 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     <div className={`max-w-6xl mx-auto px-6 ${getPaddingClass()}`}>
       <div className="text-center mb-8">
         {section.subtitle && (
-          <span
+          <MotionItem><span
             style={getEyebrowStyle()}
             className="text-[11px] font-bold uppercase tracking-widest text-indigo-400 block mb-1"
           >
             {section.subtitle}
-          </span>
+          </span></MotionItem>
         )}
-        <h3 style={getTitleStyle()} className="text-sm sm:text-base font-bold text-neutral-300">{section.title}</h3>
+        <MotionItem><h3 style={getTitleStyle()} className="text-sm sm:text-base font-bold text-neutral-300">{section.title}</h3></MotionItem>
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14">
         {section.items?.map((item, idx) => {
           const content = (
-            <div key={item.id || idx} className="text-center group transition-all duration-300">
+            <MotionItem key={item.id || idx} className="text-center group transition-all duration-300">
               {item.imageUrl ? (
                 <img
                   src={item.imageUrl}
@@ -2502,7 +2503,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                   {item.description}
                 </span>
               )}
-            </div>
+            </MotionItem>
           );
 
           if (item.linkUrl && item.linkUrl !== '#') {
@@ -2528,48 +2529,48 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   const renderCtaStrip = () => (
     <div className={`max-w-5xl mx-auto px-6 ${getPaddingClass()} text-center`}>
       {section.subtitle && (
-        <span
+        <MotionItem><span
           style={getEyebrowStyle()}
           className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
         >
           {section.subtitle}
-        </span>
+        </span></MotionItem>
       )}
-      <h2
+      <MotionItem><h2
         style={getTitleStyle()}
         className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-4"
       >
         {section.title}
-      </h2>
+      </h2></MotionItem>
       {section.content && (
-        <p
+        <MotionItem><p
           style={getContentStyle()}
           className="text-sm sm:text-base opacity-80 max-w-2xl mx-auto mb-8"
         >
           {section.content}
-        </p>
+        </p></MotionItem>
       )}
 
       <div className="flex flex-wrap items-center justify-center gap-4">
         {section.buttonText && (
-          <a
+          <MotionButton><a
             href={section.buttonLink || '#'}
             onClick={e => isEditingMode && e.preventDefault()}
             style={getPrimaryBtnStyle()}
             className="px-7 py-3.5 rounded-xl font-bold text-sm bg-indigo-600 hover:opacity-90 text-white shadow-xl shadow-indigo-600/30 transition-all"
           >
             {section.buttonText}
-          </a>
+          </a></MotionButton>
         )}
         {section.secondaryButtonText && (
-          <a
+          <MotionButton><a
             href={section.secondaryButtonLink || '#'}
             onClick={e => isEditingMode && e.preventDefault()}
             style={getSecondaryBtnStyle()}
             className="px-6 py-3.5 rounded-xl font-bold text-sm bg-white/10 text-white hover:bg-white/20 border border-white/20 transition-all"
           >
             {section.secondaryButtonText}
-          </a>
+          </a></MotionButton>
         )}
       </div>
     </div>
@@ -2618,30 +2619,30 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     return (
       <div className={`max-w-4xl mx-auto px-6 ${getPaddingClass()} text-center`}>
       {section.subtitle && (
-        <span
+        <MotionItem><span
           style={getEyebrowStyle()}
           className="text-xs font-bold uppercase tracking-widest text-indigo-400 block mb-2"
         >
           {section.subtitle}
-        </span>
+        </span></MotionItem>
       )}
-      <h2
+      <MotionItem><h2
         style={getTitleStyle()}
         className="text-2xl sm:text-4xl font-black tracking-tight text-white mb-3"
       >
         {section.title}
-      </h2>
+      </h2></MotionItem>
       {section.content && (
-        <p
+        <MotionItem><p
           style={getContentStyle()}
           className="text-sm sm:text-base text-neutral-300 max-w-xl mx-auto mb-8"
         >
           {section.content}
-        </p>
+        </p></MotionItem>
       )}
 
         {isSubmitted ? (
-          <div className="p-5 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-sm font-semibold max-w-md mx-auto space-y-2">
+          <MotionItem className="p-5 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-sm font-semibold max-w-md mx-auto space-y-2">
             <p>{section.formSuccessMessage || 'Your subscriber voucher has been sent to your email!'}</p>
             {newsletterCouponCode && (
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 font-mono text-xs">
@@ -2649,9 +2650,9 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                 <span className="font-bold tracking-wider">{newsletterCouponCode}</span>
               </div>
             )}
-          </div>
+          </MotionItem>
         ) : (
-          <form
+          <MotionItem><form
             onSubmit={handleNewsletterSubmit}
             className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto"
           >
@@ -2666,14 +2667,14 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               placeholder="Enter your VIP email address..."
               className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/20 text-white placeholder-neutral-400 text-xs focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             />
-            <button
+            <MotionButton><button
               type="submit"
               style={getPrimaryBtnStyle()}
               className="w-full sm:w-auto px-6 py-3 rounded-xl bg-indigo-600 hover:opacity-90 text-white font-bold text-xs whitespace-nowrap shadow-lg transition-colors cursor-pointer"
             >
               {section.buttonText || 'Subscribe'}
-            </button>
-          </form>
+            </button></MotionButton>
+          </form></MotionItem>
         )}
 
         {newsletterError && !isSubmitted && (
@@ -2739,7 +2740,9 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         </div>
       )}
 
-      {renderSectionContent()}
+      <CmsMotionWrapper preset={section.motionPreset} replayKey={`${section.id}-${section.motionPreset}`} isEditingMode={isEditingMode}>
+        {renderSectionContent()}
+      </CmsMotionWrapper>
     </section>
   );
 };

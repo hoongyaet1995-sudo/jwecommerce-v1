@@ -617,7 +617,10 @@ export interface InquiryCategory {
   label: string;
 }
 
+export type SectionMotionPreset = 'subtle-lift' | 'fade-in' | 'smooth-zoom' | 'dynamic-pop' | 'none';
+
 export interface PageSection {
+  motionPreset?: SectionMotionPreset;
   id: string;
   type: PageSectionType;
   title: string;
