@@ -73,7 +73,7 @@ class CheckoutService
                 if ($item['quantity'] < 1 || $variant->stock < $item['quantity']) {
                     throw new RuntimeException('Requested quantity is unavailable.');
                 }
-                $variant->decrement('stock', $item['quantity']);
+
 
                 return ['variant' => $variant, 'quantity' => $item['quantity'], 'line_total' => $variant->price * $item['quantity']];
             });
@@ -101,6 +101,9 @@ class CheckoutService
                 $variant = $line['variant'];
                 $product = $variant->product()->with('images')->firstOrFail();
                 OrderItem::query()->create(['order_id' => $order->id, 'product_variant_id' => $variant->id, 'sku' => $variant->sku, 'title' => $product->title, 'variant_title' => $variant->title, 'image_url' => $product->images->sortBy('position')->first()?->path, 'package_snapshot' => ['weight_grams' => $variant->weight_grams, 'length_cm' => $variant->package_length_cm, 'width_cm' => $variant->package_width_cm, 'height_cm' => $variant->package_height_cm], 'unit_price' => $variant->price, 'quantity' => $line['quantity'], 'line_total' => $line['line_total']]);
+            }
+            foreach ($order->items as $inventoryItem) {
+                app(\App\Services\Inventory\InventoryMutationService::class)->change((int)$inventoryItem->product_variant_id, -(int)$inventoryItem->quantity, 'order-item:'.$inventoryItem->id.':checkout', 'Checkout reservation');
             }
             $this->persistTaxSnapshot($order, $summary['tax_quote']);
             $payment = $this->paymentAttempts->createPendingPayment($order, $method, $order->currency, $bankAccountId);
@@ -177,7 +180,7 @@ class CheckoutService
             if ($status === 'cancelled') {
                 foreach ($locked->items as $item) {
                     if ($item->product_variant_id) {
-                        ProductVariant::query()->whereKey($item->product_variant_id)->increment('stock', $item->quantity);
+                        app(\App\Services\Inventory\InventoryMutationService::class)->change((int)$item->product_variant_id, (int)$item->quantity, 'order-item:'.$item->id.':cancel', 'Order cancellation', $userId);
                     }
                 }
             }

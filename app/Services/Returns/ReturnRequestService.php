@@ -73,7 +73,7 @@ class ReturnRequestService
             }
             if ($action === 'receive') {
                 if ($data['condition'] === 'restockable' && $r->item->product_variant_id) {
-                    \App\Models\ProductVariant::query()->whereKey($r->item->product_variant_id)->increment('stock', $data['received_quantity']);
+                    app(\App\Services\Inventory\InventoryMutationService::class)->change((int)$r->item->product_variant_id, (int)$data['received_quantity'], 'return:'.$r->id.':receive', 'Restockable return received', $actor->id);
                 }
                 $updates += ['received_quantity' => $data['received_quantity'], 'condition' => $data['condition'], 'warehouse_note' => $data['warehouse_note'] ?? null, 'received_at' => now()];
             }

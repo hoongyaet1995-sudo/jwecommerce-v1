@@ -9,6 +9,30 @@ use Illuminate\Validation\Rule;
 
 class MarketplaceInventoryController extends Controller
 {
+    public function reconciliation(Request $request)
+    {
+        $filters = $request->validate(['storeId'=>'required|integer|min:1',
+            'page'=>'nullable|integer|min:1', 'per_page'=>'nullable|integer|min:1|max:100']);
+        $store = DB::table('marketplace_stores')->where('id', $filters['storeId'])
+            ->first(['id', 'platform', 'shop_name', 'status']);
+        abort_unless($store, 404);
+        // Include old unpaid orders and unknown future states. A recent fetch is
+        // not proof that all outstanding orders have been retrieved.
+        $orders = DB::table('marketplace_orders')->where('store_id', $store->id)
+            ->whereNotIn('platform_status', ['COMPLETED', 'CANCELLED'])
+            ->select('id', 'store_id', 'external_order_id', 'platform_status', 'platform_updated_at', 'fetched_at')
+            ->orderBy('id')->paginate($filters['per_page'] ?? 25);
+        app(\App\Services\Marketplace\MarketplaceReconciliationPage::class)->annotate($orders);
+        $lastRun = DB::table('marketplace_order_runs')->where('store_id', $store->id)
+            ->where('status', 'succeeded')->orderByDesc('finished_at')->orderByDesc('id')
+            ->first(['id', 'requested_time_from', 'requested_time_to', 'time_from', 'time_to', 'finished_at']);
+        return response()->json(['store'=>$store, 'orders'=>$orders,
+            'last_successful_fetch'=>$lastRun, 'coverage_verified'=>false,
+            'activation_ready'=>false, 'review_required'=>['order_coverage', 'physical_stock',
+                'safety_stock', 'outstanding_order_disposition', 'warehouse_mapping']])
+            ->header('Cache-Control', 'no-store');
+    }
+
     public function index(Request $request)
     {
         $filters = $request->validate(['storeId'=>'nullable|integer|min:1', 'q'=>'nullable|string|max:100',

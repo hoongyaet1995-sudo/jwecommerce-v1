@@ -218,6 +218,7 @@ export interface ProductVariant {
   compareAtPrice?: number;
   costPrice?: number;
   inventoryQuantity: number;
+  stockVersion?: number;
   weightGrams?: number;
   packageLengthCm?: number;
   packageWidthCm?: number;

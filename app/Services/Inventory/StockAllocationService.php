@@ -37,12 +37,12 @@ class StockAllocationService
             if ($variant->stock < $quantity) {
                 throw new RuntimeException('Requested quantity is unavailable.');
             }
-            $variant->decrement('stock', $quantity);
             $id = DB::table('stock_allocations')->insertGetId($key + [
                 'product_variant_id'=>$variantId, 'quantity'=>$quantity, 'status'=>'reserved',
                 'created_at'=>now(), 'updated_at'=>now(),
             ]);
-            $this->record($id, 'reserved', -$quantity, (int) $variant->stock);
+            $available = app(InventoryMutationService::class)->change($variantId, -$quantity, 'allocation:'.$id.':reserve', 'Inventory reservation');
+            $this->record($id, 'reserved', -$quantity, $available);
             return $id;
         }, 3);
     }
@@ -74,11 +74,12 @@ class StockAllocationService
                 throw new RuntimeException('Terminal inventory allocation requires reconciliation, not another transition.');
             }
             $delta = $target === 'released' ? (int) $allocation->quantity : 0;
+            $available = (int)$variant->stock;
             if ($delta !== 0) {
-                $variant->increment('stock', $delta);
+                $available = app(InventoryMutationService::class)->change((int)$variantId, $delta, 'allocation:'.$id.':release', 'Inventory reservation released');
             }
             DB::table('stock_allocations')->where('id', $id)->update(['status'=>$target, 'updated_at'=>now()]);
-            $this->record($id, $target, $delta, (int) $variant->stock);
+            $this->record($id, $target, $delta, $available);
         }, 3);
     }
 

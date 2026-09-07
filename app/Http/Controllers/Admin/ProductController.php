@@ -40,7 +40,17 @@ class ProductController extends Controller
     }
     public function store(Request $request): RedirectResponse { $data = $request->validate(['category_id' => ['nullable', 'exists:categories,id'], 'handle' => ['required', 'alpha_dash', 'unique:products,handle'], 'title' => ['required', 'string', 'max:255'], 'base_price' => ['required', 'integer', 'min:0'], 'status' => ['required', 'in:draft,active']]); Product::query()->create($data); return redirect()->route('admin.products.index'); }
     public function update(Request $request, Product $product): RedirectResponse { $data = $request->validate(['category_id' => ['nullable', 'exists:categories,id'], 'handle' => ['required', 'alpha_dash', 'unique:products,handle,'.$product->id], 'title' => ['required', 'string', 'max:255'], 'base_price' => ['required', 'integer', 'min:0'], 'status' => ['required', 'in:draft,active']]); $product->update($data); return redirect()->route('admin.products.index'); }
-    public function destroy(Product $product): RedirectResponse { $product->delete(); return redirect()->route('admin.products.index'); }
+    public function destroy(Product $product): RedirectResponse
+    {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($product) {
+            $ids = $product->variants()->orderBy('id')->lockForUpdate()->pluck('id');
+            if (\Illuminate\Support\Facades\DB::table('inventory_movements')->whereIn('product_variant_id', $ids)->exists()) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['product' => 'This product has inventory history. Archive it instead of deleting it.']);
+            }
+            $product->delete();
+        });
+        return redirect()->route('admin.products.index');
+    }
     public function storeVariant(Request $request, Product $product): RedirectResponse { $data = $request->validate(['sku' => ['required', 'string', 'unique:product_variants,sku'], 'title' => ['required', 'string'], 'price' => ['required', 'integer', 'min:0'], 'stock' => ['required', 'integer', 'min:0']]); $product->variants()->create($data); return redirect()->route('admin.products.index'); }
     public function storeImage(Request $request, Product $product): RedirectResponse { $data = $request->validate(['path' => $this->localImageRules(), 'alt' => ['nullable', 'string', 'max:255'], 'position' => ['required', 'integer', 'min:0']]); $product->images()->create($data); return redirect()->route('admin.products.index'); }
     public function updateImage(Request $request, ProductImage $productImage): RedirectResponse { $data = $request->validate(['path' => $this->localImageRules(), 'alt' => ['nullable', 'string', 'max:255'], 'position' => ['required', 'integer', 'min:0']]); $productImage->update($data); return redirect()->route('admin.products.index'); }

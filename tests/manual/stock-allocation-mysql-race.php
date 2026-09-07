@@ -12,7 +12,7 @@ use Symfony\Component\Process\Process;
 if (!app()->environment('local') || !in_array(config('database.connections.mysql.host'), ['localhost', '127.0.0.1'], true)) exit(2);
 $worker = ($argv[1] ?? '') === 'worker';
 $mode = $worker ? ($argv[3] ?? '') : ($argv[1] ?? 'compete');
-if (!in_array($mode, ['compete', 'duplicate', 'order-compete', 'order-duplicate'], true)) exit(2);
+if (!in_array($mode, ['compete', 'duplicate', 'order-compete', 'order-duplicate', 'adjust-compete'], true)) exit(2);
 $orderMode = str_starts_with($mode, 'order-');
 $duplicate = str_ends_with($mode, 'duplicate');
 $schema = $worker ? ($argv[2] ?? '') : 'jw_stock_race_'.bin2hex(random_bytes(6));
@@ -40,6 +40,18 @@ try {
     if (DB::selectOne('SELECT DATABASE() AS db')->db !== $schema) throw new RuntimeException('Isolation failed');
     if ($worker) {
         echo "ready\n"; flush();
+        if ($mode === 'adjust-compete') {
+            $mutations = app(\App\Services\Inventory\InventoryMutationService::class);
+            try {
+                if ((int)$argv[4] === 1) $mutations->change(1, -7, 'race:order', 'Order demand');
+                else $mutations->setAvailable(1, 9, 0, 'race:adjust', 'Count adjustment');
+                echo "changed\n";
+            } catch (RuntimeException $error) {
+                if ($error->getMessage() !== 'Inventory changed. Reload before adjusting quantity.') throw $error;
+                echo "stale\n";
+            }
+            exit(0);
+        }
         if ($orderMode) {
             config(['marketplace.inventory_accounting_enabled'=>true]);
             $id = app(\App\Services\Marketplace\MarketplaceOrderSnapshotService::class)->saveShopee((int) $argv[4], [
@@ -92,6 +104,18 @@ try {
         if (!$process->isSuccessful()) throw new RuntimeException('Worker failed');
         if (str_contains($process->getOutput(), 'allocated:')) $success++;
     }
+    if ($mode === 'adjust-compete') {
+        $stock = (int)DB::table('product_variants')->value('stock');
+        $version = (int)DB::table('product_variants')->value('stock_version');
+        $stale = count(array_filter($processes, fn ($process) => str_contains($process->getOutput(), 'stale')));
+        // Adjustment first: 10 -> 9 -> 2. Order first: 10 -> 3 and reject stale adjustment.
+        if (!(($stock === 2 && $version === 2 && $stale === 0) || ($stock === 3 && $version === 1 && $stale === 1))
+            || DB::table('inventory_movements')->count() !== $version
+            || DB::table('inventory_movements')->where('operation_key','race:order')->count() !== 1) {
+            throw new RuntimeException('Adjustment race invariant failed');
+        }
+        echo "PASS: adjust-compete; stock $stock, version $version, stale adjustments $stale; audited order deduction retained.\n";
+    } else {
     if ($success !== ($duplicate ? 2 : 1)
         || (int) DB::table('product_variants')->value('stock') !== 3
         || DB::table('stock_allocations')->count() !== 1
@@ -102,6 +126,7 @@ try {
         throw new RuntimeException('Order persistence invariant failed');
     }
     echo "PASS: $mode; two processes, one allocation, stock 3, one event.\n";
+    }
 } catch (Throwable $error) {
     $failed = true;
     // Never output connection strings, credentials or raw database exceptions.

@@ -29,6 +29,7 @@ class ReturnRequestOperationalClosureTest extends TestCase
         $this->actingAs($admin)->postJson("/admin/api/returns/{$r->id}/approve")->assertOk();
         $this->postJson("/admin/api/returns/{$r->id}/receive",['received_quantity'=>1,'condition'=>'restockable'])->assertOk();
         $this->assertSame(5, $variant->fresh()->stock);
+        $this->assertDatabaseCount('inventory_movements', 1);
         $this->postJson("/admin/api/returns/{$r->id}/receive",['received_quantity'=>1,'condition'=>'restockable'])->assertUnprocessable();
         $this->assertSame(5, $variant->fresh()->stock);
     }

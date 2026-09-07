@@ -50,6 +50,9 @@ class CheckoutCommerceRulesTest extends TestCase
         app(\App\Services\CheckoutService::class)->transition(\App\Models\Order::query()->sole(), 'cancelled');
         $this->assertEquals(7, $variant->fresh()->stock);
         $this->assertDatabaseHas('stock_allocations', ['id'=>$allocation, 'status'=>'reserved']);
+        app(\App\Services\CheckoutService::class)->transition(\App\Models\Order::query()->sole(), 'cancelled');
+        $this->assertDatabaseCount('inventory_movements', 3);
+        $this->assertEquals(3, $variant->fresh()->stock_version);
     }
 
     public function test_checkout_snapshots_coupon_usage_shipping_rate_and_simulated_payment(): void

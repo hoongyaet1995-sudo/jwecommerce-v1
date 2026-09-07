@@ -277,6 +277,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/catalog/collections', AdminAppController::class)->name('collections.index');
     Route::get('/promotions', AdminAppController::class)->name('coupons.index');
     Route::get('/api/marketplace', [\App\Http\Controllers\Admin\MarketplaceApiController::class, 'index']);
+    Route::get('/api/inventory/movements', [\App\Http\Controllers\Admin\InventoryMovementController::class, 'index']);
     Route::get('/api/marketplace/connections', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'connections']);
     Route::get('/api/marketplace/oauth-result', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'result']);
     Route::get('/marketplace/oauth-acceptance', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'acceptance']);
@@ -296,6 +297,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::middleware(\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':read')->group(function () {
     Route::get('/api/marketplace/inventory', [\App\Http\Controllers\Admin\MarketplaceInventoryController::class, 'index']);
     Route::get('/api/marketplace/inventory/exceptions', [\App\Http\Controllers\Admin\MarketplaceInventoryController::class, 'exceptions']);
+    Route::get('/api/marketplace/inventory/reconciliation', [\App\Http\Controllers\Admin\MarketplaceInventoryController::class, 'reconciliation']);
     Route::get('/api/marketplace/publishing-tasks/{task}', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'show'])->whereNumber('task');
     Route::get('/api/marketplace/catalog', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'index']);
     Route::get('/api/marketplace/stores/{store}/listing-attribute-values', [\App\Http\Controllers\Admin\MarketplaceListingMetadataController::class, 'attributeValues'])->whereNumber('store')->middleware('throttle:10,1');
