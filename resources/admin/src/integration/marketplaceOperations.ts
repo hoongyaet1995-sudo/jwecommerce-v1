@@ -77,7 +77,7 @@ export const marketplaceOperations = {
   catalogProducts: (filters: Filters = {}) => marketplaceRequest<Page<CatalogProduct>>(`/catalog/products?${query(filters)}`),
   importProduct: (listingId: string) => marketplaceRequest<{productId: number; status: string}>(`/listings/${idPath(listingId)}/import-product`, 'POST'),
   retryOrders: (id: string) => marketplaceRequest<{runId: number}>(`/order-runs/${idPath(id)}/retry`, 'POST'),
-  connections: () => marketplaceRequest<{stores: StoreConnection[]; capabilities: Record<MarketplacePlatform, ProviderCapabilities>}>('/connections'),
+  connections: () => marketplaceRequest<{stores: StoreConnection[]; capabilities: Record<MarketplacePlatform, ProviderCapabilities>; localCapabilities?:{importProducts:boolean}}>('/connections'),
   authorize: (reconnectId?: string) => marketplaceRequest<{url: string}>('/shopee/authorize', 'POST', reconnectId ? {reconnectStoreId: Number(reconnectId)} : {}),
   disconnect: (id: string) => marketplaceRequest<{status: string; providerRevocationConfirmed: boolean}>(`/stores/${idPath(id)}/disconnect`, 'POST'),
   catalog: (filters: Filters = {}) => marketplaceRequest<Page<CatalogVariant>>(`/catalog?${query(filters)}`),

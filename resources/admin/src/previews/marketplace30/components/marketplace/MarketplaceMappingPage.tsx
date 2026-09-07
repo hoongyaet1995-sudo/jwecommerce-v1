@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAdmin } from '../../context/ContextBridge';
 import type {CatalogSummary} from '../../../../integration/marketplaceOperations';
+import type {ImportResult} from '../../../../integration/marketplaceImport';
 import {checkMarketplaceMappingConflict} from '../../../../integration/marketplaceMappingConflict';
 import { MarketplacePlatform, MarketplaceStoreProduct, MarketplaceStoreVariant } from '../../types';
 import { SubNavHeader } from '../common/SubNavHeader';
@@ -15,6 +16,7 @@ export interface MappingPageQuery {
 }
 export interface MappingServerPage {
   canFetch?:boolean;
+  canImport?:boolean; importing?:boolean; onImport?:(ids:string[])=>Promise<ImportResult[]>;
   total: number; summary: CatalogSummary; loading: boolean; onQueryChange: (query: MappingPageQuery) => void;
 }
 export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> = ({serverPage}) => {
@@ -248,8 +250,14 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
   };
 
   // Batch actions
-  const handleBatchImportSelected = () => {
+  const handleBatchImportSelected = async () => {
     if (selectedProductIds.size === 0) return;
+    if(serverPage){
+      if(!serverPage.canImport||serverPage.importing||!serverPage.onImport)return;
+      const results=await serverPage.onImport(Array.from(selectedProductIds));
+      setSelectedProductIds(previous=>new Set([...previous].filter(id=>!results.some(result=>result.id===id&&result.ok))));
+      return;
+    }
     batchImportStoreProductsToMaster(Array.from(selectedProductIds));
     setSelectedProductIds(new Set());
   };
@@ -299,7 +307,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
             </span>
           </div>
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-            {serverPage ? 'Browse fetched store listings and link variants to JW SKUs. Import, publishing and AI suggestions are not enabled yet.' : 'Manage high-volume catalog bindings: auto-filter exceptions, push master products to external stores, or 1-click import channel items to JW Master.'}
+            {serverPage ? `Browse fetched store listings and link variants to JW SKUs. ${serverPage.canImport ? 'Import products as JW drafts with zero stock.' : 'Import is not enabled yet.'} Publishing and AI suggestions are not enabled yet.` : 'Manage high-volume catalog bindings: auto-filter exceptions, push master products to external stores, or 1-click import channel items to JW Master.'}
           </p>
         </div>
 
@@ -674,7 +682,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
 
             <button
               type="button"
-              disabled={!!serverPage}
+              disabled={!!serverPage&&(!serverPage.canImport||serverPage.importing)}
               onClick={handleBatchImportSelected}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors cursor-pointer"
             >
@@ -1073,12 +1081,12 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage}> 
                       {hasUnmapped && (
                         <button
                           type="button"
-                          disabled={!!serverPage}
-                          onClick={() => importStoreProductToMaster(prod.id)}
+                          disabled={!!serverPage&&(!serverPage.canImport||serverPage.importing)}
+                          onClick={() => serverPage ? void serverPage.onImport?.([prod.id]) : importStoreProductToMaster(prod.id)}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
                         >
                           <DownloadCloud className="w-3.5 h-3.5" />
-                          Import Product to JW Master
+                          {serverPage?.importing ? 'Importing…' : 'Import Product to JW Master'}
                         </button>
                       )}
 

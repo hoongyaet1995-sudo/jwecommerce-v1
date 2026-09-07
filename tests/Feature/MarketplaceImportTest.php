@@ -35,6 +35,25 @@ class MarketplaceImportTest extends TestCase
         $this->postJson('/admin/api/marketplace/listings/999999/import-product')->assertNotFound();
     }
 
+    public function test_import_can_be_enabled_without_enabling_provider_operations(): void
+    {
+        $this->catalog();
+        $this->actingAs(\App\Models\User::findOrFail(42));
+        $listing = DB::table('marketplace_listing_variants')->value('id');
+        config(['marketplace.operations_enabled'=>false, 'marketplace.read_operations_enabled'=>false,
+            'marketplace.import_operations_enabled'=>false]);
+        $url = '/admin/api/marketplace/listings/'.$listing.'/import-product';
+        $this->postJson($url)->assertStatus(503);
+        $this->getJson('/admin/api/marketplace/connections')->assertOk()->assertJsonPath('localCapabilities.importProducts', false);
+        config(['marketplace.import_operations_enabled'=>true]);
+        $this->getJson('/admin/api/marketplace/connections')->assertOk()->assertJsonPath('localCapabilities.importProducts', true);
+        $this->postJson($url)->assertOk()->assertJsonPath('status', 'draft');
+        $this->assertDatabaseCount('products', 1);
+        $this->assertSame(0, (int) DB::table('product_variants')->sum('stock'));
+        $this->postJson('/admin/api/marketplace/stores/1/catalog-fetch')->assertStatus(503);
+        $this->postJson('/admin/api/marketplace/stores/1/orders-fetch', ['from'=>1,'to'=>2])->assertStatus(503);
+    }
+
     public function test_import_creates_draft_zero_stock_and_retries_without_duplicate_even_after_unlink(): void
     {
         $store = $this->catalog();

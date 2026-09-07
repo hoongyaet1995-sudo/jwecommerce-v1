@@ -7,6 +7,7 @@ import {PreviewContext} from '../previews/marketplace30/context/ContextBridge';
 import {MarketplaceMappingPage,MappingPageQuery} from '../previews/marketplace30/components/marketplace/MarketplaceMappingPage';
 import {useMarketplaceCatalog} from './useMarketplaceCatalog';
 import {useMarketplaceReadTask} from './useMarketplaceReadTask';
+import {useMarketplaceImport} from './useMarketplaceImport';
 
 export function OperationalMapping(){
  const admin=useAdmin();
@@ -15,11 +16,20 @@ export function OperationalMapping(){
  const [stores,setStores]=useState<StoreConnection[]>([]);
  const [capabilities,setCapabilities]=useState<Partial<Record<MarketplacePlatform,ProviderCapabilities>>>({});
  const [connectionError,setConnectionError]=useState('');
+ const [canImport,setCanImport]=useState(false);
+ const importer=useMarketplaceImport(canImport,catalog.products.flatMap(product=>product.variants[0]?[{id:`${product.store_id}:${product.external_product_id}`,listingId:String(product.variants[0].id)}]:[]),catalog.reload);
+ const importProducts=async(ids:string[])=>{
+  const results=await importer.run(ids);
+  if(results.length){const succeeded=results.filter(result=>result.ok).length;
+   admin.addToast({type:succeeded===results.length?'success':'error',title:'Product import',message:`${succeeded} imported, ${results.length-succeeded} failed. New products are drafts with zero stock. Review failures before retrying.`});
+  }
+  return results;
+ };
  const task=useMarketplaceReadTask('catalog',catalog.reload);
  const selectedStore=stores.find(store=>store.id===query.storeId);
  const canFetch=!!selectedStore&&selectedStore.status==='connected'&&capabilities[selectedStore.platform]?.catalog===true&&!task.busy;
  useEffect(()=>{let active=true;
-  marketplaceOperations.connections().then(data=>{if(active){setStores(data.stores);setCapabilities(data.capabilities);}})
+  marketplaceOperations.connections().then(data=>{if(active){setStores(data.stores);setCapabilities(data.capabilities);setCanImport(data.localCapabilities?.importProducts===true);}})
    .catch(()=>{if(active)setConnectionError('Store connections could not be loaded. Reload this page to retry.');});
   return()=>{active=false;};
  },[]);
@@ -45,6 +55,6 @@ export function OperationalMapping(){
   {(catalog.error||connectionError)&&<p role="alert" className="mb-4 text-sm text-rose-500">{catalog.error||connectionError}<button className="ml-3 underline" onClick={catalog.reload}>Retry catalog</button></p>}
   {catalog.loading&&<p role="status" className="mb-4 text-sm text-neutral-500">Loading store catalog…</p>}
   {(task.runId||task.error)&&<p role="status" className="mb-4 text-sm text-neutral-500">{task.error||`Catalog fetch task ${task.runId}: ${task.run?.status??'checking status'}${task.run?` · ${task.run.pages_completed} pages processed`:''}`} {task.error&&task.runId&&<button className="ml-3 underline" onClick={task.checkStatus}>Check status</button>} {task.run?.status==='failed'&&<button className="ml-3 underline" disabled={task.busy} onClick={()=>void task.start(()=>marketplaceOperations.retryCatalog(String(task.runId)))}>Retry task</button>}</p>}
-  <MarketplaceMappingPage serverPage={{total:catalog.total,summary:catalog.summary,loading:catalog.loading,onQueryChange:setQuery,canFetch}}/>
+  <MarketplaceMappingPage serverPage={{total:catalog.total,summary:catalog.summary,loading:catalog.loading,onQueryChange:setQuery,canFetch,canImport,importing:importer.busy,onImport:importProducts}}/>
  </PreviewContext.Provider>;
 }

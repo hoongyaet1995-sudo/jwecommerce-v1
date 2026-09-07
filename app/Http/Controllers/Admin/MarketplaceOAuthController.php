@@ -85,7 +85,9 @@ class MarketplaceOAuthController extends Controller
         $readsEnabled = $client->isConfigured() && (config('marketplace.read_operations_enabled') === true
             || config('marketplace.operations_enabled') === true);
 
-        return response()->json(['stores'=>$stores, 'capabilities'=>[
+        return response()->json(['stores'=>$stores, 'localCapabilities'=>[
+            'importProducts'=>config('marketplace.import_operations_enabled') === true || config('marketplace.operations_enabled') === true,
+        ], 'capabilities'=>[
             'shopee'=>array_replace($unavailable, ['oauth'=>$client->isAuthorizationReady(), 'catalog'=>$readsEnabled, 'orders'=>$readsEnabled]),
             'lazada'=>$unavailable, 'tiktok'=>$unavailable, 'shopify'=>$unavailable,
         ]])->header('Cache-Control', 'no-store');

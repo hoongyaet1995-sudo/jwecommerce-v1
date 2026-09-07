@@ -23,5 +23,13 @@ it('keeps a server page visible on page two without slicing it a second time', a
   expect(container.textContent).toContain('SERVER PAGE PRODUCT');
   expect(container.textContent).toContain('Page 2 of 22');
   expect(query).toHaveBeenLastCalledWith(expect.objectContaining({page:2,per_page:15,view:'grouped'}));
+  const importProducts=vi.fn().mockResolvedValue([{id:'1:p',ok:true,productId:12,status:'draft'}]);
+  await act(async()=>root.render(<PreviewContext.Provider value={context as unknown as React.ContextType<typeof PreviewContext>}>
+    <MarketplaceMappingPage serverPage={{total:320,summary:{products:320,variants:640,mapped:320,unmapped:320},loading:false,onQueryChange:query,canImport:true,onImport:importProducts}}/>
+  </PreviewContext.Provider>));
+  const importButton=Array.from(container.querySelectorAll('button')).find(button=>button.textContent?.includes('Import Product to JW Master'))!;
+  expect(importButton.disabled).toBe(false);
+  await act(async()=>importButton.click());
+  expect(importProducts).toHaveBeenCalledWith(['1:p']);
   await act(async()=>root.unmount()); vi.unstubAllGlobals();
 });
