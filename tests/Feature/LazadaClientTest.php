@@ -8,6 +8,16 @@ use Tests\TestCase;
 
 class LazadaClientTest extends TestCase
 {
+    public function test_stock_write_requires_its_own_explicit_gate_and_posts_a_non_negative_absolute_quantity(): void
+    {
+        config(['marketplace.lazada.enabled'=>true, 'marketplace.lazada.app_key'=>'123', 'marketplace.lazada.app_secret'=>'fixture-secret']);
+        Http::preventStrayRequests();
+        Http::fake(['api.lazada.com.my/rest/product/price_quantity/update*'=>Http::response(['code'=>'0','data'=>[]])]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Marketplace stock synchronization is disabled.');
+        app(LazadaClient::class)->updateAbsoluteQuantity('fixture-token', '1001', '2001', 7);
+    }
     public function test_token_exchange_and_refresh_use_signed_official_requests(): void
     {
         config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'139209','marketplace.lazada.app_secret'=>'fixture-secret']);

@@ -73,12 +73,12 @@ final class MarketplaceStockSyncTaskService
     }
 
     /** Read-only execution gate. A dispatcher must call this immediately before any remote request. */
-    public function review(int $taskId): array
+    public function review(int $taskId, array $allowedStatuses = ['staged']): array
     {
         $task=DB::table('marketplace_stock_sync_tasks')->find($taskId);
         if (!$task) $this->reject('Stock synchronization task not found.');
         $blockers=[];
-        if ($task->status !== 'staged') $blockers[]='task_not_staged';
+        if (!in_array($task->status, $allowedStatuses, true)) $blockers[]='task_not_executable';
         $store=DB::table('marketplace_stores')->find($task->store_id);
         if (!$store || $store->status !== 'connected') $blockers[]='store_not_connected';
         $balance=DB::table('inventory_balances')->find($task->inventory_balance_id);

@@ -6,8 +6,11 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\Inventory\InventoryBalanceProvisioner;
 use App\Services\Marketplace\MarketplaceStockSyncTaskService;
+use App\Services\Marketplace\MarketplaceStockSyncDispatchService;
+use App\Models\MarketplaceStoreToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -30,7 +33,7 @@ class MarketplaceStockSyncTaskTest extends TestCase
         $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','environment'=>'live','region'=>'MY','external_shop_id'=>'2001','shop_name'=>'Lazada MY','status'=>'connected']);
         DB::table('inventory_fulfillment_routes')->insert(['channel_key'=>'marketplace:'.$store,'warehouse_id'=>$warehouse,
             'platform_location_id'=>'LZ-WH-1','is_enabled'=>true,'version'=>4,'created_at'=>now(),'updated_at'=>now()]);
-        $listing=DB::table('marketplace_listing_variants')->insertGetId(['store_id'=>$store,'external_product_id'=>'I-1','external_variant_id'=>'S-1',
+        $listing=DB::table('marketplace_listing_variants')->insertGetId(['store_id'=>$store,'external_product_id'=>'1001','external_variant_id'=>'2001',
             'observed_data'=>json_encode(['sku'=>'SYNC-1']),'fetched_at'=>now(),'created_at'=>now(),'updated_at'=>now()]);
         DB::table('marketplace_variant_mappings')->insert(['store_id'=>$store,'listing_variant_id'=>$listing,'product_variant_id'=>$variant->id,'actor_id'=>$actor->id,'created_at'=>now(),'updated_at'=>now()]);
         return compact('actor','store','balance','listing');
@@ -85,5 +88,54 @@ class MarketplaceStockSyncTaskTest extends TestCase
         $this->getJson('/admin/api/marketplace/stock-sync-tasks/'.$task['id'])->assertOk()
             ->assertJsonPath('current',false)->assertJsonFragment(['balance_changed']);
         $this->assertDatabaseHas('marketplace_stock_sync_tasks',['id'=>$task['id'],'status'=>'staged']);
+    }
+
+    public function test_current_lazada_task_dispatches_once_only_when_the_explicit_stock_gate_is_enabled(): void
+    {
+        $f=$this->fixture();
+        config([
+            'marketplace.stock_sync_operations_enabled'=>true,
+            'marketplace.lazada.enabled'=>true,
+            'marketplace.lazada.app_key'=>'123',
+            'marketplace.lazada.app_secret'=>'fixture-secret',
+        ]);
+        MarketplaceStoreToken::create(['store_id'=>$f['store'],'application_id'=>'123','access_token'=>'fixture-token','refresh_token'=>'fixture-refresh',
+            'access_expires_at'=>now()->addHour(),'refresh_expires_at'=>now()->addDay()]);
+        $task=app(MarketplaceStockSyncTaskService::class)->stage($f['store'],$f['balance'],'dispatch-lazada',$f['actor']);
+        Http::preventStrayRequests();
+        Http::fake(['api.lazada.com.my/rest/product/price_quantity/update*'=>Http::response(['code'=>'0','data'=>[]])]);
+
+        $result=app(MarketplaceStockSyncDispatchService::class)->dispatch($task['id']);
+
+        $this->assertSame('confirmed',$result['status']);
+        $this->assertDatabaseHas('marketplace_stock_sync_tasks',['id'=>$task['id'],'status'=>'confirmed','desired_quantity'=>8]);
+        Http::assertSentCount(1);
+    }
+
+    public function test_dispatch_rechecks_wms_after_claim_and_rejects_a_stale_task_before_any_provider_call(): void
+    {
+        $f=$this->fixture();
+        config(['marketplace.stock_sync_operations_enabled'=>true]);
+        $task=app(MarketplaceStockSyncTaskService::class)->stage($f['store'],$f['balance'],'stale-dispatch',$f['actor']);
+        DB::table('inventory_balances')->where('id',$f['balance'])->increment('version');
+        Http::preventStrayRequests();
+
+        try {
+            app(MarketplaceStockSyncDispatchService::class)->dispatch($task['id']);
+            $this->fail('A stale task contacted the provider.');
+        } catch (\RuntimeException $exception) {
+            $this->assertStringContainsString('stale',$exception->getMessage());
+        }
+
+        $this->assertDatabaseHas('marketplace_stock_sync_tasks',['id'=>$task['id'],'status'=>'rejected','error_code'=>'stale_wms_state']);
+        Http::assertNothingSent();
+    }
+
+    public function test_stock_dispatch_endpoint_refuses_requests_before_the_stock_write_gate_is_enabled(): void
+    {
+        config(['marketplace.read_operations_enabled'=>true, 'marketplace.stock_sync_operations_enabled'=>false]);
+        $actor=User::factory()->create(['is_admin'=>true]);
+        $this->actingAs($actor)->postJson('/admin/api/marketplace/stock-sync-tasks/999/dispatch')
+            ->assertStatus(503)->assertJsonPath('code','marketplace_stock_sync_disabled');
     }
 }

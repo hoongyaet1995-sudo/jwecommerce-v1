@@ -8,6 +8,35 @@ use RuntimeException;
 
 final class LazadaClient
 {
+    /**
+     * Transport for one reviewed absolute SKU quantity. Callers must revalidate
+     * their WMS snapshot immediately before invoking it.
+     */
+    public function updateAbsoluteQuantity(#[\SensitiveParameter] string $accessToken, string $itemId, string $skuId, int $quantity): void
+    {
+        if (config('marketplace.stock_sync_operations_enabled') !== true) {
+            throw new RuntimeException('Marketplace stock synchronization is disabled.');
+        }
+        if (!preg_match('/^[1-9][0-9]*$/D', $itemId) || !preg_match('/^[1-9][0-9]*$/D', $skuId) || $quantity < 0) {
+            throw new RuntimeException('Invalid Lazada stock synchronization payload.');
+        }
+        $key=config('marketplace.lazada.app_key');$secret=config('marketplace.lazada.app_secret');
+        if(config('marketplace.lazada.enabled')!==true||!is_string($key)||!preg_match('/^[1-9][0-9]*$/D',$key)
+            ||!is_string($secret)||trim($secret)===''||trim($accessToken)==='')throw new RuntimeException('Lazada stock synchronization is not configured.');
+        $path='/product/price_quantity/update';
+        $query=['app_key'=>$key,'access_token'=>$accessToken,'sign_method'=>'sha256','timestamp'=>(string)now()->getTimestampMs()];
+        ksort($query,SORT_STRING);$base=$path;
+        foreach($query as $name=>$value)$base.=$name.$value;
+        $query['sign']=strtoupper(hash_hmac('sha256',$base,$secret));
+        $payload=['Request'=>['Product'=>['Skus'=>['Sku'=>['ItemId'=>$itemId,'SkuId'=>$skuId,'Quantity'=>(string)$quantity]]]]];
+        try {$response=Http::acceptJson()->connectTimeout(10)->timeout(30)->withoutRedirecting()->post('https://api.lazada.com.my/rest'.$path.'?'.http_build_query($query),$payload);}
+        catch(ConnectionException){throw new RuntimeException('Lazada stock synchronization result is unknown. Reconcile before retrying.');}
+        $result=$response->json();
+        if(!$response->successful()||!is_array($result)||!in_array($result['code']??null,['0',0],true)) {
+            throw new RuntimeException('Lazada stock synchronization was not confirmed. Reconcile before retrying.');
+        }
+    }
+
     /** Malaysia seller read APIs only. Tokens and signed URLs never leave this service. */
     public function read(string $path, #[\SensitiveParameter] string $accessToken, array $parameters=[]): array
     {

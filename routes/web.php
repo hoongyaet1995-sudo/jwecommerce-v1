@@ -350,6 +350,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/marketplace/stores/{store}/catalog-fetch', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'fetch'])->whereNumber('store')->middleware('throttle:10,1');
     Route::post('/api/marketplace/stores/{store}/stock-sync-tasks', [\App\Http\Controllers\Admin\MarketplaceStockSyncController::class, 'stage'])->whereNumber('store')->middleware('throttle:10,1');
     Route::get('/api/marketplace/stock-sync-tasks/{task}', [\App\Http\Controllers\Admin\MarketplaceStockSyncController::class, 'show'])->whereNumber('task');
+    Route::post('/api/marketplace/stock-sync-tasks/{task}/dispatch', [\App\Http\Controllers\Admin\MarketplaceStockSyncController::class, 'dispatch'])->whereNumber('task')
+        ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':stock', 'throttle:10,1']);
     Route::get('/api/marketplace/catalog-runs/{run}', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'show'])->whereNumber('run');
     Route::post('/api/marketplace/catalog-runs/{run}/retry', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'retry'])->whereNumber('run')->middleware('throttle:10,1');
     });

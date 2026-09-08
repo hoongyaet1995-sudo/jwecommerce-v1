@@ -12,6 +12,7 @@ return [
     'publish_operations_enabled' => env('MARKETPLACE_PUBLISH_OPERATIONS_ENABLED', false),
     'operations_enabled' => env('MARKETPLACE_OPERATIONS_ENABLED', false),
     'read_operations_enabled' => env('MARKETPLACE_READ_OPERATIONS_ENABLED', false),
+    'stock_sync_operations_enabled' => env('MARKETPLACE_STOCK_SYNC_OPERATIONS_ENABLED', false),
     'import_operations_enabled' => env('MARKETPLACE_IMPORT_OPERATIONS_ENABLED', false),
     'oauth_acceptance_enabled' => env('MARKETPLACE_OAUTH_ACCEPTANCE_ENABLED', false),
     'shopee' => [
