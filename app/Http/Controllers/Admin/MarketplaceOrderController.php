@@ -29,16 +29,16 @@ class MarketplaceOrderController extends Controller
         return response()->json(['data'=>$details->read($order, $request->boolean('includeRecipient'))])->header('Cache-Control', 'no-store');
     }
 
-    public function fetch(Request $request, int $store, \App\Services\Marketplace\ShopeeClient $client)
+    public function fetch(Request $request, int $store, \App\Services\Marketplace\ShopeeClient $client, \App\Services\Marketplace\LazadaClient $lazada)
     {
         $data = $request->validate(['from'=>'required|integer|min:0', 'to'=>'required|integer|gt:from']);
         abort_if($data['to'] - $data['from'] > 30 * 86400 || $data['to'] > now()->timestamp, 422, 'Choose a past interval of at most 30 days.');
-        abort_unless($client->isConfigured(), 409, 'Shopee is not configured.');
-        $id = DB::transaction(function () use ($store, $data) {
+        $id = DB::transaction(function () use ($store, $data, $client, $lazada) {
             $row = DB::table('marketplace_stores')->where('id', $store)->lockForUpdate()->first();
             abort_unless($row, 404);
-            abort_unless($row->status === 'connected' && $row->platform === 'shopee'
-                && $row->environment === config('marketplace.shopee.environment'), 409, 'Connect this store before fetching orders.');
+            $ready=$row->platform==='shopee' ? $client->isConfigured() && $row->environment===config('marketplace.shopee.environment')
+                : ($row->platform==='lazada' && $lazada->isAuthorizationReady() && $row->environment==='live' && $row->region==='MY');
+            abort_unless($row->status === 'connected' && $ready, 409, 'Connect and configure this store before fetching orders.');
             $active = DB::table('marketplace_order_runs')->where('store_id', $store)->whereIn('status', ['queued', 'running'])->first();
             if ($active) return $active->id;
             $id = DB::table('marketplace_order_runs')->insertGetId(['store_id'=>$store, 'status'=>'queued',
@@ -46,7 +46,7 @@ class MarketplaceOrderController extends Controller
                 'requested_time_from'=>$data['from'], 'requested_time_to'=>$data['to'],
                 'created_at'=>now(), 'updated_at'=>now()]);
             $this->assertAtomicQueue();
-            \App\Jobs\PullShopeeOrders::dispatch($id)->beforeCommit();
+            $row->platform==='shopee' ? \App\Jobs\PullShopeeOrders::dispatch($id)->beforeCommit() : \App\Jobs\PullLazadaOrders::dispatch($id)->beforeCommit();
             return $id;
         });
 
@@ -60,16 +60,16 @@ class MarketplaceOrderController extends Controller
         return response()->json($row)->header('Cache-Control', 'no-store');
     }
 
-    public function retry(int $run, \App\Services\Marketplace\ShopeeClient $client)
+    public function retry(int $run, \App\Services\Marketplace\ShopeeClient $client, \App\Services\Marketplace\LazadaClient $lazada)
     {
-        abort_unless($client->isConfigured(), 409, 'Shopee is not configured.');
         $initial = DB::table('marketplace_order_runs')->find($run);
         abort_unless($initial, 404);
-        DB::transaction(function () use ($run, $initial) {
+        DB::transaction(function () use ($run, $initial, $client, $lazada) {
             // The same store lock serializes fetch and retry submissions.
             $store = DB::table('marketplace_stores')->where('id', $initial->store_id)->lockForUpdate()->first();
-            abort_unless($store && $store->status === 'connected' && $store->platform === 'shopee'
-                && $store->environment === config('marketplace.shopee.environment'), 409, 'Reconnect the store before retrying.');
+            $ready=$store&&($store->platform==='shopee' ? $client->isConfigured() && $store->environment===config('marketplace.shopee.environment')
+                : $store->platform==='lazada' && $lazada->isAuthorizationReady() && $store->environment==='live' && $store->region==='MY');
+            abort_unless($store && $store->status === 'connected' && $ready, 409, 'Reconnect the store before retrying.');
             $row = DB::table('marketplace_order_runs')->where('id', $run)->lockForUpdate()->first();
             abort_unless($row && $row->status === 'failed', 409, 'Only failed runs can be retried.');
             abort_if(DB::table('marketplace_order_runs')->where('store_id', $store->id)->whereIn('status', ['queued', 'running'])->exists(),
@@ -78,7 +78,7 @@ class MarketplaceOrderController extends Controller
                 'status'=>'queued', 'error_code'=>null, 'finished_at'=>null, 'updated_at'=>now(),
             ]);
             $this->assertAtomicQueue();
-            \App\Jobs\PullShopeeOrders::dispatch($run, $row->pages_completed)->beforeCommit();
+            $store->platform==='shopee' ? \App\Jobs\PullShopeeOrders::dispatch($run, $row->pages_completed)->beforeCommit() : \App\Jobs\PullLazadaOrders::dispatch($run, $row->pages_completed)->beforeCommit();
         });
 
         return response()->json(['runId'=>$run], 202);

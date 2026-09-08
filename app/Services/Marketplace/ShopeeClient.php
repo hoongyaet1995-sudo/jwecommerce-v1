@@ -8,6 +8,27 @@ use RuntimeException;
 
 class ShopeeClient
 {
+    public function pickupWarehouses(#[\SensitiveParameter] string $accessToken, string $shopId): array
+    {
+        $payload=$this->readShop('/api/v2/shop/get_warehouse_detail',$accessToken,$shopId,['warehouse_type'=>1]);
+        $rows=$payload['response'] ?? null;
+        if (!is_array($rows) || !array_is_list($rows)) throw new RuntimeException('Shopee warehouse response was incomplete.');
+        $result=[];
+        $seen=[];
+        foreach ($rows as $row) {
+            if (!is_array($row) || !is_int($row['warehouse_id'] ?? null) || $row['warehouse_id']<1
+                || isset($seen[$row['warehouse_id']]) || ($row['warehouse_type'] ?? null)!==1
+                || !is_string($row['warehouse_name'] ?? null) || !is_string($row['location_id'] ?? null) || $row['location_id']===''
+                || !is_string($row['region'] ?? null) || !preg_match('/\A[A-Z]{2}\z/D',$row['region'])
+                || !in_array($row['holiday_mode_state'] ?? null,[0,1,2,3],true)) {
+                throw new RuntimeException('Shopee warehouse response was incomplete.');
+            }
+            $seen[$row['warehouse_id']]=true;
+            $result[]=array_intersect_key($row,array_flip(['warehouse_id','warehouse_name','warehouse_type','location_id','region','holiday_mode_state']));
+        }
+        return $result;
+    }
+
     public function searchAttributeValues(#[\SensitiveParameter] string $accessToken, string $shopId,
         int $attributeId, string $keyword = '', int $cursor = 0): array
     {
@@ -148,7 +169,7 @@ class ShopeeClient
     public function isAuthorizationReady(): bool
     {
         // Direct callbacks only. A shared authorization gateway needs a separate reviewed contract.
-        $expected = rtrim((string) config('app.url'), '/').'/admin/marketplace/shopee/callback';
+        $expected = rtrim((string) config('app.url'), '/').'/admin/marketplace/oauth/shopee/callback';
         return $this->isConfigured() && config('marketplace.shopee.callback_url') === $expected;
     }
 

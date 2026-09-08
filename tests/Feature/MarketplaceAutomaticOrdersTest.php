@@ -48,4 +48,25 @@ class MarketplaceAutomaticOrdersTest extends TestCase
         $this->assertSame(0, app(MarketplaceAutomaticOrders::class)->enqueueDue());
         $this->assertDatabaseCount('marketplace_order_runs', 0);
     }
+
+    public function test_automatic_orders_include_an_eligible_lazada_store_without_mixing_provider_jobs(): void
+    {
+        $this->freezeTime();
+        config([
+            'app.url'=>'https://example.test',
+            'marketplace.automatic_orders_enabled'=>true,
+            'marketplace.read_operations_enabled'=>true,
+            'marketplace.lazada.enabled'=>true,
+            'marketplace.lazada.app_key'=>'123',
+            'marketplace.lazada.app_secret'=>'fixture-secret',
+            'marketplace.lazada.callback_url'=>'https://example.test/admin/marketplace/oauth/lazada/callback',
+        ]);
+        $store = DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','shop_name'=>'Lazada fixture',
+            'external_shop_id'=>'2001','region'=>'MY','environment'=>'live','status'=>'connected']);
+        $this->assertSame(1, app(MarketplaceAutomaticOrders::class)->enqueueDue());
+        $this->assertDatabaseHas('marketplace_order_runs',['store_id'=>$store,'origin'=>'automatic','status'=>'queued']);
+        $this->assertDatabaseCount('jobs',1);
+        $payload = DB::table('jobs')->value('payload');
+        $this->assertStringContainsString('PullLazadaOrders',$payload);
+    }
 }

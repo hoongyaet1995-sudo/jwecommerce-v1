@@ -1,0 +1,41 @@
+<?php
+namespace App\Services\Marketplace;
+
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
+use RuntimeException;
+
+/** Read-only Lazada order pull. Order-item inventory transitions remain disabled. */
+final class LazadaOrderService
+{
+    public function __construct(private LazadaClient $client, private LazadaTokenManager $tokens,
+        private MarketplaceOrderSnapshotService $snapshots) {}
+
+    public function pullPage(int $storeId, int $from, int $to, int $offset=0): array
+    {
+        if($from<0||$to<=$from||$offset<0||$offset>5000||$offset%100!==0)throw new RuntimeException('Invalid Lazada order page window.');
+        $token=$this->tokens->accessToken($storeId);
+        $store=DB::table('marketplace_stores')->find($storeId);
+        if(!$store||$store->platform!=='lazada'||$store->status!=='connected')throw new RuntimeException('Lazada store is not connected.');
+        $format=fn(int $time)=>CarbonImmutable::createFromTimestampUTC($time)->setTimezone('Asia/Kuala_Lumpur')->format('Y-m-d\\TH:i:sP');
+        $page=$this->client->read('/orders/get',$token,['created_after'=>$format($from),'created_before'=>$format($to),'status'=>'all','limit'=>100,'offset'=>$offset]);
+        $orders=$page['orders']??null;
+        if(!is_array($orders)||!array_is_list($orders)||count($orders)>100)throw new RuntimeException('Lazada order page is incomplete.');
+        $saved=0;
+        foreach($orders as $summary){
+            if(!is_array($summary)||(!is_string($summary['order_id']??null)&&!is_int($summary['order_id']??null)))throw new RuntimeException('Lazada order page contains an invalid order identity.');
+            $details=$this->client->read('/order/items/get',$token,['order_id'=>(string)$summary['order_id']]);
+            $items=$details['order_items']??null;
+            if(!is_array($items)||!array_is_list($items))throw new RuntimeException('Lazada order items are incomplete.');
+            $this->snapshots->saveLazada($storeId,$summary+['order_items'=>$items]);
+            $saved++;
+        }
+        $countTotal=$page['countTotal']??null;
+        if(!is_int($countTotal)&&!ctype_digit((string)$countTotal))throw new RuntimeException('Lazada order page count is incomplete.');
+        // Lazada documents offsets as 0/100/200 with a 100-row limit. Advance
+        // by the requested page size, not a short response, so a transiently
+        // short page cannot create an invalid offset or duplicate a window.
+        $hasMore=$offset+$saved<(int)$countTotal;
+        return ['orders'=>$saved,'next_offset'=>$offset+100,'has_more'=>$hasMore,'count_total'=>(int)$countTotal];
+    }
+}

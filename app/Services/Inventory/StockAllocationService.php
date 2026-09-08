@@ -42,6 +42,7 @@ class StockAllocationService
                 'created_at'=>now(), 'updated_at'=>now(),
             ]);
             $available = app(InventoryMutationService::class)->change($variantId, -$quantity, 'allocation:'.$id.':reserve', 'Inventory reservation');
+            app(PhysicalAllocationService::class)->reserve($id,$ownerType,$ownerId,$variantId,$quantity);
             $this->record($id, 'reserved', -$quantity, $available);
             return $id;
         }, 3);
@@ -74,6 +75,8 @@ class StockAllocationService
                 throw new RuntimeException('Terminal inventory allocation requires reconciliation, not another transition.');
             }
             $delta = $target === 'released' ? (int) $allocation->quantity : 0;
+            $physicalDelta=app(PhysicalAllocationService::class)->finish($allocation,$target);
+            if($physicalDelta!==null)$delta=$physicalDelta;
             $available = (int)$variant->stock;
             if ($delta !== 0) {
                 $available = app(InventoryMutationService::class)->change((int)$variantId, $delta, 'allocation:'.$id.':release', 'Inventory reservation released');

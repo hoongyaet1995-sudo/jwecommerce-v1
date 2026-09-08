@@ -340,6 +340,10 @@ class CatalogApiController extends Controller
                 'cost_price' => isset($variant['costPrice']) ? $this->cents($variant['costPrice']) : null, 'stock' => $variant['inventoryQuantity'],
                 'weight_grams' => $variant['weightGrams'] ?? null, 'package_length_cm' => $variant['packageLengthCm'] ?? null, 'package_width_cm' => $variant['packageWidthCm'] ?? null, 'package_height_cm' => $variant['packageHeightCm'] ?? null, 'barcode' => $variant['barcode'] ?? null, 'image_url' => $variant['image'] ?? null,
                 'visual_type' => $variant['visualType'], 'color_code' => $variant['colorCode'], 'option_image' => $variant['optionImage'], 'enabled' => $variant['enabled']];
+            if ((!$id || !$existing->has($id)) && (int)$variant['inventoryQuantity'] !== 0
+                && DB::table('inventory_configuration')->where('id',1)->value('accounting_enabled')) {
+                throw ValidationException::withMessages(["variants.$variantIndex.inventoryQuantity" => 'Create the SKU with zero availability, then count stock in its warehouse.']);
+            }
             $model = $id && $existing->has($id) ? $existing[$id] : $product->variants()->create($attributes);
             if ($model->exists && $id && $existing->has($id)) {
                 $changed = (int)$model->stock !== (int)$variant['inventoryQuantity'];

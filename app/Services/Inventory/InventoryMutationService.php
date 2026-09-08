@@ -34,6 +34,9 @@ class InventoryMutationService
                 if (!hash_equals($previous->request_hash,$hash)) throw new RuntimeException('Inventory operation identity conflicts with an earlier change.');
                 return (int)$previous->available_after;
             }
+            if ($expectedVersion !== null && DB::table('inventory_configuration')->where('id',1)->value('accounting_enabled')) {
+                throw new RuntimeException('Warehouse accounting owns availability. Use a warehouse stock operation.');
+            }
             if ($expectedVersion !== null && (int)$variant->stock_version !== $expectedVersion) {
                 throw new RuntimeException('Inventory changed. Reload before adjusting quantity.');
             }

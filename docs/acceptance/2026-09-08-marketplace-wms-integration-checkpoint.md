@@ -1,0 +1,11 @@
+# Marketplace and WMS integration checkpoint
+
+Recovery follow-through: inspected snapshot ingestion already reprocesses the persisted latest order when an equal/older provider version is fetched; no duplicate recovery mechanism was added. Extended the warehouse-failure test to repair the pool, replay the identical snapshot twice, verify one reservation/one available movement and cleared error, then replay SHIPPED twice and verify physical12->9/reserved3->0/available7. Ingestion tests passed 15 / 96 assertions. Preview diagnostic rebuild completed: main-CNBV9EbY.js. The source exception drawer has no explicit retry action; recovery currently occurs through existing order ingestion, not a newly invented control.
+
+Concentrated pre-change regression: 309 tests passed / 1980 assertions across Marketplace, Shopee, Lazada, Inventory, Physical, StockAllocation, Checkout and operational returns. This is local automated evidence, not provider acceptance.
+
+Then added WarehouseAllocationException to distinguish physical ownership/ATP business failures from database/transport errors. MarketplaceOrderInventoryService catches this specific type outside the allocation savepoint, persists `warehouse_allocation_requires_review`, and retains the fetched order. All partial reservation writes roll back. Database/transport failures remain uncaught and observable. Exception API accepts the new filter; preview adapter supplies a clear diagnostic without misclassifying it as unmapped or historical.
+
+Targeted ingestion and physical allocation regression after the change: 19 passed / 107 assertions. New case proves an enabled store with missing physical pool retains its snapshot and exception while creating zero allocations/movements and leaving stock unchanged. Frontend rebuild remains pending after diagnostic text adapter change.
+
+Outstanding operational scope remains mode initialization/conversion/activation, complete historical ownership and order coverage, reviewed reconciliation API/UI, complete Lazada order/catalog lifecycle, real provider writes under authorization, full ZIP35 viewport comparison and final local/live acceptance. Keep goal active; no deployment or platform mutation performed.

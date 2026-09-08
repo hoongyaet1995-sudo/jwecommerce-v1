@@ -1,0 +1,7 @@
+# Warehouse adjustment chain
+
+Added POST `/admin/api/inventory/adjustment-reviews` using existing reviewed confirmation endpoint. Delta requests derive before/after quantities under variant and balance locks, reject unknown physical stock or negative results, and store operation kind and delta. ZIP35 adjustment mode now awaits server review/confirmation. Delta receipt does not pretend to be a new cycle count: counted_at is preserved.
+
+For enabled accounting, count and delta confirmation update available stock by actual ATP change in the same transaction and preserve known reserved/safety coverage. Review stores configuration version; changed configuration or balance/legacy stock versions reject confirmation. Existing receipts remain idempotent. Balances outside the active pool kind or with unknown obligations reject active adjustment. Before activation, physical staging remains isolated and invalidates obligation coverage as before.
+
+Local migration 000007 applied. PhysicalCount/PhysicalAllocationFlow/InventoryMutation/InventoryTransferFlow/ReturnRequestOperational: 36 passed, 258 assertions. Covers unknown/overdraw delta, preserved count date, repeated confirm, and active count physical10->3 with reserved2/safety2 leading available6->0. Preview build main-Dpxdfn_M.js passed. No platform push or real stock adjustment performed in this batch; browser interaction for delta remains pending. Mode activation/reconciliation is still incomplete, so full WMS operational closure is not claimed.

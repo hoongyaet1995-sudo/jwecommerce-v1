@@ -8,6 +8,24 @@ use Tests\TestCase;
 
 class ShopeeClientTest extends TestCase
 {
+    public function test_pickup_warehouses_preserve_stock_location_identity_without_address_data(): void
+    {
+        Http::fake(['*'=>Http::sequence()->push(['error'=>'','response'=>[
+            ['warehouse_id'=>6,'warehouse_name'=>'Pickup','warehouse_type'=>1,'location_id'=>'MYZ','region'=>'MY','holiday_mode_state'=>0,'address'=>'PRIVATE ADDRESS'],
+        ]])->push(['error'=>'warehouse.error_not_in_whitelist','message'=>'not enabled','response'=>null])]);
+        $rows=app(ShopeeClient::class)->pickupWarehouses('access','456');
+        $this->assertSame('MYZ',$rows[0]['location_id']);
+        $this->assertSame(6,$rows[0]['warehouse_id']);
+        $this->assertArrayNotHasKey('address',$rows[0]);
+        Http::assertSent(function ($request) {
+            parse_str(parse_url($request->url(),PHP_URL_QUERY),$q);
+            return $request->method()==='GET' && str_contains($request->url(),'/shop/get_warehouse_detail?')
+                && ($q['warehouse_type'] ?? null)==='1' && !isset($q['region']);
+        });
+        $this->expectException(\RuntimeException::class);
+        app(ShopeeClient::class)->pickupWarehouses('access','456');
+    }
+
     public function test_searchable_attribute_values_use_signed_post_and_validate_pagination(): void
     {
         Http::fake(['*'=>Http::sequence()->push(['error'=>'','response'=>[

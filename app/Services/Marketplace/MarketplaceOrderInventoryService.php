@@ -30,6 +30,9 @@ class MarketplaceOrderInventoryService
             } catch (MarketplaceInventoryException $exception) {
                 $status = 'exception';
                 $error = $exception->getMessage();
+            } catch (\App\Services\Inventory\WarehouseAllocationException $exception) {
+                $status = 'exception';
+                $error = 'warehouse_allocation_requires_review';
             }
             $values = [
                 'platform_updated_at'=>$order->platform_updated_at, 'status'=>$status, 'error_code'=>$error,

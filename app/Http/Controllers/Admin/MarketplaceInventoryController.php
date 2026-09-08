@@ -46,7 +46,7 @@ class MarketplaceInventoryController extends Controller
             $query->where(fn ($sub) => $sub->where('v.sku', 'like', '%'.$filters['q'].'%')
                 ->orWhere('v.title', 'like', '%'.$filters['q'].'%')->orWhere('p.title', 'like', '%'.$filters['q'].'%'));
         }
-        $page = $query->select('v.id', 'v.product_id', 'v.sku', 'v.title as variant_title', 'p.title as product_title', 'v.stock')
+        $page = $query->select('v.id', 'v.product_id', 'v.sku', 'v.title as variant_title', 'p.title as product_title', 'v.stock', 'v.price')
             ->orderBy('v.id')->paginate($filters['per_page'] ?? 25);
         $ids = $page->getCollection()->pluck('id');
         // Aggregate only the displayed page; do not fetch the entire merchant catalog.
@@ -61,6 +61,7 @@ class MarketplaceInventoryController extends Controller
         $page->setCollection($page->getCollection()->map(fn ($row) => [
             'id'=>(int) $row->id, 'product_id'=>(int) $row->product_id, 'sku'=>$row->sku,
             'product_title'=>$row->product_title, 'variant_title'=>$row->variant_title,
+            'selling_price'=>$row->price / 100,
             'available_stock'=>(int) $row->stock, 'marketplace_reserved_stock'=>(int) ($reserved[$row->id] ?? 0),
             // Legacy availability is not a verified physical count; safety buffer has no owner yet.
             'physical_stock'=>null, 'safety_stock'=>null, 'reconciliation_required'=>true,
@@ -80,7 +81,7 @@ class MarketplaceInventoryController extends Controller
             'q'=>'nullable|string|max:100',
             'error'=>['nullable', Rule::in(['historical_order', 'unsupported_order_status', 'invalid_order_lines',
                 'duplicate_order_line', 'unmapped_order_line', 'inventory_lifecycle_conflict', 'insufficient_stock',
-                'unsupported_fulfillment', 'unsupported_order_composition'])],
+                'unsupported_fulfillment', 'unsupported_order_composition', 'warehouse_allocation_requires_review'])],
             'page'=>'nullable|integer|min:1', 'per_page'=>'nullable|integer|min:1|max:100',
         ]);
         $query = DB::table('marketplace_order_inventory as i')

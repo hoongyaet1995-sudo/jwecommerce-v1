@@ -278,10 +278,39 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/promotions', AdminAppController::class)->name('coupons.index');
     Route::get('/api/marketplace', [\App\Http\Controllers\Admin\MarketplaceApiController::class, 'index']);
     Route::get('/api/inventory/movements', [\App\Http\Controllers\Admin\InventoryMovementController::class, 'index']);
+    Route::get('/api/inventory/physical-movements', [\App\Http\Controllers\Admin\InventoryMovementController::class, 'physical']);
+    Route::get('/api/inventory/obligations', [\App\Http\Controllers\Admin\InventoryObligationController::class, 'index']);
+    Route::get('/api/inventory/balances/{balance}/obligations', [\App\Http\Controllers\Admin\InventoryObligationController::class, 'balance'])->whereNumber('balance');
+    Route::get('/api/inventory/balances', [\App\Http\Controllers\Admin\PhysicalBalanceController::class, 'index']);
+    Route::post('/api/inventory/balances', [\App\Http\Controllers\Admin\PhysicalBalanceController::class, 'store']);
+    Route::get('/api/inventory/warehouses', [\App\Http\Controllers\Admin\InventoryWarehouseController::class, 'index']);
+    Route::get('/api/inventory/fulfillment-routes', [\App\Http\Controllers\Admin\InventoryRoutingController::class, 'index']);
+    Route::get('/api/inventory/route-stores', [\App\Http\Controllers\Admin\InventoryRoutingController::class, 'stores']);
+    Route::get('/api/inventory/readiness', \App\Http\Controllers\Admin\InventoryReadinessController::class);
+    Route::put('/api/inventory/fulfillment-routes', [\App\Http\Controllers\Admin\InventoryRoutingController::class, 'save']);
+    Route::get('/api/inventory/transfers', [\App\Http\Controllers\Admin\InventoryTransferController::class, 'index']);
+    Route::get('/api/inventory/transfer-options', [\App\Http\Controllers\Admin\PhysicalBalanceController::class, 'transferOptions']);
+    Route::post('/api/inventory/transfers', [\App\Http\Controllers\Admin\InventoryTransferController::class, 'store']);
+    Route::post('/api/inventory/transfers/{transfer}/transition', [\App\Http\Controllers\Admin\InventoryTransferController::class, 'transition'])->whereNumber('transfer');
+    Route::post('/api/inventory/warehouses', [\App\Http\Controllers\Admin\InventoryWarehouseController::class, 'store']);
+    Route::put('/api/inventory/warehouses/{warehouse}', [\App\Http\Controllers\Admin\InventoryWarehouseController::class, 'update'])->whereNumber('warehouse');
+    Route::post('/api/inventory/count-reviews', [\App\Http\Controllers\Admin\PhysicalCountController::class, 'review']);
+    Route::post('/api/inventory/adjustment-reviews', [\App\Http\Controllers\Admin\PhysicalCountController::class, 'adjustment']);
+    Route::post('/api/inventory/reconciliations', [\App\Http\Controllers\Admin\InventoryReconciliationController::class, 'store']);
+    Route::post('/api/inventory/count-reviews/{review}/confirm', [\App\Http\Controllers\Admin\PhysicalCountController::class, 'confirm'])->whereUuid('review');
     Route::get('/api/marketplace/connections', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'connections']);
     Route::get('/api/marketplace/oauth-result', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'result']);
     Route::get('/marketplace/oauth-acceptance', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'acceptance']);
     Route::get('/marketplace/orders/{order}/preview', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'preview'])->whereNumber('order');
+    Route::get('/marketplace/inventory-preview-33', function () {
+        abort_unless(app()->environment('local'), 404);
+        $path = public_path('build-marketplace33-preview/manifest.json');
+        abort_unless(is_file($path), 503, 'Build the isolated Inventory preview first.');
+        $manifest = json_decode(file_get_contents($path), true);
+        $entry = $manifest['src/previews/marketplace33/main.tsx'] ?? null;
+        abort_unless($entry, 503);
+        return response()->view('admin.marketplace33-preview', ['entry'=>$entry])->header('Cache-Control', 'no-store');
+    });
     Route::get('/marketplace/oauth-preview', function (\Illuminate\Http\Request $request) {
         abort_unless(app()->environment('local'), 404);
         $path = public_path('build-marketplace-preview/manifest.json');
@@ -319,6 +348,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/marketplace/order-runs/{run}', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'run'])->whereNumber('run');
     Route::post('/api/marketplace/order-runs/{run}/retry', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'retry'])->whereNumber('run')->middleware('throttle:10,1');
     Route::post('/api/marketplace/stores/{store}/catalog-fetch', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'fetch'])->whereNumber('store')->middleware('throttle:10,1');
+    Route::post('/api/marketplace/stores/{store}/stock-sync-tasks', [\App\Http\Controllers\Admin\MarketplaceStockSyncController::class, 'stage'])->whereNumber('store')->middleware('throttle:10,1');
+    Route::get('/api/marketplace/stock-sync-tasks/{task}', [\App\Http\Controllers\Admin\MarketplaceStockSyncController::class, 'show'])->whereNumber('task');
     Route::get('/api/marketplace/catalog-runs/{run}', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'show'])->whereNumber('run');
     Route::post('/api/marketplace/catalog-runs/{run}/retry', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'retry'])->whereNumber('run')->middleware('throttle:10,1');
     });
@@ -330,6 +361,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/marketplace/lazada/authorize', [\App\Http\Controllers\Admin\LazadaOAuthController::class, 'start'])->middleware('throttle:10,1');
     Route::get('/marketplace/oauth/lazada/callback', [\App\Http\Controllers\Admin\LazadaOAuthController::class, 'callback'])->middleware('throttle:20,1');
     Route::post('/api/marketplace/stores/{store}/disconnect', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'disconnect'])->whereNumber('store');
+    Route::get('/marketplace/oauth/shopee/callback', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'callback'])->middleware('throttle:20,1');
+    // Legacy endpoint retained for any authorization sessions created before OAuth callbacks were normalized.
     Route::get('/marketplace/shopee/callback', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'callback'])->middleware('throttle:20,1');
     Route::post('/api/marketplace/stores', [\App\Http\Controllers\Admin\MarketplaceApiController::class, 'save']);
     Route::patch('/api/marketplace/stores/{store}', [\App\Http\Controllers\Admin\MarketplaceApiController::class, 'save'])->whereNumber('store');

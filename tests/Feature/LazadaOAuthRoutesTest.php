@@ -31,6 +31,9 @@ class LazadaOAuthRoutesTest extends TestCase
             ->assertJsonPath('stores.0.status','connected')->assertJsonPath('capabilities.lazada.oauth',true)
             ->assertJsonPath('capabilities.lazada.catalog',false)->assertJsonPath('capabilities.lazada.orders',false)
             ->assertDontSee('fixture-access')->assertDontSee('fixture-secret');
+        config(['marketplace.read_operations_enabled'=>true]);
+        $this->getJson('/admin/api/marketplace/connections')->assertOk()
+            ->assertJsonPath('capabilities.lazada.catalog',true)->assertJsonPath('capabilities.lazada.orders',true);
         config(['marketplace.lazada.app_key'=>'999999']);
         $this->getJson('/admin/api/marketplace/connections')->assertOk()
             ->assertJsonPath('stores.0.status','reauthorization_required');

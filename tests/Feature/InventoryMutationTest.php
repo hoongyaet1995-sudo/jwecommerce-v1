@@ -11,6 +11,16 @@ use Tests\TestCase;
 class InventoryMutationTest extends TestCase
 {
     use RefreshDatabase;
+    public function test_active_warehouse_accounting_blocks_absolute_available_edits(): void
+    {
+        $product=Product::create(['title'=>'Owned','handle'=>'owned','base_price'=>10]);
+        $variant=$product->variants()->create(['sku'=>'OWNED','title'=>'One','price'=>10,'stock'=>10]);
+        DB::table('inventory_configuration')->where('id',1)->update(['accounting_enabled'=>true]);
+        try {app(InventoryMutationService::class)->setAvailable($variant->id,99,0,'catalog:test','Edit');$this->fail('Warehouse ownership bypassed');}
+        catch(RuntimeException $error){$this->assertStringContainsString('Warehouse accounting',$error->getMessage());}
+        $this->assertSame(10,(int)$variant->fresh()->stock);
+        $this->assertDatabaseCount('inventory_movements',0);
+    }
 
     public function test_marketplace_allocation_records_shared_movements_once(): void
     {

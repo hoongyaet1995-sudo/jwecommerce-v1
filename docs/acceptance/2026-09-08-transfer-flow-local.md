@@ -1,0 +1,18 @@
+# Warehouse transfer backend integration
+
+Implemented draft creation, dispatch, partial/full receipt and undispatched cancellation in one local backend batch: schema, transaction service and admin routes. No active mode or real warehouse activation was changed. Runtime configuration is still unset, so operational transfer writes are blocked.
+
+Dispatch subtracts the quantity from source physical stock while preserving existing order reservations and safety buffer. Remaining transferred quantity is represented as in transit. Each receipt adds only its received quantity to destination physical stock. Draft cancellation has no stock effect; in-transit cancellation is rejected pending a provenance-preserving return workflow. Unknown destination physical baseline cannot receive. Initial/delta counts, reconciliation and all other physical writers must continue to share variant/balance locking.
+
+Create and transition operation identities are idempotent and hash checked. Transfer expected versions reject stale actions. All actions use the current administrator and record an event receipt. Shared-mode transfers are not emulated as quantity allocation.
+
+Three concentrated feature tests / 31 assertions passed, covering stock conservation across partial receipt, retries, over-receipt rejection, in-transit cancellation rejection, insufficient ATP, draft cancellation and unconfigured mode/auth rejection. Local MySQL migration applied successfully; service flow tests used SQLite. Full MySQL concurrency and browser acceptance remain unproven.
+
+Still required: ZIP34 transfer UI adapter with actual balance choices, full active-mode/reconciliation integration, displayed transfer event history, partial-receipt controls if absent in source, accounting-aware mode conversion, and shipment/return/stock-push integration. This is backend progress toward full WMS, not a separate deliverable or complete operational transfer acceptance.
+
+UI adapter subsequently connected at /admin/marketplace/inventory-preview-33?view=transfers using ZIP34 WarehouseTransferTab and CreateWarehouseTransferModal. Actual transfer list joins SKU/warehouse identity; transfer-options provides paginated active warehouse balances without inferring unknown ATP. Create/dispatch/receive/cancel await persisted responses, reuse operation identities within the mounted page on retries, preserve notes (tracking reference is included in creation notes), and bind actor on the server. Canceling the native notes prompt performs no operation. Unknown or unconfigured mode shows a block; no local mode was activated to manufacture browser success. Source receipt action currently receives all remaining goods; dedicated partial-receipt UI and returned-goods workflow remain outstanding. Build passed. Browser operational acceptance remains pending full mode/reconciliation setup.
+# Active accounting follow-through (September 8)
+
+When accounting is enabled, transfer dispatch/receipt now changes the compatibility available-stock ledger by the changed warehouse's actual ATP difference in the same transaction. Destination receipts first fill any reserved/safety shortfall; received quantity is not blindly added to availability. Unknown destination obligations reject active receipt. Accounting-disabled transfer behavior remains isolated from legacy stock. Operation identity uses transfer id and next version; receipt retries return before either ledger is written again.
+
+InventoryTransferFlowTest: 4 passed, 44 assertions, including an eight-unit transfer with a three-unit destination shortfall (available 17 -> 9 -> 14) and repeated receipt. No local business transfer or platform write executed.

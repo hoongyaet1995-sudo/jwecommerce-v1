@@ -11,6 +11,31 @@ use Tests\TestCase;
 class MarketplaceInventoryIngestionTest extends TestCase
 {
     use RefreshDatabase;
+    public function test_missing_physical_pool_records_exception_and_retains_order_without_partial_reservation():void
+    {
+        $store=$this->setupStore();$this->enable($store);
+        DB::table('inventory_configuration')->where('id',1)->update(['operating_mode'=>'shared_pool','accounting_enabled'=>true]);
+        $id=app(MarketplaceOrderSnapshotService::class)->saveShopee($store,$this->order());
+        $this->assertDatabaseHas('marketplace_orders',['id'=>$id]);
+        $this->assertDatabaseHas('marketplace_order_inventory',['order_id'=>$id,'status'=>'exception','error_code'=>'warehouse_allocation_requires_review']);
+        $this->assertDatabaseCount('stock_allocations',0);
+        $this->assertDatabaseCount('inventory_movements',0);
+        $this->assertEquals(10,DB::table('product_variants')->value('stock'));
+        $variant=(int)DB::table('product_variants')->value('id');
+        $balance=app(\App\Services\Inventory\InventoryBalanceProvisioner::class)->provision($variant,'shared',null)['balance_id'];
+        DB::table('inventory_balances')->where('id',$balance)->update(['physical_stock'=>12,'reserved_stock'=>0,'safety_stock'=>2,'counted_at'=>now(),'obligations_reconciled_at'=>now()]);
+        $snapshots=app(MarketplaceOrderSnapshotService::class);
+        $this->assertSame($id,$snapshots->saveShopee($store,$this->order()));
+        $snapshots->saveShopee($store,$this->order());
+        $this->assertDatabaseHas('marketplace_order_inventory',['order_id'=>$id,'status'=>'reserved','error_code'=>null]);
+        $this->assertDatabaseCount('stock_allocations',1);
+        $this->assertDatabaseCount('inventory_movements',1);
+        $this->assertDatabaseHas('inventory_balances',['id'=>$balance,'physical_stock'=>12,'reserved_stock'=>3]);
+        $snapshots->saveShopee($store,$this->order('SHIPPED',2100));
+        $snapshots->saveShopee($store,$this->order('SHIPPED',2100));
+        $this->assertDatabaseHas('inventory_balances',['id'=>$balance,'physical_stock'=>9,'reserved_stock'=>0]);
+        $this->assertEquals(7,DB::table('product_variants')->value('stock'));
+    }
 
     private function setupStore(): int
     {
@@ -197,6 +222,7 @@ class MarketplaceInventoryIngestionTest extends TestCase
         $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>true]));
         config(['marketplace.read_operations_enabled'=>true]);
         $this->getJson($url.'?per_page=1')->assertOk()->assertJsonPath('total', 1)
+            ->assertJsonPath('data.0.selling_price', 1)
             ->assertJsonPath('data.0.available_stock', 7)->assertJsonPath('data.0.marketplace_reserved_stock', 3)
             ->assertJsonPath('data.0.physical_stock', null)->assertJsonPath('data.0.safety_stock', null)
             ->assertJsonPath('data.0.reconciliation_required', true)->assertJsonCount(2, 'data.0.channel_links')

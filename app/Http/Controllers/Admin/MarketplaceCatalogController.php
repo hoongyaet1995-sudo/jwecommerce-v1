@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\PullShopeeCatalog;
+use App\Jobs\PullLazadaCatalog;
 use App\Services\Marketplace\ShopeeClient;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -121,14 +122,13 @@ class MarketplaceCatalogController extends Controller
         return response()->json($page)->header('Cache-Control', 'no-store');
     }
 
-    public function fetch(int $store, ShopeeClient $client)
+    public function fetch(int $store, ShopeeClient $client, \App\Services\Marketplace\LazadaClient $lazada)
     {
-        abort_unless($client->isConfigured(), 409, 'Shopee is not configured.');
-        $id = DB::transaction(function () use ($store) {
+        $id = DB::transaction(function () use ($store, $client, $lazada) {
             $row = DB::table('marketplace_stores')->where('id', $store)->lockForUpdate()->first();
             abort_unless($row, 404);
-            abort_unless($row->platform === 'shopee' && $row->status === 'connected'
-                && $row->environment === config('marketplace.shopee.environment'), 409, 'Connect the store before fetching products.');
+            $ready=$row->platform==='shopee' ? $client->isConfigured()&&$row->environment===config('marketplace.shopee.environment') : $row->platform==='lazada'&&$lazada->isAuthorizationReady()&&$row->environment==='live'&&$row->region==='MY';
+            abort_unless($row->status === 'connected' && $ready, 409, 'Connect the store before fetching products.');
             $active = DB::table('marketplace_catalog_runs')->where('store_id', $store)->whereIn('status', ['queued', 'running'])->first();
             if ($active) {
                 return $active->id;
@@ -136,7 +136,7 @@ class MarketplaceCatalogController extends Controller
             $id = DB::table('marketplace_catalog_runs')->insertGetId([
                 'store_id'=>$store, 'status'=>'queued', 'created_at'=>now(), 'updated_at'=>now(),
             ]);
-            PullShopeeCatalog::dispatch($id)->afterCommit();
+            $row->platform==='shopee' ? PullShopeeCatalog::dispatch($id)->afterCommit() : PullLazadaCatalog::dispatch($id)->afterCommit();
 
             return $id;
         });
@@ -152,15 +152,18 @@ class MarketplaceCatalogController extends Controller
         return response()->json($row)->header('Cache-Control', 'no-store');
     }
 
-    public function retry(int $run, ShopeeClient $client)
+    public function retry(int $run, ShopeeClient $client, \App\Services\Marketplace\LazadaClient $lazada)
     {
-        abort_unless($client->isConfigured(), 409, 'Shopee is not configured.');
         $initial = DB::table('marketplace_catalog_runs')->find($run);
         abort_unless($initial, 404);
-        DB::transaction(function () use ($run, $initial) {
+        DB::transaction(function () use ($run, $initial, $client, $lazada) {
             $store = DB::table('marketplace_stores')->where('id', $initial->store_id)->lockForUpdate()->first();
-            abort_unless($store && $store->status === 'connected' && $store->platform === 'shopee'
-                && $store->environment === config('marketplace.shopee.environment'), 409, 'Reconnect the store before retrying.');
+            $shopeeReady = $store && $store->platform === 'shopee'
+                && $client->isConfigured() && $store->environment === config('marketplace.shopee.environment');
+            $lazadaReady = $store && $store->platform === 'lazada'
+                && $lazada->isAuthorizationReady() && $store->environment === 'live' && $store->region === 'MY';
+            abort_unless($store && $store->status === 'connected' && ($shopeeReady || $lazadaReady), 409,
+                'Reconnect the store before retrying.');
             $row = DB::table('marketplace_catalog_runs')->where('id', $run)->lockForUpdate()->first();
             abort_unless($row && $row->status === 'failed', 409, 'Only failed runs can be retried.');
             abort_if(DB::table('marketplace_catalog_runs')->where('store_id', $store->id)->whereIn('status', ['queued', 'running'])->exists(),
@@ -168,7 +171,9 @@ class MarketplaceCatalogController extends Controller
             DB::table('marketplace_catalog_runs')->where('id', $run)->update([
                 'status'=>'queued', 'error_code'=>null, 'finished_at'=>null, 'updated_at'=>now(),
             ]);
-            PullShopeeCatalog::dispatch($run, $row->pages_completed)->afterCommit();
+            $store->platform === 'shopee'
+                ? PullShopeeCatalog::dispatch($run, $row->pages_completed)->afterCommit()
+                : PullLazadaCatalog::dispatch($run, $row->pages_completed)->afterCommit();
         });
 
         return response()->json(['runId'=>$run], 202);

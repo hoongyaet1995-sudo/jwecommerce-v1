@@ -44,4 +44,42 @@ class MarketplaceOrderSnapshotService
             return $id;
         });
     }
+
+    /**
+     * Lazada represents status per order item. The normalized order status is
+     * display-only until a dedicated item-level lifecycle mapper is enabled.
+     */
+    public function saveLazada(int $storeId, #[\SensitiveParameter] array $order): int
+    {
+        $id=$order['order_id'] ?? null;
+        $updated=$order['updated_at'] ?? null;
+        $statuses=$order['statuses'] ?? null;
+        if ((!is_string($id) && !is_int($id)) || (string)$id==='' || strlen((string)$id)>100
+            || !is_string($updated) || !is_array($statuses) || !array_is_list($statuses)
+            || array_filter($statuses,fn($status)=>!is_string($status)||$status==='')) {
+            throw new RuntimeException('Lazada order identity, item status or update time is incomplete.');
+        }
+        try {$updatedAt=\Carbon\CarbonImmutable::parse($updated)->getTimestamp();}
+        catch (\Throwable) {throw new RuntimeException('Lazada order update time is invalid.');}
+        if($updatedAt<0)throw new RuntimeException('Lazada order update time is invalid.');
+        $status=implode('|',array_values(array_unique($statuses)));
+        if($status===''||strlen($status)>60)throw new RuntimeException('Lazada order item status is incomplete.');
+
+        return DB::transaction(function()use($storeId,$order,$id,$updatedAt,$status){
+            $store=DB::table('marketplace_stores')->where('id',$storeId)->lockForUpdate()->first();
+            if(!$store||$store->platform!=='lazada'||$store->status!=='connected') {
+                throw new RuntimeException('Store is not connected for Lazada order ingestion.');
+            }
+            $key=['store_id'=>$storeId,'external_order_id'=>(string)$id];
+            $existing=DB::table('marketplace_orders')->where($key)->first();
+            if($existing&&$existing->platform_updated_at>=$updatedAt)return $existing->id;
+            $values=['platform_status'=>$status,'platform_updated_at'=>$updatedAt,
+                'currency'=>is_string($order['currency']??null)?$order['currency']:null,
+                'total_amount'=>is_numeric($order['price']??null)?$order['price']:null,
+                'encrypted_payload'=>Crypt::encryptString(json_encode($order,JSON_THROW_ON_ERROR)),
+                'fetched_at'=>now(),'updated_at'=>now()];
+            if($existing){DB::table('marketplace_orders')->where('id',$existing->id)->update($values);return $existing->id;}
+            return DB::table('marketplace_orders')->insertGetId($key+$values+['created_at'=>now()]);
+        });
+    }
 }

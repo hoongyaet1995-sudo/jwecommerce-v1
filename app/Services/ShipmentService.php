@@ -139,6 +139,7 @@ class ShipmentService
                 'created_by' => $actor->id,
             ]);
 
+            app(\App\Services\Inventory\OrderAllocationService::class)->consume($lockedOrder);
             $from = $lockedOrder->status;
             $lockedOrder->update([
                 'status' => 'shipped',
@@ -541,6 +542,7 @@ class ShipmentService
             return;
         }
 
+        app(\App\Services\Inventory\OrderAllocationService::class)->consume($order);
         $from = $order->status;
         $order->forceFill([
             'status' => 'shipped',

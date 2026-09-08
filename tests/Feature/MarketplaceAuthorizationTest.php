@@ -20,7 +20,7 @@ class MarketplaceAuthorizationTest extends TestCase
             'marketplace.read_operations_enabled'=>false, 'marketplace.operations_enabled'=>false]);
         config(['app.url'=>'https://example.test', 'marketplace.shopee.enabled'=>true, 'marketplace.shopee.environment'=>'sandbox',
             'marketplace.shopee.partner_id'=>'123', 'marketplace.shopee.partner_key'=>'secret',
-            'marketplace.shopee.callback_url'=>'https://example.test/admin/marketplace/shopee/callback']);
+            'marketplace.shopee.callback_url'=>'https://example.test/admin/marketplace/oauth/shopee/callback']);
         Http::preventStrayRequests();
         Http::fake([
             '*/auth/token/get*'=>Http::response(['access_token'=>'access', 'refresh_token'=>'refresh', 'expire_in'=>14400]),
@@ -43,7 +43,7 @@ class MarketplaceAuthorizationTest extends TestCase
     public function test_authorization_is_unavailable_when_callback_targets_another_deployment_or_route(): void
     {
         $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>true]));
-        foreach (['https://other.test/admin/marketplace/shopee/callback', 'https://example.test/dashboard/callback'] as $callback) {
+        foreach (['https://other.test/admin/marketplace/oauth/shopee/callback', 'https://example.test/dashboard/callback'] as $callback) {
             config(['marketplace.shopee.callback_url'=>$callback]);
             $this->getJson('/admin/api/marketplace/connections')->assertOk()->assertJsonPath('capabilities.shopee.oauth', false);
             $this->postJson('/admin/api/marketplace/shopee/authorize')->assertConflict();
@@ -87,7 +87,7 @@ class MarketplaceAuthorizationTest extends TestCase
         $url = $this->postJson('/admin/api/marketplace/shopee/authorize')->assertOk()->json('url');
         parse_str(parse_url($url, PHP_URL_QUERY), $query);
         parse_str(parse_url($query['redirect'], PHP_URL_QUERY), $callback);
-        $response = $this->get('/admin/marketplace/shopee/callback?'.http_build_query($callback+['code'=>'code','shop_id'=>'456']));
+        $response = $this->get('/admin/marketplace/oauth/shopee/callback?'.http_build_query($callback+['code'=>'code','shop_id'=>'456']));
         $response->assertRedirect('/admin/marketplace/auth?connection=success');
         $this->assertStringNotContainsString('access', $response->getContent());
         $this->assertDatabaseCount('marketplace_store_tokens', 1);
@@ -98,7 +98,7 @@ class MarketplaceAuthorizationTest extends TestCase
         $user = \App\Models\User::factory()->create(['is_admin'=>true]);
         $this->actingAs($user);
         $state = app(OAuthStateService::class)->issue($user->id, 'shopee', config('app.url'), null);
-        $this->get('/admin/marketplace/shopee/callback?state='.$state.'&error=access_denied')
+        $this->get('/admin/marketplace/oauth/shopee/callback?state='.$state.'&error=access_denied')
             ->assertRedirect('/admin/marketplace/auth?connection=cancelled');
         $this->assertNull(app(OAuthStateService::class)->consume($state, $user->id, 'shopee', config('app.url')));
         Http::assertNothingSent();
@@ -252,7 +252,7 @@ class MarketplaceAuthorizationTest extends TestCase
     {
         $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>true]));
         config(['marketplace.oauth_acceptance_enabled'=>true]);
-        $this->get('/admin/marketplace/shopee/callback')->assertRedirect('/admin/marketplace/auth?connection=failed');
+        $this->get('/admin/marketplace/oauth/shopee/callback')->assertRedirect('/admin/marketplace/auth?connection=failed');
         $this->getJson('/admin/api/marketplace/oauth-result')->assertJsonPath('result.status','failed');
     }
 
@@ -263,7 +263,7 @@ class MarketplaceAuthorizationTest extends TestCase
         $this->getJson('/admin/api/marketplace/oauth-result?connection=success&storeId=456')
             ->assertOk()->assertExactJson(['result'=>null]);
         $state = app(OAuthStateService::class)->issue($user->id, 'shopee', config('app.url'), null);
-        $this->get('/admin/marketplace/shopee/callback?state='.$state.'&code=code&shop_id=456')->assertRedirect();
+        $this->get('/admin/marketplace/oauth/shopee/callback?state='.$state.'&code=code&shop_id=456')->assertRedirect();
         $response = $this->getJson('/admin/api/marketplace/oauth-result')->assertOk()
             ->assertJsonPath('result.status', 'success')->assertJsonPath('result.store.shopId', '456')
             ->assertJsonPath('result.store.shopName', 'Verified');
@@ -279,9 +279,9 @@ class MarketplaceAuthorizationTest extends TestCase
         $user = \App\Models\User::factory()->create(['is_admin'=>true]);
         $this->actingAs($user);
         $state = app(OAuthStateService::class)->issue($user->id, 'shopee', config('app.url'), null);
-        $this->get('/admin/marketplace/shopee/callback?state='.$state.'&error=access_denied');
+        $this->get('/admin/marketplace/oauth/shopee/callback?state='.$state.'&error=access_denied');
         $this->getJson('/admin/api/marketplace/oauth-result')->assertExactJson(['result'=>['status'=>'cancelled', 'store'=>null]]);
-        $this->get('/admin/marketplace/shopee/callback?connection=success');
+        $this->get('/admin/marketplace/oauth/shopee/callback?connection=success');
         $this->getJson('/admin/api/marketplace/oauth-result')->assertExactJson(['result'=>['status'=>'failed', 'store'=>null]]);
         $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>true]));
         $this->getJson('/admin/api/marketplace/oauth-result')->assertExactJson(['result'=>null]);
@@ -298,7 +298,7 @@ class MarketplaceAuthorizationTest extends TestCase
             'mysql', 'INSERT PRIVATE SQL', [], new \PDOException('duplicate private details')
         ));
         $this->app->instance(ShopeeAuthorizationService::class, $service);
-        $response = $this->get('/admin/marketplace/shopee/callback?state='.str_repeat('a',64).'&code=code&shop_id=456');
+        $response = $this->get('/admin/marketplace/oauth/shopee/callback?state='.str_repeat('a',64).'&code=code&shop_id=456');
         $response->assertRedirect('/admin/marketplace/auth?connection=failed');
         $this->assertStringNotContainsString('PRIVATE SQL', $response->getContent());
         $this->getJson('/admin/api/marketplace/oauth-result')->assertExactJson(['result'=>['status'=>'failed', 'store'=>null]]);

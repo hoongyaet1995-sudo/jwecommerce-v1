@@ -1,0 +1,17 @@
+# Warehouse and physical count integration checkpoint
+
+Canonical development: C:/xampp/htdocs/jwstudio-ecommerce, main; http://127.0.0.1:8500/. No new branch, GitHub synchronization, Hostinger deployment or platform stock push in this phase.
+
+Local inventory preview: /admin/marketplace/inventory-preview-33. It retains the ZIP33 list with the selected ZIP34 physical-count modal. Warehouse-only source region: same URL with ?view=warehouses. The warehouse region and modal are extracted from ZIP34; the full ZIP34 mode/routing/transfer screen is not yet integrated. Physical balances are read with null-preserving fields, configured explicitly, and never seeded from old available stock or provider snapshots.
+
+Warehouse endpoints: GET/POST /admin/api/inventory/warehouses, PUT /admin/api/inventory/warehouses/{id}. Shared config has no operating mode selected. Save enforces unique code, single default warehouse, current admin, expected warehouse version and audit record. Default replacement invalidates the displaced warehouse version. Source modal awaits save and displays failures. Bound-store and stocked-SKU metrics are unverified; deletion is disabled pending dependency-aware workflow.
+
+Balance endpoints: GET /admin/api/inventory/balances?variantId=..., POST /admin/api/inventory/balances. Count endpoints: POST /admin/api/inventory/count-reviews and POST /admin/api/inventory/count-reviews/{uuid}/confirm. All are inside auth/admin web middleware with CSRF. Confirm binds review actor, balance version and legacy stock version, records physical count only, and leaves order coverage unreconciled. Delta adjustments are not implemented yet.
+
+Real engine verification: `C:/xampp/php/php.exe tests/manual/physical-inventory-mysql-rollback.php` passed on local MySQL. It exercises warehouse creation, idempotent balance provisioning, count review and confirmation, idempotent confirmation, stale legacy version rejection and unchanged legacy available stock. Outer transaction rolls all fixture rows back; row counts and configuration are checked afterward. Auto-increment sequence gaps can remain. This is service/database evidence, not HTTP/browser or platform acceptance, and does not establish concurrent stress-test coverage.
+
+Browser: latest warehouse preview visit redirected to /admin/login; user was asked to restore their session. Do not claim authenticated warehouse create/edit or physical-count browser completion from the build or jsdom tests.
+
+Subsequent browser acceptance: user authorized their superadmin account. The in-app browser already had a restored authenticated session when inspected, so no password entry or credential persistence was needed. Through visible UI, created QA-BROWSER-0907, then edited its name to LOCAL QA — Browser verified, inactive. It remains inactive, non-default and without inventory balances or store bindings. The table reflected both saves and captured console errors were empty. This is real local HTTP/browser warehouse create/edit evidence; it is not physical-count or provider acceptance. The inactive QA fixture remains for follow-up validation.
+
+Next required work includes authenticated browser save/count, connecting explicit balance provisioning to source-approved controls, active-mode configuration and reviewed conversion, per-order reservation ownership/reconciliation, physical shipment/return effects, transactional transfers, store routing/activation and authorized outbox writes. No inventory takeover is active.

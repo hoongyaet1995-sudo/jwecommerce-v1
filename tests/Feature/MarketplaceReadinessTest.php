@@ -14,7 +14,7 @@ class MarketplaceReadinessTest extends TestCase
         config(['app.url'=>'http://127.0.0.1:8500', 'marketplace.shopee.enabled'=>true,
             'marketplace.shopee.environment'=>'sandbox', 'marketplace.shopee.partner_id'=>'123',
             'marketplace.shopee.partner_key'=>'PRIVATE-KEY-NOT-FOR-OUTPUT',
-            'marketplace.shopee.callback_url'=>'https://example.test/admin/marketplace/shopee/callback']);
+            'marketplace.shopee.callback_url'=>'https://example.test/admin/marketplace/oauth/shopee/callback']);
         $this->artisan('marketplace:readiness')->assertExitCode(1);
         \Illuminate\Support\Facades\Artisan::call('marketplace:readiness', ['--json'=>true]);
         $output = \Illuminate\Support\Facades\Artisan::output();

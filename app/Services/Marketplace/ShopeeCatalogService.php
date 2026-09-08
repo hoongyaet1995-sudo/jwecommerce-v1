@@ -41,6 +41,8 @@ class ShopeeCatalogService
                         'price'=>data_get($model, 'price_info.0.current_price'),
                         'currency'=>data_get($model, 'price_info.0.currency'),
                         'stock'=>data_get($model, 'stock_info_v2.summary_info.total_available_stock'),
+                        // Observed provider snapshot only; never authorization or freshness proof for a stock write.
+                        'stockInfo'=>$model['stock_info_v2'] ?? null,
                         'status'=>$item['item_status'] ?? $status,
                     ], JSON_THROW_ON_ERROR)];
             }

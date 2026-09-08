@@ -1,0 +1,9 @@
+# Local physical count browser acceptance
+
+Environment: main, C:/xampp/htdocs/jwstudio-ecommerce, http://127.0.0.1:8500/admin/marketplace/inventory-preview-33, authenticated in-app browser.
+
+Prepared existing QA variant 92 (INV-QA-b7f1e7f3) in inactive warehouse 2 (QA-BROWSER-0907) using InventoryBalanceProvisioner. This setup was service-side, not a proven merchant UI provisioning flow. Balance 3 / pool 3 began with all quantities null. In browser, searched the SKU, opened the ZIP34 count modal, entered 10 and the explicit note LOCAL QA browser workflow test only — no real goods count, reviewed the server response, acknowledged and confirmed. Receipt persisted actor 2, before null, after 10, version 1. Original variant availability remains 7, stock_version 2. Reservations/safety/ATP remain null and coverage unverified. No platform call or actual physical goods count was performed. QA balance is retained in the inactive test facility for follow-up.
+
+Discovered visual blocker: source modal exceeds the short in-app viewport and clips bottom controls. Initial pointer click did not submit; read-only validity inspection found no invalid controls, database review count remained zero, and screenshot showed clipping. Keyboard Enter submitted review; keyboard activation confirmed after acknowledgement and closed the modal. This proves the keyboard HTTP/database count path, not satisfactory pointer/mobile acceptance. Asked for narrowly scoped height/scroll styling approval under the user-supplied fidelity rule; do not claim this issue fixed.
+
+Other outstanding UI gaps: outer ZIP33 list still shows its read-only unverified baseline after count, inactive warehouse is identified by fixture name rather than a proper status affordance, unknown warehouse selector quantities render blank, and employee review displays session id rather than persisted display name. Complete actual WMS read-model integration before formal cutover.

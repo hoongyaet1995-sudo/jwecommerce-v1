@@ -17,6 +17,41 @@ class ReturnRequestOperationalClosureTest extends TestCase
 {
     use RefreshDatabase;
 
+    #[\PHPUnit\Framework\Attributes\TestWith([false])]
+    #[\PHPUnit\Framework\Attributes\TestWith([true])]
+    public function test_physical_return_restores_original_allocation_once(bool $shortfall): void
+    {
+        [$customer, $order, $item] = $this->deliveredOrder('PHYSICAL');
+        $product = \App\Models\Product::create(['handle'=>'physical-return','title'=>'Physical return','base_price'=>20000]);
+        $variant = $product->variants()->create(['sku'=>'PHYSICAL-RETURN','title'=>'One','price'=>20000,'stock'=>8]);
+        $item->update(['product_variant_id'=>$variant->id]);
+        $balance = app(\App\Services\Inventory\InventoryBalanceProvisioner::class)->provision($variant->id,'shared',null);
+        \DB::table('inventory_balances')->where('id',$balance['balance_id'])->update(['physical_stock'=>10,'reserved_stock'=>0,'safety_stock'=>2,'counted_at'=>now(),'obligations_reconciled_at'=>now()]);
+        \DB::table('inventory_configuration')->where('id',1)->update(['operating_mode'=>'shared_pool','accounting_enabled'=>true]);
+        $allocations = app(\App\Services\Inventory\StockAllocationService::class);
+        $allocation = $allocations->reserve('order',$order->id,'item:'.$item->id,$variant->id,1);
+        $admin = User::factory()->create(['is_admin'=>true,'is_super_admin'=>true]);
+        $order->update(['status'=>'processing']);
+        app(\App\Services\ShipmentService::class)->dispatchManually($order,$admin,'Test courier','PHYSICAL-RETURN-TRACKING');
+        $this->assertDatabaseHas('stock_allocations',['id'=>$allocation,'status'=>'consumed']);
+        $this->assertDatabaseHas('inventory_balances',['id'=>$balance['balance_id'],'physical_stock'=>9,'reserved_stock'=>0]);
+        $order->update(['status'=>'delivered']);
+        if($shortfall){
+            \DB::table('inventory_balances')->where('id',$balance['balance_id'])->update(['physical_stock'=>1]);
+            $variant->update(['stock'=>0]);
+        }
+        $this->actingAs($customer,'customer')->post('/account/returns',['order_item_id'=>$item->id,'quantity'=>1,'resolution'=>'refund','reason'=>'defective']);
+        $return = $order->returnRequests()->firstOrFail();
+        $this->actingAs($admin)->postJson("/admin/api/returns/{$return->id}/approve")->assertOk();
+        $this->postJson("/admin/api/returns/{$return->id}/receive",['received_quantity'=>1,'condition'=>'restockable'])->assertOk();
+        $this->assertDatabaseHas('inventory_balances',['id'=>$balance['balance_id'],'physical_stock'=>$shortfall?2:10,'reserved_stock'=>0]);
+        $this->assertSame($shortfall?0:8,(int)$variant->fresh()->stock);
+        $this->assertDatabaseHas('inventory_return_movements',['return_request_id'=>$return->id,'inventory_balance_id'=>$balance['balance_id'],'actor_id'=>$admin->id,'quantity'=>1]);
+        $this->postJson("/admin/api/returns/{$return->id}/receive",['received_quantity'=>1,'condition'=>'restockable'])->assertUnprocessable();
+        $this->assertDatabaseCount('inventory_return_movements',1);
+        $this->assertSame($shortfall?0:8,(int)$variant->fresh()->stock);
+    }
+
     public function test_restockable_receipt_restores_variant_once(): void
     {
         [$customer, $order, $item] = $this->deliveredOrder('STOCK');

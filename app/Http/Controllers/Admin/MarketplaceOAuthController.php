@@ -94,7 +94,7 @@ class MarketplaceOAuthController extends Controller
             'importProducts'=>config('marketplace.import_operations_enabled') === true || config('marketplace.operations_enabled') === true,
         ], 'capabilities'=>[
             'shopee'=>array_replace($unavailable, ['oauth'=>$client->isAuthorizationReady(), 'catalog'=>$readsEnabled, 'orders'=>$readsEnabled]),
-            'lazada'=>array_replace($unavailable, ['oauth'=>$lazada->isAuthorizationReady()]),
+            'lazada'=>array_replace($unavailable, ['oauth'=>$lazada->isAuthorizationReady(), 'catalog'=>$readsEnabled && $lazada->isAuthorizationReady(), 'orders'=>$readsEnabled && $lazada->isAuthorizationReady()]),
             'tiktok'=>$unavailable, 'shopify'=>$unavailable,
         ]])->header('Cache-Control', 'no-store');
     }

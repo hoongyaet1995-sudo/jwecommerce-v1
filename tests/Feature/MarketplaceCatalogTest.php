@@ -50,13 +50,21 @@ class MarketplaceCatalogTest extends TestCase
             'external_shop_id'=>'456', 'region'=>'MY', 'environment'=>'sandbox', 'status'=>'connected',
             'created_at'=>now(), 'updated_at'=>now()]);
         MarketplaceStoreToken::create(['store_id'=>$id, 'application_id'=>'123', 'access_token'=>'access', 'refresh_token'=>'refresh', 'access_expires_at'=>now()->addHours(4)]);
+        $stockInfo = [
+            'summary_info'=>['total_reserved_stock'=>0, 'total_available_stock'=>97],
+            'seller_stock'=>[['location_id'=>'MYZ', 'stock'=>97, 'if_saleable'=>true]],
+            'shopee_stock'=>[['location_id'=>'', 'stock'=>0]],
+            'advance_stock'=>['sellable_advance_stock'=>0, 'in_transit_advance_stock'=>0],
+        ];
         Http::fake([
             '*/get_item_list*'=>Http::response(['response'=>['item'=>[['item_id'=>100]], 'has_next_page'=>false]]),
             '*/get_item_base_info*'=>Http::response(['response'=>['item_list'=>[['item_id'=>100, 'has_model'=>true, 'item_name'=>'Headphones',
                 'description_type'=>'normal', 'description'=>'Source description',
                 'brand'=>['brand_id'=>123, 'original_brand_name'=>'Source Brand'], 'category_id'=>555,
                 'image'=>['image_url_list'=>['https://down-my.img.susercontent.com/file/front', 'https://down-my.img.susercontent.com/file/back']]]]]]),
-            '*/get_model_list*'=>Http::response(['response'=>['model'=>[['model_id'=>200, 'model_sku'=>'BLUE', 'model_name'=>'Blue']]]]),
+            '*/get_model_list*'=>function () use (&$stockInfo) {
+                return Http::response(['response'=>['model'=>[['model_id'=>200, 'model_sku'=>'BLUE', 'model_name'=>'Blue', 'stock_info_v2'=>$stockInfo]]]]);
+            },
         ]);
         $before = DB::table('products')->count();
         $service = app(ShopeeCatalogService::class);
@@ -80,7 +88,8 @@ class MarketplaceCatalogTest extends TestCase
         $this->assertSame(555, $data['externalCategoryId']);
         $this->assertSame(['https://down-my.img.susercontent.com/file/front', 'https://down-my.img.susercontent.com/file/back'], $data['productImages']);
         $this->assertNull($data['price']);
-        $this->assertNull($data['stock']);
+        $this->assertSame(97, $data['stock']);
+        $this->assertSame($stockInfo, $data['stockInfo']);
         $this->assertSame($before, DB::table('products')->count());
         $this->assertDatabaseCount('marketplace_variant_mappings', 0);
 
@@ -90,6 +99,12 @@ class MarketplaceCatalogTest extends TestCase
         (new \App\Jobs\PullShopeeCatalog($runId))->handle($service);
         $this->assertDatabaseHas('marketplace_catalog_runs', ['id'=>$runId, 'status'=>'succeeded', 'pages_completed'=>1]);
         $this->assertDatabaseCount('marketplace_listing_variants', 1);
+
+        $stockInfo = null;
+        $service->pullPage($id, 0);
+        $missing = json_decode(DB::table('marketplace_listing_variants')->value('observed_data'), true);
+        $this->assertNull($missing['stock']);
+        $this->assertNull($missing['stockInfo']);
     }
 
     public function test_catalog_rejects_an_environment_change_during_fetch_without_advancing_run(): void
