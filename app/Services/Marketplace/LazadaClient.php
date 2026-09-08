@@ -9,6 +9,60 @@ use RuntimeException;
 final class LazadaClient
 {
     /**
+     * Submit a category-complete Lazada product payload after the operator has
+     * reviewed the dynamic category attributes and Lazada-hosted images.
+     * This method never invents required marketplace attributes.
+     */
+    public function createProduct(#[\SensitiveParameter] string $accessToken, array $payload): array
+    {
+        if (config('marketplace.publish_operations_enabled') !== true) {
+            throw new RuntimeException('Marketplace publishing is disabled.');
+        }
+        $product=$payload['Request']['Product'] ?? null;
+        if (count($payload)!==1 || !is_array($product) || !preg_match('/^[1-9][0-9]*$/D',(string)($product['PrimaryCategory'] ?? ''))
+            || !is_array($product['Images']['Image'] ?? null) || !$product['Images']['Image']
+            || !is_array($product['Attributes'] ?? null) || !is_string($product['Attributes']['name'] ?? null)
+            || trim($product['Attributes']['name'])==='' || !is_array($product['Skus']['Sku'] ?? null)
+            || !$product['Skus']['Sku'] || !array_is_list($product['Skus']['Sku'])) {
+            throw new RuntimeException('Invalid Lazada product creation payload.');
+        }
+        $sellerSkus=[];
+        foreach ($product['Images']['Image'] as $image) {
+            if (!is_string($image) || !preg_match('#\Ahttps://[A-Za-z0-9.-]+\.slatic\.net/#D',$image)) {
+                throw new RuntimeException('Lazada product images must be Lazada-hosted HTTPS URLs.');
+            }
+        }
+        foreach ($product['Skus']['Sku'] as $sku) {
+            $sellerSku=is_array($sku) ? ($sku['SellerSku'] ?? null) : null;
+            $quantity=is_array($sku) ? ($sku['quantity'] ?? null) : null;
+            $price=is_array($sku) ? ($sku['price'] ?? ($sku['supply_price'] ?? null)) : null;
+            if (!is_string($sellerSku) || !preg_match('/\A[ -~]{1,200}\z/D',$sellerSku) || isset($sellerSkus[$sellerSku])
+                || !is_numeric($quantity) || (int)$quantity<0 || !is_numeric($price) || (float)$price<=0) {
+                throw new RuntimeException('Invalid Lazada product SKU payload.');
+            }
+            $sellerSkus[$sellerSku]=true;
+        }
+        $result=$this->signedPost('/product/create',$accessToken,$payload,'Lazada product creation');
+        $data=$result['data'] ?? null;
+        if (!is_array($data) || !preg_match('/^[1-9][0-9]*$/D',(string)($data['item_id'] ?? ''))
+            || !is_array($data['sku_list'] ?? null) || !array_is_list($data['sku_list'])) {
+            throw new PublishingResultUncertain('Lazada product creation was not confirmed. Reconcile before retrying.');
+        }
+        $ids=[];
+        foreach ($data['sku_list'] as $sku) {
+            if (!is_array($sku) || !is_string($sku['seller_sku'] ?? null) || !isset($sellerSkus[$sku['seller_sku']])
+                || !preg_match('/^[1-9][0-9]*$/D',(string)($sku['sku_id'] ?? '')) || isset($ids[$sku['seller_sku']])) {
+                throw new PublishingResultUncertain('Lazada product creation was not confirmed. Reconcile before retrying.');
+            }
+            $ids[$sku['seller_sku']]=(string)$sku['sku_id'];
+        }
+        if (count($ids)!==count($sellerSkus)) {
+            throw new PublishingResultUncertain('Lazada product creation was not confirmed. Reconcile before retrying.');
+        }
+        return ['item_id'=>(string)$data['item_id'],'sku_ids'=>$ids];
+    }
+
+    /**
      * Transport for one reviewed absolute SKU quantity. Callers must revalidate
      * their WMS snapshot immediately before invoking it.
      */
@@ -35,6 +89,24 @@ final class LazadaClient
         if(!$response->successful()||!is_array($result)||!in_array($result['code']??null,['0',0],true)) {
             throw new RuntimeException('Lazada stock synchronization was not confirmed. Reconcile before retrying.');
         }
+    }
+
+    private function signedPost(string $path, #[\SensitiveParameter] string $accessToken, array $payload, string $operation): array
+    {
+        $key=config('marketplace.lazada.app_key');$secret=config('marketplace.lazada.app_secret');
+        if(config('marketplace.lazada.enabled')!==true||!is_string($key)||!preg_match('/^[1-9][0-9]*$/D',$key)
+            ||!is_string($secret)||trim($secret)===''||trim($accessToken)==='')throw new RuntimeException($operation.' is not configured.');
+        $query=['app_key'=>$key,'access_token'=>$accessToken,'sign_method'=>'sha256','timestamp'=>(string)now()->getTimestampMs()];
+        ksort($query,SORT_STRING);$base=$path;
+        foreach($query as $name=>$value)$base.=$name.$value;
+        $query['sign']=strtoupper(hash_hmac('sha256',$base,$secret));
+        try {$response=Http::acceptJson()->connectTimeout(10)->timeout(30)->withoutRedirecting()->post('https://api.lazada.com.my/rest'.$path.'?'.http_build_query($query),$payload);}
+        catch(ConnectionException){throw new PublishingResultUncertain($operation.' result is unknown. Reconcile before retrying.');}
+        $result=$response->json();
+        if(!$response->successful()||!is_array($result)||!in_array($result['code']??null,['0',0],true)) {
+            throw new PublishingResultUncertain($operation.' was not confirmed. Reconcile before retrying.');
+        }
+        return $result;
     }
 
     /** Malaysia seller read APIs only. Tokens and signed URLs never leave this service. */

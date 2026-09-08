@@ -18,6 +18,9 @@ final class PublishingTasks
 
     public function create(int $storeId, int $productId, int $actorId, string $requestKey, array $payload): int
     {
+        if (!DB::table('users')->where('id',$actorId)->where('is_admin',true)->exists()) {
+            throw new \DomainException('An authenticated marketplace administrator is required.');
+        }
         if (!Str::isUuid($requestKey)) throw new \DomainException('A stable request UUID is required.');
         $json=json_encode($this->canonical($payload),JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
         $hash=hash('sha256',$json);

@@ -18,6 +18,29 @@ class LazadaClientTest extends TestCase
         $this->expectExceptionMessage('Marketplace stock synchronization is disabled.');
         app(LazadaClient::class)->updateAbsoluteQuantity('fixture-token', '1001', '2001', 7);
     }
+    public function test_product_creation_requires_the_publish_gate_and_confirms_provider_ids(): void
+    {
+        config(['marketplace.lazada.enabled'=>true, 'marketplace.lazada.app_key'=>'123', 'marketplace.lazada.app_secret'=>'fixture-secret']);
+        $payload=['Request'=>['Product'=>['PrimaryCategory'=>'10002019',
+            'Images'=>['Image'=>['https://my-live-02.slatic.net/p/test.jpg']],
+            'Attributes'=>['name'=>'JW-SBX Product'],
+            'Skus'=>['Sku'=>[['SellerSku'=>'JW-SBX-001','quantity'=>'2','price'=>'10.00']]]]]];
+        Http::preventStrayRequests();
+        Http::fake(['api.lazada.com.my/rest/product/create*'=>Http::response(['code'=>'0','data'=>['item_id'=>1001,
+            'sku_list'=>[['seller_sku'=>'JW-SBX-001','sku_id'=>2001]]]])]);
+
+        try { app(LazadaClient::class)->createProduct('fixture-token',$payload); $this->fail('Publish gate was bypassed.'); }
+        catch (RuntimeException $error) { $this->assertSame('Marketplace publishing is disabled.',$error->getMessage()); }
+        Http::assertNothingSent();
+
+        config(['marketplace.publish_operations_enabled'=>true]);
+        $result=app(LazadaClient::class)->createProduct('fixture-token',$payload);
+        $this->assertSame('1001',$result['item_id']);
+        $this->assertSame('2001',$result['sku_ids']['JW-SBX-001']);
+        Http::assertSent(fn ($request) => str_contains($request->url(),'/rest/product/create?')
+            && $request['Request']['Product']['Skus']['Sku'][0]['SellerSku']==='JW-SBX-001');
+    }
+
     public function test_token_exchange_and_refresh_use_signed_official_requests(): void
     {
         config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'139209','marketplace.lazada.app_secret'=>'fixture-secret']);
