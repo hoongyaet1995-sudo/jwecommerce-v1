@@ -1,5 +1,6 @@
 import {useEffect,useState} from 'react';
 import {warehouseSaver} from '../marketplace34/warehouseApi';
+import {serializedFetch} from '../marketplace33/serializedFetch';
 
 export function useWarehouses(enabled:boolean,onError:(message:string)=>void) {
  const [rows,setRows]=useState<any[]>([]);
@@ -10,7 +11,7 @@ export function useWarehouses(enabled:boolean,onError:(message:string)=>void) {
   async function load() {
    const all:any[]=[];let total:number|undefined;
    for(let page=1;page<=100;page++) {
-    const response=await fetch(`/admin/api/inventory/warehouses?page=${page}`,{signal:abort.signal,credentials:'same-origin',headers:{Accept:'application/json'}});
+    const response=await serializedFetch(`/admin/api/inventory/warehouses?page=${page}`,{signal:abort.signal,credentials:'same-origin',headers:{Accept:'application/json'}});
     if(!response.ok)throw new Error('Warehouse list unavailable.');
     const body=await response.json();
     if(!Array.isArray(body.data)||body.current_page!==page||!Number.isSafeInteger(body.total)||body.total<0
@@ -36,3 +37,4 @@ export function useWarehouses(enabled:boolean,onError:(message:string)=>void) {
    return result;
  }};
 }
+

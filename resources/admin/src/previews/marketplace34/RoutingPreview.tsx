@@ -2,11 +2,12 @@ import React,{useEffect,useState} from 'react';
 import {StoreWarehouseBindingTab} from './components/marketplace/StoreWarehouseBindingTab';
 import {StoreFulfillmentBindingModal} from './components/marketplace/StoreFulfillmentBindingModal';
 import {routingSaver} from './routingApi';
+import {serializedFetch} from '../marketplace33/serializedFetch';
 
 export async function pages(path:string,signal:AbortSignal,identityKey='id') {
   const rows:any[]=[];let total:number|undefined;
   for(let page=1;page<=100;page++){
-    const response=await fetch(`${path}?page=${page}`,{signal,credentials:'same-origin',headers:{Accept:'application/json'}});
+    const response=await serializedFetch(`${path}?page=${page}`,{signal,credentials:'same-origin',headers:{Accept:'application/json'}});
     if(!response.ok)throw Error('Routing data unavailable. Reload the page.');
     const data=await response.json();
     if(!Array.isArray(data.data)||data.current_page!==page||!Number.isSafeInteger(data.total)||!Number.isSafeInteger(data.last_page)
@@ -46,3 +47,4 @@ export function RoutingPreview(){
     }}/>}
   </main>;
 }
+

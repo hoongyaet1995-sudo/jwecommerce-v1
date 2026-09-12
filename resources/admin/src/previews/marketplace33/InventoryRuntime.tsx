@@ -5,6 +5,7 @@ import {MarketplaceInventoryPage as Inventory36} from '../marketplace36/componen
 import {readInventoryPages} from './readInventoryPages';
 import {readCombinedMovementHistory} from './readMovementHistory';
 import {readExceptions} from './readExceptions';
+import {serializedFetch} from './serializedFetch';
 import {useWarehouses} from '../marketplace36/useWarehouses';
 import {useRouting} from '../marketplace36/useRouting';
 import {useTransfers} from '../marketplace36/useTransfers';
@@ -16,7 +17,7 @@ export function InventoryRuntime({zip36=true,embedded=false,onNavigate}:{zip36?:
   useEffect(()=>{
     if(!zip36)return;
     const abort=new AbortController();
-    fetch('/admin/api/inventory/readiness',{signal:abort.signal,credentials:'same-origin',headers:{Accept:'application/json'}})
+    serializedFetch('/admin/api/inventory/readiness',{signal:abort.signal,credentials:'same-origin',headers:{Accept:'application/json'}})
       .then(async response=>{if(!response.ok)throw new Error('Inventory configuration unavailable.');return response.json();})
       .then(result=>{
         const mode=result.operating_mode===null?'unconfigured':result.operating_mode;
@@ -34,7 +35,7 @@ export function InventoryRuntime({zip36=true,embedded=false,onNavigate}:{zip36?:
   const [connectionsStatus,setConnectionsStatus]=useState('Loading');
   useEffect(()=>{
     const abort=new AbortController();
-    fetch('/admin/api/marketplace/connections',{signal:abort.signal,credentials:'same-origin',headers:{Accept:'application/json'}})
+    serializedFetch('/admin/api/marketplace/connections',{signal:abort.signal,credentials:'same-origin',headers:{Accept:'application/json'}})
       .then(async response=>{if(!response.ok)throw new Error('Store connections unavailable');return response.json();})
       .then(result=>{
         if(!Array.isArray(result.stores))throw new Error('Store connections unavailable');
@@ -127,3 +128,4 @@ export function InventoryRuntime({zip36=true,embedded=false,onNavigate}:{zip36?:
     {embedded ? <Inventory36/> : <main className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 p-4 md:p-8">{zip36?<Inventory36/>:<MarketplaceInventoryPage />}</main>}
   </PreviewContext.Provider>;
 }
+

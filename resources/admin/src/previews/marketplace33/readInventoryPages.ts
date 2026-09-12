@@ -1,5 +1,6 @@
+import {serializedFetch} from './serializedFetch';
 /** Complete bounded preview read, not a transactionally consistent inventory review. */
-export async function readInventoryPages(signal:AbortSignal, request:typeof fetch=fetch):Promise<any[]> {
+export async function readInventoryPages(signal:AbortSignal, request:typeof fetch=serializedFetch):Promise<any[]> {
   const rows:any[]=[];
   const seen=new Set<number>();
   let total:number|undefined;
@@ -23,3 +24,4 @@ export async function readInventoryPages(signal:AbortSignal, request:typeof fetc
   }
   throw new Error('Inventory exceeds the local preview limit.');
 }
+

@@ -1,3 +1,4 @@
+import {serializedFetch} from './serializedFetch';
 export function exceptionView(row:any) {
  if(row.error_code==='warehouse_allocation_requires_review')return {id:String(row.order_id),orderNumber:row.external_order_id,
   platform:row.platform,storeName:row.shop_name,placedAt:row.checked_at,type:'other',severity:'warning',channelSku:'Not available',
@@ -11,7 +12,7 @@ export function exceptionView(row:any) {
   statusLabel:row.error_code==='historical_order'?'Requires reconciliation':row.error_code==='unmapped_order_line'?'Unmapped SKU':row.error_code==='insufficient_stock'?'Reservation rejected':row.error_code,
   explanation:explanations[row.error_code]||`Inventory processing requires review: ${row.error_code}. No resolution is implied.`};
 }
-export async function readExceptions(signal:AbortSignal,request:typeof fetch=fetch) {
+export async function readExceptions(signal:AbortSignal,request:typeof fetch=serializedFetch) {
  const result:any[]=[];const seen=new Set<number>();let total:number|undefined;
  for(let page=1;page<=100;page++) {
   const response=await request(`/admin/api/marketplace/inventory/exceptions?per_page=100&page=${page}`,{signal,credentials:'same-origin',headers:{Accept:'application/json'}});
@@ -24,3 +25,4 @@ export async function readExceptions(signal:AbortSignal,request:typeof fetch=fet
  }
  throw new Error('Exception preview limit exceeded.');
 }
+
