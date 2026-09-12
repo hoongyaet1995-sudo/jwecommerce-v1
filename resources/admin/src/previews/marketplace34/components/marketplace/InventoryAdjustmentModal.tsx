@@ -27,6 +27,7 @@ interface InventoryAdjustmentModalProps {
   countApi?: ReturnType<typeof countReviewApi>;
   countApiForWarehouse?: (warehouseId: string) => ReturnType<typeof countReviewApi> | undefined;
   availabilityMessage?: string;
+  basicAvailability?: boolean;
   onApplyAdjustment: (idOrSku: string, delta: number, reason: string, staffName: string, warehouseId?: string) => void;
   onRecordAuditCount: (idOrSku: string, physicalCount: number, reason: string, staffName: string, warehouseId?: string) => void;
 }
@@ -42,6 +43,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
   countApi,
   countApiForWarehouse,
   availabilityMessage = '',
+  basicAvailability = false,
   onApplyAdjustment,
   onRecordAuditCount
 }) => {
@@ -224,7 +226,8 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
         <div className="px-4 sm:px-6 pt-3.5 pb-2.5 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/30 flex items-center gap-2 shrink-0">
           <button
             type="button"
-            onClick={() => { setMode('delta'); setStep('input'); }}
+            disabled={Boolean(availabilityMessage) || pending}
+            onClick={() => { setMode('delta'); setReason('Supplier Stock Inbound (PO Receipt)'); setStep('input'); }}
             className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               mode === 'delta'
                 ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-xs'
@@ -236,7 +239,8 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
           </button>
           <button
             type="button"
-            onClick={() => { setMode('audit'); setStep('input'); }}
+            disabled={Boolean(availabilityMessage) || pending}
+            onClick={() => { setMode('audit'); setReason(isUnknownPhysical ? 'Initial Physical Warehouse Audit & Ledger Verification' : 'Monthly Routine Cycle Count'); setStep('input'); }}
             className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               mode === 'audit'
                 ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-xs'
@@ -301,7 +305,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
                     </span>
                   </label>
                   <select
-                    disabled={Boolean(countApi)} value={selectedWarehouseId}
+                    disabled={Boolean(countApi || availabilityMessage) || pending} value={selectedWarehouseId}
                     onChange={e => {
                       setSelectedWarehouseId(e.target.value);
                       const wb = item.warehouseBalances?.find(b => b.warehouseId === e.target.value);
@@ -313,7 +317,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
                   >
                     {(item.warehouseBalances || []).map(wb => (
                       <option key={wb.warehouseId} value={wb.warehouseId}>
-                        {wb.warehouseName} ({wb.warehouseCode}) — Shelf {wb.binLocation ?? wb.locationBin} (Phys: {wb.physicalStock ?? 'Not verified'}, ATP: {wb.availableAtp ?? 'Pending reconciliation'})
+                        {wb.warehouseName} ({wb.warehouseCode}) — Shelf {wb.binLocation ?? wb.locationBin} (Phys: {wb.physicalStock ?? 'Not verified'}, {basicAvailability ? 'Basic Available' : 'ATP'}: {wb.availableAtp ?? 'Unknown'})
                       </option>
                     ))}
                   </select>
@@ -328,12 +332,13 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
                       Stock Change (Delta Units)
                     </span>
                     <span className="text-[11px] text-neutral-400 font-mono">
-                      Current: {serverReview?.physical_before ?? 'Not verified'} units {currentWarehouseBalance ? `(${currentWarehouseBalance.warehouseCode})` : ''}
+                      Current: {currentPhysical ?? 'Not verified'} units {currentWarehouseBalance ? `(${currentWarehouseBalance.warehouseCode})` : ''}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
+                      disabled={Boolean(availabilityMessage) || pending}
                       onClick={() => setDelta(prev => prev - 1)}
                       className="p-2.5 rounded-lg bg-white dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 cursor-pointer transition-colors"
                     >
@@ -341,12 +346,14 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
                     </button>
                     <input
                       type="number"
+                      disabled={Boolean(availabilityMessage) || pending}
                       value={delta}
                       onChange={e => setDelta(parseInt(e.target.value) || 0)}
                       className="w-full text-center font-black text-lg px-3 py-2 rounded-xl bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white"
                     />
                     <button
                       type="button"
+                      disabled={Boolean(availabilityMessage) || pending}
                       onClick={() => setDelta(prev => prev + 1)}
                       className="p-2.5 rounded-lg bg-white dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 cursor-pointer transition-colors"
                     >
@@ -355,7 +362,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
                   </div>
                   <div className="flex items-center justify-between text-[11px] pt-1 text-neutral-500 dark:text-neutral-400">
                     <span>New Physical Stock: <strong className={`font-bold ${isNegativeStockError ? 'text-rose-600 dark:text-rose-400' : 'text-neutral-900 dark:text-white'}`}>{serverReview?.physical_count ?? (Number.isFinite(resultingPhysical) ? resultingPhysical : 'Not verified')} units</strong></span>
-                    <span>Projected ATP: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{serverReview ? (serverReview.atp ?? 'Pending reconciliation') : resultingAtp} units</strong></span>
+                    <span>{basicAvailability ? 'Projected Basic Available (excludes unallocated orders)' : 'Projected ATP'}: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{serverReview?.basic_wms ? (serverReview.basic_wms.available ?? 'Unknown') : serverReview ? (serverReview.atp ?? 'Pending reconciliation') : resultingAtp} units</strong></span>
                   </div>
                 </div>
               ) : (
@@ -371,6 +378,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
                   <input
                     type="number"
                     min="0"
+                    disabled={Boolean(availabilityMessage) || pending}
                     value={auditCount}
                     onChange={e => setAuditCount(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="Enter exact count counted on shelf..."
@@ -380,7 +388,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
                   <div className="flex items-center justify-between text-[11px] pt-1 text-neutral-500 dark:text-neutral-400">
                     <span>Reserved: <strong className="text-amber-600 dark:text-amber-400">{currentReserved ?? 'Not verified'}</strong></span>
                     <span>Safety Buffer: <strong className="text-neutral-700 dark:text-neutral-300">{currentSafety ?? 'Not verified'}</strong></span>
-                    <span>Verified ATP: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{serverReview ? (serverReview.atp ?? 'Pending reconciliation') : resultingAtp} units</strong></span>
+                    <span>{basicAvailability ? 'Basic Available (excludes unallocated orders)' : 'Verified ATP'}: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{serverReview?.basic_wms ? (serverReview.basic_wms.available ?? 'Unknown') : serverReview ? (serverReview.atp ?? 'Pending reconciliation') : resultingAtp} units</strong></span>
                   </div>
                 </div>
               )}
@@ -404,6 +412,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
                   Audit Reason <span className="text-rose-500">*</span>
                 </label>
                 <select
+                  disabled={Boolean(availabilityMessage) || pending}
                   value={reason}
                   onChange={e => setReason(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white font-medium"
@@ -434,6 +443,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
                 </label>
                 <input
                   type="text"
+                  disabled={Boolean(availabilityMessage) || pending}
                   value={customNotes}
                   onChange={e => setCustomNotes(e.target.value)}
                   placeholder="e.g. PO-2026-8812 / Rack 3 Physical Inspection"
@@ -507,13 +517,13 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
                   <div>
                     <span className="text-neutral-500 block">Reserved / Safety Buffer:</span>
                     <span className="font-mono text-neutral-700 dark:text-neutral-300">
-                      {currentReserved ?? 'Not verified'} res / {currentSafety ?? 'Not verified'} safety
+                      {serverReview?.basic_wms ? serverReview.basic_wms.owned_reserved : currentReserved ?? 'Not verified'} res / {serverReview?.basic_wms ? serverReview.basic_wms.safety_stock ?? 'Unknown' : currentSafety ?? 'Not verified'} safety
                     </span>
                   </div>
                   <div>
-                    <span className="text-neutral-500 block">Resulting ATP:</span>
+                    <span className="text-neutral-500 block">{serverReview?.basic_wms ? 'Basic Available (excludes unallocated orders):' : 'Resulting ATP:'}</span>
                     <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
-                      {serverReview ? (serverReview.atp ?? 'Pending reconciliation') : resultingAtp} units
+                      {serverReview?.basic_wms ? (serverReview.basic_wms.available ?? 'Unknown') : serverReview ? (serverReview.atp ?? 'Pending reconciliation') : resultingAtp} units
                     </span>
                   </div>
                 </div>

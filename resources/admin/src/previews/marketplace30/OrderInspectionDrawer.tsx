@@ -2,10 +2,71 @@ import React from 'react';
 import {MapPin, Printer, Truck, X} from 'lucide-react';
 import {MarketplaceLogo} from './components/marketplace/MarketplaceLogo';
 import type {MarketplaceOrderDetail} from '../../integration/marketplaceOperations';
+import {marketplaceRequest} from '../../integration/marketplaceData';
 
 // Presentation copied from ZIP30 MarketplaceOMSPage's Order Inspection Drawer.
 // Only data expressions, disabled actions and close accessibility have changed.
 export function OrderInspectionDrawer({order, onClose}: {order: MarketplaceOrderDetail; onClose: () => void}) {
+  const [labelBusy, setLabelBusy] = React.useState(false);
+  const [labelStatus, setLabelStatus] = React.useState<string | null>(null);
+  const labelPackages = order.label_packages ?? [];
+  const [rtsState, setRtsState] = React.useState<string | null>(null);
+  const rtsClaimed = React.useRef(false);
+  const rtsPackages = order.rts_packages ?? [];
+  const packItems = order.pack_item_ids ?? [];
+  const packOrder = async () => {
+    if (rtsClaimed.current || !packItems.length) return;
+    rtsClaimed.current = true; setRtsState('Packing…');
+    try {
+      const result = await marketplaceRequest<{status: string; snapshot_refreshed?: boolean}>(`/orders/${order.id}/pack`, 'POST', {
+        requestKey: crypto.randomUUID(), itemIds: packItems, allocationType: 'TFS',
+      });
+      setRtsState(result.status === 'succeeded' ? (result.snapshot_refreshed === false ? 'Packed; order sync failed. Fetch the order again.' : 'Packed. Refresh for labels and RTS.') : 'Packing requires review. Refresh the order.');
+    } catch {setRtsState('Packing not confirmed. Reconcile before retrying.');}
+  };
+  const unresolvedRts = (order.fulfillment_attempts ?? []).filter(task => ['rts', 'pack'].includes(task.operation) && ['uncertain', 'partial'].includes(task.status));
+  const recoveryLabel = unresolvedRts.some(task => task.operation === 'pack') ? 'Packing' : 'RTS';
+  const reconcileRts = async () => {
+    if (rtsClaimed.current) return;
+    rtsClaimed.current = true; setRtsState(`Checking ${recoveryLabel}…`);
+    try {
+      let confirmed = true;
+      for (const task of unresolvedRts) {
+        const result = await marketplaceRequest<{confirmed: boolean}>(`/orders/${order.id}/fulfillment-attempts/${task.id}/reconcile`, 'POST');
+        confirmed = confirmed && result.confirmed;
+      }
+      setRtsState(confirmed ? `${recoveryLabel} confirmed. Refresh the order.` : `${recoveryLabel} still unconfirmed. Refresh to check later.`);
+    } catch { setRtsState(`${recoveryLabel} check failed. Refresh to check later.`); }
+  };
+  const dispatchPackages = async () => {
+    if (rtsClaimed.current || !order.capabilities.fulfillment || !rtsPackages.length) return;
+    rtsClaimed.current = true;
+    setRtsState('Submitting RTS…');
+    try {
+      const result = await marketplaceRequest<{status: string; snapshot_refreshed?: boolean}>(`/orders/${order.id}/ready-to-ship`, 'POST', {
+        requestKey: crypto.randomUUID(), packages: rtsPackages,
+      });
+      setRtsState(result.status === 'succeeded' ? (result.snapshot_refreshed === false ? 'RTS confirmed; order sync failed. Fetch the order again.' : 'Ready to ship confirmed') : 'RTS requires review. Refresh the order.');
+    } catch {
+      setRtsState('RTS not confirmed. Refresh and reconcile before retrying.');
+    }
+  };
+  const downloadLabels = async () => {
+    if (labelBusy) return;
+    setLabelBusy(true); setLabelStatus('Downloading labels…');
+    try {
+      for (const packageId of labelPackages) {
+        const response = await fetch(`/admin/api/marketplace/orders/${order.id}/label?packageId=${encodeURIComponent(packageId)}`, {credentials: 'same-origin', headers: {Accept: 'application/pdf'}});
+        if (!response.ok || !response.headers.get('content-type')?.includes('application/pdf')) throw new Error('Label unavailable');
+        const url = URL.createObjectURL(await response.blob());
+        const link = document.createElement('a'); link.href = url; link.download = `lazada-${packageId}.pdf`;
+        document.body.appendChild(link); link.click(); link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+      }
+      setLabelStatus('PDF download requested');
+    } catch { setLabelStatus('Download failed. Refresh the order and try again.'); }
+    finally { setLabelBusy(false); }
+  };
   const recipient = order.recipient;
   const activeOrder = {
     channel: order.platform, orderNumber: order.external_order_id, channelOrderId: order.external_order_id,
@@ -18,7 +79,8 @@ export function OrderInspectionDrawer({order, onClose}: {order: MarketplaceOrder
     items: order.lines.map(line => ({title: line.title ?? 'Not provided by platform',
       sku: line.jw_sku ?? 'Unmapped', variantTitle: line.variant_title, quantity: line.quantity ?? '—',
       price: line.unit_price, image: null as string | null})),
-    timeline: [{title: order.platform_status, timestamp: new Date(order.platform_updated_at * 1000).toISOString(),
+    timeline: [...(order.fulfillment_attempts ?? []).map(task => ({title: `${task.operation.toUpperCase()} · ${task.status}`,
+      timestamp: task.updated_at, description: `Saved fulfillment task #${task.id}.`})), {title: order.platform_status, timestamp: new Date(order.platform_updated_at * 1000).toISOString(),
       description: 'Latest platform snapshot; not a locally executed fulfillment event.'}],
   };
   return <>      {activeOrder && (
@@ -53,11 +115,11 @@ export function OrderInspectionDrawer({order, onClose}: {order: MarketplaceOrder
               <div className="p-4 bg-indigo-50/50 dark:bg-indigo-950/30 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-bold text-neutral-900 dark:text-white">Fulfillment Station</p>
-                  <p className="text-[11px] text-neutral-500">AWB status: {'Not available — platform integration pending'}</p>
+                  <p className="text-[11px] text-neutral-500">AWB status: {labelStatus ?? (order.capabilities.airway_bill && labelPackages.length ? 'Available for download' : 'Not available — platform integration pending')}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    disabled title="Platform airway bill integration is not available yet"
+                    disabled={labelBusy || !order.capabilities.airway_bill || !labelPackages.length} onClick={downloadLabels} title="Download platform PDF labels"
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-xs cursor-pointer"
                   >
                     <Printer className="w-3.5 h-3.5" />
@@ -65,11 +127,11 @@ export function OrderInspectionDrawer({order, onClose}: {order: MarketplaceOrder
                   </button>
                   {activeOrder.channelStatus !== 'IN_TRANSIT' && (
                     <button
-                      disabled title="Platform fulfillment integration is not available yet"
+                      disabled={rtsState !== null || (!unresolvedRts.length && !packItems.length && (!order.capabilities.fulfillment || !rtsPackages.length))} onClick={unresolvedRts.length ? reconcileRts : packItems.length ? packOrder : dispatchPackages} title={rtsState ?? (unresolvedRts.length ? 'Check platform RTS status without resending' : packItems.length ? 'Pack eligible order items' : 'Mark eligible packages ready to ship')}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold shadow-xs cursor-pointer"
                     >
                       <Truck className="w-3.5 h-3.5" />
-                      Dispatch
+                      {rtsState ?? (unresolvedRts.length ? `Check ${recoveryLabel} Status` : packItems.length ? 'Pack Order' : 'Dispatch')}
                     </button>
                   )}
                 </div>

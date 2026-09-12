@@ -1,0 +1,77 @@
+[
+  {
+    "source": "src/components/marketplace/MarketplaceInventoryPage.tsx",
+    "sha256": "55a0c5a3ee530624ff20ecb2a7cc0cb1c976c92fe994aed9f5a175202f0ca318",
+    "bytes": 63172
+  },
+  {
+    "source": "src/components/marketplace/ChannelMappingModal.tsx",
+    "sha256": "cfba7085eacbfb6f416ed108d1d310275ec510ec3a7461a24599fabf0364712b",
+    "bytes": 19834
+  },
+  {
+    "source": "src/components/marketplace/MarketplaceLogo.tsx",
+    "sha256": "3c963ed3e12747b6bcb7faeaced916358c39b5d441c1a5ec8cb15a3587c5ef98",
+    "bytes": 12283
+  },
+  {
+    "source": "src/components/marketplace/InventoryAdjustmentModal.tsx",
+    "sha256": "f299d41b509ce29b87686f689ea569a3910a6a53f671cb09bd3ae755165f9eec",
+    "bytes": 29594
+  },
+  {
+    "source": "src/components/marketplace/InventoryStoreBroadcastModal.tsx",
+    "sha256": "cba5c32eaf62b9e8efcf69f70ca5c80b49375c3edbd805ddad84d54bc6a21f3d",
+    "bytes": 18160
+  },
+  {
+    "source": "src/components/marketplace/StoreActivationsDrawer.tsx",
+    "sha256": "8a19b954bb845a129b8f971bab832c7f6521071ed1599d4b617f9cb9a8476057",
+    "bytes": 11222
+  },
+  {
+    "source": "src/components/marketplace/InventoryOrderExceptionsDrawer.tsx",
+    "sha256": "62983eb06c3aff714a464c5e9c3e5ec3684637c9a8664f38479368f6d9e94718",
+    "bytes": 7834
+  },
+  {
+    "source": "src/components/marketplace/ModeAndWarehouseConfigTab.tsx",
+    "sha256": "c31b5aea04d98e2400a2b96d739c78117614459dcd34ef0f44e09d1fdf100c79",
+    "bytes": 25056
+  },
+  {
+    "source": "src/components/marketplace/StoreWarehouseBindingTab.tsx",
+    "sha256": "c89105a3eb73418be8f2067c34a15dbe47d758eb8be770ebd17a36393fc95d99",
+    "bytes": 10490
+  },
+  {
+    "source": "src/components/marketplace/WarehouseTransferTab.tsx",
+    "sha256": "56ed74c70bab805a834b4bb2c9d3c1c24e8e622e73a9f60e322924db7f86ca04",
+    "bytes": 16272
+  },
+  {
+    "source": "src/components/marketplace/ModeSwitchModal.tsx",
+    "sha256": "0356426d1dc3526ca4582279766322c2531d6ffd6eeab780ba07e066af677c77",
+    "bytes": 27898
+  },
+  {
+    "source": "src/components/marketplace/EntityWarehouseModal.tsx",
+    "sha256": "2cbd15c651fe3947e775f80753ab1d13b3422f1d29730d2db25616ebd7bf5389",
+    "bytes": 13767
+  },
+  {
+    "source": "src/components/marketplace/StoreFulfillmentBindingModal.tsx",
+    "sha256": "3b40cc2e5245803e30246ad5d5d81b09b518a77a27e6b2d0f3d05b8f3f283775",
+    "bytes": 10425
+  },
+  {
+    "source": "src/components/marketplace/CreateWarehouseTransferModal.tsx",
+    "sha256": "096ee74f1bcca15fb77d55038358a78e78cd1f836019e1df36ab8174dd9e5fae",
+    "bytes": 14513
+  },
+  {
+    "source": "src/components/marketplace/WarehouseInventoryReconcileModal.tsx",
+    "sha256": "0ad2a0dab000117abe8b40561e98a174029a467f04f412474c8f3540b04f5375",
+    "bytes": 48810
+  }
+]

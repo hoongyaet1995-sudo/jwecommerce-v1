@@ -216,7 +216,8 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
           {connections.map((conn) => {
             const platformMeta = getPlatformMeta(conn.platform);
             const isConnected = conn.status === 'connected';
-            const expiresDate = new Date(conn.tokenExpiresAt);
+            const isOfficialTest = operational && conn.credentialSource === 'official_test';
+            const expiresDate = new Date(isOfficialTest ? conn.testLeaseExpiresAt || '' : conn.tokenExpiresAt);
             const daysLeft = Math.max(0, Math.ceil((expiresDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
 
             return (
@@ -257,14 +258,14 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
                         }`}
                       >
                         <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-                        {isConnected ? 'Authorized & Active' : 'Disconnected'}
+                        {isConnected ? (isOfficialTest ? 'Test Connection Active' : 'Authorized & Active') : 'Disconnected'}
                       </span>
                     </div>
                   </div>
 
                   {/* Scopes Chips */}
                   <div className="mt-4 flex flex-wrap gap-1.5">
-                    {(operational ? ['Official authorization'] : conn.authorizedScopesSummary || conn.scopes || [
+                    {(operational ? [isOfficialTest ? 'Official test token · Seller OAuth not verified' : 'Official authorization'] : conn.authorizedScopesSummary || conn.scopes || [
                       'Catalog & Listings',
                       'Inventory ATP Sync',
                       'Orders & Fulfillments',
@@ -298,7 +299,7 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
                   {/* Token & Expiry */}
                   <div className="grid grid-cols-2 gap-3 p-3.5 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800">
                     <div>
-                      <span className="text-[11px] text-neutral-500 font-medium">OAuth Token Validity</span>
+                      <span className="text-[11px] text-neutral-500 font-medium">{isOfficialTest ? 'Local Test Access Validity' : 'OAuth Token Validity'}</span>
                       <p className={`font-semibold mt-0.5 ${isConnected ? 'text-neutral-800 dark:text-neutral-200' : 'text-neutral-400 line-through'}`}>
                         {isConnected ? (Number.isFinite(daysLeft) ? (operational ? expiresDate.toLocaleString() : `${daysLeft} days remaining`) : 'Unavailable') : 'Revoked / Paused'}
                       </p>

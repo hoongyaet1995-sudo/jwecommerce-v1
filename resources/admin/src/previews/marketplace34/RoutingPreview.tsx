@@ -3,7 +3,7 @@ import {StoreWarehouseBindingTab} from './components/marketplace/StoreWarehouseB
 import {StoreFulfillmentBindingModal} from './components/marketplace/StoreFulfillmentBindingModal';
 import {routingSaver} from './routingApi';
 
-async function pages(path:string,signal:AbortSignal) {
+export async function pages(path:string,signal:AbortSignal,identityKey='id') {
   const rows:any[]=[];let total:number|undefined;
   for(let page=1;page<=100;page++){
     const response=await fetch(`${path}?page=${page}`,{signal,credentials:'same-origin',headers:{Accept:'application/json'}});
@@ -13,7 +13,7 @@ async function pages(path:string,signal:AbortSignal) {
       ||data.last_page<page||data.last_page>100||(total!==undefined&&total!==data.total))throw Error('Routing data changed. Reload.');
     total=data.total;rows.push(...data.data);if(page===data.last_page)break;
   }
-  if(rows.length!==total||new Set(rows.map(r=>r.id)).size!==rows.length)throw Error('Routing data incomplete.');
+  if(rows.length!==total||new Set(rows.map(r=>r[identityKey])).size!==rows.length)throw Error('Routing data incomplete.');
   return rows;
 }
 

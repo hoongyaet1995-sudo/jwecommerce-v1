@@ -61,7 +61,7 @@ class MarketplaceOAuthController extends Controller
         $timestamp = fn($value) => $value ? \Illuminate\Support\Carbon::parse($value, config('app.timezone'))->utc()->toISOString() : null;
         // Select only public metadata; never load encrypted credentials into this response path.
         $stores = DB::table('marketplace_stores as s')->leftJoin('marketplace_store_tokens as t', 't.store_id', '=', 's.id')
-            ->select('s.*', 't.access_expires_at', 't.refresh_expires_at', 't.application_id')
+            ->select('s.*', 't.access_expires_at', 't.refresh_expires_at', 't.application_id','t.credential_source','t.test_lease_expires_at')
             ->selectRaw("CASE WHEN t.refresh_token IS NOT NULL AND t.refresh_token <> '' THEN 1 ELSE 0 END AS has_refresh_token")
             ->orderBy('s.id')->get()->map(function ($store) use ($lastSuccess, $timestamp) {
                 $status = $store->status;
@@ -76,24 +76,26 @@ class MarketplaceOAuthController extends Controller
                 }
                 // Match the token manager's refresh window without reading credentials or making HTTP calls.
                 $accessUsable = $store->access_expires_at && now()->addMinutes(5)->lt($store->access_expires_at);
+                if ($store->credential_source==='official_test') $accessUsable=app()->environment('local','testing') && $store->test_lease_expires_at && now()->lt($store->test_lease_expires_at);
                 $canRefresh = (bool) $store->has_refresh_token
                     && (!$store->refresh_expires_at || now()->lt($store->refresh_expires_at));
                 if ($status === 'connected' && (!$applicationMatches || (!$accessUsable && !$canRefresh))) {
                     $status = 'reauthorization_required';
                 }
                 return ['id'=>(string) $store->id, 'platform'=>$store->platform, 'shopName'=>$store->shop_name,
+                    'credentialSource'=>$store->credential_source,'testLeaseExpiresAt'=>$timestamp($store->test_lease_expires_at),
                     'shopId'=>$store->external_shop_id, 'region'=>$store->region, 'status'=>$status,
                     'tokenExpiresAt'=>$timestamp($store->access_expires_at), 'lastSyncAt'=>$timestamp($lastSuccess->get($store->id)),
                     'autoSyncStock'=>false, 'autoPullOrders'=>false];
             });
         $unavailable = ['oauth'=>false, 'catalog'=>false, 'publish'=>false, 'orders'=>false, 'inventory'=>false, 'fulfillment'=>false];
-        $readsEnabled = $client->isConfigured() && (config('marketplace.read_operations_enabled') === true
-            || config('marketplace.operations_enabled') === true);
+        $readsEnabled = config('marketplace.read_operations_enabled') === true
+            || config('marketplace.operations_enabled') === true;
 
         return response()->json(['stores'=>$stores, 'localCapabilities'=>[
             'importProducts'=>config('marketplace.import_operations_enabled') === true || config('marketplace.operations_enabled') === true,
         ], 'capabilities'=>[
-            'shopee'=>array_replace($unavailable, ['oauth'=>$client->isAuthorizationReady(), 'catalog'=>$readsEnabled, 'orders'=>$readsEnabled]),
+            'shopee'=>array_replace($unavailable, ['oauth'=>$client->isAuthorizationReady(), 'catalog'=>$readsEnabled && $client->isConfigured(), 'orders'=>$readsEnabled && $client->isConfigured()]),
             'lazada'=>array_replace($unavailable, ['oauth'=>$lazada->isAuthorizationReady(), 'catalog'=>$readsEnabled && $lazada->isAuthorizationReady(), 'orders'=>$readsEnabled && $lazada->isAuthorizationReady()]),
             'tiktok'=>$unavailable, 'shopify'=>$unavailable,
         ]])->header('Cache-Control', 'no-store');

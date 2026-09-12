@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 
 export default defineConfig({
   root: __dirname,
+  base: '/build-admin/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

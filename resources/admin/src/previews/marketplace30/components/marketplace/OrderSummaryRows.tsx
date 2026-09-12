@@ -10,7 +10,7 @@ export function OrderSummaryRows({orders,onSelect}:{orders:OrderSummary[];onSele
   <td className="py-4 px-4"><input type="checkbox" disabled className="rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"/></td>
   <td className="py-4 px-4"><div className="space-y-0.5">
    <button onClick={()=>onSelect(String(order.id))} className="font-bold text-neutral-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 cursor-pointer font-mono"><span>{order.external_order_id}</span><ArrowUpRight className="w-3 h-3 text-neutral-400"/></button>
-   <p className="text-[11px] font-mono text-neutral-500">Ref: {order.external_order_id}</p>
+   <p className="text-[11px] font-mono text-neutral-500">{order.data_classification==='test'?'[TEST] ':order.data_classification==='operational'?'':'[Unclassified] '}Ref: {order.external_order_id}</p>
   </div></td>
   <td className="py-4 px-4"><MarketplaceLogo platform={order.platform} variant="badge"/><p className="text-[11px] text-neutral-500 mt-1 truncate max-w-[140px]" title={order.shop_name}>{order.shop_name}</p></td>
   <td className="py-4 px-4"><div className="flex items-center gap-2"><div className="min-w-0"><p className="font-semibold text-neutral-900 dark:text-white truncate max-w-[150px]">View order details</p><p className="text-[10px] font-mono text-neutral-500">Items loaded on inspection</p></div></div></td>

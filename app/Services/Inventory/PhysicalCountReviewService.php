@@ -39,9 +39,18 @@ class PhysicalCountReviewService
                 'expires_at'=>now()->addMinutes(15)->toDateTimeString(), 'created_at'=>now()->toDateTimeString(),
             ];
             $atp=$this->activeProjection($configuration,$balance,$count);
+            $basic=null;
+            if(config('marketplace.basic_wms_enabled')) {
+                $projected=clone $balance;
+                $projected->physical_stock=$count;
+                $projected->counted_at=now();
+                $owned=(int)DB::table('stock_allocations')->where('inventory_balance_id',$balanceId)
+                    ->where('status','reserved')->sum('quantity');
+                $basic=app(BasicWmsBalanceReader::class)->project($projected,$owned);
+            }
             DB::table('inventory_count_reviews')->insert($review);
             return $review + ['physical_before'=>$balance->physical_stock === null ? null : (int)$balance->physical_stock,
-                'atp'=>$atp['after']??null, 'coverage_verified'=>$atp!==null];
+                'atp'=>$atp['after']??null, 'coverage_verified'=>$atp!==null,'basic_wms'=>$basic];
         },3);
     }
 
@@ -110,7 +119,8 @@ class PhysicalCountReviewService
             'physical_before'=>$row->physical_before === null ? null : (int)$row->physical_before,
             'physical_after'=>(int)$row->physical_after,
             'physical_delta'=>$row->physical_delta === null ? null : (int)$row->physical_delta,
-            'balance_version'=>(int)$row->balance_version,'reason'=>$row->reason];
+            'balance_version'=>(int)$row->balance_version,'reason'=>$row->reason,
+            'created_at'=>Carbon::parse($row->created_at)->toIso8601String()];
     }
 
     private function reject(string $message): never

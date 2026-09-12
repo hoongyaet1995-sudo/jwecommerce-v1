@@ -13,7 +13,7 @@ class InventoryRoutingController extends Controller
     {
         $request->validate(['page'=>'sometimes|integer|min:1']);
         return response()->json(DB::table('marketplace_stores')->whereIn('platform',['shopee','lazada'])
-            ->select(['id','platform','shop_name','external_shop_id','status'])->orderBy('id')->paginate(100))->header('Cache-Control','no-store');
+            ->select(['id','platform','shop_name','external_shop_id','status','data_classification'])->orderBy('id')->paginate(100))->header('Cache-Control','no-store');
     }
     public function index(Request $request)
     {
@@ -23,6 +23,7 @@ class InventoryRoutingController extends Controller
 
     public function save(Request $request, InventoryRoutingService $service)
     {
+        abort_unless(config('marketplace.basic_wms_enabled'),403,'Basic WMS store bindings are disabled.');
         if(array_diff(array_keys($request->all()),['channel_key','warehouse_id','version','platform_location_id','platform_location_name','fulfillment_priority','is_enabled','_token'])) {
             throw ValidationException::withMessages(['route'=>'Unsupported route fields.']);
         }

@@ -15,6 +15,7 @@ export interface ProductImportResult {
 }
 export type OAuthResult = {status: 'success' | 'failed' | 'cancelled'; store: {id: string; platform: MarketplacePlatform; shopId: string; shopName: string} | null};
 export interface StoreConnection {
+  credentialSource?: string | null; testLeaseExpiresAt?: string | null;
   id: string; platform: MarketplacePlatform; shopName: string; shopId: string | null;
   region: string; status: string; tokenExpiresAt: string | null; lastSyncAt?: string | null;
   autoSyncStock: boolean; autoPullOrders: boolean;
@@ -41,6 +42,7 @@ export interface CatalogProduct {
 }
 export interface OrderSummary {
   id: number; store_id: number; external_order_id: string; platform_status: string;
+  data_classification?: string;
   platform: MarketplacePlatform; shop_name: string; currency: string | null; total_amount: string | null;
   platform_updated_at: number; fetched_at: string;
 }
@@ -51,6 +53,10 @@ export interface MarketplaceOrderLine {
   mapping_status: 'mapped' | 'unmapped'; jw_variant_id: number | null; jw_sku: string | null;
 }
 export interface MarketplaceOrderDetail extends OrderSummary {
+  label_packages?: string[];
+  rts_packages?: string[];
+  pack_item_ids?: string[];
+  fulfillment_attempts?: {id: number; operation: string; status: string; created_at: string; updated_at: string}[];
   lines: MarketplaceOrderLine[];
   shipping_carrier: string | null;
   packages: {package_number: string | null; logistics_status: string | null; shipping_carrier: string | null}[];

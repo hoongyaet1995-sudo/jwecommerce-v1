@@ -40,7 +40,8 @@ final class MarketplaceStockSyncDispatchService
         }
         try {
             $this->lazada->updateAbsoluteQuantity($this->lazadaTokens->accessToken((int)$task->store_id),
-                (string)$snapshot['external_product_id'],(string)$snapshot['external_variant_id'],(int)$task->desired_quantity);
+                (string)$snapshot['external_product_id'],(string)$snapshot['external_variant_id'],(int)$task->desired_quantity,
+                (string)$task->platform_location_id);
         } catch (\Throwable $error) {
             $this->uncertain($taskId,'provider_result_unconfirmed');
             throw $error;

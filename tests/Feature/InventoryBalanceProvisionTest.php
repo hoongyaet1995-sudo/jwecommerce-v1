@@ -11,6 +11,33 @@ class InventoryBalanceProvisionTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_basic_read_exposes_available_without_claiming_reconciled_orders():void
+    {
+        config(['marketplace.basic_wms_enabled'=>true]);
+        config(['marketplace.read_operations_enabled'=>true]);
+        $this->actingAs(User::factory()->create(['is_admin'=>true]));
+        $variant=Product::create(['title'=>'Basic read','handle'=>'basic-read','base_price'=>10])
+            ->variants()->create(['sku'=>'BASIC-READ','title'=>'One','price'=>10,'stock'=>97]);
+        $balance=app(\App\Services\Inventory\InventoryBalanceProvisioner::class)->provision($variant->id,'shared',null);
+        DB::table('inventory_balances')->where('id',$balance['balance_id'])->update([
+            'physical_stock'=>20,'safety_stock'=>2,'counted_at'=>now(),
+        ]);
+        $this->getJson('/admin/api/inventory/balances?variantId='.$variant->id)->assertOk()
+            ->assertJsonPath('data.0.basic_wms.available',18)
+            ->assertJsonPath('data.0.basic_wms.order_coverage_complete',false)
+            ->assertJsonPath('data.0.atp',null)->assertJsonPath('data.0.verified',false);
+        $this->assertSame(97,(int)$variant->fresh()->stock);
+        DB::table('inventory_configuration')->where('id',1)->update(['operating_mode'=>'shared_pool']);
+        DB::table('product_variants')->where('id',$variant->id)->update(['data_classification'=>'test']);
+        $this->getJson('/admin/api/marketplace/inventory')->assertOk()
+            ->assertJsonPath('data.0.data_classification','test')
+            ->assertJsonPath('data.0.wms_summary.physical_stock',20)
+            ->assertJsonPath('data.0.wms_summary.available',18)
+            ->assertJsonPath('data.0.wms_summary.safety_stock',2)
+            ->assertJsonPath('data.0.wms_summary.balance_count',1)
+            ->assertJsonPath('data.0.available_stock',97);
+    }
+
     public function test_explicit_balance_configuration_is_idempotent_and_never_seeds_stock(): void
     {
         $url='/admin/api/inventory/balances';

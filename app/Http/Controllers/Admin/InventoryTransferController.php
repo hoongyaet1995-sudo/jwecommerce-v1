@@ -27,6 +27,7 @@ class InventoryTransferController extends Controller
     }
     public function store(Request $request,InventoryTransferService $service)
     {
+        abort_unless(config('marketplace.warehouse_transfers_enabled'),403,'Warehouse transfers are disabled.');
         $this->fields($request,['source_balance_id','destination_balance_id','quantity','operation_key','notes']);
         $data=$request->validate(['source_balance_id'=>'required|integer|min:1','destination_balance_id'=>'required|integer|min:1',
             'quantity'=>'required|integer|min:1|max:2147483647','operation_key'=>'required|string|max:128','notes'=>'required|string|max:1000']);
@@ -35,6 +36,7 @@ class InventoryTransferController extends Controller
     }
     public function transition(Request $request,int $transfer,InventoryTransferService $service)
     {
+        abort_unless(config('marketplace.warehouse_transfers_enabled'),403,'Warehouse transfers are disabled.');
         $this->fields($request,['action','quantity','operation_key','version','notes']);
         $data=$request->validate(['action'=>'required|in:dispatch,receive,cancel','quantity'=>'required|integer|min:0|max:2147483647',
             'operation_key'=>'required|string|max:128','version'=>'required|integer|min:0','notes'=>'nullable|string|max:1000']);

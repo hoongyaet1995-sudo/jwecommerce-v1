@@ -11,8 +11,56 @@ use Tests\TestCase;
 class PhysicalCountApiTest extends TestCase
 {
     use RefreshDatabase;
+    protected function setUp():void
+    {
+        parent::setUp();
+        config(['marketplace.basic_wms_enabled'=>true]);
+    }
 
     private const URL = '/admin/api/inventory/count-reviews';
+    public function test_basic_review_reports_available_without_claiming_order_coverage():void
+    {
+        $actor=User::factory()->create(['is_admin'=>true]);
+        $this->actingAs($actor);
+        $variant=Product::create(['title'=>'Basic review','handle'=>'basic-review','base_price'=>10])->variants()
+            ->create(['sku'=>'BASIC-REVIEW','title'=>'One','price'=>10,'stock'=>97]);
+        $balance=app(\App\Services\Inventory\InventoryBalanceProvisioner::class)->provision($variant->id,'shared',null)['balance_id'];
+        DB::table('inventory_balances')->where('id',$balance)->update(['physical_stock'=>20,'counted_at'=>now(),'reserved_stock'=>9,'safety_stock'=>2]);
+        $this->postJson('/admin/api/inventory/adjustment-reviews',[
+            'balance_id'=>$balance,'quantity_delta'=>5,'reason'=>'Basic review only',
+        ])->assertCreated()->assertJsonPath('atp',null)
+            ->assertJsonPath('basic_wms.available',23)
+            ->assertJsonPath('basic_wms.owned_reserved',0)
+            ->assertJsonPath('basic_wms.order_coverage_complete',false)
+            ->assertJsonPath('basic_wms.platform_write_authorized',false);
+        $this->assertDatabaseHas('inventory_balances',['id'=>$balance,'physical_stock'=>20]);
+        $this->assertSame(97,(int)$variant->fresh()->stock);
+    }
+    public function test_manual_inbound_outbound_and_adjustment_preserve_legacy_stock_and_receipt_time():void
+    {
+        $actor=User::factory()->create(['is_admin'=>true]);
+        $this->actingAs($actor);
+        $variant=Product::create(['title'=>'Manual ledger','handle'=>'manual-ledger','base_price'=>10])->variants()
+            ->create(['sku'=>'MANUAL-LEDGER','title'=>'One','price'=>10,'stock'=>97]);
+        $balance=app(\App\Services\Inventory\InventoryBalanceProvisioner::class)->provision($variant->id,'shared',null)['balance_id'];
+        $count=$this->postJson(self::URL,['balance_id'=>$balance,'physical_count'=>20,'reason'=>'Opening test count'])->assertCreated()->json('id');
+        $this->postJson(self::URL.'/'.$count.'/confirm',['acknowledged'=>true])->assertOk();
+        foreach([[5,'Product inbound'],[-3,'Product outbound'],[-1,'Manual adjustment']] as [$delta,$reason]){
+            $review=$this->postJson('/admin/api/inventory/adjustment-reviews',[
+                'balance_id'=>$balance,'quantity_delta'=>$delta,'reason'=>$reason,
+            ])->assertCreated()->json('id');
+            $receipt=$this->postJson(self::URL.'/'.$review.'/confirm',['acknowledged'=>true])->assertOk()
+                ->assertJsonPath('actor_id',$actor->id)->assertJsonPath('reason',$reason)->json();
+            $this->assertNotEmpty($receipt['created_at']??null);
+            $this->travel(1)->minutes();
+            $this->postJson(self::URL.'/'.$review.'/confirm',['acknowledged'=>true])->assertOk()->assertExactJson($receipt);
+        }
+        $this->assertDatabaseHas('inventory_balances',['id'=>$balance,'physical_stock'=>21]);
+        $this->assertDatabaseCount('inventory_physical_movements',4);
+        $this->assertDatabaseCount('inventory_movements',0);
+        $this->assertDatabaseCount('stock_allocations',0);
+        $this->assertSame(97,(int)$variant->fresh()->stock);
+    }
     public function test_active_count_updates_atp_and_preserves_obligations():void
     {
         $actor=User::factory()->create(['is_admin'=>true]);$this->actingAs($actor);

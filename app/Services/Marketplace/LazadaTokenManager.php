@@ -25,6 +25,17 @@ final class LazadaTokenManager
             if (!$token || !$token->application_id || $token->application_id!==(string)config('marketplace.lazada.app_key')) {
                 throw new RuntimeException('Lazada application credentials changed. Re-authorize the store.');
             }
+            if ($token->credential_source==='official_test') {
+                $onlineTest=config('marketplace.lazada.online_test_access_enabled')===true
+                    && (string)config('marketplace.lazada.test_store_id')===(string)$storeId
+                    && $store->data_classification==='test'
+                    && $store->external_shop_id==='300163725140'
+                    && $token->application_id==='139209';
+                if ((!app()->environment('local','testing') && !$onlineTest) || !$token->test_lease_expires_at?->isFuture() || !$token->access_token) {
+                    throw new RuntimeException('Official test credential lease expired or unavailable in this environment.');
+                }
+                return $token->access_token;
+            }
             if ($token->access_token && $token->access_expires_at?->gt(now()->addMinutes(5))) return $token->access_token;
             if (!$token->refresh_token || !$token->refresh_expires_at || $token->refresh_expires_at->lte(now())) {
                 throw new RuntimeException('Lazada credentials expired. Re-authorize the store.');

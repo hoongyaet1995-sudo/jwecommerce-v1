@@ -4,7 +4,7 @@ import {createRoot} from 'react-dom/client';
 import {it,expect,vi} from 'vitest';
 import {ImportProductReviewModal} from './components/marketplace/ImportProductReviewModal';
 import {JourneyProvider,type MarketplaceJourneyContext} from './context/AdminContext';
-import {INITIAL_MARKETPLACE_STORE_PRODUCTS} from './fixtures';
+import {INITIAL_MARKETPLACE_STORE_PRODUCTS, INITIAL_PRODUCTS} from './fixtures';
 
 it('keeps an auto-assigned missing SKU stable when catalog props refresh during review',async()=>{
  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
@@ -26,9 +26,9 @@ it('keeps an auto-assigned missing SKU stable when catalog props refresh during 
 it('reviews an existing-SKU-only operation as links rather than draft creation',async()=>{
  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
  const external={...INITIAL_MARKETPLACE_STORE_PRODUCTS[0],variants:[{...INITIAL_MARKETPLACE_STORE_PRODUCTS[0].variants[0],channelSellerSku:'EXISTING'}]};
- const context={products:[{id:'9',title:'Existing product',variants:[{id:'90',sku:'EXISTING',title:'Existing variant',price:20,inventoryQuantity:39}]}],
+ const context:MarketplaceJourneyContext={products:[{...INITIAL_PRODUCTS[0],id:'9',title:'Existing product',variants:[{...INITIAL_PRODUCTS[0].variants[0],id:'90',sku:'EXISTING',title:'Existing variant',price:20,inventoryQuantity:39}]}],
   categories:[],connections:[],marketplaceStoreProducts:[],importStoreProductToMaster:vi.fn(),addToast:vi.fn(),setActiveSection:vi.fn(),
-  publishMasterProductToStore:vi.fn(),mapStoreVariantToJwSku:vi.fn(),unmapStoreVariant:vi.fn()} as MarketplaceJourneyContext;
+  publishMasterProductToStore:vi.fn(),mapStoreVariantToJwSku:vi.fn(),unmapStoreVariant:vi.fn()};
  const container=document.createElement('div');const root=createRoot(container);
  try {
   await act(async()=>root.render(<JourneyProvider value={context}><ImportProductReviewModal isOpen onClose={vi.fn()} productsToImport={[external]}/></JourneyProvider>));

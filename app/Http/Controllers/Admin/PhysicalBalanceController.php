@@ -24,6 +24,7 @@ class PhysicalBalanceController extends Controller
 
     public function store(Request $request, \App\Services\Inventory\InventoryBalanceProvisioner $provisioner)
     {
+        abort_unless(config('marketplace.basic_wms_enabled'),403,'Basic WMS balance setup is disabled.');
         if (array_diff(array_keys($request->all()),['variant_id','pool_kind','warehouse_id','_token'])) {
             throw \Illuminate\Validation\ValidationException::withMessages(['inventory'=>'Balance configuration cannot set stock quantities.']);
         }
@@ -45,7 +46,14 @@ class PhysicalBalanceController extends Controller
             ->where('b.product_variant_id',$data['variantId'])->orderBy('b.id')
             ->select(['b.*','p.kind as pool_kind','p.warehouse_id','w.code as warehouse_code','w.name as warehouse_name'])
             ->paginate(100);
+        $basicEnabled=(bool)config('marketplace.basic_wms_enabled');
+        $reserved=$basicEnabled ? DB::table('stock_allocations')
+            ->whereIn('inventory_balance_id',$rows->getCollection()->pluck('id'))
+            ->where('status','reserved')->groupBy('inventory_balance_id')
+            ->selectRaw('inventory_balance_id, SUM(quantity) as quantity')->pluck('quantity','inventory_balance_id') : collect();
         $rows->setCollection($rows->getCollection()->map(fn($row)=>$reader->project($row)+[
+            'basic_wms'=>$basicEnabled ? app(\App\Services\Inventory\BasicWmsBalanceReader::class)
+                ->project($row,(int)($reserved[$row->id]??0)) : null,
             'pool_kind'=>$row->pool_kind,
             'warehouse_id'=>$row->warehouse_id === null ? null : (int)$row->warehouse_id,
             'warehouse_code'=>$row->warehouse_code,'warehouse_name'=>$row->warehouse_name,

@@ -18,7 +18,7 @@ class LazadaOrderServiceTest extends TestCase
   Http::preventStrayRequests();
   Http::fake(function($request){
    if(str_contains($request->url(),'/orders/get'))return Http::response(['code'=>'0','data'=>['countTotal'=>'1','orders'=>[['order_id'=>'LZ-1','updated_at'=>'2026-09-08T10:00:00+08:00','statuses'=>['pending'],'currency'=>'MYR','price'=>'25.00']]]]);
-   if(str_contains($request->url(),'/order/items/get'))return Http::response(['code'=>'0','data'=>['order_items'=>[['order_item_id'=>'LI-1','status'=>'pending']]]]);
+   if(str_contains($request->url(),'/order/items/get'))return Http::response(['code'=>'0','data'=>[['order_item_id'=>'LI-1','order_id'=>'LZ-1','status'=>'pending']]]);
    return Http::response(['code'=>'denied'],400);
   });
   $result=app(LazadaOrderService::class)->pullPage($store,1725724800,1725811200);
@@ -26,6 +26,20 @@ class LazadaOrderServiceTest extends TestCase
   $this->assertDatabaseHas('marketplace_orders',['store_id'=>$store,'external_order_id'=>'LZ-1','platform_status'=>'pending']);
   $this->assertDatabaseCount('marketplace_order_inventory',0);
   Http::assertSentCount(2);
+ }
+ public function test_items_from_another_order_are_rejected_without_saving_a_snapshot():void
+ {
+  config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);
+  $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','environment'=>'live','region'=>'MY','external_shop_id'=>'2001','shop_name'=>'Lazada MY','status'=>'connected']);
+  MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'123','access_token'=>'fixture-token','access_expires_at'=>now()->addHour()]);
+  Http::preventStrayRequests();
+  Http::fake([
+   '*/orders/get*'=>Http::response(['code'=>'0','data'=>['countTotal'=>1,'orders'=>[['order_id'=>'1001','updated_at'=>'2026-09-08T10:00:00+08:00','statuses'=>['pending']]]]]),
+   '*/order/items/get*'=>Http::response(['code'=>'0','data'=>[['order_item_id'=>'2001','order_id'=>'9999','status'=>'pending']]]),
+  ]);
+  try { app(LazadaOrderService::class)->pullPage($store,1725724800,1725811200); $this->fail('Foreign order items accepted.'); }
+  catch (\RuntimeException $error) { $this->assertStringContainsString('identity',$error->getMessage()); }
+  $this->assertDatabaseCount('marketplace_orders',0);
  }
  public function test_lazada_read_run_and_admin_submission_are_queue_backed():void
  {

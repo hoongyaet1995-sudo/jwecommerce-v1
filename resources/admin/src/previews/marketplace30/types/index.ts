@@ -242,6 +242,8 @@ export interface MarketplaceConnection {
   accessToken: string;
   refreshToken: string;
   tokenExpiresAt: string; // ISO String
+  credentialSource?: string | null;
+  testLeaseExpiresAt?: string | null;
   status: 'connected' | 'expired' | 'pending_auth' | 'error' | 'disconnected';
   connectedAt?: string;
   disconnectedAt?: string;

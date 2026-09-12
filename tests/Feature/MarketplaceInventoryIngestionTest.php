@@ -217,6 +217,7 @@ class MarketplaceInventoryIngestionTest extends TestCase
         $second = DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee', 'shop_name'=>'Second store', 'region'=>'MY', 'environment'=>'sandbox', 'status'=>'disconnected']);
         $listing = DB::table('marketplace_listing_variants')->insertGetId(['store_id'=>$second, 'external_product_id'=>'301', 'external_variant_id'=>'401', 'observed_data'=>'{}', 'fetched_at'=>now()]);
         DB::table('marketplace_variant_mappings')->insert(['store_id'=>$second, 'listing_variant_id'=>$listing, 'product_variant_id'=>1]);
+        DB::table('marketplace_listing_variants')->where('id',$listing)->update(['observed_data'=>json_encode(['stock'=>42,'sku'=>'SECOND-SKU'])]);
         $url = '/admin/api/marketplace/inventory';
         $this->getJson($url)->assertUnauthorized();
         $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>true]));
@@ -227,6 +228,8 @@ class MarketplaceInventoryIngestionTest extends TestCase
             ->assertJsonPath('data.0.physical_stock', null)->assertJsonPath('data.0.safety_stock', null)
             ->assertJsonPath('data.0.reconciliation_required', true)->assertJsonCount(2, 'data.0.channel_links')
             ->assertJsonPath('data.0.channel_links.1.connection_status', 'disconnected')
+            ->assertJsonPath('data.0.channel_links.1.catalog_stock',42)
+            ->assertJsonPath('data.0.channel_links.1.external_sku','SECOND-SKU')
             ->assertJsonPath('data.0.channel_links.0.stock_push_enabled', false);
         $this->getJson($url.'?storeId='.$second)->assertOk()->assertJsonPath('total', 1);
         $this->getJson($url.'?storeId=999')->assertOk()->assertJsonPath('total', 0);

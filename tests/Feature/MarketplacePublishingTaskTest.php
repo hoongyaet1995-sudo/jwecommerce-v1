@@ -16,6 +16,36 @@ class MarketplacePublishingTaskTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_failure_after_provider_confirmation_preserves_identity_and_uncertainty(): void
+    {
+        config(['marketplace.publish_operations_enabled'=>true,'marketplace.lazada.enabled'=>true,
+            'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);
+        $actor=User::factory()->create(['is_admin'=>true]);
+        $product=Product::create(['title'=>'Test','handle'=>'persistence-failure','base_price'=>100]);
+        $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','shop_name'=>'Test',
+            'external_shop_id'=>'2001','region'=>'MY','environment'=>'live','status'=>'connected']);
+        MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'123','access_token'=>'fixture-token',
+            'access_expires_at'=>now()->addHour()]);
+        $payload=['Request'=>['Product'=>['PrimaryCategory'=>'10002019','Images'=>['Image'=>['https://my-live-02.slatic.net/p/test.jpg']],
+            'Attributes'=>['name'=>'Test'],'Skus'=>['Sku'=>[['SellerSku'=>'TEST','quantity'=>'0','price'=>'10.00']]]]]];
+        $task=app(PublishingTasks::class)->create($store,$product->id,$actor->id,'5285db80-1111-4111-8111-123456789012',$payload);
+        Http::preventStrayRequests();
+        Http::fake(['*'=>Http::response(['code'=>'0','data'=>['item_id'=>1001,'sku_list'=>[['seller_sku'=>'TEST','sku_id'=>2001]]]])]);
+        $injected=false;
+        DB::connection()->beforeExecuting(function ($sql,$bindings) use (&$injected) {
+            if (!$injected&&str_starts_with($sql,'update')&&str_contains($sql,'marketplace_publishing_tasks')&&in_array('succeeded',$bindings,true)) {
+                $injected=true;
+                throw new \RuntimeException('Injected database failure');
+            }
+        });
+        try { app(MarketplacePublishingDispatchService::class)->dispatch($task); $this->fail('Failure not surfaced'); }
+        catch (\App\Services\Marketplace\PublishingResultUncertain $error) { $this->assertNull($error->getPrevious()); }
+        $this->assertTrue($injected);
+        $this->assertDatabaseHas('marketplace_publishing_tasks',['id'=>$task,'status'=>'uncertain','external_item_id'=>'1001']);
+        $this->assertSame(['item_id'=>'1001','sku_ids'=>['TEST'=>'2001']],json_decode(DB::table('marketplace_publishing_tasks')->where('id',$task)->value('confirmed_result'),true));
+        Http::assertSentCount(1);
+    }
+
     public function test_publishing_endpoints_refuse_staging_or_dispatch_before_the_publish_gate_is_enabled(): void
     {
         config(['marketplace.read_operations_enabled'=>true, 'marketplace.publish_operations_enabled'=>false]);
@@ -48,6 +78,8 @@ class MarketplacePublishingTaskTest extends TestCase
         $this->assertSame('succeeded',$result['status']);
         $this->assertSame('1001',$result['external_item_id']);
         $this->assertDatabaseHas('marketplace_publishing_tasks',['id'=>$task,'status'=>'succeeded','external_item_id'=>'1001']);
+        $this->assertSame(['item_id'=>'1001','sku_ids'=>['JW-SBX-001'=>'2001']],
+            json_decode(DB::table('marketplace_publishing_tasks')->where('id',$task)->value('confirmed_result') ?? 'null',true));
         Http::assertSentCount(1);
     }
 

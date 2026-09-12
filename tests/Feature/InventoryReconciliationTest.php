@@ -9,6 +9,16 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 class InventoryReconciliationTest extends TestCase {
  use RefreshDatabase;
+ protected function setUp():void {parent::setUp();config(['marketplace.advanced_wms_enabled'=>true]);}
+ public function test_reservation_order_identity_is_resolved_without_customer_data():void {
+  $order=\App\Models\Order::create(['number'=>'WMS-ORDER-1','email'=>'private@example.test','status'=>'pending','currency'=>'MYR','subtotal'=>10,'total'=>10]);
+  $rows=collect([(object)['id'=>1,'owner_type'=>'order','owner_id'=>$order->id,'quantity'=>2],
+    (object)['id'=>2,'owner_type'=>'order','owner_id'=>999999,'quantity'=>1]]);
+  $result=app(\App\Services\Inventory\InventoryReservationOrderReader::class)->enrich($rows);
+  $this->assertSame(['id'=>$order->id,'number'=>'WMS-ORDER-1','status'=>'pending','channel'=>'webstore','store_id'=>null],$result[0]->order);
+  $this->assertNull($result[1]->order);
+  $this->assertStringNotContainsString('private@example.test',json_encode($result));
+ }
  public function test_reconciliation_api_uses_session_actor_and_returns_server_receipt():void {
   $actor=User::factory()->create(['is_admin'=>true]);$this->actingAs($actor);
   $variant=Product::create(['title'=>'API reconcile','handle'=>'api-reconcile','base_price'=>100])->variants()->create(['sku'=>'API-REC','title'=>'One','price'=>100,'stock'=>9]);
@@ -18,7 +28,10 @@ class InventoryReconciliationTest extends TestCase {
   $this->postJson('/admin/api/inventory/reconciliations',$payload+['actor_id'=>999])->assertUnprocessable();
   $this->postJson('/admin/api/inventory/reconciliations',$payload)->assertOk()->assertJsonPath('status','reconciled')
     ->assertJsonPath('physical_stock',9)->assertJsonPath('reserved_stock',0)->assertJsonPath('safety_stock',1)->assertJsonPath('atp',8);
-  $this->postJson('/admin/api/inventory/reconciliations',$payload)->assertOk()->assertJsonPath('atp',8);
+  $receipt=$this->postJson('/admin/api/inventory/reconciliations',$payload)->assertOk()->assertJsonPath('atp',8)
+    ->assertJsonPath('operator_id',$actor->id)->assertJsonPath('operator',$actor->name)->json();
+  $this->travel(5)->minutes();
+  $this->postJson('/admin/api/inventory/reconciliations',$payload)->assertOk()->assertJsonPath('timestamp',$receipt['timestamp']);
   $this->assertDatabaseCount('inventory_reconciliations',1);
   $this->assertDatabaseHas('inventory_reconciliations',['actor_id'=>$actor->id]);
  }
@@ -30,7 +43,8 @@ class InventoryReconciliationTest extends TestCase {
   app(\App\Services\Inventory\StockAllocationService::class)->reserve('order',1,'item:1',$variant->id,2);
   $this->actingAs($actor)->getJson('/admin/api/inventory/balances/'.$id.'/obligations')->assertOk()
    ->assertJsonPath('unowned_reserved_stock',2)->assertJsonPath('derived_reserved_stock',0)
-   ->assertJsonPath('balance.reserved_stock',null)->assertJsonPath('coverage_verified',false);
+   ->assertJsonPath('balance.reserved_stock',null)->assertJsonPath('coverage_verified',false)
+   ->assertJsonPath('pool_kind','shared')->assertJsonPath('warehouse_id',null);
   try{app(InventoryReconciliationService::class)->reconcile($id,0,1,2,'blocked','Review',$actor);$this->fail('Unowned obligation accepted');}
   catch(\Illuminate\Validation\ValidationException $error){$this->assertStringContainsString('ownership',$error->getMessage());}
   $this->assertDatabaseCount('inventory_reconciliations',0);

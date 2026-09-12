@@ -14,7 +14,7 @@
 </head>
 <body>
     <div id="jw-admin-root">
-        <div id="root">
+        <div id="root" data-employee-id="{{ $bootstrap['user']['id'] }}" data-employee-name="{{ $bootstrap['user']['name'] }}">
             @unless ($entry)
                 <main role="alert">Admin assets are unavailable.</main>
             @endunless

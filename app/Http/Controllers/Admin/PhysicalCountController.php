@@ -37,6 +37,7 @@ class PhysicalCountController extends Controller
 
     private function allowFields(Request $request, array $allowed): void
     {
+        abort_unless(config('marketplace.basic_wms_enabled'),403,'Basic WMS manual stock operations are disabled.');
         if (array_diff(array_keys($request->all()),$allowed)) {
             throw ValidationException::withMessages(['inventory'=>'Unsupported fields. Employee and reviewed quantities are server controlled.']);
         }

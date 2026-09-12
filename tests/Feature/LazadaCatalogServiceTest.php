@@ -59,7 +59,7 @@ class LazadaCatalogServiceTest extends TestCase
         $store=$this->connectedStore(); $this->fakeCatalog();
         $before=DB::table('products')->count();
         $result=app(LazadaCatalogService::class)->pullPage($store,0);
-        $this->assertSame(['items'=>1,'variants'=>1,'has_more'=>false,'next_offset'=>100],$result);
+        $this->assertSame(['items'=>1,'variants'=>1,'has_more'=>false,'next_offset'=>50],$result);
         $this->assertDatabaseHas('marketplace_listing_variants',['store_id'=>$store,'external_product_id'=>'LZ-1','external_variant_id'=>'S-1']);
         $observed=json_decode(DB::table('marketplace_listing_variants')->value('observed_data'),true);
         $this->assertSame('Lazada Headphones',$observed['productTitle']);
@@ -67,6 +67,25 @@ class LazadaCatalogServiceTest extends TestCase
         $this->assertSame(7,$observed['stock']);
         $this->assertSame($before,DB::table('products')->count());
         $this->assertDatabaseCount('marketplace_variant_mappings',0);
+    }
+
+    public function test_official_total_products_field_allows_catalog_capture(): void
+    {
+        $store=$this->connectedStore();
+        Http::preventStrayRequests();
+        Http::fake([
+            '*/products/get*'=>Http::response(['code'=>'0','data'=>['total_products'=>2132,'products'=>[['item_id'=>14984118945]]]]),
+            '*/product/item/get*'=>Http::response(['code'=>'0','data'=>['item_id'=>14984118945,
+                'images'=>['https://sg-test-11.slatic.net/p/test.png'],'primary_category'=>10000664,'attributes'=>['name'=>'Test item'],'skus'=>[['SkuId'=>128571056069,'SellerSku'=>'TEST-1','quantity'=>20]]]]),
+        ]);
+        $result=app(LazadaCatalogService::class)->pullPage($store,0);
+        $observed=json_decode(DB::table('marketplace_listing_variants')->where('store_id',$store)->value('observed_data'),true);
+        $this->assertSame(10000664,$observed['externalCategoryId']);
+        $this->assertSame('MYR',$observed['currency']);
+        $this->assertSame(['https://sg-test-11.slatic.net/p/test.png'],$observed['productImages']);
+        $this->assertTrue($result['has_more']);
+        $this->assertSame(1,$result['variants']);
+        $this->assertDatabaseHas('marketplace_listing_variants',['store_id'=>$store,'external_product_id'=>'14984118945']);
     }
 
     public function test_catalog_job_and_admin_submission_are_queue_backed_and_retry_preserves_cursor(): void

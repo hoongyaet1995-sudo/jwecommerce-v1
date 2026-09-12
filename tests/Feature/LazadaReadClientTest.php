@@ -4,6 +4,14 @@ use App\Services\Marketplace\LazadaClient;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 class LazadaReadClientTest extends TestCase {
+ public function test_category_attributes_are_available_through_signed_read():void {
+  config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);
+  Http::preventStrayRequests();
+  $attributes=[['name'=>'brand','is_mandatory'=>1,'input_type'=>'singleSelect']];
+  Http::fake(['*'=>Http::response(['code'=>'0','data'=>$attributes])]);
+  $this->assertSame($attributes,app(LazadaClient::class)->read('/category/attributes/get','fixture-token',['primary_category_id'=>'10000664']));
+  Http::assertSent(fn($request)=>$request['primary_category_id']==='10000664' && $request->method()==='GET');
+ }
  public function test_signed_read_and_authentication_override_rejection():void {
   config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);
   Http::preventStrayRequests();

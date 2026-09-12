@@ -13,13 +13,17 @@ class InventoryObligationController extends Controller
             abort_unless($identity,404);
             $variant=DB::table('product_variants')->where('id',$identity->product_variant_id)->lockForUpdate()->first();
             $row=DB::table('inventory_balances')->where('id',$balance)->lockForUpdate()->first();
+            $pool=DB::table('inventory_pools')->where('id',$row->inventory_pool_id)->first();
             $allocations=DB::table('stock_allocations')->where('inventory_balance_id',$balance)->where('status','reserved');
             $reserved=(int)(clone $allocations)->sum('quantity');
             $unowned=(int)DB::table('stock_allocations')->where('product_variant_id',$variant->id)->where('status','reserved')->whereNull('inventory_balance_id')->sum('quantity');
+            $page=$allocations->select(['id','owner_type','owner_id','line_key','quantity'])->orderBy('id')->paginate(100);
+            $page->setCollection(app(\App\Services\Inventory\InventoryReservationOrderReader::class)->enrich($page->getCollection()));
             return response()->json(['balance'=>app(\App\Services\Inventory\PhysicalBalanceReader::class)->project($row),
+                'pool_kind'=>$pool->kind,'warehouse_id'=>$pool->warehouse_id===null?null:(int)$pool->warehouse_id,
                 'stock_version'=>(int)$variant->stock_version,'legacy_available_stock'=>(int)$variant->stock,
                 'derived_reserved_stock'=>$reserved,'unowned_reserved_stock'=>$unowned,
-                'allocations'=>$allocations->select(['id','owner_type','owner_id','line_key','quantity'])->orderBy('id')->paginate(100),
+                'allocations'=>$page,
                 'coverage_verified'=>false,'review_required'=>true])->header('Cache-Control','no-store');
         });
     }

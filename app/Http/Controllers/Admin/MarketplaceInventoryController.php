@@ -22,7 +22,7 @@ class MarketplaceInventoryController extends Controller
             ->whereNotIn('platform_status', ['COMPLETED', 'CANCELLED'])
             ->select('id', 'store_id', 'external_order_id', 'platform_status', 'platform_updated_at', 'fetched_at')
             ->orderBy('id')->paginate($filters['per_page'] ?? 25);
-        app(\App\Services\Marketplace\MarketplaceReconciliationPage::class)->annotate($orders);
+        app(\App\Services\Marketplace\MarketplaceReconciliationPage::class)->annotate($orders,$store->platform);
         $lastRun = DB::table('marketplace_order_runs')->where('store_id', $store->id)
             ->where('status', 'succeeded')->orderByDesc('finished_at')->orderByDesc('id')
             ->first(['id', 'requested_time_from', 'requested_time_to', 'time_from', 'time_to', 'finished_at']);
@@ -46,9 +46,29 @@ class MarketplaceInventoryController extends Controller
             $query->where(fn ($sub) => $sub->where('v.sku', 'like', '%'.$filters['q'].'%')
                 ->orWhere('v.title', 'like', '%'.$filters['q'].'%')->orWhere('p.title', 'like', '%'.$filters['q'].'%'));
         }
-        $page = $query->select('v.id', 'v.product_id', 'v.sku', 'v.title as variant_title', 'p.title as product_title', 'v.stock', 'v.price')
+        $page = $query->select('v.id', 'v.product_id', 'v.sku', 'v.data_classification', 'v.title as variant_title', 'p.title as product_title', 'v.stock', 'v.price')
             ->orderBy('v.id')->paginate($filters['per_page'] ?? 25);
         $ids = $page->getCollection()->pluck('id');
+        $kind=match(DB::table('inventory_configuration')->where('id',1)->value('operating_mode')){
+            'shared_pool'=>'shared','independent_warehouses'=>'warehouse',default=>null,
+        };
+        $wms=collect();
+        if(config('marketplace.basic_wms_enabled') && $kind){
+            $owned=DB::table('stock_allocations')->whereIn('product_variant_id',$ids)->where('status','reserved')
+                ->whereNotNull('inventory_balance_id')->groupBy('inventory_balance_id')
+                ->selectRaw('inventory_balance_id, SUM(quantity) as quantity')->pluck('quantity','inventory_balance_id');
+            $wms=DB::table('inventory_balances as b')->join('inventory_pools as pool','pool.id','=','b.inventory_pool_id')
+                ->whereIn('b.product_variant_id',$ids)->where('pool.kind',$kind)->select('b.*')->get()
+                ->groupBy('product_variant_id')->map(function($balances)use($owned){
+                    $known=$balances->every(fn($b)=>$b->physical_stock!==null && $b->counted_at!==null && $b->physical_stock>=0);
+                    $projections=$balances->map(fn($b)=>app(\App\Services\Inventory\BasicWmsBalanceReader::class)->project($b,(int)($owned[$b->id]??0)));
+                    return ['balance_count'=>$balances->count(),'physical_stock'=>$known?(int)$balances->sum('physical_stock'):null,
+                        'available'=>$projections->every(fn($p)=>$p['available']!==null)?(int)$projections->sum('available'):null,
+                        'owned_reserved'=>(int)$projections->sum('owned_reserved'),
+                        'safety_stock'=>$projections->every(fn($p)=>$p['safety_stock']!==null)?(int)$projections->sum('safety_stock'):null,
+                        'scope'=>'recorded_balances_only','order_coverage_complete'=>false];
+                });
+        }
         // Aggregate only the displayed page; do not fetch the entire merchant catalog.
         $reserved = DB::table('stock_allocations')->whereIn('product_variant_id', $ids)
             ->where('owner_type', 'marketplace_order')->where('status', 'reserved')
@@ -57,11 +77,13 @@ class MarketplaceInventoryController extends Controller
             ->join('marketplace_listing_variants as l', 'l.id', '=', 'm.listing_variant_id')
             ->join('marketplace_stores as s', 's.id', '=', 'm.store_id')->whereIn('m.product_variant_id', $ids)
             ->select('m.product_variant_id', 'm.store_id', 's.shop_name', 's.platform', 's.status as connection_status',
-                'l.external_product_id', 'l.external_variant_id')->orderBy('m.store_id')->orderBy('l.id')->get()->groupBy('product_variant_id');
+                'l.external_product_id', 'l.external_variant_id','l.observed_data','l.fetched_at')->orderBy('m.store_id')->orderBy('l.id')->get()->groupBy('product_variant_id');
         $page->setCollection($page->getCollection()->map(fn ($row) => [
             'id'=>(int) $row->id, 'product_id'=>(int) $row->product_id, 'sku'=>$row->sku,
+            'data_classification'=>$row->data_classification,
             'product_title'=>$row->product_title, 'variant_title'=>$row->variant_title,
             'selling_price'=>$row->price / 100,
+            'wms_summary'=>$wms[$row->id]??null,
             'available_stock'=>(int) $row->stock, 'marketplace_reserved_stock'=>(int) ($reserved[$row->id] ?? 0),
             // Legacy availability is not a verified physical count; safety buffer has no owner yet.
             'physical_stock'=>null, 'safety_stock'=>null, 'reconciliation_required'=>true,
@@ -69,9 +91,25 @@ class MarketplaceInventoryController extends Controller
                 'store_id'=>(int) $link->store_id, 'shop_name'=>$link->shop_name, 'platform'=>$link->platform,
                 'connection_status'=>$link->connection_status, 'external_product_id'=>$link->external_product_id,
                 'external_variant_id'=>$link->external_variant_id, 'stock_push_enabled'=>false,
+                'catalog_stock'=>$this->catalogStock($link->observed_data),
+                'external_sku'=>$this->catalogSku($link->observed_data),
+                'catalog_fetched_at'=>$link->fetched_at===null?null:\Illuminate\Support\Carbon::parse($link->fetched_at)->toIso8601String(),
             ])->values(),
         ]));
         return response()->json($page)->header('Cache-Control', 'no-store');
+    }
+
+    private function catalogStock(string $json):?int
+    {
+        $observed=json_decode($json,true);
+        $quantity=$observed['stock']??null;
+        return is_int($quantity)&&$quantity>=0?$quantity:null;
+    }
+
+    private function catalogSku(string $json):?string
+    {
+        $sku=json_decode($json,true)['sku']??null;
+        return is_string($sku)&&trim($sku)!==''?$sku:null;
     }
 
     public function exceptions(Request $request)
@@ -81,7 +119,9 @@ class MarketplaceInventoryController extends Controller
             'q'=>'nullable|string|max:100',
             'error'=>['nullable', Rule::in(['historical_order', 'unsupported_order_status', 'invalid_order_lines',
                 'duplicate_order_line', 'unmapped_order_line', 'inventory_lifecycle_conflict', 'insufficient_stock',
-                'unsupported_fulfillment', 'unsupported_order_composition', 'warehouse_allocation_requires_review'])],
+                'unsupported_fulfillment', 'unsupported_order_composition', 'warehouse_allocation_requires_review',
+                'warehouse_route_mismatch', 'invalid_warehouse_code', 'invalid_order_time', 'stale_order_item',
+                'missing_inventory_allocation', 'store_not_connected'])],
             'page'=>'nullable|integer|min:1', 'per_page'=>'nullable|integer|min:1|max:100',
         ]);
         $query = DB::table('marketplace_order_inventory as i')

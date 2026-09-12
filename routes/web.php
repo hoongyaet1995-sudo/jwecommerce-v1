@@ -287,6 +287,15 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/inventory/fulfillment-routes', [\App\Http\Controllers\Admin\InventoryRoutingController::class, 'index']);
     Route::get('/api/inventory/route-stores', [\App\Http\Controllers\Admin\InventoryRoutingController::class, 'stores']);
     Route::get('/api/inventory/readiness', \App\Http\Controllers\Admin\InventoryReadinessController::class);
+    Route::post('/api/inventory/basic/configuration', [\App\Http\Controllers\Admin\BasicWmsConfigurationController::class, 'store']);
+    Route::post('/api/inventory/basic/safety', [\App\Http\Controllers\Admin\BasicWmsSafetyController::class, 'store']);
+    Route::get('/api/inventory/basic/safety-history', [\App\Http\Controllers\Admin\BasicWmsSafetyController::class, 'index']);
+    Route::post('/api/inventory/sandbox-attempts', [\App\Http\Controllers\Admin\SandboxInventoryAttemptController::class, 'store'])->middleware('throttle:10,1');
+    Route::get('/api/inventory/sandbox-attempts', [\App\Http\Controllers\Admin\SandboxInventoryAttemptController::class, 'index']);
+    Route::get('/api/inventory/sandbox-options', [\App\Http\Controllers\Admin\SandboxInventoryAttemptController::class, 'options']);
+    Route::post('/api/inventory/sandbox-attempts/{attempt}/dispatch', [\App\Http\Controllers\Admin\SandboxInventoryAttemptController::class, 'dispatch'])->whereUuid('attempt')->middleware('throttle:10,1');
+    Route::get('/api/inventory/sandbox-attempts/{attempt}', [\App\Http\Controllers\Admin\SandboxInventoryAttemptController::class, 'show'])->whereUuid('attempt');
+    Route::post('/api/inventory/mode-reviews', [\App\Http\Controllers\Admin\InventoryModeReviewController::class,'store']);
     Route::put('/api/inventory/fulfillment-routes', [\App\Http\Controllers\Admin\InventoryRoutingController::class, 'save']);
     Route::get('/api/inventory/transfers', [\App\Http\Controllers\Admin\InventoryTransferController::class, 'index']);
     Route::get('/api/inventory/transfer-options', [\App\Http\Controllers\Admin\PhysicalBalanceController::class, 'transferOptions']);
@@ -343,6 +352,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/marketplace/catalog/products', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'products']);
     Route::get('/api/marketplace/orders', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'index']);
     Route::get('/api/marketplace/orders/summary', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'summary']);
+    Route::post('/api/marketplace/orders/{order}/pack', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'pack'])->whereNumber('order')->middleware('throttle:10,1');
+    Route::get('/api/marketplace/orders/{order}/fulfillment-attempts/{attempt}', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'fulfillmentAttempt'])->whereNumber(['order','attempt']);
+    Route::post('/api/marketplace/orders/{order}/fulfillment-attempts/{attempt}/reconcile', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'reconcileRts'])->whereNumber(['order','attempt'])->middleware('throttle:10,1');
+    Route::post('/api/marketplace/orders/{order}/ready-to-ship', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'readyToShip'])->whereNumber('order')->middleware('throttle:10,1');
+    Route::get('/api/marketplace/orders/{order}/label', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'label'])->whereNumber('order')->middleware('throttle:10,1');
     Route::get('/api/marketplace/orders/{order}', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'show'])->whereNumber('order');
     Route::post('/api/marketplace/stores/{store}/orders-fetch', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'fetch'])->whereNumber('store')->middleware('throttle:10,1');
     Route::get('/api/marketplace/order-runs/{run}', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'run'])->whereNumber('run');

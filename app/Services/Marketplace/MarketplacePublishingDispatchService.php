@@ -33,18 +33,27 @@ final class MarketplacePublishingDispatchService
         try {
             $payload=json_decode($task->payload, true, 512, JSON_THROW_ON_ERROR);
             if (!is_array($payload)) throw new RuntimeException('Marketplace publishing payload is invalid.');
-            $externalItemId=match ($store->platform) {
-                'shopee' => $this->publishShopee($store, $payload),
+            $confirmed=match ($store->platform) {
+                'shopee' => ['item_id'=>$this->publishShopee($store, $payload)],
                 'lazada' => $this->publishLazada($store, $payload),
                 default => throw new RuntimeException('This marketplace publishing platform is not yet executable.'),
             };
-            if (!$this->tasks->recordParent($taskId, $externalItemId)
-                || !$this->tasks->transition($taskId, 'processing', 'succeeded', $externalItemId)) {
+            $externalItemId=$confirmed['item_id'];
+            try {
+                $saved=DB::table('marketplace_publishing_tasks')->where('id',$taskId)->where('status','processing')
+                    ->whereNull('external_item_id')->whereNull('confirmed_result')
+                    ->update(['external_item_id'=>$externalItemId,'confirmed_result'=>json_encode($confirmed,JSON_THROW_ON_ERROR),'updated_at'=>now()]);
+                if ($saved!==1 || !$this->tasks->transition($taskId, 'processing', 'succeeded', $externalItemId)) {
+                    throw new RuntimeException('Confirmed result persistence failed.');
+                }
+            } catch (\Throwable) {
                 throw new PublishingResultUncertain('Marketplace creation was confirmed but the local result could not be persisted. Reconcile before retrying.');
             }
             return ['id'=>$taskId, 'status'=>'succeeded', 'external_item_id'=>$externalItemId];
         } catch (PublishingResultUncertain $error) {
             $this->tasks->transition($taskId, 'processing', 'uncertain');
+            \Illuminate\Support\Facades\Log::warning('Marketplace publishing result requires reconciliation',
+                ['task_id'=>$taskId,'platform'=>$store->platform]+$error->diagnostics());
             throw $error;
         } catch (\Throwable $error) {
             $this->tasks->transition($taskId, 'processing', 'rejected');
@@ -60,8 +69,8 @@ final class MarketplacePublishingDispatchService
         return $this->shopee->createItem($this->shopeeTokens->accessToken((int)$store->id), $store->external_shop_id, $payload);
     }
 
-    private function publishLazada(object $store, array $payload): string
+    private function publishLazada(object $store, array $payload): array
     {
-        return $this->lazada->createProduct($this->lazadaTokens->accessToken((int)$store->id), $payload)['item_id'];
+        return $this->lazada->createProduct($this->lazadaTokens->accessToken((int)$store->id), $payload);
     }
 }

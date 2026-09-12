@@ -103,11 +103,16 @@ class MarketplaceStockSyncTaskTest extends TestCase
             'access_expires_at'=>now()->addHour(),'refresh_expires_at'=>now()->addDay()]);
         $task=app(MarketplaceStockSyncTaskService::class)->stage($f['store'],$f['balance'],'dispatch-lazada',$f['actor']);
         Http::preventStrayRequests();
-        Http::fake(['api.lazada.com.my/rest/product/price_quantity/update*'=>Http::response(['code'=>'0','data'=>[]])]);
+        Http::fake(['api.lazada.com.my/rest/product/stock/sellable/update'=>Http::response(['code'=>'0','data'=>[]])]);
 
         $result=app(MarketplaceStockSyncDispatchService::class)->dispatch($task['id']);
 
         $this->assertSame('confirmed',$result['status']);
+        Http::assertSent(function ($request) {
+            $xml=simplexml_load_string($request['payload']);
+            $stock=$xml->Product->Skus->Sku->MultiWarehouseInventories->MultiWarehouseInventory;
+            return (string)$stock->WarehouseCode==='LZ-WH-1' && (string)$stock->SellableQuantity==='8';
+        });
         $this->assertDatabaseHas('marketplace_stock_sync_tasks',['id'=>$task['id'],'status'=>'confirmed','desired_quantity'=>8]);
         Http::assertSentCount(1);
     }

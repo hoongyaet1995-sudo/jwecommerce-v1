@@ -45,6 +45,7 @@ final class LazadaAuthorizationService
                 $id=DB::table('marketplace_stores')->insertGetId($values+['created_at'=>now()]);
             }
             MarketplaceStoreToken::updateOrCreate(['store_id'=>$id],[
+                'credential_source'=>'oauth','test_lease_expires_at'=>null,
                 'application_id'=>(string)config('marketplace.lazada.app_key'),
                 'access_token'=>$tokens['access_token'],'refresh_token'=>$tokens['refresh_token'],
                 'access_expires_at'=>now()->addSeconds($tokens['expires_in']),

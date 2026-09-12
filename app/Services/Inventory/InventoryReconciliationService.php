@@ -8,6 +8,7 @@ class InventoryReconciliationService
 {
  public function reconcile(int $balanceId,int $version,int $stockVersion,int $safety,string $key,string $reason,User $actor):array
  {
+  abort_unless(config('marketplace.advanced_wms_enabled'),403,'Advanced WMS reconciliation is disabled.');
   if(!$actor->exists||!User::whereKey($actor->id)->where('is_admin',true)->exists())$this->reject('An inventory administrator is required.');
   if($version<0||$stockVersion<0||$safety<0||$safety>2147483647||!preg_match('/\A[A-Za-z0-9:_-]{1,128}\z/',$key)||trim($reason)===''||mb_strlen($reason)>255)$this->reject('Invalid reconciliation request.');
   $hash=hash('sha256',json_encode([$balanceId,$version,$stockVersion,$safety,$reason,$actor->id],JSON_THROW_ON_ERROR));

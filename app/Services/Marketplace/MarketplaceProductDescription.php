@@ -8,6 +8,10 @@ final class MarketplaceProductDescription
 {
     public function render(array $observation): ?string
     {
+        if (array_key_exists('sourceDescriptionHtml',$observation) && $observation['sourceDescriptionHtml'] !== null) {
+            abort_unless(is_string($observation['sourceDescriptionHtml']),422,'Invalid channel HTML description.');
+            return app(MarketplaceHtmlDescription::class)->render($observation['sourceDescriptionHtml']) ?: null;
+        }
         $type = $observation['descriptionType'] ?? 'normal';
         abort_unless(in_array($type, ['normal', 'extended'], true), 422, 'Review the channel description format before import.');
         $html = '';

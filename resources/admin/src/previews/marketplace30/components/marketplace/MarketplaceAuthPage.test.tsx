@@ -6,6 +6,15 @@ import {expect,it,vi} from 'vitest';
 import {PreviewContext} from '../../context/ContextBridge';
 import {MarketplaceAuthPage} from './MarketplaceAuthPage';
 
+it('does not describe official test credentials as completed seller OAuth',()=>{
+ const value={connections:[{id:'3',platform:'lazada',shopName:'Test',shopId:'3',status:'connected',credentialSource:'official_test',testLeaseExpiresAt:'2026-09-08T10:00:00Z',tokenExpiresAt:'',lastSyncAt:''}],marketplaceOrders:[],marketplaceInventory:[],marketplaceStoreProducts:[],syncLogs:[],setCurrentSection:vi.fn(),currentSection:'marketplace-auth'};
+ const html=renderToStaticMarkup(<PreviewContext.Provider value={value as unknown as React.ContextType<typeof PreviewContext>}><MarketplaceAuthPage operational/></PreviewContext.Provider>);
+ expect(html).toContain('Seller OAuth not verified');
+ expect(html).toContain('Local Test Access Validity');
+ expect(html).not.toContain('Official authorization');
+ expect(html).not.toContain('Authorized &amp; Active');
+});
+
 it('shows truthful operational availability without fake metrics or developer configuration',()=>{
  const value={connections:[{id:'1',platform:'shopee',shopName:'Verified',shopId:'1',status:'connected',tokenExpiresAt:'2026-09-06T14:00:00Z',lastSyncAt:''}],marketplaceOrders:[],marketplaceInventory:[],marketplaceStoreProducts:[],syncLogs:[],
    setCurrentSection:vi.fn(),currentSection:'marketplace-auth'};

@@ -4,6 +4,7 @@ export interface CountReview {
   physical_before: number | null;
   actor_id: number;
   atp: number | null;
+  basic_wms?: {available:number|null;owned_reserved:number;safety_stock:number|null;order_coverage_complete:false;platform_write_authorized:false}|null;
 }
 
 export function countReviewApi(balanceId: number, csrf: string, request: typeof fetch = fetch) {

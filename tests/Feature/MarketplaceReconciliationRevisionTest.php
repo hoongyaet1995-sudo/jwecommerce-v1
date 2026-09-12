@@ -43,6 +43,14 @@ class MarketplaceReconciliationRevisionTest extends TestCase
         $service=app(MarketplaceReconciliationRevision::class);
         $first=$service->read($s);
         $this->assertSame($first,$service->read($s));
+        $warehouse=DB::table('inventory_warehouses')->insertGetId(['code'=>'REV','name'=>'Review warehouse','status'=>'active','is_active'=>true]);
+        DB::table('inventory_fulfillment_routes')->insert(['channel_key'=>'marketplace:'.$s,'warehouse_id'=>$warehouse,'platform_location_id'=>'WH1','is_enabled'=>true]);
+        $routed=$service->read($s);
+        $this->assertNotSame($first,$routed,'Routing changes invalidate the reviewed destination.');
+        $balance=app(\App\Services\Inventory\InventoryBalanceProvisioner::class)->provision($v->id,'warehouse',$warehouse)['balance_id'];
+        $beforeCount=$service->read($s);
+        DB::table('inventory_balances')->where('id',$balance)->update(['physical_stock'=>10,'safety_stock'=>2,'counted_at'=>now()]);
+        $this->assertNotSame($beforeCount,$service->read($s),'Physical counts invalidate review even without legacy stock changes.');
         app(\App\Services\Inventory\InventoryMutationService::class)->change($v->id,-1,'test:sale','Sale');
         $second=$service->read($s);
         $this->assertNotSame($first,$second);

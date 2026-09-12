@@ -5,9 +5,22 @@ namespace App\Services\Marketplace;
 /** Read-only classification. Quantities are not instructions to allocate stock. */
 class MarketplaceReconciliationDemand
 {
-    public static function inspect(string $status, array $payload): array
+    public static function inspect(string $status, array $payload, string $platform='shopee'): array
     {
         $error = fn (string $code) => ['error'=>$code, 'kind'=>null, 'lines'=>[]];
+        if ($platform==='lazada') {
+            try { $plan=LazadaInventoryPlan::build($payload,0); }
+            catch (MarketplaceInventoryException $exception) { return $error($exception->getMessage()); }
+            $lines=[];
+            foreach ($plan as $line) {
+                $lines[]=['key'=>$line['line_key'],'mapping_key'=>$line['external_product_id'].':'.$line['external_variant_id'],
+                    'quantity'=>$line['quantity'],'warehouse_code'=>$line['warehouse_code'],
+                    'kind'=>match($line['target']) {'reserved'=>'outstanding','waiting'=>'conditional','consumed'=>'shipped_review','released'=>'released'}];
+            }
+            $kinds=array_values(array_unique(array_column($lines,'kind')));
+            return ['error'=>null,'kind'=>count($kinds)===1?$kinds[0]:'mixed','lines'=>$lines];
+        }
+        if ($platform!=='shopee') return $error('unsupported_platform');
         $kind = match ($status) {
             'READY_TO_SHIP', 'PROCESSED' => 'outstanding',
             'UNPAID', 'IN_CANCEL' => 'conditional',

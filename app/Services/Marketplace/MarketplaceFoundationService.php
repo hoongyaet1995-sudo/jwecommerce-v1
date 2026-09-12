@@ -7,9 +7,9 @@ use Illuminate\Support\Facades\DB;
 
 class MarketplaceFoundationService
 {
-    public function map(int $listingId, ?int $variantId, ?int $productId, int $actorId): void
+    public function map(int $listingId, ?int $variantId, ?int $productId, int $actorId, ?array $expected = null): void
     {
-        DB::transaction(function () use ($listingId,$variantId,$productId,$actorId) {
+        DB::transaction(function () use ($listingId,$variantId,$productId,$actorId,$expected) {
             $storeId = DB::table('marketplace_listing_variants')->where('id', $listingId)->value('store_id');
             abort_unless($storeId, 404);
             // All mapping/unlink operations in a store serialize before conflict reads.
@@ -27,6 +27,10 @@ class MarketplaceFoundationService
                 abort_if($conflict, 409, 'This JW SKU is already mapped in this store. Unlink the existing mapping first.');
             }
             $old = DB::table('marketplace_variant_mappings')->where('listing_variant_id',$listingId)->first();
+            if($expected!==null) {
+                $actual=$old?(int)$old->product_variant_id:null;
+                abort_if($actual!==$expected['variant_id'],409,'Mapping changed after selection. Reload the catalog and review again.');
+            }
             if (($old ? (int)$old->product_variant_id : null) === $variantId) return;
             if ($variantId === null) {
                 DB::table('marketplace_variant_mappings')->where('listing_variant_id',$listingId)->delete();

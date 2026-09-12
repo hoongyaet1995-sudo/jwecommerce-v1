@@ -8,6 +8,82 @@ use Illuminate\Support\Facades\DB;
 
 class MarketplaceOrderController extends Controller
 {
+    public function pack(Request $request,int $order,\App\Services\Marketplace\MarketplacePackingAttempts $attempts,\App\Services\Marketplace\LazadaPackingDispatch $dispatch)
+    {
+        abort_unless(config('marketplace.fulfillment_operations_enabled')===true,503,'Marketplace fulfillment is disabled.');
+        $data=$request->validate(['requestKey'=>'required|uuid','itemIds'=>'required|array|min:1|max:100',
+            'itemIds.*'=>'required|string|distinct|regex:/\A[1-9][0-9]{0,29}\z/D','allocationType'=>'required|in:TFS,NTFS']);
+        try {
+            $id=$attempts->stage($order,(int)$request->user()->id,$data['requestKey'],$data['itemIds'],$data['allocationType']);
+            $task=DB::table('marketplace_fulfillment_attempts')->find($id);
+            if ($task->status!=='queued') return response()->json(['id'=>$id,'status'=>$task->status])->header('Cache-Control','no-store');
+            $result=$dispatch->dispatch($id);
+            $result['snapshot_refreshed']=$this->refreshFulfillmentSnapshot($order);
+            return response()->json($result)->header('Cache-Control','no-store');
+        } catch (\DomainException) {
+            return response()->json(['message'=>'This item selection already has a packing attempt or is invalid. Refresh and review.'],409)->header('Cache-Control','no-store');
+        } catch (\RuntimeException) {
+            $status=isset($id)?DB::table('marketplace_fulfillment_attempts')->where('id',$id)->value('status'):null;
+            return response()->json(['id'=>$id??null,'status'=>$status,'message'=>'Packing was not confirmed. Reconcile before resubmitting.'],409)->header('Cache-Control','no-store');
+        }
+    }
+
+    public function fulfillmentAttempt(int $order,int $attempt)
+    {
+        $task=DB::table('marketplace_fulfillment_attempts')->where('id',$attempt)->where('order_id',$order)
+            ->first(['id','order_id','operation','status','created_at','updated_at']);
+        abort_unless($task,404);
+        return response()->json($task)->header('Cache-Control','no-store');
+    }
+
+    public function reconcileRts(int $order,int $attempt,\App\Services\Marketplace\LazadaRtsReconciliation $reconciliation)
+    {
+        $task=DB::table('marketplace_fulfillment_attempts')->where('id',$attempt)->where('order_id',$order)->whereIn('operation',['rts','pack'])->first();
+        abort_unless($task,404);
+        try {
+            $result=($task->operation==='pack' ? app(\App\Services\Marketplace\LazadaPackingReconciliation::class) : $reconciliation)->reconcile($attempt);
+            if ($result['confirmed']) $result['snapshot_refreshed']=$this->refreshFulfillmentSnapshot($order);
+        }
+        catch (\RuntimeException) { return response()->json(['message'=>'Fulfillment could not be reconciled. The task remains protected against resubmission.'],409)->header('Cache-Control','no-store'); }
+        return response()->json($result)->header('Cache-Control','no-store');
+    }
+
+    public function readyToShip(Request $request,int $order,\App\Services\Marketplace\MarketplaceRtsAttempts $attempts,\App\Services\Marketplace\LazadaRtsDispatch $dispatch)
+    {
+        abort_unless(config('marketplace.fulfillment_operations_enabled')===true,503,'Marketplace fulfillment is disabled.');
+        $data=$request->validate(['requestKey'=>'required|uuid','packages'=>'required|array|min:1|max:20',
+            'packages.*'=>'required|string|distinct|max:100|regex:/\A[A-Za-z0-9_-]+\z/D']);
+        try {
+            $id=$attempts->stage($order,(int)$request->user()->id,$data['requestKey'],$data['packages']);
+            $task=DB::table('marketplace_fulfillment_attempts')->find($id);
+            if ($task->status!=='queued') return response()->json(['id'=>$id,'status'=>$task->status])->header('Cache-Control','no-store');
+            $result=$dispatch->dispatch($id);
+            $result['snapshot_refreshed']=$this->refreshFulfillmentSnapshot($order);
+            return response()->json($result)->header('Cache-Control','no-store');
+        } catch (\DomainException) {
+            return response()->json(['message'=>'This package selection already has an attempt or is invalid. Refresh and review before resubmitting.'],409)->header('Cache-Control','no-store');
+        } catch (\RuntimeException) {
+            $status=isset($id)?DB::table('marketplace_fulfillment_attempts')->where('id',$id)->value('status'):null;
+            return response()->json(['id'=>$id??null,'status'=>$status,'message'=>'RTS was not confirmed. Refresh and reconcile the task before retrying.'],409)->header('Cache-Control','no-store');
+        }
+    }
+
+    private function refreshFulfillmentSnapshot(int $order):bool
+    {
+        try { app(\App\Services\Marketplace\LazadaOrderService::class)->refreshOrder($order); return true; }
+        catch (\Throwable) { return false; }
+    }
+
+    public function label(Request $request,int $order,\App\Services\Marketplace\LazadaOrderLabel $labels)
+    {
+        $data=$request->validate(['packageId'=>'required|string|max:100|regex:/\A[A-Za-z0-9_-]+\z/D']);
+        try { $bytes=$labels->download($order,$data['packageId']); }
+        catch (\RuntimeException) { return response()->json(['message'=>'The label could not be verified. Refresh the order and try again.'],409)->header('Cache-Control','no-store'); }
+        return response($bytes)->withHeaders(['Content-Type'=>'application/pdf',
+            'Content-Disposition'=>'attachment; filename="lazada-'.$data['packageId'].'.pdf"',
+            'Cache-Control'=>'private, no-store','X-Content-Type-Options'=>'nosniff','Referrer-Policy'=>'no-referrer']);
+    }
+
     public function preview(Request $request, int $order)
     {
         abort_unless(app()->environment('local'), 404);
@@ -102,7 +178,7 @@ class MarketplaceOrderController extends Controller
         ]);
         $query = DB::table('marketplace_orders as o')->join('marketplace_stores as s', 's.id', '=', 'o.store_id')
             ->select('o.id', 'o.store_id', 'o.external_order_id', 'o.platform_status', 'o.platform_updated_at',
-                'o.currency', 'o.total_amount', 'o.fetched_at', 's.platform', 's.shop_name');
+                'o.currency', 'o.total_amount', 'o.fetched_at', 'o.data_classification', 's.platform', 's.shop_name');
         if (isset($filters['storeId'])) $query->where('o.store_id', $filters['storeId']);
         if (!empty($filters['platform'])) $query->where('s.platform', $filters['platform']);
         if (!empty($filters['status'])) $query->where('o.platform_status', $filters['status']);

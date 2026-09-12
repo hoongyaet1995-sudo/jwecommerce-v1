@@ -8,6 +8,15 @@ use Tests\TestCase;
 
 class MarketplaceDescriptionTest extends TestCase
 {
+    public function test_lazada_html_keeps_content_without_active_markup(): void
+    {
+        $html=app(MarketplaceProductDescription::class)->render(['sourceDescriptionHtml'=>'<h3>Product</h3><p onclick="alert(1)">Hello <strong>world</strong></p><script>alert(1)</script><a href="javascript:alert(1)">link</a><img src="https://127.0.0.1/private"><img src="https://sg-test-11.slatic.net/p/a.png" onerror="alert(1)">']);
+        $this->assertStringContainsString('<h3>Product</h3>',$html);
+        $this->assertStringContainsString('<strong>world</strong>',$html);
+        foreach(['script','onclick','onerror','javascript:','127.0.0.1'] as $unsafe)$this->assertStringNotContainsString($unsafe,$html);
+        $this->assertStringContainsString('https://sg-test-11.slatic.net/p/a.png',$html);
+    }
+
     public function test_normal_description_escapes_markup_and_preserves_line_breaks(): void
     {
         $this->assertSame("<p>&lt;script&gt;x&lt;/script&gt;<br />\nSecond &amp; line</p>",

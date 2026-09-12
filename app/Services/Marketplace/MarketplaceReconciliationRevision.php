@@ -39,6 +39,13 @@ class MarketplaceReconciliationRevision
                     ->where('o.store_id',$storeId)->whereColumn('a.product_variant_id','v.id'))
                 ->orderBy('v.id')->lockForUpdate()->get(['v.id','v.stock','v.stock_version','v.enabled']);
             foreach ($variants as $row) $append($row);
+            $append(DB::table('inventory_configuration')->where('id',1)->first());
+            $route=DB::table('inventory_fulfillment_routes')->where('channel_key','marketplace:'.$storeId)->first();
+            $append($route);
+            if ($route) $append(DB::table('inventory_warehouses')->where('id',$route->warehouse_id)->first());
+            foreach (DB::table('inventory_balances as b')->join('inventory_pools as p','p.id','=','b.inventory_pool_id')
+                ->whereIn('b.product_variant_id',$variants->pluck('id'))->orderBy('b.id')
+                ->cursor(['b.*','p.kind','p.warehouse_id']) as $row) $append($row);
             foreach (DB::table('marketplace_variant_mappings as m')->join('marketplace_listing_variants as l','l.id','=','m.listing_variant_id')
                 ->where('m.store_id',$storeId)->orderBy('m.id')->cursor(['m.id','m.listing_variant_id','m.product_variant_id','l.external_product_id','l.external_variant_id']) as $row) $append($row);
             foreach (DB::table('marketplace_orders')->where('store_id',$storeId)->orderBy('id')

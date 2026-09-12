@@ -18,6 +18,8 @@ export interface AdminUser {
 }
 
 export interface LaravelAdminBootstrap {
+  basicWmsUiEnabled?: boolean;
+  basicWmsUiPreview?: boolean;
   user: {
     id?: string;
     name: string;

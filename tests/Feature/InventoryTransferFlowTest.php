@@ -10,6 +10,12 @@ use Tests\TestCase;
 class InventoryTransferFlowTest extends TestCase
 {
     use RefreshDatabase;
+    protected function setUp():void
+    {
+        parent::setUp();
+        // Advanced transfer behavior is exercised only with its explicit feature gate.
+        config(['marketplace.warehouse_transfers_enabled'=>true]);
+    }
     private function fixture():array
     {
         $this->actingAs(User::factory()->create(['is_admin'=>true]));

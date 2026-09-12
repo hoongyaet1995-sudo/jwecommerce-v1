@@ -17,7 +17,7 @@ class MarketplaceOrderInventoryService
         DB::transaction(function () use ($orderId) {
             $storeId = DB::table('marketplace_orders')->where('id', $orderId)->value('store_id');
             $store = DB::table('marketplace_stores')->where('id', $storeId)->lockForUpdate()->first();
-            if (!$store || $store->status !== 'connected' || $store->platform !== 'shopee') return;
+            if (!$store || $store->status !== 'connected' || !in_array($store->platform,['shopee','lazada'],true)) return;
             $policy = DB::table('marketplace_inventory_policies')->where('store_id', $storeId)->lockForUpdate()->first();
             if (!$policy || !$policy->enabled || !$policy->reconciled_at || !$policy->orders_created_after) return;
             $order = DB::table('marketplace_orders')->where('id', $orderId)->lockForUpdate()->first();
@@ -25,7 +25,9 @@ class MarketplaceOrderInventoryService
             try {
                 // Savepoint: an exception on any line rolls back all allocations,
                 // while retaining the fetched platform order and exception record.
-                $status = DB::transaction(fn () => $this->apply($order, $payload, (int) $policy->orders_created_after));
+                $status = DB::transaction(fn () => $store->platform==='lazada'
+                    ? $this->applyLazada($order,$payload,(int)$policy->orders_created_after)
+                    : $this->apply($order, $payload, (int) $policy->orders_created_after));
                 $error = null;
             } catch (MarketplaceInventoryException $exception) {
                 $status = 'exception';
@@ -38,9 +40,18 @@ class MarketplaceOrderInventoryService
                 'platform_updated_at'=>$order->platform_updated_at, 'status'=>$status, 'error_code'=>$error,
                 'updated_at'=>now(),
             ];
-            if (in_array($status, ['released', 'consumed'], true)) $values['terminal_status'] = $status;
+            if ($store->platform==='shopee' && in_array($status, ['released', 'consumed'], true)) $values['terminal_status'] = $status;
             DB::table('marketplace_order_inventory')->updateOrInsert(['order_id'=>$orderId], $values);
         }, 3);
+    }
+
+    private function applyLazada(object $order,array $payload,int $cutoff):string
+    {
+        if ((string)($payload['order_id']??'')!==$order->external_order_id) throw new MarketplaceInventoryException('invalid_order_lines');
+        $plan=LazadaInventoryPlan::build($payload,$cutoff);
+        app(LazadaInventoryExecutor::class)->apply((int)$order->id,$plan,(int)$order->platform_updated_at);
+        $states=array_unique(array_column($plan,'target'));
+        return count($states)===1?reset($states):'mixed';
     }
 
     private function apply(object $order, array $payload, int $cutoff): string

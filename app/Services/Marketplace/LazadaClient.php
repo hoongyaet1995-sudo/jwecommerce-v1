@@ -37,7 +37,9 @@ final class LazadaClient
             $quantity=is_array($sku) ? ($sku['quantity'] ?? null) : null;
             $price=is_array($sku) ? ($sku['price'] ?? ($sku['supply_price'] ?? null)) : null;
             if (!is_string($sellerSku) || !preg_match('/\A[ -~]{1,200}\z/D',$sellerSku) || isset($sellerSkus[$sellerSku])
-                || !is_numeric($quantity) || (int)$quantity<0 || !is_numeric($price) || (float)$price<=0) {
+                || (!is_int($quantity)&&!is_string($quantity)) || !preg_match('/\A(?:0|[1-9][0-9]*)\z/D',(string)$quantity)
+                || filter_var($quantity,FILTER_VALIDATE_INT)===false
+                || !is_numeric($price) || !is_finite((float)$price) || (float)$price<=0) {
                 throw new RuntimeException('Invalid Lazada product SKU payload.');
             }
             $sellerSkus[$sellerSku]=true;
@@ -51,7 +53,8 @@ final class LazadaClient
         $ids=[];
         foreach ($data['sku_list'] as $sku) {
             if (!is_array($sku) || !is_string($sku['seller_sku'] ?? null) || !isset($sellerSkus[$sku['seller_sku']])
-                || !preg_match('/^[1-9][0-9]*$/D',(string)($sku['sku_id'] ?? '')) || isset($ids[$sku['seller_sku']])) {
+                || !preg_match('/^[1-9][0-9]*$/D',(string)($sku['sku_id'] ?? '')) || isset($ids[$sku['seller_sku']])
+                || in_array((string)$sku['sku_id'],$ids,true)) {
                 throw new PublishingResultUncertain('Lazada product creation was not confirmed. Reconcile before retrying.');
             }
             $ids[$sku['seller_sku']]=(string)$sku['sku_id'];
@@ -66,24 +69,49 @@ final class LazadaClient
      * Transport for one reviewed absolute SKU quantity. Callers must revalidate
      * their WMS snapshot immediately before invoking it.
      */
-    public function updateAbsoluteQuantity(#[\SensitiveParameter] string $accessToken, string $itemId, string $skuId, int $quantity): void
+    public function updateAbsoluteQuantity(#[\SensitiveParameter] string $accessToken, string $itemId, string $skuId, int $quantity, ?string $warehouseCode = null): void
     {
         if (config('marketplace.stock_sync_operations_enabled') !== true) {
             throw new RuntimeException('Marketplace stock synchronization is disabled.');
         }
+        $this->sendAbsoluteQuantity($accessToken,$itemId,$skuId,$quantity,$warehouseCode);
+    }
+
+    /** Separate test boundary; does not enable the production transport flag. */
+    public function updateSandboxQuantity(array $snapshot, \App\Models\User $actor):void
+    {
+        $current=app(SandboxInventoryWriteGuard::class)->review((int)$snapshot['store_id'],(int)$snapshot['inventory_balance_id'],$actor);
+        if($current!==$snapshot||$current['platform']!=='lazada')throw new RuntimeException('Sandbox stock review changed.');
+        $token=app(LazadaTokenManager::class)->accessToken($current['store_id']);
+        $seller=$this->read('/seller/get',$token);
+        if((string)($seller['seller_id']??'')!==$current['external_shop_id']||($seller['short_code']??'')!=='MY4NA1T7CK'||($seller['status']??'')!=='ACTIVE')throw new RuntimeException('Sandbox seller identity changed.');
+        $this->sendAbsoluteQuantity($token,$current['external_product_id'],$current['external_variant_id'],$current['desired_quantity'],$current['platform_location_id']);
+    }
+
+    private function sendAbsoluteQuantity(#[\SensitiveParameter] string $accessToken,string $itemId,string $skuId,int $quantity,?string $warehouseCode):void
+    {
         if (!preg_match('/^[1-9][0-9]*$/D', $itemId) || !preg_match('/^[1-9][0-9]*$/D', $skuId) || $quantity < 0) {
             throw new RuntimeException('Invalid Lazada stock synchronization payload.');
         }
         $key=config('marketplace.lazada.app_key');$secret=config('marketplace.lazada.app_secret');
         if(config('marketplace.lazada.enabled')!==true||!is_string($key)||!preg_match('/^[1-9][0-9]*$/D',$key)
             ||!is_string($secret)||trim($secret)===''||trim($accessToken)==='')throw new RuntimeException('Lazada stock synchronization is not configured.');
-        $path='/product/price_quantity/update';
-        $query=['app_key'=>$key,'access_token'=>$accessToken,'sign_method'=>'sha256','timestamp'=>(string)now()->getTimestampMs()];
+        if ($warehouseCode !== null && !preg_match('/\A[A-Za-z0-9_-]{1,100}\z/D', $warehouseCode)) {
+            throw new RuntimeException('Invalid Lazada warehouse code.');
+        }
+        $stock='<SellableQuantity>'.$quantity.'</SellableQuantity>';
+        if ($warehouseCode !== null) {
+            $stock='<MultiWarehouseInventories><MultiWarehouseInventory><WarehouseCode>'.$warehouseCode
+                .'</WarehouseCode>'.$stock.'</MultiWarehouseInventory></MultiWarehouseInventories>';
+        }
+        $payload='<Request><Product><Skus><Sku><ItemId>'.$itemId.'</ItemId><SkuId>'.$skuId
+            .'</SkuId>'.$stock.'</Sku></Skus></Product></Request>';
+        $path='/product/stock/sellable/update';
+        $query=['payload'=>$payload,'app_key'=>$key,'access_token'=>$accessToken,'sign_method'=>'sha256','timestamp'=>(string)now()->getTimestampMs()];
         ksort($query,SORT_STRING);$base=$path;
         foreach($query as $name=>$value)$base.=$name.$value;
         $query['sign']=strtoupper(hash_hmac('sha256',$base,$secret));
-        $payload=['Request'=>['Product'=>['Skus'=>['Sku'=>['ItemId'=>$itemId,'SkuId'=>$skuId,'Quantity'=>(string)$quantity]]]]];
-        try {$response=Http::acceptJson()->connectTimeout(10)->timeout(30)->withoutRedirecting()->post('https://api.lazada.com.my/rest'.$path.'?'.http_build_query($query),$payload);}
+        try {$response=Http::asForm()->acceptJson()->connectTimeout(10)->timeout(30)->withoutRedirecting()->post('https://api.lazada.com.my/rest'.$path,$query);}
         catch(ConnectionException){throw new RuntimeException('Lazada stock synchronization result is unknown. Reconcile before retrying.');}
         $result=$response->json();
         if(!$response->successful()||!is_array($result)||!in_array($result['code']??null,['0',0],true)) {
@@ -96,15 +124,21 @@ final class LazadaClient
         $key=config('marketplace.lazada.app_key');$secret=config('marketplace.lazada.app_secret');
         if(config('marketplace.lazada.enabled')!==true||!is_string($key)||!preg_match('/^[1-9][0-9]*$/D',$key)
             ||!is_string($secret)||trim($secret)===''||trim($accessToken)==='')throw new RuntimeException($operation.' is not configured.');
-        $query=['app_key'=>$key,'access_token'=>$accessToken,'sign_method'=>'sha256','timestamp'=>(string)now()->getTimestampMs()];
+        $query=['payload'=>json_encode($payload,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES),
+            'app_key'=>$key,'access_token'=>$accessToken,'sign_method'=>'sha256','timestamp'=>(string)now()->getTimestampMs()];
         ksort($query,SORT_STRING);$base=$path;
         foreach($query as $name=>$value)$base.=$name.$value;
         $query['sign']=strtoupper(hash_hmac('sha256',$base,$secret));
-        try {$response=Http::acceptJson()->connectTimeout(10)->timeout(30)->withoutRedirecting()->post('https://api.lazada.com.my/rest'.$path.'?'.http_build_query($query),$payload);}
+        try {$response=Http::asForm()->acceptJson()->connectTimeout(10)->timeout(30)->withoutRedirecting()->post('https://api.lazada.com.my/rest'.$path,$query);}
         catch(ConnectionException){throw new PublishingResultUncertain($operation.' result is unknown. Reconcile before retrying.');}
         $result=$response->json();
         if(!$response->successful()||!is_array($result)||!in_array($result['code']??null,['0',0],true)) {
-            throw new PublishingResultUncertain($operation.' was not confirmed. Reconcile before retrying.');
+            $requestId=is_array($result)?($result['request_id']??null):null;
+            if ($requestId===$accessToken || $requestId===$secret) $requestId=null;
+            throw new PublishingResultUncertain($operation.' was not confirmed. Reconcile before retrying.',[
+                'http_status'=>$response->status(),'provider_code'=>is_array($result)?($result['code']??null):null,
+                'request_id'=>$requestId,
+            ]);
         }
         return $result;
     }
@@ -112,7 +146,7 @@ final class LazadaClient
     /** Malaysia seller read APIs only. Tokens and signed URLs never leave this service. */
     public function read(string $path, #[\SensitiveParameter] string $accessToken, array $parameters=[]): array
     {
-        if(!in_array($path,['/orders/get','/order/get','/order/items/get','/orders/items/get','/products/get','/product/item/get'],true)) {
+        if(!in_array($path,['/order/package/document/get','/order/shipment/providers/get','/category/attributes/get','/rc/warehouse/get','/rc/warehouse/detail/get','/seller/get','/orders/get','/order/get','/order/items/get','/orders/items/get','/products/get','/product/item/get'],true)) {
             throw new RuntimeException('Unsupported Lazada read endpoint.');
         }
         $key=config('marketplace.lazada.app_key');$secret=config('marketplace.lazada.app_secret');
@@ -120,7 +154,8 @@ final class LazadaClient
             ||!is_string($secret)||trim($secret)===''||trim($accessToken)==='')throw new RuntimeException('Lazada read access is not configured.');
         if(array_intersect(array_keys($parameters),['app_key','access_token','sign','sign_method','timestamp']))throw new RuntimeException('Lazada authentication fields cannot be overridden.');
         foreach($parameters as $name=>$value){
-            if(!is_string($name)||!preg_match('/^[a-z][a-z0-9_]*$/D',$name)||(!is_string($value)&&!is_int($value)))throw new RuntimeException('Invalid Lazada read parameters.');
+            $providerEnvelope=($path==='/order/shipment/providers/get'&&$name==='getShipmentProvidersReq')||($path==='/order/package/document/get'&&$name==='getDocumentReq');
+            if(!is_string($name)||(!$providerEnvelope&&!preg_match('/^[a-z][a-z0-9_]*$/D',$name))||(!is_string($value)&&!is_int($value)))throw new RuntimeException('Invalid Lazada read parameters.');
         }
         $query=$parameters+['app_key'=>$key,'access_token'=>$accessToken,'sign_method'=>'sha256','timestamp'=>(string)now()->getTimestampMs()];
         ksort($query,SORT_STRING);$base=$path;
@@ -130,8 +165,22 @@ final class LazadaClient
             $response=Http::acceptJson()->connectTimeout(10)->timeout(30)->withoutRedirecting()->get('https://api.lazada.com.my/rest'.$path,$query);
         }catch(ConnectionException){throw new RuntimeException('Lazada read request could not be completed.');}
         $payload=$response->json();
+        if (in_array($path,['/order/shipment/providers/get','/order/package/document/get'],true)) {
+            if (!$response->successful()||!is_array($payload)||!in_array($payload['code']??null,['0',0],true)
+                ||($payload['result']['success']??null)!==true||!is_array($payload['result']['data']??null)) {
+                throw new RuntimeException('Lazada shipment provider response was not confirmed.');
+            }
+            return $payload['result']['data'];
+        }
+        if(in_array($path,['/rc/warehouse/get','/rc/warehouse/detail/get'],true)) {
+            if(!$response->successful()||!is_array($payload)||!in_array($payload['code']??null,['0',0],true)
+                ||($payload['result']['success']??null)!==true||!is_array($payload['result']['module']??null)) {
+                throw new RuntimeException('Lazada warehouse request failed or returned an incomplete response.');
+            }
+            return $payload['result']['module'];
+        }
         if(!$response->successful()||!is_array($payload)||!in_array($payload['code']??null,['0',0],true)
-            ||!is_array($payload['data']??null))throw new RuntimeException('Lazada read request failed or returned an incomplete response.');
+            ||!is_array($payload['data']??null))throw new RuntimeException('Lazada read request failed or returned an incomplete response at '.$path.'.');
         return $payload['data'];
     }
     public function isAuthorizationReady(): bool

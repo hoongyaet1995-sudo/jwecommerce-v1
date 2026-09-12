@@ -91,6 +91,7 @@ class MarketplaceImportService
             abort_if($cents > 4294967295, 422, 'Channel price exceeds the supported range.');
             abort_if(ProductVariant::where('sku', $sku)->exists(), 409, 'Link the existing JW SKU instead.');
             $variant = $product->variants()->create(['sku'=>$sku, 'title'=>trim($title), 'price'=>$cents, 'stock'=>0, 'enabled'=>true]);
+            app(\App\Services\Inventory\TestDataClassificationService::class)->inheritVariant((int)$variant->id,(int)$source->store_id);
             $this->mappings->map($listingId, $variant->id, $product->id, $actorId);
             DB::table('marketplace_variant_imports')->insert(['listing_variant_id'=>$listingId,
                 'product_variant_id'=>$variant->id, 'actor_id'=>$actorId, 'created_at'=>now(), 'updated_at'=>now()]);
@@ -170,6 +171,7 @@ class MarketplaceImportService
             foreach ($prepared as $row) {
                 $variant = $product->variants()->create(['sku'=>$row['sku'], 'title'=>$row['title'],
                     'price'=>$row['cents'], 'stock'=>0, 'enabled'=>true]);
+                app(\App\Services\Inventory\TestDataClassificationService::class)->inheritVariant((int)$variant->id,$storeId);
                 $this->mappings->map($row['listing']->id, $variant->id, $product->id, $actorId);
             }
             DB::table('marketplace_product_imports')->insert(['store_id'=>$storeId, 'external_product_id'=>$externalProductId,

@@ -14,6 +14,14 @@ class InventoryBalanceProvisioner
             throw ValidationException::withMessages(['pool_kind'=>'Choose a shared pool or a physical warehouse.']);
         }
         return DB::transaction(function () use ($variantId,$kind,$warehouseId) {
+            // Serialize provisioning against initial mode selection before locking SKU rows.
+            $configuration=DB::table('inventory_configuration')->where('id',1)->lockForUpdate()->first();
+            $configuredKind=match($configuration?->operating_mode){
+                'shared_pool'=>'shared','independent_warehouses'=>'warehouse',default=>null,
+            };
+            if($configuredKind!==null && $configuredKind!==$kind){
+                throw ValidationException::withMessages(['pool_kind'=>'Pool conflicts with the configured inventory mode.']);
+            }
             abort_unless(DB::table('product_variants')->where('id',$variantId)->lockForUpdate()->first(),404);
             if ($warehouseId!==null) {
                 abort_unless(DB::table('inventory_warehouses')->where('id',$warehouseId)->lockForUpdate()->first(),404);

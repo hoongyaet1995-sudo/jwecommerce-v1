@@ -81,8 +81,9 @@ class MarketplaceApiController extends Controller
 
     public function mapping(Request $request, int $listing, MarketplaceFoundationService $service): JsonResponse
     {
-        $data=$request->validate(['productId'=>'required|integer','variantId'=>'required|integer']);
-        $service->map($listing,(int)$data['variantId'],(int)$data['productId'],(int)$request->user()->id);
+        $data=$request->validate(['productId'=>'required|integer','variantId'=>'required|integer','expectedVariantId'=>'sometimes|nullable|integer|min:1']);
+        $expected=array_key_exists('expectedVariantId',$data)?['variant_id'=>$data['expectedVariantId']===null?null:(int)$data['expectedVariantId']]:null;
+        $service->map($listing,(int)$data['variantId'],(int)$data['productId'],(int)$request->user()->id,$expected);
         return response()->json(['saved'=>true]);
     }
 

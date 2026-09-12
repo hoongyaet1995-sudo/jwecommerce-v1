@@ -18,6 +18,16 @@ class MarketplaceImportTest extends TestCase
         config(['marketplace.operations_enabled'=>true]);
     }
 
+    public function test_imported_variants_inherit_explicit_test_store_provenance():void
+    {
+        $store=$this->catalog();
+        config(['marketplace.basic_wms_enabled'=>true]);
+        app(\App\Services\Inventory\TestDataClassificationService::class)->markTest('store',$store,\App\Models\User::findOrFail(42),'Sandbox import');
+        $product=app(MarketplaceImportService::class)->importProduct($store,'100',42);
+        $this->assertSame(2,DB::table('product_variants')->where('product_id',$product)->where('data_classification','test')->where('classified_by',42)->count());
+        $this->assertSame(0,(int)DB::table('product_variants')->where('product_id',$product)->sum('stock'));
+    }
+
     public function test_import_endpoint_requires_admin_and_uses_server_owned_catalog_and_actor(): void
     {
         $this->catalog();

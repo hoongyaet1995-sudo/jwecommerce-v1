@@ -8,6 +8,56 @@ use RuntimeException;
 
 class ShopeeClient
 {
+    public function sandboxStockQuantity(array $snapshot,\App\Models\User $actor):int
+    {
+        return $this->sandboxStockContext($snapshot,$actor)['quantity'];
+    }
+
+    public function updateSandboxQuantity(array $snapshot,\App\Models\User $actor):void
+    {
+        $context=$this->sandboxStockContext($snapshot,$actor);
+        $config=$this->configuration();$token=$context['token'];$shopId=$snapshot['external_shop_id'];
+        $limits=$this->readShop('/api/v2/product/get_item_limit',$token,$shopId,[])['response']['stock_limit']??null;
+        if(!is_array($limits)||!is_int($limits['min_limit']??null)||!is_int($limits['max_limit']??null)
+            ||$snapshot['desired_quantity']<$limits['min_limit']||$snapshot['desired_quantity']>$limits['max_limit'])throw new RuntimeException('Sandbox stock is outside the provider limits.');
+        $path='/api/v2/product/update_stock';$time=now()->timestamp;
+        $query=['partner_id'=>(int)$config['partner_id'],'timestamp'=>$time,'access_token'=>$token,'shop_id'=>(int)$shopId,
+            'sign'=>hash_hmac('sha256',$config['partner_id'].$path.$time.$token.$shopId,$config['partner_key'])];
+        $body=['item_id'=>(int)$snapshot['external_product_id'],'stock_list'=>[['model_id'=>(int)$snapshot['external_variant_id'],
+            'seller_stock'=>[['location_id'=>$snapshot['platform_location_id'],'stock'=>$snapshot['desired_quantity']]]]]];
+        try{$response=Http::acceptJson()->connectTimeout(10)->timeout(30)->withoutRedirecting()->post($this->host($config).$path.'?'.http_build_query($query),$body);}
+        catch(ConnectionException){throw new RuntimeException('Shopee sandbox write outcome is unknown.');}
+        $payload=$response->json();$result=$payload['response']??null;
+        if(!$response->successful()||!is_array($payload)||($payload['error']??null)!==''||!is_array($result)
+            ||!is_array($result['failure_list']??null)||$result['failure_list']!==[]||!is_array($result['success_list']??null))throw new RuntimeException('Shopee sandbox write was not confirmed.');
+        $matches=array_values(array_filter($result['success_list'],fn($row)=>is_array($row)&&(string)($row['model_id']??'')===$snapshot['external_variant_id']
+            &&($row['location_id']??null)===$snapshot['platform_location_id']&&($row['stock']??null)===$snapshot['desired_quantity']));
+        if(count($matches)!==1)throw new RuntimeException('Shopee sandbox response did not confirm the requested SKU and location.');
+    }
+
+    private function sandboxStockContext(array $snapshot,\App\Models\User $actor):array
+    {
+        $current=app(SandboxInventoryWriteGuard::class)->review((int)$snapshot['store_id'],(int)$snapshot['inventory_balance_id'],$actor);
+        if($snapshot!==$current||$current['platform']!=='shopee')throw new RuntimeException('Sandbox stock review changed.');
+        $token=app(ShopeeTokenManager::class)->accessToken($current['store_id']);$shop=$current['external_shop_id'];
+        $this->shopInfo($token,$shop);
+        $items=$this->itemDetails($token,$shop,[$current['external_product_id']]);
+        $items=array_values(array_filter($items,fn($item)=>(string)($item['item_id']??'')===$current['external_product_id']));
+        if(count($items)!==1)throw new RuntimeException('Sandbox item identity changed.');
+        $item=$items[0];
+        if(($item['has_model']??null)===true){
+            $models=array_values(array_filter($this->models($token,$shop,$current['external_product_id']),fn($model)=>(string)$model['model_id']===$current['external_variant_id']));
+            if(count($models)!==1)throw new RuntimeException('Sandbox model identity changed.');
+            $stock=$models[0]['stock_info_v2']??null;
+        }elseif(($item['has_model']??null)===false&&$current['external_variant_id']==='0')$stock=$item['stock_info_v2']??null;
+        else throw new RuntimeException('Sandbox item/model structure changed.');
+        $rows=$stock['seller_stock']??null;
+        if(!is_array($rows)||!array_is_list($rows))throw new RuntimeException('Sandbox seller stock is unknown.');
+        $locations=array_values(array_filter($rows,fn($row)=>($row['location_id']??null)===$current['platform_location_id']));
+        if(count($locations)!==1||!is_int($locations[0]['stock']??null)||$locations[0]['stock']<0)throw new RuntimeException('Sandbox seller location is unknown.');
+        return ['token'=>$token,'quantity'=>$locations[0]['stock']];
+    }
+
     public function pickupWarehouses(#[\SensitiveParameter] string $accessToken, string $shopId): array
     {
         $payload=$this->readShop('/api/v2/shop/get_warehouse_detail',$accessToken,$shopId,['warehouse_type'=>1]);

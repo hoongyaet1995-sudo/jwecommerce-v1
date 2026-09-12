@@ -12,6 +12,33 @@ class MarketplaceMappingConstraintTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_stale_unmapped_selection_cannot_overwrite_a_new_mapping():void
+    {
+        [$store,$otherStore,$one,$two,$other,$variant]=$this->fixtures();
+        $actor=\App\Models\User::factory()->create(['is_admin'=>true]);
+        $product=DB::table('product_variants')->where('id',$variant)->value('product_id');
+        $second=\App\Models\ProductVariant::create(['product_id'=>$product,'sku'=>'CONSTRAINT-2','title'=>'Two','price'=>10,'stock'=>0,'enabled'=>true]);
+        app(\App\Services\Marketplace\MarketplaceFoundationService::class)->map($one,$variant,$product,$actor->id);
+        $this->actingAs($actor)->putJson('/admin/api/marketplace/listings/'.$one.'/mapping',[
+            'productId'=>$product,'variantId'=>$second->id,'expectedVariantId'=>null,
+        ])->assertConflict();
+        $this->assertDatabaseHas('marketplace_variant_mappings',['listing_variant_id'=>$one,'product_variant_id'=>$variant]);
+        $this->assertDatabaseCount('marketplace_mapping_events',1);
+    }
+
+    public function test_reviewed_existing_mapping_can_be_saved_without_duplicate_events():void
+    {
+        [$store,$otherStore,$one,$two,$other,$variant]=$this->fixtures();
+        $actor=\App\Models\User::factory()->create(['is_admin'=>true]);
+        $product=DB::table('product_variants')->where('id',$variant)->value('product_id');
+        $this->actingAs($actor);
+        $url='/admin/api/marketplace/listings/'.$one.'/mapping';
+        $this->putJson($url,['productId'=>$product,'variantId'=>$variant,'expectedVariantId'=>null])->assertOk();
+        $this->putJson($url,['productId'=>$product,'variantId'=>$variant,'expectedVariantId'=>$variant])->assertOk();
+        $this->assertDatabaseCount('marketplace_mapping_events',1);
+        $this->assertDatabaseHas('product_variants',['id'=>$variant,'stock'=>7]);
+    }
+
     public function test_database_rejects_a_second_mapping_for_the_same_store_and_jw_variant(): void
     {
         [$store, $otherStore, $one, $two, $other, $variant] = $this->fixtures();

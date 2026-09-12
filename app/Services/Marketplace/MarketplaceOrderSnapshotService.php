@@ -39,7 +39,7 @@ class MarketplaceOrderSnapshotService
                 return $existing->id;
             }
 
-            $id = DB::table('marketplace_orders')->insertGetId($key + $values + ['created_at'=>now()]);
+            $id = DB::table('marketplace_orders')->insertGetId($key + $values + app(\App\Services\Inventory\TestDataClassificationService::class)->inherited($store) + ['created_at'=>now()]);
             $this->inventory->process($id);
             return $id;
         });
@@ -47,7 +47,7 @@ class MarketplaceOrderSnapshotService
 
     /**
      * Lazada represents status per order item. The normalized order status is
-     * display-only until a dedicated item-level lifecycle mapper is enabled.
+     * display-only; stock processing uses each item's status under store policy.
      */
     public function saveLazada(int $storeId, #[\SensitiveParameter] array $order): int
     {
@@ -72,14 +72,60 @@ class MarketplaceOrderSnapshotService
             }
             $key=['store_id'=>$storeId,'external_order_id'=>(string)$id];
             $existing=DB::table('marketplace_orders')->where($key)->first();
-            if($existing&&$existing->platform_updated_at>=$updatedAt)return $existing->id;
+            if($existing&&($existing->platform_updated_at>$updatedAt
+                || ($existing->platform_updated_at==$updatedAt&&!$this->hasNewerLazadaItems($existing,$order)))){
+                if ($existing->currency===null) {
+                    $savedPayload=json_decode(Crypt::decryptString($existing->encrypted_payload),true,512,JSON_THROW_ON_ERROR);
+                    $currency=LazadaOrderCurrency::fromPayload($savedPayload);
+                    if ($currency!==null) DB::table('marketplace_orders')->where('id',$existing->id)->update(['currency'=>$currency]);
+                }
+                $this->inventory->process((int)$existing->id);
+                return $existing->id;
+            }
             $values=['platform_status'=>$status,'platform_updated_at'=>$updatedAt,
-                'currency'=>is_string($order['currency']??null)?$order['currency']:null,
+                'currency'=>LazadaOrderCurrency::fromPayload($order),
                 'total_amount'=>is_numeric($order['price']??null)?$order['price']:null,
                 'encrypted_payload'=>Crypt::encryptString(json_encode($order,JSON_THROW_ON_ERROR)),
                 'fetched_at'=>now(),'updated_at'=>now()];
-            if($existing){DB::table('marketplace_orders')->where('id',$existing->id)->update($values);return $existing->id;}
-            return DB::table('marketplace_orders')->insertGetId($key+$values+['created_at'=>now()]);
+            if($existing){
+                DB::table('marketplace_orders')->where('id',$existing->id)->update($values);
+                $this->inventory->process((int)$existing->id);
+                return $existing->id;
+            }
+            $saved=DB::table('marketplace_orders')->insertGetId($key+$values+app(\App\Services\Inventory\TestDataClassificationService::class)->inherited($store)+['created_at'=>now()]);
+            $this->inventory->process($saved);
+            return $saved;
         });
+    }
+
+    private function hasNewerLazadaItems(object $existing,array $incoming):bool
+    {
+        $previous=json_decode(Crypt::decryptString($existing->encrypted_payload),true,512,JSON_THROW_ON_ERROR);
+        $versions=static function (array $payload):?array {
+            $items=$payload['order_items']??null;
+            if (!is_array($items)||!array_is_list($items)||!$items) return null;
+            $result=[];
+            foreach ($items as $item) {
+                if (!is_array($item)) return null;
+                $id=$item['order_item_id']??null; $time=$item['updated_at']??null;
+                if ((!is_int($id)&&!is_string($id))||!preg_match('/^[1-9][0-9]*$/D',(string)$id)
+                    ||isset($result[(string)$id])||!is_string($time)) return null;
+                try {
+                    $parsed=\Carbon\CarbonImmutable::createFromFormat('!Y-m-d H:i:s O',$time);
+                    if (!$parsed||$parsed->format('Y-m-d H:i:s O')!==$time) return null;
+                    $result[(string)$id]=$parsed->timestamp;
+                } catch (\Throwable) { return null; }
+            }
+            ksort($result);
+            return $result;
+        };
+        $old=$versions($previous); $new=$versions($incoming);
+        if ($old===null||$new===null||array_keys($old)!==array_keys($new)) return false;
+        $advanced=false;
+        foreach ($new as $id=>$time) {
+            if ($time<$old[$id]) return false;
+            $advanced=$advanced||$time>$old[$id];
+        }
+        return $advanced;
     }
 }

@@ -9,7 +9,7 @@ use JsonException;
 
 class MarketplaceReconciliationPage
 {
-    public function annotate($orders): void
+    public function annotate($orders, string $platform='shopee'): void
     {
         // Load only this page. Never attach encrypted payloads to response objects.
         $payloads = DB::table('marketplace_orders')->whereIn('id', $orders->getCollection()->pluck('id'))
@@ -24,7 +24,7 @@ class MarketplaceReconciliationPage
             try {
                 $payload = json_decode(Crypt::decryptString($snapshot->encrypted_payload), true, 512, JSON_THROW_ON_ERROR);
                 $order->demand = is_array($payload)
-                    ? MarketplaceReconciliationDemand::inspect($order->platform_status, $payload)
+                    ? MarketplaceReconciliationDemand::inspect($order->platform_status, $payload, $platform)
                     : ['error'=>'invalid_order_payload', 'kind'=>null, 'lines'=>[]];
             } catch (DecryptException|JsonException) {
                 $order->demand = ['error'=>'invalid_order_payload', 'kind'=>null, 'lines'=>[]];
@@ -34,7 +34,7 @@ class MarketplaceReconciliationPage
         $identities = [];
         foreach ($orders->getCollection() as $order) {
             foreach ($order->demand['lines'] as $line) {
-                $identities[$order->store_id][$line['key']] = true;
+                $identities[$order->store_id][$line['mapping_key']??$line['key']] = true;
             }
         }
         $mapped = [];
@@ -50,7 +50,7 @@ class MarketplaceReconciliationPage
         }
         foreach ($orders->getCollection() as $order) {
             foreach ($order->demand['lines'] as &$line) {
-                $mapping = $mapped[$order->store_id][$line['key']] ?? null;
+                $mapping = $mapped[$order->store_id][$line['mapping_key']??$line['key']] ?? null;
                 $line['product_variant_id'] = $mapping ? (int)$mapping->product_variant_id : null;
                 $line['mapping_status'] = $line['product_variant_id'] === null ? 'unmapped' : 'mapped';
                 $line['available_stock'] = $mapping ? (int)$mapping->stock : null;

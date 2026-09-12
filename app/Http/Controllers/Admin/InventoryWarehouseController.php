@@ -36,6 +36,7 @@ class InventoryWarehouseController extends Controller
 
     private function save(Request $request, InventoryWarehouseService $service, ?int $id)
     {
+        abort_unless(config('marketplace.basic_wms_enabled'),403,'Basic WMS warehouse management is disabled.');
         $allowed=['code','name','status','is_default_master','address','state','contact_person','contact_phone','notes','supported_carriers','_token'];
         if ($id!==null) $allowed[]='version';
         if (array_diff(array_keys($request->all()),$allowed)) {
