@@ -25,7 +25,7 @@ class MarketplaceCatalogController extends Controller
             ->leftJoin('products as p', 'p.id', '=', 'v.product_id')
             ->select('l.id', 'l.store_id', 'l.external_product_id', 'l.external_variant_id', 'l.observed_data', 'l.fetched_at',
                 's.platform', 's.shop_name', 'm.product_variant_id as jw_variant_id', 'v.sku as jw_sku',
-                'v.product_id as jw_product_id', 'p.title as jw_product_title', 'v.title as jw_variant_title', 'm.updated_at as mapped_at');
+                'v.product_id as jw_product_id', 'p.title as jw_product_title', 'v.title as jw_variant_title', 'v.price as jw_price_minor', 'v.stock as jw_legacy_stock', 'm.updated_at as mapped_at');
         if (isset($data['storeId'])) $query->where('l.store_id', $data['storeId']);
         if (!empty($data['platform'])) $query->where('s.platform', $data['platform']);
         if ($includeStatus && ($data['status'] ?? '') === 'mapped') $query->whereNotNull('m.id');
@@ -102,7 +102,7 @@ class MarketplaceCatalogController extends Controller
                 ->leftJoin('product_variants as v', 'v.id', '=', 'm.product_variant_id')
                 ->leftJoin('products as p', 'p.id', '=', 'v.product_id')
                 ->select('l.*', 'm.product_variant_id as jw_variant_id', 'v.sku as jw_sku',
-                    'v.product_id as jw_product_id', 'p.title as jw_product_title', 'v.title as jw_variant_title', 'm.updated_at as mapped_at')
+                    'v.product_id as jw_product_id', 'p.title as jw_product_title', 'v.title as jw_variant_title', 'v.price as jw_price_minor', 'v.stock as jw_legacy_stock', 'm.updated_at as mapped_at')
                 ->where(function ($query) use ($page) {
                     foreach ($page->items() as $product) {
                         $query->orWhere(function ($pair) use ($product) {
@@ -127,7 +127,7 @@ class MarketplaceCatalogController extends Controller
         $id = DB::transaction(function () use ($store, $client, $lazada) {
             $row = DB::table('marketplace_stores')->where('id', $store)->lockForUpdate()->first();
             abort_unless($row, 404);
-            $ready=$row->platform==='shopee' ? $client->isConfigured()&&$row->environment===config('marketplace.shopee.environment') : $row->platform==='lazada'&&$lazada->isAuthorizationReady()&&$row->environment==='live'&&$row->region==='MY';
+            $ready=$row->platform==='shopee' ? $client->isConfigured()&&$row->environment===config('marketplace.shopee.environment') : $row->platform==='lazada'&&$lazada->isConfigured()&&$row->environment==='live'&&$row->region==='MY';
             abort_unless($row->status === 'connected' && $ready, 409, 'Connect the store before fetching products.');
             $active = DB::table('marketplace_catalog_runs')->where('store_id', $store)->whereIn('status', ['queued', 'running'])->first();
             if ($active) {
@@ -161,7 +161,7 @@ class MarketplaceCatalogController extends Controller
             $shopeeReady = $store && $store->platform === 'shopee'
                 && $client->isConfigured() && $store->environment === config('marketplace.shopee.environment');
             $lazadaReady = $store && $store->platform === 'lazada'
-                && $lazada->isAuthorizationReady() && $store->environment === 'live' && $store->region === 'MY';
+                && $lazada->isConfigured() && $store->environment === 'live' && $store->region === 'MY';
             abort_unless($store && $store->status === 'connected' && ($shopeeReady || $lazadaReady), 409,
                 'Reconnect the store before retrying.');
             $row = DB::table('marketplace_catalog_runs')->where('id', $run)->lockForUpdate()->first();

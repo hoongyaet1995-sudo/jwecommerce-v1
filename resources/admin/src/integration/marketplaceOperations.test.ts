@@ -5,6 +5,17 @@ import {marketplaceOperations, officialShopeeAuthorizationUrl, officialLazadaAut
 vi.mock('./marketplaceData', () => ({marketplaceRequest: vi.fn().mockResolvedValue({})}));
 
 describe('marketplace operational contract', () => {
+  it('recovers a lost receipt using read requests and rejects a different destination', async () => {
+    const key='9285db80-1111-4111-8111-123456789012';
+    const task={id:12,storeId:7,productId:9,status:'queued',externalItemId:null,createdAt:'now',updatedAt:'now'};
+    vi.mocked(marketplaceRequest).mockResolvedValue(task);
+    expect(await marketplaceOperations.recoverPublishingTask('7',key)).toEqual(task);
+    expect(marketplaceRequest).toHaveBeenCalledWith(`/stores/7/publishing-request/${key}`);
+    expect(vi.mocked(marketplaceRequest).mock.calls.every(call=>call[1]===undefined)).toBe(true);
+    vi.mocked(marketplaceRequest).mockResolvedValue({...task,storeId:8});
+    await expect(marketplaceOperations.recoverPublishingTask('7',key)).rejects.toThrow('destination');
+    await expect(marketplaceOperations.recoverPublishingTask('7','invalid')).rejects.toThrow('identity');
+  });
   it('navigates Lazada authorization only after validating the server destination', async () => {
     const assign = vi.fn();
     vi.stubGlobal('window', {location: {assign}});

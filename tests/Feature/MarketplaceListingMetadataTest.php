@@ -13,6 +13,29 @@ class MarketplaceListingMetadataTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_lazada_categories_use_saved_credentials_and_preserve_leaf_selection(): void
+    {
+        config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture']);
+        $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','shop_name'=>'Test','external_shop_id'=>'2001',
+            'region'=>'MY','environment'=>'live','status'=>'connected']);
+        MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'123','access_token'=>'private-token','access_expires_at'=>now()->addHour()]);
+        Http::fake(fn($request)=>str_contains($request->url(),'/category/attributes/get')
+            ? Http::response(['code'=>'0','data'=>[['name'=>'brand','label'=>'Brand','is_mandatory'=>1,
+                'input_type'=>'singleSelect','options'=>[['name'=>'No Brand']]]]])
+            : Http::response(['code'=>'0','data'=>[['category_id'=>10,'name'=>'Parent','leaf'=>false,
+                'children'=>[['category_id'=>11,'name'=>'Child','leaf'=>true]]]]]));
+        $this->actingAs(User::factory()->create(['is_admin'=>true]));
+        $this->getJson("/admin/api/marketplace/stores/{$store}/listing-categories")->assertOk()
+            ->assertJsonPath('data.0.has_children',true)->assertJsonPath('data.1.parent_category_id',10)
+            ->assertJsonPath('data.1.has_children',false)->assertJsonPath('data.1.display_category_name','Child')
+            ->assertDontSee('private-token');
+        Http::assertSent(fn($request)=>str_contains($request->url(),'/category/tree/get'));
+        $this->getJson("/admin/api/marketplace/stores/{$store}/listing-attributes?categoryId=11")->assertOk()
+            ->assertJsonPath('platform','lazada')->assertJsonPath('data.0.name','brand')
+            ->assertJsonPath('data.0.is_mandatory',1)->assertJsonPath('data.0.options.0.name','No Brand');
+        $this->getJson("/admin/api/marketplace/stores/{$store}/listing-attributes?categoryId=99")->assertUnprocessable();
+    }
+
     public function test_attribute_search_requires_admin_connected_store_and_valid_inputs(): void
     {
         $url='/admin/api/marketplace/stores/1/listing-attribute-values?attributeId=123&q=Blue&cursor=0';

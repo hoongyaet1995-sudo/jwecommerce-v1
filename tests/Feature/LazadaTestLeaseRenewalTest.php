@@ -34,6 +34,15 @@ class LazadaTestLeaseRenewalTest extends TestCase
         $this->assertTrue(MarketplaceStoreToken::where('store_id',$id)->first()->test_lease_expires_at->isFuture());
         $this->assertSame('private-test-token',MarketplaceStoreToken::where('store_id',$id)->first()->access_token);
         Http::assertSentCount(2);
+        $this->actingAs($actor)->getJson('/admin/api/marketplace/connections')->assertOk()
+            ->assertJsonPath('stores.0.status','connected')
+            ->assertDontSee('private-test-token');
+        config(['marketplace.lazada.online_test_access_enabled'=>false]);
+        $this->getJson('/admin/api/marketplace/connections')->assertOk()
+            ->assertJsonPath('stores.0.status','reauthorization_required');
+        config(['marketplace.lazada.online_test_access_enabled'=>true,'marketplace.lazada.test_store_id'=>$id+1]);
+        $this->getJson('/admin/api/marketplace/connections')->assertOk()
+            ->assertJsonPath('stores.0.status','reauthorization_required');
         MarketplaceStoreToken::where('store_id',$id)->update(['credential_source'=>'oauth']);
         $this->expectException(\RuntimeException::class);
         $service->renew($id,$actor,'Cannot replace OAuth');

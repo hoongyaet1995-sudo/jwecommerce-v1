@@ -68,6 +68,16 @@ class MarketplaceListingMetadataController extends Controller
             'offset'=>['sometimes', 'integer', 'min:0', 'max:2147483647']]);
         $connection = DB::table('marketplace_stores')->find($store);
         abort_unless($connection, 404);
+        if ($connection->platform==='lazada') {
+            abort_unless($connection->status==='connected' && $connection->environment==='live' && $connection->region==='MY',409,'Connect the Lazada Malaysia store first.');
+            try {
+                $token=app(\App\Services\Marketplace\LazadaTokenManager::class)->accessToken($store);
+                $page=app(\App\Services\Marketplace\LazadaBrands::class)->page($token,(int)($data['offset']??0));
+                return response()->json(['storeId'=>$store,'categoryId'=>(int)$data['categoryId'],'data'=>$page])->header('Cache-Control','no-store');
+            } catch (RuntimeException) {
+                return response()->json(['message'=>'Unable to load Lazada brands. Retry the brand list.'],502)->header('Cache-Control','no-store');
+            }
+        }
         abort_unless($connection->status === 'connected' && $connection->platform === 'shopee'
             && $connection->environment === config('marketplace.shopee.environment'),
             409, 'Connect this store to the configured Shopee environment first.');
@@ -91,6 +101,28 @@ class MarketplaceListingMetadataController extends Controller
         $data = $request->validate(['categoryId'=>['required', 'integer', 'min:1', 'max:2147483647']]);
         $connection = DB::table('marketplace_stores')->find($store);
         abort_unless($connection, 404);
+        if ($connection->platform==='lazada') {
+            abort_unless($connection->status==='connected' && $connection->environment==='live' && $connection->region==='MY',409,'Connect the Lazada Malaysia store first.');
+            try {
+                $lazada=app(\App\Services\Marketplace\LazadaClient::class);
+                $token=app(\App\Services\Marketplace\LazadaTokenManager::class)->accessToken($store);
+                $categories=\App\Services\Marketplace\LazadaListingCategories::flatten($lazada->read('/category/tree/get',$token));
+                if (!collect($categories)->contains(fn($category)=>$category['category_id']===(int)$data['categoryId'] && !$category['has_children'])) {
+                    return response()->json(['message'=>'Select an available leaf category.'],422)->header('Cache-Control','no-store');
+                }
+                $attributes=$lazada->read('/category/attributes/get',$token,['primary_category_id'=>(string)$data['categoryId']]);
+                if (!array_is_list($attributes)) throw new RuntimeException('Invalid attributes.');
+                foreach ($attributes as $attribute) {
+                    if (!is_array($attribute)||!is_string($attribute['name']??null)||trim($attribute['name'])===''
+                        ||!is_string($attribute['input_type']??null)||!in_array($attribute['is_mandatory']??null,[0,1,false,true],true)) {
+                        throw new RuntimeException('Invalid attribute metadata.');
+                    }
+                }
+                return response()->json(['storeId'=>$store,'platform'=>'lazada','categoryId'=>(int)$data['categoryId'],'data'=>$attributes])->header('Cache-Control','no-store');
+            } catch (RuntimeException) {
+                return response()->json(['message'=>'Unable to load Lazada attributes. Check store authorization and retry.'],502)->header('Cache-Control','no-store');
+            }
+        }
         abort_unless($connection->status === 'connected' && $connection->platform === 'shopee'
             && $connection->environment === config('marketplace.shopee.environment'),
             409, 'Connect this store to the configured Shopee environment first.');
@@ -114,6 +146,17 @@ class MarketplaceListingMetadataController extends Controller
     {
         $connection = DB::table('marketplace_stores')->find($store);
         abort_unless($connection, 404);
+        if ($connection->platform==='lazada') {
+            abort_unless($connection->status==='connected' && $connection->environment==='live' && $connection->region==='MY',409,'Connect the Lazada Malaysia store first.');
+            try {
+                $token=app(\App\Services\Marketplace\LazadaTokenManager::class)->accessToken($store);
+                $tree=app(\App\Services\Marketplace\LazadaClient::class)->read('/category/tree/get',$token);
+                $rows=\App\Services\Marketplace\LazadaListingCategories::flatten($tree);
+                return response()->json(['storeId'=>$store,'data'=>$rows])->header('Cache-Control','no-store');
+            } catch (RuntimeException) {
+                return response()->json(['message'=>'Unable to load Lazada categories. Check store authorization and retry.'],502)->header('Cache-Control','no-store');
+            }
+        }
         abort_unless($connection->status === 'connected' && $connection->platform === 'shopee'
             && $connection->environment === config('marketplace.shopee.environment'),
             409, 'Connect this store to the configured Shopee environment first.');

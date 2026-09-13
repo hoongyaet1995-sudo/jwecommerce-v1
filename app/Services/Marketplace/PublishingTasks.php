@@ -16,7 +16,7 @@ final class PublishingTasks
             ->update(['status'=>'uncertain','updated_at'=>now()]);
     }
 
-    public function create(int $storeId, int $productId, int $actorId, string $requestKey, array $payload): int
+    public function create(int $storeId, int $productId, int $actorId, string $requestKey, array $payload, ?array $source = null): int
     {
         if (!DB::table('users')->where('id',$actorId)->where('is_admin',true)->exists()) {
             throw new \DomainException('An authenticated marketplace administrator is required.');
@@ -24,12 +24,17 @@ final class PublishingTasks
         if (!Str::isUuid($requestKey)) throw new \DomainException('A stable request UUID is required.');
         $json=json_encode($this->canonical($payload),JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
         $hash=hash('sha256',$json);
-        return DB::transaction(function () use ($storeId,$productId,$actorId,$requestKey,$json,$hash) {
+        $revision=$source['revision'] ?? null;
+        if ($source !== null && (!is_string($revision) || !preg_match('/^[a-f0-9]{64}$/D',$revision) || ($source['product_id'] ?? null)!==$productId)) {
+            throw new \DomainException('A valid reviewed product source is required.');
+        }
+        $snapshot=$source===null ? null : json_encode($source,JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
+        return DB::transaction(function () use ($storeId,$productId,$actorId,$requestKey,$json,$hash,$revision,$snapshot) {
             $store=DB::table('marketplace_stores')->where('id',$storeId)->lockForUpdate()->first();
             abort_unless($store,404);
             $existing=DB::table('marketplace_publishing_tasks')->where('store_id',$storeId)->where('request_key',$requestKey)->first();
             if ($existing) {
-                if ($existing->payload_hash!==$hash || (int)$existing->product_id!==$productId || (int)$existing->actor_id!==$actorId) {
+                if ($existing->payload_hash!==$hash || (int)$existing->product_id!==$productId || (int)$existing->actor_id!==$actorId || $existing->source_revision!==$revision) {
                     throw new \DomainException('This request identity already belongs to another reviewed submission.');
                 }
                 return (int)$existing->id;
@@ -43,6 +48,7 @@ final class PublishingTasks
             return DB::table('marketplace_publishing_tasks')->insertGetId([
                 'store_id'=>$storeId,'product_id'=>$productId,'actor_id'=>$actorId,'request_key'=>$requestKey,
                 'payload_hash'=>$hash,'payload'=>$json,'status'=>'queued','created_at'=>now(),'updated_at'=>now(),
+                'source_revision'=>$revision,'source_snapshot'=>$snapshot,
             ]);
         });
     }
@@ -80,6 +86,11 @@ final class PublishingTasks
                 ->orWhere('external_item_id',trim($externalItemId)));
         }
         return $query->update($changes)===1;
+    }
+
+    public function payloadsMatch(array $left,array $right): bool
+    {
+        return $this->canonical($left)===$this->canonical($right);
     }
 
     private function canonical(array $value): array

@@ -2,6 +2,8 @@ import React,{useEffect,useState} from 'react';
 import {useAdmin} from '../context/AdminContext';
 import {marketplaceOperations,StoreConnection,ProviderCapabilities,MarketplacePlatform} from '../integration/marketplaceOperations';
 import {marketplaceRequest} from '../integration/marketplaceData';
+import {publishLazadaWithRecovery,publishShopeeWithRecovery} from '../integration/publishingReviewSession';
+import {readAdminBootstrap} from '../integration/adminBootstrap';
 import {catalogProductView} from '../integration/marketplaceCatalogView';
 import {PreviewContext} from '../previews/marketplace30/context/ContextBridge';
 import {MarketplaceMappingPage,MappingPageQuery} from '../previews/marketplace30/components/marketplace/MarketplaceMappingPage';
@@ -68,9 +70,9 @@ export function OperationalMapping(){
   batchImportStoreProductsToMaster:unavailable,batchAcceptSuggestedMappings:unavailable,publishProductToStore:unavailable};
  const publishingContext:MarketplaceJourneyContext={
   products:value.products,categories:admin.categories,
-  connections:stores.filter(store=>store.platform==='shopee'&&store.status==='connected') as MarketplaceJourneyContext['connections'],
+  connections:stores.filter(store=>['shopee','lazada'].includes(store.platform)&&store.status==='connected') as MarketplaceJourneyContext['connections'],
   marketplaceStoreProducts:value.marketplaceStoreProducts,
-  addToast:admin.addToast,setActiveSection:unavailable,importStoreProductToMaster:()=>{unavailable();},
+  addToast:admin.addToast,setActiveSection:()=>catalog.reload(),importStoreProductToMaster:()=>{unavailable();},
   publishMasterProductToStore:unavailable,mapStoreVariantToJwSku:()=>{unavailable();},unmapStoreVariant:()=>{unavailable();},
  };
  return <PreviewContext.Provider value={value as unknown as React.ContextType<typeof PreviewContext>}>
@@ -80,14 +82,27 @@ export function OperationalMapping(){
   {journeyPreview&&<p role="status" className="mb-4 text-sm text-neutral-500">Local ZIP 32 acceptance — real catalog and saved changes. Official entry unchanged.</p>}
   {reviewProducts&&<ConnectedImportReviewModal productsToImport={reviewProducts} products={value.products}
     canImport={canImport} onClose={()=>setReviewProducts(null)} onImported={catalog.reload} addToast={admin.addToast}/>}
-  {journeyPreview&&publishReview&&<JourneyProvider value={publishingContext}>
-    <PublishProductModal isOpen readOnlyMetadata preselectedConnectionId={publishReview.storeId}
-      onClose={()=>setPublishReview(null)}/>
+  {publishReview&&<JourneyProvider value={publishingContext}>
+    <PublishProductModal isOpen liveData preselectedConnectionId={publishReview.storeId}
+      submitReviewed={async(productId,storeId,options)=>{
+       if(stores.find(store=>store.id===storeId)?.platform==='shopee'){
+        if(options.condition!=='NEW'&&options.condition!=='USED')throw new Error('Review the Shopee product condition.');
+        return publishShopeeWithRecovery(String(readAdminBootstrap().user.id??''),{productId:Number(productId),storeId:Number(storeId),
+         sourceRevision:options.sourceRevision??'',categoryId:options.categoryName??'',brandId:options.shopeeBrandId??null,
+         condition:options.condition,weightKg:options.packageWeightKg??0,lengthCm:options.packageLengthCm??0,widthCm:options.packageWidthCm??0,heightCm:options.packageHeightCm??0,
+         attributes:options.shopeeAttributes??[],logistics:options.shopeeLogistics??[]});
+       }
+       if(stores.find(store=>store.id===storeId)?.platform!=='lazada')throw new Error('This platform publishing adapter is not ready yet.');
+       return publishLazadaWithRecovery(String(readAdminBootstrap().user.id??''),{productId:Number(productId),storeId:Number(storeId),
+        sourceRevision:options.sourceRevision??'',categoryId:options.categoryName??'',
+        attributes:options.lazadaAttributes??{},skuAttributes:options.lazadaSkuAttributes??{}});
+      }}
+      onClose={()=>{setPublishReview(null);catalog.reload();}}/>
   </JourneyProvider>}
   <MarketplaceMappingPage renderVariantModal={(selection,onClose)=><React.Fragment key={`${selection.storeVariant.id}:${selection.intent ?? 'link'}`}><ConnectedVariantModal
     isOpen canImport={canImport} startWithImport={selection.intent==='import'} storeProduct={selection.storeProduct} variantId={selection.storeVariant.id}
     products={value.products} categories={admin.categories} onClose={onClose} onImported={catalog.reload} addToast={admin.addToast}/></React.Fragment>}
     serverPage={{total:catalog.total,summary:catalog.summary,loading:catalog.loading,onQueryChange:setQuery,canFetch,canImport,importing:importer.busy,onImport:importProducts,
-      onReviewPublishing:journeyPreview ? storeId=>setPublishReview({storeId}) : undefined}}/>
+      onReviewPublishing:storeId=>setPublishReview({storeId})}}/>
  </PreviewContext.Provider>;
 }

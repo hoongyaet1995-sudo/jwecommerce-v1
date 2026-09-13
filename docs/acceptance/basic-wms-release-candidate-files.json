@@ -1,0 +1,517 @@
+[
+  {
+    "path": "app/Http/Controllers/Admin/MarketplaceCatalogController.php",
+    "sha256": "48f1c2922fca04e6f321717104758fa2cb60a8ba6087435cee6f6e2d1214b07b",
+    "state": "present"
+  },
+  {
+    "path": "app/Http/Controllers/Admin/MarketplaceListingMetadataController.php",
+    "sha256": "f16c4be06e9d0577204e3e8453372a12a3819a4b9ffa2be64aebdb84b95e98ae",
+    "state": "present"
+  },
+  {
+    "path": "app/Http/Controllers/Admin/MarketplaceOAuthController.php",
+    "sha256": "65f630a93b4f81f3f21b3145f6fb185833a586fd1d93678c2cb1d52e80dce552",
+    "state": "present"
+  },
+  {
+    "path": "app/Http/Controllers/Admin/MarketplaceOrderController.php",
+    "sha256": "d1bb9dd3cda09bcd2d03e30655fa0b76b0f7a8e1f55072add692570415ef4812",
+    "state": "present"
+  },
+  {
+    "path": "app/Http/Controllers/Admin/MarketplacePublishingController.php",
+    "sha256": "6e2503f6a52d395500c73dbd7b9d3e7c2f734d90f9f268f00067501ff4bbbc3f",
+    "state": "present"
+  },
+  {
+    "path": "app/Http/Middleware/EnsureMarketplaceOperationsEnabled.php",
+    "sha256": "c5134d6280698cda64326b31c24f31e0026bc972b12c674721ef918c58d896e1",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/BasicPublishingDestination.php",
+    "sha256": "3c15eb3348ceaa2816b5910e9e7293f492458b76b8ddfffbfc0990112fb8f18a",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/BasicPublishingQuantity.php",
+    "sha256": "9bf9c791f7a7fc54dc268f5f19446f62f37f00b65b24115df6a441be6aed5620",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/LazadaAttributeValue.php",
+    "sha256": "f8d6e37356f9743ff0a9c9f31eaede6d45f9bde5e863e493ea99ab6f99149269",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/LazadaBrands.php",
+    "sha256": "f8205e4643ed55ec07c7ad3aad5f6bcca55e236a2ddbfd9052ccafb11c5f9c73",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/LazadaCatalogService.php",
+    "sha256": "0be1e8595645f48fea38405bcee3dd4095064e0c8db643220499922b3fea5b5f",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/LazadaClient.php",
+    "sha256": "5331ad6289a5d77d2e86790bfdc38e912b91ea92ddf7553d57cce0dd8b7bb543",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/LazadaListingCategories.php",
+    "sha256": "fdef28d52702cbb7ffcbec03daa66e66a7a8e03086cf7ac7fc41e830148242ee",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/LazadaListingPreflight.php",
+    "sha256": "f024dea489fd44cec9ebfcb930bedf65c8e72f211c07e051b90eb35a97e8d99e",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/LazadaOfficialTestAccess.php",
+    "sha256": "311ae4d4ef0fb94424e5a4c78e745be41bd77aa18a67cbc619b23b0b9723759e",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/LazadaProductImageService.php",
+    "sha256": "cb90be012f81374c8c137cfcca76938150f37635d90b63f9300c0134eb15a224",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/LazadaPublishingImages.php",
+    "sha256": "848f141976b0808dcf9c26f17769900aaa616c04925ba6ea305dfe7458ed2d73",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/LazadaPublishingMasterData.php",
+    "sha256": "f73934165a92efc3d8f0c1d5b6947d4684cbbb67e8e96a1660a97778b9b58863",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/LazadaPublishingWarehouses.php",
+    "sha256": "28a904f6c3977cfc62d39b1fdbf093203bd45ddc6d83fed2292ad2460358870a",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/LazadaTokenManager.php",
+    "sha256": "b16834e751590540f3244db2c0e7c1cc7ad0e506a89a9f37a77d894f8e7b09bd",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/MarketplaceAutomaticOrders.php",
+    "sha256": "0174e99fd9e3c982db46ef5ceb3ce5ead894a5f0dc6e3f134f87f6499f403133",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/MarketplaceImageReceipts.php",
+    "sha256": "ac5ef4f569014f0991cfb8613ca916c3e4c88c8892e6d8fe49d6c1dd5ea5fae0",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/MarketplacePublishingDispatchService.php",
+    "sha256": "fe09749fb574b69693d9c49fb827554541436f0d34513e9981a62c2bf5f0830e",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/MarketplacePublishingSource.php",
+    "sha256": "c80cf57d167a59b68f8f74a49f9b569665af5261855e7ecbcd4339053fd936b9",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/PublishedCatalogMapping.php",
+    "sha256": "4e780987a95331662ff571c9c3a2226fffc8ae040adc06b4d788bfcdc0ac4a83",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/PublishingTasks.php",
+    "sha256": "c524b75b73c2b1b680611c452509a13a8be11afc3ce697a57f7f8767348c15ec",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/ShopeeCatalogService.php",
+    "sha256": "a81800ea429628b247c7c86cbc3e6372fdf2bdb8de2faa75b47a8654d47f7d41",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/ShopeeClient.php",
+    "sha256": "6526fbf66feeb7e2544be7878d652170cf607c8b1bebedc116c0f02eb842b4aa",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/ShopeeListingPreflight.php",
+    "sha256": "e9622aa5cc18665c648ae6d9fc326a4250c73735d154e5263f3c4b176b0ca364",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/ShopeeMasterVariants.php",
+    "sha256": "8b4b190062a063962aa698287b4455dfb04e62c23d1e7cb0055d283934b604ef",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/ShopeeProductImageService.php",
+    "sha256": "75f81dffe42ada1b45e1dc4d5983470229148f5bd30bea099a8d1e1540807b38",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/ShopeePublishingImages.php",
+    "sha256": "b90762b12538eb68e199500e54336a32d045237bff49fd3420853d3304591c81",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/ShopeePublishingMasterData.php",
+    "sha256": "f1f9cd538cea7599c778070b1f01a9fe7e5c524ec128122d28dd3c6a6a99b1c3",
+    "state": "present"
+  },
+  {
+    "path": "app/Services/Marketplace/ShopeePublishingVariants.php",
+    "sha256": "84eb264d349ab700ad058d954dfe3044973bb9996ffd181d2b1a60f243e48b81",
+    "state": "present"
+  },
+  {
+    "path": "database/migrations/2026_09_12_000001_add_review_source_to_marketplace_publishing_tasks.php",
+    "sha256": "96f02dc4cf10b424d4e6763da750e736bb3c44126fd54b8e242f80203cf4d437",
+    "state": "present"
+  },
+  {
+    "path": "database/migrations/2026_09_12_000002_create_marketplace_image_receipts.php",
+    "sha256": "0b85aea273928dbd9809b90e475066bec5398a563414ff365574ee36ff51e4fb",
+    "state": "present"
+  },
+  {
+    "path": "docs/acceptance/2026-09-12-marketplace-publishing-ai-studio-prompt.md",
+    "sha256": "8bc0602f54c974e3c1ffe5797d67bb7fef98317177446aff941643c61f1fe783",
+    "state": "present"
+  },
+  {
+    "path": "docs/acceptance/2026-09-13-basic-wms-online-candidate.md",
+    "sha256": "d000b3abeb0e8dfbca15f744aa3ad5ef783d14fe9bb46b9b086d8e9e8ff0849c",
+    "state": "present"
+  },
+  {
+    "path": "docs/acceptance/basic-wms-release-blockers.md",
+    "sha256": "845c65a9c7715dac43e75ebb1ed25b8308a216c0d2c44e3473f37ce84607c9bd",
+    "state": "present"
+  },
+  {
+    "path": "docs/acceptance/current-marketplace-goal.md",
+    "sha256": "5f1a0cc28e444dbd0e58814b3354b5b70c89157da5e0b80e97d2ffb865853460",
+    "state": "present"
+  },
+  {
+    "path": "public/build-admin/assets/index-C2mWRMdM.css",
+    "sha256": "eca0093fe7b737465b7019107957f4ac173b5fe7dac8d11f33f110a5ed73d2ec",
+    "state": "present"
+  },
+  {
+    "path": "public/build-admin/assets/index-CEu5crqC.js",
+    "sha256": "53b787b2723a4f4bbe9b10591d487f6a42c44d9493768df81ec5f23325581a34",
+    "state": "present"
+  },
+  {
+    "path": "public/build-admin/assets/index-DBH8caul.css",
+    "sha256": null,
+    "state": "deleted"
+  },
+  {
+    "path": "public/build-admin/assets/index-DJR8b6jk.js",
+    "sha256": null,
+    "state": "deleted"
+  },
+  {
+    "path": "public/build-admin/assets/InventoryRuntime-BSi0fbHA.js",
+    "sha256": null,
+    "state": "deleted"
+  },
+  {
+    "path": "public/build-admin/assets/InventoryRuntime-DVgO2F1w.js",
+    "sha256": "6e159cbabecef581a7174ff62fa4b3f2b9c5f9e53ebb711a30c11b1315ec1b76",
+    "state": "present"
+  },
+  {
+    "path": "public/build-admin/assets/main-CuFfsygc.js",
+    "sha256": "b22fcec5d81e1d63eaf40e267051bd6d101afa88181e5b56358508eaa298d09f",
+    "state": "present"
+  },
+  {
+    "path": "public/build-admin/assets/main-zA60leiq.js",
+    "sha256": null,
+    "state": "deleted"
+  },
+  {
+    "path": "public/build-admin/assets/public-page-C0wFLMc0.js",
+    "sha256": null,
+    "state": "deleted"
+  },
+  {
+    "path": "public/build-admin/assets/public-page-CGdoyNa_.js",
+    "sha256": "31c8dbabc944c1414002f1af64fd4a0e0ecd37a2446d91c4b06acd6b9fa3b34c",
+    "state": "present"
+  },
+  {
+    "path": "public/build-admin/manifest.json",
+    "sha256": "b9904776927e3b6995ad926e86772846e3f65b9d7fff1e920053de04c2424dbb",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/integration/lazadaPublishingFields.test.ts",
+    "sha256": "6d660b0eabbe8aebdd4762b96f24bd320017a8dcc7ad8b9b9177aaa34fce1d8c",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/integration/lazadaPublishingFields.ts",
+    "sha256": "806e269089a9e125cdafebf58ad8a5d695bd92ccb2fc93909fcc5a519ec6d2da",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/integration/marketplaceCatalogView.test.ts",
+    "sha256": "b4b5d2d74bfd2f84bf086da5f5b99a814fff0849e48a4681e74b67db8bdf6d2c",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/integration/marketplaceCatalogView.ts",
+    "sha256": "1f41b57f9696678eec69bc4e25db39a88fac4be1c9b6e8d4371f5c82be25d95b",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/integration/marketplaceData.test.ts",
+    "sha256": "16f3b81f268a44f3fcc9fe543b50b4c1b908de6adfcd4c3713079d9a62dc2ace",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/integration/marketplaceData.ts",
+    "sha256": "0513a3f0e35f36958f9b9b35808f0551aaa6e67a27316478609990d6b003c636",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/integration/marketplaceOperations.test.ts",
+    "sha256": "2cc112f2cf4baed7b7d2412dc7bb5051f6d35d7139b03ea015ae45881aac7001",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/integration/marketplaceOperations.ts",
+    "sha256": "96207e7292ba48433a7251562d3bb421dfa3219c8784f2649a568d0bc0867672",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/integration/marketplacePublishing.test.ts",
+    "sha256": "8021e093b62df371492845cbca0075be7f0265d4f64df413c5b0706633abf398",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/integration/marketplacePublishing.ts",
+    "sha256": "b83c9894bca423111fa519fdda64d1d210cb48366647b82f412ac3d0faacc932",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/integration/publishingReviewSession.test.ts",
+    "sha256": "01fd58ef4537efa361aa27d96e3e19de722660f9bdfaef29b5a29ef1c897cf81",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/integration/publishingReviewSession.ts",
+    "sha256": "d0061bb4cf7c934f83e3f3129e6d4063eb3a16a1314114c81b75fd6da534688b",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/integration/submitLazadaReview.test.ts",
+    "sha256": "082f52ed8b5cbfd734829723a4f53640a6ae12a7d37942789cbb922d842a86b6",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/integration/submitLazadaReview.ts",
+    "sha256": "172cb4251cb9c0855006a3f76ed0dfb461253b6e57b18b00dbe17dd4d296a91e",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/integration/submitShopeeReview.test.ts",
+    "sha256": "f2f8fa6cda1b74970ea968c9303fe1be9e9d85d40487b9171e324e384a4e3b36",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/integration/submitShopeeReview.ts",
+    "sha256": "0fdf8b60b9fa917a67bc9a93aeedbca84ab96ed61eac34633c43f1241683e4b5",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/marketplace/LazadaPublishingAttributes.test.tsx",
+    "sha256": "bcf802f95c3743a1c1efacfeb3a2c1c1fadb548043b881d3db00fb113f747e8c",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/marketplace/LazadaPublishingAttributes.tsx",
+    "sha256": "9dcc1dace171613683c0f509b0d709b238e1ac86cdc78ba7c1a89ba90ca84769",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/marketplace/OperationalMapping.tsx",
+    "sha256": "b9b41aa421a51ce75861477ce18533ea3728473e19e1c9525964d555b124c5fb",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/marketplace/ShopeePublishingRequirements.tsx",
+    "sha256": "4b41b886bbb7548b1b699fecaf897d6c746631b995b9f1ad1896128861b47e26",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/marketplace/useLazadaPublishingAttributes.ts",
+    "sha256": "62df09d6ea36d543c9e4219fd9a414cb871b860843c825ce77625f7b7514a40c",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/marketplace/useShopeePublishingRequirements.test.tsx",
+    "sha256": "23f1f18174aed6f95cf09d12d81bd142b40e57056642211233515fda1903cda8",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/marketplace/useShopeePublishingRequirements.ts",
+    "sha256": "99f89c6bf9b962039ea9952965bafd9bef9188303a7bd245dfc3b0cd138360e5",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/previews/marketplace30/components/marketplace/MarketplaceMappingPage.tsx",
+    "sha256": "d38ce323be2a338f447da259f0afa95962afd80c99250d62a5c878f8b33a07a8",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/previews/marketplace32/components/marketplace/ImportProductReviewModal.tsx",
+    "sha256": "01cfa98c164c952081ca1b83e942f007a1a23265cb39f8d1fd4e5300984e621f",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/previews/marketplace32/components/marketplace/PublishProductModal.tsx",
+    "sha256": "8cbddec5db96fead18aa53de3e75b8bce780721ed199f81903c0036fdd188d01",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/previews/marketplace32/PublishProductModal.test.tsx",
+    "sha256": "d6e4b31fbf85999e440cd2ad716f79c0b6dc6867f17632bf38b57f9475a384ea",
+    "state": "present"
+  },
+  {
+    "path": "resources/admin/src/previews/marketplace32/types/index.ts",
+    "sha256": "0a424b270833e09f36fdcce531563a14415b7d638717b15ae06925086c4d266b",
+    "state": "present"
+  },
+  {
+    "path": "routes/web.php",
+    "sha256": "e17122ecf1a535ff9c999130b8dcc564b8659afeeda7995fd25c2f13fd70b7ee",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/BasicPublishingDestinationTest.php",
+    "sha256": "706031c3367579a00fbf9dd6ee8ccddc1e2c76e556c7c962307bb685fc98cf38",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/BasicPublishingQuantityTest.php",
+    "sha256": "39be1a242b0d12f193948bbd5ccbab7d642494ad255aecfe376323f8079183b2",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/LazadaBrandsTest.php",
+    "sha256": "efcd58e8844533f6903d75f98eb5305a5c5f187074666f63d2ffed06173bbbeb",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/LazadaCatalogServiceTest.php",
+    "sha256": "043f565f52109625178eeb58faf0f41dd9ec913c4d2adbbc7f7eed106f014413",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/LazadaImageMigrationTest.php",
+    "sha256": "4d08e767d02756b6fd79bd6ce256bbdc7216f267622904fcd4b43135720869d7",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/LazadaListingPreflightTest.php",
+    "sha256": "f833d3eef6aea755b8427182f371f97a5966cc75296c42dff2bf9c2ff6c09b53",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/LazadaOAuthRoutesTest.php",
+    "sha256": "5bc253b975c72fb967a4d92a6076a062c436ae4e6a920352d40bb9210c0fcf31",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/LazadaOrderServiceTest.php",
+    "sha256": "94c7221920fa107d8dd10cbe33697940ddf59e17bed49757d5adcfb42031b95c",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/LazadaProductImageServiceTest.php",
+    "sha256": "2eaaf338737fa5ef69b25c1e01723177e7e30d77c4a6e585c546b6f9a34104d6",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/LazadaPublishingMasterDataTest.php",
+    "sha256": "b9ee38962b44457f27abb179d655deced97b9d1f9be2e83913d0f6ab0723c760",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/LazadaReadClientTest.php",
+    "sha256": "3d6311e4ea67a75c1a2088b5ae23679e75141f71c27cb8b988c68d5e583717f0",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/LazadaTestLeaseRenewalTest.php",
+    "sha256": "b0d7e9efd4f3f6d741833e0d22e8c118e80bc23bea6d4c0a638eb1586a06a0f3",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/MarketplaceImageReceiptTest.php",
+    "sha256": "6ff49c89676a83cb8c313ffbec8d1a6a746f51494072394f3b5f86a87ca6cc1a",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/MarketplaceListingMetadataTest.php",
+    "sha256": "2330cb5c750a55aa058c9b176f5d2ef4cc97f4cf58a13e13c2ba9b124cd3a666",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/MarketplacePublishingSourceTest.php",
+    "sha256": "69ce84c32e6630afe3267b8af78c0e491e0de25f953721df3f6b6ddc9552e52d",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/MarketplacePublishingStatusTest.php",
+    "sha256": "67183c1e3edc392080b5151f98382af693c0b61b0eae79bed380cc876ce5ff46",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/MarketplacePublishingTaskTest.php",
+    "sha256": "60c706e219faa9cacd816c131452a807f7a3cbc93d27af2e6e07c6223ff0e4fa",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/ShopeeListingPreflightTest.php",
+    "sha256": "7494d0f7730f6dd79115f7ec40a8a4c793214fe7fb48380579c60113061564c9",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/ShopeeProductImageServiceTest.php",
+    "sha256": "119533995849d161b7e42bb99c4639dea80336c97284e201a2cc38729026ea58",
+    "state": "present"
+  },
+  {
+    "path": "tests/Feature/ShopeePublishingVariantsTest.php",
+    "sha256": "ca3cc19a93629d7b50167e5052fde2e42ec0b6539febafbb698b356831f31752",
+    "state": "present"
+  },
+  {
+    "path": "tests/Unit/LazadaAttributeValueTest.php",
+    "sha256": "2268b711a50f65fedae7bec2bf2e31c5306875a1c586f489c4ee4d732d6a3308",
+    "state": "present"
+  },
+  {
+    "path": "tests/Unit/ShopeeMasterVariantsTest.php",
+    "sha256": "bc6c976bba00297981242697b12edb0e7f79215199319db467ad06e1fec50cbb",
+    "state": "present"
+  },
+  {
+    "path": "tests/Unit/ShopeePublishingVariantsTest.php",
+    "sha256": "15f8f1ca7e58a4d6593662be122a64e462a843aa879584c544517e847bc1498e",
+    "state": "present"
+  }
+]

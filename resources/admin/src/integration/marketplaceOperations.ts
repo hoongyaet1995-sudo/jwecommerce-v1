@@ -34,6 +34,7 @@ export interface CatalogVariant {
   id: number; store_id: number; external_product_id: string; external_variant_id: string;
   platform: MarketplacePlatform; shop_name: string; jw_variant_id: number | null; jw_sku: string | null;
   jw_product_id: number | null; jw_product_title: string | null; jw_variant_title: string | null; mapped_at: string | null;
+  jw_price_minor?: number | null; jw_legacy_stock?: number | null;
   fetched_at: string; observed_data: {productTitle?: string | null; productImage?: string | null; title?: string | null; sku?: string | null; price?: number | string | null; stock?: number | null; currency?: string | null; status?: string | null};
 }
 export interface CatalogProduct {
@@ -97,6 +98,18 @@ export const marketplaceOperations = {
     return marketplaceRequest<{storeId:number;attributeId:number;data:{
       value_list:{value_id:number;value_name:string}[];page_info:{cursor:number;has_next:boolean}
     }}>(`/stores/${idPath(storeId)}/listing-attribute-values?${params}`);
+  },
+  recoverPublishingTask: async (storeId: string, requestKey: string): Promise<PublishingTask> => {
+    if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(requestKey)) {
+      throw new Error('Invalid publishing request identity.');
+    }
+    const receipt=await marketplaceRequest<PublishingTask>(`/stores/${idPath(storeId)}/publishing-request/${requestKey}`);
+    if (!receipt || !Number.isSafeInteger(receipt.id) || receipt.id<=0 || String(receipt.storeId)!==storeId) {
+      throw new Error('Invalid publishing recovery destination.');
+    }
+    const task=await marketplaceOperations.publishingTask(String(receipt.id));
+    if (String(task.storeId)!==storeId) throw new Error('Invalid publishing recovery destination.');
+    return task;
   },
   publishingTask: async (id: string): Promise<PublishingTask> => {
     const task = await marketplaceRequest<PublishingTask>(`/publishing-tasks/${idPath(id)}`);

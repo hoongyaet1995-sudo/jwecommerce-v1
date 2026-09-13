@@ -12,6 +12,7 @@ export function catalogProductView(source: CatalogProduct, shopId: string): Mark
     return {id:String(variant.id),channelSkuId:variant.external_variant_id,channelSellerSku:data.sku||'',title:data.title||variant.external_variant_id,
       price:price!==null&&Number.isFinite(price)?price:null,stock:data.stock??null,currency:data.currency||'',mappingStatus:variant.jw_variant_id===null?'unmapped':'mapped',
       mappedJwProductId:variant.jw_product_id==null?undefined:String(variant.jw_product_id),mappedJwVariantId:variant.jw_variant_id==null?undefined:String(variant.jw_variant_id),
+      mappedJwPrice:variant.jw_price_minor==null?undefined:Number(variant.jw_price_minor)/100,mappedJwStock:variant.jw_legacy_stock??undefined,
       mappedJwSku:variant.jw_sku??undefined,mappedJwProductName:variant.jw_product_title??undefined,mappedJwVariantTitle:variant.jw_variant_title??undefined,mappedAt:variant.mapped_at??undefined};
   })};
 }

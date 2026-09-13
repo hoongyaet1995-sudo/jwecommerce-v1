@@ -53,6 +53,8 @@ class LazadaOrderServiceTest extends TestCase
   (new \App\Jobs\PullLazadaOrders($run))->handle(app(LazadaOrderService::class));
   $this->assertDatabaseHas('marketplace_order_runs',['id'=>$run,'status'=>'succeeded','orders_processed'=>0]);
   $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>true]));
+  config(['app.url'=>'http://127.0.0.1:8500']);
+  $this->assertFalse(app(\App\Services\Marketplace\LazadaClient::class)->isAuthorizationReady());
   Queue::fake();
   $task=$this->postJson('/admin/api/marketplace/stores/'.$store.'/orders-fetch',['from'=>1725724800,'to'=>1725811200])->assertStatus(202)->json('runId');
   $this->assertNotSame($run,$task);Queue::assertPushed(\App\Jobs\PullLazadaOrders::class,1);

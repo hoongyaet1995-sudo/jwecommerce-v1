@@ -9,6 +9,12 @@ export interface ImportProductOptions {
   targetProductId?: string;
 }
 export interface PublishListingOptions {
+  sourceRevision?: string;
+  lazadaAttributes?: Record<string,string>;
+  lazadaSkuAttributes?: Record<string,Record<string,string>>;
+  shopeeAttributes?: unknown[];
+  shopeeLogistics?: {logistic_id:number;is_free?:boolean;size_id?:string|number;shipping_fee?:number}[];
+  shopeeBrandId?: number|null;
   priceMultiplier?: number;
   categoryName?: string;
   marketplaceCategoryId?: string;
@@ -19,7 +25,7 @@ export interface PublishListingOptions {
   packageLengthCm?: number;
   packageWidthCm?: number;
   packageHeightCm?: number;
-  condition?: 'NEW' | 'REFURBISHED';
+  condition?: 'NEW' | 'REFURBISHED' | 'USED';
   initialStockMode?: 'warehouse_stock' | 'zero_stock';
   enableOngoingSync?: boolean;
 }

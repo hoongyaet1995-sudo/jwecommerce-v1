@@ -8,6 +8,28 @@ use RuntimeException;
 
 final class LazadaClient
 {
+    /** Transport only; callers must resolve a reviewed, owned product image first. */
+    public function migrateImage(#[\SensitiveParameter] string $accessToken, string $sourceUrl): string
+    {
+        if (config('marketplace.publish_operations_enabled') !== true) {
+            throw new RuntimeException('Marketplace image migration is disabled.');
+        }
+        $source=parse_url($sourceUrl);
+        if (!filter_var($sourceUrl,FILTER_VALIDATE_URL) || ($source['scheme'] ?? null)!=='https'
+            || isset($source['user']) || isset($source['pass']) || isset($source['fragment'])
+            || isset($source['port']) || !str_contains($source['host'] ?? '', '.')
+            || filter_var($source['host'] ?? '',FILTER_VALIDATE_IP)) {
+            throw new RuntimeException('A public HTTPS product image URL is required.');
+        }
+        $result=$this->signedPost('/image/migrate',$accessToken,['Request'=>['Image'=>['Url'=>$sourceUrl]]],'Lazada image migration');
+        $url=$result['data']['image']['url'] ?? null;
+        if (!is_string($url) || !preg_match('#\Ahttps://[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.slatic\.net/[^\s]+\z#D',$url)
+            || !filter_var($url,FILTER_VALIDATE_URL)) {
+            throw new RuntimeException('Lazada image migration returned no confirmed platform image.');
+        }
+        return $url;
+    }
+
     /**
      * Submit a category-complete Lazada product payload after the operator has
      * reviewed the dynamic category attributes and Lazada-hosted images.
@@ -146,7 +168,7 @@ final class LazadaClient
     /** Malaysia seller read APIs only. Tokens and signed URLs never leave this service. */
     public function read(string $path, #[\SensitiveParameter] string $accessToken, array $parameters=[]): array
     {
-        if(!in_array($path,['/order/package/document/get','/order/shipment/providers/get','/category/attributes/get','/rc/warehouse/get','/rc/warehouse/detail/get','/seller/get','/orders/get','/order/get','/order/items/get','/orders/items/get','/products/get','/product/item/get'],true)) {
+        if(!in_array($path,['/seller/warehouse/get','/category/brands/query','/order/package/document/get','/order/shipment/providers/get','/category/tree/get','/category/attributes/get','/rc/warehouse/get','/rc/warehouse/detail/get','/seller/get','/orders/get','/order/get','/order/items/get','/orders/items/get','/products/get','/product/item/get'],true)) {
             throw new RuntimeException('Unsupported Lazada read endpoint.');
         }
         $key=config('marketplace.lazada.app_key');$secret=config('marketplace.lazada.app_secret');
@@ -154,7 +176,9 @@ final class LazadaClient
             ||!is_string($secret)||trim($secret)===''||trim($accessToken)==='')throw new RuntimeException('Lazada read access is not configured.');
         if(array_intersect(array_keys($parameters),['app_key','access_token','sign','sign_method','timestamp']))throw new RuntimeException('Lazada authentication fields cannot be overridden.');
         foreach($parameters as $name=>$value){
-            $providerEnvelope=($path==='/order/shipment/providers/get'&&$name==='getShipmentProvidersReq')||($path==='/order/package/document/get'&&$name==='getDocumentReq');
+            $providerEnvelope=($path==='/order/shipment/providers/get'&&$name==='getShipmentProvidersReq')||($path==='/order/package/document/get'&&$name==='getDocumentReq')
+                ||($path==='/category/brands/query'&&in_array($name,['startRow','pageSize'],true))
+                ||($path==='/seller/warehouse/get'&&$name==='addressTypes');
             if(!is_string($name)||(!$providerEnvelope&&!preg_match('/^[a-z][a-z0-9_]*$/D',$name))||(!is_string($value)&&!is_int($value)))throw new RuntimeException('Invalid Lazada read parameters.');
         }
         $query=$parameters+['app_key'=>$key,'access_token'=>$accessToken,'sign_method'=>'sha256','timestamp'=>(string)now()->getTimestampMs()];
@@ -172,7 +196,7 @@ final class LazadaClient
             }
             return $payload['result']['data'];
         }
-        if(in_array($path,['/rc/warehouse/get','/rc/warehouse/detail/get'],true)) {
+        if(in_array($path,['/seller/warehouse/get','/rc/warehouse/get','/rc/warehouse/detail/get'],true)) {
             if(!$response->successful()||!is_array($payload)||!in_array($payload['code']??null,['0',0],true)
                 ||($payload['result']['success']??null)!==true||!is_array($payload['result']['module']??null)) {
                 throw new RuntimeException('Lazada warehouse request failed or returned an incomplete response.');
@@ -183,10 +207,17 @@ final class LazadaClient
             ||!is_array($payload['data']??null))throw new RuntimeException('Lazada read request failed or returned an incomplete response at '.$path.'.');
         return $payload['data'];
     }
+    public function isConfigured(): bool
+    {
+        return config('marketplace.lazada.enabled') === true
+            && preg_match('/^[1-9][0-9]*$/D', (string) config('marketplace.lazada.app_key')) === 1
+            && is_string(config('marketplace.lazada.app_secret'))
+            && trim(config('marketplace.lazada.app_secret')) !== '';
+    }
+
     public function isAuthorizationReady(): bool
     {
-        if (config('marketplace.lazada.enabled')!==true || !is_string(config('marketplace.lazada.app_secret'))
-            || trim(config('marketplace.lazada.app_secret'))==='') return false;
+        if (!$this->isConfigured()) return false;
         try {
             LazadaAuthorizationUrl::build((string)config('marketplace.lazada.app_key'),
                 (string)config('marketplace.lazada.callback_url'),config('app.url'),str_repeat('0',64));

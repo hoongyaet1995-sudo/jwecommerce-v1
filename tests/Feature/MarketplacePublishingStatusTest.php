@@ -13,6 +13,24 @@ class MarketplacePublishingStatusTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_lost_submission_receipt_can_be_recovered_without_another_write(): void
+    {
+        config(['marketplace.read_operations_enabled'=>true,'marketplace.publish_operations_enabled'=>false]);
+        $actor=User::factory()->create(['is_admin'=>true]);
+        $product=Product::create(['title'=>'Test','handle'=>'recover-publish','base_price'=>1000]);
+        $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee','shop_name'=>'Sandbox',
+            'region'=>'MY','environment'=>'sandbox','status'=>'connected']);
+        $key='9285db80-1111-4111-8111-123456789012';
+        $id=app(PublishingTasks::class)->create($store,$product->id,$actor->id,$key,['private'=>'not-visible']);
+        $url="/admin/api/marketplace/stores/{$store}/publishing-request/{$key}";
+        $this->getJson($url)->assertUnauthorized();
+        $this->actingAs($actor)->getJson($url)->assertOk()->assertJsonPath('id',$id)
+            ->assertJsonPath('status','queued')->assertDontSee('not-visible');
+        $this->actingAs(User::factory()->create(['is_admin'=>true]))->getJson($url)->assertNotFound();
+        $this->actingAs($actor)->getJson(str_replace((string)$store.'/publishing', '99999/publishing', $url))->assertNotFound();
+        $this->assertDatabaseCount('marketplace_publishing_tasks',1);
+    }
+
     public function test_status_is_admin_only_and_excludes_submission_payload(): void
     {
         config(['marketplace.read_operations_enabled'=>true]);

@@ -6,6 +6,29 @@ final class ShopeeListingPreflight
 {
     public function __construct(private ShopeeClient $client) {}
 
+    /** Recheck the reviewed parent against current store/category requirements before add_item. */
+    public function listing(#[\SensitiveParameter] string $accessToken,string $shopId,array $payload): array
+    {
+        $category=$payload['category_id']??null;
+        $weight=$payload['weight']??null;
+        $dimensions=$payload['dimension']??null;
+        $brand=$payload['brand']['brand_id']??null;
+        if (!is_int($category)||$category<=0||(!is_int($weight)&&!is_float($weight))||!is_finite((float)$weight)||$weight<=0
+            ||!is_array($dimensions)||!is_array($payload['attribute_list']??null)||!array_is_list($payload['attribute_list'])
+            ||!is_array($payload['logistic_info']??null)||($brand!==null&&!is_int($brand))
+            ||!in_array($payload['condition']??null,['NEW','USED'],true)
+            ||!in_array($payload['item_status']??null,['UNLIST','NORMAL'],true)) {
+            throw new \DomainException('Review the Shopee category, condition, package and logistics before publishing.');
+        }
+        $payload['attribute_list']=$this->attributes($accessToken,$shopId,$category,$payload['attribute_list']);
+        $verifiedBrand=$this->brand($accessToken,$shopId,$category,$brand);
+        if ($verifiedBrand===null) unset($payload['brand']);
+        else $payload['brand']=$verifiedBrand;
+        $payload['logistic_info']=$this->logistics($accessToken,$shopId,$payload['logistic_info'],(float)$weight,
+            ['height'=>$dimensions['package_height']??null,'width'=>$dimensions['package_width']??null,'length'=>$dimensions['package_length']??null]);
+        return $payload;
+    }
+
     /** Basic per-channel preflight; volume and cross-channel constraints must also be resolved before dispatch. */
     public function logistics(#[\SensitiveParameter] string $accessToken,string $shopId,array $selection,
         float $weightKg,array $centimetres): array

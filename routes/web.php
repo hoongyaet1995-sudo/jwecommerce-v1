@@ -337,6 +337,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/marketplace/inventory/exceptions', [\App\Http\Controllers\Admin\MarketplaceInventoryController::class, 'exceptions']);
     Route::get('/api/marketplace/inventory/reconciliation', [\App\Http\Controllers\Admin\MarketplaceInventoryController::class, 'reconciliation']);
     Route::get('/api/marketplace/publishing-tasks/{task}', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'show'])->whereNumber('task');
+    Route::get('/api/marketplace/products/{product}/publishing-source', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'source'])->whereNumber('product');
+    Route::get('/api/marketplace/stores/{store}/publishing-request/{key}', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'recover'])->whereNumber('store')->whereUuid('key');
     Route::get('/api/marketplace/catalog', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'index']);
     Route::get('/api/marketplace/stores/{store}/listing-attribute-values', [\App\Http\Controllers\Admin\MarketplaceListingMetadataController::class, 'attributeValues'])->whereNumber('store')->middleware('throttle:10,1');
     Route::get('/api/marketplace/stores/{store}/listing-categories', [\App\Http\Controllers\Admin\MarketplaceListingMetadataController::class, 'categories'])->whereNumber('store')
@@ -375,6 +377,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':import', 'throttle:10,1']);
     Route::post('/api/marketplace/stores/{store}/publishing-tasks', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'stage'])->whereNumber('store')
         ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':publish', 'throttle:5,1']);
+    Route::post('/api/marketplace/stores/{store}/products/{product}/images/{image}/prepare', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'prepareImage'])
+        ->whereNumber(['store','product','image'])->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':publish', 'throttle:5,1']);
     Route::post('/api/marketplace/publishing-tasks/{task}/dispatch', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'dispatch'])->whereNumber('task')
         ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':publish', 'throttle:5,1']);
     Route::post('/api/marketplace/shopee/authorize', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'start'])->middleware('throttle:10,1');

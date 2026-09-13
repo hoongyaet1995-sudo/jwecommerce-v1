@@ -5,6 +5,33 @@ use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 class ShopeeListingPreflightTest extends TestCase
 {
+    public function test_complete_parent_review_normalizes_all_platform_selections(): void
+    {
+        config(['marketplace.shopee.enabled'=>true,'marketplace.shopee.environment'=>'sandbox',
+            'marketplace.shopee.partner_id'=>'123','marketplace.shopee.partner_key'=>'fixture-key']);
+        Http::preventStrayRequests();
+        Http::fake([
+            '*/get_category*'=>Http::response(['response'=>['category_list'=>[
+                ['category_id'=>101,'parent_category_id'=>100,'original_category_name'=>'Boxes','display_category_name'=>'Boxes','has_children'=>false]]]]),
+            '*/get_attribute_tree*'=>Http::response(['response'=>['list'=>[['category_id'=>101,'attribute_tree'=>[]]]]]),
+            '*/get_brand_list*'=>Http::response(['response'=>['brand_list'=>[['brand_id'=>42,'original_brand_name'=>'Verified Brand','display_brand_name'=>'Verified Brand']],
+                'has_next_page'=>false,'next_offset'=>0,'is_mandatory'=>true,'input_type'=>'DROP_DOWN']]),
+            '*/get_channel_list*'=>Http::response(['response'=>['logistics_channel_list'=>[
+                ['logistics_channel_id'=>24000,'logistics_channel_name'=>'Sandbox','enabled'=>true,'fee_type'=>'SIZE_INPUT',
+                    'weight_limit'=>['item_min_weight'=>0,'item_max_weight'=>20],
+                    'item_max_dimension'=>['height'=>30,'width'=>30,'length'=>30,'unit'=>'cm','dimension_sum'=>0]]]]]),
+        ]);
+        $payload=['category_id'=>101,'item_status'=>'UNLIST','condition'=>'NEW','weight'=>1,
+            'dimension'=>['package_height'=>10,'package_width'=>10,'package_length'=>10],
+            'brand'=>['brand_id'=>42,'original_brand_name'=>'Forged'], 'attribute_list'=>[],
+            'logistic_info'=>[['logistic_id'=>24000,'is_free'=>false]]];
+        $result=app(ShopeeListingPreflight::class)->listing('access','456',$payload);
+        $this->assertSame('Verified Brand',$result['brand']['original_brand_name']);
+        $this->assertTrue($result['logistic_info'][0]['enabled']);
+        Http::assertSentCount(4);
+        Http::assertNotSent(fn($request)=>$request->method()!=='GET');
+    }
+
     public function test_logistics_preflight_combines_store_channel_and_package_validation(): void
     {
         config(['marketplace.shopee.enabled'=>true,'marketplace.shopee.environment'=>'sandbox',

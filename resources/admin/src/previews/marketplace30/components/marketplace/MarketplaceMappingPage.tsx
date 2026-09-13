@@ -311,7 +311,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage;
             </span>
           </div>
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-            {serverPage ? `Browse fetched store listings and link variants to JW SKUs. ${serverPage.canImport ? 'Import products as JW drafts with zero stock.' : 'Import is not enabled yet.'} Publishing and AI suggestions are not enabled yet.` : 'Manage high-volume catalog bindings: auto-filter exceptions, push master products to external stores, or 1-click import channel items to JW Master.'}
+            {serverPage ? `Browse fetched store listings and link variants to JW SKUs. ${serverPage.canImport ? 'Import JW drafts with zero legacy catalog stock; physical inventory awaits a count.' : 'Import is not enabled yet.'} Use Push JW Master to Store to review a product for publishing.` : 'Manage high-volume catalog bindings: auto-filter exceptions, push master products to external stores, or 1-click import channel items to JW Master.'}
           </p>
         </div>
 
@@ -321,7 +321,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage;
             id="btn-push-master-to-store"
             type="button"
             disabled={!!serverPage && !serverPage.onReviewPublishing}
-            title={serverPage ? serverPage.onReviewPublishing ? 'Open read-only listing metadata review. Publishing remains disabled.' : 'Publishing is not enabled yet.' : undefined}
+            title={serverPage ? serverPage.onReviewPublishing ? 'Review JW product details and destination requirements before publishing.' : 'Publishing is not enabled yet.' : undefined}
             onClick={() => {
               const connectionId=selectedConnectionId === 'all' ? undefined : selectedConnectionId;
               if (serverPage) {serverPage.onReviewPublishing?.(connectionId);return;}
@@ -449,7 +449,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage;
             {serverPage ? '—' : unlistedMasterProducts.length} <span className="text-xs font-normal text-neutral-500">Products</span>
           </div>
           <p className="text-[11px] text-neutral-400 mt-1">
-            {serverPage ? 'Publishing is not enabled yet' : 'Ready to Push to Marketplace Store'}
+            {serverPage ? 'Review JW products for store publishing' : 'Ready to Push to Marketplace Store'}
           </p>
         </div>
 
@@ -490,7 +490,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage;
             >
               All Platforms {serverPage ? '' : `(${safeStoreProds.length})`}
             </button>
-            <button
+            {!serverPage && (            <button
               id="filter-platform-tiktok"
               onClick={() => { setSelectedPlatform('tiktok'); setSelectedConnectionId('all'); setCurrentPage(1); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
@@ -501,7 +501,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage;
             >
               <MarketplaceLogo platform="tiktok" size={15} />
               <span>TikTok Shop {serverPage ? '' : `(${safeStoreProds.filter(p => p.platform === 'tiktok').length})`}</span>
-            </button>
+            </button>)}
             <button
               id="filter-platform-shopee"
               onClick={() => { setSelectedPlatform('shopee'); setSelectedConnectionId('all'); setCurrentPage(1); }}
@@ -526,7 +526,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage;
               <MarketplaceLogo platform="lazada" size={15} />
               <span>Lazada {serverPage ? '' : `(${safeStoreProds.filter(p => p.platform === 'lazada').length})`}</span>
             </button>
-            <button
+            {!serverPage && (            <button
               id="filter-platform-shopify"
               onClick={() => { setSelectedPlatform('shopify'); setSelectedConnectionId('all'); setCurrentPage(1); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
@@ -537,7 +537,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage;
             >
               <MarketplaceLogo platform="shopify" size={15} />
               <span>Shopify {serverPage ? '' : `(${safeStoreProds.filter(p => p.platform === 'shopify').length})`}</span>
-            </button>
+            </button>)}
           </div>
 
           {/* Specific Shop Dropdown & View Mode Switcher */}
@@ -1221,7 +1221,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage;
                                         <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">
                                           {variant.mappedJwSku}
                                         </span>
-                                        <span>JW Stock: <strong>{variant.mappedJwStock ?? '--'}</strong> units</span>
+                                        <span>JW Legacy Stock: <strong>{variant.mappedJwStock ?? '--'}</strong> units</span>
                                         <span>Price: RM {variant.mappedJwPrice?.toFixed(2) ?? '--'}</span>
                                       </div>
                                     </div>

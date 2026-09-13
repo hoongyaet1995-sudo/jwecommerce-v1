@@ -76,8 +76,10 @@ class MarketplaceOAuthController extends Controller
                 }
                 // Match the token manager's refresh window without reading credentials or making HTTP calls.
                 $accessUsable = $store->access_expires_at && now()->addMinutes(5)->lt($store->access_expires_at);
-                if ($store->credential_source==='official_test') $accessUsable=app()->environment('local','testing') && $store->test_lease_expires_at && now()->lt($store->test_lease_expires_at);
+                if ($store->credential_source==='official_test') $accessUsable=\App\Services\Marketplace\LazadaOfficialTestAccess::environmentAllows($store, $store->application_id)
+                    && $store->test_lease_expires_at && now()->lt($store->test_lease_expires_at);
                 $canRefresh = (bool) $store->has_refresh_token
+                    && $store->credential_source !== 'official_test'
                     && (!$store->refresh_expires_at || now()->lt($store->refresh_expires_at));
                 if ($status === 'connected' && (!$applicationMatches || (!$accessUsable && !$canRefresh))) {
                     $status = 'reauthorization_required';
@@ -96,7 +98,7 @@ class MarketplaceOAuthController extends Controller
             'importProducts'=>config('marketplace.import_operations_enabled') === true || config('marketplace.operations_enabled') === true,
         ], 'capabilities'=>[
             'shopee'=>array_replace($unavailable, ['oauth'=>$client->isAuthorizationReady(), 'catalog'=>$readsEnabled && $client->isConfigured(), 'orders'=>$readsEnabled && $client->isConfigured()]),
-            'lazada'=>array_replace($unavailable, ['oauth'=>$lazada->isAuthorizationReady(), 'catalog'=>$readsEnabled && $lazada->isAuthorizationReady(), 'orders'=>$readsEnabled && $lazada->isAuthorizationReady()]),
+            'lazada'=>array_replace($unavailable, ['oauth'=>$lazada->isAuthorizationReady(), 'catalog'=>$readsEnabled && $lazada->isConfigured(), 'orders'=>$readsEnabled && $lazada->isConfigured()]),
             'tiktok'=>$unavailable, 'shopify'=>$unavailable,
         ]])->header('Cache-Control', 'no-store');
     }

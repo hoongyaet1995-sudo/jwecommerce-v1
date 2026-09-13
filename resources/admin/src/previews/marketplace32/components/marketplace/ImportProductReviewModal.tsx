@@ -205,7 +205,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                 </span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Creates JW drafts with zero warehouse stock. External listings remain unchanged.
+                Creates JW drafts with zero legacy catalog stock. Physical inventory awaits a count.
               </p>
             </div>
           </div>
@@ -250,7 +250,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                 <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
                   <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
                     <Boxes className="w-3.5 h-3.5 text-blue-500" />
-                    Warehouse Stock
+                    Legacy Catalog Stock
                   </div>
                   <div className="text-sm font-bold text-slate-900 dark:text-white">0 Units Initialized</div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Platform stock preserved as reference</div>
@@ -311,7 +311,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                     Safe Catalog Import Policy
                   </div>
                   <p>
-                    Importing external store products creates <strong>JW Draft products</strong> with <strong>0 local warehouse stock</strong>. Platform stock is captured as reference information, not local inventory. It does <strong>not</strong> publish to your storefront or alter remote Shopee/Lazada listings.
+                    Importing external store products creates <strong>JW Draft products</strong> with <strong>0 legacy catalog stock</strong>. Physical inventory remains unknown until counted. Platform stock is reference information. This does <strong>not</strong> publish to your storefront or alter remote Shopee/Lazada listings.
                   </p>
                 </div>
               </div>
@@ -327,7 +327,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50">
                   <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">New SKUs (0 Stock)</span>
                   <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">{newVariantsCount}</span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400">Physical stock = 0</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">Physical stock awaits count</span>
                 </div>
 
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50">
@@ -490,14 +490,14 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                                         <span className="font-semibold text-slate-800 dark:text-slate-200">
                                           {item.conflictingJwVariant?.stock} units
                                         </span>
-                                        <div className="text-[10px] text-slate-500">Existing warehouse stock</div>
+                                        <div className="text-[10px] text-slate-500">Existing catalog stock</div>
                                       </div>
                                     ) : (
                                       <div>
                                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
                                           0 units
                                         </span>
-                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Physical stock</div>
+                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Legacy catalog stock</div>
                                       </div>
                                     )}
                                   </td>

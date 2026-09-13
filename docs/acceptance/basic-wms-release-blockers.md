@@ -6,13 +6,13 @@ Only add a blocker for incorrect inventory, inaccessible required operations, fa
 
 | ID | Required closure | Current evidence and remaining gap |
 | --- | --- | --- |
-| B1 | Initial shared/independent configuration, warehouse and binding persistence | Backend and adapter evidence exists. Initial configuration used a local service fixture; aggregate browser acceptance still required. |
-| B2 | Count, inbound, outbound, adjustment, safety in both modes | Independent browser count 12 and safety 2; previous browser 20 +5 -3 -1 =21. Legacy quantities unchanged. Shared safety entry path remains open. |
-| B3 | Mapping and distinct quantity sources | Existing listing 83 re-save and DB readback verified. New mapping and both provider source paths need final acceptance. |
-| B4 | Actor/time/reason, unknown values, retry/version protection | Physical ledger browser evidence exists; safety receipt verified. Safety audit retrieval and negative/gate regression remain open. |
-| B5 | Advanced mutations disabled server-side | Transfers guarded. Reconciliation and mode conversion require explicit release gates. Verify all relevant entry points together. |
-| B6 | Persistent test isolation and bounded sandbox writes | Classification schema/local fixtures exist. General store/SKU/warehouse/order propagation and designated-store write boundary need closure; prior provider evidence is reusable but not proof of this new boundary. |
-| B7 | One coherent local acceptance and exact-commit release | Pending B1-B6. Run affected tests/build and authenticated business flow, then request one GitHub/Hostinger synchronization approval. Online acceptance checks environment differences and key flows. |
+| B1 | Initial shared/independent configuration, warehouse and binding persistence | Local browser/MySQL configuration, warehouse10 creation and JW binding proved in September8 checkpoints below. Verify deployed configuration during online acceptance. |
+| B2 | Count, inbound, outbound, adjustment, safety in both modes | Shared browser/MySQL20→25→22→21, safety2/available19/legacy17; formal independent12→13→12 with legacy17. Local flow covered; do not repeat as an open shared-safety implementation gap. |
+| B3 | Mapping and distinct quantity sources | First mapping listing70→variant103 and real draft import64/105 proved. Lazada publication/readback mapping proved; Shopee code and fixture integration complete, actual provider mapping remains online acceptance. |
+| B4 | Actor/time/reason, unknown values, retry/version protection | Local physical/safety ledger and durable sandbox attempts rendered, persisted actor/time/reason and legacy separation verified. Included in current399-test regression; deployed checks pending. |
+| B5 | Advanced mutations disabled server-side | Explicit advanced/transfer/fulfillment/accounting gates exist; disabled advanced HTTP mutations covered. Keep flags off and check effective online configuration at release. |
+| B6 | Persistent test isolation and bounded sandbox writes | Classification propagation and actual bounded Lazada attempts proved. Shopee transport exists; actual sandbox identity/OAuth/write acceptance belongs on approved HTTPS environment. Test credentials available in official console, environment wiring pending. |
+| B7 | One coherent local acceptance and exact-commit release | Candidate prepared in 2026-09-13-basic-wms-online-candidate.md.399 backend tests, TypeScript/build and local formal flows documented. Await synchronization approval, exact-commit deployment and concentrated online acceptance; no Phase1 completion claim. |
 
 ## Batch progress, 2026-09-08 local evening
 
@@ -79,3 +79,14 @@ Evidence levels are distinct: API tests do not prove page wiring; page wiring do
 - Actual browser exposed missing Admin Vite base when lazy imports requested /assets instead of /build-admin/assets. Fixed build base and rebuilt. TypeScript, main build and standalone preview build passed. Final Admin main-Ci7AEHyd.js / lazy InventoryRuntime-BTXkpU4b.js.
 - Authenticated browser at `/admin/marketplace/inventory?basic_wms_preview=1` rendered existing sidebar/header and ZIP36 inventory, searched test SKU103, displayed its actual safety and physical ledger, and navigated using Product & SKU Mapping to `/admin/marketplace/mapping` with actual49-item catalog. Screenshot basic-wms-admin-shell.png. No stock mutation occurred in this shell check.
 - Explicitly navigated back to unparameterized official inventory URL to verify the default-closed boundary. No .env UI release enablement, commit, push or deployment performed. Main-shell interaction coverage and release approval remain distinct from the earlier standalone business-flow evidence.
+
+## Current batch revalidation — 2026-09-12
+
+This checkpoint supersedes old pending statements only where evidence is explicitly listed below; it does not change Phase 1 scope.
+
+- B2/B4/B7 formal local independent inventory flow: authenticated official /admin/marketplace/inventory, current build main-Czidh8CC, test variant103/warehouse9. Inbound12->13 and outbound13->12, safety2, Basic Available10 restored, legacy17 unchanged. Movements8/9 persist employee2/time/reason/version; formal ledger renders both. Details in current-marketplace-goal.md.
+- Mapping/import: current local browser imported SST-LOW as JW draft64/variant105, persisted mapping and classified test provenance. Mapped JW price9.90/legacy0 display correctly; platform snapshot695 remains separate and no physical balance inferred.
+- Coherent backend regression: artisan test --compact --filter='Marketplace|Inventory|BasicWms|Lazada|Shopee|Publishing': 368 tests /2286 assertions passed,35.76s. Frontend marketplace hooks, operations/catalog adapter and publishing modal:31 tests in10 files passed. Latest TypeScript/build passed. These use isolated test state/provider fakes except the separately documented real browser/MySQL scenarios.
+- Actual provider access gap: local official-test Lazada lease expired; official developer login renders blank with configFYSyncEx script error. No local Shopee connection and configured environment production. Do not enable test writes until proper sandbox identity is restored.
+- Added user-requested JW Master publishing remains incomplete: complete provider attribute/media validation and reviewed request construction, approved AI Studio dynamic-field UI, Lazada image orchestration, real provider creation/confirmation and follow-on mapping. Current publish switch stays off; backend fragments are not end-to-end acceptance.
+- Release gap: current work is uncommitted on main (base b537a9cb34c670f86ba63037d8cf3e0dbd21ab6a). No current-batch GitHub/Hostinger synchronization or online acceptance. Existing deployed Basic WMS is not evidence that these changes are online. Follow the approved exact-commit release order when the coherent batch is ready.

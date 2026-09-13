@@ -19,6 +19,26 @@ class ShopeeCatalogService
             throw new RuntimeException('Shopee catalog contains missing product identities.');
         }
         $items = $ids ? $this->client->itemDetails($token, $store->external_shop_id, $ids) : [];
+        $next = $page['next_offset'] ?? ($offset + count($ids));
+        if ($page['has_next_page'] && (!is_numeric($next) || (int) $next <= $offset)) {
+            throw new RuntimeException('Shopee pagination did not advance.');
+        }
+        $count=$this->capture($storeId,$store,$token,$items,$status);
+        return ['items'=>count($ids),'variants'=>$count,'has_more'=>$page['has_next_page'],'next_offset'=>(int)$next];
+    }
+
+    public function pullItem(int $storeId,string $itemId): array
+    {
+        if (!preg_match('/^[1-9][0-9]*$/D',$itemId)) throw new RuntimeException('Invalid Shopee product identity.');
+        $token=$this->tokens->accessToken($storeId);
+        $store=DB::table('marketplace_stores')->find($storeId);
+        $items=$this->client->itemDetails($token,$store->external_shop_id,[$itemId]);
+        if (count($items)!==1 || (string)($items[0]['item_id']??'')!==$itemId) throw new RuntimeException('Shopee published product was not returned.');
+        return ['items'=>1,'variants'=>$this->capture($storeId,$store,$token,$items,null)];
+    }
+
+    private function capture(int $storeId,object $store,#[\SensitiveParameter] string $token,array $items,?string $status): int
+    {
         $rows = [];
         foreach ($items as $item) {
             if (!is_bool($item['has_model'] ?? null)) {
@@ -47,10 +67,6 @@ class ShopeeCatalogService
                     ], JSON_THROW_ON_ERROR)];
             }
         }
-        $next = $page['next_offset'] ?? ($offset + count($ids));
-        if ($page['has_next_page'] && (!is_numeric($next) || (int) $next <= $offset)) {
-            throw new RuntimeException('Shopee pagination did not advance.');
-        }
         DB::transaction(function () use ($storeId, $store, $rows) {
             $current = DB::table('marketplace_stores')->where('id', $storeId)->lockForUpdate()->first();
             if (!$current || $current->status !== 'connected' || $current->external_shop_id !== $store->external_shop_id
@@ -67,6 +83,7 @@ class ShopeeCatalogService
             }
         });
 
-        return ['items'=>count($ids), 'variants'=>count($rows), 'has_more'=>$page['has_next_page'], 'next_offset'=>(int) $next];
+        app(PublishedCatalogMapping::class)->reconcile($storeId,$rows);
+        return count($rows);
     }
 }

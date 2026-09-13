@@ -125,6 +125,45 @@ class ShopeeClient
         return (string)$payload['response']['item_id'];
     }
 
+    /** Called only after the confirmed parent is durably saved and its processing delay has elapsed. */
+    public function initializeModels(#[\SensitiveParameter] string $accessToken, string $shopId, string $itemId, array $variations): array
+    {
+        if (config('marketplace.publish_operations_enabled')!==true) throw new RuntimeException('Marketplace publishing is disabled.');
+        $config=$this->configuration();
+        if ($accessToken==='' || !ctype_digit($shopId) || (int)$shopId<=0 || !ctype_digit($itemId) || (int)$itemId<=0) {
+            throw new RuntimeException('Invalid Shopee listing identity.');
+        }
+        $path='/api/v2/product/init_tier_variation';
+        $timestamp=now()->timestamp;
+        $query=['partner_id'=>(int)$config['partner_id'],'timestamp'=>$timestamp,'access_token'=>$accessToken,'shop_id'=>(int)$shopId,
+            'sign'=>hash_hmac('sha256',$config['partner_id'].$path.$timestamp.$accessToken.$shopId,$config['partner_key'])];
+        try {
+            $response=Http::acceptJson()->connectTimeout(10)->timeout(40)->withoutRedirecting()
+                ->post($this->host($config).$path.'?'.http_build_query($query),array_merge($variations,['item_id'=>(int)$itemId]));
+        } catch (ConnectionException) {
+            throw new PublishingResultUncertain('Shopee variant creation result is unknown. Reconcile the saved parent before retrying.');
+        }
+        $body=$response->json();
+        $models=$body['response']['model']??null;
+        if (!$response->successful() || !is_array($body) || ($body['error']??null)!=='' || !is_array($models)
+            || !array_is_list($models) || count($models)!==count($variations['model'])) {
+            throw new PublishingResultUncertain('Shopee did not confirm every requested variant. Reconcile the saved parent.');
+        }
+        $expected=[];
+        foreach ($variations['model'] as $model) $expected[$model['model_sku']]=$model['tier_index'];
+        $ids=[];
+        foreach ($models as $model) {
+            $sku=$model['model_sku']??null;
+            $id=$model['model_id']??null;
+            if (!is_string($sku) || !isset($expected[$sku]) || isset($ids[$sku]) || !is_int($id) || $id<=0
+                || in_array((string)$id,$ids,true) || ($model['tier_index']??null)!==$expected[$sku]) {
+                throw new PublishingResultUncertain('Shopee variant identities do not match the reviewed listing.');
+            }
+            $ids[$sku]=(string)$id;
+        }
+        return $ids;
+    }
+
     public function uploadImage(#[\SensitiveParameter] string $bytes): string
     {
         if ($bytes==='' || strlen($bytes)>10000000) throw new RuntimeException('Image must be no larger than 10 MB.');

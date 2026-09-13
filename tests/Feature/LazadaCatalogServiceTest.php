@@ -15,6 +15,33 @@ class LazadaCatalogServiceTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_catalog_links_confirmed_published_variant_but_does_not_restore_a_manual_unlink(): void
+    {
+        $store=$this->connectedStore(); $this->fakeCatalog();
+        $actor=\App\Models\User::factory()->create(['is_admin'=>true]);
+        $product=\App\Models\Product::create(['title'=>'Published','handle'=>'published-link','base_price'=>5990]);
+        $variant=$product->variants()->create(['title'=>'Default','sku'=>'LZ-ONE','price'=>5990,'stock'=>31,'enabled'=>true]);
+        $source=app(\App\Services\Marketplace\MarketplacePublishingSource::class)->read($product->id);
+        $task=app(\App\Services\Marketplace\PublishingTasks::class)->create($store,$product->id,$actor->id,
+            '6285db80-1111-4111-8111-123456789012',[],$source);
+        DB::table('marketplace_publishing_tasks')->where('id',$task)->update(['status'=>'succeeded','external_item_id'=>'LZ-1',
+            'confirmed_result'=>json_encode(['item_id'=>'LZ-1','sku_ids'=>['LZ-ONE'=>'S-1']])]);
+        app(LazadaCatalogService::class)->pullItem($store,'LZ-1');
+        $listing=DB::table('marketplace_listing_variants')->where('store_id',$store)->first();
+        $this->assertDatabaseHas('marketplace_variant_mappings',['listing_variant_id'=>$listing->id,'product_variant_id'=>$variant->id,'actor_id'=>$actor->id]);
+        app(LazadaCatalogService::class)->pullPage($store,0);
+        $this->assertDatabaseCount('marketplace_mapping_events',1);
+        $replacement=$product->variants()->create(['title'=>'Replacement','sku'=>'REPLACEMENT','price'=>5990,'stock'=>9,'enabled'=>true]);
+        app(\App\Services\Marketplace\MarketplaceFoundationService::class)->map($listing->id,$replacement->id,$product->id,$actor->id);
+        app(LazadaCatalogService::class)->pullPage($store,0);
+        $this->assertDatabaseHas('marketplace_variant_mappings',['listing_variant_id'=>$listing->id,'product_variant_id'=>$replacement->id]);
+        app(\App\Services\Marketplace\MarketplaceFoundationService::class)->map($listing->id,null,null,$actor->id);
+        app(LazadaCatalogService::class)->pullPage($store,0);
+        $this->assertDatabaseCount('marketplace_variant_mappings',0);
+        $this->assertDatabaseCount('marketplace_mapping_events',3);
+        $this->assertSame(31,$variant->fresh()->stock);
+    }
+
     private function connectedStore(): int
     {
         config([
@@ -91,6 +118,8 @@ class LazadaCatalogServiceTest extends TestCase
     public function test_catalog_job_and_admin_submission_are_queue_backed_and_retry_preserves_cursor(): void
     {
         $store=$this->connectedStore(); $this->fakeCatalog();
+        config(['app.url'=>'http://127.0.0.1:8500']);
+        $this->assertFalse(app(\App\Services\Marketplace\LazadaClient::class)->isAuthorizationReady());
         $run=DB::table('marketplace_catalog_runs')->insertGetId(['store_id'=>$store,'status'=>'queued','created_at'=>now(),'updated_at'=>now()]);
         (new PullLazadaCatalog($run))->handle(app(LazadaCatalogService::class));
         $this->assertDatabaseHas('marketplace_catalog_runs',['id'=>$run,'status'=>'succeeded','items_processed'=>1,'variants_processed'=>1]);

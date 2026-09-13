@@ -16,6 +16,80 @@ class MarketplacePublishingTaskTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Transport/task tests exercise the later publishing contract; Basic destination checks have separate coverage.
+        config(['marketplace.basic_wms_enabled'=>false]);
+    }
+
+    public function test_restored_shopee_model_payload_ignores_object_key_order_but_preserves_variant_order_and_types(): void
+    {
+        $tasks=app(PublishingTasks::class);
+        $model=['tier_index'=>[0],'model_sku'=>'RED','original_price'=>10.5,'seller_stock'=>[['stock'=>0]]];
+        $saved=$model;ksort($saved);
+        $this->assertTrue($tasks->payloadsMatch(['model'=>[$model]],['model'=>[$saved]]));
+        $other=$model;$other['model_sku']='BLUE';$other['tier_index']=[1];
+        $this->assertFalse($tasks->payloadsMatch(['model'=>[$model,$other]],['model'=>[$other,$model]]));
+        $saved['seller_stock'][0]['stock']='0';
+        $this->assertFalse($tasks->payloadsMatch(['model'=>[$model]],['model'=>[$saved]]));
+    }
+
+    public static function catalogReadbackCases(): array { return [[true],[false]]; }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('catalogReadbackCases')]
+    public function test_reviewed_lazada_publication_reads_back_and_links_the_confirmed_variant(bool $readable): void
+    {
+        config(['marketplace.publish_operations_enabled'=>true,'marketplace.lazada.enabled'=>true,
+            'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);
+        $actor=User::factory()->create(['is_admin'=>true]);
+        $product=Product::create(['title'=>'Test','handle'=>'published-readback','base_price'=>1000]);
+        $variant=$product->variants()->create(['title'=>'Default','sku'=>'TEST','price'=>1000,'stock'=>17,'enabled'=>true]);
+        $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','shop_name'=>'Test',
+            'external_shop_id'=>'2001','region'=>'MY','environment'=>'live','status'=>'connected']);
+        MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'123','access_token'=>'fixture-token','access_expires_at'=>now()->addHour()]);
+        $payload=['Request'=>['Product'=>['PrimaryCategory'=>'10002019','Images'=>['Image'=>['https://my-live-02.slatic.net/p/test.jpg']],
+            'Attributes'=>['name'=>'Test'],'Skus'=>['Sku'=>[['SellerSku'=>'TEST','quantity'=>'0','price'=>'10.00']]]]]];
+        $source=app(\App\Services\Marketplace\MarketplacePublishingSource::class)->read($product->id);
+        $task=app(PublishingTasks::class)->create($store,$product->id,$actor->id,'7285db80-1111-4111-8111-123456789012',$payload,$source);
+        Http::preventStrayRequests();
+        Http::fake([
+            '*/product/create*'=>Http::response(['code'=>'0','data'=>['item_id'=>1001,'sku_list'=>[['seller_sku'=>'TEST','sku_id'=>2001]]]]),
+            '*/product/item/get*'=>$readable ? Http::response(['code'=>'0','data'=>['item_id'=>1001,'attributes'=>['name'=>'Test'],
+                'skus'=>[['SkuId'=>2001,'SellerSku'=>'TEST','quantity'=>0,'price'=>'10.00']]]]) : Http::response(['code'=>'ServiceTimeout'],503),
+        ]);
+        app(MarketplacePublishingDispatchService::class)->dispatch($task);
+        $this->assertDatabaseHas('marketplace_publishing_tasks',['id'=>$task,'status'=>'succeeded','external_item_id'=>'1001']);
+        if ($readable) $this->assertDatabaseHas('marketplace_variant_mappings',['store_id'=>$store,'product_variant_id'=>$variant->id]);
+        else $this->assertDatabaseCount('marketplace_variant_mappings',0);
+        $this->assertSame(17,$variant->fresh()->stock);
+        Http::assertSentCount(2);
+    }
+
+    public function test_uncertain_dispatch_returns_recovery_guidance_without_provider_details(): void
+    {
+        config(['marketplace.publish_operations_enabled'=>true,'marketplace.lazada.enabled'=>true,
+            'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);
+        $actor=User::factory()->create(['is_admin'=>true]);
+        $product=Product::create(['title'=>'Test','handle'=>'uncertain-api','base_price'=>100]);
+        $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','shop_name'=>'Test',
+            'external_shop_id'=>'2001','region'=>'MY','environment'=>'live','status'=>'connected']);
+        MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'123','access_token'=>'fixture-token','access_expires_at'=>now()->addHour()]);
+        $payload=['Request'=>['Product'=>['PrimaryCategory'=>'10002019','Images'=>['Image'=>['https://my-live-02.slatic.net/p/test.jpg']],
+            'Attributes'=>['name'=>'Test'],'Skus'=>['Sku'=>[['SellerSku'=>'TEST','quantity'=>'0','price'=>'10.00']]]]]];
+        $task=app(PublishingTasks::class)->create($store,$product->id,$actor->id,'3285db80-1111-4111-8111-123456789012',$payload);
+        Http::fake(['*'=>Http::response(['code'=>'provider-secret-error','message'=>'fixture-token'],500)]);
+        $response=$this->actingAs($actor)->postJson("/admin/api/marketplace/publishing-tasks/{$task}/dispatch")
+            ->assertStatus(409)->assertJsonPath('code','publishing_result_uncertain')->assertJsonPath('taskId',$task)
+            ->assertJsonPath('retryAllowed',false);
+        $this->assertStringNotContainsString('fixture-token',$response->getContent());
+        $this->assertStringNotContainsString('provider-secret-error',$response->getContent());
+        $this->assertDatabaseHas('marketplace_publishing_tasks',['id'=>$task,'status'=>'uncertain']);
+        $this->postJson("/admin/api/marketplace/publishing-tasks/{$task}/dispatch")->assertStatus(409)
+            ->assertJsonPath('code','publishing_dispatch_unavailable');
+        Http::assertSentCount(1);
+    }
+
     public function test_failure_after_provider_confirmation_preserves_identity_and_uncertainty(): void
     {
         config(['marketplace.publish_operations_enabled'=>true,'marketplace.lazada.enabled'=>true,
@@ -54,6 +128,19 @@ class MarketplacePublishingTaskTest extends TestCase
             ->assertStatus(503)->assertJsonPath('code','marketplace_publishing_disabled');
         $this->actingAs($actor)->postJson('/admin/api/marketplace/publishing-tasks/999/dispatch')
             ->assertStatus(503)->assertJsonPath('code','marketplace_publishing_disabled');
+    }
+
+    public function test_general_operations_switch_cannot_enable_product_publishing(): void
+    {
+        config(['marketplace.operations_enabled'=>true, 'marketplace.publish_operations_enabled'=>false]);
+        Http::fake();
+        $this->actingAs(User::factory()->create(['is_admin'=>true]));
+        $this->postJson('/admin/api/marketplace/stores/999/publishing-tasks', [])
+            ->assertStatus(503)->assertJsonPath('code','marketplace_publishing_disabled');
+        $this->postJson('/admin/api/marketplace/publishing-tasks/999/dispatch')
+            ->assertStatus(503)->assertJsonPath('code','marketplace_publishing_disabled');
+        $this->assertDatabaseCount('marketplace_publishing_tasks',0);
+        Http::assertNothingSent();
     }
 
     public function test_current_lazada_publishing_task_dispatches_once_and_persists_confirmed_item_identity(): void

@@ -63,7 +63,7 @@ class MarketplaceAutomaticOrders
 
     private function providerReady(string $platform): bool
     {
-        return $platform === 'shopee' ? $this->shopee->isConfigured() : $this->lazada->isAuthorizationReady();
+        return $platform === 'shopee' ? $this->shopee->isConfigured() : $this->lazada->isConfigured();
     }
 
     private function storeEligible(object $store, string $platform): bool

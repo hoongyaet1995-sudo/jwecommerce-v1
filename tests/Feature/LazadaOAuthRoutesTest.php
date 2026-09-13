@@ -47,4 +47,25 @@ class LazadaOAuthRoutesTest extends TestCase
         $this->assertDatabaseCount('marketplace_oauth_states',0);
         $this->getJson('/admin/api/marketplace/connections')->assertOk()->assertJsonPath('capabilities.lazada.oauth',false);
     }
+
+    public function test_catalog_reads_do_not_require_a_callback_for_the_local_deployment(): void
+    {
+        config(['app.url'=>'http://127.0.0.1:8500','marketplace.lazada.enabled'=>true,
+            'marketplace.lazada.app_key'=>'139209','marketplace.lazada.app_secret'=>'fixture-secret',
+            'marketplace.lazada.callback_url'=>'https://example.test/admin/marketplace/oauth/lazada/callback',
+            'marketplace.read_operations_enabled'=>true]);
+        Http::fake();
+        $this->actingAs(User::factory()->create(['is_admin'=>true]));
+        $this->getJson('/admin/api/marketplace/connections')->assertOk()
+            ->assertJsonPath('capabilities.lazada.oauth',false)
+            ->assertJsonPath('capabilities.lazada.catalog',true)
+            ->assertJsonPath('capabilities.lazada.orders',true)
+            ->assertJsonPath('capabilities.lazada.publish',false);
+        $this->postJson('/admin/api/marketplace/lazada/authorize')->assertConflict();
+        $this->assertDatabaseCount('marketplace_oauth_states',0);
+        Http::assertNothingSent();
+        config(['marketplace.lazada.app_secret'=>'']);
+        $this->getJson('/admin/api/marketplace/connections')->assertOk()
+            ->assertJsonPath('capabilities.lazada.catalog',false);
+    }
 }
