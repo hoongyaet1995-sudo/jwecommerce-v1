@@ -1,0 +1,22 @@
+// @vitest-environment jsdom
+import React,{act} from 'react';
+import {createRoot} from 'react-dom/client';
+import {it,expect,vi} from 'vitest';
+import {SearchableSourcePicker} from './SearchableSourcePicker';
+it('shows all on open, filters names and IDs, clears and selects',async()=>{
+ vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+ const node=document.createElement('div'),root=createRoot(node),change=vi.fn();
+ await act(async()=>root.render(<SearchableSourcePicker sourceType="category" sourceId="" onChange={change} collections={[]} categories={[{id:'11',name:'Boots',slug:'boots'},{id:'22',name:'Games',slug:'games'}]}/>));
+ await act(async()=>node.querySelector('button')!.click());
+ expect(node.textContent).toContain('Boots');expect(node.textContent).toContain('Games');
+ const input=node.querySelector('input')!;
+ const type=async(value:string)=>act(async()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));});
+ await type('22');expect(node.textContent).not.toContain('Boots');expect(node.textContent).toContain('Games');
+ await type('nothing');expect(node.textContent).toContain('No matching categories');
+ await type('');expect(node.textContent).toContain('Boots');
+ await type('boo');expect(node.textContent).not.toContain('Games');
+ await act(async()=>Array.from(node.querySelectorAll('button')).find(b=>b.textContent?.includes('Boots'))!.click());
+ expect(change).toHaveBeenCalledWith('11','Boots');expect(node.querySelector('input')).toBeNull();
+ await act(async()=>node.querySelector('button')!.click());expect(node.textContent).toContain('Games');
+ await act(async()=>root.unmount());
+});

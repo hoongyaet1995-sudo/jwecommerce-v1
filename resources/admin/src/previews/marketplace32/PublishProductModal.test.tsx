@@ -25,8 +25,8 @@ it('submits live Shopee requirements from the existing three-step review',async(
  try{
   await act(async()=>root.render(<JourneyProvider value={context}><PublishProductModal isOpen liveData onClose={vi.fn()} submitReviewed={submit}/></JourneyProvider>));
   await act(async()=>Array.from(container.querySelectorAll('button')).find(button=>button.textContent?.includes('Category & Attributes'))!.click());
-  const category=container.querySelector('select')!;
-  await act(async()=>{category.value='11';category.dispatchEvent(new Event('change',{bubbles:true}));});
+  await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Marketplace category"]')!.click());
+  await act(async()=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Boxes'))!.click());
   expect(container.textContent).toContain('Sandbox courier');
   await act(async()=>container.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
   await act(async()=>Array.from(container.querySelectorAll('button')).find(button=>button.textContent?.includes('Pricing & Sync'))!.click());
@@ -94,12 +94,9 @@ it.each(['shopee','lazada'] as const)('shows %s destination categories without d
  try {
   await act(async()=>root.render(<JourneyProvider value={context}><PublishProductModal isOpen onClose={vi.fn()} readOnlyMetadata/></JourneyProvider>));
   await act(async()=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Category & Attributes'))!.click());
-  const select=container.querySelector('select')!;
-  expect(select.textContent).toContain('Game Consoles');
-  expect(select.textContent).not.toContain('Headphones');
-  expect(select.querySelector('option[value="10"]')?.hasAttribute('disabled')).toBe(true);
-  expect(select.value).toBe('');
-  await act(async()=>{select.value='11';select.dispatchEvent(new Event('change',{bubbles:true}));});
+  await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Marketplace category"]')!.click());
+  expect(container.textContent).toContain('Game Consoles');
+  await act(async()=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Game Consoles')&&!b.disabled)!.click());
   if(platform==='shopee') expect(container.querySelector('datalist')?.textContent).toContain('Sony');
   expect(container.querySelector<HTMLInputElement>('input[list]')?.value).toBe('');
   expect(container.textContent).toContain('Publishing is not enabled in this metadata review.');

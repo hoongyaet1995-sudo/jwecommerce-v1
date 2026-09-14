@@ -1,3 +1,4 @@
+import {SearchableSourcePicker} from '../../../../marketplace/SearchableSourcePicker';
 import {usePublishingStoreStatus} from '../../../../marketplace/usePublishingStoreStatus';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useAdmin } from '../../context/AdminContext';
@@ -109,8 +110,6 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
 
   // Step 2: Category & Marketplace Attributes
   const [selectedCategory, setSelectedCategory] = useState(useLiveMetadata ? '' : 'Consumer Electronics & Audio > Headphones');
-  const [categorySearch,setCategorySearch]=useState('');
-  const categoryMatches=(category:{category_id:number;display_category_name:string;original_category_name:string})=>[String(category.category_id),category.display_category_name,category.original_category_name].some(value=>(value||'').toLowerCase().includes(categorySearch.trim().toLowerCase()));
   const categoryMetadata = useMarketplaceListingCategories(useLiveMetadata && isOpen && !taskId
     && connections.some(c => c.id === selectedConnectionId && ['shopee','lazada'].includes(c.platform) && c.status === 'connected')
     ? selectedConnectionId : null);
@@ -811,8 +810,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                         <span>Marketplace Category Taxonomy</span>
                         <span className="text-rose-500">*</span>
                       </label>
-                      {useLiveMetadata && <input type="search" aria-label="Search marketplace categories" placeholder="Search category name or ID…" value={categorySearch} onChange={e=>setCategorySearch(e.target.value)} className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-xl text-xs text-neutral-900 dark:text-white focus:ring-1 focus:ring-indigo-500" />}
-                      {useLiveMetadata && categorySearch.trim() && !categoryMetadata.loading && !categoryMetadata.error && !categoryMetadata.categories.some(categoryMatches) && <p role="status" className="text-xs text-neutral-500 dark:text-neutral-400">No matching categories found.</p>}
+                      {useLiveMetadata ? <SearchableSourcePicker sourceType="category" sourceId={selectedCategory} onChange={setSelectedCategory} collections={[]} categories={categoryMetadata.categories.map(c=>({id:String(c.category_id),name:c.display_category_name||c.original_category_name,slug:c.original_category_name||'',disabled:c.has_children}))} /> : (
                       <select
                         value={selectedCategory}
                         disabled={useLiveMetadata && (categoryMetadata.loading || !!categoryMetadata.error)}
@@ -821,8 +819,8 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                       >
                         {useLiveMetadata ? <>
                           <option value="">{categoryMetadata.loading ? 'Loading store categories...' : 'Select a marketplace category'}</option>
-                          {categoryMetadata.categories.filter(category=>categoryMatches(category)||String(category.category_id)===selectedCategory).map(category => <option key={category.category_id}
-                            value={String(category.category_id)} hidden={!categoryMatches(category)} disabled={category.has_children}>
+                          {categoryMetadata.categories.map(category => <option key={category.category_id}
+                            value={String(category.category_id)} disabled={category.has_children}>
                             {category.display_category_name || category.original_category_name} ({category.category_id})
                           </option>)}
                         </> : <>
@@ -831,7 +829,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                         <option value="Mobile & Gadgets > Audio Accessories">Mobile &amp; Gadgets &gt; Audio Accessories</option>
                         <option value="Computers & Accessories > Gaming Headsets">Computers &amp; Accessories &gt; Gaming Headsets</option>
                         </>}
-                      </select>
+                      </select>)}
                     </div>
 
                     {/* Brand */}
