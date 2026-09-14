@@ -12,6 +12,7 @@ export interface ProductImportResult {
   status: string|null;
   createdVariants?: number;
   linkedVariants?: number;
+  keptVariants?: number;
 }
 export type OAuthResult = {status: 'success' | 'failed' | 'cancelled'; store: {id: string; platform: MarketplacePlatform; shopId: string; shopName: string} | null};
 export interface StoreConnection {
@@ -135,7 +136,7 @@ export const marketplaceOperations = {
   catalogSummary: (filters: Filters = {}) => marketplaceRequest<CatalogSummary>(`/catalog/summary?${query(filters)}`),
   oauthResult: () => marketplaceRequest<{result: OAuthResult | null}>('/oauth-result'),
   catalogProducts: (filters: Filters = {}) => marketplaceRequest<Page<CatalogProduct>>(`/catalog/products?${query(filters)}`),
-  importProduct: (listingId: string, review?: {skuOverrides: Record<string,string>; existingLinks?:Record<string,{productId:number;variantId:number}>}) => review === undefined
+  importProduct: (listingId: string, review?: {skuOverrides: Record<string,string>; existingLinks?:Record<string,{productId:number;variantId:number}>;productId?:number;listingIds?:number[]}) => review === undefined
     ? marketplaceRequest<ProductImportResult>(`/listings/${idPath(listingId)}/import-product`, 'POST')
     : marketplaceRequest<ProductImportResult>(`/listings/${idPath(listingId)}/import-product`, 'POST', review),
   retryOrders: (id: string) => marketplaceRequest<{runId: number}>(`/order-runs/${idPath(id)}/retry`, 'POST'),

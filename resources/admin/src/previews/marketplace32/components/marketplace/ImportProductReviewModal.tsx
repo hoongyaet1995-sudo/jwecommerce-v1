@@ -49,9 +49,11 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
   // Selected resolution actions for conflicting variants: [variantId]: SkuAction
   const [skuActions, setSkuActions] = useState<Record<string, SkuAction>>({});
   const [skuOverrides, setSkuOverrides] = useState<Record<string, string>>({});
+  const [targetProductId, setTargetProductId] = useState('');
+  const targetProduct = products.find(p => p.id === targetProductId);
   const [isCompleted, setIsCompleted] = useState(false);
   const [importedProductCount, setImportedProductCount] = useState(0);
-  const [savedCounts,setSavedCounts]=useState({drafts:0,created:0,linked:0});
+  const [savedCounts,setSavedCounts]=useState({drafts:0,created:0,linked:0,kept:0});
   const [isImporting, setIsImporting] = useState(false);
   const submitted = useRef(new Set<string>());
   const submitting = useRef(false);
@@ -89,8 +91,17 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
           }
         }
 
+        // A saved mapping is stronger evidence than a matching SKU string (which an employee may rename).
+        if (targetProductId && variant.mappedJwVariantId) {
+          const owner = products.find(p => p.id === variant.mappedJwProductId);
+          const mapped = owner?.variants.find(v => v.id === variant.mappedJwVariantId);
+          conflictingJwProduct = {id:variant.mappedJwProductId || '',title:owner?.title || variant.mappedJwProductName || 'Existing product'};
+          conflictingJwVariant = {id:variant.mappedJwVariantId,sku:mapped?.sku || variant.mappedJwSku || rawSku,
+            title:mapped?.title || variant.title,price:mapped?.price || 0,stock:mapped?.inventoryQuantity ?? variant.mappedJwStock ?? 0};
+          hasConflict = true;
+        }
         const defaultAction: SkuAction = hasConflict ? 'link_existing' : 'create_as_is';
-        const currentAction = skuActions[variant.id] || defaultAction;
+        const currentAction = targetProductId ? defaultAction : skuActions[variant.id] || defaultAction;
 
         const sourceIdentity = JSON.stringify([prod.connectionId,prod.id,variant.id]);
         if (isMissingSku && !assignedSkus.current.has(sourceIdentity)) {
@@ -113,14 +124,15 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
     });
 
     return list;
-  }, [productsToImport, products, skuActions, skuOverrides]);
+  }, [productsToImport, products, skuActions, skuOverrides, targetProductId]);
 
-  const conflictsCount = analysisList.filter(a => a.hasConflict).length;
+  const retainedCount = targetProductId ? analysisList.filter(a => a.variant.mappedJwProductId === targetProductId).length : 0;
+  const conflictsCount = analysisList.filter(a => a.hasConflict && (!targetProductId || a.conflictingJwProduct?.id !== targetProductId)).length;
   const missingSkuCount = analysisList.filter(a => a.isMissingSku).length;
   const linkExistingCount = analysisList.filter(a => a.selectedAction === 'link_existing' && a.hasConflict).length;
   const newVariantsCount = analysisList.filter(a => a.selectedAction !== 'link_existing').length;
   const draftProductIds = new Set(analysisList.filter(a => a.selectedAction !== 'link_existing').map(a => a.product.id));
-  const newDraftCount = draftProductIds.size;
+  const newDraftCount = targetProductId ? 0 : draftProductIds.size;
 
   const handleActionChange = (variantId: string, action: SkuAction) => {
     setSkuActions(prev => ({ ...prev, [variantId]: action }));
@@ -145,12 +157,12 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
       const variantSkuOverrides: Record<string, string> = {};
 
       prodAnalysis.forEach(a => {
-        if (a.selectedAction === 'link_existing' && a.conflictingJwProduct && a.conflictingJwVariant) {
+        if (!targetProductId && a.selectedAction === 'link_existing' && a.conflictingJwProduct && a.conflictingJwVariant) {
           linkExistingVariantIds[a.variant.id] = {
             productId: a.conflictingJwProduct.id,
             variantId: a.conflictingJwVariant.id
           };
-        } else if (a.selectedAction === 'generate_suffix' || a.isMissingSku || skuOverrides[a.variant.id]) {
+        } else if (a.selectedAction !== 'link_existing' && (a.selectedAction === 'generate_suffix' || a.isMissingSku || skuOverrides[a.variant.id])) {
           variantSkuOverrides[a.variant.id] = a.customSkuOverride;
         }
       });
@@ -159,13 +171,14 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
         createDraftStatus: 'draft',
         zeroPhysicalStock: true,
         linkExistingVariantIds,
-        skuOverrides: variantSkuOverrides
+        skuOverrides: variantSkuOverrides,
+        ...(targetProductId ? {targetProductId} : {})
       };
 
       try {
         const result=await importStoreProductToMaster(prod.id, undefined, options);
-        if(result) setSavedCounts(previous=>({drafts:previous.drafts+(result.productId===null?0:1),
-          created:previous.created+result.createdVariants,linked:previous.linked+result.linkedVariants}));
+        if(result) setSavedCounts(previous=>({drafts:previous.drafts+(targetProductId || result.productId===null?0:1),
+          created:previous.created+result.createdVariants,linked:previous.linked+result.linkedVariants,kept:previous.kept+(result.keptVariants??0)}));
         submitted.current.add(prod.id);
       } catch (error) {
         failed++;
@@ -205,7 +218,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                 </span>
               </h3>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Creates JW drafts with zero legacy catalog stock. Physical inventory awaits a count.
+                {targetProductId ? `Append missing variants to ${targetProduct?.title} #${targetProductId}. Existing stock is preserved.` : 'Creates JW drafts with zero legacy catalog stock. Physical inventory awaits a count.'}
               </p>
             </div>
           </div>
@@ -232,7 +245,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                   Review Saved Successfully
                 </h4>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                  {savedCounts.drafts} new draft product(s), {savedCounts.created} new variant(s), and {savedCounts.linked} existing SKU link(s). Existing warehouse stock is unchanged. New products use <strong className="text-neutral-800 dark:text-neutral-200">Draft</strong> status.
+                  {savedCounts.drafts} new draft product(s), {savedCounts.created} new variant(s), {savedCounts.linked} existing SKU link(s), {savedCounts.kept} retained. Existing warehouse stock is unchanged. {targetProductId ? 'Destination product status is unchanged.' : 'New products use Draft status.'}
                 </p>
               </div>
 
@@ -241,10 +254,10 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                 <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/60">
                   <div className="flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1">
                     <EyeOff className="w-3.5 h-3.5 text-amber-500" />
-                    Draft Status
+                    Product Status
                   </div>
-                  <div className="text-sm font-bold text-neutral-900 dark:text-white">Unpublished</div>
-                  <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">Not visible on customer storefront</div>
+                  <div className="text-sm font-bold text-neutral-900 dark:text-white">{targetProductId ? targetProduct?.status : 'Unpublished'}</div>
+                  <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">{targetProductId ? 'Existing product status preserved' : 'Not visible on customer storefront'}</div>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/60">
@@ -276,7 +289,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                   className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
                 >
                   <Package className="w-4 h-4" />
-                  View Drafts in Products Catalog
+                  View Products Catalog
                 </button>
 
                 <button
@@ -303,6 +316,16 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
           ) : (
             /* Review and Pre-Import Checklist View */
             <>
+              {productsToImport.length === 1 && <div className="space-y-2">
+                <label htmlFor="batch-import-destination" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Import Destination</label>
+                <select id="batch-import-destination" aria-label="Batch import destination" value={targetProductId} disabled={isImporting}
+                  onChange={e => {setTargetProductId(e.target.value);setSkuActions({});setSkuOverrides({});}}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-xs">
+                  <option value="">Create New JW Draft Product</option>
+                  {products.filter(p => p.status === 'draft' || p.status === 'active').map(p => <option key={p.id} value={p.id}>Append to {p.title} — #{p.id} ({p.variants.length} existing variants)</option>)}
+                </select>
+                {targetProductId && <p className="text-xs text-neutral-600 dark:text-neutral-300">{retainedCount} retained · {newVariantsCount} new · {linkExistingCount-retainedCount} existing links · {conflictsCount} conflicts. Server checks all rows before saving; any conflict cancels this product's batch.</p>}
+              </div>}
               {/* Educational Rule Banner */}
               <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 flex items-start gap-3.5">
                 <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
@@ -311,7 +334,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                     Safe Catalog Import Policy
                   </div>
                   <p>
-                    Importing external store products creates <strong>JW Draft products</strong> with <strong>0 legacy catalog stock</strong>. Physical inventory remains unknown until counted. Platform stock is reference information. This does <strong>not</strong> publish to your storefront or alter remote Shopee/Lazada listings.
+                    {targetProductId ? <>New variants are appended to <strong>{targetProduct?.title} #{targetProductId}</strong> with 0 legacy catalog stock. Existing variants and stock are preserved. {targetProduct?.status === 'active' ? 'This destination is published: new variants will appear on its storefront product.' : 'The destination remains a draft.'} Physical inventory remains unknown until counted. No remote Shopee/Lazada listings are changed.</> : <>Importing external store products creates <strong>JW Draft products</strong> with <strong>0 legacy catalog stock</strong>. Physical inventory remains unknown until counted. Platform stock is reference information. This does <strong>not</strong> publish to your storefront or alter remote Shopee/Lazada listings.</>}
                   </p>
                 </div>
               </div>
@@ -388,7 +411,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                               <span>•</span>
                               <span>Category: {prod.categoryName}</span>
                               <span>•</span>
-                              <span className="text-emerald-700 dark:text-emerald-400 font-medium">{draftProductIds.has(prod.id) ? 'Will create: New JW Draft' : 'Will link: Existing JW SKUs'}</span>
+                              <span className="text-emerald-700 dark:text-emerald-400 font-medium">{targetProductId ? `Append to #${targetProductId}` : draftProductIds.has(prod.id) ? 'Will create: New JW Draft' : 'Will link: Existing JW SKUs'}</span>
                             </div>
                           </div>
                         </div>
@@ -396,7 +419,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                         <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
                           <span className="px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 text-xs font-semibold flex items-center gap-1">
                             <EyeOff className="w-3.5 h-3.5" />
-                            {draftProductIds.has(prod.id) ? 'Draft on Import' : 'Link Existing'}
+                            {targetProductId ? 'Append & Link' : draftProductIds.has(prod.id) ? 'Draft on Import' : 'Link Existing'}
                           </span>
                         </div>
                       </div>
@@ -409,7 +432,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                               <th className="py-2.5 px-4 font-semibold">Channel Variant</th>
                               <th className="py-2.5 px-3 font-semibold">Channel SKU</th>
                               <th className="py-2.5 px-3 font-semibold">Channel Stock & Price</th>
-                              <th className="py-2.5 px-3 font-semibold">JW Master Draft SKU</th>
+                              <th className="py-2.5 px-3 font-semibold">JW Master SKU</th>
                               <th className="py-2.5 px-3 font-semibold">JW Stock</th>
                               <th className="py-2.5 px-4 font-semibold text-right">Conflict & Action</th>
                             </tr>
@@ -504,7 +527,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
 
                                   {/* Conflict resolution / Action */}
                                   <td className="py-3 px-4 text-right">
-                                    {item.hasConflict ? (
+                                    {targetProductId && item.hasConflict ? <div className="text-xs text-neutral-700 dark:text-neutral-300">{item.conflictingJwProduct?.id !== targetProductId ? `Conflict: belongs to #${item.conflictingJwProduct?.id}. Review separately.` : v.mappedJwProductId === targetProductId ? 'Retain existing mapping' : 'Link existing SKU in selected product'}</div> : item.hasConflict ? (
                                       <div className="flex flex-col items-end gap-1.5">
                                         <div className="flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-400 font-medium">
                                           <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
@@ -544,7 +567,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                                     ) : (
                                       <div className="flex items-center justify-end gap-1 text-emerald-700 dark:text-emerald-400 font-medium text-xs">
                                         <CheckCircle2 className="w-3.5 h-3.5" />
-                                        Ready to create draft
+                                        {targetProductId ? 'Ready to append variant' : 'Ready to create draft'}
                                       </div>
                                     )}
                                   </td>
@@ -568,7 +591,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
             <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
               <Info className="w-4 h-4 text-neutral-400 shrink-0" />
               <span>
-                Confirms {newDraftCount} new JW draft item(s) and {linkExistingCount} existing SKU link(s). Does not publish to live storefront.
+                {targetProductId ? `Append ${newVariantsCount} new variants to #${targetProductId}; retain ${retainedCount} mappings. ${targetProduct?.status === 'active' ? 'Destination is published.' : 'Destination remains a draft.'}` : `Confirms ${newDraftCount} new JW draft item(s) and ${linkExistingCount} existing SKU link(s). Does not publish to live storefront.`}
               </span>
             </div>
 
@@ -584,11 +607,11 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
               <button
                 type="button"
                 onClick={handleExecuteImport}
-                disabled={isImporting}
+                disabled={isImporting || (!!targetProductId && conflictsCount > 0)}
                 className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
               >
                 <DownloadCloud className="w-4 h-4" />
-                {newDraftCount ? 'Confirm Import as JW Drafts' : 'Confirm SKU Links'}
+                {targetProductId ? 'Confirm Append & Link' : newDraftCount ? 'Confirm Import as JW Drafts' : 'Confirm SKU Links'}
               </button>
             </div>
           </div>

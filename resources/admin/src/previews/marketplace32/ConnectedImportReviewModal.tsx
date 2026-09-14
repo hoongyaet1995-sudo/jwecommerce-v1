@@ -25,7 +25,7 @@ export function ConnectedImportReviewModal(props:Props) {
         props.addToast({type:'info',title:'Import saved',message:'Reload the catalog to see the saved product.'});
       }
       return {productId:result.productId,createdVariants:result.createdVariants??props.productsToImport.find(p=>p.id===productId)!.variants.length,
-        linkedVariants:result.linkedVariants??0};
+        linkedVariants:result.linkedVariants??0,keptVariants:result.keptVariants??0};
     },
   };
   return <JourneyProvider value={value}><ImportProductReviewModal isOpen onClose={props.onClose}

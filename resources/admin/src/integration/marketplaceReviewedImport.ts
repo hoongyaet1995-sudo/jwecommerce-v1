@@ -9,9 +9,6 @@ export async function importReviewedCatalogProduct(enabled:boolean,
   if(!source?.variants.length || source.variants.some(variant=>!/^[1-9]\d*$/.test(variant.id))) {
     throw new Error('Refresh and select a saved catalog product.');
   }
-  if(options.targetProductId!==undefined) {
-    throw new Error('Use single-variant import to append to an existing product.');
-  }
   // Reuse the single-variant policy checks without confusing whole-product ownership.
   variantImportReview(source.variants[0].id,{...options,skuOverrides:undefined,linkExistingVariantIds:undefined});
   const existingLinks:Record<string,{productId:number;variantId:number}>={};
@@ -27,6 +24,11 @@ export async function importReviewedCatalogProduct(enabled:boolean,
     if(!source.variants.some(variant=>variant.id===id))throw new Error('SKU override belongs to another product.');
     const review=variantImportReview(id,{skuOverrides:{[id]:sku}});
     skuOverrides[id]=review.sku!;
+  }
+  if(options.targetProductId!==undefined) {
+    if(Object.keys(existingLinks).length) throw new Error('Batch append resolves links within the selected parent only.');
+    return marketplaceOperations.importProduct(source.variants[0].id,{skuOverrides,
+      productId:Number(options.targetProductId),listingIds:source.variants.map(v=>Number(v.id))});
   }
   return marketplaceOperations.importProduct(source.variants[0].id,{skuOverrides,
     ...(Object.keys(existingLinks).length ? {existingLinks} : {})});

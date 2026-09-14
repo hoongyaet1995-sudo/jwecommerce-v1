@@ -9,13 +9,21 @@ it('submits reviewed source product using persisted listing ids and rejects inva
     await expect(importReviewedCatalogProduct(true,sources,'1:100',{skuOverrides:{'12':' NEW '}})).resolves.toEqual({productId:51,status:'draft'});
     expect(api).toHaveBeenCalledWith('12',{skuOverrides:{'12':'NEW'}});
     api.mockClear();
-    for(const options of [{zeroPhysicalStock:false},{createDraftStatus:'active'},{targetProductId:'9'},
+    for(const options of [{zeroPhysicalStock:false},{createDraftStatus:'active'},{targetProductId:'invalid'},
       {skuOverrides:{'14':'OTHER'}},{linkExistingVariantIds:{'14':{productId:'51',variantId:'92'}}}]) {
       await expect(importReviewedCatalogProduct(true,sources,'1:100',options as never)).rejects.toThrow();
     }
     await expect(importReviewedCatalogProduct(false,sources,'1:100',{})).rejects.toThrow();
     expect(api).not.toHaveBeenCalled();
   }finally{api.mockRestore();}
+});
+
+it('appends the complete reviewed listing set to the selected JW parent',async()=>{
+  const api=vi.spyOn(marketplaceOperations,'importProduct').mockResolvedValue({productId:52,status:'active'});
+  try {
+    await importReviewedCatalogProduct(true,[{id:'2:100',variants:[{id:'12'},{id:'13'}]}],'2:100',{targetProductId:'52'});
+    expect(api).toHaveBeenCalledWith('12',{productId:52,listingIds:[12,13],skuOverrides:{}});
+  } finally {api.mockRestore();}
 });
 
 it('sends explicit existing links as numeric identities without creating duplicate SKUs',async()=>{

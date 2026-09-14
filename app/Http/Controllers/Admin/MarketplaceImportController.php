@@ -36,6 +36,15 @@ class MarketplaceImportController extends Controller
     public function product(Request $request, int $listing, MarketplaceImportService $imports,
         \App\Services\Marketplace\MarketplaceReviewedImportService $reviewedImports)
     {
+        if ($request->exists('productId')) {
+            abort_if(array_diff(array_keys($request->except('_token')), ['productId','listingIds','skuOverrides']), 422);
+            $data = $request->validate(['productId'=>['required','integer','min:1'],
+                'listingIds'=>['required','array','min:1','max:1000'], 'listingIds.*'=>['required','integer','min:1','distinct'],
+                'skuOverrides'=>['sometimes','array','max:1000'], 'skuOverrides.*'=>['required','string','max:255']]);
+            return response()->json(app(\App\Services\Marketplace\MarketplaceBatchAppendService::class)->append(
+                $listing, (int) $data['productId'], $request->user()->id, $data['listingIds'], $data['skuOverrides'] ?? []
+            ))->header('Cache-Control', 'no-store');
+        }
         abort_if(array_diff(array_keys($request->except('_token')), ['skuOverrides', 'existingLinks']), 422, 'Only reviewed SKU overrides and links are accepted.');
         $review = $request->validate(['skuOverrides'=>['sometimes','array','max:1000'],
             'skuOverrides.*'=>['required','string','max:255'],

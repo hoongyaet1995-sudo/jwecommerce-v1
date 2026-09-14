@@ -10,7 +10,7 @@ export interface MarketplaceJourneyContext {
   marketplaceStoreProducts: MarketplaceStoreProduct[];
   setActiveSection: (section: string) => void;
   addToast: (toast: {type: string; title: string; message: string}) => void;
-  importStoreProductToMaster: (productId: string, variantId?: string, options?: ImportProductOptions) => void | Promise<void | {productId:number|null;createdVariants:number;linkedVariants:number}>;
+  importStoreProductToMaster: (productId: string, variantId?: string, options?: ImportProductOptions) => void | Promise<void | {productId:number|null;createdVariants:number;linkedVariants:number;keptVariants?:number}>;
   publishMasterProductToStore: (productId: string, connectionId: string, options?: PublishListingOptions) => void;
   mapStoreVariantToJwSku: (productId: string, variantId: string, jwProductId: string, jwVariantId: string) => void | Promise<void>;
   unmapStoreVariant: (productId: string, variantId: string) => void | Promise<void>;
