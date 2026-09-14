@@ -120,7 +120,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   useEffect(()=>{
     if(!liveData)return;
     const first=source?.variants[0];
-    setBrandName(source?.brand??'');
+    setBrandName(useLiveMetadata?'':source?.brand??'');
     setPackageWeightKg(first?.weight_grams?first.weight_grams/1000:0);
     setLengthCm(Number(first?.package_length_cm??0));
     setWidthCm(Number(first?.package_width_cm??0));
@@ -825,20 +825,27 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                         <span>Brand Name</span>
                         <span className="text-rose-500">*</span>
                       </label>
-                      <input
+                      {isShopeeLive ? <select aria-label="Shopee platform brand"
+                        value={brandMetadata.brands.some(b=>brandLabel(b)===brandName)?brandName:''}
+                        disabled={!selectedCategory||brandMetadata.loading}
+                        onChange={e=>setBrandName(e.target.value)}
+                        className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-xl text-xs text-neutral-900 dark:text-white focus:ring-1 focus:ring-indigo-500">
+                        <option value="">Select a platform brand</option>
+                        {brandMetadata.brands.map(b=><option key={b.brand_id} value={brandLabel(b)}>{b.display_brand_name??b.original_brand_name}</option>)}
+                      </select> : <input
                         type="text"
                         value={brandName}
                         list={useLiveMetadata ? 'marketplace-publish-brand-options' : undefined}
                         disabled={useLiveMetadata && (!selectedCategory || brandMetadata.loading)}
                         onChange={e => setBrandName(e.target.value)}
                         className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-xl text-xs text-neutral-900 dark:text-white focus:ring-1 focus:ring-indigo-500"
-                        placeholder="e.g. JW Audio or No Brand"
-                      />
+                        placeholder={useLiveMetadata ? 'Select a platform brand' : 'e.g. JW Audio or No Brand'}
+                      />}
                       {useLiveMetadata && <datalist id="marketplace-publish-brand-options">
                         {brandMetadata.brands.map(brand=><option key={brand.brand_id} value={brandLabel(brand)}>{brand.original_brand_name}</option>)}
                       </datalist>}
                       <div className="text-[10px] text-neutral-400">
-                        {readOnlyMetadata ? <>
+                        {useLiveMetadata ? <>
                           {brandMetadata.loading ? 'Loading platform brands...' : 'Choose the platform brand and ID; do not substitute an unverified brand name.'}
                           {brandMetadata.hasMore && <button type="button" onClick={brandMetadata.loadMore}>Load more brands</button>}
                           {brandMetadata.error && <button type="button" onClick={brandMetadata.retry}>Retry brands</button>}

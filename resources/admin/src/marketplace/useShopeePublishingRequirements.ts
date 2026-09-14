@@ -2,7 +2,7 @@ import {useEffect,useMemo,useState} from 'react';
 import {marketplaceRequest} from '../integration/marketplaceData';
 
 export interface ShopeeAttribute {
- attribute_id:number;mandatory:boolean;attribute_info:{name?:string;display_name?:string;input_type:number;max_value_count?:number;attribute_unit_list?:string[];format_type?:number};
+ attribute_id:number;mandatory:boolean;attribute_info:{name?:string;display_name?:string;input_type:number;max_value_count?:number;attribute_unit_list?:string[];format_type?:number;support_search_value?:boolean};
  attribute_value_list:{value_id:number;name:string;value_unit?:string;child_attribute_list?:ShopeeAttribute[]}[];
 }
 export interface ShopeeChannel {logistics_channel_id:number;logistics_channel_name:string;enabled:boolean;fee_type:string;force_enable?:boolean;compulsory_channel?:boolean;
@@ -33,8 +33,8 @@ export function useShopeePublishingRequirements(storeId:string|null,categoryId:s
   if(!key)return;
   let active=true;setSnapshot(null);setEdits({key,attributes:{},channels:{}});
   Promise.all([
-   marketplaceRequest<{storeId:number;categoryId:number;data:ShopeeAttribute[]}>(`/stores/${storeId}/listing-attributes?categoryId=${encodeURIComponent(categoryId)}`),
-   marketplaceRequest<{storeId:number;data:ShopeeChannel[]}>(`/stores/${storeId}/listing-logistics`),
+   marketplaceRequest<{storeId:number;categoryId:number;data:ShopeeAttribute[]}>(`/stores/${storeId}/listing-attributes?categoryId=${encodeURIComponent(categoryId)}&refresh=${attempt>0?1:0}`),
+   marketplaceRequest<{storeId:number;data:ShopeeChannel[]}>(`/stores/${storeId}/listing-logistics?refresh=${attempt>0?1:0}`),
   ]).then(([attributes,logistics])=>{
    if(String(attributes.storeId)!==storeId||String(attributes.categoryId)!==categoryId||String(logistics.storeId)!==storeId
     ||!Array.isArray(attributes.data)||!Array.isArray(logistics.data)||logistics.data.some(channel=>!Number.isSafeInteger(channel.logistics_channel_id)||typeof channel.enabled!=='boolean'))throw new Error('Store requirements could not be verified.');
@@ -65,7 +65,7 @@ export function useShopeePublishingRequirements(storeId:string|null,categoryId:s
    return {fields,attributes,logistics,errors};
   }catch(error){return {fields:[],attributes:[],logistics:[],errors:[error instanceof Error?error.message:'Review category requirements.']};}
  },[current,selections]);
- return {...computed,channels:current?.channels??[],values:selections.attributes,selectedChannels:selections.channels,
+ return {...computed,storeId,channels:current?.channels??[],values:selections.attributes,selectedChannels:selections.channels,
   loading:!!key&&!current,error:current?.error??'',retry:()=>setAttempt(value=>value+1),
   updateAttribute:(id:number,values:AttributeValue[])=>setEdits(old=>({...old,key,attributes:{...(old.key===key?old.attributes:{}),[id]:values}})),
   updateChannel:(id:number,value:ChannelReview|null)=>setEdits(old=>{const channels={...(old.key===key?old.channels:{})};if(value)channels[id]=value;else delete channels[id];return {...old,key,channels};})};

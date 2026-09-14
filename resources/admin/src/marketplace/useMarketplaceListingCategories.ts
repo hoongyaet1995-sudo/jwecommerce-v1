@@ -14,7 +14,7 @@ export function useMarketplaceListingCategories(storeId:string|null) {
   if (!storeId) return;
   let active=true;
   setSnapshot({storeId,categories:[],error:'',loading:true});
-  marketplaceRequest<{storeId:number;data:ListingCategory[]}>(`/stores/${encodeURIComponent(storeId)}/listing-categories`)
+  marketplaceRequest<{storeId:number;data:ListingCategory[]}>(`/stores/${encodeURIComponent(storeId)}/listing-categories?refresh=${revision>0?1:0}`)
    .then(result=>{
     if (String(result.storeId)!==storeId || !Array.isArray(result.data)) throw new Error('Invalid category response.');
     if (active) setSnapshot({storeId,categories:result.data,error:'',loading:false});

@@ -11,6 +11,11 @@ use RuntimeException;
 
 class MarketplaceListingMetadataController extends Controller
 {
+    private function cached(object $store, string $resource, array $parameters, callable $fetch): array
+    {
+        return app(\App\Services\Marketplace\ShopeeListingMetadataCache::class)
+            ->read($store,$resource,$parameters,$fetch,request()->boolean('refresh'));
+    }
     public function attributeValues(Request $request, int $store, ShopeeClient $client, ShopeeTokenManager $tokens)
     {
         $data=$request->validate(['attributeId'=>['required','integer','min:1','max:2147483647'],
@@ -40,7 +45,7 @@ class MarketplaceListingMetadataController extends Controller
             409, 'Connect this store to the configured Shopee environment first.');
         try {
             $accessToken = $tokens->accessToken($store);
-            $channels = $client->logisticsChannels($accessToken, (string) $connection->external_shop_id);
+            $channels = $this->cached($connection, 'logistics', [], fn()=>$client->logisticsChannels($accessToken, (string) $connection->external_shop_id));
         } catch (RuntimeException) {
             return response()->json(['message'=>'Unable to load Shopee logistics channels. Check store authorization and retry.'], 502)
                 ->header('Cache-Control', 'no-store');
@@ -83,8 +88,8 @@ class MarketplaceListingMetadataController extends Controller
             409, 'Connect this store to the configured Shopee environment first.');
         try {
             $accessToken = $tokens->accessToken($store);
-            $page = $client->brandPage($accessToken, (string) $connection->external_shop_id,
-                (int) $data['categoryId'], (int) ($data['offset'] ?? 0));
+            $page = $this->cached($connection, 'brands', [(int)$data['categoryId'],(int)($data['offset']??0)], fn()=>$client->brandPage($accessToken, (string) $connection->external_shop_id,
+                (int) $data['categoryId'], (int) ($data['offset'] ?? 0)));
         } catch (RuntimeException) {
             return response()->json(['message'=>'Unable to load Shopee brands. Check category and store authorization, then retry.'], 502)
                 ->header('Cache-Control', 'no-store');
@@ -129,9 +134,9 @@ class MarketplaceListingMetadataController extends Controller
         try {
             $accessToken = $tokens->accessToken($store);
             \App\Services\Marketplace\ShopeeListingCategory::requireLeaf(
-                $client->categoryTree($accessToken, (string) $connection->external_shop_id),
+                $this->cached($connection, 'categories', [], fn()=>$client->categoryTree($accessToken, (string) $connection->external_shop_id)),
                 (int) $data['categoryId']);
-            $tree = $client->attributeTree($accessToken, (string) $connection->external_shop_id, (int) $data['categoryId']);
+            $tree = $this->cached($connection, 'attributes', [(int)$data['categoryId']], fn()=>$client->attributeTree($accessToken, (string) $connection->external_shop_id, (int) $data['categoryId']));
         } catch (\DomainException $exception) {
             return response()->json(['message'=>$exception->getMessage()],422)->header('Cache-Control','no-store');
         } catch (RuntimeException) {
@@ -162,7 +167,7 @@ class MarketplaceListingMetadataController extends Controller
             409, 'Connect this store to the configured Shopee environment first.');
         try {
             $accessToken = $tokens->accessToken($store);
-            $rows = $client->categoryTree($accessToken, (string) $connection->external_shop_id);
+            $rows = $this->cached($connection, 'categories', [], fn()=>$client->categoryTree($accessToken, (string) $connection->external_shop_id));
         } catch (RuntimeException) {
             return response()->json(['message'=>'Unable to load Shopee categories. Check store authorization and retry.'], 502)
                 ->header('Cache-Control', 'no-store');

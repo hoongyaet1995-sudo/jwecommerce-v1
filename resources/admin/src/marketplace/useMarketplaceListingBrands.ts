@@ -16,7 +16,7 @@ export function useMarketplaceListingBrands(storeId:string|null,categoryId:strin
   let active=true;
   setSnapshot(old=>({key,brands:offset && old?.key===key ? old.brands : [],next:offset,
    hasMore:false,mandatory:old?.key===key ? old.mandatory : false,loading:true,error:''}));
-  const params=new URLSearchParams({categoryId:categoryId!,offset:String(offset)});
+  const params=new URLSearchParams({categoryId:categoryId!,offset:String(offset),refresh:request.revision>0?'1':'0'});
   marketplaceRequest<{storeId:number;categoryId:number;data:Page}>(`/stores/${encodeURIComponent(storeId!)}/listing-brands?${params}`)
    .then(result=>{
     const page=result.data;

@@ -19,7 +19,7 @@ it('keeps category results scoped to the destination and clears them after failu
   await act(async()=>root.render(<Probe id="1"/>));
   await act(async()=>root.render(<Probe id="2"/>));
   expect(state!.categories[0].category_id).toBe(20);
-  expect(request).toHaveBeenLastCalledWith('/stores/2/listing-categories');
+  expect(request).toHaveBeenLastCalledWith('/stores/2/listing-categories?refresh=0');
   await act(async()=>old({storeId:1,data:[]}));
   expect(state!.categories[0].category_id).toBe(20);
   await act(async()=>state!.reload());

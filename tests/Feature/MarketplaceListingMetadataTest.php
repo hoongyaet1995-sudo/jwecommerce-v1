@@ -130,6 +130,7 @@ class MarketplaceListingMetadataTest extends TestCase
             ]]]),
             '*/api/v2/product/get_attribute_tree*'=>Http::response(['response'=>['list'=>[['category_id'=>106511, 'attribute_tree'=>$tree]]]]),
         ]);
+        $tree[0]['attribute_info']['name']='Material';
         $response = $this->getJson($url.'?categoryId=106511')->assertOk()
             ->assertExactJson(['storeId'=>1, 'categoryId'=>106511, 'data'=>$tree]);
         $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));

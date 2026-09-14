@@ -20,7 +20,7 @@ class ShopeeAuthorizationService
         $identity = $this->client->shopInfo($tokens['access_token'], $shopId);
         $environment = config('marketplace.shopee.environment');
 
-        return DB::transaction(function () use ($attempt, $tokens, $identity, $environment) {
+        $storeId = DB::transaction(function () use ($attempt, $tokens, $identity, $environment) {
             $store = $attempt->reconnect_store_id
                 ? DB::table('marketplace_stores')->where('id', $attempt->reconnect_store_id)->lockForUpdate()->first()
                 : null;
@@ -51,5 +51,12 @@ class ShopeeAuthorizationService
 
             return $id;
         });
+        try {
+            \App\Jobs\WarmShopeeListingMetadata::dispatch($storeId)->afterCommit();
+        } catch (\Throwable) {
+            // Authorization is durable; metadata remains available through on-demand reads.
+            \Illuminate\Support\Facades\Log::warning('Shopee metadata warmup could not be queued', ['store_id'=>$storeId]);
+        }
+        return $storeId;
     }
 }
