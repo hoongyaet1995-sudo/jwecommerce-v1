@@ -14,14 +14,15 @@ final class BasicPublishingDestination
         $store=DB::table('marketplace_stores')->where('id',$storeId)->first();
         abort_unless($store && in_array($store->platform,['shopee','lazada'],true)
             && $store->status==='connected' && $store->data_classification==='test'
-            && $store->classified_by && $store->classified_at
-            && (string)config('marketplace.'.$store->platform.'.test_store_id')===(string)$storeId,
-            403,'Publishing requires the designated classified test store.');
+            && $store->classified_by && $store->classified_at,
+            403,'Publishing requires a connected, classified test store.');
         $token=MarketplaceStoreToken::where('store_id',$storeId)->first();
         if ($store->platform==='shopee') {
             abort_unless($store->environment==='sandbox' && config('marketplace.shopee.environment')==='sandbox'
                 && $token && $token->application_id===(string)config('marketplace.shopee.partner_id'),403,'Shopee sandbox credentials required.');
         } else {
+            abort_unless((string)config('marketplace.lazada.test_store_id')===(string)$storeId,
+                403,'Publishing requires the designated Lazada test store.');
             abort_unless($store->environment==='live' && $store->region==='MY'
                 && $store->external_shop_id==='300163725140' && (string)config('marketplace.lazada.app_key')==='139209'
                 && $token?->application_id==='139209' && $token->credential_source==='official_test'
