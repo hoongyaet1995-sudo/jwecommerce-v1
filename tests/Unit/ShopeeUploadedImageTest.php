@@ -7,6 +7,14 @@ use PHPUnit\Framework\TestCase;
 
 class ShopeeUploadedImageTest extends TestCase
 {
+    public function test_successful_provider_list_accepts_explicit_null_error(): void
+    {
+        $this->assertSame('image-123', ShopeeUploadedImage::identity(['error'=>'','response'=>[
+            'image_info'=>['image_id'=>'image-123'],
+            'image_info_list'=>[['id'=>0,'error'=>null,'image_info'=>['image_id'=>'image-123']]],
+        ]]));
+    }
+
     public function test_single_image_success_returns_platform_identity(): void
     {
         $this->assertSame('image-123',ShopeeUploadedImage::identity(['error'=>'','response'=>[

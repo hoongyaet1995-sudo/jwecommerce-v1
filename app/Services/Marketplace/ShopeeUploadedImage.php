@@ -14,7 +14,8 @@ final class ShopeeUploadedImage
         if (isset($response['image_info_list'])) {
             $rows=$response['image_info_list'];
             if (!is_array($rows) || !array_is_list($rows) || count($rows)!==1
-                || ($rows[0]['id'] ?? null)!==0 || ($rows[0]['error'] ?? null)!=='') {
+                || !is_array($rows[0]) || ($rows[0]['id'] ?? null)!==0
+                || !array_key_exists('error',$rows[0]) || !in_array($rows[0]['error'],['',null],true)) {
                 throw new \RuntimeException('Shopee image upload contained a failed or unexpected image.');
             }
             $rowId=$rows[0]['image_info']['image_id'] ?? null;
