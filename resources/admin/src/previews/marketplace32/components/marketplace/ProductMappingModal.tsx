@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import {OwnershipTransferReview} from './OwnershipTransferReview';
 import {MarketplaceRequestError} from '../../../../integration/marketplaceData';
 import { useAdmin } from '../../context/AdminContext';
 import { 
@@ -441,7 +442,7 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
                   ) : (
                     <div className="p-3 rounded-lg bg-emerald-100/50 dark:bg-emerald-950/30 text-xs text-emerald-900 dark:text-emerald-200 flex items-center gap-2">
                       <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>SKU availability check passed: <strong className="font-mono">{storeVariant.channelSellerSku || 'Draft SKU will be generated'}</strong> is ready for creation.</span>
+                      <span>SKU and previous import ownership will be verified by the server when you submit.</span>
                     </div>
                   )}
 
@@ -551,6 +552,7 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
                   </div>
 
                   {/* Reassurance text & confirm button */}
+                  {createMode==='append_variant' && targetAppendProductId && <OwnershipTransferReview key={targetAppendProductId+storeVariant.id} listingId={storeVariant.id} productId={targetAppendProductId}/>}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
                     <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
                       Creates an unpublished JW Draft catalog item and establishes a 1:1 auto-link. Does not affect live store listings.

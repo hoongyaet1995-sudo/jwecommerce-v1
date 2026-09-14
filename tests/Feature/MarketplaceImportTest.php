@@ -12,6 +12,28 @@ class MarketplaceImportTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_reviewed_transfer_moves_only_after_confirmation_and_preserves_identity():void
+    {
+        $this->catalog();$listing=DB::table('marketplace_listing_variants')->value('id');
+        $id=app(MarketplaceImportService::class)->importVariantAsProduct($listing,42);
+        $variant=\App\Models\ProductVariant::findOrFail($id);$old=$variant->product_id;
+        app(\App\Services\Marketplace\MarketplaceFoundationService::class)->map($listing,null,null,42);
+        $to=Product::create(['title'=>'Destination','handle'=>'destination','base_price'=>100,'status'=>'draft']);
+        $service=app(\App\Services\Marketplace\VariantOwnershipTransfer::class);
+        $review=$service->run($listing,$to->id,42);
+        $this->assertSame($old,$variant->fresh()->product_id);
+        $variant->update(['stock'=>1]);
+        try {$service->run($listing,$to->id,42,$review['token'],'Correct parent selection');$this->fail('Stock must block a previously reviewed move');}
+        catch(\Symfony\Component\HttpKernel\Exception\HttpException $e){$this->assertSame(409,$e->getStatusCode());}
+        $this->assertSame($old,$variant->fresh()->product_id);
+        $variant->update(['stock'=>0]);$review=$service->run($listing,$to->id,42);
+        $service->run($listing,$to->id,42,$review['token'],'Correct parent selection');
+        $this->assertSame($to->id,$variant->fresh()->product_id);
+        $this->assertDatabaseHas('marketplace_variant_mappings',['listing_variant_id'=>$listing,'product_variant_id'=>$id]);
+        $this->assertDatabaseHas('marketplace_variant_transfers',['product_variant_id'=>$id,'from_product_id'=>$old,'to_product_id'=>$to->id,'actor_id'=>42]);
+        $this->assertDatabaseCount('product_variants',1);
+    }
+
     public function test_append_reuses_sku_in_selected_parent_without_overwriting_stock(): void
     {
         $this->catalog();

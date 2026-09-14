@@ -11,6 +11,12 @@ class MarketplaceImportController extends Controller
 {
     public function variant(Request $request, int $listing, MarketplaceImportService $imports)
     {
+        if($request->has('reviewTransfer') || $request->has('transferToken')) {
+            abort_if(array_diff(array_keys($request->except('_token')),['productId','reviewTransfer','transferToken','reason']),422);
+            $data=$request->validate(['productId'=>['required','integer','min:1'],'reviewTransfer'=>['sometimes','accepted'],'transferToken'=>['sometimes','required','string'],'reason'=>['sometimes','string','max:500']]);
+            abort_if($request->has('reviewTransfer') && $request->has('transferToken'),422);
+            return response()->json(app(\App\Services\Marketplace\VariantOwnershipTransfer::class)->run($listing,(int)$data['productId'],$request->user()->id,$data['transferToken']??null,$data['reason']??null));
+        }
         abort_if(array_diff(array_keys($request->except('_token')), ['productId', 'newProduct', 'sku']), 422,
             'Only the destination JW product and reviewed SKU may be selected.');
         $review = $request->validate(['sku'=>['sometimes', 'required', 'string', 'max:255']]);
