@@ -21,6 +21,7 @@ final class MarketplacePublishingSource
                     422,'Each enabled variant requires a SKU and positive price.');
                 $source['variants'][]=['id'=>$variant->id,'sku'=>$variant->sku,'title'=>$variant->title,
                     'price_minor'=>(int)$variant->price,'options'=>$variant->options,
+                    'image_url'=>$variant->image_url,'option_image'=>$variant->option_image,
                     'weight_grams'=>$variant->weight_grams,'package_length_cm'=>$variant->package_length_cm,
                     'package_width_cm'=>$variant->package_width_cm,'package_height_cm'=>$variant->package_height_cm,
                     'classification'=>$variant->data_classification,'initial_quantity'=>0];

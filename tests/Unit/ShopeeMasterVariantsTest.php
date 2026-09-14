@@ -11,6 +11,12 @@ class ShopeeMasterVariantsTest extends TestCase
             'variants'=>[['sku'=>'RED-S','price_minor'=>1250,'options'=>['Color'=>'Red','Size'=>'S']],
                 ['sku'=>'BLUE-L','price_minor'=>1599,'options'=>['Color'=>'Blue','Size'=>'L']]]];
     }
+    public function test_rich_description_is_converted_to_readable_plain_text(): void
+    {
+        $source=$this->source()+['title'=>'PS5','description'=>'<p>Console &amp; controller</p><p>Details<br>More</p>'];
+        $bound=\App\Services\Marketplace\ShopeePublishingMasterData::bind($source,[]);
+        $this->assertSame("Console & controller\nDetails\nMore",$bound['description']);
+    }
     public function test_preserves_jw_option_order_and_sparse_combinations_without_inventing_variants(): void
     {
         $result=ShopeeMasterVariants::fromSource($this->source());

@@ -17,6 +17,20 @@ final class MarketplaceLocalImage
         $image = ProductImage::where('product_id', $productId)->findOrFail($imageId);
         $path = (string) $image->path;
 
+        return $this->readPath($path);
+    }
+
+    public function readVariant(int $productId, int $variantId, string $expectedPath): string
+    {
+        $variant=\App\Models\ProductVariant::where('product_id',$productId)->findOrFail($variantId);
+        $path=$variant->option_image ?: $variant->image_url;
+        if ($path!==$expectedPath) throw new DomainException('Variant image changed. Review the product again.');
+        return $this->readPath((string)$path);
+    }
+
+    private function readPath(string $path): string
+    {
+
         if (MediaUrlPolicy::isManaged($path) && preg_match('/\.(jpg|png|webp|gif)$/D', $path)) {
             $root = Storage::disk('public')->path('cms/media');
             $candidate = Storage::disk('public')->path(substr($path, strlen('/storage/')));

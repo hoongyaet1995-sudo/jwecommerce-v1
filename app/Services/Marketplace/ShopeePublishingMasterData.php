@@ -10,7 +10,8 @@ final class ShopeePublishingMasterData
         $variants=$source['variants']??[];
         if (!$variants) throw new DomainException('Review enabled JW variants before publishing.');
         $payload['item_name']=$source['title'];
-        $payload['description']=$source['description']??'';
+        $description=preg_replace('#<br\s*/?>|</(?:p|div|li|h[1-6])\s*>#i',"\n",$source['description']??'');
+        $payload['description']=trim(html_entity_decode(strip_tags($description),ENT_QUOTES|ENT_HTML5,'UTF-8'));
         $payload['item_sku']=$variants[0]['sku'];
         $payload['original_price']=$variants[0]['price_minor']/100;
         $payload['seller_stock']=[['stock'=>0]];

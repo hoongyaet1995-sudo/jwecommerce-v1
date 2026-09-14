@@ -15,6 +15,7 @@ final class ShopeePublishingImages
                 $this->images->prepare($storeId,(int)$source['product_id'],(int)$image['id'],$actorId);
             }
         }
+        app(ShopeeVariantImages::class)->prepare($storeId,$source,$actorId);
     }
 
     public function bind(int $storeId,array $source,array $payload): array
@@ -35,6 +36,6 @@ final class ShopeePublishingImages
                 }
             }
         }
-        return $payload;
+        return app(ShopeeVariantImages::class)->bind($storeId,$source,$payload);
     }
 }
