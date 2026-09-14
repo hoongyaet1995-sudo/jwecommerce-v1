@@ -467,6 +467,17 @@ class ShopeeClient
         }
 
         foreach ($models as &$model) {
+            $model['variant_options'] = [];
+            foreach (($payload['response']['tier_variation'] ?? []) as $tier => $definition) {
+                $name=$definition['name']??null;
+                $index=$model['tier_index'][$tier]??null;
+                $value=is_int($index)?($definition['option_list'][$index]['option']??null):null;
+                if (!is_string($name)||trim($name)===''||!is_string($value)||trim($value)===''||isset($model['variant_options'][$name])) {
+                    throw new RuntimeException('Shopee variant option definitions were incomplete.');
+                }
+                $model['variant_options'][$name]=$value;
+            }
+
             foreach (($model['tier_index'] ?? []) as $tier => $index) {
                 $image = data_get($payload, "response.tier_variation.$tier.option_list.$index.image.image_url");
                 if (is_string($image) && $image !== '') {

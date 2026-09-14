@@ -12,6 +12,24 @@ class MarketplaceImportTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_imported_options_round_trip_to_shopee_models(): void
+    {
+        $this->catalog();
+        foreach(DB::table('marketplace_listing_variants')->orderBy('id')->get() as $i=>$listing) {
+            $data=json_decode($listing->observed_data,true);
+            $data['variantOptions']=['Color'=>$i===0?'Black':'Blue','Size'=>'L'];
+            DB::table('marketplace_listing_variants')->where('id',$listing->id)->update(['observed_data'=>json_encode($data)]);
+        }
+        $parent=Product::create(['title'=>'Options','handle'=>'options','base_price'=>100]);
+        foreach(DB::table('marketplace_listing_variants')->pluck('id') as $id) app(MarketplaceImportService::class)->importVariant($id,$parent->id,42);
+        $source=app(\App\Services\Marketplace\MarketplacePublishingSource::class)->read($parent->id);
+        $result=\App\Services\Marketplace\ShopeeMasterVariants::fromSource($source);
+        $this->assertCount(2,$result['tier_variation']);
+        $this->assertCount(2,$result['model']);
+        $this->assertSame(['Color'=>'Black','Size'=>'L'],$parent->variants()->orderBy('id')->first()->options);
+        $this->assertSame(0,(int)$parent->variants()->sum('stock'));
+    }
+
     public function test_batch_append_keeps_mapped_variants_adds_missing_and_is_retry_safe(): void
     {
         $this->catalog();

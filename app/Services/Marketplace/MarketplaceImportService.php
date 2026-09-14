@@ -14,6 +14,12 @@ class MarketplaceImportService
     private function variantDetails(array $data): array
     {
         $result=[];
+        if (!empty($data['variantOptions'])) {
+            $options=$data['variantOptions'];
+            abort_unless(is_array($options)&&!array_is_list($options),422,'Invalid channel variant options.');
+            foreach($options as $name=>$value) abort_unless(is_string($name)&&trim($name)!==''&&is_string($value)&&trim($value)!=='',422,'Invalid channel variant options.');
+            $result['options']=$options;
+        }
         $image=$data['variantImage'] ?? null;
         if ($image !== null && $image !== '') {
             abort_unless(is_string($image) && strlen($image)<=255 && MediaUrlPolicy::isSafe($image),422,'Review the variant image URL before import.');
@@ -115,6 +121,7 @@ class MarketplaceImportService
                 return (int)$existing->id;
             }
             $variant = $product->variants()->create(['sku'=>$sku, 'title'=>trim($title), 'price'=>$cents, 'stock'=>0, 'enabled'=>true] + $this->variantDetails($data));
+            ImportedProductOptions::merge($product,$variant->options??[]);
             app(\App\Services\Inventory\TestDataClassificationService::class)->inheritVariant((int)$variant->id,(int)$source->store_id);
             $this->mappings->map($listingId, $variant->id, $product->id, $actorId);
             DB::table('marketplace_variant_imports')->insert(['listing_variant_id'=>$listingId,
@@ -196,7 +203,8 @@ class MarketplaceImportService
             foreach ($prepared as $row) {
                 $variant = $product->variants()->create(['sku'=>$row['sku'], 'title'=>$row['title'],
                     'price'=>$row['cents'], 'stock'=>0, 'enabled'=>true] + $row['details']);
-                app(\App\Services\Inventory\TestDataClassificationService::class)->inheritVariant((int)$variant->id,$storeId);
+                ImportedProductOptions::merge($product,$variant->options??[]);
+            app(\App\Services\Inventory\TestDataClassificationService::class)->inheritVariant((int)$variant->id,$storeId);
                 $this->mappings->map($row['listing']->id, $variant->id, $product->id, $actorId);
             }
             DB::table('marketplace_product_imports')->insert(['store_id'=>$storeId, 'external_product_id'=>$externalProductId,

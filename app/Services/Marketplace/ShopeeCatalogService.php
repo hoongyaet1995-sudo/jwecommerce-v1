@@ -52,6 +52,7 @@ class ShopeeCatalogService
                         'productTitle'=>$item['item_name'] ?? null, 'productImage'=>data_get($item, 'image.image_url_list.0'),
                         'productImages'=>data_get($item, 'image.image_url_list', []),
                         'variantImage'=>$model['variant_image_url'] ?? null,
+                        'variantOptions'=>$model['variant_options'] ?? [],
                         'weightGrams'=>is_numeric($model['weight'] ?? $item['weight'] ?? null)
                             ? (int) round((float) ($model['weight'] ?? $item['weight']) * 1000) : null,
                         'packageLengthCm'=>data_get($model, 'dimension.package_length', data_get($item, 'dimension.package_length')),
