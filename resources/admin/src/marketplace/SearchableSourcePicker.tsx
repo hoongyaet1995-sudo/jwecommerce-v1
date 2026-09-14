@@ -1,6 +1,6 @@
 import React,{useRef} from 'react';
 import {Folder,FolderArchive,ChevronDown,Search,Check} from 'lucide-react';
-type Category={id:string;name:string;slug:string;productCount?:number;disabled?:boolean};
+type Category={id:string;name:string;slug:string;productCount?:number;disabled?:boolean;parentId?:string};
 type Collection={id:string;title:string;slug:string;productCount?:number};
 // Copied from Collection Tabs SearchableSourcePicker; IDs replace item counts.
 interface SearchableSourcePickerProps {
@@ -20,6 +20,7 @@ export const SearchableSourcePicker: React.FC<SearchableSourcePickerProps> = ({
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
+  const [parentId,setParentId]=React.useState<string|null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -32,7 +33,7 @@ export const SearchableSourcePicker: React.FC<SearchableSourcePickerProps> = ({
 
   const selectedCategory = categories.find(c => c.id === sourceId);
   const selectedCollection = collections.find(c => c.id === sourceId);
-  const filteredCategories = categories.filter(c =>
+  const filteredCategories = categories.filter(c => (parentId===null || c.parentId===parentId)).filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) || c.slug.toLowerCase().includes(search.toLowerCase()) || c.id.includes(search.trim())
   );
   const filteredCollections = collections.filter(c =>
@@ -44,7 +45,7 @@ export const SearchableSourcePicker: React.FC<SearchableSourcePickerProps> = ({
       <button
         type="button"
         aria-label="Marketplace category" aria-expanded={isOpen}
-        onClick={() => {setSearch('');setIsOpen(!isOpen);}}
+        onClick={() => {setSearch('');setParentId(null);setIsOpen(!isOpen);}}
         className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl border text-xs font-medium transition-all text-left cursor-pointer ${
           sourceId
             ? 'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white hover:border-indigo-400'
@@ -93,6 +94,7 @@ export const SearchableSourcePicker: React.FC<SearchableSourcePickerProps> = ({
             />
           </div>
 
+          {parentId!==null && <button type="button" className="text-xs text-indigo-500" onClick={()=>{setParentId(null);setSearch('');}}>← All categories · {categories.find(c=>c.id===parentId)?.name}</button>}
           <div className="space-y-0.5 max-h-40 overflow-y-auto pr-0.5">
             {sourceType === 'category' ? (
               filteredCategories.length > 0 ? (
@@ -101,9 +103,8 @@ export const SearchableSourcePicker: React.FC<SearchableSourcePickerProps> = ({
                   return (
                     <button
                       key={cat.id}
-                      disabled={cat.disabled}
                       type="button"
-                      onClick={() => { onChange(cat.id, cat.name); setIsOpen(false); setSearch(''); }}
+                      onClick={() => { if(cat.disabled){setParentId(cat.id);setSearch('');return;} onChange(cat.id, cat.name); setIsOpen(false); setSearch(''); }}
                       className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition-colors text-left cursor-pointer ${
                         isSelected
                           ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold'
@@ -112,7 +113,7 @@ export const SearchableSourcePicker: React.FC<SearchableSourcePickerProps> = ({
                     >
                       <div className="flex items-center gap-2 truncate">
                         <Folder className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                        <span className="truncate">{cat.name}</span>
+                        <span className="truncate">{cat.name}{cat.disabled ? ' — View subcategories' : ''}</span>
                       </div>
                       <div className="flex items-center gap-1 shrink-0 ml-2">
                         <span className="text-[10px] text-neutral-400 font-mono">{cat.id}</span>

@@ -810,7 +810,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                         <span>Marketplace Category Taxonomy</span>
                         <span className="text-rose-500">*</span>
                       </label>
-                      {useLiveMetadata ? <SearchableSourcePicker sourceType="category" sourceId={selectedCategory} onChange={setSelectedCategory} collections={[]} categories={categoryMetadata.categories.map(c=>({id:String(c.category_id),name:c.display_category_name||c.original_category_name,slug:c.original_category_name||'',disabled:c.has_children}))} /> : (
+                      {useLiveMetadata ? <SearchableSourcePicker sourceType="category" sourceId={selectedCategory} onChange={setSelectedCategory} collections={[]} categories={categoryMetadata.categories.map(c=>({id:String(c.category_id),name:c.display_category_name||c.original_category_name,slug:c.original_category_name||'',disabled:c.has_children,parentId:String(c.parent_category_id)}))} /> : (
                       <select
                         value={selectedCategory}
                         disabled={useLiveMetadata && (categoryMetadata.loading || !!categoryMetadata.error)}

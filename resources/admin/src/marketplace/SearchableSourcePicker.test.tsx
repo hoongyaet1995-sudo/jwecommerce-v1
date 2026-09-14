@@ -20,3 +20,14 @@ it('shows all on open, filters names and IDs, clears and selects',async()=>{
  await act(async()=>node.querySelector('button')!.click());expect(node.textContent).toContain('Games');
  await act(async()=>root.unmount());
 });
+it('opens parent categories and commits only a selected leaf',async()=>{
+ vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+ const node=document.createElement('div'),root=createRoot(node),change=vi.fn();
+ await act(async()=>root.render(<SearchableSourcePicker sourceType="category" sourceId="" onChange={change} collections={[]} categories={[{id:'300014',name:'Muslim Fashion',slug:'fashion',disabled:true,parentId:'0'},{id:'77',name:'Dresses',slug:'dresses',parentId:'300014'}]}/>));
+ await act(async()=>node.querySelector('button')!.click());
+ await act(async()=>Array.from(node.querySelectorAll('button')).find(b=>b.textContent?.includes('View subcategories'))!.click());
+ expect(change).not.toHaveBeenCalled();expect(node.textContent).toContain('All categories');expect(node.textContent).toContain('Dresses');
+ await act(async()=>Array.from(node.querySelectorAll('button')).find(b=>b.textContent?.includes('Dresses'))!.click());
+ expect(change).toHaveBeenCalledWith('77','Dresses');expect(node.querySelector('input')).toBeNull();
+ await act(async()=>root.unmount());
+});
