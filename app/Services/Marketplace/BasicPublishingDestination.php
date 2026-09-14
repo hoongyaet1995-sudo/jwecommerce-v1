@@ -13,9 +13,8 @@ final class BasicPublishingDestination
         if (config('marketplace.basic_wms_enabled') !== true) return;
         $store=DB::table('marketplace_stores')->where('id',$storeId)->first();
         abort_unless($store && in_array($store->platform,['shopee','lazada'],true)
-            && $store->status==='connected' && $store->data_classification==='test'
-            && $store->classified_by && $store->classified_at,
-            403,'Publishing requires a connected, classified test store.');
+            && $store->status==='connected',
+            403,'Connect the destination store before publishing.');
         $token=MarketplaceStoreToken::where('store_id',$storeId)->first();
         if ($store->platform==='shopee') {
             abort_unless($store->environment==='sandbox' && config('marketplace.shopee.environment')==='sandbox'
@@ -29,8 +28,7 @@ final class BasicPublishingDestination
                 && $token->test_lease_expires_at?->isFuture()
                 && LazadaOfficialTestAccess::environmentAllows($store,$token->application_id),403,'Verified Lazada test credentials required.');
         }
-        $variants=DB::table('product_variants')->where('product_id',$productId)->where('enabled',true)->get();
-        abort_unless($variants->isNotEmpty() && $variants->every(fn($variant)=>$variant->data_classification==='test'
-            && $variant->classified_by && $variant->classified_at),403,'Publishing requires classified test variants.');
+        abort_unless(DB::table('product_variants')->where('product_id',$productId)->where('enabled',true)->exists(),
+            422,'Enable at least one product variant before publishing.');
     }
 }

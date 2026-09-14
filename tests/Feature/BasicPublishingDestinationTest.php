@@ -17,19 +17,19 @@ class BasicPublishingDestinationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_same_product_can_target_two_classified_shopee_sandbox_stores(): void
+    public function test_unclassified_product_can_target_two_unclassified_shopee_sandbox_stores(): void
     {
         config(['marketplace.basic_wms_enabled'=>true,'marketplace.shopee.environment'=>'sandbox',
             'marketplace.shopee.partner_id'=>'123','marketplace.shopee.test_store_id'=>999]);
         $actor=User::factory()->create(['is_admin'=>true]);
         $product=Product::create(['title'=>'Shared product','handle'=>'shared-product','base_price'=>100]);
         $variant=$product->variants()->create(['title'=>'Default','sku'=>'SHARED','price'=>100,'stock'=>77,'enabled'=>true]);
-        app(TestDataClassificationService::class)->markTest('sku',$variant->id,$actor,'Sandbox test');
+
         $tasks=[];
         foreach (['1001','1002'] as $shop) {
             $id=DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee','shop_name'=>'Sandbox',
                 'external_shop_id'=>$shop,'region'=>'MY','environment'=>'sandbox','status'=>'connected']);
-            app(TestDataClassificationService::class)->markTest('store',$id,$actor,'Sandbox test');
+
             MarketplaceStoreToken::create(['store_id'=>$id,'application_id'=>'123','access_token'=>'fixture','access_expires_at'=>now()->addHour()]);
             app(BasicPublishingDestination::class)->check($id,$product->id);
             $tasks[]=app(PublishingTasks::class)->create($id,$product->id,$actor->id,'9285db80-1111-4111-8111-123456789012',[]);
