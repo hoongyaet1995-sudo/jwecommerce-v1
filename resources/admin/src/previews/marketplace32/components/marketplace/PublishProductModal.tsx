@@ -4,6 +4,7 @@ import { Product, MarketplacePlatform, PublishListingOptions, PublishAsyncStatus
 import { MarketplaceLogo } from './MarketplaceLogo';
 import {useMarketplacePublishingTask} from '../../../../marketplace/useMarketplacePublishingTask';
 import {dispatchSavedPublishingTask} from '../../../../marketplace/dispatchSavedPublishingTask';
+import {usePublishingProgress} from '../../../../marketplace/usePublishingProgress';
 import {useMarketplaceListingCategories} from '../../../../marketplace/useMarketplaceListingCategories';
 import {useMarketplaceListingBrands} from '../../../../marketplace/useMarketplaceListingBrands';
 import {readPublishingSource,type PublishingSource} from '../../../../integration/marketplacePublishing';
@@ -71,8 +72,12 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   const [submittedTaskId, setSubmittedTaskId] = useState<string>();
   const taskId = suppliedTaskId ?? submittedTaskId;
   const submissionStarted = useRef(false);
+  const [presentProgress,setPresentProgress]=useState(false);
+  useEffect(()=>{if(!isOpen)setPresentProgress(false);},[isOpen]);
   const [simulationStep, setCurrentStep] = useState<WizardStep>('destination');
   const monitor = useMarketplacePublishingTask(taskId ?? null,isOpen);
+  const progressFailed=!!monitor.error||monitor.task?.status==='rejected'||monitor.task?.status==='uncertain';
+  const progressStep=usePublishingProgress(presentProgress,!!taskId,monitor.task?.status==='succeeded',monitor.task?.mappingComplete===true,progressFailed);
   const [dispatching,setDispatching]=useState(false);
   const executeSaved=async(id:string)=>{
     setDispatching(true);
@@ -80,7 +85,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
     catch(error){addToast({type:'error',title:'Check saved publishing task',message:error instanceof Error?error.message:'Check this task before retrying.'});}
     finally{setDispatching(false);monitor.checkStatus();}
   };
-  const currentStep = taskId ? 'publishing' : simulationStep;
+  const currentStep = taskId || presentProgress ? 'publishing' : simulationStep;
 
   // Step 1: Destination & Product
   const [selectedProductId, setSelectedProductId] = useState<string>(preselectedProductId || '');
@@ -142,7 +147,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   const [simulationExternalId, setGeneratedExternalItemId] = useState<string>('');
   const [simulationJobId, setGeneratedJobId] = useState<string>('');
   const [simulationRejection, setRejectionReason] = useState<string>('');
-  const asyncStatus:PublishAsyncStatus = taskId
+  const asyncStatus:PublishAsyncStatus = presentProgress&&!progressFailed&&progressStep<4 ? 'processing' : taskId
     ? (monitor.error || !monitor.task ? 'uncertain' : monitor.task.status === 'succeeded' ? 'success' : monitor.task.status)
     : simulationStatus;
   const generatedJobId = taskId ?? simulationJobId;
@@ -262,6 +267,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
     if (submitReviewed) {
       if (submissionStarted.current) return;
       submissionStarted.current = true;
+      setPresentProgress(true);
       try {
         const id = await submitReviewed(targetProduct.id, targetConnection.id, {
           sourceRevision: source?.revision,
@@ -275,6 +281,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
         setSubmittedTaskId(id);
         void executeSaved(id);
       } catch (error) {
+        setPresentProgress(false);
         if(error&&typeof error==='object'&&'status' in error&&typeof error.status==='number'&&error.status>=400&&error.status<500&&error.status!==404)submissionStarted.current=false;
         addToast({type:'error',title:'Check publishing request',message:error instanceof Error?error.message:'The saved task could not be confirmed. Recover the original request before submitting again.'});
       }
@@ -446,7 +453,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                       {asyncStatus === 'queued' ? 'Queued for Marketplace Dispatch' : 'Communicating with Open API Gateway'}
                     </h3>
                     <p className="text-sm text-neutral-600 dark:text-neutral-300">
-                      {asyncStepMessage}
+                      {presentProgress&&!taskId?'Preparing your publishing request…':asyncStepMessage}
                     </p>
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-neutral-100 dark:bg-neutral-800 text-xs font-mono text-neutral-600 dark:text-neutral-400">
                       <Clock className="w-3.5 h-3.5" />
@@ -457,18 +464,10 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
 
                   {/* Asynchronous Step Tracker */}
                   <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700/60 text-left space-y-3">
-                    <div className="flex items-center gap-3 text-xs">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span className="text-neutral-700 dark:text-neutral-200 font-medium">{taskId ? '1. Reading the persisted publishing task' : '1. Local catalog & mandatory attributes payload verified'}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs">
-                      <RefreshCw className="w-4 h-4 text-indigo-500 animate-spin shrink-0" />
-                      <span className="text-neutral-900 dark:text-white font-semibold">{taskId ? `2. Destination store #${monitor.task?.storeId ?? '—'}` : `2. Dispatching to ${targetConnection.shopName} (${targetConnection.platform.toUpperCase()})`}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-neutral-400">
-                      <div className="w-4 h-4 rounded-full border border-neutral-300 dark:border-neutral-600 flex items-center justify-center text-[10px]">3</div>
-                      <span>3. Awaiting external platform item ID and establishing 1:1 auto-link</span>
-                    </div>
+                    {['Preparing and saving publishing task','Uploading product, images and variants','Confirming platform result and variant mapping'].map((label,index)=><div key={label} className="flex items-center gap-3 text-xs">
+                      {progressStep>index?<CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0"/>:progressStep===index?<RefreshCw className="w-4 h-4 text-indigo-500 animate-spin shrink-0"/>:<div className="w-4 h-4 rounded-full border border-neutral-300 dark:border-neutral-600 flex items-center justify-center text-[10px]">{index+1}</div>}
+                      <span className="text-neutral-700 dark:text-neutral-200 font-medium">{index+1}. {label}{index===2&&progressStep===2&&monitor.task?.status==='succeeded'&&!monitor.task.mappingComplete?' — Waiting for mapping':''}</span>
+                    </div>)}
                   </div>
                 </div>
               )}
@@ -610,7 +609,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                       {taskId ? 'Result Requires Verification' : 'Outcome Uncertain (Gateway Timeout)'}
                     </h3>
                     <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                      {asyncStepMessage}
+                      {presentProgress&&!taskId?'Preparing your publishing request…':asyncStepMessage}
                     </p>
                   </div>
 

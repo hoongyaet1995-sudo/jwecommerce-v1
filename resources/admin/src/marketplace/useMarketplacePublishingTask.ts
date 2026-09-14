@@ -16,7 +16,7 @@ export function useMarketplacePublishingTask(taskId:string|null,enabled:boolean)
         const task=await marketplaceOperations.publishingTask(taskId);
         if(!active)return;
         setSnapshot({id:taskId,task});setError('');
-        if(task.status==='queued'||task.status==='processing')timer=setTimeout(()=>void poll(),2000);
+        if(task.status==='queued'||task.status==='processing'||(task.status==='succeeded'&&task.mappingComplete===false))timer=setTimeout(()=>void poll(),2000);
       }catch{
         if(active)setError('Saved task status could not be checked. Do not submit again; check this task later.');
       }

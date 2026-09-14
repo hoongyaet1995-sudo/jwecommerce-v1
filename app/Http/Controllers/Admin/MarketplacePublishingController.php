@@ -94,12 +94,19 @@ class MarketplacePublishingController extends Controller
     public function show(int $task)
     {
         $row=DB::table('marketplace_publishing_tasks')->select([
-            'id','store_id','product_id','status','external_item_id','created_at','updated_at',
+            'id','store_id','product_id','status','external_item_id','created_at','updated_at','source_snapshot',
         ])->find($task);
         abort_unless($row,404);
 
+        $variants=json_decode($row->source_snapshot??'{}',true)['variants']??[];
+        $linked=$row->external_item_id ? DB::table('marketplace_variant_mappings as m')
+            ->join('marketplace_listing_variants as l','l.id','=','m.listing_variant_id')
+            ->where('m.store_id',$row->store_id)->where('l.store_id',$row->store_id)
+            ->where('l.external_product_id',$row->external_item_id)
+            ->whereIn('m.product_variant_id',array_column($variants,'id'))->distinct()->count('m.product_variant_id') : 0;
         return response()->json([
             'id'=>(int)$row->id,
+            'mappingComplete'=>count($variants)>0 && $linked===count($variants),
             'storeId'=>(int)$row->store_id,
             'productId'=>(int)$row->product_id,
             'status'=>$row->status,

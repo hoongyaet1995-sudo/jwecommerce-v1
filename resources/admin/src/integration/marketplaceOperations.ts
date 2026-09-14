@@ -2,6 +2,7 @@ import {marketplaceRequest} from './marketplaceData';
 
 export type MarketplacePlatform = 'shopee' | 'lazada' | 'tiktok' | 'shopify';
 export interface PublishingTask {
+  mappingComplete?: boolean;
   id: number; storeId: number; productId: number;
   status: 'queued' | 'processing' | 'succeeded' | 'rejected' | 'uncertain';
   externalItemId: string|null; createdAt: string; updatedAt: string;
