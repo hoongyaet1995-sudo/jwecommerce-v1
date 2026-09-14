@@ -39,6 +39,7 @@ final class PublishingTasks
                 }
                 return (int)$existing->id;
             }
+            if ((new PublishingStoreStatus)->read($storeId)[(string)$productId]??false) throw new \DomainException('This product already has a listing or publishing attempt in this store. Review its mapping or saved task.');
             if ($store->status!=='connected') throw new \DomainException('Reconnect the destination store before publishing.');
             if (DB::table('marketplace_publishing_tasks')->where('store_id',$storeId)->where('product_id',$productId)
                 ->where(fn ($query) => $query->whereIn('status',['queued','processing','uncertain','succeeded'])

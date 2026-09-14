@@ -29,6 +29,12 @@ class MarketplacePublishingStatusTest extends TestCase
         $this->actingAs(User::factory()->create(['is_admin'=>true]))->getJson($url)->assertNotFound();
         $this->actingAs($actor)->getJson(str_replace((string)$store.'/publishing', '99999/publishing', $url))->assertNotFound();
         $this->assertDatabaseCount('marketplace_publishing_tasks',1);
+        $this->actingAs($actor)->getJson("/admin/api/marketplace/stores/{$store}/publishing-status?filter=unmapped")
+            ->assertOk()->assertJsonPath('products.'.$product->id,'review');
+        DB::table('marketplace_publishing_tasks')->where('id',$id)->update(['status'=>'succeeded','external_item_id'=>'123']);
+        $this->getJson("/admin/api/marketplace/stores/{$store}/publishing-status")->assertJsonPath('products.'.$product->id,'listed');
+        $other=DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee','shop_name'=>'Other','region'=>'MY','environment'=>'sandbox','status'=>'connected']);
+        $this->getJson("/admin/api/marketplace/stores/{$other}/publishing-status")->assertOk()->assertJsonMissingPath('products.'.$product->id);
     }
 
     public function test_status_is_admin_only_and_excludes_submission_payload(): void

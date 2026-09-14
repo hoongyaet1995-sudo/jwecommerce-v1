@@ -24,6 +24,12 @@ class MarketplacePublishingController extends Controller
             'status'=>'succeeded','providerIdentity'=>$receipt->provider_identity])->header('Cache-Control','no-store, private');
     }
 
+    public function storeStatus(int $store, \App\Services\Marketplace\PublishingStoreStatus $status)
+    {
+        abort_unless(DB::table('marketplace_stores')->where('id',$store)->exists(),404);
+        return response()->json(['products'=>(object)$status->read($store)])->header('Cache-Control','no-store, private');
+    }
+
     public function source(int $product, \App\Services\Marketplace\MarketplacePublishingSource $source)
     {
         return response()->json($source->read($product))->header('Cache-Control','no-store, private');

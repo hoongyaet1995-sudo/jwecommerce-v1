@@ -11,6 +11,7 @@ vi.mock('../../integration/marketplaceOperations',()=>({marketplaceOperations:{p
 it('submits live Shopee requirements from the existing three-step review',async()=>{
  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
  vi.mocked(marketplaceRequest).mockImplementation(async(path)=>{
+  if(String(path).includes('publishing-status'))return {products:{}};
   if(String(path).includes('publishing-source'))return {product_id:51,title:'Saved',brand:'',description:null,revision:'a'.repeat(64),images:[],variants:[{id:8,sku:'JW',price_minor:1599,initial_quantity:0,weight_grams:500,package_length_cm:10,package_width_cm:10,package_height_cm:10}]};
   if(String(path).includes('listing-brands'))return {storeId:1,categoryId:11,data:{brand_list:[],has_next_page:false,next_offset:0,is_mandatory:false,input_type:'DROP_DOWN'}};
   if(String(path).includes('listing-attributes'))return {storeId:1,categoryId:11,data:[]};

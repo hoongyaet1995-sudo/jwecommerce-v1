@@ -1,3 +1,4 @@
+import {usePublishingStoreStatus} from '../../../../marketplace/usePublishingStoreStatus';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { Product, MarketplacePlatform, PublishListingOptions, PublishAsyncStatus } from '../../types';
@@ -195,6 +196,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
     return platform === 'shopee' || platform === 'lazada';
   };
 
+  const storeStatus=usePublishingStoreStatus(liveData&&isOpen?selectedConnectionId:null);
   // Check if product is already listed on this connection
   const alreadyListed = useMemo(() => {
     if (!targetProduct || !targetConnection) return false;
@@ -255,7 +257,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
     return errors;
   }, [brandName, packageWeightKg, lengthCm, widthCm, heightCm, selectedCategory,readOnlyMetadata,categoryMetadata.loading,categoryMetadata.error,brandMetadata.error,brandMetadata.brands,brandMetadata.loading,brandMetadata.mandatory,condition,liveData,source,sourceState,selectedProductId,submitReviewed,isShopeeLive,shopeeRequirements.loading,shopeeRequirements.error,shopeeRequirements.errors,isLazadaLive,lazadaAttributes.loading,lazadaAttributes.error,lazadaAttributes.fields]);
 
-  const isValidForPublish = validationErrors.length === 0 && !!targetProduct && !!targetConnection;
+  const isValidForPublish = validationErrors.length === 0 && !!targetProduct && !!targetConnection && (!liveData || (!storeStatus.loading && !storeStatus.error && !storeStatus.products[selectedProductId]));
 
   // Asynchronous publish lifecycle simulation
   const handleStartPublish = async (simulatedOutcome: 'success' | 'reject' | 'uncertain' = 'success') => {
@@ -740,7 +742,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                     <div className="max-h-56 overflow-y-auto border border-neutral-200 dark:border-neutral-800 rounded-xl divide-y divide-neutral-100 dark:divide-neutral-800/80 bg-white dark:bg-neutral-950">
                       {filteredProducts.map(p => {
                         const isSelected = p.id === selectedProductId;
-                        const isAlreadyOnChannel = targetConnection && marketplaceStoreProducts.some(sp => {
+                        const isAlreadyOnChannel = liveData ? storeStatus.products[p.id] : targetConnection && marketplaceStoreProducts.some(sp => {
                           return sp.connectionId === targetConnection.id && sp.variants.some(v => v.mappedJwProductId === p.id);
                         });
 
@@ -765,7 +767,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                                   <p className="text-xs font-bold text-neutral-900 dark:text-white truncate">{p.title}</p>
                                   {isAlreadyOnChannel && (
                                     <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 shrink-0">
-                                      Already on {targetConnection.platform.toUpperCase()}
+                                      {liveData ? (isAlreadyOnChannel==='listed'?'Already in this store':'Review existing task') : 'Already on '+targetConnection.platform.toUpperCase()}
                                     </span>
                                   )}
                                 </div>
@@ -1186,11 +1188,11 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
               {currentStep === 'destination' && (
                 <button
                   type="button"
-                  disabled={!targetProduct || !targetConnection}
+                  disabled={!targetProduct || !targetConnection || (liveData && (storeStatus.loading || !!storeStatus.error || !!storeStatus.products[selectedProductId]))}
                   onClick={() => setCurrentStep('attributes')}
                   className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  <span>Next: Attributes</span>
+                  <span>{liveData&&storeStatus.error?'Status unavailable':liveData&&storeStatus.loading?'Checking listings…':liveData&&storeStatus.products[selectedProductId]?'Review existing listing / mapping':'Next: Attributes'}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               )}
