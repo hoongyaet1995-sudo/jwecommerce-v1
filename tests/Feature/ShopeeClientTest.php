@@ -169,10 +169,23 @@ class ShopeeClientTest extends TestCase
                     'attribute_info'=>['input_type'=>3, 'attribute_unit_list'=>['g']], 'attribute_value_list'=>[]]]]]]];
         Http::fake(['*'=>Http::response(['response'=>['list'=>[['category_id'=>106511, 'attribute_tree'=>$tree]]]])]);
         $result = app(ShopeeClient::class)->attributeTree('access', '456', 106511);
+        $tree[0]['attribute_info']['name']='Material';
+        $tree[0]['attribute_value_list'][0]['child_attribute_list'][0]['attribute_info']['name']='Weight';
         $this->assertSame($tree, $result);
         Http::assertSent(fn ($request)=>$request->method() === 'GET'
             && parse_url($request->url(), PHP_URL_PATH) === '/api/v2/product/get_attribute_tree'
             && $request['category_id_list'] === '106511' && $request['language'] === 'en');
+    }
+
+    public function test_optional_free_text_attributes_without_options_are_usable(): void
+    {
+        Http::fake(['*'=>Http::response(['response'=>['list'=>[['category_id'=>301082,'attribute_tree'=>[
+            ['attribute_id'=>200555,'mandatory'=>false,'name'=>'Game Genre','attribute_info'=>['input_type'=>2,'input_validation_type'=>2,'format_type'=>1]],
+        ]]]]])]);
+        $tree=app(ShopeeClient::class)->attributeTree('access','456',301082);
+        $this->assertSame([], $tree[0]['attribute_value_list']);
+        $this->assertSame('Game Genre', $tree[0]['attribute_info']['name']);
+        $this->assertSame([], \App\Services\Marketplace\ShopeeListingAttributes::normalize($tree,[]));
     }
 
     public function test_attribute_tree_rejects_wrong_category_and_partial_results(): void

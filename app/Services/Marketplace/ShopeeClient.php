@@ -233,7 +233,30 @@ class ShopeeClient
             throw new RuntimeException('Shopee attribute response was incomplete.');
         }
         // Preserve conditional child attributes, input types and units for the listing validator.
-        return $rows[0]['attribute_tree'];
+        return $this->normalizeAttributeTree($rows[0]['attribute_tree']);
+    }
+
+    private function normalizeAttributeTree(array $nodes, int $depth = 0): array
+    {
+        if ($depth > 20) throw new RuntimeException('Attribute dependency tree is too deep.');
+        foreach ($nodes as &$node) {
+            if (!is_array($node)) throw new RuntimeException('Shopee attribute metadata was incomplete.');
+            // Shopee omits options for attributes with no predefined values.
+            if (!array_key_exists('attribute_value_list', $node)) $node['attribute_value_list'] = [];
+            if (!is_array($node['attribute_value_list']) || !array_is_list($node['attribute_value_list'])) {
+                throw new RuntimeException('Shopee attribute options were incomplete.');
+            }
+            if (is_array($node['attribute_info'] ?? null) && is_string($node['name'] ?? null)
+                && !isset($node['attribute_info']['name'])) $node['attribute_info']['name'] = $node['name'];
+            foreach ($node['attribute_value_list'] as &$option) {
+                if (isset($option['child_attribute_list']) && is_array($option['child_attribute_list'])) {
+                    $option['child_attribute_list'] = $this->normalizeAttributeTree($option['child_attribute_list'], $depth + 1);
+                }
+            }
+            unset($option);
+        }
+        unset($node);
+        return $nodes;
     }
 
     public function categoryTree(#[\SensitiveParameter] string $accessToken, string $shopId): array
