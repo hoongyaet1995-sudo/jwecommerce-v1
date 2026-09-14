@@ -50,6 +50,7 @@ class MarketplaceImportService
                 ->where('external_product_id', $source->external_product_id)->exists(),
                 409, 'This product was already imported. Select its existing JW product.');
             $data = json_decode($source->observed_data, true, 512, JSON_THROW_ON_ERROR);
+            $data=app(MarketplaceMediaIngest::class)->normalize($data);
             $title = $data['productTitle'] ?? null;
             $brand = $data['brand'] ?? null;
             abort_unless(is_string($title) && trim($title) !== '' && mb_strlen($title) <= 255,
@@ -71,6 +72,7 @@ class MarketplaceImportService
             foreach (array_values(array_unique($images)) as $position => $image) {
                 $product->images()->create(['path'=>$image, 'alt'=>trim($title), 'position'=>$position]);
             }
+            app(\App\Domain\Catalog\CatalogMediaReferenceSynchronizer::class)->syncProduct($product);
             return $variantId;
         });
     }
@@ -99,6 +101,7 @@ class MarketplaceImportService
                 409, 'The imported parent belongs to another JW product.');
             $product = Product::whereKey($destinationProductId)->lockForUpdate()->firstOrFail();
             $data = json_decode($source->observed_data, true, 512, JSON_THROW_ON_ERROR);
+            $data=app(MarketplaceMediaIngest::class)->normalize($data);
             $sku = $reviewedSku ?? ($data['sku'] ?? null);
             $title = $data['title'] ?? null;
             abort_unless(is_string($sku) && trim($sku) !== '' && mb_strlen($sku) <= 255
@@ -129,6 +132,7 @@ class MarketplaceImportService
             if ($product->variants()->count() > 1 && !$product->has_variants) {
                 $product->update(['has_variants'=>true]);
             }
+            app(\App\Domain\Catalog\CatalogMediaReferenceSynchronizer::class)->syncProduct($product);
             return (int) $variant->id;
         });
     }
@@ -159,6 +163,7 @@ class MarketplaceImportService
             $images = [];
             foreach ($listings as $listing) {
                 $data = json_decode($listing->observed_data, true, 512, JSON_THROW_ON_ERROR);
+                $data=app(MarketplaceMediaIngest::class)->normalize($data);
                 $description = $this->descriptions->render($data);
                 $brand = $data['brand'] ?? null;
                 abort_unless($brand === null || (is_string($brand) && mb_strlen($brand) <= 255),
@@ -210,6 +215,7 @@ class MarketplaceImportService
             DB::table('marketplace_product_imports')->insert(['store_id'=>$storeId, 'external_product_id'=>$externalProductId,
                 'product_id'=>$product->id, 'actor_id'=>$actorId, 'created_at'=>now(), 'updated_at'=>now()]);
 
+            app(\App\Domain\Catalog\CatalogMediaReferenceSynchronizer::class)->syncProduct($product);
             return $product->id;
         });
     }

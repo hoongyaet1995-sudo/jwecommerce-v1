@@ -47,6 +47,10 @@ final class CatalogMediaReferenceSynchronizer
             ->mapWithKeys(static fn ($image): array => ["images.{$image->position}" => $image->path])
             ->all();
 
+        foreach ($product->variants()->get(['id','image_url','option_image']) as $variant) {
+            $desired["variants.{$variant->id}.image"]=$variant->image_url;
+            $desired["variants.{$variant->id}.optionImage"]=$variant->option_image;
+        }
         $this->sync(self::PRODUCT, $product->getKey(), $desired);
     }
 

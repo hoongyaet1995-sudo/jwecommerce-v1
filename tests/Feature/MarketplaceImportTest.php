@@ -136,10 +136,16 @@ class MarketplaceImportTest extends TestCase
         $listing=DB::table('marketplace_listing_variants')->first();
         $data=json_decode($listing->observed_data,true);
         $data['variantImage']='https://cf.shopee.com.my/file/black';
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $image=base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=');
+        \Illuminate\Support\Facades\Http::fake(['cf.shopee.com.my/*'=>\Illuminate\Support\Facades\Http::response($image,200)]);
         $data['weightGrams']=1000;
         $data['packageLengthCm']=1;$data['packageWidthCm']=2;$data['packageHeightCm']=3;
         DB::table('marketplace_listing_variants')->where('id',$listing->id)->update(['observed_data'=>json_encode($data)]);
         $id=app(MarketplaceImportService::class)->importVariantAsProduct($listing->id,42);
+        $data['variantImage']=\App\Models\ProductVariant::findOrFail($id)->image_url;
+        $this->assertTrue(\App\Domain\Cms\MediaUrlPolicy::isManaged($data['variantImage']));
+        \Illuminate\Support\Facades\Http::assertSentCount(1);
         $this->assertDatabaseHas('product_variants',['id'=>$id,'image_url'=>$data['variantImage'],'option_image'=>$data['variantImage'],'visual_type'=>'image','weight_grams'=>1000,'package_length_cm'=>1,'package_width_cm'=>2,'package_height_cm'=>3,'stock'=>0]);
     }
 
