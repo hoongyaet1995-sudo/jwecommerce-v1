@@ -3,6 +3,7 @@ import {readPublishingSource} from './marketplacePublishing';
 
 export interface ShopeeReviewSubmission {
  productId:number;storeId:number;requestKey:string;sourceRevision:string;categoryId:string;
+ variantImageChoices?:Record<string,number>;
  brandId:number|null;condition:'NEW'|'USED';weightKg:number;lengthCm:number;widthCm:number;heightCm:number;
  attributes:unknown[];logistics:{logistic_id:number;is_free?:boolean;size_id?:string|number;shipping_fee?:number}[];
 }
@@ -19,7 +20,7 @@ export async function submitShopeeReview(input:ShopeeReviewSubmission):Promise<s
  const source=await readPublishingSource(input.productId);
  if(source.revision!==input.sourceRevision)throw Object.assign(new Error('The JW product changed after review. Reopen it before publishing.'),{status:409});
  // Server staging owns the product fields, images, variant structure, prices and initial stock.
- const payload={category_id:Number(input.categoryId),item_status:'UNLIST',condition:input.condition,
+ const payload={...(input.variantImageChoices?{jw_variant_image_choices:input.variantImageChoices}:{}),category_id:Number(input.categoryId),item_status:'UNLIST',condition:input.condition,
   weight:input.weightKg,dimension:{package_length:input.lengthCm,package_width:input.widthCm,package_height:input.heightCm},
   ...(input.brandId===null?{}:{brand:{brand_id:input.brandId}}),attribute_list:input.attributes,logistic_info:input.logistics};
  let receipt:Receipt;

@@ -10,6 +10,7 @@ export interface ImportProductOptions {
 }
 export interface PublishListingOptions {
   sourceRevision?: string;
+  shopeeVariantImageChoices?: Record<string,number>;
   lazadaAttributes?: Record<string,string>;
   lazadaSkuAttributes?: Record<string,Record<string,string>>;
   shopeeAttributes?: unknown[];

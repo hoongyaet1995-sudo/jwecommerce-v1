@@ -40,6 +40,7 @@ class MarketplacePublishingController extends Controller
         if (array_diff(array_keys($request->all()), ['product_id', 'request_key', 'source_revision', 'payload', '_token'])) {
             throw ValidationException::withMessages(['publishing'=>'Unsupported marketplace publishing fields.']);
         }
+        $request->validate(['payload.jw_variant_image_choices'=>['sometimes','array'],'payload.jw_variant_image_choices.*'=>['required','integer','min:1']]);
         $data=$request->validate([
             'product_id'=>['required','integer','min:1'],
             'request_key'=>['required','uuid'],
@@ -58,7 +59,7 @@ class MarketplacePublishingController extends Controller
             if (DB::table('marketplace_stores')->where('id',$store)->value('platform')==='shopee') {
                 if (config('marketplace.basic_wms_enabled')===true) {
                     $payload=\App\Services\Marketplace\ShopeePublishingMasterData::bind($source,$payload);
-                    app(\App\Services\Marketplace\ShopeePublishingImages::class)->prepare($store,$source,(int)$request->user()->id);
+                    app(\App\Services\Marketplace\ShopeePublishingImages::class)->prepare($store,$source,(int)$request->user()->id,$payload['jw_variant_image_choices']??[]);
                     $payload=app(\App\Services\Marketplace\ShopeePublishingImages::class)->bind($store,$source,$payload);
                 }
                 \App\Services\Marketplace\ShopeePublishingVariants::validate($payload,$source);

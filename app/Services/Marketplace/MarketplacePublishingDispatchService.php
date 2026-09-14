@@ -92,7 +92,7 @@ final class MarketplacePublishingDispatchService
     private function publishShopee(int $taskId, object $store, array $payload): array
     {
         $variations=ShopeePublishingVariants::validate($payload);
-        unset($payload['jw_variations']);
+        unset($payload['jw_variations'],$payload['jw_variant_image_choices']);
         if (!is_string($store->external_shop_id) || !preg_match('/^[1-9][0-9]*$/D', $store->external_shop_id)) {
             throw new RuntimeException('Shopee store identity is invalid.');
         }

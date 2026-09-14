@@ -7,15 +7,16 @@ final class ShopeePublishingImages
 {
     public function __construct(private MarketplaceImageReceipts $receipts, private ShopeeProductImageService $images) {}
 
-    public function prepare(int $storeId,array $source,int $actorId): void
+    public function prepare(int $storeId,array $source,int $actorId,array $choices=[]): void
     {
+        ShopeeVariantImagePlan::fromSource($source,$choices);
         if (empty($source['images'])) throw new DomainException('Add JW product images before publishing.');
         foreach ($source['images'] as $image) {
             if (!$this->receipts->current($storeId,(int)$source['product_id'],(int)$image['id'])) {
                 $this->images->prepare($storeId,(int)$source['product_id'],(int)$image['id'],$actorId);
             }
         }
-        app(ShopeeVariantImages::class)->prepare($storeId,$source,$actorId);
+        app(ShopeeVariantImages::class)->prepare($storeId,$source,$actorId,$choices);
     }
 
     public function bind(int $storeId,array $source,array $payload): array

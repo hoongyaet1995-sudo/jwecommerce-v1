@@ -1,3 +1,4 @@
+import {PublishingVariantImages,variantImageGroups,resolveVariantImages} from '../../../../marketplace/PublishingVariantImages';
 import {SearchableSourcePicker} from '../../../../marketplace/SearchableSourcePicker';
 import {usePublishingStoreStatus} from '../../../../marketplace/usePublishingStoreStatus';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
@@ -258,7 +259,11 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
     return errors;
   }, [brandName, packageWeightKg, lengthCm, widthCm, heightCm, selectedCategory,readOnlyMetadata,categoryMetadata.loading,categoryMetadata.error,brandMetadata.error,brandMetadata.brands,brandMetadata.loading,brandMetadata.mandatory,condition,liveData,source,sourceState,selectedProductId,submitReviewed,isShopeeLive,shopeeRequirements.loading,shopeeRequirements.error,shopeeRequirements.errors,isLazadaLive,lazadaAttributes.loading,lazadaAttributes.error,lazadaAttributes.fields]);
 
-  const isValidForPublish = validationErrors.length === 0 && !!targetProduct && !!targetConnection && (!liveData || (!storeStatus.loading && !storeStatus.error && !storeStatus.products[selectedProductId]));
+  const [imageChoices,setImageChoices]=useState<Record<string,number>>({});
+  useEffect(()=>setImageChoices({}),[selectedProductId,selectedConnectionId,source?.revision]);
+  const imageGroups=useMemo(()=>variantImageGroups(source),[source]);
+  const imageReview=resolveVariantImages(imageGroups,imageChoices);
+  const isValidForPublish = (!isShopeeLive || imageReview.missing.length===0) && validationErrors.length === 0 && !!targetProduct && !!targetConnection && (!liveData || (!storeStatus.loading && !storeStatus.error && !storeStatus.products[selectedProductId]));
 
   // Asynchronous publish lifecycle simulation
   const handleStartPublish = async (simulatedOutcome: 'success' | 'reject' | 'uncertain' = 'success') => {
@@ -275,7 +280,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
         const id = await submitReviewed(targetProduct.id, targetConnection.id, {
           sourceRevision: source?.revision,
           ...(isLazadaLive?{lazadaAttributes:lazadaAttributes.values.normal,lazadaSkuAttributes:lazadaAttributes.values.skus}:{}),
-          ...(isShopeeLive?{shopeeAttributes:shopeeRequirements.attributes,shopeeLogistics:shopeeRequirements.logistics,shopeeBrandId:brandMetadata.brands.find(brand=>brandLabel(brand)===brandName)?.brand_id??null}:{}),
+          ...(isShopeeLive?{shopeeVariantImageChoices:imageReview.resolved,shopeeAttributes:shopeeRequirements.attributes,shopeeLogistics:shopeeRequirements.logistics,shopeeBrandId:brandMetadata.brands.find(brand=>brandLabel(brand)===brandName)?.brand_id??null}:{}),
           priceMultiplier: 1 + markupPercent / 100, categoryName: selectedCategory, brand: brandName,
           packageWeightKg, packageLengthCm: lengthCm, packageWidthCm: widthCm, packageHeightCm: heightCm,
           warrantyType, warrantyPeriod, condition, initialStockMode, enableOngoingSync
@@ -1116,6 +1121,8 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                     </div>
                   </div>
 
+                  {isShopeeLive && <PublishingVariantImages groups={imageGroups} choices={imageChoices} onChange={(value,id)=>setImageChoices(previous=>({...previous,[value]:id}))} />}
+
                   {/* Variants & Channel Price Preview Table */}
                   <div className="space-y-2">
                     <span className="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider">
@@ -1217,6 +1224,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                   <div className="relative group">
                     <button
                       type="button"
+                      disabled={!isValidForPublish}
                       onClick={() => handleStartPublish('success')}
                       className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
                     >

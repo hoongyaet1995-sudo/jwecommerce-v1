@@ -4,9 +4,9 @@ use Illuminate\Support\Facades\DB;
 
 final class ShopeeVariantImages
 {
-    public function prepare(int $storeId,array $source,int $actor): void
+    public function prepare(int $storeId,array $source,int $actor,array $choices=[]): void
     {
-        foreach (ShopeeVariantImagePlan::fromSource($source) as $image) {
+        foreach (ShopeeVariantImagePlan::fromSource($source,$choices) as $image) {
             DB::transaction(function() use($storeId,$source,$actor,$image){
                 abort_unless(config('marketplace.publish_operations_enabled')===true,403);
                 abort_unless(DB::table('users')->where('id',$actor)->where('is_admin',true)->exists(),403);
@@ -29,7 +29,7 @@ final class ShopeeVariantImages
 
     public function bind(int $storeId,array $source,array $payload): array
     {
-        $plan=ShopeeVariantImagePlan::fromSource($source);
+        $plan=ShopeeVariantImagePlan::fromSource($source,$payload['jw_variant_image_choices']??[]);
         if (!$plan) return $payload;
         $store=DB::table('marketplace_stores')->find($storeId);
         abort_unless($store,404);

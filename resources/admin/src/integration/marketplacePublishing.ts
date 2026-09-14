@@ -2,7 +2,8 @@ import {marketplaceRequest} from './marketplaceData';
 
 export interface PublishingSource {
   product_id:number; title:string; description:string|null; revision:string; brand?:string|null;
-  variants:{id:number;sku:string;price_minor:number;initial_quantity:0;title?:string;options?:unknown;
+  options?:{name:string;values:string[]}[];
+  variants:{image_url?:string|null;option_image?:string|null;id:number;sku:string;price_minor:number;initial_quantity:0;title?:string;options?:unknown;
     weight_grams?:number|null;package_length_cm?:number|null;package_width_cm?:number|null;package_height_cm?:number|null}[];
   images:{id:number;path:string}[];
 }

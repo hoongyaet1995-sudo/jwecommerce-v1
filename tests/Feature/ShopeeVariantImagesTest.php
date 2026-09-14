@@ -31,14 +31,15 @@ class ShopeeVariantImagesTest extends TestCase
         });
         $source=app(MarketplacePublishingSource::class)->read($p->id);
         $images=app(ShopeeVariantImages::class);
-        $images->prepare($store,$source,$actor->id);
+        $choices=['Red'=>$source['variants'][0]['id']];
+        $images->prepare($store,$source,$actor->id,$choices);
         $images->prepare($store,$source,$actor->id);
         $this->assertSame(1,$uploads);
-        $bound=$images->bind($store,$source,ShopeePublishingMasterData::bind($source,[]));
+        $bound=$images->bind($store,$source,ShopeePublishingMasterData::bind($source,['jw_variant_image_choices'=>$choices]));
         foreach($bound['jw_variations']['tier_variation'][0]['option_list'] as $option) $this->assertSame(['image_id'=>'owned-variant-image'],$option['image']);
         $this->assertSame(20,(int)$p->variants()->sum('stock'));
         Storage::disk('public')->put($path,'changed bytes');
         $this->expectException(\DomainException::class);
-        $images->bind($store,$source,ShopeePublishingMasterData::bind($source,[]));
+        $images->bind($store,$source,ShopeePublishingMasterData::bind($source,['jw_variant_image_choices'=>$choices]));
     }
 }
