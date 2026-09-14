@@ -186,25 +186,25 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
       <div 
         id="import-product-review-modal"
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-800 w-full max-w-4xl overflow-hidden flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2.5rem)]"
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
+        <div className="shrink-0 px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/50 dark:bg-neutral-900/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
               <DownloadCloud className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <h3 className="text-base font-bold text-neutral-900 dark:text-white flex items-center gap-2">
                 {isCompleted ? 'Import Completed' : 'Review Import into JW Master Catalog'}
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
                   {productsToImport.length} Product{productsToImport.length > 1 ? 's' : ''}
                 </span>
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 Creates JW drafts with zero legacy catalog stock. Physical inventory awaits a count.
               </p>
             </div>
@@ -212,14 +212,14 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
           {isCompleted ? (
             /* Success Completion View */
             <div className="py-6 px-4 text-center space-y-6">
@@ -228,41 +228,41 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
               </div>
 
               <div className="max-w-md mx-auto space-y-2">
-                <h4 className="text-lg font-bold text-slate-900 dark:text-white">
+                <h4 className="text-lg font-bold text-neutral-900 dark:text-white">
                   Review Saved Successfully
                 </h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  {savedCounts.drafts} new draft product(s), {savedCounts.created} new variant(s), and {savedCounts.linked} existing SKU link(s). Existing warehouse stock is unchanged. New products use <strong className="text-slate-800 dark:text-slate-200">Draft</strong> status.
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  {savedCounts.drafts} new draft product(s), {savedCounts.created} new variant(s), and {savedCounts.linked} existing SKU link(s). Existing warehouse stock is unchanged. New products use <strong className="text-neutral-800 dark:text-neutral-200">Draft</strong> status.
                 </p>
               </div>
 
               {/* Status Reassurance Card */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto text-left">
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/60">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1">
                     <EyeOff className="w-3.5 h-3.5 text-amber-500" />
                     Draft Status
                   </div>
-                  <div className="text-sm font-bold text-slate-900 dark:text-white">Unpublished</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Not visible on customer storefront</div>
+                  <div className="text-sm font-bold text-neutral-900 dark:text-white">Unpublished</div>
+                  <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">Not visible on customer storefront</div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/60">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1">
                     <Boxes className="w-3.5 h-3.5 text-blue-500" />
                     Legacy Catalog Stock
                   </div>
-                  <div className="text-sm font-bold text-slate-900 dark:text-white">0 Units Initialized</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Platform stock preserved as reference</div>
+                  <div className="text-sm font-bold text-neutral-900 dark:text-white">0 Units Initialized</div>
+                  <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">Platform stock preserved as reference</div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/60">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1">
                     <Link2 className="w-3.5 h-3.5 text-emerald-500" />
                     Channel Mapping
                   </div>
-                  <div className="text-sm font-bold text-slate-900 dark:text-white">Auto-Linked</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">1:1 External channel link established</div>
+                  <div className="text-sm font-bold text-neutral-900 dark:text-white">Auto-Linked</div>
+                  <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">1:1 External channel link established</div>
                 </div>
               </div>
 
@@ -285,7 +285,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                     onClose();
                     setActiveSection('marketplace_inventory');
                   }}
-                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer"
                 >
                   <Boxes className="w-4 h-4" />
                   Receive Physical Stock in Inventory
@@ -294,7 +294,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold transition-colors cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-sm font-semibold transition-colors cursor-pointer"
                 >
                   Done & Return to Mapping
                 </button>
@@ -318,42 +318,42 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
 
               {/* Summary Stats Pill Group */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50">
-                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Products to Import</span>
-                  <span className="text-lg font-bold text-slate-900 dark:text-white mt-0.5 block">{newDraftCount} Drafts</span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400">No silent merges</span>
+                <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700/50">
+                  <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 block">Products to Import</span>
+                  <span className="text-lg font-bold text-neutral-900 dark:text-white mt-0.5 block">{newDraftCount} Drafts</span>
+                  <span className="text-[10px] text-neutral-500 dark:text-neutral-400">No silent merges</span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50">
-                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">New SKUs (0 Stock)</span>
+                <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700/50">
+                  <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 block">New SKUs (0 Stock)</span>
                   <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">{newVariantsCount}</span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400">Physical stock awaits count</span>
+                  <span className="text-[10px] text-neutral-500 dark:text-neutral-400">Physical stock awaits count</span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50">
-                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">SKU Conflicts</span>
-                  <span className={`text-lg font-bold mt-0.5 block ${conflictsCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700/50">
+                  <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 block">SKU Conflicts</span>
+                  <span className={`text-lg font-bold mt-0.5 block ${conflictsCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-neutral-700 dark:text-neutral-300'}`}>
                     {conflictsCount}
                   </span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                  <span className="text-[10px] text-neutral-500 dark:text-neutral-400">
                     {conflictsCount > 0 ? `${linkExistingCount} set to link` : 'None detected'}
                   </span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50">
-                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Currency & Store</span>
-                  <span className="text-lg font-bold text-slate-900 dark:text-white mt-0.5 block">MYR (100% Match)</span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400">Base currency aligned</span>
+                <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700/50">
+                  <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 block">Currency & Store</span>
+                  <span className="text-lg font-bold text-neutral-900 dark:text-white mt-0.5 block">MYR (100% Match)</span>
+                  <span className="text-[10px] text-neutral-500 dark:text-neutral-400">Base currency aligned</span>
                 </div>
               </div>
 
               {/* Products & Variants Detailed Review */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                     Products & SKU Breakdown
                   </h4>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
                     Review and resolve any SKU conflicts below:
                   </span>
                 </div>
@@ -364,27 +364,27 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                   return (
                     <div 
                       key={prod.id} 
-                      className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 overflow-hidden"
+                      className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden"
                     >
                       {/* Product Header */}
-                      <div className="p-4 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="p-4 bg-neutral-50/70 dark:bg-neutral-800/40 border-b border-neutral-200 dark:border-neutral-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
                           <img
                             src={prod.imageUrl || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=120&q=80'}
                             alt={prod.title}
-                            className="w-12 h-12 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                            className="w-12 h-12 rounded-lg object-cover border border-neutral-200 dark:border-neutral-700 shrink-0"
                           />
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="w-5 h-5 flex items-center justify-center shrink-0">
                                 <MarketplaceLogo platform={prod.platform} size={20} />
                               </span>
-                              <h5 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1">
+                              <h5 className="text-sm font-bold text-neutral-900 dark:text-white line-clamp-1">
                                 {prod.title}
                               </h5>
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1">
-                              <span>Shop: <strong className="text-slate-700 dark:text-slate-300">{prod.shopName}</strong></span>
+                            <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                              <span>Shop: <strong className="text-neutral-700 dark:text-neutral-300">{prod.shopName}</strong></span>
                               <span>•</span>
                               <span>Category: {prod.categoryName}</span>
                               <span>•</span>
@@ -405,7 +405,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                       <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs border-collapse">
                           <thead>
-                            <tr className="bg-slate-100/50 dark:bg-slate-800/20 border-b border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-300">
+                            <tr className="bg-neutral-100/50 dark:bg-neutral-800/20 border-b border-neutral-200 dark:border-neutral-700/60 text-neutral-600 dark:text-neutral-300">
                               <th className="py-2.5 px-4 font-semibold">Channel Variant</th>
                               <th className="py-2.5 px-3 font-semibold">Channel SKU</th>
                               <th className="py-2.5 px-3 font-semibold">Channel Stock & Price</th>
@@ -414,18 +414,18 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                               <th className="py-2.5 px-4 font-semibold text-right">Conflict & Action</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                          <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                             {prodAnalysis.map(item => {
                               const v = item.variant;
 
                               return (
-                                <tr key={v.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                <tr key={v.id} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30 transition-colors">
                                   {/* Variant title & spec */}
                                   <td className="py-3 px-4">
-                                    <div className="font-semibold text-slate-900 dark:text-white">
+                                    <div className="font-semibold text-neutral-900 dark:text-white">
                                       {v.title}
                                     </div>
-                                    <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                    <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
                                       ID: {v.channelSkuId}
                                     </div>
                                   </td>
@@ -438,7 +438,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                                         Missing SKU
                                       </span>
                                     ) : (
-                                      <span className="font-mono text-slate-800 dark:text-slate-200 text-xs">
+                                      <span className="font-mono text-neutral-800 dark:text-neutral-200 text-xs">
                                         {v.channelSellerSku}
                                       </span>
                                     )}
@@ -446,12 +446,12 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
 
                                   {/* Channel Stock & Price */}
                                   <td className="py-3 px-3">
-                                    <div className="font-semibold text-slate-900 dark:text-white">
+                                    <div className="font-semibold text-neutral-900 dark:text-white">
                                       MYR {v.price.toFixed(2)}
                                     </div>
-                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                    <div className="text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
                                       <span>Ref Stock: {v.stock} units</span>
-                                      <span className="px-1 py-0.2 rounded text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500">Ref only</span>
+                                      <span className="px-1 py-0.2 rounded text-[9px] bg-neutral-100 dark:bg-neutral-800 text-neutral-500">Ref only</span>
                                     </div>
                                   </td>
 
@@ -472,7 +472,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                                           type="text"
                                           value={item.customSkuOverride}
                                           onChange={(e) => handleCustomSkuChange(v.id, e.target.value)}
-                                          className="w-32 px-2 py-1 text-xs font-mono rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500 focus:outline-hidden"
+                                          className="w-32 px-2 py-1 text-xs font-mono rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:ring-1 focus:ring-emerald-500 focus:outline-hidden"
                                         />
                                         {item.isMissingSku && (
                                           <div className="text-[10px] text-emerald-700 dark:text-emerald-400">
@@ -487,17 +487,17 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                                   <td className="py-3 px-3">
                                     {item.selectedAction === 'link_existing' ? (
                                       <div>
-                                        <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                        <span className="font-semibold text-neutral-800 dark:text-neutral-200">
                                           {item.conflictingJwVariant?.stock} units
                                         </span>
-                                        <div className="text-[10px] text-slate-500">Existing catalog stock</div>
+                                        <div className="text-[10px] text-neutral-500">Existing catalog stock</div>
                                       </div>
                                     ) : (
                                       <div>
                                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
                                           0 units
                                         </span>
-                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Legacy catalog stock</div>
+                                        <div className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5">Legacy catalog stock</div>
                                       </div>
                                     )}
                                   </td>
@@ -510,7 +510,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                                           <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
                                           SKU exists in JW Catalog:
                                         </div>
-                                        <div className="text-[10px] text-slate-600 dark:text-slate-300 font-medium max-w-[200px] text-right truncate">
+                                        <div className="text-[10px] text-neutral-600 dark:text-neutral-300 font-medium max-w-[200px] text-right truncate">
                                           {item.conflictingJwProduct?.title} ({item.conflictingJwVariant?.title})
                                         </div>
 
@@ -521,7 +521,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                                             className={`px-2 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1 ${
                                               item.selectedAction === 'link_existing'
                                                 ? 'bg-indigo-600 text-white shadow-xs'
-                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                                                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200'
                                             }`}
                                           >
                                             <Link2 className="w-3 h-3" />
@@ -534,7 +534,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                                             className={`px-2 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer ${
                                               item.selectedAction === 'generate_suffix'
                                                 ? 'bg-emerald-600 text-white shadow-xs'
-                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                                                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200'
                                             }`}
                                           >
                                             Create with Suffix
@@ -564,9 +564,9 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
 
         {/* Footer */}
         {!isCompleted && (
-          <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-              <Info className="w-4 h-4 text-slate-400 shrink-0" />
+          <div className="shrink-0 px-6 py-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+              <Info className="w-4 h-4 text-neutral-400 shrink-0" />
               <span>
                 Confirms {newDraftCount} new JW draft item(s) and {linkExistingCount} existing SKU link(s). Does not publish to live storefront.
               </span>
@@ -576,7 +576,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-semibold transition-colors cursor-pointer"
               >
                 Cancel
               </button>
