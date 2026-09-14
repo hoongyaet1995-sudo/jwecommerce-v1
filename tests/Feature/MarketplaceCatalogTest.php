@@ -63,13 +63,19 @@ class MarketplaceCatalogTest extends TestCase
                 'brand'=>['brand_id'=>123, 'original_brand_name'=>'Source Brand'], 'category_id'=>555,
                 'image'=>['image_url_list'=>['https://down-my.img.susercontent.com/file/front', 'https://down-my.img.susercontent.com/file/back']]]]]]),
             '*/get_model_list*'=>function () use (&$stockInfo) {
-                return Http::response(['response'=>['model'=>[['model_id'=>200, 'model_sku'=>'BLUE', 'model_name'=>'Blue', 'stock_info_v2'=>$stockInfo]]]]);
+                return Http::response(['response'=>[
+                    'tier_variation'=>[['name'=>'Color','option_list'=>[['option'=>'Red','image'=>['image_url'=>'https://cf.shopee.com.my/file/red']],['option'=>'Blue','image'=>['image_url'=>'https://cf.shopee.com.my/file/blue']]]]],
+                    'model'=>[['model_id'=>200, 'model_sku'=>'BLUE', 'model_name'=>'Blue', 'tier_index'=>[1], 'weight'=>'1', 'dimension'=>['package_length'=>1,'package_width'=>2,'package_height'=>3], 'stock_info_v2'=>$stockInfo]]]]);
             },
         ]);
         $before = DB::table('products')->count();
         $service = app(ShopeeCatalogService::class);
         $service->pullPage($id, 0);
         $service->pullPage($id, 0);
+        $snapshot=json_decode(DB::table('marketplace_listing_variants')->where('store_id',$id)->value('observed_data'),true);
+        $this->assertSame('https://cf.shopee.com.my/file/blue',$snapshot['variantImage']);
+        $this->assertSame(1000,$snapshot['weightGrams']);
+        $this->assertSame(3,$snapshot['packageHeightCm']);
         $this->assertDatabaseCount('marketplace_listing_variants', 1);
         \Illuminate\Support\Facades\Queue::fake();
         $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>true]));

@@ -9,7 +9,7 @@
                 @php($defaultVariant = $product->variants->first())
                 <article class="source-plp-card">
                     <a href="{{ route('storefront.products.show', ['handle' => $product->handle]) }}" class="source-plp-image"><img src="{{ $product->images->first()?->path ?: asset('images/image-not-found.png') }}" alt="{{ $product->images->first()?->alt ?: $product->title }}"></a>
-                    <div class="source-plp-copy"><small>{{ $product->brand ?: 'JW ATELIER' }}</small><a href="{{ route('storefront.products.show', ['handle' => $product->handle]) }}"><h2>{{ $product->title }}</h2></a><p>{{ $product->subtitle ?: 'Considered object for intentional work.' }}</p></div>
+                    <div class="source-plp-copy"><small>{{ $product->brand ?: 'JW ATELIER' }}</small><a href="{{ route('storefront.products.show', ['handle' => $product->handle]) }}"><h2>{{ $product->title }}</h2></a><p>{{ app(\App\Services\ProductDescriptionHtml::class)->excerpt($product->description, $product->subtitle) }}</p></div>
                     <div class="source-plp-buy"><strong>@storefrontMoney($product->base_price)</strong>@if($defaultVariant && $defaultVariant->stock > 0)<form method="POST" action="{{ route('cart.items.store') }}">@csrf<input type="hidden" name="variant_id" value="{{ $defaultVariant->id }}"><input type="hidden" name="quantity" value="1"><button aria-label="Add {{ $product->title }} to bag">+</button></form>@endif</div>
                 </article>
             @empty

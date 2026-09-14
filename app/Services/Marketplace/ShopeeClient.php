@@ -443,6 +443,16 @@ class ShopeeClient
             }
         }
 
+        foreach ($models as &$model) {
+            foreach (($model['tier_index'] ?? []) as $tier => $index) {
+                $image = data_get($payload, "response.tier_variation.$tier.option_list.$index.image.image_url");
+                if (is_string($image) && $image !== '') {
+                    $model['variant_image_url'] = $image;
+                    break;
+                }
+            }
+        }
+        unset($model);
         return $models;
     }
 

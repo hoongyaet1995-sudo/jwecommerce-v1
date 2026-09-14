@@ -13,6 +13,19 @@ class CatalogApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_edited_description_reaches_pdp_and_plain_text_listing(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin'=>true]));
+        $category=\App\Models\Category::create(['name'=>'Copy','slug'=>'copy','status'=>'active']);
+        $payload=$this->productPayload((string)$category->id, []);
+        $payload['descriptionHtml']='<p>Edited <strong>cotton</strong> &amp; comfort</p><ul><li>Wash gently</li></ul>';
+        $payload['summary']='';
+        $payload['status']='active';
+        $created=$this->postJson('/admin/api/catalog/products',$payload)->assertCreated()->json('data');
+        $this->get('/products/'.$created['slug'])->assertOk()->assertSee('<strong>cotton</strong>',false)->assertSee('<li>Wash gently</li>',false);
+        $this->get('/shop')->assertOk()->assertSee('Edited cotton &amp; comfort',false)->assertDontSee('&lt;strong&gt;',false);
+    }
+
     public function test_stale_product_form_cannot_restore_stock_sold_since_it_was_loaded(): void
     {
         $this->actingAs(User::factory()->create(['is_admin'=>true]));

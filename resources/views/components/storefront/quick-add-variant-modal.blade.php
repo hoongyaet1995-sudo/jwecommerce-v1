@@ -110,7 +110,7 @@
         <div class="flex max-h-[75vh] w-full flex-col justify-between space-y-5 overflow-y-auto p-5 sm:p-7 md:max-h-[90vh] md:w-7/12">
             <div>
                 <h2 id="quick-add-title-{{ $product->id }}" class="font-serif text-xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-2xl">{{ $product->title }}</h2>
-                <p class="mt-1 line-clamp-2 text-xs text-zinc-600 dark:text-zinc-400">{{ $product->subtitle ?: $product->description }}</p>
+                <p class="mt-1 line-clamp-2 text-xs text-zinc-600 dark:text-zinc-400">{{ app(\App\Services\ProductDescriptionHtml::class)->excerpt($product->description, $product->subtitle) }}</p>
                 <div class="mt-3 flex items-baseline gap-3"><span data-quick-add-price class="font-sans text-2xl font-bold text-zinc-900 dark:text-zinc-100">@storefrontMoney($initial['price'] ?? 0)</span><span data-quick-add-compare class="{{ filled($initial['compareAt']) ? '' : 'hidden' }} text-sm text-zinc-400 line-through dark:text-zinc-500">{{ filled($initial['compareAt']) ? app(\App\Support\StorefrontCurrencyContext::class)->format($initial['compareAt']) : '' }}</span><span data-quick-add-save class="{{ $initialSavings > 0 ? '' : 'hidden' }} rounded-md bg-amber-500/15 px-2 py-0.5 font-mono text-xs font-semibold text-amber-700 dark:text-amber-300">SAVE @storefrontMoney($initialSavings)</span></div>
             </div>
 

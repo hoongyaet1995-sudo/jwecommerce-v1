@@ -321,7 +321,7 @@ class CatalogApiController extends Controller
     private function productAttributes(array $data): array
     {
         return ['title' => $data['title'], 'handle' => $data['slug'], 'brand' => $data['brand'] ?? null, 'category_id' => $data['categoryId'] ?? null,
-            'subtitle' => $data['summary'] ?? null, 'description' => $data['descriptionHtml'] ?? null, 'status' => $data['status'],
+            'subtitle' => $data['summary'] ?? null, 'description' => app(\App\Services\ProductDescriptionHtml::class)->clean($data['descriptionHtml'] ?? null), 'status' => $data['status'],
             'base_price' => $this->cents($data['basePrice']), 'compare_at_price' => isset($data['baseCompareAtPrice']) ? $this->cents($data['baseCompareAtPrice']) : null,
             'has_variants' => $data['hasVariants'], 'options' => $data['options'], 'tags' => $data['tags'], 'is_featured' => $data['featured'],
             'seo_title' => $data['seoTitle'] ?? null, 'seo_description' => $data['seoDescription'] ?? null];

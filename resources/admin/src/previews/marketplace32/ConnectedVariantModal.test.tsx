@@ -8,6 +8,19 @@ import {INITIAL_MARKETPLACE_STORE_PRODUCTS} from './fixtures';
 import * as transport from '../../integration/marketplaceData';
 import {renderToStaticMarkup} from 'react-dom/server';
 
+it('shows the server ownership conflict instead of a generic import failure',async()=>{
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+  const message='SKU belongs to MUSE (Product #53). Selected destination: Product #52.';
+  vi.spyOn(marketplaceOperations,'importVariant').mockRejectedValue(new transport.MarketplaceRequestError(409,{message}));
+  const product={...INITIAL_MARKETPLACE_STORE_PRODUCTS[0],id:'1:100',variants:[{...INITIAL_MARKETPLACE_STORE_PRODUCTS[0].variants.at(-1)!,id:'12',channelSellerSku:'QA-NEW',mappingStatus:'unmapped' as const}]};
+  const toast=vi.fn(),close=vi.fn();const container=document.createElement('div');const root=createRoot(container);
+  try {
+    await act(async()=>root.render(<ConnectedVariantModal isOpen canImport startWithImport storeProduct={product} variantId="12" products={[]} categories={[]} onClose={close} onImported={vi.fn()} addToast={toast}/>));
+    await act(async()=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Confirm Master SKU Creation'))!.click());
+    expect(toast).toHaveBeenCalledWith(expect.objectContaining({message}));expect(close).not.toHaveBeenCalled();
+  }finally{await act(async()=>root.unmount());vi.restoreAllMocks();vi.unstubAllGlobals();}
+});
+
 it('renders missing channel price and stock as unknown without crashing or inventing zero',()=>{
   const product={...INITIAL_MARKETPLACE_STORE_PRODUCTS[0],id:'1:100',variants:[{
     ...INITIAL_MARKETPLACE_STORE_PRODUCTS[0].variants[0],id:'12',price:null,stock:null}]};

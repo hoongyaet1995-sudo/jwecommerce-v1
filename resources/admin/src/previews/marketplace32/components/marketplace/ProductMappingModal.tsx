@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import {MarketplaceRequestError} from '../../../../integration/marketplaceData';
 import { useAdmin } from '../../context/AdminContext';
 import { 
   MarketplaceStoreProduct, 
@@ -379,7 +380,7 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
                       </span>
                     </h5>
                     <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                      Import this external variant directly into JW Master catalog and auto-link. Local warehouse stock initializes to 0.
+                      Import this external variant into a JW Master draft and auto-link. Legacy stock starts at 0; physical warehouse stock remains unknown until counted.
                     </p>
                   </div>
                 </div>
@@ -511,7 +512,7 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
                         <option value="">-- Select Master Product --</option>
                         {products.map(p => (
                           <option key={p.id} value={p.id}>
-                            {p.title} ({p.variants.length} existing variant{p.variants.length > 1 ? 's' : ''})
+                            {p.title} — #{p.id} ({p.variants.length} existing variant{p.variants.length > 1 ? 's' : ''})
                           </option>
                         ))}
                       </select>
@@ -569,8 +570,9 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
                           skuOverrides: customMasterSku ? { [storeVariant.id]: customMasterSku } : undefined
                         });
                         onClose();
-                        } catch {
-                          addToast({type:'error', title:'Import failed', message:'The SKU was not confirmed as imported. Review the SKU and retry.'});
+                        } catch (error) {
+                          addToast({type:'error', title:'Import failed', message:error instanceof MarketplaceRequestError && [409,422].includes(error.status)
+                            ? error.message : 'The SKU was not confirmed as imported. Refresh the catalog to check the saved result before retrying.'});
                         } finally {
                           setIsCreating(false);
                         }
@@ -893,7 +895,7 @@ export const ProductMappingModal: React.FC<ProductMappingModalProps> = ({
                 <div className="flex items-start gap-2 pt-1 text-[11px] text-neutral-500 dark:text-neutral-400">
                   <Info className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0 mt-0.5" />
                   <span>
-                    Once linked, orders synced from this channel store will automatically recognize and deduct inventory from this JW master SKU. This operation does not modify remote marketplace listing prices or stocks.
+                    This links the channel variant to the selected JW master SKU. Linking does not enable automatic order deductions or change local inventory, marketplace prices, or platform stock.
                   </span>
                 </div>
               </div>

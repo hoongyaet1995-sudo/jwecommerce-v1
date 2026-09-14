@@ -51,6 +51,12 @@ class ShopeeCatalogService
                     'observed_data'=>json_encode([
                         'productTitle'=>$item['item_name'] ?? null, 'productImage'=>data_get($item, 'image.image_url_list.0'),
                         'productImages'=>data_get($item, 'image.image_url_list', []),
+                        'variantImage'=>$model['variant_image_url'] ?? null,
+                        'weightGrams'=>is_numeric($model['weight'] ?? $item['weight'] ?? null)
+                            ? (int) round((float) ($model['weight'] ?? $item['weight']) * 1000) : null,
+                        'packageLengthCm'=>data_get($model, 'dimension.package_length', data_get($item, 'dimension.package_length')),
+                        'packageWidthCm'=>data_get($model, 'dimension.package_width', data_get($item, 'dimension.package_width')),
+                        'packageHeightCm'=>data_get($model, 'dimension.package_height', data_get($item, 'dimension.package_height')),
                         'descriptionType'=>$item['description_type'] ?? null,
                         'description'=>$item['description'] ?? null,
                         'descriptionFields'=>data_get($item, 'description_info.extended_description.field_list'),

@@ -126,6 +126,11 @@
                         @if(filled($pdpShipping['shippingBadgeText'] ?? null))<p class="font-semibold text-emerald-600 dark:text-emerald-400">{{ $pdpShipping['shippingBadgeText'] }}</p>@endif
                         @if(filled($pdpShipping['leadTimeText'] ?? null))<p class="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">{{ $pdpShipping['leadTimeText'] }}</p>@endif
                     </div>@endif
+                    @php($descriptionHtml = app(\App\Services\ProductDescriptionHtml::class)->clean($product->description))
+                    @if(filled($descriptionHtml))<details open class="mt-7 rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+                        <summary class="cursor-pointer px-5 py-5 font-mono text-sm font-bold uppercase tracking-wide text-zinc-800 dark:text-zinc-200">Product Description</summary>
+                        <div data-product-description class="border-t border-zinc-200 p-5 text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300 [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_a]:underline [&_img]:max-w-full overflow-x-auto">{!! $descriptionHtml !!}</div>
+                    </details>@endif
                     @if($pdpSpecifications->isNotEmpty())<details open class="mt-7 rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
                         <summary class="cursor-pointer px-5 py-5 font-mono text-sm font-bold uppercase tracking-wide text-zinc-800 dark:text-zinc-200">Technical Specifications Matrix</summary>
                         <div class="border-t border-zinc-200 p-5 dark:border-zinc-800">

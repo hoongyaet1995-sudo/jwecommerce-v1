@@ -4,6 +4,7 @@ import { useAdmin } from '../../context/AdminContext';
 import { Product, ProductOption, ProductVariant, VariantVisual } from '../../types';
 import { readAdminBootstrap } from '../../integration/adminBootstrap';
 import { ProductMediaManager } from './ProductMediaManager';
+import { ProductDescriptionEditor } from './ProductDescriptionEditor';
 import { ProductExtraInfoEditor } from './ProductExtraInfoEditor';
 import { guessColorCode, VariantVisualPickerModal } from './VariantVisualPickerModal';
 import { uploadMediaAsset } from '../../integration/pageData';
@@ -543,13 +544,11 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                  HTML Description
+                  Product Description
                 </label>
-                <textarea
-                  rows={4}
+                <ProductDescriptionEditor
                   value={formData.descriptionHtml}
-                  onChange={(e) => setFormData({ ...formData, descriptionHtml: e.target.value })}
-                  className="w-full p-3 text-xs font-mono rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
+                  onChange={(descriptionHtml) => setFormData(current => ({ ...current, descriptionHtml }))}
                 />
               </div>
 

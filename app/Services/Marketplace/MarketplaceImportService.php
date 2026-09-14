@@ -11,6 +11,23 @@ use Illuminate\Support\Str;
 
 class MarketplaceImportService
 {
+    private function variantDetails(array $data): array
+    {
+        $result=[];
+        $image=$data['variantImage'] ?? null;
+        if ($image !== null && $image !== '') {
+            abort_unless(is_string($image) && strlen($image)<=255 && MediaUrlPolicy::isSafe($image),422,'Review the variant image URL before import.');
+            $result += ['image_url'=>$image,'option_image'=>$image,'visual_type'=>'image'];
+        }
+        foreach (['weightGrams'=>'weight_grams','packageLengthCm'=>'package_length_cm','packageWidthCm'=>'package_width_cm','packageHeightCm'=>'package_height_cm'] as $source=>$target) {
+            $value=$data[$source] ?? null;
+            if ($value===null || $value==='') continue;
+            abort_unless(is_numeric($value) && is_finite((float)$value) && (float)$value>=0 && (float)$value<=1000000,422,'Review the channel package measurements before import.');
+            if ((float)$value>0) $result[$target]=$value;
+        }
+        return $result;
+    }
+
     public function importVariantAsProduct(int $listingId, int $actorId, ?string $reviewedSku = null): int
     {
         $source = DB::table('marketplace_listing_variants')->find($listingId);
@@ -64,7 +81,8 @@ class MarketplaceImportService
             $identity = DB::table('marketplace_variant_imports')->where('listing_variant_id', $listingId)->lockForUpdate()->first();
             if ($identity) {
                 $variant = ProductVariant::findOrFail($identity->product_variant_id);
-                abort_unless((int) $variant->product_id === $destinationProductId, 409, 'This variant was imported into another JW product.');
+                abort_unless((int) $variant->product_id === $destinationProductId, 409,
+                    'SKU '.$variant->sku.' already belongs to '.$variant->product->title.' (Product #'.$variant->product_id.'). Selected destination: Product #'.$destinationProductId.'. Choose its existing product or review a separate ownership transfer; no duplicate was created.');
                 return (int) $variant->id;
             }
             abort_if(DB::table('marketplace_variant_mappings')->where('listing_variant_id', $listingId)->exists(),
@@ -89,8 +107,14 @@ class MarketplaceImportService
             [$major, $minor] = array_pad(explode('.', (string) $price, 2), 2, '');
             $cents = (int) $major * 100 + (int) str_pad($minor, 2, '0');
             abort_if($cents > 4294967295, 422, 'Channel price exceeds the supported range.');
-            abort_if(ProductVariant::where('sku', $sku)->exists(), 409, 'Link the existing JW SKU instead.');
-            $variant = $product->variants()->create(['sku'=>$sku, 'title'=>trim($title), 'price'=>$cents, 'stock'=>0, 'enabled'=>true]);
+            $existing=ProductVariant::where('sku',$sku)->lockForUpdate()->first();
+            if ($existing) {
+                abort_unless((int)$existing->product_id===$destinationProductId,409,
+                    'SKU '.$sku.' already belongs to '.$existing->product->title.' (Product #'.$existing->product_id.'). Selected destination: Product #'.$destinationProductId.'. No duplicate was created.');
+                $this->mappings->map($listingId,$existing->id,$destinationProductId,$actorId);
+                return (int)$existing->id;
+            }
+            $variant = $product->variants()->create(['sku'=>$sku, 'title'=>trim($title), 'price'=>$cents, 'stock'=>0, 'enabled'=>true] + $this->variantDetails($data));
             app(\App\Services\Inventory\TestDataClassificationService::class)->inheritVariant((int)$variant->id,(int)$source->store_id);
             $this->mappings->map($listingId, $variant->id, $product->id, $actorId);
             DB::table('marketplace_variant_imports')->insert(['listing_variant_id'=>$listingId,
@@ -159,7 +183,8 @@ class MarketplaceImportService
                 abort_if(in_array(mb_strtolower($sku), $skus, true) || ProductVariant::where('sku', $sku)->exists(),
                     409, 'A SKU already exists. Link the existing JW variant instead of importing a duplicate.');
                 $skus[] = mb_strtolower($sku);
-                $prepared[] = compact('listing', 'sku', 'title', 'productTitle', 'cents', 'description', 'brand');
+                $details=$this->variantDetails($data);
+                $prepared[] = compact('listing', 'sku', 'title', 'productTitle', 'cents', 'description', 'brand', 'details');
             }
             $product = Product::create(['title'=>$prepared[0]['productTitle'],
                 'handle'=>'marketplace-'.Str::uuid(), 'base_price'=>min(array_column($prepared, 'cents')),
@@ -170,7 +195,7 @@ class MarketplaceImportService
             }
             foreach ($prepared as $row) {
                 $variant = $product->variants()->create(['sku'=>$row['sku'], 'title'=>$row['title'],
-                    'price'=>$row['cents'], 'stock'=>0, 'enabled'=>true]);
+                    'price'=>$row['cents'], 'stock'=>0, 'enabled'=>true] + $row['details']);
                 app(\App\Services\Inventory\TestDataClassificationService::class)->inheritVariant((int)$variant->id,$storeId);
                 $this->mappings->map($row['listing']->id, $variant->id, $product->id, $actorId);
             }

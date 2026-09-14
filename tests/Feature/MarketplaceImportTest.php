@@ -12,6 +12,47 @@ class MarketplaceImportTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_append_reuses_sku_in_selected_parent_without_overwriting_stock(): void
+    {
+        $this->catalog();
+        $listing=DB::table('marketplace_listing_variants')->first();
+        $sku=json_decode($listing->observed_data,true)['sku'];
+        $parent=Product::create(['title'=>'Selected Parent','handle'=>'selected-parent','base_price'=>100,'status'=>'draft']);
+        $variant=$parent->variants()->create(['sku'=>$sku,'title'=>'Existing','price'=>500,'stock'=>7]);
+        $id=app(MarketplaceImportService::class)->importVariant($listing->id,$parent->id,42);
+        $this->assertSame($variant->id,$id);
+        $this->assertDatabaseHas('marketplace_variant_mappings',['listing_variant_id'=>$listing->id,'product_variant_id'=>$id]);
+        $this->assertDatabaseHas('product_variants',['id'=>$id,'stock'=>7,'price'=>500]);
+        $this->assertDatabaseCount('product_variants',1);
+    }
+
+    public function test_new_master_then_append_creates_two_variants_under_selected_parent(): void
+    {
+        $this->catalog();
+        $ids=DB::table('marketplace_listing_variants')->orderBy('id')->pluck('id');
+        $service=app(MarketplaceImportService::class);
+        $first=$service->importVariantAsProduct($ids[0],42);
+        $parent=\App\Models\ProductVariant::findOrFail($first)->product_id;
+        $second=$service->importVariant($ids[1],$parent,42);
+        $this->assertDatabaseCount('products',1);
+        $this->assertDatabaseHas('product_variants',['id'=>$second,'product_id'=>$parent,'stock'=>0]);
+        $this->assertSame($second,$service->importVariant($ids[1],$parent,42));
+        $this->assertDatabaseCount('product_variants',2);
+    }
+
+    public function test_single_variant_import_preserves_image_and_shipping_measurements(): void
+    {
+        $this->catalog();
+        $listing=DB::table('marketplace_listing_variants')->first();
+        $data=json_decode($listing->observed_data,true);
+        $data['variantImage']='https://cf.shopee.com.my/file/black';
+        $data['weightGrams']=1000;
+        $data['packageLengthCm']=1;$data['packageWidthCm']=2;$data['packageHeightCm']=3;
+        DB::table('marketplace_listing_variants')->where('id',$listing->id)->update(['observed_data'=>json_encode($data)]);
+        $id=app(MarketplaceImportService::class)->importVariantAsProduct($listing->id,42);
+        $this->assertDatabaseHas('product_variants',['id'=>$id,'image_url'=>$data['variantImage'],'option_image'=>$data['variantImage'],'visual_type'=>'image','weight_grams'=>1000,'package_length_cm'=>1,'package_width_cm'=>2,'package_height_cm'=>3,'stock'=>0]);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
