@@ -10,6 +10,7 @@ final class ShopeeMasterVariants
         $variants=$source['variants']??[];
         if (count($variants)<=1) return null;
         $options=$source['options']??null;
+        if (empty($options)) throw new DomainException('Product variant specifications are missing. Reopen the product editor and save the option groups and values before publishing.');
         if (!is_array($options)||!array_is_list($options)||!$options||count($options)>2||count($variants)>50) {
             throw new DomainException('Shopee supports up to two JW option groups and fifty enabled variants. Review the product options.');
         }

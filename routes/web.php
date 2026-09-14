@@ -377,7 +377,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/marketplace/listings/{listing}/import-variant', [\App\Http\Controllers\Admin\MarketplaceImportController::class, 'variant'])->whereNumber('listing')
         ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':import', 'throttle:10,1']);
     Route::post('/api/marketplace/stores/{store}/publishing-tasks', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'stage'])->whereNumber('store')
-        ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':publish', 'throttle:5,1']);
+        ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':publish', 'throttle:30,1,marketplace-publish-stage:']);
     Route::post('/api/marketplace/stores/{store}/products/{product}/images/{image}/prepare', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'prepareImage'])
         ->whereNumber(['store','product','image'])->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':publish', 'throttle:5,1']);
     Route::post('/api/marketplace/publishing-tasks/{task}/dispatch', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'dispatch'])->whereNumber('task')

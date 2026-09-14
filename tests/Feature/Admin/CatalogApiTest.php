@@ -13,6 +13,19 @@ class CatalogApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_stale_form_cannot_clear_saved_variant_options(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin'=>true]));
+        $category=\App\Models\Category::create(['name'=>'Options','slug'=>'options','status'=>'active']);
+        $payload=$this->productPayload((string)$category->id,[]);
+        $payload['variants'][]=array_merge($payload['variants'][0],['id'=>'second','sku'=>'SECOND-SKU']);
+        $created=$this->postJson('/admin/api/catalog/products',$payload)->assertCreated()->json('data');
+        foreach($payload['variants'] as $i=>&$variant){$variant['id']=$created['variants'][$i]['id'];$variant['options']=[];}
+        unset($variant);
+        $payload['options']=[];
+        $this->patchJson('/admin/api/catalog/products/'.$created['id'],$payload)->assertUnprocessable()->assertJsonValidationErrors('options');
+    }
+
     public function test_edited_description_reaches_pdp_and_plain_text_listing(): void
     {
         $this->actingAs(User::factory()->create(['is_admin'=>true]));

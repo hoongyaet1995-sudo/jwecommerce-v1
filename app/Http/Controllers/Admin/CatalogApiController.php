@@ -313,6 +313,12 @@ class CatalogApiController extends Controller
             $seen[$variant['sku']] = true;
         }
 
+        if ($product && !empty($product->options) && count($data['variants'])>1) {
+            if (empty($data['options']) || collect($data['variants'])->contains(fn($variant)=>empty($variant['options']))) {
+                throw ValidationException::withMessages(['options'=>'This product already has saved variant options. Reopen the product editor to load its latest specifications before saving.']);
+            }
+        }
+
         $this->validatePdpRelations($data, $product);
 
         return $data;

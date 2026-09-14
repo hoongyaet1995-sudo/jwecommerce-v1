@@ -11,7 +11,7 @@ final class ImportedProductOptions
         if ($names && (array_diff($names,array_keys($values)) || array_diff(array_keys($values),$names))) {
             throw new \DomainException('Channel option groups do not match the selected JW product. Review its variant options.');
         }
-        if (!$options) foreach($values as $name=>$value) $options[]=['name'=>$name,'values'=>[]];
+        if (!$options) foreach($values as $name=>$value) $options[]=['id'=>'marketplace-'.substr(hash('sha256',$name),0,12),'name'=>$name,'values'=>[],'displayType'=>'pills'];
         foreach($options as &$option) if(!in_array($values[$option['name']],$option['values'],true)) $option['values'][]=$values[$option['name']];
         unset($option);
         $product->update(['options'=>$options,'has_variants'=>true]);
