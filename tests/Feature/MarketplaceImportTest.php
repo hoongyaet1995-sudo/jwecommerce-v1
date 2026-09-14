@@ -18,7 +18,8 @@ class MarketplaceImportTest extends TestCase
         $id=app(MarketplaceImportService::class)->importVariantAsProduct($listing,42);
         $variant=\App\Models\ProductVariant::findOrFail($id);$old=$variant->product_id;
         app(\App\Services\Marketplace\MarketplaceFoundationService::class)->map($listing,null,null,42);
-        $to=Product::create(['title'=>'Destination','handle'=>'destination','base_price'=>100,'status'=>'draft']);
+        Product::whereKey($old)->update(['status'=>'archived']);
+        $to=Product::create(['title'=>'Destination','handle'=>'destination','base_price'=>100,'status'=>'active']);
         $service=app(\App\Services\Marketplace\VariantOwnershipTransfer::class);
         $review=$service->run($listing,$to->id,42);
         $this->assertSame($old,$variant->fresh()->product_id);
