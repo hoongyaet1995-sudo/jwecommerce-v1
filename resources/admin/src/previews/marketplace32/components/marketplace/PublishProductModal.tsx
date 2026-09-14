@@ -3,6 +3,7 @@ import { useAdmin } from '../../context/AdminContext';
 import { Product, MarketplacePlatform, PublishListingOptions, PublishAsyncStatus } from '../../types';
 import { MarketplaceLogo } from './MarketplaceLogo';
 import {useMarketplacePublishingTask} from '../../../../marketplace/useMarketplacePublishingTask';
+import {dispatchSavedPublishingTask} from '../../../../marketplace/dispatchSavedPublishingTask';
 import {useMarketplaceListingCategories} from '../../../../marketplace/useMarketplaceListingCategories';
 import {useMarketplaceListingBrands} from '../../../../marketplace/useMarketplaceListingBrands';
 import {readPublishingSource,type PublishingSource} from '../../../../integration/marketplacePublishing';
@@ -72,6 +73,13 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   const submissionStarted = useRef(false);
   const [simulationStep, setCurrentStep] = useState<WizardStep>('destination');
   const monitor = useMarketplacePublishingTask(taskId ?? null,isOpen);
+  const [dispatching,setDispatching]=useState(false);
+  const executeSaved=async(id:string)=>{
+    setDispatching(true);
+    try {await dispatchSavedPublishingTask(id);}
+    catch(error){addToast({type:'error',title:'Check saved publishing task',message:error instanceof Error?error.message:'Check this task before retrying.'});}
+    finally{setDispatching(false);monitor.checkStatus();}
+  };
   const currentStep = taskId ? 'publishing' : simulationStep;
 
   // Step 1: Destination & Product
@@ -265,6 +273,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
         });
         if (!/^[1-9][0-9]*$/.test(id)) throw new Error('Missing saved task identity');
         setSubmittedTaskId(id);
+        void executeSaved(id);
       } catch (error) {
         if(error&&typeof error==='object'&&'status' in error&&typeof error.status==='number'&&error.status>=400&&error.status<500&&error.status!==404)submissionStarted.current=false;
         addToast({type:'error',title:'Check publishing request',message:error instanceof Error?error.message:'The saved task could not be confirmed. Recover the original request before submitting again.'});
@@ -443,6 +452,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                       <Clock className="w-3.5 h-3.5" />
                       Job Reference: {generatedJobId}
                     </div>
+                    {taskId&&asyncStatus==='queued'&&<button type="button" disabled={dispatching} onClick={()=>executeSaved(taskId)} className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold disabled:opacity-50">{dispatching?'Starting saved task…':'Start saved publishing task'}</button>}
                   </div>
 
                   {/* Asynchronous Step Tracker */}
