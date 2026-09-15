@@ -1,9 +1,11 @@
+import {ShopeeOptionalAttributes} from './ShopeeOptionalAttributes';
+import {StoreShippingChannelsSection} from './publish37/StoreShippingChannelsSection';
 import {ShopeeAttributeSearch} from './ShopeeAttributeSearch';
 import React from 'react';
 import {type ShopeeAttribute,type AttributeValue,useShopeePublishingRequirements} from './useShopeePublishingRequirements';
 const control='w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-xl text-xs text-neutral-900 dark:text-white focus:ring-1 focus:ring-indigo-500';
 
-export function ShopeePublishingRequirements({review}:{review:ReturnType<typeof useShopeePublishingRequirements>}){
+export function ShopeePublishingRequirements({review,shopName='Selected Shopee store'}:{shopName?:string;review:ReturnType<typeof useShopeePublishingRequirements>}){
  const render=(field:ShopeeAttribute)=>{
   const id=field.attribute_id,info=field.attribute_info,type=info.input_type,values=review.values[id]??[];
   const label=info.display_name??info.name??`Attribute ${id}`;const multiple=[4,5].includes(type);
@@ -27,15 +29,10 @@ export function ShopeePublishingRequirements({review}:{review:ReturnType<typeof 
  };
  return <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
   {review.fields.filter(field=>field.mandatory).map(render)}
-  {review.fields.some(field=>!field.mandatory)&&<details className="space-y-1.5 sm:col-span-2"><summary className="text-xs font-bold text-neutral-700 dark:text-neutral-300">Optional attributes</summary>{review.fields.filter(field=>!field.mandatory).map(render)}</details>}
-  <div className="space-y-1.5 sm:col-span-2">
-   <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300">Store shipping channels</label>
-   {review.channels.map(channel=>{const id=channel.logistics_channel_id,selected=review.selectedChannels[id];return <div key={id} className="space-y-1.5">
-    <label className="text-xs text-neutral-700 dark:text-neutral-300 flex items-center gap-2"><input type="checkbox" checked={!!selected} disabled={!!(channel.force_enable||channel.compulsory_channel)} onChange={event=>review.updateChannel(id,event.target.checked?{logistic_id:id,is_free:false}:null)}/>{channel.logistics_channel_name}</label>
-    {selected&&channel.fee_type==='SIZE_SELECTION'&&<select className={control} aria-label={`${channel.logistics_channel_name} size`} value={String(selected.size_id??'')} onChange={event=>{const size=channel.size_list?.find(row=>String(row.size_id)===event.target.value);review.updateChannel(id,{...selected,size_id:size?.size_id});}}><option value="">Select shipping size</option>{channel.size_list?.map(size=><option key={size.size_id} value={size.size_id}>{size.name??String(size.size_id)}</option>)}</select>}
-    {selected&&channel.fee_type==='CUSTOM_PRICE'&&<input type="number" min="0" step="0.01" className={control} aria-label={`${channel.logistics_channel_name} fee`} value={selected.shipping_fee??''} onChange={event=>review.updateChannel(id,{...selected,shipping_fee:event.target.value===''?undefined:Number(event.target.value)})}/>}
-   </div>;})}
-  </div>
-  {review.error&&<button type="button" className="text-xs font-bold text-neutral-700 dark:text-neutral-300" onClick={review.retry}>Retry category and shipping requirements</button>}
+  <div className="sm:col-span-2"><StoreShippingChannelsSection connection={{shopName}} channels={review.channels.map(channel=>({channelId:String(channel.logistics_channel_id),name:channel.logistics_channel_name,isRequiredByPlatform:!!(channel.force_enable||channel.compulsory_channel),requiresSizeSelection:channel.fee_type==='SIZE_SELECTION',requiresSellerFee:channel.fee_type==='CUSTOM_PRICE',sizeOptions:channel.size_list?.map(size=>({id:String(size.size_id),label:size.name??String(size.size_id),maxDimCm:0}))}))}
+   selectedChannels={Object.fromEntries(Object.entries(review.selectedChannels).map(([id,value])=>[id,{enabled:true,selectedSizeTier:value.size_id===undefined?undefined:String(value.size_id),sellerFeeMyr:value.shipping_fee}]))}
+   isLoading={review.loading} fetchError={review.error||(!review.loading&&!review.channels.length?'No available shipping channels for this store.':null)} onRefresh={review.retry}
+   onChange={next=>{for(const channel of review.channels){const id=channel.logistics_channel_id,value=next[String(id)],prior=review.selectedChannels[id];if(value?.enabled){const size=channel.size_list?.find(s=>String(s.size_id)===value.selectedSizeTier);if(!prior||String(prior.size_id??'')!==String(size?.size_id??'')||prior.shipping_fee!==value.sellerFeeMyr)review.updateChannel(id,{...prior,logistic_id:id,is_free:prior?.is_free??false,size_id:size?.size_id,shipping_fee:value.sellerFeeMyr});}else if(prior&&!channel.force_enable&&!channel.compulsory_channel)review.updateChannel(id,null);}}}/></div>
+  <div className="sm:col-span-2"><ShopeeOptionalAttributes review={review}/></div>
  </div>;
 }

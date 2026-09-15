@@ -972,7 +972,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                     {lazadaAttributes.moreError&&<p className="text-xs text-rose-500">{lazadaAttributes.moreError}</p>}
                   </div>}
                   {/* Validation Error Banner */}
-                  {isShopeeLive&&<ShopeePublishingRequirements review={shopeeRequirements}/>}
+                  {isShopeeLive&&<ShopeePublishingRequirements shopName={targetConnection.shopName} review={shopeeRequirements}/>}
                   {validationErrors.length > 0 ? (
                     <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 space-y-1">
                       <div className="font-bold flex items-center gap-1.5">
