@@ -124,10 +124,7 @@ final class MarketplacePublishingDispatchService
         $token=$this->lazadaTokens->accessToken((int)$store->id);
         if (config('marketplace.basic_wms_enabled')===true) {
             $identity=$this->lazada->read('/seller/get',$token);
-            if ((string)($identity['seller_id']??'')!==$store->external_shop_id
-                || ($identity['short_code']??'')!=='MY4NA1T7CK' || ($identity['status']??'')!=='ACTIVE') {
-                throw new RuntimeException('Lazada test seller identity changed.');
-            }
+            LazadaSellerIdentity::assertCurrent($store,$identity,'before product publishing');
             app(LazadaListingPreflight::class)->validate($token,$payload);
         }
         return $this->lazada->createProduct($token, $payload);

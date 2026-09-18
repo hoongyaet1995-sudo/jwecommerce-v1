@@ -29,10 +29,7 @@ final class LazadaProductImageService
             $existing=$this->receipts->find($storeId,$imageId,$hash);
             if ($existing) return (int)$existing->id;
             $identity=$this->client->read('/seller/get',$token);
-            if ((string)($identity['seller_id']??'')!==$store->external_shop_id || ($identity['status']??'')!=='ACTIVE'
-                || (config('marketplace.basic_wms_enabled')===true && ($identity['short_code']??'')!=='MY4NA1T7CK')) {
-                throw new RuntimeException('Lazada seller identity changed before image migration.');
-            }
+            LazadaSellerIdentity::assertCurrent($store,$identity,'before image migration');
             $uploaded=$this->client->migrateImage($token,$url);
             return $this->receipts->record($storeId,$productId,$imageId,$actorId,$hash,$uploaded);
         });
