@@ -298,7 +298,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
           setMissingRequestRecovery(error);
           return;
         }
-        if(error&&typeof error==='object'&&'status' in error&&typeof error.status==='number'&&error.status>=400&&error.status<500&&error.status!==404)submissionStarted.current=false;
+        if(error&&typeof error==='object'&&'status' in error&&typeof error.status==='number'&&error.status>=400&&error.status<500)submissionStarted.current=false;
         addToast({type:'error',title:'Check publishing request',message:error instanceof Error?error.message:'The saved task could not be confirmed. Recover the original request before submitting again.'});
       }
       return;

@@ -96,6 +96,24 @@ it('requires explicit confirmation before replacing a server-confirmed missing p
   expect(submit).toHaveBeenCalledTimes(2);
  }finally{await act(async()=>root.unmount());vi.unstubAllGlobals();}
 });
+it('allows a same-key retry after staging did not leave a saved task',async()=>{
+ vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+ const submit=vi.fn().mockRejectedValueOnce(Object.assign(new Error('No saved task'),{status:404})).mockResolvedValueOnce('44');
+ vi.mocked(marketplaceOperations.publishingTask).mockResolvedValue({id:44,storeId:1,productId:51,status:'queued',externalItemId:null} as never);
+ const context={products:[{id:'51',title:'PS5',basePrice:1400,totalInventory:0,variants:[],images:[]}],categories:[],
+  connections:[{id:'1',platform:'lazada',shopName:'Lazada test',status:'connected'}],marketplaceStoreProducts:[],
+  addToast:vi.fn(),setActiveSection:vi.fn(),publishMasterProductToStore:vi.fn()} as unknown as MarketplaceJourneyContext;
+ const container=document.createElement('div');const root=createRoot(container);
+ try {
+  await act(async()=>root.render(<JourneyProvider value={context}><PublishProductModal isOpen onClose={vi.fn()} submitReviewed={submit}/></JourneyProvider>));
+  await act(async()=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Pricing & Sync'))!.click());
+  const publish=()=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Publish to LAZADA'))!;
+  await act(async()=>publish().click());
+  expect(submit).toHaveBeenCalledTimes(1);
+  await act(async()=>publish().click());
+  expect(submit).toHaveBeenCalledTimes(2);
+ }finally{await act(async()=>root.unmount());vi.unstubAllGlobals();}
+});
 it.each(['shopee','lazada'] as const)('shows %s destination categories without demo options and cannot publish from metadata review',async(platform)=>{
  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
  vi.mocked(marketplaceRequest).mockImplementation(async(path)=>String(path).includes('listing-brands')
