@@ -2,7 +2,9 @@
 
 namespace App\Services\Marketplace;
 
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final class MarketplaceStoreAccess
 {
@@ -19,5 +21,34 @@ final class MarketplaceStoreAccess
             403,'Product publishing is not enabled for this store.');
 
         return $store;
+    }
+
+    public function setProductPublishing(int $storeId, bool $enabled, int $actorId, string $reason): void
+    {
+        $reason=trim($reason);
+        if ($reason==='' || mb_strlen($reason)>255) {
+            throw new RuntimeException('A capability-change reason is required.');
+        }
+        if (!User::whereKey($actorId)->where('is_admin',true)->exists()) {
+            throw new RuntimeException('An administrator is required.');
+        }
+
+        DB::transaction(function () use ($storeId,$enabled,$actorId,$reason): void {
+            $store=DB::table('marketplace_stores')->where('id',$storeId)->lockForUpdate()->first();
+            if (!$store) {
+                throw new RuntimeException('Marketplace store was not found.');
+            }
+
+            $capability=DB::table('marketplace_store_capabilities')->where('store_id',$storeId)->lockForUpdate()->first();
+            $changes=['product_publish'=>$enabled,'changed_by'=>$actorId,'change_reason'=>$reason,'updated_at'=>now()];
+            if ($capability) {
+                DB::table('marketplace_store_capabilities')->where('store_id',$storeId)->update($changes);
+            } else {
+                DB::table('marketplace_store_capabilities')->insert($changes+[
+                    'store_id'=>$storeId,'catalog_read'=>true,'order_receive'=>false,
+                    'inventory_update'=>false,'fulfillment_write'=>false,'created_at'=>now(),
+                ]);
+            }
+        });
     }
 }

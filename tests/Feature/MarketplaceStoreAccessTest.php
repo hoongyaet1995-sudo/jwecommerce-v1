@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Services\Marketplace\MarketplaceStoreAccess;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -52,6 +53,17 @@ class MarketplaceStoreAccessTest extends TestCase
         DB::table('marketplace_store_capabilities')->where('store_id',$store)->update(['product_publish'=>true]);
 
         $this->assertSame($store,app(MarketplaceStoreAccess::class)->publishingStore($store)->id);
+    }
+
+    public function test_capability_change_records_an_administrator_and_reason(): void
+    {
+        $store=$this->connectedStore('300927968304');
+        $actor=User::factory()->create(['is_admin'=>true]);
+
+        app(MarketplaceStoreAccess::class)->setProductPublishing($store,true,$actor->id,'Lazada acceptance publishing');
+
+        $this->assertDatabaseHas('marketplace_store_capabilities',['store_id'=>$store,'product_publish'=>true,
+            'changed_by'=>$actor->id,'change_reason'=>'Lazada acceptance publishing']);
     }
 
     private function connectedStore(string $shopId): int
