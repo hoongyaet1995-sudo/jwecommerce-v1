@@ -11,6 +11,10 @@ class AuthController extends Controller
 {
     public function create(Request $request): View
     {
+        if ($request->routeIs('admin.login') && $this->safeAdminIntendedPath($request->query('intended'))) {
+            $request->session()->put('url.intended', url($request->query('intended')));
+        }
+
         return view('auth.login', [
             'loginAction' => $request->routeIs('admin.login')
                 ? route('admin.login.store')
@@ -41,5 +45,27 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('storefront.home');
+    }
+
+    private function safeAdminIntendedPath(mixed $intended): ?string
+    {
+        if (! is_string($intended)) {
+            return null;
+        }
+
+        $parts = parse_url($intended);
+
+        if ($parts === false) {
+            return null;
+        }
+
+        $path = $parts['path'] ?? '';
+
+        if (isset($parts['scheme'], $parts['host'], $parts['user'], $parts['pass'])
+            || ($path !== '/admin' && ! str_starts_with($path, '/admin/'))) {
+            return null;
+        }
+
+        return $intended;
     }
 }
