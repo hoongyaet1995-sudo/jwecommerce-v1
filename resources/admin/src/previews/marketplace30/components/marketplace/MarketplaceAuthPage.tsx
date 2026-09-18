@@ -217,6 +217,8 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
             const platformMeta = getPlatformMeta(conn.platform);
             const isConnected = conn.status === 'connected';
             const isOfficialTest = operational && conn.credentialSource === 'official_test';
+            const accountMode = conn.accountMode === 'test' ? 'Test account' : 'Production account';
+            const publishingLabel = conn.capabilities?.productPublish ? 'Publishing enabled' : 'Publishing disabled';
             const expiresDate = new Date(isOfficialTest ? conn.testLeaseExpiresAt || '' : conn.tokenExpiresAt);
             const daysLeft = Math.max(0, Math.ceil((expiresDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
 
@@ -265,7 +267,7 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
 
                   {/* Scopes Chips */}
                   <div className="mt-4 flex flex-wrap gap-1.5">
-                    {(operational ? [isOfficialTest ? 'Official test token · Seller OAuth not verified' : 'Official authorization'] : conn.authorizedScopesSummary || conn.scopes || [
+                    {(operational ? [accountMode, publishingLabel, isOfficialTest ? 'Official test token · Seller OAuth not verified' : 'Official authorization'] : conn.authorizedScopesSummary || conn.scopes || [
                       'Catalog & Listings',
                       'Inventory ATP Sync',
                       'Orders & Fulfillments',

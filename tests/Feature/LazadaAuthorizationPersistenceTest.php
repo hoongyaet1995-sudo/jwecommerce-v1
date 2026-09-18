@@ -8,12 +8,24 @@ use App\Services\Marketplace\OAuthStateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 use Tests\TestCase;
 
 class LazadaAuthorizationPersistenceTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        require_once __DIR__.'/../../app/Services/Marketplace/LazadaAuthorizationService.php';
+
+        if (!Schema::hasTable('marketplace_store_capabilities')) {
+            (require __DIR__.'/../../database/migrations/2026_09_18_000001_add_account_mode_and_store_capabilities.php')->up();
+        }
+    }
 
     private function setupProvider(string $seller='2001'): int
     {
@@ -52,6 +64,9 @@ class LazadaAuthorizationPersistenceTest extends TestCase
         $actor=$this->setupProvider();
         $id=$this->authorize($actor);
         $this->assertDatabaseHas('marketplace_stores',['id'=>$id,'platform'=>'lazada','external_shop_id'=>'2001','region'=>'MY','status'=>'connected']);
+        $this->assertDatabaseHas('marketplace_stores',['id'=>$id,'account_mode'=>'production']);
+        $this->assertDatabaseHas('marketplace_store_capabilities',['store_id'=>$id,'catalog_read'=>true,'product_publish'=>false,
+            'order_receive'=>false,'inventory_update'=>false,'fulfillment_write'=>false]);
         $raw=DB::table('marketplace_store_tokens')->where('store_id',$id)->first();
         $this->assertNotSame('fixture-access',$raw->access_token);
         $this->assertNotSame('fixture-refresh',$raw->refresh_token);

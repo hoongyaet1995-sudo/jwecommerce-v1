@@ -61,7 +61,9 @@ class MarketplaceOAuthController extends Controller
         $timestamp = fn($value) => $value ? \Illuminate\Support\Carbon::parse($value, config('app.timezone'))->utc()->toISOString() : null;
         // Select only public metadata; never load encrypted credentials into this response path.
         $stores = DB::table('marketplace_stores as s')->leftJoin('marketplace_store_tokens as t', 't.store_id', '=', 's.id')
-            ->select('s.*', 't.access_expires_at', 't.refresh_expires_at', 't.application_id','t.credential_source','t.test_lease_expires_at')
+            ->leftJoin('marketplace_store_capabilities as c', 'c.store_id', '=', 's.id')
+            ->select('s.*', 't.access_expires_at', 't.refresh_expires_at', 't.application_id','t.credential_source','t.test_lease_expires_at',
+                'c.catalog_read','c.product_publish','c.order_receive','c.inventory_update','c.fulfillment_write')
             ->selectRaw("CASE WHEN t.refresh_token IS NOT NULL AND t.refresh_token <> '' THEN 1 ELSE 0 END AS has_refresh_token")
             ->orderBy('s.id')->get()->map(function ($store) use ($lastSuccess, $timestamp) {
                 $status = $store->status;
@@ -87,6 +89,12 @@ class MarketplaceOAuthController extends Controller
                 return ['id'=>(string) $store->id, 'platform'=>$store->platform, 'shopName'=>$store->shop_name,
                     'credentialSource'=>$store->credential_source,'testLeaseExpiresAt'=>$timestamp($store->test_lease_expires_at),
                     'shopId'=>$store->external_shop_id, 'region'=>$store->region, 'status'=>$status,
+                    'accountMode'=>$store->account_mode,
+                    'capabilities'=>[
+                        'catalogRead'=>(bool)$store->catalog_read,'productPublish'=>(bool)$store->product_publish,
+                        'orderReceive'=>(bool)$store->order_receive,'inventoryUpdate'=>(bool)$store->inventory_update,
+                        'fulfillmentWrite'=>(bool)$store->fulfillment_write,
+                    ],
                     'tokenExpiresAt'=>$timestamp($store->access_expires_at), 'lastSyncAt'=>$timestamp($lastSuccess->get($store->id)),
                     'autoSyncStock'=>false, 'autoPullOrders'=>false];
             });

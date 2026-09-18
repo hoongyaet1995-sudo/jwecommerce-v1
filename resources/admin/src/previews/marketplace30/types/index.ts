@@ -244,6 +244,8 @@ export interface MarketplaceConnection {
   tokenExpiresAt: string; // ISO String
   credentialSource?: string | null;
   testLeaseExpiresAt?: string | null;
+  accountMode?: 'production' | 'test' | null;
+  capabilities?: {catalogRead:boolean; productPublish:boolean; orderReceive:boolean; inventoryUpdate:boolean; fulfillmentWrite:boolean};
   status: 'connected' | 'expired' | 'pending_auth' | 'error' | 'disconnected';
   connectedAt?: string;
   disconnectedAt?: string;

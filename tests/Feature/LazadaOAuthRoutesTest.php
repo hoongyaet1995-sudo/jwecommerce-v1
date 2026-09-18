@@ -4,11 +4,23 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class LazadaOAuthRoutesTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        require_once __DIR__.'/../../app/Services/Marketplace/LazadaAuthorizationService.php';
+        require_once __DIR__.'/../../app/Http/Controllers/Admin/MarketplaceOAuthController.php';
+        if (!Schema::hasTable('marketplace_store_capabilities')) {
+            (require __DIR__.'/../../database/migrations/2026_09_18_000001_add_account_mode_and_store_capabilities.php')->up();
+        }
+    }
 
     public function test_admin_can_authorize_and_callback_receipt_contains_no_credentials(): void
     {
@@ -29,6 +41,9 @@ class LazadaOAuthRoutesTest extends TestCase
         $this->assertDatabaseCount('marketplace_catalog_runs',0);
         $this->getJson('/admin/api/marketplace/connections')->assertOk()
             ->assertJsonPath('stores.0.status','connected')->assertJsonPath('capabilities.lazada.oauth',true)
+            ->assertJsonPath('stores.0.accountMode','production')
+            ->assertJsonPath('stores.0.capabilities.catalogRead',true)
+            ->assertJsonPath('stores.0.capabilities.productPublish',false)
             ->assertJsonPath('capabilities.lazada.catalog',false)->assertJsonPath('capabilities.lazada.orders',false)
             ->assertDontSee('fixture-access')->assertDontSee('fixture-secret');
         config(['marketplace.read_operations_enabled'=>true,'marketplace.shopee.enabled'=>false,'marketplace.shopee.partner_id'=>null,'marketplace.shopee.partner_key'=>null]);

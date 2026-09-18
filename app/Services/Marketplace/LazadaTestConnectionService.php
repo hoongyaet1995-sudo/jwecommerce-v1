@@ -40,9 +40,12 @@ final class LazadaTestConnectionService {
    $key=['platform'=>'lazada','environment'=>'live','external_shop_id'=>(string)$seller['seller_id']];
    $store=DB::table('marketplace_stores')->where($key)->lockForUpdate()->first();
    if($store && MarketplaceStoreToken::where('store_id',$store->id)->where('credential_source','oauth')->exists())throw new RuntimeException('Cannot replace OAuth credentials with test credentials.');
-   $values=['shop_name'=>'[Official Test] '.$seller['name'],'region'=>'MY','status'=>'connected','updated_at'=>now()];
+   $values=['shop_name'=>'[Official Test] '.$seller['name'],'region'=>'MY','account_mode'=>'test','status'=>'connected','updated_at'=>now()];
    if($store){$id=$store->id;DB::table('marketplace_stores')->where('id',$id)->update($values);}
    else $id=DB::table('marketplace_stores')->insertGetId($key+$values+['created_at'=>now()]);
+   DB::table('marketplace_store_capabilities')->updateOrInsert(['store_id'=>$id],[
+    'catalog_read'=>true,'product_publish'=>false,'order_receive'=>false,'inventory_update'=>false,
+    'fulfillment_write'=>false,'updated_at'=>now(),'created_at'=>now()]);
    MarketplaceStoreToken::updateOrCreate(['store_id'=>$id],['application_id'=>'139209','credential_source'=>'official_test',
     'test_lease_expires_at'=>now()->addHour(),'access_token'=>$accessToken,'refresh_token'=>null,'access_expires_at'=>null,'refresh_expires_at'=>null]);
    return (int)$id;

@@ -4,14 +4,22 @@ use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use App\Services\Marketplace\LazadaTestConnectionService;
 use App\Services\Marketplace\LazadaTokenManager;
 class LazadaTestConnectionTest extends TestCase {
  use RefreshDatabase;
+ protected function setUp():void {
+  parent::setUp();
+  require_once __DIR__.'/../../app/Services/Marketplace/LazadaTestConnectionService.php';
+  if (!Schema::hasTable('marketplace_store_capabilities')) (require __DIR__.'/../../database/migrations/2026_09_18_000001_add_account_mode_and_store_capabilities.php')->up();
+ }
  public function test_official_token_is_encrypted_with_lease_not_fabricated_provider_expiry():void {
   config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'139209','marketplace.lazada.app_secret'=>'test-secret']);
   Http::preventStrayRequests();Http::fake(['*'=>Http::response(['code'=>'0','data'=>['seller_id'=>300163725140,'short_code'=>'MY4NA1T7CK','name'=>'Test','status'=>'ACTIVE']])]);
   $id=app(LazadaTestConnectionService::class)->connect('test-access');
+  $this->assertDatabaseHas('marketplace_stores',['id'=>$id,'account_mode'=>'test']);
+  $this->assertDatabaseHas('marketplace_store_capabilities',['store_id'=>$id,'catalog_read'=>true,'product_publish'=>false]);
   $row=DB::table('marketplace_store_tokens')->where('store_id',$id)->first();
   $this->assertSame('official_test',$row->credential_source);
   $this->assertNull($row->access_expires_at);$this->assertNull($row->refresh_token);

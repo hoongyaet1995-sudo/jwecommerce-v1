@@ -30,6 +30,13 @@ it('shows truthful operational availability without fake metrics or developer co
  expect(html).toContain('Not enabled');
 });
 
+it('shows the connected store account mode and publishing permission',()=>{
+ const value={connections:[{id:'3',platform:'lazada',shopName:'Lazada MY',shopId:'300927968304',status:'connected',accountMode:'production',capabilities:{catalogRead:true,productPublish:false,orderReceive:false,inventoryUpdate:false,fulfillmentWrite:false},tokenExpiresAt:'2026-09-06T14:00:00Z',lastSyncAt:''}],marketplaceOrders:[],marketplaceInventory:[],marketplaceStoreProducts:[],syncLogs:[],setCurrentSection:vi.fn(),currentSection:'marketplace-auth'};
+ const html=renderToStaticMarkup(<PreviewContext.Provider value={value as unknown as React.ContextType<typeof PreviewContext>}><MarketplaceAuthPage operational/></PreviewContext.Provider>);
+ expect(html).toContain('Production account');
+ expect(html).toContain('Publishing disabled');
+});
+
 it('opens the official callback result then clears it for a new connection',async()=>{
  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
  const container=document.createElement('div');const root=createRoot(container);

@@ -34,7 +34,7 @@ final class LazadaAuthorizationService
                 ->where('external_shop_id',$tokens['seller_id'])->exists()) {
                 throw new RuntimeException('This store already exists. Use Reconnect on that store.');
             }
-            $values=['platform'=>'lazada','environment'=>'live','external_shop_id'=>$tokens['seller_id'],
+            $values=['platform'=>'lazada','environment'=>'live','account_mode'=>'production','external_shop_id'=>$tokens['seller_id'],
                 // System label, not a claimed provider shop name; preserve an existing merchant label on reconnect.
                 'shop_name'=>$store?->shop_name ?? 'Lazada MY '.$tokens['seller_id'],
                 'region'=>'MY','status'=>'connected','updated_at'=>now()];
@@ -44,6 +44,11 @@ final class LazadaAuthorizationService
             } else {
                 $id=DB::table('marketplace_stores')->insertGetId($values+['created_at'=>now()]);
             }
+            DB::table('marketplace_store_capabilities')->updateOrInsert(['store_id'=>$id],[
+                'catalog_read'=>true,'product_publish'=>false,'order_receive'=>false,
+                'inventory_update'=>false,'fulfillment_write'=>false,'updated_at'=>now(),
+                'created_at'=>now(),
+            ]);
             MarketplaceStoreToken::updateOrCreate(['store_id'=>$id],[
                 'credential_source'=>'oauth','test_lease_expires_at'=>null,
                 'application_id'=>(string)config('marketplace.lazada.app_key'),

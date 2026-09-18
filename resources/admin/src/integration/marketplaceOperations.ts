@@ -18,6 +18,8 @@ export interface ProductImportResult {
 export type OAuthResult = {status: 'success' | 'failed' | 'cancelled'; store: {id: string; platform: MarketplacePlatform; shopId: string; shopName: string} | null};
 export interface StoreConnection {
   credentialSource?: string | null; testLeaseExpiresAt?: string | null;
+  accountMode?: 'production' | 'test' | null;
+  capabilities?: {catalogRead:boolean; productPublish:boolean; orderReceive:boolean; inventoryUpdate:boolean; fulfillmentWrite:boolean};
   id: string; platform: MarketplacePlatform; shopName: string; shopId: string | null;
   region: string; status: string; tokenExpiresAt: string | null; lastSyncAt?: string | null;
   autoSyncStock: boolean; autoPullOrders: boolean;
