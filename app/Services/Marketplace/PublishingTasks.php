@@ -89,6 +89,19 @@ final class PublishingTasks
         return $query->update($changes)===1;
     }
 
+    /** Confirm a saved ambiguous result only after a provider catalog read found every reviewed SKU. */
+    public function confirmReconciled(int $taskId, string $externalItemId, array $confirmedResult): bool
+    {
+        PublishingTransition::validate('uncertain','succeeded',$externalItemId);
+        if (($confirmedResult['item_id'] ?? null)!==$externalItemId || !is_array($confirmedResult['sku_ids'] ?? null)) {
+            throw new \DomainException('A complete reconciled Lazada result is required.');
+        }
+        return DB::table('marketplace_publishing_tasks')->where('id',$taskId)->where('status','uncertain')
+            ->whereNull('confirmed_result')->whereNull('external_item_id')->update([
+                'status'=>'succeeded','external_item_id'=>$externalItemId,
+                'confirmed_result'=>json_encode($confirmedResult,JSON_THROW_ON_ERROR),'updated_at'=>now(),
+            ])===1;
+    }
     public function payloadsMatch(array $left,array $right): bool
     {
         return $this->canonical($left)===$this->canonical($right);

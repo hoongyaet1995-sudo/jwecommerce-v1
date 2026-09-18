@@ -3,6 +3,7 @@ import {marketplaceRequest} from './marketplaceData';
 export type MarketplacePlatform = 'shopee' | 'lazada' | 'tiktok' | 'shopify';
 export interface PublishingTask {
   mappingComplete?: boolean;
+  platform?: 'shopee' | 'lazada';
   id: number; storeId: number; productId: number;
   status: 'queued' | 'processing' | 'succeeded' | 'rejected' | 'uncertain';
   externalItemId: string|null; createdAt: string; updatedAt: string;
@@ -128,6 +129,7 @@ export const marketplaceOperations = {
     }
     return task;
   },
+  reconcileLazadaPublishingTask: (id: string) => marketplaceRequest<{id:number;status:'succeeded'|'rejected';confirmed:boolean;external_item_id?:string}>(`/publishing-tasks/${idPath(id)}/reconcile`, 'POST'),
   importVariant: (listingId: string, review: VariantImportReview) =>
     marketplaceRequest<{variantId: number; productId: number}>(`/listings/${idPath(listingId)}/import-variant`, 'POST', review),
   orderSummary: (filters: Filters = {}) => marketplaceRequest<{total:number;statuses:Record<string,number>}>(`/orders/summary?${query(filters)}`),

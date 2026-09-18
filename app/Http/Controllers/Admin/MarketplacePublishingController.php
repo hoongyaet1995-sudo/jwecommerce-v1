@@ -98,6 +98,19 @@ class MarketplacePublishingController extends Controller
         }
     }
 
+    /** Read the seller catalog to resolve an ambiguous Lazada write; never sends a second create request. */
+    public function reconcile(Request $request, int $task, \App\Services\Marketplace\LazadaPublishingReconciliation $reconciliation)
+    {
+        $owner=DB::table('marketplace_publishing_tasks')->where('id',$task)->value('actor_id');
+        abort_unless($owner && (int)$owner===(int)$request->user()->id,404);
+        try {
+            return response()->json($reconciliation->reconcile($task))->header('Cache-Control','no-store, private');
+        } catch (\RuntimeException $error) {
+            return response()->json(['code'=>'publishing_reconciliation_unavailable','message'=>$error->getMessage()],409)
+                ->header('Cache-Control','no-store, private');
+        }
+    }
+
     public function show(int $task)
     {
         $row=DB::table('marketplace_publishing_tasks')->select([
@@ -113,6 +126,7 @@ class MarketplacePublishingController extends Controller
             ->whereIn('m.product_variant_id',array_column($variants,'id'))->distinct()->count('m.product_variant_id') : 0;
         return response()->json([
             'id'=>(int)$row->id,
+            'platform'=>DB::table('marketplace_stores')->where('id',$row->store_id)->value('platform'),
             'mappingComplete'=>count($variants)>0 && $linked===count($variants),
             'storeId'=>(int)$row->store_id,
             'productId'=>(int)$row->product_id,

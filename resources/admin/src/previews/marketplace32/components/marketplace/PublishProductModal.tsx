@@ -11,6 +11,7 @@ import {usePublishingProgress} from '../../../../marketplace/usePublishingProgre
 import {useMarketplaceListingCategories} from '../../../../marketplace/useMarketplaceListingCategories';
 import {useMarketplaceListingBrands} from '../../../../marketplace/useMarketplaceListingBrands';
 import {readPublishingSource,type PublishingSource} from '../../../../integration/marketplacePublishing';
+import {marketplaceOperations} from '../../../../integration/marketplaceOperations';
 import {MissingPublishingRequestRecoveryError} from '../../../../integration/publishingReviewSession';
 import {useLazadaPublishingAttributes} from '../../../../marketplace/useLazadaPublishingAttributes';
 import {LazadaPublishingAttributes} from '../../../../marketplace/LazadaPublishingAttributes';
@@ -84,6 +85,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   const progressFailed=!!monitor.error||monitor.task?.status==='rejected'||monitor.task?.status==='uncertain';
   const progressStep=usePublishingProgress(presentProgress,!!taskId,monitor.task?.status==='succeeded',monitor.task?.mappingComplete===true,progressFailed);
   const [dispatching,setDispatching]=useState(false);
+  const [reconciling,setReconciling]=useState(false);
   const executeSaved=async(id:string)=>{
     setDispatching(true);
     try {await dispatchSavedPublishingTask(id);}
@@ -91,6 +93,18 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
     finally{setDispatching(false);monitor.checkStatus();}
   };
   const currentStep = taskId || presentProgress ? 'publishing' : simulationStep;
+  const reconcileSavedLazadaTask=async()=>{
+    if(!taskId||monitor.task?.platform!=='lazada'||reconciling)return;
+    setReconciling(true);
+    try {
+      const result=await marketplaceOperations.reconcileLazadaPublishingTask(taskId);
+      addToast({type:result.confirmed?'success':'info',title:'Lazada catalog reconciliation',message:result.confirmed
+        ? `Lazada confirmed Item ${result.external_item_id}. JW mapping is being refreshed.`
+        : 'Lazada has no listing with every saved SKU. This attempt is now closed; start a new submission only after correcting the provider configuration.'});
+    } catch(error) {
+      addToast({type:'error',title:'Lazada catalog reconciliation',message:error instanceof Error?error.message:'The saved task remains protected. Check Lazada and try later.'});
+    } finally {setReconciling(false);monitor.checkStatus();}
+  };
 
   // Step 1: Destination & Product
   const [selectedProductId, setSelectedProductId] = useState<string>(preselectedProductId || '');
@@ -645,13 +659,22 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                   </div>
 
                   <div className="flex items-center justify-center gap-3">
+                    {monitor.task?.platform==='lazada'&&taskId&&<button
+                      type="button"
+                      disabled={reconciling}
+                      onClick={reconcileSavedLazadaTask}
+                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${reconciling?'animate-spin':''}`} />
+                      {reconciling?'Reconciling Lazada…':'Reconcile Lazada Catalog'}
+                    </button>}
                     <button
                       type="button"
-                      onClick={() => handleStartPublish('success')}
-                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                      onClick={() => {if(taskId){monitor.checkStatus();return;}handleStartPublish('success');}}
+                      className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
-                      Poll Status Now
+                      Refresh Saved Status
                     </button>
 
                     <button

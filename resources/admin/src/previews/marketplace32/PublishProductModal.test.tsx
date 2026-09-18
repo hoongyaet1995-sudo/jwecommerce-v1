@@ -154,11 +154,27 @@ it('checks the saved task instead of simulating a new publish and does not inven
     await act(async()=>root.render(<JourneyProvider value={context}><PublishProductModal isOpen onClose={vi.fn()} taskId="12"/></JourneyProvider>));
     expect(container.textContent).toContain('Result Requires Verification');
     expect(container.textContent).not.toContain('background worker is polling');
-    await act(async()=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Poll Status Now'))!.click());
+    await act(async()=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Refresh Saved Status'))!.click());
     expect(read).toHaveBeenCalledTimes(2);expect(submit).not.toHaveBeenCalled();
     expect(container.textContent).toContain('846055463');
     expect(container.textContent).toContain('Listing Task Completed');
     expect(container.textContent).not.toContain('Published & Live');
     expect(container.textContent).not.toContain('SKUs auto-linked');
+  }finally{await act(async()=>root.unmount());vi.unstubAllGlobals();}
+});
+it('reconciles an uncertain Lazada task through the catalog instead of sending another product create request',async()=>{
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+  const reconcile=vi.fn().mockResolvedValue({id:12,status:'rejected',confirmed:false});
+  vi.mocked(marketplaceOperations.publishingTask).mockReset().mockResolvedValue({id:12,storeId:1,productId:51,status:'uncertain',platform:'lazada',externalItemId:null,createdAt:'',updatedAt:''} as never);
+  Object.assign(marketplaceOperations,{reconcileLazadaPublishingTask:reconcile});
+  const context:MarketplaceJourneyContext={products:[],categories:[],connections:[],marketplaceStoreProducts:[],
+    importStoreProductToMaster:vi.fn(),addToast:vi.fn(),setActiveSection:vi.fn(),publishMasterProductToStore:vi.fn(),
+    mapStoreVariantToJwSku:vi.fn(),unmapStoreVariant:vi.fn()};
+  const container=document.createElement('div');const root=createRoot(container);
+  try{
+    await act(async()=>root.render(<JourneyProvider value={context}><PublishProductModal isOpen onClose={vi.fn()} taskId="12"/></JourneyProvider>));
+    await act(async()=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Reconcile Lazada Catalog'))!.click());
+    expect(reconcile).toHaveBeenCalledWith('12');
+    expect(context.publishMasterProductToStore).not.toHaveBeenCalled();
   }finally{await act(async()=>root.unmount());vi.unstubAllGlobals();}
 });

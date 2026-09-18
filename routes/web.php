@@ -337,6 +337,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/marketplace/inventory/exceptions', [\App\Http\Controllers\Admin\MarketplaceInventoryController::class, 'exceptions']);
     Route::get('/api/marketplace/inventory/reconciliation', [\App\Http\Controllers\Admin\MarketplaceInventoryController::class, 'reconciliation']);
     Route::get('/api/marketplace/publishing-tasks/{task}', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'show'])->whereNumber('task');
+    Route::post('/api/marketplace/publishing-tasks/{task}/reconcile', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'reconcile'])->whereNumber('task')->middleware('throttle:3,1');
     Route::get('/api/marketplace/stores/{store}/publishing-status', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'storeStatus'])->whereNumber('store');
     Route::get('/api/marketplace/products/{product}/publishing-source', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'source'])->whereNumber('product');
     Route::get('/api/marketplace/stores/{store}/publishing-request/{key}', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'recover'])->whereNumber('store')->whereUuid('key');
