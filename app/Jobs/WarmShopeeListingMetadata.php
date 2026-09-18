@@ -1,7 +1,7 @@
 <?php
 namespace App\Jobs;
 
-use App\Services\Marketplace\{ShopeeClient,ShopeeTokenManager,ShopeeListingMetadataCache};
+use App\Services\Marketplace\{ShopeeClient,ShopeeTokenManager,MarketplaceListingMetadataCache};
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\{DB,Cache};
@@ -16,7 +16,7 @@ class WarmShopeeListingMetadata implements ShouldQueue
         $this->onConnection('marketplace')->onQueue('marketplace');
     }
     public function backoff(): array { return [30,120]; }
-    public function handle(ShopeeClient $client, ShopeeTokenManager $tokens, ShopeeListingMetadataCache $cache): void
+    public function handle(ShopeeClient $client, ShopeeTokenManager $tokens, MarketplaceListingMetadataCache $cache): void
     {
         $store=DB::table('marketplace_stores')->find($this->storeId);
         if (!$store || $store->status!=='connected' || $store->platform!=='shopee'
