@@ -1,4 +1,4 @@
-import React,{useRef} from 'react';
+import React,{useMemo,useRef} from 'react';
 import {Folder,FolderArchive,ChevronDown,Search,Check} from 'lucide-react';
 type Category={id:string;name:string;slug:string;productCount?:number;disabled?:boolean;parentId?:string};
 type Collection={id:string;title:string;slug:string;productCount?:number};
@@ -22,6 +22,12 @@ export const SearchableSourcePicker: React.FC<SearchableSourcePickerProps> = ({
   const [search, setSearch] = React.useState('');
   const [parentId,setParentId]=React.useState<string|null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const categoryById=useMemo(()=>new Map(categories.map(category=>[category.id,category])),[categories]);
+  const categoryPath=(category:Category):string=>{
+    const names:string[]=[];const seen=new Set<string>();let current:Category|undefined=category;
+    while(current&&!seen.has(current.id)){seen.add(current.id);names.unshift(current.name);current=current.parentId?categoryById.get(current.parentId):undefined;}
+    return names.join(' > ');
+  };
 
   React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -34,7 +40,7 @@ export const SearchableSourcePicker: React.FC<SearchableSourcePickerProps> = ({
   const selectedCategory = categories.find(c => c.id === sourceId);
   const selectedCollection = collections.find(c => c.id === sourceId);
   const filteredCategories = categories.filter(c => (parentId===null || c.parentId===parentId)).filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) || c.slug.toLowerCase().includes(search.toLowerCase()) || c.id.includes(search.trim())
+    categoryPath(c).toLowerCase().includes(search.toLowerCase()) || c.slug.toLowerCase().includes(search.toLowerCase()) || c.id.includes(search.trim())
   );
   const filteredCollections = collections.filter(c =>
     c.title.toLowerCase().includes(search.toLowerCase()) || c.slug.toLowerCase().includes(search.toLowerCase()) || c.id.includes(search.trim())
@@ -60,7 +66,7 @@ export const SearchableSourcePicker: React.FC<SearchableSourcePickerProps> = ({
           )}
           <span className="truncate">
             {sourceType === 'category'
-              ? selectedCategory?.name || 'Select Category...'
+              ? selectedCategory ? categoryPath(selectedCategory) : 'Select Category...'
               : selectedCollection?.title || 'Select Collection...'}
           </span>
         </div>
@@ -104,7 +110,7 @@ export const SearchableSourcePicker: React.FC<SearchableSourcePickerProps> = ({
                     <button
                       key={cat.id}
                       type="button"
-                      onClick={() => { if(cat.disabled){setParentId(cat.id);setSearch('');return;} onChange(cat.id, cat.name); setIsOpen(false); setSearch(''); }}
+                      onClick={() => { if(cat.disabled){setParentId(cat.id);setSearch('');return;} onChange(cat.id, categoryPath(cat)); setIsOpen(false); setSearch(''); }}
                       className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition-colors text-left cursor-pointer ${
                         isSelected
                           ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold'
@@ -113,7 +119,7 @@ export const SearchableSourcePicker: React.FC<SearchableSourcePickerProps> = ({
                     >
                       <div className="flex items-center gap-2 truncate">
                         <Folder className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                        <span className="truncate">{cat.name}{cat.disabled ? ' — View subcategories' : ''}</span>
+                        <span className="truncate">{categoryPath(cat)}{cat.disabled ? ' — View subcategories' : ''}</span>
                       </div>
                       <div className="flex items-center gap-1 shrink-0 ml-2">
                         <span className="text-[10px] text-neutral-400 font-mono">{cat.id}</span>
