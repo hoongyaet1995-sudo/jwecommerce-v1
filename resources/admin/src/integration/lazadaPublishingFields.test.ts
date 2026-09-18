@@ -21,7 +21,7 @@ it('uses the separate Lazada brand list when category schema omits brand options
 it('keeps per-variant weights and prices and asks for missing sale attributes',()=>{
  const fields=lazadaPublishingFields(schema,source,{});
  expect(fields.find(f=>f.name==='brand')?.value).toBe('No Brand');
- expect(fields.filter(f=>f.name==='package_weight').map(f=>f.value)).toEqual(['0.25','0.35']);
+ expect(fields.filter(f=>f.name==='package_weight').map(f=>f.value)).toEqual(['0.35','0.25']);
  expect(fields.filter(f=>f.name==='color_family').every(f=>f.required&&!f.complete)).toBe(true);
  expect(fields.find(f=>f.name==='care')?.required).toBe(false);
  const values=lazadaPublishingValues(fields);
@@ -35,4 +35,18 @@ it('validates selected English options and rejects unsupported schema shapes',()
  expect(fields.find(f=>f.key==='sku:BLUE:color_family')?.complete).toBe(false);
  expect(()=>lazadaPublishingFields([{name:'x'}],source,{})).toThrow();
  expect(()=>lazadaPublishingFields([...schema,schema[0]],source,{})).toThrow();
+});
+
+it('uses the JW option order for all SKU-level Lazada fields',()=>{
+ const orderedSource:PublishingSource={...source,options:[
+  {name:'Color',values:['Black','Blue']},{name:'Size',values:['S','M','L']},{name:'Edition',values:['Standard','Premium']},
+ ],variants:[
+  {id:1,sku:'BLUE-L',price_minor:100,initial_quantity:0,options:{Color:'Blue',Size:'L',Edition:'Standard'}},
+  {id:2,sku:'BLACK-M',price_minor:100,initial_quantity:0,options:{Color:'Black',Size:'M',Edition:'Premium'}},
+  {id:3,sku:'BLACK-S',price_minor:100,initial_quantity:0,options:{Color:'Black',Size:'S',Edition:'Standard'}},
+ ]};
+ const fields=lazadaPublishingFields([{name:'color_family',attribute_type:'sku',input_type:'singleSelect',is_mandatory:1,
+  options:[{en_name:'Black'},{en_name:'Blue'}]}],orderedSource,{});
+
+ expect(fields.map(field=>field.sku)).toEqual(['BLACK-S','BLACK-M','BLUE-L']);
 });

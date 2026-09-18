@@ -1,4 +1,5 @@
 import type {PublishingSource} from './marketplacePublishing';
+import {orderedPublishingVariants} from './marketplaceVariantOrdering';
 
 export interface LazadaPublishingField {
  key:string; name:string; label:string; sku?:string; type:string; options:string[];
@@ -27,7 +28,7 @@ export function lazadaPublishingFields(schema:unknown,source:PublishingSource,ed
   if(name==='__images__')continue;
   const options=Array.isArray(attribute.options)?attribute.options.flatMap((o:unknown)=>o&&typeof o==='object'&&'en_name' in o&&typeof o.en_name==='string'?[o.en_name]:[]):[];
   if(name==='brand'&&scope==='normal'&&type==='singleselect'&&!options.length) options.push(...new Set(['No Brand',...brands]));
-  const targets=scope==='sku'?source.variants:[undefined];
+  const targets=scope==='sku'?orderedPublishingVariants(source.options,source.variants):[undefined];
   for(const variant of targets){
    const key=variant?`sku:${variant.sku}:${name}`:`normal:${name}`;
    const own:Record<string,unknown>=variant?{SellerSku:variant.sku,price:(variant.price_minor/100).toFixed(2),quantity:'0',
