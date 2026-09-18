@@ -11,6 +11,7 @@ import {usePublishingProgress} from '../../../../marketplace/usePublishingProgre
 import {useMarketplaceListingCategories} from '../../../../marketplace/useMarketplaceListingCategories';
 import {useMarketplaceListingBrands} from '../../../../marketplace/useMarketplaceListingBrands';
 import {readPublishingSource,type PublishingSource} from '../../../../integration/marketplacePublishing';
+import {MissingPublishingRequestRecoveryError} from '../../../../integration/publishingReviewSession';
 import {useLazadaPublishingAttributes} from '../../../../marketplace/useLazadaPublishingAttributes';
 import {LazadaPublishingAttributes} from '../../../../marketplace/LazadaPublishingAttributes';
 import {useShopeePublishingRequirements} from '../../../../marketplace/useShopeePublishingRequirements';
@@ -73,6 +74,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
 
   // Active step
   const [submittedTaskId, setSubmittedTaskId] = useState<string>();
+  const [missingRequestRecovery,setMissingRequestRecovery]=useState<MissingPublishingRequestRecoveryError|null>(null);
   const taskId = suppliedTaskId ?? submittedTaskId;
   const submissionStarted = useRef(false);
   const [presentProgress,setPresentProgress]=useState(false);
@@ -95,6 +97,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   const [selectedConnectionId, setSelectedConnectionId] = useState<string>(
     preselectedConnectionId || connections[0]?.id || ''
   );
+  useEffect(()=>setMissingRequestRecovery(null),[selectedProductId,selectedConnectionId]);
   const [searchQuery, setSearchQuery] = useState('');
   const useLiveMetadata=readOnlyMetadata || liveData;
   const [sourceState,setSourceState]=useState<{id:string;source?:PublishingSource;error?:string}|null>(null);
@@ -290,6 +293,11 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
         void executeSaved(id);
       } catch (error) {
         setPresentProgress(false);
+        if(error instanceof MissingPublishingRequestRecoveryError){
+          submissionStarted.current=false;
+          setMissingRequestRecovery(error);
+          return;
+        }
         if(error&&typeof error==='object'&&'status' in error&&typeof error.status==='number'&&error.status>=400&&error.status<500&&error.status!==404)submissionStarted.current=false;
         addToast({type:'error',title:'Check publishing request',message:error instanceof Error?error.message:'The saved task could not be confirmed. Recover the original request before submitting again.'});
       }
@@ -347,6 +355,14 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
     };
 
     publishMasterProductToStore(targetProduct.id, targetConnection.id, publishOptions);
+  };
+
+  const restartAfterMissingRequestConfirmation=()=>{
+    if(!missingRequestRecovery)return;
+    missingRequestRecovery.startNewSubmission();
+    setMissingRequestRecovery(null);
+    submissionStarted.current=false;
+    void handleStartPublish();
   };
 
   if (!isOpen) return null;
@@ -997,6 +1013,24 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
               {/* STEP 3: PRICING & INVENTORY SYNC RULES */}
               {currentStep === 'pricing_sync' && targetProduct && (
                 <div className="space-y-5">
+                  {missingRequestRecovery && (
+                    <div role="alert" className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/70 space-y-3">
+                      <div className="flex items-start gap-2.5">
+                        <AlertTriangle className="w-4 h-4 text-amber-700 dark:text-amber-300 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold text-amber-950 dark:text-amber-100">Previous request was not found</p>
+                          <p className="text-[11px] leading-relaxed text-amber-900 dark:text-amber-200">JW Ecommerce confirmed that the earlier request is no longer saved on the server. After checking Lazada and confirming that no listing was created, you can start one new submission with the current details.</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={restartAfterMissingRequestConfirmation}
+                        className="px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors"
+                      >
+                        I confirmed Lazada has no product — Start new submission
+                      </button>
+                    </div>
+                  )}
                   {/* Pricing markup */}
                   <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/60 space-y-3">
                     <div className="flex items-center justify-between">

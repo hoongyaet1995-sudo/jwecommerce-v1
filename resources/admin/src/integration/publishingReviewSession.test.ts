@@ -1,5 +1,5 @@
 import {afterEach,beforeEach,expect,it,vi} from 'vitest';
-import {publishLazadaWithRecovery} from './publishingReviewSession';
+import {MissingPublishingRequestRecoveryError,publishLazadaWithRecovery} from './publishingReviewSession';
 import {submitLazadaReview} from './submitLazadaReview';
 import {marketplaceOperations} from './marketplaceOperations';
 import {marketplaceRequest} from './marketplaceData';
@@ -27,5 +27,21 @@ it('resumes a saved queued task without creating a new one',async()=>{
  vi.mocked(marketplaceOperations.recoverPublishingTask).mockResolvedValue({id:7,productId:4,status:'queued'} as never);
  expect(await publishLazadaWithRecovery('2',input)).toBe('7');
  expect(marketplaceRequest).toHaveBeenCalledWith('/publishing-tasks/7/dispatch','POST');
- expect(submitLazadaReview).toHaveBeenCalledTimes(1);
+  expect(submitLazadaReview).toHaveBeenCalledTimes(1);
+});
+it('lets a user replace only a server-confirmed missing request before submitting changed values',async()=>{
+ const slot='jw-marketplace-publish:2:2:4';
+ values.set(slot,JSON.stringify({key:'missing-request',signature:'earlier-review'}));
+ vi.mocked(marketplaceOperations.recoverPublishingTask).mockRejectedValue({status:404});
+ const changedInput={...input,categoryId:'12'};
+ let failure:unknown;
+ try {await publishLazadaWithRecovery('2',changedInput);} catch(error) {failure=error;}
+ expect(failure).toBeInstanceOf(MissingPublishingRequestRecoveryError);
+ expect(submitLazadaReview).not.toHaveBeenCalled();
+ (failure as MissingPublishingRequestRecoveryError).startNewSubmission();
+ expect(values.has(slot)).toBe(false);
+ vi.mocked(submitLazadaReview).mockResolvedValue('8');
+ expect(await publishLazadaWithRecovery('2',changedInput)).toBe('8');
+ expect(submitLazadaReview).toHaveBeenCalledWith(expect.objectContaining({categoryId:'12'}));
+ expect((submitLazadaReview.mock.calls[0][0] as {requestKey:string}).requestKey).not.toBe('missing-request');
 });

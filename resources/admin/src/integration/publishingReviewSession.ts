@@ -3,6 +3,22 @@ import {marketplaceRequest} from './marketplaceData';
 import {submitLazadaReview,type LazadaReviewSubmission} from './submitLazadaReview';
 import {submitShopeeReview,type ShopeeReviewSubmission} from './submitShopeeReview';
 
+/**
+ * The API has confirmed that the browser's prior request key is no longer a
+ * saved publishing task.  The caller may offer a deliberate recovery action;
+ * requests which still exist (including uncertain ones) never reach here.
+ */
+export class MissingPublishingRequestRecoveryError extends Error {
+  constructor(private readonly slot:string) {
+    super('The earlier publishing request was not found on the server. Confirm that no listing was created, then start a new submission.');
+    this.name='MissingPublishingRequestRecoveryError';
+  }
+
+  startNewSubmission():void {
+    localStorage.removeItem(this.slot);
+  }
+}
+
 export async function publishLazadaWithRecovery(actorId:string,input:Omit<LazadaReviewSubmission,'requestKey'>):Promise<string>{
  return publishWithRecovery(actorId,input,submitLazadaReview);
 }
@@ -32,7 +48,7 @@ async function publishWithRecovery<T extends {productId:number;storeId:number}>(
    }
   }catch(error){
    if(!error||typeof error!=='object'||!('status' in error)||error.status!==404)throw error;
-   if(pending.signature!==signature)throw new Error('The earlier publishing request is not confirmed. Recover it before changing this submission.');
+   if(pending.signature!==signature)throw new MissingPublishingRequestRecoveryError(slot);
   }
  }else{
   pending={key:crypto.randomUUID(),signature};

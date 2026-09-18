@@ -6,6 +6,7 @@ import {PublishProductModal} from './components/marketplace/PublishProductModal'
 import {JourneyProvider,type MarketplaceJourneyContext} from './context/AdminContext';
 import {marketplaceOperations} from '../../integration/marketplaceOperations';
 import {marketplaceRequest} from '../../integration/marketplaceData';
+import {MissingPublishingRequestRecoveryError} from '../../integration/publishingReviewSession';
 vi.mock('../../integration/marketplaceData',()=>({marketplaceRequest:vi.fn()}));
 vi.mock('../../integration/marketplaceOperations',()=>({marketplaceOperations:{publishingTask:vi.fn()}}));
 it('submits live Shopee requirements from the existing three-step review',async()=>{
@@ -75,6 +76,24 @@ it('hands reviewed values to the real adapter and reads its saved task without m
   expect(container.textContent).toContain('Result Requires Verification');
   expect(container.textContent).not.toContain('background worker is polling');
   expect(mockPublish).not.toHaveBeenCalled();
+ }finally{await act(async()=>root.unmount());vi.unstubAllGlobals();}
+});
+it('requires explicit confirmation before replacing a server-confirmed missing publishing request',async()=>{
+ vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+ const submit=vi.fn().mockRejectedValueOnce(new MissingPublishingRequestRecoveryError('missing-request-test')).mockResolvedValueOnce('43');
+ vi.mocked(marketplaceOperations.publishingTask).mockResolvedValue({id:43,storeId:1,productId:51,status:'queued',externalItemId:null} as never);
+ const context={products:[{id:'51',title:'PS5',basePrice:1400,totalInventory:0,variants:[],images:[]}],categories:[],
+  connections:[{id:'1',platform:'lazada',shopName:'Lazada test',status:'connected'}],marketplaceStoreProducts:[],
+  addToast:vi.fn(),setActiveSection:vi.fn(),publishMasterProductToStore:vi.fn()} as unknown as MarketplaceJourneyContext;
+ const container=document.createElement('div');const root=createRoot(container);
+ try {
+  await act(async()=>root.render(<JourneyProvider value={context}><PublishProductModal isOpen onClose={vi.fn()} submitReviewed={submit}/></JourneyProvider>));
+  await act(async()=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Pricing & Sync'))!.click());
+  await act(async()=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Publish to LAZADA'))!.click());
+  expect(submit).toHaveBeenCalledTimes(1);
+  expect(container.textContent).toContain('Previous request was not found');
+  await act(async()=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('I confirmed Lazada has no product'))!.click());
+  expect(submit).toHaveBeenCalledTimes(2);
  }finally{await act(async()=>root.unmount());vi.unstubAllGlobals();}
 });
 it.each(['shopee','lazada'] as const)('shows %s destination categories without demo options and cannot publish from metadata review',async(platform)=>{
