@@ -31,6 +31,7 @@ final class MarketplacePublishingDispatchService
             throw new RuntimeException('Marketplace store is no longer connected.');
         }
         try {
+            app(MarketplaceStoreAccess::class)->publishingStore((int)$task->store_id);
             if ($task->source_revision !== null) {
                 $current=app(MarketplacePublishingSource::class)->read((int)$task->product_id);
                 if (!hash_equals($task->source_revision,$current['revision'])) {

@@ -10,8 +10,9 @@ final class BasicPublishingDestination
 {
     public function check(int $storeId, int $productId): void
     {
+        $store=app(MarketplaceStoreAccess::class)->publishingStore($storeId);
+
         if (config('marketplace.basic_wms_enabled') !== true) return;
-        $store=DB::table('marketplace_stores')->where('id',$storeId)->first();
         abort_unless($store && in_array($store->platform,['shopee','lazada'],true)
             && $store->status==='connected',
             403,'Connect the destination store before publishing.');
@@ -20,13 +21,12 @@ final class BasicPublishingDestination
             abort_unless($store->environment==='sandbox' && config('marketplace.shopee.environment')==='sandbox'
                 && $token && $token->application_id===(string)config('marketplace.shopee.partner_id'),403,'Shopee sandbox credentials required.');
         } else {
-            abort_unless((string)config('marketplace.lazada.test_store_id')===(string)$storeId,
-                403,'Publishing requires the designated Lazada test store.');
             abort_unless($store->environment==='live' && $store->region==='MY'
-                && $store->external_shop_id==='300163725140' && (string)config('marketplace.lazada.app_key')==='139209'
-                && $token?->application_id==='139209' && $token->credential_source==='official_test'
-                && $token->test_lease_expires_at?->isFuture()
-                && LazadaOfficialTestAccess::environmentAllows($store,$token->application_id),403,'Verified Lazada test credentials required.');
+                && $token?->application_id===(string)config('marketplace.lazada.app_key')
+                && (($token->credential_source==='oauth') || ($token->credential_source==='official_test'
+                    && $token->test_lease_expires_at?->isFuture()
+                    && LazadaOfficialTestAccess::environmentAllows($store,$token->application_id))),
+                403,'Verified Lazada credentials required.');
         }
         abort_unless(DB::table('product_variants')->where('product_id',$productId)->where('enabled',true)->exists(),
             422,'Enable at least one product variant before publishing.');

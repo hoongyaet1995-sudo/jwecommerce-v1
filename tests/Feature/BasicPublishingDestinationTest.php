@@ -11,15 +11,26 @@ use App\Services\Marketplace\MarketplacePublishingDispatchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class BasicPublishingDestinationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        require_once __DIR__.'/../../app/Services/Marketplace/MarketplaceStoreAccess.php';
+        if (!Schema::hasTable('marketplace_store_capabilities')) {
+            (require __DIR__.'/../../database/migrations/2026_09_18_000001_add_account_mode_and_store_capabilities.php')->up();
+        }
+    }
+
     public function test_unclassified_product_can_target_two_unclassified_shopee_sandbox_stores(): void
     {
-        config(['marketplace.basic_wms_enabled'=>true,'marketplace.shopee.environment'=>'sandbox',
+        config(['marketplace.basic_wms_enabled'=>true,'marketplace.publish_operations_enabled'=>true,'marketplace.shopee.environment'=>'sandbox',
             'marketplace.shopee.partner_id'=>'123','marketplace.shopee.test_store_id'=>999]);
         $actor=User::factory()->create(['is_admin'=>true]);
         $product=Product::create(['title'=>'Shared product','handle'=>'shared-product','base_price'=>100]);
@@ -29,6 +40,7 @@ class BasicPublishingDestinationTest extends TestCase
         foreach (['1001','1002'] as $shop) {
             $id=DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee','shop_name'=>'Sandbox',
                 'external_shop_id'=>$shop,'region'=>'MY','environment'=>'sandbox','status'=>'connected']);
+            $this->enablePublishing($id);
 
             MarketplaceStoreToken::create(['store_id'=>$id,'application_id'=>'123','access_token'=>'fixture','access_expires_at'=>now()->addHour()]);
             app(BasicPublishingDestination::class)->check($id,$product->id);
@@ -50,6 +62,7 @@ class BasicPublishingDestinationTest extends TestCase
         $variant=$product->variants()->create(['title'=>'Default','sku'=>'BOUND','price'=>1599,'stock'=>77,'enabled'=>true]);
         $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','shop_name'=>'Test','external_shop_id'=>'300163725140',
             'region'=>'MY','environment'=>'live','status'=>'connected']);
+        $this->enablePublishing($store);
         config(['marketplace.lazada.test_store_id'=>$store]);
         foreach ([['store',$store],['sku',$variant->id]] as [$type,$id]) app(TestDataClassificationService::class)->markTest($type,$id,$actor,'Test fixture');
         MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'139209','credential_source'=>'official_test',
@@ -106,6 +119,7 @@ class BasicPublishingDestinationTest extends TestCase
         $variant=$product->variants()->create(['title'=>'Default','sku'=>'JW-BASIC','price'=>100,'stock'=>77,'enabled'=>true]);
         $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','shop_name'=>'Test','external_shop_id'=>'300163725140',
             'region'=>'MY','environment'=>'live','status'=>'connected']);
+        $this->enablePublishing($store);
         config(['marketplace.lazada.test_store_id'=>$store]);
         foreach ([['store',$store],['sku',$variant->id]] as [$type,$id]) app(TestDataClassificationService::class)->markTest($type,$id,$actor,'Test fixture');
         MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'139209','credential_source'=>'official_test',
@@ -128,5 +142,13 @@ class BasicPublishingDestinationTest extends TestCase
         catch (\DomainException $error) {$this->assertStringContainsString('zero',$error->getMessage());}
         Http::assertNothingSent();
         $this->assertDatabaseHas('marketplace_publishing_tasks',['id'=>$blocked,'status'=>'rejected']);
+    }
+
+    private function enablePublishing(int $storeId): void
+    {
+        DB::table('marketplace_store_capabilities')->updateOrInsert(['store_id'=>$storeId],[
+            'catalog_read'=>true,'product_publish'=>true,'order_receive'=>false,
+            'inventory_update'=>false,'fulfillment_write'=>false,'created_at'=>now(),'updated_at'=>now(),
+        ]);
     }
 }
