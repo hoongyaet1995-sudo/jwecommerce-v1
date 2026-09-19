@@ -98,6 +98,13 @@ class LazadaCatalogServiceTest extends TestCase
             && str_contains($request->url(), 'limit=20') && str_contains($request->url(), 'offset=0'));
     }
 
+    public function test_pull_page_accepts_a_saved_legacy_offset_when_page_size_changes(): void
+    {
+        $store=$this->connectedStore(); $this->fakeCatalog();
+        $result=app(LazadaCatalogService::class)->pullPage($store,350);
+        $this->assertSame(370,$result['next_offset']);
+    }
+
     public function test_official_total_products_field_allows_catalog_capture(): void
     {
         $store=$this->connectedStore();

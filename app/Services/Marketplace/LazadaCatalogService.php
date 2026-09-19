@@ -18,7 +18,7 @@ final class LazadaCatalogService
  }
  public function pullPage(int $storeId,int $offset):array
  {
-  if($offset<0||$offset>5000||$offset%20!==0)throw new RuntimeException('Invalid Lazada catalog offset.');
+  if($offset<0||$offset>5000)throw new RuntimeException('Invalid Lazada catalog offset.');
   $token=$this->tokens->accessToken($storeId);$store=DB::table('marketplace_stores')->find($storeId);
   if(!$store||$store->platform!=='lazada'||$store->status!=='connected')throw new RuntimeException('Lazada store is not connected.');
   $page=$this->client->read('/products/get',$token,['filter'=>'all','limit'=>20,'offset'=>$offset],$storeId);
