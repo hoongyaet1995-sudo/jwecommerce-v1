@@ -5,6 +5,7 @@ import {
   Maximize2,
   CloudDownload,
   CheckCircle2,
+  ShieldCheck,
   AlertCircle,
   AlertTriangle,
   RefreshCw,
@@ -316,9 +317,9 @@ export const CatalogDownloadDrawer38: React.FC<CatalogDownloadDrawer38Props> = (
               {showTechnicalDetails && task.errorDetails && (
                 <div className="p-3 rounded-lg bg-neutral-950 border border-neutral-800 font-mono text-[10px] space-y-1 text-neutral-400">
                   <div className="text-neutral-300 font-bold">API Diagnostic Trace:</div>
-                  <div>HTTP Code: {task.errorDetails.httpStatus || 504}</div>
-                  <div>Error Symbol: {task.errorDetails.technicalCode || 'GATEWAY_TIMEOUT'}</div>
-                  <div>Cursor Checkpoint: {task.savedPageCursor || 'page_cursor_idx'}</div>
+                  <div>HTTP Code: {task.errorDetails.httpStatus || 'Not reported'}</div>
+                  <div>Error Symbol: {task.errorDetails.technicalCode || 'Not reported'}</div>
+                  <div>Cursor Checkpoint: {task.savedPageCursor || task.currentPage}</div>
                   {task.errorDetails.rawResponseSample && (
                     <div className="p-1.5 bg-neutral-900 rounded text-neutral-300 whitespace-pre-wrap overflow-x-auto mt-1">
                       {task.errorDetails.rawResponseSample}
@@ -354,11 +355,11 @@ export const CatalogDownloadDrawer38: React.FC<CatalogDownloadDrawer38Props> = (
                   <div className="text-[10px] text-neutral-400">Variants Captured</div>
                 </div>
                 <div className="p-2 rounded-lg bg-neutral-950/50 border border-neutral-800">
-                  <div className="text-sm font-black text-white">{task.imagesCaptured.toLocaleString()}</div>
+                  <div className="text-sm font-black text-white">{task.imagesCaptured?.toLocaleString() ?? 'Not reported'}</div>
                   <div className="text-[10px] text-neutral-400">Images Available</div>
                 </div>
                 <div className="p-2 rounded-lg bg-neutral-950/50 border border-amber-900/40 bg-amber-950/20">
-                  <div className="text-sm font-black text-amber-300">{task.unmappedVariantsCount.toLocaleString()}</div>
+                  <div className="text-sm font-black text-amber-300">{task.unmappedVariantsCount?.toLocaleString() ?? 'Not reported'}</div>
                   <div className="text-[10px] text-amber-400">Unmapped Variants</div>
                 </div>
               </div>
@@ -426,7 +427,7 @@ export const CatalogDownloadDrawer38: React.FC<CatalogDownloadDrawer38Props> = (
                 <div className="p-2 rounded-lg bg-neutral-900 border border-neutral-800/80">
                   <span className="text-neutral-500 block text-[10px]">Images Cached</span>
                   <span className="text-neutral-200 font-mono font-bold">
-                    {task.imagesCaptured.toLocaleString()}
+                    {task.imagesCaptured?.toLocaleString() ?? 'Not reported'}
                   </span>
                 </div>
               </div>
@@ -442,7 +443,7 @@ export const CatalogDownloadDrawer38: React.FC<CatalogDownloadDrawer38Props> = (
               </span>
               <span>•</span>
               <span>
-                Last API batch: <strong>Just now</strong>
+                Last API batch: <strong>{task.updatedAt || 'Not reported'}</strong>
               </span>
             </div>
 
@@ -479,7 +480,7 @@ export const CatalogDownloadDrawer38: React.FC<CatalogDownloadDrawer38Props> = (
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
               >
                 <Layers className="w-4 h-4" />
-                <span>Review Unmapped Products ({task.unmappedVariantsCount})</span>
+                <span>Review Unmapped Products</span>
               </button>
             ) : (
               <button

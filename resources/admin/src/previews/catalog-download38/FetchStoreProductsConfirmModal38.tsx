@@ -23,6 +23,9 @@ interface FetchStoreProductsConfirmModal38Props {
   open: boolean;
   connections: MarketplaceConnection[];
   existingTask?: {downloadedProducts:number};
+  pending?: boolean;
+  unavailableReason?: string;
+  onViewProgress?: () => void;
   onClose: () => void;
   connection: MarketplaceConnection | null;
   onConfirmStart: (connectionId: string, skipFutureConfirm: boolean) => void;
@@ -33,6 +36,9 @@ export const FetchStoreProductsConfirmModal38: React.FC<FetchStoreProductsConfir
   open,
   connections,
   existingTask,
+  pending = false,
+  unavailableReason,
+  onViewProgress,
   onClose,
   connection,
   onConfirmStart,
@@ -60,15 +66,7 @@ export const FetchStoreProductsConfirmModal38: React.FC<FetchStoreProductsConfir
     ? 'Shopify'
     : String(connection.platform).toUpperCase();
 
-  const accountTypeDisplay = connection.shopName.toLowerCase().includes('test')
-    ? 'Test account'
-    : connection.platform === 'lazada'
-    ? (connection.shopName.toLowerCase().includes('mall') ? 'Official LazMall Store' : 'Crossborder Merchant')
-    : connection.platform === 'shopee'
-    ? (connection.shopName.toLowerCase().includes('mall') ? 'Shopee Mall Partner' : 'Preferred Seller')
-    : connection.platform === 'tiktok'
-    ? 'TikTok Shop Merchant'
-    : 'Direct Enterprise Store';
+  const accountTypeDisplay = connection.accountMode === 'test' ? 'Test account' : 'Production account';
 
   const regionDisplay = connection.region === 'MY'
     ? 'Malaysia (MYR)'
@@ -195,9 +193,9 @@ export const FetchStoreProductsConfirmModal38: React.FC<FetchStoreProductsConfir
                   <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
                   <span>A catalog download is already running for this store ({existingTask?.downloadedProducts} products retrieved).</span>
                 </div>
-                <span className="font-bold text-indigo-300 underline cursor-pointer">
+                <button type="button" onClick={onViewProgress} className="font-bold text-indigo-300 underline cursor-pointer">
                   View Progress
-                </span>
+                </button>
               </div>
             )}
           </div>
@@ -212,7 +210,7 @@ export const FetchStoreProductsConfirmModal38: React.FC<FetchStoreProductsConfir
                 This starts a background catalog download. You can continue working or leave this page; JW Studio will keep downloading on the server.
               </p>
               <p className="text-[11px] text-indigo-300/80">
-                Tasks run as asynchronous worker jobs in our Singapore cloud cluster. Closing your tab or browser session will not interrupt progress.
+                Tasks run as asynchronous worker jobs on the server. Closing your tab or browser session will not interrupt progress.
               </p>
             </div>
           </div>
@@ -294,18 +292,7 @@ export const FetchStoreProductsConfirmModal38: React.FC<FetchStoreProductsConfir
             </span>
           </div>
 
-          {/* Visually Secondary Checkbox: Do not show this confirmation again */}
-          <div className="pt-2 border-t border-neutral-800/80">
-            <label className="flex items-center gap-2 text-[11px] text-neutral-400 hover:text-neutral-300 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={doNotShowAgain}
-                onChange={e => setDoNotShowAgain(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-neutral-700 bg-neutral-800 text-indigo-600 focus:ring-indigo-500/30 focus:ring-offset-0 cursor-pointer"
-              />
-              <span>Do not show this confirmation again for this store</span>
-            </label>
-          </div>
+
         </div>
 
         {/* Modal Footer */}
@@ -320,11 +307,13 @@ export const FetchStoreProductsConfirmModal38: React.FC<FetchStoreProductsConfir
 
           <button
             type="button"
-            onClick={handleStart}
+            onClick={isTaskAlreadyRunning ? onViewProgress : handleStart}
+            disabled={pending || !!unavailableReason}
+            title={unavailableReason}
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
           >
             <CloudDownload className="w-4 h-4" />
-            <span>Start Background Download</span>
+            <span>{pending ? 'Checking task…' : unavailableReason || (isTaskAlreadyRunning ? 'View Progress' : 'Start Background Download')}</span>
           </button>
         </div>
       </div>

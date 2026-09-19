@@ -69,7 +69,7 @@ export interface MarketplaceOrderDetail extends OrderSummary {
   capabilities: {fulfillment: boolean; airway_bill: boolean};
   recipient?: Record<'name' | 'phone' | 'town' | 'district' | 'city' | 'state' | 'region' | 'zipcode' | 'full_address', string | null>;
 }
-export interface SyncRun {id: number; store_id: number; status: 'queued' | 'running' | 'succeeded' | 'failed'; pages_completed: number; items_processed?:number; variants_processed?:number; total_products?:number|null; error_code: string | null; finished_at: string | null}
+export interface SyncRun {created_at?:string;updated_at?:string;id: number; store_id: number; status: 'queued' | 'running' | 'succeeded' | 'failed'; pages_completed: number; items_processed?:number; variants_processed?:number; total_products?:number|null; error_code: string | null; finished_at: string | null}
 type Filters = {storeId?: string; platform?: MarketplacePlatform; q?: string; status?: string; page?: number; per_page?: number};
 function query(filters: Filters): string {
   const params = new URLSearchParams();
@@ -151,7 +151,12 @@ export const marketplaceOperations = {
   disconnect: (id: string) => marketplaceRequest<{status: string; providerRevocationConfirmed: boolean}>(`/stores/${idPath(id)}/disconnect`, 'POST'),
   catalog: (filters: Filters = {}) => marketplaceRequest<Page<CatalogVariant>>(`/catalog?${query(filters)}`),
   fetchCatalog: (id: string) => marketplaceRequest<{runId: number}>(`/stores/${idPath(id)}/catalog-fetch`, 'POST'),
-  latestCatalogRun: (id: string) => marketplaceRequest<SyncRun|null>(`/stores/${idPath(id)}/catalog-runs/latest`),
+  latestCatalogRun: async (id: string) => {
+    const run = await marketplaceRequest<SyncRun|null>(`/stores/${idPath(id)}/catalog-runs/latest`);
+    // Older Laravel responses serialize an absent record as {}.
+    return run && Number.isSafeInteger(run.id) && run.id > 0 && String(run.store_id) === id
+      && ['queued','running','failed','succeeded'].includes(run.status) ? run : null;
+  },
   catalogRun: (id: string) => marketplaceRequest<SyncRun>(`/catalog-runs/${idPath(id)}`),
   retryCatalog: (id: string) => marketplaceRequest<{runId: number}>(`/catalog-runs/${idPath(id)}/retry`, 'POST'),
   orders: (filters: Filters = {}) => marketplaceRequest<Page<OrderSummary>>(`/orders?${query(filters)}`),

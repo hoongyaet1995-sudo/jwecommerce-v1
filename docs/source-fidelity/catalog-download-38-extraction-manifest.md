@@ -32,8 +32,8 @@
 | Connected store identity and capability | available adapter | `/admin/api/marketplace/connections` |
 | Catalog task status and progress | available adapter | catalog-run endpoints already used by `useMarketplaceReadTask` |
 | Start / retry | available adapter | existing catalog fetch / retry endpoints |
-| Confirmation preference | local preference | browser localStorage per store |
-| Images captured, total pages, unmapped total | mock-retained as zero until API exposes them | no backend change in this frontend-only phase |
+| Confirmation | explicit each time | Store selection is independent of the page filter; only Start submits |
+| Images captured, total pages, unmapped total | unavailable, displayed as not reported | No synthetic counts |
 
 ## Evidence matrix
 
@@ -51,3 +51,14 @@
 
 - The local official-test token lease expired at `2026-09-19 04:34:39 UTC`. The existing connection API therefore returns the store as requiring reauthorization and the mapped Fetch button remains disabled. This is the intended credential safety rule; no token, task, store, catalog row, or provider data was changed during this conversion.
 - The React adapter was verified with an equivalent connected test-store fixture for the explicit-confirmation path. A real download must be initiated by the acceptance user after supplying a fresh token through the existing test-token flow.
+
+## 2026-09-20 interaction correction
+
+- Fetch now opens the ZIP confirmation while the page remains on All Connected Stores. The modal chooses its own target; Start is gated by real connection status.
+- Copied the ZIP PersistentCatalogTaskIndicator and Mapping active-task banner. Closing/minimizing leaves progress entry points; reopening does not submit.
+- Removed skip-confirmation preference to match the requested always-confirm interaction. No developer state controls included.
+- Empty Laravel latest-run responses are {} in production; validate identity/status before restoring. Production read-only inspection found zero queued Marketplace jobs, not a live Preparing task.
+- Local authenticated browser verified modal opening and Change Store dropdown while All Connected Stores remains selected. Expired local credentials block Start correctly.
+- 23 targeted tests passed, including dropdown target, explicit Start, reopening, completed UI, malformed/latest task responses, and shared order-task hook regression. Admin build passed.
+- Full TypeScript check remains blocked by existing cross-preview/catalog and AI configuration type errors. No successful full-project typecheck is claimed.
+- Real provider download is reserved for user acceptance. Existing hPanel periodic marketplace:cron design processes at most one job per invocation; no worker configuration changed.

@@ -24,11 +24,12 @@ export function useMarketplaceReadTask(kind:'catalog'|'orders',onComplete:()=>vo
  const start=async(submit:()=>Promise<{runId:number}>)=>{
   if(locked.current||runId!==null&&run?.status!=='succeeded'&&run?.status!=='failed')return;
   locked.current=true;setSubmitting(true);setError('');
-  try{const result=await submit();if(mounted.current){setRun(null);setRunId(result.runId);setPollRevision(value=>value+1);}}
-  catch{if(mounted.current)setError('Task submission was not confirmed. Check the store before retrying.');}
+  try{const result=await submit();if(mounted.current){setRun(null);setRunId(result.runId);setPollRevision(value=>value+1);}return true;}
+  catch{if(mounted.current)setError('Task submission was not confirmed. Check the store before retrying.');return false;}
   finally{locked.current=false;if(mounted.current)setSubmitting(false);}
  };
- const resume=(value:SyncRun)=>{if(value.status==='succeeded')return;setRun(value);setRunId(value.id);setError('');setPollRevision(revision=>revision+1);};
- return {runId,run,error,submitting,start,resume,checkStatus:()=>setPollRevision(value=>value+1),
+ const resume=(value:SyncRun)=>{if(!Number.isSafeInteger(value.id)||value.id<=0)return;setRun(value);setRunId(value.id);setError('');setPollRevision(revision=>revision+1);};
+ const reset=()=>{setRun(null);setRunId(null);setError('');};
+ return {runId,run,error,submitting,start,resume,reset,checkStatus:()=>setPollRevision(value=>value+1),
   busy:submitting||runId!==null&&run?.status!=='succeeded'&&run?.status!=='failed'};
 }

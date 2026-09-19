@@ -65,6 +65,15 @@ describe('marketplace operational contract', () => {
     }
   });
   beforeEach(() => vi.mocked(marketplaceRequest).mockReset().mockResolvedValue({}));
+  it('does not restore empty or mismatched catalog task responses as running tasks', async () => {
+    for(const payload of [null,{}, {id:8,store_id:9,status:'running'}]){
+      vi.mocked(marketplaceRequest).mockResolvedValueOnce(payload);
+      expect(await marketplaceOperations.latestCatalogRun('3')).toBeNull();
+    }
+    const run={id:8,store_id:3,status:'queued'};
+    vi.mocked(marketplaceRequest).mockResolvedValueOnce(run);
+    expect(await marketplaceOperations.latestCatalogRun('3')).toEqual(run);
+  });
   it('submits reviewed variant destination only and propagates rejection instead of reporting success', async () => {
     vi.mocked(marketplaceRequest).mockResolvedValueOnce({variantId: 92, productId: 51});
     const result = await marketplaceOperations.importVariant('12', {newProduct: true, sku: 'JW-REVIEWED'});
