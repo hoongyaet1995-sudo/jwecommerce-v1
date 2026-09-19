@@ -98,6 +98,28 @@ class LazadaCatalogServiceTest extends TestCase
             && str_contains($request->url(), 'limit=10') && str_contains($request->url(), 'offset=0'));
     }
 
+    public function test_pull_page_falls_back_to_single_reads_after_a_lazada_page_timeout(): void
+    {
+        $store=$this->connectedStore();
+        Http::preventStrayRequests();
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), '/products/get') && str_contains($request->url(), 'limit=10')) {
+                return Http::response(['code'=>'ServiceTimeout','message'=>'provider timeout']);
+            }
+            if (str_contains($request->url(), '/products/get')) {
+                return Http::response(['code'=>'0','data'=>['total'=>1,'products'=>[['item_id'=>'LZ-1']]]]);
+            }
+            if (str_contains($request->url(), '/product/item/get')) {
+                return Http::response(['code'=>'0','data'=>['item_id'=>'LZ-1','attributes'=>['name'=>'Recovered'],
+                    'skus'=>[['SkuId'=>'S-1','SellerSku'=>'RECOVERED','quantity'=>0]]]]);
+            }
+            return Http::response(['code'=>'denied'],400);
+        });
+        $result=app(LazadaCatalogService::class)->pullPage($store,0);
+        $this->assertSame(['items'=>1,'variants'=>1,'has_more'=>false,'next_offset'=>10],$result);
+        Http::assertSentCount(3);
+    }
+
     public function test_pull_page_accepts_a_saved_legacy_offset_when_page_size_changes(): void
     {
         $store=$this->connectedStore(); $this->fakeCatalog();

@@ -21,11 +21,39 @@ final class LazadaCatalogService
   if($offset<0||$offset>5000)throw new RuntimeException('Invalid Lazada catalog offset.');
   $token=$this->tokens->accessToken($storeId);$store=DB::table('marketplace_stores')->find($storeId);
   if(!$store||$store->platform!=='lazada'||$store->status!=='connected')throw new RuntimeException('Lazada store is not connected.');
-  $page=$this->client->read('/products/get',$token,['filter'=>'all','limit'=>10,'offset'=>$offset],$storeId);
-  $products=$page['products']??null;$total=$page['total_products']??$page['total']??$page['countTotal']??null;
-  if(!is_array($products)||!array_is_list($products)||count($products)>10||(!is_int($total)&&!ctype_digit((string)$total)))throw new RuntimeException('Lazada catalog page is incomplete.');
+  try {
+   $page=$this->client->read('/products/get',$token,['filter'=>'all','limit'=>10,'offset'=>$offset],$storeId);
+  } catch (RuntimeException) {
+   // Lazada intermittently times out on dense catalog pages. Recover this bounded page with
+   // at most ten single-item reads; any failed recovery request still propagates as a failure.
+   $first=$this->client->read('/products/get',$token,['filter'=>'all','limit'=>1,'offset'=>$offset],$storeId);
+   $total=$this->total($first);$products=$this->products($first);
+   $last=min($offset+10,$total);
+   for($cursor=$offset+1;$cursor<$last;$cursor++) {
+    $single=$this->client->read('/products/get',$token,['filter'=>'all','limit'=>1,'offset'=>$cursor],$storeId);
+    if($this->total($single)!==$total) throw new RuntimeException('Lazada catalog pagination changed during recovery.');
+    $singleProducts=$this->products($single);
+    if(count($singleProducts)!==1) throw new RuntimeException('Lazada catalog recovery page is incomplete.');
+    $products[]=$singleProducts[0];
+   }
+   $page=['products'=>$products,'total_products'=>$total];
+  }
+  $products=$this->products($page);$total=$this->total($page);
+  if(count($products)>10)throw new RuntimeException('Lazada catalog page is incomplete.');
   $rows=$this->capture($store,$products,$token);
-  $hasMore=$offset+count($products)<(int)$total;return ['items'=>count($products),'variants'=>count($rows),'has_more'=>$hasMore,'next_offset'=>$offset+10];
+  $hasMore=$offset+count($products)<$total;return ['items'=>count($products),'variants'=>count($rows),'has_more'=>$hasMore,'next_offset'=>$offset+10];
+ }
+ private function products(array $page):array
+ {
+  $products=$page['products']??null;
+  if(!is_array($products)||!array_is_list($products)) throw new RuntimeException('Lazada catalog page is incomplete.');
+  return $products;
+ }
+ private function total(array $page):int
+ {
+  $total=$page['total_products']??$page['total']??$page['countTotal']??null;
+  if(!is_int($total)&&!ctype_digit((string)$total)) throw new RuntimeException('Lazada catalog page is incomplete.');
+  return (int)$total;
  }
  private function capture(object $store,array $products,#[\SensitiveParameter] string $token):array
  {
