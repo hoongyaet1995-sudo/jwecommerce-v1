@@ -40,7 +40,7 @@ export interface CatalogVariant {
   platform: MarketplacePlatform; shop_name: string; jw_variant_id: number | null; jw_sku: string | null;
   jw_product_id: number | null; jw_product_title: string | null; jw_variant_title: string | null; mapped_at: string | null;
   jw_price_minor?: number | null; jw_legacy_stock?: number | null;
-  fetched_at: string; observed_data: {productTitle?: string | null; productImage?: string | null; title?: string | null; sku?: string | null; price?: number | string | null; stock?: number | null; currency?: string | null; status?: string | null};
+  fetched_at: string; observed_data: {productTitle?: string | null; productImage?: string | null; productImages?: string[] | null; variantImage?: string | null; title?: string | null; sku?: string | null; price?: number | string | null; stock?: number | null; currency?: string | null; status?: string | null};
 }
 export interface CatalogProduct {
   store_id: number; external_product_id: string; platform: MarketplacePlatform; shop_name: string;

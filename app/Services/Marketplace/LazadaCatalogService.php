@@ -64,10 +64,13 @@ final class LazadaCatalogService
    if((!is_string($itemId)&&!is_int($itemId))||(string)$itemId==='')throw new RuntimeException('Lazada catalog product identity is incomplete.');
    $item=is_array($summary['skus']??null)&&is_array($summary['attributes']??null)?$summary:$this->client->read('/product/item/get',$token,['item_id'=>(string)$itemId],$storeId);$skus=$item['skus']??$item['Skus']??null;
    if(!is_array($skus)||!array_is_list($skus))throw new RuntimeException('Lazada catalog SKU structure is incomplete.');
+   $productImages=array_values(array_filter($item['images']??[],fn($image)=>is_string($image)&&trim($image)!==''));
+   $productImage=$productImages[0]??null;
    foreach($skus as $sku){
     $skuId=$sku['SkuId']??$sku['sku_id']??null;if((!is_string($skuId)&&!is_int($skuId))||(string)$skuId==='')throw new RuntimeException('Lazada catalog SKU identity is incomplete.');
+    $variantImages=array_values(array_filter($sku['Images']??$sku['images']??[],fn($image)=>is_string($image)&&trim($image)!==''));
     $rows[]=['external_product_id'=>(string)$itemId,'external_variant_id'=>(string)$skuId,'observed_data'=>json_encode([
-      'productImages'=>$item['images']??[], 'brand'=>data_get($item,'attributes.brand'),
+      'productImages'=>$productImages,'productImage'=>$productImage,'variantImage'=>$variantImages[0]??$productImage, 'brand'=>data_get($item,'attributes.brand'),
       'sourceDescriptionHtml'=>data_get($item,'attributes.description'),
       'productTitle'=>data_get($item,'attributes.name')??data_get($item,'Attributes.name'),'title'=>$sku['SellerSku']??$sku['seller_sku']??null,
       'sku'=>$sku['SellerSku']??$sku['seller_sku']??null,'price'=>$sku['price']??null,'currency'=>$sku['currency']??($store->region==='MY'?'MYR':null),

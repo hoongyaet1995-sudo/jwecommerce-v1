@@ -134,13 +134,15 @@ class LazadaCatalogServiceTest extends TestCase
         Http::fake([
             '*/products/get*'=>Http::response(['code'=>'0','data'=>['total_products'=>2132,'products'=>[['item_id'=>14984118945]]]]),
             '*/product/item/get*'=>Http::response(['code'=>'0','data'=>['item_id'=>14984118945,
-                'images'=>['https://sg-test-11.slatic.net/p/test.png'],'primary_category'=>10000664,'attributes'=>['name'=>'Test item'],'skus'=>[['SkuId'=>128571056069,'SellerSku'=>'TEST-1','quantity'=>20]]]]),
+                'images'=>['https://sg-test-11.slatic.net/p/test.png'],'primary_category'=>10000664,'attributes'=>['name'=>'Test item'],'skus'=>[['SkuId'=>128571056069,'SellerSku'=>'TEST-1','quantity'=>20,'Images'=>['https://sg-test-11.slatic.net/p/sku.png']]]]]),
         ]);
         $result=app(LazadaCatalogService::class)->pullPage($store,0);
         $observed=json_decode(DB::table('marketplace_listing_variants')->where('store_id',$store)->value('observed_data'),true);
         $this->assertSame(10000664,$observed['externalCategoryId']);
         $this->assertSame('MYR',$observed['currency']);
         $this->assertSame(['https://sg-test-11.slatic.net/p/test.png'],$observed['productImages']);
+        $this->assertSame('https://sg-test-11.slatic.net/p/test.png',$observed['productImage']);
+        $this->assertSame('https://sg-test-11.slatic.net/p/sku.png',$observed['variantImage']);
         $this->assertTrue($result['has_more']);
         $this->assertSame(1,$result['variants']);
         $this->assertDatabaseHas('marketplace_listing_variants',['store_id'=>$store,'external_product_id'=>'14984118945']);
