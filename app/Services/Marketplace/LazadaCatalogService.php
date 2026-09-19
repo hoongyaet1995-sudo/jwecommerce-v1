@@ -21,11 +21,11 @@ final class LazadaCatalogService
   if($offset<0||$offset>5000)throw new RuntimeException('Invalid Lazada catalog offset.');
   $token=$this->tokens->accessToken($storeId);$store=DB::table('marketplace_stores')->find($storeId);
   if(!$store||$store->platform!=='lazada'||$store->status!=='connected')throw new RuntimeException('Lazada store is not connected.');
-  $page=$this->client->read('/products/get',$token,['filter'=>'all','limit'=>20,'offset'=>$offset],$storeId);
+  $page=$this->client->read('/products/get',$token,['filter'=>'all','limit'=>10,'offset'=>$offset],$storeId);
   $products=$page['products']??null;$total=$page['total_products']??$page['total']??$page['countTotal']??null;
-  if(!is_array($products)||!array_is_list($products)||count($products)>20||(!is_int($total)&&!ctype_digit((string)$total)))throw new RuntimeException('Lazada catalog page is incomplete.');
+  if(!is_array($products)||!array_is_list($products)||count($products)>10||(!is_int($total)&&!ctype_digit((string)$total)))throw new RuntimeException('Lazada catalog page is incomplete.');
   $rows=$this->capture($store,$products,$token);
-  $hasMore=$offset+count($products)<(int)$total;return ['items'=>count($products),'variants'=>count($rows),'has_more'=>$hasMore,'next_offset'=>$offset+20];
+  $hasMore=$offset+count($products)<(int)$total;return ['items'=>count($products),'variants'=>count($rows),'has_more'=>$hasMore,'next_offset'=>$offset+10];
  }
  private function capture(object $store,array $products,#[\SensitiveParameter] string $token):array
  {

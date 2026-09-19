@@ -86,7 +86,7 @@ class LazadaCatalogServiceTest extends TestCase
         $store=$this->connectedStore(); $this->fakeCatalog();
         $before=DB::table('products')->count();
         $result=app(LazadaCatalogService::class)->pullPage($store,0);
-        $this->assertSame(['items'=>1,'variants'=>1,'has_more'=>false,'next_offset'=>20],$result);
+        $this->assertSame(['items'=>1,'variants'=>1,'has_more'=>false,'next_offset'=>10],$result);
         $this->assertDatabaseHas('marketplace_listing_variants',['store_id'=>$store,'external_product_id'=>'LZ-1','external_variant_id'=>'S-1']);
         $observed=json_decode(DB::table('marketplace_listing_variants')->value('observed_data'),true);
         $this->assertSame('Lazada Headphones',$observed['productTitle']);
@@ -95,14 +95,14 @@ class LazadaCatalogServiceTest extends TestCase
         $this->assertSame($before,DB::table('products')->count());
         $this->assertDatabaseCount('marketplace_variant_mappings',0);
         Http::assertSent(fn ($request) => str_contains($request->url(), '/products/get')
-            && str_contains($request->url(), 'limit=20') && str_contains($request->url(), 'offset=0'));
+            && str_contains($request->url(), 'limit=10') && str_contains($request->url(), 'offset=0'));
     }
 
     public function test_pull_page_accepts_a_saved_legacy_offset_when_page_size_changes(): void
     {
         $store=$this->connectedStore(); $this->fakeCatalog();
         $result=app(LazadaCatalogService::class)->pullPage($store,350);
-        $this->assertSame(370,$result['next_offset']);
+        $this->assertSame(360,$result['next_offset']);
     }
 
     public function test_official_total_products_field_allows_catalog_capture(): void
