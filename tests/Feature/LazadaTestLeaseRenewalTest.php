@@ -48,4 +48,41 @@ class LazadaTestLeaseRenewalTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $service->renew($id,$actor,'Cannot replace OAuth');
     }
+
+    public function test_administrator_can_reconnect_only_the_designated_lazada_test_store_with_a_fresh_api_explorer_token(): void
+    {
+        config([
+            'marketplace.lazada.enabled'=>true,
+            'marketplace.lazada.app_key'=>'139209',
+            'marketplace.lazada.app_secret'=>'production-secret',
+            'marketplace.lazada.test_app_key'=>'139041',
+            'marketplace.lazada.test_app_secret'=>'test-secret',
+            'marketplace.lazada.online_test_access_enabled'=>true,
+        ]);
+        Http::preventStrayRequests();
+        Http::fake(['*'=>Http::response(['code'=>'0','data'=>[
+            'seller_id'=>300163725140,'short_code'=>'MY4NA1T7CK','name'=>'Lazada MY Test Seller','status'=>'ACTIVE',
+        ]])]);
+
+        $service=app(LazadaTestConnectionService::class);
+        $storeId=$service->connect('stale-token');
+        $actor=User::factory()->create(['is_admin'=>true]);
+        app(\App\Services\Inventory\TestDataClassificationService::class)->markTest('store',$storeId,$actor,'Official test fixture');
+        config(['marketplace.lazada.test_store_id'=>$storeId]);
+        DB::table('marketplace_stores')->where('id',$storeId)->update(['status'=>'disconnected']);
+        MarketplaceStoreToken::where('store_id',$storeId)->delete();
+
+        $response=$this->actingAs($actor)->postJson("/admin/api/marketplace/stores/{$storeId}/lazada-test-access", [
+            'accessToken'=>'fresh-api-explorer-token',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('store.id',(string)$storeId)
+            ->assertJsonPath('store.status','connected')
+            ->assertJsonPath('store.credentialSource','official_test')
+            ->assertJsonMissingPath('accessToken')
+            ->assertDontSee('fresh-api-explorer-token');
+        $this->assertDatabaseHas('marketplace_stores',['id'=>$storeId,'status'=>'connected','account_mode'=>'test']);
+        $this->assertSame('fresh-api-explorer-token',MarketplaceStoreToken::where('store_id',$storeId)->firstOrFail()->access_token);
+    }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\Marketplace\OAuthStateService;
 use App\Services\Marketplace\ShopeeClient;
 use App\Services\Marketplace\ShopeeAuthorizationService;
+use App\Models\MarketplaceStoreToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -119,6 +120,41 @@ class MarketplaceOAuthController extends Controller
                 'inventory'=>$inventoryEnabled && $lazada->isConfigured(),
             ]),
             'tiktok'=>$unavailable, 'shopify'=>$unavailable,
+        ]])->header('Cache-Control', 'no-store');
+    }
+
+    public function renewOfficialTestAccess(Request $request, int $store, \App\Services\Marketplace\LazadaTestConnectionService $service)
+    {
+        abort_unless($request->user()?->is_admin === true, 403);
+        abort_unless(config('marketplace.lazada.online_test_access_enabled') === true
+            && (string) config('marketplace.lazada.test_store_id') === (string) $store, 404);
+
+        $target = DB::table('marketplace_stores')->where('id', $store)->first();
+        abort_unless($target
+            && $target->platform === 'lazada'
+            && $target->environment === 'live'
+            && $target->region === 'MY'
+            && $target->external_shop_id === '300163725140'
+            && $target->account_mode === 'test', 404);
+
+        $data = $request->validate(['accessToken' => ['required', 'string', 'min:16', 'max:4096']]);
+
+        try {
+            $connectedStoreId = $service->connect($data['accessToken']);
+        } catch (\Throwable) {
+            return response()->json([
+                'message' => 'Test access could not be verified. Generate a new token in Lazada API Explorer and try again.',
+            ], 422)->header('Cache-Control', 'no-store');
+        }
+
+        abort_unless($connectedStoreId === $store, 409);
+        $token = MarketplaceStoreToken::query()->where('store_id', $store)->firstOrFail();
+
+        return response()->json(['store' => [
+            'id' => (string) $store,
+            'status' => 'connected',
+            'credentialSource' => 'official_test',
+            'testLeaseExpiresAt' => $token->test_lease_expires_at?->utc()->toISOString(),
         ]])->header('Cache-Control', 'no-store');
     }
 

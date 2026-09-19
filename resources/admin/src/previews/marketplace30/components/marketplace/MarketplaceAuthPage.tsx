@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/ContextBridge';
-import {requestMarketplaceAuthorization, OAuthResult} from '../../../../integration/marketplaceOperations';
+import {marketplaceOperations, requestMarketplaceAuthorization, OAuthResult} from '../../../../integration/marketplaceOperations';
 import { MarketplacePlatform, MarketplaceConnection } from '../../types';
 import { MarketplaceLogo, getPlatformMeta } from './MarketplaceLogo';
 import { SubNavHeader } from '../common/SubNavHeader';
@@ -36,6 +36,11 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
   },[operational,authorizationResult]);
   const [connectModalMode, setConnectModalMode] = useState<'connect' | 'reauthorize'>('connect');
   const [selectedConnection, setSelectedConnection] = useState<MarketplaceConnection | null>(null);
+  const [testAccessTarget, setTestAccessTarget] = useState<MarketplaceConnection | null>(null);
+  const [testAccessToken, setTestAccessToken] = useState('');
+  const [testAccessError, setTestAccessError] = useState<string | null>(null);
+  const [isRenewingTestAccess, setIsRenewingTestAccess] = useState(false);
+  const [testAccessRenewed, setTestAccessRenewed] = useState(false);
 
   const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false);
   const [disconnectTarget, setDisconnectTarget] = useState<MarketplaceConnection | null>(null);
@@ -52,10 +57,34 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
 
   // Open modal in "reauthorize" mode
   const handleOpenReauthorize = (conn: MarketplaceConnection) => {
+    if (operational && conn.credentialSource === 'official_test') {
+      setTestAccessTarget(conn);
+      setTestAccessToken('');
+      setTestAccessError(null);
+      setTestAccessRenewed(false);
+      return;
+    }
     setVisibleResult(null);
     setSelectedConnection(conn);
     setConnectModalMode('reauthorize');
     setIsConnectModalOpen(true);
+  };
+
+  const renewOfficialTestAccess = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!testAccessTarget || !testAccessToken.trim()) return;
+    setIsRenewingTestAccess(true);
+    setTestAccessError(null);
+    try {
+      await marketplaceOperations.renewLazadaTestAccess(testAccessTarget.id, testAccessToken.trim());
+      setTestAccessToken('');
+      setTestAccessRenewed(true);
+      addToast({type:'success', title:'Test access renewed', message:'The official Lazada test store is connected and ready for controlled sync.'});
+    } catch (error) {
+      setTestAccessError(error instanceof Error ? error.message : 'Test access could not be verified. Generate a fresh token and try again.');
+    } finally {
+      setIsRenewingTestAccess(false);
+    }
   };
 
   // Open modal in "disconnect" mode
@@ -394,7 +423,7 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
                           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 transition-colors cursor-pointer"
                         >
                           <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                          Re-authorize Store
+                          {isOfficialTest ? 'Renew Test Access' : 'Re-authorize Store'}
                         </button>
                         <button
                           type="button"
@@ -425,7 +454,7 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
                         className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
-                        Re-authorize & Resume Sync
+                        {isOfficialTest ? 'Renew Test Access' : 'Re-authorize & Resume Sync'}
                       </button>
 
                       <button
@@ -522,6 +551,37 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
         mode={connectModalMode}
         existingConnection={selectedConnection}
       />
+
+      {testAccessTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-sm">
+          <form onSubmit={renewOfficialTestAccess} className="w-full max-w-lg rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl overflow-hidden">
+            <div className="flex items-start justify-between gap-4 p-6 border-b border-neutral-200 dark:border-neutral-800">
+              <div>
+                <div className="inline-flex items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-300"><KeyRound className="w-4 h-4" /> Official Lazada Test Store</div>
+                <h2 className="mt-2 text-lg font-black text-neutral-900 dark:text-white">Renew Test Access</h2>
+                <p className="mt-1 text-xs text-neutral-500">{testAccessTarget.shopName} uses a Lazada API Explorer token, not Seller OAuth.</p>
+              </div>
+              <button type="button" onClick={() => setTestAccessTarget(null)} className="p-2 rounded-xl text-neutral-400 hover:text-neutral-700 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800" aria-label="Close">×</button>
+            </div>
+            <div className="p-6 space-y-4">
+              {testAccessRenewed ? (
+                <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-sm text-emerald-800 dark:text-emerald-200"><div className="flex gap-2 font-bold"><CheckCircle2 className="w-5 h-5" /> Test access renewed</div><p className="mt-1 text-xs">The token was verified server-side and stored encrypted. Reload to see the active connection.</p></div>
+              ) : (
+                <>
+                  <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-100 leading-relaxed"><strong>Use a fresh official test token.</strong> Generate it in Lazada API Explorer for App Key <code className="font-bold">139041</code>. JW ECOM validates the seller identity before restoring sync.</div>
+                  <a href="https://isvconsole.lazada.com/apps/console/test_api" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-300 hover:underline">Open Lazada API Explorer <span aria-hidden="true">↗</span></a>
+                  <label className="block space-y-2"><span className="text-xs font-bold text-neutral-700 dark:text-neutral-200">Access token</span><input autoFocus type="password" autoComplete="off" value={testAccessToken} onChange={(event) => setTestAccessToken(event.target.value)} required minLength={16} placeholder="Paste the current API Explorer token" className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-sm text-neutral-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" /></label>
+                  {testAccessError && <p role="alert" className="text-xs font-semibold text-rose-600 dark:text-rose-300">{testAccessError}</p>}
+                </>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 p-5 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/40">
+              <button type="button" onClick={() => { setTestAccessTarget(null); if (testAccessRenewed) window.location.reload(); }} className="px-4 py-2 rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-800">{testAccessRenewed ? 'Close & Reload' : 'Cancel'}</button>
+              {!testAccessRenewed && <button type="submit" disabled={isRenewingTestAccess || !testAccessToken.trim()} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold shadow-lg shadow-indigo-600/20"><RefreshCw className={`w-3.5 h-3.5 ${isRenewingTestAccess ? 'animate-spin' : ''}`} />{isRenewingTestAccess ? 'Verifying…' : 'Verify & Resume Sync'}</button>}
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Disconnect Store Confirmation Modal */}
       <DisconnectStoreModal

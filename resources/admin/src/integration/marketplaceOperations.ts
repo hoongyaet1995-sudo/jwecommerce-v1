@@ -146,6 +146,7 @@ export const marketplaceOperations = {
     : marketplaceRequest<ProductImportResult>(`/listings/${idPath(listingId)}/import-product`, 'POST', review),
   retryOrders: (id: string) => marketplaceRequest<{runId: number}>(`/order-runs/${idPath(id)}/retry`, 'POST'),
   connections: () => marketplaceRequest<{stores: StoreConnection[]; capabilities: Record<MarketplacePlatform, ProviderCapabilities>; localCapabilities?:{importProducts:boolean}}>('/connections'),
+  renewLazadaTestAccess: (id: string, accessToken: string) => marketplaceRequest<{store:{id:string;status:'connected';credentialSource:'official_test';testLeaseExpiresAt:string|null}}>(`/stores/${idPath(id)}/lazada-test-access`, 'POST', {accessToken}),
   authorize: (reconnectId?: string, platform: 'shopee' | 'lazada' = 'shopee') => marketplaceRequest<{url: string}>(`/${platform}/authorize`, 'POST', reconnectId ? {reconnectStoreId: Number(reconnectId)} : {}),
   disconnect: (id: string) => marketplaceRequest<{status: string; providerRevocationConfirmed: boolean}>(`/stores/${idPath(id)}/disconnect`, 'POST'),
   catalog: (filters: Filters = {}) => marketplaceRequest<Page<CatalogVariant>>(`/catalog?${query(filters)}`),

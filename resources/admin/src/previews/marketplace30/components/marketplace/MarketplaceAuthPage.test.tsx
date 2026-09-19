@@ -54,3 +54,10 @@ it('opens the official callback result then clears it for a new connection',asyn
  expect(container.textContent).toContain('Proceed to Official Authorization');
  await act(async()=>root.unmount());vi.unstubAllGlobals();
 });
+
+it('offers test-token renewal instead of seller OAuth for a disconnected official Lazada test store',()=>{
+ const value={connections:[{id:'4',platform:'lazada',shopName:'[Official Test] Zappyworks Test',shopId:'300163725140',status:'reauthorization_required',credentialSource:'official_test',accountMode:'test',testLeaseExpiresAt:'',tokenExpiresAt:'',lastSyncAt:''}],marketplaceOrders:[],marketplaceInventory:[],marketplaceStoreProducts:[],syncLogs:[],setCurrentSection:vi.fn(),currentSection:'marketplace-auth'};
+ const html=renderToStaticMarkup(<PreviewContext.Provider value={value as unknown as React.ContextType<typeof PreviewContext>}><MarketplaceAuthPage operational/></PreviewContext.Provider>);
+ expect(html).toContain('Renew Test Access');
+ expect(html).not.toContain('Re-authorize &amp; Resume Sync');
+});
