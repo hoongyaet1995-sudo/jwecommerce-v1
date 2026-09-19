@@ -86,7 +86,7 @@ class LazadaCatalogServiceTest extends TestCase
         $store=$this->connectedStore(); $this->fakeCatalog();
         $before=DB::table('products')->count();
         $result=app(LazadaCatalogService::class)->pullPage($store,0);
-        $this->assertSame(['items'=>1,'variants'=>1,'has_more'=>false,'next_offset'=>10],$result);
+        $this->assertSame(['items'=>1,'variants'=>1,'total_products'=>1,'has_more'=>false,'next_offset'=>10],$result);
         $this->assertDatabaseHas('marketplace_listing_variants',['store_id'=>$store,'external_product_id'=>'LZ-1','external_variant_id'=>'S-1']);
         $observed=json_decode(DB::table('marketplace_listing_variants')->value('observed_data'),true);
         $this->assertSame('Lazada Headphones',$observed['productTitle']);
@@ -116,7 +116,7 @@ class LazadaCatalogServiceTest extends TestCase
             return Http::response(['code'=>'denied'],400);
         });
         $result=app(LazadaCatalogService::class)->pullPage($store,0);
-        $this->assertSame(['items'=>1,'variants'=>1,'has_more'=>false,'next_offset'=>10],$result);
+        $this->assertSame(['items'=>1,'variants'=>1,'total_products'=>1,'has_more'=>false,'next_offset'=>10],$result);
         Http::assertSentCount(3);
     }
 

@@ -152,6 +152,15 @@ class MarketplaceCatalogController extends Controller
         return response()->json($row)->header('Cache-Control', 'no-store');
     }
 
+    public function latest(int $store)
+    {
+        abort_unless(DB::table('marketplace_stores')->where('id', $store)->exists(), 404);
+        $run = DB::table('marketplace_catalog_runs')->where('store_id', $store)
+            ->whereIn('status', ['queued', 'running', 'failed'])->orderByDesc('updated_at')->first();
+
+        return response()->json($run)->header('Cache-Control', 'no-store');
+    }
+
     public function retry(int $run, ShopeeClient $client, \App\Services\Marketplace\LazadaClient $lazada)
     {
         $initial = DB::table('marketplace_catalog_runs')->find($run);

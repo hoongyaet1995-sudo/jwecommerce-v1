@@ -48,6 +48,7 @@ class PullLazadaCatalog implements ShouldQueue
                         'next_offset'=>$page['next_offset'], 'pages_completed'=>$run->pages_completed + 1,
                         'items_processed'=>$run->items_processed + $page['items'],
                         'variants_processed'=>$run->variants_processed + $page['variants'],
+                        'total_products'=>$page['total_products'],
                         'finished_at'=>$page['has_more'] ? null : now(), 'updated_at'=>now(),
                     ]);
                 if ($page['has_more']) {

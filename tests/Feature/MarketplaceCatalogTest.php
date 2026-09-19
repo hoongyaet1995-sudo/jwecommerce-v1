@@ -156,6 +156,21 @@ class MarketplaceCatalogTest extends TestCase
         \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\PullShopeeCatalog::class, 1);
     }
 
+    public function test_latest_catalog_run_allows_a_reopened_admin_session_to_resume_observing_the_same_store_task(): void
+    {
+        $store = DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada', 'shop_name'=>'Official test',
+            'external_shop_id'=>'300163725140', 'region'=>'MY', 'environment'=>'live', 'status'=>'connected',
+            'created_at'=>now(), 'updated_at'=>now()]);
+        $run = DB::table('marketplace_catalog_runs')->insertGetId(['store_id'=>$store, 'status'=>'running',
+            'next_offset'=>120, 'pages_completed'=>12, 'items_processed'=>120, 'variants_processed'=>347,
+            'created_at'=>now(), 'updated_at'=>now()]);
+
+        $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>true]));
+        $this->getJson('/admin/api/marketplace/stores/'.$store.'/catalog-runs/latest')->assertOk()
+            ->assertJsonPath('id', $run)->assertJsonPath('status', 'running')
+            ->assertJsonPath('pages_completed', 12)->assertJsonPath('items_processed', 120);
+    }
+
     public function test_catalog_is_server_paginated_for_large_store(): void
     {
         $id = DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee', 'shop_name'=>'Store',

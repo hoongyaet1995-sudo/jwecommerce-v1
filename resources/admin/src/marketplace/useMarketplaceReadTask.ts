@@ -28,6 +28,7 @@ export function useMarketplaceReadTask(kind:'catalog'|'orders',onComplete:()=>vo
   catch{if(mounted.current)setError('Task submission was not confirmed. Check the store before retrying.');}
   finally{locked.current=false;if(mounted.current)setSubmitting(false);}
  };
- return {runId,run,error,submitting,start,checkStatus:()=>setPollRevision(value=>value+1),
+ const resume=(value:SyncRun)=>{if(value.status==='succeeded')return;setRun(value);setRunId(value.id);setError('');setPollRevision(revision=>revision+1);};
+ return {runId,run,error,submitting,start,resume,checkStatus:()=>setPollRevision(value=>value+1),
   busy:submitting||runId!==null&&run?.status!=='succeeded'&&run?.status!=='failed'};
 }

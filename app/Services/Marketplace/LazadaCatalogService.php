@@ -41,7 +41,7 @@ final class LazadaCatalogService
   $products=$this->products($page);$total=$this->total($page);
   if(count($products)>10)throw new RuntimeException('Lazada catalog page is incomplete.');
   $rows=$this->capture($store,$products,$token);
-  $hasMore=$offset+count($products)<$total;return ['items'=>count($products),'variants'=>count($rows),'has_more'=>$hasMore,'next_offset'=>$offset+10];
+  $hasMore=$offset+count($products)<$total;return ['items'=>count($products),'variants'=>count($rows),'total_products'=>$total,'has_more'=>$hasMore,'next_offset'=>$offset+10];
  }
  private function products(array $page):array
  {
