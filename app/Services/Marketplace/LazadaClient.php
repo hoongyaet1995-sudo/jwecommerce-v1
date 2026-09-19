@@ -194,14 +194,23 @@ final class LazadaClient
                 ||($path==='/seller/warehouse/get'&&$name==='addressTypes');
             if(!is_string($name)||(!$providerEnvelope&&!preg_match('/^[a-z][a-z0-9_]*$/D',$name))||(!is_string($value)&&!is_int($value)))throw new RuntimeException('Invalid Lazada read parameters.');
         }
-        $query=$parameters+['app_key'=>$key,'access_token'=>$accessToken,'sign_method'=>'sha256','timestamp'=>(string)now()->getTimestampMs()];
-        ksort($query,SORT_STRING);$base=$path;
-        foreach($query as $name=>$value)$base.=$name.$value;
-        $query['sign']=strtoupper(hash_hmac('sha256',$base,$secret));
-        try{
-            $response=Http::acceptJson()->connectTimeout(10)->timeout(30)->withoutRedirecting()->get('https://api.lazada.com.my/rest'.$path,$query);
-        }catch(ConnectionException){throw new RuntimeException('Lazada read request could not be completed.');}
-        $payload=$response->json();
+        for ($attempt=0; $attempt<2; $attempt++) {
+            $query=$parameters+['app_key'=>$key,'access_token'=>$accessToken,'sign_method'=>'sha256','timestamp'=>(string)now()->getTimestampMs()];
+            ksort($query,SORT_STRING);$base=$path;
+            foreach($query as $name=>$value)$base.=$name.$value;
+            $query['sign']=strtoupper(hash_hmac('sha256',$base,$secret));
+            try{
+                $response=Http::acceptJson()->connectTimeout(10)->timeout(30)->withoutRedirecting()->get('https://api.lazada.com.my/rest'.$path,$query);
+            }catch(ConnectionException){throw new RuntimeException('Lazada read request could not be completed.');}
+            $payload=$response->json();
+            // Lazada explicitly reports that this seller-side limit clears after one second.
+            // Reads are idempotent, so one bounded retry is safe and preserves user intent.
+            if ($attempt===0 && $response->successful() && is_array($payload) && ($payload['code']??null)==='SellerCallLimit') {
+                usleep(1_100_000);
+                continue;
+            }
+            break;
+        }
         if (in_array($path,['/order/shipment/providers/get','/order/package/document/get'],true)) {
             if (!$response->successful()||!is_array($payload)||!in_array($payload['code']??null,['0',0],true)
                 ||($payload['result']['success']??null)!==true||!is_array($payload['result']['data']??null)) {

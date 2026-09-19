@@ -33,6 +33,20 @@ class LazadaClientTest extends TestCase
                 && hash_equals(strtoupper(hash_hmac('sha256',$base,'test-secret')),$signature);
         });
     }
+    public function test_read_retries_one_declared_seller_call_limit_before_failing(): void
+    {
+        config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);
+        Http::preventStrayRequests();
+        Http::fake(['*'=>Http::sequence()
+            ->push(['code'=>'SellerCallLimit','message'=>'retry after one second'])
+            ->push(['code'=>'0','data'=>['seller_id'=>300163725140]])]);
+
+        $seller=app(LazadaClient::class)->read('/seller/get','fixture-token');
+
+        $this->assertSame(300163725140,$seller['seller_id']);
+        Http::assertSentCount(2);
+    }
+
     public function test_document_envelope_and_failed_result_are_checked():void
     {
         config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);
