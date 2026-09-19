@@ -18,6 +18,7 @@ export interface MappingServerPage {
   onReviewPublishing?: (storeId?:string)=>void;
   catalogTaskStatus?: 'queued'|'running'|'failed'; onOpenCatalogTask?:()=>void;
   canFetch?:boolean;
+  canRequestFetch?:boolean;
   canImport?:boolean; importing?:boolean; onImport?:(ids:string[])=>Promise<ImportResult[]>;
   total: number; summary: CatalogSummary; loading: boolean; onQueryChange: (query: MappingPageQuery) => void;
 }
@@ -349,7 +350,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage;
           <button
             id="btn-refresh-channel-products"
             type="button"
-            disabled={isRefreshing || !!serverPage&&!serverPage.canFetch}
+            disabled={isRefreshing || !!serverPage&&!(serverPage.canRequestFetch ?? serverPage.canFetch)}
             title={serverPage ? 'Select one connected store with catalog access' : undefined}
             onClick={handleRefresh}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-bold transition-colors cursor-pointer"

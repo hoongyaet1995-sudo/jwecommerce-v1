@@ -15,8 +15,12 @@ import {ConnectedImportReviewModal} from '../previews/marketplace32/ConnectedImp
 import type {MarketplaceStoreProduct} from '../previews/marketplace32/types';
 import {PublishProductModal} from '../previews/marketplace32/components/marketplace/PublishProductModal';
 import {JourneyProvider,type MarketplaceJourneyContext} from '../previews/marketplace32/context/AdminContext';
+import {CatalogDownload38Overlay} from '../previews/catalog-download38/CatalogDownload38Overlay';
 
 export function OperationalMapping(){
+ const [catalog38Request,setCatalog38Request]=useState(false);
+ const [catalog38OpenRequest,setCatalog38OpenRequest]=useState(false);
+ const [catalog38RestoredRunId,setCatalog38RestoredRunId]=useState<string|null>(null);
  const journeyPreview=typeof window!=='undefined'&&['127.0.0.1','localhost'].includes(window.location.hostname)
   &&new URLSearchParams(window.location.search).get('journeyPreview')==='32';
  const admin=useAdmin();
@@ -46,6 +50,7 @@ export function OperationalMapping(){
  const [isCatalogProgressOpen,setIsCatalogProgressOpen]=useState(false);
  const selectedStore=stores.find(store=>store.id===query.storeId);
  const canFetch=!!selectedStore&&selectedStore.status==='connected'&&capabilities[selectedStore.platform]?.catalog===true&&!task.busy;
+ const canRequestFetch=stores.some(store=>store.status==='connected'&&capabilities[store.platform]?.catalog===true)&&!task.busy;
  useEffect(()=>{let active=true;
   marketplaceOperations.connections().then(data=>{if(active){setStores(data.stores);setCapabilities(data.capabilities);setCanImport(data.localCapabilities?.importProducts===true);}})
    .catch(()=>{if(active)setConnectionError('Store connections could not be loaded. Reload this page to retry.');});
@@ -53,7 +58,7 @@ export function OperationalMapping(){
  },[]);
  useEffect(()=>{let active=true;
   if(!selectedStore?.id)return()=>{active=false;};
-  marketplaceOperations.latestCatalogRun(selectedStore.id).then(run=>{if(active&&run)task.resume(run);}).catch(()=>{});
+  marketplaceOperations.latestCatalogRun(selectedStore.id).then(run=>{if(active&&run){task.resume(run);setCatalog38RestoredRunId(String(run.id));}}).catch(()=>{});
   return()=>{active=false;};
  },[selectedStore?.id]);
  const unavailable=()=>{admin.addToast({type:'info',title:'Unavailable',message:'This operation is not enabled. No changes were made.'});return false;};
@@ -66,8 +71,7 @@ export function OperationalMapping(){
   if(!store||store.status!=='connected'||!capabilities[store.platform]?.catalog){
    admin.addToast({type:'info',title:'Select a store',message:'Select one connected store with catalog access before fetching.'});return;
   }
-  setIsCatalogProgressOpen(true);
-  await task.start(()=>marketplaceOperations.fetchCatalog(store.id));
+  setCatalog38Request(true);
  };
  const value={...admin,products:admin.products.map(product=>({...product,images:product.images.map(image=>typeof image==='string'?image:image.path)})),connections:stores,marketplaceStoreProducts:catalog.products.map(product=>catalogProductView(product,stores.find(store=>store.id===String(product.store_id))?.shopId||'')),
   marketplaceOrders:[],marketplaceInventory:[],syncLogs:[],
@@ -83,6 +87,7 @@ export function OperationalMapping(){
   publishMasterProductToStore:unavailable,mapStoreVariantToJwSku:()=>{unavailable();},unmapStoreVariant:()=>{unavailable();},
  };
  return <PreviewContext.Provider value={value as unknown as React.ContextType<typeof PreviewContext>}>
+  <CatalogDownload38Overlay stores={stores} selectedStore={selectedStore} run={task.run} requestFetch={catalog38Request} onRequestConsumed={()=>setCatalog38Request(false)} requestOpen={catalog38OpenRequest} onOpenRequestConsumed={()=>setCatalog38OpenRequest(false)} restoredRunId={catalog38RestoredRunId} onSelectStore={storeId=>setQuery(current=>({...current,storeId,page:1}))} onStart={async()=>{setCatalog38RestoredRunId(null);await task.start(()=>marketplaceOperations.fetchCatalog(selectedStore!.id));}} onRetry={async()=>{if(task.runId){setCatalog38RestoredRunId(null);await task.start(()=>marketplaceOperations.retryCatalog(String(task.runId)));}}} onCheck={task.checkStatus}/>
   {(catalog.error||connectionError)&&<p role="alert" className="mb-4 text-sm text-rose-500">{catalog.error||connectionError}<button className="ml-3 underline" onClick={catalog.reload}>Retry catalog</button></p>}
   {catalog.loading&&<p role="status" className="mb-4 text-sm text-neutral-500">Loading store catalog…</p>}
   {(task.runId||task.error)&&<p role="status" className="mb-4 text-sm text-neutral-500">{task.error||`Catalog fetch task ${task.runId}: ${task.run?.status??'checking status'}${task.run?` · ${task.run.pages_completed} pages processed`:''}`} {task.error&&task.runId&&<button className="ml-3 underline" onClick={task.checkStatus}>Check status</button>} {task.run?.status==='failed'&&<button className="ml-3 underline" disabled={task.busy} onClick={()=>void task.start(()=>marketplaceOperations.retryCatalog(String(task.runId)))}>Retry task</button>}</p>}
@@ -110,7 +115,7 @@ export function OperationalMapping(){
   <MarketplaceMappingPage renderVariantModal={(selection,onClose)=><React.Fragment key={`${selection.storeVariant.id}:${selection.intent ?? 'link'}`}><ConnectedVariantModal
     isOpen canImport={canImport} startWithImport={selection.intent==='import'} storeProduct={selection.storeProduct} variantId={selection.storeVariant.id}
     products={value.products} categories={admin.categories} onClose={onClose} onImported={catalog.reload} addToast={admin.addToast}/></React.Fragment>}
-    serverPage={{total:catalog.total,summary:catalog.summary,loading:catalog.loading,onQueryChange:setQuery,canFetch,canImport,importing:importer.busy,onImport:importProducts,catalogTaskStatus:task.run&&task.run.status!=='succeeded'?task.run.status:undefined,onOpenCatalogTask:()=>setIsCatalogProgressOpen(true),
+    serverPage={{total:catalog.total,summary:catalog.summary,loading:catalog.loading,onQueryChange:setQuery,canFetch,canRequestFetch,canImport,importing:importer.busy,onImport:importProducts,catalogTaskStatus:task.run&&task.run.status!=='succeeded'?task.run.status:undefined,onOpenCatalogTask:()=>setCatalog38OpenRequest(true),
       onReviewPublishing:storeId=>setPublishReview({storeId})}}/>
  </PreviewContext.Provider>;
 }

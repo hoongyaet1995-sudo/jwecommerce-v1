@@ -55,3 +55,18 @@ it('keeps a server page visible on page two without slicing it a second time', a
   expect(previewModal).toHaveBeenLastCalledWith(expect.objectContaining({intent:'import',storeVariant:expect.objectContaining({id:'1'})}),expect.any(Function));
   await act(async()=>root.unmount()); vi.unstubAllGlobals();
 });
+
+it('lets staff request a fetch target while the all-stores filter is selected', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+  const container=document.createElement('div'); const root=createRoot(container);
+  const refresh=vi.fn().mockResolvedValue(undefined);
+  const context={products:[],connections:[{id:'3',platform:'lazada',shopName:'[Official Test] Zappyworks Test',shopId:'300163725140',region:'MY',status:'connected'}],marketplaceOrders:[],marketplaceInventory:[],syncLogs:[],marketplaceStoreProducts:[],refreshStoreProductsFromChannel:refresh,currentSection:'marketplace-mapping',setCurrentSection:vi.fn(),addToast:vi.fn()};
+  await act(async()=>root.render(<PreviewContext.Provider value={context as unknown as React.ContextType<typeof PreviewContext>}>
+    <MarketplaceMappingPage serverPage={{total:0,summary:{products:0,variants:0,mapped:0,unmapped:0},loading:false,onQueryChange:vi.fn(),canFetch:false,canRequestFetch:true}}/>
+  </PreviewContext.Provider>));
+  const fetch=container.querySelector<HTMLButtonElement>('#btn-refresh-channel-products')!;
+  expect(fetch.disabled).toBe(false);
+  await act(async()=>fetch.click());
+  expect(refresh).toHaveBeenCalledWith(undefined);
+  await act(async()=>root.unmount()); vi.unstubAllGlobals();
+});
