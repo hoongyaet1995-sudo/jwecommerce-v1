@@ -16,3 +16,8 @@ it('does not dispatch a changed balance review or accept uncertain provider succ
  await expect(sandboxPush(review,'csrf',request)()).rejects.toThrow('target changed');
  expect(request).toHaveBeenCalledTimes(1);
 });
+it('accepts a recovered receipt only with matching append-only evidence and never redispatches',async()=>{
+ const request=vi.fn(async(_url,options:any)=>{const id=JSON.parse(options.body).operation_key;return {ok:true,json:async()=>({id,store_id:3,inventory_balance_id:10,snapshot:review,status:'confirmed',observed_quantity:82,rechecks:[{attempt_id:id,outcome:'matched',observed_quantity:19}]})} as Response;});
+ await expect(sandboxPush(review,'csrf',request)()).resolves.toMatchObject({status:'confirmed'});
+ expect(request).toHaveBeenCalledTimes(1);
+});

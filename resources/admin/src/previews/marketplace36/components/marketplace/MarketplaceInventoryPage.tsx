@@ -18,6 +18,7 @@ import { SubNavHeader } from '../common/SubNavHeader';
 import { PhysicalCountModal as InventoryAdjustmentModal } from '../../../marketplace34/PhysicalCountModal';
 import { InventoryStoreBroadcastModal } from './InventoryStoreBroadcastModal';
 import { StoreActivationsDrawer } from './StoreActivationsDrawer';
+import {OrderActivationControl} from '../../OrderActivationControl';
 import { InventoryOrderExceptionsDrawer } from './InventoryOrderExceptionsDrawer';
 import { ModeAndWarehouseConfigTab } from './ModeAndWarehouseConfigTab';
 import { StoreWarehouseBindingTab } from './StoreWarehouseBindingTab';
@@ -153,6 +154,22 @@ export const MarketplaceInventoryPage: React.FC = () => {
   const [selectedAuditItem, setSelectedAuditItem] = useState<MarketplaceInventoryItem | null>(null);
   const [physicalHistory,setPhysicalHistory]=useState<Awaited<ReturnType<typeof readPhysicalHistory>>>([]);
   const [historyMessage,setHistoryMessage]=useState('');
+  const [historyRevision,setHistoryRevision]=useState(0);
+  const [rechecking,setRechecking]=useState(false);
+  const recheckAttempt=async(id:string)=>{
+    if(rechecking)return;
+    setRechecking(true);
+    try {
+      const csrf=document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+      if(!csrf)throw new Error('Reload the authenticated session.');
+      const response=await fetch(`/admin/api/inventory/sandbox-attempts/${encodeURIComponent(id)}/recheck`,{method:'POST',credentials:'same-origin',headers:{Accept:'application/json','X-CSRF-TOKEN':csrf}});
+      const result=await response.json();
+      if(!response.ok)throw new Error(result.message||'Platform recheck failed.');
+      if(result.id!==id)throw new Error('Recheck receipt identity mismatch.');
+      setHistoryRevision(value=>value+1);
+    }catch(error){setHistoryMessage(error instanceof Error?error.message:'Platform recheck failed.');}
+    finally{setRechecking(false);}
+  };
   useEffect(()=>{
     const abort=new AbortController();
     setPhysicalHistory([]);
@@ -164,7 +181,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
       setPhysicalHistory(rows);setHistoryMessage(rows.length?'':'No recorded stock operations.');
     }).catch(error=>{if(!abort.signal.aborted)setHistoryMessage(error.message);});
     return()=>abort.abort();
-  },[selectedAuditItem?.id]);
+  },[selectedAuditItem?.id,historyRevision]);
   const [adjustModalItem, setAdjustModalItem] = useState<MarketplaceInventoryItem | null>(null);
   const [broadcastModalItem, setBroadcastModalItem] = useState<MarketplaceInventoryItem | null>(null);
   const [isStoreActivationsOpen, setIsStoreActivationsOpen] = useState<boolean>(false);
@@ -955,6 +972,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                                             Audit / Adjust
                                           </button>
                                         </div>
+                                        {wb.balanceId && wb.physicalStockStatus==='verified' && <OrderActivationControl balanceId={wb.balanceId} sku={item.masterSku} channels={storeFulfillmentBindings.filter(binding=>inventoryMode==='shared_pool'||binding.boundWarehouseId===wb.warehouseId).map(binding=>({id:binding.id,name:binding.storeName}))}/>}
                                       </td>
                                     </tr>
                                   ))}
@@ -1223,6 +1241,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                       </span>
                     </div>
                     <p className="text-[11px] text-neutral-600 dark:text-neutral-400">{log.reason}</p>
+                    {'attemptId' in log && typeof log.attemptId==='string' && <button disabled={rechecking} onClick={()=>recheckAttempt(log.attemptId as string)} className="px-3 py-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-bold">{rechecking?'Reading platform…':'Recheck platform quantity (no write)'}</button>}
                     <div className="flex items-center justify-between text-[10px] text-neutral-400 pt-1.5 border-t border-neutral-200 dark:border-neutral-800">
                       <span>Operator: <strong>{log.user}</strong></span>
                       <span>{new Date(log.timestamp).toLocaleString()}</span>

@@ -15,7 +15,8 @@ class LazadaTestLeaseRenewalTest extends TestCase
 
     public function test_online_renewal_requires_explicit_designation_and_fresh_seller_validation(): void
     {
-        config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'139209','marketplace.lazada.app_secret'=>'test']);
+        config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'139209','marketplace.lazada.app_secret'=>'test',
+            'marketplace.lazada.test_app_key'=>'139209','marketplace.lazada.test_app_secret'=>'test']);
         Http::preventStrayRequests();
         Http::fake(['*'=>Http::response(['code'=>'0','data'=>['seller_id'=>300163725140,'short_code'=>'MY4NA1T7CK','name'=>'Test','status'=>'ACTIVE']])]);
         $service=app(LazadaTestConnectionService::class);

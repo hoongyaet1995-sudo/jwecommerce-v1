@@ -13,8 +13,63 @@ use Tests\TestCase;
 class SandboxInventoryWriteGuardTest extends TestCase
 {
  use RefreshDatabase;
+ public function test_managed_sync_recovers_delayed_readback_without_another_write():void {
+  $f=$this->fixture();config(['marketplace.stock_sync_operations_enabled'=>true]);
+  DB::table('inventory_fulfillment_routes')->where('channel_key','marketplace:'.$f['store'])->update(['is_enabled'=>true]);
+  app(\App\Services\Inventory\ManagedInventoryActivation::class)->activate('marketplace:'.$f['store'],$f['balance'],$f['actor'],'Delayed managed sync');
+  $transport=\Mockery::mock(\App\Services\Marketplace\SandboxStockTransport::class);
+  $transport->shouldReceive('observe')->times(3)->andReturn(25,25,10);$transport->shouldReceive('write')->once();
+  $this->app->instance(\App\Services\Marketplace\SandboxStockTransport::class,$transport);
+  $task=app(\App\Services\Marketplace\MarketplaceStockSyncTaskService::class)->stage($f['store'],$f['balance'],'managed:delayed',$f['actor']);
+  $dispatcher=app(\App\Services\Marketplace\MarketplaceStockSyncDispatchService::class);
+  $result=$dispatcher->dispatch($task['id']);$this->assertSame('uncertain',$result['status']);
+  $recovered=$dispatcher->recheck($task['id']);$this->assertSame('confirmed',$recovered['status']);
+  $this->assertDatabaseHas('sandbox_inventory_attempts',['id'=>$result['sandbox_attempt_id'],'observed_quantity'=>25]);
+  $this->assertDatabaseHas('sandbox_inventory_rechecks',['attempt_id'=>$result['sandbox_attempt_id'],'observed_quantity'=>10,'outcome'=>'matched']);
+  $this->assertDatabaseHas('marketplace_stock_sync_tasks',['id'=>$task['id'],'status'=>'confirmed']);
+ }
+ public function test_same_listing_write_lock_blocks_another_attempt_before_provider_traffic():void {
+  $f=$this->fixture();
+  $transport=\Mockery::mock(\App\Services\Marketplace\SandboxStockTransport::class);
+  $transport->shouldNotReceive('observe');$transport->shouldNotReceive('write');
+  $this->app->instance(\App\Services\Marketplace\SandboxStockTransport::class,$transport);
+  $service=app(\App\Services\Marketplace\SandboxInventoryAttemptService::class);
+  $key=(string)\Illuminate\Support\Str::uuid();
+  $service->stage($f['store'],$f['balance'],$key,'Concurrent test',$f['actor']);
+  $lock=\Illuminate\Support\Facades\Cache::lock('marketplace-stock:'.$f['store'].':'.$f['listing'],3600);
+  $this->assertTrue($lock->get());
+  try {
+   $service->dispatch($key,$f['actor']);$this->fail('Competing listing write accepted');
+  } catch(\Symfony\Component\HttpKernel\Exception\HttpException $error) {
+   $this->assertSame(409,$error->getStatusCode());
+  } finally {$lock->release();}
+  $this->assertDatabaseHas('sandbox_inventory_attempts',['id'=>$key,'status'=>'staged']);
+ }
+ public function test_managed_sync_confirms_readback_and_confirmed_retry_never_resends():void {
+  $f=$this->fixture();config(['marketplace.stock_sync_operations_enabled'=>true]);
+  DB::table('inventory_fulfillment_routes')->where('channel_key','marketplace:'.$f['store'])->update(['is_enabled'=>true]);
+  app(\App\Services\Inventory\ManagedInventoryActivation::class)->activate('marketplace:'.$f['store'],$f['balance'],$f['actor'],'Test managed sync');
+  $transport=\Mockery::mock(\App\Services\Marketplace\SandboxStockTransport::class);
+  $transport->shouldReceive('observe')->twice()->andReturn(25,10);$transport->shouldReceive('write')->once();
+  $this->app->instance(\App\Services\Marketplace\SandboxStockTransport::class,$transport);
+  $task=app(\App\Services\Marketplace\MarketplaceStockSyncTaskService::class)->stage($f['store'],$f['balance'],'managed:test',$f['actor']);
+  $dispatcher=app(\App\Services\Marketplace\MarketplaceStockSyncDispatchService::class);
+  $lock=\Illuminate\Support\Facades\Cache::lock('marketplace-stock:'.$f['store'].':'.$f['listing'],3600);
+  $this->assertTrue($lock->get());
+  try {$dispatcher->dispatch($task['id']);$this->fail('Competing send accepted');}
+  catch(\Symfony\Component\HttpKernel\Exception\HttpException $error){$this->assertSame(409,$error->getStatusCode());}
+  finally {$lock->release();}
+  $this->assertDatabaseHas('marketplace_stock_sync_tasks',['id'=>$task['id'],'status'=>'staged']);
+  $result=$dispatcher->dispatch($task['id']);
+  $this->assertSame('confirmed',$result['status']);
+  $this->assertDatabaseHas('sandbox_inventory_attempts',['id'=>$result['sandbox_attempt_id'],'before_quantity'=>25,'observed_quantity'=>10,'status'=>'confirmed']);
+  $this->assertSame($result,$dispatcher->dispatch($task['id']));
+  $this->assertDatabaseCount('sandbox_inventory_attempts',1);
+ }
  private function fixture():array {
-  config(['marketplace.basic_wms_enabled'=>true,'marketplace.sandbox_stock_writes_enabled'=>true,'marketplace.lazada.app_key'=>'139209']);
+  config(['marketplace.basic_wms_enabled'=>true,'marketplace.sandbox_stock_writes_enabled'=>true,
+   'marketplace.stock_sync_operations_enabled'=>false,
+   'marketplace.lazada.app_key'=>'139209','marketplace.lazada.test_app_key'=>'139209']);
   $actor=User::factory()->create(['is_admin'=>true]);
   $variant=Product::create(['title'=>'Sandbox','handle'=>'sandbox','base_price'=>1])->variants()->create(['sku'=>'SBX','title'=>'One','price'=>1,'stock'=>17,'enabled'=>true]);
   $balance=app(InventoryBalanceProvisioner::class)->provision($variant->id,'shared',null)['balance_id'];
@@ -29,6 +84,46 @@ class SandboxInventoryWriteGuardTest extends TestCase
   DB::table('marketplace_variant_mappings')->insert(['store_id'=>$store,'listing_variant_id'=>$listing,'product_variant_id'=>$variant->id,'actor_id'=>$actor->id]);
   foreach([['store',$store],['warehouse',$warehouse],['sku',$variant->id]] as [$type,$id])app(TestDataClassificationService::class)->markTest($type,$id,$actor,'Bounded sandbox fixture');
   return compact('actor','variant','balance','store','warehouse','listing');
+ }
+ public function test_delayed_readback_recovers_without_resending_or_erasing_initial_observation():void {
+  $f=$this->fixture();$transport=\Mockery::mock(\App\Services\Marketplace\SandboxStockTransport::class);
+  $transport->shouldReceive('observe')->times(3)->andReturn(25,25,10);$transport->shouldReceive('write')->once();
+  $this->app->instance(\App\Services\Marketplace\SandboxStockTransport::class,$transport);
+  $service=app(\App\Services\Marketplace\SandboxInventoryAttemptService::class);$key=(string)\Illuminate\Support\Str::uuid();
+  $service->stage($f['store'],$f['balance'],$key,'Delayed provider test',$f['actor']);
+  $this->assertSame('uncertain',$service->dispatch($key,$f['actor'])['status']);
+  $result=$service->recheck($key,$f['actor']);
+  $this->assertSame('confirmed',$result['status']);
+  $this->assertSame(25,$result['observed_quantity']);
+  $this->assertSame(10,$result['rechecks'][0]->observed_quantity);
+  $this->assertDatabaseHas('sandbox_inventory_attempts',['id'=>$key,'observed_quantity'=>25,'error_code'=>'provider_readback_mismatch']);
+  $this->assertDatabaseHas('sandbox_inventory_rechecks',['attempt_id'=>$key,'actor_id'=>$f['actor']->id,'outcome'=>'matched','observed_quantity'=>10]);
+ }
+ public function test_recheck_rejects_other_actor_and_stale_snapshot_before_provider_read():void {
+  $f=$this->fixture();$transport=\Mockery::mock(\App\Services\Marketplace\SandboxStockTransport::class);
+  $transport->shouldNotReceive('observe');$transport->shouldNotReceive('write');
+  $this->app->instance(\App\Services\Marketplace\SandboxStockTransport::class,$transport);
+  $service=app(\App\Services\Marketplace\SandboxInventoryAttemptService::class);$key=(string)\Illuminate\Support\Str::uuid();
+  $service->stage($f['store'],$f['balance'],$key,'Recheck guards',$f['actor']);
+  DB::table('sandbox_inventory_attempts')->where('id',$key)->update(['status'=>'uncertain']);
+  $url='/admin/api/inventory/sandbox-attempts/'.$key.'/recheck';
+  $this->actingAs(User::factory()->create(['is_admin'=>true]))->postJson($url)->assertForbidden();
+  $this->actingAs($f['actor'])->postJson($url,['quantity'=>999])->assertUnprocessable();
+  DB::table('inventory_balances')->where('id',$f['balance'])->increment('version');
+  $this->postJson($url)->assertConflict();$this->assertDatabaseCount('sandbox_inventory_rechecks',0);
+ }
+ public function test_failed_or_mismatched_rechecks_keep_uncertainty_and_audit_without_writes():void {
+  $f=$this->fixture();$transport=\Mockery::mock(\App\Services\Marketplace\SandboxStockTransport::class);
+  $transport->shouldReceive('observe')->once()->andReturn(9);
+  $transport->shouldReceive('observe')->once()->andThrow(new \RuntimeException('private-provider-token'));
+  $transport->shouldNotReceive('write');$this->app->instance(\App\Services\Marketplace\SandboxStockTransport::class,$transport);
+  $service=app(\App\Services\Marketplace\SandboxInventoryAttemptService::class);$key=(string)\Illuminate\Support\Str::uuid();
+  $service->stage($f['store'],$f['balance'],$key,'Recheck failures',$f['actor']);DB::table('sandbox_inventory_attempts')->where('id',$key)->update(['status'=>'uncertain']);
+  $this->assertSame('uncertain',$service->recheck($key,$f['actor'])['status']);
+  $result=$service->recheck($key,$f['actor']);$this->assertSame('uncertain',$result['status']);
+  $this->assertStringNotContainsString('private-provider-token',json_encode($result));
+  $this->assertDatabaseHas('sandbox_inventory_rechecks',['attempt_id'=>$key,'outcome'=>'mismatch','observed_quantity'=>9]);
+  $this->assertDatabaseHas('sandbox_inventory_rechecks',['attempt_id'=>$key,'outcome'=>'read_failed','observed_quantity'=>null]);
  }
  public function test_basic_test_review_uses_manual_available_and_does_not_enable_takeover():void {
   $f=$this->fixture();$review=app(SandboxInventoryWriteGuard::class)->review($f['store'],$f['balance'],$f['actor']);

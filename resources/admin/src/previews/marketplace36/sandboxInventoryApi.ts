@@ -20,7 +20,8 @@ export function sandboxPush(review:SandboxStockReview,csrf:string,request:typeof
   if(!matches(receipt))throw new Error('The test stock target changed. Reopen the controller before sending.');
   if(receipt.status==='staged')receipt=await post(`/admin/api/inventory/sandbox-attempts/${key}/dispatch`,{});
   if(!matches(receipt))throw new Error('Test write receipt identity could not be verified. Inspect the audit before retrying.');
-  if(receipt.status!=='confirmed'||receipt.observed_quantity!==review.desired_quantity)throw new Error(`Test attempt ${key}: ${receipt.status}. Inspect provider state before another write.`);
+  const recovered=Array.isArray(receipt.rechecks)&&receipt.rechecks.some((check:any)=>check.attempt_id===key&&check.outcome==='matched'&&check.observed_quantity===review.desired_quantity);
+  if(receipt.status!=='confirmed'||(receipt.observed_quantity!==review.desired_quantity&&!recovered))throw new Error(`Test attempt ${key}: ${receipt.status}. Inspect provider state before another write.`);
   return receipt;
  };
 }

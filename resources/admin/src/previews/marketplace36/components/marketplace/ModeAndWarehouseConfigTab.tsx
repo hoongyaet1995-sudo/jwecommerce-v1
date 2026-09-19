@@ -162,8 +162,8 @@ export const ModeAndWarehouseConfigTab: React.FC<ModeAndWarehouseConfigTabProps>
                 </div>
                 <p className="text-xs text-neutral-500 mt-1 max-w-2xl leading-relaxed">
                   {currentMode === 'independent_warehouses'
-                    ? 'Each physical facility (Cyberjaya, Penang, etc.) maintains distinct physical stock, reservations, and Available-to-Promise (ATP). Connected Shopee/Lazada channels and JW Webstore deduct from their specifically bound warehouse.'
-                    : 'Every JW SKU maintains a single unified stock pool. The JW Webstore, multiple Shopee stores, and multiple Lazada stores all share and deduct from the same master balance. Warehouse locations serve solely as physical storage bin references.'}
+                    ? 'Each physical facility (Cyberjaya, Penang, etc.) maintains distinct physical stock, reservations, and Available-to-Promise (ATP). Store bindings identify the selected facility. Basic WMS does not enable automatic order deductions.'
+                    : 'Every JW SKU maintains a single unified stock pool. The JW Webstore, multiple Shopee stores, and multiple Lazada stores can share the same recorded balance. Basic WMS does not enable automatic order deductions. Warehouse locations serve solely as physical storage bin references.'}
                 </p>
               </div>
             </div>

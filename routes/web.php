@@ -286,6 +286,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/inventory/warehouses', [\App\Http\Controllers\Admin\InventoryWarehouseController::class, 'index']);
     Route::get('/api/inventory/fulfillment-routes', [\App\Http\Controllers\Admin\InventoryRoutingController::class, 'index']);
     Route::get('/api/inventory/route-stores', [\App\Http\Controllers\Admin\InventoryRoutingController::class, 'stores']);
+    Route::get('/api/inventory/order-activations', [\App\Http\Controllers\Admin\ManagedInventoryActivationController::class, 'index']);
+    Route::post('/api/inventory/order-activations', [\App\Http\Controllers\Admin\ManagedInventoryActivationController::class, 'store'])->middleware('throttle:10,1');
     Route::get('/api/inventory/readiness', \App\Http\Controllers\Admin\InventoryReadinessController::class);
     Route::post('/api/inventory/basic/configuration', [\App\Http\Controllers\Admin\BasicWmsConfigurationController::class, 'store']);
     Route::post('/api/inventory/basic/safety', [\App\Http\Controllers\Admin\BasicWmsSafetyController::class, 'store']);
@@ -295,6 +297,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/inventory/sandbox-options', [\App\Http\Controllers\Admin\SandboxInventoryAttemptController::class, 'options']);
     Route::post('/api/inventory/sandbox-attempts/{attempt}/dispatch', [\App\Http\Controllers\Admin\SandboxInventoryAttemptController::class, 'dispatch'])->whereUuid('attempt')->middleware('throttle:10,1');
     Route::get('/api/inventory/sandbox-attempts/{attempt}', [\App\Http\Controllers\Admin\SandboxInventoryAttemptController::class, 'show'])->whereUuid('attempt');
+    Route::post('/api/inventory/sandbox-attempts/{attempt}/recheck', [\App\Http\Controllers\Admin\SandboxInventoryAttemptController::class, 'recheck'])->whereUuid('attempt')->middleware('throttle:10,1');
     Route::post('/api/inventory/mode-reviews', [\App\Http\Controllers\Admin\InventoryModeReviewController::class,'store']);
     Route::put('/api/inventory/fulfillment-routes', [\App\Http\Controllers\Admin\InventoryRoutingController::class, 'save']);
     Route::get('/api/inventory/transfers', [\App\Http\Controllers\Admin\InventoryTransferController::class, 'index']);

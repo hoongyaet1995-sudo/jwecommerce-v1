@@ -10,7 +10,8 @@ class SandboxInventoryAttemptController extends Controller
   $page=\Illuminate\Support\Facades\DB::table('sandbox_inventory_attempts as a')->join('inventory_balances as b','b.id','=','a.inventory_balance_id')
    ->where('b.product_variant_id',$data['variantId'])->select(['a.id','a.actor_id','a.store_id','a.reason','a.status','a.snapshot','a.before_quantity','a.observed_quantity','a.error_code','a.updated_at','b.product_variant_id'])
    ->orderByDesc('a.updated_at')->orderByDesc('a.id')->paginate(100);
-  $page->getCollection()->transform(function($row){$row->snapshot=json_decode($row->snapshot,true,512,JSON_THROW_ON_ERROR);return $row;});
+  $rechecks=\Illuminate\Support\Facades\DB::table('sandbox_inventory_rechecks')->whereIn('attempt_id',$page->getCollection()->pluck('id'))->orderBy('id')->get()->groupBy('attempt_id');
+  $page->getCollection()->transform(function($row)use($rechecks){$row->snapshot=json_decode($row->snapshot,true,512,JSON_THROW_ON_ERROR);$row->rechecks=$rechecks->get($row->id,collect())->all();return $row;});
   return response()->json($page)->header('Cache-Control','no-store');
  }
  public function options(Request $request,\App\Services\Marketplace\SandboxInventoryWriteGuard $guard){
@@ -44,5 +45,9 @@ class SandboxInventoryAttemptController extends Controller
  }
  public function show(Request $request,string $attempt,SandboxInventoryAttemptService $service){
   return response()->json($service->inspect($attempt,$request->user()))->header('Cache-Control','no-store');
+ }
+ public function recheck(Request $request,string $attempt,SandboxInventoryAttemptService $service){
+  abort_if(array_diff(array_keys($request->all()),['_token']),422,'Recheck reads the original test target only.');
+  return response()->json($service->recheck($attempt,$request->user()))->header('Cache-Control','no-store');
  }
 }

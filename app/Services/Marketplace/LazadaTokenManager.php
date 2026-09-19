@@ -22,15 +22,21 @@ final class LazadaTokenManager
                 throw new RuntimeException('Lazada store is not connected.');
             }
             $token=MarketplaceStoreToken::where('store_id',$storeId)->lockForUpdate()->first();
-            if (!$token || !$token->application_id || $token->application_id!==(string)config('marketplace.lazada.app_key')) {
+            if (!$token || !$token->application_id) {
                 throw new RuntimeException('Lazada application credentials changed. Re-authorize the store.');
             }
             if ($token->credential_source==='official_test') {
+                if ($token->application_id!==(string)config('marketplace.lazada.test_app_key')) {
+                    throw new RuntimeException('Lazada application credentials changed. Re-authorize the store.');
+                }
                 if (!LazadaOfficialTestAccess::environmentAllows($store, $token->application_id)
                     || !$token->test_lease_expires_at?->isFuture() || !$token->access_token) {
                     throw new RuntimeException('Official test credential lease expired or unavailable in this environment.');
                 }
                 return $token->access_token;
+            }
+            if ($token->application_id!==(string)config('marketplace.lazada.app_key')) {
+                throw new RuntimeException('Lazada application credentials changed. Re-authorize the store.');
             }
             if ($token->access_token && $token->access_expires_at?->gt(now()->addMinutes(5))) return $token->access_token;
             if (!$token->refresh_token || !$token->refresh_expires_at || $token->refresh_expires_at->lte(now())) {

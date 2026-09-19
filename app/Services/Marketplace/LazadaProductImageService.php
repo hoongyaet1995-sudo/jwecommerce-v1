@@ -28,9 +28,9 @@ final class LazadaProductImageService
             $hash=MarketplaceImageReceipts::fingerprint($store,$bytes,$image->path);
             $existing=$this->receipts->find($storeId,$imageId,$hash);
             if ($existing) return (int)$existing->id;
-            $identity=$this->client->read('/seller/get',$token);
+            $identity=$this->client->read('/seller/get',$token,[],$storeId);
             LazadaSellerIdentity::assertCurrent($store,$identity,'before image migration');
-            $uploaded=$this->client->migrateImage($token,$url);
+            $uploaded=$this->client->migrateImage($token,$url,$storeId);
             return $this->receipts->record($storeId,$productId,$imageId,$actorId,$hash,$uploaded);
         });
     }

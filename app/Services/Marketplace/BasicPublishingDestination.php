@@ -22,8 +22,9 @@ final class BasicPublishingDestination
                 && $token && $token->application_id===(string)config('marketplace.shopee.partner_id'),403,'Shopee sandbox credentials required.');
         } else {
             abort_unless($store->environment==='live' && $store->region==='MY'
-                && $token?->application_id===(string)config('marketplace.lazada.app_key')
-                && (($token->credential_source==='oauth') || ($token->credential_source==='official_test'
+                && (($token?->credential_source==='oauth' && $token->application_id===(string)config('marketplace.lazada.app_key'))
+                    || ($token?->credential_source==='official_test'
+                    && $token->application_id===(string)config('marketplace.lazada.test_app_key')
                     && $token->test_lease_expires_at?->isFuture()
                     && LazadaOfficialTestAccess::environmentAllows($store,$token->application_id))),
                 403,'Verified Lazada credentials required.');

@@ -12,6 +12,6 @@ final class LazadaOfficialTestAccess
                 && $store->data_classification === 'test'
                 && $store->platform === 'lazada'
                 && $store->external_shop_id === '300163725140'
-                && $applicationId === '139209');
+                && $applicationId === (string)config('marketplace.lazada.test_app_key'));
     }
 }

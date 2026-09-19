@@ -32,10 +32,12 @@ export const StoreFulfillmentBindingModal: React.FC<StoreFulfillmentBindingModal
   const [platformLocationName, setPlatformLocationName] = useState<string>(binding?.platformLocationName || '');
   const [fulfillmentPriority, setFulfillmentPriority] = useState<number>(binding?.fulfillmentPriority || 1);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [routeEnabled, setRouteEnabled] = useState(Boolean(binding?.routeEnabled));
 
   useEffect(() => {
     if (binding) {
       setSelectedWarehouseId(binding.boundWarehouseId);
+      setRouteEnabled(Boolean(binding.routeEnabled));
       setPlatformLocationId(binding.platformLocationId || '');
       setPlatformLocationName(binding.platformLocationName || '');
       setFulfillmentPriority(binding.fulfillmentPriority || 1);
@@ -64,6 +66,7 @@ export const StoreFulfillmentBindingModal: React.FC<StoreFulfillmentBindingModal
       platformLocationId: platformLocationId.trim() || undefined,
       platformLocationName: platformLocationName.trim() || undefined,
       fulfillmentPriority,
+      routeEnabled,
       lastSyncAt: new Date().toISOString()
     };
 
@@ -145,6 +148,7 @@ export const StoreFulfillmentBindingModal: React.FC<StoreFulfillmentBindingModal
               required
               className="w-full px-3 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white font-medium"
             >
+              <option value="" disabled>Select an entity warehouse</option>
               {warehouses.map(wh => (
                 <option key={wh.id} value={wh.id}>
                   {wh.name} ({wh.code}) — {typeof wh.address === 'string' ? wh.state || 'Location not configured' : [wh.address?.city, wh.address?.state].filter(Boolean).join(', ') || 'Location not configured'} {wh.isDefaultMaster ? '★ Default Master' : ''}
@@ -189,6 +193,10 @@ export const StoreFulfillmentBindingModal: React.FC<StoreFulfillmentBindingModal
           </div>
 
           {/* Priority & Status */}
+          <label className="flex items-center gap-3 text-neutral-700 dark:text-neutral-300">
+            <input type="checkbox" checked={routeEnabled} disabled={saving} onChange={e=>setRouteEnabled(e.target.checked)}/>
+            Enable this fulfillment route. Each SKU still requires order inventory activation; platform writes remain separately controlled.
+          </label>
           <div>
             <label className="block font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
               Fulfillment Allocation Priority

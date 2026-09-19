@@ -8,9 +8,9 @@ use Illuminate\Support\Facades\DB;
 final class LazadaInventoryExecutor
 {
  public function __construct(private StockAllocationService $allocations,private LazadaInventoryItemState $states) {}
- public function apply(int $orderId,array $plan,int $version):void
+ public function apply(int $orderId,array $plan,int $version,?\Carbon\CarbonInterface $managedCreatedAt=null):void
  {
-  DB::transaction(function()use($orderId,$plan,$version){
+  DB::transaction(function()use($orderId,$plan,$version,$managedCreatedAt){
    $storeId=DB::table('marketplace_orders')->where('id',$orderId)->value('store_id');
    $store=DB::table('marketplace_stores')->where('id',$storeId)->lockForUpdate()->first();
    if (!$store||$store->platform!=='lazada'||$store->status!=='connected') throw new MarketplaceInventoryException('store_not_connected');
@@ -44,9 +44,15 @@ final class LazadaInventoryExecutor
       $variant=DB::table('marketplace_listing_variants as l')->join('marketplace_variant_mappings as m','m.listing_variant_id','=','l.id')
        ->where('l.store_id',$storeId)->where('m.store_id',$storeId)->where('l.external_product_id',$line['external_product_id'])->where('l.external_variant_id',$line['external_variant_id'])->value('m.product_variant_id');
       if (!$variant) throw new MarketplaceInventoryException('unmapped_order_line');
+      $activationId=null;
+      if ($managedCreatedAt!==null) {
+       $activation=app(\App\Services\Inventory\ManagedInventoryActivation::class)->eligible('marketplace:'.$storeId,(int)$variant,$managedCreatedAt);
+       if (!$activation) throw new MarketplaceInventoryException('order_outside_managed_activation');
+       $activationId=(int)$activation['id'];
+      }
       $product=ProductVariant::where('id',$variant)->lockForUpdate()->first();
-      if (!$product||$product->stock<1) throw new MarketplaceInventoryException('insufficient_stock');
-      $id=$this->allocations->reserve('marketplace_order',$orderId,$key,(int)$variant,1);
+      if (!$product||($activationId===null && $product->stock<1)) throw new MarketplaceInventoryException('insufficient_stock');
+      $id=$this->allocations->reserve('marketplace_order',$orderId,$key,(int)$variant,1,$activationId);
      }
      if ($target==='consumed') $this->allocations->consume($id);
     } else throw new MarketplaceInventoryException('unsupported_order_status');

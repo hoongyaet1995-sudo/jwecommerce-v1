@@ -9,10 +9,10 @@ final class LazadaBrands
 {
     public function __construct(private LazadaClient $client) {}
 
-    public function page(#[\SensitiveParameter] string $token, int $offset): array
+    public function page(#[\SensitiveParameter] string $token, int $offset, ?int $storeId=null): array
     {
         if ($offset<0 || $offset>2147483647) throw new RuntimeException('Invalid brand page.');
-        $page=$this->client->read('/category/brands/query',$token,['startRow'=>(string)$offset,'pageSize'=>'200']);
+        $page=$this->client->read('/category/brands/query',$token,['startRow'=>(string)$offset,'pageSize'=>'200'],$storeId);
         $rows=$page['module']??null; $total=$page['total_record']??null;
         if (!is_array($rows) || !array_is_list($rows) || count($rows)>200
             || (!is_int($total)&&!ctype_digit((string)$total)) || (int)$total<0) throw new RuntimeException('Incomplete Lazada brand page.');
@@ -27,12 +27,12 @@ final class LazadaBrands
         return ['names'=>array_values(array_unique($names)), 'next_offset'=>$rows && $next<(int)$total?$next:null];
     }
 
-    public function validate(#[\SensitiveParameter] string $token, string $name): void
+    public function validate(#[\SensitiveParameter] string $token, string $name, ?int $storeId=null): void
     {
         // Official CreateProduct contract provides this unbranded value. Seller/category eligibility remains provider-checked.
         if ($name==='No Brand') return;
         $offset=Cache::get($this->key($name));
-        if (!is_int($offset) || !in_array($name,$this->page($token,$offset)['names'],true)) {
+        if (!is_int($offset) || !in_array($name,$this->page($token,$offset,$storeId)['names'],true)) {
             throw ValidationException::withMessages(['brand'=>'Select a current Lazada brand from the brand list.']);
         }
     }

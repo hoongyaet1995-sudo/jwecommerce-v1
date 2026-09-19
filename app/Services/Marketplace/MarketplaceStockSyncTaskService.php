@@ -21,7 +21,8 @@ final class MarketplaceStockSyncTaskService
 
         return DB::transaction(function () use ($storeId, $balanceId, $operationKey, $actor) {
             $configuration = DB::table('inventory_configuration')->where('id', 1)->lockForUpdate()->first();
-            if (!$configuration || !$configuration->accounting_enabled || !in_array($configuration->operating_mode, ['shared_pool', 'independent_warehouses'], true)) {
+            $managed=DB::table('inventory_order_activations')->where('channel_key','marketplace:'.$storeId)->where('inventory_balance_id',$balanceId)->exists();
+            if (!$configuration || (!$managed && !$configuration->accounting_enabled) || !in_array($configuration->operating_mode, ['shared_pool', 'independent_warehouses'], true)) {
                 $this->reject('Enable and reconcile WMS accounting before staging a marketplace stock update.');
             }
             $existing = DB::table('marketplace_stock_sync_tasks')->where('operation_key', $operationKey)->first();
@@ -43,7 +44,7 @@ final class MarketplaceStockSyncTaskService
             if (!$pool || $pool->kind !== $expectedPool || ($expectedPool === 'warehouse' && (int) $pool->warehouse_id !== (int) $route->warehouse_id)) {
                 $this->reject('The balance does not own stock for this store route.');
             }
-            $projection = app(PhysicalBalanceReader::class)->project($balance);
+            $projection = $this->projection($balance,$storeId);
             if (!$projection['verified'] || $projection['atp'] === null) $this->reject('A verified warehouse ATP is required.');
             $listing = DB::table('marketplace_listing_variants as l')->join('marketplace_variant_mappings as m', 'm.listing_variant_id', '=', 'l.id')
                 ->where('m.store_id', $storeId)->where('m.product_variant_id', $variant->id)->where('l.store_id', $storeId)
@@ -85,7 +86,7 @@ final class MarketplaceStockSyncTaskService
         if (!$balance || (int) $balance->version !== (int) $task->balance_version) {
             $blockers[]='balance_changed';
         } else {
-            $projection=app(PhysicalBalanceReader::class)->project($balance);
+            $projection=$this->projection($balance,(int)$task->store_id);
             if (!$projection['verified']) $blockers[]='balance_not_verified';
             elseif ((int) $projection['atp'] !== (int) $task->desired_quantity) $blockers[]='atp_changed';
         }
@@ -100,6 +101,16 @@ final class MarketplaceStockSyncTaskService
         if (!$mapping) $blockers[]='sku_mapping_changed';
         return $this->receipt($task)+['current'=>$blockers===[],'blockers'=>$blockers];
     }
+    private function projection(object $balance,int $storeId): array
+    {
+        $managed=DB::table('inventory_order_activations')->where('channel_key','marketplace:'.$storeId)
+            ->where('inventory_balance_id',$balance->id)->where('product_variant_id',$balance->product_variant_id)->exists();
+        if (!$managed) return app(PhysicalBalanceReader::class)->project($balance);
+        $reserved=(int)DB::table('stock_allocations')->where('inventory_balance_id',$balance->id)->where('status','reserved')->sum('quantity');
+        $read=app(\App\Services\Inventory\BasicWmsBalanceReader::class)->project($balance,$reserved);
+        return ['verified'=>$read['available']!==null,'atp'=>$read['available']];
+    }
+
     private function receipt(object $row): array
     {
         return ['id'=>(int) $row->id, 'status'=>$row->status, 'store_id'=>(int) $row->store_id,

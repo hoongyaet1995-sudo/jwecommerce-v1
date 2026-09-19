@@ -12,6 +12,8 @@ return [
         'enabled' => env('MARKETPLACE_LAZADA_ENABLED', false),
         'app_key' => env('MARKETPLACE_LAZADA_APP_KEY'),
         'app_secret' => env('MARKETPLACE_LAZADA_APP_SECRET'),
+        'test_app_key' => env('MARKETPLACE_LAZADA_TEST_APP_KEY') ?: env('MARKETPLACE_LAZADA_APP_KEY'),
+        'test_app_secret' => env('MARKETPLACE_LAZADA_TEST_APP_SECRET') ?: env('MARKETPLACE_LAZADA_APP_SECRET'),
         'callback_url' => env('MARKETPLACE_LAZADA_CALLBACK_URL'),
     ],
     'automatic_orders_enabled' => env('MARKETPLACE_AUTOMATIC_ORDERS_ENABLED', false),

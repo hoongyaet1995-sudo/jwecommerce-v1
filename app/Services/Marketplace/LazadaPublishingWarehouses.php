@@ -35,7 +35,7 @@ final class LazadaPublishingWarehouses
 
     private function codes(int $storeId): array
     {
-        $rows=$this->client->read('/seller/warehouse/get',$this->tokens->accessToken($storeId),['addressTypes'=>'["warehouse"]']);
+        $rows=$this->client->read('/seller/warehouse/get',$this->tokens->accessToken($storeId),['addressTypes'=>'["warehouse"]'],$storeId);
         if (!array_is_list($rows)||!$rows) throw new RuntimeException('Lazada seller warehouses are unavailable.');
         $codes=[];
         foreach ($rows as $row) {

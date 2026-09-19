@@ -78,7 +78,7 @@ class MarketplaceListingMetadataController extends Controller
             try {
                 $token=app(\App\Services\Marketplace\LazadaTokenManager::class)->accessToken($store);
                 $page=$this->cached($connection, 'brands', [(int)($data['offset'] ?? 0)],
-                    fn()=>app(\App\Services\Marketplace\LazadaBrands::class)->page($token,(int)($data['offset']??0)));
+                    fn()=>app(\App\Services\Marketplace\LazadaBrands::class)->page($token,(int)($data['offset']??0),$store));
                 return response()->json(['storeId'=>$store,'categoryId'=>(int)$data['categoryId'],'data'=>$page])->header('Cache-Control','no-store');
             } catch (RuntimeException) {
                 return response()->json(['message'=>'Unable to load Lazada brands. Retry the brand list.'],502)->header('Cache-Control','no-store');
@@ -113,12 +113,12 @@ class MarketplaceListingMetadataController extends Controller
                 $lazada=app(\App\Services\Marketplace\LazadaClient::class);
                 $token=app(\App\Services\Marketplace\LazadaTokenManager::class)->accessToken($store);
                 $categories=\App\Services\Marketplace\LazadaListingCategories::flatten($this->cached($connection, 'categories', [],
-                    fn()=>$lazada->read('/category/tree/get',$token)));
+                    fn()=>$lazada->read('/category/tree/get',$token,[],$store)));
                 if (!collect($categories)->contains(fn($category)=>$category['category_id']===(int)$data['categoryId'] && !$category['has_children'])) {
                     return response()->json(['message'=>'Select an available leaf category.'],422)->header('Cache-Control','no-store');
                 }
                 $attributes=$this->cached($connection, 'attributes', [(int)$data['categoryId']],
-                    fn()=>$lazada->read('/category/attributes/get',$token,['primary_category_id'=>(string)$data['categoryId']]));
+                    fn()=>$lazada->read('/category/attributes/get',$token,['primary_category_id'=>(string)$data['categoryId']],$store));
                 if (!array_is_list($attributes)) throw new RuntimeException('Invalid attributes.');
                 foreach ($attributes as $attribute) {
                     if (!is_array($attribute)||!is_string($attribute['name']??null)||trim($attribute['name'])===''
@@ -159,7 +159,7 @@ class MarketplaceListingMetadataController extends Controller
             try {
                 $token=app(\App\Services\Marketplace\LazadaTokenManager::class)->accessToken($store);
                 $tree=$this->cached($connection, 'categories', [],
-                    fn()=>app(\App\Services\Marketplace\LazadaClient::class)->read('/category/tree/get',$token));
+                    fn()=>app(\App\Services\Marketplace\LazadaClient::class)->read('/category/tree/get',$token,[],$store));
                 $rows=\App\Services\Marketplace\LazadaListingCategories::flatten($tree);
                 return response()->json(['storeId'=>$store,'data'=>$rows])->header('Cache-Control','no-store');
             } catch (RuntimeException) {

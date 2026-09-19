@@ -9,7 +9,7 @@ use RuntimeException;
 final class LazadaClient
 {
     /** Transport only; callers must resolve a reviewed, owned product image first. */
-    public function migrateImage(#[\SensitiveParameter] string $accessToken, string $sourceUrl): string
+    public function migrateImage(#[\SensitiveParameter] string $accessToken, string $sourceUrl, ?int $storeId=null): string
     {
         if (config('marketplace.publish_operations_enabled') !== true) {
             throw new RuntimeException('Marketplace image migration is disabled.');
@@ -21,7 +21,7 @@ final class LazadaClient
             || filter_var($source['host'] ?? '',FILTER_VALIDATE_IP)) {
             throw new RuntimeException('A public HTTPS product image URL is required.');
         }
-        $result=$this->signedPost('/image/migrate',$accessToken,['Request'=>['Image'=>['Url'=>$sourceUrl]]],'Lazada image migration');
+        $result=$this->signedPost('/image/migrate',$accessToken,['Request'=>['Image'=>['Url'=>$sourceUrl]]],'Lazada image migration',$storeId);
         $url=$result['data']['image']['url'] ?? null;
         if (!is_string($url) || !preg_match('#\Ahttps://[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.slatic\.net/[^\s]+\z#D',$url)
             || !filter_var($url,FILTER_VALIDATE_URL)) {
@@ -35,7 +35,7 @@ final class LazadaClient
      * reviewed the dynamic category attributes and Lazada-hosted images.
      * This method never invents required marketplace attributes.
      */
-    public function createProduct(#[\SensitiveParameter] string $accessToken, array $payload): array
+    public function createProduct(#[\SensitiveParameter] string $accessToken, array $payload, ?int $storeId=null): array
     {
         if (config('marketplace.publish_operations_enabled') !== true) {
             throw new RuntimeException('Marketplace publishing is disabled.');
@@ -66,7 +66,7 @@ final class LazadaClient
             }
             $sellerSkus[$sellerSku]=true;
         }
-        $result=$this->signedPost('/product/create',$accessToken,$payload,'Lazada product creation');
+        $result=$this->signedPost('/product/create',$accessToken,$payload,'Lazada product creation',$storeId);
         $data=$result['data'] ?? null;
         if (!is_array($data) || !preg_match('/^[1-9][0-9]*$/D',(string)($data['item_id'] ?? ''))
             || !is_array($data['sku_list'] ?? null) || !array_is_list($data['sku_list'])) {
@@ -91,12 +91,12 @@ final class LazadaClient
      * Transport for one reviewed absolute SKU quantity. Callers must revalidate
      * their WMS snapshot immediately before invoking it.
      */
-    public function updateAbsoluteQuantity(#[\SensitiveParameter] string $accessToken, string $itemId, string $skuId, int $quantity, ?string $warehouseCode = null): void
+    public function updateAbsoluteQuantity(#[\SensitiveParameter] string $accessToken, string $itemId, string $skuId, int $quantity, ?string $warehouseCode = null, ?int $storeId=null): void
     {
         if (config('marketplace.stock_sync_operations_enabled') !== true) {
             throw new RuntimeException('Marketplace stock synchronization is disabled.');
         }
-        $this->sendAbsoluteQuantity($accessToken,$itemId,$skuId,$quantity,$warehouseCode);
+        $this->sendAbsoluteQuantity($accessToken,$itemId,$skuId,$quantity,$warehouseCode,$storeId);
     }
 
     /** Separate test boundary; does not enable the production transport flag. */
@@ -105,19 +105,18 @@ final class LazadaClient
         $current=app(SandboxInventoryWriteGuard::class)->review((int)$snapshot['store_id'],(int)$snapshot['inventory_balance_id'],$actor);
         if($current!==$snapshot||$current['platform']!=='lazada')throw new RuntimeException('Sandbox stock review changed.');
         $token=app(LazadaTokenManager::class)->accessToken($current['store_id']);
-        $seller=$this->read('/seller/get',$token);
+        $seller=$this->read('/seller/get',$token,[],$current['store_id']);
         if((string)($seller['seller_id']??'')!==$current['external_shop_id']||($seller['short_code']??'')!=='MY4NA1T7CK'||($seller['status']??'')!=='ACTIVE')throw new RuntimeException('Sandbox seller identity changed.');
-        $this->sendAbsoluteQuantity($token,$current['external_product_id'],$current['external_variant_id'],$current['desired_quantity'],$current['platform_location_id']);
+        $this->sendAbsoluteQuantity($token,$current['external_product_id'],$current['external_variant_id'],$current['desired_quantity'],$current['platform_location_id'],$current['store_id']);
     }
 
-    private function sendAbsoluteQuantity(#[\SensitiveParameter] string $accessToken,string $itemId,string $skuId,int $quantity,?string $warehouseCode):void
+    private function sendAbsoluteQuantity(#[\SensitiveParameter] string $accessToken,string $itemId,string $skuId,int $quantity,?string $warehouseCode,?int $storeId=null):void
     {
         if (!preg_match('/^[1-9][0-9]*$/D', $itemId) || !preg_match('/^[1-9][0-9]*$/D', $skuId) || $quantity < 0) {
             throw new RuntimeException('Invalid Lazada stock synchronization payload.');
         }
-        $key=config('marketplace.lazada.app_key');$secret=config('marketplace.lazada.app_secret');
-        if(config('marketplace.lazada.enabled')!==true||!is_string($key)||!preg_match('/^[1-9][0-9]*$/D',$key)
-            ||!is_string($secret)||trim($secret)===''||trim($accessToken)==='')throw new RuntimeException('Lazada stock synchronization is not configured.');
+        $credentials=$this->credentials($storeId);$key=$credentials['key'];$secret=$credentials['secret'];
+        if(trim($accessToken)==='')throw new RuntimeException('Lazada stock synchronization is not configured.');
         if ($warehouseCode !== null && !preg_match('/\A[A-Za-z0-9_-]{1,100}\z/D', $warehouseCode)) {
             throw new RuntimeException('Invalid Lazada warehouse code.');
         }
@@ -141,11 +140,10 @@ final class LazadaClient
         }
     }
 
-    private function signedPost(string $path, #[\SensitiveParameter] string $accessToken, array $payload, string $operation): array
+    private function signedPost(string $path, #[\SensitiveParameter] string $accessToken, array $payload, string $operation, ?int $storeId=null): array
     {
-        $key=config('marketplace.lazada.app_key');$secret=config('marketplace.lazada.app_secret');
-        if(config('marketplace.lazada.enabled')!==true||!is_string($key)||!preg_match('/^[1-9][0-9]*$/D',$key)
-            ||!is_string($secret)||trim($secret)===''||trim($accessToken)==='')throw new RuntimeException($operation.' is not configured.');
+        $credentials=$this->credentials($storeId);$key=$credentials['key'];$secret=$credentials['secret'];
+        if(trim($accessToken)==='')throw new RuntimeException($operation.' is not configured.');
         $query=['payload'=>json_encode($payload,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES),
             'app_key'=>$key,'access_token'=>$accessToken,'sign_method'=>'sha256','timestamp'=>(string)now()->getTimestampMs()];
         ksort($query,SORT_STRING);$base=$path;
@@ -166,14 +164,29 @@ final class LazadaClient
     }
 
     /** Malaysia seller read APIs only. Tokens and signed URLs never leave this service. */
-    public function read(string $path, #[\SensitiveParameter] string $accessToken, array $parameters=[]): array
+    public function read(string $path, #[\SensitiveParameter] string $accessToken, array $parameters=[], ?int $storeId=null): array
+    {
+        return $this->readWithCredentials($path,$accessToken,$parameters,$this->credentials($storeId));
+    }
+
+    public function readForStore(int $storeId, string $path, #[\SensitiveParameter] string $accessToken, array $parameters=[]): array
+    {
+        return $this->read($path,$accessToken,$parameters,$storeId);
+    }
+
+    public function readOfficialTest(string $path, #[\SensitiveParameter] string $accessToken, array $parameters=[]): array
+    {
+        return $this->readWithCredentials($path,$accessToken,$parameters,app(LazadaAppCredentialResolver::class)->officialTest());
+    }
+
+    /** @param array{key:string,secret:string} $credentials */
+    private function readWithCredentials(string $path, #[\SensitiveParameter] string $accessToken, array $parameters, array $credentials): array
     {
         if(!in_array($path,['/seller/warehouse/get','/category/brands/query','/order/package/document/get','/order/shipment/providers/get','/category/tree/get','/category/attributes/get','/rc/warehouse/get','/rc/warehouse/detail/get','/seller/get','/orders/get','/order/get','/order/items/get','/orders/items/get','/products/get','/product/item/get'],true)) {
             throw new RuntimeException('Unsupported Lazada read endpoint.');
         }
-        $key=config('marketplace.lazada.app_key');$secret=config('marketplace.lazada.app_secret');
-        if(config('marketplace.lazada.enabled')!==true||!is_string($key)||!preg_match('/^[1-9][0-9]*$/D',$key)
-            ||!is_string($secret)||trim($secret)===''||trim($accessToken)==='')throw new RuntimeException('Lazada read access is not configured.');
+        $key=$credentials['key'];$secret=$credentials['secret'];
+        if(trim($accessToken)==='')throw new RuntimeException('Lazada read access is not configured.');
         if(array_intersect(array_keys($parameters),['app_key','access_token','sign','sign_method','timestamp']))throw new RuntimeException('Lazada authentication fields cannot be overridden.');
         foreach($parameters as $name=>$value){
             $providerEnvelope=($path==='/order/shipment/providers/get'&&$name==='getShipmentProvidersReq')||($path==='/order/package/document/get'&&$name==='getDocumentReq')
@@ -206,6 +219,13 @@ final class LazadaClient
         if(!$response->successful()||!is_array($payload)||!in_array($payload['code']??null,['0',0],true)
             ||!is_array($payload['data']??null))throw new RuntimeException('Lazada read request failed or returned an incomplete response at '.$path.'.');
         return $payload['data'];
+    }
+
+    /** @return array{key:string,secret:string} */
+    private function credentials(?int $storeId): array
+    {
+        $resolver=app(LazadaAppCredentialResolver::class);
+        return $storeId===null ? $resolver->production() : $resolver->forStore($storeId);
     }
     public function isConfigured(): bool
     {

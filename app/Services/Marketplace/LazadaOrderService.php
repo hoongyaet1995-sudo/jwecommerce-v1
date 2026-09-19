@@ -17,9 +17,9 @@ final class LazadaOrderService
         $store=$order?DB::table('marketplace_stores')->find($order->store_id):null;
         if (!$store||$store->platform!=='lazada'||$store->status!=='connected'||$store->region!=='MY'||$store->environment!=='live') throw new RuntimeException('Connected Lazada order required.');
         $token=$this->tokens->accessToken($store->id);
-        $summary=$this->client->read('/order/get',$token,['order_id'=>$order->external_order_id]);
+        $summary=$this->client->read('/order/get',$token,['order_id'=>$order->external_order_id],(int)$store->id);
         if ((string)($summary['order_id']??'')!==$order->external_order_id) throw new RuntimeException('Order identity mismatch.');
-        $items=$this->client->read('/order/items/get',$token,['order_id'=>$order->external_order_id]);
+        $items=$this->client->read('/order/items/get',$token,['order_id'=>$order->external_order_id],(int)$store->id);
         if (!$items||!array_is_list($items)) throw new RuntimeException('Complete order items required.');
         $seen=[];
         foreach ($items as $item) {
@@ -37,13 +37,13 @@ final class LazadaOrderService
         $store=DB::table('marketplace_stores')->find($storeId);
         if(!$store||$store->platform!=='lazada'||$store->status!=='connected')throw new RuntimeException('Lazada store is not connected.');
         $format=fn(int $time)=>CarbonImmutable::createFromTimestampUTC($time)->setTimezone('Asia/Kuala_Lumpur')->format('Y-m-d\\TH:i:sP');
-        $page=$this->client->read('/orders/get',$token,['created_after'=>$format($from),'created_before'=>$format($to),'status'=>'all','limit'=>100,'offset'=>$offset]);
+        $page=$this->client->read('/orders/get',$token,['created_after'=>$format($from),'created_before'=>$format($to),'status'=>'all','limit'=>100,'offset'=>$offset],$storeId);
         $orders=$page['orders']??null;
         if(!is_array($orders)||!array_is_list($orders)||count($orders)>100)throw new RuntimeException('Lazada order page is incomplete.');
         $saved=0;
         foreach($orders as $summary){
             if(!is_array($summary)||(!is_string($summary['order_id']??null)&&!is_int($summary['order_id']??null)))throw new RuntimeException('Lazada order page contains an invalid order identity.');
-            $details=$this->client->read('/order/items/get',$token,['order_id'=>(string)$summary['order_id']]);
+            $details=$this->client->read('/order/items/get',$token,['order_id'=>(string)$summary['order_id']],$storeId);
             $items=array_is_list($details)?$details:($details['order_items']??null);
             if(!is_array($items)||!array_is_list($items))throw new RuntimeException('Lazada order items are incomplete.');
             $seen=[];

@@ -89,8 +89,8 @@ export const EntityWarehouseModal: React.FC<EntityWarehouseModalProps> = ({
       isActive: status === 'active',
       isDefaultMaster,
       state: state.trim() || 'Selangor',
-      contactPerson: contactName.trim() || 'Operations Manager',
-      contactPhone: phone.trim() || '+60 3-8888 0000',
+      contactPerson: contactName.trim(),
+      contactPhone: phone.trim(),
       address: combinedAddress
     };
 

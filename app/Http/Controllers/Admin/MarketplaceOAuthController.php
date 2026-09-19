@@ -72,9 +72,12 @@ class MarketplaceOAuthController extends Controller
                     && $store->application_id !== null
                     && $store->application_id === (string) config('marketplace.shopee.partner_id');
                 if ($store->platform === 'lazada') {
+                    $expectedApp=$store->credential_source==='official_test'
+                        ? (string)config('marketplace.lazada.test_app_key')
+                        : (string)config('marketplace.lazada.app_key');
                     $applicationMatches = $store->environment === 'live' && $store->region === 'MY'
                         && config('marketplace.lazada.enabled') === true && $store->application_id !== null
-                        && $store->application_id === (string) config('marketplace.lazada.app_key');
+                        && $store->application_id === $expectedApp;
                 }
                 // Match the token manager's refresh window without reading credentials or making HTTP calls.
                 $accessUsable = $store->access_expires_at && now()->addMinutes(5)->lt($store->access_expires_at);
@@ -101,12 +104,20 @@ class MarketplaceOAuthController extends Controller
         $unavailable = ['oauth'=>false, 'catalog'=>false, 'publish'=>false, 'orders'=>false, 'inventory'=>false, 'fulfillment'=>false];
         $readsEnabled = config('marketplace.read_operations_enabled') === true
             || config('marketplace.operations_enabled') === true;
+        $publishingEnabled = config('marketplace.publish_operations_enabled') === true;
+        $inventoryEnabled = config('marketplace.stock_sync_operations_enabled') === true;
 
         return response()->json(['stores'=>$stores, 'localCapabilities'=>[
             'importProducts'=>config('marketplace.import_operations_enabled') === true || config('marketplace.operations_enabled') === true,
         ], 'capabilities'=>[
             'shopee'=>array_replace($unavailable, ['oauth'=>$client->isAuthorizationReady(), 'catalog'=>$readsEnabled && $client->isConfigured(), 'orders'=>$readsEnabled && $client->isConfigured()]),
-            'lazada'=>array_replace($unavailable, ['oauth'=>$lazada->isAuthorizationReady(), 'catalog'=>$readsEnabled && $lazada->isConfigured(), 'orders'=>$readsEnabled && $lazada->isConfigured()]),
+            'lazada'=>array_replace($unavailable, [
+                'oauth'=>$lazada->isAuthorizationReady(),
+                'catalog'=>$readsEnabled && $lazada->isConfigured(),
+                'publish'=>$publishingEnabled && $lazada->isConfigured(),
+                'orders'=>$readsEnabled && $lazada->isConfigured(),
+                'inventory'=>$inventoryEnabled && $lazada->isConfigured(),
+            ]),
             'tiktok'=>$unavailable, 'shopify'=>$unavailable,
         ]])->header('Cache-Control', 'no-store');
     }

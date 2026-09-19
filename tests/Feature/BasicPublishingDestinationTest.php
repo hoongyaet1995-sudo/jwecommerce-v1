@@ -56,7 +56,8 @@ class BasicPublishingDestinationTest extends TestCase
     public function test_lazada_staging_persists_server_master_values_and_zero_stock(): void
     {
         config(['marketplace.basic_wms_enabled'=>true,'marketplace.publish_operations_enabled'=>true,
-            'marketplace.lazada.app_key'=>'139209','marketplace.lazada.enabled'=>true,'marketplace.lazada.app_secret'=>'fixture']);
+            'marketplace.lazada.app_key'=>'139209','marketplace.lazada.enabled'=>true,'marketplace.lazada.app_secret'=>'fixture',
+            'marketplace.lazada.test_app_key'=>'139209','marketplace.lazada.test_app_secret'=>'fixture']);
         $actor=User::factory()->create(['is_admin'=>true]);
         $product=Product::create(['title'=>'Database title','handle'=>'bound-publishing','base_price'=>1599]);
         $variant=$product->variants()->create(['title'=>'Default','sku'=>'BOUND','price'=>1599,'stock'=>77,'enabled'=>true]);
@@ -113,7 +114,8 @@ class BasicPublishingDestinationTest extends TestCase
     public function test_valid_local_eligibility_still_requires_fresh_provider_identity_before_creation(): void
     {
         config(['marketplace.basic_wms_enabled'=>true,'marketplace.publish_operations_enabled'=>true,
-            'marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'139209','marketplace.lazada.app_secret'=>'fixture']);
+            'marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'139209','marketplace.lazada.app_secret'=>'fixture',
+            'marketplace.lazada.test_app_key'=>'139209','marketplace.lazada.test_app_secret'=>'fixture']);
         $actor=User::factory()->create(['is_admin'=>true]);
         $product=Product::create(['title'=>'Test','handle'=>'basic-publishing','base_price'=>100]);
         $variant=$product->variants()->create(['title'=>'Default','sku'=>'JW-BASIC','price'=>100,'stock'=>77,'enabled'=>true]);

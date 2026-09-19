@@ -17,6 +17,7 @@ it('waits for warehouse save and preserves the form after server rejection',asyn
   await act(async()=>{submit();});
   expect((host.querySelector('button[type="submit"]') as HTMLButtonElement).disabled).toBe(true);
   await act(async()=>{submit();});expect(save).toHaveBeenCalledTimes(1);
+  expect(save.mock.calls[0][0]).toMatchObject({contactPerson:'',contactPhone:''});
   await act(async()=>resolve({success:false,error:'Warehouse version changed.'}));
   expect(close).not.toHaveBeenCalled();expect(host.textContent).toContain('Warehouse version changed.');
   expect((host.querySelector('input') as HTMLInputElement).value).toBe('WH-TEST');

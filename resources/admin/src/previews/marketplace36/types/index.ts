@@ -1001,6 +1001,7 @@ export interface WarehouseStockBalance {
 
 // Store & Platform Warehouse Routing Binding
 export interface StoreFulfillmentBinding {
+  routeEnabled?: boolean;
   dataClassification?: string;
   id: string;
   storeIdentifier: string; // 'webstore' or connectionId e.g. 'conn-shopee-01'

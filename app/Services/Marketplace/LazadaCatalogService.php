@@ -11,7 +11,7 @@ final class LazadaCatalogService
   if(trim($itemId)===''||strlen($itemId)>128)throw new RuntimeException('Invalid Lazada item identity.');
   $token=$this->tokens->accessToken($storeId);$store=DB::table('marketplace_stores')->find($storeId);
   if(!$store||$store->platform!=='lazada'||$store->status!=='connected')throw new RuntimeException('Lazada store is not connected.');
-  $item=$this->client->read('/product/item/get',$token,['item_id'=>$itemId]);
+  $item=$this->client->read('/product/item/get',$token,['item_id'=>$itemId],$storeId);
   if((string)($item['item_id']??$item['ItemId']??'')!==$itemId)throw new RuntimeException('Lazada returned another product identity.');
   $rows=$this->capture($store,[$item],$token);
   return ['items'=>1,'variants'=>count($rows)];
@@ -21,7 +21,7 @@ final class LazadaCatalogService
   if($offset<0||$offset>5000||$offset%50!==0)throw new RuntimeException('Invalid Lazada catalog offset.');
   $token=$this->tokens->accessToken($storeId);$store=DB::table('marketplace_stores')->find($storeId);
   if(!$store||$store->platform!=='lazada'||$store->status!=='connected')throw new RuntimeException('Lazada store is not connected.');
-  $page=$this->client->read('/products/get',$token,['filter'=>'all','limit'=>50,'offset'=>$offset]);
+  $page=$this->client->read('/products/get',$token,['filter'=>'all','limit'=>50,'offset'=>$offset],$storeId);
   $products=$page['products']??null;$total=$page['total_products']??$page['total']??$page['countTotal']??null;
   if(!is_array($products)||!array_is_list($products)||count($products)>50||(!is_int($total)&&!ctype_digit((string)$total)))throw new RuntimeException('Lazada catalog page is incomplete.');
   $rows=$this->capture($store,$products,$token);
@@ -34,7 +34,7 @@ final class LazadaCatalogService
   foreach($products as $summary){
    $itemId=$summary['item_id']??$summary['ItemId']??null;
    if((!is_string($itemId)&&!is_int($itemId))||(string)$itemId==='')throw new RuntimeException('Lazada catalog product identity is incomplete.');
-   $item=is_array($summary['skus']??null)&&is_array($summary['attributes']??null)?$summary:$this->client->read('/product/item/get',$token,['item_id'=>(string)$itemId]);$skus=$item['skus']??$item['Skus']??null;
+   $item=is_array($summary['skus']??null)&&is_array($summary['attributes']??null)?$summary:$this->client->read('/product/item/get',$token,['item_id'=>(string)$itemId],$storeId);$skus=$item['skus']??$item['Skus']??null;
    if(!is_array($skus)||!array_is_list($skus))throw new RuntimeException('Lazada catalog SKU structure is incomplete.');
    foreach($skus as $sku){
     $skuId=$sku['SkuId']??$sku['sku_id']??null;if((!is_string($skuId)&&!is_int($skuId))||(string)$skuId==='')throw new RuntimeException('Lazada catalog SKU identity is incomplete.');

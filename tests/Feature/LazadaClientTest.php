@@ -5,9 +5,34 @@ use App\Services\Marketplace\LazadaClient;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 class LazadaClientTest extends TestCase
 {
+    use RefreshDatabase;
+
+    public function test_store_scoped_read_uses_the_test_application_that_issued_its_token(): void
+    {
+        config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'139209','marketplace.lazada.app_secret'=>'production-secret',
+            'marketplace.lazada.test_app_key'=>'139041','marketplace.lazada.test_app_secret'=>'test-secret']);
+        $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','environment'=>'live','external_shop_id'=>'300163725140',
+            'shop_name'=>'Test','region'=>'MY','account_mode'=>'test','status'=>'connected','created_at'=>now(),'updated_at'=>now()]);
+        \App\Models\MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'139041','credential_source'=>'official_test',
+            'access_token'=>'fixture-test-token','test_lease_expires_at'=>now()->addHour()]);
+        Http::preventStrayRequests();
+        Http::fake(['*'=>Http::response(['code'=>'0','data'=>['seller_id'=>300163725140]])]);
+
+        app(LazadaClient::class)->readForStore($store,'/seller/get','fixture-test-token');
+
+        Http::assertSent(function ($request) {
+            parse_str(parse_url($request->url(),PHP_URL_QUERY),$query);
+            $signature=$query['sign']??''; unset($query['sign']); ksort($query,SORT_STRING);
+            $base='/seller/get'; foreach($query as $name=>$value)$base.=$name.$value;
+            return ($query['app_key']??null)==='139041'
+                && hash_equals(strtoupper(hash_hmac('sha256',$base,'test-secret')),$signature);
+        });
+    }
     public function test_document_envelope_and_failed_result_are_checked():void
     {
         config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);
@@ -97,7 +122,8 @@ class LazadaClientTest extends TestCase
 
     public function test_stock_write_requires_its_own_explicit_gate_and_posts_a_non_negative_absolute_quantity(): void
     {
-        config(['marketplace.lazada.enabled'=>true, 'marketplace.lazada.app_key'=>'123', 'marketplace.lazada.app_secret'=>'fixture-secret']);
+        config(['marketplace.stock_sync_operations_enabled'=>false,'marketplace.lazada.enabled'=>true,
+            'marketplace.lazada.app_key'=>'123', 'marketplace.lazada.app_secret'=>'fixture-secret']);
         Http::preventStrayRequests();
         Http::fake(['api.lazada.com.my/rest/product/price_quantity/update*'=>Http::response(['code'=>'0','data'=>[]])]);
 
@@ -107,7 +133,8 @@ class LazadaClientTest extends TestCase
     }
     public function test_product_creation_requires_the_publish_gate_and_confirms_provider_ids(): void
     {
-        config(['marketplace.lazada.enabled'=>true, 'marketplace.lazada.app_key'=>'123', 'marketplace.lazada.app_secret'=>'fixture-secret']);
+        config(['marketplace.publish_operations_enabled'=>false,'marketplace.lazada.enabled'=>true,
+            'marketplace.lazada.app_key'=>'123', 'marketplace.lazada.app_secret'=>'fixture-secret']);
         $payload=['Request'=>['Product'=>['PrimaryCategory'=>'10002019',
             'Images'=>['Image'=>['https://my-live-02.slatic.net/p/test.jpg']],
             'Attributes'=>['name'=>'JW-SBX Product'],

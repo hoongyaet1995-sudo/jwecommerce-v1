@@ -23,7 +23,7 @@ final class SandboxInventoryWriteGuard
             $token=MarketplaceStoreToken::where('store_id',$storeId)->first();
             if($store->platform==='lazada'){
                 abort_unless($store->environment==='live'&&$store->region==='MY'&&$store->external_shop_id==='300163725140'
-                    &&(string)config('marketplace.lazada.app_key')==='139209'&&$token?->application_id==='139209'
+                    &&$token?->application_id===(string)config('marketplace.lazada.test_app_key')
                     &&$token->credential_source==='official_test'&&$token->test_lease_expires_at?->isFuture(),403,'Verified Lazada borrowed-seller credentials required.');
             }else{
                 abort_unless($store->environment==='sandbox'&&config('marketplace.shopee.environment')==='sandbox'

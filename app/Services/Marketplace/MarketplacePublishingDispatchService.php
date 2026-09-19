@@ -123,10 +123,10 @@ final class MarketplacePublishingDispatchService
     {
         $token=$this->lazadaTokens->accessToken((int)$store->id);
         if (config('marketplace.basic_wms_enabled')===true) {
-            $identity=$this->lazada->read('/seller/get',$token);
+            $identity=$this->lazada->read('/seller/get',$token,[],(int)$store->id);
             LazadaSellerIdentity::assertCurrent($store,$identity,'before product publishing');
-            app(LazadaListingPreflight::class)->validate($token,$payload);
+            app(LazadaListingPreflight::class)->validate($token,$payload,(int)$store->id);
         }
-        return $this->lazada->createProduct($token, $payload);
+        return $this->lazada->createProduct($token, $payload, (int)$store->id);
     }
 }

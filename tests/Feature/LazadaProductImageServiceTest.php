@@ -21,6 +21,7 @@ class LazadaProductImageServiceTest extends TestCase
         $image=$product->images()->create(['path'=>'https://my-live-02.slatic.net/p/imported.jpg']);
         $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','shop_name'=>'Test','external_shop_id'=>'456',
             'region'=>'MY','environment'=>'live','status'=>'connected']);
+        $this->enablePublishing($store);
         MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'123','access_token'=>'fixture-token','access_expires_at'=>now()->addHour()]);
         Http::preventStrayRequests();
         Http::fake([
@@ -46,12 +47,14 @@ class LazadaProductImageServiceTest extends TestCase
     {
         config(['app.url'=>'https://ecom.jwaistudio.online','marketplace.publish_operations_enabled'=>true,
             'marketplace.basic_wms_enabled'=>true,'marketplace.lazada.enabled'=>true,
-            'marketplace.lazada.app_key'=>'139209','marketplace.lazada.app_secret'=>'fixture']);
+            'marketplace.lazada.app_key'=>'139209','marketplace.lazada.app_secret'=>'fixture',
+            'marketplace.lazada.test_app_key'=>'139209','marketplace.lazada.test_app_secret'=>'fixture']);
         $actor=User::factory()->create(['is_admin'=>true]);
         $product=Product::create(['title'=>'Automatic image','handle'=>'automatic-image','base_price'=>1599]);
         $variant=$product->variants()->create(['title'=>'Default','sku'=>'AUTO-IMAGE','price'=>1599,'stock'=>77,'enabled'=>true]);
         $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','shop_name'=>'Official test','external_shop_id'=>'300163725140',
             'region'=>'MY','environment'=>'live','status'=>'connected']);
+        $this->enablePublishing($store);
         config(['marketplace.lazada.test_store_id'=>$store]);
         foreach ([['store',$store],['sku',$variant->id]] as [$kind,$id]) app(\App\Services\Inventory\TestDataClassificationService::class)->markTest($kind,$id,$actor,'Test automatic publishing image');
         MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'139209','credential_source'=>'official_test',
@@ -90,6 +93,7 @@ class LazadaProductImageServiceTest extends TestCase
         $product=Product::create(['title'=>'Image','handle'=>'lazada-owned-image','base_price'=>100]);
         $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','shop_name'=>'Test','external_shop_id'=>'456',
             'region'=>'MY','environment'=>'live','status'=>'connected']);
+        $this->enablePublishing($store);
         MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'123','access_token'=>'fixture-token','access_expires_at'=>now()->addHour()]);
         Storage::fake('public');
         $path='cms/media/9285db80-1111-4111-8111-123456789012.png';
@@ -116,5 +120,11 @@ class LazadaProductImageServiceTest extends TestCase
         try {$service->prepare($store,$product->id,$image->id,$actor->id);$this->fail('Localhost passed');}
         catch (\RuntimeException $error) {$this->assertStringContainsString('HTTPS',$error->getMessage());}
         $this->assertSame(1,$migrations);
+    }
+    private function enablePublishing(int $storeId): void
+    {
+        DB::table('marketplace_store_capabilities')->insert(['store_id'=>$storeId,'catalog_read'=>true,
+            'product_publish'=>true,'order_receive'=>false,'inventory_update'=>false,'fulfillment_write'=>false,
+            'created_at'=>now(),'updated_at'=>now()]);
     }
 }

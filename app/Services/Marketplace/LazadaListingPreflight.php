@@ -9,18 +9,18 @@ final class LazadaListingPreflight
 {
     public function __construct(private LazadaClient $client) {}
 
-    public function validate(#[\SensitiveParameter] string $token, array $payload): void
+    public function validate(#[\SensitiveParameter] string $token, array $payload, ?int $storeId=null): void
     {
         $product=$payload['Request']['Product'] ?? [];
         $id=$product['PrimaryCategory'] ?? null;
         if ((!is_int($id)&&!is_string($id)) || !preg_match('/^[1-9][0-9]*$/D',(string)$id)) {
             throw ValidationException::withMessages(['category'=>'Select a Lazada leaf category.']);
         }
-        $categories=LazadaListingCategories::flatten($this->client->read('/category/tree/get',$token));
+        $categories=LazadaListingCategories::flatten($this->client->read('/category/tree/get',$token,[],$storeId));
         if (!collect($categories)->contains(fn($row)=>(string)$row['category_id']===(string)$id && !$row['has_children'])) {
             throw ValidationException::withMessages(['category'=>'This category is no longer an available leaf category.']);
         }
-        $schema=$this->client->read('/category/attributes/get',$token,['primary_category_id'=>(string)$id]);
+        $schema=$this->client->read('/category/attributes/get',$token,['primary_category_id'=>(string)$id],$storeId);
         $skus=$product['Skus']['Sku'] ?? null;
         if (!array_is_list($schema) || !is_array($skus) || !array_is_list($skus) || !$skus) throw new RuntimeException('Invalid Lazada listing schema or SKU list.');
         $seen=[];
@@ -41,7 +41,7 @@ final class LazadaListingPreflight
                 }
                 if ($scope==='normal' && $name==='brand' && strtolower((string)($attribute['input_type']??''))==='singleselect' && empty($attribute['options'])) {
                     if (!is_string($value)) throw ValidationException::withMessages(['brand'=>'Select a Lazada brand.']);
-                    app(LazadaBrands::class)->validate($token,$value);
+                    app(LazadaBrands::class)->validate($token,$value,$storeId);
                 } else LazadaAttributeValue::validate($attribute,$value);
             }
         }

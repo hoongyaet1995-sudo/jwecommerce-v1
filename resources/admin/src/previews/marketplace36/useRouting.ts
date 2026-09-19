@@ -27,7 +27,7 @@ export function useRouting(enabled:boolean,warehouses:any[],onError:(message:str
   const identity=bindings.find(row=>row.id===data.id);
   if(!identity)return {success:false,error:'Store route changed. Reload.'};
   const csrf=document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content??'';
-  const result=await routingSaver(csrf,{channelKey:identity.id,version:identity.routeVersion,enabled:identity.routeEnabled})(data);
+  const result=await routingSaver(csrf,{channelKey:identity.id,version:identity.routeVersion,enabled:typeof data.routeEnabled==='boolean'?data.routeEnabled:identity.routeEnabled})(data);
   if(result.success)setRevision(value=>value+1);
   return result;
  }};

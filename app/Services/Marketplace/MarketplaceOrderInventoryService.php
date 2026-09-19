@@ -13,21 +13,23 @@ class MarketplaceOrderInventoryService
 
     public function process(int $orderId): void
     {
-        if (config('marketplace.inventory_accounting_enabled') !== true) return;
         DB::transaction(function () use ($orderId) {
             $storeId = DB::table('marketplace_orders')->where('id', $orderId)->value('store_id');
             $store = DB::table('marketplace_stores')->where('id', $storeId)->lockForUpdate()->first();
             if (!$store || $store->status !== 'connected' || !in_array($store->platform,['shopee','lazada'],true)) return;
+            $managed=DB::table('inventory_order_activations')->where('channel_key','marketplace:'.$storeId)->exists();
+            $managedCutoff=$managed ? \Carbon\CarbonImmutable::parse(DB::table('inventory_order_activations')->where('channel_key','marketplace:'.$storeId)->min('orders_created_after'))->timestamp : 0;
+            if (!$managed && config('marketplace.inventory_accounting_enabled')!==true) return;
             $policy = DB::table('marketplace_inventory_policies')->where('store_id', $storeId)->lockForUpdate()->first();
-            if (!$policy || !$policy->enabled || !$policy->reconciled_at || !$policy->orders_created_after) return;
+            if (!$managed && (!$policy || !$policy->enabled || !$policy->reconciled_at || !$policy->orders_created_after)) return;
             $order = DB::table('marketplace_orders')->where('id', $orderId)->lockForUpdate()->first();
             $payload = json_decode(Crypt::decryptString($order->encrypted_payload), true, 512, JSON_THROW_ON_ERROR);
             try {
                 // Savepoint: an exception on any line rolls back all allocations,
                 // while retaining the fetched platform order and exception record.
                 $status = DB::transaction(fn () => $store->platform==='lazada'
-                    ? $this->applyLazada($order,$payload,(int)$policy->orders_created_after)
-                    : $this->apply($order, $payload, (int) $policy->orders_created_after));
+                    ? $this->applyLazada($order,$payload,$managed ? $managedCutoff : (int)$policy->orders_created_after,$managed)
+                    : $this->apply($order, $payload, $managed ? $managedCutoff : (int) $policy->orders_created_after,$managed));
                 $error = null;
             } catch (MarketplaceInventoryException $exception) {
                 $status = 'exception';
@@ -45,16 +47,17 @@ class MarketplaceOrderInventoryService
         }, 3);
     }
 
-    private function applyLazada(object $order,array $payload,int $cutoff):string
+    private function applyLazada(object $order,array $payload,int $cutoff,bool $managed=false):string
     {
         if ((string)($payload['order_id']??'')!==$order->external_order_id) throw new MarketplaceInventoryException('invalid_order_lines');
         $plan=LazadaInventoryPlan::build($payload,$cutoff);
-        app(LazadaInventoryExecutor::class)->apply((int)$order->id,$plan,(int)$order->platform_updated_at);
+        $created=$managed ? \Carbon\CarbonImmutable::createFromFormat('!Y-m-d H:i:s O',$payload['created_at']) : null;
+        app(LazadaInventoryExecutor::class)->apply((int)$order->id,$plan,(int)$order->platform_updated_at,$created);
         $states=array_unique(array_column($plan,'target'));
         return count($states)===1?reset($states):'mixed';
     }
 
-    private function apply(object $order, array $payload, int $cutoff): string
+    private function apply(object $order, array $payload, int $cutoff,bool $managed=false): string
     {
         if (($payload['fulfillment_flag'] ?? null) !== 'fulfilled_by_local_seller'
             || !empty($payload['advance_package'])) throw new MarketplaceInventoryException('unsupported_fulfillment');
@@ -101,15 +104,21 @@ class MarketplaceOrderInventoryService
             if (!$variantId) throw new MarketplaceInventoryException('unmapped_order_line');
             if ($allocation && ((int) $allocation->quantity !== $item['model_quantity_purchased'] || $allocation->status === 'released'
                 || ($allocation->status === 'consumed' && $target === 'reserved'))) throw new MarketplaceInventoryException('inventory_lifecycle_conflict');
-            $plan[$key] = ['variant'=>(int) $variantId, 'quantity'=>$item['model_quantity_purchased']];
+            $activationId=$allocation?->inventory_order_activation_id;
+            if ($managed && !$allocation) {
+                $activation=app(\App\Services\Inventory\ManagedInventoryActivation::class)->eligible('marketplace:'.$order->store_id,(int)$variantId,\Carbon\CarbonImmutable::createFromTimestampUTC($payload['create_time']));
+                if (!$activation) throw new MarketplaceInventoryException('order_outside_managed_activation');
+                $activationId=$activation['id'];
+            }
+            $plan[$key] = ['variant'=>(int) $variantId, 'quantity'=>$item['model_quantity_purchased'],'activation'=>$activationId===null?null:(int)$activationId];
         }
         if ($held->isNotEmpty() && ($held->count() !== count($plan)
             || array_diff($held->keys()->all(), array_keys($plan)))) throw new MarketplaceInventoryException('inventory_lifecycle_conflict');
         uasort($plan, fn ($a, $b) => $a['variant'] <=> $b['variant']);
         foreach ($plan as $key=>$line) {
             $variant = ProductVariant::query()->lockForUpdate()->find($line['variant']);
-            if (!$variant || (!$held->has($key) && $variant->stock < $line['quantity'])) throw new MarketplaceInventoryException('insufficient_stock');
-            $id = $this->allocations->reserve('marketplace_order', (int) $order->id, $key, $line['variant'], $line['quantity']);
+            if (!$variant || ($line['activation']===null && !$held->has($key) && $variant->stock < $line['quantity'])) throw new MarketplaceInventoryException('insufficient_stock');
+            $id = $this->allocations->reserve('marketplace_order', (int) $order->id, $key, $line['variant'], $line['quantity'],$line['activation']);
             if ($target === 'consumed') $this->transition($id, $target);
         }
         return $target;
