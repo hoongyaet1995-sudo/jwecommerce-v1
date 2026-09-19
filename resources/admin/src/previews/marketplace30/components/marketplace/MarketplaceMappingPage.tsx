@@ -16,6 +16,7 @@ export interface MappingPageQuery {
 }
 export interface MappingServerPage {
   onReviewPublishing?: (storeId?:string)=>void;
+  catalogTaskStatus?: 'queued'|'running'|'failed'; onOpenCatalogTask?:()=>void;
   canFetch?:boolean;
   canImport?:boolean; importing?:boolean; onImport?:(ids:string[])=>Promise<ImportResult[]>;
   total: number; summary: CatalogSummary; loading: boolean; onQueryChange: (query: MappingPageQuery) => void;
@@ -356,6 +357,7 @@ export const MarketplaceMappingPage: React.FC<{serverPage?: MappingServerPage;
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-indigo-600' : ''}`} />
             {isRefreshing ? 'Fetching...' : 'Fetch Store Products'}
           </button>
+          {serverPage?.catalogTaskStatus && <button type="button" onClick={serverPage.onOpenCatalogTask} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-xs font-bold transition-colors cursor-pointer"><DownloadCloud className="w-3.5 h-3.5" />{serverPage.catalogTaskStatus==='failed'?'Resume download':'View download status'}</button>}
         </div>
       </div>
 

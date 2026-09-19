@@ -11,7 +11,7 @@
     "src": "_index-CMPj41v1.css"
   },
   "src/main.tsx": {
-    "file": "assets/main-CeIxwZ70.js",
+    "file": "assets/main-CscjJ28V.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
@@ -23,7 +23,7 @@
     ]
   },
   "src/previews/marketplace33/InventoryRuntime.tsx": {
-    "file": "assets/InventoryRuntime-CR7a3ICn.js",
+    "file": "assets/InventoryRuntime-CgcHfzx1.js",
     "name": "InventoryRuntime",
     "src": "src/previews/marketplace33/InventoryRuntime.tsx",
     "isDynamicEntry": true,
