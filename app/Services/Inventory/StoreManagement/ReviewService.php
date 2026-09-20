@@ -11,30 +11,47 @@ use Illuminate\Validation\ValidationException;
 
 final class ReviewService
 {
-    public function __construct(private readonly CountMutation $counts) {}
+    public function __construct(private readonly CountMutation $counts, private readonly TransferMutation $transfers, private readonly SyncOutbox $outbox) {}
 
     /** @return array<string,mixed> */
     public function create(User $actor, string $kind, array $input): array
     {
         $this->authorize($actor);
-        if (! in_array($kind, ['count', 'intake', 'correction'], true)) {
-            throw ValidationException::withMessages(['kind' => 'Choose count, intake, or correction.']);
+        if (! in_array($kind, ['count', 'intake', 'correction', 'transfer'], true)) {
+            throw ValidationException::withMessages(['kind' => 'Choose count, intake, correction, or transfer.']);
         }
 
         return DB::transaction(function () use ($actor, $kind, $input): array {
             $configuration = DB::table('inventory_configuration')->where('id', 1)->lockForUpdate()->first();
-            $identity = DB::table('inventory_balances')->find((int) $input['balance_id']);
+            if ($kind === 'transfer' && $configuration->operating_mode !== 'independent_stores') {
+                throw ValidationException::withMessages(['kind' => 'Store transfers are available only in Independent Stock mode.']);
+            }
+            $balanceIds = $kind === 'transfer'
+                ? [(int) $input['source_balance_id'], (int) $input['destination_balance_id']]
+                : [(int) $input['balance_id']];
+            sort($balanceIds);
+            $identity = DB::table('inventory_balances')->find($balanceIds[0]);
             abort_unless($identity, 404);
             DB::table('product_variants')->where('id', $identity->product_variant_id)->lockForUpdate()->first();
-            $balance = DB::table('inventory_balances')->where('id', $identity->id)->lockForUpdate()->first();
-            $projection = $this->counts->preview($kind, $balance, $input);
+            $locked = DB::table('inventory_balances')->whereIn('id', $balanceIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            abort_unless($locked->count() === count(array_unique($balanceIds)), 404);
+            if ($kind === 'transfer') {
+                $source = $locked[(int) $input['source_balance_id']];
+                $destination = $locked[(int) $input['destination_balance_id']];
+                $projection = $this->transfers->preview($source, $destination, $input);
+                $versions = [(string) $source->id => (int) $source->version, (string) $destination->id => (int) $destination->version];
+            } else {
+                $balance = $locked[$balanceIds[0]];
+                $projection = $this->counts->preview($kind, $balance, $input);
+                $versions = [(string) $balance->id => (int) $balance->version];
+            }
             $id = (string) Str::uuid();
             $review = [
                 'id' => $id,
                 'kind' => $kind,
                 'actor_id' => $actor->id,
                 'configuration_version' => (int) $configuration->version,
-                'balance_versions' => [(string) $balance->id => (int) $balance->version],
+                'balance_versions' => $versions,
                 'payload' => $input,
                 'before' => $projection['before'],
                 'after' => $projection['after'],
@@ -90,28 +107,50 @@ final class ReviewService
             }
             $payload = json_decode($review->payload, true, 512, JSON_THROW_ON_ERROR);
             $versions = json_decode($review->balance_versions, true, 512, JSON_THROW_ON_ERROR);
-            $balanceId = (int) $payload['balance_id'];
-            $identity = DB::table('inventory_balances')->find($balanceId);
+            $balanceIds = $review->kind === 'transfer'
+                ? [(int) $payload['source_balance_id'], (int) $payload['destination_balance_id']]
+                : [(int) $payload['balance_id']];
+            sort($balanceIds);
+            $identity = DB::table('inventory_balances')->find($balanceIds[0]);
             abort_unless($identity, 404);
             DB::table('product_variants')->where('id', $identity->product_variant_id)->lockForUpdate()->first();
-            $balance = DB::table('inventory_balances')->where('id', $balanceId)->lockForUpdate()->first();
-            if ((int) $balance->version !== (int) ($versions[(string) $balanceId] ?? -1)) {
-                $this->conflict('balance_changed', 'Inventory changed after review.', 'Review current stock again.');
+            $locked = DB::table('inventory_balances')->whereIn('id', $balanceIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            abort_unless($locked->count() === count(array_unique($balanceIds)), 404);
+            foreach ($locked as $balance) {
+                if ((int) $balance->version !== (int) ($versions[(string) $balance->id] ?? -1)) {
+                    $this->conflict('balance_changed', 'Inventory changed after review.', 'Review current stock again.');
+                }
             }
-            $projection = $this->counts->preview($review->kind, $balance, $payload);
+            if ($review->kind === 'transfer') {
+                $source = $locked[(int) $payload['source_balance_id']];
+                $destination = $locked[(int) $payload['destination_balance_id']];
+                $projection = $this->transfers->preview($source, $destination, $payload);
+            } else {
+                $balance = $locked[$balanceIds[0]];
+                $projection = $this->counts->preview($review->kind, $balance, $payload);
+            }
             $saved = json_decode($review->after, true, 512, JSON_THROW_ON_ERROR);
             if ($projection['after'] !== $saved) {
                 $this->conflict('balance_changed', 'Inventory inputs changed after review.', 'Review current stock again.');
             }
-            $result = $this->counts->apply($balance, $saved);
             $operationId = (string) Str::uuid();
+            $result = $review->kind === 'transfer'
+                ? $this->transfers->apply($source, $destination, $saved)
+                : [$this->counts->apply($balance, $saved)];
             $receipt = ['operation_id' => $operationId, 'review_id' => $reviewId,
-                'ledger_status' => 'applied', 'balances' => [$result], 'external_stages' => []];
+                'ledger_status' => 'applied', 'balances' => $result, 'external_stages' => []];
             DB::table('inventory_store_operations')->insert([
                 'id' => $operationId, 'review_id' => $reviewId, 'operation_key' => $operationKey,
                 'kind' => $review->kind, 'actor_id' => $actor->id, 'ledger_status' => 'applied',
                 'receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'created_at' => now(), 'updated_at' => now(),
             ]);
+            if ($review->kind === 'transfer') {
+                $freshBalances = collect($result)->map(fn (array $item) => DB::table('inventory_balances')->find($item['id']))->all();
+                $receipt['external_stages'] = $this->outbox->enqueueTransfer($operationId, $freshBalances[0], $freshBalances[1]);
+                DB::table('inventory_store_operations')->where('id', $operationId)->update([
+                    'receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'updated_at' => now(),
+                ]);
+            }
             DB::table('inventory_store_reviews')->where('id', $reviewId)->update([
                 'status' => 'confirmed', 'confirmed_at' => now(), 'updated_at' => now(),
             ]);

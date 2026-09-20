@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Request;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\ServiceProvider;
+use App\Contracts\StoreInventoryPublisher;
+use App\Services\Inventory\StoreManagement\MarketplaceStoreInventoryPublisher;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(PaymentGateway::class, SimulatedPaymentGateway::class);
+        $this->app->bind(StoreInventoryPublisher::class, MarketplaceStoreInventoryPublisher::class);
         $this->app->scoped(StorefrontCurrencyContext::class);
         $this->app->scoped(ShopBrand::class);
     }

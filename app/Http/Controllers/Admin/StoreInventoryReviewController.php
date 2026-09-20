@@ -13,12 +13,14 @@ final class StoreInventoryReviewController extends Controller
 {
     public function store(Request $request, ReviewService $reviews): JsonResponse
     {
-        $this->allowOnly($request, ['kind', 'balance_id', 'physical_count', 'quantity', 'quantity_delta', 'reason', '_token']);
+        $this->allowOnly($request, ['kind', 'balance_id', 'source_balance_id', 'destination_balance_id', 'physical_count', 'quantity', 'quantity_delta', 'reason', '_token']);
         $data = $request->validate([
-            'kind' => ['required', Rule::in(['count', 'intake', 'correction'])],
-            'balance_id' => ['required', 'integer', 'min:1'],
+            'kind' => ['required', Rule::in(['count', 'intake', 'correction', 'transfer'])],
+            'balance_id' => ['required_unless:kind,transfer', 'integer', 'min:1'],
+            'source_balance_id' => ['required_if:kind,transfer', 'integer', 'min:1'],
+            'destination_balance_id' => ['required_if:kind,transfer', 'integer', 'min:1', 'different:source_balance_id'],
             'physical_count' => ['required_if:kind,count', 'integer', 'min:0', 'max:2147483647'],
-            'quantity' => ['required_if:kind,intake', 'integer', 'min:1', 'max:2147483647'],
+            'quantity' => ['required_if:kind,intake,transfer', 'integer', 'min:1', 'max:2147483647'],
             'quantity_delta' => ['required_if:kind,correction', 'integer', 'min:-2147483647', 'max:2147483647', 'not_in:0'],
             'reason' => ['required', 'string', 'max:255'],
         ]);
