@@ -49,6 +49,7 @@ export interface OptionalAttributeValues {
 interface OptionalAttributesSectionProps {
   attributesMeta?: PlatformAttributeMeta[];
   supplemental?:(id:string)=>React.ReactNode;
+  renderField?:(attribute:PlatformAttributeMeta)=>React.ReactNode;
   values: OptionalAttributeValues;
   onChange: (attributeId: string, val: any) => void;
 }
@@ -57,7 +58,8 @@ export const OptionalAttributesSection: React.FC<OptionalAttributesSectionProps>
   attributesMeta = [],
   values,
   onChange,
-  supplemental
+  supplemental,
+  renderField
 }) => {
   // Collapsible toggle
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
@@ -146,7 +148,7 @@ export const OptionalAttributesSection: React.FC<OptionalAttributesSectionProps>
               return (
                 <div key={attr.id} className="space-y-1.5 relative">
                   {/* Field Label + Custom Mode Switcher */}
-                  <div className="flex items-center justify-between">
+                  {!renderField&&<div className="flex items-center justify-between">
                     <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
                       <span>{attr.name}</span>
                       {attr.dependsOn && (
@@ -172,9 +174,10 @@ export const OptionalAttributesSection: React.FC<OptionalAttributesSectionProps>
                         {isCustomMode ? '← Pick standard option' : '+ Custom value'}
                       </button>
                     )}
-                  </div>
+                  </div>}
 
                   {/* Field Input Variant Handling */}
+                  {renderField ? renderField(attr) : <>
 
                   {/* 1. Free-form text input */}
                   {attr.inputType === 'text' && (
@@ -276,7 +279,8 @@ export const OptionalAttributesSection: React.FC<OptionalAttributesSectionProps>
                     />
                   )}
 
-                  {supplemental?.(attr.id)}
+                  </>}
+                  {!renderField&&supplemental?.(attr.id)}
                   {/* Helper description text */}
                   {attr.description && (
                     <div className="text-[10px] text-neutral-400">

@@ -1,32 +1,44 @@
 import React from 'react';
 import type {LazadaPublishingField} from '../integration/lazadaPublishingFields';
+import {MarketplaceAttributeSections} from './MarketplaceAttributeSections';
+import type {MarketplaceAttributeField,MarketplaceAttributeValue} from './publishingAttributes/types';
 
-const control='w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-xl text-xs text-neutral-900 dark:text-white focus:ring-1 focus:ring-indigo-500';
+const control=(field:LazadaPublishingField):MarketplaceAttributeField['control']=>{
+ switch(field.type){
+  case 'richtext':return 'textarea';case 'numeric':return 'decimal';case 'date':return 'date';
+  case 'singleselect':case 'enuminput':return 'single';
+  case 'multiselect':case 'multienuminput':return 'multi';case 'img':return 'image';default:return 'text';
+ }
+};
+const typed=(field:LazadaPublishingField):MarketplaceAttributeValue=>{
+ if(!field.value.trim())return {kind:'empty'};
+ if(field.type==='numeric')return {kind:'number',value:field.value};
+ if(field.type==='date')return {kind:'date',value:field.value};
+ if(['singleselect','enuminput'].includes(field.type))return {kind:'single',value:{id:field.options.includes(field.value)?field.value:null,label:field.value,custom:field.type==='enuminput'&&!field.options.includes(field.value)}};
+ if(['multiselect','multienuminput'].includes(field.type))return {kind:'multi',values:field.value.split(',').map(label=>label.trim()).filter(Boolean).map(label=>({id:field.options.includes(label)?label:null,label,custom:field.type==='multienuminput'&&!field.options.includes(label)}))};
+ return {kind:'text',value:field.value};
+};
+const serialized=(value:MarketplaceAttributeValue):string=>{
+ if(value.kind==='text'||value.kind==='number'||value.kind==='date')return value.value;
+ if(value.kind==='single')return value.value.label;
+ if(value.kind==='multi')return value.values.map(item=>item.label).join(',');
+ return '';
+};
+
 export function LazadaPublishingAttributes({fields,onChange}:{fields:LazadaPublishingField[];onChange:(key:string,value:string)=>void}){
- const visible=fields.filter(field=>!field.automatic||!field.complete);
- const render=(field:LazadaPublishingField)=>{
-  const id=`lazada-field-${encodeURIComponent(field.key)}`;
-  return <div key={field.key} className="space-y-1.5">
-   <label htmlFor={id} className="text-xs font-bold text-neutral-700 dark:text-neutral-300 flex items-center gap-1">
-    <span>{field.label}{field.sku?` · ${field.sku}`:''}</span>{field.required&&<span className="text-rose-500">*</span>}
-   </label>
-   {['singleselect','multiselect'].includes(field.type)?<select id={id} className={control} value={field.type==='multiselect'?field.value.split(',').filter(Boolean):field.value}
-    multiple={field.type==='multiselect'} onChange={(event:React.ChangeEvent<HTMLSelectElement>)=>onChange(field.key,field.type==='multiselect'?Array.from(event.target.selectedOptions,(option:HTMLOptionElement)=>option.value).join(','):event.target.value)}>
-     {field.type==='singleselect'&&<option value="">Select {field.label}</option>}
-     {field.options.map(option=><option key={option} value={option}>{option}</option>)}
-    </select>:field.type==='richtext'?<textarea id={id} className={control} value={field.value} onChange={event=>onChange(field.key,event.target.value)}/>
-    :<input id={id} className={control} type={field.type==='numeric'?'number':'text'} step={field.type==='numeric'?'any':undefined}
-     value={field.value} disabled={!field.supported} list={field.options.length?`${id}-options`:undefined}
-     onChange={event=>onChange(field.key,event.target.value)}/>}
-   {!field.supported&&<p className="text-xs text-rose-500">This required field cannot be completed yet.</p>}
-   {field.options.length>0&&['enuminput','multienuminput'].includes(field.type)&&<datalist id={`${id}-options`}>{field.options.map(value=><option key={value} value={value}/>)}</datalist>}
-  </div>;
- };
- return <>
-  {visible.filter(field=>field.required).map(render)}
-  {visible.some(field=>!field.required)&&<details className="space-y-1.5 sm:col-span-2">
-   <summary className="text-xs font-bold text-neutral-700 dark:text-neutral-300">Optional attributes</summary>
-   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{visible.filter(field=>!field.required).map(render)}</div>
-  </details>}
- </>;
+ const legacy=fields.filter(field=>!field.sizeChart&&(!field.automatic||!field.complete));
+ const canonical=legacy.map((field):MarketplaceAttributeField=>({
+  key:field.sku?`lazada:variant:${field.sku}:${field.name}`:`lazada:product:${field.name}`,
+  provider:'lazada',scope:field.sku?'variant':'product',providerName:field.name,providerId:field.name,sku:field.sku,
+  label:field.label,control:control(field),required:field.required,
+  options:field.options.map(option=>({id:option,label:option})),allowCustom:['enuminput','multienuminput'].includes(field.type),
+  maxValues:['multiselect','multienuminput'].includes(field.type)?100:1,units:[],supported:field.supported,
+  unsupportedReason:field.supported?undefined:'This required field cannot be completed yet.',
+ }));
+ const values=new Map(canonical.map((field,index)=>[field.key,typed(legacy[index])]));
+ const errors=Object.fromEntries(canonical.flatMap((field,index)=>legacy[index].required&&!legacy[index].complete?[[field.key,field.supported?`Complete ${field.label}${field.sku?` for ${field.sku}`:''}.`:'This required field cannot be completed yet.']]:[]));
+ return <MarketplaceAttributeSections fields={canonical} values={values} errors={errors} onChange={(key,value)=>{
+  const index=canonical.findIndex(field=>field.key===key);if(index>=0)onChange(legacy[index].key,serialized(value));
+ }}/>;
 }
+

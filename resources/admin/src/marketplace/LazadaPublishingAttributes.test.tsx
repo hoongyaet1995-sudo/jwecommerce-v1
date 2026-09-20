@@ -16,9 +16,9 @@ it('shows missing required fields, hides supplied values, and collapses optional
   await act(async()=>root.render(<LazadaPublishingAttributes fields={fields} onChange={change}/>));
   expect(container.textContent).toContain('Color · JW-A');
   expect(container.textContent).not.toContain('package_weight');
-  expect(container.querySelector('details')?.open).toBe(false);
-  const select=container.querySelector('select')!;
-  await act(async()=>{select.value='Red';select.dispatchEvent(new Event('change',{bubbles:true}));});
+  expect(container.textContent).toContain('Optional Attributes');
+  const red=[...container.querySelectorAll('input[type="radio"]')].find(input=>(input.parentElement?.textContent??'').includes('Red')) as HTMLInputElement;
+  await act(async()=>red.click());
   expect(change).toHaveBeenCalledWith('sku:JW-A:color_family','Red');
  }finally{await act(async()=>root.unmount());vi.unstubAllGlobals();}
 });

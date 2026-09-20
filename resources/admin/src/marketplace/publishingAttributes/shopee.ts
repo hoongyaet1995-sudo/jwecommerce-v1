@@ -82,7 +82,8 @@ export function normalizeShopeeAttributes(
     const multi=input===4||input===5;
     const max=multi&&Number.isSafeInteger(info.max_value_count)&&Number(info.max_value_count)>0
       ?Number(info.max_value_count):1;
-    const metadataSupported=Boolean(control)
+    const hasChoiceSource=![1,4].includes(input)||definition.attribute_value_list.length>0||Boolean(info.support_search_value);
+    const metadataSupported=Boolean(control)&&hasChoiceSource
       && (!multi||(Number.isSafeInteger(info.max_value_count)&&Number(info.max_value_count)>0))
       && (info.format_type!==2||(Array.isArray(info.attribute_unit_list)&&info.attribute_unit_list.length>0))
       && (info.input_validation_type!==4||[0,1].includes(Number(info.date_format_type)));
@@ -95,7 +96,7 @@ export function normalizeShopeeAttributes(
       allowCustom:[2,3,5].includes(input),maxValues:max,
       units:Array.isArray(info.attribute_unit_list)?info.attribute_unit_list.filter(unit=>typeof unit==='string'&&unit.trim()):[],
       supported:metadataSupported,
-      unsupportedReason:metadataSupported?undefined:`Shopee input type ${input} cannot be completed yet.`,
+      unsupportedReason:metadataSupported?undefined:!hasChoiceSource?'No platform options available. Refresh category requirements.':`Shopee input type ${input} cannot be completed yet.`,
       inputType:input,validationType:info.input_validation_type??(input===3?2:undefined),
       dateFormatType:info.date_format_type,formatType:info.format_type,
       supportSearch:Boolean(info.support_search_value),dependent,
@@ -172,4 +173,3 @@ export function serializeShopeeAttributes(
     return selections.length?[{attribute_id:Number(field.providerId),attribute_value_list:selections}]:[];
   });
 }
-
