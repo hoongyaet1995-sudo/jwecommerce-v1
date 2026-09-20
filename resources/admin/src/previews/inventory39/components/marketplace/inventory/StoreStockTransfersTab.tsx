@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   ArrowRightLeft,
   Store,
@@ -13,10 +13,16 @@ import {
   User,
   Info,
   ChevronRight,
+  ChevronLeft,
   Sparkles,
   Layers,
   ArrowRight,
-  X
+  X,
+  ChevronsUpDown,
+  Check,
+  Package,
+  SlidersHorizontal,
+  Plus
 } from 'lucide-react';
 import { MarketplaceInventoryItem } from '../../../types';
 import { InventoryStoreChannel, StoreStockAccountBalance, StoreStockTransferRecord } from './inventoryTypes';
@@ -48,6 +54,19 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [operator, setOperator] = useState<string>('Alexander (Admin)');
 
+  // Quick Combobox Search State
+  const [skuSearchQuery, setSkuSearchQuery] = useState<string>('');
+  const [isSkuDropdownOpen, setIsSkuDropdownOpen] = useState<boolean>(false);
+  const comboboxRef = useRef<HTMLDivElement>(null);
+
+  // Catalog Browser Modal State (for 1000+ products / 5000+ SKUs)
+  const [isCatalogModalOpen, setIsCatalogModalOpen] = useState<boolean>(false);
+  const [modalSearch, setModalSearch] = useState<string>('');
+  const [modalCategoryFilter, setModalCategoryFilter] = useState<string>('all');
+  const [modalStockFilter, setModalStockFilter] = useState<'all' | 'in_stock' | 'has_source_stock'>('all');
+  const [modalPage, setModalPage] = useState<number>(1);
+  const ITEMS_PER_PAGE = 8;
+
   // Execution Modal / Status
   const [activeTransferExecution, setActiveTransferExecution] = useState<{
     isOpen: boolean;
@@ -64,14 +83,37 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
   const safeInventory = inventory || [];
   const safeStores = stores || [];
 
+  // Keep the selected route valid when connected stores load or change.
   useEffect(() => {
     const activeStores = safeStores.filter(store => !store.isComingSoon);
     if (!activeStores.length) return;
-    if (!activeStores.some(store => store.id === sourceStoreId)) setSourceStoreId(activeStores[0].id);
-    if (!activeStores.some(store => store.id === destinationStoreId) || destinationStoreId === sourceStoreId) {
-      setDestinationStoreId((activeStores.find(store => store.id !== sourceStoreId) || activeStores[0]).id);
+
+    const nextSourceId = activeStores.some(store => store.id === sourceStoreId)
+      ? sourceStoreId
+      : activeStores[0].id;
+    if (nextSourceId !== sourceStoreId) setSourceStoreId(nextSourceId);
+
+    if (!activeStores.some(store => store.id === destinationStoreId) || destinationStoreId === nextSourceId) {
+      setDestinationStoreId((activeStores.find(store => store.id !== nextSourceId) || activeStores[0]).id);
     }
   }, [safeStores, sourceStoreId, destinationStoreId]);
+
+  useEffect(() => {
+    if (safeInventory.length && !safeInventory.some(item => item.masterSku === selectedSku)) {
+      setSelectedSku(safeInventory[0].masterSku);
+    }
+  }, [safeInventory, selectedSku]);
+
+  // Close combobox when clicking outside.
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (comboboxRef.current && !comboboxRef.current.contains(e.target as Node)) {
+        setIsSkuDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Target item
   const selectedItem = useMemo(() => {
@@ -89,8 +131,12 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
     return storeBalances[selectedSku][destinationStoreId] || null;
   }, [selectedSku, storeBalances, destinationStoreId]);
 
-  const sourceStore = safeStores.find(s => s.id === sourceStoreId) || safeStores[0];
-  const destStore = safeStores.find(s => s.id === destinationStoreId) || safeStores[1];
+  const unavailableStore = {
+    id: '', platform: 'webstore', platformDisplayName: 'Unavailable', name: 'Unavailable', nickname: 'Unavailable',
+    region: '', connectionState: 'disconnected', isManagedByJw: false, readStatus: 'failed', syncStatus: 'disabled'
+  } as InventoryStoreChannel;
+  const sourceStore = safeStores.find(s => s.id === sourceStoreId) || safeStores[0] || unavailableStore;
+  const destStore = safeStores.find(s => s.id === destinationStoreId) || safeStores.find(s => s.id !== sourceStore.id) || unavailableStore;
 
   const sourceAvailable = sourceBalance?.availableStock ?? 0;
   const destAvailable = destBalance?.availableStock ?? 0;
@@ -99,17 +145,88 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
   const isValidQty = !isNaN(numericQty) && Number.isInteger(numericQty) && numericQty > 0 && numericQty <= sourceAvailable;
   const isSameStore = sourceStoreId === destinationStoreId;
 
-  // Before / After calculations
+  // Before / After calculations for visual reference
   const sourceAfterPhysical = (sourceBalance?.physicalStock ?? 0) - (isValidQty ? numericQty : 0);
   const sourceAfterAvailable = sourceAvailable - (isValidQty ? numericQty : 0);
-
   const destAfterPhysical = (destBalance?.physicalStock ?? 0) + (isValidQty ? numericQty : 0);
   const destAfterAvailable = destAvailable + (isValidQty ? numericQty : 0);
 
-  // Total conservation check
-  const totalBefore = (sourceBalance?.physicalStock ?? 0) + (destBalance?.physicalStock ?? 0);
-  const totalAfter = sourceAfterPhysical + destAfterPhysical;
-  const isConserved = totalBefore === totalAfter;
+  // Combobox Filtered SKUs (Instant search, top 25 matches)
+  const comboboxFilteredItems = useMemo(() => {
+    if (!skuSearchQuery.trim()) {
+      return safeInventory.slice(0, 20);
+    }
+    const q = skuSearchQuery.toLowerCase().trim();
+    return safeInventory.filter(item => {
+      return (
+        item.masterSku.toLowerCase().includes(q) ||
+        item.productName.toLowerCase().includes(q) ||
+        (item.variantName && item.variantName.toLowerCase().includes(q)) ||
+        (item.barcode && item.barcode.toLowerCase().includes(q))
+      );
+    }).slice(0, 30);
+  }, [safeInventory, skuSearchQuery]);
+
+  // Extract categories for catalog modal filter
+  const availableCategories = useMemo(() => {
+    const cats = new Set<string>();
+    safeInventory.forEach(item => {
+      // Derive category from SKU prefix or warehouse location or default groups
+      const prefix = item.masterSku.split('-')[0] || 'General';
+      cats.add(prefix);
+    });
+    return Array.from(cats);
+  }, [safeInventory]);
+
+  // Catalog Modal Filtered Items (handles 1,000+ products and 5,000+ SKUs)
+  const modalFilteredItems = useMemo(() => {
+    return safeInventory.filter(item => {
+      // Search match
+      if (modalSearch.trim()) {
+        const q = modalSearch.toLowerCase().trim();
+        const match =
+          item.masterSku.toLowerCase().includes(q) ||
+          item.productName.toLowerCase().includes(q) ||
+          (item.variantName && item.variantName.toLowerCase().includes(q)) ||
+          (item.barcode && item.barcode.toLowerCase().includes(q));
+        if (!match) return false;
+      }
+
+      // Category match
+      if (modalCategoryFilter !== 'all') {
+        const prefix = item.masterSku.split('-')[0] || 'General';
+        if (prefix !== modalCategoryFilter) return false;
+      }
+
+      // Stock status filter
+      if (modalStockFilter === 'in_stock') {
+        const totalAvail = Object.values(storeBalances[item.masterSku] || {}).reduce(
+          (sum, b) => sum + (b.availableStock ?? 0),
+          0
+        );
+        if (totalAvail <= 0) return false;
+      } else if (modalStockFilter === 'has_source_stock') {
+        const srcAvail = storeBalances[item.masterSku]?.[sourceStoreId]?.availableStock ?? 0;
+        if (srcAvail <= 0) return false;
+      }
+
+      return true;
+    });
+  }, [safeInventory, modalSearch, modalCategoryFilter, modalStockFilter, storeBalances, sourceStoreId]);
+
+  // Pagination for catalog modal
+  const totalPages = Math.max(1, Math.ceil(modalFilteredItems.length / ITEMS_PER_PAGE));
+  const paginatedModalItems = useMemo(() => {
+    const start = (modalPage - 1) * ITEMS_PER_PAGE;
+    return modalFilteredItems.slice(start, start + ITEMS_PER_PAGE);
+  }, [modalFilteredItems, modalPage]);
+
+  const handleSelectSku = (sku: string) => {
+    setSelectedSku(sku);
+    setIsSkuDropdownOpen(false);
+    setIsCatalogModalOpen(false);
+    setQuantityInput('1');
+  };
 
   const handleStartTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,152 +322,511 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Transfer Creator Form */}
-        <div className="lg:col-span-6 space-y-5">
-          <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs space-y-5">
-            <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3">
-              <h3 className="text-sm font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-                <Store className="w-4 h-4 text-neutral-400" />
+      {/* Full Width 100% Transfer Form Container */}
+      <div className="w-full">
+        <div className="p-5 sm:p-6 lg:p-7 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs space-y-6">
+          {/* Form Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-100 dark:border-neutral-800 pb-4">
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-neutral-900 dark:text-white flex items-center gap-2.5">
+                <Store className="w-5 h-5 text-neutral-500" />
                 <span>Initiate Store Stock Transfer (新建店铺调配)</span>
               </h3>
-              <span className="text-[11px] text-neutral-400">Strict Conservation Enforced</span>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                Instantly reallocate available units between store ledgers and synchronize updated channel inventory in real time.
+              </p>
             </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-semibold">
+                Strict Conservation Enforced
+              </span>
+            </div>
+          </div>
 
-            <form onSubmit={handleStartTransfer} className="space-y-4">
-              {/* Select SKU */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
-                  Select Master SKU / Product *
-                </label>
-                <select
-                  value={selectedSku}
-                  onChange={e => setSelectedSku(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/80 text-neutral-900 dark:text-white font-medium cursor-pointer"
-                >
-                  {safeInventory.map(item => (
-                    <option key={item.id} value={item.masterSku}>
-                      {item.masterSku} — {item.productName} ({item.variantName})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Source & Destination Stores Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {/* Source Store */}
-                <div className="space-y-1.5 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
-                      From Store (Source) *
-                    </label>
-                    <span className="text-[10px] font-mono font-bold text-neutral-500">
-                      Avail: {sourceAvailable}
-                    </span>
-                  </div>
-                  <select
-                    value={sourceStoreId}
-                    onChange={e => setSourceStoreId(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white cursor-pointer"
-                  >
-                    {safeStores.filter(s => !s.isComingSoon).map(s => (
-                      <option key={s.id} value={s.id}>
-                        {s.nickname || s.name} ({s.platformDisplayName})
-                      </option>
-                    ))}
-                  </select>
-                  <div className="text-[11px] text-neutral-500 flex justify-between pt-1">
-                    <span>Physical: {sourceBalance?.physicalStock ?? 0}</span>
-                    <span>Reserved: {sourceBalance?.reservedStock ?? 0}</span>
-                  </div>
-                </div>
-
-                {/* Destination Store */}
-                <div className="space-y-1.5 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
-                      To Store (Destination) *
-                    </label>
-                    <span className="text-[10px] font-mono font-bold text-neutral-500">
-                      Avail: {destAvailable}
-                    </span>
-                  </div>
-                  <select
-                    value={destinationStoreId}
-                    onChange={e => setDestinationStoreId(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white cursor-pointer"
-                  >
-                    {safeStores.filter(s => !s.isComingSoon).map(s => (
-                      <option key={s.id} value={s.id}>
-                        {s.nickname || s.name} ({s.platformDisplayName})
-                      </option>
-                    ))}
-                  </select>
-                  <div className="text-[11px] text-neutral-500 flex justify-between pt-1">
-                    <span>Physical: {destBalance?.physicalStock ?? 0}</span>
-                    <span>Reserved: {destBalance?.reservedStock ?? 0}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Same store warning */}
-              {isSameStore && (
-                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 flex items-center gap-2 text-xs text-red-700 dark:text-red-300 font-semibold">
-                  <AlertTriangle className="w-4 h-4 text-red-500" />
-                  <span>Source and Destination stores cannot be identical.</span>
-                </div>
-              )}
-
-              {/* Transfer Quantity */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
-                    Transfer Quantity (调配数量) *
-                  </label>
-                  <span className="text-[11px] text-neutral-400">
-                    Max transferable: {sourceAvailable} units
+          <form onSubmit={handleStartTransfer} className="space-y-6">
+            {/* ================= SECTION 1: ENTERPRISE SKU & PRODUCT SELECTION (Scales for 1000+ Products / 5000+ SKUs) ================= */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-neutral-900 dark:text-white flex items-center gap-2">
+                  <span>1. Select Master SKU / Product (选择调配商品)</span>
+                  <span className="text-neutral-400 font-normal">
+                    ({safeInventory.length.toLocaleString()} total SKUs indexed)
                   </span>
-                </div>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalSearch('');
+                    setModalPage(1);
+                    setIsCatalogModalOpen(true);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs font-bold border border-neutral-200 dark:border-neutral-700 transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Package className="w-3.5 h-3.5 text-neutral-500" />
+                  <span>Browse Full Catalog ({safeInventory.length.toLocaleString()})</span>
+                </button>
+              </div>
+
+              {/* Combobox Search Bar */}
+              <div ref={comboboxRef} className="relative w-full">
                 <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3.5 top-3 text-neutral-400 pointer-events-none" />
                   <input
-                    type="number"
-                    min="1"
-                    max={sourceAvailable}
-                    step="1"
-                    value={quantityInput}
-                    onChange={e => setQuantityInput(e.target.value)}
-                    className={`w-full px-3.5 py-2.5 text-sm font-mono font-bold rounded-xl border ${
-                      !isValidQty && !isSameStore
-                        ? 'border-red-400 bg-red-50/20 text-red-700'
-                        : 'border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-neutral-400'
-                    }`}
+                    type="text"
+                    placeholder="Search by Master SKU, Product Name, Variant, or Barcode (e.g. AUR-PINE, Headphones, ANC)..."
+                    value={skuSearchQuery}
+                    onFocus={() => setIsSkuDropdownOpen(true)}
+                    onChange={e => {
+                      setSkuSearchQuery(e.target.value);
+                      setIsSkuDropdownOpen(true);
+                    }}
+                    className="w-full pl-10 pr-24 py-2.5 text-xs rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/80 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-hidden focus:ring-2 focus:ring-neutral-400"
                   />
-                  <div className="absolute right-3 top-2.5 text-xs text-neutral-400 pointer-events-none">
-                    Units
+                  <div className="absolute right-2.5 top-2 flex items-center gap-1">
+                    {skuSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSkuSearchQuery('');
+                          setIsSkuDropdownOpen(false);
+                        }}
+                        className="p-1 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsSkuDropdownOpen(prev => !prev)}
+                      className="p-1 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-pointer"
+                    >
+                      <ChevronsUpDown className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-                {numericQty > sourceAvailable && (
-                  <p className="text-[11px] text-red-600 font-medium">
-                    Cannot exceed source store available stock ({sourceAvailable} units). Reserved units ({sourceBalance?.reservedStock ?? 0}) are locked for active orders.
-                  </p>
+
+                {/* Instant Search Suggestions Dropdown */}
+                {isSkuDropdownOpen && (
+                  <div className="absolute z-30 left-0 right-0 mt-1.5 max-h-80 overflow-y-auto rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xl divide-y divide-neutral-100 dark:divide-neutral-800">
+                    <div className="p-2.5 bg-neutral-50/80 dark:bg-neutral-800/50 flex items-center justify-between text-[11px] text-neutral-500">
+                      <span>Found {comboboxFilteredItems.length} matching SKU(s)</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSkuDropdownOpen(false);
+                          setModalSearch(skuSearchQuery);
+                          setIsCatalogModalOpen(true);
+                        }}
+                        className="text-neutral-900 dark:text-white font-bold hover:underline cursor-pointer"
+                      >
+                        Open Catalog Grid &rarr;
+                      </button>
+                    </div>
+
+                    {comboboxFilteredItems.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-neutral-500 space-y-2">
+                        <Package className="w-6 h-6 mx-auto text-neutral-400" />
+                        <div>No SKUs found matching &ldquo;{skuSearchQuery}&rdquo;</div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSkuDropdownOpen(false);
+                            setIsCatalogModalOpen(true);
+                          }}
+                          className="text-xs font-bold text-neutral-900 dark:text-white underline cursor-pointer"
+                        >
+                          Browse complete catalog with advanced filters
+                        </button>
+                      </div>
+                    ) : (
+                      comboboxFilteredItems.map(item => {
+                        const isCurrent = item.masterSku === selectedSku;
+                        const balances = storeBalances[item.masterSku] || {};
+                        const totalAvail = Object.values(balances).reduce((acc, b) => acc + (b.availableStock ?? 0), 0);
+
+                        return (
+                          <div
+                            key={item.id}
+                            onClick={() => handleSelectSku(item.masterSku)}
+                            className={`p-3 flex items-center justify-between gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/60 cursor-pointer transition-colors ${
+                              isCurrent ? 'bg-neutral-100/70 dark:bg-neutral-800/80' : ''
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 overflow-hidden shrink-0 flex items-center justify-center">
+                                {item.imageUrl ? (
+                                  <img
+                                    src={item.imageUrl}
+                                    alt={item.productName}
+                                    className="w-full h-full object-cover"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                ) : (
+                                  <Package className="w-5 h-5 text-neutral-400" />
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-bold text-xs text-neutral-900 dark:text-white">
+                                    {item.masterSku}
+                                  </span>
+                                  {isCurrent && (
+                                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-neutral-900 text-white dark:bg-white dark:text-neutral-900">
+                                      Active
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-neutral-700 dark:text-neutral-300 truncate max-w-md">
+                                  {item.productName}
+                                </div>
+                                {item.variantName && (
+                                  <div className="text-[11px] text-neutral-400 truncate">
+                                    Variant: {item.variantName}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              <div className="text-xs font-mono font-bold text-neutral-900 dark:text-white">
+                                Total Avail: {totalAvail}
+                              </div>
+                              <div className="text-[10px] text-neutral-400">
+                                Physical: {item.totalPhysicalStock ?? 0}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 )}
               </div>
 
-              {/* Operator & Reason */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Active Selected Product Card with Store Stock Distribution */}
+              {selectedItem && (
+                <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700/80 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-14 h-14 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 overflow-hidden shrink-0 flex items-center justify-center shadow-xs">
+                        {selectedItem.imageUrl ? (
+                          <img
+                            src={selectedItem.imageUrl}
+                            alt={selectedItem.productName}
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <Package className="w-7 h-7 text-neutral-400" />
+                        )}
+                      </div>
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-sm text-neutral-900 dark:text-white">
+                            {selectedItem.masterSku}
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-200 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200">
+                            Selected SKU
+                          </span>
+                        </div>
+                        <h4 className="text-xs font-semibold text-neutral-900 dark:text-white">
+                          {selectedItem.productName}
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-neutral-500">
+                          {selectedItem.variantName && <span>Variant: <strong>{selectedItem.variantName}</strong></span>}
+                          {selectedItem.barcode && <span>• Barcode: <strong className="font-mono">{selectedItem.barcode}</strong></span>}
+                          {selectedItem.warehouseLocation && <span>• Bin: <strong className="font-mono">{selectedItem.warehouseLocation}</strong></span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-start sm:self-center">
+                      <button
+                        type="button"
+                        onClick={() => setIsCatalogModalOpen(true)}
+                        className="px-3 py-1.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 text-xs font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+                      >
+                        Change Product
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Stock Distribution across all connected stores */}
+                  <div className="border-t border-neutral-200/80 dark:border-neutral-700/60 pt-3">
+                    <div className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
+                      Available Stock Across Connected Stores:
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                      {safeStores.filter(s => !s.isComingSoon).map(st => {
+                        const bal = storeBalances[selectedItem.masterSku]?.[st.id];
+                        const avail = bal?.availableStock ?? 0;
+                        const phys = bal?.physicalStock ?? 0;
+                        const isSource = st.id === sourceStoreId;
+                        const isDest = st.id === destinationStoreId;
+
+                        return (
+                          <div
+                            key={st.id}
+                            onClick={() => {
+                              if (avail > 0 && !isSource) {
+                                setSourceStoreId(st.id);
+                              }
+                            }}
+                            className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
+                              isSource
+                                ? 'bg-white dark:bg-neutral-900 border-neutral-900 dark:border-white shadow-xs ring-1 ring-neutral-900 dark:ring-white'
+                                : isDest
+                                ? 'bg-white/70 dark:bg-neutral-900/70 border-neutral-400 dark:border-neutral-600'
+                                : 'bg-white/50 dark:bg-neutral-900/40 border-neutral-200 dark:border-neutral-700 hover:border-neutral-400'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <div className="flex items-center gap-1.5 truncate">
+                                <MarketplaceLogo platform={st.platform as any} size="xs" />
+                                <span className="font-semibold text-neutral-900 dark:text-white truncate">
+                                  {st.nickname || st.name}
+                                </span>
+                              </div>
+                              {isSource && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-neutral-900 text-white dark:bg-white dark:text-neutral-900">
+                                  Source
+                                </span>
+                              )}
+                              {isDest && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200">
+                                  Dest
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-baseline justify-between pt-0.5">
+                              <span className="text-[10px] text-neutral-400">Available</span>
+                              <span className={`font-mono text-xs font-bold ${avail > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-400'}`}>
+                                {avail} Units
+                              </span>
+                            </div>
+                            <div className="flex items-baseline justify-between text-[10px] text-neutral-400">
+                              <span>Physical</span>
+                              <span className="font-mono">{phys}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ================= SECTION 2: TRANSFER ROUTING & QUANTITY CONFIGURATION (100% Width) ================= */}
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-neutral-900 dark:text-white">
+                2. Configure Transfer Route & Quantity (设置调配路径与数量)
+              </label>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+                {/* 1. Source Store Card (From) */}
+                <div className="lg:col-span-5 p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-neutral-900 dark:text-white flex items-center gap-1.5">
+                      <MarketplaceLogo platform={sourceStore.platform as any} size="xs" />
+                      <span>From Store (调出店铺 - Source) *</span>
+                    </label>
+                    <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white">
+                      Avail: {sourceAvailable}
+                    </span>
+                  </div>
+
+                  <select
+                    value={sourceStoreId}
+                    onChange={e => {
+                      setSourceStoreId(e.target.value);
+                      setQuantityInput('1');
+                    }}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white font-medium cursor-pointer"
+                  >
+                    {safeStores.filter(s => !s.isComingSoon).map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.nickname || s.name} ({s.platformDisplayName})
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
+                    <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
+                      <span className="text-[10px] text-neutral-400 block">Physical</span>
+                      <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200">
+                        {sourceBalance?.physicalStock ?? 0}
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
+                      <span className="text-[10px] text-neutral-400 block">Reserved</span>
+                      <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
+                        {sourceBalance?.reservedStock ?? 0}
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
+                      <span className="text-[10px] text-neutral-400 block">Available</span>
+                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        {sourceAvailable}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Transfer Arrow & Quantity Input */}
+                <div className="lg:col-span-2 flex flex-col justify-center items-center p-3 rounded-2xl bg-neutral-100/70 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-700/80 space-y-3">
+                  <div className="w-8 h-8 rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 flex items-center justify-center text-neutral-600 dark:text-neutral-300 shadow-xs">
+                    <ArrowRight className="w-4 h-4 hidden lg:block" />
+                    <ArrowRightLeft className="w-4 h-4 lg:hidden" />
+                  </div>
+
+                  <div className="w-full space-y-1 text-center">
+                    <label className="text-[11px] font-bold text-neutral-700 dark:text-neutral-300 block">
+                      Transfer Units
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={sourceAvailable}
+                      step="1"
+                      value={quantityInput}
+                      onChange={e => setQuantityInput(e.target.value)}
+                      className={`w-full px-2 py-2 text-center text-base font-mono font-bold rounded-xl border ${
+                        !isValidQty && !isSameStore
+                          ? 'border-red-400 bg-red-50/30 text-red-700 dark:text-red-300'
+                          : 'border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Quick Preset Buttons */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      disabled={sourceAvailable < 1}
+                      onClick={() => setQuantityInput('1')}
+                      className="px-2 py-0.5 rounded-md bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[10px] font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 cursor-pointer disabled:opacity-40"
+                    >
+                      1
+                    </button>
+                    <button
+                      type="button"
+                      disabled={sourceAvailable < 5}
+                      onClick={() => setQuantityInput(String(Math.min(5, sourceAvailable)))}
+                      className="px-2 py-0.5 rounded-md bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[10px] font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 cursor-pointer disabled:opacity-40"
+                    >
+                      5
+                    </button>
+                    <button
+                      type="button"
+                      disabled={sourceAvailable < 10}
+                      onClick={() => setQuantityInput(String(Math.min(10, sourceAvailable)))}
+                      className="px-2 py-0.5 rounded-md bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[10px] font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 cursor-pointer disabled:opacity-40"
+                    >
+                      10
+                    </button>
+                    <button
+                      type="button"
+                      disabled={sourceAvailable <= 0}
+                      onClick={() => setQuantityInput(String(sourceAvailable))}
+                      className="px-2 py-0.5 rounded-md bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[10px] font-bold text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-700 cursor-pointer disabled:opacity-40"
+                    >
+                      Max
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Destination Store Card (To) */}
+                <div className="lg:col-span-5 p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-neutral-900 dark:text-white flex items-center gap-1.5">
+                      <MarketplaceLogo platform={destStore.platform as any} size="xs" />
+                      <span>To Store (调入店铺 - Destination) *</span>
+                    </label>
+                    <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white">
+                      Avail: {destAvailable}
+                    </span>
+                  </div>
+
+                  <select
+                    value={destinationStoreId}
+                    onChange={e => setDestinationStoreId(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white font-medium cursor-pointer"
+                  >
+                    {safeStores.filter(s => !s.isComingSoon).map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.nickname || s.name} ({s.platformDisplayName})
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
+                    <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
+                      <span className="text-[10px] text-neutral-400 block">Physical</span>
+                      <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200">
+                        {destBalance?.physicalStock ?? 0}
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
+                      <span className="text-[10px] text-neutral-400 block">Reserved</span>
+                      <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
+                        {destBalance?.reservedStock ?? 0}
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
+                      <span className="text-[10px] text-neutral-400 block">Available</span>
+                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        {destAvailable}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Validation Warnings */}
+              {isSameStore && (
+                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 flex items-center gap-2 text-xs text-red-700 dark:text-red-300 font-semibold">
+                  <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+                  <span>Source and Destination stores cannot be identical. Please select different accounts.</span>
+                </div>
+              )}
+
+              {sourceAvailable <= 0 && !isSameStore && (
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300 font-semibold">
+                  <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>The selected source store ({sourceStore.name}) has 0 available units. Please choose another source store or replenish inventory.</span>
+                </div>
+              )}
+
+              {numericQty > sourceAvailable && (
+                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 flex items-center gap-2 text-xs text-red-700 dark:text-red-300 font-semibold">
+                  <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+                  <span>Requested transfer ({numericQty} units) exceeds available stock in {sourceStore.name} ({sourceAvailable} units). Units reserved for customer orders cannot be moved.</span>
+                </div>
+              )}
+            </div>
+
+            {/* ================= SECTION 3: OPERATOR & REASON METADATA ================= */}
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-neutral-900 dark:text-white">
+                3. Audit Metadata & Operator Sign-off (操作员与原因)
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
-                    Operator *
+                  <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    Operator / Admin *
                   </label>
                   <input
                     type="text"
                     value={operator}
                     onChange={e => setOperator(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white font-medium"
                   />
                 </div>
+
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
+                  <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                     Transfer Reason *
                   </label>
                   <select
@@ -365,125 +841,44 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                     <option value="Channel Quota Adjustment">Channel Quota Adjustment</option>
                   </select>
                 </div>
-              </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                  Notes (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  placeholder="e.g. Flash sale stock buffer..."
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white"
-                />
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={!isValidQty || isSameStore || sourceAvailable <= 0}
-                  className="w-full py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-950 border border-neutral-700 dark:border-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <ArrowRightLeft className="w-4 h-4" />
-                  <span>Execute Store Stock Transfer ({isValidQty ? numericQty : 0} Units)</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        {/* Right Column: Live Before & After Simulation + Conservation Checker */}
-        <div className="lg:col-span-6 space-y-5">
-          <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                <span>Real-time Balance Simulation & Conservation</span>
-              </h4>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                isConserved ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-red-100 text-red-800'
-              }`}>
-                {isConserved ? 'Total Conserved' : 'Deficit Mismatch'}
-              </span>
-            </div>
-
-            {/* Source Store Simulation Card */}
-            <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <MarketplaceLogo platform={sourceStore.platform as any} size="xs" />
-                  <span className="font-bold text-neutral-800 dark:text-neutral-200">{sourceStore.nickname || sourceStore.name}</span>
-                </div>
-                <span className="text-[11px] font-bold text-red-600 dark:text-red-400">
-                  -{isValidQty ? numericQty : 0} Units
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
-                <div className="p-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
-                  <span className="text-[10px] text-neutral-400 block">Physical</span>
-                  <span className="font-mono font-semibold text-neutral-700 dark:text-neutral-300">
-                    {sourceBalance?.physicalStock ?? 0} &rarr; <strong>{sourceAfterPhysical}</strong>
-                  </span>
-                </div>
-                <div className="p-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
-                  <span className="text-[10px] text-neutral-400 block">Reserved</span>
-                  <span className="font-mono font-semibold text-amber-600">
-                    {sourceBalance?.reservedStock ?? 0} (Locked)
-                  </span>
-                </div>
-                <div className="p-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
-                  <span className="text-[10px] text-neutral-400 block">Available</span>
-                  <span className="font-mono font-bold text-neutral-900 dark:text-white">
-                    {sourceAvailable} &rarr; <strong className="text-neutral-900 dark:text-white">{sourceAfterAvailable}</strong>
-                  </span>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    Notes (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={notes}
+                    onChange={e => setNotes(e.target.value)}
+                    placeholder="e.g. Flash sale stock buffer..."
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white"
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Destination Store Simulation Card */}
-            <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <MarketplaceLogo platform={destStore.platform as any} size="xs" />
-                  <span className="font-bold text-neutral-800 dark:text-neutral-200">{destStore.nickname || destStore.name}</span>
-                </div>
-                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                  +{isValidQty ? numericQty : 0} Units
-                </span>
+            {/* ================= SECTION 4: SUBMIT ACTION BAR ================= */}
+            <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="text-xs text-neutral-500">
+                {isValidQty && !isSameStore ? (
+                  <span>
+                    Moving <strong>{numericQty} unit(s)</strong> of <strong className="font-mono">{selectedItem?.masterSku}</strong> from <strong>{sourceStore.name}</strong> to <strong>{destStore.name}</strong>.
+                  </span>
+                ) : (
+                  <span>Complete product selection and valid quantity to proceed.</span>
+                )}
               </div>
-              <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
-                <div className="p-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
-                  <span className="text-[10px] text-neutral-400 block">Physical</span>
-                  <span className="font-mono font-semibold text-neutral-700 dark:text-neutral-300">
-                    {destBalance?.physicalStock ?? 0} &rarr; <strong>{destAfterPhysical}</strong>
-                  </span>
-                </div>
-                <div className="p-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
-                  <span className="text-[10px] text-neutral-400 block">Reserved</span>
-                  <span className="font-mono font-semibold text-amber-600">
-                    {destBalance?.reservedStock ?? 0} (Locked)
-                  </span>
-                </div>
-                <div className="p-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
-                  <span className="text-[10px] text-neutral-400 block">Available</span>
-                  <span className="font-mono font-bold text-neutral-900 dark:text-white">
-                    {destAvailable} &rarr; <strong className="text-emerald-600 dark:text-emerald-400">{destAfterAvailable}</strong>
-                  </span>
-                </div>
-              </div>
-            </div>
 
-            {/* Total Math Verification */}
-            <div className="p-3 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 text-xs flex items-center justify-between">
-              <span className="text-neutral-700 dark:text-neutral-300 font-medium">Combined Physical Total:</span>
-              <span className="font-mono font-bold text-neutral-900 dark:text-white">
-                {totalBefore} units before &rarr; {totalAfter} units after (Net: 0)
-              </span>
+              <button
+                type="submit"
+                disabled={!isValidQty || isSameStore || sourceAvailable <= 0}
+                className="px-6 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-950 border border-neutral-700 dark:border-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer shrink-0"
+              >
+                <ArrowRightLeft className="w-4 h-4" />
+                <span>Execute Store Stock Transfer ({isValidQty ? numericQty : 0} Units)</span>
+              </button>
             </div>
-          </div>
+          </form>
         </div>
       </div>
 
@@ -573,19 +968,38 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                             <AlertTriangle className="w-3 h-3" />
                             <span>Platform Sync Failed</span>
                           </span>
-                          {record.destinationFailureReason && (
-                            <div className="text-[10px] text-red-500 max-w-xs truncate" title={record.destinationFailureReason}>
-                              {record.destinationFailureReason}
+                          {record.sourceFailureReason && (
+                            <div className="text-[10px] text-red-500 max-w-xs truncate" title={record.sourceFailureReason}>
+                              Source: {record.sourceFailureReason}
                             </div>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => onRetryPlatformSync(record.id, 'destination')}
-                            className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-900 dark:text-white hover:underline cursor-pointer"
-                          >
-                            <RefreshCw className="w-3 h-3" />
-                            <span>Retry Platform Sync Only</span>
-                          </button>
+                          {record.destinationFailureReason && (
+                            <div className="text-[10px] text-red-500 max-w-xs truncate" title={record.destinationFailureReason}>
+                              Destination: {record.destinationFailureReason}
+                            </div>
+                          )}
+                          <div className="flex flex-wrap gap-2">
+                            {record.sourcePlatformSyncStatus === 'failed' && record.id !== 'not-created' && (
+                              <button
+                                type="button"
+                                onClick={() => onRetryPlatformSync(record.id, 'source')}
+                                className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-900 dark:text-white hover:underline cursor-pointer"
+                              >
+                                <RefreshCw className="w-3 h-3" />
+                                <span>Retry Source Only</span>
+                              </button>
+                            )}
+                            {record.destinationPlatformSyncStatus === 'failed' && record.id !== 'not-created' && (
+                              <button
+                                type="button"
+                                onClick={() => onRetryPlatformSync(record.id, 'destination')}
+                                className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-900 dark:text-white hover:underline cursor-pointer"
+                              >
+                                <RefreshCw className="w-3 h-3" />
+                                <span>Retry Destination Only</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
@@ -605,6 +1019,251 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
           </table>
         </div>
       </div>
+
+      {/* ================= MODAL: DEDICATED PRODUCT CATALOG PICKER (Handles 1000+ Products & 5000+ SKUs) ================= */}
+      {isCatalogModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-neutral-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl border border-neutral-200 dark:border-neutral-800 w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="p-5 sm:p-6 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between shrink-0">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Package className="w-5 h-5 text-neutral-500" />
+                  <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+                    Select Product / Master SKU from Catalog
+                  </h3>
+                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
+                    {safeInventory.length.toLocaleString()} Indexed
+                  </span>
+                </div>
+                <p className="text-xs text-neutral-500">
+                  Search across 1,000+ products and 5,000+ SKUs by code, product title, barcode, or filter by category and stock availability.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCatalogModalOpen(false)}
+                className="p-1.5 rounded-xl text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Filter Bar */}
+            <div className="p-4 sm:p-5 bg-neutral-50/70 dark:bg-neutral-850/50 border-b border-neutral-100 dark:border-neutral-800 grid grid-cols-1 sm:grid-cols-12 gap-3 shrink-0">
+              {/* Search Bar */}
+              <div className="sm:col-span-6 relative">
+                <Search className="w-4 h-4 absolute left-3 top-2.5 text-neutral-400" />
+                <input
+                  type="text"
+                  placeholder="Filter by SKU, Product Name, Variant, Barcode..."
+                  value={modalSearch}
+                  onChange={e => {
+                    setModalSearch(e.target.value);
+                    setModalPage(1);
+                  }}
+                  className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-hidden focus:ring-2 focus:ring-neutral-400"
+                />
+                {modalSearch && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalSearch('');
+                      setModalPage(1);
+                    }}
+                    className="absolute right-2.5 top-2.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Category Filter */}
+              <div className="sm:col-span-3">
+                <select
+                  value={modalCategoryFilter}
+                  onChange={e => {
+                    setModalCategoryFilter(e.target.value);
+                    setModalPage(1);
+                  }}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white cursor-pointer"
+                >
+                  <option value="all">All Categories ({availableCategories.length})</option>
+                  {availableCategories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Stock Filter */}
+              <div className="sm:col-span-3">
+                <select
+                  value={modalStockFilter}
+                  onChange={e => {
+                    setModalStockFilter(e.target.value as any);
+                    setModalPage(1);
+                  }}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white cursor-pointer"
+                >
+                  <option value="all">All Stock Statuses</option>
+                  <option value="in_stock">In Stock (Avail &gt; 0)</option>
+                  <option value="has_source_stock">Has Stock in Source ({sourceStore.name})</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Modal Catalog Table / Items */}
+            <div className="overflow-y-auto flex-1 divide-y divide-neutral-100 dark:divide-neutral-800">
+              {paginatedModalItems.length === 0 ? (
+                <div className="p-12 text-center text-xs text-neutral-500 space-y-3">
+                  <Package className="w-10 h-10 mx-auto text-neutral-300 dark:text-neutral-600" />
+                  <div className="font-semibold text-neutral-700 dark:text-neutral-300">
+                    No matching products found
+                  </div>
+                  <p className="max-w-md mx-auto text-[11px] text-neutral-400">
+                    Try adjusting your search terms or filters to locate the product among the catalog.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalSearch('');
+                      setModalCategoryFilter('all');
+                      setModalStockFilter('all');
+                      setModalPage(1);
+                    }}
+                    className="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-xs font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
+                  >
+                    Reset All Filters
+                  </button>
+                </div>
+              ) : (
+                paginatedModalItems.map(item => {
+                  const isCurrent = item.masterSku === selectedSku;
+                  const balances = storeBalances[item.masterSku] || {};
+                  const sourceAvail = balances[sourceStoreId]?.availableStock ?? 0;
+                  const totalAvail = Object.values(balances).reduce((acc, b) => acc + (b.availableStock ?? 0), 0);
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors ${
+                        isCurrent ? 'bg-neutral-100/70 dark:bg-neutral-800/80' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-12 h-12 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 overflow-hidden shrink-0 flex items-center justify-center">
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.productName}
+                              className="w-full h-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <Package className="w-6 h-6 text-neutral-400" />
+                          )}
+                        </div>
+
+                        <div className="min-w-0 space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-xs text-neutral-900 dark:text-white">
+                              {item.masterSku}
+                            </span>
+                            {item.barcode && (
+                              <span className="font-mono text-[10px] text-neutral-400 hidden sm:inline">
+                                ({item.barcode})
+                              </span>
+                            )}
+                            {isCurrent && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-neutral-900 text-white dark:bg-white dark:text-neutral-900">
+                                Current
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate max-w-lg">
+                            {item.productName}
+                          </div>
+                          <div className="flex items-center gap-2 text-[11px] text-neutral-400">
+                            {item.variantName && <span>Variant: {item.variantName}</span>}
+                            {item.warehouseLocation && <span>• Bin: {item.warehouseLocation}</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Store stock breakdown & Select Button */}
+                      <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 pl-15 sm:pl-0">
+                        <div className="text-right space-y-0.5">
+                          <div className="text-xs font-mono font-bold text-neutral-900 dark:text-white">
+                            Total Avail: {totalAvail}
+                          </div>
+                          <div className="text-[11px] text-neutral-500">
+                            In {sourceStore.nickname || sourceStore.name}:{' '}
+                            <strong className={sourceAvail > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-400'}>
+                              {sourceAvail} units
+                            </strong>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSelectSku(item.masterSku)}
+                          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                            isCurrent
+                              ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200'
+                              : 'bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-950 shadow-xs'
+                          }`}
+                        >
+                          {isCurrent ? <Check className="w-3.5 h-3.5" /> : null}
+                          <span>{isCurrent ? 'Selected' : 'Select SKU'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Modal Pagination Footer */}
+            <div className="p-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs shrink-0 bg-white dark:bg-neutral-900">
+              <div className="text-neutral-500">
+                Showing{' '}
+                <strong className="text-neutral-900 dark:text-white">
+                  {modalFilteredItems.length > 0 ? (modalPage - 1) * ITEMS_PER_PAGE + 1 : 0}
+                </strong>
+                -
+                <strong className="text-neutral-900 dark:text-white">
+                  {Math.min(modalPage * ITEMS_PER_PAGE, modalFilteredItems.length)}
+                </strong>{' '}
+                of <strong className="text-neutral-900 dark:text-white">{modalFilteredItems.length.toLocaleString()}</strong> results
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={modalPage <= 1}
+                  onClick={() => setModalPage(p => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer flex items-center gap-1"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Previous</span>
+                </button>
+                <span className="font-mono text-xs px-2 text-neutral-500">
+                  {modalPage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={modalPage >= totalPages}
+                  onClick={() => setModalPage(p => Math.min(totalPages, p + 1))}
+                  className="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer flex items-center gap-1"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Multi-Stage Execution Result Modal */}
       {activeTransferExecution.isOpen && (

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Services\Inventory\StoreManagement\AccountResolver;
+use App\Services\Inventory\StoreManagement\OverviewReader;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\StoreInventoryFixture;
@@ -91,5 +92,28 @@ class StoreInventoryReadTest extends TestCase
         $detail->assertJsonPath('operation_id', $receipt['operation_id'])
             ->assertJsonMissingPath('provider_receipt.access_token')
             ->assertJsonMissingPath('payload');
+    }
+
+    public function test_overview_loads_sync_states_in_one_query_for_large_catalogs(): void
+    {
+        $fixture = new StoreInventoryFixture;
+        $resolver = app(AccountResolver::class);
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool']);
+
+        foreach (range(1, 12) as $_) {
+            $sku = $fixture->sku();
+            $resolver->balance($sku['variant']->id, 'website');
+        }
+
+        $syncQueries = 0;
+        DB::listen(function ($query) use (&$syncQueries): void {
+            if (str_contains(strtolower($query->sql), 'inventory_store_sync_tasks')) {
+                $syncQueries++;
+            }
+        });
+
+        app(OverviewReader::class)->read();
+
+        $this->assertSame(1, $syncQueries, 'Overview must batch-load sync states instead of querying once per balance.');
     }
 }

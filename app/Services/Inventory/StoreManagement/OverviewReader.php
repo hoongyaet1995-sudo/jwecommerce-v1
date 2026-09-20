@@ -26,7 +26,15 @@ final class OverviewReader
         if (! empty($filters['sku'])) {
             $query->where('v.sku', 'like', '%'.$filters['sku'].'%');
         }
-        $rows = $query->orderBy('b.id')->get()->map(function (object $row): array {
+        $balanceRows = $query->orderBy('b.id')->get();
+        $syncTasks = DB::table('inventory_store_sync_tasks')
+            ->whereIn('product_variant_id', $balanceRows->pluck('product_variant_id')->unique()->values())
+            ->whereNotNull('marketplace_store_id')
+            ->orderByDesc('created_at')
+            ->get(['id', 'product_variant_id', 'marketplace_store_id', 'status', 'target_quantity', 'attempts'])
+            ->groupBy('product_variant_id');
+
+        $rows = $balanceRows->map(function (object $row) use ($syncTasks): array {
             $physical = $row->physical_stock === null ? null : (int) $row->physical_stock;
             $reserved = $row->reserved_stock === null ? null : (int) $row->reserved_stock;
             $safety = $row->safety_stock === null ? null : (int) $row->safety_stock;
@@ -50,7 +58,11 @@ final class OverviewReader
                 'counted' => $row->counted_at !== null,
                 'version' => (int) $row->version,
                 'provider_observation' => null,
-                'external_sync' => $this->syncState((int) $row->product_variant_id, $row->marketplace_store_id === null ? null : (int) $row->marketplace_store_id, $row->kind === 'shared'),
+                'external_sync' => $this->syncState(
+                    $syncTasks->get((int) $row->product_variant_id, collect()),
+                    $row->marketplace_store_id === null ? null : (int) $row->marketplace_store_id,
+                    $row->kind === 'shared'
+                ),
             ];
         })->all();
 
@@ -122,13 +134,12 @@ final class OverviewReader
             'last_page' => max(1, (int) ceil($total / $perPage))]];
     }
 
-    private function syncState(int $variantId, ?int $storeId, bool $shared): ?array
+    /** @param \Illuminate\Support\Collection<int,object> $tasks */
+    private function syncState(\Illuminate\Support\Collection $tasks, ?int $storeId, bool $shared): ?array
     {
-        $query = DB::table('inventory_store_sync_tasks')->where('product_variant_id', $variantId);
         if (! $shared) {
-            $query->where('marketplace_store_id', $storeId);
+            $tasks = $tasks->where('marketplace_store_id', $storeId);
         }
-        $tasks = $query->whereNotNull('marketplace_store_id')->orderByDesc('created_at')->get(['id', 'marketplace_store_id', 'status', 'target_quantity', 'attempts']);
         if ($tasks->isEmpty()) {
             return null;
         }
