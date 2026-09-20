@@ -50,3 +50,22 @@ it('uses the JW option order for all SKU-level Lazada fields',()=>{
 
  expect(fields.map(field=>field.sku)).toEqual(['BLACK-S','BLACK-M','BLUE-L']);
 });
+
+it('recognizes Lazada size chart metadata and never serializes it as a raw category value',()=>{
+ const fields=lazadaPublishingFields([{name:'size_chart',label:'Size Chart',attribute_type:'normal',input_type:'numeric',is_mandatory:1}],source,{});
+ expect(fields[0]).toMatchObject({sizeChart:true,required:true,supported:true});
+ expect(lazadaPublishingValues(fields).normal).not.toHaveProperty('size_chart');
+});
+
+it('recognizes date and image metadata without treating image values as user-entered URLs',()=>{
+ const fields=lazadaPublishingFields([
+  {name:'manufacture_date',label:'Manufacture Date',attribute_type:'normal',input_type:'date',is_mandatory:1},
+  {name:'color_thumbnail',label:'Color Thumbnail',attribute_type:'sku',input_type:'img',is_mandatory:1},
+ ],source,{'normal:manufacture_date':'2026-09-20'});
+
+ expect(fields.find(field=>field.name==='manufacture_date')).toMatchObject({supported:true,complete:true});
+ expect(fields.filter(field=>field.name==='color_thumbnail')).toEqual([
+  expect.objectContaining({sku:'BLUE',supported:true,complete:false}),
+  expect.objectContaining({sku:'RED',supported:true,complete:false}),
+ ]);
+});
