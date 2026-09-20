@@ -241,7 +241,17 @@ final class LazadaClient
             return $payload['result']['module'];
         }
         if(!$response->successful()||!is_array($payload)||!in_array($payload['code']??null,['0',0],true)
-            ||!is_array($payload['data']??null))throw new RuntimeException('Lazada read request failed or returned an incomplete response at '.$path.'.');
+            ||!is_array($payload['data']??null)) {
+            $requestId=is_array($payload)?($payload['request_id']??null):null;
+            if (!is_string($requestId) || !preg_match('/\A[A-Za-z0-9_-]{1,100}\z/D',$requestId)) $requestId=null;
+            \Illuminate\Support\Facades\Log::warning('Lazada read request was not confirmed',[
+                'path'=>$path,
+                'http_status'=>$response->status(),
+                'provider_code'=>is_array($payload)?($payload['code']??null):null,
+                'request_id'=>$requestId,
+            ]);
+            throw new RuntimeException('Lazada read request failed or returned an incomplete response at '.$path.'.');
+        }
         return $payload['data'];
     }
 
