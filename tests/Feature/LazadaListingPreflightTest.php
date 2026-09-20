@@ -6,6 +6,34 @@ use Tests\TestCase;
 
 class LazadaListingPreflightTest extends TestCase
 {
+    public function test_required_size_chart_is_satisfied_by_the_reviewed_provider_image(): void
+    {
+        config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture']);
+        Http::preventStrayRequests();
+        Http::fake(function($request) {
+            return str_contains($request->url(),'/category/tree/get')
+                ? Http::response(['code'=>'0','data'=>[['category_id'=>2,'name'=>'Leaf','leaf'=>true]]])
+                : Http::response(['code'=>'0','data'=>[
+                    ['name'=>'size_chart','label'=>'Size Chart','attribute_type'=>'normal','is_mandatory'=>1,'input_type'=>'numeric'],
+                ]]);
+        });
+
+        $payload=[
+            'jw_size_chart'=>'https://my-live-02.slatic.net/p/size-chart.png',
+            'Request'=>['Product'=>[
+                'PrimaryCategory'=>'2',
+                'Attributes'=>[],
+                'Skus'=>['Sku'=>[['quantity'=>'0']]],
+            ]],
+        ];
+
+        app(LazadaListingPreflight::class)->validate('token',$payload);
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        unset($payload['jw_size_chart']);
+        app(LazadaListingPreflight::class)->validate('token',$payload);
+    }
+
     public function test_leaf_and_required_fields_are_checked_against_current_provider_schema(): void
     {
         config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture']);

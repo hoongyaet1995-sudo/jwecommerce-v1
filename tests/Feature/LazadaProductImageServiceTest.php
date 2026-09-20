@@ -70,7 +70,11 @@ class LazadaProductImageServiceTest extends TestCase
         ]);
         $source=app(\App\Services\Marketplace\MarketplacePublishingSource::class)->read($product->id);
         $request=['product_id'=>$product->id,'request_key'=>'1285db80-1111-4111-8111-123456789045','source_revision'=>$source['revision'],
-            'payload'=>['Request'=>['Product'=>['PrimaryCategory'=>'1','Attributes'=>[], 'Skus'=>['Sku'=>[['SellerSku'=>'AUTO-IMAGE']]]]]]];
+            'payload'=>[
+                'jw_size_chart_image_id'=>$source['images'][0]['id'],
+                'jw_attribute_image_ids'=>['lazada:variant:AUTO-IMAGE:color_thumbnail'=>$source['images'][0]['id']],
+                'Request'=>['Product'=>['PrimaryCategory'=>'1','Attributes'=>[], 'Skus'=>['Sku'=>[['SellerSku'=>'AUTO-IMAGE']]]]],
+            ]];
         $this->actingAs($actor);
         $id=$this->postJson("/admin/api/marketplace/stores/{$store}/publishing-tasks",$request)->assertOk()->json('id');
         $this->postJson("/admin/api/marketplace/stores/{$store}/publishing-tasks",$request)->assertOk()->assertJsonPath('id',$id);
@@ -78,6 +82,10 @@ class LazadaProductImageServiceTest extends TestCase
         $this->assertDatabaseCount('marketplace_publishing_tasks',1);
         $saved=json_decode(DB::table('marketplace_publishing_tasks')->where('id',$id)->value('payload'),true);
         $this->assertSame(['https://my-live-02.slatic.net/p/automatic.jpg'],$saved['Request']['Product']['Images']['Image']);
+        $this->assertSame('https://my-live-02.slatic.net/p/automatic.jpg',$saved['jw_size_chart']);
+        $this->assertArrayNotHasKey('jw_size_chart_image_id',$saved);
+        $this->assertArrayNotHasKey('jw_attribute_image_ids',$saved);
+        $this->assertSame('https://my-live-02.slatic.net/p/automatic.jpg',$saved['Request']['Product']['Skus']['Sku'][0]['color_thumbnail']);
         $this->assertSame('0',$saved['Request']['Product']['Skus']['Sku'][0]['quantity']);
         $this->assertSame(77,$variant->fresh()->stock);
         Http::assertSentCount(4);

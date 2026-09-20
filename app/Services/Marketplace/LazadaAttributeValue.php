@@ -16,6 +16,13 @@ final class LazadaAttributeValue
             if ((!is_string($value)&&!is_int($value)&&!is_float($value)) || !is_numeric($value) || !is_finite((float)$value)) $reject();
             return;
         }
+        if ($type==='date') {
+            if (!is_string($value) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D',$value)) $reject();
+            $date=\DateTimeImmutable::createFromFormat('!Y-m-d',$value);
+            $errors=\DateTimeImmutable::getLastErrors();
+            if (!$date || ($errors && ($errors['warning_count'] || $errors['error_count'])) || $date->format('Y-m-d')!==$value) $reject();
+            return;
+        }
         if ($type==='img') {
             $images=$name==='__images__'?$value:[$value];
             if (!is_array($images)||!array_is_list($images)||!$images) $reject();
@@ -27,6 +34,10 @@ final class LazadaAttributeValue
         if (!in_array($type,['singleselect','multiselect','enuminput','multienuminput'],true)) $reject();
         $selected=in_array($type,['multiselect','multienuminput'],true)?array_map('trim',explode(',',$value)):[$value];
         if (in_array('',$selected,true)||count(array_unique($selected))!==count($selected)) $reject();
+        if (count($selected)>1) {
+            $max=$attribute['max_value_count']??null;
+            if (!is_int($max) || $max<1 || count($selected)>$max) $reject();
+        }
         if (in_array($type,['enuminput','multienuminput'],true)) return;
         $options=$attribute['options']??null;
         if (!is_array($options)||!array_is_list($options)) $reject();

@@ -12,6 +12,41 @@ class ShopeePublishingVariantsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_attribute_selection_enforces_cardinality_duplicates_units_dates_and_active_dependencies(): void
+    {
+        $multi=['attribute_id'=>10,'mandatory'=>true,'attribute_info'=>['input_type'=>5,'max_value_count'=>2,'input_validation_type'=>2,'format_type'=>1],
+            'attribute_value_list'=>[['value_id'=>1,'name'=>'Mobile'],['value_id'=>2,'name'=>'Laptop']]];
+        $date=['attribute_id'=>11,'mandatory'=>true,'attribute_info'=>['input_type'=>3,'max_value_count'=>1,'input_validation_type'=>4,'date_format_type'=>0,'format_type'=>1],
+            'attribute_value_list'=>[]];
+        $capacity=['attribute_id'=>12,'mandatory'=>true,'attribute_info'=>['input_type'=>3,'max_value_count'=>1,'input_validation_type'=>1,'format_type'=>2,'attribute_unit_list'=>['mAh']],
+            'attribute_value_list'=>[]];
+        $this->assertCount(2,\App\Services\Marketplace\ShopeeAttributeSelection::normalize($multi,[['value_id'=>1],['value_id'=>2]]));
+        $this->assertSame('20/09/2026',\App\Services\Marketplace\ShopeeAttributeSelection::normalize($date,[['value_id'=>0,'original_value_name'=>'20/09/2026','value_unit'=>'']])[0]['original_value_name']);
+        $this->assertSame('mAh',\App\Services\Marketplace\ShopeeAttributeSelection::normalize($capacity,[['value_id'=>0,'original_value_name'=>'800','value_unit'=>'mAh']])[0]['value_unit']);
+
+        foreach ([
+            [$multi,[['value_id'=>1],['value_id'=>1]]],
+            [$date,[['value_id'=>0,'original_value_name'=>'31/02/2026','value_unit'=>'']]],
+            [$capacity,[['value_id'=>0,'original_value_name'=>'8.5','value_unit'=>'kg']]],
+        ] as [$definition,$invalid]) {
+            try {
+                \App\Services\Marketplace\ShopeeAttributeSelection::normalize($definition,$invalid);
+                $this->fail('Invalid Shopee attribute selection was accepted.');
+            } catch (\DomainException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+        $child=['attribute_id'=>20,'mandatory'=>false,'attribute_info'=>['input_type'=>1,'input_validation_type'=>2,'format_type'=>1],
+            'attribute_value_list'=>[['value_id'=>200,'name'=>'Child']]];
+        $parent=['attribute_id'=>19,'mandatory'=>true,'attribute_info'=>['input_type'=>1,'input_validation_type'=>2,'format_type'=>1],
+            'attribute_value_list'=>[['value_id'=>190,'name'=>'Other branch'],['value_id'=>191,'name'=>'Active','child_attribute_list'=>[$child]]]];
+        $this->expectException(\DomainException::class);
+        \App\Services\Marketplace\ShopeeListingAttributes::normalize([$parent],[
+            ['attribute_id'=>19,'attribute_value_list'=>[['value_id'=>190]]],
+            ['attribute_id'=>20,'attribute_value_list'=>[['value_id'=>200]]],
+        ]);
+    }
+
     public static function results(): array { return [[true,true], [true,false], [false,false]]; }
 
     #[\PHPUnit\Framework\Attributes\DataProvider('results')]
@@ -27,6 +62,9 @@ class ShopeePublishingVariantsTest extends TestCase
         $blue=$product->variants()->create(['title'=>'Blue','sku'=>'BLUE','price'=>1200,'stock'=>21,'enabled'=>true]);
         $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee','shop_name'=>'Test',
             'external_shop_id'=>'2001','region'=>'MY','environment'=>'sandbox','status'=>'connected']);
+        DB::table('marketplace_store_capabilities')->insert(['store_id'=>$store,'catalog_read'=>true,
+            'product_publish'=>true,'order_receive'=>false,'inventory_update'=>false,'fulfillment_write'=>false,
+            'created_at'=>now(),'updated_at'=>now()]);
         MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'123','access_token'=>'fixture-token','access_expires_at'=>now()->addHour()]);
         $models=[['tier_index'=>[0],'model_sku'=>'RED','original_price'=>10,'seller_stock'=>[['stock'=>0]]],
             ['tier_index'=>[1],'model_sku'=>'BLUE','original_price'=>12,'seller_stock'=>[['stock'=>0]]]];

@@ -32,6 +32,19 @@ final class LazadaListingPreflight
             }
             $seen[$scope.':'.$name]=true;
             $required=(bool)$attribute['is_mandatory'] || ($scope==='sku' && count($skus)>1 && ($attribute['is_sale_prop']??0)==1);
+            $label=$attribute['label'] ?? '';
+            $isSizeChart=$scope==='normal' && (
+                preg_match('/size[ _-]*chart/i',$name)===1
+                || (is_string($label) && preg_match('/size[ _-]*chart/i',$label)===1)
+            );
+            if ($isSizeChart && array_key_exists('jw_size_chart',$payload)) {
+                $sizeChart=$payload['jw_size_chart'];
+                if (!is_string($sizeChart) || filter_var($sizeChart,FILTER_VALIDATE_URL)===false
+                    || !str_ends_with(strtolower((string)parse_url($sizeChart,PHP_URL_HOST)),'.slatic.net')) {
+                    throw ValidationException::withMessages(['size_chart'=>'Select a valid Lazada size chart image.']);
+                }
+                continue;
+            }
             $targets=$scope==='sku'?$skus:[$product['Attributes'] ?? []];
             foreach ($targets as $index=>$target) {
                 $value=$name==='__images__'?($target['Images']['Image'] ?? null):($target[$name] ?? null);
