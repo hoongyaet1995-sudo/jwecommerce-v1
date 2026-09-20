@@ -50,11 +50,18 @@ C:\xampp\php\php.exe artisan test tests/Feature/MarketplaceAttributeImageUploadT
 
 Result: **37 tests, 221 assertions passed**.
 
-The boundary tests cover MIME/size/image-integrity validation, owned media, numeric/date/enum/multi cardinality, required fields, SKU identity, schema drift, stale product revision, Lazada current-schema reload, Size Chart binding, Shopee provider preflight, idempotency, uncertain results, and provider requests without unresolved top-level `jw_*` fields.
+The boundary tests cover MIME/size/image-integrity validation, owned media, numeric/date/enum/multi cardinality, required fields, SKU identity, schema drift, stale product revision, Lazada and Shopee current-schema reload before task persistence, label-only Size Chart binding, idempotency, uncertain results, and provider requests without unresolved recursive `jw_*` fields.
+
+Post-review regression verification passed **8 frontend files / 28 tests** and **8 backend files / 51 tests / 290 assertions**. It specifically proves that a new attribute image returns the updated source revision, forged Shopee attribute values cannot be saved as a task, nested internal fields cannot reach a provider request, and a Lazada field named `chart_asset` with label `Size Chart` uses the post-create Size Chart endpoint.
+
+## Fulfilment boundary
+
+Marketplace shipping remains provider-owned. Shopee listing payloads use Shopee `logistic_info` validated against the connected store's current channel list, and Lazada listing payloads use Lazada warehouse/logistics capabilities. The Marketplace publishing controller and services have no EasyParcel dependency. EasyParcel remains isolated to JW Ecommerce's own-store shipping controllers and services.
 
 ### Build and broader baseline
 
-- `npm run build`: **passed**, 3,009 modules transformed. Vite reported the existing large-chunk warning.
+- Admin `npm run build`: **passed**, 3,009 modules transformed. Vite reported the existing large-chunk warning.
+- Storefront `npm run build`: **passed**, 1,832 modules transformed; the installed Node 20.17 runtime produced Vite's existing Node 20.19+ advisory.
 - `npm test -- --run`: **141 files / 583 tests passed; 3 unrelated existing failures** in `ImportProductReviewModal`, `MarketplaceMappingPage`, and the source component inventory count.
 - `npm run lint`: still blocked by the repository's existing cross-module TypeScript baseline in AI Auto Reply, Shipping, old Marketplace previews, CMS motion, and `OperationalMapping`. No new canonical attribute-control file appeared in the diagnostics.
 

@@ -2,9 +2,10 @@ import React from 'react';
 import type {PublishingSource} from '../integration/marketplacePublishing';
 import {MarketplaceImageAttribute} from './MarketplaceImageAttribute';
 import type {MarketplaceAttributeValue} from './publishingAttributes/types';
+import type {MarketplaceAttributeImageReceipt} from '../integration/marketplaceAttributeImages';
 
-export function PublishingSizeChart({platform,required,source,selectedImageId,onChange}:{
- platform:'shopee'|'lazada';required:boolean;source?:PublishingSource;selectedImageId:number|null;onChange:(imageId:number|null)=>void;
+export function PublishingSizeChart({platform,required,source,selectedImageId,onChange,onUploaded}:{
+ platform:'shopee'|'lazada';required:boolean;source?:PublishingSource;selectedImageId:number|null;onChange:(imageId:number|null)=>void;onUploaded?:(receipt:MarketplaceAttributeImageReceipt)=>void;
 }){
  const selected=source?.images.find(image=>image.id===selectedImageId);
  const value:MarketplaceAttributeValue=selectedImageId&&selected
@@ -20,6 +21,7 @@ export function PublishingSizeChart({platform,required,source,selectedImageId,on
    purpose="size-chart"
    platform={platform}
    onChange={next=>onChange(next.kind==='image'?next.imageId:null)}
+   onUploaded={onUploaded}
   />
  </div>;
 }

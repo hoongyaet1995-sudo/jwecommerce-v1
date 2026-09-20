@@ -69,7 +69,9 @@ final class LazadaReviewedAttributes
             $type = self::isSizeChart($attribute) ? 'img' : strtolower((string) ($attribute['input_type'] ?? ''));
             $required = (bool) ($attribute['is_mandatory'] ?? false);
             if ($type === 'img') {
-                $key = "lazada:product:{$name}";
+                $key = self::isSizeChart($attribute)
+                    ? "lazada:size-chart:{$name}"
+                    : "lazada:product:{$name}";
                 $expectedImageKeys[$key] = true;
                 if ($required && !array_key_exists($key, $bindings)) self::reject("Complete required normal field {$name}.");
                 continue;

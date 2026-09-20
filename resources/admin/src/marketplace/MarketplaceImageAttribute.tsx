@@ -14,9 +14,10 @@ export interface MarketplaceImageAttributeProps {
  purpose?:'size-chart';
  platform?:'shopee'|'lazada';
  upload?:(productId:number,file:File)=>Promise<MarketplaceAttributeImageReceipt>;
+ onUploaded?:(receipt:MarketplaceAttributeImageReceipt)=>void;
 }
 
-export function MarketplaceImageAttribute({productId,label,required,images,value,onChange,purpose,platform,upload=uploadMarketplaceAttributeImage}:MarketplaceImageAttributeProps){
+export function MarketplaceImageAttribute({productId,label,required,images,value,onChange,purpose,platform,upload=uploadMarketplaceAttributeImage,onUploaded}:MarketplaceImageAttributeProps){
  const fileInput=useRef<HTMLInputElement>(null);
  const [added,setAdded]=useState<MarketplaceImageCandidate[]>([]);
  const [uploading,setUploading]=useState(false);
@@ -37,6 +38,7 @@ export function MarketplaceImageAttribute({productId,label,required,images,value
   try{
    const receipt=await upload(productId,file);
    setAdded(current=>[...current,{id:receipt.imageId,path:receipt.url,alt:receipt.alt}]);
+   onUploaded?.(receipt);
    onChange({kind:'image',imageId:receipt.imageId,url:receipt.url});
   }catch(reason){setError(reason instanceof Error?reason.message:'Unable to upload image.');}
   finally{setUploading(false);if(fileInput.current)fileInput.current.value='';}

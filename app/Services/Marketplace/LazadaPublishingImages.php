@@ -48,9 +48,12 @@ final class LazadaPublishingImages
             if (!is_string($key)||!is_int($imageId)||!isset($identities[$imageId])) {
                 throw ValidationException::withMessages(['images'=>'A reviewed Lazada image attribute changed.']);
             }
+            if (preg_match('/^lazada:size-chart:([A-Za-z_][A-Za-z0-9_]*)$/D',$key)) {
+                $payload['jw_size_chart']=$identities[$imageId];
+                continue;
+            }
             if (preg_match('/^lazada:product:([A-Za-z_][A-Za-z0-9_]*)$/D',$key,$match)) {
-                if (preg_match('/size_?chart/i',$match[1])) $payload['jw_size_chart']=$identities[$imageId];
-                else $payload['Request']['Product']['Attributes'][$match[1]]=$identities[$imageId];
+                $payload['Request']['Product']['Attributes'][$match[1]]=$identities[$imageId];
                 continue;
             }
             $bound=false;

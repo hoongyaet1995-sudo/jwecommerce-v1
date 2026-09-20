@@ -4,6 +4,7 @@ export interface MarketplaceAttributeImageReceipt {
  imageId:number;
  url:string;
  alt:string;
+ sourceRevision:string;
 }
 
 type Fetcher=(input:RequestInfo|URL,init?:RequestInit)=>Promise<Response>;
@@ -20,6 +21,7 @@ export async function uploadMarketplaceAttributeImage(productId:number,file:File
  });
  if(!response.ok)throw new Error('Unable to upload marketplace attribute image.');
  const receipt=await response.json() as Partial<MarketplaceAttributeImageReceipt>;
- if(!positiveId(receipt.imageId)||typeof receipt.url!=='string'||!receipt.url.trim()||typeof receipt.alt!=='string')throw new Error('Invalid marketplace attribute image response.');
+ if(!positiveId(receipt.imageId)||typeof receipt.url!=='string'||!receipt.url.trim()||typeof receipt.alt!=='string'
+  ||typeof receipt.sourceRevision!=='string'||!/^[a-f0-9]{64}$/.test(receipt.sourceRevision))throw new Error('Invalid marketplace attribute image response.');
  return receipt as MarketplaceAttributeImageReceipt;
 }

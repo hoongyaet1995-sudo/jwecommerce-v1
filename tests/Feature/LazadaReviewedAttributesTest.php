@@ -19,6 +19,7 @@ class LazadaReviewedAttributesTest extends TestCase
         ['name' => 'tags', 'attribute_type' => 'normal', 'is_mandatory' => 0, 'input_type' => 'multiEnumInput', 'max_value_count' => 3],
         ['name' => 'color_thumbnail', 'attribute_type' => 'sku', 'is_mandatory' => 1, 'input_type' => 'img'],
         ['name' => 'color_family', 'attribute_type' => 'sku', 'is_mandatory' => 1, 'input_type' => 'singleSelect', 'options' => [['en_name' => 'Blue'], ['en_name' => 'Red']]],
+        ['name' => 'chart_asset', 'label' => 'Size Chart', 'attribute_type' => 'normal', 'is_mandatory' => 1, 'input_type' => 'numeric'],
     ];
 
     public function test_it_allowlists_all_supported_types_and_preserves_owned_image_ids(): void
@@ -33,6 +34,7 @@ class LazadaReviewedAttributesTest extends TestCase
             'imageBindings' => [
                 'lazada:variant:BLUE-1:color_thumbnail' => 7,
                 'lazada:variant:RED-1:color_thumbnail' => 8,
+                'lazada:size-chart:chart_asset' => 7,
             ],
         ]);
 
@@ -41,6 +43,7 @@ class LazadaReviewedAttributesTest extends TestCase
         $this->assertSame([
             'lazada:variant:BLUE-1:color_thumbnail' => 7,
             'lazada:variant:RED-1:color_thumbnail' => 8,
+            'lazada:size-chart:chart_asset' => 7,
         ], $bound['jw_attribute_image_ids']);
     }
 

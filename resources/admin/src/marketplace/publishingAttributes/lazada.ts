@@ -91,7 +91,7 @@ export function normalizeLazadaAttributes(
       const variantRequired=required||Boolean(variant&&source.variants.length>1&&attribute.is_sale_prop==1);
       const key=variant
         ?`lazada:variant:${variant.sku}:${providerName}`
-        :`lazada:product:${providerName}`;
+        :sizeChart?`lazada:size-chart:${providerName}`:`lazada:product:${providerName}`;
       fields.push({
         key,provider:'lazada',scope,providerName,providerId:providerName,sku:variant?.sku,
         label:typeof attribute.label==='string'&&attribute.label.trim()?attribute.label:providerName,

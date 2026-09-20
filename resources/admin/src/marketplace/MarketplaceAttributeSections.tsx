@@ -3,6 +3,7 @@ import {MarketplaceAttributeControl} from './MarketplaceAttributeControl';
 import {OptionalAttributesSection,type PlatformAttributeMeta} from './publish37/OptionalAttributesSection';
 import type {MarketplaceAttributeField,MarketplaceAttributeValue} from './publishingAttributes/types';
 import type {MarketplaceImageCandidate} from './MarketplaceImageAttribute';
+import type {MarketplaceAttributeImageReceipt} from '../integration/marketplaceAttributeImages';
 
 export interface MarketplaceAttributeSectionsProps {
  fields:MarketplaceAttributeField[];
@@ -12,7 +13,7 @@ export interface MarketplaceAttributeSectionsProps {
  onChange:(key:string,value:MarketplaceAttributeValue)=>void;
  onUnitChange?:(key:string,unit:string)=>void;
  supplemental?:(field:MarketplaceAttributeField)=>React.ReactNode;
- imageContext?:{productId:number;images:MarketplaceImageCandidate[];platform:'shopee'|'lazada'};
+ imageContext?:{productId:number;images:MarketplaceImageCandidate[];platform:'shopee'|'lazada';onUploaded?:(receipt:MarketplaceAttributeImageReceipt)=>void};
 }
 
 const empty:MarketplaceAttributeValue={kind:'empty'};

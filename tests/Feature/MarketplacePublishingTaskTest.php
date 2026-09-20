@@ -47,19 +47,47 @@ class MarketplacePublishingTaskTest extends TestCase
         $source=app(\App\Services\Marketplace\MarketplacePublishingSource::class)->read($product->id);
         $payload=['jw_attribute_image_ids'=>['lazada:variant:BLUE-1:color_thumbnail'=>$image->id],
             'Request'=>['Product'=>['PrimaryCategory'=>'100','Attributes'=>['name'=>'Reviewed attributes','forged'=>'unsafe'],
-                'Skus'=>['Sku'=>[['SellerSku'=>'BLUE-1','price'=>'15.99','quantity'=>'0','color_family'=>'Blue']]]]]];
+                'Skus'=>['Sku'=>[['SellerSku'=>'BLUE-1','price'=>'15.99','quantity'=>'0','color_family'=>'Blue']]],
+                'Debug'=>['jw_secret'=>'unsafe']]]];
         $request=['product_id'=>$product->id,'request_key'=>'1185db80-1111-4111-8111-123456789045','source_revision'=>$source['revision'],'payload'=>$payload];
 
         $this->actingAs($actor)->postJson("/admin/api/marketplace/stores/{$store}/publishing-tasks",$request)->assertUnprocessable();
         $this->assertDatabaseCount('marketplace_publishing_tasks',0);
 
         unset($request['payload']['Request']['Product']['Attributes']['forged']);
+        unset($request['payload']['Request']['Product']['Debug']);
         $request['request_key']='2185db80-1111-4111-8111-123456789045';
         $this->postJson("/admin/api/marketplace/stores/{$store}/publishing-tasks",$request)->assertOk();
         $saved=json_decode(DB::table('marketplace_publishing_tasks')->value('payload'),true);
         $this->assertArrayNotHasKey('jw_attribute_image_ids',$saved);
         $this->assertSame('https://my-live-02.slatic.net/p/owned.jpg',$saved['Request']['Product']['Skus']['Sku'][0]['color_thumbnail']);
         Http::assertNotSent(fn($request)=>str_contains($request->url(),'/product/create'));
+    }
+
+    public function test_dispatch_rejects_nested_internal_fields_before_any_provider_request(): void
+    {
+        config(['marketplace.publish_operations_enabled'=>true,'marketplace.lazada.enabled'=>true,
+            'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);
+        $actor=User::factory()->create(['is_admin'=>true]);
+        $product=Product::create(['title'=>'Nested guard','handle'=>'nested-internal-guard','base_price'=>1000]);
+        $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','shop_name'=>'Test',
+            'external_shop_id'=>'2001','region'=>'MY','environment'=>'live','status'=>'connected']);
+        app(\App\Services\Marketplace\MarketplaceStoreAccess::class)->setProductPublishing($store,true,$actor->id,'Nested internal guard');
+        MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'123','access_token'=>'fixture-token','access_expires_at'=>now()->addHour()]);
+        $payload=['Request'=>['Product'=>['PrimaryCategory'=>'10002019','Attributes'=>['name'=>'Nested guard','meta'=>['jw_secret'=>'x']],
+            'Skus'=>['Sku'=>[['SellerSku'=>'NESTED-1','quantity'=>'0','price'=>'10.00']]]]]];
+        $task=app(PublishingTasks::class)->create($store,$product->id,$actor->id,'6285db80-1111-4111-8111-123456789012',$payload);
+        Http::preventStrayRequests();
+
+        try {
+            app(MarketplacePublishingDispatchService::class)->dispatch($task);
+            $this->fail('A nested internal field reached the provider boundary.');
+        } catch (\RuntimeException $error) {
+            $this->assertStringContainsString('Internal publishing fields', $error->getMessage());
+        }
+
+        $this->assertDatabaseHas('marketplace_publishing_tasks',['id'=>$task,'status'=>'rejected']);
+        Http::assertNothingSent();
     }
 
     protected function setUp(): void

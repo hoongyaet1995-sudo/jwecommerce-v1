@@ -22,7 +22,7 @@ class MarketplaceAttributeImageUploadTest extends TestCase
             "/admin/api/marketplace/products/{$product->id}/attribute-images",
             ['file' => $this->sourceJpeg('size-chart.jpg')],
             ['Accept' => 'application/json'],
-        )->assertCreated()->assertJsonStructure(['imageId', 'url', 'alt']);
+        )->assertCreated()->assertJsonStructure(['imageId', 'url', 'alt', 'sourceRevision']);
 
         $this->assertDatabaseHas('product_images', [
             'id' => $response->json('imageId'),
@@ -37,6 +37,10 @@ class MarketplaceAttributeImageUploadTest extends TestCase
             'field_path' => 'images.0',
         ]);
         $this->assertDatabaseHas('cms_media_assets', ['url' => $response->json('url')]);
+        $this->assertSame(
+            app(\App\Services\Marketplace\MarketplacePublishingSource::class)->read($product->id)['revision'],
+            $response->json('sourceRevision'),
+        );
     }
 
     public function test_endpoint_rejects_unauthorized_non_image_oversize_corrupt_and_extra_identity_fields(): void
@@ -89,7 +93,16 @@ class MarketplaceAttributeImageUploadTest extends TestCase
 
     private function product(string $handle): Product
     {
-        return Product::query()->create(['title' => 'Attribute Image', 'handle' => $handle, 'base_price' => 100]);
+        $product = Product::query()->create(['title' => 'Attribute Image', 'handle' => $handle, 'base_price' => 100]);
+        $product->variants()->create([
+            'title' => 'Default',
+            'sku' => strtoupper($handle),
+            'price' => 100,
+            'stock' => 0,
+            'enabled' => true,
+        ]);
+
+        return $product;
     }
 
     private function sourceJpeg(string $name): UploadedFile

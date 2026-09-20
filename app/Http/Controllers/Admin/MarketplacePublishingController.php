@@ -59,6 +59,7 @@ class MarketplacePublishingController extends Controller
         $storeRow=DB::table('marketplace_stores')->find($store);
         abort_unless($storeRow,404);
         $payload=$data['payload'];
+        $this->assertNoNestedInternalFields($payload);
         if ($storeRow->platform==='lazada') {
             $allowed=['Request','jw_attribute_image_ids','jw_size_chart_image_id'];
             if (array_diff(array_keys($payload),$allowed)) throw ValidationException::withMessages(['publishing'=>'Unsupported Lazada publishing fields.']);
@@ -83,7 +84,7 @@ class MarketplacePublishingController extends Controller
                 foreach ($schema as $attribute) if (($attribute['attribute_type']??null)==='normal'
                     && (preg_match('/size[ _-]*chart/i',(string)($attribute['name']??''))||preg_match('/size[ _-]*chart/i',(string)($attribute['label']??'')))) $sizeNames[]=$attribute['name'];
                 if (count($sizeNames)!==1) throw ValidationException::withMessages(['size_chart'=>'The current category does not expose one verified Size Chart attribute.']);
-                $sizeKey='lazada:product:'.$sizeNames[0];
+                $sizeKey='lazada:size-chart:'.$sizeNames[0];
                 if (isset($imageBindings[$sizeKey]) && $imageBindings[$sizeKey]!==$payload['jw_size_chart_image_id']) {
                     throw ValidationException::withMessages(['size_chart'=>'Choose one current JW image for the Size Chart field.']);
                 }
@@ -109,6 +110,14 @@ class MarketplacePublishingController extends Controller
                 $payload=app(\App\Services\Marketplace\ShopeePublishingImages::class)->bind($store,$source,$payload);
             }
             \App\Services\Marketplace\ShopeePublishingVariants::validate($payload,$source);
+            if (config('marketplace.basic_wms_enabled')===true) {
+                $token=app(\App\Services\Marketplace\ShopeeTokenManager::class)->accessToken($store);
+                $payload=app(\App\Services\Marketplace\ShopeeListingPreflight::class)->listing(
+                    $token,
+                    (string) $storeRow->external_shop_id,
+                    $payload,
+                );
+            }
         }
         if (config('marketplace.basic_wms_enabled')===true && $storeRow->platform==='lazada') {
             $payload=\App\Services\Marketplace\LazadaPublishingMasterData::bind($source,$payload);
@@ -128,6 +137,23 @@ class MarketplacePublishingController extends Controller
             throw ValidationException::withMessages(['publishing'=>$error->getMessage()]);
         }
         return $this->show($id);
+    }
+
+    private function assertNoNestedInternalFields(array $payload): void
+    {
+        foreach ($payload as $value) {
+            if (is_array($value)) $this->assertNoInternalFields($value);
+        }
+    }
+
+    private function assertNoInternalFields(array $payload): void
+    {
+        foreach ($payload as $key => $value) {
+            if (is_string($key) && str_starts_with($key, 'jw_')) {
+                throw ValidationException::withMessages(['publishing' => 'Internal publishing fields are only accepted at the reviewed request boundary.']);
+            }
+            if (is_array($value)) $this->assertNoInternalFields($value);
+        }
     }
 
     public function dispatch(Request $request, int $task, MarketplacePublishingDispatchService $dispatcher)

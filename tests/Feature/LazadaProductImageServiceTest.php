@@ -67,7 +67,7 @@ class LazadaProductImageServiceTest extends TestCase
             '*/seller/get*'=>Http::response(['code'=>'0','data'=>['seller_id'=>'300163725140','short_code'=>'MY4NA1T7CK','status'=>'ACTIVE']]),
             '*/seller/warehouse/get*'=>Http::response(['code'=>'0','result'=>['success'=>true,'module'=>[['code'=>'dropshipping','status'=>'ACTIVE']]]]),
             '*/category/attributes/get*'=>Http::response(['code'=>'0','data'=>[
-                ['name'=>'size_chart','label'=>'Size Chart','attribute_type'=>'normal','is_mandatory'=>1,'input_type'=>'numeric'],
+                ['name'=>'chart_asset','label'=>'Size Chart','attribute_type'=>'normal','is_mandatory'=>1,'input_type'=>'numeric'],
                 ['name'=>'color_thumbnail','attribute_type'=>'sku','is_mandatory'=>1,'input_type'=>'img'],
             ]]),
             '*/image/migrate*'=>Http::response(['code'=>'0','data'=>['image'=>['url'=>'https://my-live-02.slatic.net/p/automatic.jpg']]]),

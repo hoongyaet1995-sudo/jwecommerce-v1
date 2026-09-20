@@ -117,6 +117,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   const useLiveMetadata=readOnlyMetadata || liveData;
   const [sourceState,setSourceState]=useState<{id:string;source?:PublishingSource;error?:string}|null>(null);
   const source=sourceState?.id===selectedProductId?sourceState.source:undefined;
+  const [reviewRevision,setReviewRevision]=useState('');
   useEffect(()=>{
     if (!liveData || !selectedProductId) return;
     let active=true;
@@ -126,6 +127,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
     }).catch(error=>{if(active)setSourceState({id:selectedProductId,error:error instanceof Error?error.message:'Product could not be loaded.'});});
     return()=>{active=false;};
   },[liveData,selectedProductId]);
+  useEffect(()=>setReviewRevision(source?.revision??''),[selectedProductId,selectedConnectionId,source?.revision]);
 
   // Step 2: Category & Marketplace Attributes
   const [selectedCategory, setSelectedCategory] = useState(useLiveMetadata ? '' : 'Consumer Electronics & Audio > Headphones');
@@ -296,7 +298,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
       setPresentProgress(true);
       try {
         const id = await submitReviewed(targetProduct.id, targetConnection.id, {
-          sourceRevision: source?.revision,
+          sourceRevision: reviewRevision || source?.revision,
           ...(isShopeeLive&&shopeeSizeChartImageId?{sizeChartImageId:shopeeSizeChartImageId}:{}),
           ...(isLazadaLive?{lazadaAttributes:lazadaAttributes.serialized.normal,lazadaSkuAttributes:lazadaAttributes.serialized.skus,lazadaAttributeImageIds:lazadaAttributes.serialized.imageBindings}:{}),
           ...(isShopeeLive?{shopeeVariantImageChoices:imageReview.resolved,shopeeAttributes:shopeeRequirements.attributes,shopeeLogistics:shopeeRequirements.logistics,shopeeBrandId:brandMetadata.brands.find(brand=>brandLabel(brand)===brandName)?.brand_id??null}:{}),
@@ -1008,14 +1010,14 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
 
                   {isLazadaLive&&<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2"><MarketplaceAttributeSections fields={lazadaAttributes.fields} values={lazadaAttributes.values} errors={lazadaAttributes.errors} onChange={lazadaAttributes.update}
-                      imageContext={source?{productId:source.product_id,images:source.images,platform:'lazada'}:undefined}/></div>
+                      imageContext={source?{productId:source.product_id,images:source.images,platform:'lazada',onUploaded:receipt=>setReviewRevision(receipt.sourceRevision)}:undefined}/></div>
                     {lazadaAttributes.error&&<button type="button" className="text-xs font-bold text-neutral-700 dark:text-neutral-300" onClick={lazadaAttributes.retry}>Retry category requirements</button>}
                     {lazadaAttributes.moreBrands&&<button type="button" className="text-xs font-bold text-neutral-700 dark:text-neutral-300" disabled={lazadaAttributes.moreLoading} onClick={lazadaAttributes.loadMore}>{lazadaAttributes.moreLoading?'Loading brands…':'Load more brands'}</button>}
                     {lazadaAttributes.moreError&&<p className="text-xs text-rose-500">{lazadaAttributes.moreError}</p>}
                   </div>}
                   {/* Validation Error Banner */}
                   {isShopeeLive&&<ShopeePublishingRequirements shopName={targetConnection.shopName} review={shopeeRequirements}/>}
-                  {isShopeeLive&&<PublishingSizeChart platform="shopee" required={false} source={source} selectedImageId={shopeeSizeChartImageId} onChange={setShopeeSizeChartImageId}/>}
+                  {isShopeeLive&&<PublishingSizeChart platform="shopee" required={false} source={source} selectedImageId={shopeeSizeChartImageId} onChange={setShopeeSizeChartImageId} onUploaded={receipt=>setReviewRevision(receipt.sourceRevision)}/>}
                   {validationErrors.length > 0 ? (
                     <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 space-y-1">
                       <div className="font-bold flex items-center gap-1.5">

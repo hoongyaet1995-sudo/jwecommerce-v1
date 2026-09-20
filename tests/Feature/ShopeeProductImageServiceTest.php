@@ -45,6 +45,21 @@ class ShopeeProductImageServiceTest extends TestCase
         Http::fake(function ($request) use (&$uploads) {
             if (str_contains($request->url(),'get_shop_info')) return Http::response(['error'=>'','shop_id'=>456,'shop_name'=>'Test','region'=>'MY']);
             if (str_contains($request->url(),'upload_image')) return Http::response(['error'=>'','response'=>['image_info'=>['image_id'=>'image-'.(++$uploads)]]]);
+            if (str_contains($request->url(),'get_category')) return Http::response(['response'=>['category_list'=>[
+                ['category_id'=>101,'parent_category_id'=>100,'original_category_name'=>'Images','display_category_name'=>'Images','has_children'=>false],
+            ]]]);
+            if (str_contains($request->url(),'get_attribute_tree')) return Http::response(['response'=>['list'=>[['category_id'=>101,'attribute_tree'=>[
+                ['attribute_id'=>10,'mandatory'=>true,'attribute_info'=>['input_type'=>1,'input_validation_type'=>2,'format_type'=>1],
+                    'attribute_value_list'=>[['value_id'=>7,'name'=>'Platform Metal']]],
+            ]]]]]);
+            if (str_contains($request->url(),'get_brand_list')) return Http::response(['response'=>[
+                'brand_list'=>[],'has_next_page'=>false,'next_offset'=>0,'is_mandatory'=>false,'input_type'=>'DROP_DOWN',
+            ]]);
+            if (str_contains($request->url(),'get_channel_list')) return Http::response(['response'=>['logistics_channel_list'=>[
+                ['logistics_channel_id'=>24000,'logistics_channel_name'=>'Shopee Sandbox','enabled'=>true,'fee_type'=>'SIZE_INPUT',
+                    'weight_limit'=>['item_min_weight'=>0,'item_max_weight'=>20],
+                    'item_max_dimension'=>['height'=>30,'width'=>30,'length'=>30,'unit'=>'cm','dimension_sum'=>0]],
+            ]]]);
             return Http::response([],500);
         });
         $service=app(ShopeeProductImageService::class);
@@ -63,14 +78,23 @@ class ShopeeProductImageServiceTest extends TestCase
         DB::table('product_variants')->where('id',$variant->id)->update(['data_classification'=>'test','classified_by'=>$actor->id,'classified_at'=>now()]);
         config(['marketplace.basic_wms_enabled'=>true,'marketplace.shopee.test_store_id'=>$store]);
         $source=app(\App\Services\Marketplace\MarketplacePublishingSource::class)->read($product->id);
+        $payload=['item_name'=>'Browser override','category_id'=>101,'item_status'=>'UNLIST','condition'=>'NEW','weight'=>1,
+            'dimension'=>['package_height'=>10,'package_width'=>10,'package_length'=>10],
+            'attribute_list'=>[['attribute_id'=>10,'attribute_value_list'=>[['value_id'=>999,'original_value_name'=>'Forged']]]],
+            'logistic_info'=>[['logistic_id'=>24000,'is_free'=>false]],
+            'jw_size_chart_image_id'=>$image->id,'original_price'=>999,'original_stock'=>500,'image'=>['image_id_list'=>['foreign-image']]];
         $this->postJson($stageUrl,['product_id'=>$product->id,'source_revision'=>$source['revision'],
-            'request_key'=>'7285db80-1111-4111-8111-123456789012','payload'=>['item_name'=>'Browser override',
-                'jw_size_chart_image_id'=>$image->id,'original_price'=>999,'original_stock'=>500,'image'=>['image_id_list'=>['foreign-image']]]])->assertOk();
+            'request_key'=>'6285db80-1111-4111-8111-123456789012','payload'=>$payload])->assertUnprocessable();
+        $this->assertDatabaseCount('marketplace_publishing_tasks',0);
+        $payload['attribute_list'][0]['attribute_value_list']=[['value_id'=>7,'original_value_name'=>'Forged']];
+        $this->postJson($stageUrl,['product_id'=>$product->id,'source_revision'=>$source['revision'],
+            'request_key'=>'7285db80-1111-4111-8111-123456789012','payload'=>$payload])->assertOk();
         $saved=json_decode(DB::table('marketplace_publishing_tasks')->value('payload'),true);
         $this->assertSame('Image',$saved['item_name']);
         $this->assertSame(12.5,$saved['original_price']);
         $this->assertSame(['image-1'],$saved['image']['image_id_list']);
         $this->assertSame('image-1',$saved['size_chart']);
+        $this->assertSame('Platform Metal',$saved['attribute_list'][0]['attribute_value_list'][0]['original_value_name']);
         $this->assertArrayNotHasKey('jw_size_chart_image_id',$saved);
         $this->assertSame([['stock'=>0]],$saved['seller_stock']);
         $this->assertSame(17,$variant->fresh()->stock);

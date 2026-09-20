@@ -21,17 +21,18 @@ it('selects existing media, previews it, and removes the selection',async()=>{
 });
 
 it('shows pending state, appends a confirmed upload, and retains prior value after an error',async()=>{
- host=document.createElement('div');document.body.append(host);const root=createRoot(host);const change=vi.fn();
- let resolveUpload!:(value:{imageId:number;url:string;alt:string})=>void;
- const upload=vi.fn(()=>new Promise<{imageId:number;url:string;alt:string}>(resolve=>{resolveUpload=resolve;}));
- await act(async()=>root.render(<MarketplaceImageAttribute productId={3} label="Size Chart" required images={[]} value={{kind:'image',imageId:5,url:'/storage/old.jpg'}} onChange={change} upload={upload}/>));
+ host=document.createElement('div');document.body.append(host);const root=createRoot(host);const change=vi.fn();const uploaded=vi.fn();
+ let resolveUpload!:(value:{imageId:number;url:string;alt:string;sourceRevision:string})=>void;
+ const upload=vi.fn(()=>new Promise<{imageId:number;url:string;alt:string;sourceRevision:string}>(resolve=>{resolveUpload=resolve;}));
+ await act(async()=>root.render(<MarketplaceImageAttribute productId={3} label="Size Chart" required images={[]} value={{kind:'image',imageId:5,url:'/storage/old.jpg'}} onChange={change} onUploaded={uploaded} upload={upload}/>));
  const input=host.querySelector<HTMLInputElement>('input[type="file"]')!;
  const file=new File(['new'],'chart.png',{type:'image/png'});
  Object.defineProperty(input,'files',{configurable:true,value:[file]});
  await act(async()=>input.dispatchEvent(new Event('change',{bubbles:true})));
  expect(host.textContent).toContain('Uploading');
- await act(async()=>resolveUpload({imageId:9,url:'/storage/chart.png',alt:'chart.png'}));
+ await act(async()=>resolveUpload({imageId:9,url:'/storage/chart.png',alt:'chart.png',sourceRevision:'a'.repeat(64)}));
  expect(change).toHaveBeenCalledWith({kind:'image',imageId:9,url:'/storage/chart.png'});
+ expect(uploaded).toHaveBeenCalledWith(expect.objectContaining({imageId:9,sourceRevision:'a'.repeat(64)}));
  expect(host.querySelector('[data-marketplace-image="9"]')).not.toBeNull();
 
  const failed=vi.fn().mockRejectedValue(new Error('Upload rejected.'));

@@ -2,6 +2,7 @@ import React,{useMemo,useState} from 'react';
 import {Check,ChevronDown,Plus,X} from 'lucide-react';
 import type {MarketplaceAttributeField,MarketplaceAttributeValue} from './publishingAttributes/types';
 import {MarketplaceImageAttribute,type MarketplaceImageCandidate} from './MarketplaceImageAttribute';
+import type {MarketplaceAttributeImageReceipt} from '../integration/marketplaceAttributeImages';
 
 const controlClass='w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-xl text-xs text-neutral-900 dark:text-white placeholder-neutral-400 focus:ring-1 focus:ring-indigo-500';
 
@@ -13,7 +14,7 @@ export interface MarketplaceAttributeControlProps {
  onChange:(value:MarketplaceAttributeValue)=>void;
  onUnitChange?:(unit:string)=>void;
  supplemental?:React.ReactNode;
- imageContext?:{productId:number;images:MarketplaceImageCandidate[];platform:'shopee'|'lazada'};
+ imageContext?:{productId:number;images:MarketplaceImageCandidate[];platform:'shopee'|'lazada';onUploaded?:(receipt:MarketplaceAttributeImageReceipt)=>void};
 }
 
 const selectedItems=(value:MarketplaceAttributeValue)=>value.kind==='multi'?value.values:[];
@@ -58,7 +59,7 @@ export function MarketplaceAttributeControl({field,value,unit='',error,onChange,
    <div role="button" tabIndex={0} aria-label={`Choose ${field.label}`} onClick={()=>setOpen(state=>!state)} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();setOpen(state=>!state);}}} className={`${controlClass} min-h-[38px] flex flex-wrap items-center gap-1.5 text-left cursor-pointer`}>{selectedItems(value).length?selectedItems(value).map(item=><span key={`${item.custom?'custom':item.id}:${item.label}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[11px] font-medium">{item.label}<X className="w-2.5 h-2.5"/></span>):<span className="text-neutral-400">Choose {field.label}...</span>}<ChevronDown className="w-3.5 h-3.5 ml-auto text-neutral-400"/></div>
    {open&&<div className="absolute z-40 top-full mt-1.5 w-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-2xl overflow-hidden"><input aria-label={`Filter ${field.label}`} value={search} onChange={event=>setSearch(event.target.value)} placeholder="Search or filter options..." className={`${controlClass} rounded-none border-0 border-b`}/><div className="max-h-48 overflow-y-auto p-1">{filtered.map(option=>{const checked=selectedItems(value).some(item=>!item.custom&&item.id===option.id);return <label key={option.id} onClick={event=>{event.preventDefault();toggleMulti(option.id,option.label,false);}} className="w-full px-2.5 py-1.5 rounded-lg flex items-center gap-2.5 text-xs text-left hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer"><input type="checkbox" checked={checked} readOnly className="rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500"/>{option.label}</label>;})}</div>{field.allowCustom&&<div className="p-2 border-t border-neutral-200 dark:border-neutral-800 flex gap-1.5"><input aria-label={`Custom ${field.label}`} value={customValue} onChange={event=>setCustomValue(event.target.value)} className={controlClass}/><button type="button" disabled={!customValue.trim()||selectedItems(value).length>=field.maxValues} onClick={()=>{toggleMulti(null,customValue.trim(),true);setCustomValue('');}} className="px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold disabled:opacity-50"><Plus className="w-3 h-3"/></button></div>}</div>}
   </div>}
-  {field.control==='image'&&(imageContext?<MarketplaceImageAttribute productId={imageContext.productId} images={imageContext.images} platform={imageContext.platform} label={field.label} required={field.required} purpose={field.purpose} value={value} onChange={onChange}/>:<div data-unsupported="true" className="p-3 rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50/70 dark:bg-rose-950/20 text-xs text-rose-700 dark:text-rose-300">Product media is not available for this image attribute.</div>)}
+  {field.control==='image'&&(imageContext?<MarketplaceImageAttribute productId={imageContext.productId} images={imageContext.images} platform={imageContext.platform} label={field.label} required={field.required} purpose={field.purpose} value={value} onChange={onChange} onUploaded={imageContext.onUploaded}/>:<div data-unsupported="true" className="p-3 rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50/70 dark:bg-rose-950/20 text-xs text-rose-700 dark:text-rose-300">Product media is not available for this image attribute.</div>)}
   {supplemental}
   {field.help&&<p className="text-[10px] text-neutral-400">{field.help}</p>}
   {error&&<p id={`${field.key}-error`} className="text-[10px] text-rose-500">{error}</p>}

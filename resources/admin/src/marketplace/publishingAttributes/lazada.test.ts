@@ -30,6 +30,7 @@ const schema=[
   {name:'model_type',label:'Model Type',attribute_type:'normal',input_type:'enumInput',is_mandatory:0,options:[{en_name:'Classic'}]},
   {name:'gem_type',label:'Gem Type',attribute_type:'normal',input_type:'multiEnumInput',is_mandatory:0,options:[{en_name:'Ruby'}]},
   {name:'color_thumbnail',label:'Color Thumbnail',attribute_type:'sku',input_type:'img',is_mandatory:1},
+  {name:'chart_asset',label:'Size Chart',attribute_type:'normal',input_type:'numeric',is_mandatory:1},
 ];
 
 describe('normalizeLazadaAttributes',()=>{
@@ -43,6 +44,7 @@ describe('normalizeLazadaAttributes',()=>{
       expect.objectContaining({providerName:'occasion',control:'multi',allowCustom:false}),
       expect.objectContaining({providerName:'model_type',control:'single',allowCustom:true}),
       expect.objectContaining({providerName:'gem_type',control:'multi',allowCustom:true}),
+      expect.objectContaining({key:'lazada:size-chart:chart_asset',control:'image',purpose:'size-chart'}),
     ]));
   });
 
@@ -88,6 +90,7 @@ describe('serializeLazadaAttributes',()=>{
       ['lazada:variant:TEKAT 1G:main_diamond_carat',{kind:'number',value:'1'}],
       ['lazada:variant:TEKAT 5G:main_diamond_carat',{kind:'number',value:'5'}],
       ['lazada:variant:TEKAT 1G:color_thumbnail',{kind:'image',imageId:91,url:'/storage/tekat.jpg'}],
+      ['lazada:size-chart:chart_asset',{kind:'image',imageId:91,url:'/storage/tekat.jpg'}],
     ]);
 
     expect(serializeLazadaAttributes(fields,values)).toEqual({
@@ -96,7 +99,7 @@ describe('serializeLazadaAttributes',()=>{
         'TEKAT 1G':{main_diamond_carat:'1'},
         'TEKAT 5G':{main_diamond_carat:'5'},
       },
-      imageBindings:{'lazada:variant:TEKAT 1G:color_thumbnail':91},
+      imageBindings:{'lazada:variant:TEKAT 1G:color_thumbnail':91,'lazada:size-chart:chart_asset':91},
     });
   });
 });

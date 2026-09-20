@@ -147,10 +147,11 @@ final class MarketplacePublishingDispatchService
 
     private function assertProviderPayload(array $payload): void
     {
-        foreach (array_keys($payload) as $key) {
+        foreach ($payload as $key => $value) {
             if (is_string($key) && str_starts_with($key,'jw_')) {
                 throw new RuntimeException('Internal publishing fields were not resolved before provider dispatch.');
             }
+            if (is_array($value)) $this->assertProviderPayload($value);
         }
     }
 }
