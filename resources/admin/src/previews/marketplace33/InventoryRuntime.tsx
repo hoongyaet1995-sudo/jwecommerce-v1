@@ -10,7 +10,7 @@ import {useWarehouses} from '../marketplace36/useWarehouses';
 import {useRouting} from '../marketplace36/useRouting';
 import {useTransfers} from '../marketplace36/useTransfers';
 
-export function InventoryRuntime({zip36=true,embedded=false,onNavigate}:{zip36?:boolean;embedded?:boolean;onNavigate?:(section:any)=>void}) {
+export function InventoryRuntime({zip36=true,embedded=false,onNavigate,intakeProductIds}:{zip36?:boolean;embedded?:boolean;onNavigate?:(section:any)=>void;intakeProductIds?:number[]}) {
   const [inventoryMode,setInventoryMode]=useState('unconfigured');
   const [configuration,setConfiguration]=useState<any>(null);
   const setupKeys=useRef(new Map<string,string>());
@@ -125,7 +125,7 @@ export function InventoryRuntime({zip36=true,embedded=false,onNavigate}:{zip36?:
       Uncounted quantities remain unknown. Basic warehouse availability excludes unallocated orders. Physical totals cover recorded balances only.
       <p role="status">{notice}</p>
     </aside>}
-    {embedded ? <Inventory36/> : <main className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 p-4 md:p-8">{zip36?<Inventory36/>:<MarketplaceInventoryPage />}</main>}
+    {embedded ? <Inventory36 intakeProductIds={intakeProductIds}/> : <main className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 p-4 md:p-8">{zip36?<Inventory36 intakeProductIds={intakeProductIds}/>:<MarketplaceInventoryPage />}</main>}
   </PreviewContext.Provider>;
 }
 

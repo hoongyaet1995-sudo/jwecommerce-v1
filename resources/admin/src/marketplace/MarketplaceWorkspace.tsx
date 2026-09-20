@@ -1,4 +1,4 @@
-import React,{lazy,Suspense} from 'react';
+import React,{lazy,Suspense,useEffect,useRef} from 'react';
 const InventoryRuntime=lazy(()=>import('../previews/marketplace33/InventoryRuntime').then(module=>({default:module.InventoryRuntime})));
 import {useAdmin as useRootAdmin} from '../context/AdminContext';
 import {OperationalConnectStore} from './OperationalConnectStore';
@@ -11,6 +11,7 @@ import {MarketplaceAuthPage} from './components/marketplace/MarketplaceAuthPage'
 import {MarketplaceOMSPage} from './components/marketplace/MarketplaceOMSPage';
 import {MarketplaceInventoryPage} from './components/marketplace/MarketplaceInventoryPage';
 import {MarketplaceSyncPage} from './components/marketplace/MarketplaceSyncPage';
+import {decodeInventoryIntake,INVENTORY_INTAKE_STORAGE_KEY} from './inventoryIntake';
 function Content(){
  const {currentSection,loading,error,reload}=useAdmin();
  if(currentSection==='marketplace-auth')return <OperationalConnectStore/>;
@@ -22,11 +23,19 @@ function Content(){
 }
 export function MarketplaceWorkspace(){
  const {currentSection,setCurrentSection}=useRootAdmin();
- if(currentSection==='marketplace-inventory' && window.__JW_ADMIN__?.basicWmsUiEnabled)
+ const intakeRef=useRef<ReturnType<typeof decodeInventoryIntake>>(null);
+ if(currentSection==='marketplace-inventory'&&!intakeRef.current)
+  intakeRef.current=decodeInventoryIntake(sessionStorage.getItem(INVENTORY_INTAKE_STORAGE_KEY));
+ useEffect(()=>{
+  if(currentSection==='marketplace-inventory'&&intakeRef.current)sessionStorage.removeItem(INVENTORY_INTAKE_STORAGE_KEY);
+  if(currentSection!=='marketplace-inventory')intakeRef.current=null;
+ },[currentSection]);
+ if(currentSection==='marketplace-inventory' && window.__JW_ADMIN__?.basicWmsUiEnabled){
   return <Suspense fallback={<p role="status" className="text-sm text-neutral-500">Loading inventory…</p>}>
    {window.__JW_ADMIN__?.basicWmsUiPreview && <p className="mb-4 text-xs text-neutral-500">LOCAL BASIC WMS SHELL PREVIEW — official UI release remains disabled.</p>}
-   <InventoryRuntime embedded onNavigate={setCurrentSection}/>
+   <InventoryRuntime embedded onNavigate={setCurrentSection} intakeProductIds={intakeRef.current?.productIds}/>
   </Suspense>;
+ }
  if(currentSection==='marketplace-oms')return <OperationalOrders/>;
  if(currentSection==='marketplace-auth')return <OperationalConnectStore/>;
  if(currentSection==='marketplace-mapping')return <OperationalMapping/>;

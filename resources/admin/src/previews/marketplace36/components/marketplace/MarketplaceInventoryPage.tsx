@@ -30,6 +30,7 @@ import { CreateWarehouseTransferModal } from './CreateWarehouseTransferModal';
 import { ConnectedReconciliationModal } from '../../ConnectedReconciliationModal';
 import {readWarehouseBalances} from '../../readWarehouseBalances';
 import {matchesStockFilter} from '../../stockFilter';
+import {inventoryIntakeItems} from '../../../../marketplace/inventoryIntake';
 import {
   Warehouse,
   Package,
@@ -60,7 +61,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 
-export const MarketplaceInventoryPage: React.FC = () => {
+export const MarketplaceInventoryPage: React.FC<{intakeProductIds?:number[]}> = ({intakeProductIds=[]}) => {
   const {
     marketplaceInventory = [],
     marketplaceOrders = [],
@@ -183,6 +184,21 @@ export const MarketplaceInventoryPage: React.FC = () => {
     return()=>abort.abort();
   },[selectedAuditItem?.id,historyRevision]);
   const [adjustModalItem, setAdjustModalItem] = useState<MarketplaceInventoryItem | null>(null);
+  const [intakeQueue,setIntakeQueue]=useState<string[]>([]);
+  const [intakeActive,setIntakeActive]=useState(intakeProductIds.length>0);
+  const countConfirmed=React.useRef(false);
+  useEffect(()=>{
+    if(!intakeActive||!intakeProductIds.length||!safeMpInv.length||intakeQueue.length||adjustModalItem)return;
+    const imported=inventoryIntakeItems(safeMpInv,intakeProductIds);
+    if(!imported.length)return;
+    const names=Array.from(new Set(imported.map(item=>item.productName)));
+    setSearchQuery(names.length===1?names[0]:'');
+    setFilterStockStatus('all');setFilterPlatform('all');setActiveTab('matrix');
+    const pending=imported.filter(item=>item.physicalStockStatus==='unknown'||item.totalPhysicalStock===null).map(item=>item.id);
+    setIntakeQueue(pending);
+    if(pending.length)setAdjustModalItem(imported.find(item=>item.id===pending[0])??null);
+    else setIntakeActive(false);
+  },[intakeActive,intakeProductIds.join(','),safeMpInv.length]);
   const [broadcastModalItem, setBroadcastModalItem] = useState<MarketplaceInventoryItem | null>(null);
   const [isStoreActivationsOpen, setIsStoreActivationsOpen] = useState<boolean>(false);
   const [isExceptionsDrawerOpen, setIsExceptionsDrawerOpen] = useState<boolean>(false);
@@ -190,6 +206,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
   // Filter items
   const filteredInventory = useMemo(() => {
     return safeMpInv.filter(item => {
+      if(intakeActive&&intakeProductIds.length&&!intakeProductIds.map(String).includes(String(item.jwProductId)))return false;
       if (!matchesStockFilter(item,filterStockStatus)) return false;
 
       // Platform filter (Release 1: Shopee & Lazada)
@@ -216,7 +233,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
       }
       return true;
     });
-  }, [safeMpInv, filterStockStatus, filterPlatform, searchQuery]);
+  }, [safeMpInv, filterStockStatus, filterPlatform, searchQuery, intakeActive, intakeProductIds.join(',')]);
 
   const handleExportInventoryCSV = () => {
     const headers = [
@@ -1063,13 +1080,22 @@ export const MarketplaceInventoryPage: React.FC = () => {
           warehouses={entityWarehouses}
           onClose={() => {
             const variantId=adjustModalItem.id;
+            const confirmed=countConfirmed.current;
+            countConfirmed.current=false;
             reloadInventory?.();
             readWarehouseBalances(Number(variantId))
               .then(balances=>setLoadedBalances(previous=>({...previous,[variantId]:balances})))
               .catch(error=>addToast({type:'error',title:'Reload warehouse balances',message:error.message}));
             setAdjustModalItem(null);
             setAdjustModalTargetWarehouseId(undefined);
+            if(confirmed){
+              const remaining=intakeQueue.filter(id=>id!==variantId);
+              setIntakeQueue(remaining);
+              if(remaining.length)setTimeout(()=>setAdjustModalItem(safeMpInv.find(item=>item.id===remaining[0])??null),0);
+              else setIntakeActive(false);
+            }else if(intakeActive)setIntakeActive(false);
           }}
+          onConfirmed={()=>{countConfirmed.current=true;}}
           staffUsers={staffUsers}
           currentUserName={user?.name}
           onApplyAdjustment={adjustStock}

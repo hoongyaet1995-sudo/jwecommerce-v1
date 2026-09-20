@@ -71,7 +71,26 @@ it('reports an all-existing result without claiming a new draft',async()=>{
   try {
     await act(async()=>root.render(<JourneyProvider value={context}><ImportProductReviewModal isOpen onClose={vi.fn()} productsToImport={INITIAL_MARKETPLACE_STORE_PRODUCTS.slice(0,1)}/></JourneyProvider>));
     await act(async()=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Confirm Import'))!.click());
-    expect(container.textContent).toContain('0 new draft product(s), 0 new variant(s), and 2 existing SKU link(s)');
+    expect(container.textContent).toContain('0 new draft product(s), 0 new variant(s), 2 existing SKU link(s)');
     expect(container.textContent).not.toContain('Successfully Imported as JW Master Drafts');
+  }finally{await act(async()=>root.unmount());vi.unstubAllGlobals();}
+});
+
+it('opens Inventory Management with only the saved JW product ids',async()=>{
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+  const openInventory=vi.fn();
+  const context:MarketplaceJourneyContext={products:[],categories:[],connections:[],marketplaceStoreProducts:[],
+    importStoreProductToMaster:vi.fn().mockResolvedValue({productId:51,createdVariants:2,linkedVariants:0}),
+    addToast:vi.fn(),setActiveSection:vi.fn(),publishMasterProductToStore:vi.fn(),mapStoreVariantToJwSku:vi.fn(),unmapStoreVariant:vi.fn()};
+  const container=document.createElement('div');const root=createRoot(container);
+  try {
+    await act(async()=>root.render(<JourneyProvider value={context}><ImportProductReviewModal isOpen onClose={vi.fn()}
+      productsToImport={INITIAL_MARKETPLACE_STORE_PRODUCTS.slice(0,1)} onInventoryManagement={openInventory}/></JourneyProvider>));
+    await act(async()=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Confirm Import'))!.click());
+    const button=Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Inventory Management'))!;
+    expect(button).toBeTruthy();
+    await act(async()=>button.click());
+    expect(openInventory).toHaveBeenCalledWith({productIds:[51]});
+    expect(context.setActiveSection).not.toHaveBeenCalledWith('marketplace_inventory');
   }finally{await act(async()=>root.unmount());vi.unstubAllGlobals();}
 });

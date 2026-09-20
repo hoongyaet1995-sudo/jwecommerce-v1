@@ -18,6 +18,7 @@ import {JourneyProvider,type MarketplaceJourneyContext} from '../previews/market
 import {PersistentCatalogTaskIndicator38} from '../previews/catalog-download38/PersistentCatalogTaskIndicator38';
 import {CatalogTaskBanner} from '../previews/catalog-download38/CatalogTaskBanner';
 import {CatalogDownload38Overlay,catalogTaskFor} from '../previews/catalog-download38/CatalogDownload38Overlay';
+import {encodeInventoryIntake,INVENTORY_INTAKE_STORAGE_KEY} from './inventoryIntake';
 
 export function OperationalMapping(){
  const [catalog38Request,setCatalog38Request]=useState(false);
@@ -102,7 +103,12 @@ export function OperationalMapping(){
   {(task.runId||task.error)&&<p role="status" className="mb-4 text-sm text-neutral-500">{task.error||`Catalog fetch task ${task.runId}: ${task.run?.status??'checking status'}${task.run?` · ${task.run.pages_completed} pages processed`:''}`} {task.error&&task.runId&&<button className="ml-3 underline" onClick={task.checkStatus}>Check status</button>} {task.run?.status==='failed'&&<button className="ml-3 underline" disabled={task.busy} onClick={()=>void task.start(()=>marketplaceOperations.retryCatalog(String(task.runId)))}>Retry task</button>}</p>}
   {journeyPreview&&<p role="status" className="mb-4 text-sm text-neutral-500">Local ZIP 32 acceptance — real catalog and saved changes. Official entry unchanged.</p>}
   {reviewProducts&&<ConnectedImportReviewModal productsToImport={reviewProducts} products={value.products}
-    canImport={canImport} onClose={()=>setReviewProducts(null)} onImported={catalog.reload} addToast={admin.addToast}/>}
+    canImport={canImport} onClose={()=>setReviewProducts(null)} onImported={catalog.reload} addToast={admin.addToast}
+    onInventoryManagement={intake=>{
+      if(!intake.productIds.length){admin.addToast({type:'info',title:'Inventory Management',message:'No new JW product needs an initial physical count.'});return;}
+      sessionStorage.setItem(INVENTORY_INTAKE_STORAGE_KEY,encodeInventoryIntake(intake));
+      admin.setCurrentSection('marketplace-inventory');
+    }}/>}
   {publishReview&&<JourneyProvider value={publishingContext}>
     <PublishProductModal isOpen liveData preselectedConnectionId={publishReview.storeId}
       submitReviewed={async(productId,storeId,options)=>{

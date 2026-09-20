@@ -20,6 +20,7 @@ interface InventoryAdjustmentModalProps {
   item: MarketplaceInventoryItem | null;
   isOpen: boolean;
   onClose: () => void;
+  onConfirmed?: () => void;
   staffUsers: StaffUser[];
   currentUserName?: string;
   targetWarehouseId?: string;
@@ -36,6 +37,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
   item,
   isOpen,
   onClose,
+  onConfirmed,
   staffUsers = [],
   currentUserName,
   targetWarehouseId,
@@ -180,6 +182,7 @@ export const InventoryAdjustmentModal: React.FC<InventoryAdjustmentModalProps> =
     setRequestError('');
     try {
       await api.confirm(serverReview);
+      onConfirmed?.();
       onClose();
     } catch (error) {
       setRequestError(error instanceof Error ? error.message : 'Inventory confirmation failed.');

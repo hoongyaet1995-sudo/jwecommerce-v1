@@ -22,6 +22,7 @@ interface ImportProductReviewModalProps {
   onClose: () => void;
   productsToImport: MarketplaceStoreProduct[];
   onSuccess?: () => void;
+  onInventoryManagement?: (intake: {productIds:number[]}) => void;
 }
 
 type SkuAction = 'link_existing' | 'generate_suffix' | 'create_as_is';
@@ -42,7 +43,8 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
   isOpen,
   onClose,
   productsToImport,
-  onSuccess
+  onSuccess,
+  onInventoryManagement
 }) => {
   const { products, importStoreProductToMaster, addToast, setActiveSection } = useAdmin();
 
@@ -58,6 +60,7 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
   const submitted = useRef(new Set<string>());
   const submitting = useRef(false);
   const assignedSkus = useRef(new Map<string,string>());
+  const importedProductIds = useRef(new Set<number>());
 
   // Analyze all variants across productsToImport
   const analysisList = useMemo(() => {
@@ -177,8 +180,11 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
 
       try {
         const result=await importStoreProductToMaster(prod.id, undefined, options);
-        if(result) setSavedCounts(previous=>({drafts:previous.drafts+(targetProductId || result.productId===null?0:1),
+        if(result) {
+          if(result.productId!==null)importedProductIds.current.add(result.productId);
+          setSavedCounts(previous=>({drafts:previous.drafts+(targetProductId || result.productId===null?0:1),
           created:previous.created+result.createdVariants,linked:previous.linked+result.linkedVariants,kept:previous.kept+(result.keptVariants??0)}));
+        }
         submitted.current.add(prod.id);
       } catch (error) {
         failed++;
@@ -296,12 +302,13 @@ export const ImportProductReviewModal: React.FC<ImportProductReviewModalProps> =
                   type="button"
                   onClick={() => {
                     onClose();
-                    setActiveSection('marketplace_inventory');
+                    if(onInventoryManagement)onInventoryManagement({productIds:Array.from(importedProductIds.current)});
+                    else setActiveSection('marketplace-inventory');
                   }}
                   className="px-4 py-2.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer"
                 >
                   <Boxes className="w-4 h-4" />
-                  Receive Physical Stock in Inventory
+                  Inventory Management
                 </button>
 
                 <button

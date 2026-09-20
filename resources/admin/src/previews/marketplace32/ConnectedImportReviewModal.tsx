@@ -11,6 +11,7 @@ interface Props {
   onClose:()=>void;
   onImported:()=>void;
   addToast:MarketplaceJourneyContext['addToast'];
+  onInventoryManagement?:(intake:{productIds:number[]})=>void;
 }
 export function ConnectedImportReviewModal(props:Props) {
   const unsupported=()=>{throw new Error('Operation unavailable in import review.');};
@@ -29,5 +30,5 @@ export function ConnectedImportReviewModal(props:Props) {
     },
   };
   return <JourneyProvider value={value}><ImportProductReviewModal isOpen onClose={props.onClose}
-    productsToImport={props.productsToImport}/></JourneyProvider>;
+    productsToImport={props.productsToImport} onInventoryManagement={props.onInventoryManagement}/></JourneyProvider>;
 }
