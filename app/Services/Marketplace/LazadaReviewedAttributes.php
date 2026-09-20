@@ -16,7 +16,9 @@ final class LazadaReviewedAttributes
         $skus = $reviewed['skus'] ?? [];
         $bindings = $reviewed['imageBindings'] ?? [];
         if (!is_array($normal) || !is_array($skus) || !is_array($bindings)
-            || array_is_list($normal) || array_is_list($skus) || array_is_list($bindings)) {
+            || ($normal !== [] && array_is_list($normal))
+            || ($skus !== [] && array_is_list($skus))
+            || ($bindings !== [] && array_is_list($bindings))) {
             self::reject('Reviewed attributes are malformed.');
         }
 
@@ -54,7 +56,8 @@ final class LazadaReviewedAttributes
             if (!is_string($name) || !isset($definitions['normal'][$name])) self::reject('Unknown Lazada product attribute.');
         }
         foreach ($skus as $sku => $values) {
-            if (!is_string($sku) || !isset($sourceSkus[$sku]) || !is_array($values) || array_is_list($values)) self::reject('Unknown Lazada variant.');
+            if (!is_string($sku) || !isset($sourceSkus[$sku]) || !is_array($values)
+                || ($values !== [] && array_is_list($values))) self::reject('Unknown Lazada variant.');
             foreach ($values as $name => $_) {
                 if (!is_string($name) || !isset($definitions['sku'][$name])) self::reject('Unknown Lazada variant attribute.');
             }
@@ -63,7 +66,7 @@ final class LazadaReviewedAttributes
         $expectedImageKeys = [];
         $result = ['normal' => [], 'skus' => [], 'jw_attribute_image_ids' => []];
         foreach ($definitions['normal'] as $name => $attribute) {
-            $type = strtolower((string) ($attribute['input_type'] ?? ''));
+            $type = self::isSizeChart($attribute) ? 'img' : strtolower((string) ($attribute['input_type'] ?? ''));
             $required = (bool) ($attribute['is_mandatory'] ?? false);
             if ($type === 'img') {
                 $key = "lazada:product:{$name}";
@@ -109,5 +112,12 @@ final class LazadaReviewedAttributes
     private static function reject(string $message): never
     {
         throw ValidationException::withMessages(['attributes' => $message]);
+    }
+
+    private static function isSizeChart(array $attribute): bool
+    {
+        return ($attribute['attribute_type'] ?? null)==='normal'
+            && (preg_match('/size[ _-]*chart/i',(string)($attribute['name']??''))===1
+                || preg_match('/size[ _-]*chart/i',(string)($attribute['label']??''))===1);
     }
 }

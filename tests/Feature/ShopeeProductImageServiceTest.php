@@ -32,6 +32,7 @@ class ShopeeProductImageServiceTest extends TestCase
         $product=Product::create(['title'=>'Image','handle'=>'image-upload','base_price'=>100]);
         $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee','shop_name'=>'Test','external_shop_id'=>'456',
             'region'=>'MY','environment'=>'sandbox','status'=>'connected']);
+        app(\App\Services\Marketplace\MarketplaceStoreAccess::class)->setProductPublishing($store,true,$actor->id,'Size-chart image publishing test');
         MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'123','access_token'=>'fixture-token','access_expires_at'=>now()->addHour()]);
         Storage::fake('public');
         $path='cms/media/9285db80-1111-4111-8111-123456789012.png';
@@ -64,11 +65,13 @@ class ShopeeProductImageServiceTest extends TestCase
         $source=app(\App\Services\Marketplace\MarketplacePublishingSource::class)->read($product->id);
         $this->postJson($stageUrl,['product_id'=>$product->id,'source_revision'=>$source['revision'],
             'request_key'=>'7285db80-1111-4111-8111-123456789012','payload'=>['item_name'=>'Browser override',
-                'original_price'=>999,'original_stock'=>500,'image'=>['image_id_list'=>['foreign-image']]]])->assertOk();
+                'jw_size_chart_image_id'=>$image->id,'original_price'=>999,'original_stock'=>500,'image'=>['image_id_list'=>['foreign-image']]]])->assertOk();
         $saved=json_decode(DB::table('marketplace_publishing_tasks')->value('payload'),true);
         $this->assertSame('Image',$saved['item_name']);
         $this->assertSame(12.5,$saved['original_price']);
         $this->assertSame(['image-1'],$saved['image']['image_id_list']);
+        $this->assertSame('image-1',$saved['size_chart']);
+        $this->assertArrayNotHasKey('jw_size_chart_image_id',$saved);
         $this->assertSame([['stock'=>0]],$saved['seller_stock']);
         $this->assertSame(17,$variant->fresh()->stock);
         $this->assertSame(1,$uploads);

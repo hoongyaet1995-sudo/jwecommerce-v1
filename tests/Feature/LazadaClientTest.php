@@ -134,6 +134,25 @@ class LazadaClientTest extends TestCase
         });
     }
 
+    public function test_size_chart_update_uses_the_confirmed_item_and_lazada_image_url(): void
+    {
+        config(['marketplace.publish_operations_enabled'=>true,'marketplace.lazada.enabled'=>true,
+            'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);
+        Http::preventStrayRequests();
+        Http::fake(['*'=>Http::response(['code'=>'0','data'=>[]])]);
+
+        app(LazadaClient::class)->updateSizeChart('fixture-token','1001','https://my-live-02.slatic.net/p/size-chart.png');
+
+        Http::assertSent(function ($request) {
+            $parameters=$request->data();
+            $payload=json_decode($parameters['payload']??'',true);
+            return $request->url()==='https://api.lazada.com.my/rest/size/chart/batch/update'
+                && $payload===['Request'=>['Product'=>['SizeCharts'=>['SizeChart'=>[
+                    ['product_id'=>'1001','size_chart'=>'https://my-live-02.slatic.net/p/size-chart.png'],
+                ]]]]];
+        });
+    }
+
     public function test_stock_write_requires_its_own_explicit_gate_and_posts_a_non_negative_absolute_quantity(): void
     {
         config(['marketplace.stock_sync_operations_enabled'=>false,'marketplace.lazada.enabled'=>true,

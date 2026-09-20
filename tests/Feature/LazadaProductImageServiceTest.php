@@ -66,6 +66,10 @@ class LazadaProductImageServiceTest extends TestCase
         Http::fake([
             '*/seller/get*'=>Http::response(['code'=>'0','data'=>['seller_id'=>'300163725140','short_code'=>'MY4NA1T7CK','status'=>'ACTIVE']]),
             '*/seller/warehouse/get*'=>Http::response(['code'=>'0','result'=>['success'=>true,'module'=>[['code'=>'dropshipping','status'=>'ACTIVE']]]]),
+            '*/category/attributes/get*'=>Http::response(['code'=>'0','data'=>[
+                ['name'=>'size_chart','label'=>'Size Chart','attribute_type'=>'normal','is_mandatory'=>1,'input_type'=>'numeric'],
+                ['name'=>'color_thumbnail','attribute_type'=>'sku','is_mandatory'=>1,'input_type'=>'img'],
+            ]]),
             '*/image/migrate*'=>Http::response(['code'=>'0','data'=>['image'=>['url'=>'https://my-live-02.slatic.net/p/automatic.jpg']]]),
         ]);
         $source=app(\App\Services\Marketplace\MarketplacePublishingSource::class)->read($product->id);
@@ -88,7 +92,7 @@ class LazadaProductImageServiceTest extends TestCase
         $this->assertSame('https://my-live-02.slatic.net/p/automatic.jpg',$saved['Request']['Product']['Skus']['Sku'][0]['color_thumbnail']);
         $this->assertSame('0',$saved['Request']['Product']['Skus']['Sku'][0]['quantity']);
         $this->assertSame(77,$variant->fresh()->stock);
-        Http::assertSentCount(4);
+        Http::assertSentCount(6);
         Http::assertNotSent(fn($request)=>str_contains($request->url(),'/product/create'));
     }
 

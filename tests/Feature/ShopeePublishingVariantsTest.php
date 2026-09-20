@@ -80,7 +80,7 @@ class ShopeePublishingVariantsTest extends TestCase
             if (str_contains($request->url(),'/get_model_list?')) return Http::response(['response'=>['model'=>[
                 ['model_id'=>2001,'model_sku'=>'RED'],['model_id'=>2002,'model_sku'=>'BLUE']]]]);
             if (str_contains($request->url(),'/add_item?')) {
-                $this->assertArrayNotHasKey('jw_variations',$request->data());
+                foreach (array_keys($request->data()) as $key) $this->assertFalse(str_starts_with((string)$key,'jw_'));
                 return Http::response(['error'=>'','response'=>['item_id'=>1001]]);
             }
             $this->assertStringContainsString('/init_tier_variation?',$request->url());

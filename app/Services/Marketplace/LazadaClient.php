@@ -87,6 +87,21 @@ final class LazadaClient
         return ['item_id'=>(string)$data['item_id'],'sku_ids'=>$ids];
     }
 
+    /** Attach one reviewed Lazada-hosted size-chart image after product creation. */
+    public function updateSizeChart(#[\SensitiveParameter] string $accessToken, string $itemId, string $sizeChart, ?int $storeId=null): void
+    {
+        if (config('marketplace.publish_operations_enabled')!==true) {
+            throw new RuntimeException('Marketplace publishing is disabled.');
+        }
+        if (!preg_match('/^[1-9][0-9]*$/D',$itemId)
+            || !preg_match('#\Ahttps://[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.slatic\.net/[^\s]+\z#D',$sizeChart)) {
+            throw new RuntimeException('Invalid Lazada size chart selection.');
+        }
+        $this->signedPost('/size/chart/batch/update',$accessToken,['Request'=>['Product'=>['SizeCharts'=>['SizeChart'=>[
+            ['product_id'=>$itemId,'size_chart'=>$sizeChart],
+        ]]]]],'Lazada size chart update',$storeId);
+    }
+
     /**
      * Transport for one reviewed absolute SKU quantity. Callers must revalidate
      * their WMS snapshot immediately before invoking it.

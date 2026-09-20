@@ -55,7 +55,7 @@ final class MarketplacePublishingDispatchService
             if (config('marketplace.basic_wms_enabled')===true) BasicPublishingQuantity::validate($store->platform,$payload);
             $confirmed=match ($store->platform) {
                 'shopee' => $this->publishShopee($taskId, $store, $payload),
-                'lazada' => $this->publishLazada($store, $payload),
+                'lazada' => $this->publishLazada($taskId, $store, $payload),
                 default => throw new RuntimeException('This marketplace publishing platform is not yet executable.'),
             };
             $externalItemId=$confirmed['item_id'];
@@ -94,6 +94,7 @@ final class MarketplacePublishingDispatchService
     {
         $variations=ShopeePublishingVariants::validate($payload);
         unset($payload['jw_variations'],$payload['jw_variant_image_choices']);
+        $this->assertProviderPayload($payload);
         if (!is_string($store->external_shop_id) || !preg_match('/^[1-9][0-9]*$/D', $store->external_shop_id)) {
             throw new RuntimeException('Shopee store identity is invalid.');
         }
@@ -119,14 +120,37 @@ final class MarketplacePublishingDispatchService
         }
     }
 
-    private function publishLazada(object $store, array $payload): array
+    private function publishLazada(int $taskId, object $store, array $payload): array
     {
+        $sizeChart=$payload['jw_size_chart']??null;
+        if ($sizeChart!==null && !is_string($sizeChart)) throw new RuntimeException('Invalid Lazada size chart selection.');
         $token=$this->lazadaTokens->accessToken((int)$store->id);
         if (config('marketplace.basic_wms_enabled')===true) {
             $identity=$this->lazada->read('/seller/get',$token,[],(int)$store->id);
             LazadaSellerIdentity::assertCurrent($store,$identity,'before product publishing');
             app(LazadaListingPreflight::class)->validate($token,$payload,(int)$store->id);
         }
-        return $this->lazada->createProduct($token, $payload, (int)$store->id);
+        unset($payload['jw_size_chart']);
+        $this->assertProviderPayload($payload);
+        $confirmed=$this->lazada->createProduct($token, $payload, (int)$store->id);
+        if ($sizeChart===null) return $confirmed;
+        if (!$this->tasks->recordParent($taskId,$confirmed['item_id'])) {
+            throw new PublishingResultUncertain('Lazada product was created, but its parent identity could not be saved before the size chart update. Reconcile before retrying.');
+        }
+        try {
+            $this->lazada->updateSizeChart($token,$confirmed['item_id'],$sizeChart,(int)$store->id);
+        } catch (\Throwable) {
+            throw new PublishingResultUncertain('Lazada product was created, but its size chart update is not confirmed. Reconcile before retrying.');
+        }
+        return $confirmed;
+    }
+
+    private function assertProviderPayload(array $payload): void
+    {
+        foreach (array_keys($payload) as $key) {
+            if (is_string($key) && str_starts_with($key,'jw_')) {
+                throw new RuntimeException('Internal publishing fields were not resolved before provider dispatch.');
+            }
+        }
     }
 }

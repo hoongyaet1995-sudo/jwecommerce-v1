@@ -40,7 +40,9 @@ class MarketplacePublishingController extends Controller
         if (array_diff(array_keys($request->all()), ['product_id', 'request_key', 'source_revision', 'payload', '_token'])) {
             throw ValidationException::withMessages(['publishing'=>'Unsupported marketplace publishing fields.']);
         }
-        $request->validate(['payload.jw_variant_image_choices'=>['sometimes','array'],'payload.jw_variant_image_choices.*'=>['required','integer','min:1']]);
+        $request->validate(['payload.jw_variant_image_choices'=>['sometimes','array'],'payload.jw_variant_image_choices.*'=>['required','integer','min:1'],
+            'payload.jw_size_chart_image_id'=>['sometimes','integer','min:1'],
+            'payload.jw_attribute_image_ids'=>['sometimes','array'],'payload.jw_attribute_image_ids.*'=>['required','integer','min:1']]);
         $data=$request->validate([
             'product_id'=>['required','integer','min:1'],
             'request_key'=>['required','uuid'],
@@ -51,26 +53,76 @@ class MarketplacePublishingController extends Controller
             abort(403);
         }
         try {
-        $id=DB::transaction(function () use ($data,$request,$store,$tasks) {
-            app(\App\Services\Marketplace\BasicPublishingDestination::class)->check($store,(int)$data['product_id']);
-            $source=app(\App\Services\Marketplace\MarketplacePublishingSource::class)->read((int)$data['product_id']);
-            abort_unless(hash_equals($source['revision'],$data['source_revision']),409,'The product changed after review. Review it again before publishing.');
-            $payload=$data['payload'];
-            if (DB::table('marketplace_stores')->where('id',$store)->value('platform')==='shopee') {
-                if (config('marketplace.basic_wms_enabled')===true) {
-                    $payload=\App\Services\Marketplace\ShopeePublishingMasterData::bind($source,$payload);
-                    app(\App\Services\Marketplace\ShopeePublishingImages::class)->prepare($store,$source,(int)$request->user()->id,$payload['jw_variant_image_choices']??[]);
-                    $payload=app(\App\Services\Marketplace\ShopeePublishingImages::class)->bind($store,$source,$payload);
+        app(\App\Services\Marketplace\BasicPublishingDestination::class)->check($store,(int)$data['product_id']);
+        $source=app(\App\Services\Marketplace\MarketplacePublishingSource::class)->read((int)$data['product_id']);
+        abort_unless(hash_equals($source['revision'],$data['source_revision']),409,'The product changed after review. Review it again before publishing.');
+        $storeRow=DB::table('marketplace_stores')->find($store);
+        abort_unless($storeRow,404);
+        $payload=$data['payload'];
+        if ($storeRow->platform==='lazada') {
+            $allowed=['Request','jw_attribute_image_ids','jw_size_chart_image_id'];
+            if (array_diff(array_keys($payload),$allowed)) throw ValidationException::withMessages(['publishing'=>'Unsupported Lazada publishing fields.']);
+            $product=$payload['Request']['Product']??null;
+            $category=$product['PrimaryCategory']??null;
+            $payloadSkus=$product['Skus']['Sku']??null;
+            if (!is_array($product)||!preg_match('/^[1-9][0-9]*$/D',(string)$category)||!is_array($payloadSkus)||!array_is_list($payloadSkus)) {
+                throw ValidationException::withMessages(['publishing'=>'Review the Lazada category and variants.']);
+            }
+            $token=app(\App\Services\Marketplace\LazadaTokenManager::class)->accessToken($store);
+            $schema=app(\App\Services\Marketplace\LazadaClient::class)->read('/category/attributes/get',$token,['primary_category_id'=>(string)$category],$store);
+            $skuValues=[];
+            $reserved=['SellerSku','price','quantity','package_weight','package_length','package_width','package_height','Images','MultiWarehouseInventories'];
+            foreach ($payloadSkus as $sku) {
+                $sellerSku=$sku['SellerSku']??null;
+                if (!is_string($sellerSku)||isset($skuValues[$sellerSku])) throw ValidationException::withMessages(['publishing'=>'Review the Lazada variant identities.']);
+                $skuValues[$sellerSku]=array_diff_key($sku,array_flip($reserved));
+            }
+            $imageBindings=$payload['jw_attribute_image_ids']??[];
+            if (isset($payload['jw_size_chart_image_id'])) {
+                $sizeNames=[];
+                foreach ($schema as $attribute) if (($attribute['attribute_type']??null)==='normal'
+                    && (preg_match('/size[ _-]*chart/i',(string)($attribute['name']??''))||preg_match('/size[ _-]*chart/i',(string)($attribute['label']??'')))) $sizeNames[]=$attribute['name'];
+                if (count($sizeNames)!==1) throw ValidationException::withMessages(['size_chart'=>'The current category does not expose one verified Size Chart attribute.']);
+                $sizeKey='lazada:product:'.$sizeNames[0];
+                if (isset($imageBindings[$sizeKey]) && $imageBindings[$sizeKey]!==$payload['jw_size_chart_image_id']) {
+                    throw ValidationException::withMessages(['size_chart'=>'Choose one current JW image for the Size Chart field.']);
                 }
-                \App\Services\Marketplace\ShopeePublishingVariants::validate($payload,$source);
+                $imageBindings[$sizeKey]=$payload['jw_size_chart_image_id'];
             }
-            if (config('marketplace.basic_wms_enabled')===true && DB::table('marketplace_stores')->where('id',$store)->value('platform')==='lazada') {
-                $payload=\App\Services\Marketplace\LazadaPublishingMasterData::bind($source,$payload);
-                app(\App\Services\Marketplace\LazadaPublishingImages::class)->prepare($store,$source,(int)$request->user()->id);
-                $payload=app(\App\Services\Marketplace\LazadaPublishingImages::class)->bind($store,$source,$payload);
-                $payload=app(\App\Services\Marketplace\LazadaPublishingWarehouses::class)->bind($store,$payload);
+            $reviewed=\App\Services\Marketplace\LazadaReviewedAttributes::bind($schema,$source,[
+                'normal'=>$product['Attributes']??[],'skus'=>$skuValues,'imageBindings'=>$imageBindings,
+            ]);
+            $payload['Request']['Product']['Attributes']=$reviewed['normal'];
+            foreach ($payload['Request']['Product']['Skus']['Sku'] as &$sku) {
+                $sellerSku=$sku['SellerSku'];
+                foreach (array_diff_key($sku,array_flip($reserved)) as $name=>$_) unset($sku[$name]);
+                foreach ($reviewed['skus'][$sellerSku]??[] as $name=>$value) $sku[$name]=$value;
             }
-            return $tasks->create($store,(int)$data['product_id'],(int)$request->user()->id,$data['request_key'],$payload,$source);
+            unset($sku,$payload['jw_size_chart_image_id']);
+            if ($reviewed['jw_attribute_image_ids']) $payload['jw_attribute_image_ids']=$reviewed['jw_attribute_image_ids'];
+            else unset($payload['jw_attribute_image_ids']);
+        }
+        if ($storeRow->platform==='shopee') {
+            if (config('marketplace.basic_wms_enabled')===true) {
+                $payload=\App\Services\Marketplace\ShopeePublishingMasterData::bind($source,$payload);
+                app(\App\Services\Marketplace\ShopeePublishingImages::class)->prepare($store,$source,(int)$request->user()->id,$payload['jw_variant_image_choices']??[]);
+                $payload=app(\App\Services\Marketplace\ShopeePublishingImages::class)->bind($store,$source,$payload);
+            }
+            \App\Services\Marketplace\ShopeePublishingVariants::validate($payload,$source);
+        }
+        if (config('marketplace.basic_wms_enabled')===true && $storeRow->platform==='lazada') {
+            $payload=\App\Services\Marketplace\LazadaPublishingMasterData::bind($source,$payload);
+            app(\App\Services\Marketplace\LazadaPublishingImages::class)->prepare($store,$source,(int)$request->user()->id);
+            $payload=app(\App\Services\Marketplace\LazadaPublishingImages::class)->bind($store,$source,$payload);
+            $payload=app(\App\Services\Marketplace\LazadaPublishingWarehouses::class)->bind($store,$payload);
+        }
+        $id=DB::transaction(function () use ($data,$request,$store,$tasks,$payload,$source,$storeRow) {
+            app(\App\Services\Marketplace\BasicPublishingDestination::class)->check($store,(int)$data['product_id']);
+            $current=app(\App\Services\Marketplace\MarketplacePublishingSource::class)->read((int)$data['product_id']);
+            abort_unless(hash_equals($source['revision'],$current['revision'])
+                && DB::table('marketplace_stores')->where('id',$store)->where('platform',$storeRow->platform)->where('status','connected')->exists(),
+                409,'The product or store changed after review. Review it again before publishing.');
+            return $tasks->create($store,(int)$data['product_id'],(int)$request->user()->id,$data['request_key'],$payload,$current);
         });
         } catch (\DomainException $error) {
             throw ValidationException::withMessages(['publishing'=>$error->getMessage()]);
