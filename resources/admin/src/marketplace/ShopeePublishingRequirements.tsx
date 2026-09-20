@@ -45,4 +45,3 @@ export function ShopeePublishingRequirements({review,shopName='Selected Shopee s
    onChange={next=>{for(const channel of review.channels){const id=channel.logistics_channel_id,value=next[String(id)],prior=review.selectedChannels[id];if(value?.enabled){const size=channel.size_list?.find(size=>String(size.size_id)===value.selectedSizeTier);if(!prior||String(prior.size_id??'')!==String(size?.size_id??'')||prior.shipping_fee!==value.sellerFeeMyr)review.updateChannel(id,{...prior,logistic_id:id,is_free:prior?.is_free??false,size_id:size?.size_id,shipping_fee:value.sellerFeeMyr});}else if(prior&&!channel.force_enable&&!channel.compulsory_channel)review.updateChannel(id,null);}}}/></div>
  </div>;
 }
-

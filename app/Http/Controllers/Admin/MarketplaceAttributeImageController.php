@@ -28,4 +28,3 @@ final class MarketplaceAttributeImageController extends Controller
         ], 201)->header('Cache-Control', 'no-store, private');
     }
 }
-

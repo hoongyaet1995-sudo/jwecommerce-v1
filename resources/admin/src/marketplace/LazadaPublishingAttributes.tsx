@@ -41,4 +41,3 @@ export function LazadaPublishingAttributes({fields,onChange}:{fields:LazadaPubli
   const index=canonical.findIndex(field=>field.key===key);if(index>=0)onChange(legacy[index].key,serialized(value));
  }}/>;
 }
-
