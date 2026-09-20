@@ -2,13 +2,18 @@
 import React,{act} from 'react';
 import {createRoot} from 'react-dom/client';
 import {expect,it,vi} from 'vitest';
-import {PublishProductModal} from './components/marketplace/PublishProductModal';
+import {PublishProductModal,shouldOpenExistingPublishingTask} from './components/marketplace/PublishProductModal';
 import {JourneyProvider,type MarketplaceJourneyContext} from './context/AdminContext';
 import {marketplaceOperations} from '../../integration/marketplaceOperations';
 import {marketplaceRequest} from '../../integration/marketplaceData';
 import {MissingPublishingRequestRecoveryError} from '../../integration/publishingReviewSession';
 vi.mock('../../integration/marketplaceData',()=>({marketplaceRequest:vi.fn()}));
-vi.mock('../../integration/marketplaceOperations',()=>({marketplaceOperations:{publishingTask:vi.fn()}}));
+vi.mock('../../integration/marketplaceOperations',()=>({marketplaceOperations:{publishingTask:vi.fn(),authorizePublishingRecovery:vi.fn(),reconcileLazadaPublishingTask:vi.fn()}}));
+it('bypasses the old task after duplicate-risk recovery authorization',()=>{
+ const task={id:5,status:'uncertain'};
+ expect(shouldOpenExistingPublishingTask(task)).toBe(true);
+ expect(shouldOpenExistingPublishingTask(task,'1285db80-1111-4111-8111-123456789045')).toBe(false);
+});
 it('submits live Shopee requirements from the existing three-step review',async()=>{
  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
  vi.mocked(marketplaceRequest).mockImplementation(async(path)=>{

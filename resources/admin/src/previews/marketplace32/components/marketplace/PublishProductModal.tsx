@@ -54,6 +54,7 @@ interface PublishProductModalProps {
 }
 
 type WizardStep = 'destination' | 'attributes' | 'pricing_sync' | 'publishing';
+export const shouldOpenExistingPublishingTask=(task:unknown,recoveryAuthorizationId?:string)=>!!task&&!recoveryAuthorizationId;
 
 export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   isOpen,
@@ -1281,14 +1282,14 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
               {currentStep === 'destination' && (
                 <button
                   type="button"
-                  disabled={!targetProduct || !targetConnection || (liveData && (storeStatus.loading || !!storeStatus.error || (!!storeStatus.products[selectedProductId]&&!selectedExistingTask)))}
+                  disabled={!targetProduct || !targetConnection || (liveData && (storeStatus.loading || !!storeStatus.error || (!!storeStatus.products[selectedProductId]&&!selectedExistingTask&&!recoveryAuthorizationId)))}
                   onClick={() => {
-                    if(selectedExistingTask){setSubmittedTaskId(String(selectedExistingTask.id));setPresentProgress(true);return;}
+                    if(shouldOpenExistingPublishingTask(selectedExistingTask,recoveryAuthorizationId)){setSubmittedTaskId(String(selectedExistingTask.id));setPresentProgress(true);return;}
                     setCurrentStep('attributes');
                   }}
                   className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  <span>{liveData&&storeStatus.error?'Status unavailable':liveData&&storeStatus.loading?'Checking listings…':liveData&&storeStatus.products[selectedProductId]?'Review existing listing / mapping':'Next: Attributes'}</span>
+                  <span>{liveData&&storeStatus.error?'Status unavailable':liveData&&storeStatus.loading?'Checking listings…':shouldOpenExistingPublishingTask(selectedExistingTask,recoveryAuthorizationId)?'Review existing listing / mapping':'Next: Attributes'}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               )}
