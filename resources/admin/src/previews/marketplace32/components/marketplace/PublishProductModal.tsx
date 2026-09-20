@@ -838,7 +838,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                                   <p className="text-xs font-bold text-neutral-900 dark:text-white truncate">{p.title}</p>
                                   {isAlreadyOnChannel && (
                                     <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 shrink-0">
-                                      {liveData ? (isAlreadyOnChannel==='listed'?'Already in this store':'Review existing task') : 'Already on '+targetConnection.platform.toUpperCase()}
+                                      {liveData ? (isAlreadyOnChannel==='listed'?'Already in this store':recoveryAuthorizationId&&p.id===selectedProductId?'Retry authorized':'Review existing task') : 'Already on '+targetConnection.platform.toUpperCase()}
                                     </span>
                                   )}
                                 </div>

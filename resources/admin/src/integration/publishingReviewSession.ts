@@ -35,6 +35,14 @@ async function publishWithRecovery<T extends {productId:number;storeId:number}>(
  if(saved){
   pending=JSON.parse(saved);
   if(!pending||typeof pending.key!=='string'||typeof pending.signature!=='string')throw new Error('The saved publishing request needs review.');
+  // A duplicate-risk authorization deliberately starts a new attempt.  The
+  // saved key may belong to the uncertain task which the administrator has
+  // just reviewed, so do not recover that old task under the new signature.
+  // Once this new key is saved, retries of the same authorized submission do
+  // recover it, preserving idempotency if the response is lost.
+  if('recoveryAuthorizationId' in input&&typeof input.recoveryAuthorizationId==='string'&&input.recoveryAuthorizationId&&pending.signature!==signature){
+   pending={key:crypto.randomUUID(),signature};localStorage.setItem(slot,JSON.stringify(pending));
+  }else{
   try{
    const task=await marketplaceOperations.recoverPublishingTask(String(input.storeId),pending.key);
    if(task.productId!==input.productId)throw new Error('Saved task belongs to another product.');
@@ -49,6 +57,7 @@ async function publishWithRecovery<T extends {productId:number;storeId:number}>(
   }catch(error){
    if(!error||typeof error!=='object'||!('status' in error)||error.status!==404)throw error;
    if(pending.signature!==signature)throw new MissingPublishingRequestRecoveryError(slot);
+  }
   }
  }else{
   pending={key:crypto.randomUUID(),signature};

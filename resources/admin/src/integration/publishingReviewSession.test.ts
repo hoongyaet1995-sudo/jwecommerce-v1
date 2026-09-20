@@ -29,6 +29,24 @@ it('resumes a saved queued task without creating a new one',async()=>{
  expect(marketplaceRequest).toHaveBeenCalledWith('/publishing-tasks/7/dispatch','POST');
   expect(submitLazadaReview).toHaveBeenCalledTimes(1);
 });
+it('uses a new request identity when a duplicate-risk recovery authorization was issued',async()=>{
+ const slot='jw-marketplace-publish:2:2:4';
+ values.set(slot,JSON.stringify({key:'9285db80-1111-4111-8111-123456789012',signature:'old-review'}));
+ vi.mocked(marketplaceOperations.recoverPublishingTask).mockResolvedValue({id:5,productId:4,status:'uncertain'} as never);
+ vi.mocked(submitLazadaReview).mockResolvedValue('6');
+ const recovered={...input,recoveryAuthorizationId:'1285db80-1111-4111-8111-123456789045'};
+ expect(await publishLazadaWithRecovery('2',recovered)).toBe('6');
+ expect(marketplaceOperations.recoverPublishingTask).not.toHaveBeenCalled();
+ expect(submitLazadaReview).toHaveBeenCalledWith(expect.objectContaining({
+  recoveryAuthorizationId:recovered.recoveryAuthorizationId,
+ }));
+ const newRequestKey=(submitLazadaReview.mock.calls[0][0] as {requestKey:string}).requestKey;
+ expect(newRequestKey).not.toBe('9285db80-1111-4111-8111-123456789012');
+ vi.mocked(marketplaceOperations.recoverPublishingTask).mockResolvedValue({id:6,productId:4,status:'uncertain'} as never);
+ expect(await publishLazadaWithRecovery('2',recovered)).toBe('6');
+ expect(marketplaceOperations.recoverPublishingTask).toHaveBeenCalledWith('2',newRequestKey);
+ expect(submitLazadaReview).toHaveBeenCalledTimes(1);
+});
 it('lets a user replace only a server-confirmed missing request before submitting changed values',async()=>{
  const slot='jw-marketplace-publish:2:2:4';
  values.set(slot,JSON.stringify({key:'missing-request',signature:'earlier-review'}));
