@@ -39,9 +39,10 @@ final class LazadaPublishingImages
             }
         }
         $payload['Request']['Product']['Images']=['Image'=>$urls];
+        $hasAttributeImages=array_key_exists('jw_attribute_image_ids',$payload);
         $attributeImages=$payload['jw_attribute_image_ids']??[];
         unset($payload['jw_attribute_image_ids']);
-        if (!is_array($attributeImages) || array_is_list($attributeImages)) {
+        if ($hasAttributeImages && (!is_array($attributeImages) || array_is_list($attributeImages))) {
             throw ValidationException::withMessages(['images'=>'Reviewed Lazada image attributes are invalid.']);
         }
         foreach ($attributeImages as $key=>$imageId) {

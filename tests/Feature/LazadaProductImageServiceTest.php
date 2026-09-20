@@ -90,6 +90,7 @@ class LazadaProductImageServiceTest extends TestCase
         $this->assertArrayNotHasKey('jw_size_chart_image_id',$saved);
         $this->assertArrayNotHasKey('jw_attribute_image_ids',$saved);
         $this->assertSame('https://my-live-02.slatic.net/p/automatic.jpg',$saved['Request']['Product']['Skus']['Sku'][0]['color_thumbnail']);
+        $this->assertSame($saved, app(\App\Services\Marketplace\LazadaPublishingImages::class)->bind($store,$source,$saved));
         $this->assertSame('0',$saved['Request']['Product']['Skus']['Sku'][0]['quantity']);
         $this->assertSame(77,$variant->fresh()->stock);
         Http::assertSentCount(6);
