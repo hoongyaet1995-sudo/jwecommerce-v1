@@ -47,3 +47,11 @@ Browser acceptance against the isolated SQLite preview proved: authenticated pag
 - Transfer receipts retain provider stages and are reconstructed from persisted operation history after reload.
 - Verification: 72 backend tests / 360 assertions passed; targeted store-inventory adapter 4/4 passed; production Vite build succeeded. The repository-wide frontend run has four pre-existing unrelated failures recorded separately and is not used as closure evidence for this module.
 
+
+- Shared Stock mutations now fan out one durable task per managed mapped marketplace store; takeover resolves the shared pool and publishes the selected store's initial ATP.
+- Store/SKU tasks supersede older queued work, serialize behind in-flight work, and mark a completed write superseded when the ledger advanced during provider I/O.
+- Mode readiness now scopes balances to the current mode; a Shared to Independent to Shared round trip is covered.
+- Overview exposes current generic sync task IDs/statuses; operation history hydrates current task stages rather than saved creation-state only.
+- Takeover confirmation now requires a server review token covering store, configuration, mappings, snapshots and balance versions, and writes an audited takeover operation.
+- Latest verification: 36 StoreInventory tests / 216 assertions; targeted adapter 4/4; Vite build succeeded.
+

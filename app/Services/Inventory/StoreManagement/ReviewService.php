@@ -152,7 +152,7 @@ final class ReviewService
                 ]);
             } else {
                 $fresh = DB::table('inventory_balances')->find($result[0]['id']);
-                $receipt['external_stages'] = [$this->outbox->enqueueBalance($operationId, $fresh)];
+                $receipt['external_stages'] = $this->outbox->enqueueMutation($operationId, $fresh);
                 DB::table('inventory_store_operations')->where('id', $operationId)->update([
                     'receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'updated_at' => now(),
                 ]);

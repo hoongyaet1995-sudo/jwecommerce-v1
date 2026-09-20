@@ -45,7 +45,7 @@ final class ModeMutation
             $balances = DB::table('inventory_balances as b')->join('inventory_pools as p', 'p.id', '=', 'b.inventory_pool_id')
                 ->whereNotNull('b.counted_at')->whereIn('p.marketplace_store_id', $managedStoreIds)->select('b.*')->get();
             foreach ($balances as $balance) {
-                $stages[] = $this->outbox->enqueueBalance(null, $balance, 'mode', 'mode:'.($expectedVersion + 1).':'.$balance->id.':'.$balance->version);
+                $stages = [...$stages, ...$this->outbox->enqueueMutation(null, $balance, 'mode', 'mode:'.($expectedVersion + 1).':'.$balance->id.':'.$balance->version)];
             }
 
             return ['operating_mode' => $target, 'configuration_version' => $expectedVersion + 1, 'physical_total' => $afterTotal, 'external_stages' => $stages];

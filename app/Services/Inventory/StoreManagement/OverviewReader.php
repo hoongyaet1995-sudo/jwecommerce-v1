@@ -50,7 +50,7 @@ final class OverviewReader
                 'counted' => $row->counted_at !== null,
                 'version' => (int) $row->version,
                 'provider_observation' => null,
-                'external_sync' => null,
+                'external_sync' => $this->syncState((int) $row->product_variant_id, $row->marketplace_store_id === null ? null : (int) $row->marketplace_store_id, $row->kind === 'shared'),
             ];
         })->all();
 
@@ -102,22 +102,40 @@ final class OverviewReader
     {
         $perPage = max(1, min(100, (int) ($filters['per_page'] ?? 25)));
         $page = max(1, (int) ($filters['page'] ?? 1));
-        $query = DB::table('inventory_store_operations as o')->join('users as u', 'u.id', '=', 'o.actor_id');
+        $query = DB::table('inventory_store_operations as o')->join('users as u', 'u.id', '=', 'o.actor_id')->leftJoin('inventory_store_reviews as r', 'r.id', '=', 'o.review_id');
         if (! empty($filters['kind'])) {
             $query->where('o.kind', $filters['kind']);
         }
         $total = (clone $query)->count();
         $data = $query->orderByDesc('o.created_at')->orderByDesc('o.id')
-            ->forPage($page, $perPage)->get(['o.id', 'o.review_id', 'o.kind', 'o.ledger_status', 'o.receipt',
+            ->forPage($page, $perPage)->get(['o.id', 'o.review_id', 'o.kind', 'o.ledger_status', 'o.receipt', 'r.payload',
                 'o.created_at', 'u.name as actor_name'])->map(fn (object $row): array => [
                     'id' => $row->id, 'review_id' => $row->review_id, 'kind' => $row->kind,
                     'ledger_status' => $row->ledger_status, 'actor' => $row->actor_name,
                     'created_at' => $row->created_at,
-                    'result' => $this->sanitize(json_decode($row->receipt, true, 512, JSON_THROW_ON_ERROR)),
+                    'result' => [...$this->sanitize(json_decode($row->receipt, true, 512, JSON_THROW_ON_ERROR)),
+                        'payload' => $row->payload ? json_decode($row->payload, true, 512, JSON_THROW_ON_ERROR) : null,
+                        'external_stages' => DB::table('inventory_store_sync_tasks')->where('operation_id', $row->id)->orderBy('created_at')->get()->map(fn ($task) => (array) $task)->all()],
                 ])->all();
 
         return ['data' => $data, 'meta' => ['page' => $page, 'per_page' => $perPage, 'total' => $total,
             'last_page' => max(1, (int) ceil($total / $perPage))]];
+    }
+
+    private function syncState(int $variantId, ?int $storeId, bool $shared): ?array
+    {
+        $query = DB::table('inventory_store_sync_tasks')->where('product_variant_id', $variantId);
+        if (! $shared) {
+            $query->where('marketplace_store_id', $storeId);
+        }
+        $tasks = $query->whereNotNull('marketplace_store_id')->orderByDesc('created_at')->get(['id', 'marketplace_store_id', 'status', 'target_quantity', 'attempts']);
+        if ($tasks->isEmpty()) {
+            return null;
+        }
+        $priority = ['uncertain' => 6, 'auth_expired' => 5, 'failed' => 4, 'processing' => 3, 'queued' => 2, 'waiting_source' => 2, 'confirmed' => 1, 'superseded' => 0, 'not_applicable' => 0];
+        $worst = $tasks->sortByDesc(fn ($task) => $priority[$task->status] ?? 3)->first();
+
+        return ['id' => $worst->id, 'status' => $worst->status, 'tasks' => $tasks->map(fn ($task) => (array) $task)->all()];
     }
 
     /** @return array<string,mixed> */

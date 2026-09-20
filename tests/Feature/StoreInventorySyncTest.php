@@ -8,6 +8,7 @@ use App\Exceptions\StoreInventoryResultUncertain;
 use App\Jobs\ProcessStoreInventorySync;
 use App\Models\User;
 use App\Services\Inventory\StoreManagement\AccountResolver;
+use App\Services\Inventory\StoreManagement\SyncOutbox;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\StoreInventoryFixture;
@@ -117,5 +118,25 @@ class StoreInventorySyncTest extends TestCase
         $this->actingAs($c['actor'])->postJson('/admin/api/inventory/store-management/sync-tasks/'.$c['task']->id.'/retry')
             ->assertConflict()->assertJsonPath('error.code', 'reconciliation_required');
         $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'uncertain']);
+    }
+
+    public function test_shared_balance_fans_out_to_every_managed_mapped_marketplace_store(): void
+    {
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool']);
+        $fixture = new StoreInventoryFixture;
+        $sku = $fixture->sku();
+        $balance = app(AccountResolver::class)->balance($sku['variant']->id, 'website');
+        DB::table('inventory_balances')->where('id', $balance['id'])->update(['physical_stock' => 7, 'reserved_stock' => 1, 'safety_stock' => 0, 'counted_at' => now()]);
+        foreach (['lazada', 'shopee'] as $platform) {
+            $store = $fixture->store($platform, strtoupper($platform));
+            DB::table('inventory_store_accounts')->insert(['account_key' => 'marketplace:'.$store->id, 'marketplace_store_id' => $store->id, 'management_status' => 'managed', 'version' => 1, 'created_at' => now(), 'updated_at' => now()]);
+            $listing = DB::table('marketplace_listing_variants')->insertGetId(['store_id' => $store->id, 'external_product_id' => 'p'.$store->id, 'external_variant_id' => 'v'.$store->id, 'observed_data' => '{}', 'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+            DB::table('marketplace_variant_mappings')->insert(['listing_variant_id' => $listing, 'store_id' => $store->id, 'product_variant_id' => $sku['variant']->id, 'created_at' => now(), 'updated_at' => now()]);
+        }
+        $fresh = DB::table('inventory_balances')->find($balance['id']);
+        $stages = app(SyncOutbox::class)->enqueueMutation(null, $fresh, 'order', 'shared-test');
+        $this->assertCount(2, $stages);
+        $this->assertSame([6, 6], array_column($stages, 'target_quantity'));
+        $this->assertDatabaseCount('inventory_store_sync_tasks', 2);
     }
 }

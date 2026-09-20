@@ -26,6 +26,12 @@ final class ProcessStoreInventorySync implements ShouldQueue
             if (! $task || ! in_array($task->status, ['queued', 'failed', 'waiting_source'], true)) {
                 return null;
             }
+            $inFlight = DB::table('inventory_store_sync_tasks')->where('marketplace_store_id', $task->marketplace_store_id)
+                ->where('product_variant_id', $task->product_variant_id)->where('status', 'processing')->where('id', '!=', $task->id)
+                ->lockForUpdate()->exists();
+            if ($inFlight) {
+                return null;
+            }
             if ($task->stage === 'destination') {
                 $source = DB::table('inventory_store_sync_tasks')->where('operation_id', $task->operation_id)
                     ->where('stage', 'source')->lockForUpdate()->first();
@@ -35,7 +41,9 @@ final class ProcessStoreInventorySync implements ShouldQueue
                     return null;
                 }
             }
-            $pool = DB::table('inventory_pools')->where('marketplace_store_id', $task->marketplace_store_id)->lockForUpdate()->first();
+            $mode = DB::table('inventory_configuration')->where('id', 1)->value('operating_mode');
+            $pool = $mode === 'shared_pool' ? DB::table('inventory_pools')->where('kind', 'shared')->lockForUpdate()->first()
+                : DB::table('inventory_pools')->where('marketplace_store_id', $task->marketplace_store_id)->lockForUpdate()->first();
             $balance = $pool ? DB::table('inventory_balances')->where('inventory_pool_id', $pool->id)
                 ->where('product_variant_id', $task->product_variant_id)->lockForUpdate()->first() : null;
             if (! $balance || $balance->counted_at === null) {
@@ -63,9 +71,20 @@ final class ProcessStoreInventorySync implements ShouldQueue
 
         try {
             $receipt = $publisher->publish($context['store'], $context['listing'], $context['target'], $context['task']->event_key);
-            DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)->where('status', 'processing')->update([
-                'status' => 'confirmed', 'provider_receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'updated_at' => now(),
-            ]);
+            DB::transaction(function () use ($receipt): void {
+                $task = DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)->where('status', 'processing')->lockForUpdate()->first();
+                if (! $task) {
+                    return;
+                }
+                $mode = DB::table('inventory_configuration')->where('id', 1)->value('operating_mode');
+                $pool = $mode === 'shared_pool' ? DB::table('inventory_pools')->where('kind', 'shared')->first()
+                    : DB::table('inventory_pools')->where('marketplace_store_id', $task->marketplace_store_id)->first();
+                $balance = $pool ? DB::table('inventory_balances')->where('inventory_pool_id', $pool->id)->where('product_variant_id', $task->product_variant_id)->first() : null;
+                $stale = $balance && (int) $balance->version > (int) $task->balance_version;
+                DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)->update([
+                    'status' => $stale ? 'superseded' : 'confirmed', 'provider_receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'updated_at' => now(),
+                ]);
+            }, 3);
         } catch (StoreInventoryAuthorizationExpired $error) {
             $this->finish('auth_expired', ['code' => 'authorization_expired', 'message' => $error->getMessage()]);
         } catch (StoreInventoryResultUncertain $error) {

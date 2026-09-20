@@ -39,8 +39,11 @@ final class ReadinessReader
             $blockers[] = ['code' => 'historical_orders_unresolved', 'ids' => $openOrders->all(), 'next_action' => 'Reconcile open marketplace orders and capture the ingestion boundary.'];
         }
         $balances = [];
+        $configuration = DB::table('inventory_configuration')->where('id', 1)->first();
         foreach ($mappings as $mapping) {
-            $pool = DB::table('inventory_pools')->where('marketplace_store_id', $storeId)->first();
+            $pool = $configuration?->operating_mode === 'shared_pool'
+                ? DB::table('inventory_pools')->where('kind', 'shared')->first()
+                : DB::table('inventory_pools')->where('marketplace_store_id', $storeId)->first();
             $balance = $pool ? DB::table('inventory_balances')->where('inventory_pool_id', $pool->id)
                 ->where('product_variant_id', $mapping->product_variant_id)->first() : null;
             if (! $balance || $balance->counted_at === null || $balance->physical_stock === null) {
@@ -51,7 +54,13 @@ final class ReadinessReader
             }
         }
 
-        return ['ready' => $blockers === [], 'store' => $store, 'balances' => $balances, 'blockers' => $blockers];
+        $snapshot = ['store_id' => $storeId, 'connection' => $store?->status, 'store_updated_at' => $store?->updated_at,
+            'configuration_version' => (int) ($configuration?->version ?? 0), 'account_version' => (int) (DB::table('inventory_store_accounts')->where('marketplace_store_id', $storeId)->value('version') ?? 0),
+            'balance_versions' => collect($balances)->mapWithKeys(fn ($balance) => [(string) $balance->id => (int) $balance->version])->all(),
+            'mapping_ids' => $mappings->pluck('id')->sort()->values()->all(), 'listing_fetched_at' => DB::table('marketplace_listing_variants')->where('store_id', $storeId)->max('fetched_at')];
+
+        return ['ready' => $blockers === [], 'store' => $store, 'balances' => $balances, 'blockers' => $blockers,
+            'review_token' => hash('sha256', json_encode($snapshot, JSON_THROW_ON_ERROR)), 'snapshot' => $snapshot];
     }
 
     public function mode(): array
@@ -61,10 +70,11 @@ final class ReadinessReader
         if ($pending->isNotEmpty()) {
             $blockers[] = ['code' => 'pending_sync', 'ids' => $pending->all(), 'next_action' => 'Resolve inventory sync stages first.'];
         }
+        $mode = DB::table('inventory_configuration')->where('id', 1)->value('operating_mode');
         $activeBalances = fn () => DB::table('inventory_balances as b')->join('inventory_pools as p', 'p.id', '=', 'b.inventory_pool_id')
             ->leftJoin('inventory_store_accounts as a', 'a.marketplace_store_id', '=', 'p.marketplace_store_id')
-            ->where(fn ($query) => $query->where('p.kind', 'shared')->orWhere(fn ($store) => $store->where('p.kind', 'store')
-                ->where(fn ($managed) => $managed->whereNull('p.marketplace_store_id')->orWhere('a.management_status', 'managed'))));
+            ->where(fn ($query) => $mode === 'shared_pool' ? $query->where('p.kind', 'shared') : $query->where('p.kind', 'store')
+                ->where(fn ($managed) => $managed->whereNull('p.marketplace_store_id')->orWhere('a.management_status', 'managed')));
         $reservations = $activeBalances()->where('b.reserved_stock', '>', 0)->pluck('b.id');
         if ($reservations->isNotEmpty()) {
             $blockers[] = ['code' => 'active_reservations', 'ids' => $reservations->all(), 'next_action' => 'Complete or release active order reservations first.'];

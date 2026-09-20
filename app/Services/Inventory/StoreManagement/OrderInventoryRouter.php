@@ -138,7 +138,7 @@ final class OrderInventoryRouter
             ]);
 
             $freshBalance = DB::table('inventory_balances')->find($balance->id);
-            $result['external_stage'] = $this->outbox->enqueueBalance(null, $freshBalance, 'order', 'order:'.$eventKey);
+            $result['external_stages'] = $this->outbox->enqueueMutation(null, $freshBalance, 'order', 'order:'.$eventKey);
             DB::table('inventory_store_order_events')->where('event_key', $eventKey)->update([
                 'result' => json_encode($result, JSON_THROW_ON_ERROR), 'updated_at' => now(),
             ]);

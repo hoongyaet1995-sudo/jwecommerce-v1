@@ -16,7 +16,8 @@ export const storeInventoryApi={
   },
   syncAll:()=>json('/admin/api/inventory/store-management/sync-all',{method:'POST',body:'{}'}),
   retry:(id:string,reconcile_outcome?:'not_applied')=>json(`/admin/api/inventory/store-management/sync-tasks/${id}/retry`,{method:'POST',body:JSON.stringify(reconcile_outcome?{reconcile_outcome}:{})}),
-  takeover:(id:string,reason:string)=>json(`/admin/api/inventory/store-management/stores/${id}/takeover`,{method:'POST',body:JSON.stringify({reason})}),
+  takeoverReadiness:(id:string)=>json(`/admin/api/inventory/store-management/stores/${id}/readiness`),
+  takeover:(id:string,reason:string,review_token:string)=>json(`/admin/api/inventory/store-management/stores/${id}/takeover`,{method:'POST',body:JSON.stringify({reason,review_token})}),
   pause:(id:string)=>json(`/admin/api/inventory/store-management/stores/${id}/pause`,{method:'POST',body:'{}'}),
   mode:(target:'shared_pool'|'independent_stores',version:number,distribution:Record<string,unknown>)=>json('/admin/api/inventory/store-management/mode',{method:'POST',body:JSON.stringify({target,configuration_version:version,distribution})}),
 };
