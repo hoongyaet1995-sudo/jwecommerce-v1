@@ -47,6 +47,20 @@ class LazadaClientTest extends TestCase
         Http::assertSentCount(2);
     }
 
+    public function test_read_retries_one_transient_service_timeout(): void
+    {
+        config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);
+        Http::preventStrayRequests();
+        Http::fake(['*'=>Http::sequence()
+            ->push(['code'=>'ServiceTimeout','request_id'=>'safe-request-id'])
+            ->push(['code'=>'0','data'=>['total_products'=>0,'products'=>[]]])]);
+
+        $page=app(LazadaClient::class)->read('/products/get','fixture-token',['filter'=>'all','limit'=>50,'offset'=>0]);
+
+        $this->assertSame(0,$page['total_products']);
+        Http::assertSentCount(2);
+    }
+
     public function test_document_envelope_and_failed_result_are_checked():void
     {
         config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);

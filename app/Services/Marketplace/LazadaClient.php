@@ -220,7 +220,8 @@ final class LazadaClient
             $payload=$response->json();
             // Lazada explicitly reports that this seller-side limit clears after one second.
             // Reads are idempotent, so one bounded retry is safe and preserves user intent.
-            if ($attempt===0 && $response->successful() && is_array($payload) && ($payload['code']??null)==='SellerCallLimit') {
+            if ($attempt===0 && $response->successful() && is_array($payload)
+                && in_array($payload['code']??null,['SellerCallLimit','ServiceTimeout'],true)) {
                 usleep(1_100_000);
                 continue;
             }
