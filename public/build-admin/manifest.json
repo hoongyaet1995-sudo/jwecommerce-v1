@@ -11,7 +11,7 @@
     "src": "_index-DboDZrEU.css"
   },
   "src/main.tsx": {
-    "file": "assets/main-C9w8mrMa.js",
+    "file": "assets/main-uE7av9-H.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
@@ -23,7 +23,7 @@
     ]
   },
   "src/previews/inventory39/Inventory39Runtime.tsx": {
-    "file": "assets/Inventory39Runtime-UPNkgFQJ.js",
+    "file": "assets/Inventory39Runtime-CSpBEQEN.js",
     "name": "Inventory39Runtime",
     "src": "src/previews/inventory39/Inventory39Runtime.tsx",
     "isDynamicEntry": true,

@@ -29,6 +29,8 @@ it('shows success only after the server save resolves', async () => {
   expect(host.textContent).not.toContain('Physical Stock Count Successfully Saved');
   await act(async () => completeSave());
   expect(host.textContent).toContain('Physical Stock Count Successfully Saved');
+  expect(host.textContent).toContain('Verified (32 units)');
+  expect(host.textContent).not.toContain('Not Counted (未盘点)');
 
   await act(async () => root.unmount());
   host.remove();

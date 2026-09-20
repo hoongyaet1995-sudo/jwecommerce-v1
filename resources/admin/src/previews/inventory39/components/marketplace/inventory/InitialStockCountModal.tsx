@@ -196,13 +196,13 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                 <span className="font-mono text-xs font-bold text-neutral-900 dark:text-white">
                   {item.masterSku}
                 </span>
-                {isUncounted ? (
+                {isUncounted && step !== 'success' ? (
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300/40">
                     Not Counted (未盘点)
                   </span>
                 ) : (
                   <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
-                    Verified ({item.totalPhysicalStock} units)
+                    Verified ({step === 'success' ? numericCount : item.totalPhysicalStock} units)
                   </span>
                 )}
               </div>
