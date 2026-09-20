@@ -141,6 +141,20 @@ class LazadaReviewedAttributesTest extends TestCase
         LazadaReviewedAttributes::bind($schema,$this->source(),$invalid);
     }
 
+    public function test_negative_package_measurement_is_rejected_before_task_creation(): void
+    {
+        $schema=[
+            ['name'=>'package_weight','attribute_type'=>'sku','is_mandatory'=>1,'input_type'=>'numeric'],
+        ];
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('package_weight must be greater than 0 for BLUE-1.');
+        LazadaReviewedAttributes::bind($schema,$this->source(),[
+            'normal'=>[],
+            'skus'=>['BLUE-1'=>['package_weight'=>'-1'],'RED-1'=>['package_weight'=>'1']],
+            'imageBindings'=>[],
+        ]);
+    }
+
     private function source(): array
     {
         return [

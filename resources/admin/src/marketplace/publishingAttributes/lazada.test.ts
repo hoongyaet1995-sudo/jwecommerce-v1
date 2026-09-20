@@ -87,6 +87,15 @@ describe('normalizeLazadaAttributes',()=>{
     ]})).toContain('at most 2');
   });
 
+  it('rejects non-positive Lazada package measurements before publishing',()=>{
+    const [field]=normalizeLazadaAttributes([
+      {name:'package_weight',label:'Package Weight',attribute_type:'sku',input_type:'numeric',is_mandatory:1},
+    ],source,new Map(),[]);
+    expect(validateAttributeValue(field,{kind:'number',value:'-1'})).toBe('Package Weight must be greater than 0.');
+    expect(validateAttributeValue(field,{kind:'number',value:'0'})).toBe('Package Weight must be greater than 0.');
+    expect(validateAttributeValue(field,{kind:'number',value:'1'})).toBeNull();
+  });
+
   it('allows one or two optional sale properties and rejects provider-invalid combinations',()=>{
     const saleSchema=['ring_size','color_family','weight_of_metal'].map(name=>({
       name,label:name,attribute_type:'sku',input_type:'enumInput',is_mandatory:0,is_sale_prop:1,

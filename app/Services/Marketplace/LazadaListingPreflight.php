@@ -67,6 +67,10 @@ final class LazadaListingPreflight
                     if (!is_string($value)) throw ValidationException::withMessages(['brand'=>'Select a Lazada brand.']);
                     app(LazadaBrands::class)->validate($token,$value,$storeId);
                 } else LazadaAttributeValue::validate($attribute,$value);
+                if ($scope==='sku' && in_array($name,['package_weight','package_length','package_width','package_height'],true)
+                    && (!is_numeric($value) || (float)$value <= 0)) {
+                    throw ValidationException::withMessages(['attributes'=>"{$name} must be greater than 0 for variant ".($index+1).'.']);
+                }
             }
         }
         $selectedSaleProps=[];

@@ -107,6 +107,10 @@ final class LazadaReviewedAttributes
                     continue;
                 }
                 LazadaAttributeValue::validate($attribute, $skus[$sku][$name]);
+                if (in_array($name,['package_weight','package_length','package_width','package_height'],true)
+                    && (!is_numeric($skus[$sku][$name]) || (float)$skus[$sku][$name] <= 0)) {
+                    self::reject("{$name} must be greater than 0 for {$sku}.");
+                }
                 $result['skus'][$sku][$name] = $skus[$sku][$name];
             }
         }

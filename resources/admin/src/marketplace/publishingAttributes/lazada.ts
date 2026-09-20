@@ -167,6 +167,9 @@ export function validateAttributeValue(field:MarketplaceAttributeField,value:Mar
   if(field.control==='integer'||field.control==='decimal'){
     if(value.kind!=='number'||!value.value.trim()||!Number.isFinite(Number(value.value)))return `${field.label} must be a finite number.`;
     if(field.control==='integer'&&!Number.isInteger(Number(value.value)))return `${field.label} must be a whole number.`;
+    if(['package_weight','package_length','package_width','package_height'].includes(field.providerName)&&Number(value.value)<=0){
+      return `${field.label} must be greater than 0.`;
+    }
     return null;
   }
   if(field.control==='date')return value.kind==='date'&&validIsoDate(value.value)?null:`${field.label} must be a valid date.`;
