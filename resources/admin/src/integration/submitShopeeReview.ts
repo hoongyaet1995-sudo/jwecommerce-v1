@@ -3,6 +3,7 @@ import {readPublishingSource} from './marketplacePublishing';
 
 export interface ShopeeReviewSubmission {
  productId:number;storeId:number;requestKey:string;sourceRevision:string;categoryId:string;
+ recoveryAuthorizationId?:string;
  variantImageChoices?:Record<string,number>;
  sizeChartImageId?:number;
  brandId:number|null;condition:'NEW'|'USED';weightKg:number;lengthCm:number;widthCm:number;heightCm:number;
@@ -28,7 +29,8 @@ export async function submitShopeeReview(input:ShopeeReviewSubmission):Promise<s
   ...(input.brandId===null?{}:{brand:{brand_id:input.brandId}}),attribute_list:input.attributes,logistic_info:input.logistics};
  let receipt:Receipt;
  try{receipt=await marketplaceRequest<Receipt>(`/stores/${input.storeId}/publishing-tasks`,'POST',{
-  product_id:input.productId,request_key:input.requestKey,source_revision:source.revision,payload});}
+  product_id:input.productId,request_key:input.requestKey,source_revision:source.revision,payload,
+  ...(input.recoveryAuthorizationId?{recovery_authorization_id:input.recoveryAuthorizationId}:{})});}
  catch(error){
   const status=error&&typeof error==='object'&&'status' in error?error.status:undefined;
   if(typeof status==='number'&&status>=400&&status<500)throw error;

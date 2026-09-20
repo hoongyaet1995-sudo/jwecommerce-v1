@@ -7,6 +7,9 @@ export interface PublishingTask {
   id: number; storeId: number; productId: number;
   status: 'queued' | 'processing' | 'succeeded' | 'rejected' | 'uncertain';
   externalItemId: string|null; createdAt: string; updatedAt: string;
+  stage?: string|null; revision?: number; creationCertainty?: 'pending'|'unknown'|'not_created'|'confirmed';
+  failure?: null|{code:string;message:string;stage?:string|null;nextAction:string;diagnostics:Record<string,unknown>};
+  actions?: string[]; previousTaskId?: number|null;
 }
 export type VariantImportReview = ({newProduct: true; productId?: never} | {productId: number; newProduct?: never}) & {sku?: string};
 export interface ProductImportResult {
@@ -129,6 +132,8 @@ export const marketplaceOperations = {
     }
     return task;
   },
+  authorizePublishingRecovery: (id:string,input:{reason:string;checkedMarketplace:true;acceptDuplicateRisk:true;confirmationVersion:'v1';expectedRevision:number}) =>
+    marketplaceRequest<{authorizationId:string;expiresAt:string;previousTaskId:number}>(`/publishing-tasks/${idPath(id)}/recovery-authorizations`,'POST',input),
   reconcileLazadaPublishingTask: (id: string) => marketplaceRequest<{id:number;status:'succeeded'|'rejected';confirmed:boolean;external_item_id?:string}>(`/publishing-tasks/${idPath(id)}/reconcile`, 'POST'),
   importVariant: (listingId: string, review: VariantImportReview) =>
     marketplaceRequest<{variantId: number; productId: number}>(`/listings/${idPath(listingId)}/import-variant`, 'POST', review),

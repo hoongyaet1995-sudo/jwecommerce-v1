@@ -24,10 +24,12 @@ class MarketplacePublishingController extends Controller
             'status'=>'succeeded','providerIdentity'=>$receipt->provider_identity])->header('Cache-Control','no-store, private');
     }
 
-    public function storeStatus(int $store, \App\Services\Marketplace\PublishingStoreStatus $status)
+    public function storeStatus(Request $request, int $store, \App\Services\Marketplace\PublishingStoreStatus $status)
     {
         abort_unless(DB::table('marketplace_stores')->where('id',$store)->exists(),404);
-        return response()->json(['products'=>(object)$status->read($store)])->header('Cache-Control','no-store, private');
+        return response()->json(['products'=>(object)$status->read($store),
+            'tasksByProduct'=>(object)$status->reviewTasks($store,(int)$request->user()->id)])
+            ->header('Cache-Control','no-store, private');
     }
 
     public function source(int $product, \App\Services\Marketplace\MarketplacePublishingSource $source)
@@ -37,7 +39,7 @@ class MarketplacePublishingController extends Controller
 
     public function stage(Request $request, int $store, PublishingTasks $tasks)
     {
-        if (array_diff(array_keys($request->all()), ['product_id', 'request_key', 'source_revision', 'payload', '_token'])) {
+        if (array_diff(array_keys($request->all()), ['product_id', 'request_key', 'source_revision', 'payload', 'recovery_authorization_id', '_token'])) {
             throw ValidationException::withMessages(['publishing'=>'Unsupported marketplace publishing fields.']);
         }
         $request->validate(['payload.jw_variant_image_choices'=>['sometimes','array'],'payload.jw_variant_image_choices.*'=>['required','integer','min:1'],
@@ -48,6 +50,7 @@ class MarketplacePublishingController extends Controller
             'request_key'=>['required','uuid'],
             'source_revision'=>['required','string','regex:/^[a-f0-9]{64}$/D'],
             'payload'=>['required','array'],
+            'recovery_authorization_id'=>['sometimes','uuid'],
         ]);
         if (!$request->user() || !DB::table('users')->where('id',$request->user()->id)->where('is_admin',true)->exists()) {
             abort(403);
@@ -131,12 +134,12 @@ class MarketplacePublishingController extends Controller
             abort_unless(hash_equals($source['revision'],$current['revision'])
                 && DB::table('marketplace_stores')->where('id',$store)->where('platform',$storeRow->platform)->where('status','connected')->exists(),
                 409,'The product or store changed after review. Review it again before publishing.');
-            return $tasks->create($store,(int)$data['product_id'],(int)$request->user()->id,$data['request_key'],$payload,$current);
+            return $tasks->create($store,(int)$data['product_id'],(int)$request->user()->id,$data['request_key'],$payload,$current,$data['recovery_authorization_id']??null);
         });
         } catch (\DomainException $error) {
             throw ValidationException::withMessages(['publishing'=>$error->getMessage()]);
         }
-        return $this->show($id);
+        return $this->show($request,$id);
     }
 
     private function assertNoNestedInternalFields(array $payload): void
@@ -189,12 +192,13 @@ class MarketplacePublishingController extends Controller
         }
     }
 
-    public function show(int $task)
+    public function show(Request $request, int $task)
     {
         $row=DB::table('marketplace_publishing_tasks')->select([
             'id','store_id','product_id','status','external_item_id','created_at','updated_at','source_snapshot',
         ])->find($task);
         abort_unless($row,404);
+        abort_unless((int)DB::table('marketplace_publishing_tasks')->where('id',$task)->value('actor_id')===(int)$request->user()->id,404);
 
         $variants=json_decode($row->source_snapshot??'{}',true)['variants']??[];
         $linked=$row->external_item_id ? DB::table('marketplace_variant_mappings as m')
@@ -202,7 +206,8 @@ class MarketplacePublishingController extends Controller
             ->where('m.store_id',$row->store_id)->where('l.store_id',$row->store_id)
             ->where('l.external_product_id',$row->external_item_id)
             ->whereIn('m.product_variant_id',array_column($variants,'id'))->distinct()->count('m.product_variant_id') : 0;
-        return response()->json([
+        $review=app(\App\Services\Marketplace\PublishingTaskReview::class)->read($task,(int)$request->user()->id);
+        return response()->json($review+[
             'id'=>(int)$row->id,
             'platform'=>DB::table('marketplace_stores')->where('id',$row->store_id)->value('platform'),
             'mappingComplete'=>count($variants)>0 && $linked===count($variants),
@@ -215,11 +220,26 @@ class MarketplacePublishingController extends Controller
         ])->header('Cache-Control','no-store, private');
     }
 
+    public function authorizeRecovery(Request $request, int $task, \App\Services\Marketplace\PublishingRecoveryAuthorizations $authorizations)
+    {
+        $data=$request->validate([
+            'reason'=>['required','string','min:8','max:500'],
+            'checkedMarketplace'=>['accepted'],'acceptDuplicateRisk'=>['accepted'],
+            'confirmationVersion'=>['required','string','max:30'],'expectedRevision'=>['required','integer','min:1'],
+        ]);
+        try {
+            return response()->json($authorizations->issue($task,(int)$request->user()->id,$data),201)
+                ->header('Cache-Control','no-store, private');
+        } catch (\DomainException $error) {
+            throw ValidationException::withMessages(['publishing'=>$error->getMessage()]);
+        }
+    }
+
     public function recover(Request $request, int $store, string $key)
     {
         $id = DB::table('marketplace_publishing_tasks')->where('store_id', $store)
             ->where('request_key', $key)->where('actor_id', $request->user()->id)->value('id');
         abort_unless($id, 404);
-        return $this->show((int) $id);
+        return $this->show($request,(int) $id);
     }
 }

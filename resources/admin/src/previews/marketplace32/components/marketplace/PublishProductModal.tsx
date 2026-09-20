@@ -76,6 +76,11 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
 
   // Active step
   const [submittedTaskId, setSubmittedTaskId] = useState<string>();
+  const [recoveryAuthorizationId,setRecoveryAuthorizationId]=useState<string>();
+  const [recoveryReason,setRecoveryReason]=useState('');
+  const [checkedMarketplace,setCheckedMarketplace]=useState(false);
+  const [acceptedDuplicateRisk,setAcceptedDuplicateRisk]=useState(false);
+  const [authorizingRecovery,setAuthorizingRecovery]=useState(false);
   const [missingRequestRecovery,setMissingRequestRecovery]=useState<MissingPublishingRequestRecoveryError|null>(null);
   const taskId = suppliedTaskId ?? submittedTaskId;
   const submissionStarted = useRef(false);
@@ -283,7 +288,8 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   useEffect(()=>setImageChoices({}),[selectedProductId,selectedConnectionId,source?.revision]);
   const imageGroups=useMemo(()=>variantImageGroups(source),[source]);
   const imageReview=resolveVariantImages(imageGroups,imageChoices);
-  const isValidForPublish = (!isShopeeLive || imageReview.missing.length===0) && validationErrors.length === 0 && !!targetProduct && !!targetConnection && (!liveData || (!storeStatus.loading && !storeStatus.error && !storeStatus.products[selectedProductId]));
+  const isValidForPublish = (!isShopeeLive || imageReview.missing.length===0) && validationErrors.length === 0 && !!targetProduct && !!targetConnection && (!liveData || (!storeStatus.loading && !storeStatus.error && (!storeStatus.products[selectedProductId] || !!recoveryAuthorizationId)));
+  const selectedExistingTask=storeStatus.tasksByProduct[selectedProductId];
 
   // Asynchronous publish lifecycle simulation
   const handleStartPublish = async (simulatedOutcome: 'success' | 'reject' | 'uncertain' = 'success') => {
@@ -298,6 +304,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
       setPresentProgress(true);
       try {
         const id = await submitReviewed(targetProduct.id, targetConnection.id, {
+          recoveryAuthorizationId,
           sourceRevision: reviewRevision || source?.revision,
           ...(isShopeeLive&&shopeeSizeChartImageId?{sizeChartImageId:shopeeSizeChartImageId}:{}),
           ...(isLazadaLive?{lazadaAttributes:lazadaAttributes.serialized.normal,lazadaSkuAttributes:lazadaAttributes.serialized.skus,lazadaAttributeImageIds:lazadaAttributes.serialized.imageBindings}:{}),
@@ -601,31 +608,28 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                       {taskId ? 'Listing Attempt Rejected' : 'Listing Rejected by Channel Moderation'}
                     </h3>
                     <p className="text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 p-3 rounded-xl border border-rose-200 dark:border-rose-900 text-left">
-                      {rejectionReason}
+                      {monitor.task?.failure?.message || rejectionReason}
                     </p>
                   </div>
 
                   <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 text-left text-xs space-y-2">
-                    <div className="font-bold text-neutral-900 dark:text-white">Remediation Steps:</div>
-                    <ul className="list-disc pl-4 space-y-1 text-neutral-600 dark:text-neutral-300">
-                      <li>Select "No Brand / OEM" if you do not hold a registered trademark certificate.</li>
-                      <li>Review title keywords to avoid prohibited promotional superlatives (e.g. "Best", "Top #1").</li>
-                      <li>Adjust your category taxonomy and re-submit.</li>
-                    </ul>
+                    <div className="font-bold text-neutral-900 dark:text-white">Next action</div>
+                    <p className="text-neutral-600 dark:text-neutral-300">{monitor.task?.failure?.nextAction==='reauthorize_store'?'Reconnect this marketplace store, then reopen this saved task.':'Return to the product review, correct the highlighted marketplace data, and create a new reviewed attempt.'}</p>
+                    {monitor.task?.stage&&<p className="text-neutral-500">Failed stage: <strong>{monitor.task.stage}</strong></p>}
                   </div>
 
                   <div className="flex items-center justify-center gap-3">
                     <button
                       type="button"
                       onClick={() => {
-                        if (taskId) {monitor.checkStatus();return;}
+                        if (taskId) {setSubmittedTaskId(undefined);setPresentProgress(false);setCurrentStep('attributes');submissionStarted.current=false;return;}
                         setBrandName('No Brand / OEM');
                         setCurrentStep('attributes');
                         setAsyncStatus('idle');
                       }}
                       className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors cursor-pointer"
                     >
-                      {taskId ? 'Check Saved Status' : 'Edit Attributes & Retry'}
+                      {taskId ? 'Review product and retry' : 'Edit Attributes & Retry'}
                     </button>
 
                     <button
@@ -661,6 +665,23 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                       {taskId ? <>Task <strong>{generatedJobId}</strong> remains saved. Check its status without resubmitting the product.</> : <>JW Ecommerce background worker is polling the marketplace gateway using Job ID <strong>{generatedJobId}</strong>. When Shopee/Lazada completes indexing, the item will automatically map.</>}
                     </p>
                   </div>
+
+                  {taskId&&monitor.task?.actions?.includes('start_new_review')&&<div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-left text-xs space-y-3">
+                    <div className="font-bold text-amber-900 dark:text-amber-200">Start a new reviewed attempt</div>
+                    <p className="text-amber-800 dark:text-amber-300">The previous result is unknown. A new attempt can create a duplicate marketplace product. Check Seller Center first.</p>
+                    <label className="flex gap-2"><input type="checkbox" checked={checkedMarketplace} onChange={event=>setCheckedMarketplace(event.target.checked)}/> I checked this marketplace Seller Center.</label>
+                    <label className="flex gap-2"><input type="checkbox" checked={acceptedDuplicateRisk} onChange={event=>setAcceptedDuplicateRisk(event.target.checked)}/> I accept the duplicate product risk.</label>
+                    <textarea value={recoveryReason} onChange={event=>setRecoveryReason(event.target.value)} placeholder="Record what you checked and why a new attempt is needed" className="w-full min-h-20 px-3 py-2 rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-neutral-950"/>
+                    <button type="button" disabled={authorizingRecovery||!checkedMarketplace||!acceptedDuplicateRisk||recoveryReason.trim().length<8} onClick={async()=>{
+                      if(!taskId||!monitor.task)return;
+                      setAuthorizingRecovery(true);
+                      try{
+                        const authorization=await marketplaceOperations.authorizePublishingRecovery(taskId,{reason:recoveryReason.trim(),checkedMarketplace:true,acceptDuplicateRisk:true,confirmationVersion:'v1',expectedRevision:monitor.task.revision??1});
+                        setRecoveryAuthorizationId(authorization.authorizationId);setSubmittedTaskId(undefined);setPresentProgress(false);setCurrentStep('destination');submissionStarted.current=false;
+                      }catch(error){addToast({type:'error',title:'Recovery could not be authorized',message:error instanceof Error?error.message:'Reload this task and try again.'});}
+                      finally{setAuthorizingRecovery(false);}
+                    }} className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold">{authorizingRecovery?'Preparing review…':'Review product and start a new attempt'}</button>
+                  </div>}
 
                   <div className="flex items-center justify-center gap-3">
                     {monitor.task?.platform==='lazada'&&taskId&&<button
@@ -1260,8 +1281,11 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
               {currentStep === 'destination' && (
                 <button
                   type="button"
-                  disabled={!targetProduct || !targetConnection || (liveData && (storeStatus.loading || !!storeStatus.error || !!storeStatus.products[selectedProductId]))}
-                  onClick={() => setCurrentStep('attributes')}
+                  disabled={!targetProduct || !targetConnection || (liveData && (storeStatus.loading || !!storeStatus.error || (!!storeStatus.products[selectedProductId]&&!selectedExistingTask)))}
+                  onClick={() => {
+                    if(selectedExistingTask){setSubmittedTaskId(String(selectedExistingTask.id));setPresentProgress(true);return;}
+                    setCurrentStep('attributes');
+                  }}
                   className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <span>{liveData&&storeStatus.error?'Status unavailable':liveData&&storeStatus.loading?'Checking listings…':liveData&&storeStatus.products[selectedProductId]?'Review existing listing / mapping':'Next: Attributes'}</span>

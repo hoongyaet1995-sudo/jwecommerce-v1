@@ -9,6 +9,7 @@ export interface ImportProductOptions {
   targetProductId?: string;
 }
 export interface PublishListingOptions {
+  recoveryAuthorizationId?: string;
   sourceRevision?: string;
   sizeChartImageId?: number;
   lazadaAttributeImageIds?: Record<string,number>;

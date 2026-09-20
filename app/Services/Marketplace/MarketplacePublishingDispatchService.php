@@ -18,6 +18,7 @@ final class MarketplacePublishingDispatchService
 
     public function dispatch(int $taskId): array
     {
+        $stage='review';
         if (config('marketplace.publish_operations_enabled') !== true) {
             throw new RuntimeException('Marketplace publishing is disabled.');
         }
@@ -31,6 +32,7 @@ final class MarketplacePublishingDispatchService
             throw new RuntimeException('Marketplace store is no longer connected.');
         }
         try {
+            $stage='credentials';
             app(MarketplaceStoreAccess::class)->publishingStore((int)$task->store_id);
             if ($task->source_revision !== null) {
                 $current=app(MarketplacePublishingSource::class)->read((int)$task->product_id);
@@ -38,6 +40,7 @@ final class MarketplacePublishingDispatchService
                     throw new RuntimeException('The product changed after review. Review it again before publishing.');
                 }
             }
+            $stage='review';
             app(BasicPublishingDestination::class)->check((int)$store->id,(int)$task->product_id);
             $payload=json_decode($task->payload, true, 512, JSON_THROW_ON_ERROR);
             if (!is_array($payload)) throw new RuntimeException('Marketplace publishing payload is invalid.');
@@ -53,6 +56,7 @@ final class MarketplacePublishingDispatchService
                 app(LazadaPublishingWarehouses::class)->verify((int)$store->id,$payload);
             }
             if (config('marketplace.basic_wms_enabled')===true) BasicPublishingQuantity::validate($store->platform,$payload);
+            $stage='create';
             $confirmed=match ($store->platform) {
                 'shopee' => $this->publishShopee($taskId, $store, $payload),
                 'lazada' => $this->publishLazada($taskId, $store, $payload),
@@ -80,12 +84,14 @@ final class MarketplacePublishingDispatchService
             }
             return ['id'=>$taskId, 'status'=>'succeeded', 'external_item_id'=>$externalItemId];
         } catch (PublishingResultUncertain $error) {
-            $this->tasks->transition($taskId, 'processing', 'uncertain');
+            $details=PublishingFailureDetails::fromThrowable($error,$stage);
+            $this->tasks->fail($taskId, 'processing', 'uncertain',$details);
             \Illuminate\Support\Facades\Log::warning('Marketplace publishing result requires reconciliation',
                 ['task_id'=>$taskId,'platform'=>$store->platform]+$error->diagnostics());
             throw $error;
         } catch (\Throwable $error) {
-            $this->tasks->transition($taskId, 'processing', 'rejected');
+            $details=PublishingFailureDetails::fromThrowable($error,$stage);
+            $this->tasks->fail($taskId, 'processing', 'rejected',$details);
             throw $error;
         }
     }

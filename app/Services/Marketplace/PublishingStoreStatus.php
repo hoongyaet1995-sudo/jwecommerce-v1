@@ -15,4 +15,16 @@ final class PublishingStoreStatus
         }
         return $statuses;
     }
+
+    public function reviewTasks(int $store, int $actorId): array
+    {
+        $result=[];
+        $rows=DB::table('marketplace_publishing_tasks')->where('store_id',$store)->where('actor_id',$actorId)
+            ->orderByDesc('id')->get(['id','product_id']);
+        $review=app(PublishingTaskReview::class);
+        foreach ($rows as $row) if (!isset($result[(string)$row->product_id])) {
+            $result[(string)$row->product_id]=$review->read((int)$row->id,$actorId);
+        }
+        return $result;
+    }
 }

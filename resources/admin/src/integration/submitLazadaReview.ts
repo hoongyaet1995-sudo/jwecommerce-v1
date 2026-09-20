@@ -3,6 +3,7 @@ import {readPublishingSource} from './marketplacePublishing';
 
 export interface LazadaReviewSubmission {
  productId:number;storeId:number;requestKey:string;sourceRevision:string;categoryId:string;
+ recoveryAuthorizationId?:string;
  sizeChartImageId?:number;
  attributeImageIds?:Record<string,number>;
  attributes:Record<string,string>;skuAttributes:Record<string,Record<string,string>>;
@@ -29,7 +30,8 @@ export async function submitLazadaReview(input:LazadaReviewSubmission):Promise<s
  let receipt:Receipt;
  try{
   receipt=await marketplaceRequest<Receipt>(`/stores/${input.storeId}/publishing-tasks`,'POST',{
-   product_id:input.productId,request_key:input.requestKey,source_revision:source.revision,payload});
+   product_id:input.productId,request_key:input.requestKey,source_revision:source.revision,payload,
+   ...(input.recoveryAuthorizationId?{recovery_authorization_id:input.recoveryAuthorizationId}:{})});
  }catch(error){
   // Validation/permission responses are definitive; keep their actionable message.
   const status=error&&typeof error==='object'&&'status' in error?error.status:undefined;

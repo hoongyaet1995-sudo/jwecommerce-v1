@@ -16,7 +16,7 @@ final class PublishingTasks
             ->update(['status'=>'uncertain','updated_at'=>now()]);
     }
 
-    public function create(int $storeId, int $productId, int $actorId, string $requestKey, array $payload, ?array $source = null): int
+    public function create(int $storeId, int $productId, int $actorId, string $requestKey, array $payload, ?array $source = null, ?string $recoveryAuthorizationId = null): int
     {
         if (!DB::table('users')->where('id',$actorId)->where('is_admin',true)->exists()) {
             throw new \DomainException('An authenticated marketplace administrator is required.');
@@ -29,7 +29,7 @@ final class PublishingTasks
             throw new \DomainException('A valid reviewed product source is required.');
         }
         $snapshot=$source===null ? null : json_encode($source,JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
-        return DB::transaction(function () use ($storeId,$productId,$actorId,$requestKey,$json,$hash,$revision,$snapshot) {
+        return DB::transaction(function () use ($storeId,$productId,$actorId,$requestKey,$json,$hash,$revision,$snapshot,$recoveryAuthorizationId) {
             $store=DB::table('marketplace_stores')->where('id',$storeId)->lockForUpdate()->first();
             abort_unless($store,404);
             $existing=DB::table('marketplace_publishing_tasks')->where('store_id',$storeId)->where('request_key',$requestKey)->first();
@@ -39,18 +39,39 @@ final class PublishingTasks
                 }
                 return (int)$existing->id;
             }
-            if ((new PublishingStoreStatus)->read($storeId)[(string)$productId]??false) throw new \DomainException('This product already has a listing or publishing attempt in this store. Review its mapping or saved task.');
+            $authorization=null;
+            if ($recoveryAuthorizationId !== null) {
+                if (!Str::isUuid($recoveryAuthorizationId)) throw new \DomainException('A valid publishing recovery authorization is required.');
+                $authorization=DB::table('marketplace_publishing_recovery_authorizations')->where('id',$recoveryAuthorizationId)->lockForUpdate()->first();
+                if (!$authorization || (int)$authorization->actor_id!==$actorId || (int)$authorization->store_id!==$storeId
+                    || (int)$authorization->product_id!==$productId || $authorization->consumed_task_id!==null
+                    || now()->greaterThan($authorization->expires_at)) throw new \DomainException('This publishing recovery authorization is unavailable or expired.');
+                $blocked=DB::table('marketplace_publishing_tasks')->find($authorization->task_id);
+                if (!$blocked || app(PublishingRecoveryAuthorizations::class)->blockerHash($blocked)!==$authorization->blocker_hash) {
+                    throw new \DomainException('The previous publishing task changed. Review it again before continuing.');
+                }
+                $newerBlocker=DB::table('marketplace_publishing_tasks')->where('store_id',$storeId)->where('product_id',$productId)
+                    ->where('id','<>',$authorization->task_id)
+                    ->where(fn ($query) => $query->whereIn('status',['queued','processing','uncertain','succeeded'])
+                        ->orWhereNotNull('external_item_id'))->exists();
+                if ($newerBlocker) throw new \DomainException('A newer publishing attempt already exists. Open that saved task instead.');
+            }
+            if (!$authorization && ((new PublishingStoreStatus)->read($storeId)[(string)$productId]??false)) throw new \DomainException('This product already has a listing or publishing attempt in this store. Review its mapping or saved task.');
             if ($store->status!=='connected') throw new \DomainException('Reconnect the destination store before publishing.');
-            if (DB::table('marketplace_publishing_tasks')->where('store_id',$storeId)->where('product_id',$productId)
+            if (!$authorization && DB::table('marketplace_publishing_tasks')->where('store_id',$storeId)->where('product_id',$productId)
                 ->where(fn ($query) => $query->whereIn('status',['queued','processing','uncertain','succeeded'])
                     ->orWhereNotNull('external_item_id'))->exists()) {
                 throw new \DomainException('This product already has a listing attempt. Review its result before submitting again.');
             }
-            return DB::table('marketplace_publishing_tasks')->insertGetId([
+            $id=DB::table('marketplace_publishing_tasks')->insertGetId([
                 'store_id'=>$storeId,'product_id'=>$productId,'actor_id'=>$actorId,'request_key'=>$requestKey,
                 'payload_hash'=>$hash,'payload'=>$json,'status'=>'queued','created_at'=>now(),'updated_at'=>now(),
                 'source_revision'=>$revision,'source_snapshot'=>$snapshot,
+                'previous_task_id'=>$authorization?->task_id,
             ]);
+            if ($authorization) DB::table('marketplace_publishing_recovery_authorizations')->where('id',$authorization->id)
+                ->whereNull('consumed_task_id')->update(['consumed_task_id'=>$id,'updated_at'=>now()]);
+            return $id;
         });
     }
 
@@ -87,6 +108,17 @@ final class PublishingTasks
                 ->orWhere('external_item_id',trim($externalItemId)));
         }
         return $query->update($changes)===1;
+    }
+
+    public function fail(int $taskId, string $expectedStatus, string $nextStatus, array $details): bool
+    {
+        PublishingTransition::validate($expectedStatus,$nextStatus,null);
+        return DB::table('marketplace_publishing_tasks')->where('id',$taskId)->where('status',$expectedStatus)->update([
+            'status'=>$nextStatus,'stage'=>$details['stage']??null,'error_code'=>$details['code']??'provider_rejected',
+            'safe_error_message'=>$details['message']??'The marketplace did not accept this publishing attempt.',
+            'safe_diagnostics'=>json_encode($details['diagnostics']??[],JSON_THROW_ON_ERROR),
+            'failed_at'=>now(),'revision'=>DB::raw('revision + 1'),'updated_at'=>now(),
+        ])===1;
     }
 
     /** Confirm a saved ambiguous result only after a provider catalog read found every reviewed SKU. */
