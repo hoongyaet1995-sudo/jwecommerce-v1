@@ -164,9 +164,21 @@ final class LazadaClient
         ksort($query,SORT_STRING);$base=$path;
         foreach($query as $name=>$value)$base.=$name.$value;
         $query['sign']=strtoupper(hash_hmac('sha256',$base,$secret));
-        try {$response=Http::asForm()->acceptJson()->connectTimeout(10)->timeout(30)->withoutRedirecting()->post('https://api.lazada.com.my/rest'.$path,$query);}
-        catch(ConnectionException){throw new PublishingResultUncertain($operation.' result is unknown. Reconcile before retrying.');}
-        $result=$response->json();
+        for ($attempt=0; $attempt<2; $attempt++) {
+            try {$response=Http::asForm()->acceptJson()->connectTimeout(10)->timeout(30)->withoutRedirecting()->post('https://api.lazada.com.my/rest'.$path,$query);}
+            catch(ConnectionException){throw new PublishingResultUncertain($operation.' result is unknown. Reconcile before retrying.');}
+            $result=$response->json();
+            if ($attempt===0 && $response->successful() && is_array($result)
+                && in_array($result['code']??null,['SellerCallLimit','ApiCallLimit'],true)) {
+                usleep(1_100_000);
+                $query['timestamp']=(string)now()->getTimestampMs();
+                unset($query['sign']);ksort($query,SORT_STRING);$base=$path;
+                foreach($query as $name=>$value)$base.=$name.$value;
+                $query['sign']=strtoupper(hash_hmac('sha256',$base,$secret));
+                continue;
+            }
+            break;
+        }
         if($response->successful() && is_array($result) && !in_array($result['code']??null,['0',0],true)) {
             $requestId=is_array($result)?($result['request_id']??null):null;
             if ($requestId===$accessToken || $requestId===$secret) $requestId=null;

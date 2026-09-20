@@ -223,6 +223,23 @@ class LazadaClientTest extends TestCase
         }
     }
 
+    public function test_product_creation_retries_one_explicit_provider_rate_limit(): void
+    {
+        config(['marketplace.publish_operations_enabled'=>true,'marketplace.lazada.enabled'=>true,
+            'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);
+        $payload=['Request'=>['Product'=>['PrimaryCategory'=>'10002019','Images'=>['Image'=>['https://my-live-02.slatic.net/p/test.jpg']],
+            'Attributes'=>['name'=>'JW product'],'Skus'=>['Sku'=>[['SellerSku'=>'JW-RETRY','quantity'=>'0','price'=>'10.00']]]]]];
+        Http::preventStrayRequests();
+        Http::fake(['*'=>Http::sequence()
+            ->push(['code'=>'SellerCallLimit','message'=>'ban lasts 1 second'])
+            ->push(['code'=>'0','data'=>['item_id'=>1002,'sku_list'=>[['seller_sku'=>'JW-RETRY','sku_id'=>2002]]]])]);
+
+        $result=app(LazadaClient::class)->createProduct('fixture-token',$payload);
+
+        $this->assertSame('1002',$result['item_id']);
+        Http::assertSentCount(2);
+    }
+
     public function test_warehouse_read_uses_verified_result_module_envelope(): void
     {
         config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);
