@@ -211,12 +211,13 @@ class LazadaClientTest extends TestCase
         Http::swap(new \Illuminate\Http\Client\Factory());
         Http::preventStrayRequests();
         Http::fake(['api.lazada.com.my/rest/product/create*'=>Http::response(['code'=>'501','request_id'=>'210176f717888495722931192',
-            'message'=>'fixture-token fixture-secret','detail'=>['credentials'=>'fixture-token']],200)]);
+            'message'=>'Business rule rejected this listing','detail'=>['credentials'=>'fixture-token']],200)]);
         try {
             app(LazadaClient::class)->createProduct('fixture-token',$payload);
             $this->fail('Provider rejection was accepted.');
         } catch (\App\Services\Marketplace\PublishingProviderRejected $error) {
-            $this->assertSame(['http_status'=>200,'provider_code'=>'501','request_id'=>'210176f717888495722931192'],$error->diagnostics());
+            $this->assertSame(['http_status'=>200,'provider_code'=>'501','request_id'=>'210176f717888495722931192',
+                'provider_message'=>'Business rule rejected this listing'],$error->diagnostics());
             $this->assertStringNotContainsString('fixture-token',$error->getMessage());
             $this->assertNull($error->getPrevious());
         }

@@ -32,9 +32,10 @@ class PublishingFailureDetailsTest extends TestCase
     public function test_explicit_provider_rejection_keeps_bounded_diagnostics(): void
     {
         $details=PublishingFailureDetails::fromThrowable(new PublishingProviderRejected('Rejected',[
-            'http_status'=>200,'provider_code'=>'500','request_id'=>'2141336017898901754267490',
+            'http_status'=>200,'provider_code'=>'500','request_id'=>'2141336017898901754267490','provider_message'=>'Business validation failed',
         ]),'create');
 
-        $this->assertSame(['http_status'=>200,'provider_code'=>'500','request_id'=>'2141336017898901754267490'],$details['diagnostics']);
+        $this->assertSame(['http_status'=>200,'provider_code'=>'500','request_id'=>'2141336017898901754267490',
+            'provider_message'=>'Business validation failed'],$details['diagnostics']);
     }
 }
