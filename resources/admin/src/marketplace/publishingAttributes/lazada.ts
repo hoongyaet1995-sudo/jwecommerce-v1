@@ -121,7 +121,7 @@ const validIsoDate=(value:string):boolean=>{
 
 export function validateAttributeValue(field:MarketplaceAttributeField,value:MarketplaceAttributeValue):string|null {
   if(!field.supported)return field.required?`${field.label} cannot be completed yet.`:null;
-  if(value.kind==='empty')return field.required?`${field.label} is required.`:null;
+  if(value.kind==='empty')return field.required?(field.purpose==='size-chart'?'Select a Size Chart image.':`${field.label} is required.`):null;
   if(field.control==='text'||field.control==='textarea'){
     return value.kind==='text'&&value.value.trim()?null:`${field.label} must contain text.`;
   }
@@ -144,7 +144,7 @@ export function validateAttributeValue(field:MarketplaceAttributeField,value:Mar
     return null;
   }
   if(field.control==='image')return value.kind==='image'&&Number.isSafeInteger(value.imageId)&&value.imageId>0
-    ?null:`${field.label} requires a product image.`;
+    ?null:field.purpose==='size-chart'?'Select a Size Chart image.':`${field.label} requires a product image.`;
   return `${field.label} cannot be completed yet.`;
 }
 
@@ -176,4 +176,3 @@ export function serializeLazadaAttributes(
   }
   return {normal,skus,imageBindings};
 }
-

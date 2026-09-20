@@ -36,6 +36,34 @@ it('submits live Shopee requirements from the existing three-step review',async(
   expect(container.textContent).toContain('Result Requires Verification');
  }finally{await act(async()=>root.unmount());vi.unstubAllGlobals();}
 });
+it('replaces Lazada numeric size chart metadata with a reviewed JW image selection',async()=>{
+ vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+ vi.mocked(marketplaceRequest).mockImplementation(async(path)=>{
+  const value=String(path);
+  if(value.includes('publishing-status'))return {products:{}};
+  if(value.includes('publishing-source'))return {product_id:51,title:'Baju Kurung',brand:'',description:null,revision:'b'.repeat(64),
+   images:[{id:9,path:'https://jw.example.test/size-chart.jpg'}],variants:[{id:8,sku:'BK-01',price_minor:1599,initial_quantity:0,weight_grams:500,package_length_cm:10,package_width_cm:10,package_height_cm:10}]};
+  if(value.includes('listing-attributes'))return {storeId:1,categoryId:11,data:[{name:'size_chart',label:'Size Chart',attribute_type:'normal',is_mandatory:1,input_type:'numeric',options:[]}]};
+  if(value.includes('listing-brands'))return {storeId:1,categoryId:11,data:{names:[],next_offset:null}};
+  return {storeId:1,data:[{category_id:11,parent_category_id:0,display_category_name:'Baju Kurung',original_category_name:'Baju Kurung',has_children:false}]};
+ });
+ const submit=vi.fn();
+ const context={products:[{id:'51',title:'Baju Kurung',basePrice:15.99,totalInventory:0,variants:[],images:[]}],categories:[],
+  connections:[{id:'1',platform:'lazada',shopName:'Lazada Test',status:'connected'}],marketplaceStoreProducts:[],
+  addToast:vi.fn(),setActiveSection:vi.fn(),publishMasterProductToStore:vi.fn()} as unknown as MarketplaceJourneyContext;
+ const container=document.createElement('div'),root=createRoot(container);
+ try{
+  await act(async()=>root.render(<JourneyProvider value={context}><PublishProductModal isOpen liveData onClose={vi.fn()} submitReviewed={submit}/></JourneyProvider>));
+  await act(async()=>Array.from(container.querySelectorAll('button')).find(button=>button.textContent?.includes('Category & Attributes'))!.click());
+  await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Marketplace category"]')!.click());
+  await act(async()=>Array.from(container.querySelectorAll('button')).find(button=>button.textContent?.includes('Baju Kurung'))!.click());
+  expect(container.textContent).toContain('Select a Size Chart image.');
+  expect(container.querySelector('input[name="size_chart"]')).toBeNull();
+  await act(async()=>container.querySelector<HTMLButtonElement>('[data-size-chart-image="9"]')!.click());
+  expect(container.textContent).toContain('Size chart image selected for this store listing.');
+  expect(container.textContent).not.toContain('Select a Size Chart image.');
+ }finally{await act(async()=>root.unmount());vi.unstubAllGlobals();}
+});
 it('uses saved enabled variants and JW prices in live review instead of demo shipping and markup',async()=>{
  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
  vi.mocked(marketplaceRequest).mockImplementation(async(path)=>String(path).includes('publishing-source')

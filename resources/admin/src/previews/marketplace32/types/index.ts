@@ -10,6 +10,8 @@ export interface ImportProductOptions {
 }
 export interface PublishListingOptions {
   sourceRevision?: string;
+  sizeChartImageId?: number;
+  lazadaAttributeImageIds?: Record<string,number>;
   shopeeVariantImageChoices?: Record<string,number>;
   lazadaAttributes?: Record<string,string>;
   lazadaSkuAttributes?: Record<string,Record<string,string>>;

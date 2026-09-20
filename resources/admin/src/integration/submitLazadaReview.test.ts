@@ -3,7 +3,8 @@ import {marketplaceRequest} from './marketplaceData';
 import {submitLazadaReview} from './submitLazadaReview';
 vi.mock('./marketplaceData',()=>({marketplaceRequest:vi.fn()}));
 const source={product_id:4,title:'Saved',description:null,revision:'a'.repeat(64),variants:[{id:8,sku:'JW',price_minor:1599,initial_quantity:0}],images:[]};
-const input={productId:4,storeId:2,requestKey:'1285db80-1111-4111-8111-123456789045',sourceRevision:source.revision,categoryId:'10000420',attributes:{brand:'No Brand'},skuAttributes:{JW:{package_weight:'0.2'}}};
+const input={productId:4,storeId:2,requestKey:'1285db80-1111-4111-8111-123456789045',sourceRevision:source.revision,categoryId:'10000420',sizeChartImageId:9,
+ attributeImageIds:{'lazada:variant:JW:color_thumbnail':12},attributes:{brand:'No Brand'},skuAttributes:{JW:{package_weight:'0.2'}}};
 const task={id:7,storeId:2,productId:4,status:'queued',externalItemId:null,createdAt:'now',updatedAt:'now'};
 beforeEach(()=>vi.resetAllMocks());
 it('stages the reviewed source and returns the saved task even when dispatch response is lost',async()=>{
@@ -15,7 +16,7 @@ it('stages the reviewed source and returns the saved task even when dispatch res
  expect(await submitLazadaReview(input)).toBe('7');
  const stage=vi.mocked(marketplaceRequest).mock.calls.find(call=>call[0].endsWith('/publishing-tasks'))!;
  expect(stage[2]).toMatchObject({product_id:4,source_revision:source.revision,request_key:input.requestKey,
-  payload:{Request:{Product:{PrimaryCategory:'10000420',Skus:{Sku:[{SellerSku:'JW',quantity:'0',price:'15.99',package_weight:'0.2'}]}}}}});
+  payload:{jw_size_chart_image_id:9,jw_attribute_image_ids:{'lazada:variant:JW:color_thumbnail':12},Request:{Product:{PrimaryCategory:'10000420',Skus:{Sku:[{SellerSku:'JW',quantity:'0',price:'15.99',package_weight:'0.2'}]}}}}});
  expect(marketplaceRequest).toHaveBeenCalledTimes(3);
 });
 it('recovers an uncertain staging response without another stage request',async()=>{

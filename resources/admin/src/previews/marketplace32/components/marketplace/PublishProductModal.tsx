@@ -14,9 +14,10 @@ import {readPublishingSource,type PublishingSource} from '../../../../integratio
 import {marketplaceOperations} from '../../../../integration/marketplaceOperations';
 import {MissingPublishingRequestRecoveryError} from '../../../../integration/publishingReviewSession';
 import {useLazadaPublishingAttributes} from '../../../../marketplace/useLazadaPublishingAttributes';
-import {LazadaPublishingAttributes} from '../../../../marketplace/LazadaPublishingAttributes';
+import {MarketplaceAttributeSections} from '../../../../marketplace/MarketplaceAttributeSections';
 import {useShopeePublishingRequirements} from '../../../../marketplace/useShopeePublishingRequirements';
 import {ShopeePublishingRequirements} from '../../../../marketplace/ShopeePublishingRequirements';
+import {PublishingSizeChart} from '../../../../marketplace/PublishingSizeChart';
 import {
   X,
   Search,
@@ -209,6 +210,8 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   const isShopeeLive=liveData && targetConnection?.platform==='shopee';
   const shopeeRequirements=useShopeePublishingRequirements(isShopeeLive&&isOpen&&!taskId?selectedConnectionId:null,selectedCategory,source?.revision??'');
   const lazadaAttributes=useLazadaPublishingAttributes(isLazadaLive?selectedConnectionId:null,selectedCategory,source);
+  const [shopeeSizeChartImageId,setShopeeSizeChartImageId]=useState<number|null>(null);
+  useEffect(()=>setShopeeSizeChartImageId(null),[selectedProductId,selectedConnectionId,selectedCategory,source?.revision]);
 
   // Operational status check: Shopee and Lazada are live; others are in development
   const isPlatformOperational = (platform: MarketplacePlatform) => {
@@ -257,9 +260,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
       if(isLazadaLive){
         if(lazadaAttributes.loading)errors.push('Loading category requirements…');
         if(lazadaAttributes.error)errors.push(lazadaAttributes.error);
-        for(const field of lazadaAttributes.fields){
-          if((field.required || field.value.trim())&&!field.complete)errors.push(`Complete ${field.label}${field.sku?` for ${field.sku}`:''}.`);
-        }
+        errors.push(...Object.values(lazadaAttributes.errors).filter((error):error is string=>typeof error==='string'));
       }
     }
     if (readOnlyMetadata) {
@@ -274,7 +275,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
     if (!isLazadaLive && (!lengthCm || !widthCm || !heightCm)) errors.push('Package dimensions (L x W x H cm) are mandatory for volumetric shipping.');
     if (!selectedCategory) errors.push('Marketplace category is required.');
     return errors;
-  }, [brandName, packageWeightKg, lengthCm, widthCm, heightCm, selectedCategory,readOnlyMetadata,categoryMetadata.loading,categoryMetadata.error,brandMetadata.error,brandMetadata.brands,brandMetadata.loading,brandMetadata.mandatory,condition,liveData,source,sourceState,selectedProductId,submitReviewed,isShopeeLive,shopeeRequirements.loading,shopeeRequirements.error,shopeeRequirements.errors,isLazadaLive,lazadaAttributes.loading,lazadaAttributes.error,lazadaAttributes.fields]);
+  }, [brandName, packageWeightKg, lengthCm, widthCm, heightCm, selectedCategory,readOnlyMetadata,categoryMetadata.loading,categoryMetadata.error,brandMetadata.error,brandMetadata.brands,brandMetadata.loading,brandMetadata.mandatory,condition,liveData,source,sourceState,selectedProductId,submitReviewed,isShopeeLive,shopeeRequirements.loading,shopeeRequirements.error,shopeeRequirements.errors,isLazadaLive,lazadaAttributes.loading,lazadaAttributes.error,lazadaAttributes.errors]);
 
   const [imageChoices,setImageChoices]=useState<Record<string,number>>({});
   useEffect(()=>setImageChoices({}),[selectedProductId,selectedConnectionId,source?.revision]);
@@ -296,7 +297,8 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
       try {
         const id = await submitReviewed(targetProduct.id, targetConnection.id, {
           sourceRevision: source?.revision,
-          ...(isLazadaLive?{lazadaAttributes:lazadaAttributes.values.normal,lazadaSkuAttributes:lazadaAttributes.values.skus}:{}),
+          ...(isShopeeLive&&shopeeSizeChartImageId?{sizeChartImageId:shopeeSizeChartImageId}:{}),
+          ...(isLazadaLive?{lazadaAttributes:lazadaAttributes.serialized.normal,lazadaSkuAttributes:lazadaAttributes.serialized.skus,lazadaAttributeImageIds:lazadaAttributes.serialized.imageBindings}:{}),
           ...(isShopeeLive?{shopeeVariantImageChoices:imageReview.resolved,shopeeAttributes:shopeeRequirements.attributes,shopeeLogistics:shopeeRequirements.logistics,shopeeBrandId:brandMetadata.brands.find(brand=>brandLabel(brand)===brandName)?.brand_id??null}:{}),
           priceMultiplier: 1 + markupPercent / 100, categoryName: selectedCategory, brand: brandName,
           packageWeightKg, packageLengthCm: lengthCm, packageWidthCm: widthCm, packageHeightCm: heightCm,
@@ -1005,13 +1007,15 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                   </div>
 
                   {isLazadaLive&&<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <LazadaPublishingAttributes fields={lazadaAttributes.fields} onChange={lazadaAttributes.update}/>
+                    <div className="sm:col-span-2"><MarketplaceAttributeSections fields={lazadaAttributes.fields} values={lazadaAttributes.values} errors={lazadaAttributes.errors} onChange={lazadaAttributes.update}
+                      imageContext={source?{productId:source.product_id,images:source.images,platform:'lazada'}:undefined}/></div>
                     {lazadaAttributes.error&&<button type="button" className="text-xs font-bold text-neutral-700 dark:text-neutral-300" onClick={lazadaAttributes.retry}>Retry category requirements</button>}
                     {lazadaAttributes.moreBrands&&<button type="button" className="text-xs font-bold text-neutral-700 dark:text-neutral-300" disabled={lazadaAttributes.moreLoading} onClick={lazadaAttributes.loadMore}>{lazadaAttributes.moreLoading?'Loading brands…':'Load more brands'}</button>}
                     {lazadaAttributes.moreError&&<p className="text-xs text-rose-500">{lazadaAttributes.moreError}</p>}
                   </div>}
                   {/* Validation Error Banner */}
                   {isShopeeLive&&<ShopeePublishingRequirements shopName={targetConnection.shopName} review={shopeeRequirements}/>}
+                  {isShopeeLive&&<PublishingSizeChart platform="shopee" required={false} source={source} selectedImageId={shopeeSizeChartImageId} onChange={setShopeeSizeChartImageId}/>}
                   {validationErrors.length > 0 ? (
                     <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 space-y-1">
                       <div className="font-bold flex items-center gap-1.5">

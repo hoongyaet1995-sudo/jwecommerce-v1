@@ -110,12 +110,15 @@ export function OperationalMapping(){
         if(options.condition!=='NEW'&&options.condition!=='USED')throw new Error('Review the Shopee product condition.');
         return publishShopeeWithRecovery(String(readAdminBootstrap().user.id??''),{productId:Number(productId),storeId:Number(storeId),
          sourceRevision:options.sourceRevision??'',categoryId:options.categoryName??'',brandId:options.shopeeBrandId??null,
+         sizeChartImageId:options.sizeChartImageId,
          condition:options.condition,weightKg:options.packageWeightKg??0,lengthCm:options.packageLengthCm??0,widthCm:options.packageWidthCm??0,heightCm:options.packageHeightCm??0,
          variantImageChoices:options.shopeeVariantImageChoices,attributes:options.shopeeAttributes??[],logistics:options.shopeeLogistics??[]});
        }
        if(stores.find(store=>store.id===storeId)?.platform!=='lazada')throw new Error('This platform publishing adapter is not ready yet.');
        return publishLazadaWithRecovery(String(readAdminBootstrap().user.id??''),{productId:Number(productId),storeId:Number(storeId),
         sourceRevision:options.sourceRevision??'',categoryId:options.categoryName??'',
+        sizeChartImageId:options.sizeChartImageId,
+        attributeImageIds:options.lazadaAttributeImageIds,
         attributes:options.lazadaAttributes??{},skuAttributes:options.lazadaSkuAttributes??{}});
       }}
       onClose={()=>{setPublishReview(null);catalog.reload();}}/>

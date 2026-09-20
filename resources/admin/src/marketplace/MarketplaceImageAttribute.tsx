@@ -56,6 +56,7 @@ export function MarketplaceImageAttribute({productId,label,required,images,value
    </div>;})}
   </div>}
   {error&&<p role="alert" className="text-[10px] text-rose-500">{error}</p>}
+  {purpose==='size-chart'&&selectedId&&<p className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300">Size chart image selected for this store listing.</p>}
   {preview&&<div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs" onClick={()=>setPreview(undefined)}><div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-4 max-w-md w-full space-y-3 shadow-2xl" onClick={event=>event.stopPropagation()}><div className="flex items-center justify-between"><span className="text-xs font-bold text-neutral-900 dark:text-white">{label} Preview</span><button type="button" onClick={()=>setPreview(undefined)} className="p-1 rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"><X className="w-4 h-4"/></button></div><img src={preview.path} alt={`${label} preview`} className="w-full max-h-[65vh] object-contain rounded-xl bg-neutral-100 dark:bg-neutral-950"/></div></div>}
  </div>;
 }
