@@ -14,6 +14,10 @@ it('bypasses the old task after duplicate-risk recovery authorization',()=>{
  expect(shouldOpenExistingPublishingTask(task)).toBe(true);
  expect(shouldOpenExistingPublishingTask(task,'1285db80-1111-4111-8111-123456789045')).toBe(false);
 });
+it('does not reopen a definitively rejected task with no marketplace item',()=>{
+ expect(shouldOpenExistingPublishingTask({id:6,status:'rejected',externalItemId:null,creationCertainty:'not_created'})).toBe(false);
+ expect(shouldOpenExistingPublishingTask({id:7,status:'rejected',externalItemId:'14990001',creationCertainty:'unknown'})).toBe(true);
+});
 it('submits live Shopee requirements from the existing three-step review',async()=>{
  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
  vi.mocked(marketplaceRequest).mockImplementation(async(path)=>{

@@ -54,7 +54,11 @@ interface PublishProductModalProps {
 }
 
 type WizardStep = 'destination' | 'attributes' | 'pricing_sync' | 'publishing';
-export const shouldOpenExistingPublishingTask=(task:unknown,recoveryAuthorizationId?:string)=>!!task&&!recoveryAuthorizationId;
+export const shouldOpenExistingPublishingTask=(task:unknown,recoveryAuthorizationId?:string)=>{
+  if (!task || recoveryAuthorizationId) return false;
+  const saved=task as {status?:string;externalItemId?:string|null;creationCertainty?:string};
+  return !(saved.status==='rejected' && !saved.externalItemId && saved.creationCertainty!=='confirmed');
+};
 
 export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   isOpen,
