@@ -62,6 +62,8 @@ class LazadaProductImageServiceTest extends TestCase
         Storage::fake('public');
         $path='cms/media/9285db80-1111-4111-8111-123456789013.png';Storage::disk('public')->put($path,'image fixture');
         $product->images()->create(['path'=>'/storage/'.$path]);
+        $duplicatePath='cms/media/9285db80-1111-4111-8111-123456789014.png';Storage::disk('public')->put($duplicatePath,'duplicate image fixture');
+        $product->images()->create(['path'=>'/storage/'.$duplicatePath]);
         Http::preventStrayRequests();
         Http::fake([
             '*/seller/get*'=>Http::response(['code'=>'0','data'=>['seller_id'=>'300163725140','short_code'=>'MY4NA1T7CK','status'=>'ACTIVE']]),
@@ -82,7 +84,7 @@ class LazadaProductImageServiceTest extends TestCase
         $this->actingAs($actor);
         $id=$this->postJson("/admin/api/marketplace/stores/{$store}/publishing-tasks",$request)->assertOk()->json('id');
         $this->postJson("/admin/api/marketplace/stores/{$store}/publishing-tasks",$request)->assertOk()->assertJsonPath('id',$id);
-        $this->assertDatabaseCount('marketplace_image_receipts',1);
+        $this->assertDatabaseCount('marketplace_image_receipts',2);
         $this->assertDatabaseCount('marketplace_publishing_tasks',1);
         $saved=json_decode(DB::table('marketplace_publishing_tasks')->where('id',$id)->value('payload'),true);
         $this->assertSame(['https://my-live-02.slatic.net/p/automatic.jpg'],$saved['Request']['Product']['Images']['Image']);
@@ -93,7 +95,7 @@ class LazadaProductImageServiceTest extends TestCase
         $this->assertSame($saved, app(\App\Services\Marketplace\LazadaPublishingImages::class)->bind($store,$source,$saved));
         $this->assertSame('0',$saved['Request']['Product']['Skus']['Sku'][0]['quantity']);
         $this->assertSame(77,$variant->fresh()->stock);
-        Http::assertSentCount(6);
+        Http::assertSentCount(8);
         Http::assertNotSent(fn($request)=>str_contains($request->url(),'/product/create'));
     }
 

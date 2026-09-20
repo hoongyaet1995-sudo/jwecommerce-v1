@@ -27,6 +27,7 @@ final class LazadaPublishingImages
             $urls[]=$receipt->provider_identity;
             $identities[(int)$image['id']]=$receipt->provider_identity;
         }
+        $urls=array_values(array_unique($urls));
         if (!$urls || count($urls)>8) throw ValidationException::withMessages(['images'=>'Review one to eight JW product images before publishing.']);
         foreach ($payload['Request']['Product']['Skus']['Sku'] as $sku) {
             if (!array_key_exists('Images',$sku)) continue;
