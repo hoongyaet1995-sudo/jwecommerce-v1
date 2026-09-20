@@ -80,7 +80,9 @@ export const providerPublishingIssues=(diagnostics:Record<string,unknown>|undefi
   });
 };
 
-const providerFieldLabel=(field:string)=>field==='brandProp'||field==='brand'?'Brand':field;
+const providerFieldLabel=(field:string)=>field==='brandProp'||field==='brand'
+  ?'Brand'
+  :field==='customSaleProp'?'Variant attributes':field;
 
 export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   isOpen,

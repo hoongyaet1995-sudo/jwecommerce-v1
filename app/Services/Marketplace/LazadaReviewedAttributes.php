@@ -95,8 +95,7 @@ final class LazadaReviewedAttributes
         foreach ($sourceSkus as $sku => $_) {
             foreach ($definitions['sku'] as $name => $attribute) {
                 $type = strtolower((string) ($attribute['input_type'] ?? ''));
-                $required = (bool) ($attribute['is_mandatory'] ?? false)
-                    || (count($sourceSkus) > 1 && ($attribute['is_sale_prop'] ?? 0) == 1);
+                $required = (bool) ($attribute['is_mandatory'] ?? false);
                 if ($type === 'img') {
                     $key = "lazada:variant:{$sku}:{$name}";
                     $expectedImageKeys[$key] = true;
@@ -111,6 +110,7 @@ final class LazadaReviewedAttributes
                 $result['skus'][$sku][$name] = $skus[$sku][$name];
             }
         }
+        self::validateSaleProperties($definitions['sku'], $sourceSkus, $result['skus']);
         foreach ($bindings as $key => $imageId) {
             if (!is_string($key) || !isset($expectedImageKeys[$key]) || !is_int($imageId) || !isset($ownedImages[$imageId])) {
                 self::reject('Select a current JW product image for each Lazada image attribute.');
@@ -137,5 +137,28 @@ final class LazadaReviewedAttributes
         return ($attribute['attribute_type'] ?? null) === 'normal'
             && strtolower((string) ($attribute['input_type'] ?? '')) === 'singleselect'
             && (!is_array($attribute['options'] ?? null) || count($attribute['options']) === 0);
+    }
+
+    private static function validateSaleProperties(array $definitions, array $sourceSkus, array $values): void
+    {
+        if (count($sourceSkus) < 2) return;
+        $saleNames=[];
+        foreach ($definitions as $name=>$attribute) if (($attribute['is_sale_prop']??0)==1) $saleNames[$name]=true;
+        if (!$saleNames) return;
+        $selected=[];
+        foreach ($values as $skuValues) foreach (array_keys(array_intersect_key($skuValues,$saleNames)) as $name) $selected[$name]=true;
+        if (!$selected) self::reject('Choose one Lazada variant attribute that distinguishes every SKU.');
+        if (count($selected)>2) self::reject('Lazada accepts at most two variant attributes. Clear the additional variant attributes.');
+        $tuples=[];
+        foreach (array_keys($sourceSkus) as $sku) {
+            $parts=[];
+            foreach (array_keys($selected) as $name) {
+                if (!array_key_exists($name,$values[$sku]??[])) self::reject("Complete {$name} for every SKU, or clear it from every SKU.");
+                $parts[]=$name.':'.json_encode($values[$sku][$name],JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+            }
+            sort($parts);$tuple=implode('|',$parts);
+            if (isset($tuples[$tuple])) self::reject('Each SKU needs a unique Lazada variant attribute combination.');
+            $tuples[$tuple]=true;
+        }
     }
 }

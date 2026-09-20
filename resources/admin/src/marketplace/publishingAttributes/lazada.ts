@@ -90,7 +90,7 @@ export function normalizeLazadaAttributes(
     const required=Boolean(attribute.is_mandatory)||(scope==='product'&&providerName==='brand');
     const targets=scope==='variant'?orderedPublishingVariants(source.options,source.variants):[undefined];
     for(const variant of targets){
-      const variantRequired=required||Boolean(variant&&source.variants.length>1&&attribute.is_sale_prop==1);
+      const variantRequired=required;
       const key=variant
         ?`lazada:variant:${variant.sku}:${providerName}`
         :sizeChart?`lazada:size-chart:${providerName}`:`lazada:product:${providerName}`;
@@ -104,10 +104,47 @@ export function normalizeLazadaAttributes(
         supported:Boolean(control),
         unsupportedReason:control?undefined:`${String(attribute.input_type)} attributes cannot be completed yet.`,
         purpose:sizeChart?'size-chart':undefined,
+        saleProperty:scope==='variant'&&attribute.is_sale_prop==1,
       });
     }
   }
   return fields;
+}
+
+const hasValue=(value:MarketplaceAttributeValue|undefined):boolean=>{
+  if(!value||value.kind==='empty')return false;
+  if(value.kind==='multi')return value.values.length>0;
+  if(value.kind==='single')return Boolean(value.value.label.trim());
+  if(value.kind==='image')return value.imageId>0;
+  return Boolean(value.value.trim());
+};
+
+export function validateLazadaSaleProperties(
+  fields:MarketplaceAttributeField[],
+  values:ReadonlyMap<string,MarketplaceAttributeValue>,
+  variantCount:number,
+):string[] {
+  if(variantCount<2)return [];
+  const saleFields=fields.filter(field=>field.scope==='variant'&&field.saleProperty);
+  if(saleFields.length===0)return [];
+  const selected=[...new Set(saleFields.filter(field=>hasValue(values.get(field.key))).map(field=>field.providerName))];
+  if(selected.length===0)return ['Choose one variant attribute that distinguishes every SKU. Lazada allows at most two.'];
+  if(selected.length>2)return [`Lazada allows at most two variant attributes. Keep one or two and clear: ${selected.slice(2).join(', ')}.`];
+  for(const name of selected){
+    const group=saleFields.filter(field=>field.providerName===name);
+    if(group.length!==variantCount||group.some(field=>!hasValue(values.get(field.key)))){
+      const label=group[0]?.label??name;
+      return [`Complete ${label} for every SKU, or clear it from every SKU.`];
+    }
+  }
+  const tuples=saleFields.filter(field=>selected.includes(field.providerName)).reduce<Record<string,string[]>>((all,field)=>{
+    const value=scalar(values.get(field.key)??{kind:'empty'})??'';
+    (all[field.sku??'']??=[]).push(`${field.providerName}:${value}`);return all;
+  },{});
+  if(new Set(Object.values(tuples).map(parts=>parts.sort().join('|'))).size!==variantCount){
+    return ['Each SKU needs a unique combination of the selected variant attributes.'];
+  }
+  return [];
 }
 
 const optionAllowed=(field:MarketplaceAttributeField,label:string,custom:boolean):boolean=>{

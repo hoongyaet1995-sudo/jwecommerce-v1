@@ -41,7 +41,7 @@ final class LazadaListingPreflight
             }
             $required=(bool)$attribute['is_mandatory']
                 || ($scope==='normal' && $name==='brand')
-                || ($scope==='sku' && count($skus)>1 && ($attribute['is_sale_prop']??0)==1);
+                ;
             $label=$attribute['label'] ?? '';
             $isSizeChart=$scope==='normal' && (
                 preg_match('/size[ _-]*chart/i',$name)===1
@@ -68,6 +68,25 @@ final class LazadaListingPreflight
                     app(LazadaBrands::class)->validate($token,$value,$storeId);
                 } else LazadaAttributeValue::validate($attribute,$value);
             }
+        }
+        $selectedSaleProps=[];
+        foreach ($skus as $sku) foreach ($saleProps as $name) {
+            $value=$sku[$name]??data_get($sku,'saleProp.'.$name);
+            if ($value!==null && (!is_string($value)||trim($value)!=='')) $selectedSaleProps[$name]=true;
+        }
+        if (count($skus)>1 && $saleProps && !$selectedSaleProps) throw ValidationException::withMessages(['attributes'=>'Choose one Lazada variant attribute that distinguishes every SKU.']);
+        if (count($selectedSaleProps)>2) throw ValidationException::withMessages(['attributes'=>'Lazada accepts at most two variant attributes. Clear the additional variant attributes.']);
+        $combinations=[];
+        foreach ($skus as $index=>$sku) {
+            $parts=[];
+            foreach (array_keys($selectedSaleProps) as $name) {
+                $value=$sku[$name]??data_get($sku,'saleProp.'.$name);
+                if ($value===null || (is_string($value)&&trim($value)==='')) throw ValidationException::withMessages(['attributes'=>"Complete {$name} for every SKU, or clear it from every SKU."]);
+                $parts[]=$name.':'.json_encode($value,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+            }
+            sort($parts);$combination=implode('|',$parts);
+            if (isset($combinations[$combination])) throw ValidationException::withMessages(['attributes'=>'Each SKU needs a unique Lazada variant attribute combination.']);
+            $combinations[$combination]=$index;
         }
         foreach ($payload['Request']['Product']['Skus']['Sku'] as &$sku) {
             foreach ($saleProps as $name) {

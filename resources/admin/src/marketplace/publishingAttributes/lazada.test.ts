@@ -4,6 +4,7 @@ import {
   normalizeLazadaAttributes,
   serializeLazadaAttributes,
   validateAttributeValue,
+  validateLazadaSaleProperties,
 } from './lazada';
 import type {MarketplaceAttributeValue} from './types';
 
@@ -84,6 +85,21 @@ describe('normalizeLazadaAttributes',()=>{
       {id:null,label:'Gift',custom:false},
       {id:null,label:'Other',custom:true},
     ]})).toContain('at most 2');
+  });
+
+  it('allows one or two optional sale properties and rejects provider-invalid combinations',()=>{
+    const saleSchema=['ring_size','color_family','weight_of_metal'].map(name=>({
+      name,label:name,attribute_type:'sku',input_type:'enumInput',is_mandatory:0,is_sale_prop:1,
+    }));
+    const fields=normalizeLazadaAttributes(saleSchema,source,new Map(),[]);
+    const values=new Map<string,MarketplaceAttributeValue>();
+    for(const field of fields)values.set(field.key,{kind:'single',value:{id:null,label:`${field.sku}-${field.providerName}`,custom:true}});
+    expect(fields.every(field=>field.required===false)).toBe(true);
+    expect(validateLazadaSaleProperties(fields,values,2)[0]).toContain('at most two');
+    for(const field of fields.filter(field=>field.providerName!=='weight_of_metal'))values.delete(field.key);
+    expect(validateLazadaSaleProperties(fields,values,2)).toEqual([]);
+    values.set('lazada:variant:TEKAT 5G:weight_of_metal',{kind:'single',value:{id:null,label:'TEKAT 1G-weight_of_metal',custom:true}});
+    expect(validateLazadaSaleProperties(fields,values,2)[0]).toContain('unique combination');
   });
 });
 

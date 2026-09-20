@@ -36,6 +36,7 @@ export interface MarketplaceAttributeField {
   formatType?:number;
   supportSearch?:boolean;
   dependent?:boolean;
+  saleProperty?:boolean;
 }
 
 export const emptyMarketplaceAttributeValue=():MarketplaceAttributeValue=>({kind:'empty'});

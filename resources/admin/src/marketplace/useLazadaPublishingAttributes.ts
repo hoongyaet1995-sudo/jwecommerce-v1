@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import {marketplaceRequest} from '../integration/marketplaceData';
 import type {PublishingSource} from '../integration/marketplacePublishing';
-import {normalizeLazadaAttributes,serializeLazadaAttributes,validateAttributeValue} from './publishingAttributes/lazada';
+import {normalizeLazadaAttributes,serializeLazadaAttributes,validateAttributeValue,validateLazadaSaleProperties} from './publishingAttributes/lazada';
 import type {MarketplaceAttributeField,MarketplaceAttributeValue} from './publishingAttributes/types';
 import {useMarketplaceAttributeValues} from './useMarketplaceAttributeValues';
 
@@ -50,9 +50,9 @@ export function useLazadaPublishingAttributes(storeId:string|null,categoryId:str
   return {kind:'text',value};
  },[source]);
  const state=useMarketplaceAttributeValues(key,normalized.fields,initial);
- const errors=useMemo(()=>Object.fromEntries(normalized.fields.flatMap(field=>{
+ const errors=useMemo(()=>Object.fromEntries([...normalized.fields.flatMap(field=>{
   const error=validateAttributeValue(field,state.values.get(field.key)??{kind:'empty'});return error?[[field.key,error]]:[];
- })),[normalized.fields,state.values]);
+ }),...validateLazadaSaleProperties(normalized.fields,state.values,source?.variants.length??0).map((error,index)=>[`sale-properties:${index}`,error])]),[normalized.fields,state.values,source?.variants.length]);
  const serialized=useMemo(()=>serializeLazadaAttributes(normalized.fields,state.values),[normalized.fields,state.values]);
  return {fields:normalized.fields,values:state.values,serialized,errors,update:state.update,loading:!!key&&!current?.data&&!current?.error,
   error:current?.error||normalized.error,retry:()=>retry(value=>value+1),

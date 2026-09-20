@@ -118,6 +118,29 @@ class LazadaReviewedAttributesTest extends TestCase
         ]);
     }
 
+    public function test_multi_sku_review_accepts_at_most_two_selected_sale_properties(): void
+    {
+        $schema = [
+            ['name'=>'ring_size','attribute_type'=>'sku','is_mandatory'=>0,'is_sale_prop'=>1,'input_type'=>'enumInput'],
+            ['name'=>'color_family','attribute_type'=>'sku','is_mandatory'=>0,'is_sale_prop'=>1,'input_type'=>'enumInput'],
+            ['name'=>'weight_of_metal','attribute_type'=>'sku','is_mandatory'=>0,'is_sale_prop'=>1,'input_type'=>'enumInput'],
+        ];
+        $valid=['normal'=>[],'skus'=>[
+            'BLUE-1'=>['weight_of_metal'=>'1G'], 'RED-1'=>['weight_of_metal'=>'5G'],
+        ],'imageBindings'=>[]];
+        $bound=LazadaReviewedAttributes::bind($schema,$this->source(),$valid);
+        $this->assertSame('1G',$bound['skus']['BLUE-1']['weight_of_metal']);
+
+        $invalid=$valid;
+        foreach ($invalid['skus'] as $sku=>&$values) {
+            $values['ring_size']=$sku.'-ring';$values['color_family']=$sku.'-color';
+        }
+        unset($values);
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('at most two variant attributes');
+        LazadaReviewedAttributes::bind($schema,$this->source(),$invalid);
+    }
+
     private function source(): array
     {
         return [
