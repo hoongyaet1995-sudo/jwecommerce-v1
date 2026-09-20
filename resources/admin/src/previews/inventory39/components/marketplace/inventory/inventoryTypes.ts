@@ -114,3 +114,32 @@ export interface PreSwitchSafetyBlocker {
   description: string;
   actionLabel: string;
 }
+
+export type InventoryModeCatalogClassification =
+  | 'ready_to_allocate'
+  | 'awaiting_first_count'
+  | 'sandbox_test'
+  | 'excluded_status'
+  | 'store_not_managed'
+  | 'reservation_conflict';
+
+export interface InventoryModeCatalogItem {
+  variant_id: number;
+  product_id: number;
+  sku: string;
+  product: string;
+  variant: string;
+  product_status: string;
+  data_classification?: string | null;
+  classification: InventoryModeCatalogClassification;
+  balance_id?: number | null;
+  physical_stock?: number | null;
+  reserved_stock?: number | null;
+  counted: boolean;
+  mapped_stores: Array<{ id: number; name: string; platform?: string; management_status?: string }>;
+}
+
+export interface InventoryModeCatalog {
+  items: InventoryModeCatalogItem[];
+  summary: { total: number; ready: number; blocked: number; excluded: number };
+}

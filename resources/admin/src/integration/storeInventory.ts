@@ -1,4 +1,4 @@
-export type InventoryOverview = {mode:'shared'|'independent';configuration_version:number;website_account?:any;totals:any;stores:any[];data:any[]};
+export type InventoryOverview = {mode:'shared'|'independent';configuration_version:number;website_account?:any;totals:any;stores:any[];data:any[];mode_catalog?:any};
 
 const csrf=()=>document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content??'';
 async function json(url:string,init:RequestInit={}){

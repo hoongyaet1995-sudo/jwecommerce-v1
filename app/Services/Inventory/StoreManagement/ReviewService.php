@@ -11,7 +11,8 @@ use Illuminate\Validation\ValidationException;
 
 final class ReviewService
 {
-    public function __construct(private readonly CountMutation $counts, private readonly TransferMutation $transfers, private readonly SyncOutbox $outbox) {}
+    public function __construct(private readonly CountMutation $counts, private readonly TransferMutation $transfers,
+        private readonly SyncOutbox $outbox, private readonly AccountResolver $accounts) {}
 
     /** @return array<string,mixed> */
     public function create(User $actor, string $kind, array $input): array
@@ -19,6 +20,10 @@ final class ReviewService
         $this->authorize($actor);
         if (! in_array($kind, ['count', 'intake', 'correction', 'transfer'], true)) {
             throw ValidationException::withMessages(['kind' => 'Choose count, intake, correction, or transfer.']);
+        }
+        if ($kind === 'count' && empty($input['balance_id']) && ! empty($input['variant_id'])) {
+            $resolved = $this->accounts->balance((int) $input['variant_id'], (string) ($input['channel_key'] ?? 'website'));
+            $input['balance_id'] = $resolved['id'];
         }
 
         return DB::transaction(function () use ($actor, $kind, $input): array {

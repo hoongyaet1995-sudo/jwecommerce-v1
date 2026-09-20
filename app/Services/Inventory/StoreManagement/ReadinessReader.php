@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\DB;
 
 final class ReadinessReader
 {
+    public function __construct(private readonly ModeCatalogReader $modeCatalog) {}
+
     public function takeover(int $storeId): array
     {
         $store = DB::table('marketplace_stores')->find($storeId);
@@ -66,6 +68,21 @@ final class ReadinessReader
     public function mode(): array
     {
         $blockers = [];
+        $catalog = $this->modeCatalog->read();
+        $awaiting = collect($catalog['items'])->where('classification', 'awaiting_first_count')->values();
+        if ($awaiting->isNotEmpty()) {
+            $blockers[] = ['code' => 'catalog_first_count_required',
+                'variant_ids' => $awaiting->pluck('variant_id')->all(),
+                'skus' => $awaiting->pluck('sku')->all(),
+                'next_action' => 'Complete first counts for every active production SKU before changing mode.'];
+        }
+        $conflicts = collect($catalog['items'])->where('classification', 'reservation_conflict')->values();
+        if ($conflicts->isNotEmpty()) {
+            $blockers[] = ['code' => 'catalog_reservation_conflict',
+                'variant_ids' => $conflicts->pluck('variant_id')->all(),
+                'skus' => $conflicts->pluck('sku')->all(),
+                'next_action' => 'Complete or reconcile active order reservations before changing mode.'];
+        }
         $pending = DB::table('inventory_store_sync_tasks')->whereNotIn('status', ['confirmed', 'not_applicable'])->pluck('id');
         if ($pending->isNotEmpty()) {
             $blockers[] = ['code' => 'pending_sync', 'ids' => $pending->all(), 'next_action' => 'Resolve inventory sync stages first.'];
@@ -79,10 +96,6 @@ final class ReadinessReader
         if ($reservations->isNotEmpty()) {
             $blockers[] = ['code' => 'active_reservations', 'ids' => $reservations->all(), 'next_action' => 'Complete or release active order reservations first.'];
         }
-        $unknown = $activeBalances()->whereNull('b.counted_at')->pluck('b.id');
-        if ($unknown->isNotEmpty()) {
-            $blockers[] = ['code' => 'unknown_balances', 'ids' => $unknown->all(), 'next_action' => 'Complete first counts for every active account.'];
-        }
         $safety = $activeBalances()->where('b.safety_stock', '>', 0)->pluck('b.id');
         if ($safety->isNotEmpty()) {
             $blockers[] = ['code' => 'legacy_safety_stock', 'ids' => $safety->all(), 'next_action' => 'Reconcile legacy safety buffers explicitly.'];
@@ -92,6 +105,6 @@ final class ReadinessReader
             $blockers[] = ['code' => 'unfinished_transfers', 'ids' => $openTransfers->all(), 'next_action' => 'Resolve unfinished transfer operations.'];
         }
 
-        return ['ready' => $blockers === [], 'blockers' => $blockers];
+        return ['ready' => $blockers === [], 'blockers' => $blockers, 'catalog' => $catalog];
     }
 }

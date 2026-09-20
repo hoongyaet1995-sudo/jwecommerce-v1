@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\DB;
 
 final class OverviewReader
 {
+    public function __construct(private readonly ModeCatalogReader $modeCatalog) {}
+
     /** @return array<string,mixed> */
     public function read(array $filters = []): array
     {
@@ -83,7 +85,7 @@ final class OverviewReader
 
         return ['mode' => $mode, 'configuration_version' => (int) ($configuration?->version ?? 0),
             'website_account' => ['management_status' => $website?->management_status ?? 'not_managed', 'management_version' => (int) ($website?->version ?? 0)],
-            'totals' => ['known' => $known, 'unknown_accounts' => $unknown],
+            'totals' => ['known' => $known, 'unknown_accounts' => $unknown], 'mode_catalog' => $this->modeCatalog->read(),
             'stores' => $this->stores($filters), 'data' => $rows];
     }
 

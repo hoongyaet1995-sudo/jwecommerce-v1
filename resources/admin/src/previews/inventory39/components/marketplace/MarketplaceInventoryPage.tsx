@@ -53,6 +53,7 @@ import { InventorySettingsModal } from './inventory/InventorySettingsModal';
 export const MarketplaceInventoryPage: React.FC = () => {
   const {
     marketplaceInventory = [],
+    inventoryModeCatalog = { items: [], summary: { total: 0, ready: 0, blocked: 0, excluded: 0 } },
     connections = [],
     marketplaceOrders = [],
     adjustStock,
@@ -1278,16 +1279,19 @@ export const MarketplaceInventoryPage: React.FC = () => {
         currentMode={currentMode}
         stores={stores}
         inventory={safeInventory}
+        modeCatalog={inventoryModeCatalog}
         onSwitchMode={handleSwitchMode}
         onToggleStoreManagement={handleToggleStoreManagement}
-        onSelectSkuForCount={sku => {
+        onSelectSkuForCount={(sku, variantId) => {
           const it = safeInventory.find(i => i.masterSku === sku);
           if (it) {
             handleOpenFirstCount(it);
+            return;
           }
+          const catalogItem = inventoryModeCatalog.items.find((entry: any) => entry.variant_id === variantId || entry.sku === sku);
+          if (catalogItem) handleOpenFirstCount({id: '', variantId: catalogItem.variant_id, masterSku: catalogItem.sku, barcode: '', productName: catalogItem.product, variantName: catalogItem.variant, imageUrl: '', warehouseLocation: '', physicalStockStatus: 'unknown', hasUncountedAccounts: true, totalPhysicalStock: null, reservedStock: catalogItem.reserved_stock || 0, safetyStock: 0, availableStock: null, reorderPoint: 0, costPrice: 0, sellingPrice: 0, channelMappings: {}, autoSyncEnabled: false, historyLog: [], storeAssociations: []} as any);
         }}
       />
     </div>
   );
 };
-

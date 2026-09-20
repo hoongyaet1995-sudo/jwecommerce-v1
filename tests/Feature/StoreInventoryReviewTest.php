@@ -58,6 +58,27 @@ class StoreInventoryReviewTest extends TestCase
             ->assertOk()->assertJsonPath('balances.0.physical', 0)->assertJsonPath('balances.0.available', 0);
     }
 
+    public function test_first_count_can_provision_the_current_mode_balance_from_a_catalog_variant(): void
+    {
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool']);
+        $sku = (new StoreInventoryFixture)->sku();
+        DB::table('products')->where('id', $sku['product']->id)->update(['status' => 'active']);
+        $actor = $this->editor();
+
+        $review = $this->actingAs($actor)->postJson('/admin/api/inventory/store-management/reviews', [
+            'kind' => 'count', 'variant_id' => $sku['variant']->id, 'channel_key' => 'website',
+            'physical_count' => 7, 'reason' => 'Initial catalog count',
+        ])->assertCreated()->assertJsonPath('after.physical', 7)->json();
+
+        $this->postJson('/admin/api/inventory/store-management/reviews/'.$review['id'].'/confirm', [
+            'operation_key' => 'catalog-first-count-1',
+        ])->assertOk()->assertJsonPath('balances.0.physical', 7);
+
+        $this->assertDatabaseHas('inventory_balances', [
+            'product_variant_id' => $sku['variant']->id, 'physical_stock' => 7,
+        ]);
+    }
+
     public function test_review_rejects_a_physical_count_below_existing_reservations(): void
     {
         $context = $this->context(10, 4);

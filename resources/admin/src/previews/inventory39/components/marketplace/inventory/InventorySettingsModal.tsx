@@ -17,7 +17,7 @@ import {
   Boxes
 } from 'lucide-react';
 import { MarketplaceInventoryItem } from '../../../types';
-import { InventoryStoreChannel, PreSwitchSafetyBlocker } from './inventoryTypes';
+import { InventoryModeCatalog, InventoryModeCatalogItem, InventoryStoreChannel, PreSwitchSafetyBlocker } from './inventoryTypes';
 import { MarketplaceLogo } from '../MarketplaceLogo';
 
 interface InventorySettingsModalProps {
@@ -26,6 +26,7 @@ interface InventorySettingsModalProps {
   currentMode: 'shared' | 'independent';
   stores: InventoryStoreChannel[];
   inventory: MarketplaceInventoryItem[];
+  modeCatalog: InventoryModeCatalog;
   onSwitchMode: (
     newMode: 'shared' | 'independent',
     staffName: string,
@@ -33,7 +34,7 @@ interface InventorySettingsModalProps {
     allocations?: Record<string, Record<string, number>>
   ) => Promise<{ success: boolean; error?: string }>;
   onToggleStoreManagement: (storeId: string, enable: boolean) => void;
-  onSelectSkuForCount?: (sku: string) => void;
+  onSelectSkuForCount?: (sku: string, variantId: number) => void;
 }
 
 export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
@@ -42,6 +43,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
   currentMode,
   stores,
   inventory,
+  modeCatalog,
   onSwitchMode,
   onToggleStoreManagement,
   onSelectSkuForCount
@@ -75,52 +77,59 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
   // Safety Blockers Check
   const safetyBlockers: PreSwitchSafetyBlocker[] = useMemo(() => {
     const blockers: PreSwitchSafetyBlocker[] = [];
-    const safeInv = inventory || [];
-
-    // 1. Check for uncounted SKUs
-    const uncounted = safeInv.filter(i => i.physicalStockStatus === 'unknown' || i.totalPhysicalStock === null);
-    if (uncounted.length > 0) {
-      uncounted.forEach(item => {
+    const blockedItems = (modeCatalog?.items || []).filter(item => ['awaiting_first_count', 'reservation_conflict'].includes(item.classification));
+    if (blockedItems.length > 0) {
+      blockedItems.forEach(item => {
         blockers.push({
-          sku: item.masterSku,
-          productName: item.productName,
-          issueType: 'uncounted',
-          title: `Unverified Initial Count (${item.masterSku})`,
-          description: 'This SKU has not completed its initial verified physical count. Stock numbers must be verified before changing operating mode.',
+          sku: item.sku,
+          productName: item.product,
+          issueType: item.classification === 'reservation_conflict' ? 'reserved_stock' : 'uncounted',
+          title: item.classification === 'reservation_conflict' ? `Reservation Conflict (${item.sku})` : `Unverified Initial Count (${item.sku})`,
+          description: item.classification === 'reservation_conflict' ? 'Reserved units must be resolved before stock ownership can change.' : 'This SKU has not completed its initial verified physical count.',
           actionLabel: 'Perform Count'
         });
       });
     }
 
     return blockers;
-  }, [inventory]);
+  }, [modeCatalog]);
 
   if (!isOpen) return null;
 
   const safeStores = stores || [];
   const safeInventory = inventory || [];
+  const catalogItems = modeCatalog?.items || [];
 
   // Initialize default balanced allocation when entering allocation step
   const initializeAllocations = () => {
-    const activeStores = safeStores.filter(s => !s.isComingSoon && s.connectionState === 'connected');
+    const activeStores = safeStores.filter(s => !s.isComingSoon && s.connectionState === 'connected' && s.isManagedByJw);
     const newAlloc: Record<string, Record<string, number>> = {};
 
-    safeInventory.forEach(item => {
-      const total = item.availableStock ?? item.totalPhysicalStock ?? 0;
-      newAlloc[item.masterSku] = {};
+    catalogItems.filter(item => item.classification === 'ready_to_allocate').forEach(item => {
+      const total = item.physical_stock ?? 0;
+      newAlloc[String(item.variant_id)] = {};
 
       if (activeStores.length > 0) {
         const perStore = Math.floor(total / activeStores.length);
         const remainder = total % activeStores.length;
 
         activeStores.forEach((st, idx) => {
-          newAlloc[item.masterSku][st.id] = perStore + (idx === 0 ? remainder : 0);
+          newAlloc[String(item.variant_id)][st.id] = perStore + (idx === 0 ? remainder : 0);
         });
       }
     });
 
     setAllocations(newAlloc);
   };
+
+  const classificationMeta = (item: InventoryModeCatalogItem) => ({
+    ready_to_allocate: ['Ready to Allocate', 'Verified physical stock can be assigned to store accounts.', 'emerald'],
+    awaiting_first_count: ['Awaiting First Count', 'Complete the first verified physical count before switching mode.', 'amber'],
+    sandbox_test: ['Sandbox / Test', 'Visible for audit and excluded from production stock allocation.', 'neutral'],
+    excluded_status: ['Draft / Archived', 'Inactive catalog records remain visible and are excluded.', 'neutral'],
+    store_not_managed: ['Store Not Managed by JW', 'Take over the connected store before its listing can join JW allocation.', 'neutral'],
+    reservation_conflict: ['Reservation Conflict', 'Resolve active reserved units before changing stock ownership.', 'amber'],
+  }[item.classification] || ['Excluded', 'This SKU is not eligible for allocation.', 'neutral']) as [string, string, string];
 
   const handleStartSwitchFlow = () => {
     setTargetMode(currentMode === 'shared' ? 'independent' : 'shared');
@@ -389,7 +398,8 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                               type="button"
                               onClick={() => {
                                 onClose();
-                                if (onSelectSkuForCount) onSelectSkuForCount(b.sku);
+                                const catalogItem = catalogItems.find(item => item.sku === b.sku);
+                                if (onSelectSkuForCount && catalogItem) onSelectSkuForCount(b.sku, catalogItem.variant_id);
                               }}
                               className="px-2.5 py-1 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-bold text-[11px] hover:bg-neutral-800 dark:hover:bg-neutral-100 cursor-pointer"
                             >
@@ -435,28 +445,43 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                     </p>
                   </div>
 
-                  <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                    {safeInventory.map(item => {
-                      const total = item.availableStock ?? item.totalPhysicalStock ?? 0;
-                      const activeStores = safeStores.filter(s => !s.isComingSoon && s.connectionState === 'connected');
-                      const currentAlloc = allocations[item.masterSku] || {};
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      [`${modeCatalog?.summary?.total || 0} Total`, 'All JW catalog SKUs'],
+                      [`${modeCatalog?.summary?.ready || 0} Ready`, 'Eligible for allocation'],
+                      [`${modeCatalog?.summary?.blocked || 0} Blocked`, 'Action required'],
+                      [`${modeCatalog?.summary?.excluded || 0} Excluded`, 'Visible, not allocated'],
+                    ].map(([label, description]) => (
+                      <div key={label} className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 px-3 py-2">
+                        <div className="text-xs font-bold text-neutral-900 dark:text-white">{label}</div>
+                        <div className="text-[10px] text-neutral-500">{description}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                    {catalogItems.map(item => {
+                      const total = item.physical_stock ?? 0;
+                      const activeStores = safeStores.filter(s => !s.isComingSoon && s.connectionState === 'connected' && s.isManagedByJw);
+                      const allocationKey = String(item.variant_id);
+                      const currentAlloc = allocations[allocationKey] || {};
                       const sumAlloc = (Object.values(currentAlloc) as number[]).reduce((a: number, b: number) => a + b, 0);
                       const isBalanced = sumAlloc === total;
+                      const isReady = item.classification === 'ready_to_allocate';
+                      const [statusLabel, statusDescription, tone] = classificationMeta(item);
 
                       return (
-                        <div key={item.id} className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 text-xs space-y-2">
+                        <div key={item.variant_id} className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 text-xs space-y-2">
                           <div className="flex items-center justify-between">
                             <div>
-                              <span className="font-mono font-bold text-neutral-900 dark:text-white">{item.masterSku}</span>
-                              <span className="text-neutral-600 dark:text-neutral-400 ml-2">{item.productName}</span>
+                              <span className="font-mono font-bold text-neutral-900 dark:text-white">{item.sku}</span>
+                              <span className="text-neutral-600 dark:text-neutral-400 ml-2">{item.product}</span>
                             </div>
-                            <div className="font-mono text-xs">
-                              Shared Total: <strong>{total}</strong> units
-                            </div>
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${tone === 'emerald' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : tone === 'amber' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200'}`}>{statusLabel}</span>
                           </div>
 
                           {/* Allocation Inputs */}
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                          {isReady ? <><div className="flex items-center justify-between text-[11px] text-neutral-500"><span>{statusDescription}</span><span className="font-mono">Physical Stock: <strong className="text-neutral-900 dark:text-white">{total}</strong></span></div><div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
                             {activeStores.map(st => (
                               <div key={st.id} className="space-y-1">
                                 <label className="text-[10px] text-neutral-500 truncate block">
@@ -470,8 +495,8 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                                     const val = Math.max(0, parseInt(e.target.value) || 0);
                                     setAllocations(prev => ({
                                       ...prev,
-                                      [item.masterSku]: {
-                                        ...(prev[item.masterSku] || {}),
+                                      [allocationKey]: {
+                                        ...(prev[allocationKey] || {}),
                                         [st.id]: val
                                       }
                                     }));
@@ -486,7 +511,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                             <span className={isBalanced ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold'}>
                               {isBalanced ? '✓ Balanced' : `Mismatch: Allocated ${sumAlloc} / ${total}`}
                             </span>
-                          </div>
+                          </div></> : <div className="flex items-center justify-between gap-3 text-[11px] text-neutral-500"><span>{statusDescription}</span>{item.classification === 'awaiting_first_count' && <button type="button" onClick={() => { onClose(); onSelectSkuForCount?.(item.sku, item.variant_id); }} className="shrink-0 rounded-lg bg-neutral-900 px-2.5 py-1 font-bold text-white dark:bg-white dark:text-neutral-900">Go Count SKU</button>}</div>}
                         </div>
                       );
                     })}
@@ -503,8 +528,9 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                     </button>
                     <button
                       type="button"
+                      disabled={safetyBlockers.length > 0 || catalogItems.filter(item => item.classification === 'ready_to_allocate').some(item => Object.values(allocations[String(item.variant_id)] || {}).reduce((sum: number, quantity) => sum + Number(quantity), 0) !== (item.physical_stock ?? 0))}
                       onClick={() => setSwitchFlowStep('confirm')}
-                      className="px-5 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      className="px-5 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <span>Proceed to Admin Sign-off</span>
                       <ArrowRight className="w-3.5 h-3.5" />

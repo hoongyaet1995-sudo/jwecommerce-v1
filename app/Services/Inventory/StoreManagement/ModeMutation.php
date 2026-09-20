@@ -8,7 +8,8 @@ use Illuminate\Validation\ValidationException;
 
 final class ModeMutation
 {
-    public function __construct(private ReadinessReader $readiness, private AccountResolver $accounts, private SyncOutbox $outbox) {}
+    public function __construct(private ReadinessReader $readiness, private AccountResolver $accounts,
+        private SyncOutbox $outbox, private ModeCatalogReader $modeCatalog) {}
 
     public function switch(string $target, array $distribution, int $expectedVersion, User $actor): array
     {
@@ -80,8 +81,11 @@ final class ModeMutation
 
     private function splitToStores(array $distribution, int $expectedVersion): void
     {
+        $eligibleVariantIds = collect($this->modeCatalog->read()['items'])
+            ->where('classification', 'ready_to_allocate')->pluck('variant_id')->map(fn ($id) => (int) $id)->all();
         $shared = DB::table('inventory_pools')->where('pool_key', 'shared')->first();
-        $balances = $shared ? DB::table('inventory_balances')->where('inventory_pool_id', $shared->id)->whereNotNull('counted_at')->lockForUpdate()->get() : collect();
+        $balances = $shared ? DB::table('inventory_balances')->where('inventory_pool_id', $shared->id)
+            ->whereIn('product_variant_id', $eligibleVariantIds)->whereNotNull('counted_at')->lockForUpdate()->get() : collect();
         foreach ($balances as $balance) {
             if ((int) ($balance->reserved_stock ?? 0) > 0) {
                 throw ValidationException::withMessages(['distribution' => 'Release or explicitly reconcile shared reservations before splitting stock.']);

@@ -116,4 +116,54 @@ class StoreInventoryReadTest extends TestCase
 
         $this->assertSame(1, $syncQueries, 'Overview must batch-load sync states instead of querying once per balance.');
     }
+
+    public function test_mode_catalog_lists_every_sku_with_explicit_allocation_eligibility(): void
+    {
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool']);
+        $fixture = new StoreInventoryFixture;
+        $ready = $fixture->sku();
+        $uncounted = $fixture->sku();
+        $test = $fixture->sku();
+        $archived = $fixture->sku();
+        $unmanaged = $fixture->sku();
+
+        DB::table('products')->where('id', $ready['product']->id)->update(['status' => 'active']);
+        DB::table('products')->where('id', $uncounted['product']->id)->update(['status' => 'active']);
+        DB::table('products')->where('id', $test['product']->id)->update(['status' => 'draft']);
+        DB::table('product_variants')->where('id', $test['variant']->id)->update(['data_classification' => 'test']);
+        DB::table('products')->where('id', $archived['product']->id)->update(['status' => 'archived']);
+        DB::table('products')->where('id', $unmanaged['product']->id)->update(['status' => 'active']);
+
+        $balance = app(AccountResolver::class)->balance($ready['variant']->id, 'website');
+        DB::table('inventory_balances')->where('id', $balance['id'])->update([
+            'physical_stock' => 12, 'reserved_stock' => 0, 'safety_stock' => 0, 'counted_at' => now(),
+        ]);
+
+        $store = $fixture->store('shopee', 'UNMANAGED');
+        $listingId = DB::table('marketplace_listing_variants')->insertGetId([
+            'store_id' => $store->id, 'external_product_id' => 'P-1', 'external_variant_id' => 'V-1',
+            'observed_data' => json_encode(['stock' => 3]), 'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('marketplace_variant_mappings')->insert([
+            'listing_variant_id' => $listingId, 'store_id' => $store->id, 'product_variant_id' => $unmanaged['variant']->id,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $catalog = $this->actingAs($this->admin())
+            ->getJson('/admin/api/inventory/store-management/overview')
+            ->assertOk()
+            ->json('mode_catalog');
+
+        $this->assertCount(5, $catalog['items']);
+        $byVariant = collect($catalog['items'])->keyBy('variant_id');
+        $this->assertSame('ready_to_allocate', $byVariant[$ready['variant']->id]['classification']);
+        $this->assertSame(12, $byVariant[$ready['variant']->id]['physical_stock']);
+        $this->assertSame('awaiting_first_count', $byVariant[$uncounted['variant']->id]['classification']);
+        $this->assertSame('sandbox_test', $byVariant[$test['variant']->id]['classification']);
+        $this->assertSame('excluded_status', $byVariant[$archived['variant']->id]['classification']);
+        $this->assertSame('store_not_managed', $byVariant[$unmanaged['variant']->id]['classification']);
+        $this->assertSame([
+            'total' => 5, 'ready' => 1, 'blocked' => 1, 'excluded' => 3,
+        ], $catalog['summary']);
+    }
 }

@@ -31,4 +31,45 @@ class StoreInventoryModeTest extends TestCase
         $this->postJson($url, ['target' => 'shared_pool', 'configuration_version' => 5, 'distribution' => []])
             ->assertOk()->assertJsonPath('physical_total', 20)->assertJsonPath('configuration_version',6);
     }
+
+    public function test_shared_to_independent_blocks_active_catalog_sku_without_first_count(): void
+    {
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool', 'version' => 7]);
+        $sku = (new StoreInventoryFixture)->sku();
+        DB::table('products')->where('id', $sku['product']->id)->update(['status' => 'active']);
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+
+        $this->actingAs($admin)->postJson('/admin/api/inventory/store-management/mode', [
+            'target' => 'independent_stores', 'configuration_version' => 7, 'distribution' => [],
+        ])->assertUnprocessable()->assertJsonValidationErrors('mode');
+
+        $this->assertSame('shared_pool', DB::table('inventory_configuration')->where('id', 1)->value('operating_mode'));
+    }
+
+    public function test_shared_to_independent_excludes_test_and_inactive_skus_from_distribution(): void
+    {
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool', 'version' => 9]);
+        $fixture = new StoreInventoryFixture;
+        $testSku = $fixture->sku();
+        DB::table('product_variants')->where('id', $testSku['variant']->id)->update(['data_classification' => 'test']);
+        $testBalance = app(AccountResolver::class)->balance($testSku['variant']->id, 'website');
+        DB::table('inventory_balances')->where('id', $testBalance['id'])->update([
+            'physical_stock' => 15, 'reserved_stock' => 0, 'safety_stock' => 0, 'counted_at' => now(),
+        ]);
+        $archivedSku = $fixture->sku();
+        DB::table('products')->where('id', $archivedSku['product']->id)->update(['status' => 'archived']);
+        $archivedBalance = app(AccountResolver::class)->balance($archivedSku['variant']->id, 'website');
+        DB::table('inventory_balances')->where('id', $archivedBalance['id'])->update([
+            'physical_stock' => 8, 'reserved_stock' => 0, 'safety_stock' => 0, 'counted_at' => now(),
+        ]);
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+
+        $this->actingAs($admin)->postJson('/admin/api/inventory/store-management/mode', [
+            'target' => 'independent_stores', 'configuration_version' => 9, 'distribution' => [],
+        ])->assertOk()->assertJsonPath('physical_total', 23);
+
+        $this->assertSame('independent_stores', DB::table('inventory_configuration')->where('id', 1)->value('operating_mode'));
+        $this->assertSame(15, (int) DB::table('inventory_balances')->where('id', $testBalance['id'])->value('physical_stock'));
+        $this->assertSame(8, (int) DB::table('inventory_balances')->where('id', $archivedBalance['id'])->value('physical_stock'));
+    }
 }
