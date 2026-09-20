@@ -310,6 +310,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/inventory/adjustment-reviews', [\App\Http\Controllers\Admin\PhysicalCountController::class, 'adjustment']);
     Route::post('/api/inventory/reconciliations', [\App\Http\Controllers\Admin\InventoryReconciliationController::class, 'store']);
     Route::post('/api/inventory/count-reviews/{review}/confirm', [\App\Http\Controllers\Admin\PhysicalCountController::class, 'confirm'])->whereUuid('review');
+    Route::post('/api/inventory/store-management/reviews', [\App\Http\Controllers\Admin\StoreInventoryReviewController::class, 'store']);
+    Route::post('/api/inventory/store-management/reviews/{review}/confirm', [\App\Http\Controllers\Admin\StoreInventoryReviewController::class, 'confirm'])->whereUuid('review');
     Route::get('/api/marketplace/connections', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'connections']);
     Route::get('/api/marketplace/oauth-result', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'result']);
     Route::post('/api/marketplace/stores/{store}/lazada-test-access', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'renewOfficialTestAccess'])->whereNumber('store')->middleware('throttle:3,1');
