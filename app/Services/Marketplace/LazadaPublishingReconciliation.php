@@ -26,8 +26,9 @@ final class LazadaPublishingReconciliation
         $token=$this->tokens->accessToken((int)$store->id);
         $matched=[];
         $total=null;
-        for ($offset=0,$page=0; $offset<=5000 && $page<101; $offset+=50,$page++) {
-            $response=$this->client->read('/products/get',$token,['filter'=>'all','limit'=>50,'offset'=>$offset],(int)$store->id);
+        $pageSize=10;
+        for ($offset=0,$page=0; $offset<=5000 && $page<501; $offset+=$pageSize,$page++) {
+            $response=$this->client->read('/products/get',$token,['filter'=>'all','limit'=>$pageSize,'offset'=>$offset],(int)$store->id);
             $products=$response['products']??null;
             $pageTotal=$response['total_products']??$response['total']??$response['countTotal']??null;
             if (!is_array($products)||!array_is_list($products)||!is_numeric($pageTotal)) {
