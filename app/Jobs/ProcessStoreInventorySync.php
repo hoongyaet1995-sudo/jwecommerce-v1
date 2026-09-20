@@ -88,6 +88,9 @@ final class ProcessStoreInventorySync implements ShouldQueue
                     DB::table('inventory_store_sync_tasks')->where('operation_id', $task->operation_id)
                         ->where('status', 'waiting_source')->pluck('id')->each(fn ($id) => self::dispatch((string) $id)->afterCommit());
                 }
+                DB::table('inventory_store_sync_tasks')->where('marketplace_store_id', $task->marketplace_store_id)
+                    ->where('product_variant_id', $task->product_variant_id)->where('status', 'queued')
+                    ->orderByDesc('created_at')->limit(1)->pluck('id')->each(fn ($id) => self::dispatch((string) $id)->afterCommit());
             }, 3);
         } catch (StoreInventoryAuthorizationExpired $error) {
             $this->finish('auth_expired', ['code' => 'authorization_expired', 'message' => $error->getMessage()]);
