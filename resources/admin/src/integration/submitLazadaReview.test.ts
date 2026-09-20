@@ -29,6 +29,17 @@ it('recovers an uncertain staging response without another stage request',async(
  expect(await submitLazadaReview(input)).toBe('7');
  expect(vi.mocked(marketplaceRequest).mock.calls.filter(call=>call[0].endsWith('/publishing-tasks'))).toHaveLength(1);
 });
+it('accepts the canonical Lazada size chart image binding during review submission',async()=>{
+ const sizeChartInput={...input,attributeImageIds:{'lazada:size-chart:size_chart_image':12}};
+ vi.mocked(marketplaceRequest).mockImplementation(async(path)=>{
+  if(path.includes('publishing-source'))return source;
+  if(path.endsWith('/publishing-tasks'))return task;
+  throw new Error('Network unavailable');
+ });
+ expect(await submitLazadaReview(sizeChartInput)).toBe('7');
+ const stage=vi.mocked(marketplaceRequest).mock.calls.find(call=>call[0].endsWith('/publishing-tasks'))!;
+ expect(stage[2]).toMatchObject({payload:{jw_attribute_image_ids:{'lazada:size-chart:size_chart_image':12}}});
+});
 it('rejects changed source and foreign task receipts before dispatch',async()=>{
  vi.mocked(marketplaceRequest).mockResolvedValue({...source,revision:'b'.repeat(64)});
  await expect(submitLazadaReview(input)).rejects.toThrow('changed');

@@ -20,7 +20,7 @@ export async function submitLazadaReview(input:LazadaReviewSubmission):Promise<s
   ||!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(input.requestKey)
   ||!/^[a-f0-9]{64}$/.test(input.sourceRevision)||!/^[1-9][0-9]*$/.test(input.categoryId)
  ||(input.sizeChartImageId!==undefined&&(!Number.isSafeInteger(input.sizeChartImageId)||input.sizeChartImageId<=0))
- ||(input.attributeImageIds!==undefined&&(!input.attributeImageIds||Array.isArray(input.attributeImageIds)||Object.entries(input.attributeImageIds).some(([key,id])=>!/^lazada:(?:product:[A-Za-z_][A-Za-z0-9_]*|variant:.+:[A-Za-z_][A-Za-z0-9_]*)$/.test(key)||!Number.isSafeInteger(id)||id<=0))))throw new Error('Review the product, store and category before publishing.');
+ ||(input.attributeImageIds!==undefined&&(!input.attributeImageIds||Array.isArray(input.attributeImageIds)||Object.entries(input.attributeImageIds).some(([key,id])=>!/^lazada:(?:product:[A-Za-z_][A-Za-z0-9_]*|size-chart:[A-Za-z_][A-Za-z0-9_]*|variant:.+:[A-Za-z_][A-Za-z0-9_]*)$/.test(key)||!Number.isSafeInteger(id)||id<=0))))throw new Error('Review the product, store and category before publishing.');
  const source=await readPublishingSource(input.productId);
  if(source.revision!==input.sourceRevision)throw Object.assign(new Error('The JW product changed after review. Reopen it before publishing.'),{status:409});
  const payload={...(input.sizeChartImageId?{jw_size_chart_image_id:input.sizeChartImageId}:{}),...(input.attributeImageIds&&Object.keys(input.attributeImageIds).length?{jw_attribute_image_ids:input.attributeImageIds}:{}),Request:{Product:{PrimaryCategory:input.categoryId,Attributes:input.attributes,
