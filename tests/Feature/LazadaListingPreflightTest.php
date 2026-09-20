@@ -27,7 +27,9 @@ class LazadaListingPreflightTest extends TestCase
             ]],
         ];
 
-        app(LazadaListingPreflight::class)->validate('token',$payload);
+        $prepared=app(LazadaListingPreflight::class)->validate('token',$payload);
+        $this->assertSame('https://my-live-02.slatic.net/p/size-chart.png',
+            $prepared['Request']['Product']['Attributes']['size_chart']);
 
         $this->expectException(\Illuminate\Validation\ValidationException::class);
         unset($payload['jw_size_chart']);

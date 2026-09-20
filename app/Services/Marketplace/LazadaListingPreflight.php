@@ -51,6 +51,7 @@ final class LazadaListingPreflight
                     || !str_ends_with(strtolower((string)parse_url($sizeChart,PHP_URL_HOST)),'.slatic.net')) {
                     throw ValidationException::withMessages(['size_chart'=>'Select a valid Lazada size chart image.']);
                 }
+                $payload['Request']['Product']['Attributes'][$name]=$sizeChart;
                 continue;
             }
             $targets=$scope==='sku'?$skus:[$product['Attributes'] ?? []];
