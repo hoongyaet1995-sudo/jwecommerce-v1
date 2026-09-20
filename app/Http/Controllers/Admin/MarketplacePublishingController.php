@@ -198,7 +198,6 @@ class MarketplacePublishingController extends Controller
             'id','store_id','product_id','status','external_item_id','created_at','updated_at','source_snapshot',
         ])->find($task);
         abort_unless($row,404);
-        abort_unless((int)DB::table('marketplace_publishing_tasks')->where('id',$task)->value('actor_id')===(int)$request->user()->id,404);
 
         $variants=json_decode($row->source_snapshot??'{}',true)['variants']??[];
         $linked=$row->external_item_id ? DB::table('marketplace_variant_mappings as m')

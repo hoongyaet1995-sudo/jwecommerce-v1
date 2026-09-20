@@ -31,6 +31,12 @@ class MarketplacePublishingRecoveryTest extends TestCase
             ->assertOk()->assertJsonPath('creationCertainty','unknown')
             ->assertJsonPath('failure.code','historical_reason_unavailable')
             ->assertJsonPath('actions.0','check_marketplace_result');
+
+        $otherAdmin=User::factory()->create(['is_admin'=>true]);
+        $this->actingAs($otherAdmin)->getJson("/admin/api/marketplace/stores/{$store}/publishing-status")
+            ->assertOk()->assertJsonPath("tasksByProduct.{$product->id}.id",$task);
+        $this->getJson("/admin/api/marketplace/publishing-tasks/{$task}")
+            ->assertOk()->assertJsonPath('id',$task);
     }
 
     public function test_uncertain_task_requires_explicit_one_use_duplicate_risk_authorization(): void

@@ -10,7 +10,7 @@ final class PublishingRecoveryAuthorizations
     public function issue(int $taskId, int $actorId, array $confirmation): array
     {
         return DB::transaction(function () use ($taskId,$actorId,$confirmation) {
-            $task=DB::table('marketplace_publishing_tasks')->where('id',$taskId)->where('actor_id',$actorId)->lockForUpdate()->first();
+            $task=DB::table('marketplace_publishing_tasks')->where('id',$taskId)->lockForUpdate()->first();
             abort_unless($task,404);
             if (!in_array($task->status,['uncertain','rejected'],true)) throw new \DomainException('Only failed or uncertain tasks can start a new reviewed attempt.');
             if ((int)($confirmation['expectedRevision']??0)!==(int)($task->revision??1)) throw new \DomainException('This task changed. Reload it before continuing.');

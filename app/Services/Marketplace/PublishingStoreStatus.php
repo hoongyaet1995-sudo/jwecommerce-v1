@@ -19,7 +19,7 @@ final class PublishingStoreStatus
     public function reviewTasks(int $store, int $actorId): array
     {
         $result=[];
-        $rows=DB::table('marketplace_publishing_tasks')->where('store_id',$store)->where('actor_id',$actorId)
+        $rows=DB::table('marketplace_publishing_tasks')->where('store_id',$store)
             ->orderByDesc('id')->get(['id','product_id']);
         $review=app(PublishingTaskReview::class);
         foreach ($rows as $row) if (!isset($result[(string)$row->product_id])) {

@@ -8,7 +8,7 @@ final class PublishingTaskReview
 {
     public function read(int $taskId, int $actorId): array
     {
-        $row=DB::table('marketplace_publishing_tasks')->where('id',$taskId)->where('actor_id',$actorId)->first();
+        $row=DB::table('marketplace_publishing_tasks')->where('id',$taskId)->first();
         abort_unless($row,404);
         $store=DB::table('marketplace_stores')->find($row->store_id);
         $failure=$row->error_code ? [
@@ -31,7 +31,7 @@ final class PublishingTaskReview
     public function forProduct(int $storeId, int $productId, int $actorId): ?array
     {
         $id=DB::table('marketplace_publishing_tasks')->where('store_id',$storeId)->where('product_id',$productId)
-            ->where('actor_id',$actorId)->latest('id')->value('id');
+            ->latest('id')->value('id');
         return $id ? $this->read((int)$id,$actorId) : null;
     }
 
