@@ -71,6 +71,7 @@ class StoreInventoryCutoverTest extends TestCase
         $this->assertSame('inactive', DB::table('inventory_warehouses')->where('id', $warehouse)->value('status'));
         $this->assertFalse((bool) DB::table('inventory_fulfillment_routes')->where('warehouse_id', $warehouse)->value('is_enabled'));
         $this->assertSame('independent_stores', DB::table('inventory_configuration')->where('id', 1)->value('operating_mode'));
+        $this->assertDatabaseHas('inventory_store_accounts', ['account_key' => 'website', 'management_status' => 'managed']);
         $this->assertSame($products, DB::table('products')->count());
         $this->assertSame($stores, DB::table('marketplace_stores')->count());
     }

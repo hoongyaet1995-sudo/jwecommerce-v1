@@ -2,13 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\StoreSetting;
+use App\Services\CheckoutService;
 use App\Services\Inventory\StoreManagement\AccountResolver;
 use App\Services\Inventory\StoreManagement\OrderInventoryRouter;
+use App\Services\Inventory\WebsiteInventoryAvailability;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
-use App\Services\Inventory\WebsiteInventoryAvailability;
-use App\Models\StoreSetting;
 use Tests\Support\StoreInventoryFixture;
 use Tests\TestCase;
 
@@ -50,6 +51,7 @@ class StoreInventoryOrderLifecycleTest extends TestCase
 
         $router->apply($context['channel'], $context['line'], 'late-reserve', 'reserved', 4);
         $this->assertBalance($context['balance']['id'], 8, 0);
+        $this->assertDatabaseCount('inventory_store_sync_tasks', 4);
     }
 
     public function test_refund_does_not_restock_but_reviewed_resellable_return_does_once(): void
@@ -145,7 +147,7 @@ class StoreInventoryOrderLifecycleTest extends TestCase
         $this->startSession();
 
         try {
-            app(\App\Services\CheckoutService::class)->checkout('buyer@example.test', collect([[
+            app(CheckoutService::class)->checkout('buyer@example.test', collect([[
                 'variant' => $sku['variant']->fresh(), 'quantity' => 3,
             ]]), null, ['first_name' => 'A', 'last_name' => 'B', 'line_1' => '1 Test', 'city' => 'KL',
                 'postal_code' => '50000', 'country' => 'MY'], 'bank_transfer', 'standard', ['code' => 'MYR', 'exchange_rate' => 1]);
@@ -176,7 +178,7 @@ class StoreInventoryOrderLifecycleTest extends TestCase
             'isEnabled' => true, 'bankAccounts' => [['id' => 'bank', 'bankName' => 'Test', 'accountNumber' => '1', 'isPrimary' => true, 'isActive' => true]],
         ]]]);
 
-        $order = app(\App\Services\CheckoutService::class)->checkout('buyer@example.test', collect([[
+        $order = app(CheckoutService::class)->checkout('buyer@example.test', collect([[
             'variant' => $sku['variant']->fresh(), 'quantity' => 2,
         ]]), null, ['first_name' => 'A', 'last_name' => 'B', 'line_1' => '1 Test', 'city' => 'KL',
             'postal_code' => '50000', 'country' => 'MY'], 'bank_transfer', 'standard', ['code' => 'MYR', 'exchange_rate' => 1]);
@@ -184,7 +186,7 @@ class StoreInventoryOrderLifecycleTest extends TestCase
         $this->assertSame('pending_payment', $order->status);
         $this->assertBalance($balance['id'], 5, 2);
         $this->assertSame(999, $sku['variant']->fresh()->stock);
-        app(\App\Services\CheckoutService::class)->transition($order, 'cancelled');
+        app(CheckoutService::class)->transition($order, 'cancelled');
         $this->assertBalance($balance['id'], 5, 0);
         $this->assertSame(999, $sku['variant']->fresh()->stock);
     }

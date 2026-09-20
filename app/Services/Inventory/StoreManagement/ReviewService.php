@@ -150,6 +150,12 @@ final class ReviewService
                 DB::table('inventory_store_operations')->where('id', $operationId)->update([
                     'receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'updated_at' => now(),
                 ]);
+            } else {
+                $fresh = DB::table('inventory_balances')->find($result[0]['id']);
+                $receipt['external_stages'] = [$this->outbox->enqueueBalance($operationId, $fresh)];
+                DB::table('inventory_store_operations')->where('id', $operationId)->update([
+                    'receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'updated_at' => now(),
+                ]);
             }
             DB::table('inventory_store_reviews')->where('id', $reviewId)->update([
                 'status' => 'confirmed', 'confirmed_at' => now(), 'updated_at' => now(),

@@ -36,3 +36,14 @@ Browser acceptance against the isolated SQLite preview proved: authenticated pag
 - Lazada write code has HTTP-fake contract evidence; a real provider stock write/read-back is not yet recorded for this branch.
 - Shopee live stock publishing is deliberately rejected by the publisher boundary until a separately verified adapter exists. It is not represented as operational.
 - SQLite proves behavior but not MySQL row-lock concurrency. Dedicated two-connection MySQL evidence remains required before production cutover.
+
+## Final integration hardening (2026-09-20)
+
+- All reviewed count, intake and correction mutations now create durable sync stages; order lifecycle, takeover and mode conversion also enqueue ATP publication work.
+- A sync task already in processing cannot be published by a second worker. Interrupted processing is converted to an explicit reconciliation-required state before retry.
+- ZIP39 intake and audit correction use the selected store balance and normalize the UI adjustment label to the backend correction contract.
+- The cutover provisions the JW Storefront account as managed and creates unknown first-count balances; the UI now renders takeover state from backend truth.
+- Takeover readiness checks connection, complete/unambiguous mappings, provider snapshots, historical open orders and counted balances. Mode readiness checks pending sync, reservations, unknown balances, safety buffers and unfinished transfers.
+- Transfer receipts retain provider stages and are reconstructed from persisted operation history after reload.
+- Verification: 72 backend tests / 360 assertions passed; targeted store-inventory adapter 4/4 passed; production Vite build succeeded. The repository-wide frontend run has four pre-existing unrelated failures recorded separately and is not used as closure evidence for this module.
+

@@ -59,6 +59,7 @@ final class OverviewReader
         foreach ($rows as $row) {
             if (! $row['counted'] || $row['physical'] === null || $row['reserved'] === null || $row['available'] === null) {
                 $unknown++;
+
                 continue;
             }
             $known['physical'] += $row['physical'];
@@ -66,7 +67,10 @@ final class OverviewReader
             $known['available'] += $row['available'];
         }
 
+        $website = DB::table('inventory_store_accounts')->where('account_key', 'website')->first();
+
         return ['mode' => $mode, 'configuration_version' => (int) ($configuration?->version ?? 0),
+            'website_account' => ['management_status' => $website?->management_status ?? 'not_managed', 'management_version' => (int) ($website?->version ?? 0)],
             'totals' => ['known' => $known, 'unknown_accounts' => $unknown],
             'stores' => $this->stores($filters), 'data' => $rows];
     }

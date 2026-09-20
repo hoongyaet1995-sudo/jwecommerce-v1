@@ -15,7 +15,10 @@ final class StoreInventorySyncController extends Controller
         $this->authorizeActor($request);
         $ids = DB::table('inventory_store_sync_tasks')->whereIn('status', ['queued', 'waiting_source', 'failed'])
             ->where(fn ($query) => $query->whereNull('available_at')->orWhere('available_at', '<=', now()))->pluck('id');
-        foreach ($ids as $id) ProcessStoreInventorySync::dispatch((string) $id);
+        foreach ($ids as $id) {
+            ProcessStoreInventorySync::dispatch((string) $id);
+        }
+
         return response()->json(['queued' => $ids->count(), 'task_ids' => $ids]);
     }
 
@@ -30,11 +33,23 @@ final class StoreInventorySyncController extends Controller
                 'message' => 'Check the marketplace quantity first. Retry only after confirming the prior request was not applied.',
                 'next_action' => 'Reconcile the provider stock, then record not_applied to retry this stage.']], 409);
         }
+        if ($row->status === 'processing') {
+            DB::table('inventory_store_sync_tasks')->where('id', $task)->update([
+                'status' => 'uncertain',
+                'provider_receipt' => json_encode(['code' => 'worker_interrupted', 'message' => 'The prior provider result requires read-back.']),
+                'updated_at' => now(),
+            ]);
+
+            return response()->json(['error' => ['code' => 'reconciliation_required',
+                'message' => 'The previous provider write may have completed. Read back marketplace stock before retrying.',
+                'next_action' => 'Reconcile the provider stock, then record not_applied only if it was not applied.']], 409);
+        }
         abort_unless(in_array($row->status, ['failed', 'auth_expired', 'uncertain'], true), 409, 'This stage is not retryable.');
         DB::table('inventory_store_sync_tasks')->where('id', $task)->update([
             'status' => 'queued', 'provider_receipt' => null, 'available_at' => now(), 'updated_at' => now(),
         ]);
         ProcessStoreInventorySync::dispatch((string) $task);
+
         return response()->json(['id' => $task, 'status' => 'queued']);
     }
 

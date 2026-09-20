@@ -95,6 +95,22 @@ export const MarketplaceInventoryPage: React.FC = () => {
   useEffect(() => setStores(inventoryStores), [inventoryStores]);
   useEffect(() => setStoreBalances(inventoryStoreBalances), [inventoryStoreBalances]);
   useEffect(() => setActivityLogs(inventoryActivityHistory), [inventoryActivityHistory]);
+  useEffect(() => {
+    const restored = inventoryActivityHistory.filter((entry: any) => entry.actionType === 'store_transfer').map((entry: any) => {
+      const receipt = entry.detailsPayload || {};
+      const stages = receipt.external_stages || [];
+      const status = (stage: string) => {
+        const value = stages.find((item: any) => item.stage === stage)?.status;
+        return value === 'confirmed' || value === 'not_applicable' ? 'succeeded' : value === 'failed' || value === 'auth_expired' || value === 'uncertain' ? 'failed' : value === 'processing' ? 'syncing' : 'pending';
+      };
+      return {id: entry.id, transferNumber: entry.referenceId || entry.id, timestamp: entry.timestamp,
+        masterSku: entry.masterSku, productName: entry.productName, variantName: entry.variantName,
+        sourceStoreId: '', sourceStoreName: 'Source store', destinationStoreId: '', destinationStoreName: 'Destination store',
+        quantity: 0, operator: entry.operator, reason: entry.reason, ledgerStatus: 'succeeded',
+        sourcePlatformSyncStatus: status('source'), destinationPlatformSyncStatus: status('destination'), externalStages: stages} as StoreStockTransferRecord;
+    });
+    setTransfersList(current => [...current, ...restored.filter((item: any) => !current.some(existing => existing.id === item.id))]);
+  }, [inventoryActivityHistory]);
 
   // Search and Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -328,7 +344,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
     const item = safeInventory.find(i => i.masterSku === sku);
     if (!item) return;
 
-    await adjustStock(item.id, deltaQuantity, `${reason}: ${notes || ''}`.trim(), type);
+    await adjustStock(item.id, deltaQuantity, `${reason}: ${notes || ''}`.trim(), type, targetStoreId, item);
     await reloadInventory();
     return;
 
@@ -414,6 +430,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
       ledgerStatus: 'succeeded',
       sourcePlatformSyncStatus: displayStatus(stages.find((s: any) => s.stage === 'source')?.status),
       destinationPlatformSyncStatus: displayStatus(stages.find((s: any) => s.stage === 'destination')?.status)
+      ,externalStages: stages
     } as StoreStockTransferRecord;
     setTransfersList(prev => [connectedRecord, ...prev.filter(existing => existing.id !== connectedRecord.id)]);
     return connectedRecord;

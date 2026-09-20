@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('inventory_pools', function (Blueprint $table) {
@@ -52,7 +53,7 @@ return new class extends Migration {
 
         Schema::create('inventory_store_sync_tasks', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('operation_id');
+            $table->uuid('operation_id')->nullable();
             $table->foreign('operation_id')->references('id')->on('inventory_store_operations')->restrictOnDelete();
             $table->foreignId('marketplace_store_id')->nullable()->constrained('marketplace_stores')->restrictOnDelete();
             $table->foreignId('product_variant_id')->constrained('product_variants')->restrictOnDelete();

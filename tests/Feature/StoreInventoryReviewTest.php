@@ -131,12 +131,14 @@ class StoreInventoryReviewTest extends TestCase
         $intake = $this->actingAs($context['actor'])->postJson($url, [
             'kind' => 'intake', 'balance_id' => $context['balance']['id'], 'quantity' => 5, 'reason' => 'Supplier receipt',
         ])->assertCreated()->assertJsonPath('after.physical', 15)->json();
-        $this->postJson($url.'/'.$intake['id'].'/confirm', ['operation_key' => 'intake-1'])->assertOk();
+        $intakeReceipt = $this->postJson($url.'/'.$intake['id'].'/confirm', ['operation_key' => 'intake-1'])->assertOk()->json();
+        $this->assertCount(1, $intakeReceipt['external_stages']);
 
         $correction = $this->postJson($url, [
             'kind' => 'correction', 'balance_id' => $context['balance']['id'], 'quantity_delta' => -2, 'reason' => 'Damaged item',
         ])->assertCreated()->assertJsonPath('after.physical', 13)->json();
         $this->postJson($url.'/'.$correction['id'].'/confirm', ['operation_key' => 'correction-1'])
             ->assertOk()->assertJsonPath('balances.0.physical', 13)->assertJsonPath('balances.0.available', 11);
+        $this->assertDatabaseCount('inventory_store_sync_tasks', 2);
     }
 }

@@ -7,7 +7,7 @@ use RuntimeException;
 
 final class OrderInventoryRouter
 {
-    public function __construct(private readonly AccountResolver $accounts) {}
+    public function __construct(private readonly AccountResolver $accounts, private readonly SyncOutbox $outbox) {}
 
     public function register(string $channelKey, string $orderLineKey, int $variantId, int $orderedQuantity): array
     {
@@ -135,6 +135,12 @@ final class OrderInventoryRouter
                 'event' => $event, 'cumulative_quantity' => $cumulativeQuantity,
                 'order_line_id' => $line->id, 'payload_hash' => $hash,
                 'result' => json_encode($result, JSON_THROW_ON_ERROR), 'created_at' => now(), 'updated_at' => now(),
+            ]);
+
+            $freshBalance = DB::table('inventory_balances')->find($balance->id);
+            $result['external_stage'] = $this->outbox->enqueueBalance(null, $freshBalance, 'order', 'order:'.$eventKey);
+            DB::table('inventory_store_order_events')->where('event_key', $eventKey)->update([
+                'result' => json_encode($result, JSON_THROW_ON_ERROR), 'updated_at' => now(),
             ]);
 
             return $result;
