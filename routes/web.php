@@ -318,6 +318,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/inventory/store-management/operations/{operation}', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'operation'])->whereUuid('operation');
     Route::post('/api/inventory/store-management/sync-all', [\App\Http\Controllers\Admin\StoreInventorySyncController::class, 'syncAll']);
     Route::post('/api/inventory/store-management/sync-tasks/{task}/retry', [\App\Http\Controllers\Admin\StoreInventorySyncController::class, 'retry'])->whereUuid('task');
+    Route::get('/api/inventory/store-management/stores/{store}/readiness', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'readiness'])->whereNumber('store');
+    Route::post('/api/inventory/store-management/stores/{store}/takeover', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'takeover'])->whereNumber('store');
+    Route::post('/api/inventory/store-management/stores/{store}/pause', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'pause'])->whereNumber('store');
+    Route::post('/api/inventory/store-management/mode', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'mode']);
     Route::get('/api/marketplace/connections', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'connections']);
     Route::get('/api/marketplace/oauth-result', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'result']);
     Route::post('/api/marketplace/stores/{store}/lazada-test-access', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'renewOfficialTestAccess'])->whereNumber('store')->middleware('throttle:3,1');
