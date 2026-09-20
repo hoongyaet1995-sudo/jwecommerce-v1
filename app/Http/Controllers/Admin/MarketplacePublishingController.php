@@ -93,9 +93,15 @@ class MarketplacePublishingController extends Controller
                 }
                 $imageBindings[$sizeKey]=$payload['jw_size_chart_image_id'];
             }
+            $verifiedBrandNames=[];
+            $brand=$product['Attributes']['brand']??null;
+            if (is_string($brand) && trim($brand)!=='') {
+                app(\App\Services\Marketplace\LazadaBrands::class)->validate($token,$brand,$store);
+                $verifiedBrandNames[]=$brand;
+            }
             $reviewed=\App\Services\Marketplace\LazadaReviewedAttributes::bind($schema,$source,[
                 'normal'=>$product['Attributes']??[],'skus'=>$skuValues,'imageBindings'=>$imageBindings,
-            ]);
+            ],$verifiedBrandNames);
             $payload['Request']['Product']['Attributes']=$reviewed['normal'];
             foreach ($payload['Request']['Product']['Skus']['Sku'] as &$sku) {
                 $sellerSku=$sku['SellerSku'];

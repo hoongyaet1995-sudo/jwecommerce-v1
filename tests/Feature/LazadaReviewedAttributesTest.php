@@ -84,6 +84,25 @@ class LazadaReviewedAttributesTest extends TestCase
         }
     }
 
+    public function test_brand_from_the_verified_external_brand_list_is_accepted_when_schema_has_no_inline_options(): void
+    {
+        $schema = [[
+            'name' => 'brand', 'attribute_type' => 'normal', 'is_mandatory' => 1,
+            'input_type' => 'singleSelect',
+        ]];
+
+        $bound = LazadaReviewedAttributes::bind($schema, $this->source(), [
+            'normal' => ['brand' => 'No Brand'], 'skus' => [], 'imageBindings' => [],
+        ], ['No Brand']);
+
+        $this->assertSame('No Brand', $bound['normal']['brand']);
+
+        $this->expectException(ValidationException::class);
+        LazadaReviewedAttributes::bind($schema, $this->source(), [
+            'normal' => ['brand' => 'Unverified Brand'], 'skus' => [], 'imageBindings' => [],
+        ], ['No Brand']);
+    }
+
     private function source(): array
     {
         return [

@@ -7,7 +7,7 @@ use Illuminate\Validation\ValidationException;
 /** Validates browser-reviewed Lazada values against the current provider schema. */
 final class LazadaReviewedAttributes
 {
-    public static function bind(array $schema, array $source, array $reviewed): array
+    public static function bind(array $schema, array $source, array $reviewed, array $verifiedBrandNames = []): array
     {
         if (array_diff(array_keys($reviewed), ['normal', 'skus', 'imageBindings'])) {
             self::reject('Unsupported reviewed attribute fields.');
@@ -80,7 +80,13 @@ final class LazadaReviewedAttributes
                 if ($required) self::reject("Complete required normal field {$name}.");
                 continue;
             }
-            LazadaAttributeValue::validate($attribute, $normal[$name]);
+            if ($name === 'brand' && self::usesExternalBrandList($attribute)) {
+                if (!is_string($normal[$name]) || !in_array($normal[$name], $verifiedBrandNames, true)) {
+                    self::reject('Select a current Lazada brand from the brand list.');
+                }
+            } else {
+                LazadaAttributeValue::validate($attribute, $normal[$name]);
+            }
             $result['normal'][$name] = $normal[$name];
         }
         foreach ($sourceSkus as $sku => $_) {
@@ -121,5 +127,12 @@ final class LazadaReviewedAttributes
         return ($attribute['attribute_type'] ?? null)==='normal'
             && (preg_match('/size[ _-]*chart/i',(string)($attribute['name']??''))===1
                 || preg_match('/size[ _-]*chart/i',(string)($attribute['label']??''))===1);
+    }
+
+    private static function usesExternalBrandList(array $attribute): bool
+    {
+        return ($attribute['attribute_type'] ?? null) === 'normal'
+            && strtolower((string) ($attribute['input_type'] ?? '')) === 'singleselect'
+            && (!is_array($attribute['options'] ?? null) || count($attribute['options']) === 0);
     }
 }
