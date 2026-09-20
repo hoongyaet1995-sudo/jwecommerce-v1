@@ -31,7 +31,7 @@ interface InitialStockCountModalProps {
     reason: string;
     notes?: string;
     operator: string;
-  }) => void;
+  }) => Promise<void>;
   uncountedQueue?: MarketplaceInventoryItem[];
   onSelectNextItem?: (nextItem: MarketplaceInventoryItem) => void;
 }
@@ -56,6 +56,8 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   const [reason, setReason] = useState<string>('Initial Physical Stock Count');
   const [notes, setNotes] = useState<string>('');
   const [operator, setOperator] = useState<string>('Alexander (Admin)');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   // Reset form when item changes or modal opens
   React.useEffect(() => {
@@ -64,6 +66,8 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
       setStep('input');
       setReason('Initial Physical Stock Count');
       setNotes('');
+      setIsSaving(false);
+      setSaveError('');
     }
   }, [isOpen, item?.id]);
 
@@ -104,17 +108,25 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
     setStep('review');
   };
 
-  const handleConfirmSave = () => {
+  const handleConfirmSave = async () => {
     if (!isValidNumber) return;
-    onSaveCount({
-      sku: item.masterSku,
-      targetStoreId: mode === 'independent' ? selectedStoreId : undefined,
-      physicalCount: numericCount,
-      reason,
-      notes: notes.trim() || undefined,
-      operator
-    });
-    setStep('success');
+    setIsSaving(true);
+    setSaveError('');
+    try {
+      await onSaveCount({
+        sku: item.masterSku,
+        targetStoreId: mode === 'independent' ? selectedStoreId : undefined,
+        physicalCount: numericCount,
+        reason,
+        notes: notes.trim() || undefined,
+        operator
+      });
+      setStep('success');
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Physical count could not be saved. Review the input and try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleNextSku = () => {
@@ -214,6 +226,12 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                   <span>External Platform Reference Quantities (For Reference Only)</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-neutral-600 dark:text-neutral-400">
+                  {Number.isFinite((item as any).catalogStockSnapshot) && (
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-neutral-800/80 border border-neutral-200/60 dark:border-neutral-700/60">
+                      <span>JW Catalog Reference</span>
+                      <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200">{(item as any).catalogStockSnapshot} units</span>
+                    </div>
+                  )}
                   {((item.storeAssociations || []).length > 0) ? (
                     (item.storeAssociations || []).map(assoc => (
                       <div key={assoc.connectionId} className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-neutral-800/80 border border-neutral-200/60 dark:border-neutral-700/60">
@@ -484,6 +502,12 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                 </div>
               </div>
 
+              {saveError && (
+                <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-3 text-xs font-medium text-red-800 dark:border-red-800/60 dark:bg-red-950/30 dark:text-red-200">
+                  {saveError}
+                </div>
+              )}
+
               {/* Review Step Buttons */}
               <div className="pt-2 flex items-center justify-between border-t border-neutral-100 dark:border-neutral-800">
                 <button
@@ -496,10 +520,11 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                 <button
                   type="button"
                   onClick={handleConfirmSave}
-                  className="px-6 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+                  disabled={isSaving}
+                  className="px-6 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer disabled:cursor-wait disabled:opacity-50"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Confirm & Save Physical Count</span>
+                  <span>{isSaving ? 'Saving Physical Count…' : 'Confirm & Save Physical Count'}</span>
                 </button>
               </div>
             </div>

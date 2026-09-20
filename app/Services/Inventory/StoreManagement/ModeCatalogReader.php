@@ -15,7 +15,7 @@ final class ModeCatalogReader
         $variants = DB::table('product_variants as v')
             ->join('products as p', 'p.id', '=', 'v.product_id')
             ->orderBy('v.id')
-            ->get(['v.id', 'v.sku', 'v.title as variant_title', 'v.data_classification',
+            ->get(['v.id', 'v.sku', 'v.title as variant_title', 'v.stock as catalog_stock_snapshot', 'v.data_classification',
                 'p.id as product_id', 'p.title as product_title', 'p.status as product_status']);
 
         $balances = $this->balances($mode)->keyBy('product_variant_id');
@@ -40,6 +40,7 @@ final class ModeCatalogReader
                 'variant' => $variant->variant_title,
                 'product_status' => $variant->product_status,
                 'data_classification' => $variant->data_classification,
+                'catalog_stock_snapshot' => (int) $variant->catalog_stock_snapshot,
                 'classification' => $classification,
                 'balance_id' => $balance?->id === null ? null : (int) $balance->id,
                 'physical_stock' => $balance?->physical_stock === null ? null : (int) $balance->physical_stock,

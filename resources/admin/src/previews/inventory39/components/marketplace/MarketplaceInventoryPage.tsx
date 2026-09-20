@@ -50,6 +50,13 @@ import { StoreStockTransfersTab } from './inventory/StoreStockTransfersTab';
 import { InventoryActivityHistoryTab } from './inventory/InventoryActivityHistoryTab';
 import { InventorySettingsModal } from './inventory/InventorySettingsModal';
 
+export const resolveFirstCountItem = (
+  inventory: MarketplaceInventoryItem[],
+  selected: MarketplaceInventoryItem | null,
+  sku: string
+) => inventory.find(item => item.masterSku === sku)
+  || (selected?.masterSku === sku ? selected : null);
+
 export const MarketplaceInventoryPage: React.FC = () => {
   const {
     marketplaceInventory = [],
@@ -240,8 +247,8 @@ export const MarketplaceInventoryPage: React.FC = () => {
     notes?: string;
     operator: string;
   }) => {
-    const item = safeInventory.find(i => i.masterSku === sku);
-    if (!item) return;
+    const item = resolveFirstCountItem(safeInventory, selectedItemForCount, sku);
+    if (!item) throw new Error('The selected SKU is no longer available. Reopen the inventory catalog and try again.');
 
     // Use admin context recordPhysicalCountAudit
     await recordPhysicalCountAudit(item.id, physicalCount, `${reason}: ${notes || ''}`.trim(), targetStoreId, item);
@@ -1289,7 +1296,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
             return;
           }
           const catalogItem = inventoryModeCatalog.items.find((entry: any) => entry.variant_id === variantId || entry.sku === sku);
-          if (catalogItem) handleOpenFirstCount({id: '', variantId: catalogItem.variant_id, masterSku: catalogItem.sku, barcode: '', productName: catalogItem.product, variantName: catalogItem.variant, imageUrl: '', warehouseLocation: '', physicalStockStatus: 'unknown', hasUncountedAccounts: true, totalPhysicalStock: null, reservedStock: catalogItem.reserved_stock || 0, safetyStock: 0, availableStock: null, reorderPoint: 0, costPrice: 0, sellingPrice: 0, channelMappings: {}, autoSyncEnabled: false, historyLog: [], storeAssociations: []} as any);
+          if (catalogItem) handleOpenFirstCount({id: '', variantId: catalogItem.variant_id, masterSku: catalogItem.sku, barcode: '', productName: catalogItem.product, variantName: catalogItem.variant, imageUrl: '', warehouseLocation: '', catalogStockSnapshot: catalogItem.catalog_stock_snapshot, physicalStockStatus: 'unknown', hasUncountedAccounts: true, totalPhysicalStock: null, reservedStock: catalogItem.reserved_stock || 0, safetyStock: 0, availableStock: null, reorderPoint: 0, costPrice: 0, sellingPrice: 0, channelMappings: {}, autoSyncEnabled: false, historyLog: [], storeAssociations: []} as any);
         }}
       />
     </div>

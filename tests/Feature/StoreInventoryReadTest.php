@@ -158,6 +158,7 @@ class StoreInventoryReadTest extends TestCase
         $byVariant = collect($catalog['items'])->keyBy('variant_id');
         $this->assertSame('ready_to_allocate', $byVariant[$ready['variant']->id]['classification']);
         $this->assertSame(12, $byVariant[$ready['variant']->id]['physical_stock']);
+        $this->assertSame(999, $byVariant[$ready['variant']->id]['catalog_stock_snapshot']);
         $this->assertSame('awaiting_first_count', $byVariant[$uncounted['variant']->id]['classification']);
         $this->assertSame('sandbox_test', $byVariant[$test['variant']->id]['classification']);
         $this->assertSame('excluded_status', $byVariant[$archived['variant']->id]['classification']);

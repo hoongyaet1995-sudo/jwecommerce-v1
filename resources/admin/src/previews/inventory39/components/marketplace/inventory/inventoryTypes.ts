@@ -131,6 +131,7 @@ export interface InventoryModeCatalogItem {
   variant: string;
   product_status: string;
   data_classification?: string | null;
+  catalog_stock_snapshot: number;
   classification: InventoryModeCatalogClassification;
   balance_id?: number | null;
   physical_stock?: number | null;
