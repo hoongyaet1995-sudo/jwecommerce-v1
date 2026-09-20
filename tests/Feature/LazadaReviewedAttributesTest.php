@@ -103,6 +103,21 @@ class LazadaReviewedAttributesTest extends TestCase
         ], ['No Brand']);
     }
 
+    public function test_brand_is_required_even_when_category_metadata_marks_it_optional(): void
+    {
+        $schema = [[
+            'name' => 'brand', 'attribute_type' => 'normal', 'is_mandatory' => 0,
+            'input_type' => 'singleSelect',
+        ]];
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Complete required normal field brand.');
+
+        LazadaReviewedAttributes::bind($schema, $this->source(), [
+            'normal' => [], 'skus' => [], 'imageBindings' => [],
+        ]);
+    }
+
     private function source(): array
     {
         return [

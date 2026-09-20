@@ -85,7 +85,9 @@ export function normalizeLazadaAttributes(
       }
     }
     const allowCustom=inputType==='enuminput'||inputType==='multienuminput';
-    const required=Boolean(attribute.is_mandatory);
+    // Lazada's CreateProduct business validation requires Brand even when some
+    // category metadata snapshots report the field as optional.
+    const required=Boolean(attribute.is_mandatory)||(scope==='product'&&providerName==='brand');
     const targets=scope==='variant'?orderedPublishingVariants(source.options,source.variants):[undefined];
     for(const variant of targets){
       const variantRequired=required||Boolean(variant&&source.variants.length>1&&attribute.is_sale_prop==1);

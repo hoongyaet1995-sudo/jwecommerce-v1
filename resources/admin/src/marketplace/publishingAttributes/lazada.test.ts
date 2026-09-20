@@ -34,6 +34,15 @@ const schema=[
 ];
 
 describe('normalizeLazadaAttributes',()=>{
+  it('keeps Lazada Brand visible and required when category metadata marks it optional',()=>{
+    const [field]=normalizeLazadaAttributes([
+      {name:'brand',label:'Brand',attribute_type:'normal',input_type:'singleSelect',is_mandatory:0,options:[]},
+    ],source,new Map(),['HABIB','No Brand']);
+    expect(field).toMatchObject({providerName:'brand',required:true,control:'single'});
+    expect(field.options.map(option=>option.label)).toEqual(['No Brand','HABIB']);
+    expect(validateAttributeValue(field,{kind:'empty'})).toBe('Brand is required.');
+  });
+
   it('maps all documented Lazada input types and keeps SKU identities separate',()=>{
     const fields=normalizeLazadaAttributes(schema,source,new Map(),[]);
     expect(fields).toEqual(expect.arrayContaining([

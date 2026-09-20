@@ -60,6 +60,28 @@ export const shouldOpenExistingPublishingTask=(task:unknown,recoveryAuthorizatio
   return !(saved.status==='rejected' && !saved.externalItemId && saved.creationCertainty!=='confirmed');
 };
 
+type ProviderPublishingIssue={field:string;message:string;code?:string};
+export const providerPublishingIssues=(diagnostics:Record<string,unknown>|undefined):ProviderPublishingIssue[]=>{
+  const raw=diagnostics?.provider_detail;
+  let parsed:unknown=raw;
+  if(typeof raw==='string'){
+    try{parsed=JSON.parse(raw);}catch{return [];}
+  }
+  if(!Array.isArray(parsed))return [];
+  return parsed.flatMap(value=>{
+    if(!value||typeof value!=='object')return [];
+    const issue=value as Record<string,unknown>;
+    if(typeof issue.message!=='string'||!issue.message.trim())return [];
+    return [{
+      field:typeof issue.field==='string'&&issue.field.trim()?issue.field:'marketplace data',
+      message:issue.message.trim(),
+      ...(typeof issue.code==='string'&&issue.code.trim()?{code:issue.code.trim()}:{}),
+    }];
+  });
+};
+
+const providerFieldLabel=(field:string)=>field==='brandProp'||field==='brand'?'Brand':field;
+
 export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   isOpen,
   onClose,
@@ -189,6 +211,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
     ? `Saved task ${taskId}: ${monitor.task.status}. No new publishing request will be sent by this view.`
     : `Checking saved task ${taskId}...`) : simulationMessage;
   const rejectionReason = taskId ? 'The saved attempt was rejected. Review its details before creating a corrected submission.' : simulationRejection;
+  const rejectionIssues=providerPublishingIssues(monitor.task?.failure?.diagnostics);
 
   useEffect(() => {
     if (preselectedProductId) {
@@ -615,11 +638,22 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                     <p className="text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 p-3 rounded-xl border border-rose-200 dark:border-rose-900 text-left">
                       {monitor.task?.failure?.message || rejectionReason}
                     </p>
+                    {rejectionIssues.length>0&&<div className="text-sm text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 p-3 rounded-xl border border-rose-200 dark:border-rose-900 text-left space-y-2" role="alert">
+                      <div className="font-bold">Lazada reported:</div>
+                      <ul className="list-disc pl-5 space-y-1">{rejectionIssues.map((issue,index)=><li key={`${issue.field}:${index}`}>
+                        <strong>{providerFieldLabel(issue.field)}:</strong> {issue.message}{issue.code&&<span className="text-rose-500 dark:text-rose-400"> ({issue.code})</span>}
+                      </li>)}</ul>
+                      {typeof monitor.task?.failure?.diagnostics?.request_id==='string'&&<p className="text-xs text-rose-500 dark:text-rose-400">Lazada request ID: {monitor.task.failure.diagnostics.request_id}</p>}
+                    </div>}
                   </div>
 
                   <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 text-left text-xs space-y-2">
                     <div className="font-bold text-neutral-900 dark:text-white">Next action</div>
-                    <p className="text-neutral-600 dark:text-neutral-300">{monitor.task?.failure?.nextAction==='reauthorize_store'?'Reconnect this marketplace store, then reopen this saved task.':'Return to the product review, correct the highlighted marketplace data, and create a new reviewed attempt.'}</p>
+                    <p className="text-neutral-600 dark:text-neutral-300">{monitor.task?.failure?.nextAction==='reauthorize_store'
+                      ?'Reconnect this marketplace store, then reopen this saved task.'
+                      :rejectionIssues.length>0
+                        ?`Return to Category & Attributes and correct: ${rejectionIssues.map(issue=>providerFieldLabel(issue.field)).join(', ')}. Then create a new reviewed attempt.`
+                        :'Return to Category & Attributes, review the marketplace data, and create a new reviewed attempt.'}</p>
                     {monitor.task?.stage&&<p className="text-neutral-500">Failed stage: <strong>{monitor.task.stage}</strong></p>}
                   </div>
 

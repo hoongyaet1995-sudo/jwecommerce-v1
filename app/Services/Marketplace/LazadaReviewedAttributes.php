@@ -67,7 +67,10 @@ final class LazadaReviewedAttributes
         $result = ['normal' => [], 'skus' => [], 'jw_attribute_image_ids' => []];
         foreach ($definitions['normal'] as $name => $attribute) {
             $type = self::isSizeChart($attribute) ? 'img' : strtolower((string) ($attribute['input_type'] ?? ''));
-            $required = (bool) ($attribute['is_mandatory'] ?? false);
+            // CreateProduct enforces Brand at the provider business-rule layer,
+            // while category metadata can inconsistently mark it optional.
+            $required = (bool) ($attribute['is_mandatory'] ?? false)
+                || ($name === 'brand' && ($attribute['attribute_type'] ?? null) === 'normal');
             if ($type === 'img') {
                 $key = self::isSizeChart($attribute)
                     ? "lazada:size-chart:{$name}"

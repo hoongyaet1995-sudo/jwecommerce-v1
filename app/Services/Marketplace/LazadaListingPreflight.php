@@ -39,7 +39,9 @@ final class LazadaListingPreflight
                     if (is_string($option['en_name']??null)) $providerOptions[$name][$option['en_name']]=$option['name'];
                 }
             }
-            $required=(bool)$attribute['is_mandatory'] || ($scope==='sku' && count($skus)>1 && ($attribute['is_sale_prop']??0)==1);
+            $required=(bool)$attribute['is_mandatory']
+                || ($scope==='normal' && $name==='brand')
+                || ($scope==='sku' && count($skus)>1 && ($attribute['is_sale_prop']??0)==1);
             $label=$attribute['label'] ?? '';
             $isSizeChart=$scope==='normal' && (
                 preg_match('/size[ _-]*chart/i',$name)===1

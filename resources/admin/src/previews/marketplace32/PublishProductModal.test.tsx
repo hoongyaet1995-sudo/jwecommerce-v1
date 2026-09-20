@@ -2,7 +2,7 @@
 import React,{act} from 'react';
 import {createRoot} from 'react-dom/client';
 import {expect,it,vi} from 'vitest';
-import {PublishProductModal,shouldOpenExistingPublishingTask} from './components/marketplace/PublishProductModal';
+import {providerPublishingIssues,PublishProductModal,shouldOpenExistingPublishingTask} from './components/marketplace/PublishProductModal';
 import {JourneyProvider,type MarketplaceJourneyContext} from './context/AdminContext';
 import {marketplaceOperations} from '../../integration/marketplaceOperations';
 import {marketplaceRequest} from '../../integration/marketplaceData';
@@ -17,6 +17,13 @@ it('bypasses the old task after duplicate-risk recovery authorization',()=>{
 it('does not reopen a definitively rejected task with no marketplace item',()=>{
  expect(shouldOpenExistingPublishingTask({id:6,status:'rejected',externalItemId:null,creationCertainty:'not_created'})).toBe(false);
  expect(shouldOpenExistingPublishingTask({id:7,status:'rejected',externalItemId:'14990001',creationCertainty:'unknown'})).toBe(true);
+});
+it('extracts actionable Lazada provider rejection details without exposing malformed diagnostics',()=>{
+ expect(providerPublishingIssues({provider_detail:'[{"field":"brandProp","message":"Brand is required but missing.","code":"BIZ_CHECK_CAT_PROP_MANDATORY"}]'})).toEqual([
+  {field:'brandProp',message:'Brand is required but missing.',code:'BIZ_CHECK_CAT_PROP_MANDATORY'},
+ ]);
+ expect(providerPublishingIssues({provider_detail:'not-json'})).toEqual([]);
+ expect(providerPublishingIssues({provider_detail:[{field:'brandProp'}]})).toEqual([]);
 });
 it('submits live Shopee requirements from the existing three-step review',async()=>{
  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
