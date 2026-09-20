@@ -623,7 +623,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        if (taskId) {setSubmittedTaskId(undefined);setPresentProgress(false);setCurrentStep('attributes');submissionStarted.current=false;return;}
+                        if (taskId) {setRecoveryAuthorizationId(undefined);setSubmittedTaskId(undefined);setPresentProgress(false);setCurrentStep('attributes');submissionStarted.current=false;return;}
                         setBrandName('No Brand / OEM');
                         setCurrentStep('attributes');
                         setAsyncStatus('idle');
