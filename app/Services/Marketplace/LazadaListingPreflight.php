@@ -23,7 +23,7 @@ final class LazadaListingPreflight
         $schema=$this->client->read('/category/attributes/get',$token,['primary_category_id'=>(string)$id],$storeId);
         $skus=$product['Skus']['Sku'] ?? null;
         if (!array_is_list($schema) || !is_array($skus) || !array_is_list($skus) || !$skus) throw new RuntimeException('Invalid Lazada listing schema or SKU list.');
-        $seen=[];$saleProps=[];
+        $seen=[];$saleProps=[];$providerOptions=[];
         foreach ($schema as $attribute) {
             $name=$attribute['name'] ?? null;$scope=$attribute['attribute_type'] ?? null;
             if (!is_string($name)||trim($name)===''||!in_array($scope,['normal','sku'],true)
@@ -31,7 +31,14 @@ final class LazadaListingPreflight
                 throw new RuntimeException('Lazada attribute schema is incomplete.');
             }
             $seen[$scope.':'.$name]=true;
-            if ($scope==='sku' && ($attribute['is_sale_prop']??0)==1) $saleProps[]=$name;
+            if ($scope==='sku' && ($attribute['is_sale_prop']??0)==1) {
+                $saleProps[]=$name;
+                foreach ($attribute['options']??[] as $option) {
+                    if (!is_array($option) || !is_string($option['name']??null)) continue;
+                    $providerOptions[$name][$option['name']]=$option['name'];
+                    if (is_string($option['en_name']??null)) $providerOptions[$name][$option['en_name']]=$option['name'];
+                }
+            }
             $required=(bool)$attribute['is_mandatory'] || ($scope==='sku' && count($skus)>1 && ($attribute['is_sale_prop']??0)==1);
             $label=$attribute['label'] ?? '';
             $isSizeChart=$scope==='normal' && (
@@ -63,7 +70,7 @@ final class LazadaListingPreflight
             foreach ($saleProps as $name) {
                 $value=$sku[$name]??data_get($sku,'saleProp.'.$name);
                 if ($value===null) continue;
-                $sku['saleProp'][$name]=$value;
+                $sku['saleProp'][$name]=is_string($value) ? ($providerOptions[$name][$value]??$value) : $value;
                 unset($sku[$name]);
             }
         }
