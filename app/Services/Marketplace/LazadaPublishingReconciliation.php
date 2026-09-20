@@ -39,7 +39,10 @@ final class LazadaPublishingReconciliation
                 if ((!is_int($itemId)&&!is_string($itemId))||!preg_match('/^[1-9][0-9]*$/D',(string)$itemId)) {
                     throw new RuntimeException('Lazada catalog reconciliation received an incomplete product identity.');
                 }
-                $item=$this->client->read('/product/item/get',$token,['item_id'=>(string)$itemId],(int)$store->id);
+                $summarySkus=$summary['skus']??$summary['Skus']??null;
+                $item=is_array($summarySkus) && array_is_list($summarySkus)
+                    ? $summary
+                    : $this->client->read('/product/item/get',$token,['item_id'=>(string)$itemId],(int)$store->id);
                 foreach ($this->itemSkus($item,(string)$itemId) as $sellerSku=>$skuId) {
                     if (isset($sellerSkus[$sellerSku])) $matched[(string)$itemId][$sellerSku]=$skuId;
                 }

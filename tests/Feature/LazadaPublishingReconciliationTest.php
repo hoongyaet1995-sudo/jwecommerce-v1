@@ -51,6 +51,25 @@ class LazadaPublishingReconciliationTest extends TestCase
         $this->assertDatabaseHas('marketplace_variant_mappings', ['store_id' => $store, 'product_variant_id' => $variant]);
     }
 
+    public function test_catalog_reconciliation_uses_complete_page_skus_without_one_detail_request_per_product(): void
+    {
+        [$store, $task] = $this->uncertainTask('BKJS-PINK');
+        Http::preventStrayRequests();
+        Http::fake(['*/products/get*' => Http::response(['code' => '0', 'data' => [
+            'total_products' => 1,
+            'products' => [[
+                'item_id' => '149900002',
+                'skus' => [['SkuId' => '128900002', 'SellerSku' => 'BKJS-PINK']],
+            ]],
+        ]])]);
+
+        $result = app(LazadaPublishingReconciliation::class)->reconcile($task);
+
+        $this->assertSame('succeeded',$result['status']);
+        $this->assertSame('149900002',$result['external_item_id']);
+        Http::assertSentCount(1);
+    }
+
     private function uncertainTask(string $sku, bool $withSource = false): array
     {
         config(['marketplace.read_operations_enabled' => true, 'marketplace.lazada.enabled' => true,
