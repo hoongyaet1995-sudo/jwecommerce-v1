@@ -18,6 +18,7 @@ final class PublishingFailureDetails
                 ['marketplace_validation_failed','The marketplace rejected or changed a category or attribute requirement.','review_attributes'],
             default => ['provider_rejected','The marketplace did not accept this publishing attempt. Open the task details and review the current product and store connection.','review_task'],
         };
-        return ['code'=>$code,'message'=>$safe,'stage'=>$stage,'nextAction'=>$next,'diagnostics'=>(object)[]];
+        $diagnostics=$error instanceof PublishingResultUncertain ? $error->diagnostics() : [];
+        return ['code'=>$code,'message'=>$safe,'stage'=>$stage,'nextAction'=>$next,'diagnostics'=>$diagnostics ?: (object)[]];
     }
 }
