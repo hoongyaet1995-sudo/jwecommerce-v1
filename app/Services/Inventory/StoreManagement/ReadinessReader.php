@@ -61,15 +61,19 @@ final class ReadinessReader
         if ($pending->isNotEmpty()) {
             $blockers[] = ['code' => 'pending_sync', 'ids' => $pending->all(), 'next_action' => 'Resolve inventory sync stages first.'];
         }
-        $reservations = DB::table('inventory_balances')->where('reserved_stock', '>', 0)->pluck('id');
+        $activeBalances = fn () => DB::table('inventory_balances as b')->join('inventory_pools as p', 'p.id', '=', 'b.inventory_pool_id')
+            ->leftJoin('inventory_store_accounts as a', 'a.marketplace_store_id', '=', 'p.marketplace_store_id')
+            ->where(fn ($query) => $query->where('p.kind', 'shared')->orWhere(fn ($store) => $store->where('p.kind', 'store')
+                ->where(fn ($managed) => $managed->whereNull('p.marketplace_store_id')->orWhere('a.management_status', 'managed'))));
+        $reservations = $activeBalances()->where('b.reserved_stock', '>', 0)->pluck('b.id');
         if ($reservations->isNotEmpty()) {
             $blockers[] = ['code' => 'active_reservations', 'ids' => $reservations->all(), 'next_action' => 'Complete or release active order reservations first.'];
         }
-        $unknown = DB::table('inventory_balances')->whereNull('counted_at')->pluck('id');
+        $unknown = $activeBalances()->whereNull('b.counted_at')->pluck('b.id');
         if ($unknown->isNotEmpty()) {
             $blockers[] = ['code' => 'unknown_balances', 'ids' => $unknown->all(), 'next_action' => 'Complete first counts for every active account.'];
         }
-        $safety = DB::table('inventory_balances')->where('safety_stock', '>', 0)->pluck('id');
+        $safety = $activeBalances()->where('b.safety_stock', '>', 0)->pluck('b.id');
         if ($safety->isNotEmpty()) {
             $blockers[] = ['code' => 'legacy_safety_stock', 'ids' => $safety->all(), 'next_action' => 'Reconcile legacy safety buffers explicitly.'];
         }
