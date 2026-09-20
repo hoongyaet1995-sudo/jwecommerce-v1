@@ -21,6 +21,11 @@ final class PublishingProviderRejected extends \RuntimeException
             && preg_match('/\A[\x20-\x7E]+\z/D',$providerMessage)) {
             $this->safeDiagnostics['provider_message']=$providerMessage;
         }
+        $providerDetail=$diagnostics['provider_detail']??null;
+        if (is_string($providerDetail) && strlen($providerDetail)<=2000
+            && preg_match('/\A[\x20-\x7E]+\z/D',$providerDetail)) {
+            $this->safeDiagnostics['provider_detail']=$providerDetail;
+        }
     }
 
     public function diagnostics(): array { return $this->safeDiagnostics; }

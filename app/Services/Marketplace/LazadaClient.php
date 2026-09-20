@@ -185,9 +185,13 @@ final class LazadaClient
             $providerMessage=$result['message']??null;
             if (!is_string($providerMessage) || str_contains($providerMessage,$accessToken)
                 || str_contains($providerMessage,$secret)) $providerMessage=null;
+            $providerDetail=array_key_exists('detail',$result)
+                ? json_encode($result['detail'],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) : null;
+            if (!is_string($providerDetail) || str_contains($providerDetail,$accessToken)
+                || str_contains($providerDetail,$secret)) $providerDetail=null;
             throw new PublishingProviderRejected($operation.' was rejected by Lazada.',[
                 'http_status'=>$response->status(),'provider_code'=>is_array($result)?($result['code']??null):null,
-                'request_id'=>$requestId,'provider_message'=>$providerMessage,
+                'request_id'=>$requestId,'provider_message'=>$providerMessage,'provider_detail'=>$providerDetail,
             ]);
         }
         if(!$response->successful()||!is_array($result)) {
