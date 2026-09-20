@@ -135,6 +135,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
   const [intakeInitialType, setIntakeInitialType] = useState<'intake' | 'adjustment'>('intake');
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [settingsInitialStep, setSettingsInitialStep] = useState<'view' | 'checklist'>('view');
 
   // Batch Broadcasting State
   const [isBroadcastingAll, setIsBroadcastingAll] = useState(false);
@@ -1263,6 +1264,12 @@ export const MarketplaceInventoryPage: React.FC = () => {
         onSaveCount={handleSaveFirstCount}
         uncountedQueue={uncountedItems}
         onSelectNextItem={next => setSelectedItemForCount(next)}
+        onContinueModeSwitchPreparation={() => {
+          setIsCountModalOpen(false);
+          setSelectedItemForCount(null);
+          setSettingsInitialStep('checklist');
+          setIsSettingsModalOpen(true);
+        }}
       />
 
       {/* MODAL 2: Stock Intake & Audit Adjustment */}
@@ -1282,13 +1289,17 @@ export const MarketplaceInventoryPage: React.FC = () => {
       {/* MODAL 3: Admin Master Settings (Mode Transition & Store Takeover) */}
       <InventorySettingsModal
         isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
+        onClose={() => {
+          setIsSettingsModalOpen(false);
+          setSettingsInitialStep('view');
+        }}
         currentMode={currentMode}
         stores={stores}
         inventory={safeInventory}
         modeCatalog={inventoryModeCatalog}
         onSwitchMode={handleSwitchMode}
         onToggleStoreManagement={handleToggleStoreManagement}
+        initialSwitchFlowStep={settingsInitialStep}
         onSelectSkuForCount={(sku, variantId) => {
           const it = safeInventory.find(i => i.masterSku === sku);
           if (it) {

@@ -34,6 +34,7 @@ interface InitialStockCountModalProps {
   }) => Promise<void>;
   uncountedQueue?: MarketplaceInventoryItem[];
   onSelectNextItem?: (nextItem: MarketplaceInventoryItem) => void;
+  onContinueModeSwitchPreparation?: () => void;
 }
 
 export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
@@ -45,7 +46,8 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   storeBalances = {},
   onSaveCount,
   uncountedQueue = [],
-  onSelectNextItem
+  onSelectNextItem,
+  onContinueModeSwitchPreparation
 }) => {
   // Modal Step: 'input' | 'review' | 'success'
   const [step, setStep] = useState<'input' | 'review' | 'success'>('input');
@@ -575,10 +577,10 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
 
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={onContinueModeSwitchPreparation || onClose}
                   className="px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-semibold transition-colors cursor-pointer"
                 >
-                  Close & View Overview
+                  Continue Mode Switch Preparation
                 </button>
               </div>
             </div>

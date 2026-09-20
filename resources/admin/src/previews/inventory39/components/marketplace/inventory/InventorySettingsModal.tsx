@@ -35,6 +35,7 @@ interface InventorySettingsModalProps {
   ) => Promise<{ success: boolean; error?: string }>;
   onToggleStoreManagement: (storeId: string, enable: boolean) => void;
   onSelectSkuForCount?: (sku: string, variantId: number) => void;
+  initialSwitchFlowStep?: 'view' | 'checklist';
 }
 
 export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
@@ -46,7 +47,8 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
   modeCatalog,
   onSwitchMode,
   onToggleStoreManagement,
-  onSelectSkuForCount
+  onSelectSkuForCount,
+  initialSwitchFlowStep = 'view'
 }) => {
   const [activeTab, setActiveTab] = useState<'mode' | 'stores'>('mode');
 
@@ -68,11 +70,11 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
   // Reset when opened
   React.useEffect(() => {
     if (isOpen) {
-      setSwitchFlowStep('view');
+      setSwitchFlowStep(initialSwitchFlowStep);
       setTargetMode(currentMode === 'shared' ? 'independent' : 'shared');
       setTakeoverStoreTarget(null);
     }
-  }, [isOpen, currentMode]);
+  }, [isOpen, currentMode, initialSwitchFlowStep]);
 
   // Safety Blockers Check
   const safetyBlockers: PreSwitchSafetyBlocker[] = useMemo(() => {
