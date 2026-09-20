@@ -30,7 +30,12 @@ export interface MarketplaceAttributeField {
   supported:boolean;
   unsupportedReason?:string;
   purpose?:'size-chart';
+  inputType?:number;
+  validationType?:number;
+  dateFormatType?:number;
+  formatType?:number;
+  supportSearch?:boolean;
+  dependent?:boolean;
 }
 
 export const emptyMarketplaceAttributeValue=():MarketplaceAttributeValue=>({kind:'empty'});
-

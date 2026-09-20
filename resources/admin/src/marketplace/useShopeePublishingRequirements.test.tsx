@@ -23,6 +23,7 @@ it('clears category attributes and shipping selections before accepting another 
   await act(async()=>root.render(<Probe store="1"/>));
   await act(async()=>{state!.updateAttribute(1,[{value_id:10,original_value_name:'Box',value_unit:''}]);state!.updateChannel(24000,{logistic_id:24000,is_free:false});});
   expect(state!.fields).toHaveLength(2);expect(state!.logistics).toHaveLength(1);
+  expect(state!.canonicalFields.map(field=>field.providerId)).toEqual(['1','2']);
   await act(async()=>root.render(<Probe store="2"/>));
   expect(state!.attributes).toEqual([]);expect(state!.logistics).toEqual([]);expect(state!.error).toContain('Reconnect');
  }finally{await act(async()=>root.unmount());vi.unstubAllGlobals();}

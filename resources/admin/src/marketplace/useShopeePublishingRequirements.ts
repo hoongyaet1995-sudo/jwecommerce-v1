@@ -1,13 +1,11 @@
 import {useEffect,useMemo,useState} from 'react';
 import {marketplaceRequest} from '../integration/marketplaceData';
+import {normalizeShopeeAttributes,type ShopeeAttributeDefinition,type ShopeeAttributeSelectionValue} from './publishingAttributes/shopee';
 
-export interface ShopeeAttribute {
- attribute_id:number;mandatory:boolean;attribute_info:{name?:string;display_name?:string;input_type:number;max_value_count?:number;attribute_unit_list?:string[];format_type?:number;support_search_value?:boolean};
- attribute_value_list:{value_id:number;name:string;value_unit?:string;child_attribute_list?:ShopeeAttribute[]}[];
-}
+export type ShopeeAttribute=ShopeeAttributeDefinition;
 export interface ShopeeChannel {logistics_channel_id:number;logistics_channel_name:string;enabled:boolean;fee_type:string;force_enable?:boolean;compulsory_channel?:boolean;
  size_list?:{size_id:string|number;name?:string}[]}
-export interface AttributeValue {value_id:number;original_value_name:string;value_unit:string}
+export type AttributeValue=ShopeeAttributeSelectionValue;
 export interface ChannelReview {logistic_id:number;is_free?:boolean;size_id?:string|number;shipping_fee?:number}
 
 export function activeShopeeAttributes(tree:ShopeeAttribute[],values:Record<number,AttributeValue[]>):ShopeeAttribute[]{
@@ -62,8 +60,8 @@ export function useShopeePublishingRequirements(storeId:string|null,categoryId:s
     else if(channel.fee_type==='SIZE_SELECTION'&&selection.size_id===undefined)errors.push(`Select a shipping size for ${channel.logistics_channel_name}.`);
     else if(channel.fee_type==='CUSTOM_PRICE'&&(selection.shipping_fee===undefined||!Number.isFinite(selection.shipping_fee)||selection.shipping_fee<0))errors.push(`Enter a shipping fee for ${channel.logistics_channel_name}.`);
    }
-   return {fields,attributes,logistics,errors};
-  }catch(error){return {fields:[],attributes:[],logistics:[],errors:[error instanceof Error?error.message:'Review category requirements.']};}
+   return {fields,canonicalFields:normalizeShopeeAttributes(current?.tree??[],selections.attributes),attributes,logistics,errors};
+  }catch(error){return {fields:[],canonicalFields:[],attributes:[],logistics:[],errors:[error instanceof Error?error.message:'Review category requirements.']};}
  },[current,selections]);
  return {...computed,storeId,channels:current?.channels??[],values:selections.attributes,selectedChannels:selections.channels,
   loading:!!key&&!current,error:current?.error??'',retry:()=>setAttempt(value=>value+1),
