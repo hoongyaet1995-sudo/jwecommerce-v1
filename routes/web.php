@@ -378,6 +378,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/marketplace/catalog-runs/{run}', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'show'])->whereNumber('run');
     Route::post('/api/marketplace/catalog-runs/{run}/retry', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'retry'])->whereNumber('run')->middleware('throttle:10,1');
     });
+    Route::post('/api/marketplace/products/{product}/attribute-images', \App\Http\Controllers\Admin\MarketplaceAttributeImageController::class)->whereNumber('product')
+        ->name('api.marketplace.attribute-images.store');
     Route::post('/api/marketplace/listings/{listing}/import-product', [\App\Http\Controllers\Admin\MarketplaceImportController::class, 'product'])->whereNumber('listing')
         ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':import', 'throttle:10,1']);
     Route::post('/api/marketplace/listings/{listing}/import-variant', [\App\Http\Controllers\Admin\MarketplaceImportController::class, 'variant'])->whereNumber('listing')
