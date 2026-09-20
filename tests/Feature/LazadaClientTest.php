@@ -215,7 +215,7 @@ class LazadaClientTest extends TestCase
         try {
             app(LazadaClient::class)->createProduct('fixture-token',$payload);
             $this->fail('Provider rejection was accepted.');
-        } catch (\App\Services\Marketplace\PublishingResultUncertain $error) {
+        } catch (\App\Services\Marketplace\PublishingProviderRejected $error) {
             $this->assertSame(['http_status'=>200,'provider_code'=>'501','request_id'=>'210176f717888495722931192'],$error->diagnostics());
             $this->assertStringNotContainsString('fixture-token',$error->getMessage());
             $this->assertNull($error->getPrevious());

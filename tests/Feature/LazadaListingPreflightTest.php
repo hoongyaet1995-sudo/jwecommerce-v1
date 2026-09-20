@@ -43,14 +43,16 @@ class LazadaListingPreflightTest extends TestCase
                 ? Http::response(['code'=>'0','data'=>[['category_id'=>1,'name'=>'Root','leaf'=>false,'children'=>[['category_id'=>2,'name'=>'Leaf','leaf'=>true]]]]])
                 : Http::response(['code'=>'0','data'=>[
                     ['name'=>'brand','attribute_type'=>'normal','is_mandatory'=>1,'input_type'=>'text'],
-                    ['name'=>'color_family','attribute_type'=>'sku','is_mandatory'=>1,'input_type'=>'text'],
+                    ['name'=>'color_family','attribute_type'=>'sku','is_mandatory'=>1,'is_sale_prop'=>1,'input_type'=>'text'],
                     ['name'=>'quantity','attribute_type'=>'sku','is_mandatory'=>1,'input_type'=>'numeric'],
                 ]]);
         });
         $payload=['Request'=>['Product'=>['PrimaryCategory'=>'2','Attributes'=>['brand'=>'Selected'],
             'Skus'=>['Sku'=>[['color_family'=>'Blue','quantity'=>'0'],['color_family'=>'Red','quantity'=>'0']]]]]];
         $preflight=app(LazadaListingPreflight::class);
-        $preflight->validate('token',$payload);
+        $prepared=$preflight->validate('token',$payload);
+        $this->assertSame('Blue',$prepared['Request']['Product']['Skus']['Sku'][0]['saleProp']['color_family']);
+        $this->assertArrayNotHasKey('color_family',$prepared['Request']['Product']['Skus']['Sku'][0]);
         $bad=$payload;unset($bad['Request']['Product']['Skus']['Sku'][1]['color_family']);
         try {$preflight->validate('token',$bad);$this->fail('Missing SKU attribute accepted');}
         catch (\Illuminate\Validation\ValidationException $e) {$this->assertArrayHasKey('attributes',$e->errors());}

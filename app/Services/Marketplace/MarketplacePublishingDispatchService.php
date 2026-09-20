@@ -134,7 +134,7 @@ final class MarketplacePublishingDispatchService
         if (config('marketplace.basic_wms_enabled')===true) {
             $identity=$this->lazada->read('/seller/get',$token,[],(int)$store->id);
             LazadaSellerIdentity::assertCurrent($store,$identity,'before product publishing');
-            app(LazadaListingPreflight::class)->validate($token,$payload,(int)$store->id);
+            $payload=app(LazadaListingPreflight::class)->validate($token,$payload,(int)$store->id);
         }
         unset($payload['jw_size_chart']);
         $this->assertProviderPayload($payload);

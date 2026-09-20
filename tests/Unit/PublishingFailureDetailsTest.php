@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Services\Marketplace\PublishingFailureDetails;
 use App\Services\Marketplace\PublishingResultUncertain;
+use App\Services\Marketplace\PublishingProviderRejected;
 use PHPUnit\Framework\TestCase;
 
 class PublishingFailureDetailsTest extends TestCase
@@ -26,5 +27,14 @@ class PublishingFailureDetailsTest extends TestCase
             'provider_code'=>'500',
             'request_id'=>'0babf4c817898893301095383',
         ],$details['diagnostics']);
+    }
+
+    public function test_explicit_provider_rejection_keeps_bounded_diagnostics(): void
+    {
+        $details=PublishingFailureDetails::fromThrowable(new PublishingProviderRejected('Rejected',[
+            'http_status'=>200,'provider_code'=>'500','request_id'=>'2141336017898901754267490',
+        ]),'create');
+
+        $this->assertSame(['http_status'=>200,'provider_code'=>'500','request_id'=>'2141336017898901754267490'],$details['diagnostics']);
     }
 }

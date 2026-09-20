@@ -167,13 +167,16 @@ final class LazadaClient
         try {$response=Http::asForm()->acceptJson()->connectTimeout(10)->timeout(30)->withoutRedirecting()->post('https://api.lazada.com.my/rest'.$path,$query);}
         catch(ConnectionException){throw new PublishingResultUncertain($operation.' result is unknown. Reconcile before retrying.');}
         $result=$response->json();
-        if(!$response->successful()||!is_array($result)||!in_array($result['code']??null,['0',0],true)) {
+        if($response->successful() && is_array($result) && !in_array($result['code']??null,['0',0],true)) {
             $requestId=is_array($result)?($result['request_id']??null):null;
             if ($requestId===$accessToken || $requestId===$secret) $requestId=null;
-            throw new PublishingResultUncertain($operation.' was not confirmed. Reconcile before retrying.',[
+            throw new PublishingProviderRejected($operation.' was rejected by Lazada.',[
                 'http_status'=>$response->status(),'provider_code'=>is_array($result)?($result['code']??null):null,
                 'request_id'=>$requestId,
             ]);
+        }
+        if(!$response->successful()||!is_array($result)) {
+            throw new PublishingResultUncertain($operation.' was not confirmed. Reconcile before retrying.');
         }
         return $result;
     }
