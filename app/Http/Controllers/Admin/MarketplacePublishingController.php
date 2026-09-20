@@ -74,12 +74,18 @@ class MarketplacePublishingController extends Controller
             }
             $token=app(\App\Services\Marketplace\LazadaTokenManager::class)->accessToken($store);
             $schema=app(\App\Services\Marketplace\LazadaClient::class)->read('/category/attributes/get',$token,['primary_category_id'=>(string)$category],$store);
+            $schemaSkuNames=[];
+            foreach ($schema as $attribute) {
+                if (($attribute['attribute_type']??null)==='sku' && is_string($attribute['name']??null)) {
+                    $schemaSkuNames[$attribute['name']]=true;
+                }
+            }
             $skuValues=[];
             $reserved=['SellerSku','price','quantity','package_weight','package_length','package_width','package_height','Images','MultiWarehouseInventories'];
             foreach ($payloadSkus as $sku) {
                 $sellerSku=$sku['SellerSku']??null;
                 if (!is_string($sellerSku)||isset($skuValues[$sellerSku])) throw ValidationException::withMessages(['publishing'=>'Review the Lazada variant identities.']);
-                $skuValues[$sellerSku]=array_diff_key($sku,array_flip($reserved));
+                $skuValues[$sellerSku]=array_intersect_key($sku,$schemaSkuNames);
             }
             $imageBindings=$payload['jw_attribute_image_ids']??[];
             if (isset($payload['jw_size_chart_image_id'])) {

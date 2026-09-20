@@ -38,6 +38,7 @@ class MarketplacePublishingTaskTest extends TestCase
             if (str_contains($request->url(),'/category/attributes/get')) return Http::response(['code'=>'0','data'=>[
                 ['name'=>'name','attribute_type'=>'normal','is_mandatory'=>1,'input_type'=>'text'],
                 ['name'=>'color_family','attribute_type'=>'sku','is_mandatory'=>1,'is_sale_prop'=>1,'input_type'=>'singleSelect','options'=>[['en_name'=>'Blue']]],
+                ['name'=>'package_width','attribute_type'=>'sku','is_mandatory'=>1,'input_type'=>'numeric'],
                 ['name'=>'color_thumbnail','attribute_type'=>'sku','is_mandatory'=>1,'input_type'=>'img'],
             ]]);
             if (str_contains($request->url(),'/seller/warehouse/get')) return Http::response(['code'=>'0','result'=>['success'=>true,'module'=>[['code'=>'dropshipping','status'=>'ACTIVE']]]]);
@@ -47,7 +48,7 @@ class MarketplacePublishingTaskTest extends TestCase
         $source=app(\App\Services\Marketplace\MarketplacePublishingSource::class)->read($product->id);
         $payload=['jw_attribute_image_ids'=>['lazada:variant:BLUE-1:color_thumbnail'=>$image->id],
             'Request'=>['Product'=>['PrimaryCategory'=>'100','Attributes'=>['name'=>'Reviewed attributes','forged'=>'unsafe'],
-                'Skus'=>['Sku'=>[['SellerSku'=>'BLUE-1','price'=>'15.99','quantity'=>'0','color_family'=>'Blue']]],
+                'Skus'=>['Sku'=>[['SellerSku'=>'BLUE-1','price'=>'15.99','quantity'=>'0','package_width'=>'12','color_family'=>'Blue']]],
                 'Debug'=>['jw_secret'=>'unsafe']]]];
         $request=['product_id'=>$product->id,'request_key'=>'1185db80-1111-4111-8111-123456789045','source_revision'=>$source['revision'],'payload'=>$payload];
 
@@ -61,6 +62,7 @@ class MarketplacePublishingTaskTest extends TestCase
         $saved=json_decode(DB::table('marketplace_publishing_tasks')->value('payload'),true);
         $this->assertArrayNotHasKey('jw_attribute_image_ids',$saved);
         $this->assertSame('https://my-live-02.slatic.net/p/owned.jpg',$saved['Request']['Product']['Skus']['Sku'][0]['color_thumbnail']);
+        $this->assertSame('12',$saved['Request']['Product']['Skus']['Sku'][0]['package_width']);
         Http::assertNotSent(fn($request)=>str_contains($request->url(),'/product/create'));
     }
 
