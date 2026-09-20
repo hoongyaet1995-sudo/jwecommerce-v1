@@ -27,14 +27,15 @@ class CartController extends Controller
         $data = $request->validate(['variant_id' => ['required', 'exists:product_variants,id'], 'quantity' => ['required', 'integer', 'min:1'], 'checkout' => ['nullable', 'boolean']]);
         $variant = ProductVariant::query()->findOrFail($data['variant_id']);
 
-        if (! $variant->enabled || $variant->stock < 1) {
+        $available = app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($variant);
+        if (! $variant->enabled || $available === null || $available < 1) {
             throw ValidationException::withMessages(['variant_id' => 'This SKU is currently out of stock.']);
         }
 
         $cart = $request->session()->get('cart', []);
         $currentQuantity = (int) ($cart[$data['variant_id']] ?? 0);
 
-        if ($currentQuantity + $data['quantity'] > $variant->stock) {
+        if ($currentQuantity + $data['quantity'] > $available) {
             throw ValidationException::withMessages(['quantity' => 'Requested quantity exceeds available stock.']);
         }
 
@@ -47,6 +48,10 @@ class CartController extends Controller
     public function update(Request $request, ProductVariant $variant): RedirectResponse
     {
         $request->validate(['quantity' => ['required', 'integer', 'min:1']]);
+        $available = app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($variant);
+        if (! $variant->enabled || $available === null || $request->integer('quantity') > $available) {
+            throw ValidationException::withMessages(['quantity' => 'Requested quantity exceeds available stock.']);
+        }
         $cart = $request->session()->get('cart', []);
         $cart[$variant->id] = $request->integer('quantity');
         $request->session()->put('cart', $cart);

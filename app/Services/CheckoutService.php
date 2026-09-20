@@ -70,7 +70,8 @@ class CheckoutService
             }
             $lines = $items->map(function (array $item): array {
                 $variant = ProductVariant::query()->lockForUpdate()->findOrFail($item['variant']->id);
-                if ($item['quantity'] < 1 || $variant->stock < $item['quantity']) {
+                $available = app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($variant);
+                if ($item['quantity'] < 1 || $available === null || $available < $item['quantity']) {
                     throw new RuntimeException('Requested quantity is unavailable.');
                 }
 
@@ -103,6 +104,13 @@ class CheckoutService
                 OrderItem::query()->create(['order_id' => $order->id, 'product_variant_id' => $variant->id, 'sku' => $variant->sku, 'title' => $product->title, 'variant_title' => $variant->title, 'image_url' => $product->images->sortBy('position')->first()?->path, 'package_snapshot' => ['weight_grams' => $variant->weight_grams, 'length_cm' => $variant->package_length_cm, 'width_cm' => $variant->package_width_cm, 'height_cm' => $variant->package_height_cm], 'unit_price' => $variant->price, 'quantity' => $line['quantity'], 'line_total' => $line['line_total']]);
             }
             foreach ($order->items as $inventoryItem) {
+                if ($this->usesManagedStoreInventory()) {
+                    $lineKey = 'order-item:'.$inventoryItem->id;
+                    $router = app(\App\Services\Inventory\StoreManagement\OrderInventoryRouter::class);
+                    $router->register('website', $lineKey, (int) $inventoryItem->product_variant_id, (int) $inventoryItem->quantity);
+                    $router->apply('website', $lineKey, 'checkout:'.$lineKey.':reserved', 'reserved', (int) $inventoryItem->quantity);
+                    continue;
+                }
                 app(\App\Services\Inventory\StockAllocationService::class)->reserve('order',(int)$order->id,'item:'.$inventoryItem->id,(int)$inventoryItem->product_variant_id,(int)$inventoryItem->quantity);
             }
             $this->persistTaxSnapshot($order, $summary['tax_quote']);
@@ -180,6 +188,12 @@ class CheckoutService
             if ($status === 'cancelled') {
                 foreach ($locked->items as $item) {
                     if ($item->product_variant_id) {
+                        $storeLine = 'order-item:'.$item->id;
+                        if (DB::table('inventory_store_order_lines')->where('line_key', $storeLine)->exists()) {
+                            app(\App\Services\Inventory\StoreManagement\OrderInventoryRouter::class)
+                                ->apply('website', $storeLine, 'checkout:'.$storeLine.':cancelled', 'cancelled', (int) $item->quantity);
+                            continue;
+                        }
                         $allocation=DB::table('stock_allocations')->where('owner_type','order')->where('owner_id',$locked->id)->where('line_key','item:'.$item->id)->first();
                         if($allocation){
                             app(\App\Services\Inventory\StockAllocationService::class)->release((int)$allocation->id);
@@ -215,6 +229,12 @@ class CheckoutService
         });
     }
 
+    private function usesManagedStoreInventory(): bool
+    {
+        return in_array(DB::table('inventory_configuration')->where('id', 1)->value('operating_mode'), ['shared_pool', 'independent_stores'], true)
+            && DB::table('inventory_store_accounts')->where('account_key', 'website')->where('management_status', 'managed')->exists();
+    }
+
     public function dispatch(Order $order, string $carrier, string $trackingNumber, ?int $userId = null): Order
     {
         return DB::transaction(function () use ($order, $carrier, $trackingNumber, $userId): Order {
@@ -247,6 +267,19 @@ class CheckoutService
 
     private function consumeOrderAllocations(Order $order):void
     {
+        $managed = false;
+        foreach ($order->items()->orderBy('id')->get() as $item) {
+            $lineKey = 'order-item:'.$item->id;
+            if (! DB::table('inventory_store_order_lines')->where('line_key', $lineKey)->exists()) {
+                continue;
+            }
+            $managed = true;
+            app(\App\Services\Inventory\StoreManagement\OrderInventoryRouter::class)
+                ->apply('website', $lineKey, 'checkout:'.$lineKey.':shipped', 'shipped', (int) $item->quantity);
+        }
+        if ($managed) {
+            return;
+        }
         app(\App\Services\Inventory\OrderAllocationService::class)->consume($order);
     }
 
