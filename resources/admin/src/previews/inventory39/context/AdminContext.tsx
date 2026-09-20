@@ -1,0 +1,28 @@
+import React,{createContext,useContext,useEffect,useMemo,useState} from 'react';
+import {adaptBalances,adaptInventory,adaptStores,storeInventoryApi} from '../../../integration/storeInventory';
+
+export const PreviewContext=createContext<any>(null);
+export const useAdmin=()=>useContext(PreviewContext);
+
+export function Inventory39Provider({children}:{children:React.ReactNode}){
+  const [overview,setOverview]=useState<any>(null);const [history,setHistory]=useState<any[]>([]);const [notice,setNotice]=useState('Loading inventory…');
+  const reload=async()=>{try{const [o,h]=await Promise.all([storeInventoryApi.overview(),storeInventoryApi.history()]);setOverview(o);setHistory(h.data||[]);setNotice('');}catch(e:any){setNotice(e.message)}};
+  useEffect(()=>{void reload()},[]);
+  const value=useMemo(()=>({currentSection:'marketplace-inventory',setCurrentSection:()=>{},marketplaceOrders:[],connections:[],
+    marketplaceInventory:overview?adaptInventory(overview):[],inventoryMode:overview?.mode||'shared',inventoryConfigurationVersion:overview?.configuration_version||0,
+    inventoryStores:overview?adaptStores(overview):[],inventoryStoreBalances:overview?adaptBalances(overview):{},inventoryActivityHistory:history.map((h:any)=>({
+      id:h.id,timestamp:h.created_at,actionType:h.kind==='count'?'first_count':h.kind==='intake'?'actual_intake':h.kind==='correction'?'stock_adjustment':h.kind==='transfer'?'store_transfer':h.kind,
+      masterSku:h.result?.balances?.[0]?.sku||'—',productName:'Inventory operation',targetScope:h.result?.external_stages?.length?'Store accounts':'JW ledger',quantityChange:0,
+      previousStock:'Reviewed',resultingStock:'Applied',operator:h.actor,reason:h.kind,referenceId:h.id,status:h.ledger_status==='applied'?'succeeded':'failed',detailsPayload:h.result
+    })),
+    reloadInventory:reload,addToast:(t:any)=>setNotice(`${t.title}: ${t.message||''}`),
+    recordPhysicalCountAudit:async(_id:string,count:number,reason:string,storeId?:string,item?:any)=>{let balanceId=Number(_id);if(storeId&&storeId!=='website')balanceId=item?.storeAssociations?.find((a:any)=>a.connectionId===storeId)?.balanceId||balanceId;await storeInventoryApi.review('count',{balance_id:balanceId,physical_count:count,reason});await reload()},
+    adjustStock:async(_id:string,delta:number,reason:string,kind='correction')=>{await storeInventoryApi.review(kind,{balance_id:Number(_id),...(kind==='intake'?{quantity:delta}:{quantity_delta:delta}),reason});await reload()},
+    executeStoreTransfer:async(p:any)=>{const src=overview.data.find((r:any)=>r.sku===p.masterSku&&(r.store_id?String(r.store_id):'website')===p.sourceStoreId);const dst=overview.data.find((r:any)=>r.sku===p.masterSku&&(r.store_id?String(r.store_id):'website')===p.destinationStoreId);if(!src||!dst)throw new Error('Store balance is unavailable.');const receipt=await storeInventoryApi.review('transfer',{source_balance_id:src.balance_id,destination_balance_id:dst.balance_id,quantity:p.quantity,reason:p.reason});await reload();return receipt},
+    syncAll:async()=>{const r=await storeInventoryApi.syncAll();await reload();return r},retrySync:storeInventoryApi.retry,
+    switchInventoryMode:async(mode:any,distribution:any)=>{const r=await storeInventoryApi.mode(mode==='shared'?'shared_pool':'independent_stores',overview.configuration_version,distribution||{});await reload();return r},
+    toggleStoreManagement:async(id:string,enable:boolean,reason:string)=>{const r=enable?await storeInventoryApi.takeover(id,reason):await storeInventoryApi.pause(id);await reload();return r},
+    broadcastStockToChannels:()=>{},
+  }),[overview,history]);
+  return <PreviewContext.Provider value={value}><div role="status" className="px-4 pt-3 text-xs text-amber-600">{notice}</div>{children}</PreviewContext.Provider>;
+}

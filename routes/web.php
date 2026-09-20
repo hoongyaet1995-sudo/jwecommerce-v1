@@ -336,6 +336,15 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         abort_unless($entry, 503);
         return response()->view('admin.marketplace33-preview', ['entry'=>$entry])->header('Cache-Control', 'no-store');
     });
+    Route::get('/marketplace/inventory-preview-39', function () {
+        abort_unless(app()->environment('local'), 404);
+        $path = public_path('build-inventory39-preview/manifest.json');
+        abort_unless(is_file($path), 503, 'Build the isolated ZIP39 Inventory preview first.');
+        $manifest = json_decode(file_get_contents($path), true);
+        $entry = $manifest['src/previews/inventory39/main.tsx'] ?? null;
+        abort_unless($entry, 503);
+        return response()->view('admin.inventory39-preview', ['entry'=>$entry])->header('Cache-Control', 'no-store');
+    });
     Route::get('/marketplace/oauth-preview', function (\Illuminate\Http\Request $request) {
         abort_unless(app()->environment('local'), 404);
         $path = public_path('build-marketplace-preview/manifest.json');

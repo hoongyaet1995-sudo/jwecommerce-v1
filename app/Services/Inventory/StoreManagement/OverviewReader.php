@@ -42,6 +42,7 @@ final class OverviewReader
                 'account_key' => $row->kind === 'shared' ? 'shared'
                     : ($row->marketplace_store_id ? 'marketplace:'.$row->marketplace_store_id : 'website'),
                 'store_id' => $row->marketplace_store_id === null ? null : (int) $row->marketplace_store_id,
+                'store_name' => $row->shop_name,
                 'platform' => $row->platform ?? 'website',
                 'physical' => $physical,
                 'reserved' => $reserved,
