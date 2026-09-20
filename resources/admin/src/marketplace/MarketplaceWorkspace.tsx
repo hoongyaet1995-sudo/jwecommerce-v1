@@ -1,5 +1,5 @@
 import React,{lazy,Suspense,useEffect,useRef} from 'react';
-const InventoryRuntime=lazy(()=>import('../previews/marketplace33/InventoryRuntime').then(module=>({default:module.InventoryRuntime})));
+const InventoryRuntime=lazy(()=>import('../previews/inventory39/Inventory39Runtime').then(module=>({default:module.Inventory39Runtime})));
 import {useAdmin as useRootAdmin} from '../context/AdminContext';
 import {OperationalConnectStore} from './OperationalConnectStore';
 import {OperationalMapping} from './OperationalMapping';
@@ -30,10 +30,9 @@ export function MarketplaceWorkspace(){
   if(currentSection==='marketplace-inventory'&&intakeRef.current)sessionStorage.removeItem(INVENTORY_INTAKE_STORAGE_KEY);
   if(currentSection!=='marketplace-inventory')intakeRef.current=null;
  },[currentSection]);
- if(currentSection==='marketplace-inventory' && window.__JW_ADMIN__?.basicWmsUiEnabled){
+ if(currentSection==='marketplace-inventory'){
   return <Suspense fallback={<p role="status" className="text-sm text-neutral-500">Loading inventory…</p>}>
-   {window.__JW_ADMIN__?.basicWmsUiPreview && <p className="mb-4 text-xs text-neutral-500">LOCAL BASIC WMS SHELL PREVIEW — official UI release remains disabled.</p>}
-   <InventoryRuntime embedded onNavigate={setCurrentSection} intakeProductIds={intakeRef.current?.productIds}/>
+   <InventoryRuntime onNavigate={setCurrentSection}/>
   </Suspense>;
  }
  if(currentSection==='marketplace-oms')return <OperationalOrders/>;

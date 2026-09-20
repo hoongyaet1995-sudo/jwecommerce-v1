@@ -4,11 +4,11 @@ import {adaptBalances,adaptInventory,adaptStores,storeInventoryApi} from '../../
 export const PreviewContext=createContext<any>(null);
 export const useAdmin=()=>useContext(PreviewContext);
 
-export function Inventory39Provider({children}:{children:React.ReactNode}){
+export function Inventory39Provider({children,onNavigate=()=>{}}:{children:React.ReactNode;onNavigate?:(section:any)=>void}){
   const [overview,setOverview]=useState<any>(null);const [history,setHistory]=useState<any[]>([]);const [notice,setNotice]=useState('Loading inventory…');
   const reload=async()=>{try{const [o,h]=await Promise.all([storeInventoryApi.overview(),storeInventoryApi.history()]);setOverview(o);setHistory(h.data||[]);setNotice('');}catch(e:any){setNotice(e.message)}};
   useEffect(()=>{void reload()},[]);
-  const value=useMemo(()=>({currentSection:'marketplace-inventory',setCurrentSection:()=>{},marketplaceOrders:[],connections:[],
+  const value=useMemo(()=>({currentSection:'marketplace-inventory',setCurrentSection:onNavigate,marketplaceOrders:[],connections:[],
     marketplaceInventory:overview?adaptInventory(overview):[],inventoryMode:overview?.mode||'shared',inventoryConfigurationVersion:overview?.configuration_version||0,
     inventoryStores:overview?adaptStores(overview):[],inventoryStoreBalances:overview?adaptBalances(overview):{},inventoryActivityHistory:history.map((h:any)=>({
       id:h.id,timestamp:h.created_at,actionType:h.kind==='count'?'first_count':h.kind==='intake'?'actual_intake':h.kind==='correction'?'stock_adjustment':h.kind==='transfer'?'store_transfer':h.kind,
@@ -23,6 +23,6 @@ export function Inventory39Provider({children}:{children:React.ReactNode}){
     switchInventoryMode:async(mode:any,distribution:any)=>{const r=await storeInventoryApi.mode(mode==='shared'?'shared_pool':'independent_stores',overview.configuration_version,distribution||{});await reload();return r},
     toggleStoreManagement:async(id:string,enable:boolean,reason:string)=>{let r;if(enable){const review=await storeInventoryApi.takeoverReadiness(id);if(!review.ready)throw new Error(review.blockers?.map((b:any)=>b.next_action).join(' ')||'Store takeover is blocked.');r=await storeInventoryApi.takeover(id,reason,review.review_token)}else r=await storeInventoryApi.pause(id);await reload();return r},
     broadcastStockToChannels:()=>{},
-  }),[overview,history]);
+  }),[overview,history,onNavigate]);
   return <PreviewContext.Provider value={value}><div role="status" className="px-4 pt-3 text-xs text-amber-600">{notice}</div>{children}</PreviewContext.Provider>;
 }

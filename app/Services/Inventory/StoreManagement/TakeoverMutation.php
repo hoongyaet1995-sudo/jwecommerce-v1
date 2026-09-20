@@ -24,6 +24,9 @@ final class TakeoverMutation
             if (! $check['ready']) {
                 throw ValidationException::withMessages(['takeover' => collect($check['blockers'])->pluck('code')->all()]);
             }
+            DB::table('inventory_store_accounts')->insertOrIgnore(['account_key' => 'marketplace:'.$storeId,
+                'marketplace_store_id' => $storeId, 'management_status' => 'not_managed', 'version' => 0,
+                'created_at' => now(), 'updated_at' => now()]);
             DB::table('inventory_store_accounts')->where('marketplace_store_id', $storeId)->update([
                 'management_status' => 'managed', 'version' => DB::raw('version + 1'), 'updated_at' => now(),
             ]);
@@ -46,6 +49,7 @@ final class TakeoverMutation
                 'after' => json_encode($receipt), 'blockers' => json_encode([]), 'status' => 'confirmed', 'expires_at' => now()->addMinutes(10), 'confirmed_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
             DB::table('inventory_store_operations')->insert(['id' => $operationId, 'review_id' => $reviewId, 'operation_key' => 'takeover:'.$storeId.':'.$reviewToken,
                 'kind' => 'takeover', 'actor_id' => $actor->id, 'ledger_status' => 'applied', 'receipt' => json_encode($receipt), 'created_at' => now(), 'updated_at' => now()]);
+            DB::table('inventory_store_sync_tasks')->whereIn('id', collect($stages)->pluck('id'))->update(['operation_id' => $operationId, 'updated_at' => now()]);
 
             return [...$receipt, 'operation_id' => $operationId];
         }, 3);

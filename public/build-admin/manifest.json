@@ -11,7 +11,7 @@
     "src": "_index-FWcgdBNZ.css"
   },
   "src/main.tsx": {
-    "file": "assets/main-BxoQ-xLc.js",
+    "file": "assets/main-tUj8DfnL.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
@@ -19,13 +19,13 @@
       "_index-DeTBIyDi.js"
     ],
     "dynamicImports": [
-      "src/previews/marketplace33/InventoryRuntime.tsx"
+      "src/previews/inventory39/Inventory39Runtime.tsx"
     ]
   },
-  "src/previews/marketplace33/InventoryRuntime.tsx": {
-    "file": "assets/InventoryRuntime-Dz8MDXg0.js",
-    "name": "InventoryRuntime",
-    "src": "src/previews/marketplace33/InventoryRuntime.tsx",
+  "src/previews/inventory39/Inventory39Runtime.tsx": {
+    "file": "assets/Inventory39Runtime-C6H7Qqa1.js",
+    "name": "Inventory39Runtime",
+    "src": "src/previews/inventory39/Inventory39Runtime.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-DeTBIyDi.js",

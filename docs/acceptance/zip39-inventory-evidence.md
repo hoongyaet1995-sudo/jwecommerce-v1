@@ -55,3 +55,8 @@ Browser acceptance against the isolated SQLite preview proved: authenticated pag
 - Takeover confirmation now requires a server review token covering store, configuration, mappings, snapshots and balance versions, and writes an audited takeover operation.
 - Latest verification: 36 StoreInventory tests / 216 assertions; targeted adapter 4/4; Vite build succeeded.
 
+
+- Official localhost /admin/marketplace/inventory now lazy-loads the ZIP39 Inventory runtime; the isolated preview route remains available for comparison.
+- Outbox work dispatches after commit, dependent transfer stages re-dispatch after source confirmation, Shared conversion publishes its counted shared balance, Shared takeover provisions its account, and takeover tasks are linked to the audited operation.
+- ZIP39 preserves generic sync task IDs and exposes a visible review/retry panel for failed, authorization-expired, uncertain and interrupted writes.
+

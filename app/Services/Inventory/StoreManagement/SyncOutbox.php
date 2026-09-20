@@ -2,6 +2,7 @@
 
 namespace App\Services\Inventory\StoreManagement;
 
+use App\Jobs\ProcessStoreInventorySync;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -63,6 +64,9 @@ final class SyncOutbox
             'available_at' => $status === 'queued' ? now() : null, 'attempts' => 0,
             'created_at' => now(), 'updated_at' => now(),
         ]);
+        if ($status === 'queued') {
+            ProcessStoreInventorySync::dispatch($id)->afterCommit();
+        }
 
         return ['id' => $id, 'stage' => $stage, 'store_id' => $storeId, 'status' => $status, 'target_quantity' => $target];
     }

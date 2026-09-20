@@ -133,6 +133,8 @@ export const MarketplaceInventoryPage: React.FC = () => {
 
   // Raw items from admin context
   const safeInventory = marketplaceInventory || [];
+  const recoveryTasks = useMemo(() => Object.values(storeBalances).flatMap((accounts: any) => Object.values(accounts as any)
+    .flatMap((account: any) => account.syncTasks || [])).filter((task: any) => ['failed','auth_expired','uncertain','processing'].includes(task.status)), [storeBalances]);
 
   // Identify uncounted items (First Count required)
   const uncountedItems = useMemo(() => {
@@ -688,6 +690,11 @@ export const MarketplaceInventoryPage: React.FC = () => {
 
   return (
     <div id="marketplace-inventory-page" className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
+      {recoveryTasks.length > 0 && <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+        <div className="font-semibold text-amber-700 dark:text-amber-300">Marketplace stock sync needs review</div>
+        <div className="mt-1 text-neutral-600 dark:text-neutral-300">Check the marketplace quantity before retrying uncertain writes. Failed authorization requires reconnecting the store.</div>
+        <div className="mt-3 flex flex-wrap gap-2">{recoveryTasks.map((task:any)=><button key={task.id} className="rounded-lg border border-amber-500/40 px-3 py-1.5 font-medium" onClick={async()=>{if(task.status==='uncertain'||task.status==='processing'){if(!window.confirm('Confirm the previous marketplace write was NOT applied before retrying.'))return;await retrySync(task.id,'not_applied')}else await retrySync(task.id);await reloadInventory()}}>Review / retry {task.id.slice(0,8)}</button>)}</div>
+      </div>}
       {/* Sub Navigation & Header Breadcrumb */}
       <SubNavHeader
         parentSection="marketplace"
