@@ -56,18 +56,14 @@ final class PublishingTasks
                         ->orWhereNotNull('external_item_id'))->exists();
                 if ($newerBlocker) throw new \DomainException('A newer publishing attempt already exists. Open that saved task instead.');
             }
+            $latestTask=DB::table('marketplace_publishing_tasks')->where('store_id',$storeId)->where('product_id',$productId)->orderByDesc('id')->first();
             if (!$authorization && ((new PublishingStoreStatus)->read($storeId)[(string)$productId]??false)) throw new \DomainException('This product already has a listing or publishing attempt in this store. Review its mapping or saved task.');
             if ($store->status!=='connected') throw new \DomainException('Reconnect the destination store before publishing.');
-            if (!$authorization && DB::table('marketplace_publishing_tasks')->where('store_id',$storeId)->where('product_id',$productId)
-                ->where(fn ($query) => $query->whereIn('status',['queued','processing','uncertain','succeeded'])
-                    ->orWhereNotNull('external_item_id'))->exists()) {
-                throw new \DomainException('This product already has a listing attempt. Review its result before submitting again.');
-            }
             $id=DB::table('marketplace_publishing_tasks')->insertGetId([
                 'store_id'=>$storeId,'product_id'=>$productId,'actor_id'=>$actorId,'request_key'=>$requestKey,
                 'payload_hash'=>$hash,'payload'=>$json,'status'=>'queued','created_at'=>now(),'updated_at'=>now(),
                 'source_revision'=>$revision,'source_snapshot'=>$snapshot,
-                'previous_task_id'=>$authorization?->task_id,
+                'previous_task_id'=>$authorization?->task_id ?? (($latestTask?->status==='rejected' && !$latestTask?->external_item_id) ? $latestTask->id : null),
             ]);
             if ($authorization) DB::table('marketplace_publishing_recovery_authorizations')->where('id',$authorization->id)
                 ->whereNull('consumed_task_id')->update(['consumed_task_id'=>$id,'updated_at'=>now()]);

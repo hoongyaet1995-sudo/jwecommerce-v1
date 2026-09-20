@@ -66,4 +66,33 @@ class MarketplacePublishingRecoveryTest extends TestCase
         app(PublishingTasks::class)->create($store,$product->id,$actor->id,
             '2285db80-1111-4111-8111-123456789012',['Request'=>[]],null,$id);
     }
+
+    public function test_definitively_rejected_recovery_attempt_supersedes_older_uncertain_task(): void
+    {
+        config(['marketplace.read_operations_enabled'=>true]);
+        $actor=User::factory()->create(['is_admin'=>true]);
+        $product=Product::create(['title'=>'Retry after review rejection','handle'=>'retry-after-review-rejection','base_price'=>1000]);
+        $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','shop_name'=>'Test','region'=>'MY','environment'=>'sandbox','status'=>'connected']);
+        $uncertain=app(PublishingTasks::class)->create($store,$product->id,$actor->id,
+            '9285db80-1111-4111-8111-123456789012',['Request'=>[]]);
+        DB::table('marketplace_publishing_tasks')->where('id',$uncertain)->update(['status'=>'uncertain']);
+        $authorization=app(\App\Services\Marketplace\PublishingRecoveryAuthorizations::class)->issue($uncertain,$actor->id,[
+            'reason'=>'Checked Seller Center and accepted duplicate risk.','confirmationVersion'=>'v1','expectedRevision'=>1,
+        ]);
+        $rejected=app(PublishingTasks::class)->create($store,$product->id,$actor->id,
+            '1285db80-1111-4111-8111-123456789012',['Request'=>[]],null,$authorization['authorizationId']);
+        DB::table('marketplace_publishing_tasks')->where('id',$rejected)->update([
+            'status'=>'rejected','stage'=>'review','error_code'=>'image_validation_failed',
+        ]);
+
+        $this->actingAs($actor)->getJson("/admin/api/marketplace/stores/{$store}/publishing-status")
+            ->assertOk()->assertJsonMissingPath("products.{$product->id}")
+            ->assertJsonPath("tasksByProduct.{$product->id}.id",$rejected);
+
+        $retry=app(PublishingTasks::class)->create($store,$product->id,$actor->id,
+            '2285db80-1111-4111-8111-123456789012',['Request'=>[]]);
+        $this->assertDatabaseHas('marketplace_publishing_tasks',[
+            'id'=>$retry,'status'=>'queued','previous_task_id'=>$rejected,
+        ]);
+    }
 }
