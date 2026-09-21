@@ -5,7 +5,6 @@ import { SubNavHeader } from '../common/SubNavHeader';
 import { MarketplaceLogo } from './MarketplaceLogo';
 import {
   Boxes,
-  Layers,
   Store,
   ArrowRightLeft,
   History,
@@ -814,22 +813,6 @@ export const MarketplaceInventoryPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Current Operating Mode Pill Indicator */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs">
-            <span className="text-neutral-500 text-[11px]">Policy:</span>
-            <span className="font-bold text-neutral-900 dark:text-white">
-              {currentMode === 'shared' ? 'Shared Stock (共享库存)' : 'Independent Stock (独立库存)'}
-            </span>
-            <button
-              type="button"
-              onClick={() => setIsSettingsModalOpen(true)}
-              className="text-[10px] text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:underline font-bold ml-1 cursor-pointer"
-            >
-              Configure
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* ================= TAB 1: INVENTORY OVERVIEW ================= */}
@@ -900,36 +883,6 @@ export const MarketplaceInventoryPage: React.FC = () => {
               </div>
               <div className="text-[11px] text-neutral-400 mt-1 truncate" title={metrics.activeStoreLabels}>{metrics.activeStoreLabels || 'No connected stores'}</div>
             </div>
-          </div>
-
-          {/* Mode Policy Explanatory Banner */}
-          <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 shrink-0">
-                <Layers className="w-4 h-4" />
-              </div>
-              <div className="text-xs space-y-1">
-                <div className="font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-                  <span>Current Policy: {currentMode === 'shared' ? 'Shared Stock Mode (共享库存模式)' : 'Independent Stock Mode (独立库存模式)'}</span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300">
-                    System-wide
-                  </span>
-                </div>
-                <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-3xl">
-                  {currentMode === 'shared'
-                    ? 'All connected sales channels draw from a single shared pool of Available stock. When an item sells on Shopee, the remaining quantity decreases across Lazada and Webstore immediately. Platform reported stock numbers are channel references only and do not increase physical inventory.'
-                    : 'Each store holds an isolated stock ledger. Inventory is explicitly assigned per store, and inter-store rebalancing is performed through the Stock Transfers tab. Total stock across stores is strictly conserved.'}
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsSettingsModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 text-xs font-semibold hover:bg-neutral-50 dark:hover:bg-neutral-750 transition whitespace-nowrap cursor-pointer shrink-0 shadow-xs"
-            >
-              Mode Policy Details & Transition
-            </button>
           </div>
 
           {/* Uncounted SKUs Alert Bar */}
