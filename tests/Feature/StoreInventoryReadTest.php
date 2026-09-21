@@ -19,6 +19,19 @@ class StoreInventoryReadTest extends TestCase
         return User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
     }
 
+    private function map(int $storeId, int $variantId): void
+    {
+        $listing = DB::table('marketplace_listing_variants')->insertGetId([
+            'store_id' => $storeId, 'external_product_id' => 'READ-'.$storeId,
+            'external_variant_id' => 'READ-V-'.$storeId, 'observed_data' => json_encode(['stock' => 0]),
+            'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('marketplace_variant_mappings')->insert([
+            'store_id' => $storeId, 'listing_variant_id' => $listing, 'product_variant_id' => $variantId,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
     public function test_shared_overview_counts_one_ledger_balance_once_across_all_store_accounts(): void
     {
         $fixture = new StoreInventoryFixture;
@@ -51,6 +64,8 @@ class StoreInventoryReadTest extends TestCase
         $website = $resolver->balance($sku['variant']->id, 'website');
         $a = $resolver->balance($sku['variant']->id, 'marketplace:'.$first->id);
         $b = $resolver->balance($sku['variant']->id, 'marketplace:'.$second->id);
+        $this->map($first->id, $sku['variant']->id);
+        $this->map($second->id, $sku['variant']->id);
         DB::table('inventory_balances')->where('id', $website['id'])->update([
             'physical_stock' => 20, 'reserved_stock' => 4, 'safety_stock' => 0, 'counted_at' => now(),
         ]);
@@ -67,6 +82,29 @@ class StoreInventoryReadTest extends TestCase
         $this->assertSame([$first->id, $second->id], array_column($response->json('stores'), 'id'));
         $this->assertArrayNotHasKey('external_shop_id', $response->json('stores.0'));
         $this->assertArrayNotHasKey('access_token', $response->json('stores.0'));
+    }
+
+    public function test_independent_overview_does_not_reopen_first_count_for_unmapped_store_accounts(): void
+    {
+        $fixture = new StoreInventoryFixture;
+        $sku = $fixture->sku();
+        $unmapped = $fixture->store('lazada', 'UNMAPPED');
+        DB::table('products')->where('id', $sku['product']->id)->update(['status' => 'active']);
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores']);
+        $resolver = app(AccountResolver::class);
+        $website = $resolver->balance($sku['variant']->id, 'website');
+        $resolver->balance($sku['variant']->id, 'marketplace:'.$unmapped->id);
+        DB::table('inventory_balances')->where('id', $website['id'])->update([
+            'physical_stock' => 22, 'reserved_stock' => 0, 'safety_stock' => 0, 'counted_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->admin())->getJson('/admin/api/inventory/store-management/overview')->assertOk();
+        $response->assertJsonPath('totals.unknown_accounts', 0)
+            ->assertJsonPath('mode_catalog.summary.blocked', 0)
+            ->assertJsonPath('mode_catalog.items.0.classification', 'ready_to_allocate');
+        $rows = collect($response->json('data'))->keyBy('account_key');
+        $this->assertTrue($rows['website']['allocation_eligible']);
+        $this->assertFalse($rows['marketplace:'.$unmapped->id]['allocation_eligible']);
     }
 
     public function test_history_is_paginated_and_operation_detail_contains_sanitized_saved_receipt(): void

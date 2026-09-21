@@ -1112,6 +1112,7 @@ export const IndependentStockAllocationModal: React.FC<IndependentStockAllocatio
                       const syncStatus = stage?.status || (st.platform === 'webstore' ? 'confirmed' : 'queued');
                       const allocQty = parsedAllocations[st.id] ?? 0;
                       const isFailed = ['failed', 'auth_expired', 'uncertain'].includes(syncStatus);
+                      const isMapped = isStoreMapped(st);
 
                       return (
                         <div
@@ -1127,7 +1128,9 @@ export const IndependentStockAllocationModal: React.FC<IndependentStockAllocatio
 
                           <div className="flex items-center gap-3">
                             <span className="font-mono text-neutral-500">{allocQty} units</span>
-                            {isFailed ? (
+                            {!isMapped ? (
+                              <span className="font-semibold text-amber-600 dark:text-amber-400">SKU Not Mapped · Excluded</span>
+                            ) : isFailed ? (
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-rose-500 flex items-center gap-1">
                                   <AlertTriangle className="w-3.5 h-3.5" />

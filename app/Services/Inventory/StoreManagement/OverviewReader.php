@@ -20,8 +20,13 @@ final class OverviewReader
             ->join('product_variants as v', 'v.id', '=', 'b.product_variant_id')
             ->join('products as product', 'product.id', '=', 'v.product_id')
             ->leftJoin('marketplace_stores as store', 'store.id', '=', 'p.marketplace_store_id')
+            ->leftJoin('marketplace_variant_mappings as mapping', function ($join): void {
+                $join->on('mapping.product_variant_id', '=', 'b.product_variant_id')
+                    ->on('mapping.store_id', '=', 'p.marketplace_store_id');
+            })
             ->select(['b.id', 'b.product_variant_id', 'b.physical_stock', 'b.reserved_stock', 'b.safety_stock',
                 'b.counted_at', 'b.version', 'p.pool_key', 'p.kind', 'p.marketplace_store_id',
+                'mapping.id as mapping_id',
                 'store.platform', 'store.shop_name', 'store.status as connection_status', 'v.sku', 'v.title as variant_title',
                 'product.title as product_title']);
         if (! empty($filters['platform'])) {
@@ -60,6 +65,7 @@ final class OverviewReader
                 'reserved' => $reserved,
                 'available' => $available,
                 'counted' => $row->counted_at !== null,
+                'allocation_eligible' => $row->kind === 'shared' || $row->marketplace_store_id === null || $row->mapping_id !== null,
                 'version' => (int) $row->version,
                 'provider_observation' => null,
                 'external_sync' => $this->syncState(
@@ -73,6 +79,9 @@ final class OverviewReader
         $known = ['physical' => 0, 'reserved' => 0, 'available' => 0];
         $unknown = 0;
         foreach ($rows as $row) {
+            if (! $row['allocation_eligible']) {
+                continue;
+            }
             if (! $row['counted'] || $row['physical'] === null || $row['reserved'] === null || $row['available'] === null) {
                 $unknown++;
 

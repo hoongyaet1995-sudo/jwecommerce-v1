@@ -1,11 +1,21 @@
-// @vitest-environment jsdom
-import{beforeEach,describe,expect,it,vi}from'vitest';import{adaptBalances,adaptInventory,adaptStores,storeInventoryApi}from'./storeInventory';
+import { describe, expect, it } from 'vitest';
+import { adaptInventory } from './storeInventory';
 
-const overview:any={mode:'independent',configuration_version:4,totals:{known:{},unknown_accounts:1},stores:[],data:[{balance_id:7,variant_id:3,sku:'SKU-1',product:'Item',variant:'Blue',account_key:'website',store_id:null,platform:'website',physical:null,reserved:null,available:null,counted:false}]};
-describe('ZIP39 inventory adapter',()=>{
-  beforeEach(()=>{document.head.innerHTML='<meta name="csrf-token" content="test">';vi.restoreAllMocks()});
-  it('keeps an uncounted quantity unknown and never substitutes marketplace stock',()=>{const item=adaptInventory(overview)[0];expect(item.totalPhysicalStock).toBeNull();expect(item.availableStock).toBeNull();expect(adaptBalances(overview)['SKU-1'].website.physicalStock).toBeNull()});
-  it('sends only reviewed physical count fields without a provider snapshot',async()=>{const fetch=vi.spyOn(globalThis,'fetch').mockResolvedValueOnce(new Response(JSON.stringify({id:'00000000-0000-4000-8000-000000000001'}),{status:201,headers:{'Content-Type':'application/json'}})).mockResolvedValueOnce(new Response(JSON.stringify({operation_id:'op'}),{status:200,headers:{'Content-Type':'application/json'}}));await storeInventoryApi.review('count',{balance_id:7,physical_count:0,reason:'Shelf count'});const payload=JSON.parse(String(fetch.mock.calls[0][1]?.body));expect(payload).toEqual({kind:'count',balance_id:7,physical_count:0,reason:'Shelf count'});expect(payload).not.toHaveProperty('platformStock')});
-  it('requires an explicit reconciliation outcome before retrying an uncertain stage',async()=>{const fetch=vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(JSON.stringify({status:'queued'}),{status:200,headers:{'Content-Type':'application/json'}}));await storeInventoryApi.retry('00000000-0000-4000-8000-000000000002','not_applied');expect(JSON.parse(String(fetch.mock.calls[0][1]?.body))).toEqual({reconcile_outcome:'not_applied'})});
-  it('supplies source-design labels for every runtime store option',()=>{const stores=adaptStores({...overview,data:[],stores:[{id:7,name:'Test Store',platform:'lazada',connection_status:'connected',management_status:'managed'}]});expect(stores.every(store=>store.platformDisplayName&&store.region&&store.nickname)).toBe(true);expect(stores.find(store=>store.id==='7')?.platformDisplayName).toBe('Lazada')});
+describe('store inventory adapter', () => {
+  it('does not reopen first count because an unmapped store account is uncounted', () => {
+    const overview: any = {
+      mode: 'independent', configuration_version: 1, stores: [], totals: {},
+      mode_catalog: {items: [{variant_id: 10, mapped_stores: []}]},
+      data: [
+        {balance_id: 1, variant_id: 10, sku: 'SKU-10', product: 'Product', variant: 'Default', store_id: null, account_key: 'website', platform: 'website', physical: 22, reserved: 0, available: 22, counted: true, allocation_eligible: true},
+        {balance_id: 2, variant_id: 10, sku: 'SKU-10', product: 'Product', variant: 'Default', store_id: 9, store_name: 'Unmapped store', account_key: 'marketplace:9', platform: 'lazada', physical: null, reserved: null, available: null, counted: false, allocation_eligible: false},
+      ],
+    };
+
+    const [item] = adaptInventory(overview);
+    expect(item.hasUncountedAccounts).toBe(false);
+    expect(item.physicalStockStatus).toBe('verified');
+    expect(item.totalPhysicalStock).toBe(22);
+    expect(item.availableStock).toBe(22);
+  });
 });

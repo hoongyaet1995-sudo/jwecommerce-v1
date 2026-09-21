@@ -29,11 +29,13 @@ export const storeInventoryApi={
 export function adaptInventory(overview:InventoryOverview){
   const groups=new Map<number,any[]>(); overview.data.forEach(row=>groups.set(row.variant_id,[...(groups.get(row.variant_id)||[]),row]));
   return [...groups.entries()].map(([variantId,rows])=>{
-    const known=rows.filter(r=>r.counted); const physical=known.length?known.reduce((n,r)=>n+r.physical,0):null;
-    const reserved=known.reduce((n,r)=>n+(r.reserved||0),0); const available=known.length?known.reduce((n,r)=>n+r.available,0):null;
     const modeItem=overview.mode_catalog?.items?.find((entry:any)=>Number(entry.variant_id)===variantId);
+    const mappedIds=new Set((modeItem?.mapped_stores||[]).map((store:any)=>String(store.id)));
+    const eligibleRows=rows.filter(r=>r.allocation_eligible ?? (!r.store_id || mappedIds.has(String(r.store_id))));
+    const known=eligibleRows.filter(r=>r.counted); const physical=known.length?known.reduce((n,r)=>n+r.physical,0):null;
+    const reserved=known.reduce((n,r)=>n+(r.reserved||0),0); const available=known.length?known.reduce((n,r)=>n+r.available,0):null;
     return {id:String(rows[0].balance_id),variantId,masterSku:rows[0].sku||'',barcode:'',productName:rows[0].product||'',variantName:rows[0].variant||'',imageUrl:'',warehouseLocation:'',mappedStoreIds:(modeItem?.mapped_stores||[]).map((store:any)=>String(store.id)),
-      physicalStockStatus:physical===null?'unknown':'verified',hasUncountedAccounts:rows.some(r=>!r.counted),totalPhysicalStock:physical,reservedStock:reserved,safetyStock:0,availableStock:available,reorderPoint:0,costPrice:0,sellingPrice:0,
+      physicalStockStatus:physical===null?'unknown':'verified',hasUncountedAccounts:eligibleRows.some(r=>!r.counted),totalPhysicalStock:physical,reservedStock:reserved,safetyStock:0,availableStock:available,reorderPoint:0,costPrice:0,sellingPrice:0,
       channelMappings:{},autoSyncEnabled:false,historyLog:[],storeAssociations:rows.filter(r=>r.store_id).map(r=>({connectionId:String(r.store_id),storeName:r.store_name||r.account_key,platform:r.platform,
         externalSku:r.sku,connectionState:r.connection_status||'connected',syncState:'enabled',lastSyncStatus:r.external_sync?.status,syncTasks:r.external_sync?.tasks||[],balanceId:r.balance_id}))};
   });

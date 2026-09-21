@@ -1150,6 +1150,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                               const assoc = (item.storeAssociations || []).find(a => a.connectionId === store.id);
                               const balance = skuStoreBalances[store.id];
                               const channelStock = assoc?.channelStockSnapshot ?? store.platformStockSnapshot ?? 0;
+                              const isMapped = store.platform === 'webstore' || ((item as any).mappedStoreIds || []).includes(store.id);
 
                               return (
                                 <div
@@ -1173,7 +1174,11 @@ export const MarketplaceInventoryPage: React.FC = () => {
                                     ) : null}
 
                                     {/* Managed vs Unmanaged */}
-                                    {!store.isManagedByJw ? (
+                                    {currentMode === 'independent' && !isMapped ? (
+                                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
+                                        SKU Not Mapped
+                                      </span>
+                                    ) : !store.isManagedByJw ? (
                                       <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300" title="Store not yet managed by JW">
                                         Unmanaged
                                       </span>

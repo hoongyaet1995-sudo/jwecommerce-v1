@@ -70,13 +70,17 @@ final class ModeCatalogReader
         return DB::table('inventory_balances as b')
             ->join('inventory_pools as pool', 'pool.id', '=', 'b.inventory_pool_id')
             ->leftJoin('inventory_store_accounts as account', 'account.marketplace_store_id', '=', 'pool.marketplace_store_id')
+            ->leftJoin('marketplace_variant_mappings as mapping', function ($join): void {
+                $join->on('mapping.product_variant_id', '=', 'b.product_variant_id')
+                    ->on('mapping.store_id', '=', 'pool.marketplace_store_id');
+            })
             ->where(function ($query) use ($mode): void {
                 if ($mode === 'shared_pool') {
                     $query->where('pool.kind', 'shared');
                 } else {
                     $query->where('pool.kind', 'store')
                         ->where(fn ($accounts) => $accounts->whereNull('pool.marketplace_store_id')
-                            ->orWhereNotNull('account.id'));
+                            ->orWhereNotNull('mapping.id'));
                 }
             })
             ->selectRaw('MIN(b.id) as id, b.product_variant_id, SUM(b.physical_stock) as physical_stock, SUM(b.reserved_stock) as reserved_stock, MIN(b.counted_at) as counted_at')

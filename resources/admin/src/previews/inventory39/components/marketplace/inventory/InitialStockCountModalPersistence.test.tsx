@@ -97,6 +97,9 @@ it('allocates one verified total across mapped independent stores and blocks unm
   await act(async () => assignRemaining.click());
   const proceed = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.includes('Proceed to Review')) as HTMLButtonElement;
   expect(proceed.disabled).toBe(false);
+  await act(async () => proceed.click());
+  await act(async () => (Array.from(host.querySelectorAll('button')).find(button => button.textContent?.includes('Confirm & Allocate Stock')) as HTMLButtonElement).click());
+  expect(host.textContent).toContain('SKU Not Mapped · Excluded');
 
   await act(async () => root.unmount());
   host.remove();
