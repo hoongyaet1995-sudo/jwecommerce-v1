@@ -29,6 +29,17 @@ final class StoreInventorySyncStateTest extends TestCase
             'listing_variant_id' => $listing, 'store_id' => $store->id, 'product_variant_id' => $sku['variant']->id,
             'created_at' => now(), 'updated_at' => now(),
         ]);
+        DB::table('marketplace_store_tokens')->insert([
+            'store_id' => $store->id, 'access_token' => 'encrypted-placeholder', 'refresh_token' => null,
+            'access_expires_at' => now()->addHour(), 'refresh_expires_at' => null, 'application_id' => 'test',
+            'credential_source' => 'oauth', 'test_lease_expires_at' => null, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        config([
+            'marketplace.stock_sync_operations_enabled' => true,
+            'marketplace.stock_sync_platforms.lazada' => true,
+            'marketplace.stock_sync_canary_enforced' => true,
+            'marketplace.stock_sync_canary_identities' => ["lazada:{$store->id}:{$listing}"],
+        ]);
         DB::table('marketplace_listing_variants')->insert([
             'store_id' => $store->id, 'external_product_id' => 'ARCHIVED', 'external_variant_id' => 'ARCHIVED',
             'observed_data' => json_encode(['status' => 'archived']), 'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now(),

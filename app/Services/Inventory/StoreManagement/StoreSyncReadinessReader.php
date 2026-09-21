@@ -6,7 +6,10 @@ use Illuminate\Support\Facades\DB;
 
 final class StoreSyncReadinessReader
 {
-    public function __construct(private readonly ReadinessReader $legacy) {}
+    public function __construct(
+        private readonly ReadinessReader $legacy,
+        private readonly StoreSkuSyncReadiness $skuReadiness,
+    ) {}
 
     public function read(int $storeId): array
     {
@@ -28,16 +31,30 @@ final class StoreSyncReadinessReader
         if (($result['store']?->status ?? null) !== 'connected' && $status === 'managed') {
             $status = 'setup_required';
         }
+        $variantIds = DB::table('marketplace_variant_mappings')->where('store_id', $storeId)
+            ->distinct()->pluck('product_variant_id');
+        $skuStates = $variantIds->map(fn ($variantId): array => $this->skuReadiness->read($storeId, (int) $variantId));
+        $readySkuCount = $skuStates->where('ready', true)->count();
+        $blockedSkuCount = $skuStates->count() - $readySkuCount;
+        $resumableSkuCount = $skuStates->filter(function (array $state): bool {
+            $codes = collect($state['blockers'])->pluck('code');
+
+            return $codes->isNotEmpty() && $codes->every(fn (string $code): bool => $code === 'sync_paused');
+        })->count();
+        $effectiveState = match (true) {
+            $status === 'paused' => 'paused',
+            $readySkuCount > 0 && $blockedSkuCount > 0 => 'partially_ready',
+            $readySkuCount > 0 => 'active',
+            default => 'setup_required',
+        };
 
         return [
-            'ready' => $requirements === [],
-            'effective_state' => match ($status) {
-                'managed' => 'active',
-                'paused' => 'paused',
-                default => 'setup_required',
-            },
+            'ready' => $readySkuCount > 0 || ($status === 'paused' && $resumableSkuCount === $skuStates->count() && $skuStates->isNotEmpty()),
+            'effective_state' => $effectiveState,
             'inventory_membership' => 'enrolled',
             'requirements' => $requirements,
+            'sku_summary' => ['ready' => $readySkuCount, 'blocked' => $blockedSkuCount],
+            'setup_info' => $result['setup_info'] ?? ['unmapped_active_listings' => 0],
             'review_token' => $result['review_token'],
             'balances' => $result['balances'],
             'snapshot' => $result['snapshot'],

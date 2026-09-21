@@ -7,7 +7,10 @@ use Illuminate\Support\Facades\DB;
 
 final class ModeCatalogReader
 {
-    public function __construct(private readonly InventoryThumbnail $thumbnails) {}
+    public function __construct(
+        private readonly InventoryThumbnail $thumbnails,
+        private readonly StoreSkuSyncReadiness $skuReadiness,
+    ) {}
 
     /** @return array{items:list<array<string,mixed>>,summary:array{total:int,ready:int,blocked:int,excluded:int}} */
     public function read(): array
@@ -61,8 +64,9 @@ final class ModeCatalogReader
                     'platform' => $store->platform,
                     'name' => $store->shop_name,
                     'connection_status' => $store->connection_status,
-                    'management_status' => $store->management_status ?? 'setup_required',
-                ])->values()->all(),
+                'management_status' => $store->management_status ?? 'setup_required',
+                'sync_readiness' => $this->skuReadiness->read((int) $store->store_id, (int) $variant->id),
+            ])->values()->all(),
             ];
         })->values();
 

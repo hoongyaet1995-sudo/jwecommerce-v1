@@ -31,9 +31,6 @@ final class ReadinessReader
         }
         $unmapped = DB::table('marketplace_listing_variants as l')->leftJoin('marketplace_variant_mappings as m', 'm.listing_variant_id', '=', 'l.id')
             ->where('l.store_id', $storeId)->whereIn('l.id', $eligibleListingIds)->whereNull('m.id')->pluck('l.id');
-        if ($unmapped->isNotEmpty()) {
-            $blockers[] = ['code' => 'unmapped_listings', 'ids' => $unmapped->all(), 'next_action' => 'Map every active store listing before enabling inventory sync.'];
-        }
         $ambiguous = $mappings->groupBy('listing_variant_id')->filter(fn ($rows) => $rows->count() !== 1)->keys();
         if ($ambiguous->isNotEmpty()) {
             $blockers[] = ['code' => 'ambiguous_mappings', 'ids' => $ambiguous->all(), 'next_action' => 'Resolve duplicate SKU mappings.'];
@@ -70,6 +67,7 @@ final class ReadinessReader
             'mapping_ids' => $mappings->pluck('id')->sort()->values()->all(), 'listing_fetched_at' => DB::table('marketplace_listing_variants')->where('store_id', $storeId)->max('fetched_at')];
 
         return ['ready' => $blockers === [], 'store' => $store, 'balances' => $balances, 'blockers' => $blockers,
+            'setup_info' => ['unmapped_active_listings' => $unmapped->count()],
             'review_token' => hash('sha256', json_encode($snapshot, JSON_THROW_ON_ERROR)), 'snapshot' => $snapshot];
     }
 
