@@ -259,8 +259,9 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
       });
 
       const hasError = res.sourcePlatformSyncStatus === 'failed' || res.destinationPlatformSyncStatus === 'failed';
-      const isPending = ['pending', 'syncing'].includes(res.sourcePlatformSyncStatus)
-        || ['pending', 'syncing'].includes(res.destinationPlatformSyncStatus);
+      const isPending = ['pending', 'syncing', 'awaiting_confirmation'].includes(res.sourcePlatformSyncStatus)
+        || ['pending', 'syncing', 'awaiting_confirmation'].includes(res.destinationPlatformSyncStatus)
+        ;
       setActiveTransferExecution({
         isOpen: true,
         stage: hasError ? 'has_platform_error' : isPending ? 'dest_syncing' : 'completed',
@@ -300,6 +301,16 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
       );
     });
   }, [transfersList, historySearch]);
+
+  const executionRecord = activeTransferExecution.record;
+  const sourceExecutionStatus = executionRecord?.sourcePlatformSyncStatus
+    ?? (activeTransferExecution.stage === 'source_syncing' ? 'syncing' : 'pending');
+  const destinationExecutionStatus = executionRecord?.destinationPlatformSyncStatus
+    ?? (activeTransferExecution.stage === 'dest_syncing' ? 'syncing' : 'pending');
+  const failedExecutionTargets = [
+    ['failed', 'awaiting_confirmation'].includes(sourceExecutionStatus) ? sourceStore.name : null,
+    ['failed', 'awaiting_confirmation'].includes(destinationExecutionStatus) ? destStore.name : null,
+  ].filter(Boolean).join(' and ');
 
   return (
     <div id="store-stock-transfers-tab" className="space-y-8 animate-in fade-in duration-150">
@@ -1314,40 +1325,58 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
 
               {/* Stage 2: Source Platform Update */}
               <div className={`p-3 rounded-xl border flex items-center justify-between ${
-                activeTransferExecution.stage === 'source_syncing'
+                sourceExecutionStatus === 'syncing' || sourceExecutionStatus === 'pending'
                   ? 'bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white'
+                  : sourceExecutionStatus === 'awaiting_confirmation'
+                  ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 text-amber-900 dark:text-amber-200'
+                  : sourceExecutionStatus === 'failed'
+                  ? 'bg-red-50 border-red-200 text-red-900'
                   : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 text-emerald-900'
               }`}>
                 <div className="flex items-center gap-2.5">
-                  {activeTransferExecution.stage === 'source_syncing' ? (
+                  {sourceExecutionStatus === 'syncing' || sourceExecutionStatus === 'pending' ? (
                     <RefreshCw className="w-5 h-5 text-neutral-600 dark:text-neutral-300 animate-spin" />
+                  ) : sourceExecutionStatus === 'awaiting_confirmation' ? (
+                    <RefreshCw className="w-5 h-5 text-amber-600" />
+                  ) : sourceExecutionStatus === 'failed' ? (
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
                   ) : (
                     <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                   )}
                   <div>
                     <div className="text-xs font-bold">Step 2: Source Channel Stock Update ({sourceStore.platformDisplayName})</div>
                     <div className="text-[11px] opacity-80">
-                      {activeTransferExecution.stage === 'source_syncing' ? 'Broadcasting decremented ATP...' : 'Confirmed synced with source store.'}
+                      {sourceExecutionStatus === 'syncing' || sourceExecutionStatus === 'pending'
+                        ? 'Waiting for source channel confirmation...'
+                        : sourceExecutionStatus === 'awaiting_confirmation'
+                        ? executionRecord?.sourceFailureReason || 'The write completed, but the source channel has not confirmed the final quantity yet.'
+                        : sourceExecutionStatus === 'failed'
+                        ? executionRecord?.sourceFailureReason || 'Source channel confirmation requires review.'
+                        : 'Confirmed synced with source store.'}
                     </div>
                   </div>
                 </div>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-neutral-800">
-                  {activeTransferExecution.stage === 'source_syncing' ? 'Syncing...' : 'Confirmed'}
+                  {sourceExecutionStatus === 'syncing' || sourceExecutionStatus === 'pending' ? 'Checking...' : sourceExecutionStatus === 'awaiting_confirmation' ? 'Awaiting Confirmation' : sourceExecutionStatus === 'failed' ? 'Failed' : 'Confirmed'}
                 </span>
               </div>
 
               {/* Stage 3: Destination Platform Update */}
               <div className={`p-3 rounded-xl border flex items-center justify-between ${
-                activeTransferExecution.stage === 'dest_syncing'
+                destinationExecutionStatus === 'syncing' || destinationExecutionStatus === 'pending'
                   ? 'bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white'
-                  : activeTransferExecution.stage === 'has_platform_error'
+                  : destinationExecutionStatus === 'awaiting_confirmation'
+                  ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 text-amber-900 dark:text-amber-200'
+                  : destinationExecutionStatus === 'failed'
                   ? 'bg-red-50 border-red-200 text-red-900'
                   : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 text-emerald-900'
               }`}>
                 <div className="flex items-center gap-2.5">
-                  {activeTransferExecution.stage === 'dest_syncing' ? (
+                  {destinationExecutionStatus === 'syncing' || destinationExecutionStatus === 'pending' ? (
                     <RefreshCw className="w-5 h-5 text-neutral-600 dark:text-neutral-300 animate-spin" />
-                  ) : activeTransferExecution.stage === 'has_platform_error' ? (
+                  ) : destinationExecutionStatus === 'awaiting_confirmation' ? (
+                    <RefreshCw className="w-5 h-5 text-amber-600" />
+                  ) : destinationExecutionStatus === 'failed' ? (
                     <AlertTriangle className="w-5 h-5 text-red-600" />
                   ) : (
                     <CheckCircle2 className="w-5 h-5 text-emerald-600" />
@@ -1355,16 +1384,18 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                   <div>
                     <div className="text-xs font-bold">Step 3: Destination Channel Stock Update ({destStore.platformDisplayName})</div>
                     <div className="text-[11px] opacity-80">
-                      {activeTransferExecution.stage === 'dest_syncing' 
-                        ? 'Broadcasting incremented ATP...' 
-                        : activeTransferExecution.stage === 'has_platform_error'
-                        ? 'API Gateway timeout during platform write.'
+                      {destinationExecutionStatus === 'syncing' || destinationExecutionStatus === 'pending'
+                        ? 'Waiting for destination channel confirmation...'
+                        : destinationExecutionStatus === 'awaiting_confirmation'
+                        ? executionRecord?.destinationFailureReason || 'The write completed, but the destination channel has not confirmed the final quantity yet.'
+                        : destinationExecutionStatus === 'failed'
+                        ? executionRecord?.destinationFailureReason || 'Destination channel confirmation requires review.'
                         : 'Confirmed synced with destination store.'}
                     </div>
                   </div>
                 </div>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-neutral-800">
-                  {activeTransferExecution.stage === 'dest_syncing' ? 'Syncing...' : activeTransferExecution.stage === 'has_platform_error' ? 'Failed' : 'Confirmed'}
+                  {destinationExecutionStatus === 'syncing' || destinationExecutionStatus === 'pending' ? 'Checking...' : destinationExecutionStatus === 'awaiting_confirmation' ? 'Awaiting Confirmation' : destinationExecutionStatus === 'failed' ? 'Failed' : 'Confirmed'}
                 </span>
               </div>
             </div>
@@ -1376,7 +1407,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                   Safe Targeted Recovery Available:
                 </div>
                 <p>
-                  JW internal ledger transfer succeeded and stock is securely allocated. You can retry pushing the stock update to {destStore.name} without re-executing ledger deduction.
+                  JW internal ledger transfer succeeded and stock is securely allocated. Review or retry only {failedExecutionTargets || 'the affected channel'} without re-executing ledger deduction.
                 </p>
               </div>
             )}

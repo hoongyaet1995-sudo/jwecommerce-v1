@@ -64,8 +64,8 @@ export interface StoreStockTransferRecord {
   reason: string;
   notes?: string;
   ledgerStatus: 'succeeded' | 'failed';
-  sourcePlatformSyncStatus: 'succeeded' | 'syncing' | 'failed' | 'pending';
-  destinationPlatformSyncStatus: 'succeeded' | 'syncing' | 'failed' | 'pending';
+  sourcePlatformSyncStatus: 'succeeded' | 'syncing' | 'failed' | 'pending' | 'awaiting_confirmation';
+  destinationPlatformSyncStatus: 'succeeded' | 'syncing' | 'failed' | 'pending' | 'awaiting_confirmation';
   sourceFailureReason?: string;
   destinationFailureReason?: string;
 }

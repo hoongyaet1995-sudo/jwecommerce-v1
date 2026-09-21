@@ -99,3 +99,44 @@ it('does not report pending channel work as both stores synced', async () => {
   expect(host.textContent).not.toContain('Both Stores Synced');
   await act(async () => root.unmount());
 });
+
+it('shows source confirmation delay on the source stage without blaming the destination', async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  const onExecuteTransfer = vi.fn().mockResolvedValue({
+    id: 'operation-2', transferNumber: 'TR-2', timestamp: new Date().toISOString(),
+    masterSku: 'AUR-PINE-BLK', productName: 'Aurora Headphones', variantName: 'Black', imageUrl: '',
+    sourceStoreId: 'website', sourceStoreName: 'JW Storefront', sourcePlatform: 'webstore',
+    destinationStoreId: '12', destinationStoreName: 'Lazada Test', destinationPlatform: 'lazada',
+    quantity: 1, operator: 'Admin', reason: 'Rebalance', ledgerStatus: 'succeeded',
+    sourcePlatformSyncStatus: 'awaiting_confirmation', destinationPlatformSyncStatus: 'succeeded',
+    sourceFailureReason: 'Channel confirmation is still pending.',
+  });
+
+  await act(async () => root.render(
+    <StoreStockTransfersTab
+      inventory={inventory}
+      stores={stores}
+      storeBalances={storeBalances}
+      transfersList={[]}
+      onExecuteTransfer={onExecuteTransfer}
+      onRetryPlatformSync={vi.fn()}
+    />
+  ));
+
+  const execute = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.includes('Execute Store Stock Transfer'))!;
+  await act(async () => execute.click());
+
+  const sourceTitle = Array.from(host.querySelectorAll('div')).find(element => element.textContent === 'Step 2: Source Channel Stock Update (JW Storefront)')!;
+  const destinationTitle = Array.from(host.querySelectorAll('div')).find(element => element.textContent === 'Step 3: Destination Channel Stock Update (Lazada)')!;
+  const sourceStage = sourceTitle.parentElement!.parentElement!.parentElement!;
+  const destinationStage = destinationTitle.parentElement!.parentElement!.parentElement!;
+  expect(sourceStage.textContent).toContain('Channel confirmation is still pending.');
+  expect(sourceStage.textContent).toContain('Awaiting Confirmation');
+  expect(destinationStage.textContent).toContain('Confirmed synced with destination store.');
+  expect(destinationStage.textContent).not.toContain('API Gateway timeout');
+
+  await act(async () => root.unmount());
+});

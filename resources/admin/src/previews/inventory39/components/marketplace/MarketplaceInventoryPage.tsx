@@ -145,13 +145,15 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
       const stages = receipt.external_stages || [];
       const status = (stage: string) => {
         const value = stages.find((item: any) => item.stage === stage)?.status;
-        return value === 'confirmed' || value === 'not_applicable' ? 'succeeded' : value === 'failed' || value === 'auth_expired' || value === 'uncertain' ? 'failed' : value === 'processing' ? 'syncing' : 'pending';
+        return value === 'confirmed' || value === 'not_applicable' ? 'succeeded' : value === 'uncertain' ? 'awaiting_confirmation' : value === 'failed' || value === 'auth_expired' ? 'failed' : value === 'processing' ? 'syncing' : 'pending';
       };
+      const reason = (stage: string) => stages.find((item: any) => item.stage === stage)?.provider_receipt?.message;
       return {id: entry.id, transferNumber: entry.referenceId || entry.id, timestamp: entry.timestamp,
         masterSku: entry.masterSku, productName: entry.productName, variantName: entry.variantName,
         sourceStoreId: '', sourceStoreName: 'Source store', destinationStoreId: '', destinationStoreName: 'Destination store',
         quantity: 0, operator: entry.operator, reason: entry.reason, ledgerStatus: 'succeeded',
-        sourcePlatformSyncStatus: status('source'), destinationPlatformSyncStatus: status('destination'), externalStages: stages} as StoreStockTransferRecord;
+        sourcePlatformSyncStatus: status('source'), destinationPlatformSyncStatus: status('destination'),
+        sourceFailureReason: reason('source'), destinationFailureReason: reason('destination'), externalStages: stages} as StoreStockTransferRecord;
     });
     setTransfersList(current => [...current, ...restored.filter((item: any) => !current.some(existing => existing.id === item.id))]);
   }, [inventoryActivityHistory]);
@@ -513,18 +515,23 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
     const stages = receipt.external_stages || [];
     const displayStatus = (status?: string): StoreStockTransferRecord['sourcePlatformSyncStatus'] => {
       if (status === 'confirmed' || status === 'not_applicable') return 'succeeded';
-      if (status === 'failed' || status === 'auth_expired' || status === 'uncertain') return 'failed';
+      if (status === 'uncertain') return 'awaiting_confirmation';
+      if (status === 'failed' || status === 'auth_expired') return 'failed';
       if (status === 'processing') return 'syncing';
       return 'pending';
     };
+    const sourceStage = stages.find((s: any) => s.stage === 'source');
+    const destinationStage = stages.find((s: any) => s.stage === 'destination');
     const connectedRecord = {
       ...transferPayload,
       id: receipt.operation_id,
       transferNumber: receipt.operation_id,
       timestamp: new Date().toISOString(),
       ledgerStatus: 'succeeded',
-      sourcePlatformSyncStatus: displayStatus(stages.find((s: any) => s.stage === 'source')?.status),
-      destinationPlatformSyncStatus: displayStatus(stages.find((s: any) => s.stage === 'destination')?.status)
+      sourcePlatformSyncStatus: displayStatus(sourceStage?.status),
+      destinationPlatformSyncStatus: displayStatus(destinationStage?.status),
+      sourceFailureReason: sourceStage?.provider_receipt?.message,
+      destinationFailureReason: destinationStage?.provider_receipt?.message
       ,externalStages: stages
     } as StoreStockTransferRecord;
     setTransfersList(prev => [connectedRecord, ...prev.filter(existing => existing.id !== connectedRecord.id)]);
