@@ -1299,6 +1299,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
         item={selectedItemForIntake}
         mode={currentMode}
         stores={stores}
+        storeBalances={storeBalances}
         initialType={intakeInitialType}
         onSave={handleSaveIntake}
       />

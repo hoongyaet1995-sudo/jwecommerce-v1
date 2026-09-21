@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   X,
   PlusCircle,
@@ -11,7 +11,22 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { MarketplaceInventoryItem } from '../../../types';
-import { InventoryStoreChannel } from './inventoryTypes';
+import { InventoryStoreChannel, StoreStockAccountBalance } from './inventoryTypes';
+
+export function calculateStoreStockChange(
+  actionType: 'intake' | 'adjustment',
+  enteredQuantity: number,
+  currentPhysical: number,
+) {
+  const newPhysicalStock = actionType === 'intake'
+    ? currentPhysical + enteredQuantity
+    : enteredQuantity;
+
+  return {
+    deltaQuantity: newPhysicalStock - currentPhysical,
+    newPhysicalStock,
+  };
+}
 
 interface StockIntakeAdjustmentModalProps {
   isOpen: boolean;
@@ -19,6 +34,7 @@ interface StockIntakeAdjustmentModalProps {
   item: MarketplaceInventoryItem | null;
   mode: 'shared' | 'independent';
   stores: InventoryStoreChannel[];
+  storeBalances: Record<string, Record<string, StoreStockAccountBalance>>;
   initialType?: 'intake' | 'adjustment';
   onSave: (payload: {
     sku: string;
@@ -38,15 +54,29 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
   item,
   mode,
   stores,
+  storeBalances,
   initialType = 'intake',
   onSave
 }) => {
   const [actionType, setActionType] = useState<'intake' | 'adjustment'>(initialType);
   const [quantityInput, setQuantityInput] = useState<string>('');
-  const [selectedStoreId, setSelectedStoreId] = useState<string>('webstore');
+  const [selectedStoreId, setSelectedStoreId] = useState<string>('website');
   const [reason, setReason] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [operator, setOperator] = useState<string>('Alexander (Admin)');
+
+  const eligibleStores = useMemo(() => {
+    const mappedStoreIds = new Set<string>((item as any)?.mappedStoreIds || []);
+
+    return (stores || []).filter(store => {
+      if (store.isComingSoon) return false;
+      if (store.platform === 'webstore') return store.connectionState === 'connected';
+
+      return store.connectionState === 'connected'
+        && store.inventorySyncState === 'active'
+        && mappedStoreIds.has(store.id);
+    });
+  }, [item, stores]);
 
   useEffect(() => {
     if (isOpen) {
@@ -54,23 +84,33 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
       setQuantityInput('');
       setNotes('');
       setReason(initialType === 'intake' ? 'Supplier PO Delivery Verification' : 'Physical Cycle Count Reconciliation');
+      setSelectedStoreId(current => eligibleStores.some(store => store.id === current)
+        ? current
+        : (eligibleStores[0]?.id || ''));
     }
-  }, [isOpen, initialType, item?.id]);
+  }, [isOpen, initialType, item?.id, eligibleStores]);
 
   if (!isOpen || !item) return null;
 
-  const currentPhysical = item.totalPhysicalStock ?? 0;
-  const currentReserved = item.reservedStock ?? 0;
+  const selectedBalance = mode === 'independent'
+    ? storeBalances?.[item.masterSku]?.[selectedStoreId]
+    : undefined;
+  const currentPhysical = mode === 'independent'
+    ? (selectedBalance?.physicalStock ?? 0)
+    : (item.totalPhysicalStock ?? 0);
+  const currentReserved = mode === 'independent'
+    ? (selectedBalance?.reservedStock ?? 0)
+    : (item.reservedStock ?? 0);
   const numericQty = quantityInput.trim() === '' ? NaN : Number(quantityInput);
   const isValidQty = !isNaN(numericQty) && Number.isInteger(numericQty) && (actionType === 'intake' ? numericQty > 0 : true);
 
   // For intake: delta is +numericQty. New physical is currentPhysical + numericQty.
   // For adjustment: numericQty is the new physical count, so delta is numericQty - currentPhysical.
-  const newPhysical = actionType === 'intake' 
-    ? (isValidQty ? currentPhysical + numericQty : currentPhysical)
-    : (isValidQty ? numericQty : currentPhysical);
-
-  const delta = newPhysical - currentPhysical;
+  const change = isValidQty
+    ? calculateStoreStockChange(actionType, numericQty, currentPhysical)
+    : { deltaQuantity: 0, newPhysicalStock: currentPhysical };
+  const newPhysical = change.newPhysicalStock;
+  const delta = change.deltaQuantity;
   const newAvailable = Math.max(0, newPhysical - currentReserved);
   const hasDeficit = newPhysical < currentReserved;
 
@@ -181,7 +221,11 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
             <div className="text-right">
               <div className="text-[10px] text-neutral-400">Current Physical</div>
               <div className="font-mono font-bold text-neutral-800 dark:text-neutral-200 text-xs">
-                {item.totalPhysicalStock !== null ? `${item.totalPhysicalStock} units` : 'Not Counted'}
+                {mode === 'independent'
+                  ? (selectedBalance?.physicalStock !== null && selectedBalance?.physicalStock !== undefined
+                    ? `${selectedBalance.physicalStock} units`
+                    : 'Not Counted')
+                  : (item.totalPhysicalStock !== null ? `${item.totalPhysicalStock} units` : 'Not Counted')}
               </div>
             </div>
           </div>
@@ -197,7 +241,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
                 onChange={e => setSelectedStoreId(e.target.value)}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white cursor-pointer focus:ring-2 focus:ring-neutral-400"
               >
-                {(stores || []).filter(s => !s.isComingSoon).map(s => (
+                {eligibleStores.map(s => (
                   <option key={s.id} value={s.id}>
                     {s.name} ({s.platformDisplayName}) - {s.nickname}
                   </option>
