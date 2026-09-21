@@ -33,7 +33,7 @@ interface InventorySettingsModalProps {
     reason: string,
     allocations?: Record<string, Record<string, number>>
   ) => Promise<{ success: boolean; error?: string }>;
-  onToggleStoreManagement: (storeId: string, enable: boolean) => void;
+  onToggleStoreManagement: (storeId: string, enable: boolean) => Promise<any>;
   onSelectSkuForCount?: (sku: string, variantId: number) => void;
   initialSwitchFlowStep?: 'view' | 'checklist';
 }
@@ -58,6 +58,9 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
   const [adminName, setAdminName] = useState('Alexander (Super Admin)');
   const [switchReason, setSwitchReason] = useState('Strategic business policy realignment');
   const [isExecutingSwitch, setIsExecutingSwitch] = useState(false);
+  const [modeActionError, setModeActionError] = useState('');
+  const [storeActionError, setStoreActionError] = useState('');
+  const [storeSetupReview, setStoreSetupReview] = useState<{storeName:string; requirements:any[]} | null>(null);
 
   // Allocation distribution state for Shared -> Independent switch
   // sku -> { storeId: allocatedQty }
@@ -68,6 +71,9 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
     if (isOpen) {
       setSwitchFlowStep(initialSwitchFlowStep);
       setTargetMode(currentMode === 'shared' ? 'independent' : 'shared');
+      setModeActionError('');
+      setStoreActionError('');
+      setStoreSetupReview(null);
     }
   }, [isOpen, currentMode, initialSwitchFlowStep]);
 
@@ -143,19 +149,39 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
 
   const handleExecuteModeSwitch = async () => {
     setIsExecutingSwitch(true);
+    setModeActionError('');
     try {
+      const apiAllocations = targetMode === 'independent'
+        ? Object.fromEntries(Object.entries(allocations).map(([variantId, storeMap]) => [variantId,
+            Object.fromEntries(Object.entries(storeMap).map(([storeId, quantity]) => [storeId === 'website' ? 'website' : `marketplace:${storeId}`, quantity]))]))
+        : undefined;
       const res = await onSwitchMode(
         targetMode,
         adminName,
         switchReason,
-        targetMode === 'independent' ? allocations : undefined
+        apiAllocations
       );
       if (res.success) {
         setSwitchFlowStep('view');
         onClose();
       }
+    } catch (error: any) {
+      setModeActionError(error?.message || 'Global mode transition failed. Review the blocking requirements and try again.');
     } finally {
       setIsExecutingSwitch(false);
+    }
+  };
+
+  const handleStoreSyncAction = async (store: InventoryStoreChannel) => {
+    setStoreActionError('');
+    setStoreSetupReview(null);
+    try {
+      const result = await onToggleStoreManagement(store.id, store.inventorySyncState !== 'active');
+      if (result?.ready === false || result?.requirements?.length) {
+        setStoreSetupReview({storeName: store.name, requirements: result.requirements || []});
+      }
+    } catch (error: any) {
+      setStoreActionError(error?.message || 'Store inventory sync action failed.');
     }
   };
 
@@ -538,6 +564,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
               {/* SWITCH STEP 3: ADMIN CONFIRMATION */}
               {switchFlowStep === 'confirm' && (
                 <div className="space-y-5">
+                  {modeActionError && <div role="alert" className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300">{modeActionError}</div>}
                   <div className="p-4 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 space-y-2">
                     <h4 className="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider">
                       Confirm Global Operating Mode Transition
@@ -600,6 +627,12 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
           {/* TAB 2: STORE INVENTORY SYNC */}
           {activeTab === 'stores' && (
             <div className="space-y-6">
+              {storeActionError && <div role="alert" className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300">{storeActionError}</div>}
+              {storeSetupReview && <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-4 text-xs dark:border-amber-800 dark:bg-amber-950/20">
+                <div className="font-bold text-neutral-900 dark:text-white">Setup requirements for {storeSetupReview.storeName}</div>
+                <p className="mt-1 text-neutral-600 dark:text-neutral-300">Complete these items before JW can broadcast ATP to this marketplace. Inventory membership and physical stock are unchanged.</p>
+                <div className="mt-3 space-y-2">{storeSetupReview.requirements.map((requirement:any) => <div key={requirement.code} className="rounded-lg border border-amber-200 bg-white/70 px-3 py-2 dark:border-amber-900 dark:bg-neutral-900/60"><strong>{requirement.count} items</strong><span className="ml-2">{requirement.next_action}</span></div>)}</div>
+              </div>}
               {/* Inventory ownership and external sync policy */}
               <div className="p-4 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-200/80 dark:border-amber-800/50 flex items-start gap-3.5">
                 <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
@@ -669,7 +702,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                         )}
                         <button
                           type="button"
-                          onClick={() => onToggleStoreManagement(store.id, store.inventorySyncState !== 'active')}
+                          onClick={() => void handleStoreSyncAction(store)}
                           className="px-3 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-xs font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer text-neutral-700 dark:text-neutral-300"
                         >
                           {store.inventorySyncState === 'active' ? 'Pause Sync' : store.inventorySyncState === 'paused' ? 'Resume Sync' : 'Resolve Setup'}
@@ -710,7 +743,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                         )}
                         <button
                           type="button"
-                          onClick={() => onToggleStoreManagement(store.id, store.inventorySyncState !== 'active')}
+                          onClick={() => void handleStoreSyncAction(store)}
                           className="px-3 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-xs font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer text-neutral-700 dark:text-neutral-300"
                         >
                           {store.inventorySyncState === 'active' ? 'Pause Sync' : store.inventorySyncState === 'paused' ? 'Resume Sync' : 'Resolve Setup'}

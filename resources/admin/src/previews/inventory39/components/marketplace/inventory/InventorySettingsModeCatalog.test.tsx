@@ -25,8 +25,9 @@ it('shows the complete categorized SKU catalog and allocates only ready physical
     { id: '9', name: 'Shopee Test', nickname: 'Shopee Test', platform: 'shopee', connectionState: 'connected', isManagedByJw: true },
   ];
 
+  const switchMode = vi.fn().mockResolvedValue({success: true});
   await act(async () => root.render(<Component isOpen currentMode="shared" stores={stores} inventory={[]} modeCatalog={catalog}
-    onClose={vi.fn()} onSwitchMode={vi.fn()} onToggleStoreManagement={vi.fn()} onSelectSkuForCount={vi.fn()} />));
+    onClose={vi.fn()} onSwitchMode={switchMode} onToggleStoreManagement={vi.fn()} onSelectSkuForCount={vi.fn()} />));
   const click = async (label: string) => {
     const button = Array.from(host.querySelectorAll('button')).find(item => item.textContent?.includes(label))!;
     expect(button).toBeTruthy();
@@ -44,7 +45,25 @@ it('shows the complete categorized SKU catalog and allocates only ready physical
   expect(host.textContent).toContain('Sandbox / Test');
   expect(host.textContent).toContain('Draft / Archived');
   expect(host.querySelectorAll('input[type="number"]')).toHaveLength(2);
-
   await act(async () => root.unmount());
   host.remove();
+});
+
+it('submits marketplace allocations with inventory account keys', async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement('div'); document.body.append(host); const root = createRoot(host);
+  const switchMode = vi.fn().mockResolvedValue({success: true});
+  const ready = {summary: {total: 1, ready: 1, blocked: 0, excluded: 0}, items: [
+    {variant_id: 1, sku: 'READY', product: 'Ready Product', variant: 'Default', product_status: 'active', classification: 'ready_to_allocate', physical_stock: 12, reserved_stock: 0, counted: true, mapped_stores: []},
+  ]};
+  const stores: any[] = [
+    {id: 'website', name: 'JW Storefront', nickname: 'JW Storefront', platform: 'webstore', connectionState: 'connected', isManagedByJw: true},
+    {id: '9', name: 'Shopee Test', nickname: 'Shopee Test', platform: 'shopee', connectionState: 'connected', isManagedByJw: true},
+  ];
+  await act(async () => root.render(<InventorySettingsModal isOpen currentMode="shared" stores={stores} inventory={[]} modeCatalog={ready as any}
+    onClose={vi.fn()} onSwitchMode={switchMode} onToggleStoreManagement={vi.fn()} />));
+  const click = async (label: string) => { const button = Array.from(host.querySelectorAll('button')).find(item => item.textContent?.includes(label))!; expect(button).toBeTruthy(); await act(async () => button.click()); };
+  await click('Switch to Independent Stock Mode'); await click('Proceed to Store Allocation'); await click('Proceed to Admin Sign-off'); await click('Execute Global Mode Transition');
+  expect(switchMode).toHaveBeenCalledWith('independent', expect.any(String), expect.any(String), {'1': {website: 6, 'marketplace:9': 6}});
+  await act(async () => root.unmount()); host.remove();
 });

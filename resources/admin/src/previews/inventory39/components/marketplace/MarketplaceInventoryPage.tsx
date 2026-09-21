@@ -637,9 +637,9 @@ export const MarketplaceInventoryPage: React.FC = () => {
 
   // Handler: pause or resume marketplace ATP synchronization.
   const handleToggleStoreManagement = async (storeId: string, enable: boolean) => {
-    await toggleStoreManagement(storeId, enable, enable ? 'Admin reviewed marketplace inventory sync readiness' : 'Admin paused marketplace inventory sync');
+    const result = await toggleStoreManagement(storeId, enable, enable ? 'Admin reviewed marketplace inventory sync readiness' : 'Admin paused marketplace inventory sync');
     await reloadInventory();
-    return;
+    return result;
     setStores(prev =>
       prev.map(s => {
         if (s.id !== storeId) return s;

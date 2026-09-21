@@ -32,7 +32,7 @@ final class ReadinessReader
         $unmapped = DB::table('marketplace_listing_variants as l')->leftJoin('marketplace_variant_mappings as m', 'm.listing_variant_id', '=', 'l.id')
             ->where('l.store_id', $storeId)->whereIn('l.id', $eligibleListingIds)->whereNull('m.id')->pluck('l.id');
         if ($unmapped->isNotEmpty()) {
-            $blockers[] = ['code' => 'unmapped_listings', 'ids' => $unmapped->all(), 'next_action' => 'Map every active store listing before takeover.'];
+            $blockers[] = ['code' => 'unmapped_listings', 'ids' => $unmapped->all(), 'next_action' => 'Map every active store listing before enabling inventory sync.'];
         }
         $ambiguous = $mappings->groupBy('listing_variant_id')->filter(fn ($rows) => $rows->count() !== 1)->keys();
         if ($ambiguous->isNotEmpty()) {
@@ -41,7 +41,7 @@ final class ReadinessReader
         $missingSnapshots = DB::table('marketplace_listing_variants')->where('store_id', $storeId)->whereIn('id', $eligibleListingIds)
             ->where(fn ($q) => $q->whereNull('observed_data')->orWhereNull('fetched_at'))->pluck('id');
         if ($missingSnapshots->isNotEmpty()) {
-            $blockers[] = ['code' => 'provider_snapshot_required', 'ids' => $missingSnapshots->all(), 'next_action' => 'Fetch the current marketplace catalog before takeover.'];
+            $blockers[] = ['code' => 'provider_snapshot_required', 'ids' => $missingSnapshots->all(), 'next_action' => 'Fetch the current marketplace catalog before enabling inventory sync.'];
         }
         $openOrders = DB::table('marketplace_orders as o')->leftJoin('marketplace_order_inventory as i', 'i.order_id', '=', 'o.id')
             ->where('o.store_id', $storeId)->whereNull('i.terminal_status')->pluck('o.id');
