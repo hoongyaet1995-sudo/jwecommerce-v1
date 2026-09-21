@@ -34,13 +34,17 @@ export function adaptInventory(overview:InventoryOverview){
   return [...groups.entries()].map(([variantId,rows])=>{
     const modeItem=overview.mode_catalog?.items?.find((entry:any)=>Number(entry.variant_id)===variantId);
     const mappedIds=new Set((modeItem?.mapped_stores||[]).map((store:any)=>String(store.id)));
-    const eligibleRows=rows.filter(r=>r.allocation_eligible ?? (!r.store_id || mappedIds.has(String(r.store_id))));
-    const known=eligibleRows.filter(r=>r.counted); const physical=known.length?known.reduce((n,r)=>n+r.physical,0):null;
-    const reserved=known.reduce((n,r)=>n+(r.reserved||0),0); const available=known.length?known.reduce((n,r)=>n+r.available,0):null;
-    const identity=rows[0] || modeItem || {};
+    const currentModeRows=rows.filter(r=>overview.mode==='shared' ? r.account_key==='shared' : r.account_key!=='shared');
+    const eligibleRows=currentModeRows.filter(r=>r.allocation_eligible ?? (!r.store_id || mappedIds.has(String(r.store_id))));
+    const knownPhysical=currentModeRows.filter(r=>r.counted&&r.physical!==null);
+    const knownSellable=eligibleRows.filter(r=>r.counted&&r.available!==null);
+    const physical=knownPhysical.length?knownPhysical.reduce((n,r)=>n+r.physical,0):null;
+    const reserved=knownPhysical.reduce((n,r)=>n+(r.reserved||0),0);
+    const available=knownSellable.length?knownSellable.reduce((n,r)=>n+r.available,0):null;
+    const identity=currentModeRows[0] || rows[0] || modeItem || {};
     return {id:eligibleRows[0]?.balance_id ? String(eligibleRows[0].balance_id) : `variant:${variantId}`,variantId,catalogStatus:modeItem?.product_status||'active',isTest:modeItem?.classification==='sandbox_test',masterSku:identity.sku||'',barcode:'',productName:identity.product||'',variantName:identity.variant||'',imageUrl:modeItem?.thumbnail_url||'',warehouseLocation:'',mappedStoreIds:(modeItem?.mapped_stores||[]).map((store:any)=>String(store.id)),
       physicalStockStatus:physical===null?'unknown':'verified',hasUncountedAccounts:eligibleRows.some(r=>!r.counted),totalPhysicalStock:physical,reservedStock:reserved,safetyStock:0,availableStock:available,reorderPoint:0,costPrice:0,sellingPrice:0,
-      channelMappings:{},autoSyncEnabled:false,historyLog:[],storeAssociations:rows.filter(r=>r.store_id).map(r=>({connectionId:String(r.store_id),storeName:r.store_name||r.account_key,platform:r.platform,
+      channelMappings:{},autoSyncEnabled:false,historyLog:[],storeAssociations:currentModeRows.filter(r=>r.store_id).map(r=>({connectionId:String(r.store_id),storeName:r.store_name||r.account_key,platform:r.platform,
         externalSku:r.sku,connectionState:r.connection_status||'connected',syncState:'enabled',lastSyncStatus:r.external_sync?.status,syncTasks:r.external_sync?.tasks||[],balanceId:r.balance_id}))};
   });
 }

@@ -18,6 +18,23 @@ describe('store inventory adapter', () => {
     expect(item.totalPhysicalStock).toBe(22);
     expect(item.availableStock).toBe(22);
   });
+
+  it('shows total company physical stock across independent ledgers while ATP excludes unmapped stores', () => {
+    const overview: any = {
+      mode: 'independent', configuration_version: 1, stores: [], totals: {},
+      mode_catalog: {items: [{variant_id: 10, mapped_stores: []}]},
+      data: [
+        {balance_id: 1, variant_id: 10, sku: 'SKU-10', product: 'Product', variant: 'Default', store_id: null, account_key: 'shared', platform: 'website', physical: 32, reserved: 0, available: 32, counted: true, allocation_eligible: false},
+        {balance_id: 2, variant_id: 10, sku: 'SKU-10', product: 'Product', variant: 'Default', store_id: null, account_key: 'website', platform: 'website', physical: 50, reserved: 0, available: 50, counted: true, allocation_eligible: true},
+        {balance_id: 3, variant_id: 10, sku: 'SKU-10', product: 'Product', variant: 'Default', store_id: 9, store_name: 'Unmapped store', account_key: 'marketplace:9', platform: 'lazada', physical: 6, reserved: 0, available: 6, counted: true, allocation_eligible: false},
+      ],
+    };
+
+    const [item] = adaptInventory(overview);
+    expect(item.totalPhysicalStock).toBe(56);
+    expect(item.reservedStock).toBe(0);
+    expect(item.availableStock).toBe(50);
+  });
 });
 
 
