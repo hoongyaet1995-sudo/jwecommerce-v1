@@ -7,6 +7,7 @@ use App\Jobs\ProcessStoreInventorySync;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\Inventory\StoreManagement\MarketplaceStoreInventoryPublisher;
 
 final class StoreInventorySyncController extends Controller
 {
@@ -22,16 +23,33 @@ final class StoreInventorySyncController extends Controller
         return response()->json(['queued' => $ids->count(), 'task_ids' => $ids]);
     }
 
-    public function retry(Request $request, string $task): JsonResponse
+    public function retry(Request $request, string $task, MarketplaceStoreInventoryPublisher $publisher): JsonResponse
     {
         $this->authorizeActor($request);
         $data = $request->validate(['reconcile_outcome' => ['nullable', 'in:not_applied']]);
         $row = DB::table('inventory_store_sync_tasks')->where('id', $task)->first();
         abort_unless($row, 404);
-        if ($row->status === 'uncertain' && ($data['reconcile_outcome'] ?? null) !== 'not_applied') {
-            return response()->json(['error' => ['code' => 'reconciliation_required',
-                'message' => 'Check the marketplace quantity first. Retry only after confirming the prior request was not applied.',
-                'next_action' => 'Reconcile the provider stock, then record not_applied to retry this stage.']], 409);
+        if ($row->status === 'uncertain') {
+            $store = DB::table('marketplace_stores')->find($row->marketplace_store_id);
+            $listing = DB::table('marketplace_listing_variants as listing')
+                ->join('marketplace_variant_mappings as mapping', 'mapping.listing_variant_id', '=', 'listing.id')
+                ->where('listing.store_id', $row->marketplace_store_id)
+                ->where('mapping.product_variant_id', $row->product_variant_id)->select('listing.*')->first();
+            abort_unless($store && $listing, 409, 'The mapped provider identity changed. Create a fresh sync task.');
+            try {
+                $observation = $publisher->observe($store, $listing);
+            } catch (\Throwable) {
+                return response()->json(['error' => ['code' => 'reconciliation_required',
+                    'message' => 'Marketplace stock could not be read back safely.',
+                    'next_action' => 'Reconnect the store if needed, then run provider reconciliation again.']], 409);
+            }
+            if ((int) $observation['observed_quantity'] === (int) $row->target_quantity) {
+                DB::table('inventory_store_sync_tasks')->where('id', $task)->update([
+                    'status' => 'confirmed', 'provider_receipt' => json_encode($observation + ['reconciled' => true]), 'updated_at' => now(),
+                ]);
+
+                return response()->json(['id' => $task, 'status' => 'confirmed', 'reconciled' => true]);
+            }
         }
         if ($row->status === 'processing') {
             DB::table('inventory_store_sync_tasks')->where('id', $task)->update([

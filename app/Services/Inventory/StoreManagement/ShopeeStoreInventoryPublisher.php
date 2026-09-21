@@ -10,7 +10,7 @@ use App\Services\Marketplace\ShopeeTokenManager;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
-final class ShopeeStoreInventoryPublisher implements StoreInventoryPublisher
+class ShopeeStoreInventoryPublisher implements StoreInventoryPublisher
 {
     public function __construct(
         private readonly ShopeeTokenManager $tokens,
@@ -59,5 +59,21 @@ final class ShopeeStoreInventoryPublisher implements StoreInventoryPublisher
         return ['provider' => 'shopee', 'requested_quantity' => $quantity, 'observed_quantity' => $observed['quantity'],
             'event_fingerprint' => hash('sha256', $eventKey), 'request_id' => $write['request_id'],
             'confirmed_at' => now()->toIso8601String()];
+    }
+
+    public function observe(object $store, object $listing): array
+    {
+        $review = $this->policy->review($store, $listing);
+        if (! $review['allowed']) {
+            throw new RuntimeException($review['code']);
+        }
+        $token = $this->tokens->accessToken((int) $store->id);
+        $routeLocation = DB::table('inventory_fulfillment_routes')->where('channel_key', 'marketplace:'.$store->id)
+            ->where('is_enabled', true)->value('platform_location_id');
+        $observed = $this->client->exactStockContext($token, (string) $store->external_shop_id,
+            (string) $listing->external_product_id, (string) $listing->external_variant_id,
+            is_string($routeLocation) && $routeLocation !== '' ? $routeLocation : null);
+
+        return ['provider' => 'shopee', 'observed_quantity' => $observed['quantity'], 'observed_at' => now()->toIso8601String()];
     }
 }

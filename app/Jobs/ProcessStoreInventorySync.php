@@ -12,6 +12,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
+use App\Services\Inventory\StoreManagement\StoreSkuSyncReadiness;
 
 final class ProcessStoreInventorySync implements ShouldQueue
 {
@@ -19,9 +20,10 @@ final class ProcessStoreInventorySync implements ShouldQueue
 
     public function __construct(public readonly string $taskId) {}
 
-    public function handle(StoreInventoryPublisher $publisher): void
+    public function handle(StoreInventoryPublisher $publisher, ?StoreSkuSyncReadiness $readiness = null): void
     {
-        $context = DB::transaction(function (): ?array {
+        $readiness ??= app(StoreSkuSyncReadiness::class);
+        $context = DB::transaction(function () use ($readiness): ?array {
             $task = DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)->lockForUpdate()->first();
             if (! $task || ! in_array($task->status, ['queued', 'failed', 'waiting_source'], true)) {
                 return null;
@@ -48,6 +50,23 @@ final class ProcessStoreInventorySync implements ShouldQueue
                 ->where('product_variant_id', $task->product_variant_id)->lockForUpdate()->first() : null;
             if (! $balance || $balance->counted_at === null) {
                 throw new RuntimeException('Managed store balance is not counted.');
+            }
+            if ((int) $balance->version !== (int) $task->balance_version) {
+                DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update([
+                    'status' => 'superseded', 'provider_receipt' => json_encode(['code' => 'balance_revision_changed']), 'updated_at' => now(),
+                ]);
+
+                return null;
+            }
+            $readinessResult = $readiness->read((int) $task->marketplace_store_id, (int) $task->product_variant_id);
+            if (! $readinessResult['ready']) {
+                DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update([
+                    'status' => 'superseded',
+                    'provider_receipt' => json_encode(['code' => 'readiness_changed', 'blockers' => array_column($readinessResult['blockers'], 'code')]),
+                    'updated_at' => now(),
+                ]);
+
+                return null;
             }
             $target = max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock);
             DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update([
