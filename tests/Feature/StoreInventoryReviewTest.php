@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Services\Inventory\StoreManagement\AccountResolver;
+use App\Services\Inventory\CatalogInventoryState;
+use App\Services\Inventory\CatalogStockService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\StoreInventoryFixture;
@@ -161,5 +163,31 @@ class StoreInventoryReviewTest extends TestCase
         $this->postJson($url.'/'.$correction['id'].'/confirm', ['operation_key' => 'correction-1'])
             ->assertOk()->assertJsonPath('balances.0.physical', 13)->assertJsonPath('balances.0.available', 11);
         $this->assertDatabaseCount('inventory_store_sync_tasks', 2);
+    }
+
+    public function test_first_count_replaces_initialized_quantity_and_locks_catalog_editing(): void
+    {
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool']);
+        $sku = (new StoreInventoryFixture)->sku();
+        $actor = $this->editor();
+        app(CatalogStockService::class)->setPhysical($sku['variant']->id, 15, null, 'catalog-opening', $actor->id);
+        $balanceId = app(CatalogInventoryState::class)->snapshot($sku['variant']->id)['balance_id'];
+
+        $review = $this->actingAs($actor)->postJson('/admin/api/inventory/store-management/reviews', [
+            'kind' => 'count', 'balance_id' => $balanceId, 'physical_count' => 18, 'reason' => 'Verified shelf count',
+        ])->assertCreated()->json();
+        $receipt = $this->postJson('/admin/api/inventory/store-management/reviews/'.$review['id'].'/confirm', [
+            'operation_key' => 'verified-catalog-count',
+        ])->assertOk()->json();
+
+        $state = app(CatalogInventoryState::class)->snapshot($sku['variant']->id);
+        $this->assertTrue($state['verified']);
+        $this->assertFalse($state['editable']);
+        $this->assertSame(18, $state['physical']);
+        $this->assertDatabaseHas('product_variants', [
+            'id' => $sku['variant']->id,
+            'first_physical_verification_operation' => $receipt['operation_id'],
+        ]);
+        $this->assertDatabaseHas('product_variants', ['id' => $sku['variant']->id, 'stock' => 18]);
     }
 }

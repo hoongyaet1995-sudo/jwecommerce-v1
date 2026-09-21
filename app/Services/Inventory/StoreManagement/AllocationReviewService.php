@@ -101,6 +101,10 @@ final class AllocationReviewService
                 'operation_key' => $operationKey, 'kind' => 'allocation', 'actor_id' => $actor->id,
                 'ledger_status' => 'applied', 'receipt' => json_encode($receipt, JSON_THROW_ON_ERROR),
                 'created_at' => now(), 'updated_at' => now()]);
+            app(\App\Services\Inventory\CatalogInventoryState::class)
+                ->markVerified((int) $payload['variant_id'], $operationId);
+            app(\App\Services\Inventory\CatalogStockProjection::class)
+                ->refresh((int) $payload['variant_id']);
             foreach ($result as $saved) {
                 $fresh = DB::table('inventory_balances')->find($saved['id']);
                 $receipt['external_stages'] = [...$receipt['external_stages'], ...$this->outbox->enqueueMutation($operationId, $fresh, 'allocation')];

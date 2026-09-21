@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\StoreInventoryFixture;
 use Tests\TestCase;
+use App\Services\Inventory\CatalogInventoryState;
 
 class StoreInventoryAllocationTest extends TestCase
 {
@@ -57,6 +58,7 @@ class StoreInventoryAllocationTest extends TestCase
         $this->assertCount(3, $receipt['balances']);
         $this->assertSame(22, collect($receipt['balances'])->sum('physical'));
         $this->assertDatabaseHas('inventory_store_operations', ['id' => $receipt['operation_id'], 'kind' => 'allocation']);
+        $this->assertTrue(app(CatalogInventoryState::class)->snapshot($sku['variant']->id)['verified']);
     }
 
     public function test_allocation_rejects_mismatch_but_allows_unmapped_stores_to_remain_outside_the_ledger(): void

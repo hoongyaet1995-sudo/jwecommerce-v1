@@ -149,6 +149,12 @@ final class ReviewService
                 'kind' => $review->kind, 'actor_id' => $actor->id, 'ledger_status' => 'applied',
                 'receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'created_at' => now(), 'updated_at' => now(),
             ]);
+            if ($review->kind === 'count') {
+                app(\App\Services\Inventory\CatalogInventoryState::class)
+                    ->markVerified((int) $identity->product_variant_id, $operationId);
+                app(\App\Services\Inventory\CatalogStockProjection::class)
+                    ->refresh((int) $identity->product_variant_id);
+            }
             if ($review->kind === 'transfer') {
                 $freshBalances = collect($result)->map(fn (array $item) => DB::table('inventory_balances')->find($item['id']))->all();
                 $receipt['external_stages'] = $this->outbox->enqueueTransfer($operationId, $freshBalances[0], $freshBalances[1]);
