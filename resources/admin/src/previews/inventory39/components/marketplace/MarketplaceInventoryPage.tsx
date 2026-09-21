@@ -149,6 +149,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
 
   // Search and Filters
   const [searchQuery, setSearchQuery] = useState('');
+  const [catalogFilter, setCatalogFilter] = useState('operational');
   const [statusFilter, setStatusFilter] = useState<'all' | 'uncounted' | 'low_stock' | 'synced' | 'mismatch'>('all');
   const [platformFilter, setPlatformFilter] = useState<string>('all');
   const [selectedStoreFilter, setSelectedStoreFilter] = useState<string>('all');
@@ -169,7 +170,12 @@ export const MarketplaceInventoryPage: React.FC = () => {
   const [isBroadcastingAll, setIsBroadcastingAll] = useState(false);
 
   // Raw items from admin context
-  const safeInventory = marketplaceInventory || [];
+  const allInventory = marketplaceInventory || [];
+  const safeInventory = allInventory.filter((item: any) => {
+    if (catalogFilter === 'all') return true;
+    if (catalogFilter === 'archived') return item.catalogStatus === 'archived';
+    return ['active', 'draft'].includes(item.catalogStatus || 'active');
+  });
   const recoveryTasks = useMemo(() => Object.values(storeBalances).flatMap((accounts: any) => Object.values(accounts as any)
     .flatMap((account: any) => account.syncTasks || [])).filter((task: any) => ['failed','auth_expired','uncertain','processing'].includes(task.status)), [storeBalances]);
 
@@ -965,6 +971,12 @@ export const MarketplaceInventoryPage: React.FC = () => {
 
             {/* Filter Dropdowns */}
             <div className="flex flex-wrap items-center gap-2">
+              <select value={catalogFilter} onChange={e => setCatalogFilter(e.target.value)}
+                className="px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium cursor-pointer">
+                <option value="operational">Active &amp; Draft</option>
+                <option value="archived">Archived</option>
+                <option value="all">All Products</option>
+              </select>
               {/* Status Filter */}
               <select
                 value={statusFilter}
