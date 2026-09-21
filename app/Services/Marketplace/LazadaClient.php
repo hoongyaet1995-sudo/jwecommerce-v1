@@ -2,6 +2,8 @@
 
 namespace App\Services\Marketplace;
 
+use App\Exceptions\StoreInventoryAuthorizationExpired;
+use App\Exceptions\StoreInventoryResultUncertain;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -106,12 +108,59 @@ final class LazadaClient
      * Transport for one reviewed absolute SKU quantity. Callers must revalidate
      * their WMS snapshot immediately before invoking it.
      */
-    public function updateAbsoluteQuantity(#[\SensitiveParameter] string $accessToken, string $itemId, string $skuId, int $quantity, ?string $warehouseCode = null, ?int $storeId=null): void
+    public function updateAbsoluteQuantity(#[\SensitiveParameter] string $accessToken, string $itemId, string $skuId, int $quantity, ?string $warehouseCode = null, ?int $storeId=null): array
     {
         if (config('marketplace.stock_sync_operations_enabled') !== true) {
             throw new RuntimeException('Marketplace stock synchronization is disabled.');
         }
-        $this->sendAbsoluteQuantity($accessToken,$itemId,$skuId,$quantity,$warehouseCode,$storeId);
+        return $this->sendAbsoluteQuantity($accessToken,$itemId,$skuId,$quantity,$warehouseCode,$storeId);
+    }
+
+    /** @return array{warehouse_code:?string,quantity:int} */
+    public function exactStockQuantity(#[\SensitiveParameter] string $accessToken, string $itemId, string $skuId,
+        ?string $warehouseCode = null, ?int $storeId = null): array
+    {
+        $item = $this->read('/product/item/get', $accessToken, ['item_id' => $itemId], $storeId);
+        if ((string) ($item['item_id'] ?? $item['ItemId'] ?? '') !== $itemId) {
+            throw new RuntimeException('Lazada item identity changed.');
+        }
+        $skus = $item['skus'] ?? $item['Skus'] ?? null;
+        if (is_array($skus) && isset($skus['Sku'])) {
+            $skus = $skus['Sku'];
+        }
+        if (! is_array($skus) || ! array_is_list($skus)) {
+            throw new RuntimeException('Lazada SKU stock response was incomplete.');
+        }
+        $matches = array_values(array_filter($skus, fn ($sku): bool => is_array($sku)
+            && (string) ($sku['sku_id'] ?? $sku['SkuId'] ?? '') === $skuId));
+        if (count($matches) !== 1) {
+            throw new RuntimeException('Lazada SKU identity is ambiguous.');
+        }
+        $sku = $matches[0];
+        $warehouses = $sku['multiWarehouseInventories'] ?? $sku['MultiWarehouseInventories'] ?? null;
+        if (is_array($warehouses) && isset($warehouses['MultiWarehouseInventory'])) {
+            $warehouses = $warehouses['MultiWarehouseInventory'];
+        }
+        if (is_array($warehouses) && array_is_list($warehouses) && $warehouses !== []) {
+            $rows = array_values(array_filter($warehouses, fn ($row): bool => is_array($row)
+                && ($warehouseCode === null || (string) ($row['warehouseCode'] ?? $row['WarehouseCode'] ?? '') === $warehouseCode)));
+            if (count($rows) !== 1) {
+                throw new RuntimeException('Lazada warehouse stock identity is ambiguous or absent.');
+            }
+            $code = (string) ($rows[0]['warehouseCode'] ?? $rows[0]['WarehouseCode'] ?? '');
+            $quantity = $rows[0]['sellableQuantity'] ?? $rows[0]['SellableQuantity'] ?? null;
+        } else {
+            if ($warehouseCode !== null) {
+                throw new RuntimeException('Lazada warehouse stock identity is absent.');
+            }
+            $code = null;
+            $quantity = $sku['sellableQuantity'] ?? $sku['SellableQuantity'] ?? $sku['quantity'] ?? null;
+        }
+        if (! is_numeric($quantity) || (int) $quantity < 0 || (string) (int) $quantity !== (string) $quantity) {
+            throw new RuntimeException('Lazada sellable quantity was incomplete.');
+        }
+
+        return ['warehouse_code' => $code, 'quantity' => (int) $quantity];
     }
 
     /** Separate test boundary; does not enable the production transport flag. */
@@ -125,7 +174,7 @@ final class LazadaClient
         $this->sendAbsoluteQuantity($token,$current['external_product_id'],$current['external_variant_id'],$current['desired_quantity'],$current['platform_location_id'],$current['store_id']);
     }
 
-    private function sendAbsoluteQuantity(#[\SensitiveParameter] string $accessToken,string $itemId,string $skuId,int $quantity,?string $warehouseCode,?int $storeId=null):void
+    private function sendAbsoluteQuantity(#[\SensitiveParameter] string $accessToken,string $itemId,string $skuId,int $quantity,?string $warehouseCode,?int $storeId=null):array
     {
         if (!preg_match('/^[1-9][0-9]*$/D', $itemId) || !preg_match('/^[1-9][0-9]*$/D', $skuId) || $quantity < 0) {
             throw new RuntimeException('Invalid Lazada stock synchronization payload.');
@@ -148,11 +197,16 @@ final class LazadaClient
         foreach($query as $name=>$value)$base.=$name.$value;
         $query['sign']=strtoupper(hash_hmac('sha256',$base,$secret));
         try {$response=Http::asForm()->acceptJson()->connectTimeout(10)->timeout(30)->withoutRedirecting()->post('https://api.lazada.com.my/rest'.$path,$query);}
-        catch(ConnectionException){throw new RuntimeException('Lazada stock synchronization result is unknown. Reconcile before retrying.');}
+        catch(ConnectionException){throw new StoreInventoryResultUncertain('Lazada stock synchronization result is unknown. Reconcile before retrying.');}
         $result=$response->json();
-        if(!$response->successful()||!is_array($result)||!in_array($result['code']??null,['0',0],true)) {
-            throw new RuntimeException('Lazada stock synchronization was not confirmed. Reconcile before retrying.');
+        $code=is_array($result)?strtolower((string)($result['code']??'')):'';
+        if(in_array($response->status(),[401,403],true)||str_contains($code,'token')||str_contains($code,'auth')||str_contains($code,'expired')) {
+            throw new StoreInventoryAuthorizationExpired('Lazada authorization expired. Reconnect this store.');
         }
+        if(!$response->successful()||!is_array($result)||!in_array($result['code']??null,['0',0],true)) {
+            throw new RuntimeException('Lazada rejected the stock synchronization request.');
+        }
+        return ['request_id'=>is_string($result['request_id']??null)?$result['request_id']:null];
     }
 
     private function signedPost(string $path, #[\SensitiveParameter] string $accessToken, array $payload, string $operation, ?int $storeId=null): array
@@ -262,6 +316,10 @@ final class LazadaClient
                 throw new RuntimeException('Lazada warehouse request failed or returned an incomplete response.');
             }
             return $payload['result']['module'];
+        }
+        $providerCode=is_array($payload)?strtolower((string)($payload['code']??'')):'';
+        if(in_array($response->status(),[401,403],true)||str_contains($providerCode,'token')||str_contains($providerCode,'auth')||str_contains($providerCode,'expired')) {
+            throw new StoreInventoryAuthorizationExpired('Lazada authorization expired. Reconnect this store.');
         }
         if(!$response->successful()||!is_array($payload)||!in_array($payload['code']??null,['0',0],true)
             ||!is_array($payload['data']??null)) {

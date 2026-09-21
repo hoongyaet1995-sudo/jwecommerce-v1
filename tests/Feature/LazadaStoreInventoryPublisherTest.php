@@ -1,0 +1,148 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Exceptions\StoreInventoryAuthorizationExpired;
+use App\Exceptions\StoreInventoryResultUncertain;
+use App\Models\MarketplaceStoreToken;
+use App\Services\Inventory\StoreManagement\LazadaStoreInventoryPublisher;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\ConnectionException;
+use RuntimeException;
+use Tests\Support\StoreInventoryFixture;
+use Tests\TestCase;
+
+class LazadaStoreInventoryPublisherTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config([
+            'marketplace.stock_sync_operations_enabled' => true,
+            'marketplace.stock_sync_platforms.lazada' => true,
+            'marketplace.stock_sync_canary_enforced' => true,
+            'marketplace.lazada.enabled' => true,
+            'marketplace.lazada.app_key' => '123',
+            'marketplace.lazada.app_secret' => 'secret',
+            'marketplace.lazada.test_app_key' => '123',
+            'marketplace.lazada.test_app_secret' => 'secret',
+        ]);
+    }
+
+    public function test_single_stock_identity_is_written_and_read_back_exactly(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher();
+        Http::fake(['*' => Http::sequence()->push($this->item(3))->push(['code' => '0', 'request_id' => 'REQ-1'])->push($this->item(7))]);
+
+        $receipt = $publisher->publish($store, $listing, 7, 'event-lazada');
+
+        $this->assertSame(7, $receipt['observed_quantity']);
+        $this->assertSame('REQ-1', $receipt['request_id']);
+        Http::assertSentCount(3);
+    }
+
+    public function test_explicit_warehouse_is_preserved_in_write_and_readback(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher();
+        $warehouse = DB::table('inventory_warehouses')->insertGetId([
+            'code' => 'WH', 'name' => 'WH', 'is_active' => true, 'version' => 0, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('inventory_fulfillment_routes')->insert([
+            'channel_key' => 'marketplace:'.$store->id, 'warehouse_id' => $warehouse,
+            'platform_location_id' => 'MY-WH-2', 'is_enabled' => true, 'version' => 0,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        Http::fake(['*' => Http::sequence()->push($this->item(3, 'MY-WH-2'))->push(['code' => '0'])->push($this->item(8, 'MY-WH-2'))]);
+
+        $this->assertSame(8, $publisher->publish($store, $listing, 8, 'warehouse')['observed_quantity']);
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/product/stock/sellable/update')
+            && str_contains((string) ($request->data()['payload'] ?? ''), '<WarehouseCode>MY-WH-2</WarehouseCode>'));
+    }
+
+    public function test_absent_or_ambiguous_warehouse_identity_is_rejected_before_write(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher();
+        Http::fake(['*' => Http::response(['code' => '0', 'data' => [
+            'item_id' => '1001', 'skus' => [['sku_id' => '2001', 'multiWarehouseInventories' => [
+                ['warehouseCode' => 'A', 'sellableQuantity' => '1'], ['warehouseCode' => 'B', 'sellableQuantity' => '2'],
+            ]]],
+        ]])]);
+
+        $this->expectException(RuntimeException::class);
+        $publisher->publish($store, $listing, 7, 'ambiguous');
+    }
+
+    public function test_auth_expiry_and_mismatched_readback_are_not_confirmed(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher();
+        Http::fake(['*' => Http::response(['code' => 'IllegalAccessToken', 'request_id' => 'SAFE'], 403)]);
+        try {
+            $publisher->publish($store, $listing, 7, 'auth');
+            $this->fail('Expired authorization was accepted.');
+        } catch (StoreInventoryAuthorizationExpired) {
+            $this->assertTrue(true);
+        }
+    }
+
+    public function test_mismatched_readback_is_uncertain(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher();
+        Http::fake(['*' => Http::sequence()->push($this->item(3))->push(['code' => '0'])->push($this->item(6))]);
+
+        $this->expectException(StoreInventoryResultUncertain::class);
+        $publisher->publish($store, $listing, 7, 'mismatch');
+    }
+
+    public function test_read_rate_limit_retries_once_but_write_connection_loss_is_never_retried(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher();
+        $calls = 0;
+        Http::fake(function () use (&$calls) {
+            $calls++;
+            return match ($calls) {
+                1 => Http::response(['code' => 'SellerCallLimit']),
+                2 => Http::response($this->item(3)),
+                default => throw new ConnectionException('lost'),
+            };
+        });
+
+        try {
+            $publisher->publish($store, $listing, 7, 'lost-write');
+            $this->fail('Unknown write was accepted.');
+        } catch (StoreInventoryResultUncertain) {
+            $this->assertSame(3, $calls);
+        }
+    }
+
+    private function publisher(): array
+    {
+        $store = (new StoreInventoryFixture)->store('lazada', strtoupper(bin2hex(random_bytes(3))));
+        DB::table('marketplace_stores')->where('id', $store->id)->update(['external_shop_id' => '3001', 'environment' => 'live']);
+        MarketplaceStoreToken::create([
+            'store_id' => $store->id, 'access_token' => 'token', 'refresh_token' => 'refresh',
+            'access_expires_at' => now()->addHour(), 'refresh_expires_at' => now()->addDay(),
+            'application_id' => '123', 'credential_source' => 'oauth',
+        ]);
+        $store = DB::table('marketplace_stores')->find($store->id);
+        $listing = (object) ['id' => 51, 'store_id' => $store->id, 'external_product_id' => '1001', 'external_variant_id' => '2001'];
+        config(['marketplace.stock_sync_canary_identities' => ["lazada:{$store->id}:51"]]);
+
+        return [app(LazadaStoreInventoryPublisher::class), $store, $listing];
+    }
+
+    private function item(int $quantity, ?string $warehouse = null): array
+    {
+        $sku = ['sku_id' => '2001'];
+        if ($warehouse === null) {
+            $sku['sellableQuantity'] = (string) $quantity;
+        } else {
+            $sku['multiWarehouseInventories'] = [['warehouseCode' => $warehouse, 'sellableQuantity' => (string) $quantity]];
+        }
+
+        return ['code' => '0', 'data' => ['item_id' => '1001', 'skus' => [$sku]]];
+    }
+}
