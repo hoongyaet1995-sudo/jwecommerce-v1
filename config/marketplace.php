@@ -23,6 +23,7 @@ return [
     'operations_enabled' => env('MARKETPLACE_OPERATIONS_ENABLED', false),
     'read_operations_enabled' => env('MARKETPLACE_READ_OPERATIONS_ENABLED', false),
     'stock_sync_operations_enabled' => env('MARKETPLACE_STOCK_SYNC_OPERATIONS_ENABLED', false),
+    'stock_sync_direct_enabled' => env('MARKETPLACE_STOCK_SYNC_DIRECT_ENABLED', true),
     'stock_sync_platforms' => [
         'shopee' => env('MARKETPLACE_SHOPEE_STOCK_SYNC_ENABLED', false),
         'lazada' => env('MARKETPLACE_LAZADA_STOCK_SYNC_ENABLED', false),
@@ -38,9 +39,9 @@ return [
         'test_store_id' => env('MARKETPLACE_SHOPEE_TEST_STORE_ID'),
         'enabled' => env('MARKETPLACE_SHOPEE_ENABLED', false),
         'environment' => env('MARKETPLACE_SHOPEE_ENVIRONMENT', 'sandbox'),
-        'partner_id' => env('MARKETPLACE_SHOPEE_ENVIRONMENT', 'sandbox')==='sandbox'
+        'partner_id' => env('MARKETPLACE_SHOPEE_ENVIRONMENT', 'sandbox') === 'sandbox'
             ? (env('MARKETPLACE_SHOPEE_SANDBOX_PARTNER_ID') ?: env('MARKETPLACE_SHOPEE_PARTNER_ID')) : env('MARKETPLACE_SHOPEE_PARTNER_ID'),
-        'partner_key' => env('MARKETPLACE_SHOPEE_ENVIRONMENT', 'sandbox')==='sandbox'
+        'partner_key' => env('MARKETPLACE_SHOPEE_ENVIRONMENT', 'sandbox') === 'sandbox'
             ? (env('MARKETPLACE_SHOPEE_SANDBOX_PARTNER_KEY') ?: env('MARKETPLACE_SHOPEE_PARTNER_KEY')) : env('MARKETPLACE_SHOPEE_PARTNER_KEY'),
         'callback_url' => env('MARKETPLACE_SHOPEE_CALLBACK_URL'),
     ],

@@ -14,11 +14,19 @@ final class SyncOutbox
         private readonly InventoryIngestionBoundary $boundary,
     ) {}
 
-    public function enqueueTransfer(string $operationId, object $source, object $destination): array
+    public function enqueueTransfer(string $operationId, object $source, object $destination, bool $dispatch = true): array
     {
+        $sourceStage = $this->enqueue($operationId, $source, 'source', dispatch: $dispatch);
+
         return [
-            $this->enqueue($operationId, $source, 'source'),
-            $this->enqueue($operationId, $destination, 'destination'),
+            $sourceStage,
+            $this->enqueue(
+                $operationId,
+                $destination,
+                'destination',
+                dispatch: $dispatch,
+                predecessorComplete: in_array($sourceStage['status'], ['confirmed', 'not_applicable'], true),
+            ),
         ];
     }
 
@@ -47,14 +55,17 @@ final class SyncOutbox
         return $this->enqueue($operationId, $balance, $stage, $eventKey, $storeId);
     }
 
-    private function enqueue(?string $operationId, object $balance, string $stage, ?string $eventKey = null, ?int $overrideStoreId = null): array
+    private function enqueue(?string $operationId, object $balance, string $stage, ?string $eventKey = null,
+        ?int $overrideStoreId = null, bool $dispatch = true, bool $predecessorComplete = false): array
     {
         $pool = DB::table('inventory_pools')->where('id', $balance->inventory_pool_id)->first();
         $storeId = $overrideStoreId ?? ($pool?->marketplace_store_id === null ? null : (int) $pool->marketplace_store_id);
         $managed = $storeId === null || DB::table('inventory_store_accounts')
             ->where('marketplace_store_id', $storeId)->value('management_status') === 'managed';
         $id = (string) Str::uuid();
-        $status = $storeId === null ? 'confirmed' : ($managed ? ($stage === 'destination' ? 'waiting_source' : 'queued') : 'not_applicable');
+        $status = $storeId === null ? 'confirmed' : ($managed
+            ? ($stage === 'destination' && ! $predecessorComplete ? 'waiting_source' : 'queued')
+            : 'not_applicable');
         $target = max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock);
         $listing = $storeId === null ? null : DB::table('marketplace_variant_mappings as mapping')
             ->join('marketplace_listing_variants as listing', 'listing.id', '=', 'mapping.listing_variant_id')
@@ -80,7 +91,7 @@ final class SyncOutbox
             'available_at' => $status === 'queued' ? now() : null, 'attempts' => 0,
             'created_at' => now(), 'updated_at' => now(),
         ]);
-        if ($status === 'queued') {
+        if ($status === 'queued' && $dispatch) {
             ProcessStoreInventorySync::dispatch($id)->afterCommit();
         }
 

@@ -7,12 +7,27 @@ async function json(url:string,init:RequestInit={}){
   if(!response.ok){const detail=body?.error?.message||body?.message||Object.values(body?.errors||{}).flat().join(' ')||`Request failed (${response.status})`;throw new Error(detail);}
   return body;
 }
+const terminalSyncStatuses=new Set(['confirmed','not_applicable','superseded','uncertain','auth_expired','failed']);
+export async function waitForInventoryOperation(id:string,options:{maxAttempts?:number;wait?:(milliseconds:number)=>Promise<void>}={}){
+  const maxAttempts=options.maxAttempts??20;
+  const wait=options.wait??((milliseconds:number)=>new Promise<void>(resolve=>window.setTimeout(resolve,milliseconds)));
+  let latest:any=null;
+  for(let attempt=0;attempt<maxAttempts;attempt+=1){
+    latest=await json(`/admin/api/inventory/store-management/operations/${encodeURIComponent(id)}`);
+    const stages=latest?.external_stages||[];
+    if(stages.length>0&&stages.every((stage:any)=>terminalSyncStatuses.has(stage.status)))return latest;
+    if(attempt<maxAttempts-1)await wait(750);
+  }
+  return latest;
+}
 export const storeInventoryApi={
   overview:()=>json('/admin/api/inventory/store-management/overview'),
   syncDetails:(storeId:string,variantId:number)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/sync`),
   checkStock:(storeId:string,variantId:number)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/sync/check`,{method:'POST',body:'{}'}),
   resyncStock:(storeId:string,variantId:number,operationKey:string)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/sync/resync`,{method:'POST',body:JSON.stringify({operation_key:operationKey})}),
   history:()=>json('/admin/api/inventory/store-management/history?per_page=100'),
+  operation:(id:string)=>json(`/admin/api/inventory/store-management/operations/${encodeURIComponent(id)}`),
+  waitForOperation:waitForInventoryOperation,
   async review(kind:string,payload:Record<string,unknown>){
     const review=await json('/admin/api/inventory/store-management/reviews',{method:'POST',body:JSON.stringify({kind,...payload})});
     return json(`/admin/api/inventory/store-management/reviews/${review.id}/confirm`,{method:'POST',body:JSON.stringify({operation_key:crypto.randomUUID()})});

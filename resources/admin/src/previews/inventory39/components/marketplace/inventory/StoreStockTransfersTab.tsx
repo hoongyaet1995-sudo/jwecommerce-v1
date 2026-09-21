@@ -932,6 +932,8 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
               {(filteredHistory || []).map(record => {
                 const hasError = record.sourcePlatformSyncStatus === 'failed' || record.destinationPlatformSyncStatus === 'failed';
+                const isPending = ['pending', 'syncing'].includes(record.sourcePlatformSyncStatus)
+                  || ['pending', 'syncing'].includes(record.destinationPlatformSyncStatus);
                 return (
                   <tr key={record.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-800/50 transition-colors">
                     <td className="py-3 px-3">
@@ -1005,6 +1007,11 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                             )}
                           </div>
                         </div>
+                      ) : isPending ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>Awaiting Channel Confirmation</span>
+                        </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                           <CheckCircle2 className="w-3.5 h-3.5" />

@@ -19,7 +19,7 @@ final class ProcessStoreInventorySync implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(public readonly string $taskId)
+    public function __construct(public readonly string $taskId, public readonly bool $dispatchFollowing = true)
     {
         $this->onConnection('marketplace')->onQueue('marketplace');
     }
@@ -114,13 +114,15 @@ final class ProcessStoreInventorySync implements ShouldQueue
                     'status' => $stale ? 'superseded' : 'confirmed', 'provider_receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'updated_at' => now(),
                 ]);
                 $attempts->record($task, $stale ? 'superseded' : 'confirmed', $receipt);
-                if (! $stale && $task->operation_id) {
+                if ($this->dispatchFollowing && ! $stale && $task->operation_id) {
                     DB::table('inventory_store_sync_tasks')->where('operation_id', $task->operation_id)
                         ->where('status', 'waiting_source')->pluck('id')->each(fn ($id) => self::dispatch((string) $id)->afterCommit());
                 }
-                DB::table('inventory_store_sync_tasks')->where('marketplace_store_id', $task->marketplace_store_id)
-                    ->where('product_variant_id', $task->product_variant_id)->where('status', 'queued')
-                    ->orderByDesc('created_at')->limit(1)->pluck('id')->each(fn ($id) => self::dispatch((string) $id)->afterCommit());
+                if ($this->dispatchFollowing) {
+                    DB::table('inventory_store_sync_tasks')->where('marketplace_store_id', $task->marketplace_store_id)
+                        ->where('product_variant_id', $task->product_variant_id)->where('status', 'queued')
+                        ->orderByDesc('created_at')->limit(1)->pluck('id')->each(fn ($id) => self::dispatch((string) $id)->afterCommit());
+                }
             }, 3);
         } catch (StoreInventoryAuthorizationExpired $error) {
             $this->finish('auth_expired', ['code' => 'authorization_expired', 'message' => $error->getMessage()]);

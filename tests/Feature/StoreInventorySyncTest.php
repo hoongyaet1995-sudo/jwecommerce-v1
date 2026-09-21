@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\Inventory\StoreManagement\AccountResolver;
 use App\Services\Inventory\StoreManagement\MarketplaceStoreInventoryPublisher;
 use App\Services\Inventory\StoreManagement\SyncOutbox;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
@@ -49,7 +50,7 @@ class StoreInventorySyncTest extends TestCase
         $this->assertSame('marketplace', $job->queue);
     }
 
-    private function staged(): array
+    private function staged(bool $direct = false, ?FakeStoreInventoryPublisher $publisher = null): array
     {
         DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores']);
         $fixture = new StoreInventoryFixture;
@@ -78,7 +79,11 @@ class StoreInventorySyncTest extends TestCase
             'marketplace.stock_sync_platforms.lazada' => true,
             'marketplace.stock_sync_canary_enforced' => true,
             'marketplace.stock_sync_canary_identities' => ["lazada:{$store->id}:{$listingId}"],
+            'marketplace.stock_sync_direct_enabled' => $direct,
         ]);
+        if ($publisher) {
+            $this->app->instance(StoreInventoryPublisher::class, $publisher);
+        }
         $actor = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
         $url = '/admin/api/inventory/store-management/reviews';
         $review = $this->actingAs($actor)->postJson($url, ['kind' => 'transfer', 'source_balance_id' => $source['id'],
@@ -87,6 +92,36 @@ class StoreInventorySyncTest extends TestCase
         $task = DB::table('inventory_store_sync_tasks')->where('operation_id', $receipt['operation_id'])->where('stage', 'destination')->first();
 
         return compact('actor', 'source', 'destination', 'task', 'listingId', 'store', 'sku');
+    }
+
+    public function test_reviewed_transfer_calls_the_provider_inline_for_a_lazada_destination(): void
+    {
+        Bus::fake();
+        $publisher = new FakeStoreInventoryPublisher;
+
+        $c = $this->staged(true, $publisher);
+
+        $this->assertCount(1, $publisher->calls);
+        $this->assertSame(6, $publisher->calls[0]['quantity']);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', [
+            'id' => $c['task']->id,
+            'stage' => 'destination',
+            'status' => 'confirmed',
+        ]);
+        Bus::assertNothingDispatched();
+    }
+
+    public function test_uncertain_direct_result_is_not_blindly_queued_for_a_second_write(): void
+    {
+        Bus::fake();
+        $publisher = new FakeStoreInventoryPublisher;
+        $publisher->mode = 'uncertain';
+
+        $c = $this->staged(true, $publisher);
+
+        $this->assertCount(1, $publisher->calls);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'uncertain']);
+        Bus::assertNothingDispatched();
     }
 
     public function test_worker_supersedes_a_stale_balance_revision_without_publishing(): void
@@ -168,7 +203,7 @@ class StoreInventorySyncTest extends TestCase
         $fake->mode = 'uncertain';
         (new ProcessStoreInventorySync($c['task']->id))->handle($fake);
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
         DB::table('inventory_store_sync_tasks')->where('id', $c['task']->id)->delete();
     }
 

@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { adaptInventory, adaptStores } from './storeInventory';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { adaptInventory, adaptStores, waitForInventoryOperation } from './storeInventory';
+
+afterEach(() => vi.unstubAllGlobals());
 
 const overview: any = {
   mode: 'independent',
@@ -37,6 +39,19 @@ const overview: any = {
 };
 
 describe('store inventory adapters', () => {
+  it('polls a pending transfer operation until the provider reaches a truthful terminal state', async () => {
+    const responses = [
+      { operation_id: 'op-1', external_stages: [{ status: 'processing' }] },
+      { operation_id: 'op-1', external_stages: [{ status: 'confirmed' }] },
+    ];
+    const fetch = vi.fn(async () => ({ ok: true, json: async () => responses.shift() }));
+    vi.stubGlobal('fetch', fetch);
+
+    const result = await waitForInventoryOperation('op-1', { maxAttempts: 3, wait: async () => {} });
+
+    expect(result.external_stages[0].status).toBe('confirmed');
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
   it('does not reopen first count because an unmapped store account is uncounted', () => {
     const [item] = adaptInventory({
       mode: 'independent', configuration_version: 1, stores: [], totals: {},

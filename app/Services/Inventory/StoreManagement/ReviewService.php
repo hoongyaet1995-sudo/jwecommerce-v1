@@ -3,6 +3,8 @@
 namespace App\Services\Inventory\StoreManagement;
 
 use App\Models\User;
+use App\Services\Inventory\CatalogInventoryState;
+use App\Services\Inventory\CatalogStockProjection;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +14,8 @@ use Illuminate\Validation\ValidationException;
 final class ReviewService
 {
     public function __construct(private readonly CountMutation $counts, private readonly TransferMutation $transfers,
-        private readonly SyncOutbox $outbox, private readonly AccountResolver $accounts) {}
+        private readonly SyncOutbox $outbox, private readonly AccountResolver $accounts,
+        private readonly ImmediateStoreInventorySync $immediateSync, private readonly OverviewReader $overview) {}
 
     /** @return array<string,mixed> */
     public function create(User $actor, string $kind, array $input): array
@@ -85,7 +88,9 @@ final class ReviewService
     {
         $this->authorize($actor);
 
-        return DB::transaction(function () use ($actor, $reviewId, $operationKey): array {
+        $created = false;
+        $confirmedKind = null;
+        $receipt = DB::transaction(function () use ($actor, $reviewId, $operationKey, &$created, &$confirmedKind): array {
             $configuration = DB::table('inventory_configuration')->where('id', 1)->lockForUpdate()->first();
             $byKey = DB::table('inventory_store_operations')->where('operation_key', $operationKey)->lockForUpdate()->first();
             if ($byKey) {
@@ -97,6 +102,7 @@ final class ReviewService
             }
             $review = DB::table('inventory_store_reviews')->where('id', $reviewId)->lockForUpdate()->first();
             abort_unless($review, 404);
+            $confirmedKind = $review->kind;
             if ((int) $review->actor_id !== (int) $actor->id && ! $actor->is_super_admin) {
                 abort(403);
             }
@@ -149,15 +155,21 @@ final class ReviewService
                 'kind' => $review->kind, 'actor_id' => $actor->id, 'ledger_status' => 'applied',
                 'receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'created_at' => now(), 'updated_at' => now(),
             ]);
+            $created = true;
             if ($review->kind === 'count') {
-                app(\App\Services\Inventory\CatalogInventoryState::class)
+                app(CatalogInventoryState::class)
                     ->markVerified((int) $identity->product_variant_id, $operationId);
-                app(\App\Services\Inventory\CatalogStockProjection::class)
+                app(CatalogStockProjection::class)
                     ->refresh((int) $identity->product_variant_id);
             }
             if ($review->kind === 'transfer') {
                 $freshBalances = collect($result)->map(fn (array $item) => DB::table('inventory_balances')->find($item['id']))->all();
-                $receipt['external_stages'] = $this->outbox->enqueueTransfer($operationId, $freshBalances[0], $freshBalances[1]);
+                $receipt['external_stages'] = $this->outbox->enqueueTransfer(
+                    $operationId,
+                    $freshBalances[0],
+                    $freshBalances[1],
+                    ! config('marketplace.stock_sync_direct_enabled', true),
+                );
                 DB::table('inventory_store_operations')->where('id', $operationId)->update([
                     'receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'updated_at' => now(),
                 ]);
@@ -174,6 +186,19 @@ final class ReviewService
 
             return $receipt;
         }, 3);
+
+        if ($created && $confirmedKind === 'transfer' && config('marketplace.stock_sync_direct_enabled', true)) {
+            $this->immediateSync->run($receipt['operation_id']);
+            $receipt = $this->overview->operation($receipt['operation_id']);
+            DB::table('inventory_store_operations')->where('id', $receipt['operation_id'])->update([
+                'receipt' => json_encode($receipt, JSON_THROW_ON_ERROR),
+                'updated_at' => now(),
+            ]);
+
+            return $receipt;
+        }
+
+        return $receipt;
     }
 
     private function authorize(User $actor): void

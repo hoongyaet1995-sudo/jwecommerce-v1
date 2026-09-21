@@ -69,3 +69,33 @@ it('does not contain prototype timers or hard-coded source store ids', () => {
   expect(source).not.toContain("useState<string>('webstore')");
   expect(source).not.toContain("useState<string>('conn-shopee-01')");
 });
+
+it('does not report pending channel work as both stores synced', async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  const pendingTransfer: any = {
+    id: 'operation-1', transferNumber: 'TR-1', timestamp: new Date().toISOString(),
+    masterSku: 'AUR-PINE-BLK', productName: 'Aurora Headphones', variantName: 'Black', imageUrl: '',
+    sourceStoreId: 'website', sourceStoreName: 'JW Storefront', sourcePlatform: 'webstore',
+    destinationStoreId: '12', destinationStoreName: 'Lazada Test', destinationPlatform: 'lazada',
+    quantity: 2, operator: 'Admin', reason: 'Rebalance', ledgerStatus: 'succeeded',
+    sourcePlatformSyncStatus: 'succeeded', destinationPlatformSyncStatus: 'pending',
+  };
+
+  await act(async () => root.render(
+    <StoreStockTransfersTab
+      inventory={inventory}
+      stores={stores}
+      storeBalances={storeBalances}
+      transfersList={[pendingTransfer]}
+      onExecuteTransfer={vi.fn()}
+      onRetryPlatformSync={vi.fn()}
+    />
+  ));
+
+  expect(host.textContent).toContain('Awaiting Channel Confirmation');
+  expect(host.textContent).not.toContain('Both Stores Synced');
+  await act(async () => root.unmount());
+});
