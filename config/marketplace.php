@@ -23,6 +23,15 @@ return [
     'operations_enabled' => env('MARKETPLACE_OPERATIONS_ENABLED', false),
     'read_operations_enabled' => env('MARKETPLACE_READ_OPERATIONS_ENABLED', false),
     'stock_sync_operations_enabled' => env('MARKETPLACE_STOCK_SYNC_OPERATIONS_ENABLED', false),
+    'stock_sync_platforms' => [
+        'shopee' => env('MARKETPLACE_SHOPEE_STOCK_SYNC_ENABLED', false),
+        'lazada' => env('MARKETPLACE_LAZADA_STOCK_SYNC_ENABLED', false),
+    ],
+    'stock_sync_canary_enforced' => env('MARKETPLACE_STOCK_SYNC_CANARY_ENFORCED', true),
+    'stock_sync_canary_identities' => array_values(array_filter(array_map(
+        static fn (string $identity): string => trim($identity),
+        explode(',', (string) env('MARKETPLACE_STOCK_SYNC_CANARY_IDENTITIES', '')),
+    ))),
     'import_operations_enabled' => env('MARKETPLACE_IMPORT_OPERATIONS_ENABLED', false),
     'oauth_acceptance_enabled' => env('MARKETPLACE_OAUTH_ACCEPTANCE_ENABLED', false),
     'shopee' => [
