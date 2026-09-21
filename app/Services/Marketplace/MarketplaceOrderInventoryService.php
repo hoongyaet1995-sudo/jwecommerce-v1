@@ -18,7 +18,6 @@ class MarketplaceOrderInventoryService
             $store = DB::table('marketplace_stores')->where('id', $storeId)->lockForUpdate()->first();
             if (!$store || $store->status !== 'connected' || !in_array($store->platform,['shopee','lazada'],true)) return;
             $managed=DB::table('inventory_order_activations')->where('channel_key','marketplace:'.$storeId)->exists();
-            $managedCutoff=$managed ? \Carbon\CarbonImmutable::parse(DB::table('inventory_order_activations')->where('channel_key','marketplace:'.$storeId)->min('orders_created_after'))->timestamp : 0;
             if (!$managed && config('marketplace.inventory_accounting_enabled')!==true) return;
             $policy = DB::table('marketplace_inventory_policies')->where('store_id', $storeId)->lockForUpdate()->first();
             if (!$managed && (!$policy || !$policy->enabled || !$policy->reconciled_at || !$policy->orders_created_after)) return;
@@ -28,8 +27,8 @@ class MarketplaceOrderInventoryService
                 // Savepoint: an exception on any line rolls back all allocations,
                 // while retaining the fetched platform order and exception record.
                 $status = DB::transaction(fn () => $store->platform==='lazada'
-                    ? $this->applyLazada($order,$payload,$managed ? $managedCutoff : (int)$policy->orders_created_after,$managed)
-                    : $this->apply($order, $payload, $managed ? $managedCutoff : (int) $policy->orders_created_after,$managed));
+                    ? $this->applyLazada($order,$payload,$managed ? 0 : (int)$policy->orders_created_after,$managed)
+                    : $this->apply($order, $payload, $managed ? 0 : (int) $policy->orders_created_after,$managed));
                 $error = null;
             } catch (MarketplaceInventoryException $exception) {
                 $status = 'exception';

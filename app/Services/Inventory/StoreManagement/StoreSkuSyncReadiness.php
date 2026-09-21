@@ -6,7 +6,10 @@ use Illuminate\Support\Facades\DB;
 
 final class StoreSkuSyncReadiness
 {
-    public function __construct(private readonly StockSyncPolicy $policy) {}
+    public function __construct(
+        private readonly StockSyncPolicy $policy,
+        private readonly InventoryIngestionBoundary $boundary,
+    ) {}
 
     /** @return array<string, mixed> */
     public function read(int $storeId, int $variantId): array
@@ -56,6 +59,10 @@ final class StoreSkuSyncReadiness
             }
 
             if ($listing) {
+                $historicalOrders = $this->boundary->unresolvedHistoricalOrderIds($storeId, $variantId, now());
+                if ($historicalOrders !== []) {
+                    $blockers[] = $this->blocker('historical_orders_unresolved', 'Reconcile historical order reservations for this mapped SKU.');
+                }
                 $policy = $this->policy->review($store, $listing);
                 if (! $policy['allowed']) {
                     $blockers[] = $this->blocker($policy['code'], $policy['next_action']);

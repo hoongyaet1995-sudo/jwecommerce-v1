@@ -6,7 +6,10 @@ use Illuminate\Support\Facades\DB;
 
 final class ReadinessReader
 {
-    public function __construct(private readonly ModeCatalogReader $modeCatalog) {}
+    public function __construct(
+        private readonly ModeCatalogReader $modeCatalog,
+        private readonly InventoryIngestionBoundary $boundary,
+    ) {}
 
     public function takeover(int $storeId): array
     {
@@ -40,11 +43,6 @@ final class ReadinessReader
         if ($missingSnapshots->isNotEmpty()) {
             $blockers[] = ['code' => 'provider_snapshot_required', 'ids' => $missingSnapshots->all(), 'next_action' => 'Fetch the current marketplace catalog before enabling inventory sync.'];
         }
-        $openOrders = DB::table('marketplace_orders as o')->leftJoin('marketplace_order_inventory as i', 'i.order_id', '=', 'o.id')
-            ->where('o.store_id', $storeId)->whereNull('i.terminal_status')->pluck('o.id');
-        if ($openOrders->isNotEmpty()) {
-            $blockers[] = ['code' => 'historical_orders_unresolved', 'ids' => $openOrders->all(), 'next_action' => 'Reconcile open marketplace orders and capture the ingestion boundary.'];
-        }
         $balances = [];
         $configuration = DB::table('inventory_configuration')->where('id', 1)->first();
         foreach ($mappings as $mapping) {
@@ -58,6 +56,12 @@ final class ReadinessReader
                     'next_action' => 'Enter and review the physical count for this store SKU.'];
             } else {
                 $balances[] = $balance;
+            }
+            $openOrders = $this->boundary->unresolvedHistoricalOrderIds($storeId, (int) $mapping->product_variant_id, now());
+            if ($openOrders !== []) {
+                $blockers[] = ['code' => 'historical_orders_unresolved', 'ids' => $openOrders,
+                    'variant_id' => (int) $mapping->product_variant_id,
+                    'next_action' => 'Reconcile historical order reservations for this mapped SKU.'];
             }
         }
 

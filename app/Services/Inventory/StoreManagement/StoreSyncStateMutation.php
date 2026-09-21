@@ -13,6 +13,7 @@ final class StoreSyncStateMutation
         private readonly StoreEnrollmentService $enrollment,
         private readonly StoreSyncReadinessReader $readiness,
         private readonly SyncOutbox $outbox,
+        private readonly InventoryIngestionBoundary $boundary,
     ) {}
 
     public function pause(int $storeId, User $actor, string $reason): array
@@ -54,10 +55,7 @@ final class StoreSyncStateMutation
                     'management_status' => 'managed', 'version' => DB::raw('version + 1'), 'updated_at' => now(),
                 ]);
                 foreach ($check['balances'] as $balance) {
-                    DB::table('inventory_order_activations')->updateOrInsert([
-                        'channel_key' => 'marketplace:'.$storeId, 'product_variant_id' => $balance->product_variant_id,
-                    ], ['inventory_balance_id' => $balance->id, 'actor_id' => $actor->id, 'reason' => $reason,
-                        'orders_created_after' => now(), 'created_at' => now()]);
+                    $this->boundary->create($storeId, (int) $balance->product_variant_id, (int) $balance->id, $actor, $reason);
                     $fresh = DB::table('inventory_balances')->find($balance->id);
                     $stages[] = $this->outbox->enqueueStore(null, $fresh, $storeId, 'resume_sync', 'resume-sync:'.$storeId.':'.$fresh->id.':'.$fresh->version);
                 }
