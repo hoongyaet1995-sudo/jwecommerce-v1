@@ -76,8 +76,10 @@ Result: **627 passed, 3 failed** across 155 files. The three failures are outsid
 ## Runtime and browser evidence
 
 - The isolated Laravel server responded to `/admin/marketplace/inventory` with the expected protected `302` redirect to `/admin/login`.
-- Authenticated visual browser acceptance could not be completed in this run because the desktop browser surface could not reach the host-local isolated port. No claim of authenticated browser closure is made.
-- Admin bundle compilation plus Laravel feature tests cover the implemented behavior, but authenticated localhost acceptance remains a release gate.
+- Authenticated production browser acceptance passed at `https://ecom.jwaistudio.online/admin/marketplace/inventory`: the page loaded 16 Master SKUs, 5 connected stores, physical/ATP totals, product thumbnails, per-store status, First Count actions, and Activity History without a rendering or data-load error.
+- A fresh production-page reload showed internal inventory as `JW stock`, while unmapped marketplace accounts remained explicitly labelled `SKU Not Mapped`.
+- Opening Actual Stock Intake for `SKU-SOLIS-WAL-STD` exposed only `JW Ecom Storefront` in the Target Store Account dropdown. All four unmapped Shopee/Lazada accounts were absent, proving that adjustment targets use exact per-SKU readiness rather than connection alone.
+- No quantity was entered and no confirmation action was invoked during browser acceptance.
 
 ## No-write proof
 
@@ -121,9 +123,16 @@ Enable only one provider and the exact approved canary identity during Task 10. 
 
 ## Remaining production gates
 
-- Push and deploy the exact accepted SHA with writes disabled.
-- Prove localhost, GitHub `main`, and Hostinger use the same SHA.
-- Complete authenticated live read-only UI/API checks.
-- Record one concrete Shopee Sandbox and one Lazada official-test canary with store/listing/location identity, token health, reservations, before/target/restore quantities, and rollback commands.
+- Record one concrete Shopee Sandbox and one Lazada official-test canary with store/listing/location identity, token health, reservations, before/target/restore quantities, and rollback commands. The production candidate query currently returns no row satisfying both an active mapping and an initialized counted balance for that same store/SKU, so a canary cannot be truthfully approved yet.
 - Obtain explicit approval for those exact values before enabling any provider write.
 - Complete write, independent readback, restore, second readback, and verify no unresolved queue task remains for both providers.
+
+## Production release evidence
+
+- Release sequence completed in the required order: local verification, GitHub `main` push, Hostinger fast-forward pull, production migration, and Laravel cache clear.
+- Release SHA `6acc7f2dcff970a7f5f884d9f79434451197b729` matched local HEAD, GitHub `main`, and `/home/u762348670/apps/jwecommerce` before this evidence-only follow-up commit.
+- Production migration batch 94 reports the sync-attempt migration as `Ran`; `inventory_store_sync_attempts` and the persisted listing/product/variant/location identity columns exist.
+- Production write controls remained closed: master `false`, Shopee `false`, Lazada `false`, canary enforcement `true`, and zero canary identities.
+- Production had zero active `queued`, `processing`, or `uncertain` inventory sync tasks at verification time. The scheduler lists `marketplace:sync-managed-stock`, but disabled write controls and an empty allowlist prevent provider mutation.
+- Read-only discovery found 89 mappings, yet the mapped-store/count-ledger intersection was empty. Potential future setup examples include Shopee store 1 / variant 92 (`JWSTORE1PS5-500GB`) and Lazada store 4 / variant 116 (`0209314`), but neither currently has a counted store-specific balance and neither is an approved canary.
+- Required next operational step: initialize and allocate stock for a mapped SKU in each intended canary store, then rerun readiness discovery. Provider switches must remain disabled until the resulting exact identities and before/target/restore quantities receive explicit approval.
