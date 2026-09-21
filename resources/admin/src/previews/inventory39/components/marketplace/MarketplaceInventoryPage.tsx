@@ -48,6 +48,7 @@ import { StockIntakeAdjustmentModal } from './inventory/StockIntakeAdjustmentMod
 import { StoreStockTransfersTab } from './inventory/StoreStockTransfersTab';
 import { InventoryActivityHistoryTab } from './inventory/InventoryActivityHistoryTab';
 import { InventorySettingsModal } from './inventory/InventorySettingsModal';
+import { StockSyncStoreButton } from './inventory/StockSyncStoreButton';
 import { StockSyncRecovery } from '../../../inventory43/StockSyncRecovery';
 
 export const resolveFirstCountItem = (
@@ -1163,13 +1164,10 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
                               const syncState = describeMarketplaceSyncState(balance?.lastSyncStatus ?? assoc?.lastSyncStatus, balance?.availableStock ?? 0);
 
                               return (
-                                <div
+                                <StockSyncStoreButton
                                   key={store.id}
-                                  role={recoveryPreview ? 'button' : undefined}
-                                  tabIndex={recoveryPreview ? 0 : undefined}
-                                  onClick={recoveryPreview ? () => setSyncSelection({item,store,balance}) : undefined}
-                                  onKeyDown={recoveryPreview ? event => {if (event.key === 'Enter' || event.key === ' ') {event.preventDefault();setSyncSelection({item,store,balance});}} : undefined}
-                                  className="flex items-center justify-between p-1.5 rounded-lg bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200/60 dark:border-neutral-700/60 text-[11px]"
+                                  storeName={store.nickname || store.name}
+                                  onOpen={recoveryPreview ? () => setSyncSelection({item,store,balance}) : undefined}
                                 >
                                   <div className="flex items-center gap-1.5 truncate max-w-[140px]">
                                     <MarketplaceLogo platform={store.platform as any} size="xs" />
@@ -1220,7 +1218,7 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
                                       ({channelStock})
                                     </span>
                                   </div>
-                                </div>
+                                </StockSyncStoreButton>
                               );
                             })}
                           </div>
