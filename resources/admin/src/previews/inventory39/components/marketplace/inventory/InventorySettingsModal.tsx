@@ -61,6 +61,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
   const [modeActionError, setModeActionError] = useState('');
   const [storeActionError, setStoreActionError] = useState('');
   const [storeSetupReview, setStoreSetupReview] = useState<{storeName:string; requirements:any[]} | null>(null);
+  const modalBodyRef = React.useRef<HTMLDivElement>(null);
 
   // Allocation distribution state for Shared -> Independent switch
   // sku -> { storeId: allocatedQty }
@@ -178,6 +179,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
     try {
       const result = await onToggleStoreManagement(store.id, store.inventorySyncState !== 'active');
       if (result?.ready === false || result?.requirements?.length) {
+        if (modalBodyRef.current) modalBodyRef.current.scrollTop = 0;
         setStoreSetupReview({storeName: store.name, requirements: result.requirements || []});
       }
     } catch (error: any) {
@@ -249,7 +251,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div ref={modalBodyRef} className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* TAB 1: GLOBAL STOCK MODE */}
           {activeTab === 'mode' && (
             <div className="space-y-6">
