@@ -2,12 +2,93 @@
 
 namespace App\Services\Marketplace;
 
+use App\Exceptions\StoreInventoryAuthorizationExpired;
+use App\Exceptions\StoreInventoryResultUncertain;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 class ShopeeClient
 {
+    /** @return array{location_id:string,quantity:int} */
+    public function exactStockContext(#[\SensitiveParameter] string $accessToken, string $shopId, string $itemId,
+        string $modelId, ?string $locationId = null): array
+    {
+        $items = array_values(array_filter($this->itemDetails($accessToken, $shopId, [$itemId]),
+            fn (array $item): bool => (string) ($item['item_id'] ?? '') === $itemId));
+        if (count($items) !== 1 || ! is_bool($items[0]['has_model'] ?? null)) {
+            throw new RuntimeException('Shopee item identity changed.');
+        }
+        $item = $items[0];
+        if ($item['has_model']) {
+            $models = array_values(array_filter($this->models($accessToken, $shopId, $itemId),
+                fn (array $model): bool => (string) ($model['model_id'] ?? '') === $modelId));
+            if (count($models) !== 1) {
+                throw new RuntimeException('Shopee model identity changed.');
+            }
+            $stock = $models[0]['stock_info_v2'] ?? null;
+        } elseif ($modelId === '0') {
+            $stock = $item['stock_info_v2'] ?? null;
+        } else {
+            throw new RuntimeException('Shopee item/model structure changed.');
+        }
+        $rows = $stock['seller_stock'] ?? null;
+        if (! is_array($rows) || ! array_is_list($rows)) {
+            throw new RuntimeException('Shopee seller stock is unavailable.');
+        }
+        $matches = array_values(array_filter($rows, fn ($row): bool => is_array($row)
+            && ($locationId === null || ($row['location_id'] ?? null) === $locationId)));
+        if (count($matches) !== 1 || ! is_string($matches[0]['location_id'] ?? null)
+            || $matches[0]['location_id'] === '' || ! is_int($matches[0]['stock'] ?? null) || $matches[0]['stock'] < 0) {
+            throw new RuntimeException('Shopee seller location is ambiguous or unavailable.');
+        }
+
+        return ['location_id' => $matches[0]['location_id'], 'quantity' => $matches[0]['stock']];
+    }
+
+    /** @return array{request_id:?string} */
+    public function updateAbsoluteStock(#[\SensitiveParameter] string $accessToken, string $shopId, string $itemId,
+        string $modelId, string $locationId, int $quantity): array
+    {
+        if (! ctype_digit($shopId) || ! ctype_digit($itemId) || ! ctype_digit($modelId)
+            || $locationId === '' || $quantity < 0) {
+            throw new RuntimeException('Invalid Shopee stock identity.');
+        }
+        $config = $this->configuration();
+        $path = '/api/v2/product/update_stock';
+        $time = now()->timestamp;
+        $query = ['partner_id' => (int) $config['partner_id'], 'timestamp' => $time, 'access_token' => $accessToken,
+            'shop_id' => (int) $shopId, 'sign' => hash_hmac('sha256', $config['partner_id'].$path.$time.$accessToken.$shopId, $config['partner_key'])];
+        $body = ['item_id' => (int) $itemId, 'stock_list' => [['model_id' => (int) $modelId,
+            'seller_stock' => [['location_id' => $locationId, 'stock' => $quantity]]]]];
+        try {
+            $response = Http::acceptJson()->connectTimeout(10)->timeout(30)->withoutRedirecting()
+                ->post($this->host($config).$path.'?'.http_build_query($query), $body);
+        } catch (ConnectionException) {
+            throw new StoreInventoryResultUncertain('Shopee stock write outcome is unknown. Reconcile before retrying.');
+        }
+        $payload = $response->json();
+        if ($this->authorizationFailed($response->status(), $payload)) {
+            throw new StoreInventoryAuthorizationExpired('Shopee authorization expired. Reconnect this store.');
+        }
+        $result = is_array($payload) ? ($payload['response'] ?? null) : null;
+        $success = is_array($result) && is_array($result['success_list'] ?? null) ? $result['success_list'] : [];
+        $failure = is_array($result) && is_array($result['failure_list'] ?? null) ? $result['failure_list'] : [];
+        if ($success !== [] && $failure !== []) {
+            throw new StoreInventoryResultUncertain('Shopee returned a partial stock result. Reconcile before retrying.');
+        }
+        if (! $response->successful() || ! is_array($payload) || ($payload['error'] ?? null) !== '' || $failure !== []) {
+            throw new RuntimeException('Shopee rejected the stock update.');
+        }
+        $matches = array_values(array_filter($success, fn ($row): bool => is_array($row)
+            && (string) ($row['model_id'] ?? '') === $modelId && ($row['location_id'] ?? null) === $locationId
+            && ($row['stock'] ?? null) === $quantity));
+        if (count($matches) !== 1) {
+            throw new StoreInventoryResultUncertain('Shopee did not confirm the exact stock target. Reconcile before retrying.');
+        }
+
+        return ['request_id' => is_string($payload['request_id'] ?? null) ? $payload['request_id'] : null];
+    }
     public function sandboxStockQuantity(array $snapshot,\App\Models\User $actor):int
     {
         return $this->sandboxStockContext($snapshot,$actor)['quantity'];
@@ -511,11 +592,22 @@ class ShopeeClient
             throw new RuntimeException('Shopee read request could not reach the platform.');
         }
         $payload = $response->json();
+        if ($this->authorizationFailed($response->status(), $payload)) {
+            throw new StoreInventoryAuthorizationExpired('Shopee authorization expired. Reconnect this store.');
+        }
         if (!$response->successful() || !is_array($payload) || !empty($payload['error'])) {
             throw new RuntimeException('Shopee read request failed. Check store authorization and retry.');
         }
 
         return $payload;
+    }
+
+    private function authorizationFailed(int $status, mixed $payload): bool
+    {
+        $error = is_array($payload) ? strtolower((string) ($payload['error'] ?? '')) : '';
+
+        return in_array($status, [401, 403], true)
+            || str_contains($error, 'token') || str_contains($error, 'auth') || str_contains($error, 'expired');
     }
 
     public function exchange(#[\SensitiveParameter] string $code, string $shopId): array

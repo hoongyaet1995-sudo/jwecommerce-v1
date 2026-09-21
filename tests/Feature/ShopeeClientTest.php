@@ -45,6 +45,7 @@ class ShopeeClientTest extends TestCase
     public function test_create_item_is_gated_and_requires_confirmed_external_id(): void
     {
         $this->freezeTime();
+        config(['marketplace.publish_operations_enabled'=>false]);
         Http::fake(['*'=>Http::sequence()->push(['error'=>'','response'=>['item_id'=>846055463]])
             ->push(['error'=>'','response'=>[]])]);
         try {app(ShopeeClient::class)->createItem('access','456',['item_name'=>'Test']);$this->fail('Write gate must block.');}
