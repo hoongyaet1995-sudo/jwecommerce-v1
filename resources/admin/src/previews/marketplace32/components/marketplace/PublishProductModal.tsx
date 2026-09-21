@@ -80,6 +80,12 @@ export const providerPublishingIssues=(diagnostics:Record<string,unknown>|undefi
   });
 };
 
+const shopeeSizeChartRequirement=(fields:Array<{name?:unknown;attribute_info?:{name?:unknown;display_name?:unknown};mandatory?:unknown}>)=>{
+  const field=fields.find(item=>[item.name,item.attribute_info?.name,item.attribute_info?.display_name]
+    .some(value=>typeof value==='string'&&/size[ _-]*chart/i.test(value)));
+  return field ? {required:field.mandatory===true} : null;
+};
+
 const providerFieldLabel=(field:string)=>field==='brandProp'||field==='brand'
   ?'Brand'
   :field==='customSaleProp'?'Variant attributes':field;
@@ -246,6 +252,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   const isLazadaLive=liveData && targetConnection?.platform==='lazada';
   const isShopeeLive=liveData && targetConnection?.platform==='shopee';
   const shopeeRequirements=useShopeePublishingRequirements(isShopeeLive&&isOpen&&!taskId?selectedConnectionId:null,selectedCategory,source?.revision??'');
+  const shopeeSizeChart=shopeeSizeChartRequirement(shopeeRequirements.fields);
   const lazadaAttributes=useLazadaPublishingAttributes(isLazadaLive?selectedConnectionId:null,selectedCategory,source);
   const [shopeeSizeChartImageId,setShopeeSizeChartImageId]=useState<number|null>(null);
   useEffect(()=>setShopeeSizeChartImageId(null),[selectedProductId,selectedConnectionId,selectedCategory,source?.revision]);
@@ -641,7 +648,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                       {monitor.task?.failure?.message || rejectionReason}
                     </p>
                     {rejectionIssues.length>0&&<div className="text-sm text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 p-3 rounded-xl border border-rose-200 dark:border-rose-900 text-left space-y-2" role="alert">
-                      <div className="font-bold">Lazada reported:</div>
+                      <div className="font-bold">{monitor.task?.platform==='shopee'?'Shopee':'Lazada'} reported:</div>
                       <ul className="list-disc pl-5 space-y-1">{rejectionIssues.map((issue,index)=><li key={`${issue.field}:${index}`}>
                         <strong>{providerFieldLabel(issue.field)}:</strong> {issue.message}{issue.code&&<span className="text-rose-500 dark:text-rose-400"> ({issue.code})</span>}
                       </li>)}</ul>
@@ -1079,7 +1086,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                   </div>}
                   {/* Validation Error Banner */}
                   {isShopeeLive&&<ShopeePublishingRequirements shopName={targetConnection.shopName} review={shopeeRequirements}/>}
-                  {isShopeeLive&&<PublishingSizeChart platform="shopee" required={false} source={source} selectedImageId={shopeeSizeChartImageId} onChange={setShopeeSizeChartImageId} onUploaded={receipt=>setReviewRevision(receipt.sourceRevision)}/>}
+                  {isShopeeLive&&shopeeSizeChart&&<PublishingSizeChart platform="shopee" required={shopeeSizeChart.required} source={source} selectedImageId={shopeeSizeChartImageId} onChange={setShopeeSizeChartImageId} onUploaded={receipt=>setReviewRevision(receipt.sourceRevision)}/>}
                   {validationErrors.length > 0 ? (
                     <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 space-y-1">
                       <div className="font-bold flex items-center gap-1.5">

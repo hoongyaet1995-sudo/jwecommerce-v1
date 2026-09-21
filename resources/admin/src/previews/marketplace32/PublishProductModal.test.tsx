@@ -25,6 +25,22 @@ it('extracts actionable Lazada provider rejection details without exposing malfo
  expect(providerPublishingIssues({provider_detail:'not-json'})).toEqual([]);
  expect(providerPublishingIssues({provider_detail:[{field:'brandProp'}]})).toEqual([]);
 });
+it('labels saved provider rejection details for Shopee instead of Lazada',async()=>{
+ vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+ vi.mocked(marketplaceRequest).mockImplementation(async(path)=>String(path).includes('publishing-source')
+  ? {product_id:51,title:'PS5',brand:'',description:null,revision:'a'.repeat(64),images:[],variants:[{id:8,sku:'PS5',price_minor:140000,initial_quantity:0}]}
+  : {products:{}});
+ vi.mocked(marketplaceOperations.publishingTask).mockResolvedValue({id:42,storeId:1,productId:51,platform:'shopee',status:'rejected',externalItemId:null,
+  createdAt:'2026-09-21T00:00:00Z',updatedAt:'2026-09-21T00:00:01Z',failure:{code:'marketplace_validation_failed',message:'Shopee rejected the category.',nextAction:'review_attributes',diagnostics:{provider_detail:'[{"field":"category_id","message":"Invalid category"}]'}}} as never);
+ const context={products:[{id:'51',title:'PS5',basePrice:1400,totalInventory:0,variants:[],images:[]}],categories:[],connections:[{id:'1',platform:'shopee',shopName:'Sandbox',status:'connected'}],marketplaceStoreProducts:[],addToast:vi.fn(),setActiveSection:vi.fn(),publishMasterProductToStore:vi.fn()} as unknown as MarketplaceJourneyContext;
+ const container=document.createElement('div'),root=createRoot(container);
+ try{
+  await act(async()=>root.render(<JourneyProvider value={context}><PublishProductModal isOpen liveData taskId="42" onClose={vi.fn()}/></JourneyProvider>));
+  await act(async()=>Promise.resolve());
+  expect(container.textContent).toContain('Shopee reported:');
+  expect(container.textContent).not.toContain('Lazada reported:');
+ }finally{await act(async()=>root.unmount());vi.unstubAllGlobals();}
+});
 it('submits live Shopee requirements from the existing three-step review',async()=>{
  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
  vi.mocked(marketplaceRequest).mockImplementation(async(path)=>{
@@ -45,6 +61,7 @@ it('submits live Shopee requirements from the existing three-step review',async(
   await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Marketplace category"]')!.click());
   await act(async()=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Boxes'))!.click());
   expect(container.textContent).toContain('Sandbox courier');
+  expect(container.querySelector('#marketplace-size-chart-section')).toBeNull();
   await act(async()=>container.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
   await act(async()=>Array.from(container.querySelectorAll('button')).find(button=>button.textContent?.includes('Pricing & Sync'))!.click());
   await act(async()=>Array.from(container.querySelectorAll('button')).find(button=>button.textContent?.includes('Publish to SHOPEE'))!.click());
