@@ -31,7 +31,13 @@ describe('StockIntakeAdjustmentModal', () => {
       <StockIntakeAdjustmentModal
         isOpen
         onClose={vi.fn()}
-        item={item}
+        item={{
+          ...item,
+          storeAssociations: [
+            { connectionId: '11', syncReadiness: { ready: true, blockers: [] } },
+            { connectionId: '14', syncReadiness: { ready: false, blockers: [{ code: 'sync_paused' }] } },
+          ],
+        }}
         mode="independent"
         stores={stores}
         storeBalances={{}}
@@ -44,6 +50,28 @@ describe('StockIntakeAdjustmentModal', () => {
     expect(html).not.toContain('Unmapped Shopee');
     expect(html).not.toContain('Disconnected Lazada');
     expect(html).not.toContain('Setup Required Lazada');
+  });
+
+  it('hides a mapped active store when the current SKU is not externally eligible', () => {
+    const html = renderToStaticMarkup(
+      <StockIntakeAdjustmentModal
+        isOpen
+        onClose={vi.fn()}
+        item={{
+          ...item,
+          storeAssociations: [
+            { connectionId: '11', syncReadiness: { ready: false, blockers: [{ code: 'authorization_expired' }] } },
+          ],
+        }}
+        mode="independent"
+        stores={stores}
+        storeBalances={{}}
+        onSave={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain('JW Ecom Storefront');
+    expect(html).not.toContain('Mapped Shopee');
   });
 
   it('calculates an audit delta from the selected store ledger instead of the SKU aggregate', () => {

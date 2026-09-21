@@ -842,7 +842,8 @@ export interface StoreSkuAssociation {
   lastConfirmedPushedQuantity?: number | null; // Last pushed quantity confirmed by channel
   lastConfirmedPushedAt?: string;
   lastFailureReason?: string;
-  lastSyncStatus?: 'confirmed' | 'queued' | 'processing' | 'failed' | 'uncertain';
+  syncReadiness?: { ready: boolean; effective_state?: string; blockers?: Array<{ code: string; next_action?: string }> };
+  lastSyncStatus?: 'confirmed' | 'queued' | 'processing' | 'failed' | 'auth_expired' | 'uncertain' | 'superseded' | 'waiting_source' | 'not_applicable';
 }
 
 export interface StoreInventoryActivation {
@@ -1200,5 +1201,4 @@ export * from './aiAutoReply';
 export * from './promotions';
 export * from './storefrontHeader';
 export * from './notifications';
-
 

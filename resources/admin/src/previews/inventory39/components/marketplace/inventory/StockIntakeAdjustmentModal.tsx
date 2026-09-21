@@ -67,6 +67,8 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
 
   const eligibleStores = useMemo(() => {
     const mappedStoreIds = new Set<string>((item as any)?.mappedStoreIds || []);
+    const associations = new Map<string, any>(((item as any)?.storeAssociations || [])
+      .map((association: any) => [String(association.connectionId), association]));
 
     return (stores || []).filter(store => {
       if (store.isComingSoon) return false;
@@ -74,7 +76,8 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
 
       return store.connectionState === 'connected'
         && store.inventorySyncState === 'active'
-        && mappedStoreIds.has(store.id);
+        && mappedStoreIds.has(store.id)
+        && associations.get(store.id)?.syncReadiness?.ready === true;
     });
   }, [item, stores]);
 

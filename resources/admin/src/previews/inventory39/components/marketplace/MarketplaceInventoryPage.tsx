@@ -70,6 +70,18 @@ export const resolveInventoryAdjustmentItem = (
   variantId: string
 ) => inventory.find(item => String(item.variantId) === variantId) || null;
 
+export const describeMarketplaceSyncState = (status: string | undefined, quantity: number) => {
+  if (status === 'confirmed') return { label: `Confirmed: ${quantity}`, tone: 'success' as const };
+  if (status === 'queued') return { label: `Queued: ${quantity}`, tone: 'pending' as const };
+  if (status === 'processing') return { label: `Syncing: ${quantity}`, tone: 'pending' as const };
+  if (status === 'failed') return { label: 'Sync failed', tone: 'danger' as const };
+  if (status === 'auth_expired') return { label: 'Reconnect required', tone: 'danger' as const };
+  if (status === 'uncertain') return { label: 'Reconciliation required', tone: 'warning' as const };
+  if (status === 'superseded') return { label: 'Superseded', tone: 'neutral' as const };
+
+  return { label: 'Not synced', tone: 'neutral' as const };
+};
+
 export const MarketplaceInventoryPage: React.FC = () => {
   const {
     marketplaceInventory = [],
@@ -746,8 +758,8 @@ export const MarketplaceInventoryPage: React.FC = () => {
     <div id="marketplace-inventory-page" className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
       {recoveryTasks.length > 0 && <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
         <div className="font-semibold text-amber-700 dark:text-amber-300">Marketplace stock sync needs review</div>
-        <div className="mt-1 text-neutral-600 dark:text-neutral-300">Check the marketplace quantity before retrying uncertain writes. Failed authorization requires reconnecting the store.</div>
-        <div className="mt-3 flex flex-wrap gap-2">{recoveryTasks.map((task:any)=><button key={task.id} className="rounded-lg border border-amber-500/40 px-3 py-1.5 font-medium" onClick={async()=>{if(task.status==='uncertain'||task.status==='processing'){if(!window.confirm('Confirm the previous marketplace write was NOT applied before retrying.'))return;await retrySync(task.id,'not_applied')}else await retrySync(task.id);await reloadInventory()}}>Review / retry {task.id.slice(0,8)}</button>)}</div>
+        <div className="mt-1 text-neutral-600 dark:text-neutral-300">Reconcile uncertain writes against the marketplace before retrying. Failed authorization requires reconnecting the store.</div>
+        <div className="mt-3 flex flex-wrap gap-2">{recoveryTasks.map((task:any)=><button key={task.id} className="rounded-lg border border-amber-500/40 px-3 py-1.5 font-medium" onClick={async()=>{await retrySync(task.id);await reloadInventory()}}>{task.status === 'uncertain' || task.status === 'processing' ? 'Reconcile' : 'Retry'} {task.id.slice(0,8)}</button>)}</div>
       </div>}
       {/* Sub Navigation & Header Breadcrumb */}
       <SubNavHeader
@@ -1147,6 +1159,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                               const balance = skuStoreBalances[store.id];
                               const channelStock = assoc?.channelStockSnapshot ?? store.platformStockSnapshot ?? 0;
                               const isMapped = store.platform === 'webstore' || ((item as any).mappedStoreIds || []).includes(store.id);
+                              const syncState = describeMarketplaceSyncState(balance?.lastSyncStatus ?? assoc?.lastSyncStatus, balance?.availableStock ?? 0);
 
                               return (
                                 <div
@@ -1182,10 +1195,14 @@ export const MarketplaceInventoryPage: React.FC = () => {
                                       <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">
                                         Queued
                                       </span>
+                                    ) : store.platform === 'webstore' ? (
+                                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200">
+                                        JW stock: {currentMode === 'shared' ? availableStock : (balance?.availableStock ?? 0)}
+                                      </span>
                                     ) : (
-                                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
-                                        <CheckCircle2 className="w-2.5 h-2.5" />
-                                        <span>Synced: {currentMode === 'shared' ? availableStock : (balance?.availableStock ?? 0)}</span>
+                                      <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded flex items-center gap-1 ${syncState.tone === 'success' ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300' : syncState.tone === 'danger' ? 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300' : syncState.tone === 'warning' ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300'}`}>
+                                        {syncState.tone === 'success' ? <CheckCircle2 className="w-2.5 h-2.5" /> : null}
+                                        <span>{syncState.label}</span>
                                       </span>
                                     )}
 

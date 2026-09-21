@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  describeMarketplaceSyncState,
   readInventoryAdjustmentTarget,
   resolveInventoryAdjustmentItem,
 } from './MarketplaceInventoryPage';
@@ -19,5 +20,18 @@ describe('inventory adjustment deep link', () => {
   it('resolves the exact SKU by variant identity instead of array position or SKU text', () => {
     expect(resolveInventoryAdjustmentItem(inventory, '52')?.masterSku).toBe('SKU-TARGET');
     expect(resolveInventoryAdjustmentItem(inventory, '999')).toBeNull();
+  });
+});
+
+describe('marketplace sync state labels', () => {
+  it('calls stock synced only after provider confirmation', () => {
+    expect(describeMarketplaceSyncState('confirmed', 8)).toEqual({ label: 'Confirmed: 8', tone: 'success' });
+    expect(describeMarketplaceSyncState('queued', 8).label).toBe('Queued: 8');
+    expect(describeMarketplaceSyncState(undefined, 8).label).toBe('Not synced');
+  });
+
+  it('distinguishes authorization and uncertain outcomes', () => {
+    expect(describeMarketplaceSyncState('auth_expired', 8).label).toBe('Reconnect required');
+    expect(describeMarketplaceSyncState('uncertain', 8).label).toBe('Reconciliation required');
   });
 });

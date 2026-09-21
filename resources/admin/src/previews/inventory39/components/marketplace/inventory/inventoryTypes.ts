@@ -40,7 +40,8 @@ export interface StoreStockAccountBalance {
   syncState: StoreInventorySyncState;
   lastConfirmedPushedQuantity?: number | null;
   lastConfirmedPushedAt?: string;
-  lastSyncStatus?: 'confirmed' | 'queued' | 'processing' | 'failed' | 'uncertain';
+  syncReadiness?: { ready: boolean; effective_state?: string; blockers?: Array<{ code: string; next_action?: string }> };
+  lastSyncStatus?: 'confirmed' | 'queued' | 'processing' | 'failed' | 'auth_expired' | 'uncertain' | 'superseded' | 'waiting_source' | 'not_applicable';
   lastFailureReason?: string;
 }
 
