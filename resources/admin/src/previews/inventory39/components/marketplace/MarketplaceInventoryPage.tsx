@@ -19,6 +19,10 @@ import {
   ClipboardCheck,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
+  Download,
   Radio,
   Eye,
   Send,
@@ -50,6 +54,7 @@ import { InventoryActivityHistoryTab } from './inventory/InventoryActivityHistor
 import { InventorySettingsModal } from './inventory/InventorySettingsModal';
 import { StockSyncStoreButton } from './inventory/StockSyncStoreButton';
 import { StockSyncRecovery } from '../../../inventory43/StockSyncRecovery';
+import {inventoryCsv,inventoryPage,inventoryPageNumbers,toggleInventoryPageSelection} from './inventory/inventoryTablePagination';
 
 export const resolveFirstCountItem = (
   inventory: MarketplaceInventoryItem[],
@@ -157,6 +162,10 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
   const [statusFilter, setStatusFilter] = useState<'all' | 'uncounted' | 'low_stock' | 'synced' | 'mismatch'>('all');
   const [platformFilter, setPlatformFilter] = useState<string>('all');
   const [selectedStoreFilter, setSelectedStoreFilter] = useState<string>('all');
+  const [currentPage,setCurrentPage]=useState(1);
+  const [pageSize,setPageSize]=useState(25);
+  const [jumpPageInput,setJumpPageInput]=useState('');
+  const [selectedSkus,setSelectedSkus]=useState<string[]>([]);
 
   // Modals & Drawers
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
@@ -263,6 +272,22 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
       return true;
     });
   }, [safeInventory, searchQuery, statusFilter, platformFilter, selectedStoreFilter]);
+
+  useEffect(()=>setCurrentPage(1),[searchQuery,statusFilter,platformFilter,selectedStoreFilter,pageSize]);
+  const page=useMemo(()=>inventoryPage<MarketplaceInventoryItem>(filteredInventory as MarketplaceInventoryItem[],currentPage,pageSize),[filteredInventory,currentPage,pageSize]);
+  useEffect(()=>{if(page.currentPage!==currentPage)setCurrentPage(page.currentPage)},[page.currentPage,currentPage]);
+  const selectedOnCurrentPage=page.items.filter(item=>selectedSkus.includes(item.masterSku));
+  const isAllCurrentPageSelected=page.items.length>0&&selectedOnCurrentPage.length===page.items.length;
+  const toggleSelectedSku=(sku:string)=>setSelectedSkus(selected=>selected.includes(sku)?selected.filter(value=>value!==sku):[...selected,sku]);
+  const exportSelectedInventory=()=>{
+    const selected=filteredInventory.filter(item=>selectedSkus.includes(item.masterSku));
+    if(!selected.length)return;
+    const url=URL.createObjectURL(new Blob([inventoryCsv(selected)],{type:'text/csv;charset=utf-8;'}));
+    const link=document.createElement('a');
+    link.href=url;link.download=`inventory-skus-export-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+    addToast({type:'success',title:'CSV Export Generated',message:`Exported ${selected.length} selected inventory records to CSV.`});
+  };
 
   // Handler: Open First Count modal
   const handleOpenFirstCount = (item: MarketplaceInventoryItem) => {
@@ -1034,24 +1059,40 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
             </div>
           </div>
 
+          {selectedSkus.length>0&&<div className="p-3 bg-indigo-50 dark:bg-indigo-950/60 rounded-xl border border-indigo-200 dark:border-indigo-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-indigo-900 dark:text-indigo-200 font-semibold">
+              <span>{selectedSkus.length} SKU(s) selected</span>
+              <span className="text-[11px] text-indigo-500 dark:text-indigo-400 font-normal">({selectedOnCurrentPage.length} on this page)</span>
+              {filteredInventory.length>selectedSkus.length&&<button type="button" onClick={()=>setSelectedSkus(filteredInventory.map(item=>item.masterSku))} className="ml-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer font-bold">Select all {filteredInventory.length.toLocaleString()} SKUs</button>}
+            </div>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={exportSelectedInventory} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-neutral-900 border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 rounded-lg font-semibold hover:bg-indigo-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer">
+                <Download className="w-3.5 h-3.5"/><span>Export CSV</span>
+              </button>
+              <button type="button" onClick={()=>setSelectedSkus([])} className="px-2.5 py-1 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 cursor-pointer font-medium">Clear Selection</button>
+            </div>
+          </div>}
+
           {/* Master SKU Inventory Matrix Table */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs overflow-hidden">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-neutral-100 dark:border-neutral-800 text-neutral-400 uppercase text-[10px] tracking-wider bg-neutral-50/50 dark:bg-neutral-850/60">
-                    <th className="py-3 px-3">Product / Master SKU</th>
-                    <th className="py-3 px-3">
+                <thead className="bg-neutral-50 dark:bg-neutral-950/70 border-b border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 font-bold uppercase tracking-wider text-[10px]">
+                  <tr>
+                    <th className="py-3.5 px-4 w-10"><input type="checkbox" aria-label="Select all SKUs on current page" checked={isAllCurrentPageSelected} onChange={()=>setSelectedSkus(selected=>toggleInventoryPageSelection(selected,page.items.map(item=>item.masterSku),isAllCurrentPageSelected))} className="rounded border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"/></th>
+                    <th className="py-3.5 px-4">Product / Master SKU</th>
+                    <th className="py-3.5 px-4">
                       {currentMode === 'shared' ? 'Total Physical' : 'Physical Allocation'}
                     </th>
-                    <th className="py-3 px-3">Reserved (Locked)</th>
-                    <th className="py-3 px-3">Available to Sell (ATP)</th>
-                    <th className="py-3 px-3">Connected Stores & Sync States</th>
-                    <th className="py-3 px-3 text-right">Actions</th>
+                    <th className="py-3.5 px-4">Reserved (Locked)</th>
+                    <th className="py-3.5 px-4">Available to Sell (ATP)</th>
+                    <th className="py-3.5 px-4">Connected Stores & Sync States</th>
+                    <th className="py-3.5 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                  {(filteredInventory || []).map(item => {
+                <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                  {page.items.length===0?<tr><td colSpan={7} className="py-12 text-center text-neutral-400"><Boxes className="w-8 h-8 mx-auto mb-2 text-neutral-300 dark:text-neutral-700"/><p className="font-semibold text-neutral-700 dark:text-neutral-300">No inventory SKUs found</p><p className="text-xs text-neutral-500 mt-0.5">Try changing filters or search terms.</p></td></tr>:page.items.map(item => {
+                    const isSelected=selectedSkus.includes(item.masterSku);
                     const isUncounted = (item as any).hasUncountedAccounts || item.physicalStockStatus === 'unknown' || item.totalPhysicalStock === null;
                     const physicalStock = item.totalPhysicalStock ?? 0;
                     const reservedStock = item.reservedStock ?? 0;
@@ -1061,9 +1102,10 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
                     const skuStoreBalances = (storeBalances && storeBalances[item.masterSku]) || {};
 
                     return (
-                      <tr key={item.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-800/50 transition-colors">
+                      <tr key={item.id} className={`hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors ${isSelected?'bg-indigo-50/40 dark:bg-indigo-950/20':''}`}>
+                        <td className="py-3.5 px-4 w-10"><input type="checkbox" aria-label={`Select ${item.masterSku}`} checked={isSelected} onChange={()=>toggleSelectedSku(item.masterSku)} className="rounded border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"/></td>
                         {/* 1. Product & SKU */}
-                        <td className="py-3 px-3 min-w-[220px]">
+                        <td className="py-3.5 px-4 min-w-[240px]">
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 overflow-hidden shrink-0 flex items-center justify-center">
                               {item.imageUrl ? (
@@ -1094,7 +1136,7 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
                         </td>
 
                         {/* 2. Physical Stock */}
-                        <td className="py-3 px-3">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
                           {isUncounted ? (
                             <div className="space-y-1">
                               <span className="inline-block text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800/40">
@@ -1124,7 +1166,7 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
                         </td>
 
                         {/* 3. Reserved Stock */}
-                        <td className="py-3 px-3">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
                             <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">
                               {reservedStock}
@@ -1135,7 +1177,7 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
                         </td>
 
                         {/* 4. Available to Sell (ATP) */}
-                        <td className="py-3 px-3">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
                           {isUncounted ? (
                             <div className="font-mono text-xs text-neutral-400 italic">
                               0 (Locked until counted)
@@ -1153,7 +1195,7 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
                         </td>
 
                         {/* 5. Connected Stores & Sync States */}
-                        <td className="py-3 px-3 min-w-[260px]">
+                        <td className="py-3.5 px-4 min-w-[280px]">
                           <div className="space-y-1.5">
                             {(stores || []).filter(s => !s.isComingSoon).map(store => {
                               const assoc = (item.storeAssociations || []).find(a => a.connectionId === store.id);
@@ -1225,7 +1267,7 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
                         </td>
 
                         {/* 6. Actions */}
-                        <td className="py-3 px-3 text-right whitespace-nowrap">
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
                             {isUncounted ? (
                               <button
@@ -1263,6 +1305,21 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
                   })}
                 </tbody>
               </table>
+            </div>
+            <div className="px-5 py-4 border-t border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-4 text-xs bg-neutral-50/50 dark:bg-neutral-950/40">
+              <div className="flex flex-wrap items-center gap-3 text-neutral-500 dark:text-neutral-400">
+                <div>Showing <span className="font-mono font-bold text-neutral-900 dark:text-white">{page.startIndex}</span> to <span className="font-mono font-bold text-neutral-900 dark:text-white">{page.endIndex}</span> of <span className="font-mono font-bold text-neutral-900 dark:text-white">{page.totalItems.toLocaleString()}</span> SKUs</div>
+                <span className="text-neutral-300 dark:text-neutral-700 hidden sm:inline">|</span>
+                <div className="flex items-center gap-2"><span>Rows per page:</span><select value={pageSize} onChange={event=>setPageSize(Number(event.target.value))} className="px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 font-semibold focus:outline-hidden focus:ring-1 focus:ring-indigo-500 cursor-pointer"><option value={10}>10</option><option value={25}>25</option><option value={50}>50</option><option value={100}>100</option></select></div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button type="button" onClick={()=>setCurrentPage(1)} disabled={page.currentPage===1} title="First Page" className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer"><ChevronsLeft className="w-4 h-4"/></button>
+                <button type="button" onClick={()=>setCurrentPage(value=>Math.max(1,value-1))} disabled={page.currentPage===1} title="Previous Page" className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer"><ChevronLeft className="w-4 h-4"/></button>
+                <div className="flex items-center gap-1">{inventoryPageNumbers(page.currentPage,page.totalPages).map((value,index)=>value==='...'?<span key={`ellipsis-${index}`} className="px-1.5 py-1 text-neutral-400 font-mono text-xs">...</span>:<button key={value} type="button" onClick={()=>setCurrentPage(value)} className={`min-w-8 h-8 px-2 rounded-lg font-mono text-xs font-bold transition cursor-pointer ${value===page.currentPage?'bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 shadow-xs':'border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'}`}>{value}</button>)}</div>
+                <button type="button" onClick={()=>setCurrentPage(value=>Math.min(page.totalPages,value+1))} disabled={page.currentPage===page.totalPages} title="Next Page" className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer"><ChevronRight className="w-4 h-4"/></button>
+                <button type="button" onClick={()=>setCurrentPage(page.totalPages)} disabled={page.currentPage===page.totalPages} title="Last Page" className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer"><ChevronsRight className="w-4 h-4"/></button>
+                {page.totalPages>3&&<div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-neutral-200 dark:border-neutral-800 text-neutral-500 text-xs"><span>Go to:</span><input type="number" min={1} max={page.totalPages} value={jumpPageInput} onChange={event=>setJumpPageInput(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'){const target=Number(jumpPageInput);if(Number.isInteger(target)&&target>=1&&target<=page.totalPages){setCurrentPage(target);setJumpPageInput('')}}}} placeholder={`${page.currentPage}`} className="w-12 px-1.5 py-1 text-center font-mono rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 text-xs focus:outline-hidden focus:ring-1 focus:ring-indigo-500"/></div>}
+              </div>
             </div>
           </div>
         </div>
