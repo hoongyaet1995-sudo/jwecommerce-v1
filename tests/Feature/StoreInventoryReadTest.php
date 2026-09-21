@@ -90,8 +90,11 @@ class StoreInventoryReadTest extends TestCase
         $sku = $fixture->sku();
         $unmapped = $fixture->store('lazada', 'UNMAPPED');
         DB::table('products')->where('id', $sku['product']->id)->update(['status' => 'active']);
-        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores']);
         $resolver = app(AccountResolver::class);
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool']);
+        $legacyShared = $resolver->balance($sku['variant']->id, 'website');
+        $this->assertSame('shared', $legacyShared['account_key']);
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores']);
         $website = $resolver->balance($sku['variant']->id, 'website');
         $resolver->balance($sku['variant']->id, 'marketplace:'.$unmapped->id);
         DB::table('inventory_balances')->where('id', $website['id'])->update([

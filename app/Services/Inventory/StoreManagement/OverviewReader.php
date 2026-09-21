@@ -43,7 +43,7 @@ final class OverviewReader
             ->get(['id', 'product_variant_id', 'marketplace_store_id', 'status', 'target_quantity', 'attempts'])
             ->groupBy('product_variant_id');
 
-        $rows = $balanceRows->map(function (object $row) use ($syncTasks): array {
+        $rows = $balanceRows->map(function (object $row) use ($syncTasks, $mode): array {
             $physical = $row->physical_stock === null ? null : (int) $row->physical_stock;
             $reserved = $row->reserved_stock === null ? null : (int) $row->reserved_stock;
             $safety = $row->safety_stock === null ? null : (int) $row->safety_stock;
@@ -65,7 +65,9 @@ final class OverviewReader
                 'reserved' => $reserved,
                 'available' => $available,
                 'counted' => $row->counted_at !== null,
-                'allocation_eligible' => $row->kind === 'shared' || $row->marketplace_store_id === null || $row->mapping_id !== null,
+                'allocation_eligible' => $mode === 'shared'
+                    ? $row->kind === 'shared'
+                    : $row->kind === 'store' && ($row->marketplace_store_id === null || $row->mapping_id !== null),
                 'version' => (int) $row->version,
                 'provider_observation' => null,
                 'external_sync' => $this->syncState(
