@@ -16,10 +16,23 @@ final class InventoryThumbnail
         }
 
         if (! str_starts_with($source, '/images/') && ! str_starts_with($source, '/storage/')) {
-            return $source;
+            return $this->remoteThumbnail($source);
         }
 
         return '/admin/inventory/thumbnails/'.$variantId.'?v='.substr(hash('sha256', $source), 0, 12);
+    }
+
+    private function remoteThumbnail(string $source): string
+    {
+        $parts = parse_url($source);
+        if (($parts['host'] ?? null) !== 'images.unsplash.com') {
+            return $source;
+        }
+
+        parse_str($parts['query'] ?? '', $query);
+        $query = [...$query, 'w' => 160, 'h' => 160, 'fit' => 'crop', 'q' => 70, 'auto' => 'format'];
+
+        return 'https://images.unsplash.com'.($parts['path'] ?? '').'?'.http_build_query($query);
     }
 
     public function source(int $variantId): ?string

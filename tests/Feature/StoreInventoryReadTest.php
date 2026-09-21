@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Services\Inventory\StoreManagement\AccountResolver;
+use App\Services\Inventory\StoreManagement\InventoryThumbnail;
 use App\Services\Inventory\StoreManagement\OverviewReader;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -247,5 +248,15 @@ class StoreInventoryReadTest extends TestCase
         $this->assertNotFalse($size);
         $this->assertLessThanOrEqual(160, $size[0]);
         $this->assertLessThanOrEqual(160, $size[1]);
+    }
+
+    public function test_unsplash_catalog_media_uses_a_small_cdn_thumbnail(): void
+    {
+        $thumbnail = app(InventoryThumbnail::class);
+        $url = $thumbnail->url(9, null, null, 'https://images.unsplash.com/photo-test?w=1000&fit=crop&q=80');
+
+        $this->assertStringContainsString('w=160', $url);
+        $this->assertStringContainsString('h=160', $url);
+        $this->assertStringContainsString('q=70', $url);
     }
 }
