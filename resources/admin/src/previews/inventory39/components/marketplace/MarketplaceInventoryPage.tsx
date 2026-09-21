@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { MarketplaceInventoryItem } from '../../types';
 import { SubNavHeader } from '../common/SubNavHeader';
@@ -55,6 +55,20 @@ export const resolveFirstCountItem = (
   sku: string
 ) => inventory.find(item => item.masterSku === sku)
   || (selected?.masterSku === sku ? selected : null);
+
+export const readInventoryAdjustmentTarget = (search: string) => {
+  const params = new URLSearchParams(search);
+  const variantId = params.get('variant_id');
+
+  return params.get('action') === 'adjustment' && variantId
+    ? { variantId }
+    : null;
+};
+
+export const resolveInventoryAdjustmentItem = (
+  inventory: MarketplaceInventoryItem[],
+  variantId: string
+) => inventory.find(item => String(item.variantId) === variantId) || null;
 
 export const MarketplaceInventoryPage: React.FC = () => {
   const {
@@ -135,6 +149,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
   const [isIntakeModalOpen, setIsIntakeModalOpen] = useState(false);
   const [selectedItemForIntake, setSelectedItemForIntake] = useState<MarketplaceInventoryItem | null>(null);
   const [intakeInitialType, setIntakeInitialType] = useState<'intake' | 'adjustment'>('intake');
+  const consumedAdjustmentTarget = useRef<string | null>(null);
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [settingsInitialStep, setSettingsInitialStep] = useState<'view' | 'checklist'>('view');
@@ -348,6 +363,19 @@ export const MarketplaceInventoryPage: React.FC = () => {
     setIntakeInitialType(type);
     setIsIntakeModalOpen(true);
   };
+
+  useEffect(() => {
+    const target = readInventoryAdjustmentTarget(window.location.search);
+    if (!target || consumedAdjustmentTarget.current === target.variantId) return;
+
+    const item = resolveInventoryAdjustmentItem(allInventory, target.variantId);
+    if (!item) return;
+
+    consumedAdjustmentTarget.current = target.variantId;
+    setCatalogFilter('all');
+    setSearchQuery(item.masterSku);
+    handleOpenIntake(item, 'adjustment');
+  }, [allInventory]);
 
   // Handler: Save Intake/Adjustment
   const handleSaveIntake = async ({
