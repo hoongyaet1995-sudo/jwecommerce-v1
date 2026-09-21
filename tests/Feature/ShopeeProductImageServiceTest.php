@@ -113,4 +113,41 @@ class ShopeeProductImageServiceTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $service->prepare($store,$product->id,$image->id,$actor->id);
     }
+
+    public function test_trusted_imported_shopee_image_is_localized_and_prepared_automatically(): void
+    {
+        config(['marketplace.publish_operations_enabled'=>true,'marketplace.basic_wms_enabled'=>false,
+            'marketplace.shopee.enabled'=>true,'marketplace.shopee.environment'=>'sandbox',
+            'marketplace.shopee.partner_id'=>'123','marketplace.shopee.partner_key'=>'fixture',
+            'marketplace.shopee.callback_url'=>'https://example.test/callback']);
+        $actor=User::factory()->create(['is_admin'=>true]);
+        $product=Product::create(['title'=>'Imported image','handle'=>'imported-image','base_price'=>100]);
+        $remote='https://cf.shopee.com.my/file/imported-image';
+        $image=$product->images()->create(['path'=>$remote]);
+        $product->variants()->create(['title'=>'Default','sku'=>'IMPORTED-IMAGE','price'=>1250,'stock'=>0,'enabled'=>true]);
+        $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee','shop_name'=>'Test','external_shop_id'=>'456',
+            'region'=>'MY','environment'=>'sandbox','status'=>'connected']);
+        app(\App\Services\Marketplace\MarketplaceStoreAccess::class)->setProductPublishing($store,true,$actor->id,'Imported image publishing test');
+        MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'123','access_token'=>'fixture-token','access_expires_at'=>now()->addHour()]);
+        Storage::fake('public');
+        $bytes=base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9Z8AAAAASUVORK5CYII=');
+        Http::preventStrayRequests();
+        Http::fake(function ($request) use ($remote,$bytes) {
+            if ($request->url()===$remote) return Http::response($bytes,200,['Content-Type'=>'image/png']);
+            if (str_contains($request->url(),'get_shop_info')) return Http::response(['error'=>'','shop_id'=>456,'shop_name'=>'Test','region'=>'MY']);
+            if (str_contains($request->url(),'upload_image')) return Http::response(['error'=>'','response'=>['image_info'=>['image_id'=>'prepared-image']]]);
+            if (str_contains($request->url(),'get_category')) return Http::response(['response'=>['category_list'=>[
+                ['category_id'=>101,'parent_category_id'=>0,'original_category_name'=>'Images','display_category_name'=>'Images','has_children'=>false],
+            ]]]);
+            return Http::response([],500);
+        });
+
+        $receipt=app(ShopeeProductImageService::class)->prepare($store,$product->id,$image->id,$actor->id);
+
+        $this->assertGreaterThan(0,$receipt);
+        $this->assertTrue(\App\Domain\Cms\MediaUrlPolicy::isManaged($image->fresh()->path));
+        $this->assertDatabaseHas('marketplace_media_sources',['source_url'=>$remote]);
+        $this->assertSame('prepared-image',app(\App\Services\Marketplace\MarketplaceImageReceipts::class)
+            ->current($store,$product->id,$image->id)->provider_identity);
+    }
 }

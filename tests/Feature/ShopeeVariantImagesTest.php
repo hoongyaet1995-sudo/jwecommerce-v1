@@ -22,6 +22,7 @@ class ShopeeVariantImagesTest extends TestCase
         Storage::disk('public')->put($path,base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9Z8AAAAASUVORK5CYII='));
         foreach(['Red','Blue'] as $color) $p->variants()->create(['sku'=>$color,'title'=>$color,'price'=>100,'stock'=>10,'enabled'=>true,'options'=>['Color'=>$color],'image_url'=>'/old-unused.png','option_image'=>'/storage/'.$path]);
         $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee','shop_name'=>'Test','external_shop_id'=>'456','region'=>'MY','environment'=>'sandbox','status'=>'connected']);
+        app(\App\Services\Marketplace\MarketplaceStoreAccess::class)->setProductPublishing($store,true,$actor->id,'Variant image publishing test');
         MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'123','access_token'=>'fixture-token','access_expires_at'=>now()->addHour()]);
         Http::preventStrayRequests();$uploads=0;
         Http::fake(function($request) use (&$uploads){

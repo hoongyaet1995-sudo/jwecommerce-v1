@@ -8,7 +8,8 @@ use RuntimeException;
 final class ShopeeProductImageService
 {
     public function __construct(private MarketplaceLocalImage $images, private MarketplaceImageReceipts $receipts,
-        private ShopeeTokenManager $tokens, private ShopeeClient $client, private BasicPublishingDestination $destinations) {}
+        private ShopeeTokenManager $tokens, private ShopeeClient $client, private BasicPublishingDestination $destinations,
+        private MarketplaceMediaIngest $mediaIngest, private ShopeeImageNormalizer $normalizer) {}
 
     public function prepare(int $storeId, int $productId, int $imageId, int $actorId): int
     {
@@ -19,7 +20,13 @@ final class ShopeeProductImageService
             $store=DB::table('marketplace_stores')->where('id',$storeId)->lockForUpdate()->first();
             if (!$store || $store->platform!=='shopee' || $store->status!=='connected') throw new RuntimeException('Connect the Shopee store before preparing images.');
             $this->destinations->check($storeId,$productId);
-            $bytes=$this->images->read($productId,$imageId);
+            $image=DB::table('product_images')->where('product_id',$productId)->where('id',$imageId)->lockForUpdate()->first();
+            if (!$image) throw new RuntimeException('Select an image owned by this JW product.');
+            if ($this->mediaIngest->supports((string)$image->path)) {
+                $managed=$this->mediaIngest->ingest((string)$image->path);
+                DB::table('product_images')->where('id',$imageId)->update(['path'=>$managed,'updated_at'=>now()]);
+            }
+            $bytes=$this->normalizer->normalize($this->images->read($productId,$imageId));
             $token=$this->tokens->accessToken($storeId);
             // Include provider identity/application so a rebound store cannot reuse a prior account's result.
             $hash=MarketplaceImageReceipts::fingerprint($store,$bytes,'');

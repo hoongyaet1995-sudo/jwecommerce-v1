@@ -250,7 +250,7 @@ class ShopeeClient
 
     public function uploadImage(#[\SensitiveParameter] string $bytes): string
     {
-        if ($bytes==='' || strlen($bytes)>10000000) throw new RuntimeException('Image must be no larger than 10 MB.');
+        if ($bytes==='' || strlen($bytes)>2*1024*1024) throw new RuntimeException('Shopee product images must be no larger than 2 MB.');
         $info=@getimagesizefromstring($bytes);
         $mime=$info['mime'] ?? null;
         if (!in_array($mime,['image/jpeg','image/png'],true)) throw new RuntimeException('Shopee requires a JPEG or PNG image.');
