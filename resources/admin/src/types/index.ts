@@ -221,6 +221,12 @@ export interface ProductVariant {
   costPrice?: number;
   inventoryQuantity: number;
   stockVersion?: number;
+  inventoryInitialized?: boolean;
+  inventoryVerified?: boolean;
+  inventoryEditable?: boolean;
+  inventoryRevision?: string;
+  inventoryAdjustmentUrl?: string;
+  inventoryRepairRequired?: boolean;
   weightGrams?: number;
   packageLengthCm?: number;
   packageWidthCm?: number;

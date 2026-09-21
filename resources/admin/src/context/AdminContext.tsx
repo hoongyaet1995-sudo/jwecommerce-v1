@@ -5,6 +5,7 @@ import { formatAdminMoney } from '../integration/adminMoney';
 import { submitLaravelLogout } from '../integration/laravelSession';
 import { clonePage, createPage, fetchPages, removePage, savePageDraft } from '../integration/pageData';
 import { deleteCatalogEntity, fetchCatalog, saveCatalogEntity } from '../integration/catalogData';
+import { catalogStockPayload } from '../components/catalog/catalogStockPayload';
 import { fetchMenus, saveMenuDocument } from '../integration/menuData';
 import { customerDirectoryToCustomers, deleteCustomerData, fetchCustomerDirectoryData, saveCustomerData } from '../integration/customerDirectoryData';
 import { amendOrderDeliveryDetails as amendOrderDeliveryDetailsData, fetchOrders, processOrderRefundData, reviewPaymentProofData, updateOrderStatusData, updateOrderTrackingData, type AmendOrderDeliveryDetailsInput } from '../integration/orderData';
@@ -1184,7 +1185,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Product CRUD
   const saveProduct = async (prod: Product): Promise<Product | null> => {
     try {
-      const saved = await saveCatalogEntity(laravelBootstrap, 'products', prod);
+      const initial = products.find(item => item.id === prod.id) ?? null;
+      const saved = await saveCatalogEntity(laravelBootstrap, 'products', catalogStockPayload(prod, initial));
       setProducts(prev => prev.some(item => item.id === saved.id) ? prev.map(item => item.id === saved.id ? saved : item) : [saved, ...prev]);
       addToast({ type: 'success', title: 'Product Published', message: `Saved "${saved.title}" with ${saved.variants.length} variant SKUs.` });
       return saved;

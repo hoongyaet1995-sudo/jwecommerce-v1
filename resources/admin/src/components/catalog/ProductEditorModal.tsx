@@ -8,6 +8,7 @@ import { ProductDescriptionEditor } from './ProductDescriptionEditor';
 import { ProductExtraInfoEditor } from './ProductExtraInfoEditor';
 import { guessColorCode, VariantVisualPickerModal } from './VariantVisualPickerModal';
 import { uploadMediaAsset } from '../../integration/pageData';
+import { applyEditableInventoryQuantity, canEditCatalogStock } from './catalogStockPayload';
 import {
   X,
   Plus,
@@ -35,6 +36,36 @@ interface ProductEditorModalProps {
 }
 
 const packageDimensionValue = (value: string): number | undefined => value === '' ? undefined : parseFloat(value);
+
+export const VariantStockControl: React.FC<{
+  variant: ProductVariant;
+  onChange: (quantity: number) => void;
+}> = ({ variant, onChange }) => {
+  if (canEditCatalogStock(variant)) {
+    return (
+      <input
+        type="number"
+        min="0"
+        value={variant.inventoryQuantity}
+        onChange={(event) => onChange(parseInt(event.target.value, 10) || 0)}
+        className={`w-18 px-2 py-1 text-xs rounded border bg-white dark:bg-neutral-900 font-mono font-bold ${
+          variant.inventoryQuantity < 30 ? 'border-rose-400 text-rose-500' : 'border-neutral-200 dark:border-neutral-700'
+        }`}
+      />
+    );
+  }
+
+  const destination = variant.inventoryAdjustmentUrl
+    || `/admin/marketplace/inventory?variant_id=${encodeURIComponent(variant.id)}&action=adjustment`;
+  return (
+    <div className="flex flex-col items-start gap-1 min-w-36">
+      <span className="text-xs font-mono font-bold text-neutral-900 dark:text-white">{variant.inventoryQuantity} units</span>
+      <a href={destination} className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+        Edit in Inventory Management
+      </a>
+    </div>
+  );
+};
 
 export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   product,
@@ -100,7 +131,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
         baseCompareAtPrice: 249,
         featured: false,
         tags: ['flagship', 'new-release'],
-        totalInventory: 100,
+        totalInventory: 0,
         options: [
           { id: 'opt-1', name: 'Color', values: ['Midnight Black', 'Arctic White'] },
           { id: 'opt-2', name: 'Size', values: ['Regular', 'Max Edition'] }
@@ -128,7 +159,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
         options: {},
         price: price,
         compareAtPrice: price * 1.2,
-        inventoryQuantity: 50,
+        inventoryQuantity: 0,
         weightGrams: 300,
         enabled: true
       }];
@@ -161,7 +192,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
         price: price,
         compareAtPrice: Math.round(price * 1.2),
         costPrice: Math.round(price * 0.4),
-        inventoryQuantity: 40,
+        inventoryQuantity: 0,
         weightGrams: 350,
         image: typeof formData?.images[0] === 'string' ? formData.images[0] : formData?.images[0]?.path,
         enabled: true
@@ -246,7 +277,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   const applyBatchInventory = () => {
     const qtyNum = parseInt(batchInventory, 10);
     if (isNaN(qtyNum)) return;
-    const updated = formData.variants.map(v => ({ ...v, inventoryQuantity: qtyNum }));
+    const updated = applyEditableInventoryQuantity(formData.variants, qtyNum);
     setFormData({
       ...formData,
       variants: updated,
@@ -811,13 +842,9 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                           </td>
 
                           <td className="py-2.5 px-3">
-                            <input
-                              type="number"
-                              value={variant.inventoryQuantity}
-                              onChange={(e) => updateVariantRow(vIdx, 'inventoryQuantity', parseInt(e.target.value, 10) || 0)}
-                              className={`w-18 px-2 py-1 text-xs rounded border bg-white dark:bg-neutral-900 font-mono font-bold ${
-                                variant.inventoryQuantity < 30 ? 'border-rose-400 text-rose-500' : 'border-neutral-200 dark:border-neutral-700'
-                              }`}
+                            <VariantStockControl
+                              variant={variant}
+                              onChange={(quantity) => updateVariantRow(vIdx, 'inventoryQuantity', quantity)}
                             />
                           </td>
 
