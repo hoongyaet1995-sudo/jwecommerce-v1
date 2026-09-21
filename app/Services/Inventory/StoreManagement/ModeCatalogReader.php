@@ -7,15 +7,24 @@ use Illuminate\Support\Facades\DB;
 
 final class ModeCatalogReader
 {
+    public function __construct(private readonly InventoryThumbnail $thumbnails) {}
+
     /** @return array{items:list<array<string,mixed>>,summary:array{total:int,ready:int,blocked:int,excluded:int}} */
     public function read(): array
     {
         $configuration = DB::table('inventory_configuration')->where('id', 1)->first();
         $mode = $configuration?->operating_mode === 'independent_stores' ? 'independent_stores' : 'shared_pool';
+        $primaryImages = DB::table('product_images')
+            ->selectRaw('product_id, MIN(id) as image_id')
+            ->whereNull('product_variant_id')
+            ->groupBy('product_id');
         $variants = DB::table('product_variants as v')
             ->join('products as p', 'p.id', '=', 'v.product_id')
+            ->leftJoinSub($primaryImages, 'primary_image', 'primary_image.product_id', '=', 'p.id')
+            ->leftJoin('product_images as image', 'image.id', '=', 'primary_image.image_id')
             ->orderBy('v.id')
             ->get(['v.id', 'v.sku', 'v.title as variant_title', 'v.stock as catalog_stock_snapshot', 'v.data_classification',
+                'v.image_url', 'v.option_image', 'image.path as product_image',
                 'p.id as product_id', 'p.title as product_title', 'p.status as product_status']);
 
         $balances = $this->balances($mode)->keyBy('product_variant_id');
@@ -38,6 +47,7 @@ final class ModeCatalogReader
                 'sku' => $variant->sku,
                 'product' => $variant->product_title,
                 'variant' => $variant->variant_title,
+                'thumbnail_url' => $this->thumbnails->url((int) $variant->id, $variant->image_url, $variant->option_image, $variant->product_image),
                 'product_status' => $variant->product_status,
                 'data_classification' => $variant->data_classification,
                 'catalog_stock_snapshot' => (int) $variant->catalog_stock_snapshot,

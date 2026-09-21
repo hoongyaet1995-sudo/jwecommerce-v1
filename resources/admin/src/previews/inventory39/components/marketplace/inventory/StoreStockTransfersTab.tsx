@@ -459,6 +459,8 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                                     src={item.imageUrl}
                                     alt={item.productName}
                                     className="w-full h-full object-cover"
+                                    loading="lazy"
+                                    decoding="async"
                                     referrerPolicy="no-referrer"
                                   />
                                 ) : (
@@ -514,6 +516,8 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                             src={selectedItem.imageUrl}
                             alt={selectedItem.productName}
                             className="w-full h-full object-cover"
+                            loading="lazy"
+                            decoding="async"
                             referrerPolicy="no-referrer"
                           />
                         ) : (
@@ -1157,6 +1161,8 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                               src={item.imageUrl}
                               alt={item.productName}
                               className="w-full h-full object-cover"
+                              loading="lazy"
+                              decoding="async"
                               referrerPolicy="no-referrer"
                             />
                           ) : (

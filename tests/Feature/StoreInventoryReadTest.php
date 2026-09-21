@@ -208,4 +208,44 @@ class StoreInventoryReadTest extends TestCase
             'total' => 5, 'ready' => 1, 'blocked' => 2, 'excluded' => 2,
         ], $catalog['summary']);
     }
+
+    public function test_mode_catalog_exposes_a_cached_inventory_thumbnail_for_local_catalog_media(): void
+    {
+        $fixture = new StoreInventoryFixture;
+        $sku = $fixture->sku();
+        $sku['product']->images()->create([
+            'path' => '/images/catalog/solis-1.jpg',
+            'alt' => 'Solis thumbnail',
+            'position' => 0,
+        ]);
+
+        $item = collect($this->actingAs($this->admin())
+            ->getJson('/admin/api/inventory/store-management/overview')
+            ->assertOk()
+            ->json('mode_catalog.items'))
+            ->firstWhere('variant_id', $sku['variant']->id);
+
+        $this->assertStringStartsWith('/admin/inventory/thumbnails/'.$sku['variant']->id.'?v=', $item['thumbnail_url']);
+    }
+
+    public function test_inventory_thumbnail_is_resized_and_cached_when_gd_is_available(): void
+    {
+        if (! extension_loaded('gd')) {
+            $this->markTestSkipped('GD is not enabled in this PHP process.');
+        }
+
+        $fixture = new StoreInventoryFixture;
+        $sku = $fixture->sku();
+        $sku['product']->images()->create(['path' => '/images/catalog/solis-1.jpg', 'position' => 0]);
+
+        $response = $this->actingAs($this->admin())
+            ->get('/admin/inventory/thumbnails/'.$sku['variant']->id)
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/webp');
+
+        $size = getimagesize($response->baseResponse->getFile()->getPathname());
+        $this->assertNotFalse($size);
+        $this->assertLessThanOrEqual(160, $size[0]);
+        $this->assertLessThanOrEqual(160, $size[1]);
+    }
 }

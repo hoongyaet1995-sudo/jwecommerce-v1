@@ -315,6 +315,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/inventory/store-management/allocations', [\App\Http\Controllers\Admin\StoreInventoryAllocationController::class, 'store']);
     Route::post('/api/inventory/store-management/allocations/{review}/confirm', [\App\Http\Controllers\Admin\StoreInventoryAllocationController::class, 'confirm'])->whereUuid('review');
     Route::get('/api/inventory/store-management/overview', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'overview']);
+    Route::get('/inventory/thumbnails/{variant}', \App\Http\Controllers\Admin\InventoryThumbnailController::class)
+        ->whereNumber('variant')->name('admin.inventory.thumbnail');
     Route::get('/api/inventory/store-management/stores', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'stores']);
     Route::get('/api/inventory/store-management/history', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'history']);
     Route::get('/api/inventory/store-management/operations/{operation}', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'operation'])->whereUuid('operation');

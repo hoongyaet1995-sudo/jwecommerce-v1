@@ -1073,7 +1073,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 overflow-hidden shrink-0 flex items-center justify-center">
                               {item.imageUrl ? (
-                                <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-cover" />
+                                <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                               ) : (
                                 <Boxes className="w-5 h-5 text-neutral-400" />
                               )}
@@ -1343,7 +1343,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
             return;
           }
           const catalogItem = inventoryModeCatalog.items.find((entry: any) => entry.variant_id === variantId || entry.sku === sku);
-          if (catalogItem) handleOpenFirstCount({id: '', variantId: catalogItem.variant_id, masterSku: catalogItem.sku, barcode: '', productName: catalogItem.product, variantName: catalogItem.variant, imageUrl: '', warehouseLocation: '', catalogStockSnapshot: catalogItem.catalog_stock_snapshot, physicalStockStatus: 'unknown', hasUncountedAccounts: true, totalPhysicalStock: null, reservedStock: catalogItem.reserved_stock || 0, safetyStock: 0, availableStock: null, reorderPoint: 0, costPrice: 0, sellingPrice: 0, channelMappings: {}, autoSyncEnabled: false, historyLog: [], storeAssociations: []} as any);
+          if (catalogItem) handleOpenFirstCount({id: '', variantId: catalogItem.variant_id, masterSku: catalogItem.sku, barcode: '', productName: catalogItem.product, variantName: catalogItem.variant, imageUrl: catalogItem.thumbnail_url || '', warehouseLocation: '', catalogStockSnapshot: catalogItem.catalog_stock_snapshot, physicalStockStatus: 'unknown', hasUncountedAccounts: true, totalPhysicalStock: null, reservedStock: catalogItem.reserved_stock || 0, safetyStock: 0, availableStock: null, reorderPoint: 0, costPrice: 0, sellingPrice: 0, channelMappings: {}, autoSyncEnabled: false, historyLog: [], storeAssociations: []} as any);
         }}
       />
     </div>

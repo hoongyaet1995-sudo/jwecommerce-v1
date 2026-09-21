@@ -25,11 +25,12 @@ describe('catalog-driven inventory', () => {
   it('includes uncounted draft and active variants without balances or marketplace mappings', () => {
     const items = adaptInventory({mode:'independent', configuration_version:1, stores:[], totals:{}, data:[], mode_catalog:{items:[
       {variant_id:20,sku:'DRAFT',product:'Draft product',variant:'Default',product_status:'draft',mapped_stores:[]},
-      {variant_id:21,sku:'ACTIVE',product:'Active product',variant:'Blue',product_status:'active',mapped_stores:[]},
+      {variant_id:21,sku:'ACTIVE',product:'Active product',variant:'Blue',product_status:'active',thumbnail_url:'/admin/inventory/thumbnails/21?v=abc',mapped_stores:[]},
     ]}});
     expect(items.map(i=>i.masterSku)).toEqual(['DRAFT','ACTIVE']);
     expect(items[0].id).toBe('variant:20');
     expect(items[0].physicalStockStatus).toBe('unknown');
+    expect(items[1].imageUrl).toBe('/admin/inventory/thumbnails/21?v=abc');
     expect(items[0].totalPhysicalStock).toBeNull();
     expect(items[0].catalogStatus).toBe('draft');
   });
