@@ -73,7 +73,7 @@ class StoreInventoryModeTest extends TestCase
         $this->assertSame(8, (int) DB::table('inventory_balances')->where('id', $archivedBalance['id'])->value('physical_stock'));
     }
 
-    public function test_independent_split_allocates_to_enrolled_non_active_sync_accounts_without_broadcasting(): void
+    public function test_independent_split_rejects_positive_stock_for_unmapped_store_accounts(): void
     {
         DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool', 'version' => 12]);
         $fixture = new StoreInventoryFixture;
@@ -90,14 +90,14 @@ class StoreInventoryModeTest extends TestCase
         DB::table('inventory_store_accounts')->where('marketplace_store_id', $paused->id)->update(['management_status' => 'paused']);
         $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
 
-        $response = $this->actingAs($admin)->postJson('/admin/api/inventory/store-management/mode', [
+        $this->actingAs($admin)->postJson('/admin/api/inventory/store-management/mode', [
             'target' => 'independent_stores', 'configuration_version' => 12,
             'distribution' => [(string) $sku['variant']->id => [
                 'website' => 4, 'marketplace:'.$setup->id => 3, 'marketplace:'.$paused->id => 3,
             ]],
-        ])->assertOk()->assertJsonPath('physical_total', 10);
+        ])->assertUnprocessable()->assertJsonValidationErrors('distribution');
 
-        $this->assertSame([], $response->json('external_stages'));
+        $this->assertSame('shared_pool', DB::table('inventory_configuration')->where('id', 1)->value('operating_mode'));
         $this->assertSame(10, (int) DB::table('inventory_balances')->whereNotNull('counted_at')->sum('physical_stock'));
     }
 }

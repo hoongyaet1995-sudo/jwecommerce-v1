@@ -95,6 +95,7 @@ final class ModeMutation
             if (! is_array($allocations) || array_sum(array_map('intval', $allocations)) !== (int) $balance->physical_stock) {
                 throw ValidationException::withMessages(['distribution' => 'Allocate the complete shared physical quantity for every SKU.']);
             }
+            $allocations = $this->validatedDistribution((int) $balance->product_variant_id, $allocations);
             DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores', 'version' => $expectedVersion]);
             foreach ($allocations as $channel => $quantity) {
                 $resolved = $this->accounts->balance((int) $balance->product_variant_id, (string) $channel);
@@ -104,5 +105,30 @@ final class ModeMutation
             DB::table('inventory_balances')->where('id', $balance->id)->update(['physical_stock' => null, 'reserved_stock' => null, 'safety_stock' => null,
                 'counted_at' => null, 'version' => DB::raw('version + 1'), 'updated_at' => now()]);
         }
+    }
+
+    /** @return array<string,int> */
+    private function validatedDistribution(int $variantId, array $allocations): array
+    {
+        $validated = [];
+        foreach ($allocations as $channel => $quantity) {
+            $quantity = (int) $quantity;
+            if ($quantity < 0 || ($channel !== 'website' && ! preg_match('/^marketplace:([1-9][0-9]*)$/D', (string) $channel, $matches))) {
+                throw ValidationException::withMessages(['distribution' => 'Choose valid store accounts and non-negative stock quantities.']);
+            }
+            if ($channel !== 'website') {
+                $mapped = DB::table('marketplace_variant_mappings')
+                    ->where('product_variant_id', $variantId)->where('store_id', (int) $matches[1])->exists();
+                if (! $mapped && $quantity > 0) {
+                    throw ValidationException::withMessages(['distribution' => 'Map the SKU to a marketplace store before allocating stock to that store.']);
+                }
+                if (! $mapped) {
+                    continue;
+                }
+            }
+            $validated[(string) $channel] = $quantity;
+        }
+
+        return $validated;
     }
 }
