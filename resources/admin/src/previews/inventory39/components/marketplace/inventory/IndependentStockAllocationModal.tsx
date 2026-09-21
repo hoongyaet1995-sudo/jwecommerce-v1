@@ -153,7 +153,7 @@ export const IndependentStockAllocationModal: React.FC<IndependentStockAllocatio
       });
       setAllocations(initialMap);
     }
-  }, [isOpen, item?.id, activeStores]);
+  }, [isOpen, item?.id]);
 
   if (!isOpen || !item) return null;
 

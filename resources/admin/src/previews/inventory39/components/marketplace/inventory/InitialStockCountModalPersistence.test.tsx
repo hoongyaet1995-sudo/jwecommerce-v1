@@ -114,3 +114,24 @@ it('allows an independently verified zero count when every store allocation is z
   expect(proceed.disabled).toBe(false);
   await act(async () => root.unmount()); host.remove();
 });
+
+it('keeps the success receipt open when saving refreshes the store collection', async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement('div'); document.body.append(host); const root = createRoot(host);
+  const item: any = { id: '3', variantId: 11, masterSku: 'ALLOC-REFRESH', productName: 'Refresh allocation', variantName: 'Default', totalPhysicalStock: 22, reservedStock: 0, mappedStoreIds: [], storeAssociations: [] };
+  const baseStores: any[] = [{id:'website',name:'JW Ecom Storefront',nickname:'JW Storefront',platform:'webstore',platformDisplayName:'JW Storefront',connectionState:'connected'}];
+
+  const close = vi.fn();
+  const save = vi.fn().mockResolvedValue({ledger_status:'applied',external_stages:[]});
+  await act(async () => root.render(<InitialStockCountModal isOpen onClose={close} item={item} mode="independent" stores={baseStores} onSaveCount={save} />));
+  await act(async () => (Array.from(host.querySelectorAll('button')).find(button => button.textContent?.includes('Assign Remaining')) as HTMLButtonElement).click());
+  await act(async () => (Array.from(host.querySelectorAll('button')).find(button => button.textContent?.includes('Proceed to Review')) as HTMLButtonElement).click());
+  await act(async () => (Array.from(host.querySelectorAll('button')).find(button => button.textContent?.includes('Confirm & Allocate Stock')) as HTMLButtonElement).click());
+
+  expect(host.textContent).toContain('Stock Allocation Completed');
+  expect(host.textContent).toContain('JW Central Inventory Ledger: Updated & Conserved');
+  await act(async () => root.render(<InitialStockCountModal isOpen onClose={close} item={item} mode="independent" stores={[...baseStores]} onSaveCount={save} />));
+  expect(host.textContent).toContain('Stock Allocation Completed');
+
+  await act(async () => root.unmount()); host.remove();
+});
