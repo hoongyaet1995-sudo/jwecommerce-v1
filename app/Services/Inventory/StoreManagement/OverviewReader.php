@@ -6,11 +6,13 @@ use Illuminate\Support\Facades\DB;
 
 final class OverviewReader
 {
-    public function __construct(private readonly ModeCatalogReader $modeCatalog) {}
+    public function __construct(private readonly ModeCatalogReader $modeCatalog, private readonly StoreEnrollmentService $enrollment) {}
 
     /** @return array<string,mixed> */
     public function read(array $filters = []): array
     {
+        $this->enrollment->ensureWebsite();
+        $this->enrollment->enrollConnectedStores();
         $configuration = DB::table('inventory_configuration')->where('id', 1)->first();
         $mode = $configuration?->operating_mode === 'independent_stores' ? 'independent' : 'shared';
         $query = DB::table('inventory_balances as b')
@@ -84,7 +86,8 @@ final class OverviewReader
         $website = DB::table('inventory_store_accounts')->where('account_key', 'website')->first();
 
         return ['mode' => $mode, 'configuration_version' => (int) ($configuration?->version ?? 0),
-            'website_account' => ['management_status' => $website?->management_status ?? 'not_managed', 'management_version' => (int) ($website?->version ?? 0)],
+            'website_account' => ['management_status' => 'managed', 'inventory_membership' => 'enrolled', 'sync_state' => 'active',
+                'management_version' => (int) ($website?->version ?? 0)],
             'totals' => ['known' => $known, 'unknown_accounts' => $unknown], 'mode_catalog' => $this->modeCatalog->read(),
             'stores' => $this->stores($filters), 'data' => $rows];
     }
@@ -106,7 +109,13 @@ final class OverviewReader
                 'name' => $store->shop_name,
                 'region' => $store->region,
                 'connection_status' => $store->status,
-                'management_status' => $store->management_status ?? 'not_managed',
+                'management_status' => $store->management_status ?? 'setup_required',
+                'inventory_membership' => 'enrolled',
+                'sync_state' => match ($store->management_status ?? 'setup_required') {
+                    'managed' => 'active',
+                    'paused' => 'paused',
+                    default => 'setup_required',
+                },
                 'management_version' => (int) ($store->management_version ?? 0),
             ])->all();
     }

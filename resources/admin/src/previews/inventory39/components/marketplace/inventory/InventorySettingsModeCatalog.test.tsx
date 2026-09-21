@@ -11,13 +11,13 @@ it('shows the complete categorized SKU catalog and allocates only ready physical
   const root = createRoot(host);
   const Component = InventorySettingsModal as any;
   const catalog = {
-    summary: { total: 5, ready: 1, blocked: 1, excluded: 3 },
+    summary: { total: 5, ready: 1, blocked: 2, excluded: 2 },
     items: [
       { variant_id: 1, sku: 'READY', product: 'Ready Product', variant: 'Default', product_status: 'active', classification: 'ready_to_allocate', physical_stock: 12, reserved_stock: 0, counted: true, mapped_stores: [] },
       { variant_id: 2, sku: 'COUNT', product: 'Needs Count', variant: 'Default', product_status: 'active', classification: 'awaiting_first_count', physical_stock: null, reserved_stock: null, counted: false, mapped_stores: [] },
       { variant_id: 3, sku: 'TEST', product: 'Sandbox Product', variant: 'Default', product_status: 'draft', classification: 'sandbox_test', physical_stock: 5, reserved_stock: 0, counted: true, mapped_stores: [] },
       { variant_id: 4, sku: 'ARCHIVE', product: 'Archived Product', variant: 'Default', product_status: 'archived', classification: 'excluded_status', physical_stock: 3, reserved_stock: 0, counted: true, mapped_stores: [] },
-      { variant_id: 5, sku: 'TAKEOVER', product: 'Unmanaged Listing', variant: 'Default', product_status: 'active', classification: 'store_not_managed', physical_stock: null, reserved_stock: null, counted: false, mapped_stores: [{ id: 9, name: 'Shopee Test', management_status: 'not_managed' }] },
+      { variant_id: 5, sku: 'ENROLLED', product: 'Enrolled Listing', variant: 'Default', product_status: 'active', classification: 'awaiting_first_count', physical_stock: null, reserved_stock: null, counted: false, mapped_stores: [{ id: 9, name: 'Shopee Test', management_status: 'setup_required' }] },
     ],
   };
   const stores: any[] = [
@@ -37,13 +37,12 @@ it('shows the complete categorized SKU catalog and allocates only ready physical
 
   expect(host.textContent).toContain('5 Total');
   expect(host.textContent).toContain('1 Ready');
-  expect(host.textContent).toContain('1 Blocked');
-  expect(host.textContent).toContain('3 Excluded');
+  expect(host.textContent).toContain('2 Blocked');
+  expect(host.textContent).toContain('2 Excluded');
   expect(host.textContent).toContain('Ready to Allocate');
   expect(host.textContent).toContain('Awaiting First Count');
   expect(host.textContent).toContain('Sandbox / Test');
   expect(host.textContent).toContain('Draft / Archived');
-  expect(host.textContent).toContain('Store Not Managed by JW');
   expect(host.querySelectorAll('input[type="number"]')).toHaveLength(2);
 
   await act(async () => root.unmount());

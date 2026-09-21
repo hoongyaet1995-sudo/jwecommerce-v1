@@ -162,9 +162,9 @@ class StoreInventoryReadTest extends TestCase
         $this->assertSame('awaiting_first_count', $byVariant[$uncounted['variant']->id]['classification']);
         $this->assertSame('sandbox_test', $byVariant[$test['variant']->id]['classification']);
         $this->assertSame('excluded_status', $byVariant[$archived['variant']->id]['classification']);
-        $this->assertSame('store_not_managed', $byVariant[$unmanaged['variant']->id]['classification']);
+        $this->assertSame('awaiting_first_count', $byVariant[$unmanaged['variant']->id]['classification']);
         $this->assertSame([
-            'total' => 5, 'ready' => 1, 'blocked' => 1, 'excluded' => 3,
+            'total' => 5, 'ready' => 1, 'blocked' => 2, 'excluded' => 2,
         ], $catalog['summary']);
     }
 }

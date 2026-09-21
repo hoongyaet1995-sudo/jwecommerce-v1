@@ -51,7 +51,7 @@ final class ModeCatalogReader
                     'platform' => $store->platform,
                     'name' => $store->shop_name,
                     'connection_status' => $store->connection_status,
-                    'management_status' => $store->management_status ?? 'not_managed',
+                    'management_status' => $store->management_status ?? 'setup_required',
                 ])->values()->all(),
             ];
         })->values();
@@ -60,7 +60,7 @@ final class ModeCatalogReader
             'total' => $items->count(),
             'ready' => $items->where('classification', 'ready_to_allocate')->count(),
             'blocked' => $items->whereIn('classification', ['awaiting_first_count', 'reservation_conflict'])->count(),
-            'excluded' => $items->whereIn('classification', ['sandbox_test', 'excluded_status', 'store_not_managed'])->count(),
+            'excluded' => $items->whereIn('classification', ['sandbox_test', 'excluded_status'])->count(),
         ]];
     }
 
@@ -76,7 +76,7 @@ final class ModeCatalogReader
                 } else {
                     $query->where('pool.kind', 'store')
                         ->where(fn ($accounts) => $accounts->whereNull('pool.marketplace_store_id')
-                            ->orWhere('account.management_status', 'managed'));
+                            ->orWhereNotNull('account.id'));
                 }
             })
             ->selectRaw('MIN(b.id) as id, b.product_variant_id, SUM(b.physical_stock) as physical_stock, SUM(b.reserved_stock) as reserved_stock, MIN(b.counted_at) as counted_at')
@@ -92,10 +92,6 @@ final class ModeCatalogReader
         }
         if (! in_array($variant->product_status, ['active'], true)) {
             return 'excluded_status';
-        }
-        if ($stores->contains(fn (object $store) => $store->connection_status === 'connected'
-            && ($store->management_status ?? 'not_managed') !== 'managed')) {
-            return 'store_not_managed';
         }
         if (! $balance || $balance->counted_at === null || $balance->physical_stock === null) {
             return 'awaiting_first_count';

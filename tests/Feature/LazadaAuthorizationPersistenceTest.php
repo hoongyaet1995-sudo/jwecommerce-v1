@@ -63,6 +63,9 @@ class LazadaAuthorizationPersistenceTest extends TestCase
     {
         $actor=$this->setupProvider();
         $id=$this->authorize($actor);
+        $this->assertDatabaseHas('inventory_store_accounts',[
+            'marketplace_store_id'=>$id,'management_status'=>'setup_required',
+        ]);
         $this->assertDatabaseHas('marketplace_stores',['id'=>$id,'platform'=>'lazada','external_shop_id'=>'2001','region'=>'MY','status'=>'connected']);
         $this->assertDatabaseHas('marketplace_stores',['id'=>$id,'account_mode'=>'production']);
         $this->assertDatabaseHas('marketplace_store_capabilities',['store_id'=>$id,'catalog_read'=>true,'product_publish'=>false,

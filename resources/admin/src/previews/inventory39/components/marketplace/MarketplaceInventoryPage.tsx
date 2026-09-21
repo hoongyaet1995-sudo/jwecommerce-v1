@@ -635,9 +635,9 @@ export const MarketplaceInventoryPage: React.FC = () => {
     return { success: true };
   };
 
-  // Handler: Toggle Store Takeover Management
+  // Handler: pause or resume marketplace ATP synchronization.
   const handleToggleStoreManagement = async (storeId: string, enable: boolean) => {
-    await toggleStoreManagement(storeId, enable, enable ? 'Admin reviewed store inventory takeover' : 'Admin paused inventory takeover');
+    await toggleStoreManagement(storeId, enable, enable ? 'Admin reviewed marketplace inventory sync readiness' : 'Admin paused marketplace inventory sync');
     await reloadInventory();
     return;
     setStores(prev =>
@@ -663,10 +663,10 @@ export const MarketplaceInventoryPage: React.FC = () => {
       storeId,
       platform: store?.platform as any,
       quantityChange: 0,
-      previousStock: enable ? 'Not Managed' : 'Managed by JW',
-      resultingStock: enable ? 'Managed by JW' : 'Not Managed',
+      previousStock: enable ? 'Sync Paused / Setup Required' : 'Inventory Sync Active',
+      resultingStock: enable ? 'Inventory Sync Active' : 'Sync Paused',
       operator: 'Alexander (Admin)',
-      reason: enable ? 'Admin enabled JW inventory takeover' : 'Admin paused JW inventory takeover',
+      reason: enable ? 'Admin enabled marketplace inventory sync' : 'Admin paused marketplace inventory sync',
       referenceId: `TAKEOVER-${Date.now().toString().slice(-4)}`,
       status: 'succeeded'
     };
@@ -675,10 +675,10 @@ export const MarketplaceInventoryPage: React.FC = () => {
 
     addToast({
       type: 'info',
-      title: enable ? 'Store Inventory Taken Over' : 'Store Takeover Paused',
+      title: enable ? 'Inventory Sync Active' : 'Inventory Sync Paused',
       message: enable
-        ? `${store?.name} is now actively managed by JW. Stock updates will be pushed automatically.`
-        : `${store?.name} is now independent. JW will not broadcast inventory changes to this store.`
+        ? `${store?.name} is enrolled in JW inventory and ATP updates will be pushed automatically.`
+        : `${store?.name} remains in the JW ledger while external ATP broadcasts are paused.`
     });
   };
 
@@ -1286,7 +1286,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
         onSave={handleSaveIntake}
       />
 
-      {/* MODAL 3: Admin Master Settings (Mode Transition & Store Takeover) */}
+      {/* MODAL 3: Admin Master Settings (Mode Transition & Store Sync) */}
       <InventorySettingsModal
         isOpen={isSettingsModalOpen}
         onClose={() => {

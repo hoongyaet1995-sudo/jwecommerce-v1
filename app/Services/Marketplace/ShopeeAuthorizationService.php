@@ -3,12 +3,17 @@
 namespace App\Services\Marketplace;
 
 use App\Models\MarketplaceStoreToken;
+use App\Services\Inventory\StoreManagement\StoreEnrollmentService;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class ShopeeAuthorizationService
 {
-    public function __construct(private OAuthStateService $states, private ShopeeClient $client) {}
+    public function __construct(
+        private OAuthStateService $states,
+        private ShopeeClient $client,
+        private StoreEnrollmentService $enrollment,
+    ) {}
 
     public function complete(string $state, int $actorId, #[\SensitiveParameter] string $code, string $shopId): int
     {
@@ -51,6 +56,7 @@ class ShopeeAuthorizationService
 
             return $id;
         });
+        $this->enrollment->enroll($storeId);
         try {
             \App\Jobs\WarmShopeeListingMetadata::dispatch($storeId)->afterCommit();
         } catch (\Throwable) {

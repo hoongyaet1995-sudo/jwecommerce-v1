@@ -634,10 +634,10 @@ export const INITIAL_INVENTORY_ACTIVITY_LOGS: InventoryActivityItem[] = [
     storeId: 'conn-lazada-01',
     platform: 'lazada',
     quantityChange: 0,
-    previousStock: 'Not Managed by JW',
-    resultingStock: 'Managed by JW',
+    previousStock: 'Setup Required',
+    resultingStock: 'Inventory Sync Active',
     operator: 'Alexander (Admin)',
-    reason: 'Completed 16/16 SKU mapping and stock verification. Admin approved JW inventory takeover.',
+    reason: 'Completed SKU mapping and stock verification. Admin enabled marketplace inventory sync.',
     referenceId: 'TAKEOVER-LZ-01',
     status: 'succeeded'
   },

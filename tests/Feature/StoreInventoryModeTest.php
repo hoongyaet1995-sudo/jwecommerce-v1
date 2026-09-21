@@ -72,4 +72,32 @@ class StoreInventoryModeTest extends TestCase
         $this->assertSame(15, (int) DB::table('inventory_balances')->where('id', $testBalance['id'])->value('physical_stock'));
         $this->assertSame(8, (int) DB::table('inventory_balances')->where('id', $archivedBalance['id'])->value('physical_stock'));
     }
+
+    public function test_independent_split_allocates_to_enrolled_non_active_sync_accounts_without_broadcasting(): void
+    {
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool', 'version' => 12]);
+        $fixture = new StoreInventoryFixture;
+        $sku = $fixture->sku();
+        DB::table('products')->where('id', $sku['product']->id)->update(['status' => 'active']);
+        $shared = app(AccountResolver::class)->balance($sku['variant']->id, 'website');
+        DB::table('inventory_balances')->where('id', $shared['id'])->update([
+            'physical_stock' => 10, 'reserved_stock' => 0, 'safety_stock' => 0, 'counted_at' => now(),
+        ]);
+        $setup = $fixture->store('shopee', 'SETUP');
+        $paused = $fixture->store('lazada', 'PAUSED');
+        app(\App\Services\Inventory\StoreManagement\StoreEnrollmentService::class)->enroll($setup->id);
+        app(\App\Services\Inventory\StoreManagement\StoreEnrollmentService::class)->enroll($paused->id);
+        DB::table('inventory_store_accounts')->where('marketplace_store_id', $paused->id)->update(['management_status' => 'paused']);
+        $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+
+        $response = $this->actingAs($admin)->postJson('/admin/api/inventory/store-management/mode', [
+            'target' => 'independent_stores', 'configuration_version' => 12,
+            'distribution' => [(string) $sku['variant']->id => [
+                'website' => 4, 'marketplace:'.$setup->id => 3, 'marketplace:'.$paused->id => 3,
+            ]],
+        ])->assertOk()->assertJsonPath('physical_total', 10);
+
+        $this->assertSame([], $response->json('external_stages'));
+        $this->assertSame(10, (int) DB::table('inventory_balances')->whereNotNull('counted_at')->sum('physical_stock'));
+    }
 }

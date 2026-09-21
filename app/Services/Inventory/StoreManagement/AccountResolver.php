@@ -100,7 +100,7 @@ final class AccountResolver
         DB::table('inventory_store_accounts')->insertOrIgnore([
             'account_key' => $accountKey,
             'marketplace_store_id' => $storeId,
-            'management_status' => 'not_managed',
+            'management_status' => 'setup_required',
             'version' => 0,
             'created_at' => now(),
             'updated_at' => now(),

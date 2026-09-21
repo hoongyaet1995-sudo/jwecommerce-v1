@@ -319,6 +319,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/inventory/store-management/sync-all', [\App\Http\Controllers\Admin\StoreInventorySyncController::class, 'syncAll']);
     Route::post('/api/inventory/store-management/sync-tasks/{task}/retry', [\App\Http\Controllers\Admin\StoreInventorySyncController::class, 'retry'])->whereUuid('task');
     Route::get('/api/inventory/store-management/stores/{store}/readiness', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'readiness'])->whereNumber('store');
+    Route::get('/api/inventory/store-management/stores/{store}/sync-readiness', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'syncReadiness'])->whereNumber('store');
+    Route::post('/api/inventory/store-management/stores/{store}/pause-sync', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'pauseSync'])->whereNumber('store');
+    Route::post('/api/inventory/store-management/stores/{store}/resume-sync', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'resumeSync'])->whereNumber('store');
     Route::post('/api/inventory/store-management/stores/{store}/takeover', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'takeover'])->whereNumber('store');
     Route::post('/api/inventory/store-management/stores/{store}/pause', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'pause'])->whereNumber('store');
     Route::post('/api/inventory/store-management/mode', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'mode']);

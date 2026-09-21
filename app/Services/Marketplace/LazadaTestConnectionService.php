@@ -1,10 +1,11 @@
 <?php
 namespace App\Services\Marketplace;
 use App\Models\MarketplaceStoreToken;
+use App\Services\Inventory\StoreManagement\StoreEnrollmentService;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 final class LazadaTestConnectionService {
- public function __construct(private LazadaClient $client){}
+ public function __construct(private LazadaClient $client, private StoreEnrollmentService $enrollment){}
  /** Renew only the internal test lease after a read-only provider identity check. */
  public function renew(int $storeId,\App\Models\User $actor,string $reason):array {
   if (!$actor->exists || !\App\Models\User::whereKey($actor->id)->where('is_admin',true)->exists()
@@ -41,7 +42,7 @@ final class LazadaTestConnectionService {
   if(!preg_match('/^[1-9][0-9]*$/D',$testApp))throw new RuntimeException('Approved Lazada test application required.');
   $seller=$this->client->readOfficialTest('/seller/get',$accessToken);
   if((string)($seller['seller_id']??'')!=='300163725140'||($seller['short_code']??'')!=='MY4NA1T7CK'||($seller['status']??'')!=='ACTIVE')throw new RuntimeException('Approved test seller identity required.');
-  return DB::transaction(function()use($accessToken,$seller,$testApp){
+  $storeId=DB::transaction(function()use($accessToken,$seller,$testApp){
    $key=['platform'=>'lazada','environment'=>'live','external_shop_id'=>(string)$seller['seller_id']];
    $store=DB::table('marketplace_stores')->where($key)->lockForUpdate()->first();
    if($store && MarketplaceStoreToken::where('store_id',$store->id)->where('credential_source','oauth')->exists())throw new RuntimeException('Cannot replace OAuth credentials with test credentials.');
@@ -55,5 +56,7 @@ final class LazadaTestConnectionService {
     'test_lease_expires_at'=>now()->addHour(),'access_token'=>$accessToken,'refresh_token'=>null,'access_expires_at'=>null,'refresh_expires_at'=>null]);
    return (int)$id;
   });
+  $this->enrollment->enroll($storeId);
+  return $storeId;
  }
 }

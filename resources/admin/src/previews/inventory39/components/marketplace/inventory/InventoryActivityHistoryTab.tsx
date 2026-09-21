@@ -116,7 +116,7 @@ export const InventoryActivityHistoryTab: React.FC<InventoryActivityHistoryTabPr
         };
       case 'store_takeover':
         return {
-          label: '店铺库存接管 (Store Takeover)',
+          label: '店铺库存同步 (Store Inventory Sync)',
           bg: 'bg-green-100 text-green-800 dark:bg-green-950/60 dark:text-green-300 border-green-200'
         };
       default:
@@ -160,7 +160,7 @@ export const InventoryActivityHistoryTab: React.FC<InventoryActivityHistoryTabPr
             <option value="store_transfer">店铺调配 (Store Transfer)</option>
             <option value="platform_sync">平台同步 (Platform Sync)</option>
             <option value="mode_change">模式变更 (Mode Change)</option>
-            <option value="store_takeover">店铺库存接管 (Store Takeover)</option>
+            <option value="store_takeover">店铺库存同步 (Store Inventory Sync)</option>
           </select>
 
           {/* Scope Filter */}

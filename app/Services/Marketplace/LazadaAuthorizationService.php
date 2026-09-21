@@ -3,12 +3,17 @@
 namespace App\Services\Marketplace;
 
 use App\Models\MarketplaceStoreToken;
+use App\Services\Inventory\StoreManagement\StoreEnrollmentService;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 final class LazadaAuthorizationService
 {
-    public function __construct(private OAuthStateService $states, private LazadaClient $client) {}
+    public function __construct(
+        private OAuthStateService $states,
+        private LazadaClient $client,
+        private StoreEnrollmentService $enrollment,
+    ) {}
 
     public function complete(string $state, int $actorId, #[\SensitiveParameter] string $code): int
     {
@@ -16,7 +21,7 @@ final class LazadaAuthorizationService
         if (!$attempt) throw new RuntimeException('Authorization expired or invalid. Start again.');
         $configuration=config('marketplace.lazada');
         $tokens=$this->client->exchange($code);
-        return DB::transaction(function () use ($attempt,$tokens,$configuration) {
+        $storeId = DB::transaction(function () use ($attempt,$tokens,$configuration) {
             if (config('marketplace.lazada')!==$configuration) {
                 throw new RuntimeException('Authorization configuration changed. Start again.');
             }
@@ -58,5 +63,8 @@ final class LazadaAuthorizationService
             ]);
             return $id;
         });
+        $this->enrollment->enroll($storeId);
+
+        return $storeId;
     }
 }

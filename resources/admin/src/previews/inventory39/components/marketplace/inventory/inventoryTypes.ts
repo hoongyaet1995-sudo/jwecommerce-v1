@@ -12,6 +12,7 @@ export interface InventoryStoreChannel {
   isComingSoon?: boolean;
   connectionState: 'connected' | 'expired' | 'disconnected' | 'coming_soon';
   isManagedByJw: boolean; // 是否已由 JW 接管库存
+  inventorySyncState?: 'setup_required' | 'active' | 'paused';
   readStatus: 'ok' | 'failed' | 'mismatch' | 'unmanaged';
   syncStatus: 'synced' | 'pending' | 'syncing' | 'failed' | 'partially_failed' | 'disabled' | 'auth_expired';
   lastReadAt?: string;
@@ -79,7 +80,7 @@ export type InventoryActivityActionType =
   | 'store_transfer'       // 店铺调配
   | 'platform_sync'        // 平台同步与重试
   | 'mode_change'          // 模式变更
-  | 'store_takeover';      // 店铺库存接管
+  | 'store_takeover';      // legacy event key: 店铺库存同步状态变更
 
 export interface InventoryActivityItem {
   id: string;
@@ -120,7 +121,6 @@ export type InventoryModeCatalogClassification =
   | 'awaiting_first_count'
   | 'sandbox_test'
   | 'excluded_status'
-  | 'store_not_managed'
   | 'reservation_conflict';
 
 export interface InventoryModeCatalogItem {

@@ -17,12 +17,20 @@ final class ReadinessReader
         } elseif ($store->status !== 'connected') {
             $blockers[] = ['code' => 'connection_'.$store->status, 'next_action' => 'Reconnect this store.'];
         }
-        $mappings = DB::table('marketplace_variant_mappings')->where('store_id', $storeId)->get();
+        $listings = DB::table('marketplace_listing_variants')->where('store_id', $storeId)->get();
+        $eligibleListingIds = $listings->filter(function (object $listing): bool {
+            $observed = json_decode($listing->observed_data ?? '{}', true) ?: [];
+            $status = strtolower((string) ($observed['status'] ?? $observed['productStatus'] ?? 'active'));
+
+            return ! in_array($status, ['inactive', 'draft', 'archived', 'deleted', 'deactivated'], true);
+        })->pluck('id');
+        $mappings = DB::table('marketplace_variant_mappings')->where('store_id', $storeId)
+            ->whereIn('listing_variant_id', $eligibleListingIds)->get();
         if ($mappings->isEmpty()) {
             $blockers[] = ['code' => 'no_mapped_skus', 'next_action' => 'Map at least one marketplace SKU to a JW Master SKU.'];
         }
         $unmapped = DB::table('marketplace_listing_variants as l')->leftJoin('marketplace_variant_mappings as m', 'm.listing_variant_id', '=', 'l.id')
-            ->where('l.store_id', $storeId)->whereNull('m.id')->pluck('l.id');
+            ->where('l.store_id', $storeId)->whereIn('l.id', $eligibleListingIds)->whereNull('m.id')->pluck('l.id');
         if ($unmapped->isNotEmpty()) {
             $blockers[] = ['code' => 'unmapped_listings', 'ids' => $unmapped->all(), 'next_action' => 'Map every active store listing before takeover.'];
         }
@@ -30,7 +38,7 @@ final class ReadinessReader
         if ($ambiguous->isNotEmpty()) {
             $blockers[] = ['code' => 'ambiguous_mappings', 'ids' => $ambiguous->all(), 'next_action' => 'Resolve duplicate SKU mappings.'];
         }
-        $missingSnapshots = DB::table('marketplace_listing_variants')->where('store_id', $storeId)
+        $missingSnapshots = DB::table('marketplace_listing_variants')->where('store_id', $storeId)->whereIn('id', $eligibleListingIds)
             ->where(fn ($q) => $q->whereNull('observed_data')->orWhereNull('fetched_at'))->pluck('id');
         if ($missingSnapshots->isNotEmpty()) {
             $blockers[] = ['code' => 'provider_snapshot_required', 'ids' => $missingSnapshots->all(), 'next_action' => 'Fetch the current marketplace catalog before takeover.'];
@@ -91,7 +99,7 @@ final class ReadinessReader
         $activeBalances = fn () => DB::table('inventory_balances as b')->join('inventory_pools as p', 'p.id', '=', 'b.inventory_pool_id')
             ->leftJoin('inventory_store_accounts as a', 'a.marketplace_store_id', '=', 'p.marketplace_store_id')
             ->where(fn ($query) => $mode === 'shared_pool' ? $query->where('p.kind', 'shared') : $query->where('p.kind', 'store')
-                ->where(fn ($managed) => $managed->whereNull('p.marketplace_store_id')->orWhere('a.management_status', 'managed')));
+                ->where(fn ($enrolled) => $enrolled->whereNull('p.marketplace_store_id')->orWhereNotNull('a.id')));
         $reservations = $activeBalances()->where('b.reserved_stock', '>', 0)->pluck('b.id');
         if ($reservations->isNotEmpty()) {
             $blockers[] = ['code' => 'active_reservations', 'ids' => $reservations->all(), 'next_action' => 'Complete or release active order reservations first.'];

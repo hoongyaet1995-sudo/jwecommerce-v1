@@ -32,6 +32,10 @@ class MarketplaceAuthorizationTest extends TestCase
     {
         $state = app(OAuthStateService::class)->issue(42, 'shopee', config('app.url'), null);
         $id = app(ShopeeAuthorizationService::class)->complete($state, 42, 'code', '456');
+        $this->assertDatabaseHas('inventory_store_accounts', [
+            'marketplace_store_id' => $id,
+            'management_status' => 'setup_required',
+        ]);
         $this->assertDatabaseHas('marketplace_stores', ['id'=>$id, 'external_shop_id'=>'456', 'shop_name'=>'Verified', 'status'=>'connected']);
         $this->assertDatabaseCount('marketplace_store_tokens', 1);
         $this->assertDatabaseCount('marketplace_listing_variants', 0);

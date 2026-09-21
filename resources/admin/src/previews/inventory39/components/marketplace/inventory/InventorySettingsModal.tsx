@@ -59,10 +59,6 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
   const [switchReason, setSwitchReason] = useState('Strategic business policy realignment');
   const [isExecutingSwitch, setIsExecutingSwitch] = useState(false);
 
-  // Store takeover modal state
-  const [takeoverStoreTarget, setTakeoverStoreTarget] = useState<InventoryStoreChannel | null>(null);
-  const [takeoverStep, setTakeoverStep] = useState<'checklist' | 'preview' | 'confirm'>('checklist');
-
   // Allocation distribution state for Shared -> Independent switch
   // sku -> { storeId: allocatedQty }
   const [allocations, setAllocations] = useState<Record<string, Record<string, number>>>({});
@@ -72,7 +68,6 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
     if (isOpen) {
       setSwitchFlowStep(initialSwitchFlowStep);
       setTargetMode(currentMode === 'shared' ? 'independent' : 'shared');
-      setTakeoverStoreTarget(null);
     }
   }, [isOpen, currentMode, initialSwitchFlowStep]);
 
@@ -104,7 +99,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
 
   // Initialize default balanced allocation when entering allocation step
   const initializeAllocations = () => {
-    const activeStores = safeStores.filter(s => !s.isComingSoon && s.connectionState === 'connected' && s.isManagedByJw);
+    const activeStores = safeStores.filter(s => !s.isComingSoon && (s.platform === 'webstore' || s.connectionState === 'connected'));
     const newAlloc: Record<string, Record<string, number>> = {};
 
     catalogItems.filter(item => item.classification === 'ready_to_allocate').forEach(item => {
@@ -129,7 +124,6 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
     awaiting_first_count: ['Awaiting First Count', 'Complete the first verified physical count before switching mode.', 'amber'],
     sandbox_test: ['Sandbox / Test', 'Visible for audit and excluded from production stock allocation.', 'neutral'],
     excluded_status: ['Draft / Archived', 'Inactive catalog records remain visible and are excluded.', 'neutral'],
-    store_not_managed: ['Store Not Managed by JW', 'Take over the connected store before its listing can join JW allocation.', 'neutral'],
     reservation_conflict: ['Reservation Conflict', 'Resolve active reserved units before changing stock ownership.', 'amber'],
   }[item.classification] || ['Excluded', 'This SKU is not eligible for allocation.', 'neutral']) as [string, string, string];
 
@@ -187,7 +181,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Global stock policy enforcement and store inventory takeover configurations.
+                Global stock policy enforcement and marketplace inventory synchronization.
               </p>
             </div>
           </div>
@@ -224,7 +218,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
             }`}
           >
             <Store className="w-4 h-4" />
-            <span>Store Inventory Management (店铺接管设置)</span>
+            <span>Store Inventory Sync (店铺同步设置)</span>
           </button>
         </div>
 
@@ -603,18 +597,18 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
             </div>
           )}
 
-          {/* TAB 2: STORE INVENTORY MANAGEMENT (TAKEOVER) */}
+          {/* TAB 2: STORE INVENTORY SYNC */}
           {activeTab === 'stores' && (
             <div className="space-y-6">
-              {/* Educational Warning on Unmanaged Stores */}
+              {/* Inventory ownership and external sync policy */}
               <div className="p-4 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-200/80 dark:border-amber-800/50 flex items-start gap-3.5">
                 <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <div className="text-xs space-y-1 text-amber-950 dark:text-amber-200">
                   <div className="font-bold">
-                    Crucial Policy: Unmanaged Stores & Real Physical Inventory
+                    JW Inventory Ownership & Marketplace Sync
                   </div>
                   <p className="leading-relaxed opacity-90">
-                    Stores marked as <strong>Not Managed by JW</strong> are not subject to automated JW inventory broadcast. However, <strong>sales on unmanaged stores still consume physical stock</strong> from your stockroom shelves. Omnichannel inventory consistency cannot be claimed until all active stores are taken over by JW.
+                    Every connected store is automatically enrolled in JW inventory. Marketplace quantities remain reference-only. <strong>Setup Required</strong> and <strong>Sync Paused</strong> stores stay in the JW ledger but do not receive external ATP broadcasts.
                   </p>
                 </div>
               </div>
@@ -637,7 +631,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
-                          Managed by JW
+                          Inventory Active
                         </span>
                       </div>
                     </div>
@@ -664,21 +658,21 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {store.isManagedByJw ? (
+                        {store.inventorySyncState === 'active' ? (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
-                            Managed by JW
+                            Inventory Sync Active
                           </span>
                         ) : (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300">
-                            Not Managed by JW
+                            {store.inventorySyncState === 'paused' ? 'Sync Paused' : 'Setup Required'}
                           </span>
                         )}
                         <button
                           type="button"
-                          onClick={() => onToggleStoreManagement(store.id, !store.isManagedByJw)}
+                          onClick={() => onToggleStoreManagement(store.id, store.inventorySyncState !== 'active')}
                           className="px-3 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-xs font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer text-neutral-700 dark:text-neutral-300"
                         >
-                          {store.isManagedByJw ? 'Pause Takeover' : 'Takeover Inventory'}
+                          {store.inventorySyncState === 'active' ? 'Pause Sync' : store.inventorySyncState === 'paused' ? 'Resume Sync' : 'Resolve Setup'}
                         </button>
                       </div>
                     </div>
@@ -705,21 +699,21 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {store.isManagedByJw ? (
+                        {store.inventorySyncState === 'active' ? (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
-                            Managed by JW
+                            Inventory Sync Active
                           </span>
                         ) : (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300">
-                            Not Managed by JW
+                            {store.inventorySyncState === 'paused' ? 'Sync Paused' : 'Setup Required'}
                           </span>
                         )}
                         <button
                           type="button"
-                          onClick={() => onToggleStoreManagement(store.id, !store.isManagedByJw)}
+                          onClick={() => onToggleStoreManagement(store.id, store.inventorySyncState !== 'active')}
                           className="px-3 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-xs font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer text-neutral-700 dark:text-neutral-300"
                         >
-                          {store.isManagedByJw ? 'Pause Takeover' : 'Takeover Inventory'}
+                          {store.inventorySyncState === 'active' ? 'Pause Sync' : store.inventorySyncState === 'paused' ? 'Resume Sync' : 'Resolve Setup'}
                         </button>
                       </div>
                     </div>

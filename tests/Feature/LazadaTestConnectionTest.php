@@ -20,6 +20,9 @@ class LazadaTestConnectionTest extends TestCase {
    'marketplace.lazada.test_app_key'=>'139041','marketplace.lazada.test_app_secret'=>'test-secret']);
   Http::preventStrayRequests();Http::fake(['*'=>Http::response(['code'=>'0','data'=>['seller_id'=>300163725140,'short_code'=>'MY4NA1T7CK','name'=>'Test','status'=>'ACTIVE']])]);
   $id=app(LazadaTestConnectionService::class)->connect('test-access');
+  $this->assertDatabaseHas('inventory_store_accounts',[
+   'marketplace_store_id'=>$id,'management_status'=>'setup_required',
+  ]);
   $this->assertDatabaseHas('marketplace_stores',['id'=>$id,'account_mode'=>'test']);
   $this->assertDatabaseHas('marketplace_store_capabilities',[
    'store_id'=>$id,
