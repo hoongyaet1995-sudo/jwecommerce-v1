@@ -9,6 +9,9 @@ async function json(url:string,init:RequestInit={}){
 }
 export const storeInventoryApi={
   overview:()=>json('/admin/api/inventory/store-management/overview'),
+  syncDetails:(storeId:string,variantId:number)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/sync`),
+  checkStock:(storeId:string,variantId:number)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/sync/check`,{method:'POST',body:'{}'}),
+  resyncStock:(storeId:string,variantId:number,operationKey:string)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/sync/resync`,{method:'POST',body:JSON.stringify({operation_key:operationKey})}),
   history:()=>json('/admin/api/inventory/store-management/history?per_page=100'),
   async review(kind:string,payload:Record<string,unknown>){
     const review=await json('/admin/api/inventory/store-management/reviews',{method:'POST',body:JSON.stringify({kind,...payload})});

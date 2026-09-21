@@ -39,6 +39,7 @@ export interface InitialStockCountModalProps {
   onNavigateToTransfers?: () => void;
   onNavigateToSkuMapping?: () => void;
   onRetrySync?: (taskId: string) => Promise<unknown>;
+  onOpenSyncDetails?: (store: InventoryStoreChannel) => void;
 }
 
 export const SharedInitialStockCountModal: React.FC<InitialStockCountModalProps> = ({

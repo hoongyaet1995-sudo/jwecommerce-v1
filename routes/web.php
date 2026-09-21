@@ -321,6 +321,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/inventory/store-management/history', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'history']);
     Route::get('/api/inventory/store-management/operations/{operation}', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'operation'])->whereUuid('operation');
     Route::post('/api/inventory/store-management/sync-all', [\App\Http\Controllers\Admin\StoreInventorySyncController::class, 'syncAll']);
+    Route::get('/api/inventory/store-management/stores/{store}/skus/{variant}/sync', [\App\Http\Controllers\Admin\StockSyncRecoveryController::class, 'show'])->whereNumber(['store','variant']);
+    Route::post('/api/inventory/store-management/stores/{store}/skus/{variant}/sync/check', [\App\Http\Controllers\Admin\StockSyncRecoveryController::class, 'check'])->whereNumber(['store','variant'])->middleware('throttle:30,1');
+    Route::post('/api/inventory/store-management/stores/{store}/skus/{variant}/sync/resync', [\App\Http\Controllers\Admin\StockSyncRecoveryController::class, 'resync'])->whereNumber(['store','variant'])->middleware('throttle:10,1');
     Route::post('/api/inventory/store-management/sync-tasks/{task}/retry', [\App\Http\Controllers\Admin\StoreInventorySyncController::class, 'retry'])->whereUuid('task');
     Route::get('/api/inventory/store-management/stores/{store}/readiness', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'readiness'])->whereNumber('store');
     Route::get('/api/inventory/store-management/stores/{store}/sync-readiness', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'syncReadiness'])->whereNumber('store');
@@ -342,6 +345,15 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         $entry = $manifest['src/previews/marketplace33/main.tsx'] ?? null;
         abort_unless($entry, 503);
         return response()->view('admin.marketplace33-preview', ['entry'=>$entry])->header('Cache-Control', 'no-store');
+    });
+    Route::get('/marketplace/inventory-preview-43', function () {
+        abort_unless(app()->environment('local'), 404);
+        $path = public_path('build-inventory43-preview/manifest.json');
+        abort_unless(is_file($path), 503, 'Build the isolated Stock Sync preview first.');
+        $manifest = json_decode(file_get_contents($path), true);
+        $entry = $manifest['src/previews/inventory43/main.tsx'] ?? null;
+        abort_unless($entry, 503);
+        return response()->view('admin.inventory43-preview', ['entry' => $entry])->header('Cache-Control', 'no-store');
     });
     Route::get('/marketplace/inventory-preview-39', function () {
         abort_unless(app()->environment('local'), 404);

@@ -48,6 +48,7 @@ import { StockIntakeAdjustmentModal } from './inventory/StockIntakeAdjustmentMod
 import { StoreStockTransfersTab } from './inventory/StoreStockTransfersTab';
 import { InventoryActivityHistoryTab } from './inventory/InventoryActivityHistoryTab';
 import { InventorySettingsModal } from './inventory/InventorySettingsModal';
+import { StockSyncRecovery } from '../../../inventory43/StockSyncRecovery';
 
 export const resolveFirstCountItem = (
   inventory: MarketplaceInventoryItem[],
@@ -82,7 +83,9 @@ export const describeMarketplaceSyncState = (status: string | undefined, quantit
   return { label: 'Not synced', tone: 'neutral' as const };
 };
 
-export const MarketplaceInventoryPage: React.FC = () => {
+export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = ({recoveryPreview = false}) => {
+  const [syncSelection, setSyncSelection] = useState<any>(null);
+  const [recoveryStates, setRecoveryStates] = useState<Record<string,any>>({});
   const {
     marketplaceInventory = [],
     inventoryModeCatalog = { items: [], summary: { total: 0, ready: 0, blocked: 0, excluded: 0 } },
@@ -1154,13 +1157,18 @@ export const MarketplaceInventoryPage: React.FC = () => {
                             {(stores || []).filter(s => !s.isComingSoon).map(store => {
                               const assoc = (item.storeAssociations || []).find(a => a.connectionId === store.id);
                               const balance = skuStoreBalances[store.id];
-                              const channelStock = assoc?.channelStockSnapshot ?? store.platformStockSnapshot ?? 0;
+                              const recovered = recoveryPreview ? recoveryStates[`${item.variantId}:${store.id}`] : null;
+                              const channelStock = recovered ? (recovered.marketplaceReportedStock ?? 'Unknown') : (assoc?.channelStockSnapshot ?? store.platformStockSnapshot ?? (recoveryPreview ? 'Unknown' : 0));
                               const isMapped = store.platform === 'webstore' || ((item as any).mappedStoreIds || []).includes(store.id);
                               const syncState = describeMarketplaceSyncState(balance?.lastSyncStatus ?? assoc?.lastSyncStatus, balance?.availableStock ?? 0);
 
                               return (
                                 <div
                                   key={store.id}
+                                  role={recoveryPreview ? 'button' : undefined}
+                                  tabIndex={recoveryPreview ? 0 : undefined}
+                                  onClick={recoveryPreview ? () => setSyncSelection({item,store,balance}) : undefined}
+                                  onKeyDown={recoveryPreview ? event => {if (event.key === 'Enter' || event.key === ' ') {event.preventDefault();setSyncSelection({item,store,balance});}} : undefined}
                                   className="flex items-center justify-between p-1.5 rounded-lg bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200/60 dark:border-neutral-700/60 text-[11px]"
                                 >
                                   <div className="flex items-center gap-1.5 truncate max-w-[140px]">
@@ -1180,7 +1188,11 @@ export const MarketplaceInventoryPage: React.FC = () => {
                                     ) : null}
 
                                     {/* Managed vs Unmanaged */}
-                                    {currentMode === 'independent' && !isMapped ? (
+                                    {recovered ? (
+                                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300">
+                                        {({synced:'Synced',not_synced:'Not Synced',sync_failed:'Sync Failed',awaiting_confirmation:'Awaiting Confirmation',auth_expired:'Authorization Expired',sku_not_mapped:'SKU Not Mapped',listing_not_eligible:'Listing Not Eligible',sync_replaced:'Replaced by Newer Stock'} as Record<string,string>)[recovered.status] || 'Not Synced'}
+                                      </span>
+                                    ) : currentMode === 'independent' && !isMapped ? (
                                       <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
                                         SKU Not Mapped
                                       </span>
@@ -1190,7 +1202,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                                       </span>
                                     ) : isUncounted ? (
                                       <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">
-                                        Queued
+                                        {recoveryPreview ? 'First Count Required' : 'Queued'}
                                       </span>
                                     ) : store.platform === 'webstore' ? (
                                       <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200">
@@ -1296,6 +1308,10 @@ export const MarketplaceInventoryPage: React.FC = () => {
           setIsSettingsModalOpen(true);
         }}
         onNavigateToTransfers={() => { setIsCountModalOpen(false); setActiveTab('transfers'); }}
+        onOpenSyncDetails={recoveryPreview && selectedItemForCount ? store => {
+          setIsCountModalOpen(false);
+          setSyncSelection({item:selectedItemForCount,store,balance:storeBalances[selectedItemForCount.masterSku]?.[store.id]});
+        } : undefined}
         onNavigateToSkuMapping={() => setCurrentSection('marketplace-mapping')}
         onRetrySync={async taskId => {
           await retrySync(taskId);
@@ -1304,6 +1320,13 @@ export const MarketplaceInventoryPage: React.FC = () => {
       />
 
       {/* MODAL 2: Stock Intake & Audit Adjustment */}
+      {recoveryPreview && syncSelection && <StockSyncRecovery
+        key={`${syncSelection.item.variantId}:${syncSelection.store.id}`}
+        {...syncSelection} onClose={() => setSyncSelection(null)} onChanged={reloadInventory}
+        onObserved={(result:any) => setRecoveryStates(states => ({...states,[`${syncSelection.item.variantId}:${syncSelection.store.id}`]:result}))}
+        onError={(message:string) => addToast({title:'Stock Sync',message})}
+        onNavigate={(section:string) => {if(section==='history') setActiveTab('history');else setCurrentSection(section);}}
+      />}
       <StockIntakeAdjustmentModal
         isOpen={isIntakeModalOpen}
         onClose={() => {

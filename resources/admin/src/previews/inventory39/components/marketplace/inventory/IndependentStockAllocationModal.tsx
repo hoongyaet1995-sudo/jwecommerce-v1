@@ -76,7 +76,8 @@ export const IndependentStockAllocationModal: React.FC<IndependentStockAllocatio
   onSelectNextItem,
   onNavigateToTransfers,
   onNavigateToSkuMapping,
-  onRetrySync
+  onRetrySync,
+  onOpenSyncDetails
 }) => {
   // Modal Step: 'input' (Count & Allocate) | 'review' (Review) | 'success' (Success)
   const [step, setStep] = useState<'input' | 'review' | 'success'>('input');
@@ -1117,6 +1118,10 @@ export const IndependentStockAllocationModal: React.FC<IndependentStockAllocatio
                       return (
                         <div
                           key={st.id}
+                          role={onOpenSyncDetails ? 'button' : undefined}
+                          tabIndex={onOpenSyncDetails ? 0 : undefined}
+                          onClick={onOpenSyncDetails ? () => onOpenSyncDetails(st) : undefined}
+                          onKeyDown={onOpenSyncDetails ? event => {if(event.key==='Enter'||event.key===' ') {event.preventDefault();onOpenSyncDetails(st);}} : undefined}
                           className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 flex items-center justify-between text-xs"
                         >
                           <div className="flex items-center gap-2">
@@ -1139,7 +1144,7 @@ export const IndependentStockAllocationModal: React.FC<IndependentStockAllocatio
                                 {stage?.id && onRetrySync && (
                                   <button
                                     type="button"
-                                    onClick={() => handleRetrySync(String(stage.id))}
+                                    onClick={event => {event.stopPropagation();if(onOpenSyncDetails) onOpenSyncDetails(st);else void handleRetrySync(String(stage.id));}}
                                     disabled={retryingTaskId === String(stage.id)}
                                     className="px-2 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-[10px] font-semibold text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                   >

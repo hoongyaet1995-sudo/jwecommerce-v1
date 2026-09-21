@@ -41,7 +41,10 @@ final class StoreSkuSyncReadiness
             $token = DB::table('marketplace_store_tokens')->where('store_id', $storeId)->first();
             if (! $token) {
                 $blockers[] = $this->blocker('authorization_required', 'Connect the store account.');
-            } elseif ($token->access_expires_at !== null && now()->gte($token->access_expires_at)
+            } elseif ($token->credential_source === 'official_test' &&
+                ($token->test_lease_expires_at === null || now()->gte($token->test_lease_expires_at))) {
+                $blockers[] = $this->blocker('authorization_expired', 'Renew the store connection before synchronizing.');
+            } elseif ($token->credential_source !== 'official_test' && $token->access_expires_at !== null && now()->gte($token->access_expires_at)
                 && (! $token->refresh_token || ($token->refresh_expires_at !== null && now()->gte($token->refresh_expires_at)))) {
                 $blockers[] = $this->blocker('authorization_expired', 'Reconnect the store account.');
             }
