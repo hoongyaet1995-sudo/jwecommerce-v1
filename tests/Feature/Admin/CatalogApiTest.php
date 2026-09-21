@@ -39,24 +39,26 @@ class CatalogApiTest extends TestCase
         $this->get('/shop')->assertOk()->assertSee('Edited cotton &amp; comfort',false)->assertDontSee('&lt;strong&gt;',false);
     }
 
-    public function test_stale_product_form_cannot_restore_stock_sold_since_it_was_loaded(): void
+    public function test_stale_product_form_cannot_restore_physical_stock_changed_since_it_was_loaded(): void
     {
         $this->actingAs(User::factory()->create(['is_admin'=>true]));
         $category=\App\Models\Category::create(['name'=>'Test','slug'=>'test','status'=>'active']);
         $payload=$this->productPayload((string)$category->id,[]);
         $created=$this->postJson('/admin/api/catalog/products',$payload)->assertCreated()->json('data');
         $payload['variants'][0]['id']=$created['variants'][0]['id'];
-        $payload['variants'][0]['stockVersion']=0;
-        app(\App\Services\Inventory\InventoryMutationService::class)->change((int)$created['variants'][0]['id'],-2,'test:sale','Sale');
+        $payload['variants'][0]['inventoryRevision']=$created['variants'][0]['inventoryRevision'];
+        \Illuminate\Support\Facades\DB::table('inventory_balances')->where('product_variant_id',$created['variants'][0]['id'])
+            ->update(['physical_stock'=>10,'version'=>\Illuminate\Support\Facades\DB::raw('version + 1')]);
         $this->patchJson('/admin/api/catalog/products/'.$created['id'],$payload)->assertUnprocessable()->assertJsonValidationErrors('variants.0.inventoryQuantity');
-        $payload['variants'][0]['stockVersion']=1;
+        $payload['variants'][0]['inventoryRevision']=app(\App\Services\Inventory\CatalogInventoryState::class)
+            ->snapshot((int)$created['variants'][0]['id'])['revision'];
         $payload['variants'][0]['inventoryQuantity']=11;
-        $this->patchJson('/admin/api/catalog/products/'.$created['id'],$payload)->assertOk()->assertJsonPath('data.variants.0.stockVersion',2);
+        $this->patchJson('/admin/api/catalog/products/'.$created['id'],$payload)->assertOk()->assertJsonPath('data.variants.0.inventoryQuantity',11);
         $this->assertDatabaseHas('product_variants',['id'=>$created['variants'][0]['id'],'stock'=>11]);
-        $this->assertDatabaseCount('inventory_movements',2);
+        $this->assertDatabaseCount('catalog_stock_operations',2);
         $payload['variants'][0]['id']='new-replacement';
         $payload['variants'][0]['sku']='REPLACEMENT-SKU';
-        unset($payload['variants'][0]['stockVersion']);
+        unset($payload['variants'][0]['inventoryRevision']);
         $this->patchJson('/admin/api/catalog/products/'.$created['id'],$payload)->assertUnprocessable()->assertJsonValidationErrors('variants');
         $this->assertDatabaseHas('product_variants',['id'=>$created['variants'][0]['id'],'stock'=>11]);
         $this->assertDatabaseMissing('product_variants',['sku'=>'REPLACEMENT-SKU']);
@@ -350,6 +352,7 @@ class CatalogApiTest extends TestCase
         $payload['variants'][0]['id'] = $product['variants'][0]['id'];
         $payload['variants'][0]['inventoryQuantity'] = 7;
         $payload['variants'][0]['stockVersion'] = $product['variants'][0]['stockVersion'];
+        $payload['variants'][0]['inventoryRevision'] = $product['variants'][0]['inventoryRevision'];
         $this->actingAs($admin)->patchJson('/admin/api/catalog/products/'.$product['id'], $payload)
             ->assertOk()
             ->assertJsonPath('data.images.0.path', $payload['images'][0]['path'])

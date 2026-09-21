@@ -225,8 +225,9 @@ class CatalogApiController extends Controller
             'variants' => ['required', 'array', 'min:1', 'max:1000'], 'variants.*.id' => ['nullable', 'string', 'max:64'],
             'variants.*.sku' => ['required', 'string', 'max:255'], 'variants.*.title' => ['required', 'string', 'max:255'],
             'variants.*.options' => ['array'], 'variants.*.price' => ['required', 'numeric', 'min:0'], 'variants.*.compareAtPrice' => ['nullable', 'numeric', 'min:0'],
-            'variants.*.costPrice' => ['nullable', 'numeric', 'min:0'], 'variants.*.inventoryQuantity' => ['required', 'integer', 'min:0'],
+            'variants.*.costPrice' => ['nullable', 'numeric', 'min:0'], 'variants.*.inventoryQuantity' => ['sometimes', 'integer', 'min:0'],
             'variants.*.stockVersion' => ['nullable', 'integer', 'min:0'],
+            'variants.*.inventoryRevision' => ['nullable', 'string', 'size:64'],
             'variants.*.weightGrams' => ['nullable', 'integer', 'min:0'],
             'variants.*.packageLengthCm' => ['nullable', 'numeric', 'decimal:0,2', 'gt:0', 'max:9999'], 'variants.*.packageWidthCm' => ['nullable', 'numeric', 'decimal:0,2', 'gt:0', 'max:9999'], 'variants.*.packageHeightCm' => ['nullable', 'numeric', 'decimal:0,2', 'gt:0', 'max:9999'],
             'variants.*.barcode' => ['nullable', 'string', 'max:255'],
@@ -307,6 +308,9 @@ class CatalogApiController extends Controller
             $data['variants'][$index]['colorCode'] = $hasColor ? $variant['colorCode'] : null;
             $data['variants'][$index]['optionImage'] = $hasImage ? $variant['optionImage'] : null;
             $id = ctype_digit((string) ($variant['id'] ?? '')) ? (int) $variant['id'] : null;
+            if ((! $id || ! $product?->variants()->whereKey($id)->exists()) && ! array_key_exists('inventoryQuantity', $variant)) {
+                throw ValidationException::withMessages(["variants.$index.inventoryQuantity" => 'Enter the opening stock quantity.']);
+            }
             if (isset($seen[$variant['sku']]) || ProductVariant::query()->where('sku', $variant['sku'])->when($id, fn ($query) => $query->whereKeyNot($id))->exists()) {
                 throw ValidationException::withMessages(["variants.$index.sku" => 'The SKU has already been taken.']);
             }
@@ -343,32 +347,41 @@ class CatalogApiController extends Controller
             $attributes = ['sku' => $variant['sku'], 'title' => $variant['title'], 'options' => $variant['options'],
                 'color_name' => $variant['options']['Color'] ?? null, 'size' => $variant['options']['Size'] ?? null, 'material' => $variant['options']['Material'] ?? null,
                 'price' => $this->cents($variant['price']), 'compare_at_price' => isset($variant['compareAtPrice']) ? $this->cents($variant['compareAtPrice']) : null,
-                'cost_price' => isset($variant['costPrice']) ? $this->cents($variant['costPrice']) : null, 'stock' => $variant['inventoryQuantity'],
+                'cost_price' => isset($variant['costPrice']) ? $this->cents($variant['costPrice']) : null, 'stock' => 0,
                 'weight_grams' => $variant['weightGrams'] ?? null, 'package_length_cm' => $variant['packageLengthCm'] ?? null, 'package_width_cm' => $variant['packageWidthCm'] ?? null, 'package_height_cm' => $variant['packageHeightCm'] ?? null, 'barcode' => $variant['barcode'] ?? null, 'image_url' => $variant['image'] ?? null,
                 'visual_type' => $variant['visualType'], 'color_code' => $variant['colorCode'], 'option_image' => $variant['optionImage'], 'enabled' => $variant['enabled']];
-            if ((!$id || !$existing->has($id)) && (int)$variant['inventoryQuantity'] !== 0
-                && DB::table('inventory_configuration')->where('id',1)->value('accounting_enabled')) {
-                throw ValidationException::withMessages(["variants.$variantIndex.inventoryQuantity" => 'Create the SKU with zero availability, then count stock in its warehouse.']);
-            }
             $model = $id && $existing->has($id) ? $existing[$id] : $product->variants()->create($attributes);
             if ($model->exists && $id && $existing->has($id)) {
-                $changed = (int)$model->stock !== (int)$variant['inventoryQuantity'];
-                $version = $variant['stockVersion'] ?? null;
-                if (($changed && $version === null) || ($version !== null && (int)$version !== (int)$model->stock_version)) {
-                    throw ValidationException::withMessages(["variants.$variantIndex.inventoryQuantity" => 'Inventory changed. Reload the product before saving.']);
-                }
                 unset($attributes['stock']);
-                if ($changed) {
-                    app(\App\Services\Inventory\InventoryMutationService::class)->setAvailable((int)$model->id,
-                        (int)$variant['inventoryQuantity'], (int)$version, 'catalog:'.\Illuminate\Support\Str::uuid(),
-                        'Catalog quantity adjustment', auth()->id());
-                }
                 $model->update($attributes);
+            }
+            if (array_key_exists('inventoryQuantity', $variant)) {
+                $state = app(\App\Services\Inventory\CatalogInventoryState::class)->snapshot((int) $model->id);
+                $requested = (int) $variant['inventoryQuantity'];
+                if (! $state['initialized'] || $state['physical'] !== $requested) {
+                    try {
+                        app(\App\Services\Inventory\CatalogStockService::class)->setPhysical(
+                            (int) $model->id,
+                            $requested,
+                            $variant['inventoryRevision'] ?? null,
+                            'catalog:'.\Illuminate\Support\Str::uuid(),
+                            (int) auth()->id(),
+                        );
+                    } catch (ValidationException $exception) {
+                        throw ValidationException::withMessages([
+                            "variants.$variantIndex.inventoryQuantity" => collect($exception->errors())->flatten()->first(),
+                        ]);
+                    }
+                }
             }
             $kept[] = $model->id;
         }
         $removed = $existing->keys()->diff($kept);
-        if ($removed->isNotEmpty() && DB::table('inventory_movements')->whereIn('product_variant_id', $removed)->exists()) {
+        if ($removed->isNotEmpty() && (
+            DB::table('inventory_movements')->whereIn('product_variant_id', $removed)->exists()
+            || DB::table('inventory_balances')->whereIn('product_variant_id', $removed)->exists()
+            || DB::table('catalog_stock_operations')->whereIn('product_variant_id', $removed)->exists()
+        )) {
             throw ValidationException::withMessages(['variants' => 'A SKU with inventory history cannot be removed. Disable the SKU instead.']);
         }
         $product->variants()->whereNotIn('id', $kept)->delete();
@@ -393,8 +406,11 @@ class CatalogApiController extends Controller
     private function productData(Product $product): array
     {
         $pdpContent = $product->pdpContent;
+        $inventoryStates = $product->variants->mapWithKeys(fn (ProductVariant $variant) => [
+            (int) $variant->id => app(\App\Services\Inventory\CatalogInventoryState::class)->snapshot((int) $variant->id),
+        ]);
 
-        return ['id' => (string) $product->id, 'title' => $product->title, 'slug' => $product->handle, 'brand' => $product->brand ?? '', 'categoryId' => $product->category_id ? (string) $product->category_id : '', 'collectionIds' => $product->collections->pluck('id')->map(fn ($id) => (string) $id)->all(), 'descriptionHtml' => $product->description ?? '', 'summary' => $product->subtitle ?? '', 'images' => $product->images->sortBy('position')->values()->map(fn ($image) => ['id' => (string) $image->id, 'path' => $image->path, 'alt' => $image->alt ?? '', 'position' => $image->position])->all(), 'status' => $product->status, 'hasVariants' => $product->has_variants, 'basePrice' => $product->base_price / 100, 'baseCompareAtPrice' => $product->compare_at_price !== null ? $product->compare_at_price / 100 : null, 'options' => $product->options ?? [], 'variants' => $product->variants->map(fn (ProductVariant $v) => ['id' => (string) $v->id, 'sku' => $v->sku, 'title' => $v->title, 'options' => $v->options ?? [], 'price' => $v->price / 100, 'compareAtPrice' => $v->compare_at_price !== null ? $v->compare_at_price / 100 : null, 'costPrice' => $v->cost_price !== null ? $v->cost_price / 100 : null, 'inventoryQuantity' => $v->stock, 'stockVersion' => (int)$v->stock_version, 'weightGrams' => $v->weight_grams, 'packageLengthCm' => $v->package_length_cm, 'packageWidthCm' => $v->package_width_cm, 'packageHeightCm' => $v->package_height_cm, 'barcode' => $v->barcode, 'image' => $v->image_url, 'visualType' => $v->visual_type, 'colorCode' => $v->color_code, 'optionImage' => $v->option_image, 'enabled' => $v->enabled])->values(), 'tags' => $product->tags ?? [], 'totalInventory' => $product->variants->sum('stock'), 'featured' => $product->is_featured, 'seoTitle' => $product->seo_title, 'seoDescription' => $product->seo_description,
+        return ['id' => (string) $product->id, 'title' => $product->title, 'slug' => $product->handle, 'brand' => $product->brand ?? '', 'categoryId' => $product->category_id ? (string) $product->category_id : '', 'collectionIds' => $product->collections->pluck('id')->map(fn ($id) => (string) $id)->all(), 'descriptionHtml' => $product->description ?? '', 'summary' => $product->subtitle ?? '', 'images' => $product->images->sortBy('position')->values()->map(fn ($image) => ['id' => (string) $image->id, 'path' => $image->path, 'alt' => $image->alt ?? '', 'position' => $image->position])->all(), 'status' => $product->status, 'hasVariants' => $product->has_variants, 'basePrice' => $product->base_price / 100, 'baseCompareAtPrice' => $product->compare_at_price !== null ? $product->compare_at_price / 100 : null, 'options' => $product->options ?? [], 'variants' => $product->variants->map(function (ProductVariant $v) use ($inventoryStates): array { $state = $inventoryStates[(int) $v->id]; return ['id' => (string) $v->id, 'sku' => $v->sku, 'title' => $v->title, 'options' => $v->options ?? [], 'price' => $v->price / 100, 'compareAtPrice' => $v->compare_at_price !== null ? $v->compare_at_price / 100 : null, 'costPrice' => $v->cost_price !== null ? $v->cost_price / 100 : null, 'inventoryQuantity' => $state['physical'] ?? (int) $v->stock, 'stockVersion' => (int)$v->stock_version, 'inventoryInitialized' => $state['initialized'], 'inventoryVerified' => $state['verified'], 'inventoryEditable' => $state['editable'], 'inventoryRevision' => $state['revision'], 'inventoryAdjustmentUrl' => $state['adjustment_url'], 'inventoryRepairRequired' => $state['repair_required'], 'weightGrams' => $v->weight_grams, 'packageLengthCm' => $v->package_length_cm, 'packageWidthCm' => $v->package_width_cm, 'packageHeightCm' => $v->package_height_cm, 'barcode' => $v->barcode, 'image' => $v->image_url, 'visualType' => $v->visual_type, 'colorCode' => $v->color_code, 'optionImage' => $v->option_image, 'enabled' => $v->enabled]; })->values(), 'tags' => $product->tags ?? [], 'totalInventory' => $inventoryStates->sum(fn (array $state) => (int) ($state['physical'] ?? 0)), 'featured' => $product->is_featured, 'seoTitle' => $product->seo_title, 'seoDescription' => $product->seo_description,
             'pdpContent' => ['highlights' => $pdpContent?->highlights ?? [], 'specifications' => $pdpContent?->specifications ?? [], 'useStoreDefaultShipping' => $pdpContent?->use_store_default_shipping ?? true, 'shippingPolicy' => $pdpContent?->shipping_policy, 'customAccordions' => $pdpContent?->custom_accordions ?? [], 'configuratorLabel' => $pdpContent?->configurator_label],
             'crossSellProductIds' => $product->pdpRelatedProducts->pluck('related_product_id')->map(fn ($id) => (string) $id)->values()->all(),
             'createdAt' => $product->created_at?->toDateString(), 'updatedAt' => $product->updated_at?->toDateString()];

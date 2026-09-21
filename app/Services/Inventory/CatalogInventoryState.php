@@ -79,7 +79,7 @@ final class CatalogInventoryState
             ->where('balance.product_variant_id', $variantId)
             ->select('balance.*');
 
-        if ($mode === 'shared_pool') {
+        if ($mode === 'shared_pool' || $mode === null) {
             $query->where('pool.pool_key', 'shared')->where('pool.kind', 'shared');
         } elseif ($mode === 'independent_stores') {
             $query->where('pool.kind', 'store')
