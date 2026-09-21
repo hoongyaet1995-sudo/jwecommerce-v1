@@ -35,18 +35,24 @@ class LazadaStoreInventoryPublisher implements StoreInventoryPublisher
             }
             throw $error;
         }
-        $routeLocation = DB::table('inventory_fulfillment_routes')->where('channel_key', 'marketplace:'.$store->id)
-            ->where('is_enabled', true)->value('platform_location_id');
+        $routeLocation = property_exists($listing, 'sync_provider_location_id') ? $listing->sync_provider_location_id
+            : DB::table('inventory_fulfillment_routes')->where('channel_key', 'marketplace:'.$store->id)
+                ->where('is_enabled', true)->value('platform_location_id');
         $warehouse = is_string($routeLocation) && $routeLocation !== '' ? $routeLocation : null;
         $before = $this->client->exactStockQuantity($token, (string) $listing->external_product_id,
             (string) $listing->external_variant_id, $warehouse, (int) $store->id);
+        if (property_exists($listing, 'sync_task_id') && ($listing->sync_provider_location_id ?? null) === null
+            && $before['warehouse_code'] !== null) {
+            DB::table('inventory_store_sync_tasks')->where('id', $listing->sync_task_id)
+                ->whereNull('provider_location_id')->update(['provider_location_id' => $before['warehouse_code'], 'updated_at' => now()]);
+        }
         $write = $this->client->updateAbsoluteQuantity($token, (string) $listing->external_product_id,
             (string) $listing->external_variant_id, $quantity, $before['warehouse_code'], (int) $store->id);
         try {
             $observed = $this->client->exactStockQuantity($token, (string) $listing->external_product_id,
                 (string) $listing->external_variant_id, $before['warehouse_code'], (int) $store->id);
-        } catch (StoreInventoryAuthorizationExpired $error) {
-            throw $error;
+        } catch (StoreInventoryAuthorizationExpired) {
+            throw new StoreInventoryResultUncertain('Lazada write was accepted but authorization expired before read-back. Reconcile before retrying.');
         } catch (\Throwable) {
             throw new StoreInventoryResultUncertain('Lazada write succeeded but read-back could not be confirmed. Reconcile before retrying.');
         }
@@ -56,18 +62,20 @@ class LazadaStoreInventoryPublisher implements StoreInventoryPublisher
 
         return ['provider' => 'lazada', 'requested_quantity' => $quantity, 'observed_quantity' => $observed['quantity'],
             'event_fingerprint' => hash('sha256', $eventKey), 'request_id' => $write['request_id'],
+            'confirmation_method' => 'provider_readback',
             'confirmed_at' => now()->toIso8601String()];
     }
 
     public function observe(object $store, object $listing): array
     {
-        $review = $this->policy->review($store, $listing);
+        $review = $this->policy->reviewObservation($store, $listing);
         if (! $review['allowed']) {
             throw new RuntimeException($review['code']);
         }
         $token = $this->tokens->accessToken((int) $store->id);
-        $routeLocation = DB::table('inventory_fulfillment_routes')->where('channel_key', 'marketplace:'.$store->id)
-            ->where('is_enabled', true)->value('platform_location_id');
+        $routeLocation = property_exists($listing, 'sync_provider_location_id') ? $listing->sync_provider_location_id
+            : DB::table('inventory_fulfillment_routes')->where('channel_key', 'marketplace:'.$store->id)
+                ->where('is_enabled', true)->value('platform_location_id');
         $observed = $this->client->exactStockQuantity($token, (string) $listing->external_product_id,
             (string) $listing->external_variant_id,
             is_string($routeLocation) && $routeLocation !== '' ? $routeLocation : null, (int) $store->id);

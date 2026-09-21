@@ -203,7 +203,10 @@ final class LazadaClient
         if(in_array($response->status(),[401,403],true)||str_contains($code,'token')||str_contains($code,'auth')||str_contains($code,'expired')) {
             throw new StoreInventoryAuthorizationExpired('Lazada authorization expired. Reconnect this store.');
         }
-        if(!$response->successful()||!is_array($result)||!in_array($result['code']??null,['0',0],true)) {
+        if($response->serverError()||!is_array($result)) {
+            throw new StoreInventoryResultUncertain('Lazada did not return a conclusive stock result. Reconcile before retrying.');
+        }
+        if(!$response->successful()||!in_array($result['code']??null,['0',0],true)) {
             throw new RuntimeException('Lazada rejected the stock synchronization request.');
         }
         return ['request_id'=>is_string($result['request_id']??null)?$result['request_id']:null];

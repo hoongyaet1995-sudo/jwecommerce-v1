@@ -5,6 +5,8 @@ namespace App\Jobs;
 use App\Contracts\StoreInventoryPublisher;
 use App\Exceptions\StoreInventoryAuthorizationExpired;
 use App\Exceptions\StoreInventoryResultUncertain;
+use App\Services\Inventory\StoreManagement\StoreSkuSyncReadiness;
+use App\Services\Inventory\StoreManagement\StoreSyncAttemptLedger;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -12,24 +14,27 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
-use App\Services\Inventory\StoreManagement\StoreSkuSyncReadiness;
 
 final class ProcessStoreInventorySync implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(public readonly string $taskId) {}
+    public function __construct(public readonly string $taskId)
+    {
+        $this->onConnection('marketplace')->onQueue('marketplace');
+    }
 
-    public function handle(StoreInventoryPublisher $publisher, ?StoreSkuSyncReadiness $readiness = null): void
+    public function handle(StoreInventoryPublisher $publisher, ?StoreSkuSyncReadiness $readiness = null, ?StoreSyncAttemptLedger $attempts = null): void
     {
         $readiness ??= app(StoreSkuSyncReadiness::class);
-        $context = DB::transaction(function () use ($readiness): ?array {
+        $attempts ??= app(StoreSyncAttemptLedger::class);
+        $context = DB::transaction(function () use ($readiness, $attempts): ?array {
             $task = DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)->lockForUpdate()->first();
             if (! $task || ! in_array($task->status, ['queued', 'failed', 'waiting_source'], true)) {
                 return null;
             }
             $inFlight = DB::table('inventory_store_sync_tasks')->where('marketplace_store_id', $task->marketplace_store_id)
-                ->where('product_variant_id', $task->product_variant_id)->where('status', 'processing')->where('id', '!=', $task->id)
+                ->where('product_variant_id', $task->product_variant_id)->whereIn('status', ['processing', 'uncertain'])->where('id', '!=', $task->id)
                 ->lockForUpdate()->exists();
             if ($inFlight) {
                 return null;
@@ -59,7 +64,7 @@ final class ProcessStoreInventorySync implements ShouldQueue
                 return null;
             }
             $readinessResult = $readiness->read((int) $task->marketplace_store_id, (int) $task->product_variant_id);
-            if (! $readinessResult['ready']) {
+            if (! $readinessResult['ready'] || (int) ($readinessResult['listing_variant_id'] ?? 0) !== (int) $task->listing_variant_id) {
                 DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update([
                     'status' => 'superseded',
                     'provider_receipt' => json_encode(['code' => 'readiness_changed', 'blockers' => array_column($readinessResult['blockers'], 'code')]),
@@ -73,13 +78,18 @@ final class ProcessStoreInventorySync implements ShouldQueue
                 'status' => 'processing', 'target_quantity' => $target, 'balance_version' => $balance->version,
                 'attempts' => DB::raw('attempts + 1'), 'updated_at' => now(),
             ]);
+            $task = DB::table('inventory_store_sync_tasks')->where('id', $task->id)->first();
+            $attempts->record($task, 'processing');
             $listing = DB::table('marketplace_listing_variants as l')
-                ->join('marketplace_variant_mappings as m', 'm.listing_variant_id', '=', 'l.id')
-                ->where('l.store_id', $task->marketplace_store_id)->where('m.product_variant_id', $task->product_variant_id)
-                ->select('l.*')->orderBy('l.id')->first();
+                ->where('l.store_id', $task->marketplace_store_id)->where('l.id', $task->listing_variant_id)
+                ->select('l.*')->first();
             if (! $listing) {
                 throw new RuntimeException('Map this SKU to the selected store before synchronizing stock.');
             }
+            $listing->external_product_id = $task->provider_external_product_id;
+            $listing->external_variant_id = $task->provider_external_variant_id;
+            $listing->sync_provider_location_id = $task->provider_location_id;
+            $listing->sync_task_id = $task->id;
 
             return ['task' => $task, 'target' => $target, 'listing' => $listing,
                 'store' => DB::table('marketplace_stores')->find($task->marketplace_store_id)];
@@ -90,7 +100,7 @@ final class ProcessStoreInventorySync implements ShouldQueue
 
         try {
             $receipt = $publisher->publish($context['store'], $context['listing'], $context['target'], $context['task']->event_key);
-            DB::transaction(function () use ($receipt): void {
+            DB::transaction(function () use ($receipt, $attempts): void {
                 $task = DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)->where('status', 'processing')->lockForUpdate()->first();
                 if (! $task) {
                     return;
@@ -103,6 +113,7 @@ final class ProcessStoreInventorySync implements ShouldQueue
                 DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)->update([
                     'status' => $stale ? 'superseded' : 'confirmed', 'provider_receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'updated_at' => now(),
                 ]);
+                $attempts->record($task, $stale ? 'superseded' : 'confirmed', $receipt);
                 if (! $stale && $task->operation_id) {
                     DB::table('inventory_store_sync_tasks')->where('operation_id', $task->operation_id)
                         ->where('status', 'waiting_source')->pluck('id')->each(fn ($id) => self::dispatch((string) $id)->afterCommit());
@@ -122,8 +133,15 @@ final class ProcessStoreInventorySync implements ShouldQueue
 
     private function finish(string $status, array $receipt): void
     {
-        DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)->where('status', 'processing')->update([
-            'status' => $status, 'provider_receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'updated_at' => now(),
-        ]);
+        DB::transaction(function () use ($status, $receipt): void {
+            $task = DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)->where('status', 'processing')->lockForUpdate()->first();
+            if (! $task) {
+                return;
+            }
+            DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)->update([
+                'status' => $status, 'provider_receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'updated_at' => now(),
+            ]);
+            app(StoreSyncAttemptLedger::class)->record($task, $status, $receipt);
+        }, 3);
     }
 }

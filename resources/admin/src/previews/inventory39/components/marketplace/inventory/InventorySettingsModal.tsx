@@ -177,7 +177,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
     setStoreActionError('');
     setStoreSetupReview(null);
     try {
-      const result = await onToggleStoreManagement(store.id, store.inventorySyncState !== 'active');
+      const result = await onToggleStoreManagement(store.id, !['active', 'partially_ready'].includes(store.inventorySyncState || ''));
       if (result?.ready === false || result?.requirements?.length) {
         if (modalBodyRef.current) modalBodyRef.current.scrollTop = 0;
         setStoreSetupReview({storeName: store.name, requirements: result.requirements || []});
@@ -693,9 +693,9 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {store.inventorySyncState === 'active' ? (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
-                            Inventory Sync Active
+                        {['active', 'partially_ready'].includes(store.inventorySyncState || '') ? (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${store.inventorySyncState === 'partially_ready' ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300' : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'}`}>
+                            {store.inventorySyncState === 'partially_ready' ? 'Some SKUs Need Setup' : 'Inventory Sync Active'}
                           </span>
                         ) : (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300">
@@ -707,7 +707,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                           onClick={() => void handleStoreSyncAction(store)}
                           className="px-3 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-xs font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer text-neutral-700 dark:text-neutral-300"
                         >
-                          {store.inventorySyncState === 'active' ? 'Pause Sync' : store.inventorySyncState === 'paused' ? 'Resume Sync' : 'Resolve Setup'}
+                          {['active', 'partially_ready'].includes(store.inventorySyncState || '') ? 'Pause Sync' : store.inventorySyncState === 'paused' ? 'Resume Sync' : 'Resolve Setup'}
                         </button>
                       </div>
                     </div>
@@ -734,9 +734,9 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {store.inventorySyncState === 'active' ? (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
-                            Inventory Sync Active
+                        {['active', 'partially_ready'].includes(store.inventorySyncState || '') ? (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${store.inventorySyncState === 'partially_ready' ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300' : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'}`}>
+                            {store.inventorySyncState === 'partially_ready' ? 'Some SKUs Need Setup' : 'Inventory Sync Active'}
                           </span>
                         ) : (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300">
@@ -748,7 +748,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                           onClick={() => void handleStoreSyncAction(store)}
                           className="px-3 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-xs font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer text-neutral-700 dark:text-neutral-300"
                         >
-                          {store.inventorySyncState === 'active' ? 'Pause Sync' : store.inventorySyncState === 'paused' ? 'Resume Sync' : 'Resolve Setup'}
+                          {['active', 'partially_ready'].includes(store.inventorySyncState || '') ? 'Pause Sync' : store.inventorySyncState === 'paused' ? 'Resume Sync' : 'Resolve Setup'}
                         </button>
                       </div>
                     </div>

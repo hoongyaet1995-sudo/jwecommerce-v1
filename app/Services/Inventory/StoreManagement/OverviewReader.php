@@ -2,6 +2,7 @@
 
 namespace App\Services\Inventory\StoreManagement;
 
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 final class OverviewReader
@@ -9,7 +10,6 @@ final class OverviewReader
     public function __construct(
         private readonly ModeCatalogReader $modeCatalog,
         private readonly StoreEnrollmentService $enrollment,
-        private readonly StockSyncPolicy $stockSyncPolicy,
     ) {}
 
     /** @return array<string,mixed> */
@@ -19,6 +19,9 @@ final class OverviewReader
         $this->enrollment->enrollConnectedStores();
         $configuration = DB::table('inventory_configuration')->where('id', 1)->first();
         $mode = $configuration?->operating_mode === 'independent_stores' ? 'independent' : 'shared';
+        $modeCatalog = $this->modeCatalog->read();
+        $readiness = collect($modeCatalog['items'])->flatMap(fn (array $item) => collect($item['mapped_stores'])
+            ->mapWithKeys(fn (array $store): array => [((int) $item['variant_id']).':'.((int) $store['id']) => $store['sync_readiness']]));
         $query = DB::table('inventory_balances as b')
             ->join('inventory_pools as p', 'p.id', '=', 'b.inventory_pool_id')
             ->join('product_variants as v', 'v.id', '=', 'b.product_variant_id')
@@ -46,10 +49,7 @@ final class OverviewReader
             ->orderByDesc('created_at')
             ->get(['id', 'product_variant_id', 'marketplace_store_id', 'status', 'target_quantity', 'attempts'])
             ->groupBy('product_variant_id');
-        $tokens = DB::table('marketplace_store_tokens')->whereIn('store_id', $balanceRows->pluck('marketplace_store_id')->filter()->unique())
-            ->get(['store_id', 'access_expires_at'])->keyBy('store_id');
-
-        $rows = $balanceRows->map(function (object $row) use ($syncTasks, $tokens, $mode): array {
+        $rows = $balanceRows->map(function (object $row) use ($syncTasks, $readiness, $mode): array {
             $physical = $row->physical_stock === null ? null : (int) $row->physical_stock;
             $reserved = $row->reserved_stock === null ? null : (int) $row->reserved_stock;
             $safety = $row->safety_stock === null ? null : (int) $row->safety_stock;
@@ -76,7 +76,8 @@ final class OverviewReader
                     : $row->kind === 'store' && ($row->marketplace_store_id === null || $row->mapping_id !== null),
                 'version' => (int) $row->version,
                 'provider_observation' => null,
-                'sync_readiness' => $this->rowSyncReadiness($row, $tokens->get($row->marketplace_store_id)),
+                'sync_readiness' => $row->marketplace_store_id === null ? null
+                    : $readiness->get(((int) $row->product_variant_id).':'.((int) $row->marketplace_store_id)),
                 'external_sync' => $this->syncState(
                     $syncTasks->get((int) $row->product_variant_id, collect()),
                     $row->marketplace_store_id === null ? null : (int) $row->marketplace_store_id,
@@ -106,46 +107,8 @@ final class OverviewReader
         return ['mode' => $mode, 'configuration_version' => (int) ($configuration?->version ?? 0),
             'website_account' => ['management_status' => 'managed', 'inventory_membership' => 'enrolled', 'sync_state' => 'active',
                 'management_version' => (int) ($website?->version ?? 0)],
-            'totals' => ['known' => $known, 'unknown_accounts' => $unknown], 'mode_catalog' => $this->modeCatalog->read(),
+            'totals' => ['known' => $known, 'unknown_accounts' => $unknown], 'mode_catalog' => $modeCatalog,
             'stores' => $this->stores($filters), 'data' => $rows];
-    }
-
-    /** @return array{ready:bool,effective_state:string,blockers:list<array{code:string,next_action:string}>}|null */
-    private function rowSyncReadiness(object $row, ?object $token): ?array
-    {
-        if ($row->marketplace_store_id === null) {
-            return null;
-        }
-
-        $blockers = [];
-        if ($row->mapping_id === null || $row->listing_variant_id === null) {
-            $blockers[] = ['code' => 'sku_not_mapped', 'next_action' => 'Map this store listing to the JW SKU.'];
-        }
-        if ($row->connection_status !== 'connected') {
-            $blockers[] = ['code' => 'store_not_connected', 'next_action' => 'Reconnect the store account.'];
-        }
-        if ($row->counted_at === null || $row->physical_stock === null) {
-            $blockers[] = ['code' => 'initial_count_required', 'next_action' => 'Complete the first count for this store SKU.'];
-        } elseif ((int) ($row->reserved_stock ?? 0) > (int) $row->physical_stock) {
-            $blockers[] = ['code' => 'reservation_conflict', 'next_action' => 'Reconcile reserved units before stock sync.'];
-        }
-        if (! $token) {
-            $blockers[] = ['code' => 'authorization_required', 'next_action' => 'Connect the store account.'];
-        } elseif ($token->access_expires_at !== null && now()->gte($token->access_expires_at)) {
-            $blockers[] = ['code' => 'authorization_expired', 'next_action' => 'Reconnect the store account.'];
-        }
-        if ($row->mapping_id !== null && $row->listing_variant_id !== null) {
-            $policy = $this->stockSyncPolicy->review(
-                (object) ['id' => $row->marketplace_store_id, 'platform' => $row->platform, 'status' => $row->connection_status],
-                (object) ['id' => $row->listing_variant_id, 'store_id' => $row->marketplace_store_id],
-            );
-            if (! $policy['allowed']) {
-                $blockers[] = ['code' => $policy['code'], 'next_action' => $policy['next_action']];
-            }
-        }
-        $blockers = collect($blockers)->unique('code')->values()->all();
-
-        return ['ready' => $blockers === [], 'effective_state' => $blockers === [] ? 'ready' : 'blocked', 'blockers' => $blockers];
     }
 
     /** @return list<array<string,mixed>> */
@@ -201,8 +164,8 @@ final class OverviewReader
             'last_page' => max(1, (int) ceil($total / $perPage))]];
     }
 
-    /** @param \Illuminate\Support\Collection<int,object> $tasks */
-    private function syncState(\Illuminate\Support\Collection $tasks, ?int $storeId, bool $shared): ?array
+    /** @param Collection<int,object> $tasks */
+    private function syncState(Collection $tasks, ?int $storeId, bool $shared): ?array
     {
         if (! $shared) {
             $tasks = $tasks->where('marketplace_store_id', $storeId);

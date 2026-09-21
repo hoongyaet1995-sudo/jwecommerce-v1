@@ -8,13 +8,14 @@ use App\Exceptions\StoreInventoryResultUncertain;
 use App\Jobs\ProcessStoreInventorySync;
 use App\Models\User;
 use App\Services\Inventory\StoreManagement\AccountResolver;
+use App\Services\Inventory\StoreManagement\MarketplaceStoreInventoryPublisher;
 use App\Services\Inventory\StoreManagement\SyncOutbox;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
+use Mockery;
 use Tests\Support\StoreInventoryFixture;
 use Tests\TestCase;
-use App\Services\Inventory\StoreManagement\MarketplaceStoreInventoryPublisher;
-use Mockery;
 
 final class FakeStoreInventoryPublisher implements StoreInventoryPublisher
 {
@@ -39,6 +40,14 @@ final class FakeStoreInventoryPublisher implements StoreInventoryPublisher
 class StoreInventorySyncTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_sync_job_is_bound_to_the_marketplace_worker_queue(): void
+    {
+        $job = new ProcessStoreInventorySync('task-1');
+
+        $this->assertSame('marketplace', $job->connection);
+        $this->assertSame('marketplace', $job->queue);
+    }
 
     private function staged(): array
     {
@@ -99,6 +108,8 @@ class StoreInventorySyncTest extends TestCase
         $fake->mode = 'uncertain';
         (new ProcessStoreInventorySync($c['task']->id))->handle($fake);
         $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'uncertain']);
+        $this->assertDatabaseHas('inventory_store_sync_attempts', ['task_id' => $c['task']->id, 'status' => 'processing', 'source' => 'worker']);
+        $this->assertDatabaseHas('inventory_store_sync_attempts', ['task_id' => $c['task']->id, 'status' => 'uncertain', 'source' => 'worker']);
         (new ProcessStoreInventorySync($c['task']->id))->handle($fake);
         $this->assertCount(1, $fake->calls);
         $reconciler = Mockery::mock(MarketplaceStoreInventoryPublisher::class);
@@ -106,11 +117,74 @@ class StoreInventorySyncTest extends TestCase
             'provider' => 'lazada', 'observed_quantity' => 3, 'observed_at' => now()->toIso8601String(),
         ]);
         $this->app->instance(MarketplaceStoreInventoryPublisher::class, $reconciler);
+        $before = DB::table('inventory_store_sync_tasks')->where('id', $c['task']->id)->value('provider_receipt');
+        Bus::fake();
         $this->actingAs($c['actor'])->postJson('/admin/api/inventory/store-management/sync-tasks/'.$c['task']->id.'/retry')
-            ->assertOk()->assertJsonPath('status', 'queued');
-        $fake->mode = 'auth';
+            ->assertConflict()->assertJsonPath('error.code', 'provider_quantity_differs');
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'superseded']);
+        $this->assertSame($before, DB::table('inventory_store_sync_tasks')->where('id', $c['task']->id)->value('provider_receipt'));
+        $this->assertDatabaseHas('inventory_store_sync_attempts', ['task_id' => $c['task']->id, 'status' => 'reconciliation_mismatch', 'actor_id' => $c['actor']->id]);
+        $this->assertSame(3, DB::table('inventory_store_sync_attempts')->where('task_id', $c['task']->id)->count());
+        Bus::assertNothingDispatched();
+    }
+
+    public function test_successful_reconciliation_releases_waiting_and_queued_work(): void
+    {
+        $c = $this->staged();
+        DB::table('inventory_store_sync_tasks')->where('id', $c['task']->id)->update(['status' => 'uncertain', 'provider_location_id' => 'ORIGINAL-WH']);
+        $fresh = DB::table('inventory_balances')->find($c['destination']['id']);
+        $later = app(SyncOutbox::class)->enqueueStore(null, $fresh, (int) $c['store']->id, 'account', 'after-reconcile');
+        $reconciler = Mockery::mock(MarketplaceStoreInventoryPublisher::class);
+        $reconciler->shouldReceive('observe')->once()->withArgs(fn ($store, $listing): bool => $listing->id === $c['listingId']
+            && $listing->sync_provider_location_id === 'ORIGINAL-WH')
+            ->andReturn(['provider' => 'lazada', 'observed_quantity' => (int) $c['task']->target_quantity]);
+        $this->app->instance(MarketplaceStoreInventoryPublisher::class, $reconciler);
+        Bus::fake();
+
+        $this->actingAs($c['actor'])->postJson('/admin/api/inventory/store-management/sync-tasks/'.$c['task']->id.'/retry')
+            ->assertOk()->assertJsonPath('status', 'confirmed');
+
+        Bus::assertDispatched(ProcessStoreInventorySync::class, fn (ProcessStoreInventorySync $job): bool => $job->taskId === $later['id']);
+    }
+
+    public function test_later_ledger_mutation_cannot_bypass_an_uncertain_store_sku_write(): void
+    {
+        $c = $this->staged();
+        DB::table('inventory_store_sync_tasks')->where('id', $c['task']->id)->update(['status' => 'uncertain']);
+        $fresh = DB::table('inventory_balances')->find($c['destination']['id']);
+        $later = app(SyncOutbox::class)->enqueueStore(null, $fresh, (int) $c['store']->id, 'account', 'later-ledger-change');
+
+        $fake = new FakeStoreInventoryPublisher;
+        (new ProcessStoreInventorySync($later['id']))->handle($fake);
+
+        $this->assertCount(0, $fake->calls);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $later['id'], 'status' => 'queued']);
+    }
+
+    public function test_attempt_evidence_prevents_sync_task_deletion(): void
+    {
+        $c = $this->staged();
+        $fake = new FakeStoreInventoryPublisher;
+        $fake->mode = 'uncertain';
         (new ProcessStoreInventorySync($c['task']->id))->handle($fake);
-        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'auth_expired']);
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+        DB::table('inventory_store_sync_tasks')->where('id', $c['task']->id)->delete();
+    }
+
+    public function test_reviewed_mutation_creates_exact_order_boundary_before_sync_task(): void
+    {
+        $c = $this->staged();
+
+        $this->assertSame($c['listingId'], (int) $c['task']->listing_variant_id);
+        $this->assertSame('100', $c['task']->provider_external_product_id);
+        $this->assertSame('200', $c['task']->provider_external_variant_id);
+
+        $this->assertDatabaseHas('inventory_order_activations', [
+            'channel_key' => 'marketplace:'.$c['store']->id,
+            'product_variant_id' => $c['sku']['variant']->id,
+            'inventory_balance_id' => $c['destination']['id'],
+        ]);
     }
 
     public function test_destination_waits_while_source_outcome_is_uncertain(): void
@@ -131,6 +205,19 @@ class StoreInventorySyncTest extends TestCase
         (new ProcessStoreInventorySync($mapping['task']->id))->handle($fake);
         $this->assertCount(0, $fake->calls);
         $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $mapping['task']->id, 'status' => 'superseded']);
+
+        $replacement = $this->staged();
+        DB::table('marketplace_variant_mappings')->where('listing_variant_id', $replacement['listingId'])->delete();
+        $newListing = DB::table('marketplace_listing_variants')->insertGetId([
+            'store_id' => $replacement['store']->id, 'external_product_id' => '101', 'external_variant_id' => '201',
+            'observed_data' => '{}', 'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('marketplace_variant_mappings')->insert(['listing_variant_id' => $newListing, 'store_id' => $replacement['store']->id,
+            'product_variant_id' => $replacement['sku']['variant']->id, 'created_at' => now(), 'updated_at' => now()]);
+        config(['marketplace.stock_sync_canary_identities' => ["lazada:{$replacement['store']->id}:{$newListing}"]]);
+        (new ProcessStoreInventorySync($replacement['task']->id))->handle($fake);
+        $this->assertCount(0, $fake->calls);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $replacement['task']->id, 'status' => 'superseded']);
 
         $canary = $this->staged();
         config(['marketplace.stock_sync_canary_identities' => []]);

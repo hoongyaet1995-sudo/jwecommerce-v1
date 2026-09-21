@@ -36,19 +36,24 @@ class ShopeeStoreInventoryPublisher implements StoreInventoryPublisher
             throw $error;
         }
 
-        $routeLocation = DB::table('inventory_fulfillment_routes')->where('channel_key', 'marketplace:'.$store->id)
-            ->where('is_enabled', true)->value('platform_location_id');
+        $routeLocation = property_exists($listing, 'sync_provider_location_id') ? $listing->sync_provider_location_id
+            : DB::table('inventory_fulfillment_routes')->where('channel_key', 'marketplace:'.$store->id)
+                ->where('is_enabled', true)->value('platform_location_id');
         $before = $this->client->exactStockContext($token, (string) $store->external_shop_id,
             (string) $listing->external_product_id, (string) $listing->external_variant_id,
             is_string($routeLocation) && $routeLocation !== '' ? $routeLocation : null);
+        if (property_exists($listing, 'sync_task_id') && ($listing->sync_provider_location_id ?? null) === null) {
+            DB::table('inventory_store_sync_tasks')->where('id', $listing->sync_task_id)
+                ->whereNull('provider_location_id')->update(['provider_location_id' => $before['location_id'], 'updated_at' => now()]);
+        }
         $write = $this->client->updateAbsoluteStock($token, (string) $store->external_shop_id,
             (string) $listing->external_product_id, (string) $listing->external_variant_id,
             $before['location_id'], $quantity);
         try {
             $observed = $this->client->exactStockContext($token, (string) $store->external_shop_id,
                 (string) $listing->external_product_id, (string) $listing->external_variant_id, $before['location_id']);
-        } catch (StoreInventoryAuthorizationExpired $error) {
-            throw $error;
+        } catch (StoreInventoryAuthorizationExpired) {
+            throw new StoreInventoryResultUncertain('Shopee write was accepted but authorization expired before read-back. Reconcile before retrying.');
         } catch (\Throwable) {
             throw new StoreInventoryResultUncertain('Shopee write succeeded but read-back could not be confirmed. Reconcile before retrying.');
         }
@@ -58,18 +63,20 @@ class ShopeeStoreInventoryPublisher implements StoreInventoryPublisher
 
         return ['provider' => 'shopee', 'requested_quantity' => $quantity, 'observed_quantity' => $observed['quantity'],
             'event_fingerprint' => hash('sha256', $eventKey), 'request_id' => $write['request_id'],
+            'confirmation_method' => 'provider_readback',
             'confirmed_at' => now()->toIso8601String()];
     }
 
     public function observe(object $store, object $listing): array
     {
-        $review = $this->policy->review($store, $listing);
+        $review = $this->policy->reviewObservation($store, $listing);
         if (! $review['allowed']) {
             throw new RuntimeException($review['code']);
         }
         $token = $this->tokens->accessToken((int) $store->id);
-        $routeLocation = DB::table('inventory_fulfillment_routes')->where('channel_key', 'marketplace:'.$store->id)
-            ->where('is_enabled', true)->value('platform_location_id');
+        $routeLocation = property_exists($listing, 'sync_provider_location_id') ? $listing->sync_provider_location_id
+            : DB::table('inventory_fulfillment_routes')->where('channel_key', 'marketplace:'.$store->id)
+                ->where('is_enabled', true)->value('platform_location_id');
         $observed = $this->client->exactStockContext($token, (string) $store->external_shop_id,
             (string) $listing->external_product_id, (string) $listing->external_variant_id,
             is_string($routeLocation) && $routeLocation !== '' ? $routeLocation : null);

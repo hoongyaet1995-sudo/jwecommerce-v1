@@ -19,6 +19,7 @@ final class StoreInventorySyncStateTest extends TestCase
         DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores']);
         $fixture = new StoreInventoryFixture;
         $sku = $fixture->sku();
+        $blockedSku = $fixture->sku();
         $store = $fixture->store('lazada', 'SYNC-STATE');
         app(StoreEnrollmentService::class)->enroll($store->id);
         $listing = DB::table('marketplace_listing_variants')->insertGetId([
@@ -27,6 +28,14 @@ final class StoreInventorySyncStateTest extends TestCase
         ]);
         DB::table('marketplace_variant_mappings')->insert([
             'listing_variant_id' => $listing, 'store_id' => $store->id, 'product_variant_id' => $sku['variant']->id,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $blockedListing = DB::table('marketplace_listing_variants')->insertGetId([
+            'store_id' => $store->id, 'external_product_id' => 'P2', 'external_variant_id' => 'V2',
+            'observed_data' => json_encode(['status' => 'active']), 'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('marketplace_variant_mappings')->insert([
+            'listing_variant_id' => $blockedListing, 'store_id' => $store->id, 'product_variant_id' => $blockedSku['variant']->id,
             'created_at' => now(), 'updated_at' => now(),
         ]);
         DB::table('marketplace_store_tokens')->insert([
@@ -38,7 +47,7 @@ final class StoreInventorySyncStateTest extends TestCase
             'marketplace.stock_sync_operations_enabled' => true,
             'marketplace.stock_sync_platforms.lazada' => true,
             'marketplace.stock_sync_canary_enforced' => true,
-            'marketplace.stock_sync_canary_identities' => ["lazada:{$store->id}:{$listing}"],
+            'marketplace.stock_sync_canary_identities' => ["lazada:{$store->id}:{$listing}", "lazada:{$store->id}:{$blockedListing}"],
         ]);
         DB::table('marketplace_listing_variants')->insert([
             'store_id' => $store->id, 'external_product_id' => 'ARCHIVED', 'external_variant_id' => 'ARCHIVED',
@@ -48,6 +57,10 @@ final class StoreInventorySyncStateTest extends TestCase
         DB::table('inventory_balances')->where('id', $balance['id'])->update([
             'physical_stock' => 8, 'reserved_stock' => 2, 'safety_stock' => 0, 'counted_at' => now(),
         ]);
+        $blockedBalance = app(AccountResolver::class)->balance($blockedSku['variant']->id, 'marketplace:'.$store->id);
+        DB::table('inventory_balances')->where('id', $blockedBalance['id'])->update([
+            'physical_stock' => 1, 'reserved_stock' => 2, 'safety_stock' => 0, 'counted_at' => now(),
+        ]);
         $admin = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
         $base = '/admin/api/inventory/store-management/stores/'.$store->id;
 
@@ -55,12 +68,19 @@ final class StoreInventorySyncStateTest extends TestCase
             ->assertOk()->assertJsonPath('sync_state', 'paused');
         $this->postJson($base.'/pause-sync', ['reason' => 'Provider maintenance'])
             ->assertOk()->assertJsonPath('sync_state', 'paused');
-        $review = $this->getJson($base.'/sync-readiness')->assertOk()->assertJsonPath('ready', true)->json();
+        $review = $this->getJson($base.'/sync-readiness')->assertOk()
+            ->assertJsonPath('ready', true)->assertJsonPath('effective_state', 'paused')->json();
         $this->postJson($base.'/resume-sync', ['reason' => 'Provider restored', 'review_token' => $review['review_token']])
             ->assertOk()->assertJsonPath('sync_state', 'active');
 
         $this->assertDatabaseHas('inventory_balances', ['id' => $balance['id'], 'physical_stock' => 8, 'reserved_stock' => 2]);
         $this->assertSame(1, DB::table('inventory_store_accounts')->where('marketplace_store_id', $store->id)->count());
         $this->assertSame(2, DB::table('inventory_store_operations')->whereIn('kind', ['pause_sync', 'resume_sync'])->count());
+        $this->assertDatabaseHas('inventory_order_activations', [
+            'channel_key' => 'marketplace:'.$store->id, 'product_variant_id' => $sku['variant']->id,
+        ]);
+        $this->assertDatabaseMissing('inventory_order_activations', [
+            'channel_key' => 'marketplace:'.$store->id, 'product_variant_id' => $blockedSku['variant']->id,
+        ]);
     }
 }

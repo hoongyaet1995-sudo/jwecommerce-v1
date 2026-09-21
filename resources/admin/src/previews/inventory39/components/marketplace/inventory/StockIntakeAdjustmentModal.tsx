@@ -75,7 +75,6 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
       if (store.platform === 'webstore') return store.connectionState === 'connected';
 
       return store.connectionState === 'connected'
-        && store.inventorySyncState === 'active'
         && mappedStoreIds.has(store.id)
         && associations.get(store.id)?.syncReadiness?.ready === true;
     });

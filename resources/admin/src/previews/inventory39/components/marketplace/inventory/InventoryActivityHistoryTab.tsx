@@ -205,6 +205,7 @@ export const InventoryActivityHistoryTab: React.FC<InventoryActivityHistoryTabPr
                 <th className="py-2.5 px-3">Quantity Delta & Result</th>
                 <th className="py-2.5 px-3">Operator / Source</th>
                 <th className="py-2.5 px-3">Reason / Ref ID</th>
+                <th className="py-2.5 px-3">Provider Sync</th>
                 <th className="py-2.5 px-3 text-right">Details</th>
               </tr>
             </thead>
@@ -261,6 +262,11 @@ export const InventoryActivityHistoryTab: React.FC<InventoryActivityHistoryTabPr
                       {item.referenceId && (
                         <div className="font-mono text-[10px] text-neutral-400">{item.referenceId}</div>
                       )}
+                    </td>
+                    <td className="py-3 px-3">
+                      <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300">
+                        {item.providerSyncStatus || 'Not queued'}
+                      </span>
                     </td>
                     <td className="py-3 px-3 text-right">
                       <button

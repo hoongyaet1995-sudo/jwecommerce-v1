@@ -7,9 +7,9 @@ use App\Exceptions\StoreInventoryResultUncertain;
 use App\Models\MarketplaceStoreToken;
 use App\Services\Inventory\StoreManagement\LazadaStoreInventoryPublisher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Http\Client\ConnectionException;
 use RuntimeException;
 use Tests\Support\StoreInventoryFixture;
 use Tests\TestCase;
@@ -97,12 +97,36 @@ class LazadaStoreInventoryPublisherTest extends TestCase
         $publisher->publish($store, $listing, 7, 'mismatch');
     }
 
+    public function test_post_write_authorization_failure_is_uncertain(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher();
+        Http::fake(['*' => Http::sequence()->push($this->item(3))->push(['code' => '0'])
+            ->push(['code' => 'IllegalAccessToken', 'request_id' => 'SAFE'], 403)]);
+
+        $this->expectException(StoreInventoryResultUncertain::class);
+        $publisher->publish($store, $listing, 7, 'auth-after-write');
+    }
+
+    public function test_observation_remains_available_with_write_switches_disabled(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher();
+        config([
+            'marketplace.stock_sync_operations_enabled' => false,
+            'marketplace.stock_sync_platforms.lazada' => false,
+            'marketplace.stock_sync_canary_identities' => [],
+        ]);
+        Http::fake(['*' => Http::response($this->item(5))]);
+
+        $this->assertSame(5, $publisher->observe($store, $listing)['observed_quantity']);
+    }
+
     public function test_read_rate_limit_retries_once_but_write_connection_loss_is_never_retried(): void
     {
         [$publisher, $store, $listing] = $this->publisher();
         $calls = 0;
         Http::fake(function () use (&$calls) {
             $calls++;
+
             return match ($calls) {
                 1 => Http::response(['code' => 'SellerCallLimit']),
                 2 => Http::response($this->item(3)),
@@ -116,6 +140,16 @@ class LazadaStoreInventoryPublisherTest extends TestCase
         } catch (StoreInventoryResultUncertain) {
             $this->assertSame(3, $calls);
         }
+    }
+
+    public function test_server_error_after_write_request_is_uncertain(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher();
+        Http::fake(['*' => Http::sequence()->push($this->item(3))
+            ->push(['message' => 'temporary provider failure'], 503)]);
+
+        $this->expectException(StoreInventoryResultUncertain::class);
+        $publisher->publish($store, $listing, 7, 'server-error-after-send');
     }
 
     private function publisher(): array

@@ -9,21 +9,14 @@ final class StockSyncPolicy
      */
     public function review(object $store, object $listing): array
     {
+        $identity = $this->reviewIdentity($store, $listing);
+        if (! $identity['allowed']) {
+            return $identity;
+        }
+
         $platform = strtolower(trim((string) ($store->platform ?? '')));
         $storeId = filter_var($store->id ?? null, FILTER_VALIDATE_INT);
         $listingId = filter_var($listing->id ?? null, FILTER_VALIDATE_INT);
-
-        if (! in_array($platform, ['shopee', 'lazada'], true)) {
-            return $this->deny('platform_not_supported', 'Use a supported marketplace provider.');
-        }
-
-        if ($storeId === false || $listingId === false || (int) ($listing->store_id ?? 0) !== $storeId) {
-            return $this->deny('listing_identity_invalid', 'Refresh the persisted SKU mapping.');
-        }
-
-        if (($store->status ?? null) !== 'connected') {
-            return $this->deny('store_not_connected', 'Reconnect the store account.');
-        }
 
         if (config('marketplace.stock_sync_operations_enabled') !== true) {
             return $this->deny('stock_sync_disabled', 'Enable the master stock sync switch.');
@@ -53,6 +46,31 @@ final class StockSyncPolicy
 
         if (! in_array($identity, $parsed, true)) {
             return $this->deny('canary_not_allowlisted', 'Add this persisted listing identity to the server allowlist.');
+        }
+
+        return $this->allow();
+    }
+
+    /** Read-only incident reconciliation remains available while write switches are off. */
+    public function reviewObservation(object $store, object $listing): array
+    {
+        return $this->reviewIdentity($store, $listing);
+    }
+
+    private function reviewIdentity(object $store, object $listing): array
+    {
+        $platform = strtolower(trim((string) ($store->platform ?? '')));
+        $storeId = filter_var($store->id ?? null, FILTER_VALIDATE_INT);
+        $listingId = filter_var($listing->id ?? null, FILTER_VALIDATE_INT);
+
+        if (! in_array($platform, ['shopee', 'lazada'], true)) {
+            return $this->deny('platform_not_supported', 'Use a supported marketplace provider.');
+        }
+        if ($storeId === false || $listingId === false || (int) ($listing->store_id ?? 0) !== $storeId) {
+            return $this->deny('listing_identity_invalid', 'Refresh the persisted SKU mapping.');
+        }
+        if (($store->status ?? null) !== 'connected') {
+            return $this->deny('store_not_connected', 'Reconnect the store account.');
         }
 
         return $this->allow();

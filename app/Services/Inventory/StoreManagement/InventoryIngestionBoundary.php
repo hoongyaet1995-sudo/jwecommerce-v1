@@ -3,6 +3,7 @@
 namespace App\Services\Inventory\StoreManagement;
 
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +33,9 @@ final class InventoryIngestionBoundary
             $validBalance = DB::table('inventory_balances as balance')
                 ->join('inventory_pools as pool', 'pool.id', '=', 'balance.inventory_pool_id')
                 ->where('balance.id', $balanceId)->where('balance.product_variant_id', $variantId)
-                ->where('pool.marketplace_store_id', $storeId)->lockForUpdate()->exists();
+                ->where(function ($query) use ($storeId): void {
+                    $query->where('pool.marketplace_store_id', $storeId)->orWhere('pool.kind', 'shared');
+                })->lockForUpdate()->exists();
             $mapped = DB::table('marketplace_variant_mappings')->where('store_id', $storeId)
                 ->where('product_variant_id', $variantId)->exists();
             if (! $validBalance || ! $mapped) {
@@ -100,14 +103,14 @@ final class InventoryIngestionBoundary
         })->pluck('id')->map(fn ($id): int => (int) $id)->values()->all();
     }
 
-    private function createdAt(array $payload): ?\Carbon\CarbonImmutable
+    private function createdAt(array $payload): ?CarbonImmutable
     {
         if (is_int($payload['create_time'] ?? null)) {
-            return \Carbon\CarbonImmutable::createFromTimestampUTC($payload['create_time']);
+            return CarbonImmutable::createFromTimestampUTC($payload['create_time']);
         }
         if (is_string($payload['created_at'] ?? null)) {
             try {
-                return \Carbon\CarbonImmutable::parse($payload['created_at']);
+                return CarbonImmutable::parse($payload['created_at']);
             } catch (\Throwable) {
                 return null;
             }

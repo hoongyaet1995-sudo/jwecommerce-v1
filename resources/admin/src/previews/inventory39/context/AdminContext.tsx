@@ -3,6 +3,7 @@ import {adaptBalances,adaptInventory,adaptStores,storeInventoryApi} from '../../
 
 export const PreviewContext=createContext<any>(null);
 export const useAdmin=()=>useContext(PreviewContext);
+const providerStatus=(stages:any[]=[])=>{const priority:any={uncertain:8,auth_expired:7,failed:6,processing:5,queued:4,waiting_source:3,confirmed:2,superseded:1,not_applicable:0};return [...stages].sort((a,b)=>(priority[b.status]||0)-(priority[a.status]||0))[0]?.status};
 
 export function Inventory39Provider({children,onNavigate=()=>{}}:{children:React.ReactNode;onNavigate?:(section:any)=>void}){
   const [overview,setOverview]=useState<any>(null);const [history,setHistory]=useState<any[]>([]);const [notice,setNotice]=useState('Loading inventory…');
@@ -13,7 +14,7 @@ export function Inventory39Provider({children,onNavigate=()=>{}}:{children:React
     inventoryStores:overview?adaptStores(overview):[],inventoryStoreBalances:overview?adaptBalances(overview):{},inventoryActivityHistory:history.map((h:any)=>({
       id:h.id,timestamp:h.created_at,actionType:h.kind==='count'?'first_count':h.kind==='intake'?'actual_intake':h.kind==='correction'?'stock_adjustment':h.kind==='transfer'?'store_transfer':h.kind,
       masterSku:h.result?.balances?.[0]?.sku||'—',productName:'Inventory operation',targetScope:h.result?.external_stages?.length?'Store accounts':'JW ledger',quantityChange:0,
-      previousStock:'Reviewed',resultingStock:'Applied',operator:h.actor,reason:h.kind,referenceId:h.id,status:h.ledger_status==='applied'?'succeeded':'failed',detailsPayload:h.result
+      previousStock:'Reviewed',resultingStock:'Applied',operator:h.actor,reason:h.kind,referenceId:h.id,status:h.ledger_status==='applied'?'succeeded':'failed',providerSyncStatus:providerStatus(h.result?.external_stages),detailsPayload:h.result
     })),
     reloadInventory:reload,addToast:(t:any)=>setNotice(`${t.title}: ${t.message||''}`),
     recordPhysicalCountAudit:async(_id:string,count:number,reason:string,storeId?:string,item?:any)=>{let balanceId=Number(_id);if(storeId&&storeId!=='website')balanceId=item?.storeAssociations?.find((a:any)=>a.connectionId===storeId)?.balanceId||balanceId;const payload=Number.isFinite(balanceId)&&balanceId>0?{balance_id:balanceId,physical_count:count,reason}:{variant_id:item?.variantId,channel_key:storeId&&storeId!=='website'?`marketplace:${storeId}`:'website',physical_count:count,reason};await storeInventoryApi.review('count',payload);await reload()},

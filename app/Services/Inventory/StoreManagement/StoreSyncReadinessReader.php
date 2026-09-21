@@ -36,11 +36,14 @@ final class StoreSyncReadinessReader
         $skuStates = $variantIds->map(fn ($variantId): array => $this->skuReadiness->read($storeId, (int) $variantId));
         $readySkuCount = $skuStates->where('ready', true)->count();
         $blockedSkuCount = $skuStates->count() - $readySkuCount;
-        $resumableSkuCount = $skuStates->filter(function (array $state): bool {
+        $activatableVariantIds = $skuStates->filter(function (array $state): bool {
+            if ($state['ready']) {
+                return true;
+            }
             $codes = collect($state['blockers'])->pluck('code');
 
             return $codes->isNotEmpty() && $codes->every(fn (string $code): bool => $code === 'sync_paused');
-        })->count();
+        })->pluck('variant_id')->map(fn ($id) => (int) $id)->values()->all();
         $effectiveState = match (true) {
             $status === 'paused' => 'paused',
             $readySkuCount > 0 && $blockedSkuCount > 0 => 'partially_ready',
@@ -49,11 +52,12 @@ final class StoreSyncReadinessReader
         };
 
         return [
-            'ready' => $readySkuCount > 0 || ($status === 'paused' && $resumableSkuCount === $skuStates->count() && $skuStates->isNotEmpty()),
+            'ready' => $readySkuCount > 0 || ($status === 'paused' && $activatableVariantIds !== []),
             'effective_state' => $effectiveState,
             'inventory_membership' => 'enrolled',
             'requirements' => $requirements,
             'sku_summary' => ['ready' => $readySkuCount, 'blocked' => $blockedSkuCount],
+            'ready_variant_ids' => $activatableVariantIds,
             'setup_info' => $result['setup_info'] ?? ['unmapped_active_listings' => 0],
             'review_token' => $result['review_token'],
             'balances' => $result['balances'],

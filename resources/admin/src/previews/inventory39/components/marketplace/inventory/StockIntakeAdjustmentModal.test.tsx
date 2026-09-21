@@ -19,7 +19,7 @@ const item: any = {
 
 const stores: any[] = [
   { id: 'website', name: 'JW Ecom Storefront', nickname: 'JW Storefront', platform: 'webstore', platformDisplayName: 'JW Ecom Storefront', connectionState: 'connected', inventorySyncState: 'active' },
-  { id: '11', name: 'Mapped Shopee', nickname: 'Mapped Shopee', platform: 'shopee', platformDisplayName: 'Shopee', connectionState: 'connected', inventorySyncState: 'active' },
+  { id: '11', name: 'Mapped Shopee', nickname: 'Mapped Shopee', platform: 'shopee', platformDisplayName: 'Shopee', connectionState: 'connected', inventorySyncState: 'partially_ready' },
   { id: '12', name: 'Unmapped Shopee', nickname: 'Unmapped Shopee', platform: 'shopee', platformDisplayName: 'Shopee', connectionState: 'connected', inventorySyncState: 'active' },
   { id: '13', name: 'Disconnected Lazada', nickname: 'Disconnected Lazada', platform: 'lazada', platformDisplayName: 'Lazada', connectionState: 'disconnected', inventorySyncState: 'active' },
   { id: '14', name: 'Setup Required Lazada', nickname: 'Setup Required Lazada', platform: 'lazada', platformDisplayName: 'Lazada', connectionState: 'connected', inventorySyncState: 'setup_required' },

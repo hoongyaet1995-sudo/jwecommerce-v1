@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Services\Inventory\StoreManagement\AccountResolver;
+use App\Services\Inventory\StoreManagement\OverviewReader;
 use App\Services\Inventory\StoreManagement\StoreSkuSyncReadiness;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\StoreInventoryFixture;
@@ -62,7 +64,7 @@ class StoreInventorySkuReadinessTest extends TestCase
         $case = $this->mappedCase();
         $second = $this->listing($case['store']->id, 'DUPLICATE');
 
-        $this->expectException(\Illuminate\Database\UniqueConstraintViolationException::class);
+        $this->expectException(UniqueConstraintViolationException::class);
         $this->map($second, $case['store']->id, $case['variant']->id);
     }
 
@@ -78,6 +80,29 @@ class StoreInventorySkuReadinessTest extends TestCase
 
         config(['marketplace.stock_sync_platforms.shopee' => true, 'marketplace.stock_sync_canary_identities' => []]);
         $this->assertBlocker($case, 'canary_not_allowlisted');
+    }
+
+    public function test_expired_access_token_is_ready_when_a_valid_refresh_token_exists(): void
+    {
+        $case = $this->mappedCase();
+        DB::table('marketplace_store_tokens')->where('store_id', $case['store']->id)->update([
+            'access_expires_at' => now()->subMinute(), 'refresh_token' => 'encrypted-refresh', 'refresh_expires_at' => now()->addHour(),
+        ]);
+
+        $this->assertTrue(app(StoreSkuSyncReadiness::class)->read($case['store']->id, $case['variant']->id)['ready']);
+    }
+
+    public function test_overview_uses_canonical_listing_participation_readiness(): void
+    {
+        $case = $this->mappedCase();
+        DB::table('marketplace_listing_variants')->where('id', $case['listingId'])
+            ->update(['observed_data' => json_encode(['status' => 'archived'])]);
+
+        $overview = app(OverviewReader::class)->read();
+        $row = collect($overview['data'])->first(fn (array $row): bool => $row['variant_id'] === $case['variant']->id && $row['store_id'] === $case['store']->id);
+
+        $this->assertFalse($row['sync_readiness']['ready']);
+        $this->assertContains('listing_not_participating', array_column($row['sync_readiness']['blockers'], 'code'));
     }
 
     private function mappedCase(): array

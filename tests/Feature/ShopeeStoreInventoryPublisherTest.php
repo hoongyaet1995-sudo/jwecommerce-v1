@@ -10,6 +10,7 @@ use App\Services\Marketplace\ShopeeClient;
 use App\Services\Marketplace\ShopeeTokenManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Mockery;
 use RuntimeException;
@@ -86,6 +87,29 @@ class ShopeeStoreInventoryPublisherTest extends TestCase
         $publisher->publish($store, $listing, 7, 'mismatch');
     }
 
+    public function test_post_write_authorization_failure_is_uncertain(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher('88');
+        Http::fake(['*' => Http::sequence()->push($this->item(true))->push($this->models(4))->push($this->writeSuccess(7))
+            ->push(['error' => 'error_auth', 'message' => 'token expired'], 403)]);
+
+        $this->expectException(StoreInventoryResultUncertain::class);
+        $publisher->publish($store, $listing, 7, 'auth-after-write');
+    }
+
+    public function test_observation_remains_available_with_write_switches_disabled(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher('88');
+        config([
+            'marketplace.stock_sync_operations_enabled' => false,
+            'marketplace.stock_sync_platforms.shopee' => false,
+            'marketplace.stock_sync_canary_identities' => [],
+        ]);
+        Http::fake(['*' => Http::sequence()->push($this->item(true))->push($this->models(6))]);
+
+        $this->assertSame(6, $publisher->observe($store, $listing)['observed_quantity']);
+    }
+
     public function test_expired_authorization_is_explicit(): void
     {
         [$publisher, $store, $listing] = $this->publisher('88');
@@ -118,6 +142,16 @@ class ShopeeStoreInventoryPublisherTest extends TestCase
             ->whenEmpty(fn () => throw new ConnectionException('lost'))]);
         $this->expectException(StoreInventoryResultUncertain::class);
         $publisher->publish($store, $listing, 7, 'lost-after-send');
+    }
+
+    public function test_server_error_after_write_request_is_uncertain(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher('88');
+        Http::fake(['*' => Http::sequence()->push($this->item(true))->push($this->models(4))
+            ->push(['message' => 'temporary provider failure'], 503)]);
+
+        $this->expectException(StoreInventoryResultUncertain::class);
+        $publisher->publish($store, $listing, 7, 'server-error-after-send');
     }
 
     public function test_wrong_location_does_not_claim_a_write(): void
@@ -155,8 +189,8 @@ class ShopeeStoreInventoryPublisherTest extends TestCase
     private function publisher(string $modelId): array
     {
         $store = (new StoreInventoryFixture)->store('shopee', strtoupper(bin2hex(random_bytes(3))));
-        \Illuminate\Support\Facades\DB::table('marketplace_stores')->where('id', $store->id)->update(['external_shop_id' => '999']);
-        $store = \Illuminate\Support\Facades\DB::table('marketplace_stores')->find($store->id);
+        DB::table('marketplace_stores')->where('id', $store->id)->update(['external_shop_id' => '999']);
+        $store = DB::table('marketplace_stores')->find($store->id);
         $listing = (object) ['id' => 41, 'store_id' => $store->id, 'external_product_id' => '77', 'external_variant_id' => $modelId];
         config(['marketplace.stock_sync_canary_identities' => ["shopee:{$store->id}:41"]]);
         $tokens = Mockery::mock(ShopeeTokenManager::class);

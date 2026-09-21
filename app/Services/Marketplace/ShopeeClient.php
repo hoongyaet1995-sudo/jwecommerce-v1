@@ -71,13 +71,16 @@ class ShopeeClient
         if ($this->authorizationFailed($response->status(), $payload)) {
             throw new StoreInventoryAuthorizationExpired('Shopee authorization expired. Reconnect this store.');
         }
+        if ($response->serverError() || ! is_array($payload)) {
+            throw new StoreInventoryResultUncertain('Shopee did not return a conclusive stock result. Reconcile before retrying.');
+        }
         $result = is_array($payload) ? ($payload['response'] ?? null) : null;
         $success = is_array($result) && is_array($result['success_list'] ?? null) ? $result['success_list'] : [];
         $failure = is_array($result) && is_array($result['failure_list'] ?? null) ? $result['failure_list'] : [];
         if ($success !== [] && $failure !== []) {
             throw new StoreInventoryResultUncertain('Shopee returned a partial stock result. Reconcile before retrying.');
         }
-        if (! $response->successful() || ! is_array($payload) || ($payload['error'] ?? null) !== '' || $failure !== []) {
+        if (! $response->successful() || ($payload['error'] ?? null) !== '' || $failure !== []) {
             throw new RuntimeException('Shopee rejected the stock update.');
         }
         $matches = array_values(array_filter($success, fn ($row): bool => is_array($row)

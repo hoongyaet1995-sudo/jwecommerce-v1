@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Services\Inventory\StoreManagement\AccountResolver;
 use App\Services\Inventory\StoreManagement\InventoryIngestionBoundary;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -59,9 +60,31 @@ class StoreInventoryIngestionBoundaryTest extends TestCase
         $this->assertSame([], $boundary->unresolvedHistoricalOrderIds($case['store']->id, $case['variant']->id, now()));
 
         $activation = $boundary->create($case['store']->id, $case['variant']->id, $case['balance']['id'], $actor, 'Enable');
-        $after = \Carbon\CarbonImmutable::parse($activation['orders_created_after'])->addSecond();
+        $after = CarbonImmutable::parse($activation['orders_created_after'])->addSecond();
         $this->assertNotNull($boundary->eligible($case['store']->id, $case['variant']->id, $after));
         $this->assertNull($boundary->eligible($case['store']->id, $case['variant']->id, $after->subSeconds(2)));
+    }
+
+    public function test_shared_pool_balance_can_own_a_store_specific_ingestion_boundary(): void
+    {
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool']);
+        $fixture = new StoreInventoryFixture;
+        $store = $fixture->store('shopee', 'SHARED-BOUNDARY');
+        $variant = $fixture->sku()['variant'];
+        $listing = $this->listing($store->id, '300', '3');
+        $this->map($listing, $store->id, $variant->id);
+        $balance = app(AccountResolver::class)->balance($variant->id, 'website');
+        DB::table('inventory_balances')->where('id', $balance['id'])->update([
+            'physical_stock' => 9, 'reserved_stock' => 0, 'safety_stock' => 0, 'counted_at' => now(),
+        ]);
+        $actor = User::factory()->create(['is_admin' => true]);
+
+        $activation = app(InventoryIngestionBoundary::class)->create(
+            $store->id, $variant->id, $balance['id'], $actor, 'Enable shared inventory ingestion'
+        );
+
+        $this->assertSame('marketplace:'.$store->id, $activation['channel_key']);
+        $this->assertSame($balance['id'], $activation['inventory_balance_id']);
     }
 
     private function case(): array

@@ -747,7 +747,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
       addToast({
         type: 'success',
         title: 'Omnichannel Stock Broadcast Dispatched',
-        message: `Pushed available stock quantities across all ${stores.filter(s => s.isManagedByJw).length} managed stores.`
+        message: `Queued eligible stock updates across ${stores.filter(s => s.isManagedByJw).length} managed stores. Provider confirmation appears per store.`
       });
     } finally {
       setIsBroadcastingAll(false);

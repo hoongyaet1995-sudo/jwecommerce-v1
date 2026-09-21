@@ -95,4 +95,13 @@ describe('store inventory adapters', () => {
 
     expect(stores.find(store => store.id === '11')?.syncStatus).toBe('pending');
   });
+
+  it('exposes a partially ready store when only some mapped SKUs are eligible', () => {
+    const stores = adaptStores({ ...overview, mode_catalog: { items: [
+      { variant_id: 7, mapped_stores: [{ id: 11, sync_readiness: { ready: true, blockers: [] } }] },
+      { variant_id: 8, mapped_stores: [{ id: 11, sync_readiness: { ready: false, blockers: [{ code: 'reservation_conflict' }] } }] },
+    ] } } as any);
+
+    expect(stores.find(store => store.id === '11')?.inventorySyncState).toBe('partially_ready');
+  });
 });

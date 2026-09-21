@@ -54,7 +54,11 @@ final class StoreSyncStateMutation
                 DB::table('inventory_store_accounts')->where('id', $account->id)->update([
                     'management_status' => 'managed', 'version' => DB::raw('version + 1'), 'updated_at' => now(),
                 ]);
+                $readyVariantIds = array_flip($check['ready_variant_ids'] ?? []);
                 foreach ($check['balances'] as $balance) {
+                    if (! isset($readyVariantIds[(int) $balance->product_variant_id])) {
+                        continue;
+                    }
                     $this->boundary->create($storeId, (int) $balance->product_variant_id, (int) $balance->id, $actor, $reason);
                     $fresh = DB::table('inventory_balances')->find($balance->id);
                     $stages[] = $this->outbox->enqueueStore(null, $fresh, $storeId, 'resume_sync', 'resume-sync:'.$storeId.':'.$fresh->id.':'.$fresh->version);

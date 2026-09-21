@@ -12,7 +12,7 @@ export interface InventoryStoreChannel {
   isComingSoon?: boolean;
   connectionState: 'connected' | 'expired' | 'disconnected' | 'coming_soon';
   isManagedByJw: boolean; // 是否已由 JW 接管库存
-  inventorySyncState?: 'setup_required' | 'active' | 'paused';
+  inventorySyncState?: 'setup_required' | 'partially_ready' | 'active' | 'paused';
   readStatus: 'ok' | 'failed' | 'mismatch' | 'unmanaged';
   syncStatus: 'synced' | 'pending' | 'syncing' | 'failed' | 'partially_failed' | 'disabled' | 'auth_expired';
   lastReadAt?: string;
@@ -104,6 +104,7 @@ export interface InventoryActivityItem {
   notes?: string;
   referenceId?: string; // Order ID, Transfer ID, Audit ID
   status: 'succeeded' | 'failed' | 'partially_completed' | 'pending';
+  providerSyncStatus?: string;
   detailsPayload?: Record<string, any>;
 }
 

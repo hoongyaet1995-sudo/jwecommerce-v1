@@ -12,6 +12,7 @@ it('shows automatic enrollment sync states without takeover controls', async () 
   const stores: any[] = [
     { id: 'website', name: 'JW Ecom Storefront', nickname: 'JW Storefront', platform: 'webstore', platformDisplayName: 'JW Ecom Storefront', connectionState: 'connected', isManagedByJw: true, inventorySyncState: 'active' },
     { id: '1', name: 'Shopee Test', nickname: 'Shopee Test', platform: 'shopee', platformDisplayName: 'Shopee', connectionState: 'connected', isManagedByJw: true, inventorySyncState: 'setup_required' },
+    { id: '3', name: 'Shopee Partial', nickname: 'Shopee Partial', platform: 'shopee', platformDisplayName: 'Shopee', connectionState: 'connected', isManagedByJw: true, inventorySyncState: 'partially_ready' },
     { id: '2', name: 'Lazada Test', nickname: 'Lazada Test', platform: 'lazada', platformDisplayName: 'Lazada', connectionState: 'connected', isManagedByJw: true, inventorySyncState: 'paused' },
   ];
   const inspect = vi.fn().mockResolvedValue({ready: false, requirements: [
@@ -25,6 +26,7 @@ it('shows automatic enrollment sync states without takeover controls', async () 
   expect(host.textContent).toContain('Inventory Active');
   expect(host.textContent).toContain('Setup Required');
   expect(host.textContent).toContain('Sync Paused');
+  expect(host.textContent).toContain('Some SKUs Need Setup');
   expect(host.textContent).toContain('Resolve Setup');
   expect(host.textContent).toContain('Resume Sync');
   expect(host.textContent).not.toContain('Takeover Inventory');
