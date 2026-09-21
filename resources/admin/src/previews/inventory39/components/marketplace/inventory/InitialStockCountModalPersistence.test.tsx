@@ -93,6 +93,10 @@ it('allocates one verified total across mapped independent stores and blocks unm
   expect(host.textContent).not.toContain('Demo Scenarios');
   const unmappedRow = Array.from(host.querySelectorAll('div')).find(node => node.textContent?.includes('Unmapped Lazada') && node.textContent?.includes('SKU Not Mapped'))!;
   expect((unmappedRow.querySelector('input') as HTMLInputElement).disabled).toBe(true);
+  const assignRemaining = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.includes('Assign Remaining')) as HTMLButtonElement;
+  await act(async () => assignRemaining.click());
+  const proceed = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.includes('Proceed to Review')) as HTMLButtonElement;
+  expect(proceed.disabled).toBe(false);
 
   await act(async () => root.unmount());
   host.remove();

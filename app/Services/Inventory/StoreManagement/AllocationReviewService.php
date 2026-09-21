@@ -116,9 +116,7 @@ final class AllocationReviewService
     {
         $stores = DB::table('marketplace_stores')->whereIn('platform', ['shopee', 'lazada'])->where('status', 'connected')->orderBy('id')->get();
         $mapped = DB::table('marketplace_variant_mappings')->where('product_variant_id', $variantId)->whereIn('store_id', $stores->pluck('id'))->pluck('store_id')->map(fn ($id) => (int) $id);
-        $unmapped = $stores->reject(fn ($store) => $mapped->contains((int) $store->id));
-        if ($unmapped->isNotEmpty()) throw ValidationException::withMessages(['allocations' => 'Map this SKU in every connected store before allocating stock.']);
-        $expected = collect(['website'])->merge($stores->map(fn ($store) => 'marketplace:'.$store->id))->sort()->values()->all();
+        $expected = collect(['website'])->merge($mapped->map(fn ($storeId) => 'marketplace:'.$storeId))->sort()->values()->all();
         $actual = collect(array_keys($allocations))->sort()->values()->all();
         if ($expected !== $actual) throw ValidationException::withMessages(['allocations' => 'Provide one allocation for every eligible store account.']);
         $normalized = [];

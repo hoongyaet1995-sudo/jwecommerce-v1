@@ -59,13 +59,13 @@ class StoreInventoryAllocationTest extends TestCase
         $this->assertDatabaseHas('inventory_store_operations', ['id' => $receipt['operation_id'], 'kind' => 'allocation']);
     }
 
-    public function test_allocation_rejects_mismatch_and_any_connected_store_without_a_sku_mapping(): void
+    public function test_allocation_rejects_mismatch_but_allows_unmapped_stores_to_remain_outside_the_ledger(): void
     {
         DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores']);
         $fixture = new StoreInventoryFixture;
         $sku = $fixture->sku();
         $mapped = $fixture->store('shopee', 'MAPPED');
-        $fixture->store('lazada', 'UNMAPPED');
+        $unmapped = $fixture->store('lazada', 'UNMAPPED');
         $this->map($mapped->id, $sku['variant']->id);
         $actor = $this->editor();
         $url = '/admin/api/inventory/store-management/allocations';
@@ -75,11 +75,17 @@ class StoreInventoryAllocationTest extends TestCase
             'allocations' => ['website' => 5, 'marketplace:'.$mapped->id => 4], 'reason' => 'Mismatch',
         ])->assertUnprocessable()->assertJsonValidationErrors('allocations');
 
-        $this->postJson($url, [
+        $review = $this->postJson($url, [
             'variant_id' => $sku['variant']->id, 'physical_count' => 10,
             'allocations' => ['website' => 5, 'marketplace:'.$mapped->id => 5], 'reason' => 'Unmapped blocker',
+        ])->assertCreated()->json();
+
+        $this->postJson($url, [
+            'variant_id' => $sku['variant']->id, 'physical_count' => 10,
+            'allocations' => ['website' => 10, 'marketplace:'.$mapped->id => 0, 'marketplace:'.$unmapped->id => 0],
+            'reason' => 'Unmapped account must remain excluded',
         ])->assertUnprocessable()->assertJsonValidationErrors('allocations');
 
-        $this->assertDatabaseCount('inventory_store_reviews', 0);
+        $this->assertDatabaseHas('inventory_store_reviews', ['id' => $review['id'], 'status' => 'pending']);
     }
 }

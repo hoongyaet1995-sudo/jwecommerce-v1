@@ -205,9 +205,6 @@ export const IndependentStockAllocationModal: React.FC<IndependentStockAllocatio
     }
   });
 
-  // Check unmapped active stores blocker
-  const hasUnmappedBlocker = activeStores.some(st => !isStoreMapped(st));
-
   // Check connection blocker
   const hasConnectionBlocker = activeStores.some(st => {
     return st.connectionState !== 'connected' && (allocations[st.id]?.trim() !== '' && parsedAllocations[st.id] > 0);
@@ -220,11 +217,10 @@ export const IndependentStockAllocationModal: React.FC<IndependentStockAllocatio
     !hasInvalidAllocationNumber &&
     !hasNegativeAllocation &&
     !hasReservationConflict &&
-    !hasUnmappedBlocker &&
     !hasConnectionBlocker;
 
   // Quick Action Helpers
-  const handleAssignRemaining = (targetStoreId: string = 'webstore') => {
+  const handleAssignRemaining = (targetStoreId: string = 'website') => {
     if (!isVerifiedCountValid || verifiedCountNum <= 0) return;
     const currentForTarget = Number(allocations[targetStoreId] || 0);
     const newTargetVal = Math.max(0, currentForTarget + remainingCount);
@@ -277,7 +273,10 @@ export const IndependentStockAllocationModal: React.FC<IndependentStockAllocatio
     setIsSaving(true);
     setSaveError('');
     try {
-      const receipt = await onSaveCount({sku: item.masterSku, allocations: parsedAllocations,
+      const eligibleAllocations = Object.fromEntries(
+        activeStores.filter(isStoreMapped).map(store => [store.id, parsedAllocations[store.id] ?? 0])
+      );
+      const receipt = await onSaveCount({sku: item.masterSku, allocations: eligibleAllocations,
         physicalCount: verifiedCountNum, reason, notes: notes.trim() || undefined, operator});
       setSaveReceipt(receipt);
       setStep('success');
@@ -594,10 +593,10 @@ export const IndependentStockAllocationModal: React.FC<IndependentStockAllocatio
                 </div>
 
                 {/* Validation message banner if any blocker exists */}
-                {hasUnmappedBlocker && (
+                {activeStores.some(st => !isStoreMapped(st)) && (
                   <div className="mt-2 pt-2 border-t border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                    <span>Active store account has an unmapped SKU. Map store listing before completing allocation.</span>
+                    <span>Unmapped store accounts are excluded from this allocation. Map the SKU later, then use Stock Transfers to assign stock.</span>
                   </div>
                 )}
                 {hasReservationConflict && (
@@ -624,7 +623,7 @@ export const IndependentStockAllocationModal: React.FC<IndependentStockAllocatio
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
-                      onClick={() => handleAssignRemaining('webstore')}
+                      onClick={() => handleAssignRemaining('website')}
                       disabled={!isVerifiedCountValid || remainingCount <= 0}
                       className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                       title="Assign unallocated remainder to JW Storefront"
