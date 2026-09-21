@@ -74,9 +74,11 @@ export const MarketplaceInventoryPage: React.FC = () => {
     reloadInventory,
     executeStoreTransfer,
     retrySync,
+    allocateStock,
     switchInventoryMode,
     toggleStoreManagement,
-    syncAll
+    syncAll,
+    setCurrentSection
   } = useAdmin();
 
   // Active Tab: 'overview' | 'transfers' | 'history'
@@ -236,6 +238,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
   const handleSaveFirstCount = async ({
     sku,
     targetStoreId,
+    allocations,
     physicalCount,
     reason,
     notes,
@@ -243,6 +246,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
   }: {
     sku: string;
     targetStoreId?: string;
+    allocations?: Record<string, number>;
     physicalCount: number;
     reason: string;
     notes?: string;
@@ -250,6 +254,12 @@ export const MarketplaceInventoryPage: React.FC = () => {
   }) => {
     const item = resolveFirstCountItem(safeInventory, selectedItemForCount, sku);
     if (!item) throw new Error('The selected SKU is no longer available. Reopen the inventory catalog and try again.');
+
+    if (currentMode === 'independent' && allocations) {
+      const receipt = await allocateStock(item, physicalCount, allocations, `${reason}: ${notes || ''}`.trim());
+      await reloadInventory();
+      return receipt;
+    }
 
     // Use admin context recordPhysicalCountAudit
     await recordPhysicalCountAudit(item.id, physicalCount, `${reason}: ${notes || ''}`.trim(), targetStoreId, item);
@@ -1269,6 +1279,12 @@ export const MarketplaceInventoryPage: React.FC = () => {
           setSelectedItemForCount(null);
           setSettingsInitialStep('checklist');
           setIsSettingsModalOpen(true);
+        }}
+        onNavigateToTransfers={() => { setIsCountModalOpen(false); setActiveTab('transfers'); }}
+        onNavigateToSkuMapping={() => setCurrentSection('marketplace-mapping')}
+        onRetrySync={async taskId => {
+          await retrySync(taskId);
+          await reloadInventory();
         }}
       />
 

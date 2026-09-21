@@ -72,3 +72,41 @@ it('continues to mode switch preparation after a successful count', async () => 
   await act(async () => root.unmount());
   host.remove();
 });
+
+it('allocates one verified total across mapped independent stores and blocks unmapped inputs', async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  const item: any = { id: '1', variantId: 9, masterSku: 'ALLOC-1', productName: 'Allocate me', variantName: 'Default', totalPhysicalStock: 10,
+    reservedStock: 0, mappedStoreIds: ['11'], storeAssociations: [] };
+  const stores: any[] = [
+    {id:'website',name:'JW Ecom Storefront',nickname:'JW Storefront',platform:'webstore',platformDisplayName:'JW Storefront',connectionState:'connected'},
+    {id:'11',name:'Mapped Shopee',nickname:'Mapped Shopee',platform:'shopee',platformDisplayName:'Shopee',connectionState:'connected'},
+    {id:'12',name:'Unmapped Lazada',nickname:'Unmapped Lazada',platform:'lazada',platformDisplayName:'Lazada',connectionState:'connected'},
+  ];
+
+  await act(async () => root.render(<InitialStockCountModal isOpen onClose={vi.fn()} item={item} mode="independent" stores={stores} onSaveCount={vi.fn()} />));
+
+  expect(host.textContent).toContain('Allocate Stock');
+  expect(host.textContent).toContain('SKU Not Mapped');
+  expect(host.textContent).not.toContain('Demo Scenarios');
+  const unmappedRow = Array.from(host.querySelectorAll('div')).find(node => node.textContent?.includes('Unmapped Lazada') && node.textContent?.includes('SKU Not Mapped'))!;
+  expect((unmappedRow.querySelector('input') as HTMLInputElement).disabled).toBe(true);
+
+  await act(async () => root.unmount());
+  host.remove();
+});
+
+it('allows an independently verified zero count when every store allocation is zero', async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement('div'); document.body.append(host); const root = createRoot(host);
+  const item: any = { id: '2', variantId: 10, masterSku: 'EMPTY-1', productName: 'Empty', variantName: 'Default', totalPhysicalStock: null, reservedStock: 0, mappedStoreIds: [], storeAssociations: [] };
+  const stores: any[] = [{id:'website',name:'JW Ecom Storefront',nickname:'JW Storefront',platform:'webstore',platformDisplayName:'JW Storefront',connectionState:'connected'}];
+  await act(async () => root.render(<InitialStockCountModal isOpen onClose={vi.fn()} item={item} mode="independent" stores={stores} onSaveCount={vi.fn()} />));
+  const inputs = Array.from(host.querySelectorAll('input[type="number"]')) as HTMLInputElement[];
+  await act(async () => { for (const input of inputs) { const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!; setter.call(input,'0'); input.dispatchEvent(new Event('input',{bubbles:true})); } });
+  const proceed = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.includes('Proceed to Review')) as HTMLButtonElement;
+  expect(proceed.disabled).toBe(false);
+  await act(async () => root.unmount()); host.remove();
+});

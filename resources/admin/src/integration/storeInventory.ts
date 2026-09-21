@@ -14,6 +14,10 @@ export const storeInventoryApi={
     const review=await json('/admin/api/inventory/store-management/reviews',{method:'POST',body:JSON.stringify({kind,...payload})});
     return json(`/admin/api/inventory/store-management/reviews/${review.id}/confirm`,{method:'POST',body:JSON.stringify({operation_key:crypto.randomUUID()})});
   },
+  async allocate(payload:Record<string,unknown>){
+    const review=await json('/admin/api/inventory/store-management/allocations',{method:'POST',body:JSON.stringify(payload)});
+    return json(`/admin/api/inventory/store-management/allocations/${review.id}/confirm`,{method:'POST',body:JSON.stringify({operation_key:crypto.randomUUID()})});
+  },
   syncAll:()=>json('/admin/api/inventory/store-management/sync-all',{method:'POST',body:'{}'}),
   retry:(id:string,reconcile_outcome?:'not_applied')=>json(`/admin/api/inventory/store-management/sync-tasks/${id}/retry`,{method:'POST',body:JSON.stringify(reconcile_outcome?{reconcile_outcome}:{})}),
   syncReadiness:(id:string)=>json(`/admin/api/inventory/store-management/stores/${id}/sync-readiness`),
@@ -27,7 +31,8 @@ export function adaptInventory(overview:InventoryOverview){
   return [...groups.entries()].map(([variantId,rows])=>{
     const known=rows.filter(r=>r.counted); const physical=known.length?known.reduce((n,r)=>n+r.physical,0):null;
     const reserved=known.reduce((n,r)=>n+(r.reserved||0),0); const available=known.length?known.reduce((n,r)=>n+r.available,0):null;
-    return {id:String(rows[0].balance_id),variantId,masterSku:rows[0].sku||'',barcode:'',productName:rows[0].product||'',variantName:rows[0].variant||'',imageUrl:'',warehouseLocation:'',
+    const modeItem=overview.mode_catalog?.items?.find((entry:any)=>Number(entry.variant_id)===variantId);
+    return {id:String(rows[0].balance_id),variantId,masterSku:rows[0].sku||'',barcode:'',productName:rows[0].product||'',variantName:rows[0].variant||'',imageUrl:'',warehouseLocation:'',mappedStoreIds:(modeItem?.mapped_stores||[]).map((store:any)=>String(store.id)),
       physicalStockStatus:physical===null?'unknown':'verified',hasUncountedAccounts:rows.some(r=>!r.counted),totalPhysicalStock:physical,reservedStock:reserved,safetyStock:0,availableStock:available,reorderPoint:0,costPrice:0,sellingPrice:0,
       channelMappings:{},autoSyncEnabled:false,historyLog:[],storeAssociations:rows.filter(r=>r.store_id).map(r=>({connectionId:String(r.store_id),storeName:r.store_name||r.account_key,platform:r.platform,
         externalSku:r.sku,connectionState:r.connection_status||'connected',syncState:'enabled',lastSyncStatus:r.external_sync?.status,syncTasks:r.external_sync?.tasks||[],balanceId:r.balance_id}))};
