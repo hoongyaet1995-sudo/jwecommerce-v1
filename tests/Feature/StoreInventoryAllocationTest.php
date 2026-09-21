@@ -88,4 +88,27 @@ class StoreInventoryAllocationTest extends TestCase
 
         $this->assertDatabaseHas('inventory_store_reviews', ['id' => $review['id'], 'status' => 'pending']);
     }
+
+    public function test_unmapped_draft_can_be_counted_into_website_and_remains_verified_after_reload(): void
+    {
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores']);
+        $fixture = new StoreInventoryFixture;
+        $sku = $fixture->sku();
+        DB::table('products')->where('id', $sku['product']->id)->update(['status' => 'draft']);
+        $fixture->store('lazada', 'UNMAPPED-DRAFT');
+        $this->actingAs($this->editor());
+        $before = $this->getJson('/admin/api/inventory/store-management/overview')->assertOk();
+        $before->assertJsonPath('mode_catalog.items.0.variant_id', $sku['variant']->id);
+        $this->assertDatabaseCount('inventory_balances', 0);
+        $review = $this->postJson('/admin/api/inventory/store-management/allocations', [
+            'variant_id' => $sku['variant']->id, 'physical_count' => 0,
+            'allocations' => ['website' => 0], 'reason' => 'Verified empty stock before mapping',
+        ])->assertCreated()->json();
+        $this->postJson('/admin/api/inventory/store-management/allocations/'.$review['id'].'/confirm', [
+            'operation_key' => 'draft-first-count-zero',
+        ])->assertOk()->assertJsonPath('ledger_status', 'applied');
+        $this->getJson('/admin/api/inventory/store-management/overview')->assertOk()
+            ->assertJsonPath('data.0.counted', true)->assertJsonPath('data.0.physical', 0);
+        $this->assertDatabaseCount('inventory_balances', 1);
+    }
 }
