@@ -210,6 +210,30 @@ class StoreInventoryReadTest extends TestCase
         ], $catalog['summary']);
     }
 
+    public function test_test_store_mapping_does_not_reclassify_a_real_jw_catalog_sku_as_test(): void
+    {
+        $fixture = new StoreInventoryFixture;
+        $sku = $fixture->sku();
+        DB::table('products')->where('id', $sku['product']->id)->update(['status' => 'active']);
+        DB::table('product_variants')->where('id', $sku['variant']->id)->update([
+            'data_classification' => 'unclassified',
+        ]);
+        $store = $fixture->store('shopee', 'SANDBOX');
+        DB::table('marketplace_stores')->where('id', $store->id)->update([
+            'data_classification' => 'test',
+        ]);
+        $this->map($store->id, $sku['variant']->id);
+
+        $item = collect($this->actingAs($this->admin())
+            ->getJson('/admin/api/inventory/store-management/overview')
+            ->assertOk()
+            ->json('mode_catalog.items'))
+            ->firstWhere('variant_id', $sku['variant']->id);
+
+        $this->assertSame('awaiting_first_count', $item['classification']);
+        $this->assertSame('unclassified', $item['data_classification']);
+    }
+
     public function test_mode_catalog_exposes_a_cached_inventory_thumbnail_for_local_catalog_media(): void
     {
         $fixture = new StoreInventoryFixture;

@@ -42,7 +42,7 @@ final class ModeCatalogReader
         $items = $variants->map(function (object $variant) use ($balances, $mappings): array {
             $balance = $balances->get($variant->id);
             $stores = $mappings->get($variant->id, collect());
-            $classification = $this->classification($variant, $balance, $stores);
+            $classification = $this->classification($variant, $balance);
 
             return [
                 'variant_id' => (int) $variant->id,
@@ -102,10 +102,9 @@ final class ModeCatalogReader
             ->get();
     }
 
-    /** @param Collection<int,object> $stores */
-    private function classification(object $variant, ?object $balance, Collection $stores): string
+    private function classification(object $variant, ?object $balance): string
     {
-        if ($variant->data_classification === 'test' || $stores->contains(fn (object $store) => $store->store_classification === 'test')) {
+        if ($variant->data_classification === 'test') {
             return 'sandbox_test';
         }
         if (! in_array($variant->product_status, ['active'], true)) {
