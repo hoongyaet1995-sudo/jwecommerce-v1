@@ -36,6 +36,7 @@ interface StoreStockTransfersTabProps {
   transfersList: StoreStockTransferRecord[];
   onExecuteTransfer: (transfer: Omit<StoreStockTransferRecord, 'id' | 'transferNumber' | 'timestamp' | 'ledgerStatus' | 'sourcePlatformSyncStatus' | 'destinationPlatformSyncStatus'>) => Promise<StoreStockTransferRecord>;
   onRetryPlatformSync: (transferId: string, target: 'source' | 'destination', action: SyncRecoveryAction) => Promise<StoreStockTransferRecord>;
+  onOpenTransferExecution?: (transfer: StoreStockTransferRecord) => Promise<StoreStockTransferRecord>;
   onReconnectStore?: (storeId: string) => void;
 }
 
@@ -46,6 +47,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
   transfersList,
   onExecuteTransfer,
   onRetryPlatformSync,
+  onOpenTransferExecution = async transfer => transfer,
   onReconnectStore = () => {}
 }) => {
   // Form State
@@ -81,6 +83,8 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
   });
   const [recoveringTarget, setRecoveringTarget] = useState<'source' | 'destination' | null>(null);
   const [recoveryFeedback, setRecoveryFeedback] = useState<string | null>(null);
+  const [openingTransferId, setOpeningTransferId] = useState<string | null>(null);
+  const [historyOpenError, setHistoryOpenError] = useState<string | null>(null);
 
   // Transfer history filter
   const [historySearch, setHistorySearch] = useState<string>('');
@@ -314,11 +318,13 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
     ?? (activeTransferExecution.stage === 'dest_syncing' ? 'syncing' : 'pending');
   const sourceStage = executionRecord?.externalStages?.find(stage => stage.stage === 'source');
   const destinationStage = executionRecord?.externalStages?.find(stage => stage.stage === 'destination');
+  const executionSourceStore = safeStores.find(store => store.id === executionRecord?.sourceStoreId) || sourceStore;
+  const executionDestinationStore = safeStores.find(store => store.id === executionRecord?.destinationStoreId) || destStore;
   const sourcePresentation = syncStatusPresentation(sourceStage?.status ?? sourceExecutionStatus);
   const destinationPresentation = syncStatusPresentation(destinationStage?.status ?? destinationExecutionStatus);
   const failedExecutionTargets = [
-    sourcePresentation.action !== 'none' ? sourceStore.name : null,
-    destinationPresentation.action !== 'none' ? destStore.name : null,
+    sourcePresentation.action !== 'none' ? executionSourceStore.name : null,
+    destinationPresentation.action !== 'none' ? executionDestinationStore.name : null,
   ].filter(Boolean).join(' and ');
 
   const recoverStage = async (
@@ -367,6 +373,27 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
     if (presentation.status === 'awaiting_confirmation') return (target === 'source' ? executionRecord?.sourceFailureReason : executionRecord?.destinationFailureReason) || 'The update is awaiting marketplace confirmation. Check status before sending another write.';
     if (presentation.status === 'sync_replaced') return 'A newer stock update replaced this operation.';
     return `Confirmed synced with ${target} store.`;
+  };
+
+  const openTransferExecution = async (record: StoreStockTransferRecord) => {
+    setOpeningTransferId(record.id);
+    setHistoryOpenError(null);
+    try {
+      const updated = await onOpenTransferExecution(record);
+      const source = syncStatusPresentation(updated.externalStages?.find(stage => stage.stage === 'source')?.status ?? updated.sourcePlatformSyncStatus);
+      const destination = syncStatusPresentation(updated.externalStages?.find(stage => stage.stage === 'destination')?.status ?? updated.destinationPlatformSyncStatus);
+      const hasPlatformError = [source, destination].some(item => ['retry', 'reconnect'].includes(item.action));
+      const isPending = [source, destination].some(item => item.action === 'check_status' || item.status === 'waiting_for_source');
+      setActiveTransferExecution({
+        isOpen: true,
+        stage: hasPlatformError ? 'has_platform_error' : isPending ? 'dest_syncing' : 'completed',
+        record: updated,
+      });
+    } catch (error) {
+      setHistoryOpenError(error instanceof Error ? error.message : 'The latest transfer status could not be loaded.');
+    } finally {
+      setOpeningTransferId(null);
+    }
   };
 
   return (
@@ -982,6 +1009,12 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
           </div>
         </div>
 
+        {historyOpenError && (
+          <div role="alert" className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-xs text-red-800 dark:text-red-200">
+            {historyOpenError}
+          </div>
+        )}
+
         {/* Transfers Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -1000,8 +1033,8 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
               {(filteredHistory || []).map(record => {
                 const hasError = record.sourcePlatformSyncStatus === 'failed' || record.destinationPlatformSyncStatus === 'failed';
-                const isPending = ['pending', 'syncing'].includes(record.sourcePlatformSyncStatus)
-                  || ['pending', 'syncing'].includes(record.destinationPlatformSyncStatus);
+                const isPending = ['pending', 'syncing', 'awaiting_confirmation'].includes(record.sourcePlatformSyncStatus)
+                  || ['pending', 'syncing', 'awaiting_confirmation'].includes(record.destinationPlatformSyncStatus);
                 return (
                   <tr key={record.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-800/50 transition-colors">
                     <td className="py-3 px-3">
@@ -1038,10 +1071,11 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                     <td className="py-3 px-3">
                       {hasError ? (
                         <div className="space-y-1">
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-950/60 px-2 py-0.5 rounded-md">
+                          <button type="button" disabled={openingTransferId !== null || record.id === 'not-created'} onClick={() => void openTransferExecution(record)} title="Open stock sync recovery" className="inline-flex items-center gap-1 text-[11px] font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-950/60 px-2 py-0.5 rounded-md hover:ring-2 hover:ring-red-300 dark:hover:ring-red-800 focus:outline-hidden focus:ring-2 focus:ring-red-400 disabled:opacity-50 cursor-pointer">
                             <AlertTriangle className="w-3 h-3" />
-                            <span>Platform Sync Failed</span>
-                          </span>
+                            <span>{openingTransferId === record.id ? 'Loading Recovery…' : 'Platform Sync Failed'}</span>
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
                           {record.sourceFailureReason && (
                             <div className="text-[10px] text-red-500 max-w-xs truncate" title={record.sourceFailureReason}>
                               Source: {record.sourceFailureReason}
@@ -1052,34 +1086,13 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                               Destination: {record.destinationFailureReason}
                             </div>
                           )}
-                          <div className="flex flex-wrap gap-2">
-                            {record.sourcePlatformSyncStatus === 'failed' && record.id !== 'not-created' && (
-                              <button
-                                type="button"
-                                onClick={() => onRetryPlatformSync(record.id, 'source')}
-                                className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-900 dark:text-white hover:underline cursor-pointer"
-                              >
-                                <RefreshCw className="w-3 h-3" />
-                                <span>Retry Source Only</span>
-                              </button>
-                            )}
-                            {record.destinationPlatformSyncStatus === 'failed' && record.id !== 'not-created' && (
-                              <button
-                                type="button"
-                                onClick={() => onRetryPlatformSync(record.id, 'destination')}
-                                className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-900 dark:text-white hover:underline cursor-pointer"
-                              >
-                                <RefreshCw className="w-3 h-3" />
-                                <span>Retry Destination Only</span>
-                              </button>
-                            )}
-                          </div>
                         </div>
                       ) : isPending ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                        <button type="button" disabled={openingTransferId !== null} onClick={() => void openTransferExecution(record)} title="Open transfer status and recovery" className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400 px-2 py-1 -mx-2 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/40 focus:outline-hidden focus:ring-2 focus:ring-amber-400 disabled:opacity-50 cursor-pointer">
                           <RefreshCw className="w-3.5 h-3.5" />
-                          <span>Awaiting Channel Confirmation</span>
-                        </span>
+                          <span>{openingTransferId === record.id ? 'Loading Latest Status…' : 'Awaiting Channel Confirmation'}</span>
+                          <ChevronRight className="w-3 h-3" />
+                        </button>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                           <CheckCircle2 className="w-3.5 h-3.5" />
@@ -1373,7 +1386,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                   <div>
                     <div className="text-xs font-bold text-emerald-950 dark:text-emerald-100">Step 1: JW Inventory Ledger Transfer</div>
                     <div className="text-[11px] text-emerald-700 dark:text-emerald-300">
-                      Instantly shifted {numericQty} units from {sourceStore.name} to {destStore.name}.
+                      Instantly shifted {executionRecord?.quantity ?? numericQty} units from {executionSourceStore.name} to {executionDestinationStore.name}.
                     </div>
                   </div>
                 </div>
@@ -1391,7 +1404,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                     <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                   )}
                   <div>
-                    <div className="text-xs font-bold">Step 2: Source Channel Stock Update ({sourceStore.platformDisplayName})</div>
+                    <div className="text-xs font-bold">Step 2: Source Channel Stock Update ({executionSourceStore.platformDisplayName})</div>
                     <div className="text-[11px] opacity-80">
                       {stageDescription('source', sourcePresentation)}
                     </div>
@@ -1418,7 +1431,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                     <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                   )}
                   <div>
-                    <div className="text-xs font-bold">Step 3: Destination Channel Stock Update ({destStore.platformDisplayName})</div>
+                    <div className="text-xs font-bold">Step 3: Destination Channel Stock Update ({executionDestinationStore.platformDisplayName})</div>
                     <div className="text-[11px] opacity-80">
                       {stageDescription('destination', destinationPresentation)}
                     </div>

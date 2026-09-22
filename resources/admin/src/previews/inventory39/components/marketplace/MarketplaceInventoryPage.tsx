@@ -701,6 +701,35 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
     return updated;
   };
 
+  const handleOpenTransferExecution = async (transfer: StoreStockTransferRecord) => {
+    const latest = await getInventoryOperation(transfer.id);
+    const stages = latest?.external_stages || [];
+    const sourceStage = stages.find((stage: any) => stage.stage === 'source');
+    const destinationStage = stages.find((stage: any) => stage.stage === 'destination');
+    const sourceStoreId = sourceStage?.store_id == null ? 'website' : String(sourceStage.store_id);
+    const destinationStoreId = destinationStage?.store_id == null ? 'website' : String(destinationStage.store_id);
+    const sourceChannel = stores.find(store => store.id === sourceStoreId);
+    const destinationChannel = stores.find(store => store.id === destinationStoreId);
+    const sku = latest?.balances?.[0]?.sku || transfer.masterSku;
+    const item = safeInventory.find(candidate => candidate.masterSku === sku);
+    const refreshed = applyTransferReceipt({
+      ...transfer,
+      masterSku: sku,
+      productName: item?.productName || transfer.productName,
+      variantName: item?.variantName || transfer.variantName,
+      imageUrl: item?.imageUrl || transfer.imageUrl,
+      quantity: Number(latest?.payload?.quantity ?? transfer.quantity),
+      sourceStoreId,
+      sourceStoreName: sourceChannel?.name || transfer.sourceStoreName,
+      sourcePlatform: (sourceChannel?.platform || transfer.sourcePlatform) as StoreStockTransferRecord['sourcePlatform'],
+      destinationStoreId,
+      destinationStoreName: destinationChannel?.name || transfer.destinationStoreName,
+      destinationPlatform: (destinationChannel?.platform || transfer.destinationPlatform) as StoreStockTransferRecord['destinationPlatform'],
+    }, latest);
+    setTransfersList(current => current.map(item => item.id === transfer.id ? refreshed : item));
+    return refreshed;
+  };
+
   // Handler: Admin Global Mode Switch
   const handleSwitchMode = async (
     newMode: 'shared' | 'independent',
@@ -1402,6 +1431,7 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
           transfersList={transfersList}
           onExecuteTransfer={handleExecuteStoreTransfer}
           onRetryPlatformSync={handleRetryPlatformSync}
+          onOpenTransferExecution={handleOpenTransferExecution}
           onReconnectStore={() => setCurrentSection('marketplace-auth')}
         />
       )}

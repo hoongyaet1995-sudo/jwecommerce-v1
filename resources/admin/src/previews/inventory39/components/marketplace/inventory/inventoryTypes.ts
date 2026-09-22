@@ -72,6 +72,7 @@ export interface StoreStockTransferRecord {
     id: string;
     stage: 'source' | 'destination' | string;
     status: string;
+    store_id?: number | null;
     provider_receipt?: unknown;
   }>;
 }

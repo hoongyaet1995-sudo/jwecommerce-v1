@@ -100,6 +100,46 @@ it('does not report pending channel work as both stores synced', async () => {
   await act(async () => root.unmount());
 });
 
+it('opens a pending history operation with freshly loaded channel stages', async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  const pendingTransfer: any = {
+    id: 'operation-history', transferNumber: 'TR-HISTORY', timestamp: new Date().toISOString(),
+    masterSku: 'AUR-PINE-BLK', productName: 'Aurora Headphones', variantName: 'Black', imageUrl: '',
+    sourceStoreId: 'website', sourceStoreName: 'JW Storefront', sourcePlatform: 'webstore',
+    destinationStoreId: '12', destinationStoreName: 'Lazada Test', destinationPlatform: 'lazada',
+    quantity: 2, operator: 'Admin', reason: 'Rebalance', ledgerStatus: 'succeeded',
+    sourcePlatformSyncStatus: 'succeeded', destinationPlatformSyncStatus: 'pending',
+  };
+  const onOpenTransferExecution = vi.fn().mockResolvedValue({
+    ...pendingTransfer,
+    destinationPlatformSyncStatus: 'failed',
+    externalStages: [
+      { id: 'source-stage', stage: 'source', status: 'confirmed' },
+      { id: 'destination-stage', stage: 'destination', status: 'auth_expired', store_id: 12 },
+    ],
+  });
+
+  await act(async () => root.render(
+    <StoreStockTransfersTab inventory={inventory} stores={stores} storeBalances={storeBalances}
+      transfersList={[pendingTransfer]} onExecuteTransfer={vi.fn()} onRetryPlatformSync={vi.fn()}
+      onOpenTransferExecution={onOpenTransferExecution} />
+  ));
+
+  const pending = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.includes('Awaiting Channel Confirmation'))!;
+  expect(pending).toBeDefined();
+  await act(async () => pending.click());
+
+  expect(onOpenTransferExecution).toHaveBeenCalledWith(pendingTransfer);
+  expect(host.textContent).toContain('Store Transfer Execution Pipeline');
+  expect(host.textContent).toContain('Authorization Expired');
+  expect(host.textContent).toContain('Reconnect Store');
+
+  await act(async () => root.unmount());
+});
+
 it('shows source confirmation delay on the source stage without blaming the destination', async () => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement('div');
