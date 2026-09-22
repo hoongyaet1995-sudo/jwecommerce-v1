@@ -68,7 +68,9 @@ it('lets a super admin manage product publishing on a connected production store
  const container=document.createElement('div');const root=createRoot(container);
  const value={connections:[{id:'3',platform:'lazada',shopName:'Lazada MY',shopId:'300927968304',status:'connected',accountMode:'production',capabilities:{catalogRead:true,productPublish:false,orderReceive:false,inventoryUpdate:false,fulfillmentWrite:false},tokenExpiresAt:'',lastSyncAt:''}],marketplaceOrders:[],marketplaceInventory:[],marketplaceStoreProducts:[],syncLogs:[],setCurrentSection:vi.fn(),currentSection:'marketplace-auth',addToast:vi.fn()};
  await act(async()=>root.render(<PreviewContext.Provider value={value as unknown as React.ContextType<typeof PreviewContext>}><MarketplaceAuthPage operational canManagePublishing onSetProductPublishing={update}/></PreviewContext.Provider>));
- const manage=Array.from(container.querySelectorAll('button')).find(button=>button.textContent?.includes('Enable Publishing'))!;
+ expect(container.textContent).toContain('Product Publishing');
+ expect(container.textContent).toContain('Create marketplace listings');
+ const manage=container.querySelector('button[aria-label="Enable product publishing for Lazada MY"]') as HTMLButtonElement;
  expect(manage).toBeTruthy();
  await act(async()=>manage.click());
  expect(container.textContent).toContain('Enable Product Publishing');
@@ -82,5 +84,5 @@ it('lets a super admin manage product publishing on a connected production store
 it('does not expose publishing management to ordinary staff',()=>{
  const value={connections:[{id:'3',platform:'lazada',shopName:'Lazada MY',shopId:'300927968304',status:'connected',accountMode:'production',capabilities:{catalogRead:true,productPublish:false,orderReceive:false,inventoryUpdate:false,fulfillmentWrite:false},tokenExpiresAt:'',lastSyncAt:''}],marketplaceOrders:[],marketplaceInventory:[],marketplaceStoreProducts:[],syncLogs:[],setCurrentSection:vi.fn(),currentSection:'marketplace-auth'};
  const html=renderToStaticMarkup(<PreviewContext.Provider value={value as unknown as React.ContextType<typeof PreviewContext>}><MarketplaceAuthPage operational/></PreviewContext.Provider>);
- expect(html).not.toContain('Enable Publishing');
+ expect(html).not.toContain('Create marketplace listings');
 });

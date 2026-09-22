@@ -362,7 +362,7 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
 
                   {/* Sync Switches (only relevant if connected) */}
                   {isConnected && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className={`grid gap-3 ${operational&&canManagePublishing&&onSetProductPublishing&&conn.accountMode==='production'?'grid-cols-3':'grid-cols-2'}`}>
                       <div className="flex items-center justify-between p-3 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800">
                         <div>
                           <p className="font-semibold text-neutral-900 dark:text-white">Auto Stock Push</p>
@@ -404,6 +404,20 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
                           />
                         </button>
                       </div>
+
+                      {operational&&canManagePublishing&&onSetProductPublishing&&conn.accountMode==='production'&&(
+                        <div className="flex items-center justify-between p-3 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800">
+                          <div>
+                            <p className="font-semibold text-neutral-900 dark:text-white">Product Publishing</p>
+                            <p className="text-[10px] text-neutral-500">Create marketplace listings</p>
+                          </div>
+                          <button type="button" aria-label={`${conn.capabilities?.productPublish?'Disable':'Enable'} product publishing for ${conn.shopName}`}
+                            onClick={()=>{setPublishingTarget(conn);setPublishingReason('');setPublishingError(null);}}
+                            className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${conn.capabilities?.productPublish?'bg-indigo-600':'bg-neutral-300 dark:bg-neutral-700'}`}>
+                            <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${conn.capabilities?.productPublish?'translate-x-4':'translate-x-0'}`} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -451,12 +465,6 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
                           <RefreshCw className="w-3.5 h-3.5 text-neutral-500" />
                           Refresh Token
                         </button>
-                        {operational&&canManagePublishing&&onSetProductPublishing&&conn.accountMode==='production'&&(
-                          <button type="button" onClick={()=>{setPublishingTarget(conn);setPublishingReason('');setPublishingError(null);}}
-                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 transition-colors cursor-pointer">
-                            {conn.capabilities?.productPublish?'Disable Publishing':'Enable Publishing'}
-                          </button>
-                        )}
                       </div>
 
                       <button
