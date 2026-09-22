@@ -11,7 +11,12 @@ use Illuminate\Support\Str;
 /** Direct, audited recovery. Readback never schedules or sends a stock write. */
 final class StockSyncRecovery
 {
-    public function __construct(private MarketplaceStoreInventoryPublisher $publisher, private StoreSkuSyncReadiness $readiness, private StoreSyncAttemptLedger $attempts) {}
+    public function __construct(
+        private MarketplaceStoreInventoryPublisher $publisher,
+        private StoreSkuSyncReadiness $readiness,
+        private StoreSyncAttemptLedger $attempts,
+        private ImmediateStoreInventorySync $immediateSync,
+    ) {}
 
     private function context(int $storeId, int $variantId): array
     {
@@ -94,9 +99,10 @@ final class StockSyncRecovery
             'physicalStock' => $c['balance']?->physical_stock, 'reservedStock' => $c['balance']?->reserved_stock];
     }
 
-    public function check(int $storeId, int $variantId, int $actorId): array
+    public function check(int $storeId, int $variantId, int $actorId, bool $continueTransfer = true): array
     {
-        return $this->locked($storeId, $variantId, function () use ($storeId, $variantId, $actorId) {
+        $operationId = null;
+        $result = $this->locked($storeId, $variantId, function () use ($storeId, $variantId, $actorId, &$operationId) {
             $c = $this->context($storeId, $variantId);
             abort_unless($c['listing'], 409, 'Map this SKU before checking marketplace stock.');
             $pending = $this->tasks($storeId, $variantId)->where('status', 'uncertain')->first();
@@ -116,11 +122,19 @@ final class StockSyncRecovery
             foreach ($this->tasks($storeId, $variantId)->where('status', 'uncertain')->get() as $task) {
                 if ((int) $task->listing_variant_id === (int) $c['listing']->id && (int) $task->target_quantity === (int) $observation['observed_quantity']) {
                     $this->finish($task, 'confirmed', $observation + ['confirmation_method' => 'provider_readback', 'reconciled' => true], $actorId);
+                    if ($task->stage === 'source' && $task->operation_id) {
+                        $operationId = (string) $task->operation_id;
+                    }
                 }
             }
 
             return $this->details($storeId, $variantId);
         });
+        if ($continueTransfer && $operationId !== null) {
+            $this->immediateSync->run($operationId);
+        }
+
+        return $result;
     }
 
     public function resync(int $storeId, int $variantId, string $key, int $actorId): array

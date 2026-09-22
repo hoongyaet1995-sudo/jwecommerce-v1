@@ -323,6 +323,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/inventory/store-management/sync-all', [\App\Http\Controllers\Admin\StoreInventorySyncController::class, 'syncAll']);
     Route::get('/api/inventory/store-management/stores/{store}/skus/{variant}/sync', [\App\Http\Controllers\Admin\StockSyncRecoveryController::class, 'show'])->whereNumber(['store','variant']);
     Route::post('/api/inventory/store-management/stores/{store}/skus/{variant}/sync/check', [\App\Http\Controllers\Admin\StockSyncRecoveryController::class, 'check'])->whereNumber(['store','variant'])->middleware('throttle:30,1');
+    Route::post('/api/inventory/store-management/sync-status/bulk-check', [\App\Http\Controllers\Admin\StockSyncRecoveryController::class, 'bulkCheck'])->middleware('throttle:30,1');
     Route::post('/api/inventory/store-management/stores/{store}/skus/{variant}/sync/resync', [\App\Http\Controllers\Admin\StockSyncRecoveryController::class, 'resync'])->whereNumber(['store','variant'])->middleware('throttle:10,1');
     Route::post('/api/inventory/store-management/sync-tasks/{task}/retry', [\App\Http\Controllers\Admin\StoreInventorySyncController::class, 'retry'])->whereUuid('task');
     Route::get('/api/inventory/store-management/stores/{store}/readiness', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'readiness'])->whereNumber('store');

@@ -55,6 +55,7 @@ import { InventorySettingsModal } from './inventory/InventorySettingsModal';
 import { StockSyncStoreButton } from './inventory/StockSyncStoreButton';
 import { StockSyncRecovery } from '../../../inventory43/StockSyncRecovery';
 import {inventoryCsv,inventoryPage,inventoryPageNumbers,toggleInventoryPageSelection} from './inventory/inventoryTablePagination';
+import {buildBulkSyncStatusPlan,chunkBulkSyncPairs,summarizeBulkSyncSkips} from './inventory/bulkSyncStatus';
 
 export const resolveFirstCountItem = (
   inventory: MarketplaceInventoryItem[],
@@ -112,6 +113,7 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
     switchInventoryMode,
     toggleStoreManagement,
     syncAll,
+    bulkCheckStock,
     setCurrentSection
   } = useAdmin();
 
@@ -168,6 +170,7 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
   const [pageSize,setPageSize]=useState(25);
   const [jumpPageInput,setJumpPageInput]=useState('');
   const [selectedSkus,setSelectedSkus]=useState<string[]>([]);
+  const [bulkStatusProgress,setBulkStatusProgress]=useState<{running:boolean;checked:number;total:number}>({running:false,checked:0,total:0});
 
   // Modals & Drawers
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
@@ -289,6 +292,41 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
     link.href=url;link.download=`inventory-skus-export-${new Date().toISOString().slice(0,10)}.csv`;
     document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
     addToast({type:'success',title:'CSV Export Generated',message:`Exported ${selected.length} selected inventory records to CSV.`});
+  };
+  const getLatestStatuses=async(items:MarketplaceInventoryItem[],pendingOnly:boolean)=>{
+    if(bulkStatusProgress.running)return;
+    const limited=items.slice(0,25);
+    const plan=buildBulkSyncStatusPlan(limited,stores,pendingOnly);
+    const selectionOverflow=Math.max(0,items.length-limited.length);
+    const skippedSummary=summarizeBulkSyncSkips(plan.skipped);
+    if(!plan.pairs.length){
+      addToast({type:'info',title:'No Eligible Marketplace Statuses',message:`Nothing required a provider readback.${skippedSummary?` ${skippedSummary}.`:''}`});
+      return;
+    }
+    setBulkStatusProgress({running:true,checked:0,total:plan.pairs.length});
+    let checked=0;let failed=0;let mismatched=0;
+    try{
+      for(const chunk of chunkBulkSyncPairs(plan.pairs)){
+        const response=await bulkCheckStock(chunk.map(pair=>({store_id:Number(pair.storeId),variant_id:pair.variantId})));
+        const nextStates:Record<string,any>={};
+        for(const result of response.results||[]){
+          if(result.ok){
+            checked+=1;
+            if(result.status!=='synced')mismatched+=1;
+            nextStates[`${result.variantId}:${result.storeId}`]=result;
+          }else failed+=1;
+        }
+        setRecoveryStates(current=>({...current,...nextStates}));
+        setBulkStatusProgress({running:true,checked:Math.min(plan.pairs.length,checked+failed),total:plan.pairs.length});
+      }
+      await reloadInventory();
+      const skipped=plan.skipped.length+selectionOverflow;
+      addToast({type:failed?'warning':'success',title:'Latest Marketplace Status Loaded',message:`${checked} checked · ${mismatched} require attention · ${skipped} skipped${failed?` · ${failed} failed`:''}.${skippedSummary?` ${skippedSummary}.`:''}${selectionOverflow?` ${selectionOverflow} SKU(s) beyond the 25 SKU limit were not checked.`:''}`});
+    }catch(error){
+      addToast({type:'error',title:'Status Check Interrupted',message:error instanceof Error?error.message:'Marketplace status could not be checked.'});
+    }finally{
+      setBulkStatusProgress(current=>({...current,running:false}));
+    }
   };
 
   // Handler: Open First Count modal
@@ -1053,6 +1091,19 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
               </select>
 
               {/* Quick Intake Button */}
+              {recoveryPreview&&(
+                <button
+                  type="button"
+                  disabled={bulkStatusProgress.running}
+                  onClick={()=>void getLatestStatuses(filteredInventory,true)}
+                  className="px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${bulkStatusProgress.running?'animate-spin':''}`}/>
+                  <span>{bulkStatusProgress.running?`Checking ${bulkStatusProgress.checked} of ${bulkStatusProgress.total}`:'Refresh Pending'}</span>
+                </button>
+              )}
+
+              {/* Quick Intake Button */}
               {safeInventory.length > 0 && (
                 <button
                   type="button"
@@ -1073,6 +1124,9 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
               {filteredInventory.length>selectedSkus.length&&<button type="button" onClick={()=>setSelectedSkus(filteredInventory.map(item=>item.masterSku))} className="ml-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer font-bold">Select all {filteredInventory.length.toLocaleString()} SKUs</button>}
             </div>
             <div className="flex items-center gap-2">
+              {recoveryPreview&&<button type="button" disabled={bulkStatusProgress.running} onClick={()=>void getLatestStatuses(safeInventory.filter(item=>selectedSkus.includes(item.masterSku)),false)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 border border-indigo-500 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait">
+                <RefreshCw className={`w-3.5 h-3.5 ${bulkStatusProgress.running?'animate-spin':''}`}/><span>{bulkStatusProgress.running?`Checking ${bulkStatusProgress.checked}/${bulkStatusProgress.total}`:`Get Latest Status (${Math.min(selectedSkus.length,25)})`}</span>
+              </button>}
               <button type="button" onClick={exportSelectedInventory} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-neutral-900 border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 rounded-lg font-semibold hover:bg-indigo-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer">
                 <Download className="w-3.5 h-3.5"/><span>Export CSV</span>
               </button>

@@ -24,6 +24,7 @@ export const storeInventoryApi={
   overview:()=>json('/admin/api/inventory/store-management/overview'),
   syncDetails:(storeId:string,variantId:number)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/sync`),
   checkStock:(storeId:string,variantId:number)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/sync/check`,{method:'POST',body:'{}'}),
+  bulkCheckStock:(items:Array<{store_id:number;variant_id:number}>)=>json('/admin/api/inventory/store-management/sync-status/bulk-check',{method:'POST',body:JSON.stringify({items})}),
   resyncStock:(storeId:string,variantId:number,operationKey:string)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/sync/resync`,{method:'POST',body:JSON.stringify({operation_key:operationKey})}),
   history:()=>json('/admin/api/inventory/store-management/history?per_page=100'),
   operation:(id:string)=>json(`/admin/api/inventory/store-management/operations/${encodeURIComponent(id)}`),

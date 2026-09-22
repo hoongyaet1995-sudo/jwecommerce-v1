@@ -90,6 +90,80 @@ class StockSyncRecoveryTest extends TestCase
         Bus::assertNothingDispatched();
     }
 
+    public function test_source_readback_confirmation_directly_continues_waiting_transfer_destination(): void
+    {
+        $url = $this->fixture();
+        $publisher = Mockery::mock(MarketplaceStoreInventoryPublisher::class);
+        $publisher->shouldReceive('publish')->once()->andThrow(new StoreInventoryResultUncertain('timeout'));
+        $publisher->shouldReceive('observe')->times(3)->andReturn(
+            ['observed_quantity' => 9],
+            ['observed_quantity' => 9],
+            ['observed_quantity' => 22],
+        );
+        $publisher->shouldReceive('publish')->once()->andReturn([
+            'provider' => 'lazada', 'requested_quantity' => 22, 'observed_quantity' => 22,
+            'confirmation_method' => 'provider_readback',
+        ]);
+        $this->app->instance(MarketplaceStoreInventoryPublisher::class, $publisher);
+
+        $this->postJson($url.'/resync', ['operation_key' => (string) Str::uuid()])->assertOk();
+        $source = DB::table('inventory_store_sync_tasks')->first();
+        DB::table('inventory_store_sync_tasks')->where('id', $source->id)->update(['stage' => 'source']);
+        DB::table('inventory_store_sync_tasks')->insert([
+            'id' => (string) Str::uuid(), 'operation_id' => $source->operation_id,
+            'marketplace_store_id' => $source->marketplace_store_id,
+            'product_variant_id' => $source->product_variant_id,
+            'listing_variant_id' => $source->listing_variant_id,
+            'provider_external_product_id' => $source->provider_external_product_id,
+            'provider_external_variant_id' => $source->provider_external_variant_id,
+            'stage' => 'destination', 'status' => 'waiting_source', 'target_quantity' => 22,
+            'balance_version' => $source->balance_version, 'event_key' => (string) Str::uuid(),
+            'attempts' => 0, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->postJson($url.'/check')->assertOk();
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['stage' => 'source', 'status' => 'confirmed']);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['stage' => 'destination', 'status' => 'confirmed', 'attempts' => 1]);
+        Bus::assertNothingDispatched();
+    }
+
+    public function test_bulk_status_check_reads_provider_without_publishing_stock(): void
+    {
+        $url = $this->fixture();
+        preg_match('#/stores/(\d+)/skus/(\d+)/sync$#', $url, $matches);
+        $publisher = Mockery::mock(MarketplaceStoreInventoryPublisher::class);
+        $publisher->shouldReceive('observe')->once()->andReturn([
+            'observed_quantity' => 22,
+            'observed_at' => now()->toIso8601String(),
+        ]);
+        $publisher->shouldNotReceive('publish');
+        $this->app->instance(MarketplaceStoreInventoryPublisher::class, $publisher);
+
+        $this->postJson('/admin/api/inventory/store-management/sync-status/bulk-check', [
+            'items' => [['store_id' => (int) $matches[1], 'variant_id' => (int) $matches[2]]],
+        ])->assertOk()
+            ->assertJsonPath('summary.requested', 1)
+            ->assertJsonPath('summary.checked', 1)
+            ->assertJsonPath('summary.failed', 0)
+            ->assertJsonPath('results.0.status', 'synced')
+            ->assertJsonPath('results.0.marketplaceReportedStock', 22);
+
+        Bus::assertNothingDispatched();
+    }
+
+    public function test_bulk_status_check_limits_each_readback_chunk_to_ten_pairs(): void
+    {
+        $this->fixture();
+        $publisher = Mockery::mock(MarketplaceStoreInventoryPublisher::class);
+        $publisher->shouldNotReceive('observe');
+        $publisher->shouldNotReceive('publish');
+        $this->app->instance(MarketplaceStoreInventoryPublisher::class, $publisher);
+
+        $items = collect(range(1, 11))->map(fn (int $id): array => ['store_id' => 1, 'variant_id' => $id])->all();
+        $this->postJson('/admin/api/inventory/store-management/sync-status/bulk-check', ['items' => $items])
+            ->assertUnprocessable();
+    }
+
     public function test_changed_stock_during_send_is_not_reported_as_current_confirmation(): void
     {
         $url = $this->fixture();
