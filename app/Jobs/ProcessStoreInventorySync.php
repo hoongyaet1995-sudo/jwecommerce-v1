@@ -39,15 +39,6 @@ final class ProcessStoreInventorySync implements ShouldQueue
             if ($inFlight) {
                 return null;
             }
-            if ($task->stage === 'destination') {
-                $source = DB::table('inventory_store_sync_tasks')->where('operation_id', $task->operation_id)
-                    ->where('stage', 'source')->lockForUpdate()->first();
-                if (! $source || ! in_array($source->status, ['confirmed', 'not_applicable', 'superseded'], true)) {
-                    DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update(['status' => 'waiting_source', 'updated_at' => now()]);
-
-                    return null;
-                }
-            }
             $mode = DB::table('inventory_configuration')->where('id', 1)->value('operating_mode');
             $pool = $mode === 'shared_pool' ? DB::table('inventory_pools')->where('kind', 'shared')->lockForUpdate()->first()
                 : DB::table('inventory_pools')->where('marketplace_store_id', $task->marketplace_store_id)->lockForUpdate()->first();
@@ -113,6 +104,19 @@ final class ProcessStoreInventorySync implements ShouldQueue
                 DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)->update([
                     'status' => $stale ? 'superseded' : 'confirmed', 'provider_receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'updated_at' => now(),
                 ]);
+                if (! $stale && array_key_exists('observed_quantity', $receipt)) {
+                    DB::table('inventory_sync_observations')->insert([
+                        'store_id' => $task->marketplace_store_id,
+                        'product_variant_id' => $task->product_variant_id,
+                        'listing_variant_id' => $task->listing_variant_id,
+                        'external_product_id' => $task->provider_external_product_id,
+                        'external_variant_id' => $task->provider_external_variant_id,
+                        'sync_task_id' => $task->id,
+                        'quantity' => max(0, (int) $receipt['observed_quantity']),
+                        'actor_id' => null,
+                        'observed_at' => $receipt['observed_at'] ?? $receipt['confirmed_at'] ?? now(),
+                    ]);
+                }
                 $attempts->record($task, $stale ? 'superseded' : 'confirmed', $receipt);
                 if ($this->dispatchFollowing && ! $stale && $task->operation_id) {
                     DB::table('inventory_store_sync_tasks')->where('operation_id', $task->operation_id)

@@ -34,7 +34,8 @@ final class FakeStoreInventoryPublisher implements StoreInventoryPublisher
             throw new StoreInventoryAuthorizationExpired('token expired');
         }
 
-        return ['provider' => $store->platform, 'confirmed_quantity' => $quantity, 'request_id' => 'safe-123'];
+        return ['provider' => $store->platform, 'confirmed_quantity' => $quantity,
+            'observed_quantity' => $quantity, 'request_id' => 'safe-123'];
     }
 }
 
@@ -238,14 +239,108 @@ class StoreInventorySyncTest extends TestCase
         ]);
     }
 
-    public function test_destination_waits_while_source_outcome_is_uncertain(): void
+    public function test_destination_publishes_independently_while_source_outcome_is_uncertain(): void
     {
         $c = $this->staged();
         DB::table('inventory_store_sync_tasks')->where('operation_id', $c['task']->operation_id)->where('stage', 'source')->update(['status' => 'uncertain']);
+        DB::table('inventory_store_sync_tasks')->where('id', $c['task']->id)->update(['status' => 'queued']);
         $fake = new FakeStoreInventoryPublisher;
         (new ProcessStoreInventorySync($c['task']->id))->handle($fake);
-        $this->assertCount(0, $fake->calls);
-        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'waiting_source']);
+        $this->assertCount(1, $fake->calls);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'confirmed']);
+    }
+
+    public function test_transfer_enqueues_both_marketplace_stages_without_a_predecessor_dependency(): void
+    {
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores']);
+        $fixture = new StoreInventoryFixture;
+        $sku = $fixture->sku();
+        $sourceStore = $fixture->store('shopee', 'INDEPENDENT-SOURCE');
+        $destinationStore = $fixture->store('lazada', 'INDEPENDENT-DESTINATION');
+        $source = app(AccountResolver::class)->balance($sku['variant']->id, 'marketplace:'.$sourceStore->id);
+        $destination = app(AccountResolver::class)->balance($sku['variant']->id, 'marketplace:'.$destinationStore->id);
+        foreach ([$sourceStore, $destinationStore] as $store) {
+            DB::table('inventory_store_accounts')->where('account_key', 'marketplace:'.$store->id)
+                ->update(['management_status' => 'managed']);
+        }
+        foreach ([[$source, 8], [$destination, 2]] as [$balance, $quantity]) {
+            DB::table('inventory_balances')->where('id', $balance['id'])->update([
+                'physical_stock' => $quantity, 'reserved_stock' => 0, 'safety_stock' => 0,
+                'counted_at' => now(), 'version' => 1,
+            ]);
+        }
+
+        $actor = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        $reviewId = (string) \Illuminate\Support\Str::uuid();
+        $operationId = (string) \Illuminate\Support\Str::uuid();
+        DB::table('inventory_store_reviews')->insert([
+            'id' => $reviewId, 'kind' => 'transfer', 'actor_id' => $actor->id,
+            'configuration_version' => 1, 'balance_versions' => '{}', 'payload' => '{}',
+            'before' => '{}', 'after' => '{}', 'blockers' => '[]', 'status' => 'confirmed',
+            'expires_at' => now(), 'confirmed_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('inventory_store_operations')->insert([
+            'id' => $operationId, 'review_id' => $reviewId, 'operation_key' => 'independent-stage-test',
+            'kind' => 'transfer', 'actor_id' => $actor->id, 'ledger_status' => 'applied',
+            'receipt' => '{}', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $stages = app(SyncOutbox::class)->enqueueTransfer(
+            $operationId,
+            DB::table('inventory_balances')->find($source['id']),
+            DB::table('inventory_balances')->find($destination['id']),
+            false,
+        );
+
+        $this->assertSame(['queued', 'queued'], array_column($stages, 'status'));
+    }
+
+    public function test_operation_status_check_continues_a_destination_after_the_source_is_confirmed(): void
+    {
+        Bus::fake();
+        $publisher = new FakeStoreInventoryPublisher;
+        $c = $this->staged(false, $publisher);
+        Bus::fake();
+        DB::table('inventory_store_sync_tasks')->where('operation_id', $c['task']->operation_id)
+            ->where('stage', 'source')->update(['status' => 'confirmed']);
+        DB::table('inventory_store_sync_tasks')->where('id', $c['task']->id)
+            ->update(['status' => 'waiting_source']);
+
+        $this->actingAs($c['actor'])
+            ->postJson('/admin/api/inventory/store-management/operations/'.$c['task']->operation_id.'/check')
+            ->assertOk()
+            ->assertJsonPath('external_stages.1.status', 'confirmed');
+
+        $this->assertCount(1, $publisher->calls);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'confirmed']);
+        $this->assertDatabaseHas('inventory_sync_observations', [
+            'sync_task_id' => $c['task']->id,
+            'store_id' => $c['store']->id,
+            'product_variant_id' => $c['sku']['variant']->id,
+            'quantity' => 6,
+        ]);
+        Bus::assertNothingDispatched();
+    }
+
+    public function test_operation_status_check_does_not_resend_an_explicitly_failed_stage(): void
+    {
+        Bus::fake();
+        $publisher = new FakeStoreInventoryPublisher;
+        $c = $this->staged(false, $publisher);
+        Bus::fake();
+        DB::table('inventory_store_sync_tasks')->where('id', $c['task']->id)->update([
+            'status' => 'failed',
+            'provider_receipt' => json_encode(['code' => 'provider_rejected', 'message' => 'Rejected by provider']),
+        ]);
+
+        $this->actingAs($c['actor'])
+            ->postJson('/admin/api/inventory/store-management/operations/'.$c['task']->operation_id.'/check')
+            ->assertOk()
+            ->assertJsonPath('external_stages.1.status', 'failed');
+
+        $this->assertCount(0, $publisher->calls);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'failed']);
+        Bus::assertNothingDispatched();
     }
 
     public function test_targeted_destination_retry_can_continue_after_the_source_update_was_replaced(): void

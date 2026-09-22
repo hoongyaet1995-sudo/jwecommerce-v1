@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 
 final class StoreInventorySyncController extends Controller
 {
-    public function checkOperation(Request $request, string $operation, StockSyncRecovery $recovery, OverviewReader $reader): JsonResponse
+    public function checkOperation(Request $request, string $operation, StockSyncRecovery $recovery, OverviewReader $reader, ImmediateStoreInventorySync $immediateSync): JsonResponse
     {
         $this->authorizeActor($request);
         $record = DB::table('inventory_store_operations')->where('id', $operation)->first();
@@ -46,6 +46,10 @@ final class StoreInventorySyncController extends Controller
                 ]);
             }
         }, 3);
+
+        // Checking an operation also advances work that was waiting only for a
+        // now-confirmed source. Explicit failures remain user-controlled retries.
+        $immediateSync->continuePending($operation);
 
         return response()->json($reader->operation($operation))->header('Cache-Control', 'no-store');
     }
