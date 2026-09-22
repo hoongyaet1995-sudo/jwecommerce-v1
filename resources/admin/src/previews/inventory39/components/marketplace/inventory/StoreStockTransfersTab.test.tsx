@@ -140,3 +140,37 @@ it('shows source confirmation delay on the source stage without blaming the dest
 
   await act(async () => root.unmount());
 });
+
+it('uses the shared authorization wording and reconnect recovery action', async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  const onReconnectStore = vi.fn();
+  const onExecuteTransfer = vi.fn().mockResolvedValue({
+    id: 'operation-auth', transferNumber: 'TR-AUTH', timestamp: new Date().toISOString(),
+    masterSku: 'AUR-PINE-BLK', productName: 'Aurora Headphones', variantName: 'Black', imageUrl: '',
+    sourceStoreId: 'website', sourceStoreName: 'JW Storefront', sourcePlatform: 'webstore',
+    destinationStoreId: '12', destinationStoreName: 'Lazada Test', destinationPlatform: 'lazada',
+    quantity: 1, operator: 'Admin', reason: 'Rebalance', ledgerStatus: 'succeeded',
+    sourcePlatformSyncStatus: 'succeeded', destinationPlatformSyncStatus: 'failed',
+    externalStages: [
+      { id: 'source-stage', stage: 'source', status: 'not_applicable' },
+      { id: 'destination-stage', stage: 'destination', status: 'auth_expired' },
+    ],
+  });
+
+  await act(async () => root.render(
+    <StoreStockTransfersTab inventory={inventory} stores={stores} storeBalances={storeBalances} transfersList={[]}
+      onExecuteTransfer={onExecuteTransfer} onRetryPlatformSync={vi.fn()} onReconnectStore={onReconnectStore} />
+  ));
+  const execute = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.includes('Execute Store Stock Transfer'))!;
+  await act(async () => execute.click());
+
+  expect(host.textContent).toContain('Authorization Expired');
+  const reconnect = Array.from(host.querySelectorAll('button')).find(button => button.textContent === 'Reconnect Store')!;
+  await act(async () => reconnect.click());
+  expect(onReconnectStore).toHaveBeenCalledWith('12');
+
+  await act(async () => root.unmount());
+});

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessStoreInventorySync;
 use App\Services\Inventory\StoreManagement\MarketplaceStoreInventoryPublisher;
+use App\Services\Inventory\StoreManagement\ImmediateStoreInventorySync;
 use App\Services\Inventory\StoreManagement\StoreSyncAttemptLedger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,7 +25,7 @@ final class StoreInventorySyncController extends Controller
         return response()->json(['queued' => $ids->count(), 'task_ids' => $ids]);
     }
 
-    public function retry(Request $request, string $task, MarketplaceStoreInventoryPublisher $publisher, StoreSyncAttemptLedger $attempts): JsonResponse
+    public function retry(Request $request, string $task, MarketplaceStoreInventoryPublisher $publisher, StoreSyncAttemptLedger $attempts, ImmediateStoreInventorySync $immediateSync): JsonResponse
     {
         $this->authorizeActor($request);
         $row = DB::table('inventory_store_sync_tasks')->where('id', $task)->first();
@@ -80,14 +81,21 @@ final class StoreInventorySyncController extends Controller
                 'message' => 'The previous provider write may have completed. Read back marketplace stock before retrying.',
                 'next_action' => 'Run provider reconciliation. Do not send another stock write until the result is known.']], 409);
         }
-        abort_unless(in_array($row->status, ['failed', 'auth_expired'], true), 409, 'This stage is not retryable.');
+        abort_if($row->status === 'auth_expired', 409, 'Reconnect the store before retrying this stock update.');
+        abort_unless($row->status === 'failed', 409, 'This stage is not retryable.');
         DB::table('inventory_store_sync_tasks')->where('id', $task)->update([
             'status' => 'queued', 'provider_receipt' => null, 'available_at' => now(), 'updated_at' => now(),
         ]);
-        $attempts->record($row, 'retry_queued', null, (int) $request->user()->id, 'admin');
-        ProcessStoreInventorySync::dispatch((string) $task);
+        $attempts->record($row, 'retry_started', null, (int) $request->user()->id, 'admin');
+        if ($row->operation_id) {
+            $immediateSync->run((string) $row->operation_id);
+        } else {
+            ProcessStoreInventorySync::dispatch((string) $task);
+        }
 
-        return response()->json(['id' => $task, 'status' => 'queued']);
+        $status = DB::table('inventory_store_sync_tasks')->where('id', $task)->value('status');
+
+        return response()->json(['id' => $task, 'status' => $status]);
     }
 
     private function authorizeActor(Request $request): void

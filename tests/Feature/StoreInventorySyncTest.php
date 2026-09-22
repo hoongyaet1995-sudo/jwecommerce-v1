@@ -124,6 +124,22 @@ class StoreInventorySyncTest extends TestCase
         Bus::assertNothingDispatched();
     }
 
+    public function test_reviewed_failed_stage_retry_runs_directly_before_queue_fallback(): void
+    {
+        Bus::fake();
+        $publisher = new FakeStoreInventoryPublisher;
+        $c = $this->staged(false, $publisher);
+        DB::table('inventory_store_sync_tasks')->where('id', $c['task']->id)->update(['status' => 'failed']);
+
+        $this->actingAs($c['actor'])
+            ->postJson('/admin/api/inventory/store-management/sync-tasks/'.$c['task']->id.'/retry')
+            ->assertOk()
+            ->assertJsonPath('status', 'confirmed');
+
+        $this->assertCount(1, $publisher->calls);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'confirmed']);
+    }
+
     public function test_worker_supersedes_a_stale_balance_revision_without_publishing(): void
     {
         $c = $this->staged();

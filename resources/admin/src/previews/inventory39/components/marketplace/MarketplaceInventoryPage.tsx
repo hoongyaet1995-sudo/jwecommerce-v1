@@ -57,6 +57,7 @@ import { StockSyncRecovery } from '../../../inventory43/StockSyncRecovery';
 import {inventoryCsv,inventoryPage,inventoryPageNumbers,toggleInventoryPageSelection} from './inventory/inventoryTablePagination';
 import {buildBulkSyncStatusPlan,chunkBulkSyncPairs,summarizeBulkSyncSkips} from './inventory/bulkSyncStatus';
 import { StoreStockBreakdownTooltip } from './inventory/StoreStockBreakdownTooltip';
+import { syncStatusPresentation } from '../../../inventory43/syncStatusPresentation';
 
 export const resolveFirstCountItem = (
   inventory: MarketplaceInventoryItem[],
@@ -91,6 +92,28 @@ export const describeMarketplaceSyncState = (status: string | undefined, quantit
   return { label: 'Not synced', tone: 'neutral' as const };
 };
 
+const transferDisplayStatus = (status?: string): StoreStockTransferRecord['sourcePlatformSyncStatus'] => {
+  if (status === 'confirmed' || status === 'not_applicable' || status === 'superseded') return 'succeeded';
+  if (status === 'uncertain') return 'awaiting_confirmation';
+  if (status === 'failed' || status === 'auth_expired') return 'failed';
+  if (status === 'processing') return 'syncing';
+  return 'pending';
+};
+
+const applyTransferReceipt = (record: StoreStockTransferRecord, receipt: any): StoreStockTransferRecord => {
+  const stages = receipt?.external_stages || [];
+  const source = stages.find((stage: any) => stage.stage === 'source');
+  const destination = stages.find((stage: any) => stage.stage === 'destination');
+  return {
+    ...record,
+    sourcePlatformSyncStatus: transferDisplayStatus(source?.status),
+    destinationPlatformSyncStatus: transferDisplayStatus(destination?.status),
+    sourceFailureReason: source?.provider_receipt?.message,
+    destinationFailureReason: destination?.provider_receipt?.message,
+    externalStages: stages,
+  };
+};
+
 export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = ({recoveryPreview = false}) => {
   const [syncSelection, setSyncSelection] = useState<any>(null);
   const [recoveryStates, setRecoveryStates] = useState<Record<string,any>>({});
@@ -115,6 +138,8 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
     toggleStoreManagement,
     syncAll,
     bulkCheckStock,
+    getInventoryOperation,
+    waitForInventoryOperation,
     setCurrentSection
   } = useAdmin();
 
@@ -551,28 +576,15 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
     transferPayload: Omit<StoreStockTransferRecord, 'id' | 'transferNumber' | 'timestamp' | 'ledgerStatus' | 'sourcePlatformSyncStatus' | 'destinationPlatformSyncStatus'>
   ): Promise<StoreStockTransferRecord> => {
     const receipt = await executeStoreTransfer(transferPayload);
-    const stages = receipt.external_stages || [];
-    const displayStatus = (status?: string): StoreStockTransferRecord['sourcePlatformSyncStatus'] => {
-      if (status === 'confirmed' || status === 'not_applicable') return 'succeeded';
-      if (status === 'uncertain') return 'awaiting_confirmation';
-      if (status === 'failed' || status === 'auth_expired') return 'failed';
-      if (status === 'processing') return 'syncing';
-      return 'pending';
-    };
-    const sourceStage = stages.find((s: any) => s.stage === 'source');
-    const destinationStage = stages.find((s: any) => s.stage === 'destination');
-    const connectedRecord = {
+    const connectedRecord = applyTransferReceipt({
       ...transferPayload,
       id: receipt.operation_id,
       transferNumber: receipt.operation_id,
       timestamp: new Date().toISOString(),
       ledgerStatus: 'succeeded',
-      sourcePlatformSyncStatus: displayStatus(sourceStage?.status),
-      destinationPlatformSyncStatus: displayStatus(destinationStage?.status),
-      sourceFailureReason: sourceStage?.provider_receipt?.message,
-      destinationFailureReason: destinationStage?.provider_receipt?.message
-      ,externalStages: stages
-    } as StoreStockTransferRecord;
+      sourcePlatformSyncStatus: 'pending',
+      destinationPlatformSyncStatus: 'pending',
+    } as StoreStockTransferRecord, receipt);
     setTransfersList(prev => [connectedRecord, ...prev.filter(existing => existing.id !== connectedRecord.id)]);
     return connectedRecord;
 
@@ -664,29 +676,29 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
   };
 
   // Handler: Retry platform sync for transfer
-  const handleRetryPlatformSync = async (transferId: string, target: 'source' | 'destination') => {
-    const transfer = transfersList.find(t => t.id === transferId) as any;
+  const handleRetryPlatformSync = async (transferId: string, target: 'source' | 'destination', action: 'none' | 'check_status' | 'retry' | 'reconnect' | 'mapping') => {
+    const transfer = transfersList.find(t => t.id === transferId);
     const stage = transfer?.externalStages?.find((s: any) => s.stage === target);
-    if (!stage) throw new Error('The selected platform stage is unavailable.');
-    await retrySync(stage.id);
-    await reloadInventory();
-    return;
-    setTransfersList(prev =>
-      prev.map(t => {
-        if (t.id !== transferId) return t;
-        return {
-          ...t,
-          [target === 'source' ? 'sourcePlatformSyncStatus' : 'destinationPlatformSyncStatus']: 'succeeded',
-          destinationFailureReason: undefined
-        };
-      })
-    );
+    if (!transfer || !stage) throw new Error('The selected platform stage is unavailable.');
 
-    addToast({
-      type: 'success',
-      title: 'Platform Stock Sync Succeeded',
-      message: `Stock broadcast confirmed on remote marketplace API without re-deducting JW ledger.`
-    });
+    if (action === 'retry') {
+      await retrySync(stage.id);
+    } else if (action === 'check_status' && ['uncertain', 'processing'].includes(stage.status)) {
+      try {
+        await retrySync(stage.id);
+      } catch (error) {
+        if (stage.status !== 'processing') throw error;
+        await retrySync(stage.id);
+      }
+    }
+
+    const latest = action === 'check_status' && stage.status === 'queued'
+      ? await getInventoryOperation(transferId)
+      : await waitForInventoryOperation(transferId);
+    const updated = applyTransferReceipt(transfer, latest);
+    setTransfersList(prev => prev.map(item => item.id === transferId ? updated : item));
+    await reloadInventory();
+    return updated;
   };
 
   // Handler: Admin Global Mode Switch
@@ -1284,7 +1296,7 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
                                     {/* Managed vs Unmanaged */}
                                     {recovered ? (
                                       <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300">
-                                        {({synced:'Synced',not_synced:'Not Synced',sync_failed:'Sync Failed',awaiting_confirmation:'Awaiting Confirmation',auth_expired:'Authorization Expired',sku_not_mapped:'SKU Not Mapped',listing_not_eligible:'Listing Not Eligible',sync_replaced:'Replaced by Newer Stock'} as Record<string,string>)[recovered.status] || 'Not Synced'}
+                                        {syncStatusPresentation(recovered.status).label}
                                       </span>
                                     ) : currentMode === 'independent' && !isMapped ? (
                                       <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
@@ -1390,6 +1402,7 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
           transfersList={transfersList}
           onExecuteTransfer={handleExecuteStoreTransfer}
           onRetryPlatformSync={handleRetryPlatformSync}
+          onReconnectStore={() => setCurrentSection('marketplace-auth')}
         />
       )}
 

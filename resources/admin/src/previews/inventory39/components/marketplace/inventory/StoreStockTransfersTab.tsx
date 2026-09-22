@@ -27,6 +27,7 @@ import {
 import { MarketplaceInventoryItem } from '../../../types';
 import { InventoryStoreChannel, StoreStockAccountBalance, StoreStockTransferRecord } from './inventoryTypes';
 import { MarketplaceLogo } from '../MarketplaceLogo';
+import { syncStatusPresentation, SyncRecoveryAction } from '../../../../inventory43/syncStatusPresentation';
 
 interface StoreStockTransfersTabProps {
   inventory: MarketplaceInventoryItem[];
@@ -34,7 +35,8 @@ interface StoreStockTransfersTabProps {
   storeBalances: Record<string, Record<string, StoreStockAccountBalance>>;
   transfersList: StoreStockTransferRecord[];
   onExecuteTransfer: (transfer: Omit<StoreStockTransferRecord, 'id' | 'transferNumber' | 'timestamp' | 'ledgerStatus' | 'sourcePlatformSyncStatus' | 'destinationPlatformSyncStatus'>) => Promise<StoreStockTransferRecord>;
-  onRetryPlatformSync: (transferId: string, target: 'source' | 'destination') => Promise<void>;
+  onRetryPlatformSync: (transferId: string, target: 'source' | 'destination', action: SyncRecoveryAction) => Promise<StoreStockTransferRecord>;
+  onReconnectStore?: (storeId: string) => void;
 }
 
 export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
@@ -43,7 +45,8 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
   storeBalances,
   transfersList,
   onExecuteTransfer,
-  onRetryPlatformSync
+  onRetryPlatformSync,
+  onReconnectStore = () => {}
 }) => {
   // Form State
   const [selectedSku, setSelectedSku] = useState<string>(inventory[0]?.masterSku || '');
@@ -76,6 +79,8 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
     isOpen: false,
     stage: 'preparing'
   });
+  const [recoveringTarget, setRecoveringTarget] = useState<'source' | 'destination' | null>(null);
+  const [recoveryFeedback, setRecoveryFeedback] = useState<string | null>(null);
 
   // Transfer history filter
   const [historySearch, setHistorySearch] = useState<string>('');
@@ -307,10 +312,62 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
     ?? (activeTransferExecution.stage === 'source_syncing' ? 'syncing' : 'pending');
   const destinationExecutionStatus = executionRecord?.destinationPlatformSyncStatus
     ?? (activeTransferExecution.stage === 'dest_syncing' ? 'syncing' : 'pending');
+  const sourceStage = executionRecord?.externalStages?.find(stage => stage.stage === 'source');
+  const destinationStage = executionRecord?.externalStages?.find(stage => stage.stage === 'destination');
+  const sourcePresentation = syncStatusPresentation(sourceStage?.status ?? sourceExecutionStatus);
+  const destinationPresentation = syncStatusPresentation(destinationStage?.status ?? destinationExecutionStatus);
   const failedExecutionTargets = [
-    ['failed', 'awaiting_confirmation'].includes(sourceExecutionStatus) ? sourceStore.name : null,
-    ['failed', 'awaiting_confirmation'].includes(destinationExecutionStatus) ? destStore.name : null,
+    sourcePresentation.action !== 'none' ? sourceStore.name : null,
+    destinationPresentation.action !== 'none' ? destStore.name : null,
   ].filter(Boolean).join(' and ');
+
+  const recoverStage = async (
+    target: 'source' | 'destination',
+    presentation: ReturnType<typeof syncStatusPresentation>
+  ) => {
+    if (!executionRecord || presentation.action === 'none') return;
+    const storeId = target === 'source' ? executionRecord.sourceStoreId : executionRecord.destinationStoreId;
+
+    if (presentation.action === 'reconnect') {
+      onReconnectStore(storeId);
+      return;
+    }
+
+    setRecoveringTarget(target);
+    setRecoveryFeedback(null);
+    try {
+      const updated = await onRetryPlatformSync(executionRecord.id, target, presentation.action);
+      const source = syncStatusPresentation(updated.externalStages?.find(stage => stage.stage === 'source')?.status ?? updated.sourcePlatformSyncStatus);
+      const destination = syncStatusPresentation(updated.externalStages?.find(stage => stage.stage === 'destination')?.status ?? updated.destinationPlatformSyncStatus);
+      const hasPlatformError = [source, destination].some(item => ['retry', 'reconnect'].includes(item.action));
+      const isPending = [source, destination].some(item => item.action === 'check_status' || item.status === 'waiting_for_source');
+      setActiveTransferExecution({
+        isOpen: true,
+        stage: hasPlatformError ? 'has_platform_error' : isPending ? 'dest_syncing' : 'completed',
+        record: updated,
+      });
+    } catch (error) {
+      setRecoveryFeedback(error instanceof Error ? error.message : 'The channel status could not be refreshed.');
+    } finally {
+      setRecoveringTarget(null);
+    }
+  };
+
+  const stageTone = (status: ReturnType<typeof syncStatusPresentation>['status']) => {
+    if (status === 'synced' || status === 'jw_internal') return 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100';
+    if (status === 'awaiting_confirmation' || status === 'waiting_for_source') return 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50 text-amber-900 dark:text-amber-200';
+    if (status === 'auth_expired' || status === 'sync_failed') return 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50 text-red-900 dark:text-red-200';
+    return 'bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white';
+  };
+
+  const stageDescription = (target: 'source' | 'destination', presentation: ReturnType<typeof syncStatusPresentation>) => {
+    if (presentation.status === 'auth_expired') return 'Reconnect this store before stock can be synchronized.';
+    if (presentation.status === 'waiting_for_source') return 'The destination update will start after the source channel is confirmed.';
+    if (presentation.status === 'sync_failed') return (target === 'source' ? executionRecord?.sourceFailureReason : executionRecord?.destinationFailureReason) || 'The stock update failed and can be retried safely.';
+    if (presentation.status === 'awaiting_confirmation') return (target === 'source' ? executionRecord?.sourceFailureReason : executionRecord?.destinationFailureReason) || 'The update is awaiting marketplace confirmation. Check status before sending another write.';
+    if (presentation.status === 'sync_replaced') return 'A newer stock update replaced this operation.';
+    return `Confirmed synced with ${target} store.`;
+  };
 
   return (
     <div id="store-stock-transfers-tab" className="space-y-8 animate-in fade-in duration-150">
@@ -1324,21 +1381,11 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
               </div>
 
               {/* Stage 2: Source Platform Update */}
-              <div className={`p-3 rounded-xl border flex items-center justify-between ${
-                sourceExecutionStatus === 'syncing' || sourceExecutionStatus === 'pending'
-                  ? 'bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white'
-                  : sourceExecutionStatus === 'awaiting_confirmation'
-                  ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 text-amber-900 dark:text-amber-200'
-                  : sourceExecutionStatus === 'failed'
-                  ? 'bg-red-50 border-red-200 text-red-900'
-                  : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 text-emerald-900'
-              }`}>
+              <div className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${stageTone(sourcePresentation.status)}`}>
                 <div className="flex items-center gap-2.5">
-                  {sourceExecutionStatus === 'syncing' || sourceExecutionStatus === 'pending' ? (
-                    <RefreshCw className="w-5 h-5 text-neutral-600 dark:text-neutral-300 animate-spin" />
-                  ) : sourceExecutionStatus === 'awaiting_confirmation' ? (
+                  {sourcePresentation.status === 'awaiting_confirmation' || sourcePresentation.status === 'waiting_for_source' ? (
                     <RefreshCw className="w-5 h-5 text-amber-600" />
-                  ) : sourceExecutionStatus === 'failed' ? (
+                  ) : sourcePresentation.status === 'auth_expired' || sourcePresentation.status === 'sync_failed' ? (
                     <AlertTriangle className="w-5 h-5 text-red-600" />
                   ) : (
                     <CheckCircle2 className="w-5 h-5 text-emerald-600" />
@@ -1346,37 +1393,26 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                   <div>
                     <div className="text-xs font-bold">Step 2: Source Channel Stock Update ({sourceStore.platformDisplayName})</div>
                     <div className="text-[11px] opacity-80">
-                      {sourceExecutionStatus === 'syncing' || sourceExecutionStatus === 'pending'
-                        ? 'Waiting for source channel confirmation...'
-                        : sourceExecutionStatus === 'awaiting_confirmation'
-                        ? executionRecord?.sourceFailureReason || 'The write completed, but the source channel has not confirmed the final quantity yet.'
-                        : sourceExecutionStatus === 'failed'
-                        ? executionRecord?.sourceFailureReason || 'Source channel confirmation requires review.'
-                        : 'Confirmed synced with source store.'}
+                      {stageDescription('source', sourcePresentation)}
                     </div>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-neutral-800">
-                  {sourceExecutionStatus === 'syncing' || sourceExecutionStatus === 'pending' ? 'Checking...' : sourceExecutionStatus === 'awaiting_confirmation' ? 'Awaiting Confirmation' : sourceExecutionStatus === 'failed' ? 'Failed' : 'Confirmed'}
-                </span>
+                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-neutral-800">{sourcePresentation.label}</span>
+                  {sourcePresentation.action !== 'none' && (
+                    <button type="button" disabled={recoveringTarget !== null} onClick={() => void recoverStage('source', sourcePresentation)} className="px-2.5 py-1 rounded-lg bg-white dark:bg-neutral-950 border border-current/20 text-[10px] font-bold hover:opacity-80 disabled:opacity-50 cursor-pointer">
+                      {recoveringTarget === 'source' ? 'Working…' : sourcePresentation.actionLabel}
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Stage 3: Destination Platform Update */}
-              <div className={`p-3 rounded-xl border flex items-center justify-between ${
-                destinationExecutionStatus === 'syncing' || destinationExecutionStatus === 'pending'
-                  ? 'bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white'
-                  : destinationExecutionStatus === 'awaiting_confirmation'
-                  ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 text-amber-900 dark:text-amber-200'
-                  : destinationExecutionStatus === 'failed'
-                  ? 'bg-red-50 border-red-200 text-red-900'
-                  : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 text-emerald-900'
-              }`}>
+              <div className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${stageTone(destinationPresentation.status)}`}>
                 <div className="flex items-center gap-2.5">
-                  {destinationExecutionStatus === 'syncing' || destinationExecutionStatus === 'pending' ? (
-                    <RefreshCw className="w-5 h-5 text-neutral-600 dark:text-neutral-300 animate-spin" />
-                  ) : destinationExecutionStatus === 'awaiting_confirmation' ? (
+                  {destinationPresentation.status === 'awaiting_confirmation' || destinationPresentation.status === 'waiting_for_source' ? (
                     <RefreshCw className="w-5 h-5 text-amber-600" />
-                  ) : destinationExecutionStatus === 'failed' ? (
+                  ) : destinationPresentation.status === 'auth_expired' || destinationPresentation.status === 'sync_failed' ? (
                     <AlertTriangle className="w-5 h-5 text-red-600" />
                   ) : (
                     <CheckCircle2 className="w-5 h-5 text-emerald-600" />
@@ -1384,21 +1420,26 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                   <div>
                     <div className="text-xs font-bold">Step 3: Destination Channel Stock Update ({destStore.platformDisplayName})</div>
                     <div className="text-[11px] opacity-80">
-                      {destinationExecutionStatus === 'syncing' || destinationExecutionStatus === 'pending'
-                        ? 'Waiting for destination channel confirmation...'
-                        : destinationExecutionStatus === 'awaiting_confirmation'
-                        ? executionRecord?.destinationFailureReason || 'The write completed, but the destination channel has not confirmed the final quantity yet.'
-                        : destinationExecutionStatus === 'failed'
-                        ? executionRecord?.destinationFailureReason || 'Destination channel confirmation requires review.'
-                        : 'Confirmed synced with destination store.'}
+                      {stageDescription('destination', destinationPresentation)}
                     </div>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-neutral-800">
-                  {destinationExecutionStatus === 'syncing' || destinationExecutionStatus === 'pending' ? 'Checking...' : destinationExecutionStatus === 'awaiting_confirmation' ? 'Awaiting Confirmation' : destinationExecutionStatus === 'failed' ? 'Failed' : 'Confirmed'}
-                </span>
+                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-neutral-800">{destinationPresentation.label}</span>
+                  {destinationPresentation.action !== 'none' && (
+                    <button type="button" disabled={recoveringTarget !== null} onClick={() => void recoverStage('destination', destinationPresentation)} className="px-2.5 py-1 rounded-lg bg-white dark:bg-neutral-950 border border-current/20 text-[10px] font-bold hover:opacity-80 disabled:opacity-50 cursor-pointer">
+                      {recoveringTarget === 'destination' ? 'Working…' : destinationPresentation.actionLabel}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
+
+            {recoveryFeedback && (
+              <div role="alert" className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-xs text-red-800 dark:text-red-200">
+                {recoveryFeedback}
+              </div>
+            )}
 
             {/* Error handling reassurance if platform failed */}
             {activeTransferExecution.stage === 'has_platform_error' && (

@@ -68,6 +68,12 @@ export interface StoreStockTransferRecord {
   destinationPlatformSyncStatus: 'succeeded' | 'syncing' | 'failed' | 'pending' | 'awaiting_confirmation';
   sourceFailureReason?: string;
   destinationFailureReason?: string;
+  externalStages?: Array<{
+    id: string;
+    stage: 'source' | 'destination' | string;
+    status: string;
+    provider_receipt?: unknown;
+  }>;
 }
 
 export type InventoryActivityActionType = 
