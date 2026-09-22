@@ -157,9 +157,12 @@ final class OverviewReader
         ]);
         $balanceIds = $rows->flatMap(function (object $row) use ($payloads): array {
             $payload = $payloads[$row->id] ?? [];
-            return array_values(array_filter($row->kind === 'transfer'
-                ? [(int) ($payload['source_balance_id'] ?? 0), (int) ($payload['destination_balance_id'] ?? 0)]
-                : [(int) ($payload['balance_id'] ?? 0)]));
+            $ids = match ($row->kind) {
+                'transfer' => [(int) ($payload['source_balance_id'] ?? 0), (int) ($payload['destination_balance_id'] ?? 0)],
+                'allocation' => array_map('intval', array_values($payload['balance_ids'] ?? [])),
+                default => [(int) ($payload['balance_id'] ?? 0)],
+            };
+            return array_values(array_filter($ids));
         })->unique()->values();
         $balances = $balanceIds->isEmpty() ? collect() : DB::table('inventory_balances as b')
             ->join('inventory_pools as pool', 'pool.id', '=', 'b.inventory_pool_id')
@@ -170,9 +173,16 @@ final class OverviewReader
             ->get(['b.id', 'variant.sku', 'variant.title as variant_name', 'product.title as product_name',
                 'pool.marketplace_store_id', 'store.shop_name', 'store.platform'])
             ->keyBy('id');
+        $variantIds = $payloads->pluck('variant_id')->filter()->map(fn ($id) => (int) $id)->unique()->values();
+        $variants = $variantIds->isEmpty() ? collect() : DB::table('product_variants as variant')
+            ->join('products as product', 'product.id', '=', 'variant.product_id')->whereIn('variant.id', $variantIds)
+            ->get(['variant.id', 'variant.sku', 'variant.title as variant_name', 'product.title as product_name'])->keyBy('id');
+        $storeIds = $payloads->pluck('store_id')->filter()->map(fn ($id) => (int) $id)->unique()->values();
+        $activityStores = $storeIds->isEmpty() ? collect() : DB::table('marketplace_stores')->whereIn('id', $storeIds)
+            ->get(['id', 'shop_name', 'platform'])->keyBy('id');
         $stages = DB::table('inventory_store_sync_tasks')->whereIn('operation_id', $rows->pluck('id'))
             ->orderBy('created_at')->get()->groupBy('operation_id');
-        $data = $rows->map(function (object $row) use ($payloads, $balances, $stages): array {
+        $data = $rows->map(function (object $row) use ($payloads, $balances, $variants, $activityStores, $stages): array {
             $payload = $payloads[$row->id] ?? [];
             $before = $row->review_before ? json_decode($row->review_before, true, 512, JSON_THROW_ON_ERROR) : [];
             $after = $row->review_after ? json_decode($row->review_after, true, 512, JSON_THROW_ON_ERROR) : [];
@@ -201,6 +211,34 @@ final class OverviewReader
                     'previous_stock' => $before['source']['physical'] ?? null, 'resulting_stock' => $after['source']['physical'] ?? null,
                     'quantity_change' => (int) ($payload['quantity'] ?? 0),
                     'reason' => (string) ($payload['reason'] ?? 'Store transfer'), 'notes' => $payload['notes'] ?? null,
+                ];
+            } elseif ($row->kind === 'allocation') {
+                $allocationIds = array_values($payload['balance_ids'] ?? []);
+                $identity = $balances->get((int) ($allocationIds[0] ?? 0));
+                $accounts = $before['accounts'] ?? [];
+                $uncounted = $accounts !== [] && collect($accounts)->every(fn (array $account): bool => ($account['physical'] ?? null) === null);
+                $activity = [
+                    'master_sku' => $identity?->sku ?? 'Unavailable', 'product_name' => $identity?->product_name ?? 'Unavailable',
+                    'variant_name' => $identity?->variant_name ?? null,
+                    'store' => ['id' => 'multiple', 'name' => count($payload['allocations'] ?? []).' store accounts', 'platform' => 'multiple'],
+                    'source_store' => null, 'destination_store' => null,
+                    'previous_stock' => $uncounted ? 'Not Counted' : ($before['total_physical'] ?? null),
+                    'resulting_stock' => $after['total_physical'] ?? ($payload['physical_count'] ?? null),
+                    'quantity_change' => (int) ($payload['physical_count'] ?? 0),
+                    'reason' => (string) ($payload['reason'] ?? 'Initial store count'), 'notes' => $payload['notes'] ?? null,
+                ];
+            } elseif ($row->kind === 'platform_sync') {
+                $identity = $variants->get((int) ($payload['variant_id'] ?? 0));
+                $syncStore = $activityStores->get((int) ($payload['store_id'] ?? 0));
+                $activity = [
+                    'master_sku' => $identity?->sku ?? ($payload['sku'] ?? 'Unavailable'),
+                    'product_name' => $identity?->product_name ?? 'Unavailable', 'variant_name' => $identity?->variant_name ?? null,
+                    'store' => $syncStore ? ['id' => (string) $syncStore->id, 'name' => $syncStore->shop_name, 'platform' => $syncStore->platform] : null,
+                    'source_store' => null, 'destination_store' => null,
+                    'previous_stock' => $before['quantity'] ?? $payload['quantity'] ?? null,
+                    'resulting_stock' => $after['quantity'] ?? $payload['quantity'] ?? null,
+                    'quantity_change' => 0, 'reason' => (string) ($payload['reason'] ?? 'Resync latest stock'),
+                    'notes' => $payload['notes'] ?? null,
                 ];
             } else {
                 $previous = $before['physical'] ?? null;

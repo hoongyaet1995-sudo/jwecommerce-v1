@@ -206,6 +206,62 @@ class StoreInventoryReadTest extends TestCase
             ->assertJsonMissingPath('data.0.result.payload');
     }
 
+    public function test_history_identifies_allocation_and_platform_sync_records_for_staff(): void
+    {
+        $fixture = new StoreInventoryFixture;
+        $sku = $fixture->sku();
+        $store = $fixture->store('shopee', 'HISTORY-SYNC');
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores']);
+        $website = app(AccountResolver::class)->balance($sku['variant']->id, 'website');
+        $channel = app(AccountResolver::class)->balance($sku['variant']->id, 'marketplace:'.$store->id);
+        $actor = $this->admin();
+
+        $allocationReview = '00000000-0000-4000-8000-000000000101';
+        $allocationOperation = '00000000-0000-4000-8000-000000000102';
+        DB::table('inventory_store_reviews')->insert([
+            'id' => $allocationReview, 'kind' => 'allocation', 'actor_id' => $actor->id,
+            'payload' => json_encode(['variant_id' => $sku['variant']->id, 'physical_count' => 10,
+                'allocations' => ['website' => 6, 'marketplace:'.$store->id => 4],
+                'balance_ids' => ['website' => $website['id'], 'marketplace:'.$store->id => $channel['id']],
+                'reason' => 'Initial store count']),
+            'before' => json_encode(['accounts' => ['website' => ['physical' => null], 'marketplace:'.$store->id => ['physical' => null]], 'total_physical' => 0]),
+            'after' => json_encode(['accounts' => ['website' => ['physical' => 6], 'marketplace:'.$store->id => ['physical' => 4]], 'total_physical' => 10]),
+            'balance_versions' => json_encode([]), 'configuration_version' => 1, 'status' => 'confirmed',
+            'expires_at' => now()->addHour(), 'confirmed_at' => now(), 'created_at' => now()->subMinute(), 'updated_at' => now(),
+        ]);
+        DB::table('inventory_store_operations')->insert([
+            'id' => $allocationOperation, 'review_id' => $allocationReview, 'operation_key' => 'history-allocation',
+            'kind' => 'allocation', 'actor_id' => $actor->id, 'ledger_status' => 'applied',
+            'receipt' => json_encode(['operation_id' => $allocationOperation, 'balances' => []]),
+            'created_at' => now()->subMinute(), 'updated_at' => now(),
+        ]);
+
+        $syncReview = '00000000-0000-4000-8000-000000000103';
+        $syncOperation = '00000000-0000-4000-8000-000000000104';
+        $syncSnapshot = ['store_id' => $store->id, 'variant_id' => $sku['variant']->id, 'sku' => $sku['variant']->sku,
+            'quantity' => 4, 'ledger_changed' => false, 'reason' => 'Resync latest stock'];
+        DB::table('inventory_store_reviews')->insert([
+            'id' => $syncReview, 'kind' => 'platform_sync', 'actor_id' => $actor->id,
+            'payload' => json_encode($syncSnapshot), 'before' => json_encode($syncSnapshot), 'after' => json_encode($syncSnapshot),
+            'balance_versions' => json_encode([]), 'configuration_version' => 1, 'status' => 'confirmed',
+            'expires_at' => now()->addHour(), 'confirmed_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('inventory_store_operations')->insert([
+            'id' => $syncOperation, 'review_id' => $syncReview, 'operation_key' => 'history-platform-sync',
+            'kind' => 'platform_sync', 'actor_id' => $actor->id, 'ledger_status' => 'applied',
+            'receipt' => json_encode($syncSnapshot), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $rows = collect($this->actingAs($actor)->getJson('/admin/api/inventory/store-management/history')->assertOk()->json('data'))->keyBy('kind');
+        $this->assertSame($sku['variant']->sku, $rows['allocation']['result']['activity']['master_sku']);
+        $this->assertSame('Not Counted', $rows['allocation']['result']['activity']['previous_stock']);
+        $this->assertSame(10, $rows['allocation']['result']['activity']['resulting_stock']);
+        $this->assertSame($sku['variant']->sku, $rows['platform_sync']['result']['activity']['master_sku']);
+        $this->assertSame($sku['product']->title, $rows['platform_sync']['result']['activity']['product_name']);
+        $this->assertSame($store->shop_name, $rows['platform_sync']['result']['activity']['store']['name']);
+        $this->assertSame(4, $rows['platform_sync']['result']['activity']['resulting_stock']);
+    }
+
     public function test_overview_loads_sync_states_in_one_query_for_large_catalogs(): void
     {
         $fixture = new StoreInventoryFixture;
