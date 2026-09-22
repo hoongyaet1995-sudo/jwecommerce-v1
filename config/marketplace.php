@@ -36,6 +36,7 @@ return [
     'import_operations_enabled' => env('MARKETPLACE_IMPORT_OPERATIONS_ENABLED', false),
     'oauth_acceptance_enabled' => env('MARKETPLACE_OAUTH_ACCEPTANCE_ENABLED', false),
     'shopee' => [
+        'main_account_enabled' => env('MARKETPLACE_SHOPEE_MAIN_ACCOUNT_ENABLED', false),
         'test_store_id' => env('MARKETPLACE_SHOPEE_TEST_STORE_ID'),
         'enabled' => env('MARKETPLACE_SHOPEE_ENABLED', false),
         'environment' => env('MARKETPLACE_SHOPEE_ENVIRONMENT', 'sandbox'),

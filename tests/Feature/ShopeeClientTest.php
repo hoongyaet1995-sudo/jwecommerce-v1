@@ -245,14 +245,16 @@ class ShopeeClientTest extends TestCase
         Http::preventStrayRequests();
     }
 
-    public function test_authorization_url_uses_signed_official_host_and_encoded_state(): void
+    public function test_authorization_url_uses_official_main_account_capable_auth_protocol(): void
     {
-        $this->freezeTime();
         $url = app(ShopeeClient::class)->authorizationUrl(str_repeat('a', 64));
-        $this->assertSame('openplatform.sandbox.test-stable.shopee.sg', parse_url($url, PHP_URL_HOST));
+        $this->assertSame('open.sandbox.test-stable.shopee.com', parse_url($url, PHP_URL_HOST));
+        $this->assertSame('/auth', parse_url($url, PHP_URL_PATH));
         parse_str(parse_url($url, PHP_URL_QUERY), $query);
-        $this->assertSame(hash_hmac('sha256', '123/api/v2/shop/auth_partner'.now()->timestamp, 'test-secret'), $query['sign']);
-        $this->assertSame('https://example.test/callback?state='.str_repeat('a', 64), $query['redirect']);
+        $this->assertSame('123', $query['partner_id']);
+        $this->assertSame('seller', $query['auth_type']);
+        $this->assertSame('code', $query['response_type']);
+        $this->assertSame('https://example.test/callback?state='.str_repeat('a', 64), $query['redirect_uri']);
         $this->assertStringNotContainsString('test-secret', $url);
     }
 
@@ -260,7 +262,38 @@ class ShopeeClientTest extends TestCase
     {
         config(['marketplace.shopee.environment'=>'production']);
         $url = app(ShopeeClient::class)->authorizationUrl(str_repeat('b', 64));
-        $this->assertSame('partner.shopeemobile.com', parse_url($url, PHP_URL_HOST));
+        $this->assertSame('open.shopee.com', parse_url($url, PHP_URL_HOST));
+    }
+
+    public function test_main_account_exchange_validates_and_returns_selected_shop_ids(): void
+    {
+        Http::fake(['*'=>Http::response(['access_token'=>'seed-access','refresh_token'=>'seed-refresh','expire_in'=>14400,
+            'shop_id_list'=>[101,202], 'merchant_id_list'=>[303]])]);
+        $result=app(ShopeeClient::class)->exchangeMainAccountCode('code','55');
+        $this->assertSame(['101','202'],$result['shop_id_list']);
+        $this->assertSame(['303'],$result['merchant_id_list']);
+        Http::assertSent(fn($request)=>$request['main_account_id']===55 && !isset($request['shop_id']));
+    }
+
+    public function test_main_account_exchange_rejects_empty_or_duplicate_shop_ids(): void
+    {
+        foreach ([[], [101,101], [0]] as $ids) {
+            Http::fake(['*'=>Http::response(['access_token'=>'seed-access','refresh_token'=>'seed-refresh','expire_in'=>14400,
+                'shop_id_list'=>$ids, 'merchant_id_list'=>[]])]);
+            try { app(ShopeeClient::class)->exchangeMainAccountCode('code','55'); $this->fail('Invalid shops accepted'); }
+            catch (\RuntimeException $e) { $this->assertSame('Shopee main account did not return valid stores. Re-authorize the Main Account.', $e->getMessage()); }
+        }
+        Http::fake(['*'=>Http::response(['access_token'=>'seed-access','refresh_token'=>'seed-refresh','expire_in'=>14400,
+            'shop_id_list'=>[101], 'merchant_id_list'=>[9,9]])]);
+        $this->expectExceptionMessage('Shopee main account did not return valid stores.');
+        app(ShopeeClient::class)->exchangeMainAccountCode('code','55');
+    }
+
+    public function test_shop_credential_refresh_uses_seed_token_for_requested_shop(): void
+    {
+        Http::fake(['*'=>Http::response(['access_token'=>'shop-access','refresh_token'=>'shop-refresh','expire_in'=>14400])]);
+        app(ShopeeClient::class)->refreshShopCredential('seed-refresh','202');
+        Http::assertSent(fn($request)=>$request['refresh_token']==='seed-refresh' && $request['shop_id']===202);
     }
 
     public function test_sandbox_v2_token_exchange_uses_official_sandbox_gateway(): void

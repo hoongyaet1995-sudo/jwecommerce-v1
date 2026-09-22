@@ -5,6 +5,10 @@ namespace App\Services\Marketplace;
 use App\Models\MarketplaceStoreToken;
 use App\Services\Inventory\StoreManagement\StoreEnrollmentService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use App\Models\MarketplaceOAuthBatch;
+use App\Models\MarketplaceOAuthBatchStore;
+use App\Jobs\ProcessShopeeOAuthBatch;
 use RuntimeException;
 
 class ShopeeAuthorizationService
@@ -64,5 +68,35 @@ class ShopeeAuthorizationService
             \Illuminate\Support\Facades\Log::warning('Shopee metadata warmup could not be queued', ['store_id'=>$storeId]);
         }
         return $storeId;
+    }
+
+    public function completeMainAccount(string $state, int $actorId, #[\SensitiveParameter] string $code, string $mainAccountId): MarketplaceOAuthBatch
+    {
+        if (config('marketplace.shopee.main_account_enabled')!==true) {
+            throw new RuntimeException('Shopee Main Account authorization is not enabled.');
+        }
+        $attempt=$this->states->consume($state,$actorId,'shopee',config('app.url'));
+        if (!$attempt) throw new RuntimeException('Authorization expired or invalid. Start again.');
+        $tokens=$this->client->exchangeMainAccountCode($code,$mainAccountId);
+        if ($attempt->reconnect_store_id) {
+            $target=DB::table('marketplace_stores')->where('id',$attempt->reconnect_store_id)->first();
+            if (!$target || $target->platform!=='shopee' || $target->environment!==config('marketplace.shopee.environment')
+                || !in_array((string)$target->external_shop_id,$tokens['shop_id_list'],true)) {
+                throw new RuntimeException('Reconnect must include the original store.');
+            }
+        }
+        $batch=DB::transaction(function () use($attempt,$actorId,$mainAccountId,$tokens) {
+            $batch=MarketplaceOAuthBatch::create(['public_id'=>(string)Str::uuid(),'provider'=>'shopee',
+                'environment'=>config('marketplace.shopee.environment'),'application_id'=>(string)config('marketplace.shopee.partner_id'),
+                'actor_id'=>$actorId,'reconnect_store_id'=>$attempt->reconnect_store_id,'main_account_id'=>$mainAccountId,
+                'seed_access_token'=>$tokens['access_token'],'seed_refresh_token'=>$tokens['refresh_token'],
+                'seed_access_expires_at'=>now()->addSeconds($tokens['expire_in']),'seed_refresh_expires_at'=>now()->addDays(30),
+                'merchant_id_list'=>$tokens['merchant_id_list'],
+                'status'=>'processing','total_count'=>count($tokens['shop_id_list'])]);
+            foreach ($tokens['shop_id_list'] as $shopId) MarketplaceOAuthBatchStore::create(['batch_id'=>$batch->id,'external_shop_id'=>$shopId]);
+            return $batch;
+        });
+        ProcessShopeeOAuthBatch::dispatch($batch->id)->afterCommit();
+        return $batch;
     }
 }

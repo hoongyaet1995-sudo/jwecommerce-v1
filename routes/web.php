@@ -336,6 +336,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/inventory/store-management/mode', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'mode']);
     Route::get('/api/marketplace/connections', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'connections']);
     Route::get('/api/marketplace/oauth-result', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'result']);
+    Route::get('/api/marketplace/oauth-batches/{batch}', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'batch'])->whereUuid('batch');
+    Route::post('/api/marketplace/oauth-batches/{batch}/retry', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'retryBatch'])->whereUuid('batch')->middleware('throttle:10,1');
     Route::post('/api/marketplace/stores/{store}/lazada-test-access', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'renewOfficialTestAccess'])->whereNumber('store')->middleware('throttle:3,1');
     Route::get('/marketplace/oauth-acceptance', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'acceptance']);
     Route::get('/marketplace/orders/{order}/preview', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'preview'])->whereNumber('order');

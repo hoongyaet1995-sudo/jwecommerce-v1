@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use App\Services\Marketplace\MarketplaceStoreAccess;
+use App\Models\MarketplaceOAuthBatch;
+use App\Jobs\ProcessShopeeOAuthBatch;
 
 class MarketplaceOAuthController extends Controller
 {
@@ -56,6 +58,14 @@ class MarketplaceOAuthController extends Controller
         if (is_array($receipt) && ($receipt['actorId'] ?? null) === $request->user()->id
             && ($receipt['expiresAt'] ?? 0) > now()->timestamp) {
             $result = ['status'=>$receipt['status'], 'store'=>null];
+            if (!empty($receipt['batchId'])) {
+                $batch=MarketplaceOAuthBatch::whereKey($receipt['batchId'])->where('actor_id',$request->user()->id)->first();
+                if ($batch) {
+                    $result['status']=$batch->status;
+                    $result['batch']=$this->batchPayload($batch);
+                }
+                return response()->json(['result'=>$result])->header('Cache-Control','no-store');
+            }
             if ($receipt['status'] === 'success') {
                 $store = DB::table('marketplace_stores')->where('id', $receipt['storeId'])->where('status', 'connected')->first();
                 if ($store) {
@@ -66,7 +76,42 @@ class MarketplaceOAuthController extends Controller
                 }
             }
         }
+        if ($result===null) {
+            $batch=MarketplaceOAuthBatch::where('actor_id',$request->user()->id)
+                ->where('created_at','>',now()->subDay())->latest('id')->first();
+            if ($batch) $result=['status'=>$batch->status,'store'=>null,'batch'=>$this->batchPayload($batch)];
+        }
         return response()->json(['result'=>$result])->header('Cache-Control', 'no-store');
+    }
+
+    public function batch(Request $request, string $batch)
+    {
+        $record=MarketplaceOAuthBatch::where('public_id',$batch)->where('actor_id',$request->user()->id)->firstOrFail();
+        return response()->json(['batch'=>$this->batchPayload($record)])->header('Cache-Control','no-store');
+    }
+
+    public function retryBatch(Request $request, string $batch)
+    {
+        $record=MarketplaceOAuthBatch::where('public_id',$batch)->where('actor_id',$request->user()->id)->firstOrFail();
+        abort_if(!in_array($record->status,['partial','failed'],true),409,'This batch has no failed stores to retry.');
+        if ($record->seed_refresh_expires_at && now()->greaterThanOrEqualTo($record->seed_refresh_expires_at)) {
+            $record->update(['seed_access_token'=>null,'seed_refresh_token'=>null]);
+        }
+        abort_if(!$record->seed_refresh_token,409,'Reauthorize Main Account to continue.');
+        $record->update(['status'=>'processing','completed_at'=>null]);
+        ProcessShopeeOAuthBatch::dispatch($record->id,true);
+        return response()->json(['batch'=>$this->batchPayload($record->fresh())],202)->header('Cache-Control','no-store');
+    }
+
+    private function batchPayload(MarketplaceOAuthBatch $batch): array
+    {
+        $batch->load('stores');
+        return ['id'=>$batch->public_id,'status'=>$batch->status,'total'=>$batch->total_count,
+            'connected'=>$batch->connected_count,'reauthorized'=>$batch->reauthorized_count,'failed'=>$batch->failed_count,
+            'processing'=>$batch->stores->whereIn('status',['pending','processing'])->count(),
+            'stores'=>$batch->stores->map(fn($row)=>['shopId'=>$row->external_shop_id,'storeId'=>$row->marketplace_store_id?(string)$row->marketplace_store_id:null,
+                'status'=>$row->status==='succeeded'?$row->result_type:($row->status==='failed'?'requires_attention':'processing'),
+                'message'=>$row->failure_message])->values()->all()];
     }
 
     public function connections(ShopeeClient $client, \App\Services\Marketplace\LazadaClient $lazada)
@@ -216,6 +261,7 @@ class MarketplaceOAuthController extends Controller
         $state = $request->query('state');
         $result = 'failed';
         $storeId = null;
+        $batchId = null;
         if (is_string($state)) {
             if ($request->has('error') || !$request->filled('code')) {
                 $attempt = $states->consume($state, $request->user()->id, 'shopee', config('app.url'));
@@ -223,11 +269,20 @@ class MarketplaceOAuthController extends Controller
             } else {
                 $code = $request->query('code');
                 $shopId = $request->query('shop_id');
-                if (is_string($code) && is_string($shopId)) {
+                $mainAccountId=$request->query('main_account_id');
+                $shopIdentity=is_string($shopId) && $shopId!=='';
+                $mainIdentity=is_string($mainAccountId) && $mainAccountId!=='';
+                if (is_string($code) && ($shopIdentity xor $mainIdentity)) {
                     try {
-                        $storeId = $service->complete($state, $request->user()->id, $code, $shopId);
-                        $result = 'success';
-                    } catch (RuntimeException) {
+                        if ($shopIdentity) {
+                            $storeId = $service->complete($state, $request->user()->id, $code, $shopId);
+                            $result = 'success';
+                        } else {
+                            $batch=$service->completeMainAccount($state,$request->user()->id,$code,$mainAccountId);
+                            $batchId=$batch->id;
+                            $result=$batch->fresh()->status;
+                        }
+                    } catch (\Throwable) {
                         // Do not expose provider payloads, credentials or callback query strings.
                         $result = 'failed';
                     }
@@ -237,7 +292,7 @@ class MarketplaceOAuthController extends Controller
 
         // Server-session receipt, not the redirect query, is authoritative for result presentation.
         // Keep it briefly across reloads/React effect retries; bind it to the initiating admin.
-        $request->session()->put('marketplace.oauth_result', ['status'=>$result, 'storeId'=>$storeId,
+        $request->session()->put('marketplace.oauth_result', ['status'=>$result, 'storeId'=>$storeId,'batchId'=>$batchId,
             'actorId'=>$request->user()->id, 'expiresAt'=>now()->addMinutes(10)->timestamp]);
         return redirect('/admin/marketplace/auth?connection='.$result)
             ->header('Cache-Control', 'no-store')->header('Referrer-Policy', 'no-referrer');

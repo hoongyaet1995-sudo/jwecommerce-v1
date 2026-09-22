@@ -16,8 +16,15 @@ function OAuthPreview() {
       .catch(() => {if (active) setResult(null);});
     return () => {active = false;};
   }, []);
+  useEffect(()=>{
+    if(!result?.batch || result.batch.status!=='processing') return;
+    const timer=window.setInterval(()=>marketplaceOperations.oauthBatch(result.batch!.id)
+      .then(({batch})=>setResult(current=>current?{...current,status:batch.status,batch}:current)).catch(()=>{}),3000);
+    return()=>window.clearInterval(timer);
+  },[result?.batch?.id,result?.batch?.status]);
   return <ConnectStoreModal isOpen onClose={() => window.location.assign('/admin/marketplace/auth')}
-    requestAuthorization={requestMarketplaceAuthorization} oauthAvailability={availability} authorizationResult={result}/>;
+    requestAuthorization={requestMarketplaceAuthorization} oauthAvailability={availability} authorizationResult={result}
+    retryBatch={async id=>{const {batch}=await marketplaceOperations.retryOAuthBatch(id);setResult(current=>current?{...current,status:batch.status,batch}:current);}}/>;
 }
 
 // Local isolated connection surface; capabilities fail closed while loading or on failure.

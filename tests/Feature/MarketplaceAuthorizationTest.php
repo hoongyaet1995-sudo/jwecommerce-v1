@@ -19,13 +19,86 @@ class MarketplaceAuthorizationTest extends TestCase
         config(['marketplace.oauth_acceptance_enabled'=>false,
             'marketplace.read_operations_enabled'=>false, 'marketplace.operations_enabled'=>false]);
         config(['app.url'=>'https://example.test', 'marketplace.shopee.enabled'=>true, 'marketplace.shopee.environment'=>'sandbox',
+            'marketplace.shopee.main_account_enabled'=>true,
             'marketplace.shopee.partner_id'=>'123', 'marketplace.shopee.partner_key'=>'secret',
             'marketplace.shopee.callback_url'=>'https://example.test/admin/marketplace/oauth/shopee/callback']);
         Http::preventStrayRequests();
         Http::fake([
-            '*/auth/token/get*'=>Http::response(['access_token'=>'access', 'refresh_token'=>'refresh', 'expire_in'=>14400]),
+            '*/auth/token/get*'=>fn($request)=>Http::response(isset($request['main_account_id'])
+                ? ['access_token'=>'seed-access','refresh_token'=>'seed-refresh','expire_in'=>14400,'shop_id_list'=>[101,202],'merchant_id_list'=>[9]]
+                : ['access_token'=>'access', 'refresh_token'=>'refresh', 'expire_in'=>14400]),
             '*/shop/get_shop_info*'=>Http::response(['shop_name'=>'Verified', 'region'=>'MY', 'shop_id'=>456]),
         ]);
+    }
+
+    public function test_main_account_callback_creates_independent_stores_and_batch_result(): void
+    {
+        $user=\App\Models\User::factory()->create(['is_admin'=>true]);
+        $this->actingAs($user);
+        $client=\Mockery::mock(\App\Services\Marketplace\ShopeeClient::class);
+        $client->shouldReceive('exchangeMainAccountCode')->once()->with('one-use','77')->andReturn([
+            'access_token'=>'seed-access','refresh_token'=>'seed-refresh','expire_in'=>14400,
+            'shop_id_list'=>['101','202'],'merchant_id_list'=>['9'],
+        ]);
+        foreach (['101','202'] as $shop) {
+            $client->shouldReceive('refreshShopCredential')->once()->with('seed-refresh',$shop)->andReturn([
+                'access_token'=>'access-'.$shop,'refresh_token'=>'refresh-'.$shop,'expire_in'=>14400]);
+            $client->shouldReceive('shopInfo')->once()->with('access-'.$shop,$shop)->andReturn([
+                'shop_id'=>$shop,'shop_name'=>'Shop '.$shop,'region'=>'MY']);
+        }
+        $this->app->instance(\App\Services\Marketplace\ShopeeClient::class,$client);
+        $state=app(OAuthStateService::class)->issue($user->id,'shopee',config('app.url'),null);
+        $batch=app(ShopeeAuthorizationService::class)->completeMainAccount($state,$user->id,'one-use','77');
+        app(\App\Services\Marketplace\ShopeeOAuthBatchProcessor::class)->process($batch->id);
+        $this->assertDatabaseCount('marketplace_stores',2);
+        $this->assertDatabaseCount('marketplace_store_tokens',2);
+        $this->assertSame(2,DB::table('inventory_store_accounts')->whereNotNull('marketplace_store_id')->count());
+        $response=$this->getJson('/admin/api/marketplace/oauth-batches/'.$batch->public_id)->assertOk()
+            ->assertJsonPath('batch.status','success')->assertJsonPath('batch.total',2)
+            ->assertJsonPath('batch.connected',2);
+        $this->assertArrayNotHasKey('seed_refresh_token',$response->json('batch'));
+        $tokens=\App\Models\MarketplaceStoreToken::orderBy('store_id')->get();
+        $this->assertNotSame($tokens[0]->access_token,$tokens[1]->access_token);
+    }
+
+    public function test_callback_requires_exactly_one_shop_or_main_account_identity(): void
+    {
+        $user=\App\Models\User::factory()->create(['is_admin'=>true]);
+        $this->actingAs($user);
+        foreach ([[],['shop_id'=>'1','main_account_id'=>'2']] as $identity) {
+            $state=app(OAuthStateService::class)->issue($user->id,'shopee',config('app.url'),null);
+            $this->get('/admin/marketplace/oauth/shopee/callback?'.http_build_query(['state'=>$state,'code'=>'code']+$identity))
+                ->assertRedirect('/admin/marketplace/auth?connection=failed');
+        }
+        Http::assertNothingSent();
+    }
+
+    public function test_partial_batch_retry_processes_only_failed_store_and_preserves_success(): void
+    {
+        $user=\App\Models\User::factory()->create(['is_admin'=>true]);
+        $client=\Mockery::mock(\App\Services\Marketplace\ShopeeClient::class);
+        $client->shouldReceive('exchangeMainAccountCode')->once()->andReturn(['access_token'=>'seed','refresh_token'=>'seed-refresh',
+            'expire_in'=>14400,'shop_id_list'=>['101','202'],'merchant_id_list'=>[]]);
+        $client->shouldReceive('refreshShopCredential')->once()->with('seed-refresh','101')->andReturn([
+            'access_token'=>'access-101','refresh_token'=>'refresh-101','expire_in'=>14400]);
+        $client->shouldReceive('shopInfo')->once()->andReturn(['shop_id'=>'101','shop_name'=>'First','region'=>'MY']);
+        $client->shouldReceive('refreshShopCredential')->once()->with('seed-refresh','202')->andThrow(new \RuntimeException('temporary'));
+        $this->app->instance(\App\Services\Marketplace\ShopeeClient::class,$client);
+        $state=app(OAuthStateService::class)->issue($user->id,'shopee',config('app.url'),null);
+        $batch=app(ShopeeAuthorizationService::class)->completeMainAccount($state,$user->id,'code','77');
+        $this->assertSame('partial',$batch->fresh()->status);
+        $firstToken=\App\Models\MarketplaceStoreToken::firstOrFail()->access_token;
+
+        $retry=\Mockery::mock(\App\Services\Marketplace\ShopeeClient::class);
+        $retry->shouldReceive('refreshShopCredential')->once()->with('seed-refresh','202')->andReturn([
+            'access_token'=>'access-202','refresh_token'=>'refresh-202','expire_in'=>14400]);
+        $retry->shouldReceive('shopInfo')->once()->andReturn(['shop_id'=>'202','shop_name'=>'Second','region'=>'MY']);
+        $processor=new \App\Services\Marketplace\ShopeeOAuthBatchProcessor($retry,app(\App\Services\Inventory\StoreManagement\StoreEnrollmentService::class));
+        $processor->process($batch->id,true);
+        $this->assertSame('success',$batch->fresh()->status);
+        $this->assertSame(1,\App\Models\MarketplaceOAuthBatchStore::where('external_shop_id','101')->value('attempt_count'));
+        $this->assertSame($firstToken,\App\Models\MarketplaceStoreToken::orderBy('store_id')->first()->access_token);
+        $this->assertDatabaseCount('marketplace_stores',2);
     }
 
     public function test_verified_connection_is_saved_and_replay_cannot_exchange_again(): void
@@ -90,7 +163,7 @@ class MarketplaceAuthorizationTest extends TestCase
         $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>true]));
         $url = $this->postJson('/admin/api/marketplace/shopee/authorize')->assertOk()->json('url');
         parse_str(parse_url($url, PHP_URL_QUERY), $query);
-        parse_str(parse_url($query['redirect'], PHP_URL_QUERY), $callback);
+        parse_str(parse_url($query['redirect_uri'], PHP_URL_QUERY), $callback);
         $response = $this->get('/admin/marketplace/oauth/shopee/callback?'.http_build_query($callback+['code'=>'code','shop_id'=>'456']));
         $response->assertRedirect('/admin/marketplace/auth?connection=success');
         $this->assertStringNotContainsString('access', $response->getContent());

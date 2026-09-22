@@ -16,6 +16,12 @@ export function OperationalConnectStore() {
     marketplaceOperations.oauthResult().then(({result})=>{if(active)setAuthorizationResult(result);}).catch(()=>{});
     return()=>{active=false;};
   },[]);
+  useEffect(()=>{
+    if(!authorizationResult?.batch || authorizationResult.batch.status!=='processing') return;
+    const timer=window.setInterval(()=>marketplaceOperations.oauthBatch(authorizationResult.batch!.id)
+      .then(({batch})=>setAuthorizationResult(current=>current?{...current,status:batch.status,batch}:current)).catch(()=>{}),3000);
+    return()=>window.clearInterval(timer);
+  },[authorizationResult?.batch?.id,authorizationResult?.batch?.status]);
   const load=useCallback(async()=>{
     setLoading(true);setError('');
     try {const data=await marketplaceOperations.connections();setStores(data.stores);setCapabilities(data.capabilities);}
@@ -44,6 +50,7 @@ export function OperationalConnectStore() {
   if(error)return <div role="alert" className="text-sm text-rose-500">{error}<button className="ml-3 underline" onClick={()=>void load()}>Retry</button></div>;
   return <PreviewContext.Provider value={value as unknown as React.ContextType<typeof PreviewContext>}>
     <MarketplaceAuthPage operational authorizationResult={authorizationResult}
+      onRetryOAuthBatch={async id=>{const {batch}=await marketplaceOperations.retryOAuthBatch(id);setAuthorizationResult(current=>current?{...current,status:batch.status,batch}:current);}}
       canManagePublishing={admin.laravelBootstrap.user.isSuperAdmin===true} onSetProductPublishing={setProductPublishing}
       oauthAvailability={Object.fromEntries((['shopee','lazada','tiktok','shopify'] as const).map(key=>[key,capabilities[key]?.oauth===true]))}/>
   </PreviewContext.Provider>;

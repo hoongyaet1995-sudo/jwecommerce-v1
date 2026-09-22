@@ -411,11 +411,16 @@ class ShopeeClient
     public function authorizationUrl(string $state): string
     {
         $config = $this->configuration();
-        $path = '/api/v2/shop/auth_partner';
-        $query = $this->signedQuery($config, $path);
-        $query['redirect'] = $config['callback_url'].'?'.http_build_query(['state' => $state]);
-
-        return $this->host($config).$path.'?'.http_build_query($query);
+        if (!preg_match('/^[a-f0-9]{64}$/D', $state)) {
+            throw new RuntimeException('Invalid Shopee authorization state.');
+        }
+        $host = $config['environment'] === 'production'
+            ? 'https://open.shopee.com' : 'https://open.sandbox.test-stable.shopee.com';
+        return $host.'/auth?'.http_build_query([
+            'partner_id'=>(int)$config['partner_id'], 'auth_type'=>'seller',
+            'redirect_uri'=>$config['callback_url'].'?'.http_build_query(['state'=>$state]),
+            'response_type'=>'code',
+        ]);
     }
 
     public function shopInfo(#[\SensitiveParameter] string $accessToken, string $shopId): array
@@ -615,25 +620,63 @@ class ShopeeClient
 
     public function exchange(#[\SensitiveParameter] string $code, string $shopId): array
     {
-        return $this->tokenRequest('/api/v2/auth/token/get', 'code', $code, $shopId);
+        return $this->exchangeShopCode($code, $shopId);
     }
 
     public function refresh(#[\SensitiveParameter] string $refreshToken, string $shopId): array
     {
-        return $this->tokenRequest('/api/v2/auth/access_token/get', 'refresh_token', $refreshToken, $shopId);
+        return $this->refreshShopCredential($refreshToken, $shopId);
     }
 
-    private function tokenRequest(string $path, string $credentialName, #[\SensitiveParameter] string $credential, string $shopId): array
+    public function exchangeShopCode(#[\SensitiveParameter] string $code, string $shopId): array
+    {
+        return $this->tokenRequest('/api/v2/auth/token/get', 'code', $code, 'shop_id', $shopId);
+    }
+
+    public function exchangeMainAccountCode(#[\SensitiveParameter] string $code, string $mainAccountId): array
+    {
+        $tokens=$this->tokenRequest('/api/v2/auth/token/get', 'code', $code, 'main_account_id', $mainAccountId, true);
+        $shops=$this->positiveUniqueIds($tokens['shop_id_list']??null);
+        if (!$shops) throw new RuntimeException('Shopee main account did not return valid stores. Re-authorize the Main Account.');
+        $tokens['shop_id_list']=$shops;
+        $merchantIds=$tokens['merchant_id_list']??[];
+        $tokens['merchant_id_list']=$this->positiveUniqueIds($merchantIds, true);
+        if (!is_array($merchantIds) || count($tokens['merchant_id_list'])!==count($merchantIds)) {
+            throw new RuntimeException('Shopee main account did not return valid stores. Re-authorize the Main Account.');
+        }
+        return $tokens;
+    }
+
+    public function refreshShopCredential(#[\SensitiveParameter] string $refreshToken, string $shopId): array
+    {
+        return $this->tokenRequest('/api/v2/auth/access_token/get', 'refresh_token', $refreshToken, 'shop_id', $shopId);
+    }
+
+    private function positiveUniqueIds(mixed $ids, bool $allowEmpty=false): array
+    {
+        if (!is_array($ids) || (!$allowEmpty && !$ids)) return [];
+        $normalized=[];
+        foreach ($ids as $id) {
+            if ((!is_int($id) && !is_string($id)) || !ctype_digit((string)$id) || (int)$id<=0) return [];
+            $normalized[]=(string)$id;
+        }
+        if (count(array_unique($normalized))!==count($normalized)) return [];
+        return $normalized;
+    }
+
+    private function tokenRequest(string $path, string $credentialName, #[\SensitiveParameter] string $credential,
+        string $identityName, string $identity, bool $preserveLists=false): array
     {
         $config = $this->configuration();
-        if ($credential === '' || !ctype_digit($shopId) || (int) $shopId <= 0) {
+        if ($credential === '' || !in_array($identityName,['shop_id','main_account_id'],true)
+            || !ctype_digit($identity) || (int) $identity <= 0) {
             throw new RuntimeException('Invalid Shopee authorization callback.');
         }
         try {
             // Never retry one-use authorization codes automatically or follow redirects with credentials.
             $response = Http::acceptJson()->connectTimeout(10)->timeout(20)->withoutRedirecting()
                 ->post($this->host($config).$path.'?'.http_build_query($this->signedQuery($config, $path)), [
-                    $credentialName => $credential, 'shop_id' => (int) $shopId, 'partner_id' => (int) $config['partner_id'],
+                    $credentialName => $credential, $identityName => (int) $identity, 'partner_id' => (int) $config['partner_id'],
                 ]);
         } catch (ConnectionException) {
             throw new RuntimeException('Shopee could not be reached. Re-authorize the store.');
@@ -646,7 +689,12 @@ class ShopeeClient
             throw new RuntimeException('Shopee token exchange failed. Re-authorize the store.');
         }
 
-        return ['access_token' => $payload['access_token'], 'refresh_token' => $payload['refresh_token'],
+        $result=['access_token' => $payload['access_token'], 'refresh_token' => $payload['refresh_token'],
             'expire_in' => (int) $payload['expire_in']];
+        if ($preserveLists) {
+            $result['shop_id_list']=$payload['shop_id_list']??null;
+            $result['merchant_id_list']=$payload['merchant_id_list']??[];
+        }
+        return $result;
     }
 }

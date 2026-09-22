@@ -13,6 +13,7 @@ interface ConnectStoreModalProps {
   requestAuthorization?: (platform: MarketplacePlatform, reconnectId?: string) => Promise<void>;
   oauthAvailability?: Partial<Record<MarketplacePlatform, boolean>>;
   authorizationResult?: OAuthResult | null;
+  retryBatch?: (id:string)=>Promise<void>;
 }
 
 type AuthStep = 'select' | 'authorizing' | 'success' | 'cancelled' | 'failed';
@@ -24,7 +25,8 @@ export const ConnectStoreModal: React.FC<ConnectStoreModalProps> = ({
   existingConnection = null,
   requestAuthorization,
   oauthAvailability,
-  authorizationResult
+  authorizationResult,
+  retryBatch
 }) => {
   const previewAdmin = useOptionalAdmin();
 
@@ -100,8 +102,14 @@ export const ConnectStoreModal: React.FC<ConnectStoreModalProps> = ({
 
   useEffect(() => {
     if (!isOpen || !requestAuthorization || !authorizationResult) return;
+    if (authorizationResult.batch) {
+      setPlatform('shopee');
+      setStep('success');
+      return;
+    }
     const verified = authorizationResult.status === 'success' && authorizationResult.store;
-    setStep(authorizationResult.status === 'success' && !verified ? 'failed' : authorizationResult.status);
+    setStep(authorizationResult.status === 'success' ? (verified ? 'success' : 'failed')
+      : authorizationResult.status === 'cancelled' ? 'cancelled' : 'failed');
     if (verified) {
       setPlatform(verified.platform);
       setShopName(verified.shopName);
@@ -250,6 +258,13 @@ export const ConnectStoreModal: React.FC<ConnectStoreModalProps> = ({
             </div>
 
             {/* Platform Selection */}
+            {platform === 'shopee' && requestAuthorization && (
+              <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-600 dark:text-neutral-400 space-y-1.5">
+                <p><strong className="text-neutral-900 dark:text-white">Shop Account:</strong> authorize one Shopee store.</p>
+                <p><strong className="text-neutral-900 dark:text-white">Main Account:</strong> select and authorize multiple stores in one session.</p>
+                <p><strong className="text-neutral-900 dark:text-white">Sub-account:</strong> ask the Main Account holder to complete authorization.</p>
+              </div>
+            )}
             <div>
               <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-2.5">
                 Select Target Marketplace Platform
@@ -523,8 +538,31 @@ export const ConnectStoreModal: React.FC<ConnectStoreModalProps> = ({
           </div>
         )}
 
+        {authorizationResult?.batch && step === 'success' && (
+          <div className="p-6 space-y-5">
+            <div className="space-y-1">
+              <h4 className="text-lg font-bold text-neutral-900 dark:text-white">
+                {authorizationResult.batch.connected+authorizationResult.batch.reauthorized} of {authorizationResult.batch.total} Shopee stores connected
+              </h4>
+              <p className="text-xs text-neutral-500">Authorization continues safely in the background if this panel is closed.</p>
+            </div>
+            <div className="space-y-2">
+              {authorizationResult.batch.stores.map(store=><div key={store.shopId} className="flex items-center justify-between gap-4 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs">
+                <span className="font-mono text-neutral-800 dark:text-neutral-200">Shop {store.shopId}</span>
+                <span className={`font-bold ${store.status==='requires_attention'?'text-rose-500':store.status==='processing'?'text-amber-500':'text-emerald-500'}`}>{store.status==='requires_attention'?'Requires Attention':store.status==='processing'?'Processing':store.status==='reauthorized'?'Reauthorized':'Connected'}</span>
+              </div>)}
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <button type="button" onClick={()=>window.location.reload()} className="px-4 py-2 text-xs font-bold rounded-xl border border-neutral-300 dark:border-neutral-700">Refresh Status</button>
+              {authorizationResult.batch.failed>0&&authorizationResult.batch.status!=='processing'&&retryBatch&&<button type="button" onClick={()=>retryBatch(authorizationResult.batch!.id)} className="px-4 py-2 text-xs font-bold rounded-xl bg-rose-600 text-white">Retry Failed Stores</button>}
+              <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white">View Connected Stores</button>
+              <button type="button" onClick={()=>setStep('select')} className="px-4 py-2 text-xs font-bold rounded-xl border border-neutral-300 dark:border-neutral-700">Authorize More Stores</button>
+            </div>
+          </div>
+        )}
+
         {/* STEP 3A: Authorization Success */}
-        {step === 'success' && (!requestAuthorization || authorizationResult?.store) && (
+        {step === 'success' && !authorizationResult?.batch && (!requestAuthorization || authorizationResult?.store) && (
           <div className="p-8 text-center space-y-6">
             <div className="w-16 h-16 rounded-3xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center shadow-xs">
               <CheckCircle2 className="w-8 h-8" />

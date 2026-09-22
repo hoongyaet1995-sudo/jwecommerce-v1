@@ -130,3 +130,16 @@ it('fails closed until backend declares OAuth available and keeps unavailable pl
   await act(async () => root.unmount());
   vi.unstubAllGlobals();
 });
+
+it('renders persisted multi-store progress and retries only failed stores', async()=>{
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+  const container=document.createElement('div'); const root=createRoot(container); const retry=vi.fn().mockResolvedValue(undefined);
+  await act(async()=>root.render(<ConnectStoreModal isOpen onClose={()=>{}} requestAuthorization={vi.fn()} retryBatch={retry}
+    authorizationResult={{status:'partial',store:null,batch:{id:'batch-id',status:'partial',total:2,connected:1,reauthorized:0,failed:1,processing:0,
+      stores:[{shopId:'101',storeId:'1',status:'connected',message:null},{shopId:'202',storeId:null,status:'requires_attention',message:'Retry this store.'}]}}}/>));
+  expect(container.textContent).toContain('1 of 2 Shopee stores connected');
+  expect(container.textContent).toContain('Requires Attention');
+  const button=Array.from(container.querySelectorAll('button')).find(item=>item.textContent?.includes('Retry Failed Stores'))!;
+  await act(async()=>button.click()); expect(retry).toHaveBeenCalledExactlyOnceWith('batch-id');
+  await act(async()=>root.unmount()); vi.unstubAllGlobals();
+});

@@ -19,7 +19,8 @@ export interface ProductImportResult {
   linkedVariants?: number;
   keptVariants?: number;
 }
-export type OAuthResult = {status: 'success' | 'failed' | 'cancelled'; store: {id: string; platform: MarketplacePlatform; shopId: string; shopName: string} | null};
+export interface OAuthBatch {id:string;status:'success'|'partial'|'processing'|'failed'|'cancelled';total:number;connected:number;reauthorized:number;failed:number;processing:number;stores:{shopId:string;storeId:string|null;status:'connected'|'reauthorized'|'processing'|'requires_attention';message:string|null}[]}
+export type OAuthResult = {status: 'success' | 'partial' | 'processing' | 'failed' | 'cancelled'; store: {id: string; platform: MarketplacePlatform; shopId: string; shopName: string} | null;batch?:OAuthBatch};
 export interface StoreConnection {
   credentialSource?: string | null; testLeaseExpiresAt?: string | null;
   accountMode?: 'production' | 'test' | null;
@@ -83,8 +84,8 @@ const idPath = (id: string) => encodeURIComponent(id);
 export function officialShopeeAuthorizationUrl(value: string): string {
   const url = new URL(value);
   if (url.protocol !== 'https:' || url.username || url.password || url.port || url.hash
-    || !['partner.shopeemobile.com', 'openplatform.sandbox.test-stable.shopee.sg'].includes(url.hostname)
-    || url.pathname !== '/api/v2/shop/auth_partner') throw new Error('Unexpected authorization destination.');
+    || !['open.shopee.com', 'open.sandbox.test-stable.shopee.com'].includes(url.hostname)
+    || url.pathname !== '/auth') throw new Error('Unexpected authorization destination.');
   return url.href;
 }
 export function officialLazadaAuthorizationUrl(value: string): string {
@@ -147,6 +148,8 @@ export const marketplaceOperations = {
   },
   catalogSummary: (filters: Filters = {}) => marketplaceRequest<CatalogSummary>(`/catalog/summary?${query(filters)}`),
   oauthResult: () => marketplaceRequest<{result: OAuthResult | null}>('/oauth-result'),
+  oauthBatch: (id:string) => marketplaceRequest<{batch:OAuthBatch}>(`/oauth-batches/${idPath(id)}`),
+  retryOAuthBatch: (id:string) => marketplaceRequest<{batch:OAuthBatch}>(`/oauth-batches/${idPath(id)}/retry`,'POST'),
   catalogProducts: (filters: Filters = {}) => marketplaceRequest<Page<CatalogProduct>>(`/catalog/products?${query(filters)}`),
   importProduct: (listingId: string, review?: {skuOverrides: Record<string,string>; existingLinks?:Record<string,{productId:number;variantId:number}>;productId?:number;listingIds?:number[]}) => review === undefined
     ? marketplaceRequest<ProductImportResult>(`/listings/${idPath(listingId)}/import-product`, 'POST')

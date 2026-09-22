@@ -137,13 +137,13 @@ describe('marketplace operational contract', () => {
     expect(marketplaceRequest).toHaveBeenLastCalledWith('/shopee/authorize', 'POST', {reconnectStoreId: 7});
   });
   it('refuses non-official authorization redirects', () => {
-    expect(officialShopeeAuthorizationUrl('https://openplatform.sandbox.test-stable.shopee.sg/api/v2/shop/auth_partner?sign=test'))
-      .toBe('https://openplatform.sandbox.test-stable.shopee.sg/api/v2/shop/auth_partner?sign=test');
-    expect(() => officialShopeeAuthorizationUrl('https://openplatform.sandbox.test-stable.shopee.sg.attacker.test/api/v2/shop/auth_partner')).toThrow();
-    expect(() => officialShopeeAuthorizationUrl('https://attacker.test/api/v2/shop/auth_partner')).toThrow();
+    expect(officialShopeeAuthorizationUrl('https://open.sandbox.test-stable.shopee.com/auth?partner_id=1'))
+      .toBe('https://open.sandbox.test-stable.shopee.com/auth?partner_id=1');
+    expect(() => officialShopeeAuthorizationUrl('https://open.sandbox.test-stable.shopee.com.attacker.test/auth')).toThrow();
+    expect(() => officialShopeeAuthorizationUrl('https://attacker.test/auth')).toThrow();
     expect(() => officialShopeeAuthorizationUrl('javascript:alert(1)')).toThrow();
-    expect(officialShopeeAuthorizationUrl('https://partner.shopeemobile.com/api/v2/shop/auth_partner?sign=test'))
-      .toBe('https://partner.shopeemobile.com/api/v2/shop/auth_partner?sign=test');
+    expect(officialShopeeAuthorizationUrl('https://open.shopee.com/auth?partner_id=1'))
+      .toBe('https://open.shopee.com/auth?partner_id=1');
   });
 });
 

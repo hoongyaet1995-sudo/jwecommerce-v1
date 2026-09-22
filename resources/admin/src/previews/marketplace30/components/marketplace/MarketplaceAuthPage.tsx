@@ -8,7 +8,7 @@ import { ConnectStoreModal } from './ConnectStoreModal';
 import { DisconnectStoreModal } from './DisconnectStoreModal';
 import { KeyRound, ShieldCheck, CheckCircle2, AlertTriangle, RefreshCw, Plus, Trash2, Copy, Check, Store, Radio, Clock, Globe2, Activity, Lock, Sparkles, PowerOff, RotateCcw } from 'lucide-react';
 
-export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailability?: Partial<Record<MarketplacePlatform,boolean>>; authorizationResult?: OAuthResult|null; canManagePublishing?:boolean; onSetProductPublishing?:(storeId:string,enabled:boolean,reason:string)=>Promise<void>}> = ({operational=false,oauthAvailability={},authorizationResult=null,canManagePublishing=false,onSetProductPublishing}) => {
+export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailability?: Partial<Record<MarketplacePlatform,boolean>>; authorizationResult?: OAuthResult|null; onRetryOAuthBatch?:(id:string)=>Promise<void>; canManagePublishing?:boolean; onSetProductPublishing?:(storeId:string,enabled:boolean,reason:string)=>Promise<void>}> = ({operational=false,oauthAvailability={},authorizationResult=null,onRetryOAuthBatch,canManagePublishing=false,onSetProductPublishing}) => {
   const {
     connections = [],
     marketplaceOrders = [],
@@ -575,6 +575,7 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
       {/* Connect & Re-authorize Store Modal */}
       <ConnectStoreModal
         authorizationResult={visibleResult}
+        retryBatch={onRetryOAuthBatch}
         requestAuthorization={operational ? requestMarketplaceAuthorization : undefined}
         oauthAvailability={operational ? oauthAvailability : undefined}
         isOpen={isConnectModalOpen}
