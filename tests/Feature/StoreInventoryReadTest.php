@@ -176,6 +176,36 @@ class StoreInventoryReadTest extends TestCase
             ->assertJsonPath('data.0.result.transfer.quantity', 2);
     }
 
+    public function test_history_exposes_employee_facing_inventory_activity_without_raw_review_payload(): void
+    {
+        $fixture = new StoreInventoryFixture;
+        $sku = $fixture->sku();
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores']);
+        $balance = app(AccountResolver::class)->balance($sku['variant']->id, 'website');
+        DB::table('inventory_balances')->where('id', $balance['id'])->update([
+            'physical_stock' => 8, 'reserved_stock' => 1, 'safety_stock' => 0, 'counted_at' => now(),
+        ]);
+        $actor = $this->admin();
+        $actor->permissions()->create(['permission' => 'inventory.edit']);
+        $url = '/admin/api/inventory/store-management/reviews';
+        $review = $this->actingAs($actor)->postJson($url, [
+            'kind' => 'intake', 'balance_id' => $balance['id'], 'quantity' => 3,
+            'reason' => 'Supplier delivery',
+        ])->assertCreated()->json();
+        $receipt = $this->postJson($url.'/'.$review['id'].'/confirm', ['operation_key' => 'history-intake-summary'])->assertOk()->json();
+
+        $history = $this->getJson('/admin/api/inventory/store-management/history')->assertOk();
+        $history->assertJsonPath('data.0.id', $receipt['operation_id'])
+            ->assertJsonPath('data.0.result.activity.master_sku', $sku['variant']->sku)
+            ->assertJsonPath('data.0.result.activity.product_name', $sku['product']->title)
+            ->assertJsonPath('data.0.result.activity.store.name', 'JW Ecom Storefront')
+            ->assertJsonPath('data.0.result.activity.previous_stock', 8)
+            ->assertJsonPath('data.0.result.activity.resulting_stock', 11)
+            ->assertJsonPath('data.0.result.activity.quantity_change', 3)
+            ->assertJsonPath('data.0.result.activity.reason', 'Supplier delivery')
+            ->assertJsonMissingPath('data.0.result.payload');
+    }
+
     public function test_overview_loads_sync_states_in_one_query_for_large_catalogs(): void
     {
         $fixture = new StoreInventoryFixture;

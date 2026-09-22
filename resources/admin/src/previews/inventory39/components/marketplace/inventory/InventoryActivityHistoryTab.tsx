@@ -127,6 +127,19 @@ export const InventoryActivityHistoryTab: React.FC<InventoryActivityHistoryTabPr
     }
   };
 
+  const getSyncPresentation = (status?: string) => {
+    if (['confirmed', 'superseded', 'not_applicable'].includes(status || '')) {
+      return { label: 'Done', classes: 'border-emerald-700/60 bg-emerald-950/40 text-emerald-300' };
+    }
+    if (['queued', 'processing', 'waiting_source'].includes(status || '')) {
+      return { label: 'Awaiting Confirmation', classes: 'border-amber-700/60 bg-amber-950/40 text-amber-300' };
+    }
+    if (['failed', 'auth_expired', 'uncertain'].includes(status || '')) {
+      return { label: 'Failed', classes: 'border-rose-700/60 bg-rose-950/40 text-rose-300' };
+    }
+    return { label: 'Local Only', classes: 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300' };
+  };
+
   return (
     <div id="inventory-activity-history-tab" className="space-y-6 animate-in fade-in duration-150">
       {/* Search & Filters */}
@@ -204,7 +217,7 @@ export const InventoryActivityHistoryTab: React.FC<InventoryActivityHistoryTabPr
                 <th className="py-2.5 px-3">Store Account / Scope</th>
                 <th className="py-2.5 px-3">Quantity Delta & Result</th>
                 <th className="py-2.5 px-3">Operator / Source</th>
-                <th className="py-2.5 px-3">Reason / Ref ID</th>
+                <th className="py-2.5 px-3">Reason</th>
                 <th className="py-2.5 px-3">Provider Sync</th>
                 <th className="py-2.5 px-3 text-right">Details</th>
               </tr>
@@ -212,6 +225,7 @@ export const InventoryActivityHistoryTab: React.FC<InventoryActivityHistoryTabPr
             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
               {(filteredLogs || []).map(item => {
                 const badge = getActionBadge(item.actionType);
+                const sync = getSyncPresentation(item.providerSyncStatus);
                 return (
                   <tr key={item.id} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-800/50 transition-colors">
                     <td className="py-3 px-3 whitespace-nowrap text-neutral-500 font-mono text-[11px]">
@@ -259,13 +273,10 @@ export const InventoryActivityHistoryTab: React.FC<InventoryActivityHistoryTabPr
                       <div className="text-[11px] text-neutral-600 dark:text-neutral-400 truncate max-w-[200px]" title={item.reason}>
                         {item.reason}
                       </div>
-                      {item.referenceId && (
-                        <div className="font-mono text-[10px] text-neutral-400">{item.referenceId}</div>
-                      )}
                     </td>
                     <td className="py-3 px-3">
-                      <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300">
-                        {item.providerSyncStatus || 'Not queued'}
+                      <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold border ${sync.classes}`}>
+                        {sync.label}
                       </span>
                     </td>
                     <td className="py-3 px-3 text-right">
@@ -273,7 +284,7 @@ export const InventoryActivityHistoryTab: React.FC<InventoryActivityHistoryTabPr
                         type="button"
                         onClick={() => setInspectingItem(item)}
                         className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition cursor-pointer"
-                        title="View audit event payload"
+                        title="View activity details"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
@@ -293,7 +304,7 @@ export const InventoryActivityHistoryTab: React.FC<InventoryActivityHistoryTabPr
             <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-neutral-400" />
-                <h4 className="text-sm font-bold text-neutral-900 dark:text-white">Audit Event Details</h4>
+                <h4 className="text-sm font-bold text-neutral-900 dark:text-white">Activity Details</h4>
               </div>
               <button
                 type="button"
@@ -355,6 +366,12 @@ export const InventoryActivityHistoryTab: React.FC<InventoryActivityHistoryTabPr
                     </span>
                   </div>
                 )}
+                <div className="flex justify-between pt-1 border-t border-neutral-200 dark:border-neutral-700">
+                  <span className="text-neutral-500">Quantity Change:</span>
+                  <span className="font-mono font-bold text-neutral-900 dark:text-white">
+                    {inspectingItem.quantityChange > 0 ? `+${inspectingItem.quantityChange}` : inspectingItem.quantityChange} units
+                  </span>
+                </div>
               </div>
 
               <div>
@@ -367,21 +384,27 @@ export const InventoryActivityHistoryTab: React.FC<InventoryActivityHistoryTabPr
                 <p className="text-neutral-700 dark:text-neutral-300">{inspectingItem.reason}</p>
               </div>
 
-              {inspectingItem.referenceId && (
+              <div>
+                <span className="text-neutral-400 block text-[10px] uppercase font-bold">Marketplace Update</span>
+                <span className={`inline-block mt-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${getSyncPresentation(inspectingItem.providerSyncStatus).classes}`}>
+                  {getSyncPresentation(inspectingItem.providerSyncStatus).label}
+                </span>
+              </div>
+
+              {inspectingItem.notes && (
+                <div>
+                  <span className="text-neutral-400 block text-[10px] uppercase font-bold">Notes</span>
+                  <p className="text-neutral-700 dark:text-neutral-300">{inspectingItem.notes}</p>
+                </div>
+              )}
+
+              {inspectingItem.referenceId && (inspectingItem.status === 'failed' || inspectingItem.status === 'partially_completed' || inspectingItem.status === 'pending') && (
                 <div>
                   <span className="text-neutral-400 block text-[10px] uppercase font-bold">Reference Identifier</span>
                   <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200">{inspectingItem.referenceId}</span>
                 </div>
               )}
 
-              {inspectingItem.detailsPayload && (
-                <div>
-                  <span className="text-neutral-400 block text-[10px] uppercase font-bold mb-1">Payload Audit Inspection</span>
-                  <pre className="p-3 rounded-xl bg-neutral-950 text-neutral-200 font-mono text-[11px] border border-neutral-800 overflow-x-auto">
-                    {JSON.stringify(inspectingItem.detailsPayload, null, 2)}
-                  </pre>
-                </div>
-              )}
             </div>
 
             <div className="pt-4 border-t border-neutral-100 dark:border-neutral-800">

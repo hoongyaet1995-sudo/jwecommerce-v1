@@ -151,13 +151,15 @@ final class OverviewReader
         $total = (clone $query)->count();
         $rows = $query->orderByDesc('o.created_at')->orderByDesc('o.id')
             ->forPage($page, $perPage)->get(['o.id', 'o.review_id', 'o.kind', 'o.ledger_status', 'o.receipt', 'r.payload',
-                'o.created_at', 'u.name as actor_name']);
+                'r.before as review_before', 'r.after as review_after', 'o.created_at', 'u.name as actor_name']);
         $payloads = $rows->mapWithKeys(fn (object $row): array => [
             $row->id => $row->payload ? json_decode($row->payload, true, 512, JSON_THROW_ON_ERROR) : [],
         ]);
-        $balanceIds = $rows->where('kind', 'transfer')->flatMap(function (object $row) use ($payloads): array {
+        $balanceIds = $rows->flatMap(function (object $row) use ($payloads): array {
             $payload = $payloads[$row->id] ?? [];
-            return array_values(array_filter([(int) ($payload['source_balance_id'] ?? 0), (int) ($payload['destination_balance_id'] ?? 0)]));
+            return array_values(array_filter($row->kind === 'transfer'
+                ? [(int) ($payload['source_balance_id'] ?? 0), (int) ($payload['destination_balance_id'] ?? 0)]
+                : [(int) ($payload['balance_id'] ?? 0)]));
         })->unique()->values();
         $balances = $balanceIds->isEmpty() ? collect() : DB::table('inventory_balances as b')
             ->join('inventory_pools as pool', 'pool.id', '=', 'b.inventory_pool_id')
@@ -172,13 +174,16 @@ final class OverviewReader
             ->orderBy('created_at')->get()->groupBy('operation_id');
         $data = $rows->map(function (object $row) use ($payloads, $balances, $stages): array {
             $payload = $payloads[$row->id] ?? [];
+            $before = $row->review_before ? json_decode($row->review_before, true, 512, JSON_THROW_ON_ERROR) : [];
+            $after = $row->review_after ? json_decode($row->review_after, true, 512, JSON_THROW_ON_ERROR) : [];
             $transfer = null;
+            $activityBalance = $balances->get((int) ($payload['balance_id'] ?? 0));
+            $store = static fn (?object $balance): array => $balance?->marketplace_store_id
+                ? ['id' => (string) $balance->marketplace_store_id, 'name' => $balance->shop_name ?: 'Unavailable', 'platform' => $balance->platform ?: 'webstore']
+                : ['id' => 'website', 'name' => 'JW Ecom Storefront', 'platform' => 'webstore'];
             if ($row->kind === 'transfer') {
                 $source = $balances->get((int) ($payload['source_balance_id'] ?? 0));
                 $destination = $balances->get((int) ($payload['destination_balance_id'] ?? 0));
-                $store = static fn (?object $balance): array => $balance?->marketplace_store_id
-                    ? ['id' => (string) $balance->marketplace_store_id, 'name' => $balance->shop_name ?: 'Unavailable', 'platform' => $balance->platform ?: 'webstore']
-                    : ['id' => 'website', 'name' => 'JW Ecom Storefront', 'platform' => 'webstore'];
                 $identity = $source ?? $destination;
                 $transfer = [
                     'master_sku' => $identity?->sku ?? 'Unavailable',
@@ -189,13 +194,32 @@ final class OverviewReader
                     'quantity' => (int) ($payload['quantity'] ?? 0),
                     'reason' => (string) ($payload['reason'] ?? 'Store transfer'),
                 ];
+                $activity = [
+                    'master_sku' => $identity?->sku ?? 'Unavailable', 'product_name' => $identity?->product_name ?? 'Unavailable',
+                    'variant_name' => $identity?->variant_name ?? null, 'store' => null,
+                    'source_store' => $store($source), 'destination_store' => $store($destination),
+                    'previous_stock' => $before['source']['physical'] ?? null, 'resulting_stock' => $after['source']['physical'] ?? null,
+                    'quantity_change' => (int) ($payload['quantity'] ?? 0),
+                    'reason' => (string) ($payload['reason'] ?? 'Store transfer'), 'notes' => $payload['notes'] ?? null,
+                ];
+            } else {
+                $previous = $before['physical'] ?? null;
+                $resulting = $after['physical'] ?? null;
+                $activity = [
+                    'master_sku' => $activityBalance?->sku ?? 'Unavailable', 'product_name' => $activityBalance?->product_name ?? 'Unavailable',
+                    'variant_name' => $activityBalance?->variant_name ?? null, 'store' => $store($activityBalance),
+                    'source_store' => null, 'destination_store' => null,
+                    'previous_stock' => $previous, 'resulting_stock' => $resulting,
+                    'quantity_change' => is_numeric($previous) && is_numeric($resulting) ? (int) $resulting - (int) $previous : 0,
+                    'reason' => (string) ($payload['reason'] ?? $row->kind), 'notes' => $payload['notes'] ?? null,
+                ];
             }
             return [
                 'id' => $row->id, 'review_id' => $row->review_id, 'kind' => $row->kind,
                 'ledger_status' => $row->ledger_status, 'actor' => $row->actor_name,
                 'created_at' => $row->created_at,
                 'result' => [...$this->sanitize(json_decode($row->receipt, true, 512, JSON_THROW_ON_ERROR)),
-                    'payload' => $payload ?: null,
+                    'activity' => $activity,
                     'transfer' => $transfer,
                     'external_stages' => ($stages->get($row->id) ?? collect())->map(fn ($task) => (array) $task)->all()],
             ];
