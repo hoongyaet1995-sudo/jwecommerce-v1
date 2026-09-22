@@ -136,6 +136,34 @@ class StoreInventoryReadTest extends TestCase
             ->assertJsonMissingPath('payload');
     }
 
+    public function test_transfer_operation_detail_exposes_reviewed_quantity_without_raw_payload(): void
+    {
+        $fixture = new StoreInventoryFixture;
+        $sku = $fixture->sku();
+        $store = $fixture->store('shopee', 'TRANSFER-DETAIL');
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores']);
+        $source = app(AccountResolver::class)->balance($sku['variant']->id, 'website');
+        $destination = app(AccountResolver::class)->balance($sku['variant']->id, 'marketplace:'.$store->id);
+        foreach ([[$source, 8], [$destination, 1]] as [$balance, $physical]) {
+            DB::table('inventory_balances')->where('id', $balance['id'])->update([
+                'physical_stock' => $physical, 'reserved_stock' => 0, 'safety_stock' => 0, 'counted_at' => now(),
+            ]);
+        }
+        $actor = $this->admin();
+        $actor->permissions()->create(['permission' => 'inventory.edit']);
+        $url = '/admin/api/inventory/store-management/reviews';
+        $review = $this->actingAs($actor)->postJson($url, [
+            'kind' => 'transfer', 'source_balance_id' => $source['id'], 'destination_balance_id' => $destination['id'],
+            'quantity' => 2, 'reason' => 'History recovery',
+        ])->assertCreated()->json();
+        $receipt = $this->postJson($url.'/'.$review['id'].'/confirm', ['operation_key' => 'history-transfer-detail'])->assertOk()->json();
+
+        $this->getJson('/admin/api/inventory/store-management/operations/'.$receipt['operation_id'])
+            ->assertOk()
+            ->assertJsonPath('transfer_quantity', 2)
+            ->assertJsonMissingPath('payload');
+    }
+
     public function test_overview_loads_sync_states_in_one_query_for_large_catalogs(): void
     {
         $fixture = new StoreInventoryFixture;

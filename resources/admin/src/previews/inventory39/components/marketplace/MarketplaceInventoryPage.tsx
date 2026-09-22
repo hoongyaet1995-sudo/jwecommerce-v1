@@ -718,7 +718,7 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
       productName: item?.productName || transfer.productName,
       variantName: item?.variantName || transfer.variantName,
       imageUrl: item?.imageUrl || transfer.imageUrl,
-      quantity: Number(latest?.payload?.quantity ?? transfer.quantity),
+      quantity: Number(latest?.transfer_quantity ?? transfer.quantity),
       sourceStoreId,
       sourceStoreName: sourceChannel?.name || transfer.sourceStoreName,
       sourcePlatform: (sourceChannel?.platform || transfer.sourcePlatform) as StoreStockTransferRecord['sourcePlatform'],

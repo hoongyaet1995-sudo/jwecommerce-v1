@@ -185,13 +185,19 @@ final class OverviewReader
         $operation = DB::table('inventory_store_operations')->where('id', $id)->first();
         abort_unless($operation, 404);
         $receipt = $this->sanitize(json_decode($operation->receipt, true, 512, JSON_THROW_ON_ERROR));
+        $reviewPayload = $operation->review_id
+            ? DB::table('inventory_store_reviews')->where('id', $operation->review_id)->value('payload')
+            : null;
+        $reviewInput = $reviewPayload ? json_decode($reviewPayload, true, 512, JSON_THROW_ON_ERROR) : [];
         $stages = DB::table('inventory_store_sync_tasks')->where('operation_id', $id)->orderBy('created_at')->get()
             ->map(fn (object $stage): array => ['id' => $stage->id, 'store_id' => $stage->marketplace_store_id,
                 'variant_id' => (int) $stage->product_variant_id, 'stage' => $stage->stage, 'status' => $stage->status,
                 'target_quantity' => $stage->target_quantity, 'attempts' => (int) $stage->attempts,
                 'provider_receipt' => $stage->provider_receipt ? $this->sanitize(json_decode($stage->provider_receipt, true, 512, JSON_THROW_ON_ERROR)) : null]);
 
-        return [...$receipt, 'external_stages' => $stages->all()];
+        return [...$receipt,
+            'transfer_quantity' => $operation->kind === 'transfer' ? (int) ($reviewInput['quantity'] ?? 0) : null,
+            'external_stages' => $stages->all()];
     }
 
     private function sanitize(mixed $value): mixed
