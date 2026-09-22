@@ -56,6 +56,7 @@ import { StockSyncStoreButton } from './inventory/StockSyncStoreButton';
 import { StockSyncRecovery } from '../../../inventory43/StockSyncRecovery';
 import {inventoryCsv,inventoryPage,inventoryPageNumbers,toggleInventoryPageSelection} from './inventory/inventoryTablePagination';
 import {buildBulkSyncStatusPlan,chunkBulkSyncPairs,summarizeBulkSyncSkips} from './inventory/bulkSyncStatus';
+import { StoreStockBreakdownTooltip } from './inventory/StoreStockBreakdownTooltip';
 
 export const resolveFirstCountItem = (
   inventory: MarketplaceInventoryItem[],
@@ -1142,9 +1143,7 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
                   <tr>
                     <th className="py-3.5 px-4 w-10"><input type="checkbox" aria-label="Select all SKUs on current page" checked={isAllCurrentPageSelected} onChange={()=>setSelectedSkus(selected=>toggleInventoryPageSelection(selected,page.items.map(item=>item.masterSku),isAllCurrentPageSelected))} className="rounded border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"/></th>
                     <th className="py-3.5 px-4">Product / Master SKU</th>
-                    <th className="py-3.5 px-4">
-                      {currentMode === 'shared' ? 'Total Physical' : 'Physical Allocation'}
-                    </th>
+                    <th className="py-3.5 px-4">Total Stock</th>
                     <th className="py-3.5 px-4">Reserved (Locked)</th>
                     <th className="py-3.5 px-4">Available to Sell (ATP)</th>
                     <th className="py-3.5 px-4">Connected Stores & Sync States</th>
@@ -1206,22 +1205,14 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
                               <div className="text-[10px] text-neutral-400">Staff verification required</div>
                             </div>
                           ) : currentMode === 'shared' ? (
-                            <div className="font-mono font-bold text-sm text-neutral-900 dark:text-white">
-                              {physicalStock} <span className="text-xs text-neutral-400 font-normal">units</span>
+                            <div className="flex items-center gap-1.5 font-mono font-bold text-sm text-neutral-900 dark:text-white">
+                              <span>{physicalStock} <span className="text-xs text-neutral-400 font-normal">units</span></span>
+                              <StoreStockBreakdownTooltip balances={Object.values(skuStoreBalances) as StoreStockAccountBalance[]} />
                             </div>
                           ) : (
-                            <div className="space-y-1">
-                              <div className="font-mono font-bold text-neutral-900 dark:text-white">
-                                {physicalStock} units total
-                              </div>
-                              <div className="text-[10px] text-neutral-400 space-y-0.5">
-                                {(Object.values(skuStoreBalances) as StoreStockAccountBalance[]).map(b => (
-                                  <div key={b.storeId} className="flex items-center justify-between gap-2 max-w-[150px]">
-                                    <span className="truncate">{b.storeNickname || b.storeName}:</span>
-                                    <span className="font-mono font-semibold">{b.physicalStock ?? 'N/A'}</span>
-                                  </div>
-                                ))}
-                              </div>
+                            <div className="flex items-center gap-1.5 font-mono font-bold text-neutral-900 dark:text-white">
+                              <span>{physicalStock} units total</span>
+                              <StoreStockBreakdownTooltip balances={Object.values(skuStoreBalances) as StoreStockAccountBalance[]} />
                             </div>
                           )}
                         </td>
