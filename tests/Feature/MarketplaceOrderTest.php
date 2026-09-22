@@ -184,4 +184,38 @@ class MarketplaceOrderTest extends TestCase
         DB::table('marketplace_stores')->where('id', $store)->update(['status'=>'disconnected']);
         $this->getJson($url.'?includeRecipient=1')->assertOk()->assertJsonPath('data.capabilities.fulfillment', false);
     }
+
+    public function test_latest_order_run_is_scoped_to_the_requested_store_and_contains_employee_safe_progress(): void
+    {
+        $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>true]));
+        $store = DB::table('marketplace_stores')->insertGetId([
+            'platform'=>'shopee', 'shop_name'=>'Recovery Store', 'external_shop_id'=>'456',
+            'region'=>'MY', 'environment'=>'sandbox', 'status'=>'connected',
+            'created_at'=>now(), 'updated_at'=>now(),
+        ]);
+        $other = DB::table('marketplace_stores')->insertGetId([
+            'platform'=>'shopee', 'shop_name'=>'Other Store', 'external_shop_id'=>'789',
+            'region'=>'MY', 'environment'=>'sandbox', 'status'=>'connected',
+            'created_at'=>now(), 'updated_at'=>now(),
+        ]);
+        DB::table('marketplace_order_runs')->insert([
+            ['store_id'=>$store, 'status'=>'succeeded', 'time_from'=>100, 'time_to'=>200,
+                'requested_time_from'=>100, 'requested_time_to'=>300, 'pages_completed'=>2,
+                'orders_processed'=>8, 'error_code'=>null, 'finished_at'=>now()->subMinute(),
+                'created_at'=>now()->subMinutes(2), 'updated_at'=>now()->subMinute()],
+            ['store_id'=>$other, 'status'=>'failed', 'time_from'=>100, 'time_to'=>200,
+                'requested_time_from'=>100, 'requested_time_to'=>300, 'pages_completed'=>1,
+                'orders_processed'=>3, 'error_code'=>'provider_page_failed', 'finished_at'=>now(),
+                'created_at'=>now(), 'updated_at'=>now()],
+        ]);
+
+        $this->getJson('/admin/api/marketplace/stores/'.$store.'/order-runs/latest')
+            ->assertOk()
+            ->assertJsonPath('store_id', $store)
+            ->assertJsonPath('status', 'succeeded')
+            ->assertJsonPath('pages_completed', 2)
+            ->assertJsonPath('orders_processed', 8)
+            ->assertJsonMissing(['next_cursor']);
+        $this->getJson('/admin/api/marketplace/stores/999999/order-runs/latest')->assertNotFound();
+    }
 }

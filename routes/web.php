@@ -410,6 +410,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/marketplace/orders/{order}/label', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'label'])->whereNumber('order')->middleware('throttle:10,1');
     Route::get('/api/marketplace/orders/{order}', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'show'])->whereNumber('order');
     Route::post('/api/marketplace/stores/{store}/orders-fetch', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'fetch'])->whereNumber('store')->middleware('throttle:10,1');
+    Route::get('/api/marketplace/stores/{store}/order-runs/latest', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'latest'])->whereNumber('store');
     Route::get('/api/marketplace/order-runs/{run}', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'run'])->whereNumber('run');
     Route::post('/api/marketplace/order-runs/{run}/retry', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'retry'])->whereNumber('run')->middleware('throttle:10,1');
     Route::post('/api/marketplace/stores/{store}/catalog-fetch', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'fetch'])->whereNumber('store')->middleware('throttle:10,1');

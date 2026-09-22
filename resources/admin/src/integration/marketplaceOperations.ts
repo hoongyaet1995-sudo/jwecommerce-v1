@@ -72,7 +72,7 @@ export interface MarketplaceOrderDetail extends OrderSummary {
   capabilities: {fulfillment: boolean; airway_bill: boolean};
   recipient?: Record<'name' | 'phone' | 'town' | 'district' | 'city' | 'state' | 'region' | 'zipcode' | 'full_address', string | null>;
 }
-export interface SyncRun {created_at?:string;updated_at?:string;id: number; store_id: number; status: 'queued' | 'running' | 'succeeded' | 'failed'; pages_completed: number; items_processed?:number; variants_processed?:number; total_products?:number|null; error_code: string | null; finished_at: string | null}
+export interface SyncRun {created_at?:string;updated_at?:string;requested_time_from?:number|null;requested_time_to?:number|null;id: number; store_id: number; status: 'queued' | 'running' | 'succeeded' | 'failed'; pages_completed: number; orders_processed?:number; items_processed?:number; variants_processed?:number; total_products?:number|null; error_code: string | null; finished_at: string | null}
 type Filters = {storeId?: string; platform?: MarketplacePlatform; q?: string; status?: string; page?: number; per_page?: number};
 function query(filters: Filters): string {
   const params = new URLSearchParams();
@@ -167,5 +167,6 @@ export const marketplaceOperations = {
   orders: (filters: Filters = {}) => marketplaceRequest<Page<OrderSummary>>(`/orders?${query(filters)}`),
   orderDetail: (id: string, options: {includeRecipient?: boolean} = {}) => marketplaceRequest<{data: MarketplaceOrderDetail}>(`/orders/${idPath(id)}${options.includeRecipient ? '?includeRecipient=1' : ''}`),
   fetchOrders: (id: string, from: number, to: number) => marketplaceRequest<{runId: number}>(`/stores/${idPath(id)}/orders-fetch`, 'POST', {from, to}),
+  latestOrderRun: (id: string) => marketplaceRequest<SyncRun|null>(`/stores/${idPath(id)}/order-runs/latest`),
   orderRun: (id: string) => marketplaceRequest<SyncRun>(`/order-runs/${idPath(id)}`),
 };
