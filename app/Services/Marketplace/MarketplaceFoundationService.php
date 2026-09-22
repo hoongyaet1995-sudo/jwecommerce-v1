@@ -3,10 +3,13 @@
 namespace App\Services\Marketplace;
 
 use App\Models\ProductVariant;
+use App\Services\Inventory\StoreManagement\AccountResolver;
 use Illuminate\Support\Facades\DB;
 
 class MarketplaceFoundationService
 {
+    public function __construct(private readonly AccountResolver $accounts) {}
+
     public function map(int $listingId, ?int $variantId, ?int $productId, int $actorId, ?array $expected = null): void
     {
         DB::transaction(function () use ($listingId,$variantId,$productId,$actorId,$expected) {
@@ -31,7 +34,11 @@ class MarketplaceFoundationService
                 $actual=$old?(int)$old->product_variant_id:null;
                 abort_if($actual!==$expected['variant_id'],409,'Mapping changed after selection. Reload the catalog and review again.');
             }
-            if (($old ? (int)$old->product_variant_id : null) === $variantId) return;
+            if (($old ? (int)$old->product_variant_id : null) === $variantId) {
+                $this->provisionIndependentStoreBalance($variantId, (int) $storeId);
+
+                return;
+            }
             if ($variantId === null) {
                 DB::table('marketplace_variant_mappings')->where('listing_variant_id',$listingId)->delete();
             } else {
@@ -40,6 +47,18 @@ class MarketplaceFoundationService
                 ]);
             }
             DB::table('marketplace_mapping_events')->insert(['listing_variant_id'=>$listingId,'old_variant_id'=>$old?->product_variant_id,'new_variant_id'=>$variantId,'actor_id'=>$actorId,'created_at'=>now()]);
+            $this->provisionIndependentStoreBalance($variantId, (int) $storeId);
         });
+    }
+
+    private function provisionIndependentStoreBalance(?int $variantId, int $storeId): void
+    {
+        if ($variantId === null || DB::table('inventory_configuration')->where('id', 1)->value('operating_mode') !== 'independent_stores') {
+            return;
+        }
+
+        // Mapping establishes a new inventory destination, but it never creates stock.
+        // A previously counted SKU starts at zero here and can receive an audited transfer.
+        $this->accounts->balance($variantId, 'marketplace:'.$storeId);
     }
 }

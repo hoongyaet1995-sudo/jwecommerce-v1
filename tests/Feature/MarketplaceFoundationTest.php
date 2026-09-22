@@ -73,4 +73,51 @@ class MarketplaceFoundationTest extends TestCase
         $this->assertEquals(7,$variant->fresh()->stock);
         $this->deleteJson('/admin/api/marketplace/stores/'.$store)->assertStatus(409);
     }
+
+    public function test_mapping_a_counted_sku_provisions_an_empty_destination_account_without_copying_stock(): void
+    {
+        $this->actingAs($admin = User::factory()->create(['is_admin' => true]));
+        DB::table('inventory_configuration')->updateOrInsert(['id' => 1], [
+            'operating_mode' => 'independent_stores', 'version' => 1, 'accounting_enabled' => false,
+        ]);
+        $product = \App\Models\Product::query()->create([
+            'title' => 'Counted mapping', 'handle' => 'counted-mapping', 'base_price' => 10, 'status' => 'active',
+        ]);
+        $variant = $product->variants()->create([
+            'sku' => 'COUNTED-MAP-1', 'title' => 'One', 'price' => 10, 'stock' => 35, 'enabled' => true,
+            'inventory_initialized_at' => now(), 'first_physical_verified_at' => now(),
+        ]);
+        $websitePool = DB::table('inventory_pools')->insertGetId([
+            'pool_key' => 'store:website', 'kind' => 'store', 'warehouse_id' => null,
+            'marketplace_store_id' => null, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('inventory_balances')->insert([
+            'inventory_pool_id' => $websitePool, 'product_variant_id' => $variant->id,
+            'physical_stock' => 35, 'reserved_stock' => 0, 'safety_stock' => 0,
+            'counted_at' => now(), 'version' => 1, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $store = DB::table('marketplace_stores')->insertGetId([
+            'platform' => 'lazada', 'shop_name' => 'New destination', 'region' => 'MY',
+            'environment' => 'live', 'status' => 'connected', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $listing = DB::table('marketplace_listing_variants')->insertGetId([
+            'store_id' => $store, 'external_product_id' => 'product-1', 'external_variant_id' => 'variant-1',
+            'observed_data' => '{}', 'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->putJson('/admin/api/marketplace/listings/'.$listing.'/mapping', [
+            'productId' => $product->id, 'variantId' => $variant->id,
+        ])->assertOk();
+
+        $pool = DB::table('inventory_pools')->where('marketplace_store_id', $store)->first();
+        $this->assertNotNull($pool);
+        $this->assertDatabaseHas('inventory_balances', [
+            'inventory_pool_id' => $pool->id, 'product_variant_id' => $variant->id,
+            'physical_stock' => 0, 'reserved_stock' => 0, 'safety_stock' => 0,
+        ]);
+        $this->assertNotNull(DB::table('inventory_balances')
+            ->where('inventory_pool_id', $pool->id)->where('product_variant_id', $variant->id)->value('counted_at'));
+        $this->assertSame(35, (int) DB::table('inventory_balances')->where('product_variant_id', $variant->id)->sum('physical_stock'));
+        $this->assertSame(35, (int) $variant->fresh()->stock);
+    }
 }
