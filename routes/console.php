@@ -30,3 +30,7 @@ Artisan::command('marketplace:prune-oauth-seeds', function () {
 })->purpose('Clear expired encrypted marketplace OAuth recovery seeds');
 
 Schedule::command('marketplace:prune-oauth-seeds')->hourly()->withoutOverlapping();
+
+// Hostinger runs Laravel's scheduler each minute; drain marketplace jobs without requiring a resident daemon.
+Schedule::command('queue:work --queue=marketplace --stop-when-empty --tries=3 --timeout=120')
+    ->everyMinute()->withoutOverlapping(10);
