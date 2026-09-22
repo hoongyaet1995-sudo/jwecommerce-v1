@@ -93,7 +93,8 @@ export const describeMarketplaceSyncState = (status: string | undefined, quantit
 };
 
 const transferDisplayStatus = (status?: string): StoreStockTransferRecord['sourcePlatformSyncStatus'] => {
-  if (status === 'confirmed' || status === 'not_applicable' || status === 'superseded') return 'succeeded';
+  if (status === 'confirmed' || status === 'superseded') return 'succeeded';
+  if (status === 'not_applicable') return 'pending';
   if (status === 'uncertain') return 'awaiting_confirmation';
   if (status === 'failed' || status === 'auth_expired') return 'failed';
   if (status === 'processing') return 'syncing';

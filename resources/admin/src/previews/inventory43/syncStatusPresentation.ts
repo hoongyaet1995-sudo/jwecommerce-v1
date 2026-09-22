@@ -12,10 +12,12 @@ export type SyncPresentation = {
 export function syncStatusPresentation(status?: string | null): SyncPresentation {
   switch (status) {
     case 'confirmed':
-    case 'not_applicable':
+    case 'succeeded':
     case 'synced':
     case 'jw_internal':
       return { status: status === 'jw_internal' ? 'jw_internal' : 'synced', label: status === 'jw_internal' ? 'JW Direct Ledger' : 'Synced', action: 'none' };
+    case 'not_applicable':
+      return { status: 'not_synced', label: 'Sync Not Enabled', action: 'none' };
     case 'auth_expired':
       return { status: 'auth_expired', label: 'Authorization Expired', action: 'reconnect', actionLabel: 'Reconnect Store' };
     case 'failed':

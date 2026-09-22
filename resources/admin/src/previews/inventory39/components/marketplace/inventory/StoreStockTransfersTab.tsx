@@ -375,6 +375,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
     if (presentation.status === 'sync_failed') return (target === 'source' ? executionRecord?.sourceFailureReason : executionRecord?.destinationFailureReason) || 'The stock update failed and can be retried safely.';
     if (presentation.status === 'awaiting_confirmation') return (target === 'source' ? executionRecord?.sourceFailureReason : executionRecord?.destinationFailureReason) || 'The update is awaiting marketplace confirmation. Check status before sending another write.';
     if (presentation.status === 'sync_replaced') return 'A newer stock update replaced this operation.';
+    if (presentation.status === 'not_synced') return 'Inventory sync was not enabled for this store when the transfer completed. No marketplace stock update was sent.';
     return `Confirmed synced with ${target} store.`;
   };
 
@@ -1063,6 +1064,9 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
             </thead>
             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
               {(filteredHistory || []).map(record => {
+                const sourceStageStatus = record.externalStages?.find(stage => stage.stage === 'source')?.status;
+                const destinationStageStatus = record.externalStages?.find(stage => stage.stage === 'destination')?.status;
+                const syncWasNotEnabled = sourceStageStatus === 'not_applicable' || destinationStageStatus === 'not_applicable';
                 const hasError = record.sourcePlatformSyncStatus === 'failed' || record.destinationPlatformSyncStatus === 'failed';
                 const isPending = ['pending', 'syncing', 'awaiting_confirmation'].includes(record.sourcePlatformSyncStatus)
                   || ['pending', 'syncing', 'awaiting_confirmation'].includes(record.destinationPlatformSyncStatus);
@@ -1100,7 +1104,12 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                       </span>
                     </td>
                     <td className="py-3 px-3">
-                      {hasError ? (
+                      {syncWasNotEnabled ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          <span>Inventory Sync Not Enabled</span>
+                        </span>
+                      ) : hasError ? (
                         <div className="space-y-1">
                           <button type="button" disabled={openingTransferId !== null || record.id === 'not-created'} onClick={() => void openTransferExecution(record)} title="Open stock sync recovery" className="inline-flex items-center gap-1 text-[11px] font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-950/60 px-2 py-0.5 rounded-md hover:ring-2 hover:ring-red-300 dark:hover:ring-red-800 focus:outline-hidden focus:ring-2 focus:ring-red-400 disabled:opacity-50 cursor-pointer">
                             <AlertTriangle className="w-3 h-3" />

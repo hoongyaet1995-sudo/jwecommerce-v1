@@ -301,3 +301,32 @@ it('uses one green Done treatment for every successful or safely replaced stage'
 
   await act(async () => root.unmount());
 });
+
+it('does not report a skipped marketplace destination as synced', async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  const skipped: any = {
+    id: 'operation-skipped', transferNumber: 'TR-SKIPPED', timestamp: new Date().toISOString(),
+    masterSku: 'AUR-PINE-BLK', productName: 'Aurora Headphones', variantName: 'Black', imageUrl: '',
+    sourceStoreId: 'website', sourceStoreName: 'JW Storefront', sourcePlatform: 'webstore',
+    destinationStoreId: '12', destinationStoreName: 'Lazada Test', destinationPlatform: 'lazada',
+    quantity: 2, operator: 'Admin', reason: 'Rebalance', ledgerStatus: 'succeeded',
+    sourcePlatformSyncStatus: 'succeeded', destinationPlatformSyncStatus: 'pending',
+    externalStages: [
+      { id: 'source-stage', stage: 'source', status: 'confirmed' },
+      { id: 'destination-stage', stage: 'destination', status: 'not_applicable', store_id: 12 },
+    ],
+  };
+
+  await act(async () => root.render(
+    <StoreStockTransfersTab inventory={inventory} stores={stores} storeBalances={storeBalances}
+      transfersList={[skipped]} onExecuteTransfer={vi.fn()} onRetryPlatformSync={vi.fn()} />
+  ));
+
+  expect(host.textContent).toContain('Inventory Sync Not Enabled');
+  expect(host.textContent).not.toContain('Both Stores Synced');
+
+  await act(async () => root.unmount());
+});
