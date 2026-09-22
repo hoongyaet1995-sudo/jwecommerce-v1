@@ -149,16 +149,57 @@ final class OverviewReader
             $query->where('o.kind', $filters['kind']);
         }
         $total = (clone $query)->count();
-        $data = $query->orderByDesc('o.created_at')->orderByDesc('o.id')
+        $rows = $query->orderByDesc('o.created_at')->orderByDesc('o.id')
             ->forPage($page, $perPage)->get(['o.id', 'o.review_id', 'o.kind', 'o.ledger_status', 'o.receipt', 'r.payload',
-                'o.created_at', 'u.name as actor_name'])->map(fn (object $row): array => [
-                    'id' => $row->id, 'review_id' => $row->review_id, 'kind' => $row->kind,
-                    'ledger_status' => $row->ledger_status, 'actor' => $row->actor_name,
-                    'created_at' => $row->created_at,
-                    'result' => [...$this->sanitize(json_decode($row->receipt, true, 512, JSON_THROW_ON_ERROR)),
-                        'payload' => $row->payload ? json_decode($row->payload, true, 512, JSON_THROW_ON_ERROR) : null,
-                        'external_stages' => DB::table('inventory_store_sync_tasks')->where('operation_id', $row->id)->orderBy('created_at')->get()->map(fn ($task) => (array) $task)->all()],
-                ])->all();
+                'o.created_at', 'u.name as actor_name']);
+        $payloads = $rows->mapWithKeys(fn (object $row): array => [
+            $row->id => $row->payload ? json_decode($row->payload, true, 512, JSON_THROW_ON_ERROR) : [],
+        ]);
+        $balanceIds = $rows->where('kind', 'transfer')->flatMap(function (object $row) use ($payloads): array {
+            $payload = $payloads[$row->id] ?? [];
+            return array_values(array_filter([(int) ($payload['source_balance_id'] ?? 0), (int) ($payload['destination_balance_id'] ?? 0)]));
+        })->unique()->values();
+        $balances = $balanceIds->isEmpty() ? collect() : DB::table('inventory_balances as b')
+            ->join('inventory_pools as pool', 'pool.id', '=', 'b.inventory_pool_id')
+            ->join('product_variants as variant', 'variant.id', '=', 'b.product_variant_id')
+            ->join('products as product', 'product.id', '=', 'variant.product_id')
+            ->leftJoin('marketplace_stores as store', 'store.id', '=', 'pool.marketplace_store_id')
+            ->whereIn('b.id', $balanceIds)
+            ->get(['b.id', 'variant.sku', 'variant.title as variant_name', 'product.title as product_name',
+                'pool.marketplace_store_id', 'store.shop_name', 'store.platform'])
+            ->keyBy('id');
+        $stages = DB::table('inventory_store_sync_tasks')->whereIn('operation_id', $rows->pluck('id'))
+            ->orderBy('created_at')->get()->groupBy('operation_id');
+        $data = $rows->map(function (object $row) use ($payloads, $balances, $stages): array {
+            $payload = $payloads[$row->id] ?? [];
+            $transfer = null;
+            if ($row->kind === 'transfer') {
+                $source = $balances->get((int) ($payload['source_balance_id'] ?? 0));
+                $destination = $balances->get((int) ($payload['destination_balance_id'] ?? 0));
+                $store = static fn (?object $balance): array => $balance?->marketplace_store_id
+                    ? ['id' => (string) $balance->marketplace_store_id, 'name' => $balance->shop_name ?: 'Unavailable', 'platform' => $balance->platform ?: 'webstore']
+                    : ['id' => 'website', 'name' => 'JW Ecom Storefront', 'platform' => 'webstore'];
+                $identity = $source ?? $destination;
+                $transfer = [
+                    'master_sku' => $identity?->sku ?? 'Unavailable',
+                    'product_name' => $identity?->product_name ?? 'Unavailable',
+                    'variant_name' => $identity?->variant_name ?? 'Unavailable',
+                    'source_store' => $store($source),
+                    'destination_store' => $store($destination),
+                    'quantity' => (int) ($payload['quantity'] ?? 0),
+                    'reason' => (string) ($payload['reason'] ?? 'Store transfer'),
+                ];
+            }
+            return [
+                'id' => $row->id, 'review_id' => $row->review_id, 'kind' => $row->kind,
+                'ledger_status' => $row->ledger_status, 'actor' => $row->actor_name,
+                'created_at' => $row->created_at,
+                'result' => [...$this->sanitize(json_decode($row->receipt, true, 512, JSON_THROW_ON_ERROR)),
+                    'payload' => $payload ?: null,
+                    'transfer' => $transfer,
+                    'external_stages' => ($stages->get($row->id) ?? collect())->map(fn ($task) => (array) $task)->all()],
+            ];
+        })->all();
 
         return ['data' => $data, 'meta' => ['page' => $page, 'per_page' => $perPage, 'total' => $total,
             'last_page' => max(1, (int) ceil($total / $perPage))]];

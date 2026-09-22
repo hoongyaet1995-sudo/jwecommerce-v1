@@ -162,6 +162,18 @@ class StoreInventoryReadTest extends TestCase
             ->assertOk()
             ->assertJsonPath('transfer_quantity', 2)
             ->assertJsonMissingPath('payload');
+
+        $this->getJson('/admin/api/inventory/store-management/history?kind=transfer')
+            ->assertOk()
+            ->assertJsonPath('data.0.result.transfer.master_sku', $sku['variant']->sku)
+            ->assertJsonPath('data.0.result.transfer.product_name', $sku['product']->title)
+            ->assertJsonPath('data.0.result.transfer.variant_name', $sku['variant']->title)
+            ->assertJsonPath('data.0.result.transfer.source_store.id', 'website')
+            ->assertJsonPath('data.0.result.transfer.source_store.name', 'JW Ecom Storefront')
+            ->assertJsonPath('data.0.result.transfer.destination_store.id', (string) $store->id)
+            ->assertJsonPath('data.0.result.transfer.destination_store.name', $store->shop_name)
+            ->assertJsonPath('data.0.result.transfer.destination_store.platform', 'shopee')
+            ->assertJsonPath('data.0.result.transfer.quantity', 2);
     }
 
     public function test_overview_loads_sync_states_in_one_query_for_large_catalogs(): void

@@ -363,7 +363,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
   };
 
   const stageTone = (status: ReturnType<typeof syncStatusPresentation>['status']) => {
-    if (status === 'synced' || status === 'jw_internal') return 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100';
+    if (status === 'synced' || status === 'jw_internal' || status === 'sync_replaced') return 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100';
     if (status === 'awaiting_confirmation' || status === 'waiting_for_source') return 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50 text-amber-900 dark:text-amber-200';
     if (status === 'auth_expired' || status === 'sync_failed') return 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50 text-red-900 dark:text-red-200';
     return 'bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white';
@@ -376,6 +376,16 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
     if (presentation.status === 'awaiting_confirmation') return (target === 'source' ? executionRecord?.sourceFailureReason : executionRecord?.destinationFailureReason) || 'The update is awaiting marketplace confirmation. Check status before sending another write.';
     if (presentation.status === 'sync_replaced') return 'A newer stock update replaced this operation.';
     return `Confirmed synced with ${target} store.`;
+  };
+
+  const stageBadgeLabel = (presentation: ReturnType<typeof syncStatusPresentation>) =>
+    ['synced', 'jw_internal', 'sync_replaced'].includes(presentation.status) ? 'Done' : presentation.label;
+
+  const stageBadgeTone = (presentation: ReturnType<typeof syncStatusPresentation>) => {
+    if (['synced', 'jw_internal', 'sync_replaced'].includes(presentation.status)) return 'bg-emerald-200 text-emerald-900 dark:bg-emerald-200 dark:text-emerald-950';
+    if (['awaiting_confirmation', 'waiting_for_source'].includes(presentation.status)) return 'bg-amber-200 text-amber-900 dark:bg-amber-200 dark:text-amber-950';
+    if (['auth_expired', 'sync_failed'].includes(presentation.status)) return 'bg-red-200 text-red-900 dark:bg-red-200 dark:text-red-950';
+    return 'bg-white/80 dark:bg-neutral-800';
   };
 
   const openTransferExecution = async (record: StoreStockTransferRecord) => {
@@ -1432,7 +1442,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1.5 shrink-0">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-neutral-800">{sourcePresentation.label}</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${stageBadgeTone(sourcePresentation)}`}>{stageBadgeLabel(sourcePresentation)}</span>
                   {sourcePresentation.action !== 'none' && (
                     <button type="button" disabled={recoveringTarget !== null} onClick={() => void recoverStage('source', sourcePresentation)} className="px-2.5 py-1 rounded-lg bg-white dark:bg-neutral-950 border border-current/20 text-[10px] font-bold hover:opacity-80 disabled:opacity-50 cursor-pointer">
                       {recoveringTarget === 'source' ? 'Working…' : sourcePresentation.actionLabel}
@@ -1459,7 +1469,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1.5 shrink-0">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-neutral-800">{destinationPresentation.label}</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${stageBadgeTone(destinationPresentation)}`}>{stageBadgeLabel(destinationPresentation)}</span>
                   {destinationPresentation.action !== 'none' && (
                     <button type="button" disabled={recoveringTarget !== null} onClick={() => void recoverStage('destination', destinationPresentation)} className="px-2.5 py-1 rounded-lg bg-white dark:bg-neutral-950 border border-current/20 text-[10px] font-bold hover:opacity-80 disabled:opacity-50 cursor-pointer">
                       {recoveringTarget === 'destination' ? 'Working…' : destinationPresentation.actionLabel}

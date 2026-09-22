@@ -174,13 +174,15 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
       const stages = receipt.external_stages || [];
       const status = (stage: string) => {
         const value = stages.find((item: any) => item.stage === stage)?.status;
-        return value === 'confirmed' || value === 'not_applicable' ? 'succeeded' : value === 'uncertain' ? 'awaiting_confirmation' : value === 'failed' || value === 'auth_expired' ? 'failed' : value === 'processing' ? 'syncing' : 'pending';
+        return value === 'confirmed' || value === 'not_applicable' || value === 'superseded' ? 'succeeded' : value === 'uncertain' ? 'awaiting_confirmation' : value === 'failed' || value === 'auth_expired' ? 'failed' : value === 'processing' ? 'syncing' : 'pending';
       };
       const reason = (stage: string) => stages.find((item: any) => item.stage === stage)?.provider_receipt?.message;
+      const transfer = receipt.transfer || {};
       return {id: entry.id, transferNumber: entry.referenceId || entry.id, timestamp: entry.timestamp,
         masterSku: entry.masterSku, productName: entry.productName, variantName: entry.variantName,
-        sourceStoreId: '', sourceStoreName: 'Source store', destinationStoreId: '', destinationStoreName: 'Destination store',
-        quantity: 0, operator: entry.operator, reason: entry.reason, ledgerStatus: 'succeeded',
+        sourceStoreId: transfer.source_store?.id || '', sourceStoreName: transfer.source_store?.name || 'Unavailable', sourcePlatform: transfer.source_store?.platform || 'webstore',
+        destinationStoreId: transfer.destination_store?.id || '', destinationStoreName: transfer.destination_store?.name || 'Unavailable', destinationPlatform: transfer.destination_store?.platform || 'webstore',
+        quantity: Number(transfer.quantity ?? entry.quantityChange ?? 0), operator: entry.operator, reason: transfer.reason || entry.reason, ledgerStatus: 'succeeded',
         sourcePlatformSyncStatus: status('source'), destinationPlatformSyncStatus: status('destination'),
         sourceFailureReason: reason('source'), destinationFailureReason: reason('destination'), externalStages: stages} as StoreStockTransferRecord;
     });

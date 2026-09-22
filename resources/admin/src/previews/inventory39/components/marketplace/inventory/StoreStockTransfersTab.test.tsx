@@ -262,3 +262,42 @@ it('uses the shared authorization wording and reconnect recovery action', async 
 
   await act(async () => root.unmount());
 });
+
+it('uses one green Done treatment for every successful or safely replaced stage', async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  const completed: any = {
+    id: 'operation-complete', transferNumber: 'TR-COMPLETE', timestamp: new Date().toISOString(),
+    masterSku: 'AUR-PINE-BLK', productName: 'Aurora Headphones', variantName: 'Black', imageUrl: '',
+    sourceStoreId: 'website', sourceStoreName: 'JW Storefront', sourcePlatform: 'webstore',
+    destinationStoreId: '12', destinationStoreName: 'Lazada Test', destinationPlatform: 'lazada',
+    quantity: 2, operator: 'Admin', reason: 'Rebalance', ledgerStatus: 'succeeded',
+    sourcePlatformSyncStatus: 'succeeded', destinationPlatformSyncStatus: 'succeeded',
+    externalStages: [
+      { id: 'source-stage', stage: 'source', status: 'superseded', store_id: 12 },
+      { id: 'destination-stage', stage: 'destination', status: 'confirmed' },
+    ],
+  };
+
+  const onExecuteTransfer = vi.fn().mockResolvedValue(completed);
+  await act(async () => root.render(
+    <StoreStockTransfersTab inventory={inventory} stores={stores} storeBalances={storeBalances}
+      transfersList={[]} onExecuteTransfer={onExecuteTransfer} onRetryPlatformSync={vi.fn()} />
+  ));
+  const execute = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.includes('Execute Store Stock Transfer'))!;
+  await act(async () => execute.click());
+
+  const sourceTitle = Array.from(host.querySelectorAll('div')).find(element => element.textContent === 'Step 2: Source Channel Stock Update (JW Storefront)')!;
+  const destinationTitle = Array.from(host.querySelectorAll('div')).find(element => element.textContent === 'Step 3: Destination Channel Stock Update (Lazada)')!;
+  const sourceCard = sourceTitle.parentElement!.parentElement!.parentElement!;
+  const destinationCard = destinationTitle.parentElement!.parentElement!.parentElement!;
+  expect(sourceCard.className).toContain('emerald');
+  expect(destinationCard.className).toContain('emerald');
+  expect(sourceCard.textContent).toContain('Done');
+  expect(destinationCard.textContent).toContain('Done');
+  expect(sourceCard.textContent).toContain('A newer stock update replaced this operation.');
+
+  await act(async () => root.unmount());
+});
