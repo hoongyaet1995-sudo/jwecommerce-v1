@@ -167,6 +167,10 @@ export const marketplaceOperations = {
   orders: (filters: Filters = {}) => marketplaceRequest<Page<OrderSummary>>(`/orders?${query(filters)}`),
   orderDetail: (id: string, options: {includeRecipient?: boolean} = {}) => marketplaceRequest<{data: MarketplaceOrderDetail}>(`/orders/${idPath(id)}${options.includeRecipient ? '?includeRecipient=1' : ''}`),
   fetchOrders: (id: string, from: number, to: number) => marketplaceRequest<{runId: number}>(`/stores/${idPath(id)}/orders-fetch`, 'POST', {from, to}),
-  latestOrderRun: (id: string) => marketplaceRequest<SyncRun|null>(`/stores/${idPath(id)}/order-runs/latest`),
+  latestOrderRun: async (id: string) => {
+    const run=await marketplaceRequest<SyncRun|null>(`/stores/${idPath(id)}/order-runs/latest`);
+    return run&&Number.isSafeInteger(run.id)&&run.id>0&&String(run.store_id)===id
+      &&['queued','running','succeeded','failed'].includes(run.status) ? run : null;
+  },
   orderRun: (id: string) => marketplaceRequest<SyncRun>(`/order-runs/${idPath(id)}`),
 };
