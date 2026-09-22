@@ -90,6 +90,34 @@ class StockSyncRecoveryTest extends TestCase
         Bus::assertNothingDispatched();
     }
 
+    public function test_readback_reconciles_a_failed_transfer_when_provider_already_has_the_target(): void
+    {
+        $url = $this->fixture();
+        preg_match('#/stores/(\d+)/skus/(\d+)/sync$#', $url, $matches);
+        $listing = DB::table('marketplace_listing_variants')->first();
+        $balance = DB::table('inventory_balances')->where('product_variant_id', (int) $matches[2])->first();
+        $taskId = (string) Str::uuid();
+        DB::table('inventory_store_sync_tasks')->insert([
+            'id' => $taskId, 'marketplace_store_id' => (int) $matches[1],
+            'product_variant_id' => (int) $matches[2], 'listing_variant_id' => $listing->id,
+            'provider_external_product_id' => $listing->external_product_id,
+            'provider_external_variant_id' => $listing->external_variant_id,
+            'stage' => 'destination', 'status' => 'failed', 'target_quantity' => 22,
+            'balance_version' => $balance->version, 'event_key' => (string) Str::uuid(),
+            'provider_receipt' => json_encode(['code' => 'local_confirmation_persistence_failed']),
+            'attempts' => 1, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $publisher = Mockery::mock(MarketplaceStoreInventoryPublisher::class);
+        $publisher->shouldReceive('observe')->once()->andReturn(['observed_quantity' => 22]);
+        $publisher->shouldNotReceive('publish');
+        $this->app->instance(MarketplaceStoreInventoryPublisher::class, $publisher);
+
+        $this->postJson($url.'/check')->assertOk()->assertJsonPath('status', 'synced');
+
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $taskId, 'status' => 'confirmed']);
+        Bus::assertNothingDispatched();
+    }
+
     public function test_source_readback_confirmation_directly_continues_waiting_transfer_destination(): void
     {
         $url = $this->fixture();

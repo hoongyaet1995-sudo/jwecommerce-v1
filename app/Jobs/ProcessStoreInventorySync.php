@@ -7,6 +7,7 @@ use App\Exceptions\StoreInventoryAuthorizationExpired;
 use App\Exceptions\StoreInventoryResultUncertain;
 use App\Services\Inventory\StoreManagement\StoreSkuSyncReadiness;
 use App\Services\Inventory\StoreManagement\StoreSyncAttemptLedger;
+use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -91,6 +92,21 @@ final class ProcessStoreInventorySync implements ShouldQueue
 
         try {
             $receipt = $publisher->publish($context['store'], $context['listing'], $context['target'], $context['task']->event_key);
+        } catch (StoreInventoryAuthorizationExpired $error) {
+            $this->finish('auth_expired', ['code' => 'authorization_expired', 'message' => $error->getMessage()]);
+
+            return;
+        } catch (StoreInventoryResultUncertain $error) {
+            $this->finish('uncertain', ['code' => 'provider_result_unknown', 'message' => $error->getMessage()]);
+
+            return;
+        } catch (\Throwable) {
+            $this->finish('failed', ['code' => 'provider_rejected', 'message' => 'Marketplace rejected the stock update.']);
+
+            return;
+        }
+
+        try {
             DB::transaction(function () use ($receipt, $attempts): void {
                 $task = DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)->where('status', 'processing')->lockForUpdate()->first();
                 if (! $task) {
@@ -114,7 +130,9 @@ final class ProcessStoreInventorySync implements ShouldQueue
                         'sync_task_id' => $task->id,
                         'quantity' => max(0, (int) $receipt['observed_quantity']),
                         'actor_id' => null,
-                        'observed_at' => $receipt['observed_at'] ?? $receipt['confirmed_at'] ?? now(),
+                        'observed_at' => isset($receipt['observed_at']) || isset($receipt['confirmed_at'])
+                            ? CarbonImmutable::parse($receipt['observed_at'] ?? $receipt['confirmed_at'])->utc()->format('Y-m-d H:i:s')
+                            : now()->utc()->format('Y-m-d H:i:s'),
                     ]);
                 }
                 $attempts->record($task, $stale ? 'superseded' : 'confirmed', $receipt);
@@ -128,12 +146,12 @@ final class ProcessStoreInventorySync implements ShouldQueue
                         ->orderByDesc('created_at')->limit(1)->pluck('id')->each(fn ($id) => self::dispatch((string) $id)->afterCommit());
                 }
             }, 3);
-        } catch (StoreInventoryAuthorizationExpired $error) {
-            $this->finish('auth_expired', ['code' => 'authorization_expired', 'message' => $error->getMessage()]);
-        } catch (StoreInventoryResultUncertain $error) {
-            $this->finish('uncertain', ['code' => 'provider_result_unknown', 'message' => $error->getMessage()]);
-        } catch (\Throwable $error) {
-            $this->finish('failed', ['code' => 'provider_rejected', 'message' => $error->getMessage()]);
+        } catch (\Throwable) {
+            $this->finish('uncertain', [
+                'code' => 'local_confirmation_persistence_failed',
+                'message' => 'Marketplace accepted the update, but local confirmation requires a status check.',
+                'provider_receipt' => $receipt,
+            ]);
         }
     }
 

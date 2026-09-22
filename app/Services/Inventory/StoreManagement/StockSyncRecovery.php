@@ -105,7 +105,7 @@ final class StockSyncRecovery
         $result = $this->locked($storeId, $variantId, function () use ($storeId, $variantId, $actorId, &$operationId) {
             $c = $this->context($storeId, $variantId);
             abort_unless($c['listing'], 409, 'Map this SKU before checking marketplace stock.');
-            $pending = $this->tasks($storeId, $variantId)->where('status', 'uncertain')->first();
+            $pending = $this->tasks($storeId, $variantId)->whereIn('status', ['uncertain', 'failed'])->orderByDesc('created_at')->first();
             if ($pending) {
                 abort_unless((int) $pending->listing_variant_id === (int) $c['listing']->id &&
                     (string) $pending->provider_external_product_id === (string) $c['listing']->external_product_id &&
@@ -119,7 +119,7 @@ final class StockSyncRecovery
             }
             $this->saveObservation($c, $observation, $actorId);
             // An active sender owns its processing task. Only reconcile completed uncertain sends.
-            foreach ($this->tasks($storeId, $variantId)->where('status', 'uncertain')->get() as $task) {
+            foreach ($this->tasks($storeId, $variantId)->whereIn('status', ['uncertain', 'failed'])->get() as $task) {
                 if ((int) $task->listing_variant_id === (int) $c['listing']->id && (int) $task->target_quantity === (int) $observation['observed_quantity']) {
                     $this->finish($task, 'confirmed', $observation + ['confirmation_method' => 'provider_readback', 'reconciled' => true], $actorId);
                     if ($task->stage === 'source' && $task->operation_id) {
@@ -253,7 +253,8 @@ final class StockSyncRecovery
     {
         DB::transaction(function () use ($task, $status, $receipt, $actorId) {
             $persisted = DB::table('inventory_store_sync_tasks')->where('id', $task->id)->lockForUpdate()->first();
-            if (! $persisted || ! in_array($persisted->status, ['processing', 'uncertain'], true)) {
+            $allowedStatuses = $status === 'confirmed' ? ['processing', 'uncertain', 'failed'] : ['processing', 'uncertain'];
+            if (! $persisted || ! in_array($persisted->status, $allowedStatuses, true)) {
                 return;
             }
             if ($status === 'confirmed') {

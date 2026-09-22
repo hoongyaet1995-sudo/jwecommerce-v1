@@ -24,6 +24,8 @@ final class FakeStoreInventoryPublisher implements StoreInventoryPublisher
 
     public string $mode = 'confirmed';
 
+    public mixed $observedAt = null;
+
     public function publish(object $store, object $listing, int $quantity, string $eventKey): array
     {
         $this->calls[] = compact('quantity', 'eventKey');
@@ -34,8 +36,9 @@ final class FakeStoreInventoryPublisher implements StoreInventoryPublisher
             throw new StoreInventoryAuthorizationExpired('token expired');
         }
 
-        return ['provider' => $store->platform, 'confirmed_quantity' => $quantity,
-            'observed_quantity' => $quantity, 'request_id' => 'safe-123'];
+        return array_filter(['provider' => $store->platform, 'confirmed_quantity' => $quantity,
+            'observed_quantity' => $quantity, 'observed_at' => $this->observedAt,
+            'request_id' => 'safe-123'], fn ($value): bool => $value !== null);
     }
 }
 
@@ -123,6 +126,32 @@ class StoreInventorySyncTest extends TestCase
         $this->assertCount(1, $publisher->calls);
         $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'uncertain']);
         Bus::assertNothingDispatched();
+    }
+
+    public function test_iso_provider_timestamp_is_normalized_for_the_observation_read_model(): void
+    {
+        $publisher = new FakeStoreInventoryPublisher;
+        $publisher->observedAt = '2026-09-22T09:52:11+00:00';
+
+        $c = $this->staged(true, $publisher);
+
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'confirmed']);
+        $this->assertSame('2026-09-22 09:52:11', DB::table('inventory_sync_observations')
+            ->where('sync_task_id', $c['task']->id)->value('observed_at'));
+    }
+
+    public function test_local_confirmation_persistence_error_is_uncertain_instead_of_retryable_failure(): void
+    {
+        $publisher = new FakeStoreInventoryPublisher;
+        $publisher->observedAt = 'not-a-provider-timestamp';
+
+        $c = $this->staged(true, $publisher);
+
+        $this->assertCount(1, $publisher->calls);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'uncertain']);
+        $receipt = json_decode((string) DB::table('inventory_store_sync_tasks')->where('id', $c['task']->id)->value('provider_receipt'), true);
+        $this->assertSame('local_confirmation_persistence_failed', $receipt['code']);
+        $this->assertStringNotContainsString('SQLSTATE', $receipt['message']);
     }
 
     public function test_reviewed_failed_stage_retry_runs_directly_before_queue_fallback(): void
