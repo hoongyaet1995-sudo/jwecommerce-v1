@@ -58,6 +58,7 @@ import {inventoryCsv,inventoryPage,inventoryPageNumbers,toggleInventoryPageSelec
 import {buildBulkSyncStatusPlan,chunkBulkSyncPairs,summarizeBulkSyncSkips} from './inventory/bulkSyncStatus';
 import { StoreStockBreakdownTooltip } from './inventory/StoreStockBreakdownTooltip';
 import { syncStatusPresentation } from '../../../inventory43/syncStatusPresentation';
+import { restoreTransferHistory } from '../../context/inventoryHistoryAdapters';
 
 export const resolveFirstCountItem = (
   inventory: MarketplaceInventoryItem[],
@@ -170,24 +171,8 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
   useEffect(() => setStoreBalances(inventoryStoreBalances), [inventoryStoreBalances]);
   useEffect(() => setActivityLogs(inventoryActivityHistory), [inventoryActivityHistory]);
   useEffect(() => {
-    const restored = inventoryActivityHistory.filter((entry: any) => entry.actionType === 'store_transfer').map((entry: any) => {
-      const receipt = entry.detailsPayload || {};
-      const stages = receipt.external_stages || [];
-      const status = (stage: string) => {
-        const value = stages.find((item: any) => item.stage === stage)?.status;
-        return value === 'confirmed' || value === 'not_applicable' || value === 'superseded' ? 'succeeded' : value === 'uncertain' ? 'awaiting_confirmation' : value === 'failed' || value === 'auth_expired' ? 'failed' : value === 'processing' ? 'syncing' : 'pending';
-      };
-      const reason = (stage: string) => stages.find((item: any) => item.stage === stage)?.provider_receipt?.message;
-      const transfer = receipt.transfer || {};
-      return {id: entry.id, transferNumber: entry.referenceId || entry.id, timestamp: entry.timestamp,
-        masterSku: entry.masterSku, productName: entry.productName, variantName: entry.variantName,
-        sourceStoreId: transfer.source_store?.id || '', sourceStoreName: transfer.source_store?.name || 'Unavailable', sourcePlatform: transfer.source_store?.platform || 'webstore',
-        destinationStoreId: transfer.destination_store?.id || '', destinationStoreName: transfer.destination_store?.name || 'Unavailable', destinationPlatform: transfer.destination_store?.platform || 'webstore',
-        quantity: Number(transfer.quantity ?? entry.quantityChange ?? 0), operator: entry.operator, reason: transfer.reason || entry.reason, ledgerStatus: 'succeeded',
-        sourcePlatformSyncStatus: status('source'), destinationPlatformSyncStatus: status('destination'),
-        sourceFailureReason: reason('source'), destinationFailureReason: reason('destination'), externalStages: stages} as StoreStockTransferRecord;
-    });
-    setTransfersList(current => [...current, ...restored.filter((item: any) => !current.some(existing => existing.id === item.id))]);
+    const restored = restoreTransferHistory(inventoryActivityHistory) as StoreStockTransferRecord[];
+    setTransfersList(current => restoreTransferHistory.merge(current, restored));
   }, [inventoryActivityHistory]);
 
   // Search and Filters
