@@ -1262,7 +1262,9 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
                               const assoc = (item.storeAssociations || []).find(a => a.connectionId === store.id);
                               const balance = skuStoreBalances[store.id];
                               const recovered = recoveryPreview ? recoveryStates[`${item.variantId}:${store.id}`] : null;
-                              const channelStock = recovered ? (recovered.marketplaceReportedStock ?? 'Unknown') : (assoc?.channelStockSnapshot ?? store.platformStockSnapshot ?? (recoveryPreview ? 'Unknown' : 0));
+                              const channelStock = recovered
+                                ? recovered.marketplaceReportedStock
+                                : (assoc?.channelStockSnapshot ?? store.platformStockSnapshot ?? null);
                               const isMapped = store.platform === 'webstore' || ((item as any).mappedStoreIds || []).includes(store.id);
                               const syncState = describeMarketplaceSyncState(balance?.lastSyncStatus ?? assoc?.lastSyncStatus, balance?.availableStock ?? 0);
 
@@ -1317,9 +1319,11 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
                                     )}
 
                                     {/* Platform Reference Snapshot */}
-                                    <span className="text-[10px] text-neutral-400 font-mono" title="Reported by channel API">
-                                      ({channelStock})
-                                    </span>
+                                    {typeof channelStock === 'number' && (
+                                      <span className="text-[10px] text-neutral-400 font-mono" title="Reported by channel API">
+                                        ({channelStock})
+                                      </span>
+                                    )}
                                   </div>
                                 </StockSyncStoreButton>
                               );
