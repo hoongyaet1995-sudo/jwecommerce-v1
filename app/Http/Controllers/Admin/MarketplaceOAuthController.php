@@ -10,9 +10,25 @@ use App\Models\MarketplaceStoreToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
+use App\Services\Marketplace\MarketplaceStoreAccess;
 
 class MarketplaceOAuthController extends Controller
 {
+    public function setProductPublishing(Request $request, int $store, MarketplaceStoreAccess $access)
+    {
+        abort_unless($request->user()?->is_admin && $request->user()?->is_super_admin, 403);
+        $data=$request->validate([
+            'enabled'=>['required','boolean'],
+            'reason'=>['required','string','max:255'],
+        ]);
+        $access->setProductPublishing($store,(bool)$data['enabled'],(int)$request->user()->id,$data['reason']);
+
+        return response()->json([
+            'storeId'=>$store,
+            'productPublish'=>(bool)DB::table('marketplace_store_capabilities')->where('store_id',$store)->value('product_publish'),
+        ])->header('Cache-Control','no-store, private');
+    }
+
     private function acceptanceEnabled(): bool
     {
         return config('marketplace.oauth_acceptance_enabled') === true

@@ -8,7 +8,7 @@ import { ConnectStoreModal } from './ConnectStoreModal';
 import { DisconnectStoreModal } from './DisconnectStoreModal';
 import { KeyRound, ShieldCheck, CheckCircle2, AlertTriangle, RefreshCw, Plus, Trash2, Copy, Check, Store, Radio, Clock, Globe2, Activity, Lock, Sparkles, PowerOff, RotateCcw } from 'lucide-react';
 
-export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailability?: Partial<Record<MarketplacePlatform,boolean>>; authorizationResult?: OAuthResult|null}> = ({operational=false,oauthAvailability={},authorizationResult=null}) => {
+export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailability?: Partial<Record<MarketplacePlatform,boolean>>; authorizationResult?: OAuthResult|null; canManagePublishing?:boolean; onSetProductPublishing?:(storeId:string,enabled:boolean,reason:string)=>Promise<void>}> = ({operational=false,oauthAvailability={},authorizationResult=null,canManagePublishing=false,onSetProductPublishing}) => {
   const {
     connections = [],
     marketplaceOrders = [],
@@ -41,11 +41,28 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
   const [testAccessError, setTestAccessError] = useState<string | null>(null);
   const [isRenewingTestAccess, setIsRenewingTestAccess] = useState(false);
   const [testAccessRenewed, setTestAccessRenewed] = useState(false);
+  const [publishingTarget,setPublishingTarget]=useState<MarketplaceConnection|null>(null);
+  const [publishingReason,setPublishingReason]=useState('');
+  const [publishingBusy,setPublishingBusy]=useState(false);
+  const [publishingError,setPublishingError]=useState<string|null>(null);
 
   const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false);
   const [disconnectTarget, setDisconnectTarget] = useState<MarketplaceConnection | null>(null);
 
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const submitPublishingCapability=async(event:React.FormEvent)=>{
+    event.preventDefault();
+    const reason=String(new FormData(event.currentTarget as HTMLFormElement).get('reason')||'').trim();
+    if(!publishingTarget||!onSetProductPublishing||!reason)return;
+    const enabled=!publishingTarget.capabilities?.productPublish;
+    setPublishingBusy(true);setPublishingError(null);
+    try{
+      await onSetProductPublishing(publishingTarget.id,enabled,reason);
+      setPublishingTarget(null);setPublishingReason('');
+    }catch(error){setPublishingError(error instanceof Error?error.message:'The publishing setting could not be updated.');}
+    finally{setPublishingBusy(false);}
+  };
 
   // Open modal in "connect" mode
   const handleOpenConnect = (plat?: MarketplacePlatform) => {
@@ -434,6 +451,12 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
                           <RefreshCw className="w-3.5 h-3.5 text-neutral-500" />
                           Refresh Token
                         </button>
+                        {operational&&canManagePublishing&&onSetProductPublishing&&conn.accountMode==='production'&&(
+                          <button type="button" onClick={()=>{setPublishingTarget(conn);setPublishingReason('');setPublishingError(null);}}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 transition-colors cursor-pointer">
+                            {conn.capabilities?.productPublish?'Disable Publishing':'Enable Publishing'}
+                          </button>
+                        )}
                       </div>
 
                       <button
@@ -551,6 +574,23 @@ export const MarketplaceAuthPage: React.FC<{operational?: boolean; oauthAvailabi
         mode={connectModalMode}
         existingConnection={selectedConnection}
       />
+
+      {publishingTarget&&(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-sm">
+          <form onSubmit={submitPublishingCapability} className="w-full max-w-lg rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl overflow-hidden">
+            <div className="flex items-start justify-between gap-4 p-6 border-b border-neutral-200 dark:border-neutral-800">
+              <div><p className="text-xs font-bold text-indigo-600 dark:text-indigo-300">SUPER ADMIN STORE CONTROL</p><h2 className="mt-2 text-lg font-black text-neutral-900 dark:text-white">{publishingTarget.capabilities?.productPublish?'Disable':'Enable'} Product Publishing</h2><p className="mt-1 text-xs text-neutral-500">{publishingTarget.shopName} · Shop ID {publishingTarget.shopId}</p></div>
+              <button type="button" onClick={()=>setPublishingTarget(null)} className="p-2 rounded-xl text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800" aria-label="Close">×</button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">{publishingTarget.capabilities?.productPublish?'New product publishing will stop immediately. Existing marketplace listings are not deleted.':'This store will be allowed to create real marketplace listings after the existing review and provider checks pass.'}</p>
+              <label className="block space-y-2"><span className="text-xs font-bold text-neutral-700 dark:text-neutral-200">Reason for this change</span><textarea name="reason" required maxLength={255} value={publishingReason} onInput={event=>setPublishingReason(event.currentTarget.value)} placeholder="e.g. Merchant approved production publishing" className="w-full min-h-24 px-3.5 py-2.5 rounded-xl bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-sm text-neutral-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" /></label>
+              {publishingError&&<p role="alert" className="text-xs font-semibold text-rose-600 dark:text-rose-300">{publishingError}</p>}
+            </div>
+            <div className="flex justify-end gap-3 p-5 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/40"><button type="button" onClick={()=>setPublishingTarget(null)} className="px-4 py-2 rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-800">Cancel</button><button type="submit" disabled={publishingBusy||!publishingReason.trim()} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold">{publishingBusy?'Saving…':`Confirm ${publishingTarget.capabilities?.productPublish?'Disable':'Enable'} Publishing`}</button></div>
+          </form>
+        </div>
+      )}
 
       {testAccessTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-sm">

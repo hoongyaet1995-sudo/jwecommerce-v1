@@ -101,6 +101,8 @@ export async function requestMarketplaceAuthorization(platform: MarketplacePlatf
   window.location.assign(platform === 'lazada' ? officialLazadaAuthorizationUrl(url) : officialShopeeAuthorizationUrl(url));
 }
 export const marketplaceOperations = {
+  setProductPublishing: (storeId:string,enabled:boolean,reason:string) =>
+    marketplaceRequest<{storeId:number;productPublish:boolean}>(`/stores/${idPath(storeId)}/capabilities/product-publishing`,'PATCH',{enabled,reason}),
   attributeValues: (storeId:string,attributeId:number,keyword='',cursor=0) => {
     const params=new URLSearchParams({attributeId:String(attributeId),q:keyword,cursor:String(cursor)});
     return marketplaceRequest<{storeId:number;attributeId:number;data:{

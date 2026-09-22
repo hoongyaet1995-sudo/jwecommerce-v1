@@ -68,7 +68,7 @@ class LazadaOAuthRoutesTest extends TestCase
         config(['app.url'=>'http://127.0.0.1:8500','marketplace.lazada.enabled'=>true,
             'marketplace.lazada.app_key'=>'139209','marketplace.lazada.app_secret'=>'fixture-secret',
             'marketplace.lazada.callback_url'=>'https://example.test/admin/marketplace/oauth/lazada/callback',
-            'marketplace.read_operations_enabled'=>true]);
+            'marketplace.read_operations_enabled'=>true,'marketplace.publish_operations_enabled'=>false]);
         Http::fake();
         $this->actingAs(User::factory()->create(['is_admin'=>true]));
         $this->getJson('/admin/api/marketplace/connections')->assertOk()

@@ -438,6 +438,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/marketplace/lazada/authorize', [\App\Http\Controllers\Admin\LazadaOAuthController::class, 'start'])->middleware('throttle:10,1');
     Route::get('/marketplace/oauth/lazada/callback', [\App\Http\Controllers\Admin\LazadaOAuthController::class, 'callback'])->middleware('throttle:20,1');
     Route::post('/api/marketplace/stores/{store}/disconnect', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'disconnect'])->whereNumber('store');
+    Route::patch('/api/marketplace/stores/{store}/capabilities/product-publishing', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'setProductPublishing'])->whereNumber('store')->middleware('throttle:10,1');
     Route::get('/marketplace/oauth/shopee/callback', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'callback'])->middleware('throttle:20,1');
     // Legacy endpoint retained for any authorization sessions created before OAuth callbacks were normalized.
     Route::get('/marketplace/shopee/callback', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'callback'])->middleware('throttle:20,1');

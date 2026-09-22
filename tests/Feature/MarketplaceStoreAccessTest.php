@@ -66,6 +66,39 @@ class MarketplaceStoreAccessTest extends TestCase
             'changed_by'=>$actor->id,'change_reason'=>'Lazada acceptance publishing']);
     }
 
+    public function test_super_admin_can_manage_product_publishing_for_one_store_through_the_api(): void
+    {
+        $first=$this->connectedStore('300927968304');
+        $second=$this->connectedStore('300927968305');
+        $actor=User::factory()->create(['is_admin'=>true,'is_super_admin'=>true]);
+
+        $this->actingAs($actor)->patchJson("/admin/api/marketplace/stores/{$first}/capabilities/product-publishing",[
+            'enabled'=>true,
+            'reason'=>'Merchant approved production publishing',
+        ])->assertOk()
+            ->assertJsonPath('storeId',$first)
+            ->assertJsonPath('productPublish',true);
+
+        $this->assertDatabaseHas('marketplace_store_capabilities',[
+            'store_id'=>$first,'product_publish'=>true,'changed_by'=>$actor->id,
+            'change_reason'=>'Merchant approved production publishing',
+        ]);
+        $this->assertDatabaseHas('marketplace_store_capabilities',['store_id'=>$second,'product_publish'=>false]);
+    }
+
+    public function test_non_super_admin_cannot_manage_product_publishing_through_the_api(): void
+    {
+        $store=$this->connectedStore('300927968304');
+        $actor=User::factory()->create(['is_admin'=>true,'is_super_admin'=>false]);
+
+        $this->actingAs($actor)->patchJson("/admin/api/marketplace/stores/{$store}/capabilities/product-publishing",[
+            'enabled'=>true,
+            'reason'=>'Should not be accepted',
+        ])->assertForbidden();
+
+        $this->assertDatabaseHas('marketplace_store_capabilities',['store_id'=>$store,'product_publish'=>false]);
+    }
+
     private function connectedStore(string $shopId): int
     {
         $storeId=DB::table('marketplace_stores')->insertGetId([

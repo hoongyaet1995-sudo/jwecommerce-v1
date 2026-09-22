@@ -61,3 +61,26 @@ it('offers test-token renewal instead of seller OAuth for a disconnected officia
  expect(html).toContain('Renew Test Access');
  expect(html).not.toContain('Re-authorize &amp; Resume Sync');
 });
+
+it('lets a super admin manage product publishing on a connected production store',async()=>{
+ vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+ const update=vi.fn().mockResolvedValue(undefined);
+ const container=document.createElement('div');const root=createRoot(container);
+ const value={connections:[{id:'3',platform:'lazada',shopName:'Lazada MY',shopId:'300927968304',status:'connected',accountMode:'production',capabilities:{catalogRead:true,productPublish:false,orderReceive:false,inventoryUpdate:false,fulfillmentWrite:false},tokenExpiresAt:'',lastSyncAt:''}],marketplaceOrders:[],marketplaceInventory:[],marketplaceStoreProducts:[],syncLogs:[],setCurrentSection:vi.fn(),currentSection:'marketplace-auth',addToast:vi.fn()};
+ await act(async()=>root.render(<PreviewContext.Provider value={value as unknown as React.ContextType<typeof PreviewContext>}><MarketplaceAuthPage operational canManagePublishing onSetProductPublishing={update}/></PreviewContext.Provider>));
+ const manage=Array.from(container.querySelectorAll('button')).find(button=>button.textContent?.includes('Enable Publishing'))!;
+ expect(manage).toBeTruthy();
+ await act(async()=>manage.click());
+ expect(container.textContent).toContain('Enable Product Publishing');
+ const reason=container.querySelector('textarea')!;
+ await act(async()=>{(reason as HTMLTextAreaElement&{_valueTracker?:{setValue(value:string):void}})._valueTracker?.setValue('');reason.value='Merchant approved production publishing';reason.dispatchEvent(new Event('input',{bubbles:true}));});
+ await act(async()=>container.querySelector('form')!.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
+ expect(update).toHaveBeenCalledWith('3',true,'Merchant approved production publishing');
+ await act(async()=>root.unmount());vi.unstubAllGlobals();
+});
+
+it('does not expose publishing management to ordinary staff',()=>{
+ const value={connections:[{id:'3',platform:'lazada',shopName:'Lazada MY',shopId:'300927968304',status:'connected',accountMode:'production',capabilities:{catalogRead:true,productPublish:false,orderReceive:false,inventoryUpdate:false,fulfillmentWrite:false},tokenExpiresAt:'',lastSyncAt:''}],marketplaceOrders:[],marketplaceInventory:[],marketplaceStoreProducts:[],syncLogs:[],setCurrentSection:vi.fn(),currentSection:'marketplace-auth'};
+ const html=renderToStaticMarkup(<PreviewContext.Provider value={value as unknown as React.ContextType<typeof PreviewContext>}><MarketplaceAuthPage operational/></PreviewContext.Provider>);
+ expect(html).not.toContain('Enable Publishing');
+});

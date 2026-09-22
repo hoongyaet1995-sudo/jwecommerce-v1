@@ -146,3 +146,11 @@ describe('marketplace operational contract', () => {
       .toBe('https://partner.shopeemobile.com/api/v2/shop/auth_partner?sign=test');
   });
 });
+
+it('updates only the selected store product publishing capability with an audit reason',async()=>{
+  vi.mocked(marketplaceRequest).mockResolvedValueOnce({storeId:3,productPublish:true});
+  await marketplaceOperations.setProductPublishing('3',true,'Merchant approved production publishing');
+  expect(marketplaceRequest).toHaveBeenLastCalledWith('/stores/3/capabilities/product-publishing','PATCH',{
+    enabled:true,reason:'Merchant approved production publishing',
+  });
+});

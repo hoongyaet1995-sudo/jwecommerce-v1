@@ -32,12 +32,19 @@ export function OperationalConnectStore() {
       return true;
     } catch {admin.addToast({type:'error',title:'Disconnect failed',message:'The connection could not be updated. Please retry.'});return false;}
   };
+  const setProductPublishing=async(id:string,enabled:boolean,reason:string)=>{
+    await marketplaceOperations.setProductPublishing(id,enabled,reason);
+    await load();
+    admin.addToast({type:'success',title:enabled?'Product publishing enabled':'Product publishing disabled',message:'The store capability and audit record were updated.'});
+  };
   const value={...admin,connections:stores.map(store=>({...store,tokenExpiresAt:store.tokenExpiresAt||'',lastSyncAt:store.lastSyncAt||'',
     autoSyncStock:false,autoPullOrders:false})),marketplaceOrders:[],marketplaceInventory:[],marketplaceStoreProducts:[],syncLogs:[],
     deleteConnection:unavailable,toggleConnectionSync:unavailable,refreshToken:unavailable,syncAllMarketplaces:unavailable,disconnectConnection};
   if(loading)return <p role="status" className="text-sm text-neutral-500">Loading Marketplace settings…</p>;
   if(error)return <div role="alert" className="text-sm text-rose-500">{error}<button className="ml-3 underline" onClick={()=>void load()}>Retry</button></div>;
   return <PreviewContext.Provider value={value as unknown as React.ContextType<typeof PreviewContext>}>
-    <MarketplaceAuthPage operational authorizationResult={authorizationResult} oauthAvailability={Object.fromEntries((['shopee','lazada','tiktok','shopify'] as const).map(key=>[key,capabilities[key]?.oauth===true]))}/>
+    <MarketplaceAuthPage operational authorizationResult={authorizationResult}
+      canManagePublishing={admin.laravelBootstrap.user.isSuperAdmin===true} onSetProductPublishing={setProductPublishing}
+      oauthAvailability={Object.fromEntries((['shopee','lazada','tiktok','shopify'] as const).map(key=>[key,capabilities[key]?.oauth===true]))}/>
   </PreviewContext.Provider>;
 }
