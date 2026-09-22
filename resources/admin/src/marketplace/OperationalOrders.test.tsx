@@ -29,6 +29,10 @@ it('opens a real-store recovery panel without developer presets or sample data',
   await act(async()=>start.click());
   expect(fetch).toHaveBeenCalledExactlyOnceWith('7',1797408000,1800000000);
   expect(container.textContent).toContain('Marketplace Order Recovery');
+  const startNew=Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Start New Recovery'))!;
+  await act(async()=>startNew.click());
+  expect(container.textContent).toContain('Recover missing or delayed marketplace orders');
+  expect(fetch).toHaveBeenCalledTimes(1);
  }finally{await act(async()=>root.unmount());}
 });
 it('reports connection failure instead of presenting an empty connected-store fact',async()=>{
