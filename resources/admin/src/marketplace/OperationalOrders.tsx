@@ -16,7 +16,7 @@ export function OperationalOrders(){
  const [orderPlatforms,setOrderPlatforms]=useState<string[]>([]);
  const [connectionError,setConnectionError]=useState('');
  const [capabilities,setCapabilities]=useState<Record<string,any>>({});
- const [runs,setRuns]=useState<Record<string,SyncRun|null>>({});const [recoveryOpen,setRecoveryOpen]=useState(false);
+ const [runs,setRuns]=useState<Record<string,SyncRun|null>>({});const [recoveryOpen,setRecoveryOpen]=useState(false);const [recoveryPhase,setRecoveryPhase]=useState<'selection'|'execution'>('selection');
  const [recoveryErrors,setRecoveryErrors]=useState<Record<string,string>>({});
  const [busyStores,setBusyStores]=useState<Set<string>>(new Set());const [refreshing,setRefreshing]=useState(false);
  const canFetch=stores.some(store=>store.status==='connected'&&orderPlatforms.includes(store.platform));
@@ -45,7 +45,7 @@ export function OperationalOrders(){
  return <PreviewContext.Provider value={value as unknown as React.ContextType<typeof PreviewContext>}>
   {connectionError&&<p role="alert" className="mb-4 text-sm text-rose-500">{connectionError}</p>}
   {(state.loading||state.error)&&<p role={state.error?'alert':'status'} className="mb-4 text-sm text-neutral-500">{state.error||'Loading Marketplace orders…'}</p>}
-  <MarketplaceOMSPage operational serverData={{orders:state.orders,summary:state.summary,onSelect:setSelected,onQuery,stores,storeId,onFetch:()=>setRecoveryOpen(true),canFetch,recoverySummary:{running:Object.values(runs).filter(run=>run&&['queued','running'].includes(run.status)).length,failed:Object.values(runs).filter(run=>run?.status==='failed').length},onStore:id=>{setStoreId(id);setPage(1);setSelected(null);}}}/>
+  <MarketplaceOMSPage operational serverData={{orders:state.orders,summary:state.summary,onSelect:setSelected,onQuery,stores,storeId,onFetch:()=>{setRecoveryPhase('selection');setRecoveryOpen(true);},onRecoveryStatus:()=>{setRecoveryPhase('execution');setRecoveryOpen(true);},canFetch,recoverySummary:{running:Object.values(runs).filter(run=>run&&['queued','running'].includes(run.status)).length,failed:Object.values(runs).filter(run=>run?.status==='failed').length},onStore:id=>{setStoreId(id);setPage(1);setSelected(null);}}}/>
   <div className="flex items-center gap-2 mt-4">
    <button className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 disabled:opacity-30" onClick={()=>setRevision(value=>value+1)} disabled={state.loading}>Reload</button>
    <button className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 disabled:opacity-30" onClick={()=>setPage(value=>value-1)} disabled={state.loading||page<=1}>Previous</button>
@@ -54,6 +54,6 @@ export function OperationalOrders(){
   </div>
   {selected&&!detail&&<div role={detailError?'alert':'status'} className="p-6 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/50">{detailError||'Loading order details…'}<button className="ml-3 underline" onClick={()=>setSelected(null)}>Close</button></div>}
   {detail&&<OrderInspectionDrawer order={detail} onClose={()=>setSelected(null)}/>}
-  {recoveryOpen&&<FetchMarketplaceOrdersModal open onClose={()=>setRecoveryOpen(false)} stores={stores} capabilities={capabilities as any} runs={runs} submissionErrors={recoveryErrors} busyStores={busyStores} refreshing={refreshing} onRefresh={()=>void refreshRuns()} onStart={(ids,from,to)=>void startRecovery(ids,from,to)} onRetry={run=>void retryRecovery(run)} onReconnect={store=>void requestMarketplaceAuthorization(store.platform,store.id)}/>}
+  {recoveryOpen&&<FetchMarketplaceOrdersModal open initialPhase={recoveryPhase} onClose={()=>setRecoveryOpen(false)} stores={stores} capabilities={capabilities as any} runs={runs} submissionErrors={recoveryErrors} busyStores={busyStores} refreshing={refreshing} onRefresh={()=>void refreshRuns()} onStart={(ids,from,to)=>void startRecovery(ids,from,to)} onRetry={run=>void retryRecovery(run)} onReconnect={store=>void requestMarketplaceAuthorization(store.platform,store.id)}/>}
  </PreviewContext.Provider>;
 }

@@ -12,7 +12,7 @@ it('opens a real-store recovery panel without developer presets or sample data',
  vi.spyOn(marketplaceOperations,'connections').mockResolvedValue({stores:[{id:'7',platform:'shopee',shopName:'Selected store',status:'connected'} as any],capabilities:{shopee:{orders:true}} as any});
  vi.spyOn(marketplaceOperations,'orders').mockResolvedValue({data:[],total:0,current_page:1,last_page:1,per_page:15});
  vi.spyOn(marketplaceOperations,'orderSummary').mockResolvedValue({total:0,statuses:{}});
- vi.spyOn(marketplaceOperations,'latestOrderRun').mockResolvedValue(null);
+ vi.spyOn(marketplaceOperations,'latestOrderRun').mockResolvedValue({id:4,store_id:7,status:'succeeded',pages_completed:2,orders_processed:1} as any);
  const fetch=vi.spyOn(marketplaceOperations,'fetchOrders').mockResolvedValue({runId:5});
  vi.spyOn(marketplaceOperations,'orderRun').mockResolvedValue({id:5,status:'succeeded',pages_completed:3,orders_processed:0} as any);
  const container=document.createElement('div');const root=createRoot(container);

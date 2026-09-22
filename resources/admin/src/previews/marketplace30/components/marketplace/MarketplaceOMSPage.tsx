@@ -8,7 +8,7 @@ import {OrderSummaryRows} from './OrderSummaryRows';
 import type {OrderSummary,StoreConnection} from '../../../../integration/marketplaceOperations';
 import { Boxes, Search, Printer, PackageCheck, Truck, CheckCircle2, Clock, CloudDownload, Download, Zap, Eye, X, User, MapPin, ArrowUpRight, RefreshCw, AlertTriangle } from 'lucide-react';
 
-export interface OmsServerData {orders:OrderSummary[];summary:{total:number;statuses:Record<string,number>};onSelect:(id:string)=>void;onQuery:(query:{platform:string;status:string;q:string})=>void;stores?:StoreConnection[];storeId?:string;onStore?:(id:string)=>void;onFetch?:()=>void;canFetch?:boolean;recoverySummary?:{running:number;failed:number};}
+export interface OmsServerData {orders:OrderSummary[];summary:{total:number;statuses:Record<string,number>};onSelect:(id:string)=>void;onQuery:(query:{platform:string;status:string;q:string})=>void;stores?:StoreConnection[];storeId?:string;onStore?:(id:string)=>void;onFetch?:()=>void;onRecoveryStatus?:()=>void;canFetch?:boolean;recoverySummary?:{running:number;failed:number};}
 export const MarketplaceOMSPage: React.FC<{operational?:boolean;serverData?:OmsServerData}> = ({operational=false,serverData}) => {
   const {
     marketplaceOrders = [],
@@ -264,8 +264,8 @@ export const MarketplaceOMSPage: React.FC<{operational?:boolean;serverData?:OmsS
           </div>}
 
           <div className="flex items-center gap-2">
-          {operational&&serverData?.recoverySummary&&serverData.recoverySummary.running>0&&<button onClick={serverData.onFetch} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-300 text-xs font-semibold"><RefreshCw className="w-3.5 h-3.5 animate-spin"/>Order recovery running for {serverData.recoverySummary.running} {serverData.recoverySummary.running===1?'store':'stores'}</button>}
-          {operational&&serverData?.recoverySummary&&serverData.recoverySummary.failed>0&&<button onClick={serverData.onFetch} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-300 text-xs font-semibold"><AlertTriangle className="w-3.5 h-3.5"/>{serverData.recoverySummary.failed} {serverData.recoverySummary.failed===1?'store requires':'stores require'} attention</button>}
+          {operational&&serverData?.recoverySummary&&serverData.recoverySummary.running>0&&<button onClick={serverData.onRecoveryStatus} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-300 text-xs font-semibold"><RefreshCw className="w-3.5 h-3.5 animate-spin"/>Order recovery running for {serverData.recoverySummary.running} {serverData.recoverySummary.running===1?'store':'stores'}</button>}
+          {operational&&serverData?.recoverySummary&&serverData.recoverySummary.failed>0&&<button onClick={serverData.onRecoveryStatus} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-300 text-xs font-semibold"><AlertTriangle className="w-3.5 h-3.5"/>{serverData.recoverySummary.failed} {serverData.recoverySummary.failed===1?'store requires':'stores require'} attention</button>}
           <button
             disabled={operational&&!serverData?.canFetch}
             title={operational ? 'Recover missing or delayed marketplace orders' : undefined}

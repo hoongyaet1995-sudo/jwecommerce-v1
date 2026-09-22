@@ -7,6 +7,7 @@ type Range='24h'|'7d'|'30d'|'custom';
 type Props={
  stores:StoreConnection[]; capabilities:Record<MarketplacePlatform,ProviderCapabilities>;
  runs:Record<string,SyncRun|null>; submissionErrors:Record<string,string>; open:boolean; busyStores:Set<string>; refreshing:boolean;
+ initialPhase:'selection'|'execution';
  onClose:()=>void; onRefresh:()=>void; onStart:(ids:string[],from:number,to:number)=>void;
  onRetry:(run:SyncRun)=>void; onReconnect:(store:StoreConnection)=>void;
 };
@@ -18,8 +19,8 @@ const employeeError=(code:string|null)=>{
 };
 const fmt=(value?:string|null)=>value?new Date(value).toLocaleString('en-MY',{dateStyle:'medium',timeStyle:'short'}):'Not yet completed';
 
-export function FetchMarketplaceOrdersModal({stores,capabilities,runs,submissionErrors,open,busyStores,refreshing,onClose,onRefresh,onStart,onRetry,onReconnect}:Props){
- const [phase,setPhase]=useState<'selection'|'execution'>(()=>Object.values(runs).some(Boolean)?'execution':'selection');
+export function FetchMarketplaceOrdersModal({stores,capabilities,runs,submissionErrors,open,busyStores,refreshing,initialPhase,onClose,onRefresh,onStart,onRetry,onReconnect}:Props){
+ const [phase,setPhase]=useState<'selection'|'execution'>(initialPhase);
  const [range,setRange]=useState<Range>('30d');
  const [customFrom,setCustomFrom]=useState(''); const [customTo,setCustomTo]=useState('');
  const eligible=useMemo(()=>stores.filter(s=>(s.platform==='shopee'||s.platform==='lazada')&&capabilities[s.platform]?.orders&&s.status==='connected'),[stores,capabilities]);
