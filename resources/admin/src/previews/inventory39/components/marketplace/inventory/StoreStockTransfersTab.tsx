@@ -37,6 +37,7 @@ interface StoreStockTransfersTabProps {
   onExecuteTransfer: (transfer: Omit<StoreStockTransferRecord, 'id' | 'transferNumber' | 'timestamp' | 'ledgerStatus' | 'sourcePlatformSyncStatus' | 'destinationPlatformSyncStatus'>) => Promise<StoreStockTransferRecord>;
   onRetryPlatformSync: (transferId: string, target: 'source' | 'destination', action: SyncRecoveryAction) => Promise<StoreStockTransferRecord>;
   onOpenTransferExecution?: (transfer: StoreStockTransferRecord) => Promise<StoreStockTransferRecord>;
+  onCheckTransferStatus?: (transfer: StoreStockTransferRecord) => Promise<StoreStockTransferRecord>;
   onReconnectStore?: (storeId: string) => void;
 }
 
@@ -48,6 +49,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
   onExecuteTransfer,
   onRetryPlatformSync,
   onOpenTransferExecution = async transfer => transfer,
+  onCheckTransferStatus = async transfer => transfer,
   onReconnectStore = () => {}
 }) => {
   // Form State
@@ -84,6 +86,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
   const [recoveringTarget, setRecoveringTarget] = useState<'source' | 'destination' | null>(null);
   const [recoveryFeedback, setRecoveryFeedback] = useState<string | null>(null);
   const [openingTransferId, setOpeningTransferId] = useState<string | null>(null);
+  const [checkingTransferStatus, setCheckingTransferStatus] = useState<boolean>(false);
   const [historyOpenError, setHistoryOpenError] = useState<string | null>(null);
 
   // Transfer history filter
@@ -393,6 +396,24 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
       setHistoryOpenError(error instanceof Error ? error.message : 'The latest transfer status could not be loaded.');
     } finally {
       setOpeningTransferId(null);
+    }
+  };
+
+  const checkTransferStatus = async () => {
+    if (!executionRecord) return;
+    setCheckingTransferStatus(true);
+    setRecoveryFeedback(null);
+    try {
+      const updated = await onCheckTransferStatus(executionRecord);
+      const source = syncStatusPresentation(updated.externalStages?.find(stage => stage.stage === 'source')?.status ?? updated.sourcePlatformSyncStatus);
+      const destination = syncStatusPresentation(updated.externalStages?.find(stage => stage.stage === 'destination')?.status ?? updated.destinationPlatformSyncStatus);
+      const hasPlatformError = [source, destination].some(item => ['retry', 'reconnect'].includes(item.action));
+      const isPending = [source, destination].some(item => item.action === 'check_status' || item.status === 'waiting_for_source');
+      setActiveTransferExecution({ isOpen: true, stage: hasPlatformError ? 'has_platform_error' : isPending ? 'dest_syncing' : 'completed', record: updated });
+    } catch (error) {
+      setRecoveryFeedback(error instanceof Error ? error.message : 'The latest channel status could not be checked.');
+    } finally {
+      setCheckingTransferStatus(false);
     }
   };
 
@@ -1466,7 +1487,16 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
               </div>
             )}
 
-            <div className="pt-2 flex justify-end gap-2">
+            <div className="pt-2 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                disabled={checkingTransferStatus || recoveringTarget !== null}
+                onClick={() => void checkTransferStatus()}
+                className="px-4 py-2 rounded-xl border border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs font-bold hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${checkingTransferStatus ? 'animate-spin' : ''}`} />
+                <span>{checkingTransferStatus ? 'Checking…' : 'Check Status'}</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setActiveTransferExecution({ isOpen: false, stage: 'preparing' })}

@@ -248,6 +248,25 @@ class StoreInventorySyncTest extends TestCase
         $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'waiting_source']);
     }
 
+    public function test_targeted_destination_retry_can_continue_after_the_source_update_was_replaced(): void
+    {
+        Bus::fake();
+        $publisher = new FakeStoreInventoryPublisher;
+        $c = $this->staged(false, $publisher);
+        DB::table('inventory_store_sync_tasks')->where('operation_id', $c['task']->operation_id)
+            ->where('stage', 'source')->update(['status' => 'superseded']);
+        DB::table('inventory_store_sync_tasks')->where('id', $c['task']->id)->update(['status' => 'failed']);
+
+        $this->actingAs($c['actor'])
+            ->postJson('/admin/api/inventory/store-management/sync-tasks/'.$c['task']->id.'/retry')
+            ->assertOk()
+            ->assertJsonPath('status', 'confirmed');
+
+        $this->assertCount(1, $publisher->calls);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'confirmed']);
+        $this->assertDatabaseCount('inventory_store_operations', 1);
+    }
+
     public function test_mapping_or_canary_change_after_enqueue_supersedes_without_transport(): void
     {
         $mapping = $this->staged();

@@ -140,6 +140,54 @@ it('opens a pending history operation with freshly loaded channel stages', async
   await act(async () => root.unmount());
 });
 
+it('checks the latest transfer status and reveals targeted recovery without repeating the ledger transfer', async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  const pendingTransfer: any = {
+    id: 'operation-check', transferNumber: 'TR-CHECK', timestamp: new Date().toISOString(),
+    masterSku: 'AUR-PINE-BLK', productName: 'Aurora Headphones', variantName: 'Black', imageUrl: '',
+    sourceStoreId: 'website', sourceStoreName: 'JW Storefront', sourcePlatform: 'webstore',
+    destinationStoreId: '12', destinationStoreName: 'Lazada Test', destinationPlatform: 'lazada',
+    quantity: 2, operator: 'Admin', reason: 'Rebalance', ledgerStatus: 'succeeded',
+    sourcePlatformSyncStatus: 'succeeded', destinationPlatformSyncStatus: 'pending',
+    externalStages: [
+      { id: 'source-stage', stage: 'source', status: 'superseded' },
+      { id: 'destination-stage', stage: 'destination', status: 'waiting_source', store_id: 12 },
+    ],
+  };
+  const onCheckTransferStatus = vi.fn().mockResolvedValue({
+    ...pendingTransfer,
+    destinationPlatformSyncStatus: 'failed',
+    destinationFailureReason: 'The source update was replaced. Send the latest destination stock when ready.',
+    externalStages: [
+      { id: 'source-stage', stage: 'source', status: 'superseded' },
+      { id: 'destination-stage', stage: 'destination', status: 'failed', store_id: 12 },
+    ],
+  });
+
+  await act(async () => root.render(
+    <StoreStockTransfersTab inventory={inventory} stores={stores} storeBalances={storeBalances}
+      transfersList={[pendingTransfer]} onExecuteTransfer={vi.fn()} onRetryPlatformSync={vi.fn()}
+      onOpenTransferExecution={vi.fn().mockResolvedValue(pendingTransfer)}
+      onCheckTransferStatus={onCheckTransferStatus} />
+  ));
+
+  const pending = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.includes('Awaiting Channel Confirmation'))!;
+  await act(async () => pending.click());
+  const check = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Check Status')!;
+  expect(check).toBeDefined();
+  await act(async () => check.click());
+
+  expect(onCheckTransferStatus).toHaveBeenCalledWith(pendingTransfer);
+  expect(host.textContent).toContain('Sync Failed');
+  expect(host.textContent).toContain('Retry Update');
+  expect(host.textContent).not.toContain('Waiting for Source');
+
+  await act(async () => root.unmount());
+});
+
 it('shows source confirmation delay on the source stage without blaming the destination', async () => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement('div');

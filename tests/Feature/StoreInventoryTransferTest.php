@@ -85,4 +85,32 @@ class StoreInventoryTransferTest extends TestCase
         $this->assertSame(8, (int) DB::table('inventory_balances')->where('id', $c['source']['id'])->value('physical_stock'));
         $this->assertDatabaseCount('inventory_store_operations', 1);
     }
+
+    public function test_check_status_turns_a_destination_blocked_by_a_replaced_source_into_a_recoverable_failure(): void
+    {
+        $c = $this->context();
+        $url = '/admin/api/inventory/store-management/reviews';
+        $review = $this->actingAs($c['actor'])->postJson($url, [
+            'kind' => 'transfer', 'source_balance_id' => $c['source']['id'],
+            'destination_balance_id' => $c['destination']['id'], 'quantity' => 2,
+            'reason' => 'Recovery status check',
+        ])->assertCreated()->json();
+        $receipt = $this->postJson($url.'/'.$review['id'].'/confirm', ['operation_key' => 'transfer-status-check'])
+            ->assertOk()->json();
+
+        $tasks = DB::table('inventory_store_sync_tasks')->where('operation_id', $receipt['operation_id'])->get()->keyBy('stage');
+        DB::table('inventory_store_sync_tasks')->where('id', $tasks['source']->id)->update(['status' => 'superseded']);
+        DB::table('inventory_store_sync_tasks')->where('id', $tasks['destination']->id)->update(['status' => 'waiting_source']);
+
+        $this->postJson('/admin/api/inventory/store-management/operations/'.$receipt['operation_id'].'/check')
+            ->assertOk()
+            ->assertJsonPath('external_stages.0.status', 'superseded')
+            ->assertJsonPath('external_stages.1.status', 'failed')
+            ->assertJsonPath('external_stages.1.provider_receipt.code', 'source_update_replaced');
+
+        $this->assertDatabaseHas('inventory_store_sync_tasks', [
+            'id' => $tasks['destination']->id,
+            'status' => 'failed',
+        ]);
+    }
 }

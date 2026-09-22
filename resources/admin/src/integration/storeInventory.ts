@@ -28,6 +28,7 @@ export const storeInventoryApi={
   resyncStock:(storeId:string,variantId:number,operationKey:string)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/sync/resync`,{method:'POST',body:JSON.stringify({operation_key:operationKey})}),
   history:()=>json('/admin/api/inventory/store-management/history?per_page=100'),
   operation:(id:string)=>json(`/admin/api/inventory/store-management/operations/${encodeURIComponent(id)}`),
+  checkOperation:(id:string)=>json(`/admin/api/inventory/store-management/operations/${encodeURIComponent(id)}/check`,{method:'POST',body:'{}'}),
   waitForOperation:waitForInventoryOperation,
   async review(kind:string,payload:Record<string,unknown>){
     const review=await json('/admin/api/inventory/store-management/reviews',{method:'POST',body:JSON.stringify({kind,...payload})});

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Jobs\ProcessStoreInventorySync;
 use App\Services\Inventory\StoreManagement\MarketplaceStoreInventoryPublisher;
 use App\Services\Inventory\StoreManagement\ImmediateStoreInventorySync;
+use App\Services\Inventory\StoreManagement\OverviewReader;
+use App\Services\Inventory\StoreManagement\StockSyncRecovery;
 use App\Services\Inventory\StoreManagement\StoreSyncAttemptLedger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +15,41 @@ use Illuminate\Support\Facades\DB;
 
 final class StoreInventorySyncController extends Controller
 {
+    public function checkOperation(Request $request, string $operation, StockSyncRecovery $recovery, OverviewReader $reader): JsonResponse
+    {
+        $this->authorizeActor($request);
+        $record = DB::table('inventory_store_operations')->where('id', $operation)->first();
+        abort_unless($record && $record->kind === 'transfer', 404);
+
+        $tasks = DB::table('inventory_store_sync_tasks')->where('operation_id', $operation)->get();
+        foreach ($tasks->whereIn('status', ['uncertain']) as $task) {
+            if ($task->marketplace_store_id !== null) {
+                try {
+                    $recovery->check((int) $task->marketplace_store_id, (int) $task->product_variant_id, (int) $request->user()->id, false);
+                } catch (\Throwable) {
+                    // The operation response below remains the truthful persisted fallback.
+                }
+            }
+        }
+
+        DB::transaction(function () use ($operation): void {
+            $source = DB::table('inventory_store_sync_tasks')->where('operation_id', $operation)->where('stage', 'source')->lockForUpdate()->first();
+            $destination = DB::table('inventory_store_sync_tasks')->where('operation_id', $operation)->where('stage', 'destination')->lockForUpdate()->first();
+            if ($source?->status === 'superseded' && $destination?->status === 'waiting_source') {
+                DB::table('inventory_store_sync_tasks')->where('id', $destination->id)->update([
+                    'status' => 'failed',
+                    'provider_receipt' => json_encode([
+                        'code' => 'source_update_replaced',
+                        'message' => 'The source update was replaced by newer stock. Send the latest destination stock when ready.',
+                    ], JSON_THROW_ON_ERROR),
+                    'updated_at' => now(),
+                ]);
+            }
+        }, 3);
+
+        return response()->json($reader->operation($operation))->header('Cache-Control', 'no-store');
+    }
+
     public function syncAll(Request $request): JsonResponse
     {
         $this->authorizeActor($request);

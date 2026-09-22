@@ -139,6 +139,7 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
     syncAll,
     bulkCheckStock,
     getInventoryOperation,
+    checkInventoryOperation,
     waitForInventoryOperation,
     setCurrentSection
   } = useAdmin();
@@ -701,8 +702,7 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
     return updated;
   };
 
-  const handleOpenTransferExecution = async (transfer: StoreStockTransferRecord) => {
-    const latest = await getInventoryOperation(transfer.id);
+  const hydrateTransferExecution = (transfer: StoreStockTransferRecord, latest: any) => {
     const stages = latest?.external_stages || [];
     const sourceStage = stages.find((stage: any) => stage.stage === 'source');
     const destinationStage = stages.find((stage: any) => stage.stage === 'destination');
@@ -727,6 +727,16 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
       destinationPlatform: (destinationChannel?.platform || transfer.destinationPlatform) as StoreStockTransferRecord['destinationPlatform'],
     }, latest);
     setTransfersList(current => current.map(item => item.id === transfer.id ? refreshed : item));
+    return refreshed;
+  };
+
+  const handleOpenTransferExecution = async (transfer: StoreStockTransferRecord) => {
+    return hydrateTransferExecution(transfer, await getInventoryOperation(transfer.id));
+  };
+
+  const handleCheckTransferStatus = async (transfer: StoreStockTransferRecord) => {
+    const refreshed = hydrateTransferExecution(transfer, await checkInventoryOperation(transfer.id));
+    await reloadInventory();
     return refreshed;
   };
 
@@ -1432,6 +1442,7 @@ export const MarketplaceInventoryPage: React.FC<{recoveryPreview?: boolean}> = (
           onExecuteTransfer={handleExecuteStoreTransfer}
           onRetryPlatformSync={handleRetryPlatformSync}
           onOpenTransferExecution={handleOpenTransferExecution}
+          onCheckTransferStatus={handleCheckTransferStatus}
           onReconnectStore={() => setCurrentSection('marketplace-auth')}
         />
       )}

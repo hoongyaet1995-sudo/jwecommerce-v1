@@ -42,7 +42,7 @@ final class ProcessStoreInventorySync implements ShouldQueue
             if ($task->stage === 'destination') {
                 $source = DB::table('inventory_store_sync_tasks')->where('operation_id', $task->operation_id)
                     ->where('stage', 'source')->lockForUpdate()->first();
-                if (! $source || ! in_array($source->status, ['confirmed', 'not_applicable'], true)) {
+                if (! $source || ! in_array($source->status, ['confirmed', 'not_applicable', 'superseded'], true)) {
                     DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update(['status' => 'waiting_source', 'updated_at' => now()]);
 
                     return null;

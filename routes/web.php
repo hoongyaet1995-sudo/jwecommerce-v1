@@ -320,6 +320,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/inventory/store-management/stores', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'stores']);
     Route::get('/api/inventory/store-management/history', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'history']);
     Route::get('/api/inventory/store-management/operations/{operation}', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'operation'])->whereUuid('operation');
+    Route::post('/api/inventory/store-management/operations/{operation}/check', [\App\Http\Controllers\Admin\StoreInventorySyncController::class, 'checkOperation'])->whereUuid('operation')->middleware('throttle:30,1');
     Route::post('/api/inventory/store-management/sync-all', [\App\Http\Controllers\Admin\StoreInventorySyncController::class, 'syncAll']);
     Route::get('/api/inventory/store-management/stores/{store}/skus/{variant}/sync', [\App\Http\Controllers\Admin\StockSyncRecoveryController::class, 'show'])->whereNumber(['store','variant']);
     Route::post('/api/inventory/store-management/stores/{store}/skus/{variant}/sync/check', [\App\Http\Controllers\Admin\StockSyncRecoveryController::class, 'check'])->whereNumber(['store','variant'])->middleware('throttle:30,1');
