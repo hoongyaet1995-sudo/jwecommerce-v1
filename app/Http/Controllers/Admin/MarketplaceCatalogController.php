@@ -127,7 +127,7 @@ class MarketplaceCatalogController extends Controller
         $id = DB::transaction(function () use ($store, $client, $lazada) {
             $row = DB::table('marketplace_stores')->where('id', $store)->lockForUpdate()->first();
             abort_unless($row, 404);
-            $ready=$row->platform==='shopee' ? $client->isConfigured()&&$row->environment===config('marketplace.shopee.environment') : $row->platform==='lazada'&&$lazada->isConfigured()&&$row->environment==='live'&&$row->region==='MY';
+            $ready=$row->platform==='shopee' ? app(\App\Services\Marketplace\ShopeeApplicationResolver::class)->isStoreReady((int)$row->id) : $row->platform==='lazada'&&$lazada->isConfigured()&&$row->environment==='live'&&$row->region==='MY';
             abort_unless($row->status === 'connected' && $ready, 409, 'Connect the store before fetching products.');
             $active = DB::table('marketplace_catalog_runs')->where('store_id', $store)->whereIn('status', ['queued', 'running'])->first();
             if ($active) {
@@ -168,7 +168,7 @@ class MarketplaceCatalogController extends Controller
         DB::transaction(function () use ($run, $initial, $client, $lazada) {
             $store = DB::table('marketplace_stores')->where('id', $initial->store_id)->lockForUpdate()->first();
             $shopeeReady = $store && $store->platform === 'shopee'
-                && $client->isConfigured() && $store->environment === config('marketplace.shopee.environment');
+                && app(\App\Services\Marketplace\ShopeeApplicationResolver::class)->isStoreReady((int)$store->id);
             $lazadaReady = $store && $store->platform === 'lazada'
                 && $lazada->isConfigured() && $store->environment === 'live' && $store->region === 'MY';
             abort_unless($store && $store->status === 'connected' && ($shopeeReady || $lazadaReady), 409,

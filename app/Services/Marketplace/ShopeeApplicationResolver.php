@@ -46,9 +46,53 @@ final class ShopeeApplicationResolver
         $context = $this->forEnvironment($store->environment);
         $token = DB::table('marketplace_store_tokens')->where('store_id', $storeId)->first();
         if (! $token || (string) $token->application_id !== $context->partnerId) {
-            throw new RuntimeException('Shopee store application has changed. Re-authorize the store.');
+            throw new RuntimeException('Store application has changed. Re-authorize the store.');
         }
 
         return $context;
+    }
+
+    public function clientForStore(int $storeId, ShopeeClient $client): ShopeeClient
+    {
+        $context = $this->forStore($storeId);
+        if ($context->environment === config('marketplace.shopee.environment')
+            && $context->partnerId === (string) config('marketplace.shopee.partner_id')
+            && hash_equals($context->partnerKey, (string) config('marketplace.shopee.partner_key'))) {
+            return $client;
+        }
+
+        return $client->forApplication($context);
+    }
+
+    public function isStoreReady(int $storeId): bool
+    {
+        try {
+            $this->forStore($storeId);
+            return true;
+        } catch (RuntimeException) {
+            return false;
+        }
+    }
+
+    public function isEnvironmentReady(string $environment): bool
+    {
+        try {
+            $this->forEnvironment($environment);
+            return true;
+        } catch (RuntimeException) {
+            return false;
+        }
+    }
+
+    public function isEnvironmentAuthorizationReady(string $environment): bool
+    {
+        try {
+            $context = $this->forEnvironment($environment);
+            $base = config('marketplace.hub.oauth_routing_enabled') === true
+                ? 'https://marketplace.jwaistudio.online' : rtrim((string) config('app.url'), '/');
+            return $context->callbackUrl === $base.'/admin/marketplace/oauth/shopee/callback';
+        } catch (RuntimeException) {
+            return false;
+        }
     }
 }

@@ -12,7 +12,8 @@ use RuntimeException;
 /** Schedules bounded, read-only order capture for each eligible provider store. */
 class MarketplaceAutomaticOrders
 {
-    public function __construct(private ShopeeClient $shopee, private LazadaClient $lazada) {}
+    public function __construct(private ShopeeClient $shopee, private LazadaClient $lazada,
+        private ShopeeApplicationResolver $applications) {}
 
     public function enqueueDue(): int
     {
@@ -29,7 +30,7 @@ class MarketplaceAutomaticOrders
         foreach (['shopee', 'lazada'] as $platform) {
             if (!$this->providerReady($platform)) continue;
             $stores = DB::table('marketplace_stores')->where('platform', $platform)->where('status', 'connected')
-                ->when($platform === 'shopee', fn ($query) => $query->where('environment', config('marketplace.shopee.environment')),
+                ->when($platform === 'shopee', fn ($query) => $query->whereIn('environment', ['sandbox','production']),
                     fn ($query) => $query->where('environment', 'live')->where('region', 'MY'))
                 ->orderBy('id');
             $stores->chunkById(100, function ($candidates) use (&$count, $platform) {
@@ -63,14 +64,24 @@ class MarketplaceAutomaticOrders
 
     private function providerReady(string $platform): bool
     {
-        return $platform === 'shopee' ? $this->shopee->isConfigured() : $this->lazada->isConfigured();
+        return $platform === 'shopee' ? config('marketplace.shopee.enabled') === true : $this->lazada->isConfigured();
     }
 
     private function storeEligible(object $store, string $platform): bool
     {
         return $store->status === 'connected' && $store->platform === $platform
             && ($platform === 'shopee'
-                ? $store->environment === config('marketplace.shopee.environment')
+                ? $this->shopeeStoreEligible($store)
                 : $store->environment === 'live' && $store->region === 'MY');
+    }
+
+    private function shopeeStoreEligible(object $store): bool
+    {
+        try {
+            $this->applications->forStore((int) $store->id);
+            return true;
+        } catch (RuntimeException) {
+            return false;
+        }
     }
 }

@@ -11,6 +11,16 @@ use RuntimeException;
 
 class MarketplaceListingMetadataController extends Controller
 {
+    private function shopeeReady(int $store): bool
+    {
+        return app(\App\Services\Marketplace\ShopeeApplicationResolver::class)->isStoreReady($store);
+    }
+
+    private function storeClient(int $store, ShopeeClient $client): ShopeeClient
+    {
+        return app(\App\Services\Marketplace\ShopeeApplicationResolver::class)->clientForStore($store, $client);
+    }
+
     private function cached(object $store, string $resource, array $parameters, callable $fetch): array
     {
         return app(\App\Services\Marketplace\MarketplaceListingMetadataCache::class)
@@ -23,9 +33,10 @@ class MarketplaceListingMetadataController extends Controller
         $connection=DB::table('marketplace_stores')->find($store);
         abort_unless($connection,404);
         abort_unless($connection->status==='connected' && $connection->platform==='shopee'
-            && $connection->environment===config('marketplace.shopee.environment'),409,
+            && $this->shopeeReady($store),409,
             'Connect this store to the configured Shopee environment first.');
         try {
+            $client=$this->storeClient($store,$client);
             $page=$client->searchAttributeValues($tokens->accessToken($store),(string)$connection->external_shop_id,
                 (int)$data['attributeId'],$data['q'] ?? '',(int)($data['cursor'] ?? 0));
         } catch (RuntimeException) {
@@ -41,9 +52,10 @@ class MarketplaceListingMetadataController extends Controller
         $connection = DB::table('marketplace_stores')->find($store);
         abort_unless($connection, 404);
         abort_unless($connection->status === 'connected' && $connection->platform === 'shopee'
-            && $connection->environment === config('marketplace.shopee.environment'),
+            && $this->shopeeReady($store),
             409, 'Connect this store to the configured Shopee environment first.');
         try {
+            $client=$this->storeClient($store,$client);
             $accessToken = $tokens->accessToken($store);
             $channels = $this->cached($connection, 'logistics', [], fn()=>$client->logisticsChannels($accessToken, (string) $connection->external_shop_id));
         } catch (RuntimeException) {
@@ -85,9 +97,10 @@ class MarketplaceListingMetadataController extends Controller
             }
         }
         abort_unless($connection->status === 'connected' && $connection->platform === 'shopee'
-            && $connection->environment === config('marketplace.shopee.environment'),
+            && $this->shopeeReady($store),
             409, 'Connect this store to the configured Shopee environment first.');
         try {
+            $client=$this->storeClient($store,$client);
             $accessToken = $tokens->accessToken($store);
             $page = $this->cached($connection, 'brands', [(int)$data['categoryId'],(int)($data['offset']??0)], fn()=>$client->brandPage($accessToken, (string) $connection->external_shop_id,
                 (int) $data['categoryId'], (int) ($data['offset'] ?? 0)));
@@ -132,9 +145,10 @@ class MarketplaceListingMetadataController extends Controller
             }
         }
         abort_unless($connection->status === 'connected' && $connection->platform === 'shopee'
-            && $connection->environment === config('marketplace.shopee.environment'),
+            && $this->shopeeReady($store),
             409, 'Connect this store to the configured Shopee environment first.');
         try {
+            $client=$this->storeClient($store,$client);
             $accessToken = $tokens->accessToken($store);
             \App\Services\Marketplace\ShopeeListingCategory::requireLeaf(
                 $this->cached($connection, 'categories', [], fn()=>$client->categoryTree($accessToken, (string) $connection->external_shop_id)),
@@ -167,9 +181,10 @@ class MarketplaceListingMetadataController extends Controller
             }
         }
         abort_unless($connection->status === 'connected' && $connection->platform === 'shopee'
-            && $connection->environment === config('marketplace.shopee.environment'),
+            && $this->shopeeReady($store),
             409, 'Connect this store to the configured Shopee environment first.');
         try {
+            $client=$this->storeClient($store,$client);
             $accessToken = $tokens->accessToken($store);
             $rows = $this->cached($connection, 'categories', [], fn()=>$client->categoryTree($accessToken, (string) $connection->external_shop_id));
         } catch (RuntimeException) {

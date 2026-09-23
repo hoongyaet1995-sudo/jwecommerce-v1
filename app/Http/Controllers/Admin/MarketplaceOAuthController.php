@@ -114,7 +114,8 @@ class MarketplaceOAuthController extends Controller
                 'message'=>$row->failure_message])->values()->all()];
     }
 
-    public function connections(ShopeeClient $client, \App\Services\Marketplace\LazadaClient $lazada)
+    public function connections(ShopeeClient $client, \App\Services\Marketplace\LazadaClient $lazada,
+        \App\Services\Marketplace\ShopeeApplicationResolver $applications)
     {
         $successfulRuns = DB::table('marketplace_catalog_runs')->select('store_id','finished_at')->where('status','succeeded')
             ->unionAll(DB::table('marketplace_order_runs')->select('store_id','finished_at')->where('status','succeeded'));
@@ -127,12 +128,10 @@ class MarketplaceOAuthController extends Controller
             ->select('s.*', 't.access_expires_at', 't.refresh_expires_at', 't.application_id','t.credential_source','t.test_lease_expires_at',
                 'c.catalog_read','c.product_publish','c.order_receive','c.inventory_update','c.fulfillment_write')
             ->selectRaw("CASE WHEN t.refresh_token IS NOT NULL AND t.refresh_token <> '' THEN 1 ELSE 0 END AS has_refresh_token")
-            ->orderBy('s.id')->get()->map(function ($store) use ($lastSuccess, $timestamp) {
+            ->orderBy('s.id')->get()->map(function ($store) use ($lastSuccess, $timestamp, $applications) {
                 $status = $store->status;
                 $applicationMatches = $store->platform === 'shopee'
-                    && $store->environment === config('marketplace.shopee.environment')
-                    && $store->application_id !== null
-                    && $store->application_id === (string) config('marketplace.shopee.partner_id');
+                    && $applications->isStoreReady((int) $store->id);
                 if ($store->platform === 'lazada') {
                     $expectedApp=$store->credential_source==='official_test'
                         ? (string)config('marketplace.lazada.test_app_key')
@@ -153,7 +152,7 @@ class MarketplaceOAuthController extends Controller
                 }
                 return ['id'=>(string) $store->id, 'platform'=>$store->platform, 'shopName'=>$store->shop_name,
                     'credentialSource'=>$store->credential_source,'testLeaseExpiresAt'=>$timestamp($store->test_lease_expires_at),
-                    'shopId'=>$store->external_shop_id, 'region'=>$store->region, 'status'=>$status,
+                    'shopId'=>$store->external_shop_id, 'region'=>$store->region, 'environment'=>$store->environment, 'status'=>$status,
                     'accountMode'=>$store->account_mode,
                     'capabilities'=>[
                         'catalogRead'=>(bool)$store->catalog_read,'productPublish'=>(bool)$store->product_publish,
@@ -172,7 +171,9 @@ class MarketplaceOAuthController extends Controller
         return response()->json(['stores'=>$stores, 'localCapabilities'=>[
             'importProducts'=>config('marketplace.import_operations_enabled') === true || config('marketplace.operations_enabled') === true,
         ], 'capabilities'=>[
-            'shopee'=>array_replace($unavailable, ['oauth'=>$client->isAuthorizationReady(), 'catalog'=>$readsEnabled && $client->isConfigured(), 'orders'=>$readsEnabled && $client->isConfigured()]),
+            'shopee'=>array_replace($unavailable, ['oauth'=>$applications->isEnvironmentAuthorizationReady('sandbox') || $applications->isEnvironmentAuthorizationReady('production'),
+                'catalog'=>$readsEnabled && ($applications->isEnvironmentReady('sandbox') || $applications->isEnvironmentReady('production')),
+                'orders'=>$readsEnabled && ($applications->isEnvironmentReady('sandbox') || $applications->isEnvironmentReady('production'))]),
             'lazada'=>array_replace($unavailable, [
                 'oauth'=>$lazada->isAuthorizationReady(),
                 'catalog'=>$readsEnabled && $lazada->isConfigured(),

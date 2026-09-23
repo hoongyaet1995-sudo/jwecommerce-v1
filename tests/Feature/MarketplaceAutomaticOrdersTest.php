@@ -20,6 +20,8 @@ class MarketplaceAutomaticOrdersTest extends TestCase
             'marketplace.shopee.callback_url'=>'https://example.test/callback']);
         $store = DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee', 'shop_name'=>'Auto fixture',
             'external_shop_id'=>'456', 'region'=>'MY', 'environment'=>'sandbox', 'status'=>'connected']);
+        \App\Models\MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'123',
+            'access_token'=>'fixture-access','refresh_token'=>'fixture-refresh','access_expires_at'=>now()->addHour()]);
         $service = app(MarketplaceAutomaticOrders::class);
         $this->assertSame(1, $service->enqueueDue());
         $run = DB::table('marketplace_order_runs')->sole();

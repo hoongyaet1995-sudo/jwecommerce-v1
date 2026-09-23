@@ -8,7 +8,7 @@ use RuntimeException;
 
 class ShopeeTokenManager
 {
-    public function __construct(private ShopeeClient $client) {}
+    public function __construct(private ShopeeClient $client, private ShopeeApplicationResolver $applications) {}
 
     /** Server-only. Never return this value through an HTTP response. */
     public function accessToken(int $storeId): string
@@ -17,15 +17,15 @@ class ShopeeTokenManager
             // Same lock order as reconnect/disconnect. The bounded HTTP request serializes rotation.
             // No transaction retries: a refresh token may already have rotated at the provider.
             $store = DB::table('marketplace_stores')->where('id', $storeId)->lockForUpdate()->first();
-            if (!$store || $store->status !== 'connected' || $store->platform !== 'shopee'
-                || $store->environment !== config('marketplace.shopee.environment') || !$this->client->isConfigured()) {
+            if (!$store || $store->status !== 'connected' || $store->platform !== 'shopee') {
                 throw new RuntimeException('Store is not connected to the configured Shopee environment.');
             }
+            $context = $this->applications->forStore($storeId);
             $token = MarketplaceStoreToken::where('store_id', $storeId)->lockForUpdate()->first();
             if (!$token) {
                 throw new RuntimeException('Store credentials are missing. Re-authorize the store.');
             }
-            if (!$token->application_id || $token->application_id !== (string) config('marketplace.shopee.partner_id')) {
+            if (!$token->application_id || $token->application_id !== $context->partnerId) {
                 throw new RuntimeException('Store application has changed. Re-authorize the store.');
             }
             if ($token->access_expires_at && $token->access_expires_at->gt(now()->addMinutes(5))) {
@@ -34,7 +34,8 @@ class ShopeeTokenManager
             if (!$token->refresh_token || ($token->refresh_expires_at && $token->refresh_expires_at->lte(now()))) {
                 throw new RuntimeException('Store credentials have expired. Re-authorize the store.');
             }
-            $new = $this->client->refresh($token->refresh_token, $store->external_shop_id);
+            $new = $this->applications->clientForStore($storeId, $this->client)
+                ->refresh($token->refresh_token, $store->external_shop_id);
             $token->fill(['access_token'=>$new['access_token'], 'refresh_token'=>$new['refresh_token'],
                 'access_expires_at'=>now()->addSeconds($new['expire_in']), 'refresh_expires_at'=>null])->save();
 

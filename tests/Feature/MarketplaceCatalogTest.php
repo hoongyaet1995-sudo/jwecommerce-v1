@@ -146,6 +146,8 @@ class MarketplaceCatalogTest extends TestCase
         $id = DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee', 'shop_name'=>'Store',
             'external_shop_id'=>'456', 'region'=>'MY', 'environment'=>'sandbox', 'status'=>'connected',
             'created_at'=>now(), 'updated_at'=>now()]);
+        MarketplaceStoreToken::create(['store_id'=>$id, 'application_id'=>'123', 'access_token'=>'access',
+            'refresh_token'=>'refresh', 'access_expires_at'=>now()->addHours(4)]);
         $run = DB::table('marketplace_catalog_runs')->insertGetId(['store_id'=>$id, 'status'=>'failed',
             'next_offset'=>50, 'pages_completed'=>1, 'error_code'=>'catalog_page_failed', 'created_at'=>now(), 'updated_at'=>now()]);
         $this->actingAs(\App\Models\User::factory()->create(['is_admin'=>true]));

@@ -1,7 +1,7 @@
 <?php
 namespace App\Jobs;
 
-use App\Services\Marketplace\{ShopeeClient,ShopeeTokenManager,MarketplaceListingMetadataCache};
+use App\Services\Marketplace\{ShopeeClient,ShopeeTokenManager,MarketplaceListingMetadataCache,ShopeeApplicationResolver};
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\{DB,Cache};
@@ -16,12 +16,13 @@ class WarmShopeeListingMetadata implements ShouldQueue
         $this->onConnection('marketplace')->onQueue('marketplace');
     }
     public function backoff(): array { return [30,120]; }
-    public function handle(ShopeeClient $client, ShopeeTokenManager $tokens, MarketplaceListingMetadataCache $cache): void
+    public function handle(ShopeeClient $client, ShopeeTokenManager $tokens, MarketplaceListingMetadataCache $cache,
+        ShopeeApplicationResolver $applications): void
     {
         $store=DB::table('marketplace_stores')->find($this->storeId);
-        if (!$store || $store->status!=='connected' || $store->platform!=='shopee'
-            || $store->environment!==config('marketplace.shopee.environment')) return;
+        if (!$store || $store->status!=='connected' || $store->platform!=='shopee') return;
         $token=$tokens->accessToken($this->storeId);
+        $client=$applications->clientForStore($this->storeId,$client);
         $key='shopee-listing-warm:'.$this->storeId;
         Cache::put($key,['status'=>'running'],now()->addDay());
         try {

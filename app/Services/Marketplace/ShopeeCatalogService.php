@@ -7,18 +7,20 @@ use RuntimeException;
 
 class ShopeeCatalogService
 {
-    public function __construct(private ShopeeClient $client, private ShopeeTokenManager $tokens) {}
+    public function __construct(private ShopeeClient $client, private ShopeeTokenManager $tokens,
+        private ShopeeApplicationResolver $applications) {}
 
     public function pullPage(int $storeId, int $offset, string $status = 'NORMAL'): array
     {
         $token = $this->tokens->accessToken($storeId);
         $store = DB::table('marketplace_stores')->find($storeId);
-        $page = $this->client->catalogPage($token, $store->external_shop_id, $offset, $status);
+        $client = $this->applications->clientForStore($storeId, $this->client);
+        $page = $client->catalogPage($token, $store->external_shop_id, $offset, $status);
         $ids = array_column($page['item'], 'item_id');
         if (count($ids) !== count($page['item'])) {
             throw new RuntimeException('Shopee catalog contains missing product identities.');
         }
-        $items = $ids ? $this->client->itemDetails($token, $store->external_shop_id, $ids) : [];
+        $items = $ids ? $client->itemDetails($token, $store->external_shop_id, $ids) : [];
         $next = $page['next_offset'] ?? ($offset + count($ids));
         if ($page['has_next_page'] && (!is_numeric($next) || (int) $next <= $offset)) {
             throw new RuntimeException('Shopee pagination did not advance.');
@@ -32,19 +34,20 @@ class ShopeeCatalogService
         if (!preg_match('/^[1-9][0-9]*$/D',$itemId)) throw new RuntimeException('Invalid Shopee product identity.');
         $token=$this->tokens->accessToken($storeId);
         $store=DB::table('marketplace_stores')->find($storeId);
-        $items=$this->client->itemDetails($token,$store->external_shop_id,[$itemId]);
+        $items=$this->applications->clientForStore($storeId,$this->client)->itemDetails($token,$store->external_shop_id,[$itemId]);
         if (count($items)!==1 || (string)($items[0]['item_id']??'')!==$itemId) throw new RuntimeException('Shopee published product was not returned.');
         return ['items'=>1,'variants'=>$this->capture($storeId,$store,$token,$items,null)];
     }
 
     private function capture(int $storeId,object $store,#[\SensitiveParameter] string $token,array $items,?string $status): int
     {
+        $client=$this->applications->clientForStore($storeId,$this->client);
         $rows = [];
         foreach ($items as $item) {
             if (!is_bool($item['has_model'] ?? null)) {
                 throw new RuntimeException('Shopee product variant structure is missing.');
             }
-            $models = $item['has_model'] ? $this->client->models($token, $store->external_shop_id, (string) $item['item_id']) : [$item];
+            $models = $item['has_model'] ? $client->models($token, $store->external_shop_id, (string) $item['item_id']) : [$item];
             foreach ($models as $model) {
                 $rows[] = ['external_product_id'=>(string) $item['item_id'],
                     'external_variant_id'=>$item['has_model'] ? (string) $model['model_id'] : '0',

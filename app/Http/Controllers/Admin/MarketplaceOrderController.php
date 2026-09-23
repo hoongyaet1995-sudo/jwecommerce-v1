@@ -112,7 +112,7 @@ class MarketplaceOrderController extends Controller
         $id = DB::transaction(function () use ($store, $data, $client, $lazada) {
             $row = DB::table('marketplace_stores')->where('id', $store)->lockForUpdate()->first();
             abort_unless($row, 404);
-            $ready=$row->platform==='shopee' ? $client->isConfigured() && $row->environment===config('marketplace.shopee.environment')
+            $ready=$row->platform==='shopee' ? app(\App\Services\Marketplace\ShopeeApplicationResolver::class)->isStoreReady((int)$row->id)
                 : ($row->platform==='lazada' && $lazada->isConfigured() && $row->environment==='live' && $row->region==='MY');
             abort_unless($row->status === 'connected' && $ready, 409, 'Connect and configure this store before fetching orders.');
             $active = DB::table('marketplace_order_runs')->where('store_id', $store)->whereIn('status', ['queued', 'running'])->first();
@@ -156,7 +156,7 @@ class MarketplaceOrderController extends Controller
         DB::transaction(function () use ($run, $initial, $client, $lazada) {
             // The same store lock serializes fetch and retry submissions.
             $store = DB::table('marketplace_stores')->where('id', $initial->store_id)->lockForUpdate()->first();
-            $ready=$store&&($store->platform==='shopee' ? $client->isConfigured() && $store->environment===config('marketplace.shopee.environment')
+            $ready=$store&&($store->platform==='shopee' ? app(\App\Services\Marketplace\ShopeeApplicationResolver::class)->isStoreReady((int)$store->id)
                 : $store->platform==='lazada' && $lazada->isConfigured() && $store->environment==='live' && $store->region==='MY');
             abort_unless($store && $store->status === 'connected' && $ready, 409, 'Reconnect the store before retrying.');
             $row = DB::table('marketplace_order_runs')->where('id', $run)->lockForUpdate()->first();
