@@ -1,6 +1,6 @@
 # Shopee per-store environment and Singapore acceptance
 
-Date: 2026-09-23. Status: design for review.
+Date: 2026-09-23. Status: approved design.
 
 ## Problem and outcome
 
