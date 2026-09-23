@@ -476,7 +476,7 @@ class ShopeeClient
         $payload = $response->json();
         if (!$response->successful() || !is_array($payload) || !empty($payload['error'])
             || !is_string($payload['shop_name'] ?? null) || trim($payload['shop_name']) === ''
-            || !is_string($payload['region'] ?? null) || $payload['region'] !== 'MY'
+            || !is_string($payload['region'] ?? null) || !in_array($payload['region'], ['MY', 'SG'], true)
             || (isset($payload['shop_id']) && (string) $payload['shop_id'] !== $shopId)) {
             throw new RuntimeException('Shopee store identity could not be verified.');
         }

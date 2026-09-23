@@ -16,14 +16,23 @@ final class ShopeeOAuthBatchProcessor
     public function process(int $batchId, bool $retry=false): void
     {
         $batch=MarketplaceOAuthBatch::findOrFail($batchId);
-        if ($batch->provider!=='shopee' || $batch->application_id!==(string)config('marketplace.shopee.partner_id')
-            || $batch->environment!==config('marketplace.shopee.environment')) return;
+        if ($batch->provider!=='shopee') return;
+        try {
+            $context=app(ShopeeApplicationResolver::class)->forEnvironment($batch->environment);
+        } catch (RuntimeException) {
+            return;
+        }
+        if ($batch->application_id!==$context->partnerId) return;
+        $client=$batch->environment===config('marketplace.shopee.environment')
+            && $batch->application_id===(string)config('marketplace.shopee.partner_id')
+            && hash_equals($context->partnerKey, (string)config('marketplace.shopee.partner_key'))
+            ? $this->client : $this->client->forApplication($context);
         $query=$batch->stores()->whereIn('status',$retry?['failed']:['pending','failed'])->orderBy('id');
-        foreach ($query->get() as $row) $this->processStore($batch,$row);
+        foreach ($query->get() as $row) $this->processStore($batch,$row,$client);
         $this->recalculate($batch->fresh());
     }
 
-    private function processStore(MarketplaceOAuthBatch $batch, MarketplaceOAuthBatchStore $row): void
+    private function processStore(MarketplaceOAuthBatch $batch, MarketplaceOAuthBatchStore $row, ShopeeClient $client): void
     {
         $claimed=MarketplaceOAuthBatchStore::whereKey($row->id)->whereIn('status',['pending','failed'])->update([
             'status'=>'processing','attempt_count'=>DB::raw('attempt_count + 1'),'last_attempt_at'=>now(),
@@ -34,8 +43,8 @@ final class ShopeeOAuthBatchProcessor
             if (!$batch->seed_refresh_token || ($batch->seed_refresh_expires_at && now()->greaterThanOrEqualTo($batch->seed_refresh_expires_at))) {
                 throw new RuntimeException('reauthorize');
             }
-            $tokens=$this->client->refreshShopCredential($batch->seed_refresh_token,$row->external_shop_id);
-            $identity=$this->client->shopInfo($tokens['access_token'],$row->external_shop_id);
+            $tokens=$client->refreshShopCredential($batch->seed_refresh_token,$row->external_shop_id);
+            $identity=$client->shopInfo($tokens['access_token'],$row->external_shop_id);
             [$storeId,$type]=DB::transaction(function () use($batch,$identity,$tokens) {
                 $store=DB::table('marketplace_stores')->where('platform','shopee')->where('environment',$batch->environment)
                     ->where('external_shop_id',$identity['shop_id'])->lockForUpdate()->first();

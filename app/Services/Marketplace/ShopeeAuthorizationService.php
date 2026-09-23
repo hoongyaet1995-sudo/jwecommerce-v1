@@ -25,11 +25,15 @@ class ShopeeAuthorizationService
         if (!$attempt) {
             throw new RuntimeException('Authorization expired or invalid. Start again.');
         }
-        $tokens = $this->client->exchange($code, $shopId);
-        $identity = $this->client->shopInfo($tokens['access_token'], $shopId);
-        $environment = config('marketplace.shopee.environment');
+        $context = $attempt->environment !== null
+            ? app(ShopeeApplicationResolver::class)->forEnvironment($attempt->environment) : null;
+        $client = $context ? $this->client->forApplication($context) : $this->client;
+        $tokens = $client->exchange($code, $shopId);
+        $identity = $client->shopInfo($tokens['access_token'], $shopId);
+        $environment = $context?->environment ?? config('marketplace.shopee.environment');
+        $applicationId = $context?->partnerId ?? (string) config('marketplace.shopee.partner_id');
 
-        $storeId = DB::transaction(function () use ($attempt, $tokens, $identity, $environment) {
+        $storeId = DB::transaction(function () use ($attempt, $tokens, $identity, $environment, $applicationId) {
             $store = $attempt->reconnect_store_id
                 ? DB::table('marketplace_stores')->where('id', $attempt->reconnect_store_id)->lockForUpdate()->first()
                 : null;
@@ -53,7 +57,7 @@ class ShopeeAuthorizationService
                 $id = DB::table('marketplace_stores')->insertGetId($values + ['created_at'=>now()]);
             }
             MarketplaceStoreToken::updateOrCreate(['store_id'=>$id], [
-                'application_id'=>(string) config('marketplace.shopee.partner_id'),
+                'application_id'=>$applicationId,
                 'access_token'=>$tokens['access_token'], 'refresh_token'=>$tokens['refresh_token'],
                 'access_expires_at'=>now()->addSeconds($tokens['expire_in']), 'refresh_expires_at'=>null,
             ]);
@@ -77,17 +81,22 @@ class ShopeeAuthorizationService
         }
         $attempt=$this->states->consume($state,$actorId,'shopee',config('app.url'));
         if (!$attempt) throw new RuntimeException('Authorization expired or invalid. Start again.');
-        $tokens=$this->client->exchangeMainAccountCode($code,$mainAccountId);
+        $context=$attempt->environment!==null
+            ? app(ShopeeApplicationResolver::class)->forEnvironment($attempt->environment) : null;
+        $client=$context ? $this->client->forApplication($context) : $this->client;
+        $environment=$context?->environment ?? config('marketplace.shopee.environment');
+        $applicationId=$context?->partnerId ?? (string)config('marketplace.shopee.partner_id');
+        $tokens=$client->exchangeMainAccountCode($code,$mainAccountId);
         if ($attempt->reconnect_store_id) {
             $target=DB::table('marketplace_stores')->where('id',$attempt->reconnect_store_id)->first();
-            if (!$target || $target->platform!=='shopee' || $target->environment!==config('marketplace.shopee.environment')
+            if (!$target || $target->platform!=='shopee' || $target->environment!==$environment
                 || !in_array((string)$target->external_shop_id,$tokens['shop_id_list'],true)) {
                 throw new RuntimeException('Reconnect must include the original store.');
             }
         }
-        $batch=DB::transaction(function () use($attempt,$actorId,$mainAccountId,$tokens) {
+        $batch=DB::transaction(function () use($attempt,$actorId,$mainAccountId,$tokens,$environment,$applicationId) {
             $batch=MarketplaceOAuthBatch::create(['public_id'=>(string)Str::uuid(),'provider'=>'shopee',
-                'environment'=>config('marketplace.shopee.environment'),'application_id'=>(string)config('marketplace.shopee.partner_id'),
+                'environment'=>$environment,'application_id'=>$applicationId,
                 'actor_id'=>$actorId,'reconnect_store_id'=>$attempt->reconnect_store_id,'main_account_id'=>$mainAccountId,
                 'seed_access_token'=>$tokens['access_token'],'seed_refresh_token'=>$tokens['refresh_token'],
                 'seed_access_expires_at'=>now()->addSeconds($tokens['expire_in']),'seed_refresh_expires_at'=>now()->addDays(30),
