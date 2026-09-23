@@ -26,7 +26,7 @@ export interface StoreConnection {
   accountMode?: 'production' | 'test' | null;
   capabilities?: {catalogRead:boolean; productPublish:boolean; orderReceive:boolean; inventoryUpdate:boolean; fulfillmentWrite:boolean};
   id: string; platform: MarketplacePlatform; shopName: string; shopId: string | null;
-  region: string; status: string; tokenExpiresAt: string | null; lastSyncAt?: string | null;
+  region: string; environment?: 'sandbox' | 'production' | 'live'; status: string; tokenExpiresAt: string | null; lastSyncAt?: string | null;
   autoSyncStock: boolean; autoPullOrders: boolean;
 }
 export interface ProviderCapabilities {
@@ -96,9 +96,10 @@ export function officialLazadaAuthorizationUrl(value: string): string {
   }
   return url.href;
 }
-export async function requestMarketplaceAuthorization(platform: MarketplacePlatform, reconnectId?: string): Promise<void> {
+export async function requestMarketplaceAuthorization(platform: MarketplacePlatform, reconnectId?: string,
+  environment?: 'sandbox' | 'production'): Promise<void> {
   if (platform !== 'shopee' && platform !== 'lazada') throw new Error('This platform is not available yet.');
-  const {url} = await marketplaceOperations.authorize(reconnectId, platform);
+  const {url} = await marketplaceOperations.authorize(reconnectId, platform, environment);
   window.location.assign(platform === 'lazada' ? officialLazadaAuthorizationUrl(url) : officialShopeeAuthorizationUrl(url));
 }
 export const marketplaceOperations = {
@@ -157,7 +158,11 @@ export const marketplaceOperations = {
   retryOrders: (id: string) => marketplaceRequest<{runId: number}>(`/order-runs/${idPath(id)}/retry`, 'POST'),
   connections: () => marketplaceRequest<{stores: StoreConnection[]; capabilities: Record<MarketplacePlatform, ProviderCapabilities>; localCapabilities?:{importProducts:boolean}}>('/connections'),
   renewLazadaTestAccess: (id: string, accessToken: string) => marketplaceRequest<{store:{id:string;status:'connected';credentialSource:'official_test';testLeaseExpiresAt:string|null}}>(`/stores/${idPath(id)}/lazada-test-access`, 'POST', {accessToken}),
-  authorize: (reconnectId?: string, platform: 'shopee' | 'lazada' = 'shopee') => marketplaceRequest<{url: string}>(`/${platform}/authorize`, 'POST', reconnectId ? {reconnectStoreId: Number(reconnectId)} : {}),
+  authorize: (reconnectId?: string, platform: 'shopee' | 'lazada' = 'shopee', environment?: 'sandbox' | 'production') =>
+    marketplaceRequest<{url: string}>(`/${platform}/authorize`, 'POST', {
+      ...(reconnectId ? {reconnectStoreId: Number(reconnectId)} : {}),
+      ...(platform === 'shopee' && environment ? {environment} : {}),
+    }),
   disconnect: (id: string) => marketplaceRequest<{status: string; providerRevocationConfirmed: boolean}>(`/stores/${idPath(id)}/disconnect`, 'POST'),
   catalog: (filters: Filters = {}) => marketplaceRequest<Page<CatalogVariant>>(`/catalog?${query(filters)}`),
   fetchCatalog: (id: string) => marketplaceRequest<{runId: number}>(`/stores/${idPath(id)}/catalog-fetch`, 'POST'),

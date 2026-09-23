@@ -136,6 +136,12 @@ describe('marketplace operational contract', () => {
     await marketplaceOperations.authorize('7');
     expect(marketplaceRequest).toHaveBeenLastCalledWith('/shopee/authorize', 'POST', {reconnectStoreId: 7});
   });
+  it('sends the selected Shopee application environment without affecting Lazada', async () => {
+    await marketplaceOperations.authorize(undefined, 'shopee', 'production');
+    expect(marketplaceRequest).toHaveBeenLastCalledWith('/shopee/authorize', 'POST', {environment:'production'});
+    await marketplaceOperations.authorize(undefined, 'lazada');
+    expect(marketplaceRequest).toHaveBeenLastCalledWith('/lazada/authorize', 'POST', {});
+  });
   it('refuses non-official authorization redirects', () => {
     expect(officialShopeeAuthorizationUrl('https://open.sandbox.test-stable.shopee.com/auth?partner_id=1'))
       .toBe('https://open.sandbox.test-stable.shopee.com/auth?partner_id=1');

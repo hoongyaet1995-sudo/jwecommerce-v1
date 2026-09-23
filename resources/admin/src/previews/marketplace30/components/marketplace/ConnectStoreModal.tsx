@@ -10,7 +10,7 @@ interface ConnectStoreModalProps {
   onClose: () => void;
   mode?: 'connect' | 'reauthorize';
   existingConnection?: MarketplaceConnection | null;
-  requestAuthorization?: (platform: MarketplacePlatform, reconnectId?: string) => Promise<void>;
+  requestAuthorization?: (platform: MarketplacePlatform, reconnectId?: string, environment?: 'sandbox' | 'production') => Promise<void>;
   oauthAvailability?: Partial<Record<MarketplacePlatform, boolean>>;
   authorizationResult?: OAuthResult | null;
   retryBatch?: (id:string)=>Promise<void>;
@@ -43,6 +43,7 @@ export const ConnectStoreModal: React.FC<ConnectStoreModalProps> = ({
   const [sellerHandle, setSellerHandle] = useState<string>(
     existingConnection?.shopId || (requestAuthorization ? '' : 'aurora_official_my')
   );
+  const [environment, setEnvironment] = useState<'sandbox' | 'production'>(existingConnection?.environment || 'sandbox');
 
   // Workflow state
   const [step, setStep] = useState<AuthStep>('select');
@@ -91,8 +92,10 @@ export const ConnectStoreModal: React.FC<ConnectStoreModalProps> = ({
         setRegion(existingConnection.region);
         setShopName(existingConnection.shopName);
         setSellerHandle(existingConnection.shopId);
+        setEnvironment(existingConnection.environment || 'sandbox');
         setStep('select');
       } else {
+        setEnvironment('sandbox');
         setStep('select');
       }
       setIsHandshakeLoading(false);
@@ -127,7 +130,8 @@ export const ConnectStoreModal: React.FC<ConnectStoreModalProps> = ({
     setIsHandshakeLoading(true);
     if (requestAuthorization) {
       try {
-        await requestAuthorization(platform, mode === 'reauthorize' ? existingConnection?.id : undefined);
+        await requestAuthorization(platform, mode === 'reauthorize' ? existingConnection?.id : undefined,
+          platform === 'shopee' ? environment : undefined);
       } catch (error) {
         setErrorDetails(error instanceof Error ? error.message : 'Authorization could not be started.');
         setStep('failed');
@@ -305,8 +309,26 @@ export const ConnectStoreModal: React.FC<ConnectStoreModalProps> = ({
               </div>
             </div>
 
+            {requestAuthorization && platform === 'shopee' && (
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300">Shopee Environment</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {(['sandbox', 'production'] as const).map(choice => (
+                    <button key={choice} type="button" disabled={mode === 'reauthorize'}
+                      onClick={() => setEnvironment(choice)}
+                      className={`p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${environment === choice
+                        ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-900 dark:text-white ring-2 ring-indigo-500/20'
+                        : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/60'}`}>
+                      {choice === 'sandbox' ? 'Sandbox' : 'Production'}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-neutral-400">Shopee confirms the store name and region after authorization.</p>
+              </div>
+            )}
+
             {/* Store Information Form */}
-            <div className="space-y-4">
+            {!requestAuthorization && <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1.5">
@@ -368,7 +390,7 @@ export const ConnectStoreModal: React.FC<ConnectStoreModalProps> = ({
                   {requestAuthorization ? 'The platform confirms your shop identity. No manual Shop ID is required.' : 'The primary seller handle or store username registered with the marketplace.'}
                 </span>
               </div>
-            </div>
+            </div>}
 
             {/* Bottom Actions */}
             <div className="flex items-center justify-between pt-4 border-t border-neutral-100 dark:border-neutral-800">

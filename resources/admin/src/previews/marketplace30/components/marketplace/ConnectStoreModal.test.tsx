@@ -4,6 +4,27 @@ import {createRoot} from 'react-dom/client';
 import {expect, it, vi} from 'vitest';
 import {ConnectStoreModal} from './ConnectStoreModal';
 
+it('sends the chosen Shopee environment without asking for an unverified name or region', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  const authorize = vi.fn().mockResolvedValue(undefined);
+  try {
+    await act(async () => root.render(<ConnectStoreModal isOpen onClose={() => {}}
+      requestAuthorization={authorize} oauthAvailability={{shopee:true}}/>));
+    expect(container.textContent).not.toContain('Store Display Name');
+    expect(container.textContent).not.toContain('Platform Region / Country');
+    const production = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('Production'))!;
+    await act(async () => production.click());
+    const proceed = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('Proceed to Official Authorization'))!;
+    await act(async () => proceed.click());
+    expect(authorize).toHaveBeenCalledExactlyOnceWith('shopee', undefined, 'production');
+  } finally {
+    await act(async () => root.unmount());
+    vi.unstubAllGlobals();
+  }
+});
+
 // Operational modal must render without loading or mounting the demo AdminProvider.
 
 it('keeps Lazada reconnect bound to the existing store and platform', async () => {
@@ -20,7 +41,7 @@ it('keeps Lazada reconnect bound to the existing store and platform', async () =
     const button = (label: string) => Array.from(container.querySelectorAll('button')).find(b => b.textContent?.includes(label))!;
     expect(button('Shopee').disabled).toBe(true);
     await act(async () => button('Proceed to Official Authorization').click());
-    expect(authorize).toHaveBeenCalledExactlyOnceWith('lazada', '42');
+    expect(authorize).toHaveBeenCalledExactlyOnceWith('lazada', '42', undefined);
     expect(container.textContent).not.toContain('Store Connected Successfully!');
   } finally {
     await act(async () => root.unmount());
@@ -40,7 +61,7 @@ it('selects available Lazada and submits its authorization without simulating a 
     expect(button('Lazada').disabled).toBe(false);
     await act(async () => button('Lazada').click());
     await act(async () => button('Proceed to Official Authorization').click());
-    expect(authorize).toHaveBeenCalledExactlyOnceWith('lazada', undefined);
+    expect(authorize).toHaveBeenCalledExactlyOnceWith('lazada', undefined, undefined);
     expect(container.textContent).not.toContain('Store Connected Successfully!');
     expect(container.textContent).not.toContain('Permissions Requested by JW ERP');
   } finally {
@@ -78,7 +99,7 @@ it('uses injected authorization without entering simulated seller consent', asyn
   await act(async () => root.render(<ConnectStoreModal isOpen onClose={() => {}} requestAuthorization={authorize} oauthAvailability={{shopee: true}}/>));
   const button = Array.from(container.querySelectorAll('button')).find(b => b.textContent?.includes('Proceed to Official Authorization'))!;
   await act(async () => button.click());
-  expect(authorize).toHaveBeenCalledWith('shopee', undefined);
+  expect(authorize).toHaveBeenCalledWith('shopee', undefined, 'sandbox');
   expect(container.textContent).not.toContain('Permissions Requested by JW ERP');
   expect(container.textContent).not.toContain('Store Connected Successfully!');
   await act(async () => root.unmount());
@@ -122,11 +143,8 @@ it('fails closed until backend declares OAuth available and keeps unavailable pl
   const lazada = Array.from(container.querySelectorAll('button')).find(b => b.textContent?.includes('Lazada'))!;
   expect(lazada.disabled).toBe(true);
   expect(lazada.textContent).toContain('Unavailable');
-  expect(container.querySelector('select')?.disabled).toBe(true);
   const identityInputs = Array.from(container.querySelectorAll('input'));
-  expect(identityInputs).toHaveLength(2);
-  expect(identityInputs.every(input => input.readOnly)).toBe(true);
-  expect(identityInputs.every(input => input.placeholder.includes('authorization'))).toBe(true);
+  expect(identityInputs).toHaveLength(0);
   await act(async () => root.unmount());
   vi.unstubAllGlobals();
 });
