@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'payments/webhooks/paypal',
             'webhooks/easyparcel',
             'webhooks/easyparcel/*',
+            'api/marketplace/hub/refresh',
+            'api/marketplace/hub/events',
         ]);
         $middleware->web(append: [
             ClearLegacyCustomerWebSession::class,

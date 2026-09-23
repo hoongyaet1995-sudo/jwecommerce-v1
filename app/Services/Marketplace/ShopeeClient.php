@@ -364,8 +364,9 @@ class ShopeeClient
 
     public function isAuthorizationReady(): bool
     {
-        // Direct callbacks only. A shared authorization gateway needs a separate reviewed contract.
-        $expected = rtrim((string) config('app.url'), '/').'/admin/marketplace/oauth/shopee/callback';
+        $base = config('marketplace.hub.oauth_routing_enabled') === true
+            ? 'https://marketplace.jwaistudio.online' : rtrim((string) config('app.url'), '/');
+        $expected = $base.'/admin/marketplace/oauth/shopee/callback';
         return $this->isConfigured() && config('marketplace.shopee.callback_url') === $expected;
     }
 

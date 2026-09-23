@@ -233,7 +233,8 @@ class MarketplaceOAuthController extends Controller
         return response()->json(['status'=>'disconnected', 'providerRevocationConfirmed'=>false]);
     }
 
-    public function start(Request $request, OAuthStateService $states, ShopeeClient $client)
+    public function start(Request $request, OAuthStateService $states, ShopeeClient $client,
+        \App\Services\Marketplace\MarketplaceHubOAuthIntent $hubIntent)
     {
         $request->session()->forget('marketplace.oauth_result');
         $data = $request->validate(['reconnectStoreId'=>'nullable|integer|exists:marketplace_stores,id']);
@@ -250,7 +251,9 @@ class MarketplaceOAuthController extends Controller
             }
             $client->authorizationUrl(str_repeat('0', 64));
             $state = $states->issue($request->user()->id, 'shopee', config('app.url'), $storeId);
-            return response()->json(['url'=>$client->authorizationUrl($state)])->header('Cache-Control', 'no-store');
+            $providerState = config('marketplace.hub.oauth_routing_enabled') === true
+                ? $hubIntent->issue('shopee', (string) config('marketplace.shopee.environment'), $state) : $state;
+            return response()->json(['url'=>$client->authorizationUrl($providerState)])->header('Cache-Control', 'no-store');
         } catch (RuntimeException) {
             return response()->json(['message'=>'Shopee authorization is not available. Contact the system administrator.'], 409);
         }

@@ -11,6 +11,32 @@ final class LazadaOrderService
     public function __construct(private LazadaClient $client, private LazadaTokenManager $tokens,
         private MarketplaceOrderSnapshotService $snapshots) {}
 
+    public function pullOrderByExternalId(int $storeId, string $externalOrderId): int
+    {
+        if (!preg_match('/^[1-9][0-9]*$/D', $externalOrderId)) throw new RuntimeException('Invalid order identity.');
+        $store = DB::table('marketplace_stores')->find($storeId);
+        if (!$store || $store->platform !== 'lazada' || $store->status !== 'connected'
+            || $store->region !== 'MY' || $store->environment !== 'live') {
+            throw new RuntimeException('Connected Lazada order store required.');
+        }
+        $token = $this->tokens->accessToken($storeId);
+        $summary = $this->client->read('/order/get', $token, ['order_id' => $externalOrderId], $storeId);
+        if ((string) ($summary['order_id'] ?? '') !== $externalOrderId) throw new RuntimeException('Order identity mismatch.');
+        $items = $this->client->read('/order/items/get', $token, ['order_id' => $externalOrderId], $storeId);
+        $items = array_is_list($items) ? $items : ($items['order_items'] ?? null);
+        if (!is_array($items) || !array_is_list($items) || !$items) throw new RuntimeException('Complete order items required.');
+        $seen = [];
+        foreach ($items as $item) {
+            $id = is_array($item) ? (string) ($item['order_item_id'] ?? '') : '';
+            if (!preg_match('/^[1-9][0-9]*$/D', $id) || isset($seen[$id])
+                || (string) ($item['order_id'] ?? '') !== $externalOrderId) {
+                throw new RuntimeException('Order item identity mismatch.');
+            }
+            $seen[$id] = true;
+        }
+        return $this->snapshots->saveLazada($storeId, array_replace($summary, ['order_items' => $items]));
+    }
+
     public function refreshOrder(int $localOrderId):int
     {
         $order=DB::table('marketplace_orders')->find($localOrderId);

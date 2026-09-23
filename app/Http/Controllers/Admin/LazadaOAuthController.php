@@ -12,7 +12,8 @@ use RuntimeException;
 
 final class LazadaOAuthController extends Controller
 {
-    public function start(Request $request, OAuthStateService $states)
+    public function start(Request $request, OAuthStateService $states,
+        \App\Services\Marketplace\MarketplaceHubOAuthIntent $hubIntent)
     {
         $request->session()->forget('marketplace.oauth_result');
         $data=$request->validate(['reconnectStoreId'=>'nullable|integer|exists:marketplace_stores,id']);
@@ -25,11 +26,14 @@ final class LazadaOAuthController extends Controller
         try {
             if (config('marketplace.lazada.enabled')!==true || !is_string(config('marketplace.lazada.app_secret'))
                 || trim(config('marketplace.lazada.app_secret'))==='') throw new RuntimeException('Unavailable.');
+            $routing = config('marketplace.hub.oauth_routing_enabled') === true;
+            $deployment = $routing ? 'https://marketplace.jwaistudio.online' : config('app.url');
             $build=fn($state)=>LazadaAuthorizationUrl::build((string)config('marketplace.lazada.app_key'),
-                (string)config('marketplace.lazada.callback_url'),config('app.url'),$state);
+                (string)config('marketplace.lazada.callback_url'),$deployment,$state);
             $build(str_repeat('0',64));
             $state=$states->issue($request->user()->id,'lazada',config('app.url'),$id);
-            return response()->json(['url'=>$build($state)])->header('Cache-Control','no-store');
+            $providerState = $routing ? $hubIntent->issue('lazada', 'production', $state) : $state;
+            return response()->json(['url'=>$build($providerState)])->header('Cache-Control','no-store');
         } catch (RuntimeException) {
             return response()->json(['message'=>'Lazada authorization is not available. Contact the system administrator.'],409);
         }

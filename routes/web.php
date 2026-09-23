@@ -53,6 +53,11 @@ use App\Http\Controllers\StorefrontCurrencyController;
 use App\Http\Controllers\StorefrontPageController;
 use Illuminate\Support\Facades\Route;
 
+Route::post('/api/marketplace/hub/refresh', \App\Http\Controllers\MarketplaceHubRefreshController::class)
+    ->middleware('throttle:30,1');
+Route::post('/api/marketplace/hub/events', \App\Http\Controllers\MarketplaceHubEventController::class)
+    ->middleware('throttle:120,1');
+
 Route::get('/', [StorefrontController::class, 'home'])->name('storefront.home');
 Route::get('/shop', [StorefrontController::class, 'index'])->name('storefront.index');
 Route::get('/categories/{category:slug}', [StorefrontController::class, 'category'])->name('storefront.categories.show');

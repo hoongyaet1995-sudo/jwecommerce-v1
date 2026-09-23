@@ -10,6 +10,21 @@ use Tests\TestCase;
 class LazadaOrderServiceTest extends TestCase
 {
  use RefreshDatabase;
+ public function test_targeted_hub_order_pull_fetches_verified_order_and_items():void
+ {
+  config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);
+  $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','environment'=>'live','region'=>'MY','external_shop_id'=>'2001','shop_name'=>'Lazada MY','status'=>'connected','created_at'=>now(),'updated_at'=>now()]);
+  MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'123','access_token'=>'fixture-token','refresh_token'=>'fixture-refresh','access_expires_at'=>now()->addHour(),'refresh_expires_at'=>now()->addDay()]);
+  Http::preventStrayRequests();
+  Http::fake(function($request){
+   if(str_contains($request->url(),'/order/get'))return Http::response(['code'=>'0','data'=>['order_id'=>'1001','updated_at'=>'2026-09-08T10:00:00+08:00','statuses'=>['pending'],'currency'=>'MYR','price'=>'25.00']]);
+   if(str_contains($request->url(),'/order/items/get'))return Http::response(['code'=>'0','data'=>[['order_item_id'=>'2001','order_id'=>'1001','status'=>'pending']]]);
+   return Http::response(['code'=>'denied'],400);
+  });
+  app(LazadaOrderService::class)->pullOrderByExternalId($store,'1001');
+  $this->assertDatabaseHas('marketplace_orders',['store_id'=>$store,'external_order_id'=>'1001']);
+  Http::assertSentCount(2);
+ }
  public function test_pull_page_fetches_order_items_and_keeps_snapshot_inventory_decoupled():void
  {
   config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'123','marketplace.lazada.app_secret'=>'fixture-secret']);

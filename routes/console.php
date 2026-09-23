@@ -44,6 +44,26 @@ Artisan::command('marketplace:hub-heartbeat', function () {
 Schedule::command('marketplace:hub-heartbeat')->everyFiveMinutes()->withoutOverlapping()
     ->when(fn () => (bool) config('marketplace.hub.client_id') && (bool) config('marketplace.hub.client_secret'));
 
+Artisan::command('marketplace:hub-report-stores', function () {
+    $this->line(json_encode(app(\App\Services\Marketplace\MarketplaceHubStoreReporter::class)->run(), JSON_THROW_ON_ERROR));
+})->purpose('Report connected marketplace store metadata to JW Marketplace Hub');
+
+Schedule::command('marketplace:hub-report-stores')->everyFiveMinutes()->withoutOverlapping()
+    ->when(fn () => config('marketplace.hub.store_reporting_enabled') === true);
+
+Artisan::command('marketplace:hub-report-activity', function () {
+    $this->line(json_encode(app(\App\Services\Marketplace\MarketplaceHubActivityReporter::class)->run(), JSON_THROW_ON_ERROR));
+})->purpose('Report safe marketplace task status to JW Marketplace Hub');
+
+Artisan::command('marketplace:hub-sync', function () {
+    $this->call('marketplace:hub-heartbeat');
+    $this->call('marketplace:hub-report-stores');
+    $this->call('marketplace:hub-report-activity');
+})->purpose('Run the enabled Marketplace Hub installation reports in dependency order');
+
+Schedule::command('marketplace:hub-report-activity')->everyFiveMinutes()->withoutOverlapping()
+    ->when(fn () => config('marketplace.hub.activity_reporting_enabled') === true);
+
 Schedule::job(new SyncEasyParcelTracking, 'easyparcel')
     ->everyFifteenMinutes();
 
