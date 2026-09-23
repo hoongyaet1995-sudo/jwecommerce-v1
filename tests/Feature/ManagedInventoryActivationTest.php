@@ -37,6 +37,7 @@ class ManagedInventoryActivationTest extends TestCase
         $service=app(\App\Services\Marketplace\MarketplaceOrderInventoryService::class);
         $service->process($order);$service->process($order);
         $this->assertDatabaseCount('stock_allocations',2);
+        $this->assertDatabaseHas('inventory_balances',['id'=>$balance['balance_id'],'physical_stock'=>10,'reserved_stock'=>2]);
         $this->assertFalse($sync->review($staged['id'])['current']);
         $latest=$sync->stage($store,$balance['balance_id'],'managed:after',$actor);
         $this->assertSame(6,$latest['desired_quantity']);
@@ -56,6 +57,7 @@ class ManagedInventoryActivationTest extends TestCase
         DB::table('marketplace_orders')->where('id',$order)->update(['encrypted_payload'=>\Illuminate\Support\Facades\Crypt::encryptString(json_encode($payload)),'platform_updated_at'=>now()->addSecond()->timestamp]);
         $service->process($order);$service->process($order);
         $this->assertDatabaseHas('inventory_balances',['id'=>$balance['balance_id'],'physical_stock'=>9]);
+        $this->assertDatabaseHas('inventory_balances',['id'=>$balance['balance_id'],'physical_stock'=>9,'reserved_stock'=>0]);
         $this->assertDatabaseHas('marketplace_inventory_items',['order_id'=>$order,'line_key'=>'301','status'=>'consumed']);
         $this->assertDatabaseHas('marketplace_inventory_items',['order_id'=>$order,'line_key'=>'302','status'=>'released']);
         $this->assertDatabaseCount('inventory_allocation_movements',4);

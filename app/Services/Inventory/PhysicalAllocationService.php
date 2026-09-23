@@ -32,7 +32,9 @@ class PhysicalAllocationService
         }
         if ($physical<0 || $reserved<0) throw new RuntimeException('Warehouse allocation exceeds recorded quantities.');
         $version=(int)$balance->version+1;
-        DB::table('inventory_balances')->where('id',$balance->id)->update(['physical_stock'=>$physical,'version'=>$version,'updated_at'=>now()]);
+        DB::table('inventory_balances')->where('id',$balance->id)->update([
+            'physical_stock'=>$physical,'reserved_stock'=>$reserved,'version'=>$version,'updated_at'=>now(),
+        ]);
         DB::table('inventory_allocation_movements')->insert([
             'stock_allocation_id'=>$allocationId,'inventory_balance_id'=>$balance->id,'event'=>$event,
             'physical_delta'=>$event==='consumed'?-$quantity:0,'reserved_delta'=>$event==='reserved'?$quantity:-$quantity,
