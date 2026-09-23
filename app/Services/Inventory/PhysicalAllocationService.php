@@ -6,6 +6,42 @@ use App\Services\Inventory\WarehouseAllocationException as RuntimeException;
 /** Called inside StockAllocationService's transaction with the variant row locked. */
 class PhysicalAllocationService
 {
+    /** Managed reservations use owned allocation rows; raw historical obligations remain unknown. */
+    public function managed(int $allocationId,string $event): array
+    {
+        $allocation=DB::table('stock_allocations')->find($allocationId);
+        $activation=DB::table('inventory_order_activations')->find($allocation->inventory_order_activation_id);
+        if (!$activation || (int)$activation->product_variant_id!==(int)$allocation->product_variant_id) {
+            throw new RuntimeException('Managed allocation does not match its activated SKU.');
+        }
+        $balance=DB::table('inventory_balances')->where('id',$activation->inventory_balance_id)->lockForUpdate()->first();
+        if (!$balance || $balance->physical_stock===null || $balance->safety_stock===null || !$balance->counted_at) {
+            throw new RuntimeException('Managed physical stock requires a verified count.');
+        }
+        $reserved=(int)DB::table('stock_allocations')->where('inventory_balance_id',$balance->id)->where('status','reserved')->sum('quantity');
+        $physical=(int)$balance->physical_stock;
+        $before=max(0,$physical-$reserved-(int)$balance->safety_stock);
+        $quantity=(int)$allocation->quantity;
+        if ($event==='reserved') {
+            if ($physical-$reserved-(int)$balance->safety_stock<$quantity) throw new RuntimeException('Verified warehouse ATP is insufficient.');
+            $reserved+=$quantity;
+            DB::table('stock_allocations')->where('id',$allocationId)->update(['inventory_balance_id'=>$balance->id]);
+        } else {
+            $reserved-=$quantity;
+            if ($event==='consumed') $physical-=$quantity;
+        }
+        if ($physical<0 || $reserved<0) throw new RuntimeException('Warehouse allocation exceeds recorded quantities.');
+        $version=(int)$balance->version+1;
+        DB::table('inventory_balances')->where('id',$balance->id)->update(['physical_stock'=>$physical,'version'=>$version,'updated_at'=>now()]);
+        DB::table('inventory_allocation_movements')->insert([
+            'stock_allocation_id'=>$allocationId,'inventory_balance_id'=>$balance->id,'event'=>$event,
+            'physical_delta'=>$event==='consumed'?-$quantity:0,'reserved_delta'=>$event==='reserved'?$quantity:-$quantity,
+            'physical_after'=>$physical,'reserved_after'=>$reserved,'balance_version'=>$version,'created_at'=>now(),
+        ]);
+        $after=max(0,$physical-$reserved-(int)$balance->safety_stock);
+        return ['available'=>$after,'delta'=>$after-$before];
+    }
+
     public function reserve(int $allocationId,string $ownerType,int $ownerId,int $variantId,int $quantity):void
     {
         $config=DB::table('inventory_configuration')->where('id',1)->first();
