@@ -374,7 +374,7 @@ class ShopeeClient
 
     public function isAuthorizationReady(): bool
     {
-        $base = config('marketplace.hub.oauth_routing_enabled') === true
+        $base = MarketplaceHubOAuthMode::enabled('shopee', $this->configuration()['environment'])
             ? 'https://marketplace.jwaistudio.online' : rtrim((string) config('app.url'), '/');
         $expected = $base.'/admin/marketplace/oauth/shopee/callback';
         return $this->isConfigured() && $this->configuration()['callback_url'] === $expected;

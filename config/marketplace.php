@@ -6,6 +6,15 @@ return [
         'client_id' => env('MARKETPLACE_HUB_CLIENT_ID'),
         'client_secret' => env('MARKETPLACE_HUB_CLIENT_SECRET'),
         'oauth_routing_enabled' => env('MARKETPLACE_HUB_OAUTH_ROUTING_ENABLED', false),
+        'oauth_routes' => [
+            'shopee' => [
+                'sandbox' => env('MARKETPLACE_HUB_SHOPEE_SANDBOX_OAUTH_ENABLED', env('MARKETPLACE_HUB_OAUTH_ROUTING_ENABLED', false)),
+                'production' => env('MARKETPLACE_HUB_SHOPEE_PRODUCTION_OAUTH_ENABLED', env('MARKETPLACE_HUB_OAUTH_ROUTING_ENABLED', false)),
+            ],
+            'lazada' => [
+                'production' => env('MARKETPLACE_HUB_LAZADA_PRODUCTION_OAUTH_ENABLED', env('MARKETPLACE_HUB_OAUTH_ROUTING_ENABLED', false)),
+            ],
+        ],
         'store_reporting_enabled' => env('MARKETPLACE_HUB_STORE_REPORTING_ENABLED', false),
         'refresh_endpoint_enabled' => env('MARKETPLACE_HUB_REFRESH_ENDPOINT_ENABLED', false),
         'activity_reporting_enabled' => env('MARKETPLACE_HUB_ACTIVITY_REPORTING_ENABLED', false),

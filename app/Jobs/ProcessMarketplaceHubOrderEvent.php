@@ -16,7 +16,7 @@ final class ProcessMarketplaceHubOrderEvent implements ShouldQueue
 
     public function __construct(public string $hubEventId)
     {
-        $this->onConnection('marketplace')->onQueue('marketplace');
+        $this->onConnection('marketplace')->onQueue('marketplace-hub-orders');
     }
 
     public function handle(LazadaOrderService $orders): void

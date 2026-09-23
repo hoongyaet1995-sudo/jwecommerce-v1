@@ -84,10 +84,52 @@ class MarketplaceHubOAuthRoutingTest extends TestCase
         });
     }
 
+    public function test_only_shopee_sandbox_can_be_switched_to_hub_while_production_stays_direct(): void
+    {
+        config(['app.url' => 'https://ecom.jwaistudio.online',
+            'marketplace.hub.oauth_routing_enabled' => false,
+            'marketplace.hub.oauth_routes.shopee.sandbox' => true,
+            'marketplace.hub.oauth_routes.shopee.production' => false,
+            'marketplace.hub.url' => 'https://marketplace.jwaistudio.online',
+            'marketplace.hub.client_id' => 'jw_fixture_client',
+            'marketplace.hub.client_secret' => 'fixture-client-secret',
+            'marketplace.shopee.enabled' => true,
+            'marketplace.shopee.applications.sandbox' => ['partner_id' => '1232619',
+                'partner_key' => 'fixture-sandbox-key',
+                'callback_url' => 'https://marketplace.jwaistudio.online/admin/marketplace/oauth/shopee/callback'],
+            'marketplace.shopee.applications.production' => ['partner_id' => '2033707',
+                'partner_key' => 'fixture-production-key',
+                'callback_url' => 'https://ecom.jwaistudio.online/admin/marketplace/oauth/shopee/callback'],
+            'marketplace.lazada.enabled' => true,
+            'marketplace.lazada.app_key' => '139209',
+            'marketplace.lazada.app_secret' => 'fixture-lazada-secret',
+            'marketplace.lazada.callback_url' => 'https://ecom.jwaistudio.online/admin/marketplace/oauth/lazada/callback',
+        ]);
+        $hubState = str_repeat('a', 64);
+        Http::fake(['marketplace.jwaistudio.online/api/oauth/intents' => Http::response(['state' => $hubState], 201)]);
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+
+        $sandbox = $this->postJson('/admin/api/marketplace/shopee/authorize', ['environment' => 'sandbox'])
+            ->assertOk()->json('url');
+        $production = $this->postJson('/admin/api/marketplace/shopee/authorize', ['environment' => 'production'])
+            ->assertOk()->json('url');
+        $lazada = $this->postJson('/admin/api/marketplace/lazada/authorize')->assertOk()->json('url');
+        parse_str(parse_url($sandbox, PHP_URL_QUERY), $sandboxQuery);
+        parse_str(parse_url($production, PHP_URL_QUERY), $productionQuery);
+        parse_str(parse_url($lazada, PHP_URL_QUERY), $lazadaQuery);
+        $this->assertStringStartsWith('https://marketplace.jwaistudio.online/', $sandboxQuery['redirect_uri']);
+        $this->assertStringStartsWith('https://ecom.jwaistudio.online/', $productionQuery['redirect_uri']);
+        $this->assertSame('https://ecom.jwaistudio.online/admin/marketplace/oauth/lazada/callback',
+            $lazadaQuery['redirect_uri']);
+        Http::assertSentCount(1);
+    }
+
     private function configureHub(): void
     {
         config(['app.url' => 'https://ecom.jwaistudio.online',
             'marketplace.hub.oauth_routing_enabled' => true,
+            'marketplace.hub.oauth_routes.shopee.production' => true,
+            'marketplace.hub.oauth_routes.lazada.production' => true,
             'marketplace.hub.url' => 'https://marketplace.jwaistudio.online',
             'marketplace.hub.client_id' => 'jw_fixture_client',
             'marketplace.hub.client_secret' => 'fixture-client-secret']);

@@ -93,7 +93,7 @@ final class ShopeeApplicationResolver
     {
         try {
             $context = $this->forEnvironment($environment);
-            $base = config('marketplace.hub.oauth_routing_enabled') === true
+            $base = MarketplaceHubOAuthMode::enabled('shopee', $environment)
                 ? 'https://marketplace.jwaistudio.online' : rtrim((string) config('app.url'), '/');
             return $context->callbackUrl === $base.'/admin/marketplace/oauth/shopee/callback';
         } catch (RuntimeException) {

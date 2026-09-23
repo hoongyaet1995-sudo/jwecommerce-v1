@@ -14,7 +14,7 @@ final class MarketplaceHubOAuthIntent
         $clientId = (string) config('marketplace.hub.client_id');
         $secret = (string) config('marketplace.hub.client_secret');
         $domain = parse_url((string) config('app.url'), PHP_URL_HOST);
-        if (config('marketplace.hub.oauth_routing_enabled') !== true
+        if (! MarketplaceHubOAuthMode::enabled($provider, $environment)
             || $base !== 'https://marketplace.jwaistudio.online'
             || $clientId === '' || $secret === '' || ! is_string($domain)
             || ! in_array($provider, ['shopee', 'lazada'], true)

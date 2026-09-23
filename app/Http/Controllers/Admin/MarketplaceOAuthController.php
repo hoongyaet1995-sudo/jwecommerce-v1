@@ -260,7 +260,7 @@ class MarketplaceOAuthController extends Controller
             }
             $client->authorizationUrl(str_repeat('0', 64));
             $state = $states->issue($request->user()->id, 'shopee', config('app.url'), $storeId, $context);
-            $providerState = config('marketplace.hub.oauth_routing_enabled') === true
+            $providerState = \App\Services\Marketplace\MarketplaceHubOAuthMode::enabled('shopee', $environment)
                 ? $hubIntent->issue('shopee', $environment, $state) : $state;
             return response()->json(['url'=>$client->authorizationUrl($providerState)])->header('Cache-Control', 'no-store');
         } catch (RuntimeException) {
