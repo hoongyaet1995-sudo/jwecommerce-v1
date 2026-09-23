@@ -99,7 +99,7 @@ class MarketplaceOrderDetailService
             $result['label_packages']=array_keys(array_filter($packages));
             $testToken=\App\Models\MarketplaceStoreToken::where('store_id',$order->store_id)->first();
             $testAccessReady=$testToken && ($testToken->credential_source!=='official_test'
-                || ($testToken->test_lease_expires_at?->isFuture() && $testToken->access_expires_at?->isFuture()));
+                || ($testToken->test_lease_expires_at?->isFuture() && (bool)$testToken->access_token));
             $result['capabilities']['airway_bill']=count($result['label_packages'])>0 && $testAccessReady;
             $store=DB::table('marketplace_stores')->find($order->store_id);
             if (config('marketplace.fulfillment_operations_enabled')===true&&$store->status==='connected'&&$store->region==='MY'&&$store->environment==='live') {

@@ -39,6 +39,18 @@ class LazadaOrderDetailTest extends TestCase
         $this->assertSame(['PK1'],$detail['label_packages']);
         $this->assertFalse($detail['capabilities']['airway_bill']);
     }
+    public function test_current_official_test_lease_allows_awb_without_access_expiry():void
+    {
+        $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'lazada','shop_name'=>'Official Test','region'=>'MY','environment'=>'live','status'=>'connected']);
+        MarketplaceStoreToken::create(['store_id'=>$store,'credential_source'=>'official_test','application_id'=>'456',
+            'access_token'=>'fixture','access_expires_at'=>null,'test_lease_expires_at'=>now()->addHour()]);
+        $item=['order_item_id'=>'101','package_id'=>'PK1','status'=>'packed','is_fbl'=>0,'is_digital'=>0,'delivery_option_sof'=>0];
+        $id=DB::table('marketplace_orders')->insertGetId(['store_id'=>$store,'external_order_id'=>'100','platform_status'=>'packed',
+            'platform_updated_at'=>100,'encrypted_payload'=>Crypt::encryptString(json_encode(['order_items'=>[$item]])),'fetched_at'=>now()]);
+        $detail=app(MarketplaceOrderDetailService::class)->read($id);
+        $this->assertSame(['PK1'],$detail['label_packages']);
+        $this->assertTrue($detail['capabilities']['airway_bill']);
+    }
     public function test_rts_capability_excludes_claimed_packages():void
     {
         config(['marketplace.fulfillment_operations_enabled'=>true]);
