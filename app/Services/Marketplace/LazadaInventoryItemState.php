@@ -11,7 +11,7 @@ final class LazadaInventoryItemState
    $order=DB::table('marketplace_orders')->where('id',$orderId)->lockForUpdate()->first();
    if (!$order) throw new MarketplaceInventoryException('invalid_order_lines');
    $target=$line['target'];
-   if (!in_array($target,['waiting','reserved','released','consumed'],true)||$version<0) throw new MarketplaceInventoryException('inventory_lifecycle_conflict');
+   if (!in_array($target,['waiting','reserved','released','consumed','skipped_unmapped','skipped_historical'],true)||$version<0) throw new MarketplaceInventoryException('inventory_lifecycle_conflict');
    if ($allocationId===null && in_array($target,['reserved','consumed'],true)) throw new MarketplaceInventoryException('missing_inventory_allocation');
    if ($allocationId!==null && !DB::table('stock_allocations')->where('id',$allocationId)->where('owner_type','marketplace_order')->where('owner_id',$orderId)->where('line_key',$line['line_key'])->where('status',$target)->exists()) throw new MarketplaceInventoryException('inventory_lifecycle_conflict');
    $key=['order_id'=>$orderId,'line_key'=>$line['line_key']];

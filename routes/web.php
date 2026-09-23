@@ -387,6 +387,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             'csrfToken'=>csrf_token(), 'logoutUrl'=>route('logout'),
         ]])->header('Cache-Control', 'no-store');
     });
+    Route::get('/api/marketplace/hub-events', \App\Http\Controllers\Admin\MarketplaceHubEventLedgerController::class);
     Route::middleware(\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':read')->group(function () {
     Route::get('/api/marketplace/inventory', [\App\Http\Controllers\Admin\MarketplaceInventoryController::class, 'index']);
     Route::get('/api/marketplace/inventory/exceptions', [\App\Http\Controllers\Admin\MarketplaceInventoryController::class, 'exceptions']);

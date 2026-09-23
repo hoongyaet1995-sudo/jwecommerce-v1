@@ -107,16 +107,17 @@ class MarketplaceInventoryIngestionTest extends TestCase
         $this->assertDatabaseHas('marketplace_order_inventory', ['order_id'=>$id, 'status'=>'exception', 'error_code'=>'historical_order']);
     }
 
-    public function test_unmapped_line_blocks_the_whole_order_but_not_snapshot_ingestion(): void
+    public function test_unmapped_line_is_skipped_while_mapped_line_reserves_stock(): void
     {
         $store = $this->setupStore();
         $this->enable($store);
         $order = $this->order();
         $order['item_list'][] = ['item_id'=>102, 'model_id'=>202, 'model_quantity_purchased'=>1];
         $id = app(MarketplaceOrderSnapshotService::class)->saveShopee($store, $order);
-        $this->assertEquals(10, DB::table('product_variants')->value('stock'));
-        $this->assertDatabaseCount('stock_allocations', 0);
-        $this->assertDatabaseHas('marketplace_order_inventory', ['order_id'=>$id, 'status'=>'exception', 'error_code'=>'unmapped_order_line']);
+        $this->assertEquals(7, DB::table('product_variants')->value('stock'));
+        $this->assertDatabaseCount('stock_allocations', 1);
+        $this->assertDatabaseHas('marketplace_order_inventory', ['order_id'=>$id, 'status'=>'mixed', 'error_code'=>null]);
+        $this->assertDatabaseHas('marketplace_inventory_items', ['order_id'=>$id, 'line_key'=>'102:202', 'status'=>'skipped_unmapped']);
         $this->assertDatabaseCount('marketplace_orders', 1);
     }
 

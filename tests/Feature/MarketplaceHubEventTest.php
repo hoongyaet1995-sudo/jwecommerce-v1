@@ -14,6 +14,46 @@ class MarketplaceHubEventTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_can_read_sanitized_hub_event_ledger(): void
+    {
+        $storeId = DB::table('marketplace_stores')->insertGetId([
+            'platform' => 'lazada', 'shop_name' => 'Test store', 'external_shop_id' => '300163725140',
+            'region' => 'MY', 'environment' => 'live', 'status' => 'connected',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('marketplace_hub_event_inbox')->insert([
+            'hub_event_id' => '72', 'store_id' => $storeId, 'event_type' => 'ORDER_STATUS_CHANGED',
+            'external_order_id' => '510332413643475', 'status' => 'received',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->getJson('/admin/api/marketplace/hub-events')->assertUnauthorized();
+        $this->actingAs(\App\Models\User::factory()->create(['is_admin' => true]));
+        $response = $this->getJson('/admin/api/marketplace/hub-events')->assertOk()
+            ->assertJsonPath('events.0.externalOrderId', '510332413643475')
+            ->assertJsonPath('events.0.status', 'processing')
+            ->assertJsonPath('events.0.platform', 'lazada');
+        $this->assertStringNotContainsString('encrypted_payload', $response->getContent());
+        $this->assertStringNotContainsString('payloadJson', $response->getContent());
+
+        $orderId = DB::table('marketplace_orders')->insertGetId([
+            'store_id' => $storeId, 'external_order_id' => '510332413643475',
+            'platform_status' => 'pending', 'platform_updated_at' => 1,
+            'encrypted_payload' => 'private-payload', 'fetched_at' => now(),
+        ]);
+        DB::table('marketplace_inventory_items')->insert([
+            'order_id' => $orderId, 'line_key' => '101', 'external_product_id' => '200',
+            'external_variant_id' => '300', 'warehouse_code' => 'MY-WH-1',
+            'status' => 'skipped_unmapped', 'platform_updated_at' => 1,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('marketplace_hub_event_inbox')->where('hub_event_id', '72')->update(['status' => 'completed']);
+        $this->getJson('/admin/api/marketplace/hub-events')->assertOk()
+            ->assertJsonPath('events.0.status', 'warning')
+            ->assertJsonPath('events.0.attentionCode', 'inventory_line_skipped')
+            ->assertDontSee('private-payload');
+    }
+
     public function test_signed_event_is_queued_once_and_wrong_signature_is_rejected(): void
     {
         config(['app.url' => 'https://ecom.jwaistudio.online',

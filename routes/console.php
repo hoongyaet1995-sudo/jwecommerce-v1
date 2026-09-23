@@ -56,11 +56,10 @@ Artisan::command('marketplace:hub-report-activity', function () {
 })->purpose('Report safe marketplace task status to JW Marketplace Hub');
 
 Artisan::command('marketplace:hub-sync', function () {
-    $this->call('marketplace:hub-process-events');
     $this->call('marketplace:hub-heartbeat');
     $this->call('marketplace:hub-report-stores');
     $this->call('marketplace:hub-report-activity');
-})->purpose('Run the enabled Marketplace Hub installation reports in dependency order');
+})->purpose('Run Marketplace Hub installation reports; order events drain every minute separately');
 
 Artisan::command('marketplace:hub-process-events', function () {
     return $this->call('queue:work', [

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { initialSectionFromLocation, navigateToSection, subscribeToSectionChanges } from '../integration/adminRoutes';
 import { readAdminBootstrap } from '../integration/adminBootstrap';
+import { fetchHubEventLogs } from '../integration/marketplaceHubEvents';
 import { formatAdminMoney } from '../integration/adminMoney';
 import { submitLaravelLogout } from '../integration/laravelSession';
 import { clonePage, createPage, fetchPages, removePage, savePageDraft } from '../integration/pageData';
@@ -814,6 +815,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [marketplaceOrders, setMarketplaceOrders] = useState<MarketplaceOrder[]>([]);
   const [marketplaceInventory, setMarketplaceInventory] = useState<MarketplaceInventoryItem[]>([]);
   const [syncLogs, setSyncLogs] = useState<MarketplaceSyncLog[]>([]);
+  useEffect(() => {
+    const refresh = () => void fetchHubEventLogs().then(setSyncLogs).catch(() => undefined);
+    refresh();
+    const timer = window.setInterval(refresh, 30000);
+    return () => window.clearInterval(timer);
+  }, []);
   const [selectedMarketplaceOrderId, setSelectedMarketplaceOrderId] = useState<string | null>(null);
 
   // Malaysia Shipping Module State

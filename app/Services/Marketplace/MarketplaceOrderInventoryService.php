@@ -53,7 +53,7 @@ class MarketplaceOrderInventoryService
         $plan=LazadaInventoryPlan::build($payload,$cutoff);
         $created=$managed ? \Carbon\CarbonImmutable::createFromFormat('!Y-m-d H:i:s O',$payload['created_at']) : null;
         app(LazadaInventoryExecutor::class)->apply((int)$order->id,$plan,(int)$order->platform_updated_at,$created);
-        $states=array_unique(array_column($plan,'target'));
+        $states=DB::table('marketplace_inventory_items')->where('order_id',$order->id)->distinct()->pluck('status')->all();
         return count($states)===1?reset($states):'mixed';
     }
 
@@ -83,6 +83,7 @@ class MarketplaceOrderInventoryService
         $items = $payload['item_list'] ?? null;
         if (!is_array($items) || !array_is_list($items) || !$items) throw new MarketplaceInventoryException('invalid_order_lines');
         $plan = [];
+        $skipped = false;
         foreach ($items as $item) {
             if (!is_array($item) || !is_int($item['item_id'] ?? null) || $item['item_id'] < 1
                 || !is_int($item['model_id'] ?? null) || $item['model_id'] < 0
@@ -101,7 +102,19 @@ class MarketplaceOrderInventoryService
                 ->join('marketplace_variant_mappings as m', 'm.listing_variant_id', '=', 'l.id')
                 ->where('l.store_id', $order->store_id)->where('l.external_product_id', (string) $item['item_id'])
                 ->where('l.external_variant_id', (string) $item['model_id'])->value('m.product_variant_id');
-            if (!$variantId) throw new MarketplaceInventoryException('unmapped_order_line');
+            $priorSkipped = DB::table('marketplace_inventory_items')->where('order_id', $order->id)
+                ->where('line_key', $key)->where('status', 'skipped_unmapped')->exists();
+            if ($priorSkipped || !$variantId) {
+                DB::table('marketplace_inventory_items')->updateOrInsert(['order_id'=>$order->id,'line_key'=>$key], [
+                    'external_product_id'=>(string)$item['item_id'],
+                    'external_variant_id'=>(string)$item['model_id'],
+                    'warehouse_code'=>'SHOPEE', 'status'=>'skipped_unmapped',
+                    'platform_updated_at'=>$order->platform_updated_at,
+                    'stock_allocation_id'=>null, 'updated_at'=>now(),
+                ]);
+                $skipped = true;
+                continue;
+            }
             if ($allocation && ((int) $allocation->quantity !== $item['model_quantity_purchased'] || $allocation->status === 'released'
                 || ($allocation->status === 'consumed' && $target === 'reserved'))) throw new MarketplaceInventoryException('inventory_lifecycle_conflict');
             $activationId=$allocation?->inventory_order_activation_id;
@@ -121,7 +134,7 @@ class MarketplaceOrderInventoryService
             $id = $this->allocations->reserve('marketplace_order', (int) $order->id, $key, $line['variant'], $line['quantity'],$line['activation']);
             if ($target === 'consumed') $this->transition($id, $target);
         }
-        return $target;
+        return $skipped ? ($plan ? 'mixed' : 'skipped_unmapped') : $target;
     }
 
     private function transition(int $id, string $target): void

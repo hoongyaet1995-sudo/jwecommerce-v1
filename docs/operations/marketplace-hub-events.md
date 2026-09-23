@@ -1,0 +1,9 @@
+# Marketplace Hub order event operations
+
+The Hub receives verified provider order notifications, signs an event receipt for the registered Ecom installation, and the Ecom `marketplace-hub-orders` queue fetches the complete order from the provider. The provider notification itself is not an order snapshot.
+
+On Hostinger, run `marketplace:deliver-events` in the Hub and `marketplace:hub-process-events` in Ecom every minute. The existing five-minute `marketplace:hub-run` and `marketplace:hub-sync` jobs retain token oversight and installation reporting only. Do not run two delivery or two queue-drain commands at the same minute. The Ecom Webhooks & Logs view reads the latest 100 sanitized inbox events; it is an operational window, not a lifetime event count or a raw provider payload viewer.
+
+An order can be created while inventory is unresolved. Each unmapped SKU is recorded as `skipped_unmapped` and is never claimed as reserved. Orders predating the first verified count for their mapped store SKU are recorded as `skipped_historical`; replay cannot retroactively reserve them. A mapped new SKU still needs a matching Lazada warehouse route, an explicit ingestion boundary, and a verified inventory account with available stock. Order `510332413643475` was received and created, but its earlier inventory result was `warehouse_route_mismatch`; it did not reserve stock. After release, reprocess this and other pre-count orders to record the historical exclusion, verify the boundary, then use a new Sandbox order for stock acceptance.
+
+One-minute polling reduces Hub-to-Ecom delay but cannot guarantee zero overselling. The production Ecom inventory mode observed on 2026-09-23 was `independent_stores`, so a store-specific test count does not prove omnichannel shared ATP. Shared-stock acceptance requires a separately reviewed mode and order-routing transition plus before/after balance evidence across JW Ecom and the connected marketplaces.

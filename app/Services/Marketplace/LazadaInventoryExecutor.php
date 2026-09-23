@@ -28,6 +28,18 @@ final class LazadaInventoryExecutor
      if (in_array($previous->status,['released','consumed'],true)&&$previous->status!==$target) throw new MarketplaceInventoryException('inventory_lifecycle_conflict');
     }
     $id=$allocation?(int)$allocation->id:null;
+    if (!$allocation && (in_array($previous?->status, ['skipped_unmapped','skipped_historical'],true) || in_array($target, ['reserved','consumed'],true))) {
+     $variant=DB::table('marketplace_listing_variants as l')->join('marketplace_variant_mappings as m','m.listing_variant_id','=','l.id')
+      ->where('l.store_id',$storeId)->where('m.store_id',$storeId)->where('l.external_product_id',$line['external_product_id'])->where('l.external_variant_id',$line['external_variant_id'])->value('m.product_variant_id');
+     if ($previous?->status === 'skipped_historical') {
+      $this->states->record($orderId,array_replace($line,['target'=>'skipped_historical']),$version,null);
+      continue;
+     }
+     if ($previous?->status === 'skipped_unmapped' || !$variant) {
+      $this->states->record($orderId,array_replace($line,['target'=>'skipped_unmapped']),$version,null);
+      continue;
+     }
+    }
     if ($target==='waiting') {
      if ($allocation) throw new MarketplaceInventoryException('inventory_lifecycle_conflict');
     } elseif ($target==='released') {
@@ -41,13 +53,20 @@ final class LazadaInventoryExecutor
      } else {
       $route=DB::table('inventory_fulfillment_routes')->where('channel_key','marketplace:'.$storeId)->lockForUpdate()->first();
       if (!$route||!$route->is_enabled||$route->platform_location_id!==$line['warehouse_code']) throw new MarketplaceInventoryException('warehouse_route_mismatch');
-      $variant=DB::table('marketplace_listing_variants as l')->join('marketplace_variant_mappings as m','m.listing_variant_id','=','l.id')
-       ->where('l.store_id',$storeId)->where('m.store_id',$storeId)->where('l.external_product_id',$line['external_product_id'])->where('l.external_variant_id',$line['external_variant_id'])->value('m.product_variant_id');
-      if (!$variant) throw new MarketplaceInventoryException('unmapped_order_line');
       $activationId=null;
       if ($managedCreatedAt!==null) {
        $activation=app(\App\Services\Inventory\ManagedInventoryActivation::class)->eligible('marketplace:'.$storeId,(int)$variant,$managedCreatedAt);
-       if (!$activation) throw new MarketplaceInventoryException('order_outside_managed_activation');
+       if (!$activation) {
+        $mode=DB::table('inventory_configuration')->where('id',1)->value('operating_mode');
+        $poolKey=$mode==='shared_pool'?'shared':'store:marketplace:'.$storeId;
+        $countedAt=DB::table('inventory_balances as balance')->join('inventory_pools as pool','pool.id','=','balance.inventory_pool_id')
+         ->where('pool.pool_key',$poolKey)->where('balance.product_variant_id',$variant)->value('balance.counted_at');
+        if ($countedAt!==null && $managedCreatedAt->lessThanOrEqualTo(\Carbon\CarbonImmutable::parse($countedAt,'UTC'))) {
+         $this->states->record($orderId,array_replace($line,['target'=>'skipped_historical']),$version,null);
+         continue;
+        }
+        throw new MarketplaceInventoryException('order_outside_managed_activation');
+       }
        $activationId=(int)$activation['id'];
       }
       $product=ProductVariant::where('id',$variant)->lockForUpdate()->first();

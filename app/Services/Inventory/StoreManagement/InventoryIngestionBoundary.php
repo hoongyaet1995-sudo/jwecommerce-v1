@@ -93,8 +93,10 @@ final class InventoryIngestionBoundary
                 return false;
             }
 
-            foreach ($this->lineIdentities($payload) as $identity) {
-                if ($identities->has($identity)) {
+            foreach ($this->lineIdentities($payload) as $line) {
+                if ($identities->has($line['identity']) && ! DB::table('marketplace_inventory_items')
+                    ->where('order_id', $order->id)->where('line_key', $line['line_key'])
+                    ->whereIn('status', ['skipped_unmapped', 'skipped_historical'])->exists()) {
                     return true;
                 }
             }
@@ -119,16 +121,16 @@ final class InventoryIngestionBoundary
         return null;
     }
 
-    /** @return list<string> */
+    /** @return list<array{identity:string,line_key:string}> */
     private function lineIdentities(array $payload): array
     {
         $lines = is_array($payload['item_list'] ?? null) ? $payload['item_list'] : ($payload['order_items'] ?? []);
 
-        return collect($lines)->filter(fn ($line): bool => is_array($line))->map(function (array $line): string {
+        return collect($lines)->filter(fn ($line): bool => is_array($line))->map(function (array $line): array {
             $product = $line['item_id'] ?? $line['product_id'] ?? '';
             $variant = $line['model_id'] ?? $line['sku_id'] ?? '';
-
-            return (string) $product.':'.(string) $variant;
+            return ['identity' => (string) $product.':'.(string) $variant,
+                'line_key' => (string) ($line['order_item_id'] ?? ((string) $product.':'.(string) $variant))];
         })->all();
     }
 }
