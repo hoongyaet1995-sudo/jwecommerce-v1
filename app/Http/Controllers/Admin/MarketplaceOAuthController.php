@@ -234,25 +234,30 @@ class MarketplaceOAuthController extends Controller
     }
 
     public function start(Request $request, OAuthStateService $states, ShopeeClient $client,
-        \App\Services\Marketplace\MarketplaceHubOAuthIntent $hubIntent)
+        \App\Services\Marketplace\MarketplaceHubOAuthIntent $hubIntent,
+        \App\Services\Marketplace\ShopeeApplicationResolver $applications)
     {
         $request->session()->forget('marketplace.oauth_result');
-        $data = $request->validate(['reconnectStoreId'=>'nullable|integer|exists:marketplace_stores,id']);
+        $data = $request->validate(['reconnectStoreId'=>'nullable|integer|exists:marketplace_stores,id',
+            'environment'=>'sometimes|in:sandbox,production']);
         $storeId = isset($data['reconnectStoreId']) ? (int) $data['reconnectStoreId'] : null;
+        $environment = $data['environment'] ?? config('marketplace.shopee.environment', 'sandbox');
         if ($storeId) {
             $store = DB::table('marketplace_stores')->find($storeId);
-            abort_unless($store->platform === 'shopee' && $store->environment === config('marketplace.shopee.environment')
+            abort_unless($store->platform === 'shopee' && $store->environment === $environment
                 && $store->external_shop_id !== null, 409, 'Store cannot be reauthorized with this provider configuration.');
         }
         try {
+            $context = $applications->forEnvironment($environment);
+            $client = $client->forApplication($context);
             // Check configuration before creating an attempt.
             if (!$client->isAuthorizationReady()) {
                 throw new RuntimeException('Authorization callback does not target this deployment.');
             }
             $client->authorizationUrl(str_repeat('0', 64));
-            $state = $states->issue($request->user()->id, 'shopee', config('app.url'), $storeId);
+            $state = $states->issue($request->user()->id, 'shopee', config('app.url'), $storeId, $context);
             $providerState = config('marketplace.hub.oauth_routing_enabled') === true
-                ? $hubIntent->issue('shopee', (string) config('marketplace.shopee.environment'), $state) : $state;
+                ? $hubIntent->issue('shopee', $environment, $state) : $state;
             return response()->json(['url'=>$client->authorizationUrl($providerState)])->header('Cache-Control', 'no-store');
         } catch (RuntimeException) {
             return response()->json(['message'=>'Shopee authorization is not available. Contact the system administrator.'], 409);

@@ -13,6 +13,11 @@ final class ShopeeApplicationResolver
             throw new RuntimeException('Unsupported Shopee environment.');
         }
         $settings = config("marketplace.shopee.applications.$environment", []);
+        if (empty($settings['partner_id']) && empty($settings['partner_key'])
+            && config('marketplace.shopee.environment') === $environment) {
+            $settings = ['partner_id' => config('marketplace.shopee.partner_id'),
+                'partner_key' => config('marketplace.shopee.partner_key')];
+        }
         $partnerId = (string) ($settings['partner_id'] ?? '');
         $partnerKey = $settings['partner_key'] ?? null;
         $callbackUrl = $settings['callback_url'] ?? config('marketplace.shopee.callback_url');
