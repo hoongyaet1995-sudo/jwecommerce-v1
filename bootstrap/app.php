@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'webhooks/easyparcel/*',
             'api/marketplace/hub/refresh',
             'api/marketplace/hub/events',
+            'api/marketplace/hub/verify-shopee',
         ]);
         $middleware->web(append: [
             ClearLegacyCustomerWebSession::class,
