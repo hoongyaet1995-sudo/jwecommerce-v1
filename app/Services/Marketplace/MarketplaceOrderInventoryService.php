@@ -17,6 +17,7 @@ class MarketplaceOrderInventoryService
             $storeId = DB::table('marketplace_orders')->where('id', $orderId)->value('store_id');
             $store = DB::table('marketplace_stores')->where('id', $storeId)->lockForUpdate()->first();
             if (!$store || $store->status !== 'connected' || !in_array($store->platform,['shopee','lazada'],true)) return;
+            if ($store->platform === 'shopee' && $store->region === 'SG') return;
             $managed=DB::table('inventory_order_activations')->where('channel_key','marketplace:'.$storeId)->exists();
             if (!$managed && config('marketplace.inventory_accounting_enabled')!==true) return;
             $policy = DB::table('marketplace_inventory_policies')->where('store_id', $storeId)->lockForUpdate()->first();

@@ -49,6 +49,11 @@ class ShopeeCatalogService
             }
             $models = $item['has_model'] ? $client->models($token, $store->external_shop_id, (string) $item['item_id']) : [$item];
             foreach ($models as $model) {
+                $price=data_get($model, 'price_info.0.current_price');
+                $currency=data_get($model, 'price_info.0.currency');
+                if ($store->region === 'SG' && $price !== null && $currency !== 'SGD') {
+                    throw new RuntimeException('Shopee SG product currency is unavailable or inconsistent.');
+                }
                 $rows[] = ['external_product_id'=>(string) $item['item_id'],
                     'external_variant_id'=>$item['has_model'] ? (string) $model['model_id'] : '0',
                     'observed_data'=>json_encode([

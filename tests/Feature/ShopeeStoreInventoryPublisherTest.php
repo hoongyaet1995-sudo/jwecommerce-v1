@@ -189,7 +189,11 @@ class ShopeeStoreInventoryPublisherTest extends TestCase
     private function publisher(string $modelId): array
     {
         $store = (new StoreInventoryFixture)->store('shopee', strtoupper(bin2hex(random_bytes(3))));
-        DB::table('marketplace_stores')->where('id', $store->id)->update(['external_shop_id' => '999']);
+        DB::table('marketplace_stores')->where('id', $store->id)->update([
+            'external_shop_id' => '999', 'environment' => 'sandbox',
+        ]);
+        \App\Models\MarketplaceStoreToken::create(['store_id'=>$store->id,'application_id'=>'12345',
+            'access_token'=>'token','refresh_token'=>'refresh','access_expires_at'=>now()->addHour()]);
         $store = DB::table('marketplace_stores')->find($store->id);
         $listing = (object) ['id' => 41, 'store_id' => $store->id, 'external_product_id' => '77', 'external_variant_id' => $modelId];
         config(['marketplace.stock_sync_canary_identities' => ["shopee:{$store->id}:41"]]);

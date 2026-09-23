@@ -19,6 +19,8 @@ final class MarketplaceStoreAccess
 
         abort_unless($store && $store->status==='connected' && $capability && $capability->product_publish,
             403,'Product publishing is not enabled for this store.');
+        abort_if($store->platform === 'shopee' && ($store->region !== 'MY' || $store->environment !== 'sandbox'),
+            403, 'Shopee publishing for this region or environment awaits separate acceptance.');
 
         return $store;
     }

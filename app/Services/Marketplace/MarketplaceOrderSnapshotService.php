@@ -23,6 +23,9 @@ class MarketplaceOrderSnapshotService
             if (!$store || $store->platform !== 'shopee' || $store->status !== 'connected') {
                 throw new RuntimeException('Store is not connected for order ingestion.');
             }
+            if ($store->region === 'SG' && ($order['currency'] ?? null) !== 'SGD') {
+                throw new RuntimeException('Shopee SG order currency is unavailable or inconsistent.');
+            }
             $key = ['store_id'=>$storeId, 'external_order_id'=>$order['order_sn']];
             $existing = DB::table('marketplace_orders')->where($key)->first();
             if ($existing && $existing->platform_updated_at >= $order['update_time']) {
