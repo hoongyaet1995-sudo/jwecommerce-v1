@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Crypt;
+use App\Services\Marketplace\MarketplaceOrderLogistics;
+use App\Services\Marketplace\MarketplaceOrderImage;
 
 class MarketplaceOrderController extends Controller
 {
@@ -191,14 +194,24 @@ class MarketplaceOrderController extends Controller
         ]);
         $query = DB::table('marketplace_orders as o')->join('marketplace_stores as s', 's.id', '=', 'o.store_id')
             ->select('o.id', 'o.store_id', 'o.external_order_id', 'o.platform_status', 'o.platform_updated_at',
-                'o.currency', 'o.total_amount', 'o.fetched_at', 'o.data_classification', 's.platform', 's.shop_name');
+                'o.currency', 'o.total_amount', 'o.fetched_at', 'o.data_classification', 'o.encrypted_payload', 's.platform', 's.shop_name');
         if (isset($filters['storeId'])) $query->where('o.store_id', $filters['storeId']);
         if (!empty($filters['platform'])) $query->where('s.platform', $filters['platform']);
         if (!empty($filters['status'])) $query->where('o.platform_status', $filters['status']);
         if (!empty($filters['q'])) $query->where('o.external_order_id', 'like', '%'.$filters['q'].'%');
 
-        return response()->json($query->orderByDesc('o.platform_updated_at')->orderByDesc('o.id')
-            ->paginate($filters['per_page'] ?? 50))->header('Cache-Control', 'no-store');
+        $page = $query->orderByDesc('o.platform_updated_at')->orderByDesc('o.id')
+            ->paginate($filters['per_page'] ?? 50);
+        $page->getCollection()->transform(function ($order) {
+            $payload = json_decode(Crypt::decryptString($order->encrypted_payload), true, 512, JSON_THROW_ON_ERROR);
+            $logistics = MarketplaceOrderLogistics::fromPayload($payload, $order->platform);
+            unset($order->encrypted_payload);
+            $order->tracking_number = $logistics['tracking_number'];
+            $order->shipping_carrier = $logistics['shipping_carrier'];
+            $order->thumbnail_url = MarketplaceOrderImage::fromPayload($payload, $order->platform);
+            return $order;
+        });
+        return response()->json($page)->header('Cache-Control', 'no-store');
     }
 
     public function summary(Request $request)

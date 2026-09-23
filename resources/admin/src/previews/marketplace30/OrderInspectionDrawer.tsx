@@ -3,12 +3,12 @@ import {MapPin, Printer, Truck, X} from 'lucide-react';
 import {MarketplaceLogo} from './components/marketplace/MarketplaceLogo';
 import type {MarketplaceOrderDetail} from '../../integration/marketplaceOperations';
 import {marketplaceRequest} from '../../integration/marketplaceData';
+import {OfficialAwbPanel} from './OfficialAwbPanel';
 
 // Presentation copied from ZIP30 MarketplaceOMSPage's Order Inspection Drawer.
 // Only data expressions, disabled actions and close accessibility have changed.
 export function OrderInspectionDrawer({order, onClose}: {order: MarketplaceOrderDetail; onClose: () => void}) {
-  const [labelBusy, setLabelBusy] = React.useState(false);
-  const [labelStatus, setLabelStatus] = React.useState<string | null>(null);
+  const [awbOpen, setAwbOpen] = React.useState(false);
   const labelPackages = order.label_packages ?? [];
   const [rtsState, setRtsState] = React.useState<string | null>(null);
   const rtsClaimed = React.useRef(false);
@@ -51,22 +51,6 @@ export function OrderInspectionDrawer({order, onClose}: {order: MarketplaceOrder
       setRtsState('RTS not confirmed. Refresh and reconcile before retrying.');
     }
   };
-  const downloadLabels = async () => {
-    if (labelBusy) return;
-    setLabelBusy(true); setLabelStatus('Downloading labels…');
-    try {
-      for (const packageId of labelPackages) {
-        const response = await fetch(`/admin/api/marketplace/orders/${order.id}/label?packageId=${encodeURIComponent(packageId)}`, {credentials: 'same-origin', headers: {Accept: 'application/pdf'}});
-        if (!response.ok || !response.headers.get('content-type')?.includes('application/pdf')) throw new Error('Label unavailable');
-        const url = URL.createObjectURL(await response.blob());
-        const link = document.createElement('a'); link.href = url; link.download = `lazada-${packageId}.pdf`;
-        document.body.appendChild(link); link.click(); link.remove();
-        window.setTimeout(() => URL.revokeObjectURL(url), 30000);
-      }
-      setLabelStatus('PDF download requested');
-    } catch { setLabelStatus('Download failed. Refresh the order and try again.'); }
-    finally { setLabelBusy(false); }
-  };
   const recipient = order.recipient;
   const activeOrder = {
     channel: order.platform, orderNumber: order.external_order_id, channelOrderId: order.external_order_id,
@@ -78,7 +62,7 @@ export function OrderInspectionDrawer({order, onClose}: {order: MarketplaceOrder
       province: recipient?.state ?? '', postalCode: recipient?.zipcode ?? '', country: recipient?.region ?? ''},
     items: order.lines.map(line => ({title: line.title ?? 'Not provided by platform',
       sku: line.jw_sku ?? 'Unmapped', variantTitle: line.variant_title, quantity: line.quantity ?? '—',
-      price: line.unit_price, image: null as string | null})),
+        price: line.unit_price, image: line.image_url ?? null as string | null})),
     timeline: [...(order.fulfillment_attempts ?? []).map(task => ({title: `${task.operation.toUpperCase()} · ${task.status}`,
       timestamp: task.updated_at, description: `Saved fulfillment task #${task.id}.`})), {title: order.platform_status, timestamp: new Date(order.platform_updated_at * 1000).toISOString(),
       description: 'Latest platform snapshot; not a locally executed fulfillment event.'}],
@@ -115,11 +99,12 @@ export function OrderInspectionDrawer({order, onClose}: {order: MarketplaceOrder
               <div className="p-4 bg-indigo-50/50 dark:bg-indigo-950/30 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-bold text-neutral-900 dark:text-white">Fulfillment Station</p>
-                  <p className="text-[11px] text-neutral-500">AWB status: {labelStatus ?? (order.capabilities.airway_bill && labelPackages.length ? 'Available for download' : 'Not available — platform integration pending')}</p>
+                  <p className="text-[11px] text-neutral-500">AWB status: {order.capabilities.airway_bill && labelPackages.length ? 'Eligible for platform download' : labelPackages.length ? 'Renew test access or check store connection' : 'Not available for this order'}</p>
+                  <p className="text-[11px] text-neutral-500">Courier: {order.shipping_carrier ?? 'Not provided'} · Tracking: {order.tracking_number ?? 'Not provided'}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    disabled={labelBusy || !order.capabilities.airway_bill || !labelPackages.length} onClick={downloadLabels} title="Download platform PDF labels"
+                    disabled={!order.capabilities.airway_bill || !labelPackages.length} onClick={() => setAwbOpen(true)} title="Open official platform PDF labels"
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-xs cursor-pointer"
                   >
                     <Printer className="w-3.5 h-3.5" />
@@ -210,5 +195,6 @@ export function OrderInspectionDrawer({order, onClose}: {order: MarketplaceOrder
       )}
 
 
+    {awbOpen && <OfficialAwbPanel order={order} onClose={() => setAwbOpen(false)}/>}
   </>;
 }

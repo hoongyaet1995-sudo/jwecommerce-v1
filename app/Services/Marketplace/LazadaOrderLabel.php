@@ -17,7 +17,7 @@ final class LazadaOrderLabel
             throw new RuntimeException('Connected Malaysia Lazada order required.');
         }
         $token=$this->tokens->accessToken($store->id);
-        $items=$this->client->read('/order/items/get',$token,['order_id'=>$order->external_order_id]);
+        $items=$this->client->read('/order/items/get',$token,['order_id'=>$order->external_order_id],$store->id);
         if (!array_is_list($items)||!$items) throw new RuntimeException('Order items unavailable.');
         $matched=false;$seen=[];
         foreach ($items as $item) {
@@ -33,7 +33,7 @@ final class LazadaOrderLabel
         if (!$matched) throw new RuntimeException('Package does not belong to this order.');
         $document=$this->client->read('/order/package/document/get',$token,['getDocumentReq'=>json_encode([
             'doc_type'=>'PDF','packages'=>[['package_id'=>$packageId]],
-        ],JSON_THROW_ON_ERROR)]);
+        ],JSON_THROW_ON_ERROR)],$store->id);
         return $this->pdf->download($document);
     }
 }

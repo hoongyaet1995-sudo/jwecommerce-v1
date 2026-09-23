@@ -51,14 +51,17 @@ export interface CatalogProduct {
   first_listing_id: number; variants: Omit<CatalogVariant, 'platform' | 'shop_name'>[];
 }
 export interface OrderSummary {
-  id: number; store_id: number; external_order_id: string; platform_status: string;
-  data_classification?: string;
+    id: number; store_id: number; external_order_id: string; platform_status: string;
+    data_classification?: string;
+    tracking_number?: string | null; shipping_carrier?: string | null;
+    thumbnail_url?: string | null;
   platform: MarketplacePlatform; shop_name: string; currency: string | null; total_amount: string | null;
   platform_updated_at: number; fetched_at: string;
 }
 export interface MarketplaceOrderLine {
   external_product_id: string | null; external_variant_id: string | null;
-  title: string | null; variant_title: string | null; external_sku: string | null;
+    title: string | null; variant_title: string | null; external_sku: string | null;
+    image_url?: string | null;
   quantity: number | null; unit_price: number | string | null;
   mapping_status: 'mapped' | 'unmapped'; jw_variant_id: number | null; jw_sku: string | null;
 }

@@ -14,6 +14,8 @@ class MarketplaceOrderDetailService
             ->where('o.id', $id)->select('o.*', 's.platform', 's.shop_name')->first();
         abort_unless($order, 404);
         $payload = json_decode(Crypt::decryptString($order->encrypted_payload), true, 512, JSON_THROW_ON_ERROR);
+        $logistics = MarketplaceOrderLogistics::fromPayload($payload, $order->platform);
+        $thumbnail = MarketplaceOrderImage::fromPayload($payload, $order->platform);
         $items = $payload['item_list'] ?? [];
         abort_unless(is_array($items), 409, 'Order items are unavailable. Fetch the order again.');
         if ($order->platform==='lazada') {
@@ -25,6 +27,7 @@ class MarketplaceOrderDetailService
                 $items[]=['item_id'=>$line['product_id']??null,'model_id'=>$line['sku_id']??null,
                     'order_item_id'=>$line['order_item_id']??null,'item_name'=>$line['name']??null,
                     'model_name'=>$line['variation']??null,'model_sku'=>$line['sku']??null,
+                    'image_url'=>MarketplaceOrderImage::fromItem($line,'lazada'),
                     'model_quantity_purchased'=>1,'model_discounted_price'=>$line['paid_price']??$line['item_price']??null];
             }
         }
@@ -46,6 +49,7 @@ class MarketplaceOrderDetailService
                 'external_order_item_id'=>isset($item['order_item_id'])?(string)$item['order_item_id']:null,
                 'external_product_id'=>$productId, 'external_variant_id'=>$modelId,
                 'title'=>$item['item_name'] ?? null, 'variant_title'=>$item['model_name'] ?? null,
+                'image_url'=>$order->platform==='lazada' ? ($item['image_url'] ?? null) : MarketplaceOrderImage::fromItem($item,'shopee'),
                 'external_sku'=>$item['model_sku'] ?? $item['item_sku'] ?? null,
                 'quantity'=>$item['model_quantity_purchased'] ?? null,
                 'unit_price'=>$item['model_discounted_price'] ?? $item['model_original_price'] ?? null,
@@ -59,7 +63,9 @@ class MarketplaceOrderDetailService
             'currency'=>$order->currency, 'total_amount'=>$order->total_amount,
             'platform_updated_at'=>$order->platform_updated_at, 'fetched_at'=>$order->fetched_at,
             'lines'=>$lines,
-            'shipping_carrier'=>$payload['shipping_carrier'] ?? null,
+            'shipping_carrier'=>$logistics['shipping_carrier'],
+            'tracking_number'=>$logistics['tracking_number'],
+            'thumbnail_url'=>$thumbnail,
             'packages'=>array_map(fn ($package) => [
                 'package_number'=>$package['package_number'] ?? null,
                 'logistics_status'=>$package['logistics_status'] ?? null,
@@ -91,7 +97,10 @@ class MarketplaceOrderDetailService
                 $rts[$package]=($rts[$package]??true)&&$eligible&&($item['status']??null)==='packed'&&($item['semi_managed']??null)===false;
             }
             $result['label_packages']=array_keys(array_filter($packages));
-            $result['capabilities']['airway_bill']=count($result['label_packages'])>0;
+            $testToken=\App\Models\MarketplaceStoreToken::where('store_id',$order->store_id)->first();
+            $testAccessReady=$testToken && ($testToken->credential_source!=='official_test'
+                || ($testToken->test_lease_expires_at?->isFuture() && $testToken->access_expires_at?->isFuture()));
+            $result['capabilities']['airway_bill']=count($result['label_packages'])>0 && $testAccessReady;
             $store=DB::table('marketplace_stores')->find($order->store_id);
             if (config('marketplace.fulfillment_operations_enabled')===true&&$store->status==='connected'&&$store->region==='MY'&&$store->environment==='live') {
                 $blockedItems=[];
