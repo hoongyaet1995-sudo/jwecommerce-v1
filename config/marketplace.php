@@ -10,6 +10,7 @@ return [
         'refresh_endpoint_enabled' => env('MARKETPLACE_HUB_REFRESH_ENDPOINT_ENABLED', false),
         'activity_reporting_enabled' => env('MARKETPLACE_HUB_ACTIVITY_REPORTING_ENABLED', false),
         'event_endpoint_enabled' => env('MARKETPLACE_HUB_EVENT_ENDPOINT_ENABLED', false),
+        'verification_endpoint_enabled' => env('MARKETPLACE_HUB_VERIFICATION_ENDPOINT_ENABLED', false),
     ],
     'basic_wms_ui_enabled' => env('MARKETPLACE_BASIC_WMS_UI_ENABLED', false),
     'basic_wms_enabled' => env('MARKETPLACE_BASIC_WMS_ENABLED', false),
@@ -46,6 +47,12 @@ return [
     'import_operations_enabled' => env('MARKETPLACE_IMPORT_OPERATIONS_ENABLED', false),
     'oauth_acceptance_enabled' => env('MARKETPLACE_OAUTH_ACCEPTANCE_ENABLED', false),
     'shopee' => [
+        'applications' => [
+            'production' => ['partner_id' => env('MARKETPLACE_SHOPEE_PARTNER_ID'),
+                'partner_key' => env('MARKETPLACE_SHOPEE_PARTNER_KEY')],
+            'sandbox' => ['partner_id' => env('MARKETPLACE_SHOPEE_SANDBOX_PARTNER_ID'),
+                'partner_key' => env('MARKETPLACE_SHOPEE_SANDBOX_PARTNER_KEY')],
+        ],
         'main_account_enabled' => env('MARKETPLACE_SHOPEE_MAIN_ACCOUNT_ENABLED', false),
         'test_store_id' => env('MARKETPLACE_SHOPEE_TEST_STORE_ID'),
         'enabled' => env('MARKETPLACE_SHOPEE_ENABLED', false),

@@ -55,6 +55,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/api/marketplace/hub/refresh', \App\Http\Controllers\MarketplaceHubRefreshController::class)
     ->middleware('throttle:30,1');
+Route::post('/api/marketplace/hub/verify-shopee', \App\Http\Controllers\MarketplaceHubShopeeVerificationController::class)
+    ->middleware('throttle:10,1');
 Route::post('/api/marketplace/hub/events', \App\Http\Controllers\MarketplaceHubEventController::class)
     ->middleware('throttle:120,1');
 

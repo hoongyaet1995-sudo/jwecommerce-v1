@@ -427,6 +427,18 @@ class ShopeeClient
     public function shopInfo(#[\SensitiveParameter] string $accessToken, string $shopId): array
     {
         $config = $this->configuration();
+        return $this->shopInfoWithApplication($accessToken, $shopId, $config['environment'],
+            (string) $config['partner_id'], $config['partner_key']);
+    }
+
+    public function shopInfoWithApplication(#[\SensitiveParameter] string $accessToken, string $shopId,
+        string $environment, string $partnerId, #[\SensitiveParameter] string $partnerKey): array
+    {
+        if (!in_array($environment, ['production', 'sandbox'], true) || !ctype_digit($partnerId)
+            || $partnerId === '' || $partnerKey === '') {
+            throw new RuntimeException('Shopee application identity could not be verified.');
+        }
+        $config = ['environment' => $environment, 'partner_id' => $partnerId, 'partner_key' => $partnerKey];
         if ($accessToken === '' || !ctype_digit($shopId) || (int) $shopId <= 0) {
             throw new RuntimeException('Shopee store identity could not be verified.');
         }
