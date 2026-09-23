@@ -87,4 +87,30 @@ class MarketplaceHubStoreReporterTest extends TestCase
             app(MarketplaceHubStoreReporter::class)->run());
         Http::assertNothingSent();
     }
+
+    public function test_official_lazada_test_store_is_reported_as_sandbox(): void
+    {
+        config(['app.url' => 'https://ecom.jwaistudio.online',
+            'marketplace.hub.url' => 'https://marketplace.jwaistudio.online',
+            'marketplace.hub.client_id' => 'jw_fixture_client',
+            'marketplace.hub.client_secret' => 'fixture-client-secret',
+            'marketplace.hub.store_reporting_enabled' => true,
+            'marketplace.lazada.test_app_key' => '139041']);
+        $storeId = DB::table('marketplace_stores')->insertGetId([
+            'platform' => 'lazada', 'shop_name' => '[Official Test] Lazada MY',
+            'external_shop_id' => '300163725140', 'region' => 'MY', 'environment' => 'live',
+            'status' => 'connected', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('marketplace_store_tokens')->insert([
+            'store_id' => $storeId, 'application_id' => '139041', 'credential_source' => 'official_test',
+            'access_token' => 'encrypted-test-access', 'refresh_token' => null,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        Http::fake(['marketplace.jwaistudio.online/api/stores/receipt' => Http::response(['result' => 'connected'])]);
+
+        $this->assertSame(1, app(MarketplaceHubStoreReporter::class)->run()['reported']);
+        Http::assertSent(fn ($request) => data_get(json_decode($request->body(), true), 'store.environment') === 'sandbox'
+            && data_get(json_decode($request->body(), true), 'store.applicationId') === '139041'
+            && ! str_contains($request->body(), 'encrypted-test-access'));
+    }
 }

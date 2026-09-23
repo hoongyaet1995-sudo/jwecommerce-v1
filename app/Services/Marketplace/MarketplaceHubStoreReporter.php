@@ -24,11 +24,16 @@ final class MarketplaceHubStoreReporter
         $counts = ['reported' => 0, 'failed' => 0, 'disabled' => false];
         DB::table('marketplace_stores as s')->join('marketplace_store_tokens as t', 't.store_id', '=', 's.id')
             ->select('s.id', 's.platform', 's.environment', 's.external_shop_id', 's.shop_name', 's.region', 's.status',
-                't.application_id', 't.access_expires_at')
+                't.application_id', 't.credential_source', 't.access_expires_at')
             ->whereIn('s.platform', ['shopee', 'lazada'])->whereNotNull('s.external_shop_id')
             ->whereNotNull('t.application_id')->orderBy('s.id')->chunk(100, function ($stores) use ($base, $clientId, $secret, $domain, &$counts) {
                 foreach ($stores as $store) {
-                    $environment = $store->environment === 'live' ? 'production' : $store->environment;
+                    $environment = $store->platform === 'lazada'
+                        && $store->environment === 'live'
+                        && $store->credential_source === 'official_test'
+                        && (string) $store->application_id === (string) config('marketplace.lazada.test_app_key')
+                        ? 'sandbox'
+                        : ($store->environment === 'live' ? 'production' : $store->environment);
                     if (! in_array($environment, ['sandbox', 'production'], true)) continue;
                     $body = json_encode(['domain' => strtolower($domain), 'store' => [
                         'clientStoreId' => (string) $store->id,
