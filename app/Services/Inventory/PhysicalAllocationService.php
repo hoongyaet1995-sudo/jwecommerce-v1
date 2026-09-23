@@ -40,6 +40,12 @@ class PhysicalAllocationService
             'physical_delta'=>$event==='consumed'?-$quantity:0,'reserved_delta'=>$event==='reserved'?$quantity:-$quantity,
             'physical_after'=>$physical,'reserved_after'=>$reserved,'balance_version'=>$version,'created_at'=>now(),
         ]);
+        app(StoreManagement\SyncOutbox::class)->enqueueMutation(
+            null,
+            DB::table('inventory_balances')->find($balance->id),
+            'order',
+            'allocation:'.$allocationId.':'.$event
+        );
         $after=max(0,$physical-$reserved-(int)$balance->safety_stock);
         return ['available'=>$after,'delta'=>$after-$before];
     }

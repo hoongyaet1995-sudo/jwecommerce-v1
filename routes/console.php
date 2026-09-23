@@ -68,6 +68,22 @@ Artisan::command('marketplace:hub-process-events', function () {
     ]);
 })->purpose('Drain only Hub-delivered marketplace order events');
 
+Artisan::command('marketplace:store-stock-process', function () {
+    $lock = \Illuminate\Support\Facades\Cache::lock('marketplace:store-stock-process', 180);
+    if (! $lock->get()) {
+        return 0;
+    }
+    try {
+        return $this->call('queue:work', [
+            'connection' => 'marketplace', '--queue' => 'marketplace-stock',
+            '--stop-when-empty' => true, '--max-jobs' => 20, '--max-time' => 45,
+            '--tries' => 1, '--timeout' => 120, '--no-interaction' => true,
+        ]);
+    } finally {
+        $lock->release();
+    }
+})->purpose('Drain managed marketplace stock updates separately from catalog and order workers');
+
 Schedule::command('marketplace:hub-report-activity')->everyFiveMinutes()->withoutOverlapping()
     ->when(fn () => config('marketplace.hub.activity_reporting_enabled') === true);
 

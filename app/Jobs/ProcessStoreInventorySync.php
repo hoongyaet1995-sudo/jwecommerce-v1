@@ -22,7 +22,7 @@ final class ProcessStoreInventorySync implements ShouldQueue
 
     public function __construct(public readonly string $taskId, public readonly bool $dispatchFollowing = true)
     {
-        $this->onConnection('marketplace')->onQueue('marketplace');
+        $this->onConnection('marketplace')->onQueue('marketplace-stock');
     }
 
     public function handle(StoreInventoryPublisher $publisher, ?StoreSkuSyncReadiness $readiness = null, ?StoreSyncAttemptLedger $attempts = null): void

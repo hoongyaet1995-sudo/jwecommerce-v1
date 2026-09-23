@@ -51,7 +51,7 @@ class StoreInventorySyncTest extends TestCase
         $job = new ProcessStoreInventorySync('task-1');
 
         $this->assertSame('marketplace', $job->connection);
-        $this->assertSame('marketplace', $job->queue);
+        $this->assertSame('marketplace-stock', $job->queue);
     }
 
     private function staged(bool $direct = false, ?FakeStoreInventoryPublisher $publisher = null): array

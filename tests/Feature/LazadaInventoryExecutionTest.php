@@ -22,6 +22,7 @@ class LazadaInventoryExecutionTest extends TestCase
   $payload=['created_at'=>$created->format('Y-m-d H:i:s O'),'order_items'=>[['order_item_id'=>'101','product_id'=>'200','sku_id'=>'300']]];
   $order=DB::table('marketplace_orders')->insertGetId(['store_id'=>$store,'external_order_id'=>'100','platform_status'=>'pending','platform_updated_at'=>100,'encrypted_payload'=>\Illuminate\Support\Facades\Crypt::encryptString(json_encode($payload)),'fetched_at'=>now()]);
   $balance=app(\App\Services\Inventory\StoreManagement\AccountResolver::class)->balance($variant->id,'marketplace:'.$store);
+  DB::table('inventory_store_accounts')->where('marketplace_store_id',$store)->update(['management_status'=>'managed']);
   DB::table('inventory_balances')->where('id',$balance['id'])->update(['physical_stock'=>10,'reserved_stock'=>0,'safety_stock'=>0,'counted_at'=>now()]);
   $boundary=app(\App\Services\Inventory\StoreManagement\InventoryIngestionBoundary::class);
   $this->assertSame([$order],$boundary->unresolvedHistoricalOrderIds($store,$variant->id,now()));
@@ -39,7 +40,10 @@ class LazadaInventoryExecutionTest extends TestCase
   $newOrder=DB::table('marketplace_orders')->insertGetId(['store_id'=>$store,'external_order_id'=>'102','platform_status'=>'pending','platform_updated_at'=>101,'encrypted_payload'=>'unused','fetched_at'=>now()]);
   app(LazadaInventoryExecutor::class)->apply($newOrder,[array_replace($line,['line_key'=>'103'])],101,\Carbon\CarbonImmutable::now()->addMinute());
   $this->assertDatabaseHas('marketplace_inventory_items',['order_id'=>$newOrder,'line_key'=>'103','status'=>'reserved']);
-  $this->assertDatabaseHas('inventory_balances',['id'=>$balance['id'],'physical_stock'=>10]);
+  $this->assertDatabaseHas('inventory_balances',['id'=>$balance['id'],'physical_stock'=>10,'reserved_stock'=>1]);
+  $this->assertDatabaseHas('inventory_store_sync_tasks',[
+   'marketplace_store_id'=>$store,'product_variant_id'=>$variant->id,'stage'=>'order','status'=>'queued','target_quantity'=>9,
+  ]);
   $this->assertDatabaseCount('stock_allocations',1);
  }
  public function test_unmapped_line_is_recorded_as_skipped_while_mapped_line_reserves_stock():void
