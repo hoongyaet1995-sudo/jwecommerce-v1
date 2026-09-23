@@ -10,6 +10,16 @@ use RuntimeException;
 
 class ShopeeClient
 {
+    private ?ShopeeApplicationContext $application = null;
+
+    public function forApplication(ShopeeApplicationContext $context): self
+    {
+        $client = clone $this;
+        $client->application = $context;
+
+        return $client;
+    }
+
     /** @return array{location_id:string,quantity:int} */
     public function exactStockContext(#[\SensitiveParameter] string $accessToken, string $shopId, string $itemId,
         string $modelId, ?string $locationId = null): array
@@ -382,6 +392,15 @@ class ShopeeClient
 
     private function configuration(): array
     {
+        if ($this->application !== null) {
+            return [
+                'enabled' => true,
+                'environment' => $this->application->environment,
+                'partner_id' => $this->application->partnerId,
+                'partner_key' => $this->application->partnerKey,
+                'callback_url' => $this->application->callbackUrl,
+            ];
+        }
         $config = config('marketplace.shopee', []);
         if (empty($config['enabled']) || !ctype_digit((string) ($config['partner_id'] ?? ''))
             || empty($config['partner_key']) || !in_array($config['environment'] ?? '', ['sandbox', 'production'], true)
