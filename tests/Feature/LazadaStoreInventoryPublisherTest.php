@@ -63,6 +63,66 @@ class LazadaStoreInventoryPublisherTest extends TestCase
             && str_contains((string) ($request->data()['payload'] ?? ''), '<WarehouseCode>MY-WH-2</WarehouseCode>'));
     }
 
+    public function test_dropshipping_only_sku_uses_single_warehouse_payload_despite_store_route(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher();
+        $warehouse = DB::table('inventory_warehouses')->insertGetId([
+            'code' => 'WH', 'name' => 'WH', 'is_active' => true, 'version' => 0, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('inventory_fulfillment_routes')->insert([
+            'channel_key' => 'marketplace:'.$store->id, 'warehouse_id' => $warehouse,
+            'platform_location_id' => 'MY-WH-2', 'is_enabled' => true, 'version' => 0,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        Http::fake(['*' => Http::sequence()->push($this->item(0, 'dropshipping'))
+            ->push($this->item(0, 'dropshipping'))
+            ->push(['code' => '0'])->push($this->item(25, 'dropshipping'))]);
+
+        $this->assertSame(25, $publisher->publish($store, $listing, 25, 'dropshipping')['observed_quantity']);
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/product/stock/sellable/update')
+            && str_contains((string) ($request->data()['payload'] ?? ''), '<SellableQuantity>25</SellableQuantity>')
+            && ! str_contains((string) ($request->data()['payload'] ?? ''), '<MultiWarehouseInventories>'));
+    }
+
+    public function test_direct_resync_with_no_pinned_warehouse_uses_single_warehouse_payload(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher();
+        $listing->sync_provider_location_id = null;
+        Http::fake(['*' => Http::sequence()->push($this->item(0, 'dropshipping'))
+            ->push(['code' => '0'])->push($this->item(25, 'dropshipping'))]);
+
+        $this->assertSame(25, $publisher->publish($store, $listing, 25, 'direct-resync')['observed_quantity']);
+        Http::assertSentCount(3);
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/product/stock/sellable/update')
+            && ! str_contains((string) ($request->data()['payload'] ?? ''), '<MultiWarehouseInventories>'));
+    }
+
+    public function test_mismatched_multi_warehouse_route_does_not_write(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher();
+        $warehouse = DB::table('inventory_warehouses')->insertGetId([
+            'code' => 'WH', 'name' => 'WH', 'is_active' => true, 'version' => 0, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('inventory_fulfillment_routes')->insert([
+            'channel_key' => 'marketplace:'.$store->id, 'warehouse_id' => $warehouse,
+            'platform_location_id' => 'WRONG', 'is_enabled' => true, 'version' => 0,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        Http::fake(['*' => Http::response(['code' => '0', 'data' => [
+            'item_id' => '1001', 'skus' => [['sku_id' => '2001', 'multiWarehouseInventories' => [
+                ['warehouseCode' => 'A', 'sellableQuantity' => '1'], ['warehouseCode' => 'B', 'sellableQuantity' => '2'],
+            ]]],
+        ]])]);
+
+        try {
+            $publisher->publish($store, $listing, 25, 'wrong-route');
+            $this->fail('A mismatched multi-warehouse route was accepted.');
+        } catch (RuntimeException) {
+            Http::assertSentCount(2);
+            Http::assertNotSent(fn ($request): bool => str_contains($request->url(), '/product/stock/sellable/update'));
+        }
+    }
+
     public function test_absent_or_ambiguous_warehouse_identity_is_rejected_before_write(): void
     {
         [$publisher, $store, $listing] = $this->publisher();
