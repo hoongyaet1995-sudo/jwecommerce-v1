@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'hub' => [
+        'url' => env('MARKETPLACE_HUB_URL', 'https://marketplace.jwaistudio.online'),
+        'client_id' => env('MARKETPLACE_HUB_CLIENT_ID'),
+        'client_secret' => env('MARKETPLACE_HUB_CLIENT_SECRET'),
+    ],
     'basic_wms_ui_enabled' => env('MARKETPLACE_BASIC_WMS_UI_ENABLED', false),
     'basic_wms_enabled' => env('MARKETPLACE_BASIC_WMS_ENABLED', false),
     'advanced_wms_enabled' => env('MARKETPLACE_ADVANCED_WMS_ENABLED', false),
