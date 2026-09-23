@@ -11,6 +11,22 @@ class ShopeeApplicationResolverTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_sandbox_cannot_fall_back_to_the_production_application(): void
+    {
+        config([
+            'marketplace.shopee.enabled' => true,
+            'marketplace.shopee.environment' => 'sandbox',
+            'marketplace.shopee.partner_id' => '456',
+            'marketplace.shopee.partner_key' => 'production-key',
+            'marketplace.shopee.callback_url' => 'https://ecom.example.test/admin/marketplace/oauth/shopee/callback',
+            'marketplace.shopee.applications.sandbox' => ['partner_id' => null, 'partner_key' => null],
+            'marketplace.shopee.applications.production' => ['partner_id' => '456', 'partner_key' => 'production-key'],
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        app(ShopeeApplicationResolver::class)->forEnvironment('sandbox');
+    }
+
     public function test_each_store_resolves_its_own_application_and_rejects_a_wrong_token_application(): void
     {
         config([

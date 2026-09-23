@@ -15,6 +15,11 @@ final class ShopeeApplicationResolver
         $settings = config("marketplace.shopee.applications.$environment", []);
         if (empty($settings['partner_id']) && empty($settings['partner_key'])
             && config('marketplace.shopee.environment') === $environment) {
+            if ($environment === 'sandbox'
+                && (string)config('marketplace.shopee.partner_id') !== ''
+                && (string)config('marketplace.shopee.partner_id') === (string)config('marketplace.shopee.applications.production.partner_id')) {
+                throw new RuntimeException('Shopee Sandbox application is not configured.');
+            }
             $settings = ['partner_id' => config('marketplace.shopee.partner_id'),
                 'partner_key' => config('marketplace.shopee.partner_key')];
         }

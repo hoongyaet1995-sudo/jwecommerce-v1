@@ -44,6 +44,12 @@ class ShopeeAuthorizationService
                 || $store->environment !== $environment || $store->external_shop_id !== $identity['shop_id'])) {
                 throw new RuntimeException('Reconnect must authorize the original store.');
             }
+            if ($store) {
+                $bound = MarketplaceStoreToken::where('store_id', $store->id)->first();
+                if ($bound?->application_id && $bound->application_id !== $applicationId) {
+                    throw new RuntimeException('Store belongs to another Shopee application.');
+                }
+            }
             if (!$store && DB::table('marketplace_stores')->where('platform', 'shopee')
                 ->where('environment', $environment)->where('external_shop_id', $identity['shop_id'])->exists()) {
                 throw new RuntimeException('This store already exists. Use Reconnect on that store.');

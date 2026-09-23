@@ -49,9 +49,11 @@ return [
     'shopee' => [
         'applications' => [
             'production' => ['partner_id' => env('MARKETPLACE_SHOPEE_PARTNER_ID'),
-                'partner_key' => env('MARKETPLACE_SHOPEE_PARTNER_KEY')],
+                'partner_key' => env('MARKETPLACE_SHOPEE_PARTNER_KEY'),
+                'callback_url' => env('MARKETPLACE_SHOPEE_PRODUCTION_CALLBACK_URL', env('MARKETPLACE_SHOPEE_CALLBACK_URL'))],
             'sandbox' => ['partner_id' => env('MARKETPLACE_SHOPEE_SANDBOX_PARTNER_ID'),
-                'partner_key' => env('MARKETPLACE_SHOPEE_SANDBOX_PARTNER_KEY')],
+                'partner_key' => env('MARKETPLACE_SHOPEE_SANDBOX_PARTNER_KEY'),
+                'callback_url' => env('MARKETPLACE_SHOPEE_SANDBOX_CALLBACK_URL', env('MARKETPLACE_SHOPEE_CALLBACK_URL'))],
         ],
         'main_account_enabled' => env('MARKETPLACE_SHOPEE_MAIN_ACCOUNT_ENABLED', false),
         'test_store_id' => env('MARKETPLACE_SHOPEE_TEST_STORE_ID'),

@@ -250,6 +250,9 @@ class MarketplaceOAuthController extends Controller
         }
         try {
             $context = $applications->forEnvironment($environment);
+            if ($storeId && ! $applications->isStoreReady($storeId)) {
+                throw new RuntimeException('Store application does not match this Shopee environment.');
+            }
             $client = $client->forApplication($context);
             // Check configuration before creating an attempt.
             if (!$client->isAuthorizationReady()) {

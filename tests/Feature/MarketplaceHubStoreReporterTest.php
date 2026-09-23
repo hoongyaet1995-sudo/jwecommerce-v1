@@ -12,6 +12,36 @@ class MarketplaceHubStoreReporterTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_same_shopee_shop_id_in_two_environments_sends_distinct_token_free_receipts(): void
+    {
+        config(['app.url' => 'https://ecom.jwaistudio.online',
+            'marketplace.hub.url' => 'https://marketplace.jwaistudio.online',
+            'marketplace.hub.client_id' => 'jw_fixture_client',
+            'marketplace.hub.client_secret' => 'fixture-client-secret',
+            'marketplace.hub.store_reporting_enabled' => true]);
+        foreach (['sandbox' => '123', 'production' => '456'] as $environment => $applicationId) {
+            $storeId = DB::table('marketplace_stores')->insertGetId([
+                'platform' => 'shopee', 'environment' => $environment, 'external_shop_id' => '227929252',
+                'shop_name' => 'Singapore Store', 'region' => 'SG', 'status' => 'connected',
+                'created_at' => now(), 'updated_at' => now(),
+            ]);
+            \App\Models\MarketplaceStoreToken::create(['store_id' => $storeId, 'application_id' => $applicationId,
+                'access_token' => 'private-'.$environment, 'refresh_token' => 'refresh-'.$environment,
+                'access_expires_at' => now()->addHour()]);
+        }
+        Http::fake(['marketplace.jwaistudio.online/api/stores/receipt' => Http::response(['result' => 'connected'])]);
+
+        $this->assertSame(2, app(MarketplaceHubStoreReporter::class)->run()['reported']);
+        $requests = Http::recorded()->map(fn ($entry) => json_decode($entry[0]->body(), true)['store'])->all();
+        $this->assertEqualsCanonicalizing(['sandbox', 'production'], array_column($requests, 'environment'));
+        $this->assertEqualsCanonicalizing(['123', '456'], array_column($requests, 'applicationId'));
+        foreach ($requests as $receipt) {
+            $this->assertSame('SG', $receipt['region']);
+            $this->assertArrayNotHasKey('accessToken', $receipt);
+            $this->assertArrayNotHasKey('refreshToken', $receipt);
+        }
+    }
+
     public function test_only_store_metadata_is_signed_and_sent_to_hub(): void
     {
         config(['app.url' => 'https://ecom.jwaistudio.online',
