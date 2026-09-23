@@ -16,8 +16,11 @@ class MarketplaceHubOAuthRoutingTest extends TestCase
     {
         $this->configureHub();
         config(['marketplace.shopee.enabled' => true, 'marketplace.shopee.environment' => 'production',
-            'marketplace.shopee.partner_id' => '230736', 'marketplace.shopee.partner_key' => 'fixture-key',
-            'marketplace.shopee.callback_url' => 'https://marketplace.jwaistudio.online/admin/marketplace/oauth/shopee/callback']);
+            'marketplace.shopee.partner_id' => '2033707', 'marketplace.shopee.partner_key' => 'fixture-key',
+            'marketplace.shopee.callback_url' => 'https://marketplace.jwaistudio.online/admin/marketplace/oauth/shopee/callback',
+            'marketplace.shopee.applications.production' => ['partner_id' => '2033707',
+                'partner_key' => 'fixture-key',
+                'callback_url' => 'https://marketplace.jwaistudio.online/admin/marketplace/oauth/shopee/callback']]);
         $hubState = str_repeat('b', 64);
         Http::fake(['marketplace.jwaistudio.online/api/oauth/intents' => Http::response(['state' => $hubState], 201)]);
         $this->actingAs(User::factory()->create(['is_admin' => true]));
@@ -53,6 +56,32 @@ class MarketplaceHubOAuthRoutingTest extends TestCase
 
         $this->postJson('/admin/api/marketplace/lazada/authorize')->assertConflict()->assertDontSee('fixture-secret');
         $this->assertSame(1, DB::table('marketplace_oauth_states')->count());
+    }
+
+    public function test_lazada_start_registers_a_signed_hub_intent_and_uses_the_hub_callback(): void
+    {
+        $this->configureHub();
+        config(['marketplace.lazada.enabled' => true, 'marketplace.lazada.app_key' => '139209',
+            'marketplace.lazada.app_secret' => 'fixture-secret',
+            'marketplace.lazada.callback_url' => 'https://marketplace.jwaistudio.online/admin/marketplace/oauth/lazada/callback']);
+        $hubState = str_repeat('f', 64);
+        Http::fake(['marketplace.jwaistudio.online/api/oauth/intents' => Http::response(['state' => $hubState], 201)]);
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+
+        $url = $this->postJson('/admin/api/marketplace/lazada/authorize')->assertOk()->json('url');
+        parse_str(parse_url($url, PHP_URL_QUERY), $query);
+        $this->assertSame('139209', $query['client_id']);
+        $this->assertSame($hubState, $query['state']);
+        $this->assertSame('https://marketplace.jwaistudio.online/admin/marketplace/oauth/lazada/callback',
+            $query['redirect_uri']);
+        $this->assertSame(1, DB::table('marketplace_oauth_states')->count());
+        Http::assertSent(function ($request) {
+            $data = json_decode($request->body(), true);
+            return $request->url() === 'https://marketplace.jwaistudio.online/api/oauth/intents'
+                && ($data['provider'] ?? null) === 'lazada'
+                && ($data['environment'] ?? null) === 'production'
+                && hash('sha256', $data['localState'] ?? '') === DB::table('marketplace_oauth_states')->value('state_hash');
+        });
     }
 
     private function configureHub(): void
