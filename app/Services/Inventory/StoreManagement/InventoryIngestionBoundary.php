@@ -96,7 +96,7 @@ final class InventoryIngestionBoundary
             foreach ($this->lineIdentities($payload) as $line) {
                 if ($identities->has($line['identity']) && ! DB::table('marketplace_inventory_items')
                     ->where('order_id', $order->id)->where('line_key', $line['line_key'])
-                    ->whereIn('status', ['skipped_unmapped', 'skipped_historical'])->exists()) {
+                    ->whereIn('status', ['skipped_unmapped', 'skipped_historical', 'released'])->exists()) {
                     return true;
                 }
             }

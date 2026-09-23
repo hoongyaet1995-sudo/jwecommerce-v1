@@ -30,6 +30,10 @@ class LazadaInventoryExecutionTest extends TestCase
   $this->assertDatabaseHas('marketplace_inventory_items',['order_id'=>$order,'line_key'=>'101','status'=>'skipped_historical','stock_allocation_id'=>null]);
   $this->assertDatabaseCount('stock_allocations',0);
   $this->assertSame([],$boundary->unresolvedHistoricalOrderIds($store,$variant->id,now()));
+  $cancelled=DB::table('marketplace_orders')->insertGetId(['store_id'=>$store,'external_order_id'=>'101','platform_status'=>'canceled','platform_updated_at'=>101,'encrypted_payload'=>\Illuminate\Support\Facades\Crypt::encryptString(json_encode($payload)),'fetched_at'=>now()]);
+  $this->assertSame([$cancelled],$boundary->unresolvedHistoricalOrderIds($store,$variant->id,now()));
+  DB::table('marketplace_inventory_items')->insert(['order_id'=>$cancelled,'line_key'=>'101','external_product_id'=>'200','external_variant_id'=>'300','warehouse_code'=>'MY-WH-1','status'=>'released','platform_updated_at'=>101,'created_at'=>now(),'updated_at'=>now()]);
+  $this->assertSame([],$boundary->unresolvedHistoricalOrderIds($store,$variant->id,now()));
   $actor=\App\Models\User::factory()->create(['is_admin'=>true]);
   $boundary->create($store,$variant->id,$balance['id'],$actor,'Counted Sandbox inventory and excluded old orders');
   $newOrder=DB::table('marketplace_orders')->insertGetId(['store_id'=>$store,'external_order_id'=>'102','platform_status'=>'pending','platform_updated_at'=>101,'encrypted_payload'=>'unused','fetched_at'=>now()]);
