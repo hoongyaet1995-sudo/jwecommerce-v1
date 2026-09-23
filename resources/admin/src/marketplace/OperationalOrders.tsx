@@ -21,8 +21,15 @@ export function OperationalOrders(){
  const [busyStores,setBusyStores]=useState<Set<string>>(new Set());const [refreshing,setRefreshing]=useState(false);
  const canFetch=stores.some(store=>store.status==='connected'&&orderPlatforms.includes(store.platform));
  const [selected,setSelected]=useState<string|null>(null);
+ const [refreshingId,setRefreshingId]=useState<string|null>(null);const [refreshError,setRefreshError]=useState('');const [refreshNotice,setRefreshNotice]=useState('');
  const [detail,setDetail]=useState<MarketplaceOrderDetail|null>(null);const [detailError,setDetailError]=useState('');
  const onQuery=useCallback((value:typeof query)=>{setQuery(value);setPage(1);},[]);
+ const refreshOne=async(id:string)=>{if(refreshingId)return;setRefreshingId(id);setRefreshError('');setRefreshNotice('');try{
+  const result=await marketplaceOperations.refreshOrder(id);
+  setRevision(value=>value+1);
+  if(selected===id){try{setDetail(await marketplaceOperations.orderDetail(id,{includeRecipient:true}).then(response=>response.data));}catch{setDetail(null);setDetailError('Order updated, but details could not be loaded. Close and retry.');}}
+  setRefreshNotice(`Order ${result.data.external_order_id} updated from ${result.data.platform}.`);
+ }catch(error){setRefreshError(error instanceof Error?error.message:'Order refresh failed. Try again.');}finally{setRefreshingId(null);}};
  const refreshRuns=useCallback(async()=>{if(!stores.length)return;setRefreshing(true);try{const values=await Promise.all(stores.filter(s=>s.platform==='shopee'||s.platform==='lazada').map(async store=>[store.id,await marketplaceOperations.latestOrderRun(store.id)] as const));setRuns(previous=>({...previous,...Object.fromEntries(values)}));}catch{/* Keep the last confirmed statuses visible; the operator can refresh again. */}finally{setRefreshing(false);}},[stores]);
  useEffect(()=>{let active=true;marketplaceOperations.connections().then(data=>{if(active){setStores(data.stores);setCapabilities(data.capabilities);setOrderPlatforms(Object.entries(data.capabilities).filter(([,value])=>value.orders).map(([platform])=>platform));}}).catch(()=>{if(active)setConnectionError('Store connections could not be loaded. Reload this page to retry.');});return()=>{active=false;};},[]);
  useEffect(()=>{if(stores.length)void refreshRuns();},[stores,refreshRuns]);
@@ -44,8 +51,10 @@ export function OperationalOrders(){
  const value={...admin,connections:stores,marketplaceOrders:[],marketplaceInventory:[],marketplaceStoreProducts:[],syncLogs:[],selectedMarketplaceOrderId:null};
  return <PreviewContext.Provider value={value as unknown as React.ContextType<typeof PreviewContext>}>
   {connectionError&&<p role="alert" className="mb-4 text-sm text-rose-500">{connectionError}</p>}
+  {refreshError&&<p role="alert" className="mb-4 text-sm text-rose-500">{refreshError}</p>}
+  {refreshNotice&&<p role="status" className="mb-4 text-sm text-emerald-600">{refreshNotice}</p>}
   {(state.loading||state.error)&&<p role={state.error?'alert':'status'} className="mb-4 text-sm text-neutral-500">{state.error||'Loading Marketplace orders…'}</p>}
-  <MarketplaceOMSPage operational serverData={{orders:state.orders,summary:state.summary,onSelect:setSelected,onQuery,stores,storeId,onFetch:()=>{setRecoveryPhase('selection');setRecoveryOpen(true);},onRecoveryStatus:()=>{setRecoveryPhase('execution');setRecoveryOpen(true);},canFetch,recoverySummary:{running:Object.values(runs).filter(run=>run&&['queued','running'].includes(run.status)).length,failed:Object.values(runs).filter(run=>run?.status==='failed').length},onStore:id=>{setStoreId(id);setPage(1);setSelected(null);}}}/>
+  <MarketplaceOMSPage operational serverData={{orders:state.orders,summary:state.summary,onSelect:setSelected,onRefresh:id=>void refreshOne(id),refreshingId,onQuery,stores,storeId,onFetch:()=>{setRecoveryPhase('selection');setRecoveryOpen(true);},onRecoveryStatus:()=>{setRecoveryPhase('execution');setRecoveryOpen(true);},canFetch,recoverySummary:{running:Object.values(runs).filter(run=>run&&['queued','running'].includes(run.status)).length,failed:Object.values(runs).filter(run=>run?.status==='failed').length},onStore:id=>{setStoreId(id);setPage(1);setSelected(null);}}}/>
   <div className="flex items-center gap-2 mt-4">
    <button className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 disabled:opacity-30" onClick={()=>setRevision(value=>value+1)} disabled={state.loading}>Reload</button>
    <button className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 disabled:opacity-30" onClick={()=>setPage(value=>value-1)} disabled={state.loading||page<=1}>Previous</button>

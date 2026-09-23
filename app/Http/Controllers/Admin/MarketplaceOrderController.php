@@ -11,6 +11,21 @@ use App\Services\Marketplace\MarketplaceOrderImage;
 
 class MarketplaceOrderController extends Controller
 {
+    public function refresh(int $order, \App\Services\Marketplace\MarketplaceOrderDetailService $details): \Illuminate\Http\JsonResponse
+    {
+        $row=DB::table('marketplace_orders as o')->join('marketplace_stores as s','s.id','=','o.store_id')
+            ->where('o.id',$order)->first(['o.id','s.platform']);
+        abort_unless($row,404);
+        abort_unless(in_array($row->platform,['shopee','lazada'],true),409,'This platform does not support single-order refresh.');
+        try {
+            $id=$row->platform==='lazada' ? app(\App\Services\Marketplace\LazadaOrderService::class)->refreshOrder($order)
+                : app(\App\Services\Marketplace\ShopeeOrderService::class)->refreshOrder($order);
+        } catch (\RuntimeException $e) {
+            \Illuminate\Support\Facades\Log::warning('Marketplace single-order refresh failed',['order_id'=>$order,'platform'=>$row->platform,'exception'=>get_class($e)]);
+            return response()->json(['message'=>'The platform order could not be refreshed. Check the store connection and try again.'],409)->header('Cache-Control','no-store');
+        }
+        return response()->json(['data'=>$details->read($id)])->header('Cache-Control','no-store');
+    }
     public function pack(Request $request,int $order,\App\Services\Marketplace\MarketplacePackingAttempts $attempts,\App\Services\Marketplace\LazadaPackingDispatch $dispatch)
     {
         abort_unless(config('marketplace.fulfillment_operations_enabled')===true,503,'Marketplace fulfillment is disabled.');

@@ -413,6 +413,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/marketplace/catalog/products', [\App\Http\Controllers\Admin\MarketplaceCatalogController::class, 'products']);
     Route::get('/api/marketplace/orders', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'index']);
     Route::get('/api/marketplace/orders/summary', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'summary']);
+    Route::post('/api/marketplace/orders/{order}/refresh', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'refresh'])->whereNumber('order')->middleware('throttle:10,1');
     Route::post('/api/marketplace/orders/{order}/pack', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'pack'])->whereNumber('order')->middleware('throttle:10,1');
     Route::get('/api/marketplace/orders/{order}/fulfillment-attempts/{attempt}', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'fulfillmentAttempt'])->whereNumber(['order','attempt']);
     Route::post('/api/marketplace/orders/{order}/fulfillment-attempts/{attempt}/reconcile', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'reconcileRts'])->whereNumber(['order','attempt'])->middleware('throttle:10,1');

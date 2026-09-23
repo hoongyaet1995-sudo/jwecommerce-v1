@@ -10,6 +10,27 @@ class ShopeeOrderService
     public function __construct(private ShopeeClient $client, private ShopeeTokenManager $tokens,
         private MarketplaceOrderSnapshotService $snapshots, private ShopeeApplicationResolver $applications) {}
 
+    public function refreshOrder(int $localOrderId): int
+    {
+        $order=DB::table('marketplace_orders')->find($localOrderId);
+        $store=$order ? DB::table('marketplace_stores')->find($order->store_id) : null;
+        if (!$store || $store->platform!=='shopee' || $store->status!=='connected') {
+            throw new RuntimeException('Connected Shopee order required.');
+        }
+        $token=$this->tokens->accessToken((int)$store->id);
+        $client=$this->applications->clientForStore((int)$store->id,$this->client);
+        $orders=$client->orderDetails($token,$store->external_shop_id,[$order->external_order_id]);
+        if (count($orders)!==1 || ($orders[0]['order_sn']??null)!==$order->external_order_id) {
+            throw new RuntimeException('Shopee order identity mismatch.');
+        }
+        return DB::transaction(function () use ($store,$orders) {
+            $current=DB::table('marketplace_stores')->where('id',$store->id)->lockForUpdate()->first();
+            if (!$current || $current->status!=='connected' || $current->external_shop_id!==$store->external_shop_id
+                || $current->environment!==$store->environment) throw new RuntimeException('Store connection changed during order refresh.');
+            return $this->snapshots->saveShopee((int)$store->id,$orders[0]);
+        });
+    }
+
     public function pullPage(int $storeId, int $from, int $to, string $cursor = ''): array
     {
         $token = $this->tokens->accessToken($storeId);

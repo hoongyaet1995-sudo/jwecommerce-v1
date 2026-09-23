@@ -8,7 +8,7 @@ import {OrderSummaryRows} from './OrderSummaryRows';
 import type {OrderSummary,StoreConnection} from '../../../../integration/marketplaceOperations';
 import { Boxes, Search, Printer, PackageCheck, Truck, CheckCircle2, Clock, CloudDownload, Download, Zap, Eye, X, User, MapPin, ArrowUpRight, RefreshCw, AlertTriangle } from 'lucide-react';
 
-export interface OmsServerData {orders:OrderSummary[];summary:{total:number;statuses:Record<string,number>};onSelect:(id:string)=>void;onQuery:(query:{platform:string;status:string;q:string})=>void;stores?:StoreConnection[];storeId?:string;onStore?:(id:string)=>void;onFetch?:()=>void;onRecoveryStatus?:()=>void;canFetch?:boolean;recoverySummary?:{running:number;failed:number};}
+export interface OmsServerData {orders:OrderSummary[];summary:{total:number;statuses:Record<string,number>};onSelect:(id:string)=>void;onRefresh?:(id:string)=>void;refreshingId?:string|null;onQuery:(query:{platform:string;status:string;q:string})=>void;stores?:StoreConnection[];storeId?:string;onStore?:(id:string)=>void;onFetch?:()=>void;onRecoveryStatus?:()=>void;canFetch?:boolean;recoverySummary?:{running:number;failed:number};}
 export const MarketplaceOMSPage: React.FC<{operational?:boolean;serverData?:OmsServerData}> = ({operational=false,serverData}) => {
   const {
     marketplaceOrders = [],
@@ -432,7 +432,7 @@ export const MarketplaceOMSPage: React.FC<{operational?:boolean;serverData?:OmsS
             </thead>
 
             <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
-              {serverData ? <OrderSummaryRows orders={serverData.orders} onSelect={serverData.onSelect}/> : filteredOrders.length === 0 ? (
+              {serverData ? <OrderSummaryRows orders={serverData.orders} onSelect={serverData.onSelect} onRefresh={serverData.onRefresh} refreshingId={serverData.refreshingId}/> : filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-neutral-400">
                     <Boxes className="w-8 h-8 mx-auto mb-2 text-neutral-300 dark:text-neutral-700" />
