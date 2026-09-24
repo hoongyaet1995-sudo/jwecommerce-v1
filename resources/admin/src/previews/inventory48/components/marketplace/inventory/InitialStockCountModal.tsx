@@ -1172,7 +1172,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                                                 ? 'border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400 focus:ring-1 focus:ring-rose-500'
                                                 : isInputDisabled
                                                 ? 'border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800/60 text-neutral-400 cursor-not-allowed'
-                                                : 'border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-850 text-neutral-900 dark:text-white focus:ring-1 focus:ring-indigo-500'
+                                                : 'border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:ring-1 focus:ring-indigo-500'
                                             }`}
                                           />
                                         </div>
