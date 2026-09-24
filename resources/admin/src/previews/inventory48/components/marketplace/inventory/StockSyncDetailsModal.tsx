@@ -445,7 +445,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                 <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2 text-xs">
                   <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-bold">
                     <AlertTriangle className="w-4 h-4" />
-                    <span>Marketplace stock does not match JW inventory</span>
+                    <span>{currentSync.difference === null ? 'Marketplace stock has not been reconciled' : 'Marketplace stock does not match JW inventory'}</span>
                   </div>
                   <p className="text-amber-800/90 dark:text-amber-200/90">
                     JW inventory has <strong>{currentSync.jwAvailableStock ?? 'an uncounted quantity'}</strong> available to sell, while {store.nickname || store.name} currently reports <strong>{currentSync.marketplaceReportedStock ?? 'Unknown'}</strong>.

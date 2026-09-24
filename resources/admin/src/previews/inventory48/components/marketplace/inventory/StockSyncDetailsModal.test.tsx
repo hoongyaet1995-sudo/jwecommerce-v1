@@ -47,6 +47,12 @@ describe('warehouse-aware stock sync details',()=>{
     expect(host.textContent).not.toContain('Check Status');
   });
 
+  it('does not call unknown stock a mismatch before First Count',async()=>{
+    await render({syncInfo:{...state,status:'not_synced',failureReason:'Complete First Count.'}});
+    expect(host.textContent).toContain('Marketplace stock has not been reconciled');
+    expect(host.textContent).not.toContain('Marketplace stock does not match JW inventory');
+  });
+
   it('offers readback for awaiting confirmation and retry only when permitted',async()=>{
     const check=vi.fn().mockResolvedValue({...state,status:'synced',jwAvailableStock:8,
       marketplaceReportedStock:8,difference:0,canCheck:true});
