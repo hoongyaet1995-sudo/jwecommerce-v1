@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        $indexNames = array_column(Schema::getIndexes('inventory_pools'), 'name');
+        if (in_array('inventory_pool_kind_warehouse_unique', $indexNames, true)) {
+            return;
+        }
         Schema::table('inventory_pools', function (Blueprint $table): void {
             $table->index('warehouse_id', 'inventory_pools_warehouse_id_index');
         });
