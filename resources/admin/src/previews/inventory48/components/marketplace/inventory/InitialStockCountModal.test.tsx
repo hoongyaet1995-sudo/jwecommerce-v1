@@ -53,3 +53,28 @@ it('lists mapped stores as references while keeping a targeted facility count bl
     sku:'TEST-1',targetStoreId:'3',targetWarehouseId:'8',physicalCount:3,
   }));
 });
+
+it('preserves a warehouse draft when store data refreshes', async () => {
+  const fetchMock=vi.fn(async (_input:RequestInfo|URL) => ({ok:true,json:async()=>({status:'verified',topology:'multi_warehouse',facilities:[
+    {id:7,name:'Warehouse A',provider_id:'WH-A',inventory_warehouse_id:19,counted:false,physical:null,reserved:0,available:null},
+  ]})} as Response));
+  vi.stubGlobal('fetch', fetchMock);
+  const item={id:'55',masterSku:'TEST-1',productName:'Test product',variantId:55,mappedStoreIds:['3']} as any;
+  const render=(name:string)=>root.render(<InitialStockCountModal isOpen onClose={()=>{}} item={item}
+    mode="independent" stores={[{id:'3',name,platform:'lazada'} as any]}
+    initialTargetStoreId="3" initialTargetWarehouseId="7" onSaveCount={vi.fn()} />);
+  await act(async()=>render('Lazada Test'));
+  await act(async()=>{await Promise.resolve();await Promise.resolve()});
+  const input=host.querySelector('input[aria-label="Lazada Test Warehouse A first count"]') as HTMLInputElement;
+  await act(async()=>{
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,'12');
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  expect(host.querySelector('input[placeholder^="Enter verified physical units"]')).toHaveProperty('value','12');
+  const facilityReads=fetchMock.mock.calls.filter(([url])=>String(url).endsWith('/facilities')).length;
+  await act(async()=>render('Lazada Test'));
+  await act(async()=>{await Promise.resolve();await Promise.resolve()});
+  expect(fetchMock.mock.calls.filter(([url])=>String(url).endsWith('/facilities'))).toHaveLength(facilityReads);
+  expect(host.querySelector('input[aria-label="Lazada Test Warehouse A first count"]')).toHaveProperty('value','12');
+  expect(host.querySelector('input[placeholder^="Enter verified physical units"]')).toHaveProperty('value','12');
+});

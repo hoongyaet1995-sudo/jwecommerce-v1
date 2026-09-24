@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   X,
   ClipboardCheck,
@@ -122,6 +122,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   const [platformSyncStatuses, setPlatformSyncStatuses] = useState<Record<string, 'confirmed' | 'syncing' | 'failed'>>({});
   const [isRetryingSync, setIsRetryingSync] = useState<boolean>(false);
   const [saveError,setSaveError] = useState<string>('');
+  const initializedSession = useRef<string | null>(null);
 
   // Filter channels into active inventory accounts and coming soon accounts
   const activeStores = useMemo(() => {
@@ -154,6 +155,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) {
+      initializedSession.current = null;
       setStep('input');
       setConfirmedCount(null);
       setSelectedCountTarget(initialTargetStoreId && initialTargetWarehouseId
@@ -164,6 +166,9 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   // Initialize or Reset form when modal opens or item changes
   useEffect(() => {
     if (isOpen && item && step !== 'success') {
+      const session = `${item.id}:${initialTargetStoreId || ''}:${initialTargetWarehouseId || ''}`;
+      if (initializedSession.current === session) return;
+      initializedSession.current = session;
       setStep('input');
       setConfirmedCount(null);
       setOperator('Current admin');
@@ -217,6 +222,23 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
     }
   }, [isOpen, item?.id, activeStores, storeConfigs, warehouseStockData, initialTargetStoreId, initialTargetWarehouseId]);
 
+  // Facility data can arrive after the form opens. Add its initial balances without
+  // replacing quantities the operator has already entered in this session.
+  useEffect(() => {
+    if (!isOpen || !item) return;
+    setWarehouseAllocations(previous => {
+      let changed = false;
+      const next = { ...previous };
+      for (const store of storeConfigs) for (const warehouse of store.warehouses) {
+        if (warehouse.id in next) continue;
+        const balance = warehouseStockData[item.masterSku]?.[warehouse.id];
+        next[warehouse.id] = balance && balance.physicalStock > 0 ? String(balance.physicalStock) : '';
+        changed = true;
+      }
+      return changed ? next : previous;
+    });
+  }, [isOpen, item?.id, storeConfigs, warehouseStockData]);
+
   useEffect(()=>{
     if(!isOpen || !item) return;
     let active=true;
@@ -226,7 +248,9 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
       setExpandedStores(Object.fromEntries(view.storeConfigs.map(store=>[store.storeId,true])));
     });
     return()=>{active=false};
-  },[isOpen,item?.id,stores,storeBalances]);
+  // Capture the facility view once per opened SKU. Parent inventory refreshes
+  // must not restart this request or replace an in-progress count draft.
+  },[isOpen,item?.id,initialTargetStoreId,initialTargetWarehouseId]);
 
   useEffect(()=>{
     if(!isOpen || !item || !storeConfigs.length) return;
