@@ -30,6 +30,11 @@ final class ModeMutation
             if ($target === $configuration->operating_mode) {
                 throw ValidationException::withMessages(['target' => 'This inventory mode is already active.']);
             }
+            if (DB::table('inventory_balances as balance')
+                ->join('inventory_pools as pool', 'pool.id', '=', 'balance.inventory_pool_id')
+                ->where('pool.kind', 'facility')->whereNotNull('balance.counted_at')->exists()) {
+                throw ValidationException::withMessages(['mode' => 'Review every facility and active reservation before changing inventory mode.']);
+            }
             $beforeTotal = (int) DB::table('inventory_balances')->whereNotNull('counted_at')->sum('physical_stock');
             if ($target === 'shared_pool') {
                 $this->mergeToShared();

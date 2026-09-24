@@ -14,9 +14,8 @@ final class OrderInventoryRouter
         if (! preg_match('/^[A-Za-z0-9:_-]{1,160}$/D', $orderLineKey) || $orderedQuantity < 1) {
             throw new RuntimeException('Invalid inventory order line.');
         }
-        $balance = $this->accounts->balance($variantId, $channelKey);
-
-        return DB::transaction(function () use ($channelKey, $orderLineKey, $variantId, $orderedQuantity, $balance): array {
+        return DB::transaction(function () use ($channelKey, $orderLineKey, $variantId, $orderedQuantity): array {
+            $balance = $this->accounts->balance($variantId, $channelKey);
             DB::table('inventory_store_order_lines')->insertOrIgnore([
                 'line_key' => $orderLineKey, 'channel_key' => $channelKey,
                 'product_variant_id' => $variantId, 'inventory_balance_id' => $balance['id'],

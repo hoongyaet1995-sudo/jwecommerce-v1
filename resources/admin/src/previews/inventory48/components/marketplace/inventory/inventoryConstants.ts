@@ -1,0 +1,743 @@
+import { InventoryStoreChannel, StoreStockAccountBalance, StoreStockTransferRecord, InventoryActivityItem } from './inventoryTypes';
+
+export const INVENTORY_STORE_CHANNELS: InventoryStoreChannel[] = [
+  {
+    id: 'webstore',
+    platform: 'webstore',
+    platformDisplayName: 'JW Ecom Storefront',
+    name: 'Aurora Audio Official Direct Storefront',
+    nickname: 'JW Storefront (MY)',
+    region: 'Malaysia (MYR)',
+    connectionState: 'connected',
+    isManagedByJw: true,
+    readStatus: 'ok',
+    syncStatus: 'synced',
+    lastReadAt: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+    lastSyncAt: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+    platformStockSnapshot: 19,
+    environment: 'production',
+    mappedSkuCount: 16,
+    totalStoreSkuCount: 16
+  },
+  {
+    id: 'conn-shopee-01',
+    platform: 'shopee',
+    platformDisplayName: 'Shopee',
+    name: 'Aurora Audio Flagship Mall',
+    nickname: 'Shopee Official MY',
+    region: 'Malaysia (MYR)',
+    connectionState: 'connected',
+    isManagedByJw: true,
+    readStatus: 'ok',
+    syncStatus: 'synced',
+    lastReadAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+    lastSyncAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+    platformStockSnapshot: 19,
+    environment: 'production',
+    mappedSkuCount: 16,
+    totalStoreSkuCount: 16
+  },
+  {
+    id: 'conn-shopee-02',
+    platform: 'shopee',
+    platformDisplayName: 'Shopee',
+    name: 'Aurora Audio Outlet Store',
+    nickname: 'Shopee Secondary Outlet',
+    region: 'Malaysia (MYR)',
+    connectionState: 'expired',
+    isManagedByJw: false,
+    readStatus: 'failed',
+    syncStatus: 'auth_expired',
+    lastReadAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    lastSyncAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    platformStockSnapshot: 19,
+    environment: 'production',
+    mappedSkuCount: 12,
+    totalStoreSkuCount: 16
+  },
+  {
+    id: 'conn-lazada-01',
+    platform: 'lazada',
+    platformDisplayName: 'Lazada',
+    name: 'Aurora Audio LazMall Store',
+    nickname: 'Lazada LazMall MY',
+    region: 'Malaysia (MYR)',
+    connectionState: 'connected',
+    isManagedByJw: true,
+    readStatus: 'ok',
+    syncStatus: 'synced',
+    lastReadAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+    lastSyncAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+    platformStockSnapshot: 19,
+    environment: 'production',
+    mappedSkuCount: 16,
+    totalStoreSkuCount: 16
+  },
+  {
+    id: 'conn-lazada-test-01',
+    platform: 'lazada',
+    platformDisplayName: 'Lazada',
+    name: '[Official Test] Zappyworks Test Store',
+    nickname: 'Lazada Test MY',
+    region: 'Malaysia (Sandbox)',
+    connectionState: 'connected',
+    isManagedByJw: true,
+    readStatus: 'ok',
+    syncStatus: 'synced',
+    lastReadAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+    lastSyncAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+    platformStockSnapshot: 0,
+    environment: 'sandbox',
+    mappedSkuCount: 8,
+    totalStoreSkuCount: 16
+  },
+  {
+    id: 'tiktok-pending',
+    platform: 'tiktok',
+    platformDisplayName: 'TikTok Shop',
+    name: 'TikTok Shop (Southeast Asia)',
+    nickname: 'TikTok Shop',
+    region: 'Regional',
+    connectionState: 'coming_soon',
+    isComingSoon: true,
+    isManagedByJw: false,
+    readStatus: 'unmanaged',
+    syncStatus: 'disabled'
+  },
+  {
+    id: 'shopify-pending',
+    platform: 'shopify',
+    platformDisplayName: 'Shopify',
+    name: 'Shopify Global Storefront',
+    nickname: 'Shopify Store',
+    region: 'Global',
+    connectionState: 'coming_soon',
+    isComingSoon: true,
+    isManagedByJw: false,
+    readStatus: 'unmanaged',
+    syncStatus: 'disabled'
+  }
+];
+
+export const INITIAL_INDEPENDENT_STORE_BALANCES: Record<string, Record<string, StoreStockAccountBalance>> = {
+  // inv-01: AUR-PINE-ANC-TT (Total physical: 22, Reserved: 3, Available: 19)
+  'AUR-PINE-ANC-TT': {
+    'webstore': {
+      storeId: 'webstore',
+      storeName: 'Aurora Audio Official Direct Storefront',
+      storeNickname: 'JW Storefront (MY)',
+      platform: 'webstore',
+      isManagedByJw: true,
+      connectionState: 'connected',
+      isCounted: true,
+      physicalStock: 8,
+      reservedStock: 1,
+      availableStock: 7,
+      platformStockSnapshot: 7,
+      platformReadStatus: 'ok',
+      lastPlatformReadAt: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+      syncState: 'enabled',
+      lastConfirmedPushedQuantity: 7,
+      lastConfirmedPushedAt: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+      lastSyncStatus: 'confirmed'
+    },
+    'conn-shopee-01': {
+      storeId: 'conn-shopee-01',
+      storeName: 'Aurora Audio Flagship Mall',
+      storeNickname: 'Shopee Official MY',
+      platform: 'shopee',
+      isManagedByJw: true,
+      connectionState: 'connected',
+      isCounted: true,
+      physicalStock: 7,
+      reservedStock: 1,
+      availableStock: 6,
+      platformStockSnapshot: 6,
+      platformReadStatus: 'ok',
+      lastPlatformReadAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+      syncState: 'enabled',
+      lastConfirmedPushedQuantity: 6,
+      lastConfirmedPushedAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+      lastSyncStatus: 'confirmed'
+    },
+    'conn-lazada-01': {
+      storeId: 'conn-lazada-01',
+      storeName: 'Aurora Audio LazMall Store',
+      storeNickname: 'Lazada LazMall MY',
+      platform: 'lazada',
+      isManagedByJw: true,
+      connectionState: 'connected',
+      isCounted: true,
+      physicalStock: 7,
+      reservedStock: 1,
+      availableStock: 6,
+      platformStockSnapshot: 6,
+      platformReadStatus: 'ok',
+      lastPlatformReadAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+      syncState: 'enabled',
+      lastConfirmedPushedQuantity: 6,
+      lastConfirmedPushedAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+      lastSyncStatus: 'confirmed'
+    },
+    'conn-shopee-02': {
+      storeId: 'conn-shopee-02',
+      storeName: 'Aurora Audio Outlet Store',
+      storeNickname: 'Shopee Secondary Outlet',
+      platform: 'shopee',
+      isManagedByJw: false,
+      connectionState: 'expired',
+      isCounted: false,
+      physicalStock: null,
+      reservedStock: 0,
+      availableStock: null,
+      platformStockSnapshot: 19,
+      platformReadStatus: 'failed',
+      lastPlatformReadAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      syncState: 'auth_expired',
+      lastConfirmedPushedQuantity: null,
+      lastFailureReason: 'OAuth access token expired. Re-authorization required.',
+      lastSyncStatus: 'failed'
+    },
+    'conn-lazada-test-01': {
+      storeId: 'conn-lazada-test-01',
+      storeName: '[Official Test] Zappyworks Test Store',
+      storeNickname: 'Lazada Test MY',
+      platform: 'lazada',
+      isManagedByJw: true,
+      connectionState: 'connected',
+      isCounted: true,
+      physicalStock: 0,
+      reservedStock: 0,
+      availableStock: 0,
+      platformStockSnapshot: 0,
+      platformReadStatus: 'ok',
+      lastPlatformReadAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+      syncState: 'enabled',
+      lastConfirmedPushedQuantity: 0,
+      lastConfirmedPushedAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+      lastSyncStatus: 'confirmed'
+    }
+  },
+
+  // inv-02: AUR-ANC-01-BLK (Total physical: 150, Reserved: 18, Available: 122)
+  'AUR-ANC-01-BLK': {
+    'webstore': {
+      storeId: 'webstore',
+      storeName: 'Aurora Audio Official Direct Storefront',
+      storeNickname: 'JW Storefront (MY)',
+      platform: 'webstore',
+      isManagedByJw: true,
+      connectionState: 'connected',
+      isCounted: true,
+      physicalStock: 60,
+      reservedStock: 8,
+      availableStock: 52,
+      platformStockSnapshot: 52,
+      platformReadStatus: 'ok',
+      lastPlatformReadAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+      syncState: 'enabled',
+      lastConfirmedPushedQuantity: 52,
+      lastConfirmedPushedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+      lastSyncStatus: 'confirmed'
+    },
+    'conn-shopee-01': {
+      storeId: 'conn-shopee-01',
+      storeName: 'Aurora Audio Flagship Mall',
+      storeNickname: 'Shopee Official MY',
+      platform: 'shopee',
+      isManagedByJw: true,
+      connectionState: 'connected',
+      isCounted: true,
+      physicalStock: 50,
+      reservedStock: 6,
+      availableStock: 44,
+      platformStockSnapshot: 44,
+      platformReadStatus: 'ok',
+      lastPlatformReadAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+      syncState: 'enabled',
+      lastConfirmedPushedQuantity: 44,
+      lastConfirmedPushedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+      lastSyncStatus: 'confirmed'
+    },
+    'conn-lazada-01': {
+      storeId: 'conn-lazada-01',
+      storeName: 'Aurora Audio LazMall Store',
+      storeNickname: 'Lazada LazMall MY',
+      platform: 'lazada',
+      isManagedByJw: true,
+      connectionState: 'connected',
+      isCounted: true,
+      physicalStock: 40,
+      reservedStock: 4,
+      availableStock: 36,
+      platformStockSnapshot: 36,
+      platformReadStatus: 'ok',
+      lastPlatformReadAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+      syncState: 'enabled',
+      lastConfirmedPushedQuantity: 36,
+      lastConfirmedPushedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+      lastSyncStatus: 'confirmed'
+    },
+    'conn-shopee-02': {
+      storeId: 'conn-shopee-02',
+      storeName: 'Aurora Audio Outlet Store',
+      storeNickname: 'Shopee Secondary Outlet',
+      platform: 'shopee',
+      isManagedByJw: false,
+      connectionState: 'expired',
+      isCounted: false,
+      physicalStock: null,
+      reservedStock: 0,
+      availableStock: null,
+      platformStockSnapshot: 40,
+      platformReadStatus: 'failed',
+      lastPlatformReadAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      syncState: 'auth_expired',
+      lastConfirmedPushedQuantity: null,
+      lastSyncStatus: 'failed'
+    },
+    'conn-lazada-test-01': {
+      storeId: 'conn-lazada-test-01',
+      storeName: '[Official Test] Zappyworks Test Store',
+      storeNickname: 'Lazada Test MY',
+      platform: 'lazada',
+      isManagedByJw: true,
+      connectionState: 'connected',
+      isCounted: true,
+      physicalStock: 0,
+      reservedStock: 0,
+      availableStock: 0,
+      platformStockSnapshot: 0,
+      platformReadStatus: 'ok',
+      lastPlatformReadAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+      syncState: 'enabled',
+      lastConfirmedPushedQuantity: 0,
+      lastConfirmedPushedAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+      lastSyncStatus: 'confirmed'
+    }
+  },
+
+  // inv-08: LEG-AUD-EARPAD-VEL (Legacy Uncounted SKU: MUST SHOW 'Not Counted' on all accounts!)
+  'LEG-AUD-EARPAD-VEL': {
+    'webstore': {
+      storeId: 'webstore',
+      storeName: 'Aurora Audio Official Direct Storefront',
+      storeNickname: 'JW Storefront (MY)',
+      platform: 'webstore',
+      isManagedByJw: true,
+      connectionState: 'connected',
+      isCounted: false,
+      physicalStock: null,
+      reservedStock: 0,
+      availableStock: null,
+      platformStockSnapshot: 0,
+      platformReadStatus: 'ok',
+      lastPlatformReadAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+      syncState: 'awaiting_reconciliation',
+      lastConfirmedPushedQuantity: null,
+      lastFailureReason: 'Awaiting initial physical inventory count before stock can be released.',
+      lastSyncStatus: 'queued'
+    },
+    'conn-shopee-01': {
+      storeId: 'conn-shopee-01',
+      storeName: 'Aurora Audio Flagship Mall',
+      storeNickname: 'Shopee Official MY',
+      platform: 'shopee',
+      isManagedByJw: true,
+      connectionState: 'connected',
+      isCounted: false,
+      physicalStock: null,
+      reservedStock: 0,
+      availableStock: null,
+      platformStockSnapshot: 15,
+      platformReadStatus: 'mismatch',
+      lastPlatformReadAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+      syncState: 'awaiting_reconciliation',
+      lastConfirmedPushedQuantity: null,
+      lastFailureReason: 'Shopee reports 15 units. Physical goods not yet counted by JW staff.',
+      lastSyncStatus: 'queued'
+    },
+    'conn-lazada-01': {
+      storeId: 'conn-lazada-01',
+      storeName: 'Aurora Audio LazMall Store',
+      storeNickname: 'Lazada LazMall MY',
+      platform: 'lazada',
+      isManagedByJw: true,
+      connectionState: 'connected',
+      isCounted: false,
+      physicalStock: null,
+      reservedStock: 0,
+      availableStock: null,
+      platformStockSnapshot: 12,
+      platformReadStatus: 'mismatch',
+      lastPlatformReadAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+      syncState: 'awaiting_reconciliation',
+      lastConfirmedPushedQuantity: null,
+      lastFailureReason: 'Lazada reports 12 units. Physical goods not yet counted by JW staff.',
+      lastSyncStatus: 'queued'
+    },
+    'conn-shopee-02': {
+      storeId: 'conn-shopee-02',
+      storeName: 'Aurora Audio Outlet Store',
+      storeNickname: 'Shopee Secondary Outlet',
+      platform: 'shopee',
+      isManagedByJw: false,
+      connectionState: 'expired',
+      isCounted: false,
+      physicalStock: null,
+      reservedStock: 0,
+      availableStock: null,
+      platformStockSnapshot: 0,
+      platformReadStatus: 'failed',
+      lastPlatformReadAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      syncState: 'disabled',
+      lastConfirmedPushedQuantity: null,
+      lastSyncStatus: 'failed'
+    },
+    'conn-lazada-test-01': {
+      storeId: 'conn-lazada-test-01',
+      storeName: '[Official Test] Zappyworks Test Store',
+      storeNickname: 'Lazada Test MY',
+      platform: 'lazada',
+      isManagedByJw: true,
+      connectionState: 'connected',
+      isCounted: false,
+      physicalStock: null,
+      reservedStock: 0,
+      availableStock: null,
+      platformStockSnapshot: 0,
+      platformReadStatus: 'ok',
+      lastPlatformReadAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+      syncState: 'awaiting_reconciliation',
+      lastConfirmedPushedQuantity: null,
+      lastSyncStatus: 'queued'
+    }
+  }
+};
+
+export const INITIAL_STORE_STOCK_TRANSFERS: StoreStockTransferRecord[] = [
+  {
+    id: 'trf-001',
+    transferNumber: 'TRF-2026-0901',
+    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    masterSku: 'AUR-PINE-ANC-TT',
+    productName: 'Aurora ANC Pro Wireless Headphones',
+    variantName: 'Forest Pine / Matte Titanium',
+    imageUrl: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=200&auto=format&fit=crop&q=80',
+    sourceStoreId: 'webstore',
+    sourceStoreName: 'Aurora Audio Official Direct Storefront',
+    sourcePlatform: 'webstore',
+    destinationStoreId: 'conn-shopee-01',
+    destinationStoreName: 'Aurora Audio Flagship Mall',
+    destinationPlatform: 'shopee',
+    quantity: 3,
+    operator: 'Alexander (Admin)',
+    reason: 'Shopee 9.9 Campaign Stock Pre-allocation',
+    notes: 'Rebalanced 3 units from webstore surplus to Shopee flagship ahead of midnight flash sale.',
+    ledgerStatus: 'succeeded',
+    sourcePlatformSyncStatus: 'succeeded',
+    destinationPlatformSyncStatus: 'succeeded'
+  },
+  {
+    id: 'trf-002',
+    transferNumber: 'TRF-2026-0899',
+    timestamp: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
+    masterSku: 'AUR-ANC-01-BLK',
+    productName: 'Aurora ANC Wireless Headphones',
+    variantName: 'Midnight Black / Titanium',
+    imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&auto=format&fit=crop&q=80',
+    sourceStoreId: 'conn-lazada-01',
+    sourceStoreName: 'Aurora Audio LazMall Store',
+    sourcePlatform: 'lazada',
+    destinationStoreId: 'webstore',
+    destinationStoreName: 'Aurora Audio Official Direct Storefront',
+    destinationPlatform: 'webstore',
+    quantity: 5,
+    operator: 'Mei Ling (Operations)',
+    reason: 'Direct Storefront VIP Pre-order Backfill',
+    notes: 'Customer support escalated high demand on webstore direct channel.',
+    ledgerStatus: 'succeeded',
+    sourcePlatformSyncStatus: 'succeeded',
+    destinationPlatformSyncStatus: 'succeeded'
+  },
+  {
+    id: 'trf-003',
+    transferNumber: 'TRF-2026-0885',
+    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    masterSku: 'AUR-PINE-ANC-TT',
+    productName: 'Aurora ANC Pro Wireless Headphones',
+    variantName: 'Forest Pine / Matte Titanium',
+    imageUrl: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=200&auto=format&fit=crop&q=80',
+    sourceStoreId: 'conn-shopee-01',
+    sourceStoreName: 'Aurora Audio Flagship Mall',
+    sourcePlatform: 'shopee',
+    destinationStoreId: 'conn-lazada-01',
+    destinationStoreName: 'Aurora Audio LazMall Store',
+    destinationPlatform: 'lazada',
+    quantity: 2,
+    operator: 'Alexander (Admin)',
+    reason: 'Platform Equalization',
+    notes: 'JW ledger transferred. Shopee sync confirmed; Lazada experienced temporary rate limit on update.',
+    ledgerStatus: 'succeeded',
+    sourcePlatformSyncStatus: 'succeeded',
+    destinationPlatformSyncStatus: 'failed',
+    destinationFailureReason: 'HTTP 429: Lazada Open Platform API rate limit exceeded. Retry queued.'
+  }
+];
+
+export const INITIAL_INVENTORY_ACTIVITY_LOGS: InventoryActivityItem[] = [
+  {
+    id: 'act-001',
+    timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+    actionType: 'order_reserved',
+    masterSku: 'AUR-PINE-ANC-TT',
+    productName: 'Aurora ANC Pro Wireless Headphones',
+    variantName: 'Forest Pine / Matte Titanium',
+    targetScope: 'Aurora Audio Flagship Mall (Shopee)',
+    storeId: 'conn-shopee-01',
+    platform: 'shopee',
+    quantityChange: 0,
+    previousStock: 7,
+    resultingStock: 7,
+    reservedChange: +1,
+    availableChange: -1,
+    operator: 'Shopee Webhook Listener',
+    reason: 'Incoming order placed on Shopee. Stock reserved immediately to prevent oversell.',
+    referenceId: 'ORD-SH-992140',
+    status: 'succeeded',
+    detailsPayload: {
+      orderId: 'ORD-SH-992140',
+      buyer: 'Faizal R.',
+      paymentStatus: 'pending_payment',
+      rule: 'Rule 1: Valid order placed immediately locks stock into Reserved.'
+    }
+  },
+  {
+    id: 'act-002',
+    timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    actionType: 'store_transfer',
+    masterSku: 'AUR-PINE-ANC-TT',
+    productName: 'Aurora ANC Pro Wireless Headphones',
+    variantName: 'Forest Pine / Matte Titanium',
+    targetScope: 'JW Storefront -> Shopee Official',
+    quantityChange: 3,
+    previousStock: 'Webstore: 11 / Shopee: 4',
+    resultingStock: 'Webstore: 8 / Shopee: 7',
+    operator: 'Alexander (Admin)',
+    reason: 'Stock rebalance ahead of campaign promotion',
+    referenceId: 'TRF-2026-0901',
+    status: 'succeeded',
+    detailsPayload: {
+      sourceStore: 'JW Storefront (MY)',
+      destinationStore: 'Shopee Official MY',
+      transferredQuantity: 3,
+      totalInventoryConserved: true
+    }
+  },
+  {
+    id: 'act-003',
+    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    actionType: 'actual_intake',
+    masterSku: 'AUR-ANC-01-BLK',
+    productName: 'Aurora ANC Wireless Headphones',
+    variantName: 'Midnight Black / Titanium',
+    targetScope: 'Shared Pool',
+    quantityChange: +20,
+    previousStock: 130,
+    resultingStock: 150,
+    availableChange: +20,
+    operator: 'Hazim (Lead Inspector)',
+    reason: 'Factory Supplier Shipment Batch #PO-MY-8819 received and verified',
+    referenceId: 'INB-88190',
+    status: 'succeeded',
+    detailsPayload: {
+      intakeBatch: 'PO-MY-8819',
+      supplier: 'Aurora Audio Precision Electronics Ltd',
+      inspector: 'Hazim (Penang Lead)'
+    }
+  },
+  {
+    id: 'act-004',
+    timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    actionType: 'order_shipped',
+    masterSku: 'AUR-ANC-01-BLK',
+    productName: 'Aurora ANC Wireless Headphones',
+    variantName: 'Midnight Black / Titanium',
+    targetScope: 'Aurora Audio LazMall Store (Lazada)',
+    storeId: 'conn-lazada-01',
+    platform: 'lazada',
+    quantityChange: -1,
+    previousStock: 41,
+    resultingStock: 40,
+    reservedChange: -1,
+    availableChange: 0,
+    operator: 'OMS Carrier Handover',
+    reason: 'Courier collected package with verified AWB #LEX-MY-99182',
+    referenceId: 'ORD-LAZ-88219',
+    status: 'succeeded',
+    detailsPayload: {
+      rule: 'Rule 3: Shipment fulfillment deducts physical stock and simultaneously clears reservation.',
+      trackingNumber: 'LEX-MY-99182',
+      carrier: 'LEX Express'
+    }
+  },
+  {
+    id: 'act-005',
+    timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+    actionType: 'order_released',
+    masterSku: 'AUR-PINE-ANC-TT',
+    productName: 'Aurora ANC Pro Wireless Headphones',
+    variantName: 'Forest Pine / Matte Titanium',
+    targetScope: 'Aurora Audio Official Direct Storefront',
+    storeId: 'webstore',
+    platform: 'webstore',
+    quantityChange: 0,
+    previousStock: 8,
+    resultingStock: 8,
+    reservedChange: -1,
+    availableChange: +1,
+    operator: 'Automated Order Timeout',
+    reason: 'Unpaid order expired after 24 hours. Reserved stock safely returned to Available pool.',
+    referenceId: 'ORD-JW-10928',
+    status: 'succeeded',
+    detailsPayload: {
+      rule: 'Rule 2: Cancellation or expiration releases reserved stock back into Available.'
+    }
+  },
+  {
+    id: 'act-006',
+    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    actionType: 'first_count',
+    masterSku: 'AUR-PINE-ANC-TT',
+    productName: 'Aurora ANC Pro Wireless Headphones',
+    variantName: 'Forest Pine / Matte Titanium',
+    targetScope: 'Shared Pool',
+    quantityChange: +22,
+    previousStock: 'Not Counted',
+    resultingStock: 22,
+    operator: 'Alexander (Admin)',
+    reason: 'Initial physical stock count post-import to JW Master Catalog',
+    referenceId: 'COUNT-INIT-01',
+    status: 'succeeded',
+    detailsPayload: {
+      method: 'Manual physical count verified in central stock room',
+      channelReferenceStock: 'Shopee: 19 / Lazada: 19'
+    }
+  },
+  {
+    id: 'act-007',
+    timestamp: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
+    actionType: 'store_takeover',
+    masterSku: 'ALL_SKUS',
+    productName: 'Global Catalog (16 Master SKUs)',
+    targetScope: 'Aurora Audio LazMall Store (Lazada)',
+    storeId: 'conn-lazada-01',
+    platform: 'lazada',
+    quantityChange: 0,
+    previousStock: 'Not Managed by JW',
+    resultingStock: 'Managed by JW',
+    operator: 'Alexander (Admin)',
+    reason: 'Completed 16/16 SKU mapping and stock verification. Admin approved JW inventory takeover.',
+    referenceId: 'TAKEOVER-LZ-01',
+    status: 'succeeded'
+  },
+  {
+    id: 'act-008',
+    timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+    actionType: 'mode_change',
+    masterSku: 'ALL_SKUS',
+    productName: 'System-wide Inventory Policy',
+    targetScope: 'Global Admin Settings',
+    quantityChange: 0,
+    previousStock: 'Unconfigured',
+    resultingStock: 'Shared Stock',
+    operator: 'Alexander (Super Admin)',
+    reason: 'Initial system go-live: Global inventory mode set to Shared Stock policy.',
+    referenceId: 'POLICY-MODE-01',
+    status: 'succeeded'
+  }
+];
+
+/**
+ * Deterministic enterprise inventory generator for simulating 5,000+ SKUs
+ * allowing pagination, search, and bulk operations testing with high performance.
+ */
+export const generateEnterpriseInventory = (
+  baseList: any[],
+  targetTotal = 5420
+): any[] => {
+  const result: any[] = [...baseList];
+  const categories = [
+    'Wireless Headphones', 'In-Ear Monitors', 'DAC Amplifiers', 'Studio Reference',
+    'Gaming Headsets', 'Microphones', 'Cables & Adapters', 'Ear Tips & Accessories',
+    'Audio Interfaces', 'Bluetooth Receivers'
+  ];
+  const variants = [
+    'Midnight Black', 'Silver Frost', 'Matte Titanium', 'Forest Pine',
+    'Rose Gold', 'Carbon Gray', 'Arctic White', 'Navy Blue', 'Lunar Gray'
+  ];
+
+  let idCounter = 200;
+  for (let i = baseList.length; i < targetTotal; i++) {
+    const cat = categories[i % categories.length];
+    const color = variants[i % variants.length];
+    const catCode = cat.substring(0, 3).toUpperCase();
+    const skuCode = `AUR-${catCode}-${String(i + 1).padStart(5, '0')}`;
+    const phys = ((i * 17 + 23) % 350) + 5;
+    const reserved = (i % 7 === 0) ? (i % 8) : 0;
+    const avail = Math.max(0, phys - reserved);
+    const isUncounted = (i % 29 === 0);
+
+    result.push({
+      id: `inv-ent-${idCounter++}`,
+      masterSku: skuCode,
+      barcode: `8809281${String(i + 1000).padStart(6, '0')}`,
+      productName: `Aurora ${cat} Enterprise Edition - Mark ${((i % 5) + 1)}`,
+      variantName: `${color} / Aluminum`,
+      imageUrl: '',
+      warehouseLocation: `Warehouse A - Bin ${String.fromCharCode(65 + (i % 6))}-${(i % 30) + 1}`,
+      physicalStockStatus: isUncounted ? 'unknown' : 'verified',
+      totalPhysicalStock: isUncounted ? null : phys,
+      reservedStock: reserved,
+      safetyStock: 5,
+      availableStock: isUncounted ? 0 : avail,
+      reorderPoint: 15,
+      costPrice: 85 + (i % 60),
+      sellingPrice: 199 + (i % 150),
+      channelMappings: {},
+      autoSyncEnabled: true,
+      lastBroadcastAt: new Date(Date.now() - (i % 60) * 60 * 1000).toISOString(),
+      historyLog: [],
+      storeAssociations: [
+        {
+          connectionId: 'webstore',
+          storeNickname: 'JW Storefront (MY)',
+          platform: 'webstore',
+          channelSku: skuCode,
+          channelStockSnapshot: avail,
+          syncStatus: 'synced',
+          lastSyncedAt: new Date().toISOString()
+        },
+        {
+          connectionId: 'conn-shopee-01',
+          storeNickname: 'Shopee Official MY',
+          platform: 'shopee',
+          channelSku: skuCode,
+          channelStockSnapshot: avail,
+          syncStatus: (i % 17 === 0) ? 'not_synced' : (i % 31 === 0) ? 'sync_failed' : 'synced',
+          lastSyncedAt: new Date().toISOString()
+        },
+        {
+          connectionId: 'conn-lazada-01',
+          storeNickname: 'Lazada LazMall MY',
+          platform: 'lazada',
+          channelSku: skuCode,
+          channelStockSnapshot: avail,
+          syncStatus: (i % 23 === 0) ? 'auth_expired' : 'synced',
+          lastSyncedAt: new Date().toISOString()
+        }
+      ]
+    });
+  }
+  return result;
+};

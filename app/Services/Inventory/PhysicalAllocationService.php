@@ -10,7 +10,9 @@ class PhysicalAllocationService
     public function managed(int $allocationId,string $event): array
     {
         $allocation=DB::table('stock_allocations')->find($allocationId);
-        $activation=DB::table('inventory_order_activations')->find($allocation->inventory_order_activation_id);
+        $activation=$allocation->inventory_facility_order_activation_id
+            ? DB::table('inventory_facility_order_activations')->find($allocation->inventory_facility_order_activation_id)
+            : DB::table('inventory_order_activations')->find($allocation->inventory_order_activation_id);
         if (!$activation || (int)$activation->product_variant_id!==(int)$allocation->product_variant_id) {
             throw new RuntimeException('Managed allocation does not match its activated SKU.');
         }

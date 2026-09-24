@@ -325,6 +325,19 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/inventory/thumbnails/{variant}', \App\Http\Controllers\Admin\InventoryThumbnailController::class)
         ->whereNumber('variant')->name('admin.inventory.thumbnail');
     Route::get('/api/inventory/store-management/stores', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'stores']);
+    Route::get('/api/inventory/store-management/stores/{store}/facilities', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'facilities'])->whereNumber('store');
+    Route::get('/api/inventory/store-management/stores/{store}/skus/{variant}/facilities', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'facilityBalances'])->whereNumber('store')->whereNumber('variant');
+    Route::post('/api/inventory/store-management/stores/{store}/skus/{variant}/facilities/migration-preview', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'facilityMigrationPreview'])->whereNumber('store')->whereNumber('variant')->middleware('throttle:10,1');
+    Route::post('/api/inventory/store-management/stores/{store}/facilities/refresh', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'refreshFacilities'])->whereNumber('store')->middleware('throttle:10,1');
+    Route::post('/api/inventory/store-management/stores/{store}/facilities/{facility}/binding-reviews', [\App\Http\Controllers\Admin\FacilityBindingController::class, 'review'])->whereNumber('store')->whereNumber('facility')->middleware('throttle:10,1');
+    Route::post('/api/inventory/store-management/facility-binding-reviews/{review}/confirm', [\App\Http\Controllers\Admin\FacilityBindingController::class, 'confirm'])->whereUuid('review')->middleware('throttle:10,1');
+    Route::post('/api/inventory/store-management/stores/{store}/facilities/{facility}/skus/{variant}/stock-reviews', [\App\Http\Controllers\Admin\FacilityStockReviewController::class, 'review'])->whereNumber('store')->whereNumber('facility')->whereNumber('variant')->middleware('throttle:20,1');
+    Route::post('/api/inventory/store-management/facility-stock-reviews/{review}/confirm', [\App\Http\Controllers\Admin\FacilityStockReviewController::class, 'confirm'])->whereUuid('review')->middleware('throttle:20,1');
+    Route::post('/api/inventory/store-management/facility-transfer-reviews', [\App\Http\Controllers\Admin\FacilityTransferReviewController::class, 'review'])->middleware('throttle:20,1');
+    Route::post('/api/inventory/store-management/facility-transfer-reviews/{review}/confirm', [\App\Http\Controllers\Admin\FacilityTransferReviewController::class, 'confirm'])->whereUuid('review')->middleware('throttle:20,1');
+    Route::get('/api/inventory/store-management/stores/{store}/facilities/{facility}/skus/{variant}/sync', [\App\Http\Controllers\Admin\FacilitySyncRecoveryController::class, 'details'])->whereNumber('store')->whereNumber('facility')->whereNumber('variant');
+    Route::post('/api/inventory/store-management/stores/{store}/facilities/{facility}/skus/{variant}/sync/check', [\App\Http\Controllers\Admin\FacilitySyncRecoveryController::class, 'check'])->whereNumber('store')->whereNumber('facility')->whereNumber('variant')->middleware('throttle:20,1');
+    Route::post('/api/inventory/store-management/stores/{store}/facilities/{facility}/skus/{variant}/sync/resync', [\App\Http\Controllers\Admin\FacilitySyncRecoveryController::class, 'resync'])->whereNumber('store')->whereNumber('facility')->whereNumber('variant')->middleware('throttle:20,1');
     Route::get('/api/inventory/store-management/history', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'history']);
     Route::get('/api/inventory/store-management/operations/{operation}', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'operation'])->whereUuid('operation');
     Route::post('/api/inventory/store-management/operations/{operation}/check', [\App\Http\Controllers\Admin\StoreInventorySyncController::class, 'checkOperation'])->whereUuid('operation')->middleware('throttle:30,1');
@@ -374,6 +387,15 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         $entry = $manifest['src/previews/inventory39/main.tsx'] ?? null;
         abort_unless($entry, 503);
         return response()->view('admin.inventory39-preview', ['entry'=>$entry])->header('Cache-Control', 'no-store');
+    });
+    Route::get('/marketplace/inventory-preview-48', function () {
+        abort_unless(app()->environment('local'), 404);
+        $path = public_path('build-inventory48-preview/manifest.json');
+        abort_unless(is_file($path), 503, 'Build the isolated Inventory 48 preview first.');
+        $manifest = json_decode(file_get_contents($path), true);
+        $entry = $manifest['src/previews/inventory48/main.tsx'] ?? null;
+        abort_unless($entry, 503);
+        return response()->view('admin.inventory48-preview', ['entry' => $entry])->header('Cache-Control', 'no-store');
     });
     Route::get('/marketplace/oauth-preview', function (\Illuminate\Http\Request $request) {
         abort_unless(app()->environment('local'), 404);

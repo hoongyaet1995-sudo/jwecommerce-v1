@@ -51,10 +51,22 @@ final class LazadaInventoryExecutor
      if ($allocation) {
       if ((int)$allocation->quantity!==1||$allocation->status==='released'||($allocation->status==='consumed'&&$target==='reserved')) throw new MarketplaceInventoryException('inventory_lifecycle_conflict');
      } else {
-      $route=DB::table('inventory_fulfillment_routes')->where('channel_key','marketplace:'.$storeId)->lockForUpdate()->first();
-      if (!$route||!$route->is_enabled||$route->platform_location_id!==$line['warehouse_code']) throw new MarketplaceInventoryException('warehouse_route_mismatch');
       $activationId=null;
-      if ($managedCreatedAt!==null) {
+      $facilityActivationId=null;
+      $hasFacilityActivation=config('marketplace.multiwarehouse_orders_enabled') === true
+       && DB::table('inventory_facility_order_activations')->where('marketplace_store_id',$storeId)
+        ->where('product_variant_id',$variant)->exists();
+      if ($hasFacilityActivation) {
+       if ($managedCreatedAt===null) throw new MarketplaceInventoryException('order_outside_managed_activation');
+       $activation=app(\App\Services\Inventory\StoreManagement\FacilityOrderActivation::class)
+        ->eligible($storeId,(int)$variant,$line['warehouse_code'],$managedCreatedAt);
+       if (!$activation) throw new MarketplaceInventoryException('warehouse_route_mismatch');
+       $facilityActivationId=(int)$activation['id'];
+      } else {
+       $route=DB::table('inventory_fulfillment_routes')->where('channel_key','marketplace:'.$storeId)->lockForUpdate()->first();
+       if (!$route||!$route->is_enabled||$route->platform_location_id!==$line['warehouse_code']) throw new MarketplaceInventoryException('warehouse_route_mismatch');
+      }
+      if ($managedCreatedAt!==null && !$hasFacilityActivation) {
        $activation=app(\App\Services\Inventory\ManagedInventoryActivation::class)->eligible('marketplace:'.$storeId,(int)$variant,$managedCreatedAt);
        if (!$activation) {
         $mode=DB::table('inventory_configuration')->where('id',1)->value('operating_mode');
@@ -70,8 +82,8 @@ final class LazadaInventoryExecutor
        $activationId=(int)$activation['id'];
       }
       $product=ProductVariant::where('id',$variant)->lockForUpdate()->first();
-      if (!$product||($activationId===null && $product->stock<1)) throw new MarketplaceInventoryException('insufficient_stock');
-      $id=$this->allocations->reserve('marketplace_order',$orderId,$key,(int)$variant,1,$activationId);
+      if (!$product||($activationId===null && $facilityActivationId===null && $product->stock<1)) throw new MarketplaceInventoryException('insufficient_stock');
+      $id=$this->allocations->reserve('marketplace_order',$orderId,$key,(int)$variant,1,$activationId,$facilityActivationId);
      }
      if ($target==='consumed') $this->allocations->consume($id);
     } else throw new MarketplaceInventoryException('unsupported_order_status');

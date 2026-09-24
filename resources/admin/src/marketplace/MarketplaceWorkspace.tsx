@@ -1,5 +1,5 @@
 import React,{lazy,Suspense,useEffect,useRef} from 'react';
-const InventoryRuntime=lazy(()=>import('../previews/inventory39/Inventory39Runtime').then(module=>({default:module.Inventory39Runtime})));
+const InventoryRuntime=lazy(()=>import('../previews/inventory48/Inventory48Runtime').then(module=>({default:module.Inventory48Runtime})));
 import {useAdmin as useRootAdmin} from '../context/AdminContext';
 import {OperationalConnectStore} from './OperationalConnectStore';
 import {OperationalMapping} from './OperationalMapping';

@@ -43,6 +43,7 @@ final class ReviewService
             DB::table('product_variants')->where('id', $identity->product_variant_id)->lockForUpdate()->first();
             $locked = DB::table('inventory_balances')->whereIn('id', $balanceIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             abort_unless($locked->count() === count(array_unique($balanceIds)), 404);
+            $this->rejectFacilityBalances($locked->all());
             if ($kind === 'transfer') {
                 $source = $locked[(int) $input['source_balance_id']];
                 $destination = $locked[(int) $input['destination_balance_id']];
@@ -127,6 +128,7 @@ final class ReviewService
             DB::table('product_variants')->where('id', $identity->product_variant_id)->lockForUpdate()->first();
             $locked = DB::table('inventory_balances')->whereIn('id', $balanceIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             abort_unless($locked->count() === count(array_unique($balanceIds)), 404);
+            $this->rejectFacilityBalances($locked->all());
             foreach ($locked as $balance) {
                 if ((int) $balance->version !== (int) ($versions[(string) $balance->id] ?? -1)) {
                     $this->conflict('balance_changed', 'Inventory changed after review.', 'Review current stock again.');
@@ -206,6 +208,29 @@ final class ReviewService
         $allowed = $actor->exists && $actor->is_admin
             && ($actor->is_super_admin || $actor->permissions()->where('permission', 'inventory.edit')->exists());
         abort_unless($allowed, 403);
+    }
+
+    private function rejectFacilityBalances(array $balances): void
+    {
+        $poolIds = array_column($balances, 'inventory_pool_id');
+        $pools = DB::table('inventory_pools')->whereIn('id', $poolIds)->get();
+        if ($pools->contains(fn (object $pool): bool => $pool->kind === 'facility')) {
+            throw ValidationException::withMessages(['balance_id' =>
+                'Use a verified facility-specific inventory action for this stock balance.']);
+        }
+        if (config('marketplace.multiwarehouse_operations_enabled') === true) {
+            foreach ($pools as $pool) {
+                if ($pool->kind !== 'store' || $pool->marketplace_store_id === null) {
+                    continue;
+                }
+                $scan = DB::table('marketplace_store_facility_scans')
+                    ->where('marketplace_store_id', $pool->marketplace_store_id)->first();
+                if (! $scan || $scan->status !== 'verified' || $scan->topology !== 'no_warehouse') {
+                    throw ValidationException::withMessages(['balance_id' =>
+                        'Verify this store has no platform warehouse before using store-level stock actions.']);
+                }
+            }
+        }
     }
 
     private function conflict(string $code, string $message, string $nextAction): never

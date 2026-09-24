@@ -30,6 +30,21 @@ final class SyncOutbox
     public function enqueueMutation(?string $operationId, object $balance, string $stage = 'account', ?string $eventKey = null): array
     {
         $pool = DB::table('inventory_pools')->find($balance->inventory_pool_id);
+        if ($pool?->kind === 'facility') {
+            $facilities = DB::table('marketplace_store_facilities as facility')
+                ->join('marketplace_variant_mappings as mapping', 'mapping.store_id', '=', 'facility.marketplace_store_id')
+                ->where('facility.inventory_warehouse_id', $pool->warehouse_id)
+                ->where('facility.is_active', true)
+                ->where('mapping.product_variant_id', $balance->product_variant_id)
+                ->distinct()->get(['facility.*']);
+            if ($facilities->isEmpty()) {
+                throw new \RuntimeException('The physical facility has no mapped provider stock destination.');
+            }
+
+            return $facilities->map(fn (object $facility): array => $this->enqueueFacilityBalance(
+                ($eventKey ?? $operationId.':'.$stage).':'.$facility->id, $balance, $facility
+            ))->all();
+        }
         if ($pool?->kind !== 'shared') {
             return [$this->enqueue($operationId, $balance, $stage, $eventKey)];
         }
@@ -45,6 +60,48 @@ final class SyncOutbox
     public function enqueueStore(?string $operationId, object $balance, int $storeId, string $stage, string $eventKey): array
     {
         return $this->enqueue($operationId, $balance, $stage, $eventKey, $storeId);
+    }
+
+    /** Persist the exact facility destination. The facility worker gate controls later dispatch. */
+    public function enqueueFacilityBalance(string $eventKey, object $balance, object $facility): array
+    {
+        $storeId = (int) $facility->marketplace_store_id;
+        $listing = DB::table('marketplace_variant_mappings as mapping')
+            ->join('marketplace_listing_variants as listing', 'listing.id', '=', 'mapping.listing_variant_id')
+            ->where('mapping.store_id', $storeId)->where('listing.store_id', $storeId)
+            ->where('mapping.product_variant_id', $balance->product_variant_id)
+            ->first(['listing.id', 'listing.external_product_id', 'listing.external_variant_id']);
+        if (! $listing) {
+            throw new \RuntimeException('Map the SKU before queuing facility stock sync.');
+        }
+        DB::table('inventory_store_sync_tasks')->where('marketplace_store_id', $storeId)
+            ->where('product_variant_id', $balance->product_variant_id)
+            ->where('marketplace_store_facility_id', $facility->id)
+            ->whereIn('status', ['queued', 'failed', 'waiting_source', 'facility_pending'])
+            ->update(['status' => 'superseded', 'updated_at' => now()]);
+        $id = (string) Str::uuid();
+        $target = max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock);
+        DB::table('inventory_store_sync_tasks')->insert([
+            'id' => $id, 'operation_id' => null, 'marketplace_store_id' => $storeId,
+            'product_variant_id' => $balance->product_variant_id,
+            'inventory_balance_id' => $balance->id,
+            'marketplace_store_facility_id' => $facility->id,
+            'listing_variant_id' => $listing->id,
+            'provider_external_product_id' => $listing->external_product_id,
+            'provider_external_variant_id' => $listing->external_variant_id,
+            'provider_location_id' => $facility->provider_facility_id,
+            'stage' => 'facility', 'status' => 'facility_pending',
+            'target_quantity' => $target, 'balance_version' => $balance->version,
+            'event_key' => $eventKey, 'attempts' => 0,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        if (config('marketplace.multiwarehouse_stock_sync_enabled') === true) {
+            \App\Jobs\ProcessFacilityInventorySync::dispatch($id)->afterCommit();
+        }
+
+        return ['id' => $id, 'status' => 'facility_pending', 'store_id' => $storeId,
+            'facility_id' => (int) $facility->id, 'provider_location_id' => $facility->provider_facility_id,
+            'target_quantity' => $target];
     }
 
     private function enqueue(?string $operationId, object $balance, string $stage, ?string $eventKey = null,

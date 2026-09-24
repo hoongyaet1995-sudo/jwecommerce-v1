@@ -27,17 +27,34 @@ final class OverviewReader
             ->join('product_variants as v', 'v.id', '=', 'b.product_variant_id')
             ->join('products as product', 'product.id', '=', 'v.product_id')
             ->leftJoin('marketplace_stores as store', 'store.id', '=', 'p.marketplace_store_id')
+            ->leftJoinSub(DB::table('marketplace_store_facilities')
+                ->selectRaw('MIN(id) as id, inventory_warehouse_id')
+                ->whereNotNull('inventory_warehouse_id')->where('is_active', true)
+                ->groupBy('inventory_warehouse_id'), 'facility_owner', function ($join): void {
+                $join->on('facility_owner.inventory_warehouse_id', '=', 'p.warehouse_id')
+                    ->where('p.kind', '=', 'facility');
+            })
+            ->leftJoin('marketplace_store_facilities as facility', function ($join): void {
+                $join->on('facility.id', '=', 'facility_owner.id')
+                    ->where('p.kind', '=', 'facility');
+            })
+            ->leftJoin('marketplace_stores as facility_store', 'facility_store.id', '=', 'facility.marketplace_store_id')
             ->leftJoin('marketplace_variant_mappings as mapping', function ($join): void {
                 $join->on('mapping.product_variant_id', '=', 'b.product_variant_id')
                     ->on('mapping.store_id', '=', 'p.marketplace_store_id');
             })
             ->select(['b.id', 'b.product_variant_id', 'b.physical_stock', 'b.reserved_stock', 'b.safety_stock',
                 'b.counted_at', 'b.version', 'p.pool_key', 'p.kind', 'p.marketplace_store_id',
+                'facility.id as facility_id', 'facility.provider_facility_id', 'facility.marketplace_store_id as facility_store_id',
+                'facility_store.platform as facility_platform', 'facility_store.shop_name as facility_store_name',
                 'mapping.id as mapping_id', 'mapping.listing_variant_id',
                 'store.platform', 'store.shop_name', 'store.status as connection_status', 'v.sku', 'v.title as variant_title',
                 'product.title as product_title']);
         if (! empty($filters['platform'])) {
-            $query->where('store.platform', $filters['platform']);
+            $query->where(function ($query) use ($filters): void {
+                $query->where('store.platform', $filters['platform'])
+                    ->orWhere('facility_store.platform', $filters['platform']);
+            });
         }
         if (! empty($filters['sku'])) {
             $query->where('v.sku', 'like', '%'.$filters['sku'].'%');
@@ -63,17 +80,23 @@ final class OverviewReader
                 'product' => $row->product_title,
                 'variant' => $row->variant_title,
                 'account_key' => $row->kind === 'shared' ? 'shared'
-                    : ($row->marketplace_store_id ? 'marketplace:'.$row->marketplace_store_id : 'website'),
-                'store_id' => $row->marketplace_store_id === null ? null : (int) $row->marketplace_store_id,
-                'store_name' => $row->shop_name,
-                'platform' => $row->platform ?? 'website',
+                    : ($row->kind === 'facility' ? 'facility:'.$row->facility_id
+                    : ($row->marketplace_store_id ? 'marketplace:'.$row->marketplace_store_id : 'website')),
+                'store_id' => $row->kind === 'facility' ? (int) $row->facility_store_id
+                    : ($row->marketplace_store_id === null ? null : (int) $row->marketplace_store_id),
+                'store_name' => $row->kind === 'facility' ? $row->facility_store_name : $row->shop_name,
+                'platform' => $row->kind === 'facility' ? $row->facility_platform : ($row->platform ?? 'website'),
+                'facility_id' => $row->facility_id === null ? null : (int) $row->facility_id,
+                'provider_facility_id' => $row->provider_facility_id,
+                'pool_kind' => $row->kind,
                 'physical' => $physical,
                 'reserved' => $reserved,
                 'available' => $available,
                 'counted' => $row->counted_at !== null,
                 'allocation_eligible' => $mode === 'shared'
                     ? $row->kind === 'shared'
-                    : $row->kind === 'store' && ($row->marketplace_store_id === null || $row->mapping_id !== null),
+                    : ($row->kind === 'store' && ($row->marketplace_store_id === null || $row->mapping_id !== null))
+                        || ($row->kind === 'facility' && $row->facility_id !== null),
                 'version' => (int) $row->version,
                 'provider_observation' => null,
                 'sync_readiness' => $row->marketplace_store_id === null ? null
