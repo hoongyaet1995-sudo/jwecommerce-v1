@@ -34,6 +34,9 @@ interface StockSyncDetailsModalProps {
   onNavigateToSkuMapping?: (sku: string, storeId: string) => void;
   onNavigateToStoreSettings?: (storeId: string) => void;
   onNavigateToHistory?: (sku: string) => void;
+  facilities?: Array<{id:number;name:string;providerId:string}>;
+  selectedFacilityId?: number | null;
+  onSelectFacility?: (id:number) => Promise<void>;
 }
 
 type ModalViewMode = 'detail' | 'confirm_resync' | 'executing' | 'success';
@@ -49,13 +52,17 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
   onResync,
   onNavigateToSkuMapping,
   onNavigateToStoreSettings,
-  onNavigateToHistory
+  onNavigateToHistory,
+  facilities = [],
+  selectedFacilityId = null,
+  onSelectFacility
 }) => {
   const [currentSync, setCurrentSync] = useState<StoreSyncItemState | null>(null);
   const [viewMode, setViewMode] = useState<ModalViewMode>('detail');
   const [executingStep, setExecutingStep] = useState<'sending' | 'verifying'>('sending');
   const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false);
   const [statusCheckFeedback, setStatusCheckFeedback] = useState<string | null>(null);
+  const [selectingFacility, setSelectingFacility] = useState(false);
 
   // Sync state when props change
   useEffect(() => {
@@ -171,6 +178,14 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
             <span>Replaced by Newer Stock</span>
           </span>
         );
+      case 'verification_pending':
+      case 'select_facility':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-semibold">
+            <Clock className="w-3.5 h-3.5" />
+            <span>{status === 'select_facility' ? 'Select Warehouse' : 'Verification Pending'}</span>
+          </span>
+        );
       case 'jw_internal':
       default:
         return (
@@ -263,6 +278,31 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
           {/* VIEW MODE 1: DETAIL / STATUS DISPLAY */}
           {viewMode === 'detail' && (
             <div className="space-y-4">
+              {facilities.length > 0 && (
+                <div className="p-4 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-2 text-xs">
+                  <label htmlFor="sync-target-facility" className="font-bold text-neutral-700 dark:text-neutral-200">Target Warehouse / Location</label>
+                  <select id="sync-target-facility" value={selectedFacilityId ?? ''} disabled={selectingFacility}
+                    onChange={async event=>{
+                      const id=Number(event.target.value);
+                      if(!id||!onSelectFacility)return;
+                      setSelectingFacility(true);setStatusCheckFeedback(null);
+                      try {await onSelectFacility(id)}
+                      catch(error:any){setStatusCheckFeedback(error?.message||'Warehouse stock status could not be read.')}
+                      finally {setSelectingFacility(false)}
+                    }}
+                    className="w-full p-2 rounded-lg bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700">
+                    <option value="">Select a warehouse to inspect exact stock</option>
+                    {facilities.map(facility=><option key={facility.id} value={facility.id}>{facility.name} ({facility.providerId})</option>)}
+                  </select>
+                </div>
+              )}
+              {(effectiveStatus==='verification_pending'||effectiveStatus==='select_facility') && (
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-300">
+                  {effectiveStatus==='verification_pending'
+                    ? (currentSync.failureReason || 'Warehouse verification is pending. Stock check and resync are paused.')
+                    : 'Select a verified warehouse before checking or resynchronizing stock.'}
+                </div>
+              )}
               {/* STOCK COMPARISON TABLE / CARDS */}
               {!isWebstore ? (
                 <div className="p-4 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-3">
@@ -277,7 +317,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                         JW Available Stock
                       </span>
                       <span className="font-mono font-bold text-lg text-neutral-900 dark:text-white">
-                        {currentSync.jwAvailableStock} <span className="text-xs font-normal text-neutral-400">units</span>
+                        {currentSync.jwAvailableStock === null ? 'Not counted' : <>{currentSync.jwAvailableStock} <span className="text-xs font-normal text-neutral-400">units</span></>}
                       </span>
                     </div>
 
@@ -408,10 +448,12 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                     <span>Marketplace stock does not match JW inventory</span>
                   </div>
                   <p className="text-amber-800/90 dark:text-amber-200/90">
-                    JW inventory has <strong>{currentSync.jwAvailableStock} units</strong> available to sell, while {store.nickname || store.name} currently reports <strong>{currentSync.marketplaceReportedStock ?? 'Unknown'}</strong>.
+                    JW inventory has <strong>{currentSync.jwAvailableStock ?? 'an uncounted quantity'}</strong> available to sell, while {store.nickname || store.name} currently reports <strong>{currentSync.marketplaceReportedStock ?? 'Unknown'}</strong>.
                   </p>
                   <p className="text-amber-700 dark:text-amber-300/80 text-[11px]">
-                    Send the latest JW Available Stock to this store to reconcile channel availability.
+                    {currentSync.canResync === true
+                      ? 'Send the latest JW Available Stock to this store to reconcile channel availability.'
+                      : (currentSync.failureReason || 'Stock synchronization is unavailable until this warehouse is counted and verified.')}
                   </p>
                 </div>
               )}
@@ -427,7 +469,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                     {currentSync.failureReason || 'The marketplace service is temporarily unavailable.'}
                   </div>
                   <div className="p-2 rounded bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 text-[11px] text-neutral-600 dark:text-neutral-400">
-                    <strong>Ledger Integrity:</strong> JW inventory remains safe and saved at {currentSync.jwAvailableStock} units. External provider failures do not affect internal stock counts.
+                    <strong>Ledger Integrity:</strong> JW inventory remains safe; {currentSync.jwAvailableStock === null ? 'this warehouse has not been counted yet' : `${currentSync.jwAvailableStock} units are recorded`}. External provider failures do not affect internal stock counts.
                   </div>
                   <p className="text-rose-700 dark:text-rose-300/80 text-[11px]">
                     What to do next: Verify connection status or retry sending the latest JW stock.
@@ -466,10 +508,10 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                     <span>Store authorization expired</span>
                   </div>
                   <p className="text-rose-800/90 dark:text-rose-200/90">
-                    This store must be reconnected before inventory can be synchronized. The OAuth access token has expired.
+                    This store must be connected or reauthorized before inventory can be synchronized.
                   </p>
                   <div className="p-2 rounded bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 text-[11px] text-neutral-600 dark:text-neutral-400">
-                    <strong>Ledger Integrity:</strong> JW inventory remains safe at {currentSync.jwAvailableStock} units. Reconnect this store in Store Settings to resume automated dispatch.
+                    <strong>Ledger Integrity:</strong> JW inventory remains safe. {currentSync.jwAvailableStock === null ? 'The count is not yet verified.' : `${currentSync.jwAvailableStock} units are recorded.`} Reconnect this store in Connect Store to resume synchronization.
                   </div>
                 </div>
               )}
@@ -485,7 +527,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                     This JW SKU is not linked to a listing in this store. Stock cannot be synchronized until a channel item ID is mapped.
                   </p>
                   <div className="p-2 rounded bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 text-[11px] text-neutral-600 dark:text-neutral-400">
-                    <strong>Ledger Integrity:</strong> JW inventory is safely maintained at {currentSync.jwAvailableStock} units. Map this SKU to start channel synchronization.
+                    <strong>Ledger Integrity:</strong> JW inventory remains unchanged. {currentSync.jwAvailableStock === null ? 'The count is not yet verified.' : `${currentSync.jwAvailableStock} units are recorded.`} Map this SKU to start channel synchronization.
                   </div>
                 </div>
               )}
@@ -744,7 +786,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                 {effectiveStatus === 'synced' && (
                   <button
                     type="button"
-                    disabled={isCheckingStatus}
+                    disabled={isCheckingStatus || currentSync.canCheck !== true}
                     onClick={handleCheckStatus}
                     className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-950 font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
@@ -760,8 +802,9 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                 {effectiveStatus === 'not_synced' && (
                   <button
                     type="button"
+                    disabled={currentSync.canResync !== true}
                     onClick={handleStartResync}
-                    className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-950 font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-950 font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span>Resync Stock</span>
@@ -771,6 +814,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                 {effectiveStatus === 'sync_failed' && (
                   <button
                     type="button"
+                    disabled={currentSync.canResync !== true}
                     onClick={handleStartResync}
                     className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-950 font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >
@@ -782,7 +826,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                 {effectiveStatus === 'awaiting_confirmation' && (
                   <button
                     type="button"
-                    disabled={isCheckingStatus}
+                    disabled={isCheckingStatus || currentSync.canCheck !== true}
                     onClick={handleCheckStatus}
                     className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-950 font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
@@ -798,7 +842,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                 {effectiveStatus === 'listing_not_eligible' && (
                   <button
                     type="button"
-                    disabled={isCheckingStatus}
+                    disabled={isCheckingStatus || currentSync.canCheck !== true}
                     onClick={handleCheckStatus}
                     className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-950 font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
@@ -814,6 +858,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                 {effectiveStatus === 'sync_replaced' && (
                   <button
                     type="button"
+                    disabled={currentSync.canResync !== true}
                     onClick={handleStartResync}
                     className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-950 font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >

@@ -10,13 +10,15 @@ export type OperationalSyncStatus =
   | 'sku_not_mapped'         // Amber: This JW SKU is not linked to a listing in this store
   | 'listing_not_eligible'   // Neutral/Red: This marketplace listing is not currently accepting stock updates
   | 'sync_replaced'          // Amber/Neutral: Replaced by Newer Stock (replaces "superseded")
-  | 'jw_internal';           // Internal JW Storefront (no external sync needed)
+  | 'jw_internal'            // Internal JW Storefront (no external sync needed)
+  | 'verification_pending'
+  | 'select_facility';
 
 export interface StoreSyncItemState {
   sku: string;
   storeId: string;
   status: OperationalSyncStatus;
-  jwAvailableStock: number;
+  jwAvailableStock: number | null;
   marketplaceReportedStock: number | null; // null = 'Unknown' (never displayed as 0)
   difference: number | null; // calculated when marketplaceReportedStock !== null
   lastConfirmedSyncAt: string | null; // formatted string or null -> 'Never'
@@ -27,6 +29,8 @@ export interface StoreSyncItemState {
   failureRecoveryType?: 'resync' | 'reconnect' | 'mapping' | 'check_status';
   sellerCenterUrl?: string;
   providerWriteSent?: boolean;
+  canCheck?: boolean;
+  canResync?: boolean;
 }
 
 export interface StockSyncModalData {

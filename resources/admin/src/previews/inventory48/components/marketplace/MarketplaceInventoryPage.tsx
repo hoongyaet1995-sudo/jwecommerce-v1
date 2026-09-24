@@ -57,6 +57,21 @@ import { StockSyncDetailsModal } from './inventory/StockSyncDetailsModal';
 import { StoreSyncItemState } from './inventory/stockSyncTypes';
 import {storeInventoryApi} from '../../../../integration/storeInventory';
 
+function adaptFacilitySync(detail:any, previous:StoreSyncItemState):StoreSyncItemState {
+  return {...previous,
+    status:detail.status==='verification_pending'?'verification_pending':detail.status,
+    jwAvailableStock:detail.jw_available_stock ?? null,
+    marketplaceReportedStock:detail.marketplace_reported_stock ?? null,
+    difference:detail.difference ?? null,
+    lastCheckedAt:detail.last_checked_at ?? '',
+    canCheck:detail.can_check === true,
+    canResync:detail.can_resync === true,
+    failureReason:detail.status==='verification_pending'
+      ? 'Warehouse verification is pending; stock operations are paused.'
+      :detail.jw_available_stock === null ? 'Complete First Count for this warehouse before resynchronizing stock.' : undefined,
+  };
+}
+
 export const MarketplaceInventoryPage: React.FC = () => {
   const {
     marketplaceInventory = [],
@@ -136,6 +151,8 @@ export const MarketplaceInventoryPage: React.FC = () => {
   const [syncModalItem, setSyncModalItem] = useState<MarketplaceInventoryItem | null>(null);
   const [syncModalStore, setSyncModalStore] = useState<InventoryStoreChannel | null>(null);
   const [syncModalInfo, setSyncModalInfo] = useState<StoreSyncItemState | null>(null);
+  const [syncFacilityOptions, setSyncFacilityOptions] = useState<Array<{id:number;name:string;providerId:string}>>([]);
+  const [syncFacilityId, setSyncFacilityId] = useState<number | null>(null);
 
 
   // Batch Broadcasting State
@@ -147,14 +164,15 @@ export const MarketplaceInventoryPage: React.FC = () => {
     const task=(((balance as any)?.syncTasks)||[]).find((entry:any)=>entry.status!=='superseded');
     const mapped=store.platform==='webstore'||(item as any).mappedStoreIds?.includes(String(store.id));
     const status:StoreSyncItemState['status']=store.platform==='webstore'?'jw_internal'
+      :store.connectionState!=='connected'?'auth_expired'
       :!mapped?'sku_not_mapped'
-      :store.connectionState==='expired'?'auth_expired'
       :['queued','processing','uncertain','facility_pending'].includes(task?.status)?'awaiting_confirmation'
       :['failed','auth_expired','facility_blocked'].includes(task?.status)?'sync_failed'
       :'not_synced';
     return {sku:item.masterSku,storeId:store.id,status,
-      jwAvailableStock:currentMode==='shared'?(item.availableStock??0):(balance?.availableStock??0),
+      jwAvailableStock:currentMode==='shared'?(item.availableStock??null):(balance?.availableStock??null),
       marketplaceReportedStock:null,difference:null,lastConfirmedSyncAt:null,lastCheckedAt:'',
+      canCheck:false,canResync:false,
       failureReason:item.physicalStockStatus==='unknown'?'Complete a verified physical count first.':undefined,
       failureRecoveryType:status==='auth_expired'?'reconnect':status==='sku_not_mapped'?'mapping':'check_status'};
   };
@@ -163,22 +181,41 @@ export const MarketplaceInventoryPage: React.FC = () => {
     store: InventoryStoreChannel,
     overrideInfo?: StoreSyncItemState
   ) => {
-    let info = getStoreSyncItemState(item, store);
-    if(store.platform!=='webstore') {
-      try {
-        const topology=await storeInventoryApi.facilities(store.id);
-        if(topology.status!=='verified'||topology.topology!=='no_warehouse') {
-          setSelectedDrawerItem(item);setIsManageStockDrawerOpen(true);return;
-        }
-        info=await storeInventoryApi.syncDetails(store.id,(item as any).variantId);
-      } catch(error:any) {
-        addToast({type:'error',title:'Stock status unavailable',message:error?.message||'Try again.'});return;
-      }
-    }
+    let info = overrideInfo ?? getStoreSyncItemState(item, store);
+    setSyncFacilityOptions([]);
+    setSyncFacilityId(null);
     setSyncModalItem(item);
     setSyncModalStore(store);
     setSyncModalInfo(info);
     setIsStockSyncModalOpen(true);
+    if(store.platform!=='webstore' && info.status!=='auth_expired' && info.status!=='sku_not_mapped') {
+      try {
+        const topology=await storeInventoryApi.facilities(store.id);
+        if(topology.status!=='verified') {
+          info={...info,status:'verification_pending',jwAvailableStock:null,marketplaceReportedStock:null,
+            difference:null,canCheck:false,canResync:false,
+            failureReason:topology.error_code || 'Warehouse list has not been verified.'};
+        } else if(topology.topology==='no_warehouse') {
+          info=await storeInventoryApi.syncDetails(store.id,(item as any).variantId);
+        } else {
+          const options=(topology.facilities||[]).map((facility:any)=>({
+            id:Number(facility.id),name:String(facility.name),providerId:String(facility.provider_id)
+          }));
+          setSyncFacilityOptions(options);
+          info={...info,status:'select_facility',jwAvailableStock:null,marketplaceReportedStock:null,
+            difference:null,canCheck:false,canResync:false};
+          if(options.length===1) {
+            setSyncFacilityId(options[0].id);
+            info=adaptFacilitySync(await storeInventoryApi.facilitySyncDetails(store.id,options[0].id,(item as any).variantId),info);
+          }
+        }
+      } catch(error:any) {
+        info={...info,status:'verification_pending',jwAvailableStock:null,marketplaceReportedStock:null,
+          difference:null,canCheck:false,canResync:false,
+          failureReason:error?.message||'Warehouse or stock status could not be read.'};
+      }
+      setSyncModalInfo(info);
+    }
   };
 
   const handleUpdateSyncInfo = (updated: StoreSyncItemState) => {
@@ -1332,7 +1369,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                           <div className="space-y-1.5">
                             {(stores || []).filter(s => !s.isComingSoon).map(store => {
                               const syncState = getStoreSyncItemState(item, store);
-                              const channelStock = syncState.marketplaceReportedStock ?? store.platformStockSnapshot ?? 0;
+                              const channelStock = syncState.marketplaceReportedStock ?? store.platformStockSnapshot ?? null;
 
                               // Render status badge based on operational sync status
                               let badgeElement = null;
@@ -1342,7 +1379,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                                   badgeElement = (
                                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-1">
                                       <CheckCircle2 className="w-2.5 h-2.5 shrink-0" />
-                                      <span>Synced ({channelStock})</span>
+                                      <span>{syncState.status === 'jw_internal' ? 'JW Ledger' : `Synced (${channelStock ?? 'Unknown'})`}</span>
                                     </span>
                                   );
                                   break;
@@ -1350,7 +1387,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                                   badgeElement = (
                                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 flex items-center gap-1">
                                       <Clock className="w-2.5 h-2.5 shrink-0" />
-                                      <span>Not Synced ({channelStock})</span>
+                                      <span>Not Synced{channelStock === null ? '' : ` (${channelStock})`}</span>
                                     </span>
                                   );
                                   break;
@@ -1742,22 +1779,38 @@ export const MarketplaceInventoryPage: React.FC = () => {
           setSyncModalItem(null);
           setSyncModalStore(null);
           setSyncModalInfo(null);
+          setSyncFacilityOptions([]);
+          setSyncFacilityId(null);
         }}
         item={syncModalItem}
         store={syncModalStore}
         syncInfo={syncModalInfo}
+        facilities={syncFacilityOptions}
+        selectedFacilityId={syncFacilityId}
+        onSelectFacility={async facilityId=>{
+          if(!syncModalStore||!syncModalItem||!syncModalInfo)return;
+          setSyncFacilityId(facilityId);
+          const detail=await storeInventoryApi.facilitySyncDetails(syncModalStore.id,facilityId,(syncModalItem as any).variantId);
+          setSyncModalInfo(adaptFacilitySync(detail,syncModalInfo));
+        }}
         onUpdateSyncInfo={handleUpdateSyncInfo}
         onCheckStatus={async()=>{
           if(!syncModalStore||!syncModalItem)throw new Error('Select a marketplace SKU.');
+          if(syncFacilityId!==null) return adaptFacilitySync(
+            await storeInventoryApi.facilitySyncCheck(syncModalStore.id,syncFacilityId,(syncModalItem as any).variantId),
+            syncModalInfo!);
           return storeInventoryApi.checkStock(syncModalStore.id,(syncModalItem as any).variantId);
         }}
         onResync={async()=>{
           if(!syncModalStore||!syncModalItem)throw new Error('Select a marketplace SKU.');
+          if(syncFacilityId!==null) return adaptFacilitySync(
+            await storeInventoryApi.facilityResync(syncModalStore.id,syncFacilityId,(syncModalItem as any).variantId,crypto.randomUUID()),
+            syncModalInfo!);
           return storeInventoryApi.resyncStock(syncModalStore.id,(syncModalItem as any).variantId,crypto.randomUUID());
         }}
         onNavigateToStoreSettings={() => {
           setIsStockSyncModalOpen(false);
-          setIsSettingsModalOpen(true);
+          setCurrentSection('marketplace-auth');
         }}
         onNavigateToHistory={(sku) => {
           setIsStockSyncModalOpen(false);
