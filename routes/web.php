@@ -321,6 +321,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/inventory/store-management/reviews/{review}/confirm', [\App\Http\Controllers\Admin\StoreInventoryReviewController::class, 'confirm'])->whereUuid('review');
     Route::post('/api/inventory/store-management/allocations', [\App\Http\Controllers\Admin\StoreInventoryAllocationController::class, 'store']);
     Route::post('/api/inventory/store-management/allocations/{review}/confirm', [\App\Http\Controllers\Admin\StoreInventoryAllocationController::class, 'confirm'])->whereUuid('review');
+    Route::post('/api/inventory/store-management/batch-first-counts', [\App\Http\Controllers\Admin\BatchFirstCountController::class, 'review'])->middleware('throttle:10,1');
+    Route::post('/api/inventory/store-management/batch-first-counts/{review}/confirm', [\App\Http\Controllers\Admin\BatchFirstCountController::class, 'confirm'])->whereUuid('review')->middleware('throttle:10,1');
     Route::get('/api/inventory/store-management/overview', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'overview']);
     Route::get('/api/inventory/store-management/rebaseline/readiness', [\App\Http\Controllers\Admin\InventoryRebaselineController::class, 'readiness']);
     Route::get('/inventory/thumbnails/{variant}', \App\Http\Controllers\Admin\InventoryThumbnailController::class)

@@ -419,26 +419,15 @@ export const MarketplaceInventoryPage: React.FC = () => {
 
   const handleRealSaveFirstCount = async (payload: {
     sku:string;targetStoreId?:string;targetWarehouseId?:string;
-    allocations?:Record<string,number>;physicalCount:number;reason:string;notes?:string;operator:string;
+    allocations?:Record<string,number>;warehouseAllocations?:Record<string,number>;
+    batchAllocations?:Record<string,number>;physicalCount:number;reason:string;notes?:string;operator:string;
   }) => {
     const item=safeInventory.find(entry=>entry.masterSku===payload.sku);
     if(!item) throw new Error('SKU is no longer available. Refresh inventory.');
     const reason=[payload.reason,payload.notes].filter(Boolean).join(': ');
-    if(payload.targetWarehouseId && !payload.targetWarehouseId.startsWith('direct:')) {
-      if(!payload.targetStoreId || !/^\d+$/.test(payload.targetWarehouseId)) throw new Error('Select a verified facility.');
-      await storeInventoryApi.facilityStockAction(payload.targetStoreId,Number(payload.targetWarehouseId),
-        (item as any).variantId,'count',payload.physicalCount,reason);
-    } else if(payload.allocations && Object.values(payload.allocations).some(quantity=>quantity>0)) {
-      const mappedStoreIds = ((item as any).mappedStoreIds || []).map(String);
-      const topologies = await Promise.all(mappedStoreIds.map(storeId =>
-        storeInventoryApi.facilityBalances(storeId,(item as any).variantId)));
-      if(topologies.some(view => view.status !== 'verified' || view.topology !== 'no_warehouse')) {
-        throw new Error('Count each verified warehouse separately. Use Allocate Stock for a reviewed facility transfer.');
-      }
-      await allocateStock(item,payload.physicalCount,payload.allocations,reason);
-    } else {
-      await recordPhysicalCountAudit(item.id,payload.physicalCount,reason,payload.targetStoreId,item);
-    }
+    if(!payload.batchAllocations) throw new Error('Review allocations for every store and warehouse.');
+    await storeInventoryApi.batchFirstCount((item as any).variantId,payload.physicalCount,
+      payload.batchAllocations,reason);
     await reloadInventory();
     addToast({type:'success',title:'Physical count saved',message:'JW ledger updated. Check platform sync status separately.'});
   };

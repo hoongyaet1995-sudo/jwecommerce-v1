@@ -12,9 +12,10 @@ beforeEach(()=>{
 });
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.restoreAllMocks()});
 
-it('lists mapped stores as references while keeping a targeted facility count blank',async()=>{
+it('conserves an independent verified total across mapped warehouse inputs',async()=>{
   vi.stubGlobal('fetch',vi.fn(async (input:RequestInfo|URL)=>({ok:true,json:async()=>String(input).endsWith('/sync/check')
-    ? {marketplace_reported_stock:6} : {status:'verified',topology:'multi_warehouse',facilities:[
+    ? {marketplace_reported_stock:6} : String(input).includes('/stores/4/')
+      ? {status:'verified',topology:'no_warehouse',facilities:[]} : {status:'verified',topology:'multi_warehouse',facilities:[
     {id:7,name:'Warehouse A',provider_id:'WH-A',inventory_warehouse_id:19,counted:false,physical:null,reserved:0,available:null},
     {id:8,name:'Warehouse B',provider_id:'WH-B',inventory_warehouse_id:20,counted:false,physical:null,reserved:0,available:null},
   ]}} as Response)));
@@ -30,27 +31,30 @@ it('lists mapped stores as references while keeping a targeted facility count bl
   expect(host.textContent).toContain('12 units (2 WH)');
   expect(host.textContent).toContain('Live Conservation Summary');
   expect(host.textContent).toContain('Allocate Stock');
-  expect(host.querySelectorAll('input[aria-label$="first count"]')).toHaveLength(2);
-  expect(host.textContent).toContain('Warehouse A (warehouse_code: WH-A)');
+  expect(host.querySelectorAll('input[aria-label^="Lazada Test"][aria-label$="first count"]')).toHaveLength(2);
+  expect(host.textContent).toContain('Warehouse Awarehouse_code: WH-A');
   const reference = [...host.querySelectorAll('span')].find(node=>node.textContent==='External Platform Reference Quantities (For Reference Only)')?.parentElement?.parentElement?.parentElement;
   expect(reference?.textContent).not.toContain('Unmapped Store');
   expect(host.querySelector('input[placeholder^="Enter verified physical units"]')).toHaveProperty('value','');
-  const warehouseB=host.querySelector('input[aria-label="Lazada Test Warehouse B first count"]') as HTMLInputElement;
-  await act(async()=>{
+  const enter=async(input:HTMLInputElement,value:string)=>act(async()=>{
     const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!;
-    setter.call(warehouseB,'3');warehouseB.dispatchEvent(new Event('input',{bubbles:true}));
+    setter.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));
   });
-  expect(host.querySelector('input[placeholder^="Enter verified physical units"]')).toHaveProperty('value','3');
-  expect(host.textContent).toContain('JW Draft Total3');
+  await enter(host.querySelector('input[placeholder^="Enter verified physical units"]') as HTMLInputElement,'10');
+  await enter(host.querySelector('input[aria-label="Lazada Test Warehouse A first count"]') as HTMLInputElement,'7');
+  await enter(host.querySelector('input[aria-label="Lazada Test Warehouse B first count"]') as HTMLInputElement,'3');
+  expect(host.textContent).toContain('Verified Total');
+  expect(host.textContent).toContain('Status: Balanced');
   const click=async(label:string)=>{
     const button=[...host.querySelectorAll('button')].find(node=>node.textContent?.includes(label));
     expect(button).toBeTruthy();
     await act(async()=>button!.click());
   };
   await click('Proceed to Review');
-  await click('Confirm First Count');
+  await click('Confirm & Allocate Stock');
   expect(save).toHaveBeenCalledWith(expect.objectContaining({
-    sku:'TEST-1',targetStoreId:'3',targetWarehouseId:'8',physicalCount:3,
+    sku:'TEST-1',physicalCount:10,
+    batchAllocations:expect.objectContaining({'facility:3:7':7,'facility:3:8':3}),
   }));
 });
 
@@ -70,11 +74,16 @@ it('preserves a warehouse draft when store data refreshes', async () => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,'12');
     input.dispatchEvent(new Event('input',{bubbles:true}));
   });
-  expect(host.querySelector('input[placeholder^="Enter verified physical units"]')).toHaveProperty('value','12');
+  expect(host.querySelector('input[placeholder^="Enter verified physical units"]')).toHaveProperty('value','');
+  const total=host.querySelector('input[placeholder^="Enter verified physical units"]') as HTMLInputElement;
+  await act(async()=>{
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(total,'20');
+    total.dispatchEvent(new Event('input',{bubbles:true}));
+  });
   const facilityReads=fetchMock.mock.calls.filter(([url])=>String(url).endsWith('/facilities')).length;
   await act(async()=>render('Lazada Test'));
   await act(async()=>{await Promise.resolve();await Promise.resolve()});
   expect(fetchMock.mock.calls.filter(([url])=>String(url).endsWith('/facilities'))).toHaveLength(facilityReads);
   expect(host.querySelector('input[aria-label="Lazada Test Warehouse A first count"]')).toHaveProperty('value','12');
-  expect(host.querySelector('input[placeholder^="Enter verified physical units"]')).toHaveProperty('value','12');
+  expect(host.querySelector('input[placeholder^="Enter verified physical units"]')).toHaveProperty('value','20');
 });
