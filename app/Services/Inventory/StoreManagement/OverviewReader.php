@@ -302,7 +302,8 @@ final class OverviewReader
         $priority = ['uncertain' => 6, 'auth_expired' => 5, 'failed' => 4, 'processing' => 3, 'queued' => 2, 'waiting_source' => 2, 'confirmed' => 1, 'superseded' => 0, 'not_applicable' => 0];
         $worst = $tasks->sortByDesc(fn ($task) => $priority[$task->status] ?? 3)->first();
 
-        return ['id' => $worst->id, 'status' => $worst->status, 'tasks' => $tasks->map(fn ($task) => (array) $task)->all()];
+        return ['id' => $worst->id, 'status' => $worst->status,
+            'tasks' => $tasks->map(fn ($task) => (array) $task)->values()->all()];
     }
 
     /** @return array<string,mixed> */
