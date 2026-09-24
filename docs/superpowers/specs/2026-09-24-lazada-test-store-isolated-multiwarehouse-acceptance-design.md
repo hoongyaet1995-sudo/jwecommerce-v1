@@ -1,6 +1,6 @@
 # Isolated Lazada test-store multiwarehouse acceptance
 
-**Status:** Design approved in conversation on 2026-09-24; written specification awaiting review. This is a limited acceptance path, not the all-store production rebaseline or a new stock mode.
+**Status:** Written specification approved by the merchant on 2026-09-24. This is a limited acceptance path, not the all-store production rebaseline or a new stock mode.
 
 ## Purpose and scope
 
