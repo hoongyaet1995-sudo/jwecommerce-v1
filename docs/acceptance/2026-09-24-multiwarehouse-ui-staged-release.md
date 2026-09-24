@@ -1,0 +1,9 @@
+# Multiwarehouse UI staged release
+
+Scope: deploy the ZIP-derived Inventory 48 page at `/admin/marketplace/inventory`, the facility registry/read contracts, and additive schema migrations `2026_09_24_000001` through `000008`. The old Inventory 39 page remains in source for rollback. This stage does not run a stock rebaseline or change any current stock quantity.
+
+The release flags default to false. A verified provider facility list can be displayed after `MARKETPLACE_MULTIWAREHOUSE_DISCOVERY_ENABLED=true` and a successful complete provider scan. Unknown facility stock is displayed as unknown, not zero. Shopee's partial pickup-warehouse response cannot certify complete stock topology and remains pending. Facility stock actions remain blocked until ledger migration is reviewed and `MARKETPLACE_MULTIWAREHOUSE_OPERATIONS_ENABLED=true`; outbound facility stock sync and facility order routing remain disabled separately. Existing direct-account/no-warehouse actions retain their prior endpoints.
+
+Before the UI route is considered live, production must apply the additive migrations. The `OverviewReader` now joins the facility registry, so deploying the code without the tables would break the inventory read API. Verify the full pending migration list before applying only the intended release migrations. Do not enable provider stock writes or rebaseline during this stage.
+
+Local validation: Inventory 48 Vite build; 43 facility feature tests (239 assertions); 89 related inventory/provider tests (437 assertions, one GD-dependent skip). A broader order-run retry test returns 409 rather than the fixture's expected 202 because its Shopee test store has no authorized application token; this is outside the facility path and needs separate follow-up. Live browser acceptance and same-SHA verification remain required after deployment.
