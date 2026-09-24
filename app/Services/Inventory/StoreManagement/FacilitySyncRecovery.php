@@ -16,6 +16,10 @@ final class FacilitySyncRecovery
             ->where('status', '!=', 'superseded')
             ->orderByRaw("CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END")
             ->orderByDesc('created_at')->orderByDesc('id')->first();
+        if ($task && (! $c['balance'] || $c['balance']->counted_at === null
+            || (int) $task->balance_version !== (int) $c['balance']->version)) {
+            $task = null;
+        }
         $receipt = $task ? json_decode($task->provider_receipt ?? '{}', true) ?: [] : [];
         $quantity = $c['balance'] && $c['balance']->counted_at !== null
             && $c['balance']->physical_stock !== null && $c['balance']->reserved_stock !== null
@@ -75,6 +79,12 @@ final class FacilitySyncRecovery
                 return;
             }
             $balance = DB::table('inventory_balances')->find($task->inventory_balance_id);
+            if (! $balance || $balance->counted_at === null
+                || (int) $balance->version !== (int) $task->balance_version) {
+                DB::table('inventory_store_sync_tasks')->where('id', $task->id)
+                    ->update(['status' => 'superseded', 'updated_at' => now()]);
+                return;
+            }
             $matches = $balance && (int) $balance->version === (int) $task->balance_version
                 && (int) $task->target_quantity === $observation['observed_quantity'];
             DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update([

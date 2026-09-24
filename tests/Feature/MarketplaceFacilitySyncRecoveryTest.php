@@ -71,6 +71,21 @@ class MarketplaceFacilitySyncRecoveryTest extends TestCase
         $this->assertSame('synced', $result['status']);
         $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $taskId, 'status' => 'confirmed']);
 
+        $balanceId = DB::table('inventory_store_sync_tasks')->where('id', $taskId)->value('inventory_balance_id');
+        DB::table('inventory_balances')->where('id', $balanceId)->update([
+            'physical_stock' => null, 'counted_at' => null, 'version' => 2,
+        ]);
+        $this->assertNull($service->details($store->id, $facility->id, $variant->id)['marketplace_reported_stock']);
+        $publisher = \Mockery::mock(StoreInventoryPublisher::class);
+        $publisher->shouldReceive('observe')->once()->andReturn([
+            'provider_location_id' => 'WH-A', 'observed_quantity' => 6,
+            'observed_at' => now()->toIso8601String(),
+        ]);
+        $staleResult = $service->check($store->id, $facility->id, $variant->id, $publisher);
+        $this->assertSame(6, $staleResult['marketplace_reported_stock']);
+        $this->assertSame('not_synced', $staleResult['status']);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $taskId, 'status' => 'superseded']);
+
         Queue::fake();
         config(['marketplace.multiwarehouse_stock_sync_enabled' => true]);
         $this->assertFalse($service->details($store->id, $facility->id, $variant->id)['can_resync']);
