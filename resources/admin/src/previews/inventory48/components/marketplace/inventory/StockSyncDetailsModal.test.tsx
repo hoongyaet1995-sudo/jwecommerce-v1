@@ -70,4 +70,15 @@ describe('warehouse-aware stock sync details',()=>{
     await act(async()=>button.click());
     expect(connect).toHaveBeenCalledWith('9');
   });
+
+  it('does not keep a historical synced badge after test access expires during check',async()=>{
+    const check=vi.fn().mockRejectedValue(new Error('Lazada test access expired. Renew Test Access in Connect Store, then check this warehouse again.'));
+    await render({syncInfo:{...state,status:'synced',jwAvailableStock:0,marketplaceReportedStock:0,
+      difference:0,canCheck:true},onCheckStatus:check});
+    const button=[...host.querySelectorAll('button')].find(b=>b.textContent?.trim()==='Check Status')!;
+    await act(async()=>button.click());
+    expect(host.textContent).toContain('Store authorization expired');
+    expect(host.textContent).toContain('Previous quantities and sync times are historical');
+    expect(host.textContent).not.toContain('Stock is synchronized');
+  });
 });

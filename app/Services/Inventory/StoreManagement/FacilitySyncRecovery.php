@@ -5,6 +5,7 @@ namespace App\Services\Inventory\StoreManagement;
 use App\Contracts\StoreInventoryPublisher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 /** Exact-location status and read-only reconciliation for a counted facility SKU. */
 final class FacilitySyncRecovery
@@ -39,7 +40,14 @@ final class FacilitySyncRecovery
             || ! $c['facility']->inventory_warehouse_id) {
             $status = 'verification_pending';
         }
-        $canCheck = $status !== 'verification_pending' && (bool) $c['listing'];
+        if ($c['store']->platform === 'lazada' && DB::table('marketplace_store_tokens')
+            ->where('store_id', $storeId)->where('credential_source', 'official_test')
+            ->where(function ($query): void {
+                $query->whereNull('test_lease_expires_at')->orWhere('test_lease_expires_at', '<=', now());
+            })->exists()) {
+            $status = 'auth_expired';
+        }
+        $canCheck = ! in_array($status, ['verification_pending', 'auth_expired'], true) && (bool) $c['listing'];
         $canResync = $canCheck && $quantity !== null
             && in_array($status, ['not_synced', 'sync_failed'], true)
             && ! in_array($task?->status, ['processing', 'uncertain'], true)
@@ -67,7 +75,14 @@ final class FacilitySyncRecovery
         $listing = $c['listing'];
         $listing->sync_provider_location_id = $c['facility']->provider_facility_id;
         $listing->sync_strict_facility = true;
-        $observation = $publisher->observe($c['store'], $listing);
+        try {
+            $observation = $publisher->observe($c['store'], $listing);
+        } catch (RuntimeException $error) {
+            if ($error->getMessage() === 'Official test credential lease expired or unavailable in this environment.') {
+                $this->reject('Lazada test access expired. Renew Test Access in Connect Store, then check this warehouse again.');
+            }
+            throw $error;
+        }
         if (($observation['provider_location_id'] ?? null) !== $c['facility']->provider_facility_id
             || ! is_int($observation['observed_quantity'] ?? null)) {
             $this->reject('The provider did not return an exact location stock count.');

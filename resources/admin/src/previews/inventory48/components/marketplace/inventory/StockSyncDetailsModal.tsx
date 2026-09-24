@@ -95,7 +95,11 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
         : 'Provider readback completed. Review the reported quantity and status.');
       if(updated.status==='synced') setViewMode('success');
     } catch(error:any) {
-      setStatusCheckFeedback(error?.message||'Provider stock could not be checked.');
+      const message=error?.message||'Provider stock could not be checked.';
+      if(message.includes('test access expired')) {
+        setCurrentSync(previous=>previous?{...previous,status:'auth_expired',canCheck:false,canResync:false}:previous);
+      }
+      setStatusCheckFeedback(`Latest warehouse readback failed: ${message} Previous quantities and sync times are historical.`);
     } finally {setIsCheckingStatus(false)}
   };
 
