@@ -34,6 +34,7 @@ import {
   SkuWarehouseStockBalance
 } from './warehouseInventoryTypes';
 import {loadFacilityView} from './loadFacilityView';
+import {storeInventoryApi} from '../../../../../integration/storeInventory';
 
 const EMPTY_STORE_BALANCES: Record<string, Record<string, StoreStockAccountBalance>> = {};
 
@@ -99,6 +100,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   // Store warehouse configurations
   const [storeConfigs, setStoreConfigs] = useState<StoreWithWarehouses[]>([]);
   const [warehouseStockData,setWarehouseStockData] = useState<Record<string, Record<string, SkuWarehouseStockBalance>>>({});
+  const [targetProviderReference,setTargetProviderReference] = useState<number|null>(null);
 
   // Simulated mapping overrides for demo/edge-case handling
   const [unmappedStores, setUnmappedStores] = useState<Record<string, boolean>>({});
@@ -218,6 +220,19 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
     });
     return()=>{active=false};
   },[isOpen,item?.id,stores,storeBalances]);
+
+  useEffect(()=>{
+    setTargetProviderReference(null);
+    if(!isOpen || !item || !initialTargetStoreId || !initialTargetWarehouseId
+      || !/^\d+$/.test(initialTargetWarehouseId)) return;
+    let active=true;
+    storeInventoryApi.facilitySyncDetails(initialTargetStoreId,Number(initialTargetWarehouseId),(item as any).variantId)
+      .then(detail=>{
+        const quantity=detail.marketplace_reported_stock;
+        if(active && Number.isInteger(quantity) && quantity>=0) setTargetProviderReference(quantity);
+      }).catch(()=>{});
+    return()=>{active=false};
+  },[isOpen,item?.id,initialTargetStoreId,initialTargetWarehouseId]);
 
   if (!isOpen || !item) return null;
 
@@ -619,7 +634,11 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                         <MarketplaceLogo platform={store.platform} size="xs" />
                         <span className="text-neutral-700 dark:text-neutral-300 font-medium truncate">{store.nickname || store.name}</span>
                       </div>
-                      <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200 shrink-0">{association?.channelStockSnapshot == null ? 'Unknown' : `${association.channelStockSnapshot} units`}</span>
+                      <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200 shrink-0">{
+                        store.id===initialTargetStoreId && targetProviderReference!==null
+                          ? `${targetProviderReference} units`
+                          : association?.channelStockSnapshot == null ? 'Unknown' : `${association.channelStockSnapshot} units`
+                      }</span>
                     </div>;
                   })}
                   {mappedMarketplaceStores.length === 0 && <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400">No mapped marketplace stores for this SKU.</div>}
