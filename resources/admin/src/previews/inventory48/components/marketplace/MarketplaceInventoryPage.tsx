@@ -429,6 +429,12 @@ export const MarketplaceInventoryPage: React.FC = () => {
       await storeInventoryApi.facilityStockAction(payload.targetStoreId,Number(payload.targetWarehouseId),
         (item as any).variantId,'count',payload.physicalCount,reason);
     } else if(payload.allocations && Object.values(payload.allocations).some(quantity=>quantity>0)) {
+      const mappedStoreIds = ((item as any).mappedStoreIds || []).map(String);
+      const topologies = await Promise.all(mappedStoreIds.map(storeId =>
+        storeInventoryApi.facilityBalances(storeId,(item as any).variantId)));
+      if(topologies.some(view => view.status !== 'verified' || view.topology !== 'no_warehouse')) {
+        throw new Error('Count each verified warehouse separately. Use Allocate Stock for a reviewed facility transfer.');
+      }
       await allocateStock(item,payload.physicalCount,payload.allocations,reason);
     } else {
       await recordPhysicalCountAudit(item.id,payload.physicalCount,reason,payload.targetStoreId,item);
@@ -1726,9 +1732,10 @@ export const MarketplaceInventoryPage: React.FC = () => {
           setIsManageStockDrawerOpen(false);
           handleOpenFirstCount(item, storeId, warehouseId);
         }}
-        onSelectAllocateStock={(item) => {
+        onSelectAllocateStock={(item, storeId, warehouseId) => {
           setIsManageStockDrawerOpen(false);
-          handleOpenFirstCount(item);
+          setTransferTarget({ sku: item.masterSku, storeId, warehouseId });
+          setActiveTab('transfers');
         }}
         onSelectIntake={(item, storeId, warehouseId) => {
           setIsManageStockDrawerOpen(false);
@@ -1766,7 +1773,9 @@ export const MarketplaceInventoryPage: React.FC = () => {
         onSelectSkuForCount={sku => {
           const it = safeInventory.find(i => i.masterSku === sku);
           if (it) {
-            handleOpenFirstCount(it);
+            setIsSettingsModalOpen(false);
+            setSelectedDrawerItem(it);
+            setIsManageStockDrawerOpen(true);
           }
         }}
       />

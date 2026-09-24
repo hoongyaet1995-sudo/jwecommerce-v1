@@ -35,6 +35,8 @@ import {
 } from './warehouseInventoryTypes';
 import {loadFacilityView} from './loadFacilityView';
 
+const EMPTY_STORE_BALANCES: Record<string, Record<string, StoreStockAccountBalance>> = {};
+
 interface InitialStockCountModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -67,7 +69,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   item,
   mode,
   stores,
-  storeBalances = {},
+  storeBalances = EMPTY_STORE_BALANCES,
   initialTargetStoreId,
   initialTargetWarehouseId,
   onSaveCount,
@@ -128,6 +130,11 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
     if (!item?.masterSku) return {};
     return storeBalances[item.masterSku] || {};
   }, [item?.masterSku, storeBalances]);
+
+  const mappedMarketplaceStores = useMemo(() => {
+    const mappedIds = new Set((((item as any)?.mappedStoreIds || []) as string[]).map(String));
+    return activeStores.filter(store => store.platform !== 'webstore' && mappedIds.has(String(store.id)));
+  }, [activeStores, item]);
 
   // Calculate sum of reserved stock across all stores
   const totalReservedAcrossStores = useMemo(() => {
@@ -322,7 +329,10 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   });
 
   // Check unmapped active stores blocker
-  const hasUnmappedBlocker = activeStores.some(st => unmappedStores[st.id] && (allocations[st.id]?.trim() || '') !== '');
+  const hasUnmappedBlocker = activeStores.some(st => {
+    const mapped = storeConfigs.find(config => config.storeId === st.id)?.isSkuMapped;
+    return !mapped && (allocations[st.id]?.trim() || '') !== '';
+  });
 
   // Check connection blocker
   const hasConnectionBlocker = activeStores.some(st => {
@@ -392,7 +402,9 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
 
   const handleDistributeEvenly = () => {
     if (!isVerifiedCountValid || verifiedCountNum <= 0) return;
-    const eligibleStores = activeStores.filter(s => !unmappedStores[s.id] && s.connectionState !== 'expired');
+    const eligibleStores = activeStores.filter(s =>
+      storeConfigs.find(config => config.storeId === s.id)?.isSkuMapped
+      && s.connectionState !== 'expired');
     if (eligibleStores.length === 0) return;
 
     const baseShare = Math.floor(verifiedCountNum / eligibleStores.length);
@@ -577,6 +589,19 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                 </div>
               </div>
 
+              {initialTargetWarehouseId && targetStore && (
+                <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-xs text-indigo-900 dark:text-indigo-200 flex items-start gap-2.5">
+                  <Warehouse className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold">Specific Facility First Count Target</div>
+                    <p className="text-neutral-600 dark:text-neutral-300 text-[11px] mt-0.5">
+                      {targetStore.storeNickname || targetStore.storeName} · {targetWarehouse?.warehouseName || targetBalance?.warehouseName || 'Direct inventory'}
+                      {targetWarehouse ? ` (${targetWarehouse.codeType}: ${targetWarehouse.codeValue})` : ''}. Other facilities remain unchanged.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Reference Only Section: Marketplace Snapshots */}
               <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-800 space-y-2 text-xs">
                 <div className="flex items-center justify-between">
@@ -587,9 +612,17 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                   <span className="text-[11px] text-neutral-400">Never auto-filled into JW ledger</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400">
-                    No verified provider stock snapshot loaded for this count.
-                  </div>
+                  {mappedMarketplaceStores.map(store => {
+                    const association = item.storeAssociations?.find(row => String(row.connectionId) === String(store.id));
+                    return <div key={store.id} className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <MarketplaceLogo platform={store.platform} size="xs" />
+                        <span className="text-neutral-700 dark:text-neutral-300 font-medium truncate">{store.nickname || store.name}</span>
+                      </div>
+                      <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200 shrink-0">{association?.channelStockSnapshot == null ? 'Unknown' : `${association.channelStockSnapshot} units`}</span>
+                    </div>;
+                  })}
+                  {mappedMarketplaceStores.length === 0 && <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400">No mapped marketplace stores for this SKU.</div>}
                 </div>
                 <div className="flex items-center gap-2 text-[11px] text-amber-700 dark:text-amber-300/90 pt-1">
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-500" />
@@ -817,7 +850,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                     const hasWarehouses = sc && sc.warehouses.length > 0;
                     const isExpanded = !!expandedStores[st.id];
 
-                    const isUnmapped = !!unmappedStores[st.id];
+                    const isUnmapped = sc?.isSkuMapped === false;
                     const connectionStatus = connectionOverrides[st.id] || st.connectionState;
                     const isConnectionExpired = connectionStatus === 'expired';
                     const isInputDisabled = isUnmapped || isConnectionExpired || isVerificationPending;
@@ -827,9 +860,9 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                     const storeReserved = hasWarehouses
                       ? sc.warehouses.reduce((acc, wh) => {
                           const wBal = warehouseStockData[item.masterSku]?.[wh.id];
-                          return acc + (wBal?.reservedStock ?? (wh.id === 'wh-shopee-selangor' ? 1 : 0));
+                          return acc + (wBal?.reservedStock ?? 0);
                         }, 0)
-                      : (balanceRecord?.reservedStock ?? (st.id === 'webstore' ? 1 : 0));
+                      : (balanceRecord?.reservedStock ?? 0);
                     const storeAvail = Math.max(0, storePhysical - storeReserved);
 
                     const isStoreConflict = !hasWarehouses && storeReservationConflicts[st.id] !== undefined;
@@ -968,7 +1001,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                               {sc.warehouses.map(wh => {
                                 const whBal = warehouseStockData[item.masterSku]?.[wh.id];
                                 const whPrevPhys = whBal?.physicalStock ?? '—';
-                                const whReserved = whBal?.reservedStock ?? (wh.id === 'wh-shopee-selangor' ? 1 : 0);
+                                const whReserved = whBal?.reservedStock ?? 0;
                                 const whEntered = warehouseAllocations[wh.id] ?? '';
                                 const whParsed = parsedWarehouseAllocations[wh.id] ?? 0;
                                 const whAtp = whEntered.trim() === '' ? '—' : Math.max(0, whParsed - whReserved);

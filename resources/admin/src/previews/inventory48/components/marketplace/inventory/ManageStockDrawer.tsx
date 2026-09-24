@@ -44,7 +44,7 @@ interface ManageStockDrawerProps {
   stores?: any[];
   storeBalances?: any;
   onSelectFirstCount?: (item: MarketplaceInventoryItem, targetStoreId?: string, targetWarehouseId?: string) => void;
-  onSelectAllocateStock?: (item: MarketplaceInventoryItem) => void;
+  onSelectAllocateStock?: (item: MarketplaceInventoryItem, storeId?: string, warehouseId?: string) => void;
   onSelectIntake?: (item: MarketplaceInventoryItem, targetStoreId?: string, targetWarehouseId?: string) => void;
   onSelectAdjustment?: (item: MarketplaceInventoryItem, targetStoreId?: string, targetWarehouseId?: string) => void;
   onSelectTransfer?: (item: MarketplaceInventoryItem, sourceStoreId?: string, sourceWarehouseId?: string) => void;
@@ -269,11 +269,10 @@ export const ManageStockDrawer: React.FC<ManageStockDrawerProps> = ({
       || (testAcceptance.eligible === true && acceptanceFacility?.eligible === true)));
   const canFirstCount = selectedStoreReady && acceptanceReady && !selectedCounted;
   const canAdjust = selectedStoreReady && acceptanceReady && selectedCounted;
-  const canAllocate = canAdjust && mode === 'independent'
-    && selectedWarehouseObj?.store.warehouseMode === 'no_warehouse';
   const canTransfer = canAdjust && mode === 'independent' && selectedAvailable > 0
     && (testAcceptance?.test_acceptance_enabled !== true
       || testAcceptance.facilities.filter((facility:any)=>facility.eligible && facility.counted).length > 1);
+  const canAllocate = canTransfer && selectedWarehouseObj?.store.warehouseMode !== 'no_warehouse';
 
   useEffect(()=>{
     if(!isOpen || !item || !selectedMarketplaceFacility){setTestAcceptance(null);setTestAcceptanceError('');return}
@@ -367,7 +366,7 @@ export const ManageStockDrawer: React.FC<ManageStockDrawerProps> = ({
 
   const handleAllocateClick = () => {
     if (!item || !canAllocate) return;
-    if (onSelectAllocateStock) onSelectAllocateStock(item);
+    if (onSelectAllocateStock) onSelectAllocateStock(item, selectedStoreId, selectedWarehouseId);
     else onOpenAllocateStock?.(item);
   };
 
@@ -944,7 +943,7 @@ export const ManageStockDrawer: React.FC<ManageStockDrawerProps> = ({
               type="button"
               onClick={handleAllocateClick}
               className="px-3.5 py-2 rounded-xl bg-neutral-850 hover:bg-neutral-800 border border-neutral-700 text-xs font-bold text-neutral-200 hover:text-white transition flex items-center gap-1.5 cursor-pointer shadow-xs"
-              title="Distribute inventory across stores and individual warehouses"
+              title="Move available physical units through a reviewed facility transfer"
             >
               <Layers className="w-3.5 h-3.5 text-blue-400" />
               <span>Allocate Stock</span>
