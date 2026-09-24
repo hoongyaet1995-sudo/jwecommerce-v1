@@ -163,7 +163,7 @@ export const ManageStockDrawer: React.FC<ManageStockDrawerProps> = ({
       const configurations=rows.map(row=>row.config);
       setStoreConfigs(configurations);
       setWarehouseBalances({[item.masterSku]:Object.assign({},...rows.map(row=>row.balances))});
-      const first=configurations.flatMap(store=>store.warehouseMode==='no_warehouse'
+      const first=configurations.flatMap(store=>store.warehouseMode==='no_warehouse' && store.warehouseSyncStatus==='synced'
         ? [{storeId:store.storeId,id:`direct:${store.storeId}`}]
         : store.warehouses.map(warehouse=>({storeId:store.storeId,id:warehouse.id})))[0];
       setSelectedStoreId(first?.storeId || '');setSelectedWarehouseId(first?.id || '');
@@ -201,7 +201,7 @@ export const ManageStockDrawer: React.FC<ManageStockDrawerProps> = ({
 
   // Count total warehouses
   const totalWarehousesCount = useMemo(() => {
-    return storeConfigs.reduce((acc, sc) => acc + (sc.warehouseMode === 'no_warehouse' ? 1 : sc.warehouses.length), 0);
+    return storeConfigs.reduce((acc, sc) => acc + (sc.warehouseMode === 'no_warehouse' ? (sc.warehouseSyncStatus === 'synced' ? 1 : 0) : sc.warehouses.length), 0);
   }, [storeConfigs]);
 
   // Filtered stores
@@ -223,7 +223,7 @@ export const ManageStockDrawer: React.FC<ManageStockDrawerProps> = ({
   // Selected warehouse object
   const selectedWarehouseObj = useMemo(() => {
     for (const sc of storeConfigs) {
-      if (sc.warehouseMode === 'no_warehouse' && selectedWarehouseId === `direct:${sc.storeId}` && sc.storeId === selectedStoreId) {
+      if (sc.warehouseMode === 'no_warehouse' && sc.warehouseSyncStatus === 'synced' && selectedWarehouseId === `direct:${sc.storeId}` && sc.storeId === selectedStoreId) {
         return {
           id: `direct:${sc.storeId}`,
           name: `${sc.storeName} Direct Inventory (No Platform Warehouse)`,
@@ -535,9 +535,14 @@ export const ManageStockDrawer: React.FC<ManageStockDrawerProps> = ({
                         </span>
 
                         {/* Store Mode Badge */}
-                        {store.warehouseMode === 'no_warehouse' && (
+                        {store.warehouseMode === 'no_warehouse' && !isVerificationPending && (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-800 text-neutral-300 border border-neutral-700">
                             No Platform Warehouse
+                          </span>
+                        )}
+                        {store.warehouseMode === 'no_warehouse' && isVerificationPending && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/60 text-amber-300 border border-amber-800/60">
+                            Warehouse Status Unknown
                           </span>
                         )}
                         {store.warehouseMode === 'single_warehouse' && (
@@ -652,7 +657,7 @@ export const ManageStockDrawer: React.FC<ManageStockDrawerProps> = ({
                     )}
 
                     {/* Scenario 1: No Platform Warehouse (无仓) */}
-                    {store.warehouseMode === 'no_warehouse' && (
+                    {store.warehouseMode === 'no_warehouse' && !isVerificationPending && (
                       <div 
                         onClick={() => handleSelectWarehouse(store.storeId, `direct:${store.storeId}`)}
                         className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-wrap items-center justify-between gap-4 ${
