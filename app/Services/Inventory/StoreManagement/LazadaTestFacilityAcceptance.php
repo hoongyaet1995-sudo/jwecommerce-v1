@@ -81,18 +81,20 @@ final class LazadaTestFacilityAcceptance
                 }
             }
         }
+        $batch = $facilityId === null ? null : $this->countBatchFor($storeId, $variantId, $facilityId, $ignoreSyncTaskId);
         if ($facilityId !== null && DB::table('inventory_store_sync_tasks')
             ->where('marketplace_store_id', $storeId)
             ->where('marketplace_store_facility_id', $facilityId)
             ->where('product_variant_id', $variantId)
             ->when($ignoreSyncTaskId, fn ($query) => $query->where('id', '!=', $ignoreSyncTaskId))
+            ->when($batch, fn ($query) => $query->whereNotIn('event_key', $batch['event_keys']))
             ->whereNotIn('status', ['confirmed', 'not_applicable', 'superseded'])->exists()) {
             $blockers[] = ['code' => 'unfinished_stock_sync'];
         }
         if (DB::table('inventory_balances as balance')
             ->join('inventory_pools as pool', 'pool.id', '=', 'balance.inventory_pool_id')
             ->where('balance.product_variant_id', $variantId)
-            ->whereIn('pool.kind', ['warehouse', 'store', 'shared'])
+            ->whereIn('pool.kind', $batch ? ['warehouse', 'shared'] : ['warehouse', 'store', 'shared'])
             ->where(fn ($query) => $query->whereNotNull('balance.counted_at')
                 ->orWhere('balance.physical_stock', '>', 0)
                 ->orWhere('balance.reserved_stock', '>', 0))->exists()) {
@@ -149,5 +151,31 @@ final class LazadaTestFacilityAcceptance
         }
 
         return $result;
+    }
+
+    /** A confirmed batch already reviewed every destination before any child sync was queued. */
+    private function countBatchFor(int $storeId, int $variantId, int $facilityId, ?string $taskId): ?array
+    {
+        $taskReviewId = null;
+        if ($taskId !== null) {
+            $eventKey = DB::table('inventory_store_sync_tasks')->where('id', $taskId)->value('event_key');
+            if (! is_string($eventKey) || ! str_starts_with($eventKey, 'facility-stock:')) return null;
+            $taskReviewId = substr($eventKey, strlen('facility-stock:'));
+        }
+        $reviews = DB::table('inventory_store_reviews')->where('kind', 'batch_first_count')
+            ->whereIn('status', $taskId === null ? ['confirming'] : ['confirmed'])
+            ->orderByDesc('created_at')->limit(100)->get(['payload']);
+        foreach ($reviews as $review) {
+            $payload = json_decode($review->payload, true);
+            if ((int) ($payload['variant_id'] ?? 0) !== $variantId) continue;
+            $children = $payload['subreviews'] ?? [];
+            $matchesFacility = collect($children)->contains(fn ($child) =>
+                ($child['key'] ?? null) === 'facility:'.$storeId.':'.$facilityId
+                && ($taskReviewId === null || ($child['id'] ?? null) === $taskReviewId));
+            if (! $matchesFacility) continue;
+            return ['event_keys' => array_map(fn ($child) => 'facility-stock:'.$child['id'],
+                array_values(array_filter($children, fn ($child) => ($child['kind'] ?? null) === 'facility')))];
+        }
+        return null;
     }
 }

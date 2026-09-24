@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Services\Inventory\StoreManagement\FacilityRegistry;
+use App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\StoreInventoryFixture;
@@ -71,10 +72,36 @@ class BatchFirstCountReviewTest extends TestCase
             ->where('product_variant_id', $variantId)->whereNotNull('counted_at')->count());
     }
 
-    private function setupSku(): array
+    public function test_test_seller_acceptance_allows_sibling_warehouse_sync_tasks_from_the_same_batch(): void
+    {
+        [$actor, $storeId, $variantId, $facilityIds] = $this->setupSku(true);
+        $review = $this->actingAs($actor)->postJson('/admin/api/inventory/store-management/batch-first-counts', [
+            'variant_id' => $variantId, 'physical_count' => 25,
+            'allocations' => ['website' => 7, 'facility:'.$storeId.':'.$facilityIds[0] => 10,
+                'facility:'.$storeId.':'.$facilityIds[1] => 8], 'reason' => 'Test seller batch count',
+        ])->assertCreated()->json();
+        $this->postJson('/admin/api/inventory/store-management/batch-first-counts/'.$review['id'].'/confirm', [
+            'operation_key' => 'test-seller-batch',
+        ])->assertOk();
+        foreach ($facilityIds as $facilityId) {
+            $task = DB::table('inventory_store_sync_tasks')->where('marketplace_store_facility_id', $facilityId)->first();
+            $this->assertTrue(app(LazadaTestFacilityAcceptance::class)->inspect(
+                $storeId, $variantId, $facilityId, $task->id)['eligible']);
+        }
+    }
+
+    private function setupSku(bool $testSeller = false): array
     {
         $fixture = new StoreInventoryFixture;
         $store = $fixture->store('lazada', 'BATCH-COUNT');
+        if ($testSeller) {
+            DB::table('marketplace_stores')->where('id', $store->id)->update([
+                'account_mode' => 'test', 'environment' => 'live',
+                'external_shop_id' => '300163725140', 'data_classification' => 'test',
+            ]);
+            config(['marketplace.multiwarehouse_test_acceptance_enabled' => true,
+                'marketplace.lazada.test_store_id' => (string) $store->id]);
+        }
         $variant = $fixture->sku()['variant'];
         app(FacilityRegistry::class)->confirm((int) $store->id, [
             ['provider_id' => 'WH-A', 'name' => 'A'], ['provider_id' => 'WH-B', 'name' => 'B'],

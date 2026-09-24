@@ -132,6 +132,9 @@ final class BatchFirstCountReview
                 $this->conflict('configuration_changed');
             }
             $payload = json_decode($review->payload, true, 512, JSON_THROW_ON_ERROR);
+            DB::table('inventory_store_reviews')->where('id', $reviewId)->update([
+                'status' => 'confirming', 'updated_at' => now(),
+            ]);
             $receipts = [];
             foreach ($payload['subreviews'] as $subreview) {
                 $key = substr(hash('sha256', $operationKey.':'.$subreview['key']), 0, 64);
