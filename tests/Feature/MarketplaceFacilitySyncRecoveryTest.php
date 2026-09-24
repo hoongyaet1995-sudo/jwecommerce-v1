@@ -41,6 +41,17 @@ class MarketplaceFacilitySyncRecoveryTest extends TestCase
         ]);
         DB::table('marketplace_store_facilities')->where('id', $facility->id)
             ->update(['inventory_warehouse_id' => $warehouse]);
+        $publisher = \Mockery::mock(StoreInventoryPublisher::class);
+        $publisher->shouldReceive('observe')->once()->andReturn([
+            'provider_location_id' => 'WH-A', 'observed_quantity' => 6,
+            'observed_at' => now()->toIso8601String(),
+        ]);
+        $preCountReference = app(FacilitySyncRecovery::class)->check(
+            $store->id, $facility->id, $variant->id, $publisher);
+        $this->assertSame(6, $preCountReference['marketplace_reported_stock']);
+        $this->assertNull($preCountReference['jw_available_stock']);
+        $this->assertNull($preCountReference['difference']);
+        $this->assertDatabaseCount('inventory_store_sync_tasks', 0);
         $review = app(FacilityStockReview::class)->review($actor, (int) $store->id,
             (int) $facility->id, (int) $variant->id, 'count', 10, 'Physical count');
         $receipt = app(FacilityStockReview::class)->confirm($actor, $review['id'], 'recovery-count');

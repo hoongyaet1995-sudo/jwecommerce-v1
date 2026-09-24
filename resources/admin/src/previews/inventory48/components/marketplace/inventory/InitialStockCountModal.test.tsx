@@ -13,22 +13,43 @@ beforeEach(()=>{
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.restoreAllMocks()});
 
 it('lists mapped stores as references while keeping a targeted facility count blank',async()=>{
-  vi.stubGlobal('fetch',vi.fn(async (input:RequestInfo|URL)=>({ok:true,json:async()=>String(input).endsWith('/sync')
+  vi.stubGlobal('fetch',vi.fn(async (input:RequestInfo|URL)=>({ok:true,json:async()=>String(input).endsWith('/sync/check')
     ? {marketplace_reported_stock:6} : {status:'verified',topology:'multi_warehouse',facilities:[
     {id:7,name:'Warehouse A',provider_id:'WH-A',inventory_warehouse_id:19,counted:false,physical:null,reserved:0,available:null},
     {id:8,name:'Warehouse B',provider_id:'WH-B',inventory_warehouse_id:20,counted:false,physical:null,reserved:0,available:null},
   ]}} as Response)));
+  const save=vi.fn(async()=>{});
   await act(async()=>root.render(<InitialStockCountModal isOpen onClose={()=>{}}
     item={{id:'55',masterSku:'TEST-1',productName:'Test product',variantId:55,mappedStoreIds:['3'],
       storeAssociations:[{connectionId:'3',storeName:'Lazada Test',platform:'lazada',channelStockSnapshot:11}]} as any}
     mode="independent" stores={[{id:'3',name:'Lazada Test',platform:'lazada'} as any,
       {id:'4',name:'Unmapped Store',platform:'shopee'} as any]}
-    initialTargetStoreId="3" initialTargetWarehouseId="7" onSaveCount={vi.fn()} />));
+    initialTargetStoreId="3" initialTargetWarehouseId="7" onSaveCount={save} />));
   await act(async()=>{await Promise.resolve();await Promise.resolve()});
   expect(host.textContent).toContain('Lazada Test');
-  expect(host.textContent).toContain('6 units');
+  expect(host.textContent).toContain('12 units (2 WH)');
+  expect(host.textContent).toContain('Live Conservation Summary');
+  expect(host.textContent).toContain('Allocate Stock');
+  expect(host.querySelectorAll('input[aria-label$="first count"]')).toHaveLength(2);
   expect(host.textContent).toContain('Warehouse A (warehouse_code: WH-A)');
   const reference = [...host.querySelectorAll('span')].find(node=>node.textContent==='External Platform Reference Quantities (For Reference Only)')?.parentElement?.parentElement?.parentElement;
   expect(reference?.textContent).not.toContain('Unmapped Store');
   expect(host.querySelector('input[placeholder^="Enter verified physical units"]')).toHaveProperty('value','');
+  const warehouseB=host.querySelector('input[aria-label="Lazada Test Warehouse B first count"]') as HTMLInputElement;
+  await act(async()=>{
+    const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!;
+    setter.call(warehouseB,'3');warehouseB.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  expect(host.querySelector('input[placeholder^="Enter verified physical units"]')).toHaveProperty('value','3');
+  expect(host.textContent).toContain('JW Draft Total3');
+  const click=async(label:string)=>{
+    const button=[...host.querySelectorAll('button')].find(node=>node.textContent?.includes(label));
+    expect(button).toBeTruthy();
+    await act(async()=>button!.click());
+  };
+  await click('Proceed to Review');
+  await click('Confirm First Count');
+  expect(save).toHaveBeenCalledWith(expect.objectContaining({
+    sku:'TEST-1',targetStoreId:'3',targetWarehouseId:'8',physicalCount:3,
+  }));
 });

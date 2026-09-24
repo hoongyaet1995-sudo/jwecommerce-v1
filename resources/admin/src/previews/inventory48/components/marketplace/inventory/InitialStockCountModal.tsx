@@ -100,7 +100,9 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   // Store warehouse configurations
   const [storeConfigs, setStoreConfigs] = useState<StoreWithWarehouses[]>([]);
   const [warehouseStockData,setWarehouseStockData] = useState<Record<string, Record<string, SkuWarehouseStockBalance>>>({});
-  const [targetProviderReference,setTargetProviderReference] = useState<number|null>(null);
+  const [providerReferences,setProviderReferences] = useState<Record<string,Record<string,number>>>({});
+  const [providerReferenceLoading,setProviderReferenceLoading] = useState(false);
+  const [selectedCountTarget,setSelectedCountTarget] = useState<{storeId:string;warehouseId:string}|null>(null);
 
   // Simulated mapping overrides for demo/edge-case handling
   const [unmappedStores, setUnmappedStores] = useState<Record<string, boolean>>({});
@@ -151,6 +153,8 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
     if (!isOpen) {
       setStep('input');
       setConfirmedCount(null);
+      setSelectedCountTarget(initialTargetStoreId && initialTargetWarehouseId
+        ? {storeId:initialTargetStoreId,warehouseId:initialTargetWarehouseId} : null);
     }
   }, [isOpen]);
 
@@ -208,7 +212,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
       });
       setAllocations(initialMap);
     }
-  }, [isOpen, item?.id, activeStores, storeConfigs, warehouseStockData]);
+  }, [isOpen, item?.id, activeStores, storeConfigs, warehouseStockData, initialTargetStoreId, initialTargetWarehouseId]);
 
   useEffect(()=>{
     if(!isOpen || !item) return;
@@ -222,19 +226,40 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   },[isOpen,item?.id,stores,storeBalances]);
 
   useEffect(()=>{
-    setTargetProviderReference(null);
-    if(!isOpen || !item || !initialTargetStoreId || !initialTargetWarehouseId
-      || !/^\d+$/.test(initialTargetWarehouseId)) return;
+    if(!isOpen || !item || !storeConfigs.length) return;
     let active=true;
-    storeInventoryApi.facilitySyncDetails(initialTargetStoreId,Number(initialTargetWarehouseId),(item as any).variantId)
-      .then(detail=>{
+    const mapped=new Set((((item as any).mappedStoreIds || []) as string[]).map(String));
+    const facilities=storeConfigs.flatMap(store=>
+      mapped.has(String(store.storeId)) && store.warehouseSyncStatus==='synced'
+        ? store.warehouses.filter(wh=>wh.inventoryWarehouseId && /^\d+$/.test(wh.id))
+            .map(wh=>({storeId:String(store.storeId),warehouseId:wh.id})) : []);
+    setProviderReferences({});
+    setProviderReferenceLoading(facilities.length>0);
+    Promise.allSettled(facilities.map(async facility=>({
+      ...facility,
+      result:await storeInventoryApi.facilitySyncCheck(facility.storeId,Number(facility.warehouseId),(item as any).variantId)
+    }))).then(results=>{
+      if(!active)return;
+      const next:Record<string,Record<string,number>>={};
+      results.forEach(result=>{
+        if(result.status!=='fulfilled')return;
+        const {storeId,warehouseId,result:detail}=result.value;
         const quantity=detail.marketplace_reported_stock;
-        if(active && Number.isInteger(quantity) && quantity>=0) setTargetProviderReference(quantity);
-      }).catch(()=>{});
+        if(Number.isInteger(quantity) && quantity>=0){
+          next[storeId] ??= {};
+          next[storeId][warehouseId]=quantity;
+        }
+      });
+      setProviderReferences(next);
+      setProviderReferenceLoading(false);
+    });
     return()=>{active=false};
-  },[isOpen,item?.id,initialTargetStoreId,initialTargetWarehouseId]);
+  },[isOpen,item?.id,storeConfigs]);
 
   if (!isOpen || !item) return null;
+
+  const effectiveTargetStoreId=selectedCountTarget?.storeId || initialTargetStoreId;
+  const effectiveTargetWarehouseId=selectedCountTarget?.warehouseId || initialTargetWarehouseId;
 
   // Numerical verified total calculation
   const verifiedCountNum = physicalCountInput.trim() === '' ? NaN : Number(physicalCountInput);
@@ -356,14 +381,19 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   });
 
   // Validation flag for Proceed to Review
-  const targetStore=storeConfigs.find(store=>store.storeId===initialTargetStoreId);
-  const targetWarehouse=targetStore?.warehouses.find(warehouse=>warehouse.id===initialTargetWarehouseId);
-  const targetBalance=initialTargetWarehouseId&&item
-    ? warehouseStockData[item.masterSku]?.[initialTargetWarehouseId] : undefined;
-  const targetedCountReady=!!initialTargetWarehouseId && !!targetStore
+  const targetStore=storeConfigs.find(store=>store.storeId===effectiveTargetStoreId);
+  const targetWarehouse=targetStore?.warehouses.find(warehouse=>warehouse.id===effectiveTargetWarehouseId);
+  const targetBalance=effectiveTargetWarehouseId&&item
+    ? warehouseStockData[item.masterSku]?.[effectiveTargetWarehouseId] : undefined;
+  const targetedCountReady=!!effectiveTargetWarehouseId && !!targetStore
     && targetStore.warehouseSyncStatus==='synced' && targetStore.isSkuMapped
-    && (initialTargetWarehouseId.startsWith('direct:') || (targetWarehouse?.status==='active' && !!targetWarehouse.inventoryWarehouseId))
+    && (effectiveTargetWarehouseId.startsWith('direct:') || (targetWarehouse?.status==='active' && !!targetWarehouse.inventoryWarehouseId))
     && targetBalance?.isCounted===false;
+  const countedFacilityTotal=storeConfigs.reduce((sum,store)=>sum+store.warehouses.reduce((warehouseSum,warehouse)=>{
+    const balance=warehouseStockData[item.masterSku]?.[warehouse.id];
+    return warehouseSum+(balance?.isCounted ? balance.physicalStock || 0 : 0);
+  },0),0);
+  const draftFacilityTotal=countedFacilityTotal+(isVerifiedCountValid ? verifiedCountNum : 0);
   const canProceedToReview = initialTargetWarehouseId
     ? targetedCountReady && isVerifiedCountValid && verifiedCountNum >= 0
     :
@@ -387,6 +417,10 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
 
   // Warehouse input change handler
   const handleWarehouseAllocationChange = (storeId: string, warehouseId: string, val: string) => {
+    if(initialTargetWarehouseId){
+      setSelectedCountTarget({storeId,warehouseId});
+      setPhysicalCountInput(val);
+    }
     setWarehouseAllocations(prev => {
       const updated = { ...prev, [warehouseId]: val };
       // Also update store total in allocations
@@ -460,9 +494,9 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
     try {
     await onSaveCount({
       sku: item.masterSku,
-      targetStoreId: initialTargetStoreId,
-      targetWarehouseId: initialTargetWarehouseId,
-      allocations: parsedAllocations,
+      targetStoreId: effectiveTargetStoreId,
+      targetWarehouseId: effectiveTargetWarehouseId,
+      allocations: initialTargetWarehouseId ? undefined : parsedAllocations,
       physicalCount: verifiedCountNum,
       reason,
       notes: notes.trim() || undefined,
@@ -635,9 +669,19 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                         <span className="text-neutral-700 dark:text-neutral-300 font-medium truncate">{store.nickname || store.name}</span>
                       </div>
                       <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200 shrink-0">{
-                        store.id===initialTargetStoreId && targetProviderReference!==null
-                          ? `${targetProviderReference} units`
-                          : association?.channelStockSnapshot == null ? 'Unknown' : `${association.channelStockSnapshot} units`
+                        (()=>{
+                          const config=storeConfigs.find(row=>row.storeId===store.id);
+                          const facilities=config?.warehouses.filter(wh=>/^\d+$/.test(wh.id)) || [];
+                          const observed=providerReferences[String(store.id)] || {};
+                          if(facilities.length){
+                            if(providerReferenceLoading)return 'Checking warehouses…';
+                            const observedCount=facilities.filter(wh=>observed[wh.id]!==undefined).length;
+                            return observedCount===facilities.length
+                              ? `${facilities.reduce((sum,wh)=>sum+observed[wh.id],0)} units (${observedCount} WH)`
+                              : `Unknown (${observedCount}/${facilities.length} WH checked)`;
+                          }
+                          return association?.channelStockSnapshot == null ? 'Unknown' : `${association.channelStockSnapshot} units`;
+                        })()
                       }</span>
                     </div>;
                   })}
@@ -694,7 +738,13 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                       disabled={isCountLocked}
                       placeholder="Enter verified physical units (e.g. 22)"
                       value={physicalCountInput}
-                      onChange={e => setPhysicalCountInput(e.target.value)}
+                      onChange={e => {
+                        setPhysicalCountInput(e.target.value);
+                        if(initialTargetWarehouseId && effectiveTargetStoreId && effectiveTargetWarehouseId){
+                          if(effectiveTargetWarehouseId.startsWith('direct:'))setAllocations(prev=>({...prev,[effectiveTargetStoreId]:e.target.value}));
+                          else setWarehouseAllocations(prev=>({...prev,[effectiveTargetWarehouseId]:e.target.value}));
+                        }
+                      }}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white font-mono text-base font-bold focus:outline-hidden focus:ring-2 focus:ring-neutral-900 dark:focus:ring-white disabled:opacity-75 disabled:cursor-not-allowed"
                     />
                     <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-neutral-400 pointer-events-none">
@@ -720,7 +770,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
               {/* ================= LIVE CONSERVATION SUMMARY (Sticky & Color-Coded) ================= */}
               <div
                 id="live-conservation-summary"
-                className={`${initialTargetWarehouseId ? 'hidden' : ''} p-4 rounded-xl border transition-all ${
+                className={`p-4 rounded-xl border transition-all ${
                   !isVerifiedCountValid || verifiedTotal === 0
                     ? 'bg-neutral-50 dark:bg-neutral-800/60 border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300'
                     : remainingCount > 0
@@ -747,7 +797,9 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                             : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
                         }`}
                       >
-                        {!isVerifiedCountValid || verifiedTotal === 0
+                        {initialTargetWarehouseId
+                          ? isVerifiedCountValid ? 'Selected warehouse draft' : 'Awaiting selected warehouse count'
+                          : !isVerifiedCountValid || verifiedTotal === 0
                           ? 'Awaiting Verified Count'
                           : remainingCount > 0
                           ? `${remainingCount} Units Unallocated`
@@ -757,26 +809,28 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                       </span>
                     </div>
                     <p className="text-xs opacity-90 mt-0.5">
-                      Sum allocated across all active stores must exactly equal verified physical quantity.
+                      {initialTargetWarehouseId
+                        ? 'Each warehouse has its own physical ledger. The selected warehouse is counted independently; all others remain unchanged.'
+                        : 'Sum allocated across all active stores must exactly equal verified physical quantity.'}
                     </p>
                   </div>
 
                   {/* Metrics Row */}
                   <div className="flex items-center gap-4 text-xs font-mono">
                     <div className="text-center">
-                      <span className="block text-[10px] text-neutral-400 uppercase">Verified Total</span>
+                      <span className="block text-[10px] text-neutral-400 uppercase">{initialTargetWarehouseId ? 'Counted Now' : 'Verified Total'}</span>
                       <span className="font-bold text-sm text-neutral-900 dark:text-white">
                         {isVerifiedCountValid ? verifiedTotal : '—'}
                       </span>
                     </div>
-                    <span className="text-neutral-400 font-sans font-bold">=</span>
+                    <span className="text-neutral-400 font-sans font-bold">{initialTargetWarehouseId ? '+' : '='}</span>
                     <div className="text-center">
-                      <span className="block text-[10px] text-neutral-400 uppercase">Allocated</span>
-                      <span className="font-bold text-sm text-neutral-900 dark:text-white">{totalAllocatedNum}</span>
+                      <span className="block text-[10px] text-neutral-400 uppercase">{initialTargetWarehouseId ? 'Other Counted WHs' : 'Allocated'}</span>
+                      <span className="font-bold text-sm text-neutral-900 dark:text-white">{initialTargetWarehouseId ? countedFacilityTotal : totalAllocatedNum}</span>
                     </div>
-                    <span className="text-neutral-400 font-sans font-bold">+</span>
+                    <span className="text-neutral-400 font-sans font-bold">{initialTargetWarehouseId ? '=' : '+'}</span>
                     <div className="text-center">
-                      <span className="block text-[10px] text-neutral-400 uppercase">Remaining</span>
+                      <span className="block text-[10px] text-neutral-400 uppercase">{initialTargetWarehouseId ? 'JW Draft Total' : 'Remaining'}</span>
                       <span
                         className={`font-bold text-sm ${
                           remainingCount === 0 && verifiedTotal > 0
@@ -786,7 +840,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                             : 'text-rose-600 dark:text-rose-400'
                         }`}
                       >
-                        {remainingCount}
+                        {initialTargetWarehouseId ? draftFacilityTotal : remainingCount}
                       </span>
                     </div>
                   </div>
@@ -808,19 +862,19 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
               </div>
 
               {/* Section 2: Store Allocation Accounts */}
-              <div className={`${initialTargetWarehouseId ? 'hidden' : ''} space-y-3`}>
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider">
                       Allocate Stock
                     </h4>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      Specify stock ledger balance for each connected store inventory account.
+                      {initialTargetWarehouseId ? 'Select one uncounted warehouse and enter its independent physical count.' : 'Specify stock ledger balance for each connected store inventory account.'}
                     </p>
                   </div>
 
                   {/* Compact Quick Actions */}
-                  <div className="flex items-center gap-1.5">
+                  <div className={`${initialTargetWarehouseId ? 'hidden' : 'flex'} items-center gap-1.5`}>
                     <button
                       type="button"
                       onClick={() => handleAssignRemaining('webstore')}
@@ -863,7 +917,8 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                     </div>
                   )}
 
-                  {activeStores.map(st => {
+                  {activeStores.filter(st=>!initialTargetWarehouseId || st.platform==='webstore'
+                    || mappedMarketplaceStores.some(mapped=>mapped.id===st.id)).map(st => {
                     const sc = storeConfigs.find(c => c.storeId === st.id);
                     const isVerificationPending = sc?.syncStatus === 'verification_pending';
                     const hasWarehouses = sc && sc.warehouses.length > 0;
@@ -973,11 +1028,12 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                                   type="number"
                                   min="0"
                                   step="1"
-                                  disabled={isInputDisabled}
+                                  disabled={isInputDisabled || (!!initialTargetWarehouseId && !!warehouseStockData[item.masterSku]?.[`direct:${st.id}`]?.isCounted)}
                                   placeholder={isInputDisabled ? '—' : '0'}
                                   value={allocations[st.id] ?? ''}
                                   onChange={e => {
                                     const val = e.target.value;
+                                    if(initialTargetWarehouseId){setSelectedCountTarget({storeId:st.id,warehouseId:`direct:${st.id}`});setPhysicalCountInput(val)}
                                     setAllocations(prev => ({
                                       ...prev,
                                       [st.id]: val
@@ -1010,7 +1066,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                         {hasWarehouses && isExpanded && (
                           <div className="px-3.5 pb-3.5 pt-1 border-t border-neutral-200 dark:border-neutral-800/80 bg-neutral-50/50 dark:bg-neutral-950/30">
                             <div className="mb-2 flex items-center justify-between text-[11px] text-neutral-500">
-                              <span>Enter Physical Allocation per registered platform warehouse:</span>
+                              <span>{initialTargetWarehouseId ? 'Enter a first count for one uncounted platform warehouse:' : 'Enter Physical Allocation per registered platform warehouse:'}</span>
                               <span className="font-mono text-[10px]">
                                 Sum: <strong className="text-neutral-800 dark:text-neutral-200">{storePhysical}u</strong>
                               </span>
@@ -1058,6 +1114,14 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                                       {/* Warehouse Numbers & Input */}
                                       <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
                                         <div className="text-right text-xs font-mono hidden sm:block">
+                                          {initialTargetWarehouseId && (
+                                            <div className="text-neutral-400 text-[10px]">
+                                              Platform: <span className="text-neutral-600 dark:text-neutral-300">{
+                                                providerReferenceLoading ? 'Checking…' : providerReferences[String(st.id)]?.[wh.id] === undefined
+                                                  ? 'Unknown' : `${providerReferences[String(st.id)][wh.id]}u`
+                                              }</span>
+                                            </div>
+                                          )}
                                           <div className="text-neutral-400 text-[10px]">
                                             Prev: <span className="text-neutral-600 dark:text-neutral-300">{whPrevPhys !== '—' ? `${whPrevPhys}u` : '—'}</span>
                                           </div>
@@ -1078,10 +1142,11 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                                             type="number"
                                             min="0"
                                             step="1"
-                                            disabled={isInputDisabled}
+                                            disabled={isInputDisabled || (!!initialTargetWarehouseId && (whBal?.isCounted || wh.status!=='active' || !wh.inventoryWarehouseId))}
                                             placeholder={isInputDisabled ? '—' : '0'}
                                             value={whEntered}
                                             onChange={e => handleWarehouseAllocationChange(st.id, wh.id, e.target.value)}
+                                            aria-label={`${st.nickname || st.name} ${wh.warehouseName} first count`}
                                             className={`w-full px-2 py-1 rounded-md border font-mono text-xs font-bold text-right transition-colors focus:outline-hidden ${
                                               whConflict
                                                 ? 'border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400 focus:ring-1 focus:ring-rose-500'

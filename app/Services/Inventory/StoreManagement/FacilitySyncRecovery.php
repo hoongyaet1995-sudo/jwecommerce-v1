@@ -85,7 +85,15 @@ final class FacilitySyncRecovery
             ]);
         }, 3);
 
-        return $this->details($storeId, $facilityId, $variantId);
+        $details = $this->details($storeId, $facilityId, $variantId);
+        // A first count has no sync task yet. Return the fresh exact-location
+        // observation for reference without treating it as a JW ledger count.
+        $details['marketplace_reported_stock'] = $observation['observed_quantity'];
+        $details['last_checked_at'] = $observation['observed_at'] ?? now()->toIso8601String();
+        $details['difference'] = $details['jw_available_stock'] === null
+            ? null : $details['jw_available_stock'] - $observation['observed_quantity'];
+
+        return $details;
     }
 
     public function resync(int $storeId, int $facilityId, int $variantId, string $operationKey): array
