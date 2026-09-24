@@ -18,7 +18,19 @@ class MarketplaceOrderInventoryService
             $store = DB::table('marketplace_stores')->where('id', $storeId)->lockForUpdate()->first();
             if (!$store || $store->status !== 'connected' || !in_array($store->platform,['shopee','lazada'],true)) return;
             if ($store->platform === 'shopee' && $store->region === 'SG') return;
-            $managed=DB::table('inventory_order_activations')->where('channel_key','marketplace:'.$storeId)->exists();
+            if (app(\App\Services\Inventory\StoreManagement\RebaselineFreeze::class)->isPaused()) {
+                $order = DB::table('marketplace_orders')->where('id', $orderId)->lockForUpdate()->first();
+                DB::table('marketplace_order_inventory')->updateOrInsert(['order_id' => $orderId], [
+                    'platform_updated_at' => $order->platform_updated_at,
+                    'status' => 'exception', 'error_code' => 'inventory_rebaseline_frozen',
+                    'updated_at' => now(),
+                ]);
+
+                return;
+            }
+            $managed=DB::table('inventory_order_activations')->where('channel_key','marketplace:'.$storeId)->exists()
+                || ($store->platform === 'lazada' && config('marketplace.multiwarehouse_orders_enabled') === true
+                    && DB::table('inventory_facility_order_activations')->where('marketplace_store_id', $storeId)->exists());
             if (!$managed && config('marketplace.inventory_accounting_enabled')!==true) return;
             $policy = DB::table('marketplace_inventory_policies')->where('store_id', $storeId)->lockForUpdate()->first();
             if (!$managed && (!$policy || !$policy->enabled || !$policy->reconciled_at || !$policy->orders_created_after)) return;

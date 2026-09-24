@@ -10,7 +10,7 @@
             'title' => $variant->title,
             'price' => (int) $variant->price,
             'compareAt' => $variant->compare_at_price ? (int) $variant->compare_at_price : null,
-            'stock' => (int) $variant->stock,
+            'stock' => app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($variant),
             'enabled' => $variant->enabled !== false,
             'options' => is_array($variant->options) ? $variant->options : [],
             'image' => $variant->image_url ?: $linkedImage?->path,

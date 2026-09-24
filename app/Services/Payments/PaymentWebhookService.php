@@ -241,6 +241,7 @@ class PaymentWebhookService
         $order = Order::query()->lockForUpdate()->findOrFail($lockedPayment->order_id);
         if ($order->status === 'pending_payment') {
             $order->update(['status' => 'paid']);
+            app(\App\Services\Inventory\OrderAllocationService::class)->reservePaid($order);
             OrderStatusHistory::query()->create([
                 'order_id' => $order->id,
                 'from_status' => 'pending_payment',

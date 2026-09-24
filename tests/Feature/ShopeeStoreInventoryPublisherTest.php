@@ -33,6 +33,10 @@ class ShopeeStoreInventoryPublisherTest extends TestCase
             'marketplace.shopee.partner_id' => '12345',
             'marketplace.shopee.partner_key' => 'secret',
             'marketplace.shopee.callback_url' => 'https://example.test/admin/marketplace/oauth/shopee/callback',
+            'marketplace.shopee.applications.sandbox' => [
+                'partner_id' => '12345', 'partner_key' => 'secret',
+                'callback_url' => 'https://example.test/admin/marketplace/oauth/shopee/callback',
+            ],
         ]);
     }
 
@@ -107,7 +111,9 @@ class ShopeeStoreInventoryPublisherTest extends TestCase
         ]);
         Http::fake(['*' => Http::sequence()->push($this->item(true))->push($this->models(6))]);
 
-        $this->assertSame(6, $publisher->observe($store, $listing)['observed_quantity']);
+        $observation = $publisher->observe($store, $listing);
+        $this->assertSame(6, $observation['observed_quantity']);
+        $this->assertSame('LOC-1', $observation['provider_location_id']);
     }
 
     public function test_expired_authorization_is_explicit(): void

@@ -67,6 +67,7 @@ class ShopeeStoreInventoryPublisher implements StoreInventoryPublisher
         }
 
         return ['provider' => 'shopee', 'requested_quantity' => $quantity, 'observed_quantity' => $observed['quantity'],
+            'provider_location_id' => $before['location_id'],
             'event_fingerprint' => hash('sha256', $eventKey), 'request_id' => $write['request_id'],
             'confirmation_method' => 'provider_readback',
             'confirmed_at' => now()->toIso8601String()];
@@ -87,6 +88,7 @@ class ShopeeStoreInventoryPublisher implements StoreInventoryPublisher
             (string) $listing->external_product_id, (string) $listing->external_variant_id,
             is_string($routeLocation) && $routeLocation !== '' ? $routeLocation : null);
 
-        return ['provider' => 'shopee', 'observed_quantity' => $observed['quantity'], 'observed_at' => now()->toIso8601String()];
+        return ['provider' => 'shopee', 'observed_quantity' => $observed['quantity'],
+            'provider_location_id' => $observed['location_id'], 'observed_at' => now()->toIso8601String()];
     }
 }

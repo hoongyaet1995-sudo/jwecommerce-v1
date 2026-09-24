@@ -84,6 +84,22 @@ class LazadaStoreInventoryPublisherTest extends TestCase
             && ! str_contains((string) ($request->data()['payload'] ?? ''), '<MultiWarehouseInventories>'));
     }
 
+    public function test_strict_facility_sync_never_falls_back_to_dropshipping_when_selected_location_is_absent(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher();
+        $listing->sync_provider_location_id = 'MY-WH-2';
+        $listing->sync_strict_facility = true;
+        Http::fake(['*' => Http::response($this->item(3, 'dropshipping'))]);
+
+        $this->expectException(RuntimeException::class);
+        try {
+            $publisher->publish($store, $listing, 7, 'strict-facility');
+        } finally {
+            Http::assertSentCount(1);
+            Http::assertNotSent(fn ($request): bool => str_contains($request->url(), '/product/stock/sellable/update'));
+        }
+    }
+
     public function test_direct_resync_with_no_pinned_warehouse_uses_single_warehouse_payload(): void
     {
         [$publisher, $store, $listing] = $this->publisher();

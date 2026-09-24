@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ProductVariant;
 use App\Services\CartViewData;
 use App\Services\CustomerCouponEligibilityService;
+use App\Services\Inventory\WebsiteInventoryAvailability;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -27,7 +28,7 @@ class CartController extends Controller
         $data = $request->validate(['variant_id' => ['required', 'exists:product_variants,id'], 'quantity' => ['required', 'integer', 'min:1'], 'checkout' => ['nullable', 'boolean']]);
         $variant = ProductVariant::query()->findOrFail($data['variant_id']);
 
-        $available = app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($variant);
+        $available = app(WebsiteInventoryAvailability::class)->quantity($variant);
         if (! $variant->enabled || $available === null || $available < 1) {
             throw ValidationException::withMessages(['variant_id' => 'This SKU is currently out of stock.']);
         }
@@ -48,7 +49,7 @@ class CartController extends Controller
     public function update(Request $request, ProductVariant $variant): RedirectResponse
     {
         $request->validate(['quantity' => ['required', 'integer', 'min:1']]);
-        $available = app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($variant);
+        $available = app(WebsiteInventoryAvailability::class)->quantity($variant);
         if (! $variant->enabled || $available === null || $request->integer('quantity') > $available) {
             throw ValidationException::withMessages(['quantity' => 'Requested quantity exceeds available stock.']);
         }

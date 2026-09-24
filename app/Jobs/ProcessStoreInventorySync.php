@@ -27,6 +27,9 @@ final class ProcessStoreInventorySync implements ShouldQueue
 
     public function handle(StoreInventoryPublisher $publisher, ?StoreSkuSyncReadiness $readiness = null, ?StoreSyncAttemptLedger $attempts = null): void
     {
+        if (app(\App\Services\Inventory\StoreManagement\RebaselineFreeze::class)->isPaused()) {
+            return;
+        }
         $readiness ??= app(StoreSkuSyncReadiness::class);
         $attempts ??= app(StoreSyncAttemptLedger::class);
         $context = DB::transaction(function () use ($readiness, $attempts): ?array {

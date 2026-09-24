@@ -29,6 +29,7 @@ class CartViewData
         $items = $variants->map(fn (ProductVariant $variant): array => [
             'variant' => $variant,
             'quantity' => (int) $quantities[$variant->id],
+            'available' => app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($variant),
         ]);
         $coupon = Coupon::query()
             ->currentlyValid()

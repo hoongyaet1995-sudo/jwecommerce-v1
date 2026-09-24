@@ -1149,7 +1149,7 @@ const installStorefrontVariantSelectors = () => {
             const enabled = variant.enabled !== false;
             const label = variant.label || variant.title;
             const availability = outOfStock
-                ? 'Out of Stock'
+                ? (variant.stock == null ? 'Awaiting stock verification' : 'Out of Stock')
                 : Number(variant.stock) <= 5
                     ? `Low Stock (Only ${variant.stock} remaining)`
                     : `In Stock (${variant.stock} units)`;
@@ -1344,6 +1344,7 @@ const installQuickAddVariantModals = () => {
         };
         const isOutOfStock = (variant) => !variant || variant.enabled === false || Number(variant.stock || 0) < 1;
         const availability = (variant) => {
+            if (variant?.stock == null) return { text: 'Awaiting stock verification', tone: 'rose', dot: 'bg-rose-500' };
             if (isOutOfStock(variant)) return { text: 'Out of Stock', tone: 'rose', dot: 'bg-rose-500' };
             if (Number(variant.stock) <= 5) return { text: `Low Stock (Only ${variant.stock} remaining)`, tone: 'amber', dot: 'bg-amber-400' };
             return { text: `In Stock (${variant.stock} units)`, tone: 'emerald', dot: 'bg-emerald-400' };
@@ -1424,7 +1425,7 @@ const installQuickAddVariantModals = () => {
             const dot = modal.querySelector('[data-quick-add-availability-dot]');
             dot?.classList.remove('bg-rose-500', 'bg-amber-400', 'bg-emerald-400');
             dot?.classList.add(state.dot);
-            setText(modal, '[data-quick-add-stock-note]', Number(variant.stock) > 0 ? `${variant.stock} units ready` : 'Zero stock');
+            setText(modal, '[data-quick-add-stock-note]', variant.stock == null ? 'Awaiting stock verification' : Number(variant.stock) > 0 ? `${variant.stock} units ready` : 'Zero stock');
             setHeroImage(variant.optionImage || variant.image);
             modal.querySelector('[data-quick-add-sold-out-overlay]')?.classList.toggle('hidden', !isOutOfStock(variant));
             const confirmText = modal.querySelector('[data-quick-add-confirm-text]');

@@ -8,7 +8,7 @@
             'label' => $variant->color_name ?: $variant->title,
             'price' => (int) $variant->price,
             'compareAt' => $variant->compare_at_price ? (int) $variant->compare_at_price : null,
-            'stock' => (int) $variant->stock,
+            'stock' => app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($variant),
             'enabled' => $variant->enabled !== false,
             'visualType' => $variant->visual_type,
             'colorCode' => $variant->color_code ?: $variant->color_hex,

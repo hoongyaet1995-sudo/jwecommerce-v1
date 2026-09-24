@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    color-scheme: light;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.35) transparent;
+  }
+  
+  :root.dark {
+    color-scheme: dark;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
+  }
+
+  body {
+    @apply antialiased transition-colors duration-200;
+  }
+
+  /* Universal Custom Sleek Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.35);
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    background-clip: content-box;
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(107, 114, 128, 0.6);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Eliminate ugly native Windows/Linux browser scrollbar arrow buttons */
+  ::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  /* Dark mode scrollbars */
+  .dark ::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.25);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(203, 213, 225, 0.5);
+  }
+}
+
+/* Scrollbar Utility Classes */
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin !important;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px !important;
+  height: 4px !important;
+}
+
+.scrollbar-subtle::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.scrollbar-subtle::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.25);
+  border-radius: 9999px;
+}
+
+.dark .scrollbar-subtle::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.2);
+}
+
+.scrollbar-subtle::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.5);
+}
+
+.dark .scrollbar-subtle::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.4);
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+}
+
+.animate-marquee-slow {
+  display: flex;
+  width: max-content;
+  animation: marquee 45s linear infinite;
+}
+
+.animate-marquee-fast {
+  display: flex;
+  width: max-content;
+  animation: marquee 16s linear infinite;
+}
+
+.animate-marquee:hover,
+.animate-marquee-slow:hover,
+.animate-marquee-fast:hover {
+  animation-play-state: paused;
+}
+

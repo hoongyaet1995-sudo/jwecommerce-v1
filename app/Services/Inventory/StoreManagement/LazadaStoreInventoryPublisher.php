@@ -39,7 +39,17 @@ class LazadaStoreInventoryPublisher implements StoreInventoryPublisher
             : DB::table('inventory_fulfillment_routes')->where('channel_key', 'marketplace:'.$store->id)
                 ->where('is_enabled', true)->value('platform_location_id');
         $warehouse = is_string($routeLocation) && $routeLocation !== '' ? $routeLocation : null;
-        $before = $this->stockQuantity($token, $listing, $warehouse, (int) $store->id);
+        $strictFacility = ($listing->sync_strict_facility ?? false) === true;
+        if ($strictFacility && $warehouse === null) {
+            throw new RuntimeException('A verified provider facility is required for this stock task.');
+        }
+        $before = $strictFacility
+            ? $this->client->exactStockQuantity($token, (string) $listing->external_product_id,
+                (string) $listing->external_variant_id, $warehouse, (int) $store->id)
+            : $this->stockQuantity($token, $listing, $warehouse, (int) $store->id);
+        if ($strictFacility && $before['warehouse_code'] !== $warehouse) {
+            throw new RuntimeException('Provider stock location changed before the write.');
+        }
         if (property_exists($listing, 'sync_task_id') && ($listing->sync_provider_location_id ?? null) === null
             && $before['warehouse_code'] !== null) {
             DB::table('inventory_store_sync_tasks')->where('id', $listing->sync_task_id)
@@ -61,6 +71,7 @@ class LazadaStoreInventoryPublisher implements StoreInventoryPublisher
         }
 
         return ['provider' => 'lazada', 'requested_quantity' => $quantity, 'observed_quantity' => $observed['quantity'],
+            'provider_location_id' => $before['warehouse_code'],
             'event_fingerprint' => hash('sha256', $eventKey), 'request_id' => $write['request_id'],
             'confirmation_method' => 'provider_readback',
             'confirmed_at' => now()->toIso8601String()];
@@ -76,10 +87,22 @@ class LazadaStoreInventoryPublisher implements StoreInventoryPublisher
         $routeLocation = property_exists($listing, 'sync_provider_location_id') ? $listing->sync_provider_location_id
             : DB::table('inventory_fulfillment_routes')->where('channel_key', 'marketplace:'.$store->id)
                 ->where('is_enabled', true)->value('platform_location_id');
-        $observed = $this->stockQuantity($token, $listing,
-            is_string($routeLocation) && $routeLocation !== '' ? $routeLocation : null, (int) $store->id);
+        $warehouse = is_string($routeLocation) && $routeLocation !== '' ? $routeLocation : null;
+        if (($listing->sync_strict_facility ?? false) === true) {
+            if ($warehouse === null) {
+                throw new RuntimeException('A verified provider facility is required for this stock read.');
+            }
+            $observed = $this->client->exactStockQuantity($token, (string) $listing->external_product_id,
+                (string) $listing->external_variant_id, $warehouse, (int) $store->id);
+            if ($observed['warehouse_code'] !== $warehouse) {
+                throw new RuntimeException('Provider stock read returned another facility.');
+            }
+        } else {
+            $observed = $this->stockQuantity($token, $listing, $warehouse, (int) $store->id);
+        }
 
-        return ['provider' => 'lazada', 'observed_quantity' => $observed['quantity'], 'observed_at' => now()->toIso8601String()];
+        return ['provider' => 'lazada', 'observed_quantity' => $observed['quantity'],
+            'provider_location_id' => $observed['warehouse_code'], 'observed_at' => now()->toIso8601String()];
     }
 
     private function stockQuantity(string $token, object $listing, ?string $warehouse, int $storeId): array

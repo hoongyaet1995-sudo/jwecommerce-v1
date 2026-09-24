@@ -8,6 +8,7 @@ class WebsiteInventoryAvailability
 {
     public function quantity(ProductVariant $variant): ?int
     {
+        if (app(\App\Services\Inventory\StoreManagement\RebaselineFreeze::class)->isPaused()) return 0;
         $configuration=DB::table('inventory_configuration')->where('id',1)->first();
         if(in_array($configuration?->operating_mode,['shared_pool','independent_stores'],true)
             && DB::table('inventory_store_accounts')->where('account_key','website')->where('management_status','managed')->exists()){

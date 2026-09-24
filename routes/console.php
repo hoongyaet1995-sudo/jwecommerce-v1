@@ -99,6 +99,13 @@ Artisan::command('marketplace:sync-managed-stock', function () {
 
 Schedule::command('marketplace:sync-managed-stock')->everyMinute()->withoutOverlapping();
 
+Artisan::command('marketplace:discover-facilities', function () {
+    $this->line(json_encode(app(\App\Services\Inventory\StoreManagement\FacilityDiscoverySweep::class)->run(), JSON_THROW_ON_ERROR));
+})->purpose('Verify one connected marketplace store warehouse topology without changing inventory');
+
+Schedule::command('marketplace:discover-facilities')->everyFiveMinutes()->withoutOverlapping()
+    ->when(fn () => config('marketplace.multiwarehouse_discovery_enabled') === true);
+
 Artisan::command('marketplace:prune-oauth-seeds', function () {
     $count=\App\Models\MarketplaceOAuthBatch::whereNotNull('seed_refresh_token')
         ->where('seed_refresh_expires_at','<=',now())

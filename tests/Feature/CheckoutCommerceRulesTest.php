@@ -15,6 +15,46 @@ class CheckoutCommerceRulesTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_managed_checkout_defers_reservation_and_unpaid_cancel_does_not_restore_legacy(): void
+    {
+        $variant=$this->variant();
+        $this->configureStandardShipping();$this->configureBankTransfer();
+        $balance=app(\App\Services\Inventory\InventoryBalanceProvisioner::class)->provision($variant->id,'shared',null);
+        \Illuminate\Support\Facades\DB::table('inventory_configuration')->where('id',1)->update(['operating_mode'=>'shared_pool']);
+        \Illuminate\Support\Facades\DB::table('inventory_balances')->where('id',$balance['balance_id'])->update(['physical_stock'=>20,'safety_stock'=>2,'counted_at'=>now()]);
+        $activation=app(\App\Services\Inventory\ManagedInventoryActivation::class)->activate('website',$balance['balance_id'],\App\Models\User::factory()->create(['is_admin'=>true]),'New orders');
+        $this->travel(2)->seconds();
+        $variant->update(['stock'=>0]);
+        request()->setLaravelSession(app('session.store'));
+        $quickAdd=\Illuminate\Support\Facades\Blade::render('<x-storefront.quick-add-variant-modal :product="$product" :variants="$variants" :images="$images" />',[
+            'product'=>$variant->product,'variants'=>collect([$variant->fresh()]),'images'=>collect(),
+        ]);
+        $this->assertStringContainsString('"stock":18',$quickAdd);
+        $this->get(route('storefront.products.show',['handle'=>$variant->product->handle]))->assertOk()->assertSee('In Stock (18 units)',false);
+        $this->post('/cart/items',['variant_id'=>$variant->id,'quantity'=>2])->assertRedirect('/cart')->assertSessionHasNoErrors();
+        $this->get('/cart')->assertOk()->assertSee('name="quantity" value="3"',false);
+        $this->get('/cart/drawer')->assertOk()->assertSee('name="quantity" value="3"',false);
+        $this->withSession(['cart'=>[$variant->id=>2]])->post('/checkout',$this->checkoutData('bank_transfer'))->assertRedirect('/order/success');
+        $order=\App\Models\Order::query()->sole();
+        $this->assertDatabaseHas('order_items',['order_id'=>$order->id,'inventory_order_activation_id'=>$activation['id']]);
+        $this->assertDatabaseCount('stock_allocations',0);
+        $this->assertEquals(0,$variant->fresh()->stock);
+        app(\App\Services\CheckoutService::class)->transition($order,'cancelled');
+        $this->assertEquals(0,$variant->fresh()->stock);
+        $this->assertDatabaseCount('inventory_movements',0);
+        $this->withSession(['cart'=>[$variant->id=>2]])->post('/checkout',$this->checkoutData('bank_transfer'))->assertRedirect('/order/success');
+        $paid=\App\Models\Order::query()->latest('id')->first();
+        $checkout=app(\App\Services\CheckoutService::class);
+        $checkout->transition($paid,'paid');$checkout->transition($paid,'paid');
+        $this->assertDatabaseCount('stock_allocations',1);
+        $this->assertSame(16,app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($variant->fresh()));
+        $checkout->transition($paid,'cancelled');
+        $this->assertSame(18,app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($variant->fresh()));
+        $this->assertEquals(0,$variant->fresh()->stock);
+        $this->withSession(['cart'=>[$variant->id=>2]])->patch('/cart/items/'.$variant->id,['quantity'=>19])->assertSessionHasErrors('quantity');
+        $this->assertSame(2,session('cart.'.$variant->id));
+    }
+
     public function test_checkout_cannot_sell_units_held_by_a_marketplace_allocation(): void
     {
         $variant = $this->variant();

@@ -65,8 +65,8 @@
                         <span class="-mx-7 w-6 text-center font-mono text-xs text-zinc-700 dark:text-zinc-200">{{ $item['quantity'] }}</span>
                         <form method="POST" action="{{ route('cart.items.update', $variant) }}" data-cart-drawer-form class="flex items-center rounded-lg border border-zinc-200 bg-white p-0.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                             @csrf @method('PATCH')
-                            <input type="hidden" name="quantity" value="{{ min($variant->stock, $item['quantity'] + 1) }}" />
-                            <button type="submit" aria-label="Increase quantity" @disabled($item['quantity'] >= $variant->stock) class="grid h-5 w-5 place-items-center text-zinc-500 transition hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-400 dark:hover:text-white"><i data-lucide="plus" class="h-3 w-3"></i></button>
+                            <input type="hidden" name="quantity" value="{{ min($item['available'], $item['quantity'] + 1) }}" />
+                            <button type="submit" aria-label="Increase quantity" @disabled($item['quantity'] >= $item['available']) class="grid h-5 w-5 place-items-center text-zinc-500 transition hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-400 dark:hover:text-white"><i data-lucide="plus" class="h-3 w-3"></i></button>
                         </form>
                         <span class="font-mono text-xs font-bold text-zinc-900 dark:text-zinc-100">@storefrontMoney($variant->price * $item['quantity'])</span>
                     </div>

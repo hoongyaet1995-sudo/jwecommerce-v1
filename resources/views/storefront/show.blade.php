@@ -1,6 +1,7 @@
 <x-layouts.app title="{{ $product->title }}{{ filled($pdpBrand) ? ' | '.$pdpBrand : '' }}">
     @php
-        $cartEnabled = $selectedVariant && $selectedVariant->stock > 0;
+        $selectedAvailable = $selectedVariant ? app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($selectedVariant) : null;
+        $cartEnabled = $selectedVariant && $selectedAvailable > 0;
         $productUrl = route('storefront.products.show', ['handle' => $product->handle]);
         $fallbackImage = asset('images/image-not-found.png');
         $price = $selectedVariant?->price ?? $product->base_price;
@@ -42,7 +43,7 @@
                     <span>/</span>
                     <span class="max-w-xs truncate font-medium text-zinc-900 dark:text-zinc-200">{{ $product->title }}</span>
                 </div>
-                @if($selectedVariant)<span data-pdp-breadcrumb-availability class="hidden font-mono text-[11px] text-zinc-500 sm:block">{{ $selectedVariant->stock > 0 ? 'In Stock ('.$selectedVariant->stock.' units)' : 'Out of Stock' }}</span>@endif
+                @if($selectedVariant)<span data-pdp-breadcrumb-availability class="hidden font-mono text-[11px] text-zinc-500 sm:block">{{ $selectedAvailable > 0 ? 'In Stock ('.$selectedAvailable.' units)' : ($selectedAvailable === null ? 'Awaiting stock verification' : 'Out of Stock') }}</span>@endif
             </div>
         </div>
 
@@ -111,7 +112,7 @@
                         <input data-pdp-variant-input type="hidden" name="variant_id" value="{{ $selectedVariant?->id }}" />
                         <x-storefront.variant-selector :product="$product" :variants="$product->variants" :images="$images" :selected-variant="$selectedVariant" />
                         <div class="mt-8 flex gap-3">
-                            <input name="quantity" type="number" value="1" min="1" max="{{ max(1, $selectedVariant?->stock ?? 1) }}" class="w-28 rounded-xl border border-zinc-200 bg-white px-4 py-4 text-center font-mono text-zinc-900 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-white" />
+                            <input name="quantity" type="number" value="1" min="1" max="{{ max(1, $selectedAvailable ?? 1) }}" class="w-28 rounded-xl border border-zinc-200 bg-white px-4 py-4 text-center font-mono text-zinc-900 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-white" />
                             <button data-pdp-add-to-cart @disabled(!$cartEnabled) class="flex-1 rounded-xl bg-zinc-900 px-5 py-4 text-base font-black text-white transition hover:bg-amber-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-amber-400">{{ $cartEnabled ? 'Add to Cart · '.app(\App\Support\StorefrontCurrencyContext::class)->format($price) : 'Sold out' }}</button>
                         </div>
                     </form>

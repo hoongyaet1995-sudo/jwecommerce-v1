@@ -313,16 +313,16 @@ final class LazadaClient
             }
             return $payload['result']['data'];
         }
+        $providerCode=is_array($payload)?strtolower((string)($payload['code']??'')):'';
+        if(in_array($response->status(),[401,403],true)||str_contains($providerCode,'token')||str_contains($providerCode,'auth')||str_contains($providerCode,'expired')) {
+            throw new StoreInventoryAuthorizationExpired('Lazada authorization expired. Reconnect this store.');
+        }
         if(in_array($path,['/seller/warehouse/get','/rc/warehouse/get','/rc/warehouse/detail/get'],true)) {
             if(!$response->successful()||!is_array($payload)||!in_array($payload['code']??null,['0',0],true)
                 ||($payload['result']['success']??null)!==true||!is_array($payload['result']['module']??null)) {
                 throw new RuntimeException('Lazada warehouse request failed or returned an incomplete response.');
             }
             return $payload['result']['module'];
-        }
-        $providerCode=is_array($payload)?strtolower((string)($payload['code']??'')):'';
-        if(in_array($response->status(),[401,403],true)||str_contains($providerCode,'token')||str_contains($providerCode,'auth')||str_contains($providerCode,'expired')) {
-            throw new StoreInventoryAuthorizationExpired('Lazada authorization expired. Reconnect this store.');
         }
         if(!$response->successful()||!is_array($payload)||!in_array($payload['code']??null,['0',0],true)
             ||!is_array($payload['data']??null)) {

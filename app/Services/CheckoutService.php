@@ -10,6 +10,12 @@ use App\Models\OrderPayment;
 use App\Models\OrderStatusHistory;
 use App\Models\OrderTaxLine;
 use App\Models\ProductVariant;
+use App\Services\Inventory\InventoryMutationService;
+use App\Services\Inventory\ManagedInventoryActivation;
+use App\Services\Inventory\OrderAllocationService;
+use App\Services\Inventory\StockAllocationService;
+use App\Services\Inventory\StoreManagement\OrderInventoryRouter;
+use App\Services\Inventory\WebsiteInventoryAvailability;
 use App\Services\Notifications\OrderNotificationMilestoneService;
 use App\Services\Payments\PaymentProofService;
 use App\Services\Shipping\EasyParcelBookingGuard;
@@ -54,6 +60,7 @@ class CheckoutService
         $currencySnapshot ??= app(StorefrontCurrencyContext::class)->snapshot();
 
         return DB::transaction(function () use ($email, $items, $coupon, $shippingAddress, $gateway, $delivery, $currencySnapshot, $paymentProof, $bankAccountId): Order {
+            app(\App\Services\Inventory\StoreManagement\RebaselineFreeze::class)->assertNewReservationAllowed();
             $normalizedEmail = strtolower(trim($email));
             $customer = Customer::query()
                 ->whereRaw('lower(email) = ?', [$normalizedEmail])
@@ -70,11 +77,10 @@ class CheckoutService
             }
             $lines = $items->map(function (array $item): array {
                 $variant = ProductVariant::query()->lockForUpdate()->findOrFail($item['variant']->id);
-                $available = app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($variant);
+                $available = app(WebsiteInventoryAvailability::class)->quantity($variant);
                 if ($item['quantity'] < 1 || $available === null || $available < $item['quantity']) {
                     throw new RuntimeException('Requested quantity is unavailable.');
                 }
-
 
                 return ['variant' => $variant, 'quantity' => $item['quantity'], 'line_total' => $variant->price * $item['quantity']];
             });
@@ -104,14 +110,21 @@ class CheckoutService
                 OrderItem::query()->create(['order_id' => $order->id, 'product_variant_id' => $variant->id, 'sku' => $variant->sku, 'title' => $product->title, 'variant_title' => $variant->title, 'image_url' => $product->images->sortBy('position')->first()?->path, 'package_snapshot' => ['weight_grams' => $variant->weight_grams, 'length_cm' => $variant->package_length_cm, 'width_cm' => $variant->package_width_cm, 'height_cm' => $variant->package_height_cm], 'unit_price' => $variant->price, 'quantity' => $line['quantity'], 'line_total' => $line['line_total']]);
             }
             foreach ($order->items as $inventoryItem) {
-                if ($this->usesManagedStoreInventory()) {
-                    $lineKey = 'order-item:'.$inventoryItem->id;
-                    $router = app(\App\Services\Inventory\StoreManagement\OrderInventoryRouter::class);
-                    $router->register('website', $lineKey, (int) $inventoryItem->product_variant_id, (int) $inventoryItem->quantity);
-                    $router->apply('website', $lineKey, 'checkout:'.$lineKey.':reserved', 'reserved', (int) $inventoryItem->quantity);
+                $activation = app(ManagedInventoryActivation::class)->eligible('website', (int) $inventoryItem->product_variant_id, $order->created_at);
+                if ($activation) {
+                    DB::table('order_items')->where('id', $inventoryItem->id)->update(['inventory_order_activation_id' => $activation['id']]);
+
                     continue;
                 }
-                app(\App\Services\Inventory\StockAllocationService::class)->reserve('order',(int)$order->id,'item:'.$inventoryItem->id,(int)$inventoryItem->product_variant_id,(int)$inventoryItem->quantity);
+                if ($this->usesManagedStoreInventory()) {
+                    $lineKey = 'order-item:'.$inventoryItem->id;
+                    $router = app(OrderInventoryRouter::class);
+                    $router->register('website', $lineKey, (int) $inventoryItem->product_variant_id, (int) $inventoryItem->quantity);
+                    $router->apply('website', $lineKey, 'checkout:'.$lineKey.':reserved', 'reserved', (int) $inventoryItem->quantity);
+
+                    continue;
+                }
+                app(StockAllocationService::class)->reserve('order', (int) $order->id, 'item:'.$inventoryItem->id, (int) $inventoryItem->product_variant_id, (int) $inventoryItem->quantity);
             }
             $this->persistTaxSnapshot($order, $summary['tax_quote']);
             $payment = $this->paymentAttempts->createPendingPayment($order, $method, $order->currency, $bankAccountId);
@@ -190,16 +203,21 @@ class CheckoutService
                     if ($item->product_variant_id) {
                         $storeLine = 'order-item:'.$item->id;
                         if (DB::table('inventory_store_order_lines')->where('line_key', $storeLine)->exists()) {
-                            app(\App\Services\Inventory\StoreManagement\OrderInventoryRouter::class)
+                            app(OrderInventoryRouter::class)
                                 ->apply('website', $storeLine, 'checkout:'.$storeLine.':cancelled', 'cancelled', (int) $item->quantity);
+
                             continue;
                         }
-                        $allocation=DB::table('stock_allocations')->where('owner_type','order')->where('owner_id',$locked->id)->where('line_key','item:'.$item->id)->first();
-                        if($allocation){
-                            app(\App\Services\Inventory\StockAllocationService::class)->release((int)$allocation->id);
-                        }else{
-                            if(DB::table('inventory_configuration')->where('id',1)->value('accounting_enabled'))throw new InvalidArgumentException('Existing order requires warehouse reconciliation before cancellation.');
-                            app(\App\Services\Inventory\InventoryMutationService::class)->change((int)$item->product_variant_id, (int)$item->quantity, 'order-item:'.$item->id.':cancel', 'Order cancellation', $userId);
+                        $allocation = DB::table('stock_allocations')->where('owner_type', 'order')->where('owner_id', $locked->id)->where('line_key', 'item:'.$item->id)->first();
+                        if ($allocation) {
+                            app(StockAllocationService::class)->release((int) $allocation->id);
+                        } elseif ($item->inventory_order_activation_id) {
+                            continue;
+                        } else {
+                            if (DB::table('inventory_configuration')->where('id', 1)->value('accounting_enabled')) {
+                                throw new InvalidArgumentException('Existing order requires warehouse reconciliation before cancellation.');
+                            }
+                            app(InventoryMutationService::class)->change((int) $item->product_variant_id, (int) $item->quantity, 'order-item:'.$item->id.':cancel', 'Order cancellation', $userId);
                         }
                     }
                 }
@@ -212,8 +230,13 @@ class CheckoutService
                 $locked->payments()->where('status', 'pending')->update(['status' => 'cancelled']);
             }
             $from = $locked->status;
-            if($status==='shipped')$this->consumeOrderAllocations($locked);
+            if ($status === 'shipped') {
+                $this->consumeOrderAllocations($locked);
+            }
             $locked->update(['status' => $status]);
+            if ($status === 'paid') {
+                app(OrderAllocationService::class)->reservePaid($locked);
+            }
             $history = OrderStatusHistory::query()->create(['order_id' => $locked->id, 'from_status' => $from, 'to_status' => $status, 'user_id' => $userId, 'note' => $note]);
             if ($notifyCustomer && $status === 'cancelled') {
                 $this->recordNotification(
@@ -265,7 +288,7 @@ class CheckoutService
         });
     }
 
-    private function consumeOrderAllocations(Order $order):void
+    private function consumeOrderAllocations(Order $order): void
     {
         $managed = false;
         foreach ($order->items()->orderBy('id')->get() as $item) {
@@ -274,13 +297,13 @@ class CheckoutService
                 continue;
             }
             $managed = true;
-            app(\App\Services\Inventory\StoreManagement\OrderInventoryRouter::class)
+            app(OrderInventoryRouter::class)
                 ->apply('website', $lineKey, 'checkout:'.$lineKey.':shipped', 'shipped', (int) $item->quantity);
         }
         if ($managed) {
             return;
         }
-        app(\App\Services\Inventory\OrderAllocationService::class)->consume($order);
+        app(OrderAllocationService::class)->consume($order);
     }
 
     /** @param array<string, mixed> $extra */

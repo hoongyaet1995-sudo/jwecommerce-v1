@@ -25,8 +25,19 @@ final class ReviewService
             throw ValidationException::withMessages(['kind' => 'Choose count, intake, correction, or transfer.']);
         }
         if ($kind === 'count' && empty($input['balance_id']) && ! empty($input['variant_id'])) {
-            $resolved = $this->accounts->balance((int) $input['variant_id'], (string) ($input['channel_key'] ?? 'website'));
-            $input['balance_id'] = $resolved['id'];
+            $epochId = DB::table('inventory_configuration')->where('id', 1)->value('active_rebaseline_epoch_id');
+            if ($epochId !== null) {
+                $warehouseId = $this->epochPhysicalRoute(
+                    (string) ($input['channel_key'] ?? 'website'), (int) $input['variant_id']);
+                $input['balance_id'] = DB::table('inventory_balances as balance')
+                    ->join('inventory_pools as pool', 'pool.id', '=', 'balance.inventory_pool_id')
+                    ->where('pool.kind', 'facility')->where('pool.warehouse_id', $warehouseId)
+                    ->where('balance.product_variant_id', (int) $input['variant_id'])
+                    ->where('balance.rebaseline_epoch_id', $epochId)->value('balance.id');
+            } else {
+                $resolved = $this->accounts->balance((int) $input['variant_id'], (string) ($input['channel_key'] ?? 'website'));
+                $input['balance_id'] = $resolved['id'];
+            }
         }
 
         return DB::transaction(function () use ($actor, $kind, $input): array {
@@ -43,6 +54,11 @@ final class ReviewService
             DB::table('product_variants')->where('id', $identity->product_variant_id)->lockForUpdate()->first();
             $locked = DB::table('inventory_balances')->whereIn('id', $balanceIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             abort_unless($locked->count() === count(array_unique($balanceIds)), 404);
+            if ($configuration->active_rebaseline_epoch_id !== null) {
+                $this->assertEpochWebsiteCount($configuration, $kind, $input, $locked->all());
+            } else {
+                $this->rejectFacilityBalances($locked->all());
+            }
             if ($kind === 'transfer') {
                 $source = $locked[(int) $input['source_balance_id']];
                 $destination = $locked[(int) $input['destination_balance_id']];
@@ -127,6 +143,11 @@ final class ReviewService
             DB::table('product_variants')->where('id', $identity->product_variant_id)->lockForUpdate()->first();
             $locked = DB::table('inventory_balances')->whereIn('id', $balanceIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             abort_unless($locked->count() === count(array_unique($balanceIds)), 404);
+            if ($configuration->active_rebaseline_epoch_id !== null) {
+                $this->assertEpochWebsiteCount($configuration, $review->kind, $payload, $locked->all());
+            } else {
+                $this->rejectFacilityBalances($locked->all());
+            }
             foreach ($locked as $balance) {
                 if ((int) $balance->version !== (int) ($versions[(string) $balance->id] ?? -1)) {
                     $this->conflict('balance_changed', 'Inventory changed after review.', 'Review current stock again.');
@@ -156,7 +177,7 @@ final class ReviewService
                 'receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'created_at' => now(), 'updated_at' => now(),
             ]);
             $created = true;
-            if ($review->kind === 'count') {
+            if ($review->kind === 'count' && $configuration->active_rebaseline_epoch_id === null) {
                 app(CatalogInventoryState::class)
                     ->markVerified((int) $identity->product_variant_id, $operationId);
                 app(CatalogStockProjection::class)
@@ -173,7 +194,7 @@ final class ReviewService
                 DB::table('inventory_store_operations')->where('id', $operationId)->update([
                     'receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'updated_at' => now(),
                 ]);
-            } else {
+            } elseif ($configuration->active_rebaseline_epoch_id === null) {
                 $fresh = DB::table('inventory_balances')->find($result[0]['id']);
                 $receipt['external_stages'] = $this->outbox->enqueueMutation($operationId, $fresh);
                 DB::table('inventory_store_operations')->where('id', $operationId)->update([
@@ -206,6 +227,68 @@ final class ReviewService
         $allowed = $actor->exists && $actor->is_admin
             && ($actor->is_super_admin || $actor->permissions()->where('permission', 'inventory.edit')->exists());
         abort_unless($allowed, 403);
+    }
+
+    private function rejectFacilityBalances(array $balances): void
+    {
+        $poolIds = array_column($balances, 'inventory_pool_id');
+        $pools = DB::table('inventory_pools')->whereIn('id', $poolIds)->get();
+        if ($pools->contains(fn (object $pool): bool => $pool->kind === 'facility')) {
+            throw ValidationException::withMessages(['balance_id' =>
+                'Use a verified facility-specific inventory action for this stock balance.']);
+        }
+        if (config('marketplace.multiwarehouse_operations_enabled') === true) {
+            foreach ($pools as $pool) {
+                if ($pool->kind !== 'store' || $pool->marketplace_store_id === null) {
+                    continue;
+                }
+                $scan = DB::table('marketplace_store_facility_scans')
+                    ->where('marketplace_store_id', $pool->marketplace_store_id)->first();
+                if (! $scan || $scan->status !== 'verified' || $scan->topology !== 'no_warehouse') {
+                    throw ValidationException::withMessages(['balance_id' =>
+                        'Verify this store has no platform warehouse before using store-level stock actions.']);
+                }
+            }
+        }
+    }
+
+    private function assertEpochWebsiteCount(object $configuration, string $kind, array $input, array $balances): void
+    {
+        $epochId = $configuration->active_rebaseline_epoch_id;
+        $balance = count($balances) === 1 ? reset($balances) : null;
+        $warehouseId = $balance ? $this->epochPhysicalRoute(
+            (string) ($input['channel_key'] ?? 'website'), (int) $balance->product_variant_id) : null;
+        $pool = $balance ? DB::table('inventory_pools')->find($balance->inventory_pool_id) : null;
+        if ($kind !== 'count' || ! $warehouseId
+            || ! $balance || $balance->rebaseline_epoch_id !== $epochId
+            || $balance->counted_at !== null || $balance->physical_stock !== null
+            || ! $pool || $pool->kind !== 'facility' || (int) $pool->warehouse_id !== (int) $warehouseId
+            || DB::table('inventory_rebaseline_epochs')->where('id', $epochId)->value('status') !== 'counting') {
+            throw ValidationException::withMessages(['balance_id' =>
+                'Only First Count on a verified new-epoch physical route is available during rebaseline.']);
+        }
+    }
+
+    private function epochPhysicalRoute(string $channelKey, int $variantId): ?int
+    {
+        if ($channelKey !== 'website') {
+            if (! preg_match('/\Amarketplace:([1-9][0-9]*)\z/D', $channelKey, $match)) {
+                return null;
+            }
+            $storeId = (int) $match[1];
+            if (! DB::table('marketplace_stores')->where('id', $storeId)->where('status', 'connected')->exists()
+                || ! DB::table('marketplace_store_facility_scans')->where('marketplace_store_id', $storeId)
+                    ->where('status', 'verified')->where('topology', 'no_warehouse')->exists()
+                || DB::table('marketplace_variant_mappings')->where('store_id', $storeId)
+                    ->where('product_variant_id', $variantId)->count() !== 1) {
+                return null;
+            }
+        }
+        $warehouseId = DB::table('inventory_fulfillment_routes')->where('channel_key', $channelKey)
+            ->where('is_enabled', true)->value('warehouse_id');
+
+        return $warehouseId && DB::table('inventory_warehouses')->where('id', $warehouseId)
+            ->where('status', 'active')->where('is_active', true)->exists() ? (int) $warehouseId : null;
     }
 
     private function conflict(string $code, string $message, string $nextAction): never

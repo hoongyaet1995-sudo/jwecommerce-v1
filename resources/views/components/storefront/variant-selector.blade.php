@@ -1,6 +1,7 @@
 @props(['product', 'variants', 'images', 'selectedVariant'])
 
 @php
+    $selectedAvailable = $selectedVariant ? app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($selectedVariant) : null;
     $payload = $variants->values()->map(function ($variant) use ($images) {
         $linkedImage = $images->firstWhere('product_variant_id', $variant->id);
 
@@ -10,7 +11,7 @@
             'title' => $variant->title,
             'price' => (int) $variant->price,
             'compareAt' => $variant->compare_at_price ? (int) $variant->compare_at_price : null,
-            'stock' => (int) $variant->stock,
+            'stock' => app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($variant),
             'enabled' => $variant->enabled !== false,
             'options' => is_array($variant->options) ? $variant->options : [],
             'image' => $variant->image_url ?: $linkedImage?->path,
@@ -51,6 +52,7 @@
     // Legacy products created before per-variant option maps stored their exact
     // combination only in the title ("Color / Material"). Normalize only an
     // unambiguous, ordered title that matches the persisted option values.
+    $selectedAvailable = $selectedVariant ? app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($selectedVariant) : null;
     $payload = $payload->map(function (array $variant) use ($selectorOptions) {
         if (filled($variant['options'])) {
             return $variant;
@@ -100,9 +102,9 @@
             <span class="font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">Finish / Option:</span>
             <strong data-pdp-selected-label class="text-amber-600 dark:text-amber-400 font-sans font-bold">{{ $selectedVariant?->title }}</strong>
         </div>
-        <div data-pdp-availability class="flex items-center gap-1.5 font-mono text-[11px] font-medium {{ ($selectedVariant?->stock ?? 0) < 1 ? 'text-rose-500' : (($selectedVariant?->stock ?? 0) <= 5 ? 'text-amber-500' : 'text-emerald-600') }}">
-            <span data-pdp-availability-dot class="w-2 h-2 rounded-full {{ ($selectedVariant?->stock ?? 0) < 1 ? 'bg-rose-500' : (($selectedVariant?->stock ?? 0) <= 5 ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400 animate-pulse') }}"></span>
-            <span data-pdp-availability-text>{{ ($selectedVariant?->stock ?? 0) < 1 ? 'Out of Stock' : (($selectedVariant?->stock ?? 0) <= 5 ? 'Low Stock (Only '.($selectedVariant?->stock ?? 0).' remaining)' : 'In Stock ('.($selectedVariant?->stock ?? 0).' units)') }}</span>
+        <div data-pdp-availability class="flex items-center gap-1.5 font-mono text-[11px] font-medium {{ ($selectedAvailable ?? 0) < 1 ? 'text-rose-500' : (($selectedAvailable ?? 0) <= 5 ? 'text-amber-500' : 'text-emerald-600') }}">
+            <span data-pdp-availability-dot class="w-2 h-2 rounded-full {{ ($selectedAvailable ?? 0) < 1 ? 'bg-rose-500' : (($selectedAvailable ?? 0) <= 5 ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400 animate-pulse') }}"></span>
+            <span data-pdp-availability-text>{{ ($selectedAvailable ?? 0) < 1 ? ($selectedAvailable === null ? 'Awaiting stock verification' : 'Out of Stock') : (($selectedAvailable ?? 0) <= 5 ? 'Low Stock (Only '.($selectedAvailable ?? 0).' remaining)' : 'In Stock ('.($selectedAvailable ?? 0).' units)') }}</span>
         </div>
     </div>
 
