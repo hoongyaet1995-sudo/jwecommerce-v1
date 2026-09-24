@@ -99,6 +99,33 @@ class LazadaTestFacilityAcceptanceTest extends TestCase
             $policy->inspect($storeId, $variantId, $facilityId)['blockers'], 'code'));
     }
 
+    public function test_matching_open_order_already_excluded_as_historical_without_allocation_does_not_block_count(): void
+    {
+        [$storeId, $variantId, $facilityId] = $this->context();
+        $orderId = DB::table('marketplace_orders')->insertGetId([
+            'store_id' => $storeId, 'external_order_id' => 'HISTORICAL-1',
+            'platform_status' => 'ready_to_ship', 'platform_updated_at' => 1,
+            'encrypted_payload' => Crypt::encryptString(json_encode([
+                'order_items' => [['product_id' => 100, 'sku_id' => 200, 'order_item_id' => 'ITEM-1']],
+            ])), 'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('marketplace_inventory_items')->insert([
+            'order_id' => $orderId, 'line_key' => 'ITEM-1',
+            'external_product_id' => '100', 'external_variant_id' => '200',
+            'warehouse_code' => 'WH-TEST', 'status' => 'skipped_historical',
+            'stock_allocation_id' => null, 'platform_updated_at' => 1,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->assertTrue(app(LazadaTestFacilityAcceptance::class)
+            ->inspect($storeId, $variantId, $facilityId)['eligible']);
+
+        DB::table('marketplace_inventory_items')->where('order_id', $orderId)
+            ->update(['status' => 'reserved']);
+        $this->assertContains('open_test_store_order', array_column(app(LazadaTestFacilityAcceptance::class)
+            ->inspect($storeId, $variantId, $facilityId)['blockers'], 'code'));
+    }
+
     private function context(): array
     {
         $fixture = new StoreInventoryFixture;

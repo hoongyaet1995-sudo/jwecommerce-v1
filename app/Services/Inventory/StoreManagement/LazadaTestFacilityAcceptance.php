@@ -50,7 +50,7 @@ final class LazadaTestFacilityAcceptance
             $listing = DB::table('marketplace_listing_variants')->find($mappings[0]->listing_variant_id);
             foreach (DB::table('marketplace_orders')->where('store_id', $storeId)
                 ->whereNotIn('platform_status', ['cancelled', 'canceled', 'delivered', 'returned', 'refunded'])
-                ->select('encrypted_payload')->cursor() as $order) {
+                ->select('id', 'encrypted_payload')->cursor() as $order) {
                 try {
                     $payload = json_decode(Crypt::decryptString($order->encrypted_payload), true, 512, JSON_THROW_ON_ERROR);
                     $items = $payload['order_items'] ?? null;
@@ -63,8 +63,16 @@ final class LazadaTestFacilityAcceptance
                         }
                         if ($listing && (string) $item['product_id'] === (string) $listing->external_product_id
                             && (string) $item['sku_id'] === (string) $listing->external_variant_id) {
-                            $blockers[] = ['code' => 'open_test_store_order'];
-                            break 2;
+                            $lineKey = $item['order_item_id'] ?? null;
+                            $historical = $lineKey !== null && DB::table('marketplace_inventory_items')
+                                ->where('order_id', $order->id)->where('line_key', (string) $lineKey)
+                                ->where('external_product_id', (string) $listing->external_product_id)
+                                ->where('external_variant_id', (string) $listing->external_variant_id)
+                                ->where('status', 'skipped_historical')->whereNull('stock_allocation_id')->exists();
+                            if (! $historical) {
+                                $blockers[] = ['code' => 'open_test_store_order'];
+                                break 2;
+                            }
                         }
                     }
                 } catch (\Throwable) {
