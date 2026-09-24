@@ -1674,10 +1674,13 @@ export const MarketplaceInventoryPage: React.FC = () => {
 
       {/* MODAL 1: Allocate Stock Modal */}
       <InitialStockCountModal
+        key={`${selectedItemForCount?.id || 'none'}:${targetFirstCountStoreId || ''}:${targetFirstCountWarehouseId || ''}`}
         isOpen={isCountModalOpen}
         onClose={() => {
           setIsCountModalOpen(false);
           setSelectedItemForCount(null);
+          setTargetFirstCountStoreId(undefined);
+          setTargetFirstCountWarehouseId(undefined);
         }}
         item={selectedItemForCount}
         mode={currentMode}
@@ -1695,6 +1698,11 @@ export const MarketplaceInventoryPage: React.FC = () => {
         }}
         onOpenStockSyncModal={(itemForSync, storeForSync) => {
           handleOpenStockSync(itemForSync, storeForSync);
+        }}
+        onNavigateToConnectStore={() => {
+          setIsCountModalOpen(false);
+          setSelectedItemForCount(null);
+          setCurrentSection('marketplace-auth');
         }}
       />
 

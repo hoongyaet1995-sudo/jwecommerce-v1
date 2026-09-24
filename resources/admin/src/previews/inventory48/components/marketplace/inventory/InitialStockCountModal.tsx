@@ -61,6 +61,7 @@ interface InitialStockCountModalProps {
   onSelectNextItem?: (nextItem: MarketplaceInventoryItem) => void;
   onNavigateToTransfers?: () => void;
   onNavigateToSkuMapping?: () => void;
+  onNavigateToConnectStore?: () => void;
   onOpenStockSyncModal?: (item: MarketplaceInventoryItem, store: InventoryStoreChannel) => void;
 }
 
@@ -78,6 +79,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   onSelectNextItem,
   onNavigateToTransfers,
   onNavigateToSkuMapping,
+  onNavigateToConnectStore,
   onOpenStockSyncModal
 }) => {
   // Modal Step: 'input' (Count & Allocate) | 'review' (Review) | 'success' (Success)
@@ -101,6 +103,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   const [storeConfigs, setStoreConfigs] = useState<StoreWithWarehouses[]>([]);
   const [warehouseStockData,setWarehouseStockData] = useState<Record<string, Record<string, SkuWarehouseStockBalance>>>({});
   const [providerReferences,setProviderReferences] = useState<Record<string,Record<string,number>>>({});
+  const [providerReferenceFailures,setProviderReferenceFailures] = useState<Record<string,Record<string,string>>>({});
   const [providerReferenceLoading,setProviderReferenceLoading] = useState(false);
   const [selectedCountTarget,setSelectedCountTarget] = useState<{storeId:string;warehouseId:string}|null>(null);
 
@@ -234,6 +237,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
         ? store.warehouses.filter(wh=>wh.inventoryWarehouseId && /^\d+$/.test(wh.id))
             .map(wh=>({storeId:String(store.storeId),warehouseId:wh.id})) : []);
     setProviderReferences({});
+    setProviderReferenceFailures({});
     setProviderReferenceLoading(facilities.length>0);
     Promise.allSettled(facilities.map(async facility=>({
       ...facility,
@@ -241,8 +245,14 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
     }))).then(results=>{
       if(!active)return;
       const next:Record<string,Record<string,number>>={};
-      results.forEach(result=>{
-        if(result.status!=='fulfilled')return;
+      const failures:Record<string,Record<string,string>>={};
+      results.forEach((result,index)=>{
+        if(result.status!=='fulfilled'){
+          const {storeId,warehouseId}=facilities[index];
+          failures[storeId] ??= {};
+          failures[storeId][warehouseId]=result.reason instanceof Error ? result.reason.message : 'Provider read unavailable';
+          return;
+        }
         const {storeId,warehouseId,result:detail}=result.value;
         const quantity=detail.marketplace_reported_stock;
         if(Number.isInteger(quantity) && quantity>=0){
@@ -251,6 +261,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
         }
       });
       setProviderReferences(next);
+      setProviderReferenceFailures(failures);
       setProviderReferenceLoading(false);
     });
     return()=>{active=false};
@@ -388,7 +399,9 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   const targetedCountReady=!!effectiveTargetWarehouseId && !!targetStore
     && targetStore.warehouseSyncStatus==='synced' && targetStore.isSkuMapped
     && (effectiveTargetWarehouseId.startsWith('direct:') || (targetWarehouse?.status==='active' && !!targetWarehouse.inventoryWarehouseId))
-    && targetBalance?.isCounted===false;
+    && targetBalance?.isCounted===false
+    && !providerReferenceLoading
+    && !providerReferenceFailures[String(effectiveTargetStoreId)]?.[String(effectiveTargetWarehouseId)];
   const countedFacilityTotal=storeConfigs.reduce((sum,store)=>sum+store.warehouses.reduce((warehouseSum,warehouse)=>{
     const balance=warehouseStockData[item.masterSku]?.[warehouse.id];
     return warehouseSum+(balance?.isCounted ? balance.physicalStock || 0 : 0);
@@ -678,7 +691,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                             const observedCount=facilities.filter(wh=>observed[wh.id]!==undefined).length;
                             return observedCount===facilities.length
                               ? `${facilities.reduce((sum,wh)=>sum+observed[wh.id],0)} units (${observedCount} WH)`
-                              : `Unknown (${observedCount}/${facilities.length} WH checked)`;
+                              : `Read unavailable (${observedCount}/${facilities.length} WH checked)`;
                           }
                           return association?.channelStockSnapshot == null ? 'Unknown' : `${association.channelStockSnapshot} units`;
                         })()
@@ -687,6 +700,12 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                   })}
                   {mappedMarketplaceStores.length === 0 && <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400">No mapped marketplace stores for this SKU.</div>}
                 </div>
+                {Object.keys(providerReferenceFailures).length>0 && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-[11px] text-amber-700 dark:text-amber-300">
+                    <span>Platform stock read failed. The Lazada test access may have expired; stock operations for affected warehouses are paused.</span>
+                    {onNavigateToConnectStore && <button type="button" onClick={onNavigateToConnectStore} className="font-bold underline">Renew Test Access in Connect Store</button>}
+                  </div>
+                )}
                 <div className="flex items-center gap-2 text-[11px] text-amber-700 dark:text-amber-300/90 pt-1">
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-500" />
                   <span>
@@ -1117,8 +1136,9 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                                           {initialTargetWarehouseId && (
                                             <div className="text-neutral-400 text-[10px]">
                                               Platform: <span className="text-neutral-600 dark:text-neutral-300">{
-                                                providerReferenceLoading ? 'Checking…' : providerReferences[String(st.id)]?.[wh.id] === undefined
-                                                  ? 'Unknown' : `${providerReferences[String(st.id)][wh.id]}u`
+                                                providerReferenceLoading ? 'Checking…' : providerReferenceFailures[String(st.id)]?.[wh.id]
+                                                  ? 'Read unavailable' : providerReferences[String(st.id)]?.[wh.id] === undefined
+                                                    ? 'Unknown' : `${providerReferences[String(st.id)][wh.id]}u`
                                               }</span>
                                             </div>
                                           )}
