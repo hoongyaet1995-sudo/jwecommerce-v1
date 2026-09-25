@@ -112,6 +112,25 @@ class LazadaStoreInventoryPublisherTest extends TestCase
         $publisher->publish($store, $listing, 7, 'strict-facility-missing-readback');
     }
 
+    public function test_strict_dropshipping_readback_selects_dropshipping_after_other_warehouses_exist(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher();
+        $listing->sync_provider_location_id = 'dropshipping';
+        $listing->sync_strict_facility = true;
+        Http::fake(['*' => Http::sequence()->push(['code' => '0'])->push(['code' => '0', 'data' => [
+            'item_id' => '1001', 'skus' => [['sku_id' => '2001', 'multiWarehouseInventories' => [
+                ['warehouseCode' => 'dropshipping', 'sellableQuantity' => '8'],
+                ['warehouseCode' => 'MY-WH-2', 'sellableQuantity' => '7'],
+            ]]],
+        ]])]);
+
+        $receipt = $publisher->publish($store, $listing, 8, 'strict-dropshipping');
+        $this->assertSame('dropshipping', $receipt['provider_location_id']);
+        $this->assertSame(8, $receipt['observed_quantity']);
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/product/stock/sellable/update')
+            && ! str_contains((string) ($request->data()['payload'] ?? ''), '<MultiWarehouseInventories>'));
+    }
+
     public function test_direct_resync_with_no_pinned_warehouse_uses_single_warehouse_payload(): void
     {
         [$publisher, $store, $listing] = $this->publisher();

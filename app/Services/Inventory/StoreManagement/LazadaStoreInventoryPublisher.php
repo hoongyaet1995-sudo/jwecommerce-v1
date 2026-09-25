@@ -57,7 +57,8 @@ class LazadaStoreInventoryPublisher implements StoreInventoryPublisher
             (string) $listing->external_variant_id, $quantity, $writeWarehouse, (int) $store->id);
         try {
             $observed = $this->client->exactStockQuantity($token, (string) $listing->external_product_id,
-                (string) $listing->external_variant_id, $writeWarehouse, (int) $store->id);
+                (string) $listing->external_variant_id, $strictFacility ? $warehouse : $writeWarehouse,
+                (int) $store->id);
         } catch (StoreInventoryAuthorizationExpired) {
             throw new StoreInventoryResultUncertain('Lazada write was accepted but authorization expired before read-back. Reconcile before retrying.');
         } catch (\Throwable) {
