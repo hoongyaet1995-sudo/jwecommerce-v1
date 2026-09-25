@@ -35,6 +35,7 @@ import {
 } from './warehouseInventoryTypes';
 import {loadFacilityView} from './loadFacilityView';
 import {storeInventoryApi} from '../../../../../integration/storeInventory';
+import {FocusedIndependentAllocationModal} from './FocusedIndependentAllocationModal';
 
 const EMPTY_STORE_BALANCES: Record<string, Record<string, StoreStockAccountBalance>> = {};
 
@@ -124,6 +125,8 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   const [platformSyncStatuses, setPlatformSyncStatuses] = useState<Record<string, 'confirmed' | 'syncing' | 'failed'>>({});
   const [isRetryingSync, setIsRetryingSync] = useState<boolean>(false);
   const [saveError,setSaveError] = useState<string>('');
+  const [isSaving,setIsSaving] = useState(false);
+  const savingRef = useRef(false);
   const initializedSession = useRef<string | null>(null);
 
   // Only the website and stores mapped to this SKU participate in allocation.
@@ -537,7 +540,9 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
 
   // Step 2 -> Step 3
   const handleConfirmSave = async () => {
-    if (!canProceedToReview) return;
+    if (!canProceedToReview || savingRef.current) return;
+    savingRef.current = true;
+    setIsSaving(true);
     setSaveError('');
     try {
     await onSaveCount({
@@ -559,6 +564,9 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
     setStep('success');
     } catch(error:any) {
       setSaveError(error?.message || 'Physical count could not be saved.');
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
     }
   };
 
@@ -579,6 +587,32 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
       onClose();
     }
   };
+
+  if (mode === 'independent') return <FocusedIndependentAllocationModal
+    item={item} step={step} onClose={onClose} onBackToInput={() => setStep('input')}
+    onReview={handleProceedToReview} onConfirm={() => void handleConfirmSave()}
+    onNextSku={handleNextSku} nextSkuCount={remainingUncounted.length}
+    onOpenStockSyncModal={onOpenStockSyncModal}
+    activeStores={activeStores} storeConfigs={storeConfigs} skuStoreBalances={skuStoreBalances}
+    warehouseStockData={warehouseStockData} physicalCountInput={physicalCountInput}
+    onPhysicalCountChange={setPhysicalCountInput} isCountLocked={isCountLocked}
+    onUnlockCount={() => setIsCountLocked(false)} allocations={allocations}
+    onAllocationChange={(storeId, value) => setAllocations(previous => ({...previous, [storeId]: value}))}
+    warehouseAllocations={warehouseAllocations} onWarehouseAllocationChange={handleWarehouseAllocationChange}
+    parsedAllocations={parsedAllocations} parsedWarehouseAllocations={parsedWarehouseAllocations}
+    providerReferences={providerReferences} providerReferenceFailures={providerReferenceFailures}
+    providerReferenceLoading={providerReferenceLoading} isVerifiedCountValid={isVerifiedCountValid}
+    verifiedCountNum={verifiedCountNum} totalAllocatedNum={totalAllocatedNum}
+    remainingCount={remainingCount} totalReservedAcrossStores={totalReservedAcrossStores}
+    canProceedToReview={canProceedToReview} hasIncompleteTopology={hasIncompleteTopology}
+    hasReservationConflict={hasReservationConflict} hasConnectionBlocker={hasConnectionBlocker}
+    hasVerificationPendingAttempt={hasVerificationPendingAttempt}
+    hasInvalidAllocationNumber={hasInvalidAllocationNumber} hasNegativeAllocation={hasNegativeAllocation}
+    warehouseReservationConflicts={warehouseReservationConflicts}
+    storeReservationConflicts={storeReservationConflicts} operator={operator} reason={reason}
+    notes={notes} onNotesChange={setNotes} saveError={saveError} isSaving={isSaving}
+    confirmedCount={confirmedCount}
+  />;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-neutral-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
