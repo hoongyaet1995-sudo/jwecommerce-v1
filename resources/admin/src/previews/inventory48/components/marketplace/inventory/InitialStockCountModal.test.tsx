@@ -19,7 +19,7 @@ const stores = [{ id: '3', name: 'Lazada Test', platform: 'lazada', connectionSt
   { id: '5', name: 'TikTok Shop', platform: 'tiktok', isComingSoon: true }] as any;
 
 const mockFacilities = () => vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({ ok: true, json: async () =>
-  String(input).endsWith('/sync/check') ? { marketplace_reported_stock: 6 }
+  String(input).endsWith('/sync/check') ? { status: 'synced', marketplace_reported_stock: 6 }
     : String(input).includes('/stores/4/') ? { status: 'verified', topology: 'no_warehouse', facilities: [] }
       : { status: 'verified', topology: 'multi_warehouse', facilities: [
         { id: 7, name: 'Warehouse A', provider_id: 'WH-A', inventory_warehouse_id: 19, counted: false, physical: null, reserved: 0, available: null },
@@ -66,6 +66,10 @@ it('allocates one independent verified count through the existing atomic batch p
   }));
   expect((save.mock.calls as unknown as Array<[Record<string, any>]>)[0][0].batchAllocations).not.toHaveProperty('marketplace:4');
   expect(host.textContent).toContain('Stock allocation completed');
+  await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+  expect(host.textContent).toContain('Warehouse A');
+  expect(host.textContent).toContain('Synced');
+  expect(host.textContent).toContain('Refresh status');
 });
 
 it('preserves a warehouse draft when store data refreshes', async () => {

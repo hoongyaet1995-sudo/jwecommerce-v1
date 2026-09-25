@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, Boxes, Check, CheckCircle2, ChevronDown, ClipboardCheck, Lock, X } from 'lucide-react';
 import { MarketplaceInventoryItem } from '../../../types';
 import { MarketplaceLogo } from '../MarketplaceLogo';
 import { InventoryStoreChannel, StoreStockAccountBalance } from './inventoryTypes';
 import { StoreWithWarehouses, SkuWarehouseStockBalance } from './warehouseInventoryTypes';
+import { storeInventoryApi } from '../../../../../integration/storeInventory';
 import './focused-independent-allocation.css';
 
 type Step = 'input' | 'review' | 'success';
@@ -61,6 +62,8 @@ interface Props {
 export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
   const [inputView, setInputView] = useState<'count' | 'destinations'>('count');
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
+  const [syncStates, setSyncStates] = useState<Record<string, 'synced' | 'pending' | 'failed' | 'unavailable'>>({});
+  const [isCheckingSync, setIsCheckingSync] = useState(false);
   const selectedStore = props.activeStores.find(store => store.id === selectedStoreId);
   const selectedConfig = props.storeConfigs.find(config => config.storeId === selectedStoreId);
   const allocated = props.totalAllocatedNum;
@@ -97,6 +100,40 @@ export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
     !config || (store.platform !== 'webstore' && !config.isSkuMapped)
     || config.warehouseSyncStatus !== 'synced' || store.connectionState === 'expired';
   const balanceClass = !props.isVerifiedCountValid ? '' : remaining === 0 ? 'is-balanced' : remaining < 0 ? 'is-over' : '';
+  const variantId = Number((props.item as MarketplaceInventoryItem & { variantId?: number }).variantId);
+  const syncTargets = props.activeStores.flatMap(store => {
+    if (store.platform === 'webstore') return [];
+    const config = props.storeConfigs.find(candidate => candidate.storeId === store.id);
+    if (!config?.isSkuMapped) return [];
+    return config.warehouses.length
+      ? config.warehouses.filter(warehouse => (props.parsedWarehouseAllocations[warehouse.id] ?? 0) > 0 && /^\d+$/.test(warehouse.id))
+          .map(warehouse => ({ key: `${store.id}:${warehouse.id}`, store, warehouse }))
+      : (props.parsedAllocations[store.id] ?? 0) > 0 ? [{ key: `${store.id}:direct`, store, warehouse: null }] : [];
+  });
+  const checkSync = useCallback(async (targets: typeof syncTargets, active: () => boolean) => {
+    if (!targets.length) return;
+    setIsCheckingSync(true);
+    const results = await Promise.all(targets.map(async target => {
+      try {
+        const detail = target.warehouse
+          ? await storeInventoryApi.facilitySyncCheck(target.store.id, Number(target.warehouse.id), variantId)
+          : await storeInventoryApi.checkStock(target.store.id, variantId);
+        const status = detail?.status;
+        return [target.key, status === 'synced' ? 'synced' : ['failed', 'sync_failed', 'auth_expired'].includes(status) ? 'failed' : 'pending'] as const;
+      } catch {
+        return [target.key, 'unavailable'] as const;
+      }
+    }));
+    if (active()) { setSyncStates(Object.fromEntries(results)); setIsCheckingSync(false); }
+  }, [variantId]);
+  useEffect(() => {
+    if (props.step !== 'success') return;
+    let active = true;
+    void checkSync(syncTargets, () => active);
+    return () => { active = false; };
+  // The confirmed allocation is fixed at this point. Refresh is explicit to avoid repeated provider calls on rerenders.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.step]);
 
   return <div className="allocation-focus-backdrop" role="presentation">
     <div className="allocation-focus" role="dialog" aria-modal="true" aria-label="Allocate Stock">
@@ -173,7 +210,7 @@ export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
           {props.saveError && <p className="allocation-focus-error" role="alert">{props.saveError}</p>}
         </>}
 
-        {props.step === 'success' && <><div className="allocation-focus-success"><CheckCircle2 size={28} /><h3>Stock allocation completed</h3><p>{props.confirmedCount ?? props.verifiedCountNum} verified units were recorded in the JW ledger.</p></div><details className="allocation-focus-reference"><summary>Marketplace stock status</summary><p>Provider confirmation is tracked separately from the saved JW ledger.</p>{props.activeStores.filter(store => store.platform !== 'webstore').map(store => <button type="button" className="allocation-focus-sync-row" key={store.id} onClick={() => props.onOpenStockSyncModal?.(props.item, store)}><span><MarketplaceLogo platform={store.platform} size="xs" /> {store.nickname || store.name}</span><span>Check status</span></button>)}</details></>}
+        {props.step === 'success' && <><div className="allocation-focus-success"><CheckCircle2 size={28} /><h3>Stock allocation completed</h3><p>{props.confirmedCount ?? props.verifiedCountNum} verified units were recorded in the JW ledger.</p></div><section className="allocation-focus-sync-status" aria-label="Marketplace stock status"><div className="allocation-focus-sync-heading"><div><strong>Marketplace stock status</strong><small>Checked against each allocated stock location.</small></div>{syncTargets.length > 0 && <button type="button" disabled={isCheckingSync} onClick={() => void checkSync(syncTargets, () => true)}>{isCheckingSync ? 'Checking…' : 'Refresh status'}</button>}</div>{syncTargets.length === 0 ? <p>No marketplace stock was allocated.</p> : syncTargets.map(target => { const status = syncStates[target.key]; return <div className="allocation-focus-sync-result" key={target.key}><span><MarketplaceLogo platform={target.store.platform} size="xs" /><span><strong>{target.store.nickname || target.store.name}</strong>{target.warehouse && <small>{target.warehouse.warehouseName}</small>}</span></span><span className="allocation-focus-sync-actions"><b className={status === 'synced' ? 'is-synced' : status === 'failed' ? 'is-failed' : ''}>{isCheckingSync && !status ? 'Checking…' : status === 'synced' ? 'Synced' : status === 'failed' ? 'Sync failed' : status === 'unavailable' ? 'Unable to check' : 'Pending'}</b>{props.onOpenStockSyncModal && <button type="button" className="allocation-focus-sync-details" onClick={() => props.onOpenStockSyncModal?.(props.item, target.store)}>Details</button>}</span></div>; })}</section></>}
       </div>
       <footer className="allocation-focus-footer"><div className="allocation-focus-footer-step"><span>{props.step === 'success' ? 'COMPLETE' : props.step === 'review' ? 'STEP 3 OF 3' : inputView === 'count' ? 'STEP 1 OF 3' : 'STEP 2 OF 3'}</span><strong>{props.step === 'success' ? 'JW ledger saved' : props.step === 'review' ? 'Final review' : inputView === 'count' ? 'Verify total' : `${remaining} units remaining`}</strong></div><div className="allocation-focus-footer-actions"><button type="button" className="allocation-focus-secondary" onClick={back}>{props.step === 'success' ? 'Return to inventory' : props.step === 'input' && inputView === 'count' ? 'Cancel' : 'Back'}</button><button type="button" className="allocation-focus-primary" onClick={next} disabled={props.step === 'review' ? !props.canProceedToReview || props.isSaving : props.step === 'input' && inputView === 'count' ? !props.isVerifiedCountValid || props.verifiedCountNum < props.totalReservedAcrossStores : props.step === 'input' && !selectedStore ? !props.canProceedToReview : false}>{props.step === 'success' ? props.nextSkuCount ? `Next SKU (${props.nextSkuCount})` : 'Done' : props.step === 'review' ? props.isSaving ? 'Saving…' : 'Confirm allocation' : inputView === 'count' ? 'Allocate stock' : selectedStore ? 'Done with warehouses' : 'Review allocation'}</button></div></footer>
     </div>
