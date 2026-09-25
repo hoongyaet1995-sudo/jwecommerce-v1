@@ -126,14 +126,12 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   const [saveError,setSaveError] = useState<string>('');
   const initializedSession = useRef<string | null>(null);
 
-  // Filter channels into active inventory accounts and coming soon accounts
+  // Only the website and stores mapped to this SKU participate in allocation.
   const activeStores = useMemo(() => {
-    return stores.filter(s => !s.isComingSoon && s.platform !== 'tiktok' && s.platform !== 'shopify');
-  }, [stores]);
-
-  const comingSoonStores = useMemo(() => {
-    return stores.filter(s => s.isComingSoon || s.platform === 'tiktok' || s.platform === 'shopify');
-  }, [stores]);
+    const mappedIds = new Set((((item as any)?.mappedStoreIds || []) as string[]).map(String));
+    return stores.filter(s => !s.isComingSoon && s.platform !== 'tiktok' && s.platform !== 'shopify'
+      && (s.platform === 'webstore' || mappedIds.has(String(s.id))));
+  }, [stores, item]);
 
   // Read existing balances for this SKU if any
   const skuStoreBalances = useMemo(() => {
@@ -1255,30 +1253,6 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                   })}
                 </div>
 
-                {/* Coming Soon Stores (Read-Only) */}
-                {comingSoonStores.length > 0 && (
-                  <div className="pt-2 border-t border-neutral-200/60 dark:border-neutral-800/60 space-y-2">
-                    <span className="text-[11px] text-neutral-400 uppercase tracking-wider font-semibold">
-                      Supported Soon (Non-participating)
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 opacity-60">
-                      {comingSoonStores.map(cs => (
-                        <div
-                          key={cs.id}
-                          className="p-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-800 flex items-center justify-between text-xs"
-                        >
-                          <div className="flex items-center gap-2">
-                            <MarketplaceLogo platform={cs.platform} size="xs" />
-                            <span className="text-neutral-700 dark:text-neutral-300 font-medium">{cs.name}</span>
-                          </div>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400 font-semibold">
-                            Coming Soon
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Operator, Reason & Notes */}

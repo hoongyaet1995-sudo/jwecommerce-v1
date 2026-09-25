@@ -24,13 +24,17 @@ it('conserves an independent verified total across mapped warehouse inputs',asyn
     item={{id:'55',masterSku:'TEST-1',productName:'Test product',variantId:55,mappedStoreIds:['3'],
       storeAssociations:[{connectionId:'3',storeName:'Lazada Test',platform:'lazada',channelStockSnapshot:11}]} as any}
     mode="independent" stores={[{id:'3',name:'Lazada Test',platform:'lazada'} as any,
-      {id:'4',name:'Unmapped Store',platform:'shopee'} as any]}
+      {id:'4',name:'Unmapped Store',platform:'shopee'} as any,
+      {id:'5',name:'TikTok Shop',platform:'tiktok',isComingSoon:true} as any]}
     initialTargetStoreId="3" initialTargetWarehouseId="7" onSaveCount={save} />));
   await act(async()=>{await Promise.resolve();await Promise.resolve()});
   expect(host.textContent).toContain('Lazada Test');
   expect(host.textContent).toContain('12 units (2 WH)');
   expect(host.textContent).toContain('Live Conservation Summary');
   expect(host.textContent).toContain('Allocate Stock');
+  expect(host.textContent).not.toContain('Unmapped Store');
+  expect(host.textContent).not.toContain('Supported Soon (Non-participating)');
+  expect(host.textContent).not.toContain('TikTok Shop');
   expect(host.querySelectorAll('input[aria-label^="Lazada Test"][aria-label$="first count"]')).toHaveLength(2);
   expect(host.textContent).toContain('Warehouse Awarehouse_code: WH-A');
   const reference = [...host.querySelectorAll('span')].find(node=>node.textContent==='External Platform Reference Quantities (For Reference Only)')?.parentElement?.parentElement?.parentElement;
@@ -56,6 +60,7 @@ it('conserves an independent verified total across mapped warehouse inputs',asyn
     sku:'TEST-1',physicalCount:10,
     batchAllocations:expect.objectContaining({'facility:3:7':7,'facility:3:8':3}),
   }));
+  expect(save.mock.calls[0][0].batchAllocations).not.toHaveProperty('marketplace:4');
 });
 
 it('preserves a warehouse draft when store data refreshes', async () => {
