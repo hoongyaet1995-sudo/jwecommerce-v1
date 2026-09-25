@@ -9,10 +9,70 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 use Tests\Support\StoreInventoryFixture;
+use App\Contracts\StoreInventoryPublisher;
+use App\Services\Inventory\StoreManagement\FacilityRegistry;
+use App\Services\Inventory\StoreManagement\FacilityStockReview;
+use App\Services\Inventory\StoreManagement\FacilitySyncRecovery;
+use Illuminate\Support\Facades\Queue;
 
 class LazadaTestLeaseRenewalTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_renewal_retries_current_failed_facility_stock_and_confirms_provider_readback(): void
+    {
+        config(['marketplace.lazada.enabled'=>true,'marketplace.lazada.app_key'=>'139209',
+            'marketplace.lazada.app_secret'=>'test','marketplace.lazada.test_app_key'=>'139209',
+            'marketplace.lazada.test_app_secret'=>'test',
+            'marketplace.multiwarehouse_test_acceptance_enabled'=>true]);
+        DB::table('inventory_configuration')->where('id',1)->update(['operating_mode'=>'independent_stores']);
+        Http::preventStrayRequests();
+        Http::fake(['*'=>Http::response(['code'=>'0','data'=>[
+            'seller_id'=>300163725140,'short_code'=>'MY4NA1T7CK','name'=>'Test','status'=>'ACTIVE',
+        ]])]);
+        $service=app(LazadaTestConnectionService::class);
+        $storeId=$service->connect('private-test-token');
+        $actor=User::factory()->create(['is_admin'=>true,'is_super_admin'=>true]);
+        app(\App\Services\Inventory\TestDataClassificationService::class)
+            ->markTest('store',$storeId,$actor,'Official test fixture');
+        config(['marketplace.lazada.test_store_id'=>$storeId]);
+        $variant=(new StoreInventoryFixture)->sku()['variant'];
+        app(FacilityRegistry::class)->confirm($storeId,[['provider_id'=>'WH-A','name'=>'A']]);
+        $facility=DB::table('marketplace_store_facilities')->where('marketplace_store_id',$storeId)->first();
+        $warehouseId=DB::table('inventory_warehouses')->insertGetId([
+            'code'=>'JW-RENEW-A','name'=>'Renew A','is_active'=>true,'status'=>'active',
+            'created_at'=>now(),'updated_at'=>now(),
+        ]);
+        DB::table('marketplace_store_facilities')->where('id',$facility->id)
+            ->update(['inventory_warehouse_id'=>$warehouseId]);
+        $listingId=DB::table('marketplace_listing_variants')->insertGetId([
+            'store_id'=>$storeId,'external_product_id'=>'100','external_variant_id'=>'200',
+            'observed_data'=>'{}','fetched_at'=>now(),'created_at'=>now(),'updated_at'=>now(),
+        ]);
+        DB::table('marketplace_variant_mappings')->insert([
+            'store_id'=>$storeId,'listing_variant_id'=>$listingId,'product_variant_id'=>$variant->id,
+            'created_at'=>now(),'updated_at'=>now(),
+        ]);
+        Queue::fake();
+        $review=app(FacilityStockReview::class)->review($actor,$storeId,$facility->id,$variant->id,
+            'count',7,'Verified warehouse count');
+        $receipt=app(FacilityStockReview::class)->confirm($actor,$review['id'],'renewal-count');
+        DB::table('inventory_store_sync_tasks')->where('id',$receipt['provider_sync_task']['id'])
+            ->update(['status'=>'auth_expired']);
+        $publisher=\Mockery::mock(StoreInventoryPublisher::class);
+        $publisher->shouldReceive('publish')->once()->andReturn([
+            'provider'=>'lazada','provider_location_id'=>'WH-A','observed_quantity'=>7,
+            'confirmation_method'=>'provider_readback','confirmed_at'=>now()->toIso8601String(),
+        ]);
+        $this->app->instance(StoreInventoryPublisher::class,$publisher);
+
+        $service->renew($storeId,$actor,'Renew and recover stock');
+
+        $details=app(FacilitySyncRecovery::class)->details($storeId,$facility->id,$variant->id);
+        $this->assertSame('synced',$details['status']);
+        $this->assertSame(7,$details['marketplace_reported_stock']);
+        $this->assertSame('confirmed',$details['task_status']);
+    }
 
     public function test_online_renewal_requires_explicit_designation_and_fresh_seller_validation(): void
     {
