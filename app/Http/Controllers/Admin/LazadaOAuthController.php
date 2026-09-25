@@ -27,7 +27,7 @@ final class LazadaOAuthController extends Controller
             if (config('marketplace.lazada.enabled')!==true || !is_string(config('marketplace.lazada.app_secret'))
                 || trim(config('marketplace.lazada.app_secret'))==='') throw new RuntimeException('Unavailable.');
             $routing = \App\Services\Marketplace\MarketplaceHubOAuthMode::enabled('lazada', 'production');
-            $deployment = $routing ? 'https://marketplace.jwaistudio.online' : config('app.url');
+            $deployment = \App\Services\Marketplace\MarketplaceHubOAuthMode::authorizationDeployment('lazada', 'production');
             $build=fn($state)=>LazadaAuthorizationUrl::build((string)config('marketplace.lazada.app_key'),
                 (string)config('marketplace.lazada.callback_url'),$deployment,$state);
             $build(str_repeat('0',64));

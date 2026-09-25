@@ -359,7 +359,8 @@ final class LazadaClient
         if (!$this->isConfigured()) return false;
         try {
             LazadaAuthorizationUrl::build((string)config('marketplace.lazada.app_key'),
-                (string)config('marketplace.lazada.callback_url'),config('app.url'),str_repeat('0',64));
+                (string)config('marketplace.lazada.callback_url'),
+                MarketplaceHubOAuthMode::authorizationDeployment('lazada', 'production'), str_repeat('0',64));
             return true;
         } catch (RuntimeException) { return false; }
     }

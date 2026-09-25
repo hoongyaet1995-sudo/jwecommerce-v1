@@ -68,6 +68,9 @@ class MarketplaceHubOAuthRoutingTest extends TestCase
         Http::fake(['marketplace.jwaistudio.online/api/oauth/intents' => Http::response(['state' => $hubState], 201)]);
         $this->actingAs(User::factory()->create(['is_admin' => true]));
 
+        $this->getJson('/admin/api/marketplace/connections')->assertOk()
+            ->assertJsonPath('capabilities.lazada.oauth', true);
+
         $url = $this->postJson('/admin/api/marketplace/lazada/authorize')->assertOk()->json('url');
         parse_str(parse_url($url, PHP_URL_QUERY), $query);
         $this->assertSame('139209', $query['client_id']);
