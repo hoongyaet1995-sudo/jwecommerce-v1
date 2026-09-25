@@ -84,20 +84,32 @@ class LazadaStoreInventoryPublisherTest extends TestCase
             && ! str_contains((string) ($request->data()['payload'] ?? ''), '<MultiWarehouseInventories>'));
     }
 
-    public function test_strict_facility_sync_never_falls_back_to_dropshipping_when_selected_location_is_absent(): void
+    public function test_strict_facility_can_write_before_its_sku_stock_row_exists_and_requires_exact_readback(): void
     {
         [$publisher, $store, $listing] = $this->publisher();
         $listing->sync_provider_location_id = 'MY-WH-2';
         $listing->sync_strict_facility = true;
-        Http::fake(['*' => Http::response($this->item(3, 'dropshipping'))]);
+        Http::fake(['*' => Http::sequence()->push(['code' => '0'])
+            ->push($this->item(7, 'MY-WH-2'))]);
 
-        $this->expectException(RuntimeException::class);
-        try {
-            $publisher->publish($store, $listing, 7, 'strict-facility');
-        } finally {
-            Http::assertSentCount(1);
-            Http::assertNotSent(fn ($request): bool => str_contains($request->url(), '/product/stock/sellable/update'));
-        }
+        $receipt = $publisher->publish($store, $listing, 7, 'strict-facility');
+        $this->assertSame('MY-WH-2', $receipt['provider_location_id']);
+        $this->assertSame(7, $receipt['observed_quantity']);
+        Http::assertSentCount(2);
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/product/stock/sellable/update')
+            && str_contains((string) ($request->data()['payload'] ?? ''), '<WarehouseCode>MY-WH-2</WarehouseCode>'));
+    }
+
+    public function test_strict_facility_does_not_confirm_another_warehouse_after_write(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher();
+        $listing->sync_provider_location_id = 'MY-WH-2';
+        $listing->sync_strict_facility = true;
+        Http::fake(['*' => Http::sequence()->push(['code' => '0'])
+            ->push($this->item(7, 'dropshipping'))]);
+
+        $this->expectException(StoreInventoryResultUncertain::class);
+        $publisher->publish($store, $listing, 7, 'strict-facility-missing-readback');
     }
 
     public function test_direct_resync_with_no_pinned_warehouse_uses_single_warehouse_payload(): void

@@ -43,19 +43,16 @@ class LazadaStoreInventoryPublisher implements StoreInventoryPublisher
         if ($strictFacility && $warehouse === null) {
             throw new RuntimeException('A verified provider facility is required for this stock task.');
         }
-        $before = $strictFacility
-            ? $this->client->exactStockQuantity($token, (string) $listing->external_product_id,
-                (string) $listing->external_variant_id, $warehouse, (int) $store->id)
-            : $this->stockQuantity($token, $listing, $warehouse, (int) $store->id);
-        if ($strictFacility && $before['warehouse_code'] !== $warehouse) {
-            throw new RuntimeException('Provider stock location changed before the write.');
-        }
+        // Lazada omits a SKU's warehouses that have no stock. A registered and
+        // pinned facility may therefore be absent until its first stock write.
+        $before = $strictFacility ? null : $this->stockQuantity($token, $listing, $warehouse, (int) $store->id);
         if (property_exists($listing, 'sync_task_id') && ($listing->sync_provider_location_id ?? null) === null
-            && $before['warehouse_code'] !== null) {
+            && $before !== null && $before['warehouse_code'] !== null) {
             DB::table('inventory_store_sync_tasks')->where('id', $listing->sync_task_id)
                 ->whereNull('provider_location_id')->update(['provider_location_id' => $before['warehouse_code'], 'updated_at' => now()]);
         }
-        $writeWarehouse = $before['warehouse_code'] === 'dropshipping' ? null : $before['warehouse_code'];
+        $writeWarehouse = $strictFacility ? ($warehouse === 'dropshipping' ? null : $warehouse)
+            : ($before['warehouse_code'] === 'dropshipping' ? null : $before['warehouse_code']);
         $write = $this->client->updateAbsoluteQuantity($token, (string) $listing->external_product_id,
             (string) $listing->external_variant_id, $quantity, $writeWarehouse, (int) $store->id);
         try {
@@ -69,9 +66,13 @@ class LazadaStoreInventoryPublisher implements StoreInventoryPublisher
         if ($observed['quantity'] !== $quantity) {
             throw new StoreInventoryResultUncertain('Lazada read-back differs from the requested quantity. Reconcile before retrying.');
         }
+        $observedLocation = $observed['warehouse_code'] ?? 'dropshipping';
+        if ($strictFacility && $observedLocation !== $warehouse) {
+            throw new StoreInventoryResultUncertain('Lazada read-back returned another warehouse. Reconcile before retrying.');
+        }
 
         return ['provider' => 'lazada', 'requested_quantity' => $quantity, 'observed_quantity' => $observed['quantity'],
-            'provider_location_id' => $before['warehouse_code'],
+            'provider_location_id' => $strictFacility ? $warehouse : $before['warehouse_code'],
             'event_fingerprint' => hash('sha256', $eventKey), 'request_id' => $write['request_id'],
             'confirmation_method' => 'provider_readback',
             'confirmed_at' => now()->toIso8601String()];
