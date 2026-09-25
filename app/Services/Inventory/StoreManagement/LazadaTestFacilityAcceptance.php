@@ -94,7 +94,15 @@ final class LazadaTestFacilityAcceptance
         if (DB::table('inventory_balances as balance')
             ->join('inventory_pools as pool', 'pool.id', '=', 'balance.inventory_pool_id')
             ->where('balance.product_variant_id', $variantId)
-            ->whereIn('pool.kind', $batch ? ['warehouse', 'shared'] : ['warehouse', 'store', 'shared'])
+            ->where(function ($query) use ($batch, $storeId) {
+                $query->whereIn('pool.kind', ['warehouse', 'shared']);
+                if (! $batch) {
+                    $query->orWhere(function ($storeQuery) use ($storeId) {
+                        $storeQuery->where('pool.kind', 'store')
+                            ->where('pool.marketplace_store_id', $storeId);
+                    });
+                }
+            })
             ->where(fn ($query) => $query->whereNotNull('balance.counted_at')
                 ->orWhere('balance.physical_stock', '>', 0)
                 ->orWhere('balance.reserved_stock', '>', 0))->exists()) {

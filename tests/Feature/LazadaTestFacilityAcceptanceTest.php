@@ -63,6 +63,23 @@ class LazadaTestFacilityAcceptanceTest extends TestCase
             ->where('inventory_pool_id', $poolId)->value('physical_stock'));
     }
 
+    public function test_counted_website_stock_does_not_block_test_store_facility_operations(): void
+    {
+        [$storeId, $variantId, $facilityId] = $this->context();
+        $poolId = DB::table('inventory_pools')->insertGetId([
+            'pool_key' => 'store:website', 'kind' => 'store',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('inventory_balances')->insert([
+            'inventory_pool_id' => $poolId, 'product_variant_id' => $variantId,
+            'physical_stock' => 10, 'reserved_stock' => 0, 'safety_stock' => 0,
+            'counted_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->assertTrue(app(LazadaTestFacilityAcceptance::class)
+            ->inspect($storeId, $variantId, $facilityId)['eligible']);
+    }
+
     public function test_admin_can_read_eligibility_but_guest_cannot(): void
     {
         [$storeId, $variantId, $facilityId] = $this->context();
