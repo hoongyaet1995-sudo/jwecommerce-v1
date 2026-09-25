@@ -39,6 +39,14 @@ const overview: any = {
 };
 
 describe('store inventory adapters', () => {
+  it('preserves the marketplace account mode for stock action eligibility', () => {
+    const stores = adaptStores({ ...overview, stores: [
+      { id: 11, name: 'Lazada production', platform: 'lazada', account_mode: 'production', connection_status: 'connected' },
+      { id: 12, name: 'Lazada test', platform: 'lazada', account_mode: 'test', connection_status: 'connected' },
+    ] } as any);
+    expect(stores.find(store => store.id === '11')?.environment).toBe('production');
+    expect(stores.find(store => store.id === '12')?.environment).toBe('sandbox');
+  });
   it('polls a pending transfer operation until the provider reaches a truthful terminal state', async () => {
     const responses = [
       { operation_id: 'op-1', external_stages: [{ status: 'processing' }] },

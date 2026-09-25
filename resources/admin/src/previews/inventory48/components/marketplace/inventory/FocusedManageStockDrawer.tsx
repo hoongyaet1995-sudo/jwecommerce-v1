@@ -8,7 +8,7 @@ import { ManageStockDrawer } from './ManageStockDrawer';
 type Balance = { physical: number | null; reserved: number | null; available: number | null; counted: boolean };
 type Facility = Balance & { id: string; name: string; providerId: string; inventoryWarehouseId: number | null };
 type StoreRow = {
-  id: string; name: string; platform: string; topology: string | null; status: string;
+  id: string; name: string; platform: string; environment?: string; topology: string | null; status: string;
   balance: Balance | null; facilities: Facility[]; error?: string;
 };
 
@@ -92,7 +92,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
       (store.platform === 'webstore' || mappedIds.has(String(store.id))));
     Promise.all(eligible.map(async (store: any): Promise<StoreRow> => {
       const id = String(store.id);
-      const base = { id, name: store.nickname || store.name, platform: store.platform };
+      const base = { id, name: store.nickname || store.name, platform: store.platform, environment: store.environment };
       if (store.platform === 'webstore') {
         const balance = storeBalances?.[id];
         return { ...base, topology: 'no_warehouse', status: 'verified', facilities: [],
@@ -137,8 +137,10 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
   const activeBalance = direct ? selectedStore?.balance || null : selectedFacility || null;
   const locationName = direct ? selectedStore?.name : selectedFacility?.name;
   const acceptanceFacility = acceptance?.facilities?.find((facility: any) => String(facility.id) === selectedFacility?.id);
-  const acceptanceReady = !selectedFacility || acceptance?.test_acceptance_enabled !== true
-    || (acceptance.eligible === true && acceptanceFacility?.eligible === true);
+  const requiresTestAcceptance = selectedStore?.platform === 'lazada' && selectedStore.environment !== 'production';
+  const acceptanceReady = !requiresTestAcceptance || (acceptance !== null
+    && (acceptance.test_acceptance_enabled !== true
+      || (acceptance.eligible === true && acceptanceFacility?.eligible === true)));
   const actionable = selectedStore?.status === 'verified' && (direct || !!selectedFacility?.inventoryWarehouseId)
     && acceptanceReady;
   const title = !selectedStore ? 'Choose a store' : !atLocation ? selectedStore.name : actionsOpen ? 'Manage this stock' : locationName || 'Stock location';
@@ -147,7 +149,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
       : actionsOpen ? 'Choose an action for this stock location.' : `Manage ${item?.masterSku || 'this SKU'} at this stock location only.`;
 
   useEffect(() => {
-    if (!isOpen || !item || !selectedStore || !selectedFacility || selectedStore.platform === 'webstore') {
+    if (!isOpen || !item || !selectedStore || !selectedFacility || !requiresTestAcceptance) {
       setAcceptance(null); return;
     }
     let active = true;
@@ -156,7 +158,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
       .then(result => { if (active) setAcceptance(result); })
       .catch(() => { if (active) setAcceptance({ test_acceptance_enabled: true, eligible: false }); });
     return () => { active = false; };
-  }, [isOpen, item?.id, storeId, facilityId]);
+  }, [isOpen, item?.id, storeId, facilityId, requiresTestAcceptance]);
 
   useEffect(() => {
     if (!isOpen || !item || !selectedStore || !atLocation || selectedStore.platform === 'webstore' || selectedStore.status !== 'verified') {

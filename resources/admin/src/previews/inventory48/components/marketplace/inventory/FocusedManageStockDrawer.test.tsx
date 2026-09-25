@@ -15,7 +15,7 @@ afterEach(async () => { await act(async () => root.unmount()); host.remove(); vi
 const item = { id: '55', masterSku: 'BKJS-Pink', productName: 'Baju Kurung Joshua', variantName: 'Pink',
   imageUrl: '/products/pink.jpg', variantId: 55, mappedStoreIds: ['3'] } as any;
 const stores = [{ id: 'web', name: 'JW Storefront', platform: 'webstore' },
-  { id: '3', name: 'Lazada Test', platform: 'lazada' },
+  { id: '3', name: 'Lazada Test', platform: 'lazada', environment: 'sandbox' },
   { id: '4', name: 'Unmapped Shopee', platform: 'shopee' }];
 const click = async (label: string) => {
   const button = [...host.querySelectorAll('button')].find(node => node.textContent?.includes(label));
@@ -84,4 +84,26 @@ it('keeps a test facility blocked when the existing eligibility check rejects it
   await act(async () => { await Promise.resolve(); await Promise.resolve(); });
   const manage = [...host.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Manage this stock');
   expect(manage?.disabled).toBe(true);
+});
+
+it.each([
+  { sku: 'BKJS-Pink', counted: true, physical: 20, expected: 'Actual Stock Intake' },
+  { sku: 'BKJS-Blue', counted: false, physical: null, expected: 'First Count this location' },
+])('allows a production Lazada location to manage $sku based on its own count', async ({ sku, counted, physical, expected }) => {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => ({ ok: true, json: async () =>
+    String(input).includes('/sync') ? { status: 'not_synced', can_check: false, can_resync: false }
+      : { status: 'verified', topology: 'single_warehouse', facilities: [
+        { id: 7, name: 'Production warehouse', provider_id: 'dropshipping', inventory_warehouse_id: 19,
+          counted, physical, reserved: counted ? 0 : null, available: physical },
+      ] } }) as Response);
+  vi.stubGlobal('fetch', fetchMock);
+  await act(async () => root.render(<FocusedManageStockDrawer isOpen onClose={() => {}}
+    item={{ ...item, masterSku: sku }} mode="independent"
+    stores={[{ id: '3', name: 'Production Lazada', platform: 'lazada', environment: 'production' }]} />));
+  await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+  await click('Production Lazada');
+  await click('Production warehouse');
+  await click('Manage this stock');
+  expect(host.textContent).toContain(expected);
+  expect(fetchMock.mock.calls.some(([input]) => String(input).includes('test-facility-acceptance'))).toBe(false);
 });

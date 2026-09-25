@@ -149,10 +149,11 @@ final class OverviewReader
             $query->where('s.platform', $filters['platform']);
         }
 
-        return $query->orderBy('s.id')->get(['s.id', 's.platform', 's.shop_name', 's.region', 's.status',
+        return $query->orderBy('s.id')->get(['s.id', 's.platform', 's.shop_name', 's.region', 's.status', 's.account_mode',
             'a.management_status', 'a.version as management_version'])->map(fn (object $store): array => [
                 'id' => (int) $store->id,
                 'platform' => $store->platform,
+                'account_mode' => $store->account_mode,
                 'name' => $store->shop_name,
                 'region' => $store->region,
                 'connection_status' => $store->status,
