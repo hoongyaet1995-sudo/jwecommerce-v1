@@ -433,7 +433,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
   };
 
   const handleRealSaveIntake = async (payload: {
-    sku:string;type:'intake'|'adjustment';targetStoreId?:string;targetWarehouseId?:string;
+    sku:string;type:'intake'|'adjustment'|'count';targetStoreId?:string;targetWarehouseId?:string;
     targetWarehouseCode?:string;deltaQuantity:number;newPhysicalStock:number;
     reason:string;notes?:string;operator:string;
   }) => {
@@ -443,9 +443,10 @@ export const MarketplaceInventoryPage: React.FC = () => {
     if(payload.targetWarehouseId && !payload.targetWarehouseId.startsWith('direct:')) {
       if(!payload.targetStoreId || !/^\d+$/.test(payload.targetWarehouseId)) throw new Error('Select a verified facility.');
       await storeInventoryApi.facilityStockAction(payload.targetStoreId,Number(payload.targetWarehouseId),
-        (item as any).variantId,payload.type==='intake'?'intake':'audit',
+        (item as any).variantId,payload.type==='intake'?'intake':payload.type==='count'?'count':'audit',
         payload.type==='intake'?payload.deltaQuantity:payload.newPhysicalStock,reason);
     } else {
+      if(payload.type==='count') throw new Error('Choose a registered warehouse for First Count.');
       await adjustStock(item.id,payload.deltaQuantity,reason,
         payload.type==='intake'?'intake':'correction',payload.targetStoreId,item);
     }

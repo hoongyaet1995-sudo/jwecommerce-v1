@@ -35,11 +35,8 @@ final class LazadaTestFacilityAcceptance
         if ($mappings->count() !== 1) {
             $blockers[] = ['code' => 'mapping_missing'];
         }
-        if (DB::table('marketplace_variant_mappings')->where('product_variant_id', $variantId)
-            ->where('store_id', '!=', $storeId)->exists()) {
-            $blockers[] = ['code' => 'sku_shared_with_other_store'];
-        }
-        if (DB::table('inventory_order_activations')->where('product_variant_id', $variantId)->exists()
+        if (DB::table('inventory_order_activations')->where('product_variant_id', $variantId)
+            ->where('channel_key', 'marketplace:'.$storeId)->exists()
             || DB::table('inventory_store_order_lines')->where('product_variant_id', $variantId)
                 ->where('reserved_quantity', '>', 0)->exists()
             || DB::table('stock_allocations')->where('product_variant_id', $variantId)

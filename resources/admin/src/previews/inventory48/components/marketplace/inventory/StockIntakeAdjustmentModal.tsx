@@ -39,7 +39,7 @@ interface StockIntakeAdjustmentModalProps {
   initialWarehouseId?: string;
   onSave: (payload: {
     sku: string;
-    type: 'intake' | 'adjustment';
+    type: 'intake' | 'adjustment' | 'count';
     targetStoreId?: string;
     targetWarehouseId?: string;
     targetWarehouseCode?: string;
@@ -63,7 +63,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
   initialWarehouseId,
   onSave
 }) => {
-  const [actionType, setActionType] = useState<'intake' | 'adjustment'>(initialType);
+  const [actionType, setActionType] = useState<'intake' | 'adjustment' | 'count'>(initialType);
   const [quantityInput, setQuantityInput] = useState<string>('');
   const [selectedStoreId, setSelectedStoreId] = useState<string>(initialStoreId || '');
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>(initialWarehouseId || '');
@@ -170,7 +170,8 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
 
   // Blocked submission check
   const isSubmissionBlocked = !isValidQty || hasDeficit || isVerificationPending || isUnmapped
-    || !currentWarehouseObj?.balance?.isCounted || (hasWarehouses && ((currentWarehouseObj as any)?.status !== 'active' || !(currentWarehouseObj as any)?.inventoryWarehouseId));
+    || (actionType === 'count' ? (!hasWarehouses || !!currentWarehouseObj?.balance?.isCounted) : !currentWarehouseObj?.balance?.isCounted)
+    || (hasWarehouses && ((currentWarehouseObj as any)?.status !== 'active' || !(currentWarehouseObj as any)?.inventoryWarehouseId));
 
   const handleRetryWarehouseVerification = async () => {
     setIsRetryingFetch(true);
@@ -225,7 +226,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
             </div>
             <div>
               <h3 className="text-base font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-                <span>{actionType === 'intake' ? 'Actual Stock Intake' : 'Stock Audit Adjustment'}</span>
+                <span>{actionType === 'count' ? 'Warehouse First Count' : actionType === 'intake' ? 'Actual Stock Intake' : 'Stock Audit Adjustment'}</span>
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/60 border border-purple-800/60 text-purple-300">
                   {hasWarehouses ? 'Multi-Warehouse Compatible' : 'Direct Channel'}
                 </span>
@@ -282,6 +283,12 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
               <span>Audit Count Adjustment</span>
             </button>
           </div>
+          {hasWarehouses && !currentWarehouseObj?.balance?.isCounted && !isVerificationPending && !isUnmapped && (
+            <div className="mt-3 p-3 rounded-xl border border-purple-700/50 bg-purple-950/20 text-xs text-neutral-200 flex items-center justify-between gap-3">
+              <span>This warehouse has no verified opening count. Count it before receiving stock.</span>
+              <button type="button" onClick={() => { setActionType('count'); setQuantityInput(''); setReason('Initial Warehouse Physical Count'); }} className="shrink-0 px-3 py-2 rounded-lg bg-purple-600 text-white font-bold cursor-pointer">First Count This Warehouse</button>
+            </div>
+          )}
         </div>
 
         {/* Form Body */}
@@ -563,7 +570,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
             <label className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
               {actionType === 'intake' 
                 ? 'Arrived Inbound Quantity (+ Units) *' 
-                : 'New Confirmed Physical Stock Count (Total Units) *'}
+                : actionType === 'count' ? 'Verified Warehouse Physical Count (0 is allowed) *' : 'New Confirmed Physical Stock Count (Total Units) *'}
             </label>
             <div className="relative">
               <input
@@ -690,7 +697,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
               className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>{actionType === 'intake' ? 'Confirm Facility Intake' : 'Save Facility Adjustment'}</span>
+              <span>{actionType === 'count' ? 'Confirm Warehouse First Count' : actionType === 'intake' ? 'Confirm Facility Intake' : 'Save Facility Adjustment'}</span>
             </button>
           </div>
         </form>

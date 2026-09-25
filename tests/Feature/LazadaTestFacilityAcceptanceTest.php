@@ -80,6 +80,24 @@ class LazadaTestFacilityAcceptanceTest extends TestCase
             ->inspect($storeId, $variantId, $facilityId)['eligible']);
     }
 
+    public function test_mapping_in_another_store_does_not_lock_the_test_store_sku(): void
+    {
+        [$storeId, $variantId, $facilityId] = $this->context();
+        $other = (new StoreInventoryFixture)->store('shopee', 'OTHER-STORE');
+        $listing = DB::table('marketplace_listing_variants')->insertGetId([
+            'store_id' => $other->id, 'external_product_id' => 'OTHER-100',
+            'external_variant_id' => 'OTHER-200', 'observed_data' => '{}',
+            'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('marketplace_variant_mappings')->insert([
+            'store_id' => $other->id, 'listing_variant_id' => $listing,
+            'product_variant_id' => $variantId, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->assertTrue(app(LazadaTestFacilityAcceptance::class)
+            ->inspect($storeId, $variantId, $facilityId)['eligible']);
+    }
+
     public function test_admin_can_read_eligibility_but_guest_cannot(): void
     {
         [$storeId, $variantId, $facilityId] = $this->context();
