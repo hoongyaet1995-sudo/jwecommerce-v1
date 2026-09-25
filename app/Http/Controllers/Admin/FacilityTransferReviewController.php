@@ -16,8 +16,8 @@ final class FacilityTransferReviewController extends Controller
             'quantity', 'reason', '_token']);
         $data = $request->validate([
             'variant_id' => ['required', 'integer', 'min:1'],
-            'source_facility_id' => ['required', 'integer', 'min:1'],
-            'destination_facility_id' => ['required', 'integer', 'min:1'],
+            'source_facility_id' => ['present', 'nullable', 'integer', 'min:1'],
+            'destination_facility_id' => ['present', 'nullable', 'integer', 'min:1'],
             'quantity' => ['required', 'integer', 'min:1', 'max:2147483647'],
             'reason' => ['required', 'string', 'max:255'],
         ]);

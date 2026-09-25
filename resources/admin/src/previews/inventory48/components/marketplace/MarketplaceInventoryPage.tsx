@@ -460,9 +460,12 @@ export const MarketplaceInventoryPage: React.FC = () => {
     const source=payload.sourceWarehouseId||'';
     const destination=payload.destinationWarehouseId||'';
     let id:string;
-    if(/^\d+$/.test(source)&&/^\d+$/.test(destination)) {
+    if((/^\d+$/.test(source)||source==='direct:website')
+      && (/^\d+$/.test(destination)||destination==='direct:website')
+      && (/^\d+$/.test(source)||/^\d+$/.test(destination))) {
       const receipt=await storeInventoryApi.facilityTransfer((item as any).variantId,
-        Number(source),Number(destination),payload.quantity,payload.reason);
+        /^\d+$/.test(source)?Number(source):null,
+        /^\d+$/.test(destination)?Number(destination):null,payload.quantity,payload.reason);
       id=receipt.review_id;
     } else if(source.startsWith('direct:')&&destination.startsWith('direct:')) {
       const receipt=await executeStoreTransfer(payload);
@@ -473,7 +476,8 @@ export const MarketplaceInventoryPage: React.FC = () => {
     await reloadInventory();
     const record:StoreStockTransferRecord={...payload,id,transferNumber:id,
       timestamp:new Date().toISOString(),ledgerStatus:'succeeded',
-      sourcePlatformSyncStatus:'pending',destinationPlatformSyncStatus:'pending'};
+      sourcePlatformSyncStatus:payload.sourcePlatform==='webstore'?'succeeded':'pending',
+      destinationPlatformSyncStatus:payload.destinationPlatform==='webstore'?'succeeded':'pending'};
     setTransfersList(previous=>[record,...previous]);
     return record;
   };

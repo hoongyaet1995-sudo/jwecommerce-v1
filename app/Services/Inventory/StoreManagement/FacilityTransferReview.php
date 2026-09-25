@@ -8,10 +8,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-/** Atomic movement between two counted physical facility owners. */
+/** Atomic movement between counted facility and website stock owners. */
 final class FacilityTransferReview
 {
-    public function review(User $actor, int $variantId, int $sourceId, int $destinationId,
+    public function review(User $actor, int $variantId, ?int $sourceId, ?int $destinationId,
         int $quantity, string $reason): array
     {
         $this->authorize($actor);
@@ -40,8 +40,8 @@ final class FacilityTransferReview
                 'source_balance_id' => $source['balance']->id,
                 'destination_balance_id' => $destination['balance']->id,
                 'actor_id' => $actor->id, 'configuration_version' => $configuration->version,
-                'source_topology_revision' => $source['scan']->revision,
-                'destination_topology_revision' => $destination['scan']->revision,
+                'source_topology_revision' => $source['scan']?->revision ?? 0,
+                'destination_topology_revision' => $destination['scan']?->revision ?? 0,
                 'source_balance_version' => $source['balance']->version,
                 'destination_balance_version' => $destination['balance']->version,
                 'quantity' => $quantity, 'reason' => trim($reason),
@@ -83,8 +83,8 @@ final class FacilityTransferReview
                 $this->conflict('operation_key_reused');
             }
             $configuration = $this->configuration();
-            $this->assertTestAcceptance((int) $review->source_facility_id, (int) $review->product_variant_id);
-            $this->assertTestAcceptance((int) $review->destination_facility_id, (int) $review->product_variant_id);
+            $this->assertTestAcceptance($review->source_facility_id === null ? null : (int) $review->source_facility_id, (int) $review->product_variant_id);
+            $this->assertTestAcceptance($review->destination_facility_id === null ? null : (int) $review->destination_facility_id, (int) $review->product_variant_id);
             if ((int) $configuration->version !== (int) $review->configuration_version) {
                 $this->conflict('configuration_changed');
             }
@@ -92,10 +92,10 @@ final class FacilityTransferReview
             sort($ids);
             $locked = DB::table('inventory_balances')->whereIn('id', $ids)->orderBy('id')
                 ->lockForUpdate()->get()->keyBy('id');
-            $source = $this->endpoint((int) $review->source_facility_id, (int) $review->product_variant_id);
-            $destination = $this->endpoint((int) $review->destination_facility_id, (int) $review->product_variant_id);
-            if ((int) $source['scan']->revision !== (int) $review->source_topology_revision
-                || (int) $destination['scan']->revision !== (int) $review->destination_topology_revision
+            $source = $this->endpoint($review->source_facility_id === null ? null : (int) $review->source_facility_id, (int) $review->product_variant_id);
+            $destination = $this->endpoint($review->destination_facility_id === null ? null : (int) $review->destination_facility_id, (int) $review->product_variant_id);
+            if ((int) ($source['scan']?->revision ?? 0) !== (int) $review->source_topology_revision
+                || (int) ($destination['scan']?->revision ?? 0) !== (int) $review->destination_topology_revision
                 || (int) $source['balance']->id !== (int) $review->source_balance_id
                 || (int) $destination['balance']->id !== (int) $review->destination_balance_id
                 || (int) $locked[$review->source_balance_id]->version !== (int) $review->source_balance_version
@@ -116,6 +116,11 @@ final class FacilityTransferReview
             }
             $sync = [];
             foreach ([$source, $destination] as $endpoint) {
+                if ($endpoint['facility'] === null) {
+                    $sync[] = ['status' => 'confirmed', 'store_id' => null, 'target_quantity' => $this->available(
+                        DB::table('inventory_balances')->find($endpoint['balance']->id))];
+                    continue;
+                }
                 $balance = DB::table('inventory_balances')->find($endpoint['balance']->id);
                 $sync[] = app(SyncOutbox::class)->enqueueMutation(
                     'facility-transfer:'.$reviewId, $balance, 'transfer',
@@ -134,8 +139,20 @@ final class FacilityTransferReview
         }, 3);
     }
 
-    private function endpoint(int $facilityId, int $variantId): array
+    private function endpoint(?int $facilityId, int $variantId): array
     {
+        if ($facilityId === null) {
+            $balance = DB::table('inventory_pools as pool')
+                ->join('inventory_balances as balance', 'balance.inventory_pool_id', '=', 'pool.id')
+                ->where('pool.kind', 'store')->where('pool.pool_key', 'store:website')
+                ->whereNull('pool.marketplace_store_id')
+                ->where('balance.product_variant_id', $variantId)->first(['balance.*']);
+            if (! $balance || $balance->counted_at === null || $balance->physical_stock === null
+                || $balance->reserved_stock === null || $balance->safety_stock === null) {
+                throw ValidationException::withMessages(['facility' => 'Complete the website physical count first.']);
+            }
+            return ['facility' => null, 'scan' => null, 'balance' => $balance];
+        }
         $facility = DB::table('marketplace_store_facilities as facility')
             ->join('marketplace_stores as store', 'store.id', '=', 'facility.marketplace_store_id')
             ->where('facility.id', $facilityId)->where('facility.is_active', true)
@@ -193,8 +210,8 @@ final class FacilityTransferReview
     {
         $balance = $endpoint['balance'];
 
-        return ['facility_id' => (int) $endpoint['facility']->id,
-            'provider_facility_id' => $endpoint['facility']->provider_facility_id,
+        return ['facility_id' => $endpoint['facility']?->id,
+            'provider_facility_id' => $endpoint['facility']?->provider_facility_id,
             'balance_id' => (int) $balance->id,
             'physical_before' => (int) $balance->physical_stock,
             'physical_after' => (int) $balance->physical_stock + $delta];
@@ -208,9 +225,9 @@ final class FacilityTransferReview
             || config('marketplace.multiwarehouse_test_acceptance_enabled') === true, 404);
     }
 
-    private function assertTestAcceptance(int $facilityId, int $variantId): void
+    private function assertTestAcceptance(?int $facilityId, int $variantId): void
     {
-        if (config('marketplace.multiwarehouse_test_acceptance_enabled') !== true) {
+        if ($facilityId === null || config('marketplace.multiwarehouse_test_acceptance_enabled') !== true) {
             return;
         }
         $storeId = DB::table('marketplace_store_facilities')->where('id', $facilityId)

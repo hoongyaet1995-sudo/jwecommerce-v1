@@ -37,7 +37,7 @@ export const storeInventoryApi={
     const review=await json('/admin/api/inventory/store-management/batch-first-counts',{method:'POST',body:JSON.stringify({variant_id:variantId,physical_count:physicalCount,allocations,reason})});
     return json(`/admin/api/inventory/store-management/batch-first-counts/${encodeURIComponent(review.id)}/confirm`,{method:'POST',body:JSON.stringify({operation_key:crypto.randomUUID()})});
   },
-  async facilityTransfer(variantId:number,sourceFacilityId:number,destinationFacilityId:number,quantity:number,reason:string){
+  async facilityTransfer(variantId:number,sourceFacilityId:number|null,destinationFacilityId:number|null,quantity:number,reason:string){
     const review=await json('/admin/api/inventory/store-management/facility-transfer-reviews',{method:'POST',body:JSON.stringify({variant_id:variantId,source_facility_id:sourceFacilityId,destination_facility_id:destinationFacilityId,quantity,reason})});
     return json(`/admin/api/inventory/store-management/facility-transfer-reviews/${encodeURIComponent(review.id)}/confirm`,{method:'POST',body:JSON.stringify({operation_key:crypto.randomUUID()})});
   },

@@ -74,6 +74,37 @@ class LazadaTestFacilityStockActionsTest extends TestCase
             ->whereIn('id', $tasks)->where('status', 'confirmed')->count());
     }
 
+    public function test_website_and_lazada_test_warehouse_can_transfer_after_count(): void
+    {
+        $c = $this->context();
+        $stock = app(FacilityStockReview::class);
+        $count = $stock->review($c['actor'], $c['store'], $c['a'], $c['variant'],
+            'count', 10, 'Verified warehouse count');
+        $stock->confirm($c['actor'], $count['id'], 'mixed-count-a');
+        DB::table('inventory_store_sync_tasks')->where('marketplace_store_facility_id', $c['a'])
+            ->update(['status' => 'confirmed']);
+        $pool = DB::table('inventory_pools')->insertGetId([
+            'pool_key' => 'store:website', 'kind' => 'store',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $websiteBalance = DB::table('inventory_balances')->insertGetId([
+            'inventory_pool_id' => $pool, 'product_variant_id' => $c['variant'],
+            'physical_stock' => 5, 'reserved_stock' => 0, 'safety_stock' => 0,
+            'counted_at' => now(), 'version' => 1,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $transfer = app(FacilityTransferReview::class);
+        $review = $transfer->review($c['actor'], $c['variant'], $c['a'], null, 2, 'To website');
+        $receipt = $transfer->confirm($c['actor'], $review['id'], 'test-facility-to-website');
+        $this->assertSame('applied', $receipt['status']);
+        $this->assertSame(8, $this->physical($c['warehouse_a'], $c['variant']));
+        $this->assertSame(7, (int) DB::table('inventory_balances')->where('id', $websiteBalance)->value('physical_stock'));
+        $this->assertDatabaseHas('inventory_store_sync_tasks', [
+            'marketplace_store_facility_id' => $c['a'], 'target_quantity' => 8,
+        ]);
+    }
+
     public function test_forged_production_seller_cannot_create_a_facility_review(): void
     {
         $c = $this->context();

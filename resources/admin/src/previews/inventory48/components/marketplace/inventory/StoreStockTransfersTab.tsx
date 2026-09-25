@@ -223,7 +223,8 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
     || !sourceWarehouseObj?.balance?.isCounted || !destWarehouseObj?.balance?.isCounted
     || (sourceHasWarehouses && (sourceWarehouseObj as any)?.status!=='active')
     || (destHasWarehouses && (destWarehouseObj as any)?.status!=='active')
-    || sourceHasWarehouses !== destHasWarehouses;
+    || (sourceHasWarehouses !== destHasWarehouses
+      && (sourceHasWarehouses ? destinationStoreId !== 'website' : sourceStoreId !== 'website'));
 
   // Before / After calculations for visual reference
   const sourceAfterPhysical = sourcePhysical - (isValidQty ? numericQty : 0);
@@ -1081,8 +1082,9 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
 
             {/* ================= SECTION 4: SUBMIT ACTION BAR ================= */}
             {transferError && <p role="alert" className="text-xs text-rose-500">{transferError}</p>}
-            {sourceHasWarehouses !== destHasWarehouses &&
-              <p role="status" className="text-xs text-amber-500">Transfers between a direct store account and a platform warehouse are pending a reviewed physical route.</p>}
+            {sourceHasWarehouses !== destHasWarehouses
+              && (sourceHasWarehouses ? destinationStoreId !== 'website' : sourceStoreId !== 'website') &&
+              <p role="status" className="text-xs text-amber-500">Select JW Storefront as the direct account for a reviewed warehouse transfer.</p>}
             <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="text-xs text-neutral-500">
                 {isValidQty && !isSameRoute ? (

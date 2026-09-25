@@ -61,6 +61,60 @@ class MarketplaceFacilityTransferReviewTest extends TestCase
         $this->assertSame(5, (int) DB::table('inventory_balances')->where('id', $c['balance_b'])->value('physical_stock'));
     }
 
+    public function test_facility_to_website_transfer_moves_both_ledgers_and_syncs_only_facility(): void
+    {
+        $c = $this->context();
+        $websitePool = DB::table('inventory_pools')->insertGetId([
+            'pool_key' => 'store:website', 'kind' => 'store',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $websiteBalance = DB::table('inventory_balances')->insertGetId([
+            'inventory_pool_id' => $websitePool, 'product_variant_id' => $c['variant'],
+            'physical_stock' => 4, 'reserved_stock' => 0, 'safety_stock' => 0,
+            'counted_at' => now(), 'version' => 1,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $transfer = app(FacilityTransferReview::class);
+        $review = $transfer->review($c['actor'], $c['variant'], $c['a'], null, 3, 'Move to website');
+        $receipt = $transfer->confirm($c['actor'], $review['id'], 'facility-to-website');
+
+        $this->assertSame('applied', $receipt['status']);
+        $this->assertSame(7, (int) DB::table('inventory_balances')->where('id', $c['balance_a'])->value('physical_stock'));
+        $this->assertSame(7, (int) DB::table('inventory_balances')->where('id', $websiteBalance)->value('physical_stock'));
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['provider_location_id' => 'WH-A', 'target_quantity' => 5]);
+        $this->assertSame(1, DB::table('inventory_store_sync_tasks')->count());
+        $this->assertSame('confirmed', $receipt['sync'][1]['status']);
+    }
+
+    public function test_website_to_facility_transfer_respects_website_reservations(): void
+    {
+        $c = $this->context();
+        $websitePool = DB::table('inventory_pools')->insertGetId([
+            'pool_key' => 'store:website', 'kind' => 'store',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $websiteBalance = DB::table('inventory_balances')->insertGetId([
+            'inventory_pool_id' => $websitePool, 'product_variant_id' => $c['variant'],
+            'physical_stock' => 10, 'reserved_stock' => 3, 'safety_stock' => 1,
+            'counted_at' => now(), 'version' => 1,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $transfer = app(FacilityTransferReview::class);
+        try {
+            $transfer->review($c['actor'], $c['variant'], null, $c['a'], 7, 'Too much');
+            $this->fail('Reserved website stock was transferred');
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            $this->assertArrayHasKey('quantity', $exception->errors());
+        }
+        $review = $transfer->review($c['actor'], $c['variant'], null, $c['a'], 5, 'Restock Lazada');
+        $receipt = $transfer->confirm($c['actor'], $review['id'], 'website-to-facility');
+        $this->assertSame('applied', $receipt['status']);
+        $this->assertSame(5, (int) DB::table('inventory_balances')->where('id', $websiteBalance)->value('physical_stock'));
+        $this->assertSame(15, (int) DB::table('inventory_balances')->where('id', $c['balance_a'])->value('physical_stock'));
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['provider_location_id' => 'WH-A', 'target_quantity' => 13]);
+    }
+
     private function context(): array
     {
         config(['marketplace.multiwarehouse_operations_enabled' => true]);
