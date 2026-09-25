@@ -31,6 +31,7 @@ interface StockSyncDetailsModalProps {
   onUpdateSyncInfo?: (updated: StoreSyncItemState) => void;
   onCheckStatus?: () => Promise<StoreSyncItemState>;
   onResync?: () => Promise<StoreSyncItemState>;
+  onFirstCount?: () => void;
   onNavigateToSkuMapping?: (sku: string, storeId: string) => void;
   onNavigateToStoreSettings?: (storeId: string) => void;
   onNavigateToHistory?: (sku: string) => void;
@@ -50,6 +51,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
   onUpdateSyncInfo,
   onCheckStatus,
   onResync,
+  onFirstCount,
   onNavigateToSkuMapping,
   onNavigateToStoreSettings,
   onNavigateToHistory,
@@ -81,6 +83,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
 
   const isWebstore = store.platform === 'webstore' || store.id === 'webstore';
   const effectiveStatus = isWebstore ? 'jw_internal' : currentSync.status;
+  const needsWarehouseFirstCount = !isWebstore && selectedFacilityId !== null && currentSync.jwAvailableStock === null;
 
   // Handle "Check Status" (performs readback only without resending)
   const handleCheckStatus = async () => {
@@ -803,7 +806,19 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                   </button>
                 )}
 
-                {effectiveStatus === 'not_synced' && (
+                {effectiveStatus === 'not_synced' && needsWarehouseFirstCount && (
+                  <button
+                    type="button"
+                    onClick={onFirstCount}
+                    disabled={!onFirstCount}
+                    className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-950 font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>First Count</span>
+                  </button>
+                )}
+
+                {effectiveStatus === 'not_synced' && !needsWarehouseFirstCount && (
                   <button
                     type="button"
                     disabled={currentSync.canResync !== true}

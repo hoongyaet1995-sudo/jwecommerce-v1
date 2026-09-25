@@ -68,6 +68,23 @@ describe('warehouse-aware stock sync details',()=>{
     expect(host.textContent).not.toContain('Marketplace stock does not match JW inventory');
   });
 
+  it('opens First Count for the selected uncounted warehouse instead of offering resync',async()=>{
+    const firstCount=vi.fn();
+    await render({syncInfo:{...state,status:'not_synced'},selectedFacilityId:8,onFirstCount:firstCount});
+    const button=[...host.querySelectorAll('button')].find(b=>b.textContent?.trim()==='First Count')!;
+    expect(button).toBeTruthy();
+    expect(button.disabled).toBe(false);
+    expect(host.textContent).not.toContain('Resync Stock');
+    await act(async()=>button.click());
+    expect(firstCount).toHaveBeenCalledOnce();
+  });
+
+  it('keeps resync for a counted warehouse that has not synced',async()=>{
+    await render({syncInfo:{...state,status:'not_synced',jwAvailableStock:5,canResync:true},selectedFacilityId:8});
+    expect([...host.querySelectorAll('button')].some(b=>b.textContent?.trim()==='Resync Stock')).toBe(true);
+    expect([...host.querySelectorAll('button')].some(b=>b.textContent?.trim()==='First Count')).toBe(false);
+  });
+
   it('offers readback for awaiting confirmation and retry only when permitted',async()=>{
     const check=vi.fn().mockResolvedValue({...state,status:'synced',jwAvailableStock:8,
       marketplaceReportedStock:8,difference:0,canCheck:true});

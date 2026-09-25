@@ -136,7 +136,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
 
   const [isIntakeModalOpen, setIsIntakeModalOpen] = useState(false);
   const [selectedItemForIntake, setSelectedItemForIntake] = useState<MarketplaceInventoryItem | null>(null);
-  const [intakeInitialType, setIntakeInitialType] = useState<'intake' | 'adjustment'>('intake');
+  const [intakeInitialType, setIntakeInitialType] = useState<'intake' | 'adjustment' | 'count'>('intake');
   const [intakeTargetStoreId, setIntakeTargetStoreId] = useState<string | undefined>(undefined);
   const [intakeTargetWarehouseId, setIntakeTargetWarehouseId] = useState<string | undefined>(undefined);
 
@@ -649,7 +649,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
   // Handler: Open Intake/Adjustment modal
   const handleOpenIntake = (
     item: MarketplaceInventoryItem,
-    type: 'intake' | 'adjustment' = 'intake',
+    type: 'intake' | 'adjustment' | 'count' = 'intake',
     targetStoreId?: string,
     targetWarehouseId?: string
   ) => {
@@ -1845,6 +1845,11 @@ export const MarketplaceInventoryPage: React.FC = () => {
             await storeInventoryApi.facilityResync(syncModalStore.id,syncFacilityId,(syncModalItem as any).variantId,crypto.randomUUID()),
             syncModalInfo!);
           return storeInventoryApi.resyncStock(syncModalStore.id,(syncModalItem as any).variantId,crypto.randomUUID());
+        }}
+        onFirstCount={() => {
+          if (!syncModalItem || !syncModalStore || syncFacilityId === null) return;
+          handleOpenIntake(syncModalItem, 'count', syncModalStore.id, String(syncFacilityId));
+          setIsStockSyncModalOpen(false);
         }}
         onNavigateToStoreSettings={() => {
           setIsStockSyncModalOpen(false);

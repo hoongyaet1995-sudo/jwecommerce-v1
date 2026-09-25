@@ -34,7 +34,7 @@ interface StockIntakeAdjustmentModalProps {
   mode: 'shared' | 'independent';
   stores: InventoryStoreChannel[];
   storeBalances?: Record<string,Record<string,any>>;
-  initialType?: 'intake' | 'adjustment';
+  initialType?: 'intake' | 'adjustment' | 'count';
   initialStoreId?: string;
   initialWarehouseId?: string;
   onSave: (payload: {
@@ -98,7 +98,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
       setActionType(initialType);
       setQuantityInput('');
       setNotes('');
-      setReason(initialType === 'intake' ? 'Supplier PO Delivery Verification' : 'Physical Cycle Count Reconciliation');
+      setReason(initialType === 'intake' ? 'Supplier PO Delivery Verification' : initialType === 'count' ? 'Initial Warehouse Physical Count' : 'Physical Cycle Count Reconciliation');
       if (initialStoreId) setSelectedStoreId(initialStoreId);
       if (initialWarehouseId) setSelectedWarehouseId(initialWarehouseId);
     }
@@ -285,8 +285,8 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
           </div>
           {hasWarehouses && !currentWarehouseObj?.balance?.isCounted && !isVerificationPending && !isUnmapped && (
             <div className="mt-3 p-3 rounded-xl border border-purple-700/50 bg-purple-950/20 text-xs text-neutral-200 flex items-center justify-between gap-3">
-              <span>This warehouse has no verified opening count. Count it before receiving stock.</span>
-              <button type="button" onClick={() => { setActionType('count'); setQuantityInput(''); setReason('Initial Warehouse Physical Count'); }} className="shrink-0 px-3 py-2 rounded-lg bg-purple-600 text-white font-bold cursor-pointer">First Count This Warehouse</button>
+              <span>{actionType === 'count' ? 'Enter the verified physical stock for this warehouse.' : 'This warehouse has no verified opening count. Count it before receiving stock.'}</span>
+              {actionType !== 'count' && <button type="button" onClick={() => { setActionType('count'); setQuantityInput(''); setReason('Initial Warehouse Physical Count'); }} className="shrink-0 px-3 py-2 rounded-lg bg-purple-600 text-white font-bold cursor-pointer">First Count This Warehouse</button>}
             </div>
           )}
         </div>
