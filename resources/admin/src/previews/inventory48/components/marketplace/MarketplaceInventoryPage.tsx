@@ -49,7 +49,7 @@ import {
 
 import { InitialStockCountModal } from './inventory/InitialStockCountModal';
 import { StockIntakeAdjustmentModal } from './inventory/StockIntakeAdjustmentModal';
-import { ManageStockDrawer } from './inventory/ManageStockDrawer';
+import { FocusedManageStockDrawer } from './inventory/FocusedManageStockDrawer';
 import { StoreStockTransfersTab } from './inventory/StoreStockTransfersTab';
 import { InventoryActivityHistoryTab } from './inventory/InventoryActivityHistoryTab';
 import { InventorySettingsModal } from './inventory/InventorySettingsModal';
@@ -1747,7 +1747,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
       />
 
       {/* DRAWER: Manage Stock Bottom Drawer (Multi-Warehouse / Single / No-Warehouse) */}
-      <ManageStockDrawer
+      <FocusedManageStockDrawer
         isOpen={isManageStockDrawerOpen}
         onClose={() => {
           setIsManageStockDrawerOpen(false);
