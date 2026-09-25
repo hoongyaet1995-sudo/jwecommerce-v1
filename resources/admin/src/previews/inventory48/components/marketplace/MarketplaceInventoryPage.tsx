@@ -482,6 +482,32 @@ export const MarketplaceInventoryPage: React.FC = () => {
     return record;
   };
 
+  const handleCheckTransferStatus = async (record:StoreStockTransferRecord):Promise<StoreStockTransferRecord> => {
+    const item=safeInventory.find(entry=>entry.masterSku===record.masterSku);
+    if(!item) throw new Error('Refresh inventory, then check this transfer again.');
+    const check=async(storeId:string,warehouseId:string|undefined,platform:string) => {
+      if(platform==='webstore') return 'succeeded' as const;
+      const isFacility=/^\d+$/.test(warehouseId||'');
+      const current=isFacility
+        ? await storeInventoryApi.facilitySyncDetails(storeId,Number(warehouseId),(item as any).variantId)
+        : await storeInventoryApi.syncDetails(storeId,(item as any).variantId);
+      const result=current.status!=='synced'&&(current.can_check??current.canCheck)
+        ? isFacility
+          ? await storeInventoryApi.facilitySyncCheck(storeId,Number(warehouseId),(item as any).variantId)
+          : await storeInventoryApi.checkStock(storeId,(item as any).variantId)
+        : current;
+      return result.status==='synced'?'succeeded' as const
+        : ['sync_failed','auth_expired','verification_pending'].includes(result.status)?'failed' as const:'pending' as const;
+    };
+    const [sourcePlatformSyncStatus,destinationPlatformSyncStatus]=await Promise.all([
+      check(record.sourceStoreId,record.sourceWarehouseId,record.sourcePlatform),
+      check(record.destinationStoreId,record.destinationWarehouseId,record.destinationPlatform),
+    ]);
+    const updated={...record,sourcePlatformSyncStatus,destinationPlatformSyncStatus};
+    setTransfersList(previous=>previous.map(entry=>entry.id===record.id?updated:entry));
+    return updated;
+  };
+
   // Handler: Save First Count
   const handleSaveFirstCount = ({
     sku,
@@ -1642,7 +1668,8 @@ export const MarketplaceInventoryPage: React.FC = () => {
           stores={stores}
           storeBalances={storeBalances}
           transfersList={transfersList}
-        onExecuteTransfer={handleRealExecuteTransfer}
+          onExecuteTransfer={handleRealExecuteTransfer}
+          onCheckTransferStatus={handleCheckTransferStatus}
         onRetryPlatformSync={async (id,target)=>{
           const record=transfersList.find(entry=>entry.id===id);
           if(!record)throw new Error('Transfer record is unavailable.');

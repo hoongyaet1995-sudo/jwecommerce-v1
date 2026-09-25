@@ -40,6 +40,7 @@ interface StoreStockTransfersTabProps {
   storeBalances: Record<string, Record<string, StoreStockAccountBalance>>;
   transfersList: StoreStockTransferRecord[];
   onExecuteTransfer: (transfer: Omit<StoreStockTransferRecord, 'id' | 'transferNumber' | 'timestamp' | 'ledgerStatus' | 'sourcePlatformSyncStatus' | 'destinationPlatformSyncStatus'>) => Promise<StoreStockTransferRecord>;
+  onCheckTransferStatus: (transfer: StoreStockTransferRecord) => Promise<StoreStockTransferRecord>;
   onRetryPlatformSync: (transferId: string, target: 'source' | 'destination') => Promise<void>;
 }
 
@@ -52,6 +53,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
   storeBalances,
   transfersList,
   onExecuteTransfer,
+  onCheckTransferStatus,
   onRetryPlatformSync
 }) => {
   // Form State
@@ -98,6 +100,8 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
     isOpen: false,
     stage: 'preparing'
   });
+  const [checkingTransferStatus,setCheckingTransferStatus]=useState(false);
+  const [transferStatusError,setTransferStatusError]=useState('');
 
   // Transfer history filter
   const [historySearch, setHistorySearch] = useState<string>('');
@@ -313,6 +317,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
     e.preventDefault();
     if (isTransferBlocked || !selectedItem) return;
     setTransferError('');
+    setTransferStatusError('');
 
     setActiveTransferExecution({
       isOpen: true,
@@ -346,6 +351,27 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
       setTransferError(err?.message||'Transfer could not be completed.');
     }
   };
+
+  const handleCheckStatus = async () => {
+    const record=activeTransferExecution.record;
+    if(!record || checkingTransferStatus)return;
+    setCheckingTransferStatus(true);
+    setTransferStatusError('');
+    try {
+      const updated=await onCheckTransferStatus(record);
+      setActiveTransferExecution(previous=>({...previous,record:updated,
+        stage:updated.sourcePlatformSyncStatus==='failed'||updated.destinationPlatformSyncStatus==='failed'
+          ?'has_platform_error':updated.sourcePlatformSyncStatus==='succeeded'
+            && updated.destinationPlatformSyncStatus==='succeeded'?'completed':'ledger_done'}));
+    } catch {
+      setTransferStatusError('Stock status could not be checked. Please try again.');
+    } finally {
+      setCheckingTransferStatus(false);
+    }
+  };
+
+  const sourceTransferStatus=activeTransferExecution.record?.sourcePlatformSyncStatus??'pending';
+  const destinationTransferStatus=activeTransferExecution.record?.destinationPlatformSyncStatus??'pending';
 
   // Filtered history list
   const filteredHistory = useMemo(() => {
@@ -1504,12 +1530,18 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
 
               {/* Stage 2: Source Platform Update */}
               <div className={`p-3 rounded-xl border flex items-center justify-between ${
-                activeTransferExecution.stage === 'source_syncing'
+                sourceTransferStatus === 'succeeded'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+                  : sourceTransferStatus === 'failed'
+                  ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-900 dark:text-red-200'
+                  : activeTransferExecution.stage === 'source_syncing'
                   ? 'bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white'
                   : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200'
               }`}>
                 <div className="flex items-center gap-2.5">
-                  {activeTransferExecution.stage === 'source_syncing' ? (
+                  {sourceTransferStatus === 'succeeded' ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  ) : activeTransferExecution.stage === 'source_syncing' ? (
                     <RefreshCw className="w-5 h-5 text-neutral-600 dark:text-neutral-300 animate-spin" />
                   ) : (
                     <AlertTriangle className="w-5 h-5 text-amber-600" />
@@ -1517,27 +1549,34 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                   <div>
                     <div className="text-xs font-bold">Step 2: Source Channel Stock Update ({sourceStore.platformDisplayName})</div>
                     <div className="text-[11px] opacity-80">
-                      {activeTransferExecution.stage === 'source_syncing' ? 'Sending updated ATP…' : 'JW ledger saved. Provider delivery has not been confirmed.'}
+                      {sourceTransferStatus === 'succeeded'
+                        ? activeTransferExecution.record?.sourcePlatform==='webstore'?'Saved in JW Storefront.':'Provider stock confirmed.'
+                        : sourceTransferStatus === 'failed'?'Stock update needs attention.'
+                        : activeTransferExecution.stage === 'source_syncing'?'Sending updated ATP…':'JW ledger saved. Provider delivery has not been confirmed.'}
                     </div>
                   </div>
                 </div>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-neutral-800">
-                  {activeTransferExecution.stage === 'source_syncing' ? 'Syncing…' : 'Not confirmed'}
+                  {sourceTransferStatus === 'succeeded'?'Confirmed':sourceTransferStatus === 'failed'?'Needs attention':activeTransferExecution.stage === 'source_syncing'?'Syncing…':'Not confirmed'}
                 </span>
               </div>
 
               {/* Stage 3: Destination Platform Update */}
               <div className={`p-3 rounded-xl border flex items-center justify-between ${
-                activeTransferExecution.stage === 'dest_syncing'
+                destinationTransferStatus === 'succeeded'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+                  : activeTransferExecution.stage === 'dest_syncing'
                   ? 'bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white'
-                  : activeTransferExecution.stage === 'has_platform_error'
+                  : destinationTransferStatus === 'failed'
                   ? 'bg-red-50 border-red-200 text-red-900'
                   : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200'
               }`}>
                 <div className="flex items-center gap-2.5">
-                  {activeTransferExecution.stage === 'dest_syncing' ? (
+                  {destinationTransferStatus === 'succeeded' ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  ) : activeTransferExecution.stage === 'dest_syncing' ? (
                     <RefreshCw className="w-5 h-5 text-neutral-600 dark:text-neutral-300 animate-spin" />
-                  ) : activeTransferExecution.stage === 'has_platform_error' ? (
+                  ) : destinationTransferStatus === 'failed' ? (
                     <AlertTriangle className="w-5 h-5 text-red-600" />
                   ) : (
                     <AlertTriangle className="w-5 h-5 text-amber-600" />
@@ -1545,33 +1584,42 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                   <div>
                     <div className="text-xs font-bold">Step 3: Destination Channel Stock Update ({destStore.platformDisplayName})</div>
                     <div className="text-[11px] opacity-80">
-                      {activeTransferExecution.stage === 'dest_syncing' 
-                        ? 'Broadcasting incremented ATP...' 
-                        : activeTransferExecution.stage === 'has_platform_error'
-                        ? 'API Gateway timeout during platform write.'
-                        : 'JW ledger saved. Provider delivery has not been confirmed.'}
+                      {destinationTransferStatus === 'succeeded'
+                        ? activeTransferExecution.record?.destinationPlatform==='webstore'?'Saved in JW Storefront.':'Provider stock confirmed.'
+                        : destinationTransferStatus === 'failed'?'Stock update needs attention.'
+                        : activeTransferExecution.stage === 'dest_syncing'?'Sending updated ATP…':'JW ledger saved. Provider delivery has not been confirmed.'}
                     </div>
                   </div>
                 </div>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-neutral-800">
-                  {activeTransferExecution.stage === 'dest_syncing' ? 'Syncing…' : activeTransferExecution.stage === 'has_platform_error' ? 'Failed' : 'Not confirmed'}
+                  {destinationTransferStatus === 'succeeded'?'Confirmed':destinationTransferStatus === 'failed'?'Needs attention':activeTransferExecution.stage === 'dest_syncing'?'Syncing…':'Not confirmed'}
                 </span>
               </div>
             </div>
 
             {/* Error handling reassurance if platform failed */}
-            {activeTransferExecution.stage === 'has_platform_error' && (
+            {(sourceTransferStatus === 'failed' || destinationTransferStatus === 'failed') && (
               <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 text-xs text-amber-900 dark:text-amber-200 space-y-1">
                 <div className="font-bold text-amber-950 dark:text-amber-100">
                   Safe Targeted Recovery Available:
                 </div>
                 <p>
-                  JW internal ledger transfer succeeded and stock is securely allocated. You can retry pushing the stock update to {destStore.name} without re-executing ledger deduction.
+                  JW inventory has been saved. Open Stock Sync Details to retry the affected store without repeating this transfer.
                 </p>
               </div>
             )}
 
-            <div className="pt-2 flex justify-end gap-2">
+            <div className="pt-2 flex items-center justify-between gap-2">
+              <div>
+                {transferStatusError && <p role="alert" className="text-xs text-amber-500">{transferStatusError}</p>}
+              </div>
+              <div className="flex gap-2">
+                <button type="button" disabled={!activeTransferExecution.record || checkingTransferStatus}
+                  onClick={handleCheckStatus}
+                  className="px-4 py-2 rounded-xl border border-neutral-300 dark:border-neutral-700 text-xs font-bold text-neutral-900 dark:text-white disabled:opacity-50 cursor-pointer flex items-center gap-1.5">
+                  <RefreshCw className={`w-3.5 h-3.5 ${checkingTransferStatus?'animate-spin':''}`} />
+                  {checkingTransferStatus?'Checking…':'Check Status'}
+                </button>
               <button
                 type="button"
                 onClick={() => setActiveTransferExecution({ isOpen: false, stage: 'preparing' })}
@@ -1579,6 +1627,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
               >
                 Done
               </button>
+              </div>
             </div>
           </div>
         </div>
