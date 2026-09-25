@@ -8,6 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
+use Tests\Support\StoreInventoryFixture;
 
 class LazadaTestLeaseRenewalTest extends TestCase
 {
@@ -23,6 +24,13 @@ class LazadaTestLeaseRenewalTest extends TestCase
         $id=$service->connect('private-test-token');
         $actor=User::factory()->create(['is_admin'=>true]);
         app(\App\Services\Inventory\TestDataClassificationService::class)->markTest('store',$id,$actor,'Official test fixture');
+        $variant=(new StoreInventoryFixture)->sku()['variant'];
+        DB::table('inventory_store_sync_tasks')->insert([
+            'id'=>'11111111-1111-4111-8111-111111111111',
+            'marketplace_store_id'=>$id,'product_variant_id'=>$variant->id,
+            'stage'=>'facility','status'=>'auth_expired','balance_version'=>1,
+            'event_key'=>'expired-before-renewal','created_at'=>now(),'updated_at'=>now(),
+        ]);
         $this->travel(61)->minutes();
         $this->app->instance('env','production');
         try {$service->renew($id,$actor,'Renew for acceptance');$this->fail('Online renewal implicitly enabled.');}
@@ -34,6 +42,9 @@ class LazadaTestLeaseRenewalTest extends TestCase
         $this->assertArrayNotHasKey('access_token',$receipt);
         $this->assertTrue(MarketplaceStoreToken::where('store_id',$id)->first()->test_lease_expires_at->isFuture());
         $this->assertSame('private-test-token',MarketplaceStoreToken::where('store_id',$id)->first()->access_token);
+        $this->assertDatabaseHas('inventory_store_sync_tasks',[
+            'id'=>'11111111-1111-4111-8111-111111111111','status'=>'failed',
+        ]);
         Http::assertSentCount(2);
         $this->actingAs($actor)->getJson('/admin/api/marketplace/connections')->assertOk()
             ->assertJsonPath('stores.0.status','connected')

@@ -27,6 +27,7 @@ final class LazadaTestConnectionService {
    if ((string)($seller['seller_id']??'')!==$store->external_shop_id || ($seller['short_code']??'')!=='MY4NA1T7CK'
        || ($seller['status']??'')!=='ACTIVE') throw new RuntimeException('Fresh official test seller validation failed.');
    $token->test_lease_expires_at=now()->addHour();$token->save();
+   $this->releaseExpiredInventoryAttempts($storeId);
    return ['store_id'=>$storeId,'actor_id'=>(int)$actor->id,'reason'=>trim($reason),
        'test_lease_expires_at'=>$token->test_lease_expires_at->toIso8601String()];
   });
@@ -54,9 +55,16 @@ final class LazadaTestConnectionService {
     'fulfillment_write'=>false,'updated_at'=>now(),'created_at'=>now()]);
    MarketplaceStoreToken::updateOrCreate(['store_id'=>$id],['application_id'=>$testApp,'credential_source'=>'official_test',
     'test_lease_expires_at'=>now()->addHour(),'access_token'=>$accessToken,'refresh_token'=>null,'access_expires_at'=>null,'refresh_expires_at'=>null]);
+   $this->releaseExpiredInventoryAttempts($id);
    return (int)$id;
   });
   $this->enrollment->enroll($storeId);
   return $storeId;
+ }
+ private function releaseExpiredInventoryAttempts(int $storeId):void {
+  // A fresh seller read proved the replacement credential works. Old auth failures
+  // are retryable failures now; their stock writes are never replayed implicitly.
+  DB::table('inventory_store_sync_tasks')->where('marketplace_store_id',$storeId)
+   ->where('status','auth_expired')->update(['status'=>'failed','updated_at'=>now()]);
  }
 }
