@@ -207,7 +207,8 @@ final class LazadaClient
             throw new StoreInventoryResultUncertain('Lazada did not return a conclusive stock result. Reconcile before retrying.');
         }
         if(!$response->successful()||!in_array($result['code']??null,['0',0],true)) {
-            throw new RuntimeException('Lazada rejected the stock synchronization request.');
+            throw new \App\Exceptions\StoreInventoryProviderRejected(
+                $response->status(), $result['code'] ?? null, $result['message'] ?? null);
         }
         return ['request_id'=>is_string($result['request_id']??null)?$result['request_id']:null];
     }

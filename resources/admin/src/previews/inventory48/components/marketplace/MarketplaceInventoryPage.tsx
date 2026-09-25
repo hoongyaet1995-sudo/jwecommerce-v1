@@ -66,9 +66,9 @@ function adaptFacilitySync(detail:any, previous:StoreSyncItemState):StoreSyncIte
     lastCheckedAt:detail.last_checked_at ?? '',
     canCheck:detail.can_check === true,
     canResync:detail.can_resync === true,
-    failureReason:detail.status==='verification_pending'
+    failureReason:detail.failure_reason || (detail.status==='verification_pending'
       ? 'Warehouse verification is pending; stock operations are paused.'
-      :detail.jw_available_stock === null ? 'Complete First Count for this warehouse before resynchronizing stock.' : undefined,
+      :detail.jw_available_stock === null ? 'Complete First Count for this warehouse before resynchronizing stock.' : undefined),
   };
 }
 

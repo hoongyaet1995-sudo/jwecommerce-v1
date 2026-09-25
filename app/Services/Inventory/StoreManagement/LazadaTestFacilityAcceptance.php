@@ -157,10 +157,18 @@ final class LazadaTestFacilityAcceptance
     private function countBatchFor(int $storeId, int $variantId, int $facilityId, ?string $taskId): ?array
     {
         $taskReviewId = null;
+        $resyncTask = null;
         if ($taskId !== null) {
-            $eventKey = DB::table('inventory_store_sync_tasks')->where('id', $taskId)->value('event_key');
-            if (! is_string($eventKey) || ! str_starts_with($eventKey, 'facility-stock:')) return null;
-            $taskReviewId = substr($eventKey, strlen('facility-stock:'));
+            $task = DB::table('inventory_store_sync_tasks')->where('id', $taskId)->first();
+            $eventKey = $task?->event_key;
+            if (! is_string($eventKey)) return null;
+            if (str_starts_with($eventKey, 'facility-stock:')) {
+                $taskReviewId = substr($eventKey, strlen('facility-stock:'));
+            } elseif (str_starts_with($eventKey, 'facility-resync:')) {
+                $resyncTask = $task;
+            } else {
+                return null;
+            }
         }
         $reviews = DB::table('inventory_store_reviews')->where('kind', 'batch_first_count')
             ->whereIn('status', $taskId === null ? ['confirming'] : ['confirmed'])
@@ -173,6 +181,16 @@ final class LazadaTestFacilityAcceptance
                 ($child['key'] ?? null) === 'facility:'.$storeId.':'.$facilityId
                 && ($taskReviewId === null || ($child['id'] ?? null) === $taskReviewId));
             if (! $matchesFacility) continue;
+            if ($resyncTask) {
+                $child = collect($children)->firstWhere('key', 'facility:'.$storeId.':'.$facilityId);
+                $facilityReview = DB::table('marketplace_facility_stock_reviews')->where('id', $child['id'])->first();
+                $receipt = json_decode($facilityReview?->receipt ?? '{}', true) ?: [];
+                if ($facilityReview?->status !== 'confirmed'
+                    || (int) ($receipt['balance_id'] ?? 0) !== (int) $resyncTask->inventory_balance_id
+                    || (int) ($receipt['balance_version'] ?? -1) !== (int) $resyncTask->balance_version) {
+                    continue;
+                }
+            }
             return ['event_keys' => array_map(fn ($child) => 'facility-stock:'.$child['id'],
                 array_values(array_filter($children, fn ($child) => ($child['kind'] ?? null) === 'facility')))];
         }

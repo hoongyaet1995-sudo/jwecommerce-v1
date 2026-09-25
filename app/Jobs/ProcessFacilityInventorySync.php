@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Contracts\StoreInventoryPublisher;
 use App\Exceptions\StoreInventoryAuthorizationExpired;
 use App\Exceptions\StoreInventoryResultUncertain;
+use App\Exceptions\StoreInventoryProviderRejected;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -129,6 +130,14 @@ final class ProcessFacilityInventorySync implements ShouldQueue
             $this->finish('uncertain', $error->getMessage());
 
             return;
+        } catch (StoreInventoryProviderRejected $error) {
+            $this->finish('failed', $error->getMessage(), [
+                'provider_code' => $error->providerCode,
+                'provider_message' => $error->providerMessage,
+                'http_status' => $error->httpStatus,
+            ]);
+
+            return;
         } catch (\Throwable) {
             $this->finish('failed', 'Marketplace rejected the facility stock update.');
 
@@ -151,11 +160,11 @@ final class ProcessFacilityInventorySync implements ShouldQueue
         }, 3);
     }
 
-    private function finish(string $status, string $message): void
+    private function finish(string $status, string $message, array $diagnostics = []): void
     {
         DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)->where('status', 'processing')->update([
             'status' => $status,
-            'provider_receipt' => json_encode(['code' => $status, 'message' => $message], JSON_THROW_ON_ERROR),
+            'provider_receipt' => json_encode(['code' => $status, 'message' => $message] + $diagnostics, JSON_THROW_ON_ERROR),
             'updated_at' => now(),
         ]);
     }

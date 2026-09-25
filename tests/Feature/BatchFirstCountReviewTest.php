@@ -5,6 +5,9 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Services\Inventory\StoreManagement\FacilityRegistry;
 use App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance;
+use App\Services\Inventory\StoreManagement\FacilitySyncRecovery;
+use App\Contracts\StoreInventoryPublisher;
+use App\Jobs\ProcessFacilityInventorySync;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\StoreInventoryFixture;
@@ -88,6 +91,30 @@ class BatchFirstCountReviewTest extends TestCase
             $this->assertTrue(app(LazadaTestFacilityAcceptance::class)->inspect(
                 $storeId, $variantId, $facilityId, $task->id)['eligible']);
         }
+    }
+
+    public function test_failed_batch_facility_can_resync_after_website_count_without_losing_test_eligibility(): void
+    {
+        [$actor, $storeId, $variantId, $facilities] = $this->setupSku(true);
+        $review = $this->actingAs($actor)->postJson('/admin/api/inventory/store-management/batch-first-counts', [
+            'variant_id' => $variantId, 'physical_count' => 15,
+            'allocations' => ['website' => 5, 'facility:'.$storeId.':'.$facilities[0] => 5,
+                'facility:'.$storeId.':'.$facilities[1] => 5], 'reason' => 'Batch resync regression',
+        ])->assertCreated()->json();
+        $this->postJson('/admin/api/inventory/store-management/batch-first-counts/'.$review['id'].'/confirm', [
+            'operation_key' => 'batch-resync-regression',
+        ])->assertOk();
+        $original = DB::table('inventory_store_sync_tasks')->where('marketplace_store_facility_id', $facilities[0])->first();
+        DB::table('inventory_store_sync_tasks')->where('id', $original->id)->update(['status' => 'failed']);
+        app(FacilitySyncRecovery::class)->resync($storeId, $facilities[0], $variantId, 'retry-batch-a');
+        $retry = DB::table('inventory_store_sync_tasks')->where('event_key', 'facility-resync:retry-batch-a')->first();
+        $publisher = \Mockery::mock(StoreInventoryPublisher::class);
+        $publisher->shouldReceive('publish')->once()->andReturn([
+            'provider' => 'lazada', 'observed_quantity' => 5, 'provider_location_id' => 'WH-A',
+            'confirmation_method' => 'provider_readback',
+        ]);
+        (new ProcessFacilityInventorySync($retry->id))->handle($publisher);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $retry->id, 'status' => 'confirmed']);
     }
 
     private function setupSku(bool $testSeller = false): array

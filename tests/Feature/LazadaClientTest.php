@@ -162,6 +162,23 @@ class LazadaClientTest extends TestCase
         });
     }
 
+    public function test_stock_rejection_preserves_bounded_provider_code_without_credentials(): void
+    {
+        config(['marketplace.stock_sync_operations_enabled' => true, 'marketplace.lazada.enabled' => true,
+            'marketplace.lazada.app_key' => '123', 'marketplace.lazada.app_secret' => 'fixture-secret']);
+        Http::preventStrayRequests();
+        Http::fake(['*' => Http::response(['code' => 'IllegalWarehouse',
+            'message' => 'Warehouse cannot accept this SKU', 'request_id' => 'abc'], 200)]);
+        try {
+            app(LazadaClient::class)->updateAbsoluteQuantity('fixture-token', '1001', '2001', 5, 'MY-WH-2');
+            $this->fail('A rejected warehouse update must throw.');
+        } catch (\App\Exceptions\StoreInventoryProviderRejected $error) {
+            $this->assertSame('IllegalWarehouse', $error->providerCode);
+            $this->assertSame(200, $error->httpStatus);
+            $this->assertStringNotContainsString('fixture-token', $error->getMessage());
+        }
+    }
+
     public function test_size_chart_update_uses_the_confirmed_item_and_lazada_image_url(): void
     {
         config(['marketplace.publish_operations_enabled'=>true,'marketplace.lazada.enabled'=>true,
