@@ -38,6 +38,9 @@ final class ProcessFacilityInventorySync implements ShouldQueue
                 || ! $task->inventory_balance_id) {
                 return null;
             }
+            if (! \App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::stockSyncAllowed((int) $task->marketplace_store_id)) {
+                return null;
+            }
             $inFlight = DB::table('inventory_store_sync_tasks')->where('marketplace_store_facility_id', $task->marketplace_store_facility_id)
                 ->where('product_variant_id', $task->product_variant_id)
                 ->whereIn('status', ['processing', 'uncertain'])->where('id', '!=', $task->id)->exists();
@@ -72,7 +75,7 @@ final class ProcessFacilityInventorySync implements ShouldQueue
 
                 return null;
             }
-            if (config('marketplace.multiwarehouse_test_acceptance_enabled') === true) {
+            if (\App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::appliesToStore((int) $task->marketplace_store_id)) {
                 try {
                     app(\App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::class)
                         ->assertEligible((int) $task->marketplace_store_id,

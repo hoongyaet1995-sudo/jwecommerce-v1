@@ -105,15 +105,29 @@ class LazadaTestFacilityStockActionsTest extends TestCase
         ]);
     }
 
-    public function test_forged_production_seller_cannot_create_a_facility_review(): void
+    public function test_production_seller_requires_general_gate_but_uses_the_same_facility_review(): void
     {
         $c = $this->context();
         DB::table('marketplace_stores')->where('id', $c['store'])->update([
             'account_mode' => 'production', 'external_shop_id' => 'PRODUCTION-SELLER',
         ]);
-        $this->expectException(ValidationException::class);
-        app(FacilityStockReview::class)->review($c['actor'], $c['store'], $c['a'], $c['variant'],
-            'count', 10, 'Forged seller');
+        try {
+            app(FacilityStockReview::class)->review($c['actor'], $c['store'], $c['a'], $c['variant'],
+                'count', 10, 'Production facility count');
+            $this->fail('Production must remain closed while general facility operations are disabled.');
+        } catch (ValidationException) {
+            $this->assertDatabaseCount('marketplace_facility_stock_reviews', 0);
+        }
+        config(['marketplace.multiwarehouse_operations_enabled' => true]);
+        $review = app(FacilityStockReview::class)->review($c['actor'], $c['store'], $c['a'], $c['variant'],
+            'count', 10, 'Production facility count');
+        $this->assertSame('pending', $review['status']);
+        $receipt = app(FacilityStockReview::class)->confirm($c['actor'], $review['id'], 'production-count');
+        $this->assertSame(10, $receipt['after']['physical']);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', [
+            'marketplace_store_id' => $c['store'], 'marketplace_store_facility_id' => $c['a'],
+            'product_variant_id' => $c['variant'], 'target_quantity' => 10,
+        ]);
     }
 
     public function test_test_only_sync_writes_and_reads_back_exact_lazada_warehouse(): void

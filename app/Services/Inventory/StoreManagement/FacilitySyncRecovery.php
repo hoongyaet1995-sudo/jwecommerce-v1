@@ -51,8 +51,7 @@ final class FacilitySyncRecovery
         $canResync = $canCheck && $quantity !== null
             && in_array($status, ['not_synced', 'sync_failed'], true)
             && ! in_array($task?->status, ['processing', 'uncertain'], true)
-            && (config('marketplace.multiwarehouse_stock_sync_enabled') === true
-                || config('marketplace.multiwarehouse_test_acceptance_enabled') === true);
+            && LazadaTestFacilityAcceptance::stockSyncAllowed($storeId);
 
         return ['store_id' => $storeId, 'facility_id' => $facilityId, 'variant_id' => $variantId,
             'provider_location_id' => $c['facility']->provider_facility_id,
@@ -126,12 +125,11 @@ final class FacilitySyncRecovery
         if (! preg_match('/\A[A-Za-z0-9:_-]{1,120}\z/D', $operationKey)) {
             $this->reject('Use a valid operation key.');
         }
-        if (config('marketplace.multiwarehouse_stock_sync_enabled') !== true
-            && config('marketplace.multiwarehouse_test_acceptance_enabled') !== true) {
+        if (! LazadaTestFacilityAcceptance::stockSyncAllowed($storeId)) {
             $this->reject('Facility stock sync is not enabled.');
         }
         $c = $this->context($storeId, $facilityId, $variantId);
-        if (config('marketplace.multiwarehouse_test_acceptance_enabled') === true) {
+        if (LazadaTestFacilityAcceptance::appliesToStore($storeId)) {
             $lastTask = $this->tasks($storeId, $facilityId, $variantId)
                 ->whereIn('status', ['failed', 'facility_blocked'])->orderByDesc('created_at')->orderByDesc('id')->first();
             app(LazadaTestFacilityAcceptance::class)->assertEligible(

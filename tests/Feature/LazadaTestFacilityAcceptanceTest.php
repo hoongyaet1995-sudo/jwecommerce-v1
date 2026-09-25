@@ -25,6 +25,7 @@ class LazadaTestFacilityAcceptanceTest extends TestCase
     {
         [$storeId, $variantId, $facilityId] = $this->context();
         $policy = app(LazadaTestFacilityAcceptance::class);
+        $this->assertTrue(LazadaTestFacilityAcceptance::appliesToStore($storeId));
         $this->assertTrue($policy->inspect($storeId, $variantId, $facilityId)['eligible']);
         config(['marketplace.lazada.test_store_id' => $storeId + 100]);
         $this->assertContains('test_seller_not_approved', array_column(
@@ -35,6 +36,7 @@ class LazadaTestFacilityAcceptanceTest extends TestCase
         DB::table('marketplace_stores')->where('id', $production->id)->update([
             'account_mode' => 'production', 'environment' => 'live',
         ]);
+        $this->assertFalse(LazadaTestFacilityAcceptance::appliesToStore((int) $production->id));
         $this->assertContains('test_seller_not_approved', array_column(
             $policy->inspect((int) $production->id, $variantId, $facilityId)['blockers'], 'code'));
         $this->assertContains('mapping_missing', array_column(

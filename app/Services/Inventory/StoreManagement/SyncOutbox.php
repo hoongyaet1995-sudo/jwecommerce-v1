@@ -96,8 +96,7 @@ final class SyncOutbox
             'event_key' => $eventKey, 'attempts' => 0,
             'created_at' => now(), 'updated_at' => now(),
         ]);
-        if (config('marketplace.multiwarehouse_stock_sync_enabled') === true
-            || config('marketplace.multiwarehouse_test_acceptance_enabled') === true) {
+        if (LazadaTestFacilityAcceptance::stockSyncAllowed($storeId)) {
             \App\Jobs\ProcessFacilityInventorySync::dispatch($id)->afterCommit();
         }
 

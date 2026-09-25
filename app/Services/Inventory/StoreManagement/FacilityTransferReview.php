@@ -227,12 +227,18 @@ final class FacilityTransferReview
 
     private function assertTestAcceptance(?int $facilityId, int $variantId): void
     {
-        if ($facilityId === null || config('marketplace.multiwarehouse_test_acceptance_enabled') !== true) {
+        if ($facilityId === null) {
             return;
         }
         $storeId = DB::table('marketplace_store_facilities')->where('id', $facilityId)
             ->value('marketplace_store_id');
-        app(LazadaTestFacilityAcceptance::class)->assertEligible((int) $storeId, $variantId, $facilityId);
+        if (config('marketplace.multiwarehouse_operations_enabled') !== true
+            && ! LazadaTestFacilityAcceptance::appliesToStore((int) $storeId)) {
+            throw ValidationException::withMessages(['inventory' => 'Facility transfers are not enabled for this store.']);
+        }
+        if (LazadaTestFacilityAcceptance::appliesToStore((int) $storeId)) {
+            app(LazadaTestFacilityAcceptance::class)->assertEligible((int) $storeId, $variantId, $facilityId);
+        }
     }
 
     private function conflict(string $code): never

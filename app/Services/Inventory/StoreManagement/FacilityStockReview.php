@@ -16,6 +16,7 @@ final class FacilityStockReview
     {
         $this->authorize($actor);
         $this->validateInput($kind, $quantity, $reason);
+        $this->assertStoreEnabled($storeId);
 
         return DB::transaction(function () use ($actor, $storeId, $facilityId, $variantId, $kind, $quantity, $reason): array {
             $configuration = DB::table('inventory_configuration')->where('id', 1)->lockForUpdate()->first();
@@ -56,6 +57,7 @@ final class FacilityStockReview
         return DB::transaction(function () use ($actor, $reviewId, $operationKey): array {
             $review = DB::table('marketplace_facility_stock_reviews')->where('id', $reviewId)->lockForUpdate()->first();
             abort_unless($review, 404);
+            $this->assertStoreEnabled((int) $review->marketplace_store_id);
             if ($review->status === 'confirmed') {
                 if ($review->operation_key !== $operationKey) {
                     $this->conflict('review_already_confirmed');
@@ -264,8 +266,16 @@ final class FacilityStockReview
 
     private function assertTestAcceptance(int $storeId, int $variantId, int $facilityId): void
     {
-        if (config('marketplace.multiwarehouse_test_acceptance_enabled') === true) {
+        if (LazadaTestFacilityAcceptance::appliesToStore($storeId)) {
             app(LazadaTestFacilityAcceptance::class)->assertEligible($storeId, $variantId, $facilityId);
+        }
+    }
+
+    private function assertStoreEnabled(int $storeId): void
+    {
+        if (config('marketplace.multiwarehouse_operations_enabled') !== true
+            && ! LazadaTestFacilityAcceptance::appliesToStore($storeId)) {
+            throw ValidationException::withMessages(['inventory' => 'Facility inventory operations are not enabled for this store.']);
         }
     }
 

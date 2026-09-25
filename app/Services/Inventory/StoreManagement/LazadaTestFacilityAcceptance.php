@@ -9,6 +9,19 @@ use Illuminate\Validation\ValidationException;
 /** Narrow, read-only eligibility gate for the designated Lazada test seller. */
 final class LazadaTestFacilityAcceptance
 {
+    public static function appliesToStore(int $storeId): bool
+    {
+        return config('marketplace.multiwarehouse_test_acceptance_enabled') === true
+            && DB::table('marketplace_stores')->where('id', $storeId)
+                ->where('platform', 'lazada')->where('account_mode', 'test')->exists();
+    }
+
+    public static function stockSyncAllowed(int $storeId): bool
+    {
+        return config('marketplace.multiwarehouse_stock_sync_enabled') === true
+            || self::appliesToStore($storeId);
+    }
+
     public function inspect(int $storeId, int $variantId, ?int $facilityId = null,
         ?string $ignoreSyncTaskId = null): array
     {

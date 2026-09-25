@@ -13,6 +13,34 @@ class MarketplaceFacilityBindingTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_independent_production_lazada_facility_gets_a_dedicated_owner_without_manual_binding(): void
+    {
+        [$storeId, $facilityId] = $this->context();
+        config(['marketplace.multiwarehouse_operations_enabled' => true]);
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores']);
+        DB::table('marketplace_stores')->where('id', $storeId)->update(['account_mode' => 'production']);
+        $facilities = [['provider_id' => 'WH-A', 'name' => 'A'], ['provider_id' => 'WH-B', 'name' => 'B']];
+        app(FacilityRegistry::class)->confirm($storeId, $facilities);
+        $owner = DB::table('marketplace_store_facilities')->where('id', $facilityId)->value('inventory_warehouse_id');
+        $this->assertNotNull($owner);
+        $this->assertDatabaseHas('inventory_warehouses', ['id' => $owner, 'code' => 'LZD-FAC-'.$storeId.'-'.$facilityId]);
+        app(FacilityRegistry::class)->confirm($storeId, $facilities);
+        $this->assertSame($owner, DB::table('marketplace_store_facilities')->where('id', $facilityId)->value('inventory_warehouse_id'));
+        $this->assertDatabaseCount('inventory_balances', 0);
+    }
+
+    public function test_shared_mode_does_not_create_an_independent_production_owner(): void
+    {
+        [$storeId, $facilityId] = $this->context();
+        config(['marketplace.multiwarehouse_operations_enabled' => true]);
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool']);
+        DB::table('marketplace_stores')->where('id', $storeId)->update(['account_mode' => 'production']);
+        app(FacilityRegistry::class)->confirm($storeId, [
+            ['provider_id' => 'WH-A', 'name' => 'A'], ['provider_id' => 'WH-B', 'name' => 'B'],
+        ]);
+        $this->assertNull(DB::table('marketplace_store_facilities')->where('id', $facilityId)->value('inventory_warehouse_id'));
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
