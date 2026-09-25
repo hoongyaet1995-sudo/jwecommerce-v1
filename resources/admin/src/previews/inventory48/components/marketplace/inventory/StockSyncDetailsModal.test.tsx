@@ -42,9 +42,24 @@ describe('warehouse-aware stock sync details',()=>{
 
   it('keeps provider actions unavailable while warehouse verification is pending',async()=>{
     await render({syncInfo:{...state,status:'verification_pending',failureReason:'warehouse.error_not_in_whitelist'}});
-    expect(host.textContent).toContain('warehouse.error_not_in_whitelist');
+    expect(host.textContent).not.toContain('warehouse.error_not_in_whitelist');
     expect(host.textContent).not.toContain('Resync Stock');
     expect(host.textContent).not.toContain('Check Status');
+  });
+
+  it('keeps technical provider failures out of the resync flow',async()=>{
+    const resync=vi.fn().mockRejectedValue(new Error('IllegalWarehouse: provider internal detail'));
+    await render({syncInfo:{...state,status:'sync_failed',jwAvailableStock:5,
+      marketplaceReportedStock:0,difference:5,canResync:true,
+      failureReason:'IllegalWarehouse: provider internal detail'},onResync:resync});
+    expect(host.textContent).not.toContain('IllegalWarehouse');
+    const retry=[...host.querySelectorAll('button')].find(button=>button.textContent?.trim()==='Resync Stock')!;
+    await act(async()=>retry.click());
+    const confirm=[...host.querySelectorAll('button')].find(button=>button.textContent?.includes('Resync 5 Units'))!;
+    await act(async()=>confirm.click());
+    expect(resync).toHaveBeenCalledOnce();
+    expect(host.textContent).not.toContain('IllegalWarehouse');
+    expect(host.textContent).toContain('Resync Stock');
   });
 
   it('does not call unknown stock a mismatch before First Count',async()=>{

@@ -108,6 +108,10 @@ class BatchFirstCountReviewTest extends TestCase
         DB::table('inventory_store_sync_tasks')->where('id', $original->id)->update(['status' => 'failed']);
         app(FacilitySyncRecovery::class)->resync($storeId, $facilities[0], $variantId, 'retry-batch-a');
         $retry = DB::table('inventory_store_sync_tasks')->where('event_key', 'facility-resync:retry-batch-a')->first();
+        DB::table('inventory_store_sync_tasks')->where('id', $retry->id)->update(['status' => 'facility_blocked']);
+        app(FacilitySyncRecovery::class)->resync($storeId, $facilities[0], $variantId, 'retry-batch-b');
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $retry->id, 'status' => 'superseded']);
+        $retry = DB::table('inventory_store_sync_tasks')->where('event_key', 'facility-resync:retry-batch-b')->first();
         $publisher = \Mockery::mock(StoreInventoryPublisher::class);
         $publisher->shouldReceive('publish')->once()->andReturn([
             'provider' => 'lazada', 'observed_quantity' => 5, 'provider_location_id' => 'WH-A',

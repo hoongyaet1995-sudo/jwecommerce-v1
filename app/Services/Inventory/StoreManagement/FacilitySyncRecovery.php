@@ -60,8 +60,6 @@ final class FacilitySyncRecovery
             'marketplace_reported_stock' => $observed,
             'difference' => $quantity === null || $observed === null ? null : $quantity - $observed,
             'last_checked_at' => $receipt['observed_at'] ?? $receipt['confirmed_at'] ?? null,
-            'failure_reason' => in_array($status, ['sync_failed', 'auth_expired'], true)
-                ? ($receipt['message'] ?? ($receipt['code'] ?? null)) : null,
             'task_id' => $task?->id, 'task_status' => $task?->status,
             'can_check' => $canCheck, 'can_resync' => $canResync];
     }

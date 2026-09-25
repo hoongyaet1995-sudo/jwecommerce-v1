@@ -66,9 +66,9 @@ function adaptFacilitySync(detail:any, previous:StoreSyncItemState):StoreSyncIte
     lastCheckedAt:detail.last_checked_at ?? '',
     canCheck:detail.can_check === true,
     canResync:detail.can_resync === true,
-    failureReason:detail.failure_reason || (detail.status==='verification_pending'
+    failureReason:detail.status==='verification_pending'
       ? 'Warehouse verification is pending; stock operations are paused.'
-      :detail.jw_available_stock === null ? 'Complete First Count for this warehouse before resynchronizing stock.' : undefined),
+      :detail.jw_available_stock === null ? 'Complete First Count for this warehouse before resynchronizing stock.' : undefined,
   };
 }
 
@@ -194,7 +194,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
         if(topology.status!=='verified') {
           info={...info,status:'verification_pending',jwAvailableStock:null,marketplaceReportedStock:null,
             difference:null,canCheck:false,canResync:false,
-            failureReason:topology.error_code || 'Warehouse list has not been verified.'};
+            failureReason:'Warehouse list has not been verified.'};
         } else if(topology.topology==='no_warehouse') {
           info=await storeInventoryApi.syncDetails(store.id,(item as any).variantId);
         } else {
@@ -212,7 +212,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
       } catch(error:any) {
         info={...info,status:'verification_pending',jwAvailableStock:null,marketplaceReportedStock:null,
           difference:null,canCheck:false,canResync:false,
-          failureReason:error?.message||'Warehouse or stock status could not be read.'};
+          failureReason:'Warehouse or stock status could not be read.'};
       }
       setSyncModalInfo(info);
     }

@@ -99,7 +99,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
       if(message.includes('test access expired')) {
         setCurrentSync(previous=>previous?{...previous,status:'auth_expired',canCheck:false,canResync:false}:previous);
       }
-      setStatusCheckFeedback(`Latest warehouse readback failed: ${message} Previous quantities and sync times are historical.`);
+      setStatusCheckFeedback('The latest warehouse check did not finish. Previous quantities and sync times are historical. Please try again.');
     } finally {setIsCheckingStatus(false)}
   };
 
@@ -118,8 +118,8 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
       setCurrentSync(updated);onUpdateSyncInfo?.(updated);
       if(updated.status==='synced')setViewMode('success');
       else {setViewMode('detail');setStatusCheckFeedback('Stock update queued. Await provider readback before treating it as synchronized.');}
-    } catch(error:any) {
-      setViewMode('detail');setStatusCheckFeedback(error?.message||'Provider resync failed.');
+    } catch {
+      setViewMode('detail');setStatusCheckFeedback('Stock has not synced yet. Please try Resync Stock again.');
     }
   };
 
@@ -291,7 +291,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                       if(!id||!onSelectFacility)return;
                       setSelectingFacility(true);setStatusCheckFeedback(null);
                       try {await onSelectFacility(id)}
-                      catch(error:any){setStatusCheckFeedback(error?.message||'Warehouse stock status could not be read.')}
+                      catch{setStatusCheckFeedback('Warehouse stock status could not be read. Please try again.')}
                       finally {setSelectingFacility(false)}
                     }}
                     className="w-full p-2 rounded-lg bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700">
@@ -303,7 +303,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
               {(effectiveStatus==='verification_pending'||effectiveStatus==='select_facility') && (
                 <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-300">
                   {effectiveStatus==='verification_pending'
-                    ? (currentSync.failureReason || 'Warehouse verification is pending. Stock check and resync are paused.')
+                    ? 'Warehouse verification is pending. Stock check and resync are paused.'
                     : 'Select a verified warehouse before checking or resynchronizing stock.'}
                 </div>
               )}
@@ -457,7 +457,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                   <p className="text-amber-700 dark:text-amber-300/80 text-[11px]">
                     {currentSync.canResync === true
                       ? 'Send the latest JW Available Stock to this store to reconcile channel availability.'
-                      : (currentSync.failureReason || 'Stock synchronization is unavailable until this warehouse is counted and verified.')}
+                      : 'Stock synchronization is unavailable until this warehouse is counted and verified.'}
                   </p>
                 </div>
               )}
@@ -470,7 +470,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                     <span>Marketplace sync failed</span>
                   </div>
                   <div className="p-2.5 rounded-lg bg-white/60 dark:bg-neutral-900/60 border border-rose-200 dark:border-rose-900/40 text-neutral-800 dark:text-neutral-200 font-medium">
-                    {currentSync.failureReason || 'The marketplace service is temporarily unavailable.'}
+                    Stock has not synced yet. Select Resync Stock to try again.
                   </div>
                   <div className="p-2 rounded bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 text-[11px] text-neutral-600 dark:text-neutral-400">
                     <strong>Ledger Integrity:</strong> JW inventory remains safe; {currentSync.jwAvailableStock === null ? 'this warehouse has not been counted yet' : `${currentSync.jwAvailableStock} units are recorded`}. External provider failures do not affect internal stock counts.
