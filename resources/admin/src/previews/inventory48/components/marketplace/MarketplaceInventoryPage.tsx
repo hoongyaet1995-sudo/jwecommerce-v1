@@ -136,13 +136,16 @@ export const MarketplaceInventoryPage: React.FC = () => {
 
   const [isIntakeModalOpen, setIsIntakeModalOpen] = useState(false);
   const [selectedItemForIntake, setSelectedItemForIntake] = useState<MarketplaceInventoryItem | null>(null);
-  const [intakeInitialType, setIntakeInitialType] = useState<'intake' | 'adjustment' | 'count'>('intake');
+  const [intakeInitialType, setIntakeInitialType] = useState<'intake' | 'adjustment'>('intake');
   const [intakeTargetStoreId, setIntakeTargetStoreId] = useState<string | undefined>(undefined);
   const [intakeTargetWarehouseId, setIntakeTargetWarehouseId] = useState<string | undefined>(undefined);
 
   // Manage Stock Bottom Drawer
   const [isManageStockDrawerOpen, setIsManageStockDrawerOpen] = useState(false);
   const [selectedDrawerItem, setSelectedDrawerItem] = useState<MarketplaceInventoryItem | null>(null);
+  const [manageTargetStoreId, setManageTargetStoreId] = useState<string | undefined>(undefined);
+  const [manageTargetWarehouseId, setManageTargetWarehouseId] = useState<string | undefined>(undefined);
+  const [manageOpenActions, setManageOpenActions] = useState(false);
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
@@ -445,6 +448,14 @@ export const MarketplaceInventoryPage: React.FC = () => {
     setIsCountModalOpen(true);
   };
 
+  const openManageStock = (item: MarketplaceInventoryItem, storeId?: string, warehouseId?: string, openActions = false) => {
+    setSelectedDrawerItem(item);
+    setManageTargetStoreId(storeId);
+    setManageTargetWarehouseId(warehouseId);
+    setManageOpenActions(openActions);
+    setIsManageStockDrawerOpen(true);
+  };
+
   const handleRealSaveFirstCount = async (payload: {
     sku:string;targetStoreId?:string;targetWarehouseId?:string;
     allocations?:Record<string,number>;warehouseAllocations?:Record<string,number>;
@@ -677,7 +688,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
   // Handler: Open Intake/Adjustment modal
   const handleOpenIntake = (
     item: MarketplaceInventoryItem,
-    type: 'intake' | 'adjustment' | 'count' = 'intake',
+    type: 'intake' | 'adjustment' = 'intake',
     targetStoreId?: string,
     targetWarehouseId?: string
   ) => {
@@ -1142,7 +1153,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                 {uncountedItems.length > 0 && uncountedItems[0] && (
                   <button
                     type="button"
-                    onClick={() => {setSelectedDrawerItem(uncountedItems[0]);setIsManageStockDrawerOpen(true)}}
+                    onClick={() => openManageStock(uncountedItems[0])}
                     className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <ClipboardCheck className="w-4 h-4" />
@@ -1539,10 +1550,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                           <div className="flex items-center justify-center">
                             <button
                                 type="button"
-                                onClick={() => {
-                                  setSelectedDrawerItem(item);
-                                  setIsManageStockDrawerOpen(true);
-                                }}
+                                onClick={() => openManageStock(item)}
                                 className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-neutral-800 dark:hover:bg-neutral-750 text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer border border-neutral-700/80 shrink-0"
                               >
                                 <Warehouse className="w-3.5 h-3.5 text-indigo-400" />
@@ -1780,8 +1788,14 @@ export const MarketplaceInventoryPage: React.FC = () => {
         onClose={() => {
           setIsManageStockDrawerOpen(false);
           setSelectedDrawerItem(null);
+          setManageTargetStoreId(undefined);
+          setManageTargetWarehouseId(undefined);
+          setManageOpenActions(false);
         }}
         item={selectedDrawerItem}
+        initialStoreId={manageTargetStoreId}
+        initialWarehouseId={manageTargetWarehouseId}
+        initialActionsOpen={manageOpenActions}
         mode={currentMode}
         stores={stores}
         storeBalances={selectedDrawerItem ? storeBalances[selectedDrawerItem.masterSku] : undefined}
@@ -1831,8 +1845,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
           const it = safeInventory.find(i => i.masterSku === sku);
           if (it) {
             setIsSettingsModalOpen(false);
-            setSelectedDrawerItem(it);
-            setIsManageStockDrawerOpen(true);
+            openManageStock(it);
           }
         }}
       />
@@ -1887,7 +1900,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
         }}
         onFirstCount={() => {
           if (!syncModalItem || !syncModalStore || syncFacilityId === null) return;
-          handleOpenIntake(syncModalItem, 'count', syncModalStore.id, String(syncFacilityId));
+          openManageStock(syncModalItem, syncModalStore.id, String(syncFacilityId), true);
           setIsStockSyncModalOpen(false);
         }}
         onNavigateToStoreSettings={() => {

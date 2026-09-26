@@ -50,6 +50,27 @@ it('shows mapped stores only, then opens an exact warehouse First Count with rea
   expect(firstCount).toHaveBeenCalledWith(item, '3', '7');
 });
 
+it('opens the preselected warehouse action page from marketplace sync without visiting Intake or Audit', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({ ok: true, json: async () =>
+    String(input).includes('/sync') ? { status: 'not_synced', can_check: false, can_resync: false }
+      : { status: 'verified', topology: 'multi_warehouse', facilities: [
+        { id: 7, name: 'Warehouse A', provider_id: 'WH-A', inventory_warehouse_id: 19,
+          counted: false, physical: null, reserved: null, available: null },
+        { id: 8, name: 'Warehouse B', provider_id: 'WH-B', inventory_warehouse_id: 20,
+          counted: true, physical: 5, reserved: 0, available: 5 },
+      ] } }) as Response));
+  const firstCount = vi.fn();
+  await act(async () => root.render(<FocusedManageStockDrawer isOpen onClose={() => {}} item={item}
+    mode="independent" stores={[{ ...stores[1], environment: 'production' }]}
+    initialStoreId="3" initialWarehouseId="7" initialActionsOpen onSelectFirstCount={firstCount} />));
+  await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+  expect(host.textContent).toContain('Manage this stock');
+  expect(host.textContent).toContain('First Count this location');
+  expect(host.textContent).not.toContain('Actual Stock Intake');
+  await click('First Count this location');
+  expect(firstCount).toHaveBeenCalledWith(item, '3', '7');
+});
+
 it('skips warehouses for a verified no-warehouse store and keeps existing Intake and Audit callbacks', async () => {
   const intake = vi.fn(); const audit = vi.fn();
   await act(async () => root.render(<FocusedManageStockDrawer isOpen onClose={() => {}} item={item}

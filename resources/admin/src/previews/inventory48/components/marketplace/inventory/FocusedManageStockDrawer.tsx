@@ -20,6 +20,9 @@ interface Props {
   item: MarketplaceInventoryItem | null;
   stores?: any[];
   storeBalances?: any;
+  initialStoreId?: string;
+  initialWarehouseId?: string;
+  initialActionsOpen?: boolean;
   onSelectFirstCount?: (item: MarketplaceInventoryItem, storeId?: string, warehouseId?: string) => void;
   onSelectAllocateStock?: (item: MarketplaceInventoryItem, storeId?: string, warehouseId?: string) => void;
   onSelectIntake?: (item: MarketplaceInventoryItem, storeId?: string, warehouseId?: string) => void;
@@ -67,6 +70,7 @@ function ProductIdentity({ item }: { item: MarketplaceInventoryItem }) {
 }
 
 const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stores, storeBalances,
+  initialStoreId, initialWarehouseId, initialActionsOpen = false,
   onSelectFirstCount, onSelectIntake, onSelectAdjustment, onSelectTransfer, onViewLedger, onNavigateToMapping }) => {
   const [rows, setRows] = useState<StoreRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -82,8 +86,9 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
 
   useEffect(() => {
     if (!isOpen || !item) return;
-    setStoreId(null); setFacilityId(null); setActionsOpen(false); setSync(null); setSyncError(''); setAcceptance(null); setRecovering(false);
-  }, [isOpen, item?.id]);
+    setStoreId(initialStoreId || null); setFacilityId(initialWarehouseId || null); setActionsOpen(initialActionsOpen);
+    setSync(null); setSyncError(''); setAcceptance(null); setRecovering(false);
+  }, [isOpen, item?.id, initialStoreId, initialWarehouseId, initialActionsOpen]);
 
   useEffect(() => {
     if (!isOpen || !item) return;
@@ -254,7 +259,8 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
           </div>}
         </>}
         {atLocation && actionsOpen && <div className="space-y-3">
-          {!actionable ? <p className="text-xs text-amber-300">Stock actions are unavailable for this location.</p>
+          {!actionable ? <><p className="text-xs text-amber-300">Stock actions are unavailable for this location.</p>
+              {canRecover && <button type="button" onClick={() => setRecovering(true)} className="w-full rounded-xl border border-purple-700 bg-purple-950/30 p-4 text-left text-xs font-bold text-purple-200 hover:border-purple-400">Resolve stock issue <ArrowRight className="ml-2 inline h-4 w-4" /></button>}</>
             : !activeBalance?.counted ? <button type="button" onClick={() => proceed('count')} className="flex w-full items-center gap-2 rounded-xl bg-purple-600 p-4 text-left text-sm font-bold hover:bg-purple-500"><ClipboardCheck className="h-4 w-4" />First Count this location<ArrowRight className="ml-auto h-4 w-4" /></button>
               : <><button type="button" onClick={() => proceed('intake')} className="block w-full rounded-xl border border-neutral-700 bg-neutral-800 p-4 text-left text-sm hover:border-purple-500">Actual Stock Intake</button>
                 <button type="button" onClick={() => proceed('adjustment')} className="block w-full rounded-xl border border-neutral-700 bg-neutral-800 p-4 text-left text-sm hover:border-purple-500">Stock Audit Adjustment</button>

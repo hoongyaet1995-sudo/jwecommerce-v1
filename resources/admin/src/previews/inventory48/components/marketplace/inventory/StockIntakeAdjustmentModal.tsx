@@ -285,8 +285,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
           </div>
           {hasWarehouses && !currentWarehouseObj?.balance?.isCounted && !isVerificationPending && !isUnmapped && (
             <div className="mt-3 p-3 rounded-xl border border-purple-700/50 bg-purple-950/20 text-xs text-neutral-200 flex items-center justify-between gap-3">
-              <span>{actionType === 'count' ? 'Enter the verified physical stock for this warehouse.' : 'This warehouse has no verified opening count. Count it before receiving stock.'}</span>
-              {actionType !== 'count' && <button type="button" onClick={() => { setActionType('count'); setQuantityInput(''); setReason('Initial Warehouse Physical Count'); }} className="shrink-0 px-3 py-2 rounded-lg bg-purple-600 text-white font-bold cursor-pointer">First Count This Warehouse</button>}
+              <span>{actionType === 'count' ? 'Enter the verified physical stock for this warehouse.' : 'This warehouse has no verified opening count. Use Manage Stock to complete First Count before intake or adjustment.'}</span>
             </div>
           )}
         </div>
