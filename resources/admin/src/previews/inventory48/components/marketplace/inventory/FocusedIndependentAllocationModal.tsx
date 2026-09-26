@@ -55,6 +55,7 @@ interface Props {
   notes: string;
   onNotesChange: (value: string) => void;
   saveError: string;
+  onOpenStockTakeReview: () => void;
   isSaving: boolean;
   confirmedCount: number | null;
 }
@@ -192,7 +193,7 @@ export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
             const conflict = props.storeReservationConflicts[store.id];
             return <div className="allocation-focus-store" key={store.id}><div className="allocation-focus-store-identity"><span className="allocation-focus-platform"><MarketplaceLogo platform={store.platform} size="xs" /></span><div><strong>{store.nickname || store.name}</strong><small>{config.warehouseSyncStatus !== 'synced' ? 'Warehouse verification pending' : warehouses.length ? `${warehouses.length} platform ${warehouses.length === 1 ? 'warehouse' : 'warehouses'}` : store.platform === 'webstore' ? 'Your own stock' : 'No platform warehouse'}</small>{conflict && <small className="allocation-focus-warning">Below {conflict.reserved} reserved units</small>}</div></div><div className="allocation-focus-store-action">{warehouses.length ? <><b>{storeTotal(store)}</b><button type="button" disabled={blocked} onClick={() => setSelectedStoreId(store.id)}>Choose warehouses <ChevronDown size={13} className="allocation-focus-side-chevron" /></button></> : <input aria-label={`${store.nickname || store.name} allocation`} type="number" min="0" step="1" disabled={blocked || !!props.warehouseStockData[props.item.masterSku]?.[`direct:${store.id}`]?.isCounted} value={props.allocations[store.id] ?? ''} placeholder="0" onChange={event => props.onAllocationChange(store.id, event.target.value)} />}</div></div>;
           })}</div></>}
-          {!props.canProceedToReview && blocker && <p className="allocation-focus-warning allocation-focus-blocker">{blocker}</p>}
+          {!props.canProceedToReview && blocker && <div className="allocation-focus-warning allocation-focus-blocker"><p>{blocker}</p><button type="button" onClick={props.onOpenStockTakeReview}>Open Stock Take Review</button></div>}
         </>}
 
         {props.step === 'review' && <>
@@ -207,7 +208,7 @@ export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
           })}</div>
           <div className="allocation-focus-review-total"><strong>Total allocated</strong><strong>{allocated} / {props.verifiedCountNum} units</strong></div>
           <details className="allocation-focus-reference"><summary>Audit details</summary><p>Operator: {props.operator} · Reason: {props.reason}</p><label htmlFor="allocation-focus-notes">Notes (optional)</label><textarea id="allocation-focus-notes" value={props.notes} onChange={event => props.onNotesChange(event.target.value)} /></details>
-          {props.saveError && <p className="allocation-focus-error" role="alert">{props.saveError}</p>}
+          {props.saveError && <div className="allocation-focus-error" role="alert">{props.saveError}<button type="button" onClick={props.onOpenStockTakeReview}>Open Stock Take Review</button></div>}
         </>}
 
         {props.step === 'success' && <><div className="allocation-focus-success"><CheckCircle2 size={28} /><h3>Stock allocation completed</h3><p>{props.confirmedCount ?? props.verifiedCountNum} verified units were recorded in the JW ledger.</p></div><section className="allocation-focus-sync-status" aria-label="Marketplace stock status"><div className="allocation-focus-sync-heading"><div><strong>Marketplace stock status</strong><small>Checked against each allocated stock location.</small></div>{syncTargets.length > 0 && <button type="button" disabled={isCheckingSync} onClick={() => void checkSync(syncTargets, () => true)}>{isCheckingSync ? 'Checking…' : 'Refresh status'}</button>}</div>{syncTargets.length === 0 ? <p>No marketplace stock was allocated.</p> : syncTargets.map(target => { const status = syncStates[target.key]; return <div className="allocation-focus-sync-result" key={target.key}><span><MarketplaceLogo platform={target.store.platform} size="xs" /><span><strong>{target.store.nickname || target.store.name}</strong>{target.warehouse && <small>{target.warehouse.warehouseName}</small>}</span></span><span className="allocation-focus-sync-actions"><b className={status === 'synced' ? 'is-synced' : status === 'failed' ? 'is-failed' : ''}>{isCheckingSync && !status ? 'Checking…' : status === 'synced' ? 'Synced' : status === 'failed' ? 'Sync failed' : status === 'unavailable' ? 'Unable to check' : 'Pending'}</b>{props.onOpenStockSyncModal && <button type="button" className="allocation-focus-sync-details" onClick={() => props.onOpenStockSyncModal?.(props.item, target.store)}>Details</button>}</span></div>; })}</section></>}

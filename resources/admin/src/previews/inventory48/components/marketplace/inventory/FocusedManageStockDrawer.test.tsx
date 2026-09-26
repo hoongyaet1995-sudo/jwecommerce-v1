@@ -90,7 +90,7 @@ it('opens the exact-location Stock Take recovery instead of silently bypassing a
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => ({ ok: true, json: async () =>
     String(input).includes('stock-take-recovery') ? {
       eligible: false, blockers: [{ code: 'open_test_store_order' }],
-      orders: [{ id: 82, reference: 'ORDER-82', status: 'packed', historical: false, can_review_historical: true }],
+      orders: [{ id: 82, reference: 'ORDER-82', status: 'packed', line_key: 'LINE-82', historical: false, can_review_historical: true }],
     } : String(input).includes('test-facility-acceptance') ? {
       test_acceptance_enabled: true, eligible: false, blockers: [{ code: 'open_test_store_order' }],
       facilities: [{ id: 7, eligible: true }],
@@ -111,7 +111,8 @@ it('opens the exact-location Stock Take recovery instead of silently bypassing a
   expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/stores/3/facilities/7/skus/55/stock-take-recovery'))).toBe(true);
   await click('Continue');
   expect(host.textContent).toContain('ORDER-82');
-  expect(host.textContent).toContain('Active orders must be fulfilled');
+  expect(host.textContent).toContain('Accept oversell risk');
+  expect(host.textContent).toContain('LINE-82');
 });
 
 it.each([

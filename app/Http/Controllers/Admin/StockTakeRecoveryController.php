@@ -18,11 +18,15 @@ final class StockTakeRecoveryController extends Controller
         StockTakeRecovery $service): JsonResponse
     {
         $input = $request->validate([
-            'order_ids' => ['required', 'array', 'min:1', 'max:100'],
+            'order_ids' => ['required_without:lines', 'array', 'min:1', 'max:100'],
             'order_ids.*' => ['required', 'integer', 'min:1', 'distinct'],
+            'lines' => ['required_without:order_ids', 'array', 'min:1', 'max:100'],
+            'lines.*.order_id' => ['required', 'integer', 'min:1'],
+            'lines.*.line_key' => ['required', 'string', 'max:100'],
+            'lines.*.decision' => ['sometimes', 'in:historical,risk_accepted'],
             'reason' => ['required', 'string', 'min:10', 'max:500'],
         ]);
         return response()->json($service->reviewHistorical($request->user(), $store, $facility,
-            $variant, $input['order_ids'], $input['reason']))->header('Cache-Control', 'no-store');
+            $variant, $input['lines'] ?? array_map(fn ($id) => ['order_id' => $id], $input['order_ids']), $input['reason']))->header('Cache-Control', 'no-store');
     }
 }

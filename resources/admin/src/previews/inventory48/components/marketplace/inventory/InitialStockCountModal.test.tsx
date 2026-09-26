@@ -90,3 +90,25 @@ it('preserves a warehouse draft when store data refreshes', async () => {
   await click('Back');
   expect(host.querySelector('input[aria-label="Verified physical quantity"]')).toHaveProperty('value', '20');
 });
+
+it('opens Stock Take Review with each affected warehouse after an order blocker', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({ ok: true, json: async () =>
+    String(input).includes('stock-take-recovery') ? { eligible: false, blockers: [{ code: 'open_test_store_order' }],
+      orders: [{ id: 82, line_key: 'LINE-82', status: 'packed', historical: false, can_review_historical: true }] }
+      : { status: 'verified', topology: 'multi_warehouse', facilities: [
+        { id: 7, name: 'Warehouse A', provider_id: 'WH-A', inventory_warehouse_id: 19, counted: false, physical: null, reserved: 0, available: null },
+        { id: 8, name: 'Warehouse B', provider_id: 'WH-B', inventory_warehouse_id: 20, counted: false, physical: null, reserved: 0, available: null },
+      ] } }) as Response));
+  await act(async () => root.render(<InitialStockCountModal isOpen onClose={() => {}} item={item}
+    mode="independent" stores={stores} initialTargetStoreId="3" initialTargetWarehouseId="7"
+    onSaveCount={vi.fn(async () => { throw new Error('open_test_store_order'); })} />));
+  await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+  await enter('Verified physical quantity', '10');
+  await click('Allocate stock'); await click('Choose warehouses');
+  await enter('Lazada Test Warehouse A first count', '7');
+  await enter('Lazada Test Warehouse B first count', '3');
+  await click('Done with warehouses'); await click('Review allocation'); await click('Confirm allocation');
+  expect(host.textContent).toContain('Stock Take Review');
+  expect(host.textContent).toContain('Warehouse A');
+  expect(host.textContent).toContain('Open orders need review');
+});

@@ -36,6 +36,7 @@ import {
 import {loadFacilityView} from './loadFacilityView';
 import {storeInventoryApi} from '../../../../../integration/storeInventory';
 import {FocusedIndependentAllocationModal} from './FocusedIndependentAllocationModal';
+import {StockTakeRecoveryFlow, stockTakeBlockerCopy} from './StockTakeRecoveryFlow';
 
 const EMPTY_STORE_BALANCES: Record<string, Record<string, StoreStockAccountBalance>> = {};
 
@@ -125,6 +126,21 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   const [platformSyncStatuses, setPlatformSyncStatuses] = useState<Record<string, 'confirmed' | 'syncing' | 'failed'>>({});
   const [isRetryingSync, setIsRetryingSync] = useState<boolean>(false);
   const [saveError,setSaveError] = useState<string>('');
+  const [stockTakeIssues,setStockTakeIssues] = useState<Array<{storeId:string;storeName:string;facility:StorePlatformWarehouse;blockers:string[]}>>([]);
+  const [reviewIssuesOpen,setReviewIssuesOpen] = useState(false);
+  const [selectedIssue,setSelectedIssue] = useState<{storeId:string;storeName:string;facility:StorePlatformWarehouse}|null>(null);
+  const openStockTakeReview = async () => {
+    if (!item) return;
+    const targets = storeConfigs.flatMap(config => config.warehouses
+      .filter(warehouse => /^\d+$/.test(warehouse.id))
+      .map(warehouse => ({ storeId: config.storeId, storeName: config.storeName, facility: warehouse })));
+    const results = await Promise.allSettled(targets.map(async target => ({ ...target,
+      snapshot: await storeInventoryApi.stockTakeRecovery(target.storeId, Number(target.facility.id), Number((item as any).variantId)) })));
+    setStockTakeIssues(results.flatMap(result => result.status === 'fulfilled' && result.value.snapshot.blockers?.length
+      ? [{ storeId: result.value.storeId, storeName: result.value.storeName, facility: result.value.facility,
+        blockers: result.value.snapshot.blockers.map((blocker: {code:string}) => blocker.code) }] : []));
+    setReviewIssuesOpen(true);
+  };
   const [isSaving,setIsSaving] = useState(false);
   const savingRef = useRef(false);
   const initializedSession = useRef<string | null>(null);
@@ -431,6 +447,13 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
     const conn = connectionOverrides[st.id] || st.connectionState;
     return conn === 'expired' && (allocations[st.id]?.trim() !== '' && (parsedAllocations[st.id] ?? 0) > 0);
   });
+  const stockTakeClientIssues = [
+    hasIncompleteTopology && { label: 'A mapped store has not verified its warehouse list.', href: '/admin/marketplace/auth', action: 'Open Connect Store' },
+    hasConnectionBlocker && { label: 'A store connection has expired.', href: '/admin/marketplace/auth', action: 'Reconnect store' },
+    hasUnmappedBlocker && { label: 'A listing is not mapped to this JW SKU.', href: '/admin/marketplace/mapping', action: 'Open SKU mapping' },
+    hasReservationConflict && { label: 'An allocation is below stock already reserved for orders.', href: null, action: 'Review order reservations' },
+    hasVerificationPendingAttempt && { label: 'A selected warehouse is still being verified.', href: '/admin/marketplace/auth', action: 'Check warehouses' },
+  ].filter(Boolean) as Array<{label:string;href:string|null;action:string}>;
 
   // Validation flag for Proceed to Review
   const targetStore=storeConfigs.find(store=>store.storeId===effectiveTargetStoreId);
@@ -564,6 +587,9 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
     setStep('success');
     } catch(error:any) {
       setSaveError(error?.message || 'Physical count could not be saved.');
+      if (mode === 'independent') {
+        await openStockTakeReview();
+      }
     } finally {
       savingRef.current = false;
       setIsSaving(false);
@@ -588,7 +614,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
     }
   };
 
-  if (mode === 'independent') return <FocusedIndependentAllocationModal
+  if (mode === 'independent') return <><FocusedIndependentAllocationModal
     item={item} step={step} onClose={onClose} onBackToInput={() => setStep('input')}
     onReview={handleProceedToReview} onConfirm={() => void handleConfirmSave()}
     onNextSku={handleNextSku} nextSkuCount={remainingUncounted.length}
@@ -611,8 +637,25 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
     warehouseReservationConflicts={warehouseReservationConflicts}
     storeReservationConflicts={storeReservationConflicts} operator={operator} reason={reason}
     notes={notes} onNotesChange={setNotes} saveError={saveError} isSaving={isSaving}
+    onOpenStockTakeReview={() => void openStockTakeReview()}
     confirmedCount={confirmedCount}
-  />;
+  />
+    {reviewIssuesOpen && <div className="fixed inset-0 z-[65] flex items-center justify-center bg-black/80 p-4 text-neutral-100" role="dialog" aria-modal="true" aria-label="Stock Take Review">
+      <div className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-neutral-700 bg-neutral-900 p-5 shadow-2xl">
+        <div className="flex justify-between gap-4"><div><h2 className="text-lg font-bold">Stock Take Review</h2><p className="mt-1 text-xs text-neutral-400">Review every affected stock location before retrying allocation.</p></div><button type="button" aria-label="Close Stock Take Review" onClick={() => setReviewIssuesOpen(false)}><X size={18} /></button></div>
+        {stockTakeClientIssues.length > 0 && <div className="mt-5 space-y-2">{stockTakeClientIssues.map(issue => <div key={issue.label} className="rounded-xl border border-amber-800 bg-amber-950/20 p-3 text-xs"><strong className="block">{issue.label}</strong>{issue.href ? <a className="mt-2 block text-purple-300 underline" href={issue.href}>{issue.action}</a> : <span className="mt-2 block text-neutral-300">{issue.action}</span>}</div>)}</div>}
+        {stockTakeIssues.length ? <div className="mt-5 space-y-3">{stockTakeIssues.map(issue => <div key={`${issue.storeId}:${issue.facility.id}`} className="rounded-xl border border-neutral-700 bg-neutral-800 p-4 text-xs">
+          <strong className="block">{issue.storeName} · {issue.facility.warehouseName || issue.facility.name}</strong>
+          <ul className="mt-2 list-inside list-disc text-amber-300">{issue.blockers.map(code => <li key={code}>{stockTakeBlockerCopy[code] || `Review required: ${code.replaceAll('_', ' ')}`}</li>)}</ul>
+          <button type="button" className="mt-3 rounded-lg bg-purple-600 px-3 py-2 font-bold" onClick={() => setSelectedIssue(issue)}>Open recovery</button>
+        </div>)}</div> : stockTakeClientIssues.length === 0 && <p className="mt-5 rounded-xl border border-amber-800 bg-amber-950/30 p-4 text-xs text-amber-200">{saveError || 'The stock change needs review. Check the destination, mapping and store connection.'}</p>}
+        <button type="button" className="mt-5 rounded-lg border border-neutral-600 px-4 py-2 text-xs" onClick={() => setReviewIssuesOpen(false)}>Return to allocation</button>
+      </div>
+    </div>}
+    {selectedIssue && item && <StockTakeRecoveryFlow item={item} store={{id:selectedIssue.storeId,name:selectedIssue.storeName}}
+      facility={{id:selectedIssue.facility.id,name:selectedIssue.facility.warehouseName || selectedIssue.facility.name,providerId:selectedIssue.facility.codeValue}}
+      resolveOnly onClose={() => setSelectedIssue(null)} onSaved={() => { setStockTakeIssues(previous => previous.filter(issue => !(issue.storeId === selectedIssue.storeId && issue.facility.id === selectedIssue.facility.id))); setSaveError(''); }} />}
+  </>;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-neutral-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">

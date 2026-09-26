@@ -31,9 +31,12 @@ final class StockTakeRecovery
                     $allocated = $lineKey !== '' && DB::table('stock_allocations')
                         ->where('owner_type', 'marketplace_order')->where('owner_id', $order->id)
                         ->where('line_key', $lineKey)->exists();
+                    $reviewDecision = $lineKey === '' ? null : DB::table('marketplace_stock_take_order_reviews')
+                        ->where('order_id', $order->id)->where('line_key', $lineKey)->value('decision');
                     $orders[] = [
                         'id' => (int) $order->id, 'reference' => $order->external_order_id,
                         'status' => $order->platform_status, 'line_key' => $lineKey,
+                        'review_decision' => $reviewDecision,
                         'historical' => $state?->status === 'skipped_historical' && ! $allocated,
                         'can_review_historical' => $lineKey !== '' && ! $allocated
                             && ($state === null || $state->warehouse_code === $context['provider_facility_id'])
@@ -56,28 +59,37 @@ final class StockTakeRecovery
     }
 
     public function reviewHistorical(User $actor, int $storeId, int $facilityId, int $variantId,
-        array $orderIds, string $reason): array
+        array $lines, string $reason): array
     {
         abort_unless($actor->exists && $actor->is_admin && $actor->is_super_admin, 403);
-        if ($orderIds === [] || trim($reason) === '') {
-            throw ValidationException::withMessages(['orders' => 'Select reviewed historical orders and provide evidence.']);
+        if ($lines === [] || trim($reason) === '') {
+            throw ValidationException::withMessages(['orders' => 'Select reviewed order lines and provide a reason.']);
         }
 
-        return DB::transaction(function () use ($actor, $storeId, $facilityId, $variantId, $orderIds, $reason): array {
+        return DB::transaction(function () use ($actor, $storeId, $facilityId, $variantId, $lines, $reason): array {
             DB::table('marketplace_stores')->where('id', $storeId)->lockForUpdate()->first();
-            foreach (array_unique($orderIds) as $orderId) {
+            foreach (array_unique(array_column($lines, 'order_id')) as $orderId) {
                 DB::table('marketplace_orders')->where('id', $orderId)->where('store_id', $storeId)->lockForUpdate()->first();
             }
             $snapshot = $this->inspect($storeId, $facilityId, $variantId);
-            $byId = collect($snapshot['orders'])->keyBy('id');
             $listing = $this->context($storeId, $facilityId, $variantId);
-            foreach (array_unique($orderIds) as $orderId) {
-                $order = $byId->get((int) $orderId);
+            $seen = [];
+            foreach ($lines as $line) {
+                if (! in_array($line['decision'] ?? 'historical', ['historical', 'risk_accepted'], true)) {
+                    throw ValidationException::withMessages(['orders' => 'Choose a valid order-line review decision.']);
+                }
+                $orderId = (int) $line['order_id'];
+                $candidates = collect($snapshot['orders'])->where('id', $orderId);
+                $order = isset($line['line_key'])
+                    ? $candidates->firstWhere('line_key', $line['line_key'])
+                    : ($candidates->count() === 1 ? $candidates->first() : null);
                 if (! $order || ! $order['can_review_historical']
-                    || collect($snapshot['orders'])->where('id', (int) $orderId)->count() !== 1) {
-                    throw ValidationException::withMessages(['orders' => 'An order is active, changed, unreadable, or outside this SKU and store. Resolve it in Orders first.']);
+                    || $candidates->where('line_key', $order['line_key'])->count() !== 1
+                    || isset($seen[$orderId.':'.$order['line_key']])) {
+                    throw ValidationException::withMessages(['orders' => 'An order line is allocated, changed, unreadable, or outside this SKU and store. Resolve it in Orders first.']);
                 }
                 $lineKey = $order['line_key'];
+                $seen[$orderId.':'.$lineKey] = true;
                 if ($order['historical']) {
                     continue;
                 }
@@ -91,7 +103,7 @@ final class StockTakeRecovery
                 DB::table('marketplace_stock_take_order_reviews')->insert([
                     'marketplace_store_id' => $storeId, 'marketplace_store_facility_id' => $facilityId,
                     'product_variant_id' => $variantId, 'order_id' => $orderId, 'line_key' => $lineKey,
-                    'actor_id' => $actor->id, 'decision' => 'historical', 'reason' => trim($reason),
+                    'actor_id' => $actor->id, 'decision' => $line['decision'] ?? 'historical', 'reason' => trim($reason),
                     'created_at' => now(), 'updated_at' => now(),
                 ]);
             }

@@ -85,7 +85,7 @@ class StockTakeRecoveryTest extends TestCase
     public function test_active_or_allocated_order_cannot_be_reclassified(): void
     {
         [$store, $variant, $facility, $order] = $this->setupCase();
-        $url = "/admin/api/inventory/store-management/stores/$store/facilities/$facility/skus/$variant/stock-take-recovery/historical-review";
+        $url = "/admin/api/inventory/store-management/stores/$store/facilities/$facility/skus/$variant/stock-take-recovery/order-line-review";
         $this->actingAs(User::factory()->create(['is_admin' => true, 'is_super_admin' => false]))
             ->postJson($url, ['order_ids' => [$order], 'reason' => 'Review attempt'])->assertForbidden();
         $this->actingAs(User::factory()->create(['is_admin' => true, 'is_super_admin' => true]));
@@ -96,5 +96,43 @@ class StockTakeRecoveryTest extends TestCase
         ]);
         $this->postJson($url, ['order_ids' => [$order], 'reason' => 'Review attempt'])->assertUnprocessable();
         $this->assertDatabaseCount('marketplace_stock_take_order_reviews', 0);
+    }
+
+    public function test_two_matching_lines_in_one_order_can_be_reviewed_individually(): void
+    {
+        [$store, $variant, $facility, $order] = $this->setupCase();
+        $payload = ['order_items' => [
+            ['order_item_id' => 'LINE-82', 'product_id' => '100', 'sku_id' => '200', 'warehouse_code' => 'WH-TEST'],
+            ['order_item_id' => 'LINE-83', 'product_id' => '100', 'sku_id' => '200', 'warehouse_code' => 'WH-TEST'],
+        ]];
+        DB::table('marketplace_orders')->where('id', $order)->update(['encrypted_payload' => Crypt::encryptString(json_encode($payload))]);
+        $url = "/admin/api/inventory/store-management/stores/$store/facilities/$facility/skus/$variant/stock-take-recovery";
+        $this->actingAs(User::factory()->create(['is_admin' => true, 'is_super_admin' => true]));
+        $this->getJson($url)->assertOk()->assertJsonCount(2, 'orders');
+        $this->postJson($url.'/historical-review', ['lines' => [
+            ['order_id' => $order, 'line_key' => 'LINE-82'],
+            ['order_id' => $order, 'line_key' => 'LINE-83'],
+        ], 'reason' => 'Verified both lines outside managed stock'])
+            ->assertOk()->assertJsonPath('eligible', true);
+        $this->assertDatabaseCount('marketplace_stock_take_order_reviews', 2);
+    }
+
+    public function test_supervisor_can_accept_open_order_stock_risk_with_an_audit_reason(): void
+    {
+        [$store, $variant, $facility, $order] = $this->setupCase();
+        $url = "/admin/api/inventory/store-management/stores/$store/facilities/$facility/skus/$variant/stock-take-recovery/historical-review";
+        $actor = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        $this->actingAs($actor)->postJson($url, ['lines' => [
+            ['order_id' => $order, 'line_key' => 'LINE-82', 'decision' => 'risk_accepted'],
+        ], 'reason' => 'Supervisor confirms active order may sell against this counted quantity'])
+            ->assertOk()->assertJsonPath('eligible', true);
+        $this->assertDatabaseHas('marketplace_stock_take_order_reviews', [
+            'order_id' => $order, 'line_key' => 'LINE-82', 'decision' => 'risk_accepted', 'actor_id' => $actor->id,
+        ]);
+        $this->assertDatabaseCount('stock_allocations', 0);
+        $review = app(FacilityStockReview::class)->review($actor, $store, $facility, $variant,
+            'count', 7, 'Supervisor-reviewed Stock Take');
+        $receipt = app(FacilityStockReview::class)->confirm($actor, $review['id'], 'risk-reviewed-count-82');
+        $this->assertSame('applied', $receipt['ledger_status']);
     }
 }
