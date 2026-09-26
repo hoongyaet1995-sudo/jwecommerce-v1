@@ -179,6 +179,79 @@ class LazadaClientTest extends TestCase
         }
     }
 
+    public function test_stock_write_retries_an_explicit_seller_limit_for_the_same_store(): void
+    {
+        config(['marketplace.stock_sync_operations_enabled' => true, 'marketplace.lazada.enabled' => true,
+            'marketplace.lazada.app_key' => '123', 'marketplace.lazada.app_secret' => 'fixture-secret']);
+        $store = $this->stockWriteStore();
+        Http::preventStrayRequests();
+        Http::fake(['*' => Http::sequence()
+            ->push(['code' => 'SellerCallLimit', 'message' => 'Seller access frequency exceeds the limit. this ban will last 1 seconds'])
+            ->push(['code' => '0', 'request_id' => 'accepted'])]);
+
+        $receipt = app(LazadaClient::class)->updateAbsoluteQuantity('fixture-token', '1001', '2001', 5, 'MY-WH-2', $store);
+
+        $this->assertSame('accepted', $receipt['request_id']);
+        Http::assertSentCount(2);
+    }
+
+    public function test_stock_write_does_not_retry_an_unknown_provider_result(): void
+    {
+        config(['marketplace.stock_sync_operations_enabled' => true, 'marketplace.lazada.enabled' => true,
+            'marketplace.lazada.app_key' => '123', 'marketplace.lazada.app_secret' => 'fixture-secret']);
+        $store = $this->stockWriteStore();
+        Http::preventStrayRequests();
+        Http::fake(['*' => Http::sequence()->push(['message' => 'temporary failure'], 503)]);
+
+        try {
+            app(LazadaClient::class)->updateAbsoluteQuantity('fixture-token', '1001', '2001', 5, 'MY-WH-2', $store);
+            $this->fail('An unknown write result must require reconciliation.');
+        } catch (\App\Exceptions\StoreInventoryResultUncertain) {
+            Http::assertSentCount(1);
+        }
+    }
+
+    public function test_stock_write_stops_after_three_explicit_rate_limit_rejections(): void
+    {
+        config(['marketplace.stock_sync_operations_enabled' => true, 'marketplace.lazada.enabled' => true,
+            'marketplace.lazada.app_key' => '123', 'marketplace.lazada.app_secret' => 'fixture-secret']);
+        $store = $this->stockWriteStore();
+        Http::preventStrayRequests();
+        Http::fake(['*' => Http::response(['code' => 'SellerCallLimit',
+            'message' => 'Seller access frequency exceeds the limit. this ban will last 1 seconds'])]);
+
+        try {
+            app(LazadaClient::class)->updateAbsoluteQuantity('fixture-token', '1001', '2001', 5, 'MY-WH-2', $store);
+            $this->fail('A persistent rate limit must retain its provider error.');
+        } catch (\App\Exceptions\StoreInventoryProviderRejected $error) {
+            $this->assertSame('SellerCallLimit', $error->providerCode);
+            Http::assertSentCount(3);
+        }
+    }
+
+    public function test_stock_calls_share_a_seller_cooldown_across_writes_and_readbacks(): void
+    {
+        config(['marketplace.lazada.stock_call_interval_ms' => 120]);
+        $gate = app(\App\Services\Marketplace\LazadaStockCallGate::class);
+        $gate->run(9876, 'fixture-app', fn () => true);
+
+        $start = microtime(true);
+        $gate->run(9876, 'fixture-app', fn () => true);
+
+        $this->assertGreaterThanOrEqual(0.10, microtime(true) - $start);
+    }
+
+    private function stockWriteStore(): int
+    {
+        $store = DB::table('marketplace_stores')->insertGetId(['platform' => 'lazada', 'environment' => 'live',
+            'external_shop_id' => 'stock-write-test', 'shop_name' => 'Stock write test', 'region' => 'MY',
+            'account_mode' => 'production', 'status' => 'connected', 'created_at' => now(), 'updated_at' => now()]);
+        \App\Models\MarketplaceStoreToken::create(['store_id' => $store, 'application_id' => '123',
+            'credential_source' => 'production', 'access_token' => 'fixture-token']);
+
+        return $store;
+    }
+
     public function test_size_chart_update_uses_the_confirmed_item_and_lazada_image_url(): void
     {
         config(['marketplace.publish_operations_enabled'=>true,'marketplace.lazada.enabled'=>true,

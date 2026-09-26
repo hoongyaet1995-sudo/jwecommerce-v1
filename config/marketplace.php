@@ -35,6 +35,7 @@ return [
     'multiwarehouse_orders_enabled' => env('MARKETPLACE_MULTIWAREHOUSE_ORDERS_ENABLED', false),
     'rebaseline_cutover_enabled' => env('MARKETPLACE_REBASELINE_CUTOVER_ENABLED', false),
     'lazada' => [
+        'stock_call_interval_ms' => (int) env('MARKETPLACE_LAZADA_STOCK_CALL_INTERVAL_MS', 1100),
         'online_test_access_enabled' => env('MARKETPLACE_LAZADA_ONLINE_TEST_ACCESS_ENABLED', false),
         'test_store_id' => env('MARKETPLACE_LAZADA_TEST_STORE_ID'),
         'enabled' => env('MARKETPLACE_LAZADA_ENABLED', false),

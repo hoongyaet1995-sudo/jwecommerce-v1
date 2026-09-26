@@ -120,7 +120,9 @@ final class LazadaClient
     public function exactStockQuantity(#[\SensitiveParameter] string $accessToken, string $itemId, string $skuId,
         ?string $warehouseCode = null, ?int $storeId = null): array
     {
-        $item = $this->read('/product/item/get', $accessToken, ['item_id' => $itemId], $storeId);
+        $credentials = $this->credentials($storeId);
+        $item = app(LazadaStockCallGate::class)->run($storeId, $credentials['key'],
+            fn () => $this->read('/product/item/get', $accessToken, ['item_id' => $itemId], $storeId));
         if ((string) ($item['item_id'] ?? $item['ItemId'] ?? '') !== $itemId) {
             throw new RuntimeException('Lazada item identity changed.');
         }
@@ -175,6 +177,23 @@ final class LazadaClient
     }
 
     private function sendAbsoluteQuantity(#[\SensitiveParameter] string $accessToken,string $itemId,string $skuId,int $quantity,?string $warehouseCode,?int $storeId=null):array
+    {
+        $credentials = $this->credentials($storeId);
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            try {
+                return app(LazadaStockCallGate::class)->run($storeId, $credentials['key'],
+                    fn () => $this->sendAbsoluteQuantityOnce($accessToken, $itemId, $skuId, $quantity, $warehouseCode, $storeId));
+            } catch (\App\Exceptions\StoreInventoryProviderRejected $error) {
+                // Only an explicit rate-limit rejection proves the write was not accepted.
+                if ($attempt === 2 || ! in_array($error->providerCode, ['SellerCallLimit', 'ApiCallLimit'], true)) {
+                    throw $error;
+                }
+            }
+        }
+        throw new RuntimeException('Lazada stock write attempts exhausted.');
+    }
+
+    private function sendAbsoluteQuantityOnce(#[\SensitiveParameter] string $accessToken,string $itemId,string $skuId,int $quantity,?string $warehouseCode,?int $storeId=null):array
     {
         if (!preg_match('/^[1-9][0-9]*$/D', $itemId) || !preg_match('/^[1-9][0-9]*$/D', $skuId) || $quantity < 0) {
             throw new RuntimeException('Invalid Lazada stock synchronization payload.');
