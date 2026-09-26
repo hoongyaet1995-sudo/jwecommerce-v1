@@ -82,6 +82,49 @@ class LazadaTestFacilityAcceptanceTest extends TestCase
             ->inspect($storeId, $variantId, $facilityId)['eligible']);
     }
 
+    public function test_counted_stock_in_an_unrelated_warehouse_does_not_block_the_selected_facility(): void
+    {
+        [$storeId, $variantId, $facilityId] = $this->context();
+        $otherWarehouseId = DB::table('inventory_warehouses')->insertGetId([
+            'code' => 'JW-OTHER', 'name' => 'Unrelated warehouse',
+            'is_active' => true, 'status' => 'active', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $poolId = DB::table('inventory_pools')->insertGetId([
+            'pool_key' => 'warehouse:'.$otherWarehouseId, 'kind' => 'warehouse',
+            'warehouse_id' => $otherWarehouseId, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('inventory_balances')->insert([
+            'inventory_pool_id' => $poolId, 'product_variant_id' => $variantId,
+            'physical_stock' => 0, 'reserved_stock' => 0, 'safety_stock' => 0,
+            'counted_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $policy = app(LazadaTestFacilityAcceptance::class);
+        $this->assertTrue($policy->inspect($storeId, $variantId, $facilityId)['eligible']);
+        DB::table('inventory_balances')->where('inventory_pool_id', $poolId)->update(['physical_stock' => 8]);
+        $this->assertTrue($policy->inspect($storeId, $variantId, $facilityId)['eligible']);
+    }
+
+    public function test_zero_counted_legacy_store_row_does_not_block_but_positive_stock_does(): void
+    {
+        [$storeId, $variantId, $facilityId] = $this->context();
+        $poolId = DB::table('inventory_pools')->insertGetId([
+            'pool_key' => 'store:'.$storeId, 'kind' => 'store',
+            'marketplace_store_id' => $storeId, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('inventory_balances')->insert([
+            'inventory_pool_id' => $poolId, 'product_variant_id' => $variantId,
+            'physical_stock' => 0, 'reserved_stock' => 0, 'safety_stock' => 0,
+            'counted_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $policy = app(LazadaTestFacilityAcceptance::class);
+        $this->assertTrue($policy->inspect($storeId, $variantId, $facilityId)['eligible']);
+        DB::table('inventory_balances')->where('inventory_pool_id', $poolId)->update(['reserved_stock' => 1]);
+        $this->assertContains('legacy_stock_present', array_column(
+            $policy->inspect($storeId, $variantId, $facilityId)['blockers'], 'code'));
+    }
+
     public function test_mapping_in_another_store_does_not_lock_the_test_store_sku(): void
     {
         [$storeId, $variantId, $facilityId] = $this->context();
@@ -134,6 +177,23 @@ class LazadaTestFacilityAcceptanceTest extends TestCase
         DB::table('marketplace_orders')->where('id', $orderId)->update(['encrypted_payload' => 'corrupt']);
         $this->assertContains('unreadable_test_store_order', array_column(
             $policy->inspect($storeId, $variantId, $facilityId)['blockers'], 'code'));
+    }
+
+    public function test_order_at_another_provider_warehouse_does_not_block_selected_location(): void
+    {
+        [$storeId, $variantId, $facilityId] = $this->context();
+        DB::table('marketplace_orders')->insert([
+            'store_id' => $storeId, 'external_order_id' => 'OTHER-WAREHOUSE',
+            'platform_status' => 'packed', 'platform_updated_at' => 2,
+            'encrypted_payload' => Crypt::encryptString(json_encode([
+                'order_items' => [[
+                    'order_item_id' => 'OTHER-LINE', 'product_id' => 100, 'sku_id' => 200,
+                    'warehouse_code' => 'WH-OTHER',
+                ]],
+            ])), 'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $this->assertTrue(app(LazadaTestFacilityAcceptance::class)
+            ->inspect($storeId, $variantId, $facilityId)['eligible']);
     }
 
     public function test_matching_open_order_already_excluded_as_historical_without_allocation_does_not_block_count(): void

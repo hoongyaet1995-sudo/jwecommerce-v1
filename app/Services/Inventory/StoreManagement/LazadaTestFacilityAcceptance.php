@@ -58,6 +58,8 @@ final class LazadaTestFacilityAcceptance
         }
         if ($mappings->count() === 1) {
             $listing = DB::table('marketplace_listing_variants')->find($mappings[0]->listing_variant_id);
+            $selectedProviderId = $facilityId === null ? null : DB::table('marketplace_store_facilities')
+                ->where('id', $facilityId)->where('marketplace_store_id', $storeId)->value('provider_facility_id');
             foreach (DB::table('marketplace_orders')->where('store_id', $storeId)
                 ->whereNotIn('platform_status', ['cancelled', 'canceled', 'delivered', 'returned', 'refunded'])
                 ->select('id', 'encrypted_payload')->cursor() as $order) {
@@ -72,7 +74,9 @@ final class LazadaTestFacilityAcceptance
                             throw new \UnexpectedValueException('Incomplete order line');
                         }
                         if ($listing && (string) $item['product_id'] === (string) $listing->external_product_id
-                            && (string) $item['sku_id'] === (string) $listing->external_variant_id) {
+                            && (string) $item['sku_id'] === (string) $listing->external_variant_id
+                            && ($selectedProviderId === null || ! isset($item['warehouse_code'])
+                                || (string) $item['warehouse_code'] === (string) $selectedProviderId)) {
                             $lineKey = $item['order_item_id'] ?? null;
                             $historical = $lineKey !== null && DB::table('marketplace_inventory_items')
                                 ->where('order_id', $order->id)->where('line_key', (string) $lineKey)
@@ -101,21 +105,36 @@ final class LazadaTestFacilityAcceptance
             ->whereNotIn('status', ['confirmed', 'not_applicable', 'superseded'])->exists()) {
             $blockers[] = ['code' => 'unfinished_stock_sync'];
         }
+        $targetWarehouseId = $facilityId === null ? null : DB::table('marketplace_store_facilities')
+            ->where('id', $facilityId)->where('marketplace_store_id', $storeId)
+            ->value('inventory_warehouse_id');
         if (DB::table('inventory_balances as balance')
             ->join('inventory_pools as pool', 'pool.id', '=', 'balance.inventory_pool_id')
             ->where('balance.product_variant_id', $variantId)
-            ->where(function ($query) use ($batch, $storeId) {
-                $query->whereIn('pool.kind', ['warehouse', 'shared']);
+            ->where(function ($query) use ($batch, $storeId, $facilityId, $targetWarehouseId) {
+                $query->where(function ($warehouse) use ($facilityId, $targetWarehouseId) {
+                    $warehouse->where('pool.kind', 'warehouse');
+                    if ($facilityId !== null) {
+                        $warehouse->where('pool.warehouse_id', $targetWarehouseId ?? -1);
+                    }
+                    $warehouse->where(fn ($balance) => $balance->whereNotNull('balance.counted_at')
+                        ->orWhere('balance.physical_stock', '>', 0)
+                        ->orWhere('balance.reserved_stock', '>', 0));
+                })->orWhere(function ($shared) {
+                    $shared->where('pool.kind', 'shared')
+                        ->where(fn ($balance) => $balance->where('balance.physical_stock', '>', 0)
+                            ->orWhere('balance.reserved_stock', '>', 0));
+                });
                 if (! $batch) {
                     $query->orWhere(function ($storeQuery) use ($storeId) {
                         $storeQuery->where('pool.kind', 'store')
-                            ->where('pool.marketplace_store_id', $storeId);
+                            ->where('pool.marketplace_store_id', $storeId)
+                            ->where(fn ($balance) => $balance->where('balance.physical_stock', '>', 0)
+                                ->orWhere('balance.reserved_stock', '>', 0));
                     });
                 }
             })
-            ->where(fn ($query) => $query->whereNotNull('balance.counted_at')
-                ->orWhere('balance.physical_stock', '>', 0)
-                ->orWhere('balance.reserved_stock', '>', 0))->exists()) {
+            ->exists()) {
             $blockers[] = ['code' => 'legacy_stock_present'];
         }
 

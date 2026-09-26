@@ -4,6 +4,7 @@ import { MarketplaceInventoryItem } from '../../../types';
 import { storeInventoryApi } from '../../../../../integration/storeInventory';
 import { MarketplaceLogo } from '../MarketplaceLogo';
 import { ManageStockDrawer } from './ManageStockDrawer';
+import { StockTakeRecoveryFlow } from './StockTakeRecoveryFlow';
 
 type Balance = { physical: number | null; reserved: number | null; available: number | null; counted: boolean };
 type Facility = Balance & { id: string; name: string; providerId: string; inventoryWarehouseId: number | null };
@@ -76,11 +77,12 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncError, setSyncError] = useState('');
   const [acceptance, setAcceptance] = useState<any>(null);
+  const [recovering, setRecovering] = useState(false);
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
     if (!isOpen || !item) return;
-    setStoreId(null); setFacilityId(null); setActionsOpen(false); setSync(null); setSyncError(''); setAcceptance(null);
+    setStoreId(null); setFacilityId(null); setActionsOpen(false); setSync(null); setSyncError(''); setAcceptance(null); setRecovering(false);
   }, [isOpen, item?.id]);
 
   useEffect(() => {
@@ -141,6 +143,8 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
   const acceptanceReady = !requiresTestAcceptance || (acceptance !== null
     && (acceptance.test_acceptance_enabled !== true
       || (acceptance.eligible === true && acceptanceFacility?.eligible === true)));
+  const canRecover = requiresTestAcceptance && !!selectedFacility && acceptance?.test_acceptance_enabled === true
+    && acceptance?.eligible === false;
   const actionable = selectedStore?.status === 'verified' && (direct || !!selectedFacility?.inventoryWarehouseId)
     && acceptanceReady;
   const title = !selectedStore ? 'Choose a store' : !atLocation ? selectedStore.name : actionsOpen ? 'Manage this stock' : locationName || 'Stock location';
@@ -205,7 +209,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
     if (action === 'adjustment') onSelectAdjustment?.(item, selectedStore.id, targetWarehouseId);
     if (action === 'transfer') onSelectTransfer?.(item, selectedStore.id, targetWarehouseId);
   };
-  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 text-neutral-100 backdrop-blur-sm sm:p-6">
+  return <><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 text-neutral-100 backdrop-blur-sm sm:p-6">
     <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
     <div role="dialog" aria-modal="true" aria-label="Manage Stock" className="relative z-10 flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-neutral-700 bg-neutral-900 shadow-2xl">
       <header className="flex items-start justify-between gap-4 border-b border-neutral-800 px-5 py-5 sm:px-6">
@@ -241,6 +245,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
           <p className="text-xs font-semibold text-neutral-300">{selectedStore!.name} · {direct ? 'Store ledger' : `Platform warehouse ${selectedFacility!.providerId}`}</p>
           <StockSummary balance={activeBalance} />
           {!actionable && <div role="status" className="rounded-xl border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-300">{selectedStore!.status !== 'verified' ? 'Warehouse verification is pending.' : !acceptanceReady ? 'This stock location is not yet eligible for a stock change.' : 'This warehouse does not yet have an active stock ledger.'}</div>}
+          {canRecover && <button type="button" onClick={() => setRecovering(true)} className="w-full rounded-xl border border-purple-700 bg-purple-950/30 p-4 text-left text-xs font-bold text-purple-200 hover:border-purple-400">Resolve stock issue <ArrowRight className="ml-2 inline h-4 w-4" /></button>}
           {selectedStore!.platform !== 'webstore' && <div className="rounded-xl border border-neutral-700 bg-neutral-800/60 p-4 text-xs">
             <div className="flex items-center justify-between gap-2"><strong>Marketplace stock check</strong><span className="text-neutral-400">{sync?.status?.replaceAll('_', ' ') || 'Not checked'}</span></div>
             {syncError && <p role="alert" className="mt-2 text-rose-300">{syncError}</p>}
@@ -262,7 +267,11 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
         {atLocation && actionsOpen && onViewLedger && <button type="button" onClick={() => onViewLedger(item, selectedStore!.id, targetWarehouseId)} className="flex items-center gap-1 rounded-lg border border-neutral-700 px-4 py-2 text-xs text-neutral-300"><History className="h-3 w-3" />View ledger</button>}
       </footer>
     </div>
-  </div>;
+  </div>
+    {recovering && item && selectedStore && selectedFacility && <StockTakeRecoveryFlow item={item}
+      store={{ id: selectedStore.id, name: selectedStore.name }} facility={selectedFacility}
+      onClose={() => setRecovering(false)} onSaved={() => { setReload(value => value + 1); setAcceptance(null); }} />}
+  </>;
 };
 
 export const FocusedManageStockDrawer: React.FC<Props> = props => props.mode === 'shared'

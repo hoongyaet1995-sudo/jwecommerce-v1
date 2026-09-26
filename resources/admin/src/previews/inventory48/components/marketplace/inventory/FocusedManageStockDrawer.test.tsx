@@ -86,6 +86,34 @@ it('keeps a test facility blocked when the existing eligibility check rejects it
   expect(manage?.disabled).toBe(true);
 });
 
+it('opens the exact-location Stock Take recovery instead of silently bypassing an order blocker', async () => {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => ({ ok: true, json: async () =>
+    String(input).includes('stock-take-recovery') ? {
+      eligible: false, blockers: [{ code: 'open_test_store_order' }],
+      orders: [{ id: 82, reference: 'ORDER-82', status: 'packed', historical: false, can_review_historical: true }],
+    } : String(input).includes('test-facility-acceptance') ? {
+      test_acceptance_enabled: true, eligible: false, blockers: [{ code: 'open_test_store_order' }],
+      facilities: [{ id: 7, eligible: true }],
+    } : String(input).includes('/sync') ? { status: 'not_synced', can_check: false, can_resync: false }
+      : { status: 'verified', topology: 'single_warehouse', facilities: [
+        { id: 7, name: 'Warehouse A', provider_id: 'WH-A', inventory_warehouse_id: 19,
+          counted: false, physical: null, reserved: null, available: null },
+      ] } }) as Response);
+  vi.stubGlobal('fetch', fetchMock);
+  await act(async () => root.render(<FocusedManageStockDrawer isOpen onClose={() => {}} item={item}
+    mode="independent" stores={[stores[1]]} />));
+  await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+  await click('Lazada Test'); await click('Warehouse A');
+  await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+  await click('Resolve stock issue');
+  await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+  expect(host.textContent).toContain('Open orders need review');
+  expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/stores/3/facilities/7/skus/55/stock-take-recovery'))).toBe(true);
+  await click('Continue');
+  expect(host.textContent).toContain('ORDER-82');
+  expect(host.textContent).toContain('Active orders must be fulfilled');
+});
+
 it.each([
   { sku: 'BKJS-Pink', counted: true, physical: 20, expected: 'Actual Stock Intake' },
   { sku: 'BKJS-Blue', counted: false, physical: null, expected: 'First Count this location' },
