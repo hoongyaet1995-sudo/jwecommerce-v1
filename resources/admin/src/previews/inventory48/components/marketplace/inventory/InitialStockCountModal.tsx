@@ -66,7 +66,7 @@ interface InitialStockCountModalProps {
   onNavigateToTransfers?: () => void;
   onNavigateToSkuMapping?: () => void;
   onNavigateToConnectStore?: () => void;
-  onOpenStockSyncModal?: (item: MarketplaceInventoryItem, store: InventoryStoreChannel) => void;
+  onOpenStockSyncModal?: (item: MarketplaceInventoryItem, store: InventoryStoreChannel, facilityId?: number) => void;
 }
 
 export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({

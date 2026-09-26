@@ -38,6 +38,10 @@ interface StockSyncDetailsModalProps {
   facilities?: Array<{id:number;name:string;providerId:string}>;
   selectedFacilityId?: number | null;
   onSelectFacility?: (id:number) => Promise<void>;
+  availableStores?: InventoryStoreChannel[];
+  onSelectStore?: (store: InventoryStoreChannel) => Promise<void>;
+  isLoadingTopology?: boolean;
+  facilityStatuses?: Record<number, OperationalSyncStatus>;
 }
 
 type ModalViewMode = 'detail' | 'confirm_resync' | 'executing' | 'success';
@@ -57,7 +61,11 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
   onNavigateToHistory,
   facilities = [],
   selectedFacilityId = null,
-  onSelectFacility
+  onSelectFacility,
+  availableStores = [],
+  onSelectStore,
+  isLoadingTopology = false,
+  facilityStatuses = {}
 }) => {
   const [currentSync, setCurrentSync] = useState<StoreSyncItemState | null>(null);
   const [viewMode, setViewMode] = useState<ModalViewMode>('detail');
@@ -65,6 +73,12 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
   const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false);
   const [statusCheckFeedback, setStatusCheckFeedback] = useState<string | null>(null);
   const [selectingFacility, setSelectingFacility] = useState(false);
+  const [selectingStore, setSelectingStore] = useState(false);
+  const [navigationStep, setNavigationStep] = useState<'auto' | 'stores' | 'locations'>('auto');
+
+  useEffect(() => {
+    if (isOpen) setNavigationStep('auto');
+  }, [isOpen, item?.masterSku, store?.id]);
 
   // Sync state when props change
   useEffect(() => {
@@ -84,6 +98,11 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
   const isWebstore = store.platform === 'webstore' || store.id === 'webstore';
   const effectiveStatus = isWebstore ? 'jw_internal' : currentSync.status;
   const needsWarehouseFirstCount = !isWebstore && selectedFacilityId !== null && currentSync.jwAvailableStock === null;
+  const hasMultipleLocations = facilities.length > 1;
+  const flowStep = navigationStep === 'auto'
+    ? hasMultipleLocations && selectedFacilityId === null ? 'locations' : 'detail'
+    : navigationStep;
+  const selectedFacility = facilities.find(facility => facility.id === selectedFacilityId);
 
   // Handle "Check Status" (performs readback only without resending)
   const handleCheckStatus = async () => {
@@ -221,12 +240,12 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm sm:text-base font-bold text-neutral-900 dark:text-white">
-                {isWebstore ? 'Storefront Stock Ledger' : 'Stock Sync Details'}
+                {isWebstore ? 'Storefront Stock Ledger' : 'Manage Marketplace Sync'}
               </h3>
               <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
                 {isWebstore
                   ? 'Internal direct storefront inventory status'
-                  : 'Independent marketplace channel synchronization state'}
+                  : 'Independent mode · Review one store and stock location at a time'}
               </p>
             </div>
           </div>
@@ -240,6 +259,8 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {!isWebstore && <div className="h-0.5 bg-neutral-200 dark:bg-neutral-800"><div className="h-full bg-purple-600 transition-all" style={{width:flowStep==='stores'?'33%':flowStep==='locations'?'66%':'100%'}} /></div>}
 
         {/* ================= PRODUCT & STORE BANNER ================= */}
         <div className="p-4 sm:p-5 bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
@@ -269,7 +290,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
             </div>
           </div>
 
-          <div className="flex flex-row sm:flex-col sm:items-end justify-between items-center gap-1.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-neutral-200 dark:border-neutral-700/50">
+          {flowStep==='detail' && <div className="flex flex-row sm:flex-col sm:items-end justify-between items-center gap-1.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-neutral-200 dark:border-neutral-700/50">
             <div className="flex items-center gap-1.5">
               <MarketplaceLogo platform={store.platform as any} size="xs" />
               <span className="font-semibold text-neutral-900 dark:text-white text-xs">
@@ -277,32 +298,32 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
               </span>
             </div>
             <div>{getStatusBadge(effectiveStatus)}</div>
-          </div>
+          </div>}
         </div>
 
         {/* ================= MODAL BODY ================= */}
         <div className="p-5 overflow-y-auto space-y-4 max-h-[70vh]">
+          {isLoadingTopology && <div role="status" className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400"><RefreshCw size={15} className="animate-spin" /> Loading store and warehouse stock status…</div>}
+          {!isLoadingTopology && flowStep==='stores' && <section className="space-y-3" aria-label="Choose a marketplace store">
+            <div><p className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-300">Step 1 · Stores</p><h4 className="text-lg font-bold mt-1">Which marketplace?</h4><p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Select a mapped store to inspect stock sync for this SKU.</p></div>
+            {availableStores.map(candidate=><button key={candidate.id} type="button" disabled={selectingStore} onClick={async()=>{if(!onSelectStore)return;setSelectingStore(true);try{await onSelectStore(candidate);setNavigationStep('auto')}catch{setStatusCheckFeedback('Store stock status could not be loaded. Please try again.')}finally{setSelectingStore(false)}}} className="w-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 p-4 text-left flex items-center justify-between gap-3 hover:border-purple-500 disabled:opacity-50"><span className="flex items-center gap-3"><MarketplaceLogo platform={candidate.platform as any} size="sm" /><strong className="text-xs">{candidate.nickname || candidate.name}</strong></span><ArrowRight size={15} /></button>)}
+            {statusCheckFeedback && <p role="status" className="text-xs text-rose-500">{statusCheckFeedback}</p>}
+          </section>}
+          {!isLoadingTopology && flowStep==='locations' && <section className="space-y-3" aria-label="Choose a stock location">
+            {availableStores.length > 1 && <button type="button" onClick={()=>setNavigationStep('stores')} className="text-xs text-purple-600 dark:text-purple-300">← All stores</button>}
+            <div><p className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-300">Step 2 · Warehouses</p><h4 className="text-lg font-bold mt-1">Which stock location?</h4><p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Choose one warehouse to inspect its exact provider status.</p></div>
+            {facilities.map(facility=><button key={facility.id} type="button" disabled={selectingFacility} onClick={async()=>{if(!onSelectFacility)return;setSelectingFacility(true);setStatusCheckFeedback(null);try{await onSelectFacility(facility.id);setNavigationStep('auto')}catch{setStatusCheckFeedback('Warehouse stock status could not be read. Please try again.')}finally{setSelectingFacility(false)}}} className="w-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 p-4 text-left flex items-center justify-between gap-3 hover:border-purple-500 disabled:opacity-50"><span><strong className="block text-xs">{facility.name}</strong><small className="block text-[11px] text-neutral-500 mt-1">{facility.providerId}</small></span><span className="flex items-center gap-2">{facilityStatuses[facility.id] && getStatusBadge(facilityStatuses[facility.id])}<ArrowRight size={15} /></span></button>)}
+            {statusCheckFeedback && <p role="status" className="text-xs text-rose-500">{statusCheckFeedback}</p>}
+          </section>}
+          {!isLoadingTopology && flowStep==='detail' && <div className="space-y-3">
+            {hasMultipleLocations && <button type="button" onClick={()=>{setNavigationStep('locations');setViewMode('detail')}} className="text-xs text-purple-600 dark:text-purple-300">← All warehouses</button>}
+            {!hasMultipleLocations && availableStores.length > 1 && <button type="button" onClick={()=>{setNavigationStep('stores');setViewMode('detail')}} className="text-xs text-purple-600 dark:text-purple-300">← All stores</button>}
+            <div className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-300">Step 3 · Exact stock location</div>
+            <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 p-3 text-xs"><strong>{store.nickname || store.name}</strong><span className="block text-neutral-500 dark:text-neutral-400 mt-1">{selectedFacility ? `${selectedFacility.name} · ${selectedFacility.providerId}` : 'Store stock · No platform warehouse'}</span></div>
+          </div>}
           {/* VIEW MODE 1: DETAIL / STATUS DISPLAY */}
-          {viewMode === 'detail' && (
+          {!isLoadingTopology && flowStep==='detail' && viewMode === 'detail' && (
             <div className="space-y-4">
-              {facilities.length > 0 && (
-                <div className="p-4 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-2 text-xs">
-                  <label htmlFor="sync-target-facility" className="font-bold text-neutral-700 dark:text-neutral-200">Target Warehouse / Location</label>
-                  <select id="sync-target-facility" value={selectedFacilityId ?? ''} disabled={selectingFacility}
-                    onChange={async event=>{
-                      const id=Number(event.target.value);
-                      if(!id||!onSelectFacility)return;
-                      setSelectingFacility(true);setStatusCheckFeedback(null);
-                      try {await onSelectFacility(id)}
-                      catch{setStatusCheckFeedback('Warehouse stock status could not be read. Please try again.')}
-                      finally {setSelectingFacility(false)}
-                    }}
-                    className="w-full p-2 rounded-lg bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700">
-                    <option value="">Select a warehouse to inspect exact stock</option>
-                    {facilities.map(facility=><option key={facility.id} value={facility.id}>{facility.name} ({facility.providerId})</option>)}
-                  </select>
-                </div>
-              )}
               {(effectiveStatus==='verification_pending'||effectiveStatus==='select_facility') && (
                 <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-300">
                   {effectiveStatus==='verification_pending'
@@ -585,7 +606,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
           )}
 
           {/* VIEW MODE 2: CONFIRM RESYNC */}
-          {viewMode === 'confirm_resync' && (
+          {!isLoadingTopology && flowStep==='detail' && viewMode === 'confirm_resync' && (
             <div className="space-y-4 text-xs animate-in fade-in duration-150">
               <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 space-y-3">
                 <div className="flex items-center gap-2 text-neutral-900 dark:text-white font-bold text-sm">
@@ -636,7 +657,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
           )}
 
           {/* VIEW MODE 3: EXECUTING PROGRESS */}
-          {viewMode === 'executing' && (
+          {!isLoadingTopology && flowStep==='detail' && viewMode === 'executing' && (
             <div className="py-8 space-y-6 text-center animate-in fade-in duration-150">
               <div className="w-12 h-12 rounded-2xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white mx-auto flex items-center justify-center shadow-xs">
                 <RefreshCw className="w-6 h-6 animate-spin" />
@@ -695,7 +716,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
           )}
 
           {/* VIEW MODE 4: SUCCESS */}
-          {viewMode === 'success' && (
+          {!isLoadingTopology && flowStep==='detail' && viewMode === 'success' && (
             <div className="space-y-4 text-xs animate-in fade-in duration-150">
               <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-2">
                 <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-500 mx-auto flex items-center justify-center">
@@ -742,8 +763,10 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
 
         {/* ================= MODAL FOOTER ACTIONS ================= */}
         <div className="p-4 sm:p-5 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/40 flex flex-wrap items-center justify-between gap-3 text-xs">
+          {isLoadingTopology && <button type="button" onClick={onClose} className="px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 font-semibold">Close</button>}
+          {!isLoadingTopology && flowStep!=='detail' && <button type="button" onClick={flowStep==='stores'?onClose:availableStores.length>1?()=>setNavigationStep('stores'):onClose} className="px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 font-semibold">{flowStep==='stores'?'Return to inventory':availableStores.length>1?'All stores':'Close'}</button>}
           {/* VIEW MODE 1: DETAIL BUTTONS */}
-          {viewMode === 'detail' && (
+          {!isLoadingTopology && flowStep==='detail' && viewMode === 'detail' && (
             <>
               <div>
                 {/* Secondary Action on the left if applicable */}
@@ -904,7 +927,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
           )}
 
           {/* VIEW MODE 2: CONFIRM RESYNC BUTTONS */}
-          {viewMode === 'confirm_resync' && (
+          {!isLoadingTopology && flowStep==='detail' && viewMode === 'confirm_resync' && (
             <div className="flex items-center justify-end gap-2 w-full">
               <button
                 type="button"
@@ -925,14 +948,14 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
           )}
 
           {/* VIEW MODE 3: EXECUTING (Action disabled) */}
-          {viewMode === 'executing' && (
+          {!isLoadingTopology && flowStep==='detail' && viewMode === 'executing' && (
             <div className="flex items-center justify-center w-full text-xs text-neutral-400 italic">
               Synchronizing with marketplace API... Please do not close this window.
             </div>
           )}
 
           {/* VIEW MODE 4: SUCCESS BUTTONS */}
-          {viewMode === 'success' && (
+          {!isLoadingTopology && flowStep==='detail' && viewMode === 'success' && (
             <div className="flex items-center justify-end gap-2 w-full">
               <button
                 type="button"

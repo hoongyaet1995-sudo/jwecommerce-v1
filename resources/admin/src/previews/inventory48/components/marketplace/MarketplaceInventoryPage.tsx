@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { MarketplaceInventoryItem } from '../../types';
 import { SubNavHeader } from '../common/SubNavHeader';
@@ -153,6 +153,9 @@ export const MarketplaceInventoryPage: React.FC = () => {
   const [syncModalInfo, setSyncModalInfo] = useState<StoreSyncItemState | null>(null);
   const [syncFacilityOptions, setSyncFacilityOptions] = useState<Array<{id:number;name:string;providerId:string}>>([]);
   const [syncFacilityId, setSyncFacilityId] = useState<number | null>(null);
+  const [isSyncTopologyLoading, setIsSyncTopologyLoading] = useState(false);
+  const [syncFacilityStatuses, setSyncFacilityStatuses] = useState<Record<number, StoreSyncItemState['status']>>({});
+  const syncOpenRequestRef = useRef(0);
 
 
   // Batch Broadcasting State
@@ -179,18 +182,24 @@ export const MarketplaceInventoryPage: React.FC = () => {
   const handleOpenStockSync = async (
     item: MarketplaceInventoryItem,
     store: InventoryStoreChannel,
-    overrideInfo?: StoreSyncItemState
+    overrideInfo?: StoreSyncItemState,
+    targetFacilityId?: number
   ) => {
+    const requestId=++syncOpenRequestRef.current;
     let info = overrideInfo ?? getStoreSyncItemState(item, store);
     setSyncFacilityOptions([]);
     setSyncFacilityId(null);
+    setSyncFacilityStatuses({});
     setSyncModalItem(item);
     setSyncModalStore(store);
     setSyncModalInfo(info);
     setIsStockSyncModalOpen(true);
-    if(store.platform!=='webstore' && info.status!=='auth_expired' && info.status!=='sku_not_mapped') {
+    const needsTopology=store.platform!=='webstore' && info.status!=='auth_expired' && info.status!=='sku_not_mapped';
+    setIsSyncTopologyLoading(needsTopology);
+    if(needsTopology) {
       try {
         const topology=await storeInventoryApi.facilities(store.id);
+        if(requestId!==syncOpenRequestRef.current)return;
         if(topology.status!=='verified') {
           info={...info,status:'verification_pending',jwAvailableStock:null,marketplaceReportedStock:null,
             difference:null,canCheck:false,canResync:false,
@@ -202,11 +211,27 @@ export const MarketplaceInventoryPage: React.FC = () => {
             id:Number(facility.id),name:String(facility.name),providerId:String(facility.provider_id)
           }));
           setSyncFacilityOptions(options);
+          if(options.length>1) {
+            void Promise.allSettled(options.map(option=>storeInventoryApi.facilitySyncDetails(store.id,option.id,(item as any).variantId)))
+              .then(results=>{
+                if(requestId!==syncOpenRequestRef.current)return;
+                const statuses:Record<number,StoreSyncItemState['status']>={};
+                results.forEach((result,index)=>{
+                  if(result.status==='fulfilled') statuses[options[index].id]=result.value.status as StoreSyncItemState['status'];
+                });
+                setSyncFacilityStatuses(previous=>({...statuses,...previous}));
+              });
+          }
           info={...info,status:'select_facility',jwAvailableStock:null,marketplaceReportedStock:null,
             difference:null,canCheck:false,canResync:false};
-          if(options.length===1) {
-            setSyncFacilityId(options[0].id);
-            info=adaptFacilitySync(await storeInventoryApi.facilitySyncDetails(store.id,options[0].id,(item as any).variantId),info);
+          const exactFacility=targetFacilityId !== undefined
+            ? options.find(option=>option.id===targetFacilityId)
+            : options.length===1 ? options[0] : undefined;
+          if(exactFacility) {
+            setSyncFacilityId(exactFacility.id);
+            info=adaptFacilitySync(await storeInventoryApi.facilitySyncDetails(store.id,exactFacility.id,(item as any).variantId),info);
+            if(requestId!==syncOpenRequestRef.current)return;
+            setSyncFacilityStatuses(previous=>({...previous,[exactFacility.id]:info.status}));
           }
         }
       } catch(error:any) {
@@ -214,12 +239,15 @@ export const MarketplaceInventoryPage: React.FC = () => {
           difference:null,canCheck:false,canResync:false,
           failureReason:'Warehouse or stock status could not be read.'};
       }
+      if(requestId!==syncOpenRequestRef.current)return;
       setSyncModalInfo(info);
+      setIsSyncTopologyLoading(false);
     }
   };
 
   const handleUpdateSyncInfo = (updated: StoreSyncItemState) => {
     setSyncModalInfo(updated);
+    if(syncFacilityId!==null) setSyncFacilityStatuses(previous=>({...previous,[syncFacilityId]:updated.status}));
     void reloadInventory();
   };
 
@@ -1717,8 +1745,8 @@ export const MarketplaceInventoryPage: React.FC = () => {
           setSelectedItemForCount(null);
           setActiveTab('transfers');
         }}
-        onOpenStockSyncModal={(itemForSync, storeForSync) => {
-          handleOpenStockSync(itemForSync, storeForSync);
+        onOpenStockSyncModal={(itemForSync, storeForSync, facilityId) => {
+          handleOpenStockSync(itemForSync, storeForSync, undefined, facilityId);
         }}
         onNavigateToConnectStore={() => {
           setIsCountModalOpen(false);
@@ -1813,23 +1841,34 @@ export const MarketplaceInventoryPage: React.FC = () => {
       <StockSyncDetailsModal
         isOpen={isStockSyncModalOpen}
         onClose={() => {
+          syncOpenRequestRef.current++;
           setIsStockSyncModalOpen(false);
           setSyncModalItem(null);
           setSyncModalStore(null);
           setSyncModalInfo(null);
           setSyncFacilityOptions([]);
           setSyncFacilityId(null);
+          setSyncFacilityStatuses({});
+          setIsSyncTopologyLoading(false);
         }}
         item={syncModalItem}
         store={syncModalStore}
         syncInfo={syncModalInfo}
         facilities={syncFacilityOptions}
         selectedFacilityId={syncFacilityId}
+        facilityStatuses={syncFacilityStatuses}
+        isLoadingTopology={isSyncTopologyLoading}
+        availableStores={stores.filter(candidate=>candidate.platform!=='webstore' && (syncModalItem as any)?.mappedStoreIds?.includes(String(candidate.id)))}
+        onSelectStore={async selectedStore=>{
+          if(syncModalItem) await handleOpenStockSync(syncModalItem, selectedStore);
+        }}
         onSelectFacility={async facilityId=>{
           if(!syncModalStore||!syncModalItem||!syncModalInfo)return;
-          setSyncFacilityId(facilityId);
           const detail=await storeInventoryApi.facilitySyncDetails(syncModalStore.id,facilityId,(syncModalItem as any).variantId);
-          setSyncModalInfo(adaptFacilitySync(detail,syncModalInfo));
+          setSyncFacilityId(facilityId);
+          const updated=adaptFacilitySync(detail,syncModalInfo);
+          setSyncModalInfo(updated);
+          setSyncFacilityStatuses(previous=>({...previous,[facilityId]:updated.status}));
         }}
         onUpdateSyncInfo={handleUpdateSyncInfo}
         onCheckStatus={async()=>{

@@ -22,13 +22,38 @@ async function render(props:any){await act(async()=>root.render(<StockSyncDetail
 describe('warehouse-aware stock sync details',()=>{
   it('requires an exact warehouse before showing provider actions',async()=>{
     const select=vi.fn().mockResolvedValue(undefined);
-    await render({facilities:[{id:4,name:'MY warehouse',providerId:'MY-WH-4'}],onSelectFacility:select});
-    expect(host.textContent).toContain('Select a warehouse to inspect exact stock');
-    expect(host.textContent).toContain('Not counted');
+    await render({facilities:[{id:4,name:'MY warehouse',providerId:'MY-WH-4'},{id:5,name:'Second warehouse',providerId:'MY-WH-5'}],onSelectFacility:select});
+    expect(host.textContent).toContain('Which stock location?');
     expect(host.textContent).not.toContain('Resync Stock');
-    const control=host.querySelector('#sync-target-facility') as HTMLSelectElement;
-    await act(async()=>{control.value='4';control.dispatchEvent(new Event('change',{bubbles:true}))});
+    const control=[...host.querySelectorAll('button')].find(button=>button.textContent?.includes('MY warehouse'))!;
+    await act(async()=>{control.click()});
     expect(select).toHaveBeenCalledWith(4);
+  });
+
+  it('opens an exact warehouse directly and returns to the warehouse list',async()=>{
+    const facilities=[{id:4,name:'MY warehouse',providerId:'MY-WH-4'},{id:5,name:'Second warehouse',providerId:'MY-WH-5'}];
+    await render({facilities,selectedFacilityId:4,syncInfo:{...state,status:'sync_failed',jwAvailableStock:20,marketplaceReportedStock:10,difference:10,canResync:true}});
+    expect(host.textContent).toContain('MY warehouse · MY-WH-4');
+    expect(host.textContent).not.toContain('Which stock location?');
+    const back=[...host.querySelectorAll('button')].find(button=>button.textContent?.includes('All warehouses'))!;
+    await act(async()=>back.click());
+    expect(host.textContent).toContain('Which stock location?');
+    expect(host.textContent).toContain('Second warehouse');
+  });
+
+  it('shows mapped stores as a separate step without offering provider writes while loading',async()=>{
+    const second={id:'10',platform:'shopee',name:'Shopee MY'};
+    const selectStore=vi.fn().mockResolvedValue(undefined);
+    await render({availableStores:[base.store,second],onSelectStore:selectStore});
+    const allStores=[...host.querySelectorAll('button')].find(button=>button.textContent?.includes('All stores'))!;
+    await act(async()=>allStores.click());
+    expect(host.textContent).toContain('Which marketplace?');
+    const target=[...host.querySelectorAll('button')].find(button=>button.textContent?.includes('Shopee MY'))!;
+    await act(async()=>target.click());
+    expect(selectStore).toHaveBeenCalledWith(second);
+    await render({isLoadingTopology:true,syncInfo:{...state,status:'sync_failed',jwAvailableStock:5,canResync:true}});
+    expect(host.textContent).toContain('Loading store and warehouse stock status');
+    expect(host.textContent).not.toContain('Resync Stock');
   });
 
   it('shows mapping recovery without a fabricated marketplace quantity',async()=>{
