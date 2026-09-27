@@ -22,6 +22,41 @@ class ShopeeProductImageServiceTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_production_image_upload_uses_store_application_and_endpoint(): void
+    {
+        config(['marketplace.publish_operations_enabled'=>true,'marketplace.basic_wms_enabled'=>false,
+            'marketplace.shopee.enabled'=>true,'marketplace.shopee.environment'=>'sandbox',
+            'marketplace.shopee.partner_id'=>'123','marketplace.shopee.partner_key'=>'sandbox-secret',
+            'marketplace.shopee.applications.production'=>['partner_id'=>'789','partner_key'=>'production-secret',
+                'callback_url'=>'https://example.test/admin/marketplace/oauth/shopee/callback']]);
+        $actor=User::factory()->create(['is_admin'=>true]);
+        $product=Product::create(['title'=>'Production image','handle'=>'production-image','base_price'=>100]);
+        $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee','shop_name'=>'Production',
+            'external_shop_id'=>'456','region'=>'MY','environment'=>'production','status'=>'connected']);
+        DB::table('marketplace_store_capabilities')->insert(['store_id'=>$store,'catalog_read'=>true,
+            'product_publish'=>true,'order_receive'=>false,'inventory_update'=>false,'fulfillment_write'=>false,
+            'created_at'=>now(),'updated_at'=>now()]);
+        MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'789','access_token'=>'token',
+            'access_expires_at'=>now()->addHour()]);
+        Storage::fake('public');
+        $path='cms/media/9285db80-1111-4111-8111-123456789013.png';
+        Storage::disk('public')->put($path,base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9Z8AAAAASUVORK5CYII='));
+        $image=$product->images()->create(['path'=>'/storage/'.$path]);
+        Http::preventStrayRequests();
+        Http::fake(function ($request) {
+            $this->assertStringStartsWith('https://partner.shopeemobile.com/',$request->url());
+            parse_str((string)parse_url($request->url(),PHP_URL_QUERY),$query);
+            $this->assertSame('789',(string)($query['partner_id']??''));
+            if (str_contains($request->url(),'get_shop_info')) return Http::response(['error'=>'','shop_id'=>456,'shop_name'=>'Production','region'=>'MY']);
+            if (str_contains($request->url(),'upload_image')) return Http::response(['error'=>'','response'=>['image_info'=>['image_id'=>'production-image-id']]]);
+            return Http::response([],500);
+        });
+
+        $receipt=app(ShopeeProductImageService::class)->prepare($store,$product->id,$image->id,$actor->id);
+        $this->assertGreaterThan(0,$receipt);
+        Http::assertSentCount(2);
+    }
+
     public function test_owned_image_is_uploaded_once_and_changed_bytes_require_new_upload(): void
     {
         config(['marketplace.publish_operations_enabled'=>true,'marketplace.basic_wms_enabled'=>false,

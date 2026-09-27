@@ -27,11 +27,12 @@ final class ShopeeProductImageService
             $hash=MarketplaceImageReceipts::fingerprint($store,$bytes,'');
             $existing=$this->receipts->find($storeId,$imageId,$hash);
             if ($existing) return (int)$existing->id;
-            $identity=$this->client->shopInfo($token,$store->external_shop_id);
+            $client=app(ShopeeApplicationResolver::class)->clientForStore($storeId,$this->client);
+            $identity=$client->shopInfo($token,$store->external_shop_id);
             if ((string)($identity['shop_id']??'')!==$store->external_shop_id || ($identity['region']??'')!==$store->region) {
                 throw new RuntimeException('Shopee store identity changed before image upload.');
             }
-            $uploaded=$this->client->uploadImage($bytes);
+            $uploaded=$client->uploadImage($bytes);
             return $this->receipts->record($storeId,$productId,$imageId,$actorId,$hash,$uploaded);
         });
     }

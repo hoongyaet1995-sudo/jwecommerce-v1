@@ -31,6 +31,31 @@ class ShopeeOrderService
         });
     }
 
+    public function pullOrderByExternalId(int $storeId, string $externalOrderId): int
+    {
+        if (! preg_match('/^[A-Za-z0-9_-]{1,100}$/D', $externalOrderId)) {
+            throw new RuntimeException('Shopee order identity is invalid.');
+        }
+        $store = DB::table('marketplace_stores')->find($storeId);
+        if (! $store || $store->platform !== 'shopee' || $store->status !== 'connected') {
+            throw new RuntimeException('Connected Shopee store required.');
+        }
+        $token = $this->tokens->accessToken($storeId);
+        $client = $this->applications->clientForStore($storeId, $this->client);
+        $orders = $client->orderDetails($token, $store->external_shop_id, [$externalOrderId]);
+        if (count($orders) !== 1 || ($orders[0]['order_sn'] ?? null) !== $externalOrderId) {
+            throw new RuntimeException('Shopee order identity mismatch.');
+        }
+        return DB::transaction(function () use ($store, $orders): int {
+            $current = DB::table('marketplace_stores')->where('id', $store->id)->lockForUpdate()->first();
+            if (! $current || $current->status !== 'connected' || $current->external_shop_id !== $store->external_shop_id
+                || $current->environment !== $store->environment) {
+                throw new RuntimeException('Store connection changed during order fetch.');
+            }
+            return $this->snapshots->saveShopee((int) $store->id, $orders[0]);
+        });
+    }
+
     public function pullPage(int $storeId, int $from, int $to, string $cursor = ''): array
     {
         $token = $this->tokens->accessToken($storeId);

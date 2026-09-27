@@ -32,12 +32,13 @@ final class MarketplaceHubEventController extends Controller
             'eventId' => ['required', 'regex:/^[1-9][0-9]*$/D'],
             'clientStoreId' => ['required', 'regex:/^[1-9][0-9]*$/D'],
             'type' => ['required', 'in:ORDER_STATUS_CHANGED'],
-            'externalOrderId' => ['required', 'regex:/^[1-9][0-9]*$/D'],
+            'externalOrderId' => ['required', 'string', 'regex:/^[A-Za-z0-9_-]{1,100}$/D'],
         ])->validate();
         abort_unless($data['domain'] === parse_url((string) config('app.url'), PHP_URL_HOST), 403);
         $store = DB::table('marketplace_stores')->where('id', $data['clientStoreId'])
-            ->where('platform', 'lazada')->where('status', 'connected')->first();
+            ->whereIn('platform', ['lazada', 'shopee'])->where('status', 'connected')->first();
         abort_unless($store, 404);
+        abort_if($store->platform === 'lazada' && ! preg_match('/^[1-9][0-9]*$/D', $data['externalOrderId']), 422);
         $created = DB::table('marketplace_hub_event_inbox')->insertOrIgnore([
             'hub_event_id' => $data['eventId'], 'store_id' => $store->id,
             'event_type' => $data['type'], 'external_order_id' => $data['externalOrderId'],

@@ -30,8 +30,12 @@ class BasicPublishingDestinationTest extends TestCase
 
     public function test_unclassified_product_can_target_two_unclassified_shopee_sandbox_stores(): void
     {
-        config(['marketplace.basic_wms_enabled'=>true,'marketplace.publish_operations_enabled'=>true,'marketplace.shopee.environment'=>'sandbox',
-            'marketplace.shopee.partner_id'=>'123','marketplace.shopee.test_store_id'=>999]);
+        config(['marketplace.basic_wms_enabled'=>true,'marketplace.publish_operations_enabled'=>true,'marketplace.shopee.enabled'=>true,
+            'marketplace.shopee.environment'=>'sandbox','marketplace.shopee.partner_id'=>'123','marketplace.shopee.partner_key'=>'fixture',
+            'marketplace.shopee.callback_url'=>'https://example.test/admin/marketplace/oauth/shopee/callback',
+            'marketplace.shopee.applications.sandbox'=>['partner_id'=>'123','partner_key'=>'fixture',
+                'callback_url'=>'https://example.test/admin/marketplace/oauth/shopee/callback'],
+            'marketplace.shopee.test_store_id'=>999]);
         $actor=User::factory()->create(['is_admin'=>true]);
         $product=Product::create(['title'=>'Shared product','handle'=>'shared-product','base_price'=>100]);
         $variant=$product->variants()->create(['title'=>'Default','sku'=>'SHARED','price'=>100,'stock'=>77,'enabled'=>true]);

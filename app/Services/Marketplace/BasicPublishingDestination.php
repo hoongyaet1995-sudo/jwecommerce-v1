@@ -18,8 +18,8 @@ final class BasicPublishingDestination
             403,'Connect the destination store before publishing.');
         $token=MarketplaceStoreToken::where('store_id',$storeId)->first();
         if ($store->platform==='shopee') {
-            abort_unless($store->environment==='sandbox' && config('marketplace.shopee.environment')==='sandbox'
-                && $token && $token->application_id===(string)config('marketplace.shopee.partner_id'),403,'Shopee sandbox credentials required.');
+            abort_unless(app(ShopeeApplicationResolver::class)->isStoreReady($storeId),403,
+                'Verified Shopee store application required. Re-authorize this store.');
         } else {
             abort_unless($store->environment==='live' && $store->region==='MY'
                 && (($token?->credential_source==='oauth' && $token->application_id===(string)config('marketplace.lazada.app_key'))

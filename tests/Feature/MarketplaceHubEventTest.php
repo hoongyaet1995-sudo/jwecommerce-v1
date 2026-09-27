@@ -111,7 +111,7 @@ class MarketplaceHubEventTest extends TestCase
             'type' => 'ORDER_STATUS_CHANGED', 'externalOrderId' => '123456'], JSON_THROW_ON_ERROR);
         $this->deliver($body, 'event-nonce-order-1', 'fixture-client-secret')->assertOk();
         Queue::assertPushedOn('marketplace-hub-orders', ProcessMarketplaceHubOrderEvent::class);
-        (new ProcessMarketplaceHubOrderEvent('52'))->handle(app(\App\Services\Marketplace\LazadaOrderService::class));
+        app()->call([new ProcessMarketplaceHubOrderEvent('52'), 'handle']);
 
         $this->assertDatabaseHas('marketplace_orders', ['store_id' => $storeId, 'external_order_id' => '123456']);
         $this->assertDatabaseHas('marketplace_hub_event_inbox', ['hub_event_id' => '52', 'status' => 'completed']);
@@ -151,6 +151,61 @@ class MarketplaceHubEventTest extends TestCase
         $this->assertDatabaseHas('marketplace_orders', ['store_id' => $storeId, 'external_order_id' => '123456']);
         $this->assertDatabaseHas('marketplace_hub_event_inbox', ['hub_event_id' => '62', 'status' => 'completed']);
         Http::assertSentCount(2);
+    }
+
+    public static function shopeeEnvironments(): array
+    {
+        return [['sandbox', '123', 'https://openplatform.sandbox.test-stable.shopee.sg/'],
+            ['production', '789', 'https://partner.shopeemobile.com/']];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('shopeeEnvironments')]
+    public function test_signed_shopee_event_pulls_exact_order_with_store_environment(string $environment, string $partnerId, string $host): void
+    {
+        config(['app.url' => 'https://ecom.jwaistudio.online',
+            'marketplace.hub.event_endpoint_enabled' => true,
+            'marketplace.hub.client_id' => 'jw_fixture_client',
+            'marketplace.hub.client_secret' => 'fixture-client-secret',
+            'marketplace.read_operations_enabled' => true,
+            'marketplace.shopee.enabled' => true,
+            'marketplace.shopee.environment' => 'sandbox',
+            'marketplace.shopee.partner_id' => '123',
+            'marketplace.shopee.partner_key' => 'sandbox-secret',
+            'marketplace.shopee.applications.sandbox' => ['partner_id' => '123',
+                'partner_key' => 'sandbox-secret',
+                'callback_url' => 'https://example.test/admin/marketplace/oauth/shopee/callback'],
+            'marketplace.shopee.applications.production' => ['partner_id' => '789',
+                'partner_key' => 'production-secret',
+                'callback_url' => 'https://example.test/admin/marketplace/oauth/shopee/callback']]);
+        $storeId = DB::table('marketplace_stores')->insertGetId([
+            'platform' => 'shopee', 'shop_name' => 'Shopee production', 'external_shop_id' => '456',
+            'region' => 'MY', 'environment' => $environment, 'status' => 'connected',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        \App\Models\MarketplaceStoreToken::create(['store_id' => $storeId,
+            'application_id' => $partnerId, 'access_token' => 'fixture-token',
+            'refresh_token' => 'fixture-refresh', 'access_expires_at' => now()->addHour()]);
+        Queue::fake();
+        Http::preventStrayRequests();
+        Http::fake(function ($request) use ($partnerId, $host) {
+            $this->assertStringStartsWith($host, $request->url());
+            parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
+            $this->assertSame($partnerId, (string) ($query['partner_id'] ?? ''));
+            return Http::response(['error' => '', 'response' => ['order_list' => [[
+                'order_sn' => 'SHOPEE123', 'order_status' => 'UNPAID',
+                'update_time' => 1780000000, 'currency' => 'MYR', 'item_list' => [],
+            ]]]]);
+        });
+        $body = json_encode(['domain' => 'ecom.jwaistudio.online', 'operation' => 'deliver_event',
+            'eventId' => '82', 'clientStoreId' => (string) $storeId,
+            'type' => 'ORDER_STATUS_CHANGED', 'externalOrderId' => 'SHOPEE123'], JSON_THROW_ON_ERROR);
+        $this->deliver($body, 'event-nonce-shopee-1', 'fixture-client-secret')->assertOk();
+        Queue::assertPushedOn('marketplace-hub-orders', ProcessMarketplaceHubOrderEvent::class);
+        app()->call([new ProcessMarketplaceHubOrderEvent('82'), 'handle']);
+
+        $this->assertDatabaseHas('marketplace_orders', ['store_id' => $storeId, 'external_order_id' => 'SHOPEE123']);
+        $this->assertDatabaseHas('marketplace_hub_event_inbox', ['hub_event_id' => '82', 'status' => 'completed']);
+        Http::assertSentCount(1);
     }
 
     private function deliver(string $body, string $nonce, string $secret)

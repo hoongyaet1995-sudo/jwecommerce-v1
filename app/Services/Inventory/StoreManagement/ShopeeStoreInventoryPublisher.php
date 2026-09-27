@@ -21,9 +21,6 @@ class ShopeeStoreInventoryPublisher implements StoreInventoryPublisher
 
     public function publish(object $store, object $listing, int $quantity, string $eventKey): array
     {
-        if ($store->region !== 'MY' || $store->environment !== 'sandbox') {
-            throw new RuntimeException('Shopee stock writes for this region or environment await separate acceptance.');
-        }
         $review = $this->policy->review($store, $listing);
         if (! $review['allowed']) {
             throw new RuntimeException($review['code']);

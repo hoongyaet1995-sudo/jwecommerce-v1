@@ -104,22 +104,23 @@ final class MarketplacePublishingDispatchService
         if (!is_string($store->external_shop_id) || !preg_match('/^[1-9][0-9]*$/D', $store->external_shop_id)) {
             throw new RuntimeException('Shopee store identity is invalid.');
         }
+        $client=app(ShopeeApplicationResolver::class)->clientForStore((int)$store->id,$this->shopee);
         $token=$this->shopeeTokens->accessToken((int)$store->id);
         if (config('marketplace.basic_wms_enabled')===true) {
-            $identity=$this->shopee->shopInfo($token,$store->external_shop_id);
+            $identity=$client->shopInfo($token,$store->external_shop_id);
             if ((string)($identity['shop_id']??'')!==$store->external_shop_id || ($identity['region']??'')!==$store->region) {
                 throw new RuntimeException('Shopee test store identity changed.');
             }
-            $payload=app(ShopeeListingPreflight::class)->listing($token,$store->external_shop_id,$payload);
+            $payload=(new ShopeeListingPreflight($client))->listing($token,$store->external_shop_id,$payload);
         }
-        $itemId=$this->shopee->createItem($token, $store->external_shop_id, $payload);
+        $itemId=$client->createItem($token, $store->external_shop_id, $payload);
         if ($variations===null) return ['item_id'=>$itemId];
         try {
             if (!$this->tasks->recordParent($taskId,$itemId)) throw new RuntimeException('Parent result persistence failed.');
             \Illuminate\Support\Sleep::for(5)->seconds();
             // Recheck connection and credentials after the provider's mandatory processing delay.
             $token=$this->shopeeTokens->accessToken((int)$store->id);
-            $ids=$this->shopee->initializeModels($token,$store->external_shop_id,$itemId,$variations);
+            $ids=$client->initializeModels($token,$store->external_shop_id,$itemId,$variations);
             return ['item_id'=>$itemId,'model_ids'=>$ids];
         } catch (\Throwable) {
             throw new PublishingResultUncertain('Shopee parent was created, but the complete variant result is not confirmed. Reconcile before retrying.');

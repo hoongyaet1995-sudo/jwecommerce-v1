@@ -31,7 +31,7 @@ class ShopeeSingaporeReadSafetyTest extends TestCase
         }
     }
 
-    public function test_sg_store_cannot_enter_publishing_even_if_a_capability_was_manually_enabled(): void
+    public function test_production_store_uses_the_same_publishing_access_policy_when_enabled(): void
     {
         config(['marketplace.publish_operations_enabled' => true]);
         $storeId = DB::table('marketplace_stores')->insertGetId([
@@ -45,8 +45,7 @@ class ShopeeSingaporeReadSafetyTest extends TestCase
             'created_at' => now(), 'updated_at' => now(),
         ]);
 
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
-        app(MarketplaceStoreAccess::class)->publishingStore($storeId);
+        $this->assertSame($storeId, app(MarketplaceStoreAccess::class)->publishingStore($storeId)->id);
     }
 
     public function test_connected_sg_sandbox_store_can_enter_publishing_with_its_own_capability(): void

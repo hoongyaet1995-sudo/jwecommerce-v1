@@ -17,7 +17,7 @@ final class ShopeeVariantImages
                 $hash=MarketplaceImageReceipts::fingerprint($store,$bytes,'');
                 if ($this->receipt($storeId,$source['product_id'],$hash)) return;
                 $token=app(ShopeeTokenManager::class)->accessToken($storeId);
-                $client=app(ShopeeClient::class);
+                $client=app(ShopeeApplicationResolver::class)->clientForStore($storeId,app(ShopeeClient::class));
                 $identity=$client->shopInfo($token,$store->external_shop_id);
                 abort_unless((string)($identity['shop_id']??'')===$store->external_shop_id && ($identity['region']??'')===$store->region,409,'Shopee store identity changed.');
                 $uploaded=$client->uploadImage($bytes);

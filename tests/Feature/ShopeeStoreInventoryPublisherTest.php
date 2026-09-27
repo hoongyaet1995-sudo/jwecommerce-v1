@@ -58,6 +58,24 @@ class ShopeeStoreInventoryPublisherTest extends TestCase
             && data_get($request->data(), 'stock_list.0.seller_stock.0.stock') === 7);
     }
 
+    public function test_production_stock_uses_production_application_and_endpoint(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher('88', 'production');
+        Http::fake(['*' => Http::sequence()
+            ->push($this->item(true))->push($this->models(4))
+            ->push($this->writeSuccess(7))->push($this->item(true))->push($this->models(7))]);
+
+        $this->assertSame(7, $publisher->publish($store, $listing, 7, 'production-event')['observed_quantity']);
+        Http::assertSentCount(5);
+        Http::assertSent(function ($request): bool {
+            parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
+            return str_starts_with($request->url(), 'https://partner.shopeemobile.com/')
+                && str_contains($request->url(), '/product/update_stock')
+                && (string) ($query['partner_id'] ?? '') === '789';
+        });
+        Http::assertNotSent(fn ($request): bool => str_contains($request->url(), 'sandbox.test-stable.shopee'));
+    }
+
     public function test_non_model_item_uses_model_zero_and_single_verified_location(): void
     {
         [$publisher, $store, $listing] = $this->publisher('0');
@@ -211,13 +229,17 @@ class ShopeeStoreInventoryPublisherTest extends TestCase
         }
     }
 
-    private function publisher(string $modelId): array
+    private function publisher(string $modelId, string $environment = 'sandbox'): array
     {
+        if ($environment === 'production') config(['marketplace.shopee.applications.production' => [
+            'partner_id' => '789', 'partner_key' => 'production-secret',
+            'callback_url' => 'https://example.test/admin/marketplace/oauth/shopee/callback',
+        ]]);
         $store = (new StoreInventoryFixture)->store('shopee', strtoupper(bin2hex(random_bytes(3))));
         DB::table('marketplace_stores')->where('id', $store->id)->update([
-            'external_shop_id' => '999', 'environment' => 'sandbox',
+            'external_shop_id' => '999', 'environment' => $environment,
         ]);
-        \App\Models\MarketplaceStoreToken::create(['store_id'=>$store->id,'application_id'=>'12345',
+        \App\Models\MarketplaceStoreToken::create(['store_id'=>$store->id,'application_id'=>$environment === 'production' ? '789' : '12345',
             'access_token'=>'token','refresh_token'=>'refresh','access_expires_at'=>now()->addHour()]);
         $store = DB::table('marketplace_stores')->find($store->id);
         $listing = (object) ['id' => 41, 'store_id' => $store->id, 'external_product_id' => '77', 'external_variant_id' => $modelId];

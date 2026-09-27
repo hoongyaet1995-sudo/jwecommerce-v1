@@ -47,25 +47,29 @@ class ShopeePublishingVariantsTest extends TestCase
         ]);
     }
 
-    public static function results(): array { return [[true,true], [true,false], [false,false]]; }
+    public static function results(): array { return [[true,true,'sandbox'], [true,false,'sandbox'], [false,false,'sandbox'], [true,true,'production']]; }
 
     #[\PHPUnit\Framework\Attributes\DataProvider('results')]
-    public function test_parent_is_durable_before_models_and_partial_creation_is_never_retryable(bool $complete,bool $readable): void
+    public function test_parent_is_durable_before_models_and_partial_creation_is_never_retryable(bool $complete,bool $readable,string $environment): void
     {
         config(['marketplace.basic_wms_enabled'=>false,'marketplace.publish_operations_enabled'=>true,
             'marketplace.shopee.enabled'=>true,'marketplace.shopee.environment'=>'sandbox',
-            'marketplace.shopee.partner_id'=>'123','marketplace.shopee.partner_key'=>'fixture-secret']);
+            'marketplace.shopee.partner_id'=>'123','marketplace.shopee.partner_key'=>'fixture-secret',
+            'marketplace.shopee.applications.sandbox'=>['partner_id'=>'123','partner_key'=>'fixture-secret',
+                'callback_url'=>'https://example.test/admin/marketplace/oauth/shopee/callback'],
+            'marketplace.shopee.applications.production'=>['partner_id'=>'789','partner_key'=>'production-secret',
+                'callback_url'=>'https://example.test/admin/marketplace/oauth/shopee/callback']]);
         Sleep::fake();
         $actor=User::factory()->create(['is_admin'=>true]);
         $product=Product::create(['title'=>'Test','handle'=>'shopee-models','base_price'=>1000]);
         $red=$product->variants()->create(['title'=>'Red','sku'=>'RED','price'=>1000,'stock'=>17,'enabled'=>true]);
         $blue=$product->variants()->create(['title'=>'Blue','sku'=>'BLUE','price'=>1200,'stock'=>21,'enabled'=>true]);
         $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee','shop_name'=>'Test',
-            'external_shop_id'=>'2001','region'=>'MY','environment'=>'sandbox','status'=>'connected']);
+            'external_shop_id'=>'2001','region'=>'MY','environment'=>$environment,'status'=>'connected']);
         DB::table('marketplace_store_capabilities')->insert(['store_id'=>$store,'catalog_read'=>true,
             'product_publish'=>true,'order_receive'=>false,'inventory_update'=>false,'fulfillment_write'=>false,
             'created_at'=>now(),'updated_at'=>now()]);
-        MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>'123','access_token'=>'fixture-token','access_expires_at'=>now()->addHour()]);
+        MarketplaceStoreToken::create(['store_id'=>$store,'application_id'=>$environment==='production'?'789':'123','access_token'=>'fixture-token','access_expires_at'=>now()->addHour()]);
         $models=[['tier_index'=>[0],'model_sku'=>'RED','original_price'=>10,'seller_stock'=>[['stock'=>0]]],
             ['tier_index'=>[1],'model_sku'=>'BLUE','original_price'=>12,'seller_stock'=>[['stock'=>0]]]];
         $payload=['item_name'=>'Test','original_stock'=>0,'jw_variations'=>[
@@ -73,7 +77,10 @@ class ShopeePublishingVariantsTest extends TestCase
         $source=app(\App\Services\Marketplace\MarketplacePublishingSource::class)->read($product->id);
         $task=app(PublishingTasks::class)->create($store,$product->id,$actor->id,'7285db80-2222-4111-8111-123456789012',$payload,$source);
         Http::preventStrayRequests();
-        Http::fake(function ($request) use ($task,$complete,$readable) {
+        Http::fake(function ($request) use ($task,$complete,$readable,$environment) {
+            $this->assertStringStartsWith($environment==='production'?'https://partner.shopeemobile.com/':'https://openplatform.sandbox.test-stable.shopee.sg/',$request->url());
+            parse_str((string)parse_url($request->url(),PHP_URL_QUERY),$query);
+            $this->assertSame($environment==='production'?'789':'123',(string)($query['partner_id']??''));
             if (str_contains($request->url(),'/get_item_base_info?')) {
                 return $readable?Http::response(['response'=>['item_list'=>[['item_id'=>1001,'has_model'=>true,'item_name'=>'Test','item_status'=>'UNLIST']]]]):Http::response([],503);
             }
