@@ -82,6 +82,10 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncError, setSyncError] = useState('');
   const [confirmResync, setConfirmResync] = useState(false);
+  const [explicitQuantity, setExplicitQuantity] = useState('');
+  const [explicitReason, setExplicitReason] = useState('');
+  const [confirmExplicit, setConfirmExplicit] = useState(false);
+  const [explicitResult, setExplicitResult] = useState<any>(null);
   const [acceptance, setAcceptance] = useState<any>(null);
   const [recovering, setRecovering] = useState(false);
   const [reload, setReload] = useState(0);
@@ -90,6 +94,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
     if (!isOpen || !item) return;
     setStoreId(initialStoreId || null); setFacilityId(initialWarehouseId || null); setActionsOpen(initialActionsOpen);
     setSync(null); setSyncError(''); setAcceptance(null); setRecovering(false);
+    setExplicitQuantity(''); setExplicitReason(''); setConfirmExplicit(false); setExplicitResult(null);
   }, [isOpen, item?.id, initialStoreId, initialWarehouseId, initialActionsOpen]);
 
   useEffect(() => {
@@ -218,6 +223,19 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
     } catch { setSyncError('Stock sync could not be completed. Please try again.'); }
     finally { setSyncBusy(false); }
   };
+  const pushExplicit = async () => {
+    if (!item || !selectedStore || !selectedFacility) return;
+    setSyncBusy(true); setSyncError('');
+    try {
+      const result = await storeInventoryApi.pushExplicitFacilityStock(selectedStore.id,
+        Number(selectedFacility.id), (item as any).variantId, Number(explicitQuantity),
+        explicitReason.trim(), crypto.randomUUID());
+      setExplicitResult(result); setConfirmExplicit(false);
+      setSync(await storeInventoryApi.facilitySyncDetails(selectedStore.id,
+        Number(selectedFacility.id), (item as any).variantId));
+    } catch (error: any) { setSyncError(error.message || 'The stock push could not be queued.'); }
+    finally { setSyncBusy(false); }
+  };
   if (!isOpen || !item) return null;
   const targetWarehouseId = direct ? `direct:${selectedStore?.id}` : selectedFacility?.id;
   const proceed = (action: 'count' | 'intake' | 'adjustment' | 'transfer') => {
@@ -262,7 +280,22 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
         {atLocation && !actionsOpen && <>
           <p className="text-xs font-semibold text-neutral-300">{selectedStore!.name} · {direct ? 'Store ledger' : `Platform warehouse ${warehouseDisplayCode(selectedFacility!.providerId)}`}</p>
           <StockSummary balance={activeBalance} />
-          {!actionable && !awaitingSync && !failedSync && <div role="status" className="rounded-xl border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-300">{selectedStore!.status !== 'verified' ? 'Warehouse verification is pending.' : !acceptanceReady ? 'This stock location is not yet eligible for a stock change.' : 'This warehouse does not yet have an active stock ledger.'}</div>}
+          {selectedFacility && selectedStore?.platform === 'lazada' && <div className="rounded-xl border border-purple-800 bg-purple-950/20 p-4 text-xs">
+            <strong className="block text-sm">Push stock to this warehouse</strong>
+            <p className="mt-2 text-neutral-300">Send an explicit quantity to the selected marketplace warehouse. JW stock and order reservations stay unchanged.</p>
+            <label className="mt-3 block font-semibold">Quantity to push<input type="number" min="0" max="2147483647" step="1" value={explicitQuantity}
+              onChange={event => setExplicitQuantity(event.target.value)} className="mt-2 w-full rounded-lg border border-neutral-600 bg-neutral-800 p-3" /></label>
+            <label className="mt-3 block font-semibold">Reason<textarea rows={2} value={explicitReason}
+              onChange={event => setExplicitReason(event.target.value)} placeholder="Why are you pushing this quantity?"
+              className="mt-2 w-full rounded-lg border border-neutral-600 bg-neutral-800 p-3" /></label>
+            {!confirmExplicit ? <button type="button" disabled={!/^\d+$/.test(explicitQuantity) || Number(explicitQuantity) > 2147483647 || explicitReason.trim().length < 10 || syncBusy}
+              onClick={() => setConfirmExplicit(true)} className="mt-3 rounded-lg bg-purple-600 px-4 py-2 font-bold disabled:opacity-40">Push stock now</button>
+              : <div className="mt-3 rounded-lg border border-purple-700 p-3"><p>Push {explicitQuantity} units to {selectedStore.name} · {selectedFacility.name}?</p>
+                <div className="mt-3 flex gap-2"><button type="button" onClick={() => setConfirmExplicit(false)} className="rounded border border-neutral-600 px-3 py-2">Cancel</button>
+                  <button type="button" disabled={syncBusy} onClick={() => void pushExplicit()} className="rounded bg-purple-600 px-3 py-2 font-bold disabled:opacity-40">Confirm push</button></div></div>}
+            {explicitResult && <p role="status" className="mt-3 text-emerald-300">Push queued for {explicitResult.target_quantity} units. Check status below for provider confirmation.</p>}
+          </div>}
+          {!actionable && !awaitingSync && !failedSync && <div role="status" className="rounded-xl border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-300">{selectedStore!.status !== 'verified' ? 'Warehouse verification is pending.' : !acceptanceReady ? 'JW ledger actions need review. Marketplace stock can still be pushed above.' : 'This warehouse does not yet have an active stock ledger.'}</div>}
           {canRecover && !awaitingSync && !failedSync && <button type="button" onClick={() => setRecovering(true)} className="w-full rounded-xl border border-purple-700 bg-purple-950/30 p-4 text-left text-xs font-bold text-purple-200 hover:border-purple-400">Resolve stock issue <ArrowRight className="ml-2 inline h-4 w-4" /></button>}
           {selectedStore!.platform !== 'webstore' && <div role="status" className={`rounded-xl border p-4 text-xs ${sync?.status === 'synced' ? 'border-emerald-800 bg-emerald-950/40' : failedSync ? 'border-rose-800 bg-rose-950/30' : awaitingSync ? 'border-amber-800 bg-amber-950/30' : 'border-neutral-700 bg-neutral-800/60'}`}>
             <strong className={sync?.status === 'synced' ? 'text-emerald-300' : failedSync ? 'text-rose-300' : awaitingSync ? 'text-amber-300' : 'text-white'}>{sync?.status === 'synced' ? 'Marketplace stock confirmed' : failedSync ? 'Marketplace sync failed' : awaitingSync ? 'Marketplace result needs confirmation' : 'Marketplace stock sync'}</strong>

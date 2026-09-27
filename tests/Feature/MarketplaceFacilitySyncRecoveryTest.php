@@ -19,7 +19,8 @@ class MarketplaceFacilitySyncRecoveryTest extends TestCase
 
     public function test_exact_location_readback_confirms_only_matching_facility_task(): void
     {
-        config(['marketplace.multiwarehouse_operations_enabled' => true]);
+        config(['marketplace.multiwarehouse_operations_enabled' => true,
+            'marketplace.multiwarehouse_stock_sync_enabled' => true]);
         DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores']);
         $fixture = new StoreInventoryFixture;
         $store = $fixture->store('lazada', 'FACILITY-RECOVERY');

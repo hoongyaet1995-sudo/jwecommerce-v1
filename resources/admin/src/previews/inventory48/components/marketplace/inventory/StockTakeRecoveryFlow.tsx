@@ -43,6 +43,10 @@ export const StockTakeRecoveryFlow: React.FC<Props> = ({ item, store, facility, 
   const [receipt, setReceipt] = useState<any>(null);
   const [sync, setSync] = useState<any>(null);
   const [syncBusy, setSyncBusy] = useState(false);
+  const [pushQuantity, setPushQuantity] = useState('');
+  const [pushReason, setPushReason] = useState('');
+  const [pushConfirmed, setPushConfirmed] = useState(false);
+  const [pushReceipt, setPushReceipt] = useState<any>(null);
   const variantId = Number((item as any).variantId);
   const facilityId = Number(facility.id);
   const refresh = async () => {
@@ -105,6 +109,16 @@ export const StockTakeRecoveryFlow: React.FC<Props> = ({ item, store, facility, 
     catch (failure: any) { setError(failure.message); }
     finally { setSyncBusy(false); }
   };
+  const pushNow = async () => {
+    setSyncBusy(true); setError('');
+    try {
+      const result = await storeInventoryApi.pushExplicitFacilityStock(store.id, facilityId, variantId,
+        Number(pushQuantity), pushReason.trim(), crypto.randomUUID());
+      setPushReceipt(result);
+      setPushConfirmed(false);
+    } catch (failure: any) { setError(failure.message); }
+    finally { setSyncBusy(false); }
+  };
   const titles = ['Resolve stock issue', 'Review order obligations', 'Stock Take', 'Review Stock Take', 'Stock Take recorded'];
   const descriptions = [
     'See what needs attention for this SKU and warehouse.',
@@ -147,6 +161,26 @@ export const StockTakeRecoveryFlow: React.FC<Props> = ({ item, store, facility, 
             </div>)}
           {otherBlockers.length > 0 && <p className="text-amber-300">Resolve these issues through their existing inventory or order workflows before counting. Other locations are unchanged.</p>}
           {sync && <p role="status" className="rounded-xl border border-neutral-700 p-3">Marketplace sync: {sync.status || 'Status unavailable'}</p>}
+          <div className="rounded-xl border border-purple-800 bg-purple-950/20 p-4">
+            <strong className="block text-sm">Push stock to this marketplace warehouse</strong>
+            <p className="mt-2 text-neutral-300">You may send an explicit quantity even while these JW ledger or order issues remain open. This does not change JW physical stock or reservations. Check the marketplace result afterward.</p>
+            <label className="mt-3 block font-semibold">Quantity to send
+              <input type="number" min="0" max="2147483647" step="1" value={pushQuantity}
+                onChange={event => setPushQuantity(event.target.value)} className="mt-2 block w-full rounded-lg border border-neutral-600 bg-neutral-800 p-3" />
+            </label>
+            <label className="mt-3 block font-semibold">Reason
+              <textarea rows={2} value={pushReason} onChange={event => setPushReason(event.target.value)}
+                placeholder="Explain this manual marketplace stock push."
+                className="mt-2 block w-full rounded-lg border border-neutral-600 bg-neutral-800 p-3" />
+            </label>
+            {!pushConfirmed ? <button type="button" disabled={!/^\d+$/.test(pushQuantity) || Number(pushQuantity) > 2147483647 || pushReason.trim().length < 10 || syncBusy}
+              onClick={() => setPushConfirmed(true)} className="mt-3 rounded-lg bg-purple-600 px-4 py-2 font-bold disabled:opacity-40">Push stock now</button>
+              : <div className="mt-3 rounded-lg border border-purple-700 p-3"><p>Send {pushQuantity} units to {store.name} · {facility.name}? JW ledger and reservations will remain unchanged.</p>
+                  <div className="mt-3 flex gap-2"><button type="button" onClick={() => setPushConfirmed(false)} className="rounded-lg border border-neutral-600 px-3 py-2">Cancel</button>
+                    <button type="button" disabled={syncBusy} onClick={() => void pushNow()} className="rounded-lg bg-purple-600 px-3 py-2 font-bold disabled:opacity-40">Confirm push</button></div></div>}
+            {pushReceipt && <div role="status" className="mt-3 rounded-lg border border-neutral-700 p-3">Push queued for {pushReceipt.target_quantity} units. JW ledger unchanged.
+              <button type="button" disabled={syncBusy} onClick={() => void checkSync()} className="ml-3 font-semibold text-purple-300 underline">Check status</button></div>}
+          </div>
         </>}
         {screen === 1 && <><h3 className="text-base font-bold">Which orders still need stock?</h3>
           <p className="text-neutral-400">Choose a resolution for every order line. Risk acceptance excludes that line from JW reservations and can cause overselling. The decision and reason are audited.</p>

@@ -5,9 +5,12 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Services\Inventory\StoreManagement\FacilityRegistry;
 use App\Services\Inventory\StoreManagement\FacilityStockReview;
+use App\Contracts\StoreInventoryPublisher;
+use App\Jobs\ProcessFacilityInventorySync;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Tests\Support\StoreInventoryFixture;
 use Tests\TestCase;
 
@@ -50,6 +53,50 @@ class StockTakeRecoveryTest extends TestCase
             'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now(),
         ]);
         return [(int) $store->id, (int) $variant->id, $facility, $order];
+    }
+
+    public function test_explicit_exact_warehouse_push_bypasses_ledger_and_order_review_without_changing_jw_stock(): void
+    {
+        [$store, $variant, $facility] = $this->setupCase();
+        $warehouse = DB::table('marketplace_store_facilities')->where('id', $facility)->value('inventory_warehouse_id');
+        $pool = DB::table('inventory_pools')->insertGetId([
+            'pool_key' => 'warehouse:'.$warehouse, 'kind' => 'warehouse',
+            'warehouse_id' => $warehouse, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('inventory_balances')->insert([
+            'inventory_pool_id' => $pool, 'product_variant_id' => $variant,
+            'physical_stock' => 9, 'reserved_stock' => 1, 'safety_stock' => 0,
+            'counted_at' => now(), 'version' => 1, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $actor = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        $this->actingAs($actor);
+        Queue::fake();
+        $url = "/admin/api/inventory/store-management/stores/$store/facilities/$facility/skus/$variant/sync/push-explicit";
+        $this->postJson($url, ['quantity' => 5, 'reason' => 'Supervisor verified exact provider quantity',
+            'operation_key' => 'explicit-test-1'])->assertOk()
+            ->assertJsonPath('target_quantity', 5);
+        $task = DB::table('inventory_store_sync_tasks')->where('event_key', 'facility-manual-push:explicit-test-1')->first();
+        $this->assertNotNull($task);
+        $this->assertNull($task->inventory_balance_id);
+        $this->assertSame('WH-TEST', $task->provider_location_id);
+        $this->assertSame(9, (int) DB::table('inventory_balances')->where('inventory_pool_id', $pool)->value('physical_stock'));
+        $this->assertDatabaseHas('inventory_store_sync_attempts', ['task_id' => $task->id,
+            'actor_id' => $actor->id, 'source' => 'manual', 'target_quantity' => 5]);
+        $publisher = \Mockery::mock(StoreInventoryPublisher::class);
+        $publisher->shouldReceive('publish')->once()->withArgs(function ($actualStore, $listing, $quantity): bool {
+            $this->assertSame('WH-TEST', $listing->sync_provider_location_id);
+            $this->assertTrue($listing->sync_strict_facility);
+            $this->assertSame(5, $quantity);
+            return true;
+        })->andReturn(['confirmation_method' => 'provider_readback',
+            'observed_quantity' => 5, 'provider_location_id' => 'WH-TEST']);
+        (new ProcessFacilityInventorySync($task->id))->handle($publisher);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $task->id, 'status' => 'confirmed']);
+        $this->assertSame(9, (int) DB::table('inventory_balances')->where('inventory_pool_id', $pool)->value('physical_stock'));
+        DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update(['status' => 'uncertain']);
+        $this->postJson($url, ['quantity' => 6, 'reason' => 'Supervisor intentionally resends uncertain result',
+            'operation_key' => 'explicit-test-2'])->assertOk()->assertJsonPath('target_quantity', 6);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $task->id, 'status' => 'superseded']);
     }
 
     public function test_supervisor_reviews_one_historical_order_then_existing_facility_count_can_continue(): void

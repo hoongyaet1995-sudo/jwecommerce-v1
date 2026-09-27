@@ -40,6 +40,20 @@ final class FacilitySyncRecoveryController extends Controller
             ->header('Cache-Control', 'no-store');
     }
 
+    public function pushExplicit(Request $request, int $store, int $facility, int $variant,
+        FacilitySyncRecovery $service): JsonResponse
+    {
+        $this->authorizeActor($request);
+        $data = $request->validate([
+            'quantity' => ['required', 'integer', 'min:0', 'max:2147483647'],
+            'reason' => ['required', 'string', 'min:10', 'max:255'],
+            'operation_key' => ['required', 'string', 'max:120'],
+        ]);
+        return response()->json($service->pushExplicit($store, $facility, $variant,
+            (int) $data['quantity'], $data['operation_key'], (int) $request->user()->id,
+            $data['reason']))->header('Cache-Control', 'no-store');
+    }
+
     private function authorizeActor(Request $request): void
     {
         $actor = $request->user();

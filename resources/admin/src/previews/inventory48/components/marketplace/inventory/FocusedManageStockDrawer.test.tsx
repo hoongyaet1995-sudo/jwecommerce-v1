@@ -105,6 +105,8 @@ it('keeps a test facility blocked when the existing eligibility check rejects it
   await act(async () => { await Promise.resolve(); await Promise.resolve(); });
   const manage = [...host.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Manage this stock');
   expect(manage?.disabled).toBe(true);
+  expect(host.textContent).toContain('Push stock to this warehouse');
+  expect([...host.querySelectorAll('button')].some(button => button.textContent?.trim() === 'Push stock now')).toBe(true);
 });
 
 it('opens the exact-location Stock Take recovery instead of silently bypassing an order blocker', async () => {
