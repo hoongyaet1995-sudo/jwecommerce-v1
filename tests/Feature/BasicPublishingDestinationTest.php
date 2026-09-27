@@ -37,9 +37,9 @@ class BasicPublishingDestinationTest extends TestCase
         $variant=$product->variants()->create(['title'=>'Default','sku'=>'SHARED','price'=>100,'stock'=>77,'enabled'=>true]);
 
         $tasks=[];
-        foreach (['1001','1002'] as $shop) {
+        foreach ([['1001','MY'],['1002','SG']] as [$shop,$region]) {
             $id=DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee','shop_name'=>'Sandbox',
-                'external_shop_id'=>$shop,'region'=>'MY','environment'=>'sandbox','status'=>'connected']);
+                'external_shop_id'=>$shop,'region'=>$region,'environment'=>'sandbox','status'=>'connected']);
             $this->enablePublishing($id);
 
             MarketplaceStoreToken::create(['store_id'=>$id,'application_id'=>'123','access_token'=>'fixture','access_expires_at'=>now()->addHour()]);

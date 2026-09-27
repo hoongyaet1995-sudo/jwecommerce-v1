@@ -48,4 +48,21 @@ class ShopeeSingaporeReadSafetyTest extends TestCase
         $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
         app(MarketplaceStoreAccess::class)->publishingStore($storeId);
     }
+
+    public function test_connected_sg_sandbox_store_can_enter_publishing_with_its_own_capability(): void
+    {
+        config(['marketplace.publish_operations_enabled' => true]);
+        $storeId = DB::table('marketplace_stores')->insertGetId([
+            'platform' => 'shopee', 'environment' => 'sandbox', 'external_shop_id' => '227929253',
+            'shop_name' => 'SG Sandbox', 'region' => 'SG', 'status' => 'connected',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('marketplace_store_capabilities')->insert([
+            'store_id' => $storeId, 'catalog_read' => true, 'product_publish' => true,
+            'order_receive' => false, 'inventory_update' => false, 'fulfillment_write' => false,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->assertSame($storeId, app(MarketplaceStoreAccess::class)->publishingStore($storeId)->id);
+    }
 }

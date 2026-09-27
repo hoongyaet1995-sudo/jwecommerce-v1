@@ -269,6 +269,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   }, [products, selectedProductId,liveData,source]);
   const isLazadaLive=liveData && targetConnection?.platform==='lazada';
   const isShopeeLive=liveData && targetConnection?.platform==='shopee';
+  const channelCurrency=targetConnection?.platform==='shopee'&&targetConnection.region==='SG'?'SGD':'MYR';
   const shopeeRequirements=useShopeePublishingRequirements(isShopeeLive&&isOpen&&!taskId?selectedConnectionId:null,selectedCategory,source?.revision??'');
   const shopeeSizeChart=shopeeSizeChartRequirement(shopeeRequirements.fields);
   const lazadaAttributes=useLazadaPublishingAttributes(isLazadaLive?selectedConnectionId:null,selectedCategory,source);
@@ -842,7 +843,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                                 {conn.shopName}
                               </div>
                               <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                                Region: Malaysia (MYR)
+                                {conn.region==='SG'?'Region: Singapore (SGD)':'Region: Malaysia (MYR)'}
                               </div>
                             </div>
 
@@ -1307,7 +1308,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                                 <td className="py-2.5 px-3 font-semibold text-neutral-900 dark:text-white">{v.title}</td>
                                 <td className="py-2.5 px-3 font-mono text-indigo-600 dark:text-indigo-400">{v.sku}</td>
                                 <td className="py-2.5 px-3 text-neutral-500 dark:text-neutral-400">MYR {v.price.toFixed(2)}</td>
-                                <td className="py-2.5 px-3 font-bold text-emerald-600 dark:text-emerald-400">MYR {channelPrice.toFixed(2)}</td>
+                                <td className="py-2.5 px-3 font-bold text-emerald-600 dark:text-emerald-400">{channelCurrency} {channelPrice.toFixed(2)}</td>
                                 <td className="py-2.5 px-3">
                                   <span className="px-2 py-0.5 rounded text-xs font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200">
                                     {displayStock} units
@@ -1319,6 +1320,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                         </tbody>
                       </table>
                     </div>
+                    {channelCurrency==='SGD'&&<p className="text-[11px] text-amber-600 dark:text-amber-400">JW master prices are in MYR. Shopee Singapore receives the same numeric price in SGD; no currency conversion is applied.</p>}
                   </div>
                 </div>
               )}

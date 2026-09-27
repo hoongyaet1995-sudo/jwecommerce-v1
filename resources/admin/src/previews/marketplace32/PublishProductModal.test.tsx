@@ -80,7 +80,7 @@ it('submits live Shopee requirements from the existing three-step review',async(
  });
  vi.mocked(marketplaceOperations.publishingTask).mockResolvedValue({id:42,storeId:1,productId:51,status:'uncertain',externalItemId:'1001'} as never);
  const submit=vi.fn().mockResolvedValue('42');
- const context={products:[{id:'51',title:'Saved',basePrice:15.99,totalInventory:17,variants:[],images:[]}],categories:[],connections:[{id:'1',platform:'shopee',shopName:'Sandbox',status:'connected'}],marketplaceStoreProducts:[],addToast:vi.fn(),setActiveSection:vi.fn(),publishMasterProductToStore:vi.fn()} as unknown as MarketplaceJourneyContext;
+ const context={products:[{id:'51',title:'Saved',basePrice:15.99,totalInventory:17,variants:[],images:[]}],categories:[],connections:[{id:'1',platform:'shopee',shopName:'Sandbox',region:'SG',status:'connected'}],marketplaceStoreProducts:[],addToast:vi.fn(),setActiveSection:vi.fn(),publishMasterProductToStore:vi.fn()} as unknown as MarketplaceJourneyContext;
  const container=document.createElement('div'),root=createRoot(container);
  try{
   await act(async()=>root.render(<JourneyProvider value={context}><PublishProductModal isOpen liveData onClose={vi.fn()} submitReviewed={submit}/></JourneyProvider>));
@@ -91,6 +91,8 @@ it('submits live Shopee requirements from the existing three-step review',async(
   expect(container.querySelector('#marketplace-size-chart-section')).toBeNull();
   await act(async()=>container.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
   await act(async()=>Array.from(container.querySelectorAll('button')).find(button=>button.textContent?.includes('Pricing & Sync'))!.click());
+  expect(container.textContent).toContain('SGD 15.99');
+  expect(container.textContent).toContain('no currency conversion is applied');
   await act(async()=>Array.from(container.querySelectorAll('button')).find(button=>button.textContent?.includes('Publish to SHOPEE'))!.click());
   expect(submit).toHaveBeenCalledWith('51','1',expect.objectContaining({shopeeAttributes:[],shopeeBrandId:null,shopeeLogistics:[{logistic_id:24000,is_free:false}],sourceRevision:'a'.repeat(64)}));
   expect(container.textContent).toContain('Result Requires Verification');
