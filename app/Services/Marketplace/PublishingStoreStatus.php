@@ -12,10 +12,10 @@ final class PublishingStoreStatus
         foreach (DB::table('marketplace_publishing_tasks')->where('store_id',$store)->orderByDesc('id')->get(['product_id','status','external_item_id']) as $task) {
             $id=(string)$task->product_id;
             if (isset($seen[$id])) continue;
-            $seen[$id]=true;
             if (($statuses[$id]??null)==='listed') continue;
-            if ($task->status==='rejected' && !$task->external_item_id) continue;
+            if (in_array($task->status,['rejected','uncertain'],true) && !$task->external_item_id) continue;
             if (!in_array($task->status,['queued','processing','uncertain','succeeded'],true) && !$task->external_item_id) continue;
+            $seen[$id]=true;
             $statuses[$id]=$task->status==='succeeded'?'listed':'review';
         }
         return $statuses;

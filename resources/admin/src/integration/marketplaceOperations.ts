@@ -141,6 +141,7 @@ export const marketplaceOperations = {
   },
   authorizePublishingRecovery: (id:string,input:{reason:string;checkedMarketplace:true;acceptDuplicateRisk:true;confirmationVersion:'v1';expectedRevision:number}) =>
     marketplaceRequest<{authorizationId:string;expiresAt:string;previousTaskId:number}>(`/publishing-tasks/${idPath(id)}/recovery-authorizations`,'POST',input),
+  cancelUnsentPublishingTask: (id:string) => marketplaceRequest<PublishingTask>(`/publishing-tasks/${idPath(id)}/cancel-unsent`,'POST'),
   reconcileLazadaPublishingTask: (id: string) => marketplaceRequest<{id:number;status:'succeeded'|'rejected';confirmed:boolean;external_item_id?:string}>(`/publishing-tasks/${idPath(id)}/reconcile`, 'POST'),
   importVariant: (listingId: string, review: VariantImportReview) =>
     marketplaceRequest<{variantId: number; productId: number}>(`/listings/${idPath(listingId)}/import-variant`, 'POST', review),

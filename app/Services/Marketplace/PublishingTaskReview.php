@@ -44,9 +44,10 @@ final class PublishingTaskReview
     }
     private function actions(object $row, ?object $store): array
     {
+        if ($row->status==='queued') return ['resume_dispatch','cancel_unsent'];
         if (!$store || $store->status!=='connected') return ['reauthorize_store'];
         return match ($row->status) {
-            'queued'=>['resume_dispatch'], 'processing'=>['wait'],
+            'processing'=>['wait'],
             'uncertain'=>['check_marketplace_result','start_new_review'],
             'rejected'=>['edit_and_retry'], 'succeeded'=>['view_mapping'], default=>[],
         };

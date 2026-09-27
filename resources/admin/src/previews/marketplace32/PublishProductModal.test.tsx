@@ -2,21 +2,48 @@
 import React,{act} from 'react';
 import {createRoot} from 'react-dom/client';
 import {expect,it,vi} from 'vitest';
-import {providerPublishingIssues,PublishProductModal,shouldOpenExistingPublishingTask} from './components/marketplace/PublishProductModal';
+import {providerPublishingIssues,PublishProductModal,shouldOpenExistingPublishingTask,resolvePublishingAsyncStatus} from './components/marketplace/PublishProductModal';
 import {JourneyProvider,type MarketplaceJourneyContext} from './context/AdminContext';
 import {marketplaceOperations} from '../../integration/marketplaceOperations';
 import {marketplaceRequest} from '../../integration/marketplaceData';
 import {MissingPublishingRequestRecoveryError} from '../../integration/publishingReviewSession';
 vi.mock('../../integration/marketplaceData',()=>({marketplaceRequest:vi.fn()}));
 vi.mock('../../integration/marketplaceOperations',()=>({marketplaceOperations:{publishingTask:vi.fn(),authorizePublishingRecovery:vi.fn(),reconcileLazadaPublishingTask:vi.fn()}}));
+it('keeps an actually queued saved task visible with recovery actions during progress animation',()=>{
+ expect(resolvePublishingAsyncStatus({taskId:'33',taskStatus:'queued',presentProgress:true,progressStep:1})).toBe('queued');
+ expect(resolvePublishingAsyncStatus({taskId:'33',taskStatus:'processing',presentProgress:true,progressStep:1})).toBe('processing');
+ expect(resolvePublishingAsyncStatus({taskId:'33',taskStatus:'succeeded',presentProgress:true,progressStep:1})).toBe('processing');
+});
+it('shows execution and cancellation for a saved unsent task',async()=>{
+ vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+ vi.mocked(marketplaceOperations.publishingTask).mockReset().mockResolvedValue({id:33,storeId:1,productId:56,status:'queued',platform:'shopee',externalItemId:null,createdAt:'',updatedAt:'',actions:['resume_dispatch','cancel_unsent']} as never);
+ const cancel=vi.fn().mockResolvedValue({id:33,status:'rejected'});
+ Object.assign(marketplaceOperations,{cancelUnsentPublishingTask:cancel});
+ const close=vi.fn();
+ const context={products:[],categories:[],connections:[],marketplaceStoreProducts:[],addToast:vi.fn(),setActiveSection:vi.fn(),publishMasterProductToStore:vi.fn()} as unknown as MarketplaceJourneyContext;
+ const container=document.createElement('div'),root=createRoot(container);
+ try{
+  await act(async()=>root.render(<JourneyProvider value={context}><PublishProductModal isOpen liveData taskId="33" onClose={close}/></JourneyProvider>));
+  expect(container.textContent).toContain('Queued for Marketplace Dispatch');
+  expect(container.textContent).toContain('Start saved publishing task');
+  expect(container.textContent).toContain('Cancel unsent task');
+  await act(async()=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.includes('Cancel unsent task'))!.click());
+  expect(cancel).toHaveBeenCalledWith('33');
+  expect(close).toHaveBeenCalledTimes(1);
+ }finally{await act(async()=>root.unmount());vi.unstubAllGlobals();}
+});
 it('bypasses the old task after duplicate-risk recovery authorization',()=>{
- const task={id:5,status:'uncertain'};
+ const task={id:5,status:'uncertain',externalItemId:'846055463'};
  expect(shouldOpenExistingPublishingTask(task)).toBe(true);
  expect(shouldOpenExistingPublishingTask(task,'1285db80-1111-4111-8111-123456789045')).toBe(false);
 });
 it('does not reopen a definitively rejected task with no marketplace item',()=>{
  expect(shouldOpenExistingPublishingTask({id:6,status:'rejected',externalItemId:null,creationCertainty:'not_created'})).toBe(false);
  expect(shouldOpenExistingPublishingTask({id:7,status:'rejected',externalItemId:'14990001',creationCertainty:'unknown'})).toBe(true);
+});
+it('allows a new reviewed submission after an uncertain task without a confirmed marketplace item',()=>{
+ expect(shouldOpenExistingPublishingTask({id:28,status:'uncertain',externalItemId:null,creationCertainty:'unknown'})).toBe(false);
+ expect(shouldOpenExistingPublishingTask({id:29,status:'uncertain',externalItemId:'846060134',creationCertainty:'confirmed'})).toBe(true);
 });
 it('extracts actionable Lazada provider rejection details without exposing malformed diagnostics',()=>{
  expect(providerPublishingIssues({provider_detail:'[{"field":"brandProp","message":"Brand is required but missing.","code":"BIZ_CHECK_CAT_PROP_MANDATORY"}]'})).toEqual([

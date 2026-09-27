@@ -345,7 +345,7 @@ class MarketplacePublishingTaskTest extends TestCase
             'region'=>'MY','environment'=>'sandbox','status'=>'connected','created_at'=>now(),'updated_at'=>now()]);
         $tasks=app(PublishingTasks::class);
         $id=$tasks->create($store,$product->id,$actor->id,'9285db80-1111-4111-8111-123456789012',['item_name'=>'Test']);
-        foreach (['queued','processing','uncertain','succeeded'] as $status) {
+        foreach (['queued','processing','succeeded'] as $status) {
             DB::table('marketplace_publishing_tasks')->where('id',$id)->update(['status'=>$status]);
             try {
                 $tasks->create($store,$product->id,$actor->id,'9285db80-1111-4111-8111-123456789013',['item_name'=>'Test']);

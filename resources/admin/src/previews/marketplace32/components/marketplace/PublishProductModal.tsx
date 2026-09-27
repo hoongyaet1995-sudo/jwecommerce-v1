@@ -57,7 +57,15 @@ type WizardStep = 'destination' | 'attributes' | 'pricing_sync' | 'publishing';
 export const shouldOpenExistingPublishingTask=(task:unknown,recoveryAuthorizationId?:string)=>{
   if (!task || recoveryAuthorizationId) return false;
   const saved=task as {status?:string;externalItemId?:string|null;creationCertainty?:string};
-  return !(saved.status==='rejected' && !saved.externalItemId && saved.creationCertainty!=='confirmed');
+  return !(saved.status==='rejected' && !saved.externalItemId && saved.creationCertainty!=='confirmed')
+    && !(saved.status==='uncertain' && !saved.externalItemId);
+};
+export const resolvePublishingAsyncStatus=(input:{taskId?:string;taskStatus?:string;presentProgress:boolean;progressStep:number;hasError?:boolean;simulationStatus?:PublishAsyncStatus}):PublishAsyncStatus=>{
+  if(!input.taskId)return input.presentProgress?'processing':input.simulationStatus??'idle';
+  if(input.hasError)return 'uncertain';
+  if(!input.taskStatus)return 'processing';
+  if(input.taskStatus==='succeeded')return input.presentProgress&&input.progressStep<4?'processing':'success';
+  return input.taskStatus as PublishAsyncStatus;
 };
 
 type ProviderPublishingIssue={field:string;message:string;code?:string};
@@ -126,12 +134,24 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   const progressFailed=!!monitor.error||monitor.task?.status==='rejected'||monitor.task?.status==='uncertain';
   const progressStep=usePublishingProgress(presentProgress,!!taskId,monitor.task?.status==='succeeded',monitor.task?.mappingComplete===true,progressFailed);
   const [dispatching,setDispatching]=useState(false);
+  const [cancellingUnsent,setCancellingUnsent]=useState(false);
   const [reconciling,setReconciling]=useState(false);
   const executeSaved=async(id:string)=>{
     setDispatching(true);
     try {await dispatchSavedPublishingTask(id);}
     catch(error){addToast({type:'error',title:'Check saved publishing task',message:error instanceof Error?error.message:'Check this task before retrying.'});}
     finally{setDispatching(false);monitor.checkStatus();}
+  };
+  const cancelUnsent=async(id:string)=>{
+    setCancellingUnsent(true);
+    try{
+      await marketplaceOperations.cancelUnsentPublishingTask(id);
+      addToast({type:'info',title:'Unsent publishing task cancelled',message:'Open Push JW Master to Store to review and submit a new attempt.'});
+      onClose();
+    }catch(error){
+      addToast({type:'error',title:'Check saved publishing task',message:error instanceof Error?error.message:'Refresh its status before trying again.'});
+      monitor.checkStatus();
+    }finally{setCancellingUnsent(false);}
   };
   const currentStep = taskId || presentProgress ? 'publishing' : simulationStep;
   const reconcileSavedLazadaTask=async()=>{
@@ -210,9 +230,7 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
   const [simulationExternalId, setGeneratedExternalItemId] = useState<string>('');
   const [simulationJobId, setGeneratedJobId] = useState<string>('');
   const [simulationRejection, setRejectionReason] = useState<string>('');
-  const asyncStatus:PublishAsyncStatus = presentProgress&&!progressFailed&&progressStep<4 ? 'processing' : taskId
-    ? (monitor.error || !monitor.task ? 'uncertain' : monitor.task.status === 'succeeded' ? 'success' : monitor.task.status)
-    : simulationStatus;
+  const asyncStatus=resolvePublishingAsyncStatus({taskId,taskStatus:monitor.task?.status,presentProgress,progressStep,hasError:!!monitor.error,simulationStatus});
   const generatedJobId = taskId ?? simulationJobId;
   const generatedExternalItemId = taskId ? monitor.task?.externalItemId ?? '' : simulationExternalId;
   const asyncStepMessage = taskId ? monitor.error || (monitor.task
@@ -545,7 +563,10 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                       <Clock className="w-3.5 h-3.5" />
                       Job Reference: {generatedJobId}
                     </div>
-                    {taskId&&asyncStatus==='queued'&&<button type="button" disabled={dispatching} onClick={()=>executeSaved(taskId)} className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold disabled:opacity-50">{dispatching?'Starting saved task…':'Start saved publishing task'}</button>}
+                    {taskId&&asyncStatus==='queued'&&<div className="flex items-center justify-center gap-2">
+                      <button type="button" disabled={dispatching||cancellingUnsent} onClick={()=>executeSaved(taskId)} className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold disabled:opacity-50">{dispatching?'Starting saved task…':'Start saved publishing task'}</button>
+                      {monitor.task?.actions?.includes('cancel_unsent')&&<button type="button" disabled={dispatching||cancellingUnsent} onClick={()=>cancelUnsent(taskId)} className="px-4 py-2 rounded-xl border border-neutral-300 dark:border-neutral-700 text-xs font-bold disabled:opacity-50">{cancellingUnsent?'Cancelling…':'Cancel unsent task'}</button>}
+                    </div>}
                   </div>
 
                   {/* Asynchronous Step Tracker */}
@@ -895,6 +916,8 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                                 <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
                                   {p.variants.length} variant(s) · Base MYR {p.basePrice.toFixed(2)} · {liveData ? 'JW Legacy Stock' : 'Physical Stock'}: {p.totalInventory} units
                                 </p>
+                                {liveData&&storeStatus.tasksByProduct[p.id]?.status==='uncertain'&&!storeStatus.tasksByProduct[p.id]?.externalItemId&&
+                                  <p className="text-[11px] text-amber-600 dark:text-amber-400">Previous result is unconfirmed. Another publish may create a duplicate; you can continue.</p>}
                               </div>
                             </div>
 

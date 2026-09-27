@@ -191,6 +191,19 @@ class MarketplacePublishingController extends Controller
         }
     }
 
+    public function cancelUnsent(Request $request, int $task, PublishingTasks $tasks)
+    {
+        if (array_diff(array_keys($request->all()),['_token'])) {
+            throw ValidationException::withMessages(['publishing'=>'Cancellation accepts no request fields.']);
+        }
+        try {
+            $tasks->cancelUnsent($task,(int)$request->user()->id);
+            return $this->show($request,$task);
+        } catch (\DomainException $error) {
+            throw ValidationException::withMessages(['publishing'=>$error->getMessage()]);
+        }
+    }
+
     /** Read the seller catalog to resolve an ambiguous Lazada write; never sends a second create request. */
     public function reconcile(Request $request, int $task, \App\Services\Marketplace\LazadaPublishingReconciliation $reconciliation)
     {

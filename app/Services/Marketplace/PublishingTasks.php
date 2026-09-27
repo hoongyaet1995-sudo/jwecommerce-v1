@@ -65,7 +65,7 @@ final class PublishingTasks
                 'store_id'=>$storeId,'product_id'=>$productId,'actor_id'=>$actorId,'request_key'=>$requestKey,
                 'payload_hash'=>$hash,'payload'=>$json,'status'=>'queued','created_at'=>now(),'updated_at'=>now(),
                 'source_revision'=>$revision,'source_snapshot'=>$snapshot,
-                'previous_task_id'=>$authorization?->task_id ?? (($latestTask?->status==='rejected' && !$latestTask?->external_item_id) ? $latestTask->id : null),
+                'previous_task_id'=>$authorization?->task_id ?? ((in_array($latestTask?->status,['rejected','uncertain'],true) && !$latestTask?->external_item_id) ? $latestTask->id : null),
             ]);
             if ($authorization) DB::table('marketplace_publishing_recovery_authorizations')->where('id',$authorization->id)
                 ->whereNull('consumed_task_id')->update(['consumed_task_id'=>$id,'updated_at'=>now()]);
@@ -117,6 +117,27 @@ final class PublishingTasks
             'safe_diagnostics'=>json_encode($details['diagnostics']??[],JSON_THROW_ON_ERROR),
             'failed_at'=>now(),'revision'=>DB::raw('revision + 1'),'updated_at'=>now(),
         ])===1;
+    }
+
+    /** A queued task has not claimed a provider write. Serialize cancellation with dispatch. */
+    public function cancelUnsent(int $taskId, int $actorId): void
+    {
+        DB::transaction(function () use ($taskId,$actorId) {
+            $storeId=DB::table('marketplace_publishing_tasks')->where('id',$taskId)->value('store_id');
+            abort_unless($storeId,404);
+            DB::table('marketplace_stores')->where('id',$storeId)->lockForUpdate()->first();
+            $task=DB::table('marketplace_publishing_tasks')->where('id',$taskId)->lockForUpdate()->first();
+            abort_unless($task && (int)$task->actor_id===$actorId,404);
+            if ($task->status!=='queued' || $task->external_item_id!==null || $task->confirmed_result!==null) {
+                throw new \DomainException('This task is no longer unsent. Check its saved status before publishing again.');
+            }
+            PublishingTransition::validate('queued','rejected');
+            DB::table('marketplace_publishing_tasks')->where('id',$taskId)->where('status','queued')->update([
+                'status'=>'rejected','stage'=>'review','error_code'=>'cancelled_before_dispatch',
+                'safe_error_message'=>'This saved task was cancelled before any marketplace product request.',
+                'failed_at'=>now(),'revision'=>DB::raw('revision + 1'),'updated_at'=>now(),
+            ]);
+        });
     }
 
     /** Confirm a saved ambiguous result only after a provider catalog read found every reviewed SKU. */

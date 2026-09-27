@@ -424,6 +424,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/marketplace/inventory/reconciliation', [\App\Http\Controllers\Admin\MarketplaceInventoryController::class, 'reconciliation']);
     Route::get('/api/marketplace/publishing-tasks/{task}', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'show'])->whereNumber('task');
     Route::post('/api/marketplace/publishing-tasks/{task}/recovery-authorizations', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'authorizeRecovery'])->whereNumber('task')->middleware('throttle:10,1');
+    Route::post('/api/marketplace/publishing-tasks/{task}/cancel-unsent', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'cancelUnsent'])->whereNumber('task')->middleware('throttle:10,1');
     Route::post('/api/marketplace/publishing-tasks/{task}/reconcile', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'reconcile'])->whereNumber('task')->middleware('throttle:3,1');
     Route::get('/api/marketplace/stores/{store}/publishing-status', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'storeStatus'])->whereNumber('store');
     Route::get('/api/marketplace/products/{product}/publishing-source', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'source'])->whereNumber('product');
