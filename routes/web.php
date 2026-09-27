@@ -475,7 +475,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/marketplace/stores/{store}/products/{product}/images/{image}/prepare', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'prepareImage'])
         ->whereNumber(['store','product','image'])->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':publish', 'throttle:5,1']);
     Route::post('/api/marketplace/publishing-tasks/{task}/dispatch', [\App\Http\Controllers\Admin\MarketplacePublishingController::class, 'dispatch'])->whereNumber('task')
-        ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':publish', 'throttle:5,1']);
+        ->middleware([\App\Http\Middleware\EnsureMarketplaceOperationsEnabled::class.':publish']);
     Route::post('/api/marketplace/shopee/authorize', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'start'])->middleware('throttle:10,1');
     Route::post('/api/marketplace/lazada/authorize', [\App\Http\Controllers\Admin\LazadaOAuthController::class, 'start'])->middleware('throttle:10,1');
     Route::get('/marketplace/oauth/lazada/callback', [\App\Http\Controllers\Admin\LazadaOAuthController::class, 'callback'])->middleware('throttle:20,1');

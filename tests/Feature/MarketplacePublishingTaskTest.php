@@ -163,8 +163,10 @@ class MarketplacePublishingTaskTest extends TestCase
         $this->assertStringNotContainsString('fixture-token',$response->getContent());
         $this->assertStringNotContainsString('provider-secret-error',$response->getContent());
         $this->assertDatabaseHas('marketplace_publishing_tasks',['id'=>$task,'status'=>'uncertain']);
-        $this->postJson("/admin/api/marketplace/publishing-tasks/{$task}/dispatch")->assertStatus(409)
-            ->assertJsonPath('code','publishing_dispatch_unavailable');
+        for ($attempt=0; $attempt<7; $attempt++) {
+            $this->postJson("/admin/api/marketplace/publishing-tasks/{$task}/dispatch")->assertStatus(409)
+                ->assertJsonPath('code','publishing_dispatch_unavailable');
+        }
         Http::assertSentCount(1);
     }
 
