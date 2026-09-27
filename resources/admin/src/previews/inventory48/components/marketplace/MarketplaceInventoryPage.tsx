@@ -55,6 +55,7 @@ import { InventoryActivityHistoryTab } from './inventory/InventoryActivityHistor
 import { InventorySettingsModal } from './inventory/InventorySettingsModal';
 import { StockSyncDetailsModal } from './inventory/StockSyncDetailsModal';
 import { StoreSyncItemState } from './inventory/stockSyncTypes';
+import { mappedStoreSummaries } from './inventory/mappedStoreSummary';
 import {storeInventoryApi} from '../../../../integration/storeInventory';
 
 function adaptFacilitySync(detail:any, previous:StoreSyncItemState):StoreSyncItemState {
@@ -1304,7 +1305,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                     </th>
                     <th className="py-3.5 px-4 min-w-[120px] whitespace-nowrap">Reserved (Locked)</th>
                     <th className="py-3.5 px-4 min-w-[130px] whitespace-nowrap">Available to Sell (ATP)</th>
-                    <th className="py-3.5 px-4 min-w-[240px]">Connected Stores & Sync States</th>
+                    <th className="py-3.5 px-4 min-w-[240px]">{currentMode === 'independent' ? 'Mapped stores · JW stock' : 'Connected Stores & Sync States'}</th>
                     <th className="py-3.5 px-4 text-center w-36 min-w-[144px] sticky right-0 z-20 bg-neutral-100 dark:bg-neutral-800 shadow-[-4px_0_12px_rgba(0,0,0,0.15)] dark:shadow-[-6px_0_16px_rgba(0,0,0,0.6)] border-l border-neutral-200 dark:border-neutral-700/80 text-neutral-700 dark:text-neutral-300">
                       Actions
                     </th>
@@ -1329,6 +1330,9 @@ export const MarketplaceInventoryPage: React.FC = () => {
 
                     // Independent store balances for this SKU
                     const skuStoreBalances = (storeBalances && storeBalances[item.masterSku]) || {};
+                    const mappedSummaries = currentMode === 'independent'
+                      ? mappedStoreSummaries(item, stores, skuStoreBalances)
+                      : [];
 
                     return (
                       <tr
@@ -1431,6 +1435,37 @@ export const MarketplaceInventoryPage: React.FC = () => {
 
                         {/* 5. Connected Stores & Sync States */}
                         <td className="py-3.5 px-4 min-w-[240px]">
+                          {currentMode === 'independent' ? (
+                            <div className="space-y-1.5">
+                              {mappedSummaries.length === 0 && <span className="text-[11px] text-neutral-500">No mapped stores for this SKU</span>}
+                              {mappedSummaries.map(({ store, availableStock, facilityCount, needsAttention }) => (
+                                <button
+                                  key={store.id}
+                                  type="button"
+                                  onClick={() => openManageStock(item, store.id)}
+                                  aria-label={`View ${store.nickname || store.name} stock for ${item.masterSku}`}
+                                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-2.5 text-left transition hover:border-purple-400 hover:bg-purple-50/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-500 dark:border-neutral-700 dark:bg-neutral-800/70 dark:hover:border-purple-500 dark:hover:bg-neutral-800"
+                                >
+                                  <span className="flex min-w-0 items-center gap-2">
+                                    <MarketplaceLogo platform={store.platform as any} size="xs" />
+                                    <span className="min-w-0">
+                                      <strong className="block truncate text-[11px] text-neutral-900 dark:text-white">{store.nickname || store.name}</strong>
+                                      <small className="block text-[10px] text-neutral-500 dark:text-neutral-400">
+                                        {store.platform === 'webstore' ? 'Direct stock' : facilityCount === null ? 'Store stock' : `${facilityCount} warehouse${facilityCount === 1 ? '' : 's'}`}
+                                      </small>
+                                    </span>
+                                  </span>
+                                  <span className="flex shrink-0 items-center gap-2">
+                                    <span className="text-right">
+                                      <strong className="block whitespace-nowrap text-xs text-neutral-900 dark:text-white">{availableStock === null ? 'Not counted' : `${availableStock} units`}</strong>
+                                      {needsAttention && <small className="block text-[10px] text-amber-600 dark:text-amber-400">Needs attention</small>}
+                                    </span>
+                                    <ChevronRight className="h-3.5 w-3.5 text-purple-400" aria-hidden="true" />
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
                           <div className="space-y-1.5">
                             {(stores || []).filter(s => !s.isComingSoon).map(store => {
                               const syncState = getStoreSyncItemState(item, store);
@@ -1539,6 +1574,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                               );
                             })}
                           </div>
+                          )}
                         </td>
 
                         {/* 6. Actions (Sticky Right Column - Always Visible) */}

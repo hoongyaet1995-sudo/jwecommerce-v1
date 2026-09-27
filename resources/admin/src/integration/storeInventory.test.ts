@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { adaptInventory, adaptStores, waitForInventoryOperation } from './storeInventory';
+import { adaptBalances, adaptInventory, adaptStores, waitForInventoryOperation } from './storeInventory';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -39,6 +39,31 @@ const overview: any = {
 };
 
 describe('store inventory adapters', () => {
+  it('totals mapped multi-warehouse stock from facility ledgers without counting a legacy store pool twice', () => {
+    const balances = adaptBalances({ ...overview, data: [
+      { ...overview.data[0], pool_kind: 'store', physical: 99, available: 99 },
+      { ...overview.data[0], pool_kind: 'facility', facility_id: 1, physical: 12, reserved: 2, available: 10 },
+      { ...overview.data[0], pool_kind: 'facility', facility_id: 2, physical: 30, reserved: 0, available: 30 },
+    ] } as any);
+
+    expect(balances['SKU-7']['11']).toMatchObject({ physicalStock: 42, reservedStock: 2, availableStock: 40, isCounted: true, facilityCount: 2 });
+  });
+
+  it('keeps a multi-warehouse store uncounted when any warehouse has not been counted', () => {
+    const balances = adaptBalances({ ...overview, data: [
+      { ...overview.data[0], pool_kind: 'facility', facility_id: 1, physical: 12, reserved: 0, available: 12 },
+      { ...overview.data[0], pool_kind: 'facility', facility_id: 2, physical: null, available: null, counted: false },
+    ] } as any);
+
+    expect(balances['SKU-7']['11']).toMatchObject({ physicalStock: null, availableStock: null, isCounted: false, facilityCount: 2 });
+  });
+  it('keeps JW direct stock when an active facility epoch represents it as a website row', () => {
+    const balances = adaptBalances({ ...overview, data: [
+      { ...overview.data[0], pool_kind: 'facility', account_key: 'website', store_id: null, facility_id: null, platform: 'website', physical: 15, available: 15 },
+    ] } as any);
+
+    expect(balances['SKU-7'].website).toMatchObject({ physicalStock: 15, availableStock: 15, isCounted: true });
+  });
   it('preserves the marketplace account mode for stock action eligibility', () => {
     const stores = adaptStores({ ...overview, stores: [
       { id: 11, name: 'Lazada production', platform: 'lazada', account_mode: 'production', connection_status: 'connected' },

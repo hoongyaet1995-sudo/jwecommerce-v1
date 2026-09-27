@@ -33,6 +33,8 @@ export interface StoreStockAccountBalance {
   physicalStock: number | null; // null if Not Counted
   reservedStock: number;
   availableStock: number | null; // null if Not Counted
+  facilityCount?: number; // Aggregated platform facilities for this store and SKU
+  syncTasks?: Array<{ status?: string }>;
   platformStockSnapshot?: number;
   platformReadStatus: 'ok' | 'failed' | 'mismatch' | 'unmanaged';
   lastPlatformReadAt?: string;

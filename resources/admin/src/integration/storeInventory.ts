@@ -95,4 +95,26 @@ export function adaptInventory(overview:InventoryOverview){
 
 export function adaptStores(overview:InventoryOverview){return [{id:'website',name:'JW Ecom Storefront',nickname:'JW Storefront',platform:'webstore',platformDisplayName:'JW Ecom Storefront',region:'Malaysia (MYR)',connectionState:'connected',isManagedByJw:true,inventorySyncState:'active',isComingSoon:false,syncStatus:'pending',readStatus:'connected'},...overview.stores.map(s=>{const readiness=(overview.mode_catalog?.items||[]).flatMap((item:any)=>item.mapped_stores||[]).filter((mapped:any)=>String(mapped.id)===String(s.id)).map((mapped:any)=>mapped.sync_readiness);const hasReady=readiness.some((state:any)=>state?.ready);const hasBlocked=readiness.some((state:any)=>state&&!state.ready);const inventorySyncState=s.sync_state==='paused'?'paused':hasReady&&hasBlocked?'partially_ready':hasReady?'active':'setup_required';return {id:String(s.id),name:s.name,nickname:s.name,platform:s.platform,environment:s.account_mode==='production'?'production':'sandbox',platformDisplayName:s.platform==='lazada'?'Lazada':s.platform==='shopee'?'Shopee':s.platform,region:'Malaysia (MYR)',connectionState:s.connection_status,isManagedByJw:true,inventorySyncState,isComingSoon:false,syncStatus:inventorySyncState==='paused'?'disabled':'pending',readStatus:s.connection_status}}),{id:'tiktok-coming',name:'TikTok Shop',nickname:'TikTok Shop',platform:'tiktok',platformDisplayName:'TikTok Shop',region:'Regional',connectionState:'disconnected',isManagedByJw:false,inventorySyncState:'setup_required',isComingSoon:true,syncStatus:'disabled',readStatus:'disconnected'},{id:'shopify-coming',name:'Shopify',nickname:'Shopify',platform:'shopify',platformDisplayName:'Shopify',region:'Global',connectionState:'disconnected',isManagedByJw:false,inventorySyncState:'setup_required',isComingSoon:true,syncStatus:'disabled',readStatus:'disconnected'}];}
 
-export function adaptBalances(overview:InventoryOverview){const result:any={};for(const row of overview.data){if(row.pool_kind==='facility')continue;result[row.sku]??={};const key=row.store_id?String(row.store_id):'website';result[row.sku][key]={storeId:key,storeName:row.store_name||(key==='website'?'JW Ecom Storefront':row.account_key),platform:row.platform,isManagedByJw:true,connectionState:row.connection_status||'connected',isCounted:row.counted,physicalStock:row.physical,reservedStock:row.reserved||0,availableStock:row.available,syncState:'enabled',syncReadiness:row.sync_readiness,lastSyncStatus:row.external_sync?.status,syncTasks:row.external_sync?.tasks||[],balanceId:row.balance_id};}return result;}
+export function adaptBalances(overview:InventoryOverview){
+  const result:any={};
+  const facilities=new Map<string,any[]>();
+  for(const row of overview.data){
+    if(row.pool_kind==='facility'){
+      if(!row.store_id && row.account_key!=='website')continue;
+      const key=`${row.sku}:${row.store_id||'website'}`;
+      facilities.set(key,[...(facilities.get(key)||[]),row]);
+      continue;
+    }
+    result[row.sku]??={};
+    const key=row.store_id?String(row.store_id):'website';
+    result[row.sku][key]={storeId:key,storeName:row.store_name||(key==='website'?'JW Ecom Storefront':row.account_key),platform:row.platform,isManagedByJw:true,connectionState:row.connection_status||'connected',isCounted:row.counted,physicalStock:row.physical,reservedStock:row.reserved??0,availableStock:row.available,syncState:'enabled',syncReadiness:row.sync_readiness,lastSyncStatus:row.external_sync?.status,syncTasks:row.external_sync?.tasks||[],balanceId:row.balance_id};
+  }
+  for(const rows of facilities.values()){
+    const first=rows[0];
+    const key=first.store_id?String(first.store_id):'website';
+    const counted=rows.every(row=>row.counted===true&&Number.isFinite(row.physical)&&Number.isFinite(row.reserved)&&Number.isFinite(row.available));
+    result[first.sku]??={};
+    result[first.sku][key]={storeId:key,storeName:first.store_name||(key==='website'?'JW Ecom Storefront':first.account_key),platform:first.platform,isManagedByJw:true,connectionState:first.connection_status||'connected',isCounted:counted,physicalStock:counted?rows.reduce((sum,row)=>sum+row.physical,0):null,reservedStock:rows.reduce((sum,row)=>sum+(row.reserved??0),0),availableStock:counted?rows.reduce((sum,row)=>sum+row.available,0):null,facilityCount:rows.length,syncState:'enabled',syncReadiness:first.sync_readiness,lastSyncStatus:first.external_sync?.status,syncTasks:first.external_sync?.tasks||[]};
+  }
+  return result;
+}
