@@ -13,12 +13,13 @@ class StoreInventoryTransferTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function context(): array
+    private function context(string $platform = 'lazada'): array
     {
         DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores']);
         $fixture = new StoreInventoryFixture;
         $sku = $fixture->sku();
-        $store = $fixture->store('lazada', 'TRANSFER');
+        $store = $fixture->store($platform, 'TRANSFER');
+        app(\App\Services\Inventory\StoreManagement\FacilityRegistry::class)->confirm((int) $store->id, []);
         $source = app(AccountResolver::class)->balance($sku['variant']->id, 'website');
         $destination = app(AccountResolver::class)->balance($sku['variant']->id, 'marketplace:'.$store->id);
         DB::table('inventory_balances')->where('id', $source['id'])->update([
@@ -34,9 +35,10 @@ class StoreInventoryTransferTest extends TestCase
         return compact('actor', 'source', 'destination', 'store');
     }
 
-    public function test_reviewed_transfer_conserves_physical_stock_and_preserves_reservations(): void
+    #[\PHPUnit\Framework\Attributes\DataProvider('defaultStorePlatforms')]
+    public function test_reviewed_transfer_conserves_physical_stock_and_preserves_reservations(string $platform): void
     {
-        $c = $this->context();
+        $c = $this->context($platform);
         $url = '/admin/api/inventory/store-management/reviews';
         $review = $this->actingAs($c['actor'])->postJson($url, [
             'kind' => 'transfer', 'source_balance_id' => $c['source']['id'],
@@ -53,6 +55,11 @@ class StoreInventoryTransferTest extends TestCase
         $this->assertDatabaseHas('inventory_balances', ['id' => $c['source']['id'], 'reserved_stock' => 3]);
         $this->assertDatabaseHas('inventory_balances', ['id' => $c['destination']['id'], 'reserved_stock' => 1]);
         $this->assertDatabaseCount('inventory_store_sync_tasks', 2);
+    }
+
+    public static function defaultStorePlatforms(): array
+    {
+        return [['lazada'], ['shopee']];
     }
 
     public function test_transfer_rejects_same_account_unknown_destination_and_reserved_units(): void

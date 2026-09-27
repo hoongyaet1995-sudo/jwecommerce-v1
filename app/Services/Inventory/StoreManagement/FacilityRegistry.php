@@ -59,28 +59,29 @@ final class FacilityRegistry
                 'revision' => (int) $scan->revision + ($changed ? 1 : 0),
                 'verified_at' => now(), 'last_error_code' => null, 'updated_at' => now(),
             ]);
-            $this->ensureIndependentLazadaOwners($storeId);
+            $this->ensureIndependentMarketplaceOwners($storeId);
         });
 
         return $this->read($storeId);
     }
 
-    private function ensureIndependentLazadaOwners(int $storeId): void
+    private function ensureIndependentMarketplaceOwners(int $storeId): void
     {
         if (config('marketplace.multiwarehouse_operations_enabled') !== true
             || DB::table('inventory_configuration')->where('id', 1)->value('operating_mode') !== 'independent_stores') {
             return;
         }
         $store = DB::table('marketplace_stores')->where('id', $storeId)->first();
-        if (! $store || $store->platform !== 'lazada' || $store->account_mode !== 'production') {
+        if (! $store || ! ($store->platform === 'shopee'
+            || ($store->platform === 'lazada' && $store->account_mode === 'production'))) {
             return;
         }
         $facilities = DB::table('marketplace_store_facilities')->where('marketplace_store_id', $storeId)
             ->where('is_active', true)->whereNull('inventory_warehouse_id')->lockForUpdate()->get();
         foreach ($facilities as $facility) {
-            $code = 'LZD-FAC-'.$storeId.'-'.$facility->id;
+            $code = ($store->platform === 'shopee' ? 'SHP' : 'LZD').'-FAC-'.$storeId.'-'.$facility->id;
             DB::table('inventory_warehouses')->insertOrIgnore([
-                'code' => $code, 'name' => 'Lazada '.$store->external_shop_id.' / '.$facility->name,
+                'code' => $code, 'name' => ucfirst($store->platform).' '.$store->external_shop_id.' / '.$facility->name,
                 'is_active' => true, 'status' => 'active',
                 'created_at' => now(), 'updated_at' => now(),
             ]);

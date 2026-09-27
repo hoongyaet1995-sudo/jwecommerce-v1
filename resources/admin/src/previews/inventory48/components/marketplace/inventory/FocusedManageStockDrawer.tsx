@@ -88,7 +88,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
 
   useEffect(() => {
     if (!isOpen || !item) return;
-    setStoreId(initialStoreId || null); setFacilityId(initialWarehouseId || null); setActionsOpen(initialActionsOpen);
+    setStoreId(initialStoreId || null); setFacilityId(initialWarehouseId || (initialActionsOpen ? 'default' : null)); setActionsOpen(initialActionsOpen);
     setSync(null); setSyncError(''); setAcceptance(null); setRecovering(false);
   }, [isOpen, item?.id, initialStoreId, initialWarehouseId, initialActionsOpen]);
 
@@ -142,9 +142,11 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
   const selectedStore = rows.find(row => row.id === storeId) || null;
   const selectedFacility = selectedStore?.facilities.find(facility => facility.id === facilityId) || null;
   const direct = selectedStore?.topology === 'no_warehouse';
-  const atLocation = !!selectedStore && (direct || !!selectedFacility);
+  const shopeeDefault = direct && selectedStore?.platform === 'shopee';
+  const defaultSelected = facilityId === 'default' || facilityId === `direct:${selectedStore?.id}`;
+  const atLocation = !!selectedStore && ((direct && (!shopeeDefault || defaultSelected)) || !!selectedFacility);
   const activeBalance = direct ? selectedStore?.balance || null : selectedFacility || null;
-  const locationName = direct ? selectedStore?.name : selectedFacility?.name;
+  const locationName = shopeeDefault ? 'Default Inventory' : direct ? selectedStore?.name : selectedFacility?.name;
   const acceptanceFacility = acceptance?.facilities?.find((facility: any) => String(facility.id) === selectedFacility?.id);
   const requiresTestAcceptance = selectedStore?.platform === 'lazada' && selectedStore.environment !== 'production';
   const acceptanceReady = !requiresTestAcceptance || (acceptance !== null
@@ -192,7 +194,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
 
   const back = () => {
     if (actionsOpen) { setActionsOpen(false); return; }
-    if (selectedFacility) { setFacilityId(null); return; }
+    if (selectedFacility || (shopeeDefault && defaultSelected)) { setFacilityId(null); return; }
     if (selectedStore) { setStoreId(null); return; }
     onClose();
   };
@@ -236,7 +238,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
         <button type="button" aria-label="Close" onClick={onClose} className="rounded p-1 text-neutral-400 hover:text-white"><X className="h-5 w-5" /></button>
       </header>
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
-        {selectedStore && <button type="button" onClick={back} className="flex items-center gap-1 text-xs text-purple-300 hover:text-purple-200"><ArrowLeft className="h-3 w-3" />{selectedFacility || actionsOpen ? `Back to ${selectedStore.name}` : 'All stores'}</button>}
+        {selectedStore && <button type="button" onClick={back} className="flex items-center gap-1 text-xs text-purple-300 hover:text-purple-200"><ArrowLeft className="h-3 w-3" />{selectedFacility || actionsOpen || (shopeeDefault && atLocation) ? `Back to ${selectedStore.name}` : 'All stores'}</button>}
         <ProductIdentity item={item} />
         {!selectedStore && <>
           <p className="text-xs font-semibold text-neutral-300">Mapped stores · {rows.length}</p>
@@ -246,14 +248,18 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
           </div>}
           {rows.map(row => <button key={row.id} type="button" onClick={() => openStore(row)} className="flex w-full flex-col gap-3 rounded-xl border border-neutral-700 bg-neutral-800/60 p-4 text-left hover:border-purple-500 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-3"><MarketplaceLogo platform={row.platform as any} size="sm" />
-              <div className="min-w-0"><strong className="block truncate text-xs text-white">{row.name}</strong><span className="text-[11px] text-neutral-400">{row.topology === 'no_warehouse' ? 'No platform warehouse' : row.status !== 'verified' ? 'Warehouse verification pending' : `${row.facilities.length} platform warehouse${row.facilities.length === 1 ? '' : 's'}`}</span></div></div>
+              <div className="min-w-0"><strong className="block truncate text-xs text-white">{row.name}</strong><span className="text-[11px] text-neutral-400">{row.topology === 'no_warehouse' ? row.platform === 'shopee' ? 'Default Inventory' : 'No platform warehouse' : row.status !== 'verified' ? 'Warehouse verification pending' : `${row.facilities.length} platform warehouse${row.facilities.length === 1 ? '' : 's'}`}</span></div></div>
             <div className="flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto"><CompactBalances balance={row.balance} /><ChevronRight className="h-4 w-4 text-neutral-400" /></div>
           </button>)}
         </>}
         {selectedStore && !atLocation && <>
           <StockSummary balance={selectedStore.balance} />
           {selectedStore.status !== 'verified' && <div role="status" className="rounded-xl border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-300">Warehouse verification is pending. Stock changes are unavailable until it completes.</div>}
-          <p className="text-xs font-semibold text-neutral-300">Platform warehouses · {selectedStore.facilities.length}</p>
+          <p className="text-xs font-semibold text-neutral-300">{shopeeDefault ? 'Stock locations · 1' : `Platform warehouses · ${selectedStore.facilities.length}`}</p>
+          {shopeeDefault && <button type="button" onClick={() => { setFacilityId('default'); setActionsOpen(false); }} className="flex w-full flex-col gap-3 rounded-xl border border-neutral-700 bg-neutral-800/60 p-4 text-left hover:border-purple-500 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0"><strong className="block truncate text-xs text-white">Default Inventory</strong><span className="text-[10px] text-neutral-400">Shopee store inventory</span></div>
+            <div className="flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto"><CompactBalances balance={selectedStore.balance} /><ChevronRight className="h-4 w-4 text-neutral-400" /></div>
+          </button>}
           {selectedStore.facilities.map(facility => <button key={facility.id} type="button" onClick={() => openFacility(facility)} className="flex w-full flex-col gap-3 rounded-xl border border-neutral-700 bg-neutral-800/60 p-4 text-left hover:border-purple-500 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0"><strong className="block truncate text-xs text-white">{facility.name}</strong><span className="font-mono text-[10px] text-neutral-400">{warehouseDisplayCode(facility.providerId)}</span></div>
             <div className="flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto"><CompactBalances balance={facility} /><ChevronRight className="h-4 w-4 text-neutral-400" /></div>

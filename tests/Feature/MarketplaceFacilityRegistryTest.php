@@ -96,8 +96,9 @@ class MarketplaceFacilityRegistryTest extends TestCase
         $this->actingAs($staff)->postJson($url)->assertForbidden();
         $super = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
         $this->actingAs($super)->postJson($url)->assertOk()
-            ->assertJsonPath('status', 'verification_pending')
-            ->assertJsonPath('error_code', 'complete_location_api_unverified');
+            ->assertJsonPath('status', 'verified')
+            ->assertJsonPath('topology', 'no_warehouse')
+            ->assertJsonPath('error_code', 'default_inventory_fallback');
         config(['marketplace.multiwarehouse_discovery_enabled' => false]);
         $this->actingAs($super)->postJson($url)->assertNotFound();
     }

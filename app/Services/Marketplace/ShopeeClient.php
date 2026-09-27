@@ -20,7 +20,7 @@ class ShopeeClient
         return $client;
     }
 
-    /** @return array{location_id:string,quantity:int} */
+    /** @return array{location_id:?string,quantity:int} */
     public function exactStockContext(#[\SensitiveParameter] string $accessToken, string $shopId, string $itemId,
         string $modelId, ?string $locationId = null): array
     {
@@ -48,17 +48,18 @@ class ShopeeClient
         }
         $matches = array_values(array_filter($rows, fn ($row): bool => is_array($row)
             && ($locationId === null || ($row['location_id'] ?? null) === $locationId)));
-        if (count($matches) !== 1 || ! is_string($matches[0]['location_id'] ?? null)
-            || $matches[0]['location_id'] === '' || ! is_int($matches[0]['stock'] ?? null) || $matches[0]['stock'] < 0) {
+        if (count($matches) !== 1
+            || (isset($matches[0]['location_id']) && ! is_string($matches[0]['location_id']))
+            || ! is_int($matches[0]['stock'] ?? null) || $matches[0]['stock'] < 0) {
             throw new RuntimeException('Shopee seller location is ambiguous or unavailable.');
         }
 
-        return ['location_id' => $matches[0]['location_id'], 'quantity' => $matches[0]['stock']];
+        return ['location_id' => ($matches[0]['location_id'] ?? '') ?: null, 'quantity' => $matches[0]['stock']];
     }
 
     /** @return array{request_id:?string} */
     public function updateAbsoluteStock(#[\SensitiveParameter] string $accessToken, string $shopId, string $itemId,
-        string $modelId, string $locationId, int $quantity): array
+        string $modelId, ?string $locationId, int $quantity): array
     {
         if (! ctype_digit($shopId) || ! ctype_digit($itemId) || ! ctype_digit($modelId)
             || $locationId === '' || $quantity < 0) {
@@ -69,8 +70,12 @@ class ShopeeClient
         $time = now()->timestamp;
         $query = ['partner_id' => (int) $config['partner_id'], 'timestamp' => $time, 'access_token' => $accessToken,
             'shop_id' => (int) $shopId, 'sign' => hash_hmac('sha256', $config['partner_id'].$path.$time.$accessToken.$shopId, $config['partner_key'])];
+        $sellerStock = ['stock' => $quantity];
+        if ($locationId !== null) {
+            $sellerStock['location_id'] = $locationId;
+        }
         $body = ['item_id' => (int) $itemId, 'stock_list' => [['model_id' => (int) $modelId,
-            'seller_stock' => [['location_id' => $locationId, 'stock' => $quantity]]]]];
+            'seller_stock' => [$sellerStock]]]];
         try {
             $response = Http::acceptJson()->connectTimeout(10)->timeout(30)->withoutRedirecting()
                 ->post($this->host($config).$path.'?'.http_build_query($query), $body);
@@ -94,7 +99,7 @@ class ShopeeClient
             throw new RuntimeException('Shopee rejected the stock update.');
         }
         $matches = array_values(array_filter($success, fn ($row): bool => is_array($row)
-            && (string) ($row['model_id'] ?? '') === $modelId && ($row['location_id'] ?? null) === $locationId
+            && (string) ($row['model_id'] ?? '') === $modelId && (($row['location_id'] ?? '') ?: null) === $locationId
             && ($row['stock'] ?? null) === $quantity));
         if (count($matches) !== 1) {
             throw new StoreInventoryResultUncertain('Shopee did not confirm the exact stock target. Reconcile before retrying.');
@@ -150,6 +155,25 @@ class ShopeeClient
         $locations=array_values(array_filter($rows,fn($row)=>($row['location_id']??null)===$current['platform_location_id']));
         if(count($locations)!==1||!is_int($locations[0]['stock']??null)||$locations[0]['stock']<0)throw new RuntimeException('Sandbox seller location is unknown.');
         return ['token'=>$token,'quantity'=>$locations[0]['stock']];
+    }
+
+    /** Stock discovery only needs provider location identity; address metadata is optional. */
+    public function stockLocations(#[\SensitiveParameter] string $accessToken, string $shopId): array
+    {
+        $payload = $this->readShop('/api/v2/shop/get_warehouse_detail', $accessToken, $shopId, ['warehouse_type' => 1]);
+        $rows = $payload['response'] ?? null;
+        if (! is_array($rows) || ! array_is_list($rows)) {
+            throw new RuntimeException('Shopee warehouse response was incomplete.');
+        }
+        $locations = [];
+        foreach ($rows as $row) {
+            if (! is_array($row) || ! is_string($row['location_id'] ?? null) || trim($row['location_id']) === '') {
+                throw new RuntimeException('Shopee stock location is missing.');
+            }
+            $locations[] = ['location_id' => trim($row['location_id']),
+                'warehouse_name' => is_string($row['warehouse_name'] ?? null) ? $row['warehouse_name'] : $row['location_id']];
+        }
+        return $locations;
     }
 
     public function pickupWarehouses(#[\SensitiveParameter] string $accessToken, string $shopId): array

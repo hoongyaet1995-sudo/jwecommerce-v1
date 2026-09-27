@@ -138,9 +138,9 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
     if (!hasWarehouses) {
       return {
         id: `direct:${selectedStoreId}`,
-        name: 'Storefront Direct Inventory',
+        name: currentStoreConfig?.platform === 'shopee' ? 'Default Inventory' : 'Storefront Direct Inventory',
         codeType: 'internal_bin' as const,
-        codeValue: 'DIRECT-WEB',
+        codeValue: currentStoreConfig?.platform === 'shopee' ? 'DEFAULT' : 'DIRECT-WEB',
         balance: currentSkuBalances[`direct:${selectedStoreId}`]
       };
     }
@@ -325,7 +325,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
               {currentStoreConfig && (
                 <span className="text-[10px] text-neutral-400">
                   {currentStoreConfig.warehouseMode === 'no_warehouse' 
-                    ? 'No Warehouse (Direct Storefront)' 
+                    ? currentStoreConfig.platform === 'shopee' ? 'Default Inventory' : 'No Warehouse (Direct Storefront)'
                     : `${currentStoreConfig.warehouses.length} Registered Platform Facilities`}
                 </span>
               )}
@@ -410,7 +410,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
                               )}
                             </div>
                             <div className="text-[11px] text-neutral-400 truncate mt-0.5">
-                              {s.storeName} • {s.warehouseMode === 'no_warehouse' ? 'Direct Storefront' : `${s.warehouses.length} Platform Facilities`}
+                              {s.storeName} • {s.warehouseMode === 'no_warehouse' ? s.platform === 'shopee' ? 'Default Inventory' : 'Direct Storefront' : `${s.warehouses.length} Platform Facilities`}
                             </div>
                           </div>
                         </div>

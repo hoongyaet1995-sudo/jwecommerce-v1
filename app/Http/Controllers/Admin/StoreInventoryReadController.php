@@ -35,7 +35,7 @@ final class StoreInventoryReadController extends Controller
         abort_unless(DB::table('marketplace_stores')->where('id', $store)
             ->whereIn('platform', ['shopee', 'lazada'])->exists(), 404);
 
-        return response()->json($registry->read($store))->header('Cache-Control', 'no-store');
+        return response()->json(app(FacilityDiscovery::class)->inventoryLocations($store))->header('Cache-Control', 'no-store');
     }
 
     public function facilityBalances(int $store, int $variant, FacilityBalanceReader $reader): JsonResponse

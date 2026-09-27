@@ -67,6 +67,25 @@ class ShopeeStoreInventoryPublisherTest extends TestCase
         Http::assertSentCount(3);
     }
 
+    public function test_default_seller_stock_without_location_can_be_updated_and_read_back(): void
+    {
+        [$publisher, $store, $listing] = $this->publisher('0');
+        $before = $this->item(false, 3);
+        $after = $this->item(false, 5);
+        unset($before['response']['item_list'][0]['stock_info_v2']['seller_stock'][0]['location_id']);
+        unset($after['response']['item_list'][0]['stock_info_v2']['seller_stock'][0]['location_id']);
+        Http::fake(['*' => Http::sequence()->push($before)->push([
+            'error' => '', 'response' => ['success_list' => [['model_id' => 0, 'stock' => 5]], 'failure_list' => []],
+        ])->push($after)]);
+
+        $receipt = $publisher->publish($store, $listing, 5, 'default-stock');
+
+        $this->assertSame(5, $receipt['observed_quantity']);
+        $this->assertNull($receipt['provider_location_id']);
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/product/update_stock')
+            && $request->data()['stock_list'][0]['seller_stock'] === [['stock' => 5]]);
+    }
+
     public function test_partial_success_is_uncertain(): void
     {
         [$publisher, $store, $listing] = $this->publisher('88');

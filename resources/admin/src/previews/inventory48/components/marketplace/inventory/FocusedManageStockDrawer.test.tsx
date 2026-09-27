@@ -23,6 +23,28 @@ const click = async (label: string) => {
   await act(async () => button!.click());
 };
 
+it('opens Shopee default inventory as a selectable location and preserves store ledger action targets', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({ ok: true, json: async () =>
+    String(input).includes('/sync') ? { status: 'synced', can_check: true }
+      : { status: 'verified', topology: 'no_warehouse', facilities: [], error_code: 'default_inventory_fallback' } }) as Response));
+  const intake = vi.fn(); const audit = vi.fn(); const transfer = vi.fn();
+  await act(async () => root.render(<FocusedManageStockDrawer isOpen onClose={() => {}} item={item}
+    mode="independent" stores={[{ id: '3', name: 'Shopee Test', platform: 'shopee' }]}
+    storeBalances={{ 3: { physicalStock: 20, reservedStock: 2, availableStock: 18, isCounted: true } }}
+    onSelectIntake={intake} onSelectAdjustment={audit} onSelectTransfer={transfer} />));
+  await click('Shopee Test');
+  expect(host.textContent).not.toContain('Warehouse verification');
+  await click('Default Inventory');
+  expect(host.textContent).toContain('Physical stock20');
+  await click('Manage this stock');
+  await click('Actual Stock Intake');
+  await click('Stock Audit Adjustment');
+  await click('Transfer Stock');
+  expect(intake).toHaveBeenCalledWith(item, '3', 'direct:3');
+  expect(audit).toHaveBeenCalledWith(item, '3', 'direct:3');
+  expect(transfer).toHaveBeenCalledWith(item, '3', 'direct:3');
+});
+
 it('shows mapped stores only, then opens an exact warehouse First Count with real product and platform identity', async () => {
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({ ok: true, json: async () =>
     String(input).includes('test-facility-acceptance') ? { test_acceptance_enabled: false } :

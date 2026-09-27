@@ -14,7 +14,7 @@ final class FacilityBalanceReader
             ->whereIn('platform', ['shopee', 'lazada'])->exists(), 404);
         abort_unless(DB::table('product_variants')->where('id', $variantId)->exists(), 404);
 
-        $result = $this->registry->read($storeId);
+        $result = app(FacilityDiscovery::class)->inventoryLocations($storeId);
         $warehouseIds = collect($result['facilities'])->pluck('inventory_warehouse_id')->filter()->unique()->all();
         $balances = DB::table('inventory_pools as pool')
             ->join('inventory_warehouses as warehouse', 'warehouse.id', '=', 'pool.warehouse_id')

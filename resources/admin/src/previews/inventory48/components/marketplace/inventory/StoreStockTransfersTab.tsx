@@ -167,9 +167,9 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
     if (!sourceHasWarehouses) {
       return {
         id: `direct:${sourceStoreId}`,
-        name: 'Direct Storefront (No Platform WH)',
+        name: sourceStoreConfig?.platform === 'shopee' ? 'Default Inventory' : 'Direct Storefront (No Platform WH)',
         codeType: 'internal_bin' as const,
-        codeValue: 'DIRECT-WEB',
+        codeValue: sourceStoreConfig?.platform === 'shopee' ? 'DEFAULT' : 'DIRECT-WEB',
         balance: currentSkuBalances[`direct:${sourceStoreId}`]
       };
     }
@@ -184,9 +184,9 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
     if (!destHasWarehouses) {
       return {
         id: `direct:${destinationStoreId}`,
-        name: 'Direct Storefront (No Platform WH)',
+        name: destStoreConfig?.platform === 'shopee' ? 'Default Inventory' : 'Direct Storefront (No Platform WH)',
         codeType: 'internal_bin' as const,
-        codeValue: 'DIRECT-WEB',
+        codeValue: destStoreConfig?.platform === 'shopee' ? 'DEFAULT' : 'DIRECT-WEB',
         balance: currentSkuBalances[`direct:${destinationStoreId}`]
       };
     }
