@@ -49,8 +49,6 @@ final class FacilitySyncRecovery
         }
         $canCheck = ! in_array($status, ['verification_pending', 'auth_expired'], true) && (bool) $c['listing'];
         $canResync = $canCheck && $quantity !== null
-            && in_array($status, ['not_synced', 'sync_failed'], true)
-            && ! in_array($task?->status, ['processing', 'uncertain'], true)
             && LazadaTestFacilityAcceptance::stockSyncAllowed($storeId);
 
         return ['store_id' => $storeId, 'facility_id' => $facilityId, 'variant_id' => $variantId,
@@ -102,7 +100,7 @@ final class FacilitySyncRecovery
             $matches = $balance && (int) $balance->version === (int) $task->balance_version
                 && (int) $task->target_quantity === $observation['observed_quantity'];
             DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update([
-                'status' => $matches ? 'confirmed' : ($task->status === 'confirmed' ? 'failed' : $task->status),
+                'status' => $matches ? 'confirmed' : (in_array($task->status, ['confirmed', 'uncertain'], true) ? 'failed' : $task->status),
                 'provider_receipt' => json_encode($observation + [
                     'confirmation_method' => 'provider_readback',
                 ], JSON_THROW_ON_ERROR), 'updated_at' => now(),
@@ -120,7 +118,8 @@ final class FacilitySyncRecovery
         return $details;
     }
 
-    public function resync(int $storeId, int $facilityId, int $variantId, string $operationKey): array
+    public function resync(int $storeId, int $facilityId, int $variantId, string $operationKey,
+        int $actorId = 0, string $reason = ''): array
     {
         if (! preg_match('/\A[A-Za-z0-9:_-]{1,120}\z/D', $operationKey)) {
             $this->reject('Use a valid operation key.');
@@ -129,31 +128,37 @@ final class FacilitySyncRecovery
             $this->reject('Facility stock sync is not enabled.');
         }
         $c = $this->context($storeId, $facilityId, $variantId);
-        if (LazadaTestFacilityAcceptance::appliesToStore($storeId)) {
-            $lastTask = $this->tasks($storeId, $facilityId, $variantId)
-                ->whereIn('status', ['failed', 'facility_blocked'])->orderByDesc('created_at')->orderByDesc('id')->first();
-            app(LazadaTestFacilityAcceptance::class)->assertEligible(
-                $storeId, $variantId, $facilityId, $lastTask?->id);
-        }
         if ($c['scan']?->status !== 'verified' || ! $c['facility']->is_active
             || ! $c['facility']->inventory_warehouse_id || ! $c['balance']
-            || $c['balance']->counted_at === null || ! $c['listing']) {
+            || $c['balance']->counted_at === null || $c['balance']->physical_stock === null
+            || $c['balance']->reserved_stock === null || $c['balance']->safety_stock === null
+            || ! $c['listing'] || $c['store']->status !== 'connected'
+            || ! DB::table('inventory_warehouses')->where('id', $c['facility']->inventory_warehouse_id)
+                ->where('is_active', true)->where('status', 'active')->exists()
+            || DB::table('marketplace_variant_mappings')->where('store_id', $storeId)
+                ->where('product_variant_id', $variantId)->count() !== 1) {
             $this->reject('Verify the exact counted facility and SKU mapping first.');
+        }
+        if (! $this->details($storeId, $facilityId, $variantId)['can_resync']) {
+            $this->reject('Verify the store connection and stock location before resending stock.');
         }
         $existing = $this->tasks($storeId, $facilityId, $variantId)
             ->where('event_key', 'facility-resync:'.$operationKey)->first();
         if ($existing) {
             return $this->details($storeId, $facilityId, $variantId);
         }
-        if (! $this->details($storeId, $facilityId, $variantId)['can_resync']) {
-            $this->reject('Check or resolve the current facility sync before resending stock.');
-        }
-        if ($this->tasks($storeId, $facilityId, $variantId)
-            ->whereIn('status', ['processing', 'uncertain'])->exists()) {
-            $this->reject('Check the uncertain provider result before sending another stock update.');
-        }
-        app(SyncOutbox::class)->enqueueFacilityBalance('facility-resync:'.$operationKey,
-            $c['balance'], $c['facility']);
+        DB::transaction(function () use ($operationKey, $c, $actorId, $reason): void {
+            $sync = app(SyncOutbox::class)->enqueueFacilityBalance('facility-resync:'.$operationKey,
+                $c['balance'], $c['facility']);
+            DB::table('inventory_store_sync_attempts')->insert([
+                'id' => (string) \Illuminate\Support\Str::uuid(), 'task_id' => $sync['id'],
+                'attempt_number' => 0, 'status' => 'queued',
+                'actor_id' => $actorId ?: null, 'source' => 'manual',
+                'target_quantity' => $sync['target_quantity'],
+                'provider_receipt' => json_encode(['reason' => trim($reason)], JSON_THROW_ON_ERROR),
+                'created_at' => now(),
+            ]);
+        }, 3);
 
         return $this->details($storeId, $facilityId, $variantId);
     }

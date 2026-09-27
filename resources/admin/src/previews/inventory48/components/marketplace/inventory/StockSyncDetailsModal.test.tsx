@@ -110,6 +110,19 @@ describe('warehouse-aware stock sync details',()=>{
     expect([...host.querySelectorAll('button')].some(b=>b.textContent?.trim()==='First Count')).toBe(false);
   });
 
+  it('allows an explicit resend while the previous provider result is uncertain',async()=>{
+    const resend=vi.fn().mockResolvedValue({...state,status:'awaiting_confirmation',jwAvailableStock:8,canResync:true});
+    await render({syncInfo:{...state,status:'awaiting_confirmation',jwAvailableStock:8,
+      canCheck:true,canResync:true},selectedFacilityId:8,onResync:resend});
+    const trigger=[...host.querySelectorAll('button')].find(b=>b.textContent?.trim()==='Resend current stock')!;
+    expect(trigger).toBeTruthy();
+    await act(async()=>trigger.click());
+    expect(host.textContent).toContain('8 units (Absolute)');
+    const confirm=[...host.querySelectorAll('button')].find(b=>b.textContent?.includes('Resync 8 Units'))!;
+    await act(async()=>confirm.click());
+    expect(resend).toHaveBeenCalledOnce();
+  });
+
   it('offers readback for awaiting confirmation and retry only when permitted',async()=>{
     const check=vi.fn().mockResolvedValue({...state,status:'synced',jwAvailableStock:8,
       marketplaceReportedStock:8,difference:0,canCheck:true});

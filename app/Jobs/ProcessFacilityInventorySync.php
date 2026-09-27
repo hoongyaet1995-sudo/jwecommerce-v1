@@ -45,6 +45,8 @@ final class ProcessFacilityInventorySync implements ShouldQueue
                 ->where('product_variant_id', $task->product_variant_id)
                 ->whereIn('status', ['processing', 'uncertain'])->where('id', '!=', $task->id)->exists();
             if ($inFlight) {
+                // Keep the latest absolute target queued until the active write finishes.
+                self::dispatch($task->id)->delay(now()->addSeconds(5))->afterCommit();
                 return null;
             }
             $scan = DB::table('marketplace_store_facility_scans')
@@ -75,7 +77,27 @@ final class ProcessFacilityInventorySync implements ShouldQueue
 
                 return null;
             }
-            if (\App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::appliesToStore((int) $task->marketplace_store_id)) {
+            if ((int) $balance->version !== (int) $task->balance_version) {
+                $this->mark($task->id, 'superseded', 'balance_version_changed');
+
+                return null;
+            }
+            $latestTask = DB::table('inventory_store_sync_tasks')
+                ->where('marketplace_store_facility_id', $task->marketplace_store_facility_id)
+                ->where('product_variant_id', $task->product_variant_id)
+                ->where('inventory_balance_id', $task->inventory_balance_id)
+                ->where('balance_version', $task->balance_version)
+                ->where('status', '!=', 'superseded')
+                ->orderByDesc('created_at')
+                ->orderByRaw("CASE WHEN status IN ('failed', 'facility_blocked') THEN 0 WHEN status IN ('queued', 'waiting_source', 'facility_pending', 'processing', 'uncertain') THEN 1 ELSE 2 END")
+                ->orderByDesc('id')->first(['id']);
+            if ($latestTask && $latestTask->id !== $task->id) {
+                $this->mark($task->id, 'superseded', 'newer_sync_task_exists');
+
+                return null;
+            }
+            if (! str_starts_with((string) $task->event_key, 'facility-resync:')
+                && \App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::appliesToStore((int) $task->marketplace_store_id)) {
                 try {
                     app(\App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::class)
                         ->assertEligible((int) $task->marketplace_store_id,
@@ -86,11 +108,6 @@ final class ProcessFacilityInventorySync implements ShouldQueue
 
                     return null;
                 }
-            }
-            if ((int) $balance->version !== (int) $task->balance_version) {
-                $this->mark($task->id, 'superseded', 'balance_version_changed');
-
-                return null;
             }
             if (! DB::table('inventory_warehouses')->where('id', $facility->inventory_warehouse_id)
                 ->where('is_active', true)->where('status', 'active')->exists()) {

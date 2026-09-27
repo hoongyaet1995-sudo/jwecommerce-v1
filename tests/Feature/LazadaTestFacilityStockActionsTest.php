@@ -164,6 +164,9 @@ class LazadaTestFacilityStockActionsTest extends TestCase
         $receipt = app(FacilityStockReview::class)->confirm($c['actor'], $review['id'], 'count-resync-a');
         DB::table('inventory_store_sync_tasks')->where('id', $receipt['provider_sync_task']['id'])
             ->update(['status' => 'failed']);
+        $eligibility = app(\App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::class)
+            ->inspect($c['store'], $c['variant'], $c['a']);
+        $this->assertNotContains('unfinished_stock_sync', array_column($eligibility['blockers'], 'code'));
         $recovery = app(FacilitySyncRecovery::class);
         $this->assertTrue($recovery->details($c['store'], $c['a'], $c['variant'])['can_resync']);
         $recovery->resync($c['store'], $c['a'], $c['variant'], 'retry-test-a');
@@ -174,27 +177,131 @@ class LazadaTestFacilityStockActionsTest extends TestCase
         ]);
     }
 
-    public function test_pending_or_confirmed_test_sync_cannot_be_resynced_directly(): void
+    public function test_older_pending_sync_does_not_block_stock_review_after_a_newer_failure(): void
+    {
+        $c = $this->context();
+        $stock = app(FacilityStockReview::class);
+        $review = $stock->review($c['actor'], $c['store'], $c['a'], $c['variant'],
+            'count', 7, 'Verified test count');
+        $receipt = $stock->confirm($c['actor'], $review['id'], 'count-stale-task');
+        $oldTaskId = $receipt['provider_sync_task']['id'];
+        DB::table('inventory_store_sync_tasks')->where('id', $oldTaskId)
+            ->update(['status' => 'facility_pending']);
+        $newTask = (array) DB::table('inventory_store_sync_tasks')->where('id', $oldTaskId)->first();
+        $newTask['id'] = (string) \Illuminate\Support\Str::uuid();
+        $newTask['event_key'] = 'facility-resync:newer-failed-task';
+        $newTask['status'] = 'failed';
+        $newTask['created_at'] = now()->addSecond();
+        $newTask['updated_at'] = now()->addSecond();
+        DB::table('inventory_store_sync_tasks')->insert($newTask);
+
+        $eligibility = app(\App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::class)
+            ->inspect($c['store'], $c['variant'], $c['a']);
+        $this->assertNotContains('unfinished_stock_sync', array_column($eligibility['blockers'], 'code'));
+        $audit = $stock->review($c['actor'], $c['store'], $c['a'], $c['variant'],
+            'audit', 9, 'Reviewed physical count');
+        $this->assertSame('pending', $audit['status']);
+
+        $publisher = \Mockery::mock(StoreInventoryPublisher::class);
+        $publisher->shouldNotReceive('publish');
+        (new ProcessFacilityInventorySync($oldTaskId))->handle($publisher);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $oldTaskId, 'status' => 'superseded']);
+    }
+
+    public function test_current_pending_sync_still_requires_confirmation_before_another_write(): void
+    {
+        $c = $this->context();
+        $stock = app(FacilityStockReview::class);
+        $review = $stock->review($c['actor'], $c['store'], $c['a'], $c['variant'],
+            'count', 7, 'Verified test count');
+        $stock->confirm($c['actor'], $review['id'], 'count-current-pending');
+
+        $eligibility = app(\App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::class)
+            ->inspect($c['store'], $c['variant'], $c['a']);
+        $this->assertContains('unfinished_stock_sync', array_column($eligibility['blockers'], 'code'));
+    }
+
+    public function test_pending_and_confirmed_test_sync_can_be_resend_without_changing_jw_stock(): void
     {
         $c = $this->context();
         $review = app(FacilityStockReview::class)->review($c['actor'], $c['store'], $c['a'],
             $c['variant'], 'count', 7, 'Verified test count');
         $receipt = app(FacilityStockReview::class)->confirm($c['actor'], $review['id'], 'count-no-duplicate');
         $recovery = app(FacilitySyncRecovery::class);
-        $this->assertFalse($recovery->details($c['store'], $c['a'], $c['variant'])['can_resync']);
-        try {
-            $recovery->resync($c['store'], $c['a'], $c['variant'], 'duplicate-pending');
-            $this->fail('Pending stock sync must reject direct resync.');
-        } catch (ValidationException) {
-            $this->assertSame(1, DB::table('inventory_store_sync_tasks')->where('product_variant_id', $c['variant'])->count());
-        }
-        DB::table('inventory_store_sync_tasks')->where('id', $receipt['provider_sync_task']['id'])
+        $this->assertTrue($recovery->details($c['store'], $c['a'], $c['variant'])['can_resync']);
+        $recovery->resync($c['store'], $c['a'], $c['variant'], 'duplicate-pending', $c['actor']->id,
+            'Operator requested the current absolute quantity again');
+        $this->assertDatabaseHas('inventory_store_sync_tasks', [
+            'id' => $receipt['provider_sync_task']['id'], 'status' => 'superseded',
+        ]);
+        $this->assertSame(7, $this->physical($c['warehouse_a'], $c['variant']));
+        $resent = DB::table('inventory_store_sync_tasks')->where('event_key', 'facility-resync:duplicate-pending')->first();
+        $this->assertSame(7, (int) $resent->target_quantity);
+        $this->assertDatabaseHas('inventory_store_sync_attempts', [
+            'task_id' => $resent->id, 'actor_id' => $c['actor']->id, 'source' => 'manual',
+        ]);
+        DB::table('inventory_store_sync_tasks')->where('id', $resent->id)
             ->update(['status' => 'confirmed', 'provider_receipt' => json_encode([
                 'provider_location_id' => 'WH-A', 'observed_quantity' => 7,
             ], JSON_THROW_ON_ERROR)]);
-        $this->assertFalse($recovery->details($c['store'], $c['a'], $c['variant'])['can_resync']);
-        $this->expectException(ValidationException::class);
-        $recovery->resync($c['store'], $c['a'], $c['variant'], 'duplicate-confirmed');
+        $this->assertTrue($recovery->details($c['store'], $c['a'], $c['variant'])['can_resync']);
+        $recovery->resync($c['store'], $c['a'], $c['variant'], 'duplicate-confirmed', $c['actor']->id);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', [
+            'event_key' => 'facility-resync:duplicate-confirmed', 'target_quantity' => 7,
+        ]);
+    }
+
+    public function test_uncertain_provider_result_can_be_superseded_by_manual_absolute_resend(): void
+    {
+        $c = $this->context();
+        $stock = app(FacilityStockReview::class);
+        $review = $stock->review($c['actor'], $c['store'], $c['a'], $c['variant'],
+            'count', 7, 'Verified test count');
+        $receipt = $stock->confirm($c['actor'], $review['id'], 'count-uncertain-resend');
+        DB::table('inventory_store_sync_tasks')->where('id', $receipt['provider_sync_task']['id'])
+            ->update(['status' => 'uncertain']);
+
+        $recovery = app(FacilitySyncRecovery::class);
+        $this->assertTrue($recovery->details($c['store'], $c['a'], $c['variant'])['can_resync']);
+        $recovery->resync($c['store'], $c['a'], $c['variant'], 'manual-after-uncertain', $c['actor']->id);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', [
+            'id' => $receipt['provider_sync_task']['id'], 'status' => 'superseded',
+        ]);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', [
+            'event_key' => 'facility-resync:manual-after-uncertain', 'target_quantity' => 7,
+            'status' => 'facility_pending',
+        ]);
+    }
+
+    public function test_manual_resend_waits_for_an_active_write_then_sends_latest_absolute_quantity(): void
+    {
+        $c = $this->context();
+        $stock = app(FacilityStockReview::class);
+        $review = $stock->review($c['actor'], $c['store'], $c['a'], $c['variant'],
+            'count', 7, 'Verified test count');
+        $receipt = $stock->confirm($c['actor'], $review['id'], 'count-active-resend');
+        $oldId = $receipt['provider_sync_task']['id'];
+        DB::table('inventory_store_sync_tasks')->where('id', $oldId)->update(['status' => 'processing']);
+        \Illuminate\Support\Facades\Queue::fake();
+
+        app(FacilitySyncRecovery::class)->resync($c['store'], $c['a'], $c['variant'],
+            'manual-while-processing', $c['actor']->id);
+        $newId = DB::table('inventory_store_sync_tasks')
+            ->where('event_key', 'facility-resync:manual-while-processing')->value('id');
+        $publisher = \Mockery::mock(StoreInventoryPublisher::class);
+        $publisher->shouldNotReceive('publish');
+        (new ProcessFacilityInventorySync($newId))->handle($publisher);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $newId, 'status' => 'facility_pending']);
+
+        DB::table('inventory_store_sync_tasks')->where('id', $oldId)->update(['status' => 'confirmed']);
+        $publisher = \Mockery::mock(StoreInventoryPublisher::class);
+        $publisher->shouldReceive('publish')->once()->andReturnUsing(
+            fn ($store, $listing, $quantity): array => [
+                'provider_location_id' => $listing->sync_provider_location_id,
+                'observed_quantity' => $quantity, 'confirmation_method' => 'provider_readback',
+            ]);
+        (new ProcessFacilityInventorySync($newId))->handle($publisher);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $newId, 'status' => 'confirmed']);
     }
 
     private function physical(int $warehouseId, int $variantId): int

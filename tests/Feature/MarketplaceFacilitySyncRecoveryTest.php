@@ -71,6 +71,18 @@ class MarketplaceFacilitySyncRecoveryTest extends TestCase
         $this->assertSame('synced', $result['status']);
         $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $taskId, 'status' => 'confirmed']);
 
+        DB::table('inventory_store_sync_tasks')->where('id', $taskId)->update(['status' => 'uncertain']);
+        $publisher = \Mockery::mock(StoreInventoryPublisher::class);
+        $publisher->shouldReceive('observe')->once()->andReturn([
+            'provider_location_id' => 'WH-A', 'observed_quantity' => 6,
+            'observed_at' => now()->toIso8601String(),
+        ]);
+        $mismatch = $service->check($store->id, $facility->id, $variant->id, $publisher);
+        $this->assertSame('sync_failed', $mismatch['status']);
+        $this->assertSame(4, $mismatch['difference']);
+        $this->assertTrue($mismatch['can_resync']);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $taskId, 'status' => 'failed']);
+
         DB::table('marketplace_store_tokens')->insert([
             'store_id' => $store->id, 'application_id' => 'test', 'credential_source' => 'official_test',
             'access_token' => 'test', 'test_lease_expires_at' => now()->subMinute(),
@@ -79,7 +91,7 @@ class MarketplaceFacilitySyncRecoveryTest extends TestCase
         $expired = $service->details($store->id, $facility->id, $variant->id);
         $this->assertSame('auth_expired', $expired['status']);
         $this->assertFalse($expired['can_check']);
-        $this->assertSame(10, $expired['marketplace_reported_stock']);
+        $this->assertSame(6, $expired['marketplace_reported_stock']);
         DB::table('marketplace_store_tokens')->where('store_id', $store->id)->delete();
 
         $balanceId = DB::table('inventory_store_sync_tasks')->where('id', $taskId)->value('inventory_balance_id');

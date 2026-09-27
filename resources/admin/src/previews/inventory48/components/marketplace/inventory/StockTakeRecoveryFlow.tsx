@@ -6,7 +6,7 @@ import { storeInventoryApi } from '../../../../../integration/storeInventory';
 import { MarketplaceLogo } from '../MarketplaceLogo';
 
 type Order = { id: number; reference: string; status: string; line_key: string; historical: boolean; can_review_historical: boolean; review_decision?: string | null };
-type Snapshot = { eligible: boolean; blockers: { code: string }[]; orders: Order[] };
+type Snapshot = { eligible: boolean; blockers: { code: string }[]; orders: Order[]; facility?: { counted: boolean } | null };
 
 export const stockTakeBlockerCopy: Record<string, string> = {
   open_test_store_order: 'Open orders need review before this warehouse can be counted.',
@@ -91,7 +91,7 @@ export const StockTakeRecoveryFlow: React.FC<Props> = ({ item, store, facility, 
         const current = await refresh();
         if (!current.eligible) throw new Error('Stock or order status changed. Review this location again.');
         const result = await storeInventoryApi.facilityStockAction(store.id, facilityId, variantId,
-          'count', Number(count), 'Verified warehouse Stock Take');
+          current.facility?.counted ? 'audit' : 'count', Number(count), 'Reviewed warehouse Stock Take');
         setReceipt(result);
         setScreen(4);
         onSaved();
@@ -169,7 +169,7 @@ export const StockTakeRecoveryFlow: React.FC<Props> = ({ item, store, facility, 
           <label className="block font-semibold">Verified warehouse physical count
             <input type="number" min="0" max="2147483647" step="1" value={count} onChange={event => setCount(event.target.value)}
               aria-label="Verified warehouse physical count" className="mt-2 block w-full rounded-lg border border-neutral-600 bg-neutral-800 p-3 text-lg" /></label>
-          <p className="rounded-xl border border-purple-800 bg-purple-950/30 p-4 text-purple-200">Only this SKU, store and warehouse will be counted. Existing audit history remains intact.</p>
+          <p className="rounded-xl border border-purple-800 bg-purple-950/30 p-4 text-purple-200">Only this SKU, store and warehouse will be updated. Existing audit history remains intact.</p>
         </>}
         {screen === 3 && <><h3 className="text-base font-bold">Review this one location</h3>
           <div className="rounded-xl border border-neutral-700 bg-neutral-800 p-4"><span className="text-neutral-400">Verified physical count</span><strong className="float-right">{count} units</strong></div>

@@ -157,3 +157,24 @@ it.each([
   expect(host.textContent).toContain(expected);
   expect(fetchMock.mock.calls.some(([input]) => String(input).includes('test-facility-acceptance'))).toBe(false);
 });
+
+it.each([
+  { status: 'sync_failed', expected: ['Check status', 'Manage this stock'], absent: [] },
+  { status: 'awaiting_confirmation', expected: ['Check status'], absent: ['Manage this stock'] },
+  { status: 'synced', expected: ['Manage this stock'], absent: ['Check status'] },
+])('shows the approved recovery actions for $status', async ({ status, expected, absent }) => {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({ ok: true, json: async () =>
+    String(input).includes('test-facility-acceptance')
+      ? { test_acceptance_enabled: true, eligible: status !== 'awaiting_confirmation', facilities: [{ id: 7, eligible: status !== 'awaiting_confirmation' }] }
+      : String(input).includes('/sync') ? { status, can_check: true, can_resync: status === 'sync_failed' }
+        : { status: 'verified', topology: 'single_warehouse', facilities: [
+          { id: 7, name: 'Warehouse A', provider_id: 'WH-A', inventory_warehouse_id: 19,
+            counted: true, physical: 10, reserved: 0, available: 10 },
+        ] } }) as Response));
+  await act(async () => root.render(<FocusedManageStockDrawer isOpen onClose={() => {}} item={item}
+    mode="independent" stores={[stores[1]]} initialStoreId="3" initialWarehouseId="7" />));
+  await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+  const buttons = [...host.querySelectorAll('footer button')].map(button => button.textContent?.trim());
+  for (const label of expected) expect(buttons).toContain(label);
+  for (const label of absent) expect(buttons).not.toContain(label);
+});

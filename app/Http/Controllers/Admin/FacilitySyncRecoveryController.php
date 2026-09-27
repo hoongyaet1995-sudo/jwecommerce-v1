@@ -35,7 +35,8 @@ final class FacilitySyncRecoveryController extends Controller
         $this->authorizeActor($request);
         $data = $request->validate(['operation_key' => ['required', 'string', 'max:120']]);
 
-        return response()->json($service->resync($store, $facility, $variant, $data['operation_key']))
+        return response()->json($service->resync($store, $facility, $variant, $data['operation_key'],
+            (int) $request->user()->id, 'Manual resend of current JW available stock'))
             ->header('Cache-Control', 'no-store');
     }
 

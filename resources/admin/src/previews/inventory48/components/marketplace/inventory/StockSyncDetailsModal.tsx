@@ -867,7 +867,7 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                 )}
 
                 {effectiveStatus === 'awaiting_confirmation' && (
-                  <button
+                  <><button
                     type="button"
                     disabled={isCheckingStatus || currentSync.canCheck !== true}
                     onClick={handleCheckStatus}
@@ -879,7 +879,11 @@ export const StockSyncDetailsModal: React.FC<StockSyncDetailsModalProps> = ({
                       <RefreshCw className="w-3.5 h-3.5" />
                     )}
                     <span>Check Status</span>
-                  </button>
+                  </button>{currentSync.canResync === true && <button type="button" onClick={handleStartResync} className="px-4 py-2 rounded-xl border border-purple-500 text-purple-600 dark:text-purple-300 font-bold">Resend current stock</button>}</>
+                )}
+
+                {effectiveStatus === 'synced' && currentSync.canResync === true && (
+                  <button type="button" onClick={handleStartResync} className="px-4 py-2 rounded-xl border border-purple-500 text-purple-600 dark:text-purple-300 font-bold">Resend current stock</button>
                 )}
 
                 {effectiveStatus === 'listing_not_eligible' && (

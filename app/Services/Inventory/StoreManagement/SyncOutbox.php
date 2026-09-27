@@ -78,7 +78,7 @@ final class SyncOutbox
         DB::table('inventory_store_sync_tasks')->where('marketplace_store_id', $storeId)
             ->where('product_variant_id', $balance->product_variant_id)
             ->where('marketplace_store_facility_id', $facility->id)
-            ->whereIn('status', ['queued', 'failed', 'facility_blocked', 'waiting_source', 'facility_pending'])
+            ->whereIn('status', ['queued', 'failed', 'facility_blocked', 'waiting_source', 'facility_pending', 'uncertain'])
             ->update(['status' => 'superseded', 'updated_at' => now()]);
         $id = (string) Str::uuid();
         $target = max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock);

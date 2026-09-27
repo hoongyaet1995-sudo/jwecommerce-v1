@@ -81,6 +81,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
   const [sync, setSync] = useState<any>(null);
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncError, setSyncError] = useState('');
+  const [confirmResync, setConfirmResync] = useState(false);
   const [acceptance, setAcceptance] = useState<any>(null);
   const [recovering, setRecovering] = useState(false);
   const [reload, setReload] = useState(0);
@@ -153,6 +154,12 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
     && acceptance?.eligible === false;
   const actionable = selectedStore?.status === 'verified' && (direct || !!selectedFacility?.inventoryWarehouseId)
     && acceptanceReady;
+  const awaitingSync = sync?.status === 'awaiting_confirmation';
+  const failedSync = sync?.status === 'sync_failed';
+  const checkedMismatch = failedSync && sync?.marketplace_reported_stock !== null
+    && sync?.marketplace_reported_stock !== undefined && sync?.difference !== null
+    && sync?.difference !== undefined && sync.difference !== 0;
+  const mayManage = actionable && !awaitingSync;
   const title = !selectedStore ? 'Choose a store' : !atLocation ? selectedStore.name : actionsOpen ? 'Manage this stock' : locationName || 'Stock location';
   const description = !selectedStore ? `Select the store whose ${item?.masterSku || 'SKU'} stock you want to manage.`
     : !atLocation ? 'Choose a warehouse to view and manage its independent stock.'
@@ -168,7 +175,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
       .then(result => { if (active) setAcceptance(result); })
       .catch(() => { if (active) setAcceptance({ test_acceptance_enabled: true, eligible: false }); });
     return () => { active = false; };
-  }, [isOpen, item?.id, storeId, facilityId, requiresTestAcceptance]);
+  }, [isOpen, item?.id, storeId, facilityId, requiresTestAcceptance, reload]);
 
   useEffect(() => {
     if (!isOpen || !item || !selectedStore || !atLocation || selectedStore.platform === 'webstore' || selectedStore.status !== 'verified') {
@@ -203,6 +210,11 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
         : resend ? await storeInventoryApi.resyncStock(selectedStore.id, (item as any).variantId, crypto.randomUUID())
           : await storeInventoryApi.checkStock(selectedStore.id, (item as any).variantId);
       setSync(result);
+      setConfirmResync(false);
+      if (!resend && selectedFacility && requiresTestAcceptance) {
+        const next = await storeInventoryApi.testFacilityAcceptance(selectedStore.id, (item as any).variantId, Number(selectedFacility.id));
+        setAcceptance(next);
+      }
     } catch { setSyncError('Stock sync could not be completed. Please try again.'); }
     finally { setSyncBusy(false); }
   };
@@ -250,13 +262,14 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
         {atLocation && !actionsOpen && <>
           <p className="text-xs font-semibold text-neutral-300">{selectedStore!.name} · {direct ? 'Store ledger' : `Platform warehouse ${warehouseDisplayCode(selectedFacility!.providerId)}`}</p>
           <StockSummary balance={activeBalance} />
-          {!actionable && <div role="status" className="rounded-xl border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-300">{selectedStore!.status !== 'verified' ? 'Warehouse verification is pending.' : !acceptanceReady ? 'This stock location is not yet eligible for a stock change.' : 'This warehouse does not yet have an active stock ledger.'}</div>}
-          {canRecover && <button type="button" onClick={() => setRecovering(true)} className="w-full rounded-xl border border-purple-700 bg-purple-950/30 p-4 text-left text-xs font-bold text-purple-200 hover:border-purple-400">Resolve stock issue <ArrowRight className="ml-2 inline h-4 w-4" /></button>}
-          {selectedStore!.platform !== 'webstore' && <div className="rounded-xl border border-neutral-700 bg-neutral-800/60 p-4 text-xs">
-            <div className="flex items-center justify-between gap-2"><strong>Marketplace stock check</strong><span className="text-neutral-400">{sync?.status?.replaceAll('_', ' ') || 'Not checked'}</span></div>
+          {!actionable && !awaitingSync && !failedSync && <div role="status" className="rounded-xl border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-300">{selectedStore!.status !== 'verified' ? 'Warehouse verification is pending.' : !acceptanceReady ? 'This stock location is not yet eligible for a stock change.' : 'This warehouse does not yet have an active stock ledger.'}</div>}
+          {canRecover && !awaitingSync && !failedSync && <button type="button" onClick={() => setRecovering(true)} className="w-full rounded-xl border border-purple-700 bg-purple-950/30 p-4 text-left text-xs font-bold text-purple-200 hover:border-purple-400">Resolve stock issue <ArrowRight className="ml-2 inline h-4 w-4" /></button>}
+          {selectedStore!.platform !== 'webstore' && <div role="status" className={`rounded-xl border p-4 text-xs ${sync?.status === 'synced' ? 'border-emerald-800 bg-emerald-950/40' : failedSync ? 'border-rose-800 bg-rose-950/30' : awaitingSync ? 'border-amber-800 bg-amber-950/30' : 'border-neutral-700 bg-neutral-800/60'}`}>
+            <strong className={sync?.status === 'synced' ? 'text-emerald-300' : failedSync ? 'text-rose-300' : awaitingSync ? 'text-amber-300' : 'text-white'}>{sync?.status === 'synced' ? 'Marketplace stock confirmed' : failedSync ? 'Marketplace sync failed' : awaitingSync ? 'Marketplace result needs confirmation' : 'Marketplace stock sync'}</strong>
+            <p className="mt-2 text-neutral-300">{sync?.status === 'synced' ? 'The marketplace readback matches JW available stock for this location.' : checkedMismatch ? `JW has ${sync.jw_available_stock} available; the marketplace reports ${sync.marketplace_reported_stock}. Review this difference before resyncing.` : failedSync ? 'The previous stock update failed. JW stock remains available to manage; check the exact marketplace location before resending.' : awaitingSync ? 'The previous update may have reached the marketplace. Check this exact location before sending another update.' : 'Check the exact marketplace location to confirm its stock.'}</p>
             {syncError && <p role="alert" className="mt-2 text-rose-300">{syncError}</p>}
-            <div className="mt-3 flex gap-2"><button type="button" disabled={syncBusy || !sync?.can_check} onClick={() => void syncAction(false)} className="rounded-lg border border-neutral-600 px-3 py-1.5 disabled:opacity-40"><RefreshCw className="mr-1 inline h-3 w-3" />Check status</button>
-              <button type="button" disabled={syncBusy || !sync?.can_resync} onClick={() => void syncAction(true)} className="rounded-lg border border-neutral-600 px-3 py-1.5 disabled:opacity-40">Resync stock</button></div>
+            {sync?.can_resync && <button type="button" onClick={() => setConfirmResync(true)} className="mt-3 rounded-lg border border-purple-600 px-3 py-2 font-semibold text-purple-200">Resend current stock</button>}
+            {confirmResync && <div className="mt-3 rounded-lg border border-purple-700 bg-purple-950/30 p-3"><p>Send JW available stock ({sync?.jw_available_stock}) to this exact marketplace location?</p><div className="mt-3 flex gap-2"><button type="button" onClick={() => setConfirmResync(false)} className="rounded border border-neutral-600 px-3 py-2">Cancel</button><button type="button" disabled={syncBusy} onClick={() => void syncAction(true)} className="rounded bg-purple-600 px-3 py-2 font-bold disabled:opacity-40">Confirm resync</button></div></div>}
           </div>}
         </>}
         {atLocation && actionsOpen && <div className="space-y-3">
@@ -270,7 +283,8 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
       </div>
       <footer className="flex items-center justify-between gap-3 border-t border-neutral-800 bg-neutral-950/70 px-5 py-4 sm:px-6">
         <button type="button" onClick={back} className="rounded-lg border border-neutral-700 px-4 py-2 text-xs text-neutral-300 hover:bg-neutral-800">{selectedStore ? 'Back' : 'Close'}</button>
-        {atLocation && !actionsOpen && <button type="button" disabled={!actionable} onClick={() => setActionsOpen(true)} className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-bold text-white hover:bg-purple-500 disabled:opacity-40">Manage this stock</button>}
+        {atLocation && !actionsOpen && <div className="flex gap-2">{selectedStore?.platform !== 'webstore' && sync?.can_check && (failedSync || awaitingSync || sync?.status === 'not_synced') && <button type="button" disabled={syncBusy} onClick={() => void syncAction(false)} className={`rounded-lg px-4 py-2 text-xs font-bold disabled:opacity-40 ${awaitingSync ? 'bg-purple-600 text-white' : 'border border-neutral-600 text-neutral-200'}`}>Check status</button>}
+          {!awaitingSync && <button type="button" disabled={!mayManage} onClick={() => setActionsOpen(true)} className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-bold text-white hover:bg-purple-500 disabled:opacity-40">Manage this stock</button>}</div>}
         {atLocation && actionsOpen && onViewLedger && <button type="button" onClick={() => onViewLedger(item, selectedStore!.id, targetWarehouseId)} className="flex items-center gap-1 rounded-lg border border-neutral-700 px-4 py-2 text-xs text-neutral-300"><History className="h-3 w-3" />View ledger</button>}
       </footer>
     </div>

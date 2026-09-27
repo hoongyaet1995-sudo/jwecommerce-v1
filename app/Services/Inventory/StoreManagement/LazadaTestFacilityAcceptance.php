@@ -96,13 +96,21 @@ final class LazadaTestFacilityAcceptance
             }
         }
         $batch = $facilityId === null ? null : $this->countBatchFor($storeId, $variantId, $facilityId, $ignoreSyncTaskId);
-        if ($facilityId !== null && DB::table('inventory_store_sync_tasks')
+        $currentSync = $facilityId === null ? null : DB::table('inventory_store_sync_tasks')
             ->where('marketplace_store_id', $storeId)
             ->where('marketplace_store_facility_id', $facilityId)
             ->where('product_variant_id', $variantId)
-            ->when($ignoreSyncTaskId, fn ($query) => $query->where('id', '!=', $ignoreSyncTaskId))
             ->when($batch, fn ($query) => $query->whereNotIn('event_key', $batch['event_keys']))
-            ->whereNotIn('status', ['confirmed', 'not_applicable', 'superseded'])->exists()) {
+            ->where('status', '!=', 'superseded')
+            ->orderByDesc('created_at')
+            ->orderByRaw("CASE WHEN status IN ('failed', 'facility_blocked') THEN 0 ELSE 1 END")
+            ->orderByDesc('id')->first();
+        $currentBalanceVersion = $currentSync?->inventory_balance_id === null ? null
+            : DB::table('inventory_balances')->where('id', $currentSync->inventory_balance_id)->value('version');
+        if ($currentSync && $currentSync->id !== $ignoreSyncTaskId && $currentBalanceVersion !== null
+            && (int) $currentSync->balance_version === (int) $currentBalanceVersion
+            && in_array($currentSync->status,
+                ['queued', 'waiting_source', 'facility_pending', 'processing', 'uncertain'], true)) {
             $blockers[] = ['code' => 'unfinished_stock_sync'];
         }
         $targetWarehouseId = $facilityId === null ? null : DB::table('marketplace_store_facilities')
