@@ -26,6 +26,7 @@ final class LazadaTestFacilityAcceptance
         ?string $ignoreSyncTaskId = null): array
     {
         $blockers = [];
+        $warnings = [];
         if (config('marketplace.multiwarehouse_test_acceptance_enabled') !== true) {
             $blockers[] = ['code' => 'test_acceptance_disabled'];
         }
@@ -54,7 +55,7 @@ final class LazadaTestFacilityAcceptance
                 ->where('reserved_quantity', '>', 0)->exists()
             || DB::table('stock_allocations')->where('product_variant_id', $variantId)
                 ->where('status', 'reserved')->exists()) {
-            $blockers[] = ['code' => 'active_stock_obligation'];
+            $warnings[] = ['code' => 'active_stock_obligation'];
         }
         if ($mappings->count() === 1) {
             $listing = DB::table('marketplace_listing_variants')->find($mappings[0]->listing_variant_id);
@@ -84,13 +85,13 @@ final class LazadaTestFacilityAcceptance
                                 ->where('external_variant_id', (string) $listing->external_variant_id)
                                 ->where('status', 'skipped_historical')->whereNull('stock_allocation_id')->exists();
                             if (! $historical) {
-                                $blockers[] = ['code' => 'open_test_store_order'];
+                                $warnings[] = ['code' => 'open_test_store_order'];
                                 break 2;
                             }
                         }
                     }
                 } catch (\Throwable) {
-                    $blockers[] = ['code' => 'unreadable_test_store_order'];
+                    $warnings[] = ['code' => 'unreadable_test_store_order'];
                     break;
                 }
             }
@@ -111,7 +112,7 @@ final class LazadaTestFacilityAcceptance
             && (int) $currentSync->balance_version === (int) $currentBalanceVersion
             && in_array($currentSync->status,
                 ['queued', 'waiting_source', 'facility_pending', 'processing', 'uncertain'], true)) {
-            $blockers[] = ['code' => 'unfinished_stock_sync'];
+            $warnings[] = ['code' => 'unfinished_stock_sync'];
         }
         $targetWarehouseId = $facilityId === null ? null : DB::table('marketplace_store_facilities')
             ->where('id', $facilityId)->where('marketplace_store_id', $storeId)
@@ -143,7 +144,7 @@ final class LazadaTestFacilityAcceptance
                 }
             })
             ->exists()) {
-            $blockers[] = ['code' => 'legacy_stock_present'];
+            $warnings[] = ['code' => 'legacy_stock_present'];
         }
 
         $facilities = DB::table('marketplace_store_facilities')->where('marketplace_store_id', $storeId)
@@ -180,7 +181,7 @@ final class LazadaTestFacilityAcceptance
         }
 
         return ['test_acceptance_enabled' => config('marketplace.multiwarehouse_test_acceptance_enabled') === true,
-            'eligible' => $blockers === [], 'blockers' => $blockers,
+            'eligible' => $blockers === [], 'blockers' => $blockers, 'warnings' => $warnings,
             'store_id' => $storeId, 'variant_id' => $variantId,
             'topology_revision' => (int) ($scan?->revision ?? 0),
             'mapping_id' => $mappings->count() === 1 ? (int) $mappings[0]->id : null,

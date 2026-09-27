@@ -81,14 +81,14 @@ class StoreInventoryReviewTest extends TestCase
         ]);
     }
 
-    public function test_review_rejects_a_physical_count_below_existing_reservations(): void
+    public function test_review_accepts_physical_count_below_reservations_with_zero_available(): void
     {
         $context = $this->context(10, 4);
 
         $this->actingAs($context['actor'])->postJson('/admin/api/inventory/store-management/reviews', [
             'kind' => 'count', 'balance_id' => $context['balance']['id'], 'physical_count' => 3,
             'reason' => 'Shelf count',
-        ])->assertUnprocessable()->assertJsonValidationErrors('physical_count');
+        ])->assertCreated();
     }
 
     public function test_unauthorized_actor_cannot_create_or_confirm_a_review(): void

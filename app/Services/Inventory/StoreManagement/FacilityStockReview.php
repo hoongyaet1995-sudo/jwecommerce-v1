@@ -161,28 +161,6 @@ final class FacilityStockReview
             ->where('product_variant_id', $variantId)->count() !== 1) {
             throw ValidationException::withMessages(['variant_id' => 'Map exactly one listing to this JW SKU.']);
         }
-        if (DB::table('inventory_order_activations')->where('channel_key', 'marketplace:'.$storeId)
-            ->where('product_variant_id', $variantId)->exists()) {
-            throw ValidationException::withMessages(['variant_id' => 'Reconcile the existing store-level order route before facility stock operations.']);
-        }
-        $legacy = DB::table('inventory_balances as balance')
-            ->join('inventory_pools as pool', 'pool.id', '=', 'balance.inventory_pool_id')
-            ->where('pool.kind', 'store')->where('pool.marketplace_store_id', $storeId)
-            ->where('balance.product_variant_id', $variantId)
-            ->first(['balance.physical_stock', 'balance.reserved_stock']);
-        if ($configuration->active_rebaseline_epoch_id === null
-            && $legacy && ((int) $legacy->physical_stock > 0 || (int) $legacy->reserved_stock > 0)) {
-            throw ValidationException::withMessages(['variant_id' => 'Migrate the existing store stock and reservations before counting a facility.']);
-        }
-        if ($configuration->active_rebaseline_epoch_id === null
-            && DB::table('inventory_balances as balance')
-                ->join('inventory_pools as pool', 'pool.id', '=', 'balance.inventory_pool_id')
-                ->where('pool.kind', 'warehouse')
-                ->where('pool.warehouse_id', $facility->inventory_warehouse_id)
-                ->where('balance.product_variant_id', $variantId)
-                ->whereNotNull('balance.counted_at')->exists()) {
-            throw ValidationException::withMessages(['variant_id' => 'Archive the counted legacy warehouse owner before First Count.']);
-        }
 
         return $facility;
     }
@@ -238,8 +216,8 @@ final class FacilityStockReview
             'intake' => $physical + $quantity,
             default => throw ValidationException::withMessages(['kind' => 'Choose first count, intake or audit.']),
         };
-        if ($target < $reserved || $target > 2147483647) {
-            throw ValidationException::withMessages(['quantity' => 'Physical stock must cover reservations and fit the allowed range.']);
+        if ($target < 0 || $target > 2147483647) {
+            throw ValidationException::withMessages(['quantity' => 'Physical stock must be a non-negative whole number within the allowed range.']);
         }
 
         return ['physical' => $target, 'reserved' => $reserved, 'safety' => $safety,

@@ -46,7 +46,7 @@ class LazadaTestFacilityAcceptanceTest extends TestCase
             $policy->inspect($storeId, $variantId, $facilityId)['blockers'], 'code'));
     }
 
-    public function test_counted_legacy_owner_blocks_test_first_count_without_changing_stock(): void
+    public function test_counted_legacy_owner_is_an_advisory_without_changing_stock(): void
     {
         [$storeId, $variantId, $facilityId, $warehouseId] = $this->context();
         $poolId = DB::table('inventory_pools')->insertGetId([
@@ -60,7 +60,7 @@ class LazadaTestFacilityAcceptanceTest extends TestCase
         ]);
 
         $this->assertContains('legacy_stock_present', array_column(
-            app(LazadaTestFacilityAcceptance::class)->inspect($storeId, $variantId, $facilityId)['blockers'], 'code'));
+            app(LazadaTestFacilityAcceptance::class)->inspect($storeId, $variantId, $facilityId)['warnings'], 'code'));
         $this->assertSame(9, (int) DB::table('inventory_balances')
             ->where('inventory_pool_id', $poolId)->value('physical_stock'));
     }
@@ -105,7 +105,7 @@ class LazadaTestFacilityAcceptanceTest extends TestCase
         $this->assertTrue($policy->inspect($storeId, $variantId, $facilityId)['eligible']);
     }
 
-    public function test_zero_counted_legacy_store_row_does_not_block_but_positive_stock_does(): void
+    public function test_legacy_store_stock_is_advisory(): void
     {
         [$storeId, $variantId, $facilityId] = $this->context();
         $poolId = DB::table('inventory_pools')->insertGetId([
@@ -122,7 +122,7 @@ class LazadaTestFacilityAcceptanceTest extends TestCase
         $this->assertTrue($policy->inspect($storeId, $variantId, $facilityId)['eligible']);
         DB::table('inventory_balances')->where('inventory_pool_id', $poolId)->update(['reserved_stock' => 1]);
         $this->assertContains('legacy_stock_present', array_column(
-            $policy->inspect($storeId, $variantId, $facilityId)['blockers'], 'code'));
+            $policy->inspect($storeId, $variantId, $facilityId)['warnings'], 'code'));
     }
 
     public function test_mapping_in_another_store_does_not_lock_the_test_store_sku(): void
@@ -153,7 +153,7 @@ class LazadaTestFacilityAcceptanceTest extends TestCase
             ->assertJsonPath('facilities.0.id', $facilityId);
     }
 
-    public function test_unrelated_open_order_does_not_block_but_matching_or_unknown_order_does(): void
+    public function test_matching_and_unreadable_orders_are_advisory(): void
     {
         [$storeId, $variantId, $facilityId] = $this->context();
         $policy = app(LazadaTestFacilityAcceptance::class);
@@ -172,11 +172,11 @@ class LazadaTestFacilityAcceptanceTest extends TestCase
             ])),
         ]);
         $this->assertContains('open_test_store_order', array_column(
-            $policy->inspect($storeId, $variantId, $facilityId)['blockers'], 'code'));
+            $policy->inspect($storeId, $variantId, $facilityId)['warnings'], 'code'));
 
         DB::table('marketplace_orders')->where('id', $orderId)->update(['encrypted_payload' => 'corrupt']);
         $this->assertContains('unreadable_test_store_order', array_column(
-            $policy->inspect($storeId, $variantId, $facilityId)['blockers'], 'code'));
+            $policy->inspect($storeId, $variantId, $facilityId)['warnings'], 'code'));
     }
 
     public function test_order_at_another_provider_warehouse_does_not_block_selected_location(): void
@@ -220,7 +220,7 @@ class LazadaTestFacilityAcceptanceTest extends TestCase
         DB::table('marketplace_inventory_items')->where('order_id', $orderId)
             ->update(['status' => 'reserved']);
         $this->assertContains('open_test_store_order', array_column(app(LazadaTestFacilityAcceptance::class)
-            ->inspect($storeId, $variantId, $facilityId)['blockers'], 'code'));
+            ->inspect($storeId, $variantId, $facilityId)['warnings'], 'code'));
     }
 
     private function context(): array

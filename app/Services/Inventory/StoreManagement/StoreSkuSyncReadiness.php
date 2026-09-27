@@ -57,8 +57,7 @@ final class StoreSkuSyncReadiness
             if (! $balance || $balance->counted_at === null || $balance->physical_stock === null
                 || $balance->reserved_stock === null || $balance->safety_stock === null) {
                 $blockers[] = $this->blocker('initial_count_required', 'Complete the first count for this store SKU.');
-            } elseif ((int) $balance->reserved_stock > (int) $balance->physical_stock) {
-                $blockers[] = $this->blocker('reservation_conflict', 'Reconcile reserved units before stock sync.');
+
             }
 
             if ($listing) {

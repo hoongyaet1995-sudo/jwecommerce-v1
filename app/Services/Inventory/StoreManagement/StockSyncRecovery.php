@@ -56,10 +56,10 @@ final class StockSyncRecovery
             $reason = 'Link this JW SKU to exactly one listing in this store.';
         } elseif ($pending) {
             $status = 'awaiting_confirmation';
-            $reason = 'A previous update is awaiting marketplace confirmation. Check status before sending again.';
+            $reason = 'A previous update is awaiting marketplace confirmation. You can check status or resend the latest stock.';
         } elseif ($transferPending) {
             $status = 'sync_failed';
-            $reason = 'Resolve the outstanding stock transfer before resynchronizing this store.';
+            $reason = 'A previous transfer stock update is incomplete. You can resend the latest stock for this store.';
         } elseif ($blocker) {
             $status = match ($blocker) {
                 'authorization_expired','authorization_required','store_not_connected' => 'auth_expired',
@@ -95,7 +95,7 @@ final class StockSyncRecovery
             'lastConfirmedSyncAt' => $confirmedAt, 'lastCheckedAt' => $observation?->observed_at,
             'requestSentAt' => $pending?->updated_at, 'requestedQuantity' => $pending?->target_quantity,
             'failureReason' => $reason, 'failureRecoveryType' => $status === 'auth_expired' ? 'reconnect' : ($status === 'sku_not_mapped' ? 'mapping' : ($pending ? 'check_status' : 'resync')),
-            'canResync' => $readiness['ready'] && ! $pending && ! $transferPending, 'canCheck' => (bool) $c['listing'],
+            'canResync' => $readiness['ready'] && ! $this->tasks($storeId, $variantId)->where('status', 'processing')->exists(), 'canCheck' => (bool) $c['listing'],
             'physicalStock' => $c['balance']?->physical_stock, 'reservedStock' => $c['balance']?->reserved_stock];
     }
 
@@ -157,11 +157,10 @@ final class StockSyncRecovery
                 abort_unless($fresh['balance']?->id === $c['balance']->id && $fresh['listing']?->id === $c['listing']->id &&
                     $fresh['listing']?->external_product_id === $c['listing']->external_product_id &&
                     $fresh['listing']?->external_variant_id === $c['listing']->external_variant_id, 409, 'The stock account or mapping changed. Refresh before synchronizing.');
-                abort_if($this->tasks($storeId, $variantId)->whereIn('status', ['processing', 'uncertain', 'waiting_source'])->lockForUpdate()->exists(), 409, 'A previous stock update needs confirmation first.');
-                abort_if($this->tasks($storeId, $variantId)->whereIn('stage', ['source', 'destination'])->whereIn('status', ['queued', 'failed', 'auth_expired'])->exists(), 409, 'Resolve the outstanding stock transfer before resynchronizing.');
+                abort_if($this->tasks($storeId, $variantId)->where('status', 'processing')->lockForUpdate()->exists(), 409, 'A stock update is currently being sent. Try again when it finishes.');
                 abort_unless($this->readiness->read($storeId, $variantId)['ready'], 409, 'Synchronization requirements changed. Refresh before continuing.');
                 // Keep older receipts and attempts, but only the new request is current.
-                $this->tasks($storeId, $variantId)->whereIn('status', ['queued', 'failed', 'auth_expired', 'confirmed', 'not_applicable'])->update(['status' => 'superseded', 'updated_at' => now()]);
+                $this->tasks($storeId, $variantId)->whereIn('status', ['queued', 'failed', 'auth_expired', 'confirmed', 'not_applicable', 'uncertain', 'waiting_source'])->update(['status' => 'superseded', 'updated_at' => now()]);
                 $id = (string) Str::uuid();
                 $operationId = $this->auditOperation($c, $event, $actorId);
                 DB::table('inventory_store_sync_tasks')->insert(['id' => $id, 'operation_id' => $operationId, 'marketplace_store_id' => $storeId,

@@ -125,7 +125,7 @@ final class SyncOutbox
         if ($storeId !== null) {
             $this->createBoundaryForReviewedMutation($operationId, $storeId, $balance);
             DB::table('inventory_store_sync_tasks')->where('marketplace_store_id', $storeId)
-                ->where('product_variant_id', $balance->product_variant_id)->whereIn('status', ['queued', 'failed', 'waiting_source'])
+                ->where('product_variant_id', $balance->product_variant_id)->whereIn('status', ['queued', 'failed', 'waiting_source', 'uncertain'])
                 ->update(['status' => 'superseded', 'updated_at' => now()]);
         }
         DB::table('inventory_store_sync_tasks')->insert([

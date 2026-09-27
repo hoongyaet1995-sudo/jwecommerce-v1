@@ -130,15 +130,36 @@ class StockSyncRecoveryTest extends TestCase
         $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $taskId, 'status' => 'confirmed']);
     }
 
-    public function test_uncertain_stays_blocked_until_readback_matches(): void
+    public function test_new_stock_mutation_supersedes_uncertain_delivery_and_sends_latest_quantity(): void
+    {
+        $url = $this->fixture();
+        preg_match('#/stores/(\d+)/skus/(\d+)/sync$#', $url, $matches);
+        $storeId = (int) $matches[1];
+        $balance = DB::table('inventory_balances')->where('product_variant_id', (int) $matches[2])->first();
+        DB::table('inventory_store_accounts')->where('marketplace_store_id', $storeId)->update(['management_status' => 'managed']);
+        $outbox = app(\App\Services\Inventory\StoreManagement\SyncOutbox::class);
+        $old = $outbox->enqueueStore(null, $balance, $storeId, 'account', 'old-stock');
+        DB::table('inventory_store_sync_tasks')->where('id', $old['id'])->update(['status' => 'uncertain']);
+        DB::table('inventory_balances')->where('id', $balance->id)->update(['physical_stock' => 30, 'version' => $balance->version + 1]);
+        $latest = $outbox->enqueueStore(null, DB::table('inventory_balances')->find($balance->id), $storeId, 'account', 'new-stock');
+        $publisher = Mockery::mock(MarketplaceStoreInventoryPublisher::class);
+        $publisher->shouldReceive('publish')->once()->withArgs(fn ($store, $listing, $quantity) => $quantity === 27)
+            ->andReturn(['observed_quantity' => 27, 'confirmation_method' => 'provider_readback']);
+        (new \App\Jobs\ProcessStoreInventorySync($latest['id']))->handle($publisher);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $old['id'], 'status' => 'superseded']);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $latest['id'], 'status' => 'confirmed']);
+    }
+
+    public function test_uncertain_result_allows_manual_resend(): void
     {
         $url = $this->fixture();
         $publisher = Mockery::mock(MarketplaceStoreInventoryPublisher::class);
         $publisher->shouldReceive('publish')->once()->andThrow(new StoreInventoryResultUncertain('private diagnostic'));
+        $publisher->shouldReceive('publish')->once()->andReturn(['observed_quantity' => 22]);
         $publisher->shouldReceive('observe')->times(2)->andReturn(['observed_quantity' => 9, 'observed_at' => now()->toIso8601String()]);
         $this->app->instance(MarketplaceStoreInventoryPublisher::class, $publisher);
         $this->postJson($url.'/resync', ['operation_key' => 'a7362401-b46c-4079-bf24-4e036874f111'])->assertOk()->assertJsonPath('status', 'awaiting_confirmation')->assertDontSee('private diagnostic');
-        $this->postJson($url.'/resync', ['operation_key' => 'b7362401-b46c-4079-bf24-4e036874f111'])->assertStatus(409);
+        $this->postJson($url.'/resync', ['operation_key' => 'b7362401-b46c-4079-bf24-4e036874f111'])->assertOk()->assertJsonPath('status', 'synced');
     }
 
     public function test_readback_reconciles_uncertain_without_sending_again(): void
@@ -337,7 +358,7 @@ class StockSyncRecoveryTest extends TestCase
         $this->assertDatabaseCount('inventory_store_sync_tasks', 0);
     }
 
-    public function test_inflight_transfer_cannot_be_replaced_by_direct_recovery(): void
+    public function test_waiting_transfer_does_not_block_manual_latest_stock_resend(): void
     {
         $url = $this->fixture();
         $store = DB::table('marketplace_stores')->first();
@@ -348,10 +369,10 @@ class StockSyncRecoveryTest extends TestCase
             'balance_version' => 0, 'event_key' => 'existing-transfer', 'created_at' => now(), 'updated_at' => now(),
         ]);
         $publisher = Mockery::mock(MarketplaceStoreInventoryPublisher::class);
-        $publisher->shouldNotReceive('publish');
+        $publisher->shouldReceive('publish')->once()->andReturn(['observed_quantity' => 22]);
         $this->app->instance(MarketplaceStoreInventoryPublisher::class, $publisher);
-        $this->getJson($url)->assertOk()->assertJsonPath('canResync', false);
-        $this->postJson($url.'/resync', ['operation_key' => (string) Str::uuid()])->assertStatus(409);
-        $this->assertDatabaseHas('inventory_store_sync_tasks', ['status' => 'waiting_source', 'event_key' => 'existing-transfer']);
+        $this->getJson($url)->assertOk()->assertJsonPath('canResync', true);
+        $this->postJson($url.'/resync', ['operation_key' => (string) Str::uuid()])->assertOk()->assertJsonPath('status', 'synced');
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['status' => 'superseded', 'event_key' => 'existing-transfer']);
     }
 }

@@ -208,7 +208,7 @@ class LazadaTestFacilityStockActionsTest extends TestCase
         $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $oldTaskId, 'status' => 'superseded']);
     }
 
-    public function test_current_pending_sync_still_requires_confirmation_before_another_write(): void
+    public function test_current_pending_sync_is_advisory_for_stock_management(): void
     {
         $c = $this->context();
         $stock = app(FacilityStockReview::class);
@@ -218,7 +218,8 @@ class LazadaTestFacilityStockActionsTest extends TestCase
 
         $eligibility = app(\App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::class)
             ->inspect($c['store'], $c['variant'], $c['a']);
-        $this->assertContains('unfinished_stock_sync', array_column($eligibility['blockers'], 'code'));
+        $this->assertContains('unfinished_stock_sync', array_column($eligibility['warnings'], 'code'));
+        $this->assertTrue($eligibility['eligible']);
     }
 
     public function test_pending_and_confirmed_test_sync_can_be_resend_without_changing_jw_stock(): void

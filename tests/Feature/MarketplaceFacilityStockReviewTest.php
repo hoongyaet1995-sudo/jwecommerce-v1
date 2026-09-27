@@ -73,7 +73,7 @@ class MarketplaceFacilityStockReviewTest extends TestCase
         $this->assertSame('facility', $poolKind);
     }
 
-    public function test_count_cannot_duplicate_counted_legacy_warehouse_before_epoch_cutover(): void
+    public function test_first_count_uses_selected_facility_despite_legacy_warehouse_record(): void
     {
         $c = $this->context();
         $warehouseId = DB::table('marketplace_store_facilities')->where('id', $c['facility_a'])
@@ -88,9 +88,10 @@ class MarketplaceFacilityStockReviewTest extends TestCase
             'counted_at' => now(), 'created_at' => now(), 'updated_at' => now(),
         ]);
 
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
-        app(FacilityStockReview::class)->review($c['actor'], $c['store_id'],
-            $c['facility_a'], $c['variant_id'], 'count', 10, 'Must not duplicate stock');
+        $review = app(FacilityStockReview::class)->review($c['actor'], $c['store_id'],
+            $c['facility_a'], $c['variant_id'], 'count', 10, 'Selected facility count');
+        $this->assertSame('pending', $review['status']);
+        $this->assertSame(10, $review['after']['physical']);
     }
 
     public function test_verified_first_count_opens_only_its_exact_facility_order_boundary(): void

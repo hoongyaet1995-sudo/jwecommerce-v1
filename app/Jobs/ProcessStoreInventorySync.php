@@ -38,7 +38,7 @@ final class ProcessStoreInventorySync implements ShouldQueue
                 return null;
             }
             $inFlight = DB::table('inventory_store_sync_tasks')->where('marketplace_store_id', $task->marketplace_store_id)
-                ->where('product_variant_id', $task->product_variant_id)->whereIn('status', ['processing', 'uncertain'])->where('id', '!=', $task->id)
+                ->where('product_variant_id', $task->product_variant_id)->where('status', 'processing')->where('id', '!=', $task->id)
                 ->lockForUpdate()->exists();
             if ($inFlight) {
                 return null;

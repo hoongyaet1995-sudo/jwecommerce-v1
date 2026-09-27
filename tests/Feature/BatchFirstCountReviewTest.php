@@ -78,6 +78,17 @@ class BatchFirstCountReviewTest extends TestCase
     public function test_test_seller_acceptance_allows_sibling_warehouse_sync_tasks_from_the_same_batch(): void
     {
         [$actor, $storeId, $variantId, $facilityIds] = $this->setupSku(true);
+        DB::table('marketplace_orders')->insert([
+            'store_id' => $storeId, 'external_order_id' => 'OPEN-BEFORE-FIRST-COUNT',
+            'platform_status' => 'packed', 'platform_updated_at' => 1,
+            'encrypted_payload' => \Illuminate\Support\Facades\Crypt::encryptString(json_encode([
+                'order_items' => [
+                    ['order_item_id' => 'line-a', 'product_id' => '100', 'sku_id' => '200', 'warehouse_code' => 'WH-A'],
+                    ['order_item_id' => 'line-b', 'product_id' => '100', 'sku_id' => '200', 'warehouse_code' => 'WH-B'],
+                ],
+            ])), 'fetched_at' => now(),
+        ]);
+
         $review = $this->actingAs($actor)->postJson('/admin/api/inventory/store-management/batch-first-counts', [
             'variant_id' => $variantId, 'physical_count' => 25,
             'allocations' => ['website' => 7, 'facility:'.$storeId.':'.$facilityIds[0] => 10,
@@ -90,6 +101,15 @@ class BatchFirstCountReviewTest extends TestCase
             $task = DB::table('inventory_store_sync_tasks')->where('marketplace_store_facility_id', $facilityId)->first();
             $this->assertTrue(app(LazadaTestFacilityAcceptance::class)->inspect(
                 $storeId, $variantId, $facilityId, $task->id)['eligible']);
+            $providerId = DB::table('marketplace_store_facilities')->where('id', $facilityId)->value('provider_facility_id');
+            $publisher = \Mockery::mock(StoreInventoryPublisher::class);
+            $publisher->shouldReceive('publish')->once()->andReturn([
+                'observed_quantity' => (int) $task->target_quantity,
+                'provider_location_id' => $providerId, 'confirmation_method' => 'provider_readback',
+            ]);
+            (new ProcessFacilityInventorySync($task->id))->handle($publisher);
+            $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $task->id, 'status' => 'confirmed']);
+
         }
     }
 

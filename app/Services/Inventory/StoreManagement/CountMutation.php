@@ -24,9 +24,7 @@ final class CountMutation
         if ($target < 0 || $target > 2147483647) {
             throw ValidationException::withMessages(['physical_count' => 'The resulting physical stock is outside the allowed range.']);
         }
-        if ($target < $reserved) {
-            throw ValidationException::withMessages(['physical_count' => 'Physical stock cannot be lower than stock reserved by active orders.']);
-        }
+
 
         return [
             'before' => $this->state($physical, $reserved, $balance->safety_stock),

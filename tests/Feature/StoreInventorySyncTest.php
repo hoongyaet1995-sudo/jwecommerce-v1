@@ -60,6 +60,7 @@ class StoreInventorySyncTest extends TestCase
         $fixture = new StoreInventoryFixture;
         $sku = $fixture->sku();
         $store = $fixture->store('lazada', 'SYNC-'.strtoupper(bin2hex(random_bytes(3))));
+        app(\App\Services\Inventory\StoreManagement\FacilityRegistry::class)->confirm((int) $store->id, []);
         $source = app(AccountResolver::class)->balance($sku['variant']->id, 'website');
         $destination = app(AccountResolver::class)->balance($sku['variant']->id, 'marketplace:'.$store->id);
         foreach ([[$source, 10], [$destination, 4]] as [$balance, $physical]) {
@@ -215,6 +216,8 @@ class StoreInventorySyncTest extends TestCase
         DB::table('inventory_store_sync_tasks')->where('id', $c['task']->id)->update(['status' => 'uncertain', 'provider_location_id' => 'ORIGINAL-WH']);
         $fresh = DB::table('inventory_balances')->find($c['destination']['id']);
         $later = app(SyncOutbox::class)->enqueueStore(null, $fresh, (int) $c['store']->id, 'account', 'after-reconcile');
+        // Reproduce a previously queued task whose predecessor still needs readback.
+        DB::table('inventory_store_sync_tasks')->where('id', $c['task']->id)->update(['status' => 'uncertain']);
         $reconciler = Mockery::mock(MarketplaceStoreInventoryPublisher::class);
         $reconciler->shouldReceive('observe')->once()->withArgs(fn ($store, $listing): bool => $listing->id === $c['listingId']
             && $listing->sync_provider_location_id === 'ORIGINAL-WH')
@@ -228,7 +231,7 @@ class StoreInventorySyncTest extends TestCase
         Bus::assertDispatched(ProcessStoreInventorySync::class, fn (ProcessStoreInventorySync $job): bool => $job->taskId === $later['id']);
     }
 
-    public function test_later_ledger_mutation_cannot_bypass_an_uncertain_store_sku_write(): void
+    public function test_later_ledger_mutation_sends_latest_stock_after_an_uncertain_store_sku_write(): void
     {
         $c = $this->staged();
         DB::table('inventory_store_sync_tasks')->where('id', $c['task']->id)->update(['status' => 'uncertain']);
@@ -238,8 +241,9 @@ class StoreInventorySyncTest extends TestCase
         $fake = new FakeStoreInventoryPublisher;
         (new ProcessStoreInventorySync($later['id']))->handle($fake);
 
-        $this->assertCount(0, $fake->calls);
-        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $later['id'], 'status' => 'queued']);
+        $this->assertCount(1, $fake->calls);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'superseded']);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $later['id'], 'status' => 'confirmed']);
     }
 
     public function test_attempt_evidence_prevents_sync_task_deletion(): void

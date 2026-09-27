@@ -175,18 +175,6 @@ final class FacilityTransferReview
                 ->where('product_variant_id', $variantId)->count() !== 1) {
             throw ValidationException::withMessages(['facility' => 'Verify topology, SKU mapping and a physical count first.']);
         }
-        if (DB::table('inventory_order_activations')->where('channel_key', 'marketplace:'.$facility->marketplace_store_id)
-            ->where('product_variant_id', $variantId)->exists()) {
-            throw ValidationException::withMessages(['facility' => 'Reconcile the old store-level order route first.']);
-        }
-        $legacy = DB::table('inventory_balances as balance')
-            ->join('inventory_pools as pool', 'pool.id', '=', 'balance.inventory_pool_id')
-            ->where('pool.kind', 'store')->where('pool.marketplace_store_id', $facility->marketplace_store_id)
-            ->where('balance.product_variant_id', $variantId)
-            ->first(['balance.physical_stock', 'balance.reserved_stock']);
-        if ($legacy && ((int) $legacy->physical_stock > 0 || (int) $legacy->reserved_stock > 0)) {
-            throw ValidationException::withMessages(['facility' => 'Migrate and reconcile old store stock first.']);
-        }
 
         return ['facility' => $facility, 'scan' => $scan, 'balance' => $balance];
     }
