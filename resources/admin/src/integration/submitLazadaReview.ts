@@ -31,17 +31,13 @@ export async function submitLazadaReview(input:LazadaReviewSubmission):Promise<s
  try{
   receipt=await marketplaceRequest<Receipt>(`/stores/${input.storeId}/publishing-tasks`,'POST',{
    product_id:input.productId,request_key:input.requestKey,source_revision:source.revision,payload,
-   ...(input.recoveryAuthorizationId?{recovery_authorization_id:input.recoveryAuthorizationId}:{})});
+   ...(input.recoveryAuthorizationId?{recovery_authorization_id:input.recoveryAuthorizationId}:{})},{timeoutMs:45000});
  }catch(error){
   // Validation/permission responses are definitive; keep their actionable message.
   const status=error&&typeof error==='object'&&'status' in error?error.status:undefined;
   if(typeof status==='number'&&status>=400&&status<500)throw error;
-  receipt=await marketplaceRequest<Receipt>(`/stores/${input.storeId}/publishing-request/${input.requestKey}`);
+  receipt=await marketplaceRequest<Receipt>(`/stores/${input.storeId}/publishing-request/${input.requestKey}`,'GET',undefined,{timeoutMs:15000});
  }
  receipt=checkedReceipt(receipt,input);
- if(receipt.status==='queued'){
-  try{await marketplaceRequest(`/publishing-tasks/${receipt.id}/dispatch`,'POST');}
-  catch{/* The persisted task, including uncertain/rejected states, owns the result. */}
- }
  return String(receipt.id);
 }

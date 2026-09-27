@@ -379,7 +379,8 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
           setMissingRequestRecovery(error);
           return;
         }
-        if(error&&typeof error==='object'&&'status' in error&&typeof error.status==='number'&&error.status>=400&&error.status<500)submissionStarted.current=false;
+        // The same persisted request key is reused on retry, even after a lost response.
+        submissionStarted.current=false;
         addToast({type:'error',title:'Check publishing request',message:error instanceof Error?error.message:'The saved task could not be confirmed. Recover the original request before submitting again.'});
       }
       return;

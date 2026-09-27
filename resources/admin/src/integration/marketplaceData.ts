@@ -16,12 +16,18 @@ export class MarketplaceRequestError extends Error {
   }
 }
 
-export async function marketplaceRequest<T>(path = '', method = 'GET', body?: unknown): Promise<T> {
-  const response = await fetch(`/admin/api/marketplace${path}`, {
+export async function marketplaceRequest<T>(path = '', method = 'GET', body?: unknown, options?:{timeoutMs?:number}): Promise<T> {
+  let response:Response;
+  try {response = await fetch(`/admin/api/marketplace${path}`, {
     method, credentials:'same-origin',
     headers:{Accept:'application/json','Content-Type':'application/json','X-CSRF-TOKEN':readAdminBootstrap().csrfToken},
     ...(body === undefined ? {} : {body:JSON.stringify(body)}),
-  });
+    ...(options?.timeoutMs ? {signal:AbortSignal.timeout(options.timeoutMs)} : {}),
+  });} catch(error) {
+    if(error instanceof Error && (error.name==='TimeoutError'||error.name==='AbortError'))
+      throw new Error('Publishing request timed out. Check the saved request before submitting again.');
+    throw error;
+  }
   if(response.status===204)return undefined as T;
   let payload: unknown;
   try {payload=await response.json();}

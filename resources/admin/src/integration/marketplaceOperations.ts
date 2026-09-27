@@ -118,7 +118,7 @@ export const marketplaceOperations = {
     if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(requestKey)) {
       throw new Error('Invalid publishing request identity.');
     }
-    const receipt=await marketplaceRequest<PublishingTask>(`/stores/${idPath(storeId)}/publishing-request/${requestKey}`);
+    const receipt=await marketplaceRequest<PublishingTask>(`/stores/${idPath(storeId)}/publishing-request/${requestKey}`,'GET',undefined,{timeoutMs:15000});
     if (!receipt || !Number.isSafeInteger(receipt.id) || receipt.id<=0 || String(receipt.storeId)!==storeId) {
       throw new Error('Invalid publishing recovery destination.');
     }

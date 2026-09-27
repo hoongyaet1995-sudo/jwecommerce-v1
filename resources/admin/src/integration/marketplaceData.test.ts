@@ -20,3 +20,10 @@ it('does not accept malformed recovery identities or retry flags',async()=>{
  vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response(JSON.stringify({taskId:'42',retryAllowed:'true',errors:{images:['Prepare images.']}}),{status:422})));
  await expect(marketplaceRequest('/images','POST')).rejects.toMatchObject({taskId:undefined,retryAllowed:undefined,message:'Prepare images.'});
 });
+
+it('bounds a publishing request and explains a timeout without hiding its saved identity',async()=>{
+ vi.stubGlobal('fetch',vi.fn().mockRejectedValue(Object.assign(new Error('aborted'),{name:'TimeoutError'})));
+ await expect(marketplaceRequest('/stores/2/publishing-tasks','POST',{}, {timeoutMs:45000}))
+  .rejects.toThrow('Check the saved request before submitting again.');
+ expect((vi.mocked(fetch).mock.calls[0][1] as RequestInit).signal).toBeInstanceOf(AbortSignal);
+});

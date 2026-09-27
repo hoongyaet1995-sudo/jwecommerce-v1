@@ -22,11 +22,11 @@ it('clears a definitively denied request so the user can correct the review',asy
  await expect(publishLazadaWithRecovery('2',input)).rejects.toThrow('Review category');
  expect(values.size).toBe(0);
 });
-it('resumes a saved queued task without creating a new one',async()=>{
+it('returns a saved queued task to the view without blocking on dispatch',async()=>{
  vi.mocked(submitLazadaReview).mockResolvedValue('7');await publishLazadaWithRecovery('2',input);
  vi.mocked(marketplaceOperations.recoverPublishingTask).mockResolvedValue({id:7,productId:4,status:'queued'} as never);
  expect(await publishLazadaWithRecovery('2',input)).toBe('7');
- expect(marketplaceRequest).toHaveBeenCalledWith('/publishing-tasks/7/dispatch','POST');
+ expect(marketplaceRequest).not.toHaveBeenCalled();
   expect(submitLazadaReview).toHaveBeenCalledTimes(1);
 });
 it('uses a new request identity when a duplicate-risk recovery authorization was issued',async()=>{

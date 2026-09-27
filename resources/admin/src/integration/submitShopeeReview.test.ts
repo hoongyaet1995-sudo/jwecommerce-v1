@@ -7,7 +7,7 @@ const input={productId:4,storeId:2,requestKey:'1285db80-1111-4111-8111-123456789
  variantImageChoices:{Black:8},sizeChartImageId:9,brandId:42,condition:'NEW' as const,weightKg:0.5,lengthCm:10,widthCm:10,heightCm:10,attributes:[],logistics:[{logistic_id:24000,is_free:false}]};
 const task={id:7,storeId:2,productId:4,status:'queued'};
 beforeEach(()=>vi.resetAllMocks());
-it('stages reviewed Shopee metadata and recovers a lost receipt without restaging',async()=>{
+it('returns the saved Shopee task without waiting for a provider dispatch',async()=>{
  vi.mocked(marketplaceRequest).mockImplementation(async(path)=>{
   if(path.includes('publishing-source'))return source;
   if(path.endsWith('/publishing-tasks'))throw new Error('Lost response');
@@ -20,6 +20,7 @@ it('stages reviewed Shopee metadata and recovers a lost receipt without restagin
  expect(stages[0][2]).toMatchObject({payload:{jw_variant_image_choices:{Black:8},jw_size_chart_image_id:9,category_id:101,item_status:'UNLIST',condition:'NEW',brand:{brand_id:42},
   dimension:{package_length:10,package_width:10,package_height:10},logistic_info:input.logistics}});
  expect((stages[0][2] as {payload:object}).payload).not.toHaveProperty('jw_variations');
+ expect(vi.mocked(marketplaceRequest).mock.calls.some(call=>call[0].endsWith('/dispatch'))).toBe(false);
 });
 it('rejects changed source before creating a task',async()=>{
  vi.mocked(marketplaceRequest).mockResolvedValue({...source,revision:'b'.repeat(64)});

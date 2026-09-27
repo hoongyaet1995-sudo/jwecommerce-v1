@@ -186,9 +186,9 @@ it('requires explicit confirmation before replacing a server-confirmed missing p
   expect(submit).toHaveBeenCalledTimes(2);
  }finally{await act(async()=>root.unmount());vi.unstubAllGlobals();}
 });
-it('allows a same-key retry after staging did not leave a saved task',async()=>{
+it('allows a retry after a timed-out staging response',async()=>{
  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
- const submit=vi.fn().mockRejectedValueOnce(Object.assign(new Error('No saved task'),{status:404})).mockResolvedValueOnce('44');
+ const submit=vi.fn().mockRejectedValueOnce(new Error('Publishing request timed out')).mockResolvedValueOnce('44');
  vi.mocked(marketplaceOperations.publishingTask).mockResolvedValue({id:44,storeId:1,productId:51,status:'queued',externalItemId:null} as never);
  const context={products:[{id:'51',title:'PS5',basePrice:1400,totalInventory:0,variants:[],images:[]}],categories:[],
   connections:[{id:'1',platform:'lazada',shopName:'Lazada test',status:'connected'}],marketplaceStoreProducts:[],

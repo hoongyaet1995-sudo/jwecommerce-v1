@@ -30,17 +30,13 @@ export async function submitShopeeReview(input:ShopeeReviewSubmission):Promise<s
  let receipt:Receipt;
  try{receipt=await marketplaceRequest<Receipt>(`/stores/${input.storeId}/publishing-tasks`,'POST',{
   product_id:input.productId,request_key:input.requestKey,source_revision:source.revision,payload,
-  ...(input.recoveryAuthorizationId?{recovery_authorization_id:input.recoveryAuthorizationId}:{})});}
+  ...(input.recoveryAuthorizationId?{recovery_authorization_id:input.recoveryAuthorizationId}:{})},{timeoutMs:45000});}
  catch(error){
   const status=error&&typeof error==='object'&&'status' in error?error.status:undefined;
   if(typeof status==='number'&&status>=400&&status<500)throw error;
-  receipt=await marketplaceRequest<Receipt>(`/stores/${input.storeId}/publishing-request/${input.requestKey}`);
+  receipt=await marketplaceRequest<Receipt>(`/stores/${input.storeId}/publishing-request/${input.requestKey}`,'GET',undefined,{timeoutMs:15000});
  }
  if(!receipt||!Number.isSafeInteger(receipt.id)||receipt.id<=0||receipt.productId!==input.productId||receipt.storeId!==input.storeId
   ||!['queued','processing','succeeded','rejected','uncertain'].includes(receipt.status))throw new Error('The saved publishing task could not be verified.');
- if(receipt.status==='queued'){
-  try{await marketplaceRequest(`/publishing-tasks/${receipt.id}/dispatch`,'POST');}
-  catch{/* The saved task owns the result, including a partially created Shopee parent. */}
- }
  return String(receipt.id);
 }

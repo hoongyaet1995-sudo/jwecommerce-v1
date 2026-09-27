@@ -127,7 +127,9 @@ class MarketplacePublishingController extends Controller
             \App\Services\Marketplace\ShopeePublishingVariants::validate($payload,$source);
             if (config('marketplace.basic_wms_enabled')===true) {
                 $token=app(\App\Services\Marketplace\ShopeeTokenManager::class)->accessToken($store);
-                $payload=app(\App\Services\Marketplace\ShopeeListingPreflight::class)->listing(
+                $client=app(\App\Services\Marketplace\ShopeeApplicationResolver::class)->clientForStore(
+                    $store,app(\App\Services\Marketplace\ShopeeClient::class));
+                $payload=(new \App\Services\Marketplace\ShopeeListingPreflight($client))->listing(
                     $token,
                     (string) $storeRow->external_shop_id,
                     $payload,

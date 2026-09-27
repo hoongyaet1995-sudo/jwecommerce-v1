@@ -1,5 +1,4 @@
 import {marketplaceOperations} from './marketplaceOperations';
-import {marketplaceRequest} from './marketplaceData';
 import {submitLazadaReview,type LazadaReviewSubmission} from './submitLazadaReview';
 import {submitShopeeReview,type ShopeeReviewSubmission} from './submitShopeeReview';
 
@@ -49,9 +48,6 @@ async function publishWithRecovery<T extends {productId:number;storeId:number}>(
    if(task.status==='rejected'&&!task.externalItemId){
     pending={key:crypto.randomUUID(),signature};localStorage.setItem(slot,JSON.stringify(pending));
    }else{
-    if(task.status==='queued'&&pending.signature===signature){
-     try{await marketplaceRequest(`/publishing-tasks/${task.id}/dispatch`,'POST');}catch{/* Read the original task outcome. */}
-    }
     return String(task.id);
    }
   }catch(error){
