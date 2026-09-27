@@ -66,6 +66,70 @@ class StockSyncRecoveryTest extends TestCase
         Bus::assertNothingDispatched();
     }
 
+    public function test_historical_order_warning_does_not_block_resync_of_counted_stock(): void
+    {
+        $url = $this->fixture();
+        preg_match('#/stores/(\d+)/skus/(\d+)/sync$#', $url, $matches);
+        $listing = DB::table('marketplace_listing_variants')->first();
+        $payload = ['created_at' => now()->subHour()->toIso8601String(), 'order_items' => [[
+            'order_item_id' => 'old-line', 'product_id' => $listing->external_product_id,
+            'sku_id' => $listing->external_variant_id,
+        ]]];
+        DB::table('marketplace_orders')->insert([
+            'store_id' => (int) $matches[1], 'external_order_id' => 'old-order',
+            'platform_status' => 'pending', 'platform_updated_at' => 1,
+            'encrypted_payload' => \Illuminate\Support\Facades\Crypt::encryptString(json_encode($payload)),
+            'fetched_at' => now(),
+        ]);
+        $this->assertNotEmpty(app(\App\Services\Inventory\StoreManagement\InventoryIngestionBoundary::class)
+            ->unresolvedHistoricalOrderIds((int) $matches[1], (int) $matches[2], now()));
+
+        $publisher = Mockery::mock(MarketplaceStoreInventoryPublisher::class);
+        $publisher->shouldReceive('publish')->once()->withArgs(fn ($store, $mappedListing, $quantity) => $quantity === 22)
+            ->andReturn(['observed_quantity' => 22, 'confirmation_method' => 'provider_readback']);
+        $this->app->instance(MarketplaceStoreInventoryPublisher::class, $publisher);
+
+        $this->getJson($url)->assertOk()->assertJsonPath('canResync', true);
+        $this->postJson($url.'/resync', ['operation_key' => (string) Str::uuid()])
+            ->assertOk()->assertJsonPath('status', 'synced');
+        $this->assertDatabaseHas('inventory_balances', ['physical_stock' => 25, 'reserved_stock' => 2]);
+    }
+
+    public function test_historical_order_warning_does_not_supersede_initial_stock_push(): void
+    {
+        $url = $this->fixture();
+        preg_match('#/stores/(\d+)/skus/(\d+)/sync$#', $url, $matches);
+        $storeId = (int) $matches[1];
+        $variantId = (int) $matches[2];
+        $listing = DB::table('marketplace_listing_variants')->first();
+        $balance = DB::table('inventory_balances')->where('product_variant_id', $variantId)->first();
+        DB::table('marketplace_orders')->insert([
+            'store_id' => $storeId, 'external_order_id' => 'before-count',
+            'platform_status' => 'pending', 'platform_updated_at' => 1,
+            'encrypted_payload' => \Illuminate\Support\Facades\Crypt::encryptString(json_encode([
+                'created_at' => now()->subHour()->toIso8601String(),
+                'order_items' => [['order_item_id' => 'line-1', 'product_id' => $listing->external_product_id,
+                    'sku_id' => $listing->external_variant_id]],
+            ])), 'fetched_at' => now(),
+        ]);
+        $taskId = (string) Str::uuid();
+        DB::table('inventory_store_sync_tasks')->insert([
+            'id' => $taskId, 'marketplace_store_id' => $storeId, 'product_variant_id' => $variantId,
+            'listing_variant_id' => $listing->id, 'provider_external_product_id' => $listing->external_product_id,
+            'provider_external_variant_id' => $listing->external_variant_id, 'stage' => 'account',
+            'status' => 'queued', 'target_quantity' => 22, 'balance_version' => $balance->version,
+            'event_key' => 'initial-push', 'attempts' => 0, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $publisher = Mockery::mock(MarketplaceStoreInventoryPublisher::class);
+        $publisher->shouldReceive('publish')->once()->withArgs(fn ($store, $mappedListing, $quantity) => $quantity === 22)
+            ->andReturn(['observed_quantity' => 22, 'confirmation_method' => 'provider_readback']);
+        $this->app->instance(MarketplaceStoreInventoryPublisher::class, $publisher);
+
+        (new \App\Jobs\ProcessStoreInventorySync($taskId))->handle($publisher);
+
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $taskId, 'status' => 'confirmed']);
+    }
+
     public function test_uncertain_stays_blocked_until_readback_matches(): void
     {
         $url = $this->fixture();
