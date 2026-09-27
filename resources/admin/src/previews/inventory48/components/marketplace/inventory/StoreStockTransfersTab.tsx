@@ -1,3 +1,4 @@
+import { warehouseDisplayCode } from './warehouseDisplay';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   ArrowRightLeft,
@@ -774,7 +775,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                           const b = currentSkuBalances[w.id];
                           return (
                             <option key={w.id} value={w.id}>
-                              {w.name} [{w.codeValue}] — Avail: {b?.availableStock ?? 'N/A'} (Phys: {b?.physicalStock ?? 'N/A'})
+                              {w.name} [{warehouseDisplayCode(w.codeValue)}] — Avail: {b?.availableStock ?? 'N/A'} (Phys: {b?.physicalStock ?? 'N/A'})
                             </option>
                           );
                         })}
@@ -930,7 +931,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                           const b = currentSkuBalances[w.id];
                           return (
                             <option key={w.id} value={w.id}>
-                              {w.name} [{w.codeValue}] — Avail: {b?.availableStock ?? 'N/A'} (Phys: {b?.physicalStock ?? 'N/A'})
+                              {w.name} [{warehouseDisplayCode(w.codeValue)}] — Avail: {b?.availableStock ?? 'N/A'} (Phys: {b?.physicalStock ?? 'N/A'})
                             </option>
                           );
                         })}
@@ -1076,7 +1077,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                       <span>{sourceWarehouseObj?.name}</span>
                     </div>
                     <div className="text-[11px] text-neutral-400 font-mono">
-                      Location: <strong className="text-purple-300">{sourceWarehouseObj?.codeValue}</strong>
+                      Location: <strong className="text-purple-300">{warehouseDisplayCode(sourceWarehouseObj?.codeValue)}</strong>
                     </div>
                     <div className="pt-1 text-[11px] font-mono text-amber-400">
                       Phys: {sourcePhysical} → {sourceAfterPhysical} • Avail: {sourceAvailable} → {sourceAfterAvailable}
@@ -1091,7 +1092,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                       <span>{destWarehouseObj?.name}</span>
                     </div>
                     <div className="text-[11px] text-neutral-400 font-mono">
-                      Location: <strong className="text-purple-300">{destWarehouseObj?.codeValue}</strong>
+                      Location: <strong className="text-purple-300">{warehouseDisplayCode(destWarehouseObj?.codeValue)}</strong>
                     </div>
                     <div className="pt-1 text-[11px] font-mono text-emerald-400">
                       Phys: {destPhysical} → {destAfterPhysical} • Avail: {destAvailable} → {destAfterAvailable}

@@ -1,3 +1,4 @@
+import { warehouseDisplayCode } from './warehouseDisplay';
 import React, { useEffect, useState } from 'react';
 import { Boxes, CheckCircle2, X } from 'lucide-react';
 import { MarketplaceInventoryItem } from '../../../types';
@@ -132,7 +133,7 @@ export const StockTakeRecoveryFlow: React.FC<Props> = ({ item, store, facility, 
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <div className="rounded-lg border border-neutral-700 p-3"><span className="block text-neutral-400">Marketplace store</span><strong className="mt-1 flex items-center gap-2"><MarketplaceLogo platform="lazada" size="sm" />{store.name}</strong></div>
-          <div className="rounded-lg border border-neutral-700 p-3"><span className="block text-neutral-400">Stock location</span><strong className="mt-1 block">{facility.name} · {facility.providerId}</strong></div>
+          <div className="rounded-lg border border-neutral-700 p-3"><span className="block text-neutral-400">Stock location</span><strong className="mt-1 block">{facility.name} · {warehouseDisplayCode(facility.providerId)}</strong></div>
         </div>
         {!snapshot && !error && <p role="status">Checking stock and orders…</p>}
         {screen === 0 && snapshot && <><h3 className="text-base font-bold">Stock location check</h3>

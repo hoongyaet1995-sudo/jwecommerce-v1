@@ -1,3 +1,4 @@
+import { warehouseDisplayCode } from './warehouseDisplay';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, Boxes, Check, CheckCircle2, ChevronDown, ClipboardCheck, Lock, X } from 'lucide-react';
 import { MarketplaceInventoryItem } from '../../../types';
@@ -183,7 +184,7 @@ export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
               const balance = props.warehouseStockData[props.item.masterSku]?.[warehouse.id];
               const blocked = disabledStore(selectedStore, selectedConfig) || warehouse.status !== 'active' || !warehouse.inventoryWarehouseId || !!balance?.isCounted;
               const conflict = props.warehouseReservationConflicts[warehouse.id];
-              return <div className="allocation-focus-warehouse" key={warehouse.id}><div><strong>{warehouse.warehouseName}</strong><small>{warehouse.codeValue}</small>{blocked && <small className="allocation-focus-warning">{balance?.isCounted ? 'Already counted' : 'Warehouse unavailable'}</small>}{conflict && <small className="allocation-focus-warning">Below {conflict.reserved} reserved units</small>}</div><input aria-label={`${selectedStore.nickname || selectedStore.name} ${warehouse.warehouseName} first count`} type="number" min="0" step="1" disabled={blocked} value={props.warehouseAllocations[warehouse.id] ?? ''} placeholder="0" onChange={event => props.onWarehouseAllocationChange(selectedStore.id, warehouse.id, event.target.value)} /></div>;
+              return <div className="allocation-focus-warehouse" key={warehouse.id}><div><strong>{warehouse.warehouseName}</strong><small>{warehouseDisplayCode(warehouse.codeValue)}</small>{blocked && <small className="allocation-focus-warning">{balance?.isCounted ? 'Already counted' : 'Warehouse unavailable'}</small>}{conflict && <small className="allocation-focus-warning">Below {conflict.reserved} reserved units</small>}</div><input aria-label={`${selectedStore.nickname || selectedStore.name} ${warehouse.warehouseName} first count`} type="number" min="0" step="1" disabled={blocked} value={props.warehouseAllocations[warehouse.id] ?? ''} placeholder="0" onChange={event => props.onWarehouseAllocationChange(selectedStore.id, warehouse.id, event.target.value)} /></div>;
             })}
           </div> : <><p className="allocation-focus-section-label">Stock locations</p><div className="allocation-focus-store-list">{props.activeStores.map(store => {
             const config = storeConfig(store);

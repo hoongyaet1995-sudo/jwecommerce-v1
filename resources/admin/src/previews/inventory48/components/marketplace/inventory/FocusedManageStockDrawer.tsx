@@ -5,6 +5,7 @@ import { storeInventoryApi } from '../../../../../integration/storeInventory';
 import { MarketplaceLogo } from '../MarketplaceLogo';
 import { ManageStockDrawer } from './ManageStockDrawer';
 import { StockTakeRecoveryFlow } from './StockTakeRecoveryFlow';
+import { warehouseDisplayCode } from './warehouseDisplay';
 
 type Balance = { physical: number | null; reserved: number | null; available: number | null; counted: boolean };
 type Facility = Balance & { id: string; name: string; providerId: string; inventoryWarehouseId: number | null };
@@ -242,12 +243,12 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
           {selectedStore.status !== 'verified' && <div role="status" className="rounded-xl border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-300">Warehouse verification is pending. Stock changes are unavailable until it completes.</div>}
           <p className="text-xs font-semibold text-neutral-300">Platform warehouses · {selectedStore.facilities.length}</p>
           {selectedStore.facilities.map(facility => <button key={facility.id} type="button" onClick={() => openFacility(facility)} className="flex w-full flex-col gap-3 rounded-xl border border-neutral-700 bg-neutral-800/60 p-4 text-left hover:border-purple-500 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0"><strong className="block truncate text-xs text-white">{facility.name}</strong><span className="font-mono text-[10px] text-neutral-400">{facility.providerId}</span></div>
+            <div className="min-w-0"><strong className="block truncate text-xs text-white">{facility.name}</strong><span className="font-mono text-[10px] text-neutral-400">{warehouseDisplayCode(facility.providerId)}</span></div>
             <div className="flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto"><CompactBalances balance={facility} /><ChevronRight className="h-4 w-4 text-neutral-400" /></div>
           </button>)}
         </>}
         {atLocation && !actionsOpen && <>
-          <p className="text-xs font-semibold text-neutral-300">{selectedStore!.name} · {direct ? 'Store ledger' : `Platform warehouse ${selectedFacility!.providerId}`}</p>
+          <p className="text-xs font-semibold text-neutral-300">{selectedStore!.name} · {direct ? 'Store ledger' : `Platform warehouse ${warehouseDisplayCode(selectedFacility!.providerId)}`}</p>
           <StockSummary balance={activeBalance} />
           {!actionable && <div role="status" className="rounded-xl border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-300">{selectedStore!.status !== 'verified' ? 'Warehouse verification is pending.' : !acceptanceReady ? 'This stock location is not yet eligible for a stock change.' : 'This warehouse does not yet have an active stock ledger.'}</div>}
           {canRecover && <button type="button" onClick={() => setRecovering(true)} className="w-full rounded-xl border border-purple-700 bg-purple-950/30 p-4 text-left text-xs font-bold text-purple-200 hover:border-purple-400">Resolve stock issue <ArrowRight className="ml-2 inline h-4 w-4" /></button>}

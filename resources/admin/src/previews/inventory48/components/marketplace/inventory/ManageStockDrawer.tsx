@@ -1,3 +1,4 @@
+import { warehouseDisplayCode } from './warehouseDisplay';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   X,
@@ -778,7 +779,7 @@ export const ManageStockDrawer: React.FC<ManageStockDrawerProps> = ({
                                     </div>
                                     <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 mt-0.5">
                                       <span className="px-1.5 py-0.2 rounded font-mono font-bold bg-neutral-800 text-purple-300 border border-purple-900/40">
-                                        {wh.codeType === 'location_id' ? 'location_id' : 'warehouse_code'}: {wh.codeValue}
+                                        {wh.codeType === 'location_id' ? 'location_id' : 'warehouse_code'}: {warehouseDisplayCode(wh.codeValue)}
                                       </span>
                                       <span className="truncate">{wh.region}</span>
                                     </div>
@@ -891,7 +892,7 @@ export const ManageStockDrawer: React.FC<ManageStockDrawerProps> = ({
                 </span>
                 {selectedWarehouseObj && (
                   <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-purple-950/60 text-purple-300 border border-purple-800/60">
-                    {selectedWarehouseObj.codeValue}
+                    {warehouseDisplayCode(selectedWarehouseObj.codeValue)}
                   </span>
                 )}
               </div>
@@ -1002,7 +1003,7 @@ export const ManageStockDrawer: React.FC<ManageStockDrawerProps> = ({
               {bindingReview?.storeId===selectedStoreId && bindingReview.facilityId===selectedWarehouseId
                 && bindingReview.warehouseId===physicalWarehouseId && (
                 <div className="w-full rounded-xl border border-purple-700 bg-purple-950/30 p-3 space-y-2">
-                  <p>Confirm route: {selectedWarehouseObj.name} ({selectedWarehouseObj.codeValue}) → {physicalWarehouses.find(warehouse=>String(warehouse.id)===physicalWarehouseId)?.name}.</p>
+                  <p>Confirm route: {selectedWarehouseObj.name} ({warehouseDisplayCode(selectedWarehouseObj.codeValue)}) → {physicalWarehouses.find(warehouse=>String(warehouse.id)===physicalWarehouseId)?.name}.</p>
                   <p>Stock quantities will not change. This route will determine future facility inventory operations.</p>
                   <button type="button" disabled={bindingBusy} onClick={()=>void confirmSelectedBinding()}
                     className="px-2 py-1 rounded border border-purple-700 disabled:opacity-40">Confirm Warehouse Link</button>
@@ -1061,7 +1062,7 @@ export const ManageStockDrawer: React.FC<ManageStockDrawerProps> = ({
                     <div className="font-bold text-neutral-200 flex items-center gap-1.5">
                       <span>{entry.warehouseName}</span>
                       <span className="font-mono text-[10px] text-purple-300 bg-purple-950/60 px-1.5 py-0.2 rounded border border-purple-900/40">
-                        {entry.codeValue}
+                        {warehouseDisplayCode(entry.codeValue)}
                       </span>
                     </div>
                     <span className={`font-mono font-bold ${entry.quantityChange >= 0 ? 'text-emerald-400' : 'text-amber-400'}`}>

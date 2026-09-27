@@ -1,3 +1,4 @@
+import { warehouseDisplayCode } from './warehouseDisplay';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   X,
@@ -770,7 +771,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                     <div className="font-bold">Specific Facility First Count Target</div>
                     <p className="text-neutral-600 dark:text-neutral-300 text-[11px] mt-0.5">
                       {targetStore.storeNickname || targetStore.storeName} · {targetWarehouse?.warehouseName || targetBalance?.warehouseName || 'Direct inventory'}
-                      {targetWarehouse ? ` (${targetWarehouse.codeType}: ${targetWarehouse.codeValue})` : ''}. Other facilities remain unchanged.
+                      {targetWarehouse ? ` (${targetWarehouse.codeType}: ${warehouseDisplayCode(targetWarehouse.codeValue)})` : ''}. Other facilities remain unchanged.
                     </p>
                   </div>
                 </div>
@@ -1223,7 +1224,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                                           )}
                                         </div>
                                         <div className="flex items-center gap-2 mt-0.5 text-[10px] text-neutral-500 font-mono">
-                                          <span>{wh.codeType}: <strong className="text-neutral-700 dark:text-neutral-300">{wh.codeValue}</strong></span>
+                                          <span>{wh.codeType}: <strong className="text-neutral-700 dark:text-neutral-300">{warehouseDisplayCode(wh.codeValue)}</strong></span>
                                           {wh.city && <span>• {wh.city}, {wh.state}</span>}
                                         </div>
                                       </div>
@@ -1506,7 +1507,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
                                   <div className="flex items-center gap-1.5">
                                     <Warehouse className="w-3 h-3 text-neutral-400 shrink-0" />
                                     <span>{wh.warehouseName}</span>
-                                    <span className="text-[10px] text-neutral-400">({wh.codeValue})</span>
+                                    <span className="text-[10px] text-neutral-400">({warehouseDisplayCode(wh.codeValue)})</span>
                                   </div>
                                 </td>
                                 <td className="py-1.5 px-3 text-right font-mono text-[11px] text-neutral-400">

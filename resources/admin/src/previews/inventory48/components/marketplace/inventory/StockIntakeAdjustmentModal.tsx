@@ -1,3 +1,4 @@
+import { warehouseDisplayCode } from './warehouseDisplay';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   X,
@@ -483,7 +484,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
                   const phys = b?.physicalStock ?? 'N/A';
                   return (
                     <option key={w.id} value={w.id}>
-                      {w.name} [{w.codeType === 'location_id' ? 'location_id' : 'code'}: {w.codeValue}] — Phys: {phys}, Avail: {b?.availableStock ?? 'N/A'}
+                      {w.name} [{w.codeType === 'location_id' ? 'location_id' : 'code'}: {warehouseDisplayCode(w.codeValue)}] — Phys: {phys}, Avail: {b?.availableStock ?? 'N/A'}
                     </option>
                   );
                 })}
@@ -517,7 +518,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
                           />
                           <span className="font-semibold">{w.name}</span>
                           <span className="font-mono text-[10px] text-purple-300 bg-neutral-800 px-1.5 py-0.2 rounded">
-                            {w.codeValue}
+                            {warehouseDisplayCode(w.codeValue)}
                           </span>
                         </div>
                         <div className="flex items-center gap-3 font-mono text-[11px]">
@@ -542,7 +543,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
                       {currentWarehouseObj.name}
                     </div>
                     <div className="text-[11px] text-neutral-400 font-mono mt-0.5">
-                      Platform ID: <strong className="text-purple-300">{currentWarehouseObj.codeValue}</strong>
+                      Platform ID: <strong className="text-purple-300">{warehouseDisplayCode(currentWarehouseObj.codeValue)}</strong>
                     </div>
                   </div>
                   <div className="flex items-center gap-4 text-xs font-mono text-right">
@@ -634,7 +635,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
                 <div>
                   <span className="text-neutral-500 block">Target Facility / ID:</span>
                   <span className="font-semibold text-white">
-                    {currentWarehouseObj?.name} (<span className="font-mono text-purple-300">{currentWarehouseObj?.codeValue}</span>)
+                    {currentWarehouseObj?.name} (<span className="font-mono text-purple-300">{warehouseDisplayCode(currentWarehouseObj?.codeValue)}</span>)
                   </span>
                 </div>
                 <div>
