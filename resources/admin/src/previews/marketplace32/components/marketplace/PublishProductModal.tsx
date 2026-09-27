@@ -710,8 +710,11 @@ export const PublishProductModal: React.FC<PublishProductModalProps> = ({
                   <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800 text-left text-xs space-y-2 border border-neutral-200 dark:border-neutral-700">
                     <div className="font-semibold text-neutral-800 dark:text-neutral-200">{taskId ? 'Saved Task Reference:' : 'Asynchronous Recovery in Progress:'}</div>
                     <p className="text-neutral-500">
-                      {taskId ? <>Task <strong>{generatedJobId}</strong> remains saved. Check its status without resubmitting the product.</> : <>JW Ecommerce background worker is polling the marketplace gateway using Job ID <strong>{generatedJobId}</strong>. When Shopee/Lazada completes indexing, the item will automatically map.</>}
+                      {taskId ? <>Task <strong>{generatedJobId}</strong> remains saved. Check its status or use the new-attempt action below to publish again.</> : <>JW Ecommerce background worker is polling the marketplace gateway using Job ID <strong>{generatedJobId}</strong>. When Shopee/Lazada completes indexing, the item will automatically map.</>}
                     </p>
+                    {typeof monitor.task?.failure?.diagnostics?.provider_code==='string'&&<p className="text-neutral-500">Marketplace error code: <strong>{monitor.task.failure.diagnostics.provider_code}</strong></p>}
+                    {typeof monitor.task?.failure?.diagnostics?.http_status==='number'&&<p className="text-neutral-500">HTTP status: {monitor.task.failure.diagnostics.http_status}</p>}
+                    {typeof monitor.task?.failure?.diagnostics?.request_id==='string'&&<p className="text-neutral-500">Marketplace request ID: {monitor.task.failure.diagnostics.request_id}</p>}
                   </div>
 
                   {taskId&&monitor.task?.actions?.includes('start_new_review')&&<div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-left text-xs space-y-3">

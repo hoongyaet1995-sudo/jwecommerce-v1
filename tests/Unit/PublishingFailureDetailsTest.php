@@ -20,7 +20,7 @@ class PublishingFailureDetailsTest extends TestCase
 
         $details=PublishingFailureDetails::fromThrowable($error,'create');
 
-        $this->assertSame('provider_rejected',$details['code']);
+        $this->assertSame('provider_result_unknown',$details['code']);
         $this->assertSame('create',$details['stage']);
         $this->assertSame([
             'http_status'=>200,

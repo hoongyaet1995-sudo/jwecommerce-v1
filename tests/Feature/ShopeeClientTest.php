@@ -8,6 +8,36 @@ use Tests\TestCase;
 
 class ShopeeClientTest extends TestCase
 {
+    public function test_explicit_description_rejection_is_not_an_unknown_creation(): void
+    {
+        config(['marketplace.publish_operations_enabled'=>true]);
+        Http::fake(['*'=>Http::response(['error'=>'product.error_desc_length_min_limit',
+            'message'=>'Product Description is required. Please fill in it.',
+            'request_id'=>'e3e3e7f35c7816cdd00fca165a51cd00'],200)]);
+        try {
+            app(ShopeeClient::class)->createItem('access','456',['description'=>'']);
+            $this->fail('Explicit rejection cannot succeed.');
+        } catch (\App\Services\Marketplace\PublishingProviderRejected $error) {
+            $this->assertSame('product.error_desc_length_min_limit',$error->diagnostics()['provider_code']);
+            $details=\App\Services\Marketplace\PublishingFailureDetails::fromThrowable($error,'create');
+            $this->assertSame('review_product',$details['nextAction']);
+            $this->assertStringContainsString('description',$details['message']);
+        }
+    }
+    public function test_unconfirmed_creation_keeps_shopee_error_code_and_request_id(): void
+    {
+        config(['marketplace.publish_operations_enabled'=>true]);
+        Http::fake(['*'=>Http::response(['error'=>'product.error_param','message'=>'private response body',
+            'request_id'=>'0123456789abcdef0123456789abcdef','response'=>null],200)]);
+        try {
+            app(ShopeeClient::class)->createItem('access','456',['item_name'=>'Test']);
+            $this->fail('Unconfirmed creation cannot succeed.');
+        } catch (\App\Services\Marketplace\PublishingResultUncertain $error) {
+            $this->assertSame(['http_status'=>200,'provider_code'=>'product.error_param',
+                'request_id'=>'0123456789abcdef0123456789abcdef'],$error->diagnostics());
+            $this->assertStringNotContainsString('private',json_encode($error->diagnostics()));
+        }
+    }
     public function test_pickup_warehouses_preserve_stock_location_identity_without_address_data(): void
     {
         Http::fake(['*'=>Http::sequence()->push(['error'=>'','response'=>[

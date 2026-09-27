@@ -8,6 +8,10 @@ final class PublishingFailureDetails
     {
         $message=strtolower($error->getMessage());
         [$code,$safe,$next]=match (true) {
+            $error instanceof PublishingProviderRejected && ($error->diagnostics()['provider_code']??null)==='product.error_desc_length_min_limit' =>
+                ['product_description_required','Shopee rejected the product description. Add a complete description to the JW product and publish again.','review_product'],
+            $error instanceof PublishingResultUncertain =>
+                ['provider_result_unknown','The marketplace creation result was not confirmed. Check the saved task details or deliberately start a new attempt.','check_marketplace_result'],
             str_contains($message,'token') || str_contains($message,'credential') || str_contains($message,'connect') =>
                 ['credentials_unavailable','The marketplace connection expired or could not be verified.','reauthorize_store'],
             str_contains($message,'changed after review') =>

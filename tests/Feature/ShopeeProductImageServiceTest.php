@@ -26,7 +26,7 @@ class ShopeeProductImageServiceTest extends TestCase
     {
         config(['marketplace.publish_operations_enabled'=>true,'marketplace.basic_wms_enabled'=>false,
             'marketplace.shopee.enabled'=>true,'marketplace.shopee.environment'=>'sandbox',
-            'marketplace.shopee.partner_id'=>'123','marketplace.shopee.partner_key'=>'fixture',
+            'marketplace.shopee.applications.sandbox'=>['partner_id'=>'123','partner_key'=>'fixture'], 'marketplace.shopee.partner_id'=>'123','marketplace.shopee.partner_key'=>'fixture',
             'marketplace.shopee.callback_url'=>'https://example.test/callback']);
         $actor=User::factory()->create(['is_admin'=>true]);
         $product=Product::create(['title'=>'Image','handle'=>'image-upload','base_price'=>100]);
@@ -114,11 +114,11 @@ class ShopeeProductImageServiceTest extends TestCase
         $service->prepare($store,$product->id,$image->id,$actor->id);
     }
 
-    public function test_trusted_imported_shopee_image_is_localized_and_prepared_automatically(): void
+    public function test_trusted_imported_shopee_image_is_prepared_without_changing_reviewed_source(): void
     {
         config(['marketplace.publish_operations_enabled'=>true,'marketplace.basic_wms_enabled'=>false,
             'marketplace.shopee.enabled'=>true,'marketplace.shopee.environment'=>'sandbox',
-            'marketplace.shopee.partner_id'=>'123','marketplace.shopee.partner_key'=>'fixture',
+            'marketplace.shopee.applications.sandbox'=>['partner_id'=>'123','partner_key'=>'fixture'], 'marketplace.shopee.partner_id'=>'123','marketplace.shopee.partner_key'=>'fixture',
             'marketplace.shopee.callback_url'=>'https://example.test/callback']);
         $actor=User::factory()->create(['is_admin'=>true]);
         $product=Product::create(['title'=>'Imported image','handle'=>'imported-image','base_price'=>100]);
@@ -142,10 +142,12 @@ class ShopeeProductImageServiceTest extends TestCase
             return Http::response([],500);
         });
 
+        $revision=app(\App\Services\Marketplace\MarketplacePublishingSource::class)->read($product->id)['revision'];
         $receipt=app(ShopeeProductImageService::class)->prepare($store,$product->id,$image->id,$actor->id);
 
         $this->assertGreaterThan(0,$receipt);
-        $this->assertTrue(\App\Domain\Cms\MediaUrlPolicy::isManaged($image->fresh()->path));
+        $this->assertSame($remote,$image->fresh()->path);
+        $this->assertSame($revision,app(\App\Services\Marketplace\MarketplacePublishingSource::class)->read($product->id)['revision']);
         $this->assertDatabaseHas('marketplace_media_sources',['source_url'=>$remote]);
         $this->assertSame('prepared-image',app(\App\Services\Marketplace\MarketplaceImageReceipts::class)
             ->current($store,$product->id,$image->id)->provider_identity);

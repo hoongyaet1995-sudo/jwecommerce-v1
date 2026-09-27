@@ -35,7 +35,9 @@ final class MarketplaceImageReceipts
         $image=DB::table('product_images')->where('product_id',$productId)->find($imageId);
         if (!$store || !$image || !in_array($store->platform,['shopee','lazada'],true)) throw new DomainException('Select an owned product image and supported store.');
         $bytes=$store->platform==='lazada' && self::isLazadaCatalogUrl($image->path)
-            ? '' : app(MarketplaceLocalImage::class)->read($productId,$imageId);
+            ? '' : ($store->platform==='shopee'
+                ? app(MarketplaceLocalImage::class)->readForShopee($productId,$imageId)
+                : app(MarketplaceLocalImage::class)->read($productId,$imageId));
         return $this->find($storeId,$imageId,self::fingerprint($store,$bytes,$image->path));
     }
 

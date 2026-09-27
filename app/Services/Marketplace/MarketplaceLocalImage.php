@@ -11,6 +11,28 @@ final class MarketplaceLocalImage
 {
     private const MAX_BYTES = 10 * 1024 * 1024;
 
+    /** Resolve only owned, allowlisted media; never rewrite the reviewed catalog source. */
+    public function readForShopee(int $productId, int $imageId): string
+    {
+        $image=ProductImage::where('product_id',$productId)->findOrFail($imageId);
+        return $this->shopeeBytes((string)$image->path);
+    }
+
+    public function readVariantForShopee(int $productId, int $variantId, string $expectedPath): string
+    {
+        $variant=\App\Models\ProductVariant::where('product_id',$productId)->findOrFail($variantId);
+        $path=$variant->option_image ?: $variant->image_url;
+        if ($path!==$expectedPath) throw new DomainException('Variant image changed. Review the product again.');
+        return $this->shopeeBytes((string)$path);
+    }
+
+    private function shopeeBytes(string $path): string
+    {
+        $ingest=app(MarketplaceMediaIngest::class);
+        if ($ingest->supports($path)) $path=$ingest->ingest($path);
+        return app(ShopeeImageNormalizer::class)->normalize($this->readPath($path));
+    }
+
     /** Read an owned local asset only; remote retrieval and image decoding are separate steps. */
     public function read(int $productId, int $imageId): string
     {

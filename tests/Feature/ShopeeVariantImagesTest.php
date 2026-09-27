@@ -13,7 +13,7 @@ class ShopeeVariantImagesTest extends TestCase
     {
         config(['marketplace.publish_operations_enabled'=>true,'marketplace.basic_wms_enabled'=>false,
             'marketplace.shopee.enabled'=>true,'marketplace.shopee.environment'=>'sandbox',
-            'marketplace.shopee.partner_id'=>'123','marketplace.shopee.partner_key'=>'fixture']);
+            'marketplace.shopee.applications.sandbox'=>['partner_id'=>'123','partner_key'=>'fixture'], 'marketplace.shopee.partner_id'=>'123','marketplace.shopee.partner_key'=>'fixture']);
         $actor=User::factory()->create(['is_admin'=>true]);
         $p=Product::create(['title'=>'Variant images','handle'=>'variant-images','base_price'=>100,
             'options'=>[['name'=>'Color','values'=>['Red','Blue']]]]);

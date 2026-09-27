@@ -52,6 +52,8 @@ final class PublishingTasks
                 }
                 $newerBlocker=DB::table('marketplace_publishing_tasks')->where('store_id',$storeId)->where('product_id',$productId)
                     ->where('id','<>',$authorization->task_id)
+                    ->where(fn ($query) => $query->where('id','>',$authorization->task_id)
+                        ->orWhereIn('status',['queued','processing','succeeded'])->orWhereNotNull('external_item_id'))
                     ->where(fn ($query) => $query->whereIn('status',['queued','processing','uncertain','succeeded'])
                         ->orWhereNotNull('external_item_id'))->exists();
                 if ($newerBlocker) throw new \DomainException('A newer publishing attempt already exists. Open that saved task instead.');

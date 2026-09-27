@@ -13,6 +13,31 @@ class MarketplacePublishingRecoveryTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_repeated_uncertain_attempts_do_not_treat_an_older_task_as_newer(): void
+    {
+        $actor=User::factory()->create(['is_admin'=>true]);
+        $product=Product::create(['title'=>'Repeat retry','handle'=>'repeat-retry','base_price'=>1000]);
+        $store=DB::table('marketplace_stores')->insertGetId(['platform'=>'shopee','shop_name'=>'Test','region'=>'MY','environment'=>'sandbox','status'=>'connected']);
+        $tasks=app(PublishingTasks::class);
+        $first=$tasks->create($store,$product->id,$actor->id,(string)\Illuminate\Support\Str::uuid(),['item_name'=>'Test']);
+        $previous=$first;
+        $firstAuthorization=null;
+        for ($i=0;$i<3;$i++) {
+            DB::table('marketplace_publishing_tasks')->where('id',$previous)->update(['status'=>'uncertain']);
+            $authorization=app(\App\Services\Marketplace\PublishingRecoveryAuthorizations::class)->issue($previous,$actor->id,[
+                'reason'=>'Checked Seller Center; retry intentionally.','confirmationVersion'=>'v1','expectedRevision'=>1,
+            ]);
+            if ($i===0) $firstAuthorization=app(\App\Services\Marketplace\PublishingRecoveryAuthorizations::class)->issue($previous,$actor->id,[
+                'reason'=>'Another browser tab.','confirmationVersion'=>'v1','expectedRevision'=>1,
+            ]);
+            $next=$tasks->create($store,$product->id,$actor->id,(string)\Illuminate\Support\Str::uuid(),['item_name'=>'Test'],null,$authorization['authorizationId']);
+            $this->assertDatabaseHas('marketplace_publishing_tasks',['id'=>$next,'previous_task_id'=>$previous,'status'=>'queued']);
+            $previous=$next;
+        }
+        $this->expectExceptionMessage('A newer publishing attempt already exists');
+        $tasks->create($store,$product->id,$actor->id,(string)\Illuminate\Support\Str::uuid(),['item_name'=>'Test'],null,$firstAuthorization['authorizationId']);
+    }
+
     public function test_status_exposes_latest_reviewable_task_and_legacy_reason_honestly(): void
     {
         config(['marketplace.read_operations_enabled'=>true]);

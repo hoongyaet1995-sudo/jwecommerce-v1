@@ -235,10 +235,22 @@ class ShopeeClient
             throw new PublishingResultUncertain('Shopee creation result is unknown. Reconcile before retrying.');
         }
         $payload=$response->json();
-        // Conservatively retain ambiguity for all unverified error responses.
+        // A verified field rejection is recoverable without an unknown-create review.
+        if ($response->successful() && ($payload['error']??null)==='product.error_desc_length_min_limit'
+            && empty($payload['response']['item_id'])) {
+            throw new PublishingProviderRejected('Shopee requires a product description.', [
+                'http_status'=>$response->status(),'provider_code'=>$payload['error'],
+                'request_id'=>$payload['request_id']??null,
+            ]);
+        }
+        // Missing identities and unverified responses still cannot be called successful.
         if (!$response->successful() || !is_array($payload) || ($payload['error'] ?? null)!==''
             || !is_int($payload['response']['item_id'] ?? null) || $payload['response']['item_id']<=0) {
-            throw new PublishingResultUncertain('Shopee creation was not confirmed. Reconcile before retrying.');
+            throw new PublishingResultUncertain('Shopee creation was not confirmed. Check the saved provider diagnostics before retrying.', [
+                'http_status'=>$response->status(),
+                'provider_code'=>is_array($payload)?($payload['error']??null):null,
+                'request_id'=>is_array($payload)?($payload['request_id']??null):null,
+            ]);
         }
         return (string)$payload['response']['item_id'];
     }

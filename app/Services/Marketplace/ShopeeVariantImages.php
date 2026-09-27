@@ -13,7 +13,7 @@ final class ShopeeVariantImages
                 $store=DB::table('marketplace_stores')->where('id',$storeId)->lockForUpdate()->first();
                 abort_unless($store && $store->platform==='shopee' && $store->status==='connected',409);
                 app(BasicPublishingDestination::class)->check($storeId,$source['product_id']);
-                $bytes=app(MarketplaceLocalImage::class)->readVariant($source['product_id'],$image['variant_id'],$image['path']);
+                $bytes=app(MarketplaceLocalImage::class)->readVariantForShopee($source['product_id'],$image['variant_id'],$image['path']);
                 $hash=MarketplaceImageReceipts::fingerprint($store,$bytes,'');
                 if ($this->receipt($storeId,$source['product_id'],$hash)) return;
                 $token=app(ShopeeTokenManager::class)->accessToken($storeId);
@@ -34,7 +34,7 @@ final class ShopeeVariantImages
         $store=DB::table('marketplace_stores')->find($storeId);
         abort_unless($store,404);
         foreach ($plan as $index=>$image) {
-            $bytes=app(MarketplaceLocalImage::class)->readVariant($source['product_id'],$image['variant_id'],$image['path']);
+            $bytes=app(MarketplaceLocalImage::class)->readVariantForShopee($source['product_id'],$image['variant_id'],$image['path']);
             $hash=MarketplaceImageReceipts::fingerprint($store,$bytes,'');
             $receipt=$this->receipt($storeId,$source['product_id'],$hash);
             if (!$receipt) throw new \DomainException('Prepare the current variant images before publishing.');
