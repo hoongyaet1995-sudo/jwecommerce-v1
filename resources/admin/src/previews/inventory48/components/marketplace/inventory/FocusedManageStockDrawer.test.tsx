@@ -110,7 +110,7 @@ it('skips warehouses for a verified no-warehouse store and keeps existing Intake
   expect(audit).toHaveBeenCalledWith(item, 'web', 'direct:web');
 });
 
-it('keeps a test facility blocked when the existing eligibility check rejects it', async () => {
+it('keeps Manage this stock visible and opens actions when a test facility has an eligibility warning', async () => {
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({ ok: true, json: async () =>
     String(input).includes('test-facility-acceptance')
       ? { test_acceptance_enabled: true, eligible: false, facilities: [{ id: 7, eligible: false }] }
@@ -126,9 +126,28 @@ it('keeps a test facility blocked when the existing eligibility check rejects it
   await click('Warehouse A');
   await act(async () => { await Promise.resolve(); await Promise.resolve(); });
   const manage = [...host.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Manage this stock');
-  expect(manage?.disabled).toBe(true);
-  expect(host.textContent).not.toContain('Push stock to this warehouse');
-  expect([...host.querySelectorAll('button')].some(button => button.textContent?.trim() === 'Push stock now')).toBe(false);
+  expect(manage?.disabled).toBe(false);
+  await click('Manage this stock');
+  expect(host.textContent).toContain('First Count this location');
+});
+
+it('keeps Manage this stock available while the marketplace result needs confirmation', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({ ok: true, json: async () =>
+    String(input).includes('/sync') ? { status: 'awaiting_confirmation', can_check: true, can_resync: true }
+      : { status: 'verified', topology: 'no_warehouse', facilities: [] } }) as Response));
+  const intake = vi.fn();
+  await act(async () => root.render(<FocusedManageStockDrawer isOpen onClose={() => {}} item={item}
+    mode="independent" stores={[{ id: '3', name: 'Shopee Test', platform: 'shopee' }]}
+    storeBalances={{ 3: { physicalStock: 30, reservedStock: 0, availableStock: 30, isCounted: true } }}
+    onSelectIntake={intake} />));
+  await click('Shopee Test');
+  await click('Default Inventory');
+  expect(host.textContent).toContain('Marketplace result needs confirmation');
+  const manage = [...host.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Manage this stock');
+  expect(manage?.disabled).toBe(false);
+  await click('Manage this stock');
+  await click('Actual Stock Intake');
+  expect(intake).toHaveBeenCalledWith(item, '3', 'direct:3');
 });
 
 it('opens the exact-location Stock Take recovery instead of silently bypassing an order blocker', async () => {
@@ -184,7 +203,7 @@ it.each([
 
 it.each([
   { status: 'sync_failed', expected: ['Check status', 'Manage this stock'], absent: [] },
-  { status: 'awaiting_confirmation', expected: ['Check status'], absent: ['Manage this stock'] },
+  { status: 'awaiting_confirmation', expected: ['Check status', 'Manage this stock'], absent: [] },
   { status: 'synced', expected: ['Manage this stock'], absent: ['Check status'] },
 ])('shows the approved recovery actions for $status', async ({ status, expected, absent }) => {
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({ ok: true, json: async () =>

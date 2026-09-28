@@ -161,7 +161,6 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
   const checkedMismatch = failedSync && sync?.marketplace_reported_stock !== null
     && sync?.marketplace_reported_stock !== undefined && sync?.difference !== null
     && sync?.difference !== undefined && sync.difference !== 0;
-  const mayManage = actionable && !awaitingSync;
   const title = !selectedStore ? 'Choose a store' : !atLocation ? selectedStore.name : actionsOpen ? 'Manage this stock' : locationName || 'Stock location';
   const description = !selectedStore ? `Select the store whose ${item?.masterSku || 'SKU'} stock you want to manage.`
     : !atLocation ? 'Choose a warehouse to view and manage its independent stock.'
@@ -223,7 +222,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
   if (!isOpen || !item) return null;
   const targetWarehouseId = direct ? `direct:${selectedStore?.id}` : selectedFacility?.id;
   const proceed = (action: 'count' | 'intake' | 'adjustment' | 'transfer') => {
-    if (!selectedStore || !actionable) return;
+    if (!selectedStore) return;
     if (action === 'count') onSelectFirstCount?.(item, selectedStore.id, targetWarehouseId);
     if (action === 'intake') onSelectIntake?.(item, selectedStore.id, targetWarehouseId);
     if (action === 'adjustment') onSelectAdjustment?.(item, selectedStore.id, targetWarehouseId);
@@ -268,7 +267,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
         {atLocation && !actionsOpen && <>
           <p className="text-xs font-semibold text-neutral-300">{selectedStore!.name} · {direct ? 'Store ledger' : `Platform warehouse ${warehouseDisplayCode(selectedFacility!.providerId)}`}</p>
           <StockSummary balance={activeBalance} />
-          {!actionable && !awaitingSync && !failedSync && <div role="status" className="rounded-xl border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-300">{selectedStore!.status !== 'verified' ? 'Warehouse verification is pending.' : !acceptanceReady ? 'JW ledger actions need review.' : 'This warehouse does not yet have an active stock ledger.'}</div>}
+          {!actionable && !awaitingSync && !failedSync && <div role="status" className="rounded-xl border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-300">{selectedStore!.status !== 'verified' ? 'Warehouse verification is pending.' : !acceptanceReady ? 'This stock location is not yet eligible for a stock change.' : 'This warehouse does not yet have an active stock ledger.'}</div>}
           {canRecover && !awaitingSync && !failedSync && <button type="button" onClick={() => setRecovering(true)} className="w-full rounded-xl border border-purple-700 bg-purple-950/30 p-4 text-left text-xs font-bold text-purple-200 hover:border-purple-400">Resolve stock issue <ArrowRight className="ml-2 inline h-4 w-4" /></button>}
           {selectedStore!.platform !== 'webstore' && <div role="status" className={`rounded-xl border p-4 text-xs ${sync?.status === 'synced' ? 'border-emerald-800 bg-emerald-950/40' : failedSync ? 'border-rose-800 bg-rose-950/30' : awaitingSync ? 'border-amber-800 bg-amber-950/30' : 'border-neutral-700 bg-neutral-800/60'}`}>
             <strong className={sync?.status === 'synced' ? 'text-emerald-300' : failedSync ? 'text-rose-300' : awaitingSync ? 'text-amber-300' : 'text-white'}>{sync?.status === 'synced' ? 'Marketplace stock confirmed' : failedSync ? 'Marketplace sync failed' : awaitingSync ? 'Marketplace result needs confirmation' : 'Marketplace stock sync'}</strong>
@@ -279,9 +278,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
           </div>}
         </>}
         {atLocation && actionsOpen && <div className="space-y-3">
-          {!actionable ? <><p className="text-xs text-amber-300">Stock actions are unavailable for this location.</p>
-              {canRecover && <button type="button" onClick={() => setRecovering(true)} className="w-full rounded-xl border border-purple-700 bg-purple-950/30 p-4 text-left text-xs font-bold text-purple-200 hover:border-purple-400">Resolve stock issue <ArrowRight className="ml-2 inline h-4 w-4" /></button>}</>
-            : !activeBalance?.counted ? <button type="button" onClick={() => proceed('count')} className="flex w-full items-center gap-2 rounded-xl bg-purple-600 p-4 text-left text-sm font-bold hover:bg-purple-500"><ClipboardCheck className="h-4 w-4" />First Count this location<ArrowRight className="ml-auto h-4 w-4" /></button>
+          {!activeBalance?.counted ? <button type="button" onClick={() => proceed('count')} className="flex w-full items-center gap-2 rounded-xl bg-purple-600 p-4 text-left text-sm font-bold hover:bg-purple-500"><ClipboardCheck className="h-4 w-4" />First Count this location<ArrowRight className="ml-auto h-4 w-4" /></button>
               : <><button type="button" onClick={() => proceed('intake')} className="block w-full rounded-xl border border-neutral-700 bg-neutral-800 p-4 text-left text-sm hover:border-purple-500">Actual Stock Intake</button>
                 <button type="button" onClick={() => proceed('adjustment')} className="block w-full rounded-xl border border-neutral-700 bg-neutral-800 p-4 text-left text-sm hover:border-purple-500">Stock Audit Adjustment</button>
                 {activeBalance.available !== null && activeBalance.available > 0 && <button type="button" onClick={() => proceed('transfer')} className="block w-full rounded-xl border border-neutral-700 bg-neutral-800 p-4 text-left text-sm hover:border-purple-500">Transfer Stock</button>}</>}
@@ -290,7 +287,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
       <footer className="flex items-center justify-between gap-3 border-t border-neutral-800 bg-neutral-950/70 px-5 py-4 sm:px-6">
         <button type="button" onClick={back} className="rounded-lg border border-neutral-700 px-4 py-2 text-xs text-neutral-300 hover:bg-neutral-800">{selectedStore ? 'Back' : 'Close'}</button>
         {atLocation && !actionsOpen && <div className="flex gap-2">{selectedStore?.platform !== 'webstore' && sync?.can_check && (failedSync || awaitingSync || sync?.status === 'not_synced') && <button type="button" disabled={syncBusy} onClick={() => void syncAction(false)} className={`rounded-lg px-4 py-2 text-xs font-bold disabled:opacity-40 ${awaitingSync ? 'bg-purple-600 text-white' : 'border border-neutral-600 text-neutral-200'}`}>Check status</button>}
-          {!awaitingSync && <button type="button" disabled={!mayManage} onClick={() => setActionsOpen(true)} className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-bold text-white hover:bg-purple-500 disabled:opacity-40">Manage this stock</button>}</div>}
+          <button type="button" onClick={() => setActionsOpen(true)} className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-bold text-white hover:bg-purple-500">Manage this stock</button></div>}
         {atLocation && actionsOpen && onViewLedger && <button type="button" onClick={() => onViewLedger(item, selectedStore!.id, targetWarehouseId)} className="flex items-center gap-1 rounded-lg border border-neutral-700 px-4 py-2 text-xs text-neutral-300"><History className="h-3 w-3" />View ledger</button>}
       </footer>
     </div>
