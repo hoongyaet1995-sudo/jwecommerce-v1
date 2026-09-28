@@ -71,6 +71,11 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
   const [reason, setReason] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [operator, setOperator] = useState<string>('Current admin');
+  const [completion, setCompletion] = useState<{storeId:string;facilityId:number|null;variantId:number;type:string}|null>(null);
+  const [syncState, setSyncState] = useState<any>(null);
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [syncError, setSyncError] = useState('');
+  const syncPollCount = useRef(0);
 
   // Store warehouse configurations
   const [storeConfigs, setStoreConfigs] = useState<StoreWithWarehouses[]>([]);
@@ -96,6 +101,10 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
 
   useEffect(() => {
     if (isOpen) {
+      setCompletion(null);
+      setSyncState(null);
+      setSyncError('');
+      syncPollCount.current = 0;
       setActionType(initialType);
       setQuantityInput('');
       setNotes('');
@@ -187,6 +196,37 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
   };
 
   const [saveError,setSaveError] = useState('');
+  const readSync = async (check = false, target = completion) => {
+    if (!target) return;
+    setSyncBusy(true);
+    setSyncError('');
+    try {
+      const result = target.facilityId === null
+        ? await (check ? storeInventoryApi.checkStock(target.storeId,target.variantId) : storeInventoryApi.syncDetails(target.storeId,target.variantId))
+        : await (check ? storeInventoryApi.facilitySyncCheck(target.storeId,target.facilityId,target.variantId) : storeInventoryApi.facilitySyncDetails(target.storeId,target.facilityId,target.variantId));
+      setSyncState(result);
+    } catch (error:any) { setSyncError(error?.message || 'Marketplace status could not be checked.'); }
+    finally { setSyncBusy(false); }
+  };
+  useEffect(() => {
+    if (!completion || !syncState || syncPollCount.current >= 10) return;
+    const taskStatus = syncState.taskStatus ?? syncState.task_status;
+    if (!['queued','processing','facility_pending'].includes(taskStatus)) return;
+    const timer = window.setTimeout(() => { syncPollCount.current += 1; void readSync(false,completion); }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [completion,syncState]);
+  const resendSync = async () => {
+    if (!completion) return;
+    setSyncBusy(true);
+    setSyncError('');
+    try {
+      const result = completion.facilityId === null
+        ? await storeInventoryApi.resyncStock(completion.storeId,completion.variantId,crypto.randomUUID())
+        : await storeInventoryApi.facilityResync(completion.storeId,completion.facilityId,completion.variantId,crypto.randomUUID());
+      setSyncState(result);
+    } catch (error:any) { setSyncError(error?.message || 'Stock could not be resent.'); }
+    finally { setSyncBusy(false); }
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmissionBlocked || !item) return;
@@ -204,7 +244,12 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
       notes: notes.trim() || undefined,
       operator
     });
-    onClose();
+    if (selectedStoreId && currentStoreConfig?.platform !== 'webstore') {
+      const target = {storeId:selectedStoreId,facilityId:hasWarehouses ? Number(effectiveWarehouseId) : null,
+        variantId:Number((item as any).variantId),type:actionType};
+      setCompletion(target);
+      void readSync(false,target);
+    } else onClose();
     } catch(error:any) {
       setSaveError(error?.message || 'Inventory could not be saved.');
     }
@@ -212,6 +257,39 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
 
   // Safe early return after all React hooks and event handlers are called
   if (!isOpen || !item || !currentStoreConfig) return null;
+
+  if (completion) {
+    const status = syncState?.status;
+    const taskStatus = syncState?.taskStatus ?? syncState?.task_status;
+    const notDispatched = status === 'not_dispatched' || taskStatus === 'not_applicable';
+    const confirmed = status === 'synced';
+    const failed = status === 'sync_failed' || status === 'auth_expired';
+    const stateLabel = syncBusy && !syncState ? 'Checking' : notDispatched ? 'Not dispatched'
+      : confirmed ? 'Confirmed' : failed ? 'Sync failed'
+      : ['queued','processing','facility_pending'].includes(taskStatus) ? 'Sending'
+      : status === 'awaiting_confirmation' ? 'Needs confirmation' : 'Not confirmed';
+    const canResend = syncState?.canResync === true || syncState?.can_resync === true;
+    const canCheck = syncState?.canCheck === true || syncState?.can_check === true;
+    return <div className="fixed inset-0 z-50 bg-neutral-950/75 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-neutral-900 text-white border border-neutral-700 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <div className="px-6 py-5 border-b border-neutral-800"><div className="text-[10px] font-bold tracking-wide text-purple-300">MANAGE STOCK · INDEPENDENT MODE</div>
+          <h3 className="font-bold text-lg mt-2">{completion.type === 'intake' ? 'Actual Stock Intake' : 'Stock Audit Adjustment'} · Execution Pipeline</h3>
+          <p className="text-xs text-neutral-400 mt-1">JW ledger and marketplace delivery are tracked separately.</p></div>
+        <div className="p-6 space-y-3">
+          <div className="rounded-xl bg-neutral-800 border border-neutral-700 p-3 text-sm font-semibold">{item.masterSku} · {currentStoreConfig.storeName || currentStoreConfig.storeId}<div className="text-xs text-neutral-400 mt-1">{currentWarehouseObj?.name || 'Default Inventory'}</div></div>
+          <div className="rounded-xl bg-emerald-950/40 border border-emerald-800 p-4 flex justify-between gap-3"><div><b className="text-sm">Step 1: JW Inventory Ledger</b><p className="text-xs text-emerald-200 mt-1">Stock change recorded in the JW ledger.</p></div><span className="text-xs text-emerald-200">Done</span></div>
+          <div className={`rounded-xl border p-4 flex justify-between gap-3 ${confirmed ? 'bg-emerald-950/40 border-emerald-800' : failed ? 'bg-rose-950/40 border-rose-800' : 'bg-amber-950/30 border-amber-800'}`}><div><b className="text-sm">Step 2: Marketplace Stock Update</b>
+            <p className="text-xs text-neutral-300 mt-1">{notDispatched ? syncState?.failureReason || 'No stock API request was sent.' : confirmed ? 'Marketplace readback matches JW available stock.' : syncState?.failureReason || (syncBusy ? 'Reading the latest task status…' : 'Marketplace delivery is not yet confirmed.')}</p>
+            {syncState?.jwAvailableStock != null && <p className="text-xs text-neutral-400 mt-2">JW available: {syncState.jwAvailableStock} · Marketplace readback: {syncState.marketplaceReportedStock ?? syncState.marketplace_reported_stock ?? 'Not available'}</p>}
+          </div><span className="text-xs whitespace-nowrap">{stateLabel}</span></div>
+          {syncError && <p role="alert" className="text-xs text-rose-300">{syncError}</p>}
+          {notDispatched && <p className="text-xs text-amber-200">No Shopee stock push was attempted for this task. Resync sends the latest JW available quantity when available.</p>}
+        </div><div className="px-6 py-4 border-t border-neutral-800 flex justify-end gap-2 flex-wrap">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-neutral-700 text-sm">Done</button>
+          <button type="button" disabled={syncBusy || !canCheck} onClick={() => void readSync(true)} className="px-4 py-2 rounded-lg border border-neutral-700 text-sm disabled:opacity-50">Check Status</button>
+          <button type="button" disabled={syncBusy || !canResend} onClick={() => void resendSync()} className="px-4 py-2 rounded-lg bg-purple-700 font-bold text-sm disabled:opacity-50">Resync Stock</button>
+        </div></div></div>;
+  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-neutral-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">

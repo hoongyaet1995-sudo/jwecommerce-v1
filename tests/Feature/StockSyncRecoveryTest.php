@@ -150,6 +150,28 @@ class StockSyncRecoveryTest extends TestCase
         $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $latest['id'], 'status' => 'confirmed']);
     }
 
+    public function test_unsent_intake_task_is_reported_as_not_dispatched(): void
+    {
+        $url = $this->fixture();
+        preg_match('#/stores/(\d+)/skus/(\d+)/sync$#', $url, $matches);
+        $storeId = (int) $matches[1];
+        $variantId = (int) $matches[2];
+        DB::table('inventory_store_accounts')->where('marketplace_store_id', $storeId)
+            ->update(['management_status' => 'setup_required']);
+        DB::table('inventory_store_sync_tasks')->insert([
+            'id' => (string) Str::uuid(), 'marketplace_store_id' => $storeId,
+            'product_variant_id' => $variantId, 'stage' => 'account', 'status' => 'not_applicable',
+            'target_quantity' => 22, 'balance_version' => 1, 'event_key' => 'intake:test',
+            'attempts' => 0, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->getJson($url)->assertOk()
+            ->assertJsonPath('status', 'not_dispatched')
+            ->assertJsonPath('taskStatus', 'not_applicable')
+            ->assertJsonPath('taskAttempts', 0)
+            ->assertJsonPath('canResync', true);
+    }
+
     public function test_uncertain_result_allows_manual_resend(): void
     {
         $url = $this->fixture();

@@ -60,6 +60,12 @@ final class StockSyncRecovery
         } elseif ($transferPending) {
             $status = 'sync_failed';
             $reason = 'A previous transfer stock update is incomplete. You can resend the latest stock for this store.';
+        } elseif ($task && $task->status === 'not_applicable') {
+            $status = 'not_dispatched';
+            $management = DB::table('inventory_store_accounts')->where('marketplace_store_id', $storeId)->value('management_status');
+            $reason = $management === 'setup_required'
+                ? 'JW ledger saved, but this store is setup_required. No marketplace stock API request was sent.'
+                : 'JW ledger saved, but this stock sync task was not dispatched to the marketplace.';
         } elseif ($blocker) {
             $status = match ($blocker) {
                 'authorization_expired','authorization_required','store_not_connected' => 'auth_expired',
@@ -94,6 +100,7 @@ final class StockSyncRecovery
             'marketplaceReportedStock' => $quantity, 'difference' => $quantity === null || $c['quantity'] === null ? null : $c['quantity'] - $quantity,
             'lastConfirmedSyncAt' => $confirmedAt, 'lastCheckedAt' => $observation?->observed_at,
             'requestSentAt' => $pending?->updated_at, 'requestedQuantity' => $pending?->target_quantity,
+            'taskId' => $task?->id, 'taskStatus' => $task?->status, 'taskAttempts' => $task?->attempts,
             'failureReason' => $reason, 'failureRecoveryType' => $status === 'auth_expired' ? 'reconnect' : ($status === 'sku_not_mapped' ? 'mapping' : ($pending ? 'check_status' : 'resync')),
             'canResync' => $readiness['ready'] && ! $this->tasks($storeId, $variantId)->where('status', 'processing')->exists(), 'canCheck' => (bool) $c['listing'],
             'physicalStock' => $c['balance']?->physical_stock, 'reservedStock' => $c['balance']?->reserved_stock];
