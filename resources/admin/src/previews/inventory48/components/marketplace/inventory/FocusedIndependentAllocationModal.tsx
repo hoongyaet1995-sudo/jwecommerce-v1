@@ -56,6 +56,7 @@ interface Props {
   notes: string;
   onNotesChange: (value: string) => void;
   saveError: string;
+  saveNeedsStockTakeReview: boolean;
   onOpenStockTakeReview: () => void;
   isSaving: boolean;
   confirmedCount: number | null;
@@ -83,9 +84,9 @@ export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
   const next = () => {
     if (props.step === 'success') { if (props.nextSkuCount) props.onNextSku(); else props.onClose(); return; }
     if (props.step === 'review') { props.onConfirm(); return; }
-    if (inputView === 'count') { if (props.isVerifiedCountValid && props.verifiedCountNum >= props.totalReservedAcrossStores) setInputView('destinations'); return; }
+    if (inputView === 'count') { if (props.isVerifiedCountValid) setInputView('destinations'); return; }
     if (selectedStoreId) { setSelectedStoreId(null); return; }
-    props.onReview();
+    props.onConfirm();
   };
   const balanceMessage = !props.isVerifiedCountValid ? 'Enter a verified count'
     : remaining === 0 ? 'All units allocated'
@@ -99,8 +100,7 @@ export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
   const storeTotal = (store: InventoryStoreChannel) => props.parsedAllocations[store.id] ?? 0;
   const storeConfig = (store: InventoryStoreChannel) => props.storeConfigs.find(config => config.storeId === store.id);
   const disabledStore = (store: InventoryStoreChannel, config?: StoreWithWarehouses) =>
-    !config || (store.platform !== 'webstore' && !config.isSkuMapped)
-    || config.warehouseSyncStatus !== 'synced' || store.connectionState === 'expired';
+    !config || (store.platform !== 'webstore' && !config.isSkuMapped);
   const balanceClass = !props.isVerifiedCountValid ? '' : remaining === 0 ? 'is-balanced' : remaining < 0 ? 'is-over' : '';
   const variantId = Number((props.item as MarketplaceInventoryItem & { variantId?: number }).variantId);
   const syncTargets = props.activeStores.flatMap(store => {
@@ -108,9 +108,9 @@ export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
     const config = props.storeConfigs.find(candidate => candidate.storeId === store.id);
     if (!config?.isSkuMapped) return [];
     return config.warehouses.length
-      ? config.warehouses.filter(warehouse => (props.parsedWarehouseAllocations[warehouse.id] ?? 0) > 0 && /^\d+$/.test(warehouse.id))
+      ? config.warehouses.filter(warehouse => /^\d+$/.test(warehouse.id) && warehouse.status === 'active' && !!warehouse.inventoryWarehouseId)
           .map(warehouse => ({ key: `${store.id}:${warehouse.id}`, store, warehouse }))
-      : (props.parsedAllocations[store.id] ?? 0) > 0 ? [{ key: `${store.id}:direct`, store, warehouse: null }] : [];
+      : [{ key: `${store.id}:direct`, store, warehouse: null }];
   });
   const checkSync = useCallback(async (targets: typeof syncTargets, active: () => boolean) => {
     if (!targets.length) return;
@@ -160,7 +160,6 @@ export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
             <div className="allocation-focus-count-input"><input aria-label="Verified physical quantity" type="number" min="0" step="1" value={props.physicalCountInput} disabled={props.isCountLocked} placeholder="Enter count" onChange={event => props.onPhysicalCountChange(event.target.value)} /><span>units</span></div>
             {props.isCountLocked && <button type="button" className="allocation-focus-link" onClick={props.onUnlockCount}>Recount / edit total</button>}
           </div>
-          {props.isVerifiedCountValid && props.verifiedCountNum < props.totalReservedAcrossStores && <p className="allocation-focus-error">The count cannot be lower than {props.totalReservedAcrossStores} units reserved for orders.</p>}
           <details className="allocation-focus-reference"><summary>View marketplace reference quantities</summary><p>Provider readings are not a physical count and never fill the JW ledger automatically.</p>
             {props.activeStores.filter(store => store.platform !== 'webstore').map(store => {
               const config = storeConfig(store);
@@ -181,10 +180,9 @@ export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
           <div className={`allocation-focus-balance ${balanceClass}`} role="status"><div><strong>{balanceMessage}</strong><small>{props.isVerifiedCountValid ? `${props.verifiedCountNum} verified − ${allocated} allocated` : 'Waiting for a physical count'}</small></div><b>{props.isVerifiedCountValid ? remaining === 0 ? <Check size={23} /> : Math.abs(remaining) : '—'}</b></div>
           {selectedStore && selectedConfig ? <div className="allocation-focus-warehouse-list">
             {selectedConfig.warehouses.map(warehouse => {
-              const balance = props.warehouseStockData[props.item.masterSku]?.[warehouse.id];
-              const blocked = disabledStore(selectedStore, selectedConfig) || warehouse.status !== 'active' || !warehouse.inventoryWarehouseId || !!balance?.isCounted;
+              const blocked = disabledStore(selectedStore, selectedConfig) || warehouse.status !== 'active' || !warehouse.inventoryWarehouseId;
               const conflict = props.warehouseReservationConflicts[warehouse.id];
-              return <div className="allocation-focus-warehouse" key={warehouse.id}><div><strong>{warehouse.warehouseName}</strong><small>{warehouseDisplayCode(warehouse.codeValue)}</small>{blocked && <small className="allocation-focus-warning">{balance?.isCounted ? 'Already counted' : 'Warehouse unavailable'}</small>}{conflict && <small className="allocation-focus-warning">Below {conflict.reserved} reserved units</small>}</div><input aria-label={`${selectedStore.nickname || selectedStore.name} ${warehouse.warehouseName} first count`} type="number" min="0" step="1" disabled={blocked} value={props.warehouseAllocations[warehouse.id] ?? ''} placeholder="0" onChange={event => props.onWarehouseAllocationChange(selectedStore.id, warehouse.id, event.target.value)} /></div>;
+              return <div className="allocation-focus-warehouse" key={warehouse.id}><div><strong>{warehouse.warehouseName}</strong><small>{warehouseDisplayCode(warehouse.codeValue)}</small>{blocked && <small className="allocation-focus-warning">Warehouse unavailable</small>}{conflict && <small className="allocation-focus-warning">Below {conflict.reserved} reserved units</small>}</div><input aria-label={`${selectedStore.nickname || selectedStore.name} ${warehouse.warehouseName} first count`} type="number" min="0" step="1" disabled={blocked} value={props.warehouseAllocations[warehouse.id] ?? ''} placeholder="0" onChange={event => props.onWarehouseAllocationChange(selectedStore.id, warehouse.id, event.target.value)} /></div>;
             })}
           </div> : <><p className="allocation-focus-section-label">Stock locations</p><div className="allocation-focus-store-list">{props.activeStores.map(store => {
             const config = storeConfig(store);
@@ -192,9 +190,10 @@ export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
             const warehouses = config.warehouses;
             const blocked = disabledStore(store, config);
             const conflict = props.storeReservationConflicts[store.id];
-            return <div className="allocation-focus-store" key={store.id}><div className="allocation-focus-store-identity"><span className="allocation-focus-platform"><MarketplaceLogo platform={store.platform} size="xs" /></span><div><strong>{store.nickname || store.name}</strong><small>{config.warehouseSyncStatus !== 'synced' ? 'Warehouse verification pending' : warehouses.length ? `${warehouses.length} platform ${warehouses.length === 1 ? 'warehouse' : 'warehouses'}` : store.platform === 'webstore' ? 'Your own stock' : 'No platform warehouse'}</small>{conflict && <small className="allocation-focus-warning">Below {conflict.reserved} reserved units</small>}</div></div><div className="allocation-focus-store-action">{warehouses.length ? <><b>{storeTotal(store)}</b><button type="button" disabled={blocked} onClick={() => setSelectedStoreId(store.id)}>Choose warehouses <ChevronDown size={13} className="allocation-focus-side-chevron" /></button></> : <input aria-label={`${store.nickname || store.name} allocation`} type="number" min="0" step="1" disabled={blocked || !!props.warehouseStockData[props.item.masterSku]?.[`direct:${store.id}`]?.isCounted} value={props.allocations[store.id] ?? ''} placeholder="0" onChange={event => props.onAllocationChange(store.id, event.target.value)} />}</div></div>;
+            return <div className="allocation-focus-store" key={store.id}><div className="allocation-focus-store-identity"><span className="allocation-focus-platform"><MarketplaceLogo platform={store.platform} size="xs" /></span><div><strong>{store.nickname || store.name}</strong><small>{config.warehouseSyncStatus !== 'synced' ? 'Warehouse verification pending' : warehouses.length ? `${warehouses.length} platform ${warehouses.length === 1 ? 'warehouse' : 'warehouses'}` : store.platform === 'webstore' ? 'Your own stock' : 'No platform warehouse'}</small>{conflict && <small className="allocation-focus-warning">Below {conflict.reserved} reserved units</small>}</div></div><div className="allocation-focus-store-action">{warehouses.length ? <><b>{storeTotal(store)}</b><button type="button" disabled={blocked} onClick={() => setSelectedStoreId(store.id)}>Choose warehouses <ChevronDown size={13} className="allocation-focus-side-chevron" /></button></> : <input aria-label={`${store.nickname || store.name} allocation`} type="number" min="0" step="1" disabled={blocked} value={props.allocations[store.id] ?? ''} placeholder="0" onChange={event => props.onAllocationChange(store.id, event.target.value)} />}</div></div>;
           })}</div></>}
-          {!props.canProceedToReview && blocker && <div className="allocation-focus-warning allocation-focus-blocker"><p>{blocker}</p><button type="button" onClick={props.onOpenStockTakeReview}>Open Stock Take Review</button></div>}
+          {!props.canProceedToReview && blocker && <div className="allocation-focus-warning allocation-focus-blocker"><p>{blocker}</p></div>}
+          {props.saveError && <div className="allocation-focus-error" role="alert">{props.saveError}</div>}
         </>}
 
         {props.step === 'review' && <>
@@ -209,12 +208,12 @@ export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
           })}</div>
           <div className="allocation-focus-review-total"><strong>Total allocated</strong><strong>{allocated} / {props.verifiedCountNum} units</strong></div>
           <details className="allocation-focus-reference"><summary>Audit details</summary><p>Operator: {props.operator} · Reason: {props.reason}</p><label htmlFor="allocation-focus-notes">Notes (optional)</label><textarea id="allocation-focus-notes" value={props.notes} onChange={event => props.onNotesChange(event.target.value)} /></details>
-          {props.saveError && <div className="allocation-focus-error" role="alert">{props.saveError}<button type="button" onClick={props.onOpenStockTakeReview}>Open Stock Take Review</button></div>}
+          {props.saveError && <div className="allocation-focus-error" role="alert">{props.saveError}{props.saveNeedsStockTakeReview && <button type="button" onClick={props.onOpenStockTakeReview}>Open Stock Take Review</button>}</div>}
         </>}
 
         {props.step === 'success' && <><div className="allocation-focus-success"><CheckCircle2 size={28} /><h3>Stock allocation completed</h3><p>{props.confirmedCount ?? props.verifiedCountNum} verified units were recorded in the JW ledger.</p></div><section className="allocation-focus-sync-status" aria-label="Marketplace stock status"><div className="allocation-focus-sync-heading"><div><strong>Marketplace stock status</strong><small>Checked against each allocated stock location.</small></div>{syncTargets.length > 0 && <button type="button" disabled={isCheckingSync} onClick={() => void checkSync(syncTargets, () => true)}>{isCheckingSync ? 'Checking…' : 'Refresh status'}</button>}</div>{syncTargets.length === 0 ? <p>No marketplace stock was allocated.</p> : syncTargets.map(target => { const status = syncStates[target.key]; return <div className="allocation-focus-sync-result" key={target.key}><span><MarketplaceLogo platform={target.store.platform} size="xs" /><span><strong>{target.store.nickname || target.store.name}</strong>{target.warehouse && <small>{target.warehouse.warehouseName}</small>}</span></span><span className="allocation-focus-sync-actions"><b className={status === 'synced' ? 'is-synced' : status === 'failed' ? 'is-failed' : ''}>{isCheckingSync && !status ? 'Checking…' : status === 'synced' ? 'Synced' : status === 'failed' ? 'Sync failed' : status === 'unavailable' ? 'Unable to check' : 'Pending'}</b>{props.onOpenStockSyncModal && <button type="button" className="allocation-focus-sync-details" onClick={() => props.onOpenStockSyncModal?.(props.item, target.store, target.warehouse ? Number(target.warehouse.id) : undefined)}>Details</button>}</span></div>; })}</section></>}
       </div>
-      <footer className="allocation-focus-footer"><div className="allocation-focus-footer-step"><span>{props.step === 'success' ? 'COMPLETE' : props.step === 'review' ? 'STEP 3 OF 3' : inputView === 'count' ? 'STEP 1 OF 3' : 'STEP 2 OF 3'}</span><strong>{props.step === 'success' ? 'JW ledger saved' : props.step === 'review' ? 'Final review' : inputView === 'count' ? 'Verify total' : `${remaining} units remaining`}</strong></div><div className="allocation-focus-footer-actions"><button type="button" className="allocation-focus-secondary" onClick={back}>{props.step === 'success' ? 'Return to inventory' : props.step === 'input' && inputView === 'count' ? 'Cancel' : 'Back'}</button><button type="button" className="allocation-focus-primary" onClick={next} disabled={props.step === 'review' ? !props.canProceedToReview || props.isSaving : props.step === 'input' && inputView === 'count' ? !props.isVerifiedCountValid || props.verifiedCountNum < props.totalReservedAcrossStores : props.step === 'input' && !selectedStore ? !props.canProceedToReview : false}>{props.step === 'success' ? props.nextSkuCount ? `Next SKU (${props.nextSkuCount})` : 'Done' : props.step === 'review' ? props.isSaving ? 'Saving…' : 'Confirm allocation' : inputView === 'count' ? 'Allocate stock' : selectedStore ? 'Done with warehouses' : 'Review allocation'}</button></div></footer>
+      <footer className="allocation-focus-footer"><div className="allocation-focus-footer-step"><span>{props.step === 'success' ? 'COMPLETE' : inputView === 'count' && props.step === 'input' ? 'STEP 1 OF 2' : 'STEP 2 OF 2'}</span><strong>{props.step === 'success' ? 'JW ledger saved' : inputView === 'count' && props.step === 'input' ? 'Verify total' : `${remaining} units remaining`}</strong></div><div className="allocation-focus-footer-actions"><button type="button" className="allocation-focus-secondary" onClick={back}>{props.step === 'success' ? 'Return to inventory' : props.step === 'input' && inputView === 'count' ? 'Cancel' : 'Back'}</button><button type="button" className="allocation-focus-primary" onClick={next} disabled={props.step === 'review' ? !props.canProceedToReview || props.isSaving : props.step === 'input' && inputView === 'count' ? !props.isVerifiedCountValid : props.step === 'input' && !selectedStore ? !props.canProceedToReview || props.isSaving : false}>{props.step === 'success' ? props.nextSkuCount ? `Next SKU (${props.nextSkuCount})` : 'Done' : props.step === 'review' ? props.isSaving ? 'Saving…' : 'Confirm allocation' : inputView === 'count' ? 'Allocate stock' : selectedStore ? 'Done with warehouses' : props.isSaving ? 'Saving…' : 'Save and sync stock'}</button></div></footer>
     </div>
   </div>;
 };

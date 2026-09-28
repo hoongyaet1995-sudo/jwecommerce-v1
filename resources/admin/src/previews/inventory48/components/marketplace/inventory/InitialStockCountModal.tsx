@@ -127,6 +127,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
   const [platformSyncStatuses, setPlatformSyncStatuses] = useState<Record<string, 'confirmed' | 'syncing' | 'failed'>>({});
   const [isRetryingSync, setIsRetryingSync] = useState<boolean>(false);
   const [saveError,setSaveError] = useState<string>('');
+  const saveNeedsStockTakeReview = /open_test_store_order|stock.?take|historical.*order|reservation/i.test(saveError);
   const [stockTakeIssues,setStockTakeIssues] = useState<Array<{storeId:string;storeName:string;facility:StorePlatformWarehouse;blockers:string[]}>>([]);
   const [reviewIssuesOpen,setReviewIssuesOpen] = useState(false);
   const [selectedIssue,setSelectedIssue] = useState<{storeId:string;storeName:string;facility:StorePlatformWarehouse}|null>(null);
@@ -476,12 +477,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
     storeConfigs.length > 0 &&
     isBalanced &&
     !hasInvalidAllocationNumber &&
-    !hasNegativeAllocation &&
-    !hasReservationConflict &&
-    !hasUnmappedBlocker &&
-    !hasConnectionBlocker &&
-    !hasVerificationPendingAttempt &&
-    !hasIncompleteTopology;
+    !hasNegativeAllocation;
 
   // Toggle store accordion
   const handleToggleStoreExpand = (storeId: string) => {
@@ -588,7 +584,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
     setStep('success');
     } catch(error:any) {
       setSaveError(error?.message || 'Physical count could not be saved.');
-      if (mode === 'independent') {
+      if (mode === 'independent' && /open_test_store_order|stock.?take|historical.*order|reservation/i.test(error?.message || '')) {
         await openStockTakeReview();
       }
     } finally {
@@ -638,6 +634,7 @@ export const InitialStockCountModal: React.FC<InitialStockCountModalProps> = ({
     warehouseReservationConflicts={warehouseReservationConflicts}
     storeReservationConflicts={storeReservationConflicts} operator={operator} reason={reason}
     notes={notes} onNotesChange={setNotes} saveError={saveError} isSaving={isSaving}
+    saveNeedsStockTakeReview={saveNeedsStockTakeReview}
     onOpenStockTakeReview={() => void openStockTakeReview()}
     confirmedCount={confirmedCount}
   />

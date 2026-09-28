@@ -96,7 +96,7 @@ final class SyncOutbox
             'event_key' => $eventKey, 'attempts' => 0,
             'created_at' => now(), 'updated_at' => now(),
         ]);
-        if (LazadaTestFacilityAcceptance::stockSyncAllowed($storeId)) {
+        if (str_starts_with($eventKey, 'batch-allocation:') || LazadaTestFacilityAcceptance::stockSyncAllowed($storeId)) {
             \App\Jobs\ProcessFacilityInventorySync::dispatch($id)->afterCommit();
         }
 

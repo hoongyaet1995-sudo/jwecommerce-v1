@@ -31,7 +31,8 @@ final class ProcessFacilityInventorySync implements ShouldQueue
             && app(\App\Services\Inventory\StoreManagement\RebaselineFreeze::class)->isPaused()) {
             return;
         }
-        if (config('marketplace.multiwarehouse_stock_sync_enabled') !== true
+        if (! str_starts_with((string) $explicitPush, 'batch-allocation:')
+            && config('marketplace.multiwarehouse_stock_sync_enabled') !== true
             && config('marketplace.multiwarehouse_test_acceptance_enabled') !== true) {
             return;
         }
@@ -42,7 +43,9 @@ final class ProcessFacilityInventorySync implements ShouldQueue
                 || (! $manualPush && ! $task->inventory_balance_id)) {
                 return null;
             }
-            if (! \App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::stockSyncAllowed((int) $task->marketplace_store_id)) {
+            $directAllocation = str_starts_with((string) $task->event_key, 'batch-allocation:');
+            if (! $directAllocation
+                && ! \App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::stockSyncAllowed((int) $task->marketplace_store_id)) {
                 return null;
             }
             $inFlight = DB::table('inventory_store_sync_tasks')->where('marketplace_store_facility_id', $task->marketplace_store_facility_id)
@@ -68,13 +71,13 @@ final class ProcessFacilityInventorySync implements ShouldQueue
                 ->where('product_variant_id', $task->product_variant_id)->exists();
             $account = DB::table('inventory_store_accounts')
                 ->where('marketplace_store_id', $task->marketplace_store_id)->first();
-            if (! $scan || $scan->status !== 'verified' || ! $facility || ! $facility->is_active
+            if ((! $directAllocation && (! $scan || $scan->status !== 'verified')) || ! $facility || ! $facility->is_active
                 || (int) $facility->marketplace_store_id !== (int) $task->marketplace_store_id
                 || $facility->provider_facility_id !== $task->provider_location_id
                 || (! $manualPush && (! $pool || $pool->kind !== 'facility'
                     || (int) $pool->warehouse_id !== (int) $facility->inventory_warehouse_id))
-                || ! $store || $store->status !== 'connected' || ! $mapping
-                || (! $manualPush && $account && $account->management_status === 'paused')
+                || ! $store || (! $directAllocation && $store->status !== 'connected') || ! $mapping
+                || (! $manualPush && ! $directAllocation && $account && $account->management_status === 'paused')
                 || (! $manualPush && (! $balance || $balance->counted_at === null
                     || $balance->physical_stock === null || $balance->reserved_stock === null
                     || $balance->safety_stock === null))) {
@@ -101,7 +104,7 @@ final class ProcessFacilityInventorySync implements ShouldQueue
 
                 return null;
             }
-            if (! $manualPush && ! str_starts_with((string) $task->event_key, 'facility-resync:')
+            if (! $manualPush && ! $directAllocation && ! str_starts_with((string) $task->event_key, 'facility-resync:')
                 && \App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::appliesToStore((int) $task->marketplace_store_id)) {
                 try {
                     app(\App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::class)
@@ -121,7 +124,8 @@ final class ProcessFacilityInventorySync implements ShouldQueue
                 return null;
             }
             $target = $manualPush ? (int) $task->target_quantity
-                : max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock);
+                : ($directAllocation ? (int) $balance->physical_stock
+                : max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock));
             if (! $manualPush && $target !== (int) $task->target_quantity) {
                 $this->mark($task->id, 'superseded', 'atp_changed');
 

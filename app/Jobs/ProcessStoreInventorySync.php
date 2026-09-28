@@ -58,8 +58,9 @@ final class ProcessStoreInventorySync implements ShouldQueue
 
                 return null;
             }
-            $readinessResult = $readiness->read((int) $task->marketplace_store_id, (int) $task->product_variant_id);
-            if (! $readinessResult['ready'] || (int) ($readinessResult['listing_variant_id'] ?? 0) !== (int) $task->listing_variant_id) {
+            $directAllocation = str_starts_with((string) $task->event_key, 'batch-allocation:');
+            $readinessResult = $directAllocation ? null : $readiness->read((int) $task->marketplace_store_id, (int) $task->product_variant_id);
+            if (! $directAllocation && (! $readinessResult['ready'] || (int) ($readinessResult['listing_variant_id'] ?? 0) !== (int) $task->listing_variant_id)) {
                 DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update([
                     'status' => 'superseded',
                     'provider_receipt' => json_encode(['code' => 'readiness_changed', 'blockers' => array_column($readinessResult['blockers'], 'code')]),
@@ -68,7 +69,8 @@ final class ProcessStoreInventorySync implements ShouldQueue
 
                 return null;
             }
-            $target = max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock);
+            $target = $directAllocation ? (int) $balance->physical_stock
+                : max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock);
             DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update([
                 'status' => 'processing', 'target_quantity' => $target, 'balance_version' => $balance->version,
                 'attempts' => DB::raw('attempts + 1'), 'updated_at' => now(),
@@ -80,6 +82,16 @@ final class ProcessStoreInventorySync implements ShouldQueue
                 ->select('l.*')->first();
             if (! $listing) {
                 throw new RuntimeException('Map this SKU to the selected store before synchronizing stock.');
+            }
+            if ($directAllocation && ! DB::table('marketplace_variant_mappings')
+                ->where('store_id', $task->marketplace_store_id)
+                ->where('product_variant_id', $task->product_variant_id)
+                ->where('listing_variant_id', $listing->id)->exists()) {
+                DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update([
+                    'status' => 'superseded', 'provider_receipt' => json_encode(['code' => 'mapping_changed']), 'updated_at' => now(),
+                ]);
+
+                return null;
             }
             $listing->external_product_id = $task->provider_external_product_id;
             $listing->external_variant_id = $task->provider_external_variant_id;

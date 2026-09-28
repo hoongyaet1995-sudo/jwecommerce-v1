@@ -39,7 +39,7 @@ const enter = async (label: string, value: string) => {
   });
 };
 
-it('allocates one independent verified count through the existing atomic batch payload', async () => {
+it('saves an independent allocation with one action once every unit is allocated', async () => {
   mockFacilities();
   const save = vi.fn(async () => {});
   await act(async () => root.render(<InitialStockCountModal isOpen onClose={() => {}} item={item}
@@ -57,9 +57,7 @@ it('allocates one independent verified count through the existing atomic batch p
   await enter('Lazada Test Warehouse B first count', '3');
   await click('Done with warehouses');
   expect(host.textContent).toContain('All units allocated');
-  await click('Review allocation');
-  expect(host.textContent).toContain('Warehouse breakdown');
-  await click('Confirm allocation');
+  await click('Save and sync stock');
   expect(save).toHaveBeenCalledWith(expect.objectContaining({
     sku: 'TEST-1', physicalCount: 10,
     batchAllocations: expect.objectContaining({ 'facility:3:7': 7, 'facility:3:8': 3 }),
@@ -107,8 +105,47 @@ it('opens Stock Take Review with each affected warehouse after an order blocker'
   await click('Allocate stock'); await click('Choose warehouses');
   await enter('Lazada Test Warehouse A first count', '7');
   await enter('Lazada Test Warehouse B first count', '3');
-  await click('Done with warehouses'); await click('Review allocation'); await click('Confirm allocation');
+  await click('Done with warehouses'); await click('Save and sync stock');
   expect(host.textContent).toContain('Stock Take Review');
   expect(host.textContent).toContain('Warehouse A');
   expect(host.textContent).toContain('Open orders need review');
+});
+
+it('keeps a generic allocation request failure on the review screen without opening Stock Take Review', async () => {
+  mockFacilities();
+  await act(async () => root.render(<InitialStockCountModal isOpen onClose={() => {}} item={item}
+    mode="independent" stores={stores} initialTargetStoreId="3" initialTargetWarehouseId="7"
+    onSaveCount={vi.fn(async () => { throw new Error('Too Many Attempts.'); })} />));
+  await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+  await enter('Verified physical quantity', '10');
+  await click('Allocate stock'); await click('Choose warehouses');
+  await enter('Lazada Test Warehouse A first count', '7');
+  await enter('Lazada Test Warehouse B first count', '3');
+  await click('Done with warehouses'); await click('Save and sync stock');
+  expect(host.textContent).toContain('Too Many Attempts.');
+  expect(host.querySelector('[aria-label="Stock Take Review"]')).toBeNull();
+  expect([...host.querySelectorAll('button')].some(button => button.textContent === 'Open Stock Take Review')).toBe(false);
+});
+
+it('allows replacing counted stock even when old reservations exceed the new allocation', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({
+    status: 'verified', topology: 'multi_warehouse', facilities: [
+      { id: 7, name: 'Warehouse A', provider_id: 'WH-A', inventory_warehouse_id: 19,
+        counted: true, physical: 10, reserved: 5, available: 5 },
+      { id: 8, name: 'Warehouse B', provider_id: 'WH-B', inventory_warehouse_id: 20,
+        counted: true, physical: 10, reserved: 0, available: 10 },
+    ],
+  }) }) as Response));
+  const save = vi.fn(async () => {});
+  await act(async () => root.render(<InitialStockCountModal isOpen onClose={() => {}} item={item}
+    mode="independent" stores={stores} initialTargetStoreId="3" initialTargetWarehouseId="7" onSaveCount={save} />));
+  await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+  await enter('Verified physical quantity', '4');
+  await click('Allocate stock'); await click('Choose warehouses');
+  await enter('Lazada Test Warehouse A first count', '2');
+  await enter('Lazada Test Warehouse B first count', '2');
+  await click('Done with warehouses'); await click('Save and sync stock');
+  expect(save).toHaveBeenCalledWith(expect.objectContaining({
+    physicalCount: 4, batchAllocations: expect.objectContaining({ 'facility:3:7': 2, 'facility:3:8': 2 }),
+  }));
 });

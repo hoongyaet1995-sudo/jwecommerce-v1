@@ -457,7 +457,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
     setIsManageStockDrawerOpen(true);
   };
 
-  const handleRealSaveFirstCount = async (payload: {
+  const handleDirectAllocation = async (payload: {
     sku:string;targetStoreId?:string;targetWarehouseId?:string;
     allocations?:Record<string,number>;warehouseAllocations?:Record<string,number>;
     batchAllocations?:Record<string,number>;physicalCount:number;reason:string;notes?:string;operator:string;
@@ -466,7 +466,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
     if(!item) throw new Error('SKU is no longer available. Refresh inventory.');
     const reason=[payload.reason,payload.notes].filter(Boolean).join(': ');
     if(!payload.batchAllocations) throw new Error('Review allocations for every store and warehouse.');
-    await storeInventoryApi.batchFirstCount((item as any).variantId,payload.physicalCount,
+    await storeInventoryApi.directAllocation((item as any).variantId,payload.physicalCount,
       payload.batchAllocations,reason);
     await reloadInventory();
     addToast({type:'success',title:'Physical count saved',message:'JW ledger updated. Check platform sync status separately.'});
@@ -1781,7 +1781,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
         storeBalances={storeBalances}
         initialTargetStoreId={targetFirstCountStoreId}
         initialTargetWarehouseId={targetFirstCountWarehouseId}
-        onSaveCount={handleRealSaveFirstCount}
+        onSaveCount={handleDirectAllocation}
         uncountedQueue={uncountedItems}
         onSelectNextItem={next => setSelectedItemForCount(next)}
         onNavigateToTransfers={() => {

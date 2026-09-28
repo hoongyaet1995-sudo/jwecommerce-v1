@@ -8,8 +8,10 @@ use App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance;
 use App\Services\Inventory\StoreManagement\FacilitySyncRecovery;
 use App\Contracts\StoreInventoryPublisher;
 use App\Jobs\ProcessFacilityInventorySync;
+use App\Jobs\ProcessStoreInventorySync;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use Tests\Support\StoreInventoryFixture;
 use Tests\TestCase;
 
@@ -22,6 +24,21 @@ class BatchFirstCountReviewTest extends TestCase
         parent::setUp();
         config(['marketplace.multiwarehouse_operations_enabled' => true]);
         DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores']);
+    }
+
+    public function test_batch_count_review_and_confirm_are_not_limited_by_a_generic_ten_per_minute_throttle(): void
+    {
+        $routes = collect(Route::getRoutes()->getRoutes())
+            ->filter(fn ($route) => in_array($route->uri(), [
+                'admin/api/inventory/store-management/batch-first-counts',
+                'admin/api/inventory/store-management/batch-first-counts/{review}/confirm',
+                'admin/api/inventory/store-management/direct-allocations',
+            ], true));
+
+        $this->assertCount(3, $routes);
+        foreach ($routes as $route) {
+            $this->assertNotContains('throttle:10,1', $route->gatherMiddleware());
+        }
     }
 
     public function test_one_review_counts_website_and_both_lazada_facilities_with_exact_conservation(): void
@@ -50,6 +67,122 @@ class BatchFirstCountReviewTest extends TestCase
         $this->assertSame(25, $balances->sum());
         $this->assertSame(7, (int) $balances['store:website']);
         $this->assertSame(2, DB::table('inventory_store_sync_tasks')->whereNotNull('marketplace_store_facility_id')->count());
+    }
+
+    public function test_direct_allocation_overwrites_jw_stock_and_queues_each_provider_destination_once(): void
+    {
+        [$actor, $storeId, $variantId, $facilityIds] = $this->setupSku();
+        $url = '/admin/api/inventory/store-management/direct-allocations';
+        $payload = ['variant_id' => $variantId, 'physical_count' => 25,
+            'allocations' => ['website' => 7, 'facility:'.$storeId.':'.$facilityIds[0] => 10,
+                'facility:'.$storeId.':'.$facilityIds[1] => 8],
+            'reason' => 'Direct JW allocation', 'operation_key' => 'direct-allocation-1'];
+        $this->actingAs($actor)->postJson($url, [...$payload, 'physical_count' => 24])->assertUnprocessable();
+        $this->assertDatabaseCount('inventory_store_operations', 0);
+
+        $receipt = $this->postJson($url, $payload)->assertOk()->json();
+        $this->assertSame('applied', $receipt['ledger_status']);
+        $this->assertSame(25, $receipt['physical_total']);
+        $this->assertSame($receipt, $this->postJson($url, $payload)->assertOk()->json());
+        $this->assertSame(1, DB::table('inventory_store_operations')->where('kind', 'batch_direct_allocation')->count());
+        $this->assertSame(0, DB::table('inventory_store_reviews')->where('kind', 'batch_direct_allocation')
+            ->where('status', 'pending')->count());
+        $this->assertSame(2, DB::table('inventory_store_sync_tasks')->whereNotNull('marketplace_store_facility_id')->count());
+        $this->assertSame(25, DB::table('inventory_balances')->where('product_variant_id', $variantId)
+            ->whereNotNull('counted_at')->sum('physical_stock'));
+
+        $facilityPoolId = DB::table('inventory_store_sync_tasks')->where('marketplace_store_facility_id', $facilityIds[0])
+            ->value('inventory_balance_id');
+        DB::table('inventory_balances')->where('id', $facilityPoolId)->update(['reserved_stock' => 3]);
+        $payload['operation_key'] = 'direct-allocation-2';
+        $payload['allocations']['facility:'.$storeId.':'.$facilityIds[0]] = 8;
+        $payload['allocations']['facility:'.$storeId.':'.$facilityIds[1]] = 10;
+        $this->postJson($url, $payload)->assertOk();
+        $this->assertSame(25, DB::table('inventory_balances')->where('product_variant_id', $variantId)
+            ->whereNotNull('counted_at')->sum('physical_stock'));
+        $this->assertSame(2, DB::table('inventory_store_sync_tasks')->where('status', 'facility_pending')->count());
+        $this->assertDatabaseHas('inventory_store_sync_tasks', [
+            'marketplace_store_facility_id' => $facilityIds[0], 'status' => 'facility_pending',
+            'target_quantity' => 8,
+        ]);
+        $latestTask = DB::table('inventory_store_sync_tasks')
+            ->where('marketplace_store_facility_id', $facilityIds[0])->where('status', 'facility_pending')->first();
+        $publisher = \Mockery::mock(StoreInventoryPublisher::class);
+        $publisher->shouldReceive('publish')->once()->withArgs(fn ($store, $listing, $quantity) => $quantity === 8)
+            ->andReturn(['observed_quantity' => 8, 'provider_location_id' => 'WH-A',
+                'confirmation_method' => 'provider_readback']);
+        (new ProcessFacilityInventorySync($latestTask->id))->handle($publisher);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $latestTask->id, 'status' => 'confirmed']);
+    }
+
+    public function test_direct_allocation_can_process_a_test_lazada_facility_without_stock_take_review(): void
+    {
+        [$actor, $storeId, $variantId, $facilities] = $this->setupSku(true);
+        DB::table('marketplace_store_facility_scans')->where('marketplace_store_id', $storeId)
+            ->update(['status' => 'pending']);
+        $this->actingAs($actor)->postJson('/admin/api/inventory/store-management/direct-allocations', [
+            'variant_id' => $variantId, 'physical_count' => 5,
+            'allocations' => ['website' => 0, 'facility:'.$storeId.':'.$facilities[0] => 5],
+            'reason' => 'Direct provider push', 'operation_key' => 'direct-test-lazada',
+        ])->assertOk();
+        $task = DB::table('inventory_store_sync_tasks')->where('marketplace_store_facility_id', $facilities[0])->first();
+        $this->assertSame('facility_pending', $task->status);
+        $publisher = \Mockery::mock(StoreInventoryPublisher::class);
+        $publisher->shouldReceive('publish')->once()->andReturn([
+            'observed_quantity' => 5, 'provider_location_id' => 'WH-A',
+            'confirmation_method' => 'provider_readback',
+        ]);
+        (new ProcessFacilityInventorySync($task->id))->handle($publisher);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $task->id, 'status' => 'confirmed']);
+    }
+
+    public function test_zero_at_an_unbound_provider_warehouse_does_not_block_positive_allocations(): void
+    {
+        [$actor, $storeId, $variantId, $facilities] = $this->setupSku();
+        DB::table('marketplace_store_facilities')->where('id', $facilities[1])
+            ->update(['inventory_warehouse_id' => null]);
+        $this->actingAs($actor)->postJson('/admin/api/inventory/store-management/direct-allocations', [
+            'variant_id' => $variantId, 'physical_count' => 5,
+            'allocations' => ['website' => 0, 'facility:'.$storeId.':'.$facilities[0] => 5,
+                'facility:'.$storeId.':'.$facilities[1] => 0],
+            'reason' => 'Zero destination ignored', 'operation_key' => 'direct-zero-unbound',
+        ])->assertOk();
+        $this->assertSame(1, DB::table('inventory_store_sync_tasks')->whereNotNull('marketplace_store_facility_id')->count());
+    }
+
+    public function test_direct_allocation_queues_a_newly_mapped_shopee_store_without_a_platform_warehouse(): void
+    {
+        $fixture = new StoreInventoryFixture;
+        $store = $fixture->store('shopee', 'DIRECT-STORE');
+        $variant = $fixture->sku()['variant'];
+        DB::table('marketplace_store_facility_scans')->insert([
+            'marketplace_store_id' => $store->id, 'status' => 'verified', 'topology' => 'no_warehouse',
+            'revision' => 1, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $listingId = DB::table('marketplace_listing_variants')->insertGetId([
+            'store_id' => $store->id, 'external_product_id' => 'SHOPEE-100',
+            'external_variant_id' => 'SHOPEE-200', 'observed_data' => '{}',
+            'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('marketplace_variant_mappings')->insert([
+            'store_id' => $store->id, 'listing_variant_id' => $listingId,
+            'product_variant_id' => $variant->id, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $actor = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        $this->actingAs($actor)->postJson('/admin/api/inventory/store-management/direct-allocations', [
+            'variant_id' => $variant->id, 'physical_count' => 10,
+            'allocations' => ['website' => 3, 'marketplace:'.$store->id => 7],
+            'reason' => 'Direct Shopee allocation', 'operation_key' => 'direct-shopee-store',
+        ])->assertOk();
+        $this->assertDatabaseHas('inventory_store_sync_tasks', [
+            'marketplace_store_id' => $store->id, 'product_variant_id' => $variant->id,
+            'target_quantity' => 7, 'status' => 'queued',
+        ]);
+        $task = DB::table('inventory_store_sync_tasks')->where('marketplace_store_id', $store->id)->first();
+        $publisher = \Mockery::mock(StoreInventoryPublisher::class);
+        $publisher->shouldReceive('publish')->once()->andReturn(['observed_quantity' => 7]);
+        (new ProcessStoreInventorySync($task->id))->handle($publisher);
+        $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $task->id, 'status' => 'confirmed']);
     }
 
     public function test_a_stale_facility_aborts_the_entire_batch_without_partial_ledger_writes(): void
