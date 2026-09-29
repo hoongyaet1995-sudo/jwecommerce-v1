@@ -29,7 +29,12 @@ final class StockSyncRecovery
         $mode = DB::table('inventory_configuration')->where('id', 1)->value('operating_mode');
         $pool = $mode === 'shared_pool' ? DB::table('inventory_pools')->where('kind', 'shared')->first() : DB::table('inventory_pools')->where('marketplace_store_id', $storeId)->first();
         $balance = $pool ? DB::table('inventory_balances')->where('inventory_pool_id', $pool->id)->where('product_variant_id', $variantId)->first() : null;
-        $quantity = $balance && $balance->counted_at !== null && $balance->physical_stock !== null && $balance->reserved_stock !== null && $balance->safety_stock !== null ? max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock) : null;
+        $quantity = config('inventory.current_stock_only')
+            ? ($balance?->current_stock === null ? null : (int) $balance->current_stock)
+            : ($balance && $balance->counted_at !== null && $balance->physical_stock !== null
+                && $balance->reserved_stock !== null && $balance->safety_stock !== null
+                ? max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock
+                    - (int) $balance->safety_stock) : null);
 
         return compact('store', 'variant', 'listing', 'balance', 'quantity');
     }
@@ -80,6 +85,9 @@ final class StockSyncRecovery
                 'listing_not_participating' => 'This listing is not currently eligible for stock updates.',
                 default => 'Stock synchronization is currently unavailable for this store SKU.',
             };
+        } elseif ($task && $task->stage === 'baseline' && $task->status === 'confirmed'
+            && $c['quantity'] !== null && (int) $task->target_quantity === $c['quantity']) {
+            $status = 'synced';
         } elseif ($observation && (! $task || $observation->sync_task_id === $task->id) && $c['quantity'] !== null && (int) $observation->quantity === $c['quantity']) {
             $status = 'synced';
         } elseif ($task && $task->status === 'auth_expired') {
@@ -94,11 +102,14 @@ final class StockSyncRecovery
         $confirmedAt = DB::table('inventory_store_sync_attempts as a')->join('inventory_store_sync_tasks as t', 't.id', '=', 'a.task_id')
             ->where('t.marketplace_store_id', $storeId)->where('t.product_variant_id', $variantId)->where('a.status', 'confirmed')
             ->max('a.created_at');
-        $quantity = $observation ? (int) $observation->quantity : null;
+        $baselineReceipt = $task?->stage === 'baseline' && $task->status === 'confirmed'
+            ? (json_decode($task->provider_receipt ?? '{}', true) ?: []) : [];
+        $quantity = isset($baselineReceipt['observed_quantity']) ? (int) $baselineReceipt['observed_quantity']
+            : ($observation ? (int) $observation->quantity : null);
 
         return ['sku' => $c['variant']->sku, 'storeId' => (string) $storeId, 'status' => $status, 'jwAvailableStock' => $c['quantity'],
             'marketplaceReportedStock' => $quantity, 'difference' => $quantity === null || $c['quantity'] === null ? null : $c['quantity'] - $quantity,
-            'lastConfirmedSyncAt' => $confirmedAt, 'lastCheckedAt' => $observation?->observed_at,
+            'lastConfirmedSyncAt' => $confirmedAt, 'lastCheckedAt' => $baselineReceipt['observed_at'] ?? $observation?->observed_at,
             'requestSentAt' => $pending?->updated_at, 'requestedQuantity' => $pending?->target_quantity,
             'taskId' => $task?->id, 'taskStatus' => $task?->status, 'taskAttempts' => $task?->attempts,
             'failureReason' => $reason, 'failureRecoveryType' => $status === 'auth_expired' ? 'reconnect' : ($status === 'sku_not_mapped' ? 'mapping' : ($pending ? 'check_status' : 'resync')),

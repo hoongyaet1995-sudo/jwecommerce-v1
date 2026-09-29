@@ -38,6 +38,8 @@ export const storeInventoryApi={
   async directAllocation(variantId:number,physicalCount:number,allocations:Record<string,number>,reason:string){
     return json('/admin/api/inventory/store-management/direct-allocations',{method:'POST',body:JSON.stringify({variant_id:variantId,physical_count:physicalCount,allocations,reason,operation_key:crypto.randomUUID()})});
   },
+  baselineObserve:(storeKey:string,facilityId:number|null,variantId:number)=>json('/admin/api/inventory/store-management/first-count-baseline/observe',{method:'POST',body:JSON.stringify({store_key:storeKey,facility_id:facilityId,variant_id:variantId})}),
+  baselineCommit:(payload:{store_key:string;facility_id:number|null;variant_id:number;source:'marketplace'|'manual';quantity:number;expected_provider_quantity:number|null;operation_key:string;allow_provider_overwrite?:boolean})=>json('/admin/api/inventory/store-management/first-count-baseline/commit',{method:'POST',body:JSON.stringify(payload)}),
   async facilityTransfer(variantId:number,sourceFacilityId:number|null,destinationFacilityId:number|null,quantity:number,reason:string){
     const review=await json('/admin/api/inventory/store-management/facility-transfer-reviews',{method:'POST',body:JSON.stringify({variant_id:variantId,source_facility_id:sourceFacilityId,destination_facility_id:destinationFacilityId,quantity,reason})});
     return json(`/admin/api/inventory/store-management/facility-transfer-reviews/${encodeURIComponent(review.id)}/confirm`,{method:'POST',body:JSON.stringify({operation_key:crypto.randomUUID()})});

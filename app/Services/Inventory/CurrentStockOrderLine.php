@@ -25,12 +25,10 @@ final class CurrentStockOrderLine
             throw new RuntimeException('Invalid Current Stock order quantities.');
         }
         $historical = $orderCreatedAt !== null
-            && app(CurrentStockCutover::class)->isHistorical($channelKey, $orderReference, $orderCreatedAt);
-        if ($historical) {
-            $desiredDebitedQuantity = 0;
-            $desiredRestoredQuantity = 0;
-            $terminal = true;
-        }
+            && app(CurrentStockCutover::class)->isHistorical($channelKey, $orderReference, $orderCreatedAt, $balanceId);
+        // A pre-baseline active order is already reflected in the imported provider
+        // available quantity. Seed its debit without a JW movement so a later
+        // cancellation can restore it once. A first-seen terminal order remains 0/0.
         $hash = hash('sha256', json_encode([$channelKey, $orderReference, $itemReference, $variantId,
             $balanceId, $orderedQuantity, $desiredDebitedQuantity, $desiredRestoredQuantity, $terminal], JSON_THROW_ON_ERROR));
 
@@ -45,7 +43,9 @@ final class CurrentStockOrderLine
                 'item_reference' => $itemReference];
             DB::table('inventory_current_stock_order_lines')->insertOrIgnore($key + [
                 'product_variant_id' => $variantId, 'inventory_balance_id' => $balanceId,
-                'ordered_quantity' => $orderedQuantity, 'created_at' => now(), 'updated_at' => now(),
+                'ordered_quantity' => $orderedQuantity,
+                'deducted_quantity' => $historical && ! $terminal ? $orderedQuantity : 0,
+                'created_at' => now(), 'updated_at' => now(),
             ]);
             $line = DB::table('inventory_current_stock_order_lines')->where($key)->lockForUpdate()->first();
             if ((int) $line->product_variant_id !== $variantId || (int) $line->inventory_balance_id !== $balanceId
@@ -100,7 +100,7 @@ final class CurrentStockOrderLine
                 'deducted_quantity' => $desiredDebitedQuantity,
                 'restored_quantity' => $desiredRestoredQuantity,
                 'replayed' => $debit === 0 && $credit === 0,
-                'status' => $historical ? 'historical' : 'applied'];
+                'status' => $historical && $debit === 0 && $credit === 0 ? 'historical' : 'applied'];
             DB::table('inventory_current_stock_order_events')->insert([
                 'order_line_id' => $line->id, 'event_key' => $eventKey,
                 'request_hash' => $hash, 'result' => json_encode($result, JSON_THROW_ON_ERROR),

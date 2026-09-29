@@ -323,6 +323,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/inventory/store-management/allocations/{review}/confirm', [\App\Http\Controllers\Admin\StoreInventoryAllocationController::class, 'confirm'])->whereUuid('review');
     Route::post('/api/inventory/store-management/batch-first-counts', [\App\Http\Controllers\Admin\BatchFirstCountController::class, 'review']);
     Route::post('/api/inventory/store-management/direct-allocations', [\App\Http\Controllers\Admin\DirectStockAllocationController::class, 'store']);
+    Route::post('/api/inventory/store-management/first-count-baseline/observe', [\App\Http\Controllers\Admin\MarketplaceBaselineFirstCountController::class, 'observe'])->middleware('throttle:20,1');
+    Route::post('/api/inventory/store-management/first-count-baseline/commit', [\App\Http\Controllers\Admin\MarketplaceBaselineFirstCountController::class, 'commit'])->middleware('throttle:10,1');
     Route::post('/api/inventory/store-management/batch-first-counts/{review}/confirm', [\App\Http\Controllers\Admin\BatchFirstCountController::class, 'confirm'])->whereUuid('review');
     Route::get('/api/inventory/store-management/overview', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'overview']);
     Route::get('/api/inventory/store-management/rebaseline/readiness', [\App\Http\Controllers\Admin\InventoryRebaselineController::class, 'readiness']);
@@ -346,7 +348,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/inventory/store-management/stores/{store}/facilities/{facility}/skus/{variant}/sync', [\App\Http\Controllers\Admin\FacilitySyncRecoveryController::class, 'details'])->whereNumber('store')->whereNumber('facility')->whereNumber('variant');
     Route::post('/api/inventory/store-management/stores/{store}/facilities/{facility}/skus/{variant}/sync/check', [\App\Http\Controllers\Admin\FacilitySyncRecoveryController::class, 'check'])->whereNumber('store')->whereNumber('facility')->whereNumber('variant')->middleware('throttle:20,1');
     Route::post('/api/inventory/store-management/stores/{store}/facilities/{facility}/skus/{variant}/sync/resync', [\App\Http\Controllers\Admin\FacilitySyncRecoveryController::class, 'resync'])->whereNumber('store')->whereNumber('facility')->whereNumber('variant')->middleware('throttle:20,1');
-    Route::post('/api/inventory/store-management/stores/{store}/facilities/{facility}/skus/{variant}/sync/push-explicit', [\App\Http\Controllers\Admin\FacilitySyncRecoveryController::class, 'pushExplicit'])->whereNumber('store')->whereNumber('facility')->whereNumber('variant')->middleware('throttle:20,1');
     Route::get('/api/inventory/store-management/history', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'history']);
     Route::get('/api/inventory/store-management/operations/{operation}', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'operation'])->whereUuid('operation');
     Route::post('/api/inventory/store-management/operations/{operation}/check', [\App\Http\Controllers\Admin\StoreInventorySyncController::class, 'checkOperation'])->whereUuid('operation')->middleware('throttle:30,1');

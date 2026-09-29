@@ -48,6 +48,7 @@ import {
 
 
 import { InitialStockCountModal } from './inventory/InitialStockCountModal';
+import { LocationFirstCountBaseline } from './inventory/LocationFirstCountBaseline';
 import { StockIntakeAdjustmentModal } from './inventory/StockIntakeAdjustmentModal';
 import { FocusedManageStockDrawer } from './inventory/FocusedManageStockDrawer';
 import { StoreStockTransfersTab } from './inventory/StoreStockTransfersTab';
@@ -1767,7 +1768,16 @@ export const MarketplaceInventoryPage: React.FC = () => {
       )}
 
       {/* MODAL 1: Allocate Stock Modal */}
-      <InitialStockCountModal
+      {currentMode === 'independent' && selectedItemForCount && targetFirstCountStoreId && targetFirstCountWarehouseId ? <LocationFirstCountBaseline
+        key={`${selectedItemForCount.id}:${targetFirstCountStoreId}:${targetFirstCountWarehouseId}`}
+        item={selectedItemForCount}
+        storeId={targetFirstCountStoreId}
+        facilityId={targetFirstCountWarehouseId}
+        storeName={stores.find(store => String(store.id) === targetFirstCountStoreId)?.nickname || stores.find(store => String(store.id) === targetFirstCountStoreId)?.name || (targetFirstCountStoreId === 'website' ? 'JW Storefront' : `Store ${targetFirstCountStoreId}`)}
+        facilityName={targetFirstCountWarehouseId.startsWith('direct:') ? 'Store ledger' : `Warehouse ${targetFirstCountWarehouseId}`}
+        onClose={() => { setIsCountModalOpen(false); setSelectedItemForCount(null); setTargetFirstCountStoreId(undefined); setTargetFirstCountWarehouseId(undefined); }}
+        onSaved={async () => { await reloadInventory(); addToast({type:'success', title:'Current Stock baseline saved', message:'The selected location was counted. Check its Marketplace sync status separately.'}); }}
+      /> : <InitialStockCountModal
         key={`${selectedItemForCount?.id || 'none'}:${targetFirstCountStoreId || ''}:${targetFirstCountWarehouseId || ''}`}
         isOpen={isCountModalOpen}
         onClose={() => {
@@ -1798,7 +1808,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
           setSelectedItemForCount(null);
           setCurrentSection('marketplace-auth');
         }}
-      />
+      />}
 
       {/* MODAL 2: Stock Intake & Audit Adjustment (Warehouse-Aware) */}
       <StockIntakeAdjustmentModal

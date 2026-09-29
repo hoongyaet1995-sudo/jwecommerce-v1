@@ -22,11 +22,13 @@ final class FacilitySyncRecovery
             $task = null;
         }
         $receipt = $task ? json_decode($task->provider_receipt ?? '{}', true) ?: [] : [];
-        $quantity = $c['balance'] && $c['balance']->counted_at !== null
+        $quantity = config('inventory.current_stock_only')
+            ? ($c['balance']?->current_stock === null ? null : (int) $c['balance']->current_stock)
+            : ($c['balance'] && $c['balance']->counted_at !== null
             && $c['balance']->physical_stock !== null && $c['balance']->reserved_stock !== null
             && $c['balance']->safety_stock !== null
             ? max(0, (int) $c['balance']->physical_stock - (int) $c['balance']->reserved_stock
-                - (int) $c['balance']->safety_stock) : null;
+                - (int) $c['balance']->safety_stock) : null);
         $observed = isset($receipt['observed_quantity']) ? (int) $receipt['observed_quantity'] : null;
         $status = match ($task?->status) {
             'confirmed' => $observed === $quantity && ($receipt['provider_location_id'] ?? null)
@@ -130,8 +132,10 @@ final class FacilitySyncRecovery
         $c = $this->context($storeId, $facilityId, $variantId);
         if ($c['scan']?->status !== 'verified' || ! $c['facility']->is_active
             || ! $c['facility']->inventory_warehouse_id || ! $c['balance']
-            || $c['balance']->counted_at === null || $c['balance']->physical_stock === null
-            || $c['balance']->reserved_stock === null || $c['balance']->safety_stock === null
+            || $c['balance']->counted_at === null
+            || (config('inventory.current_stock_only') ? $c['balance']->current_stock === null
+                : ($c['balance']->physical_stock === null || $c['balance']->reserved_stock === null
+                    || $c['balance']->safety_stock === null))
             || ! $c['listing'] || $c['store']->status !== 'connected'
             || ! DB::table('inventory_warehouses')->where('id', $c['facility']->inventory_warehouse_id)
                 ->where('is_active', true)->where('status', 'active')->exists()

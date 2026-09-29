@@ -48,4 +48,26 @@ class CurrentStockCutoverTest extends TestCase
         $this->assertSame('historical', $result['status']);
         $this->assertSame(10, app(CurrentStockLedger::class)->quantity($balance));
     }
+
+    public function test_pre_baseline_active_order_is_not_debited_twice_but_later_cancellation_restores_it(): void
+    {
+        $product = Product::create(['title' => 'Existing order test', 'handle' => 'existing-order-test', 'base_price' => 1]);
+        $variant = $product->variants()->create(['sku' => 'CS-OLD-ORDER', 'title' => 'Test', 'price' => 1, 'stock' => 0]);
+        $pool = DB::table('inventory_pools')->insertGetId(['pool_key' => 'marketplace-old-order', 'kind' => 'store',
+            'created_at' => now(), 'updated_at' => now()]);
+        $balance = DB::table('inventory_balances')->insertGetId(['inventory_pool_id' => $pool,
+            'product_variant_id' => $variant->id, 'version' => 0, 'created_at' => now(), 'updated_at' => now()]);
+        app(CurrentStockLedger::class)->setAbsolute($balance, 9, 'count:old-order', 'Marketplace baseline');
+        DB::table('inventory_balances')->where('id', $balance)->update(['counted_at' => '2026-09-29 10:00:00']);
+
+        $lines = app(CurrentStockOrderLine::class);
+        $active = $lines->apply('marketplace:1', 'PRE-BASELINE', 'ITEM-1', $variant->id,
+            $balance, 1, 1, 0, 'old-order:active', false, '2026-09-29 09:59:00');
+        $this->assertSame('historical', $active['status']);
+        $this->assertSame(9, app(CurrentStockLedger::class)->quantity($balance));
+        $cancelled = $lines->apply('marketplace:1', 'PRE-BASELINE', 'ITEM-1', $variant->id,
+            $balance, 1, 1, 1, 'old-order:cancelled', true, '2026-09-29 09:59:00');
+        $this->assertSame('applied', $cancelled['status']);
+        $this->assertSame(10, app(CurrentStockLedger::class)->quantity($balance));
+    }
 }
