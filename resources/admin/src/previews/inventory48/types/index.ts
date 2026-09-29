@@ -1048,6 +1048,7 @@ export interface InventoryModeSwitchAudit {
 
 export interface MarketplaceInventoryItem {
   id: string;
+  productId?: number;
   mappedStoreIds?: string[]; // Store-specific SKU mappings returned by the inventory overview
   masterSku: string;
   barcode: string;

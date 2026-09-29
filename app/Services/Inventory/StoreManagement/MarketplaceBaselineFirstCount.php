@@ -111,6 +111,80 @@ final class MarketplaceBaselineFirstCount
         }, 3);
     }
 
+    /** Apply one location from a twice-confirmed item snapshot without another provider call. */
+    public function reconcileObserved(User $actor, int $storeId, ?int $facilityId, int $variantId,
+        int $itemId, int $quantity, string $observedAt, int $expectedVersion): array
+    {
+        $this->authorize($actor);
+        if ($quantity < 0) {
+            throw ValidationException::withMessages(['stock' => 'Marketplace returned an invalid stock quantity.']);
+        }
+        $eventKey = 'bulk-retrieve:'.$itemId;
+        $prior = DB::table('inventory_current_stock_movements')
+            ->whereIn('event_key', [$eventKey, 'baseline:'.$eventKey])->first();
+        if ($prior) {
+            $first = str_starts_with($prior->reason, 'Marketplace First Count');
+            return ['action' => $first ? 'first_count' : 'audit_adjustment',
+                'quantity' => (int) $prior->current_after,
+                'previous_quantity' => $first ? null : (int) $prior->current_after - (int) $prior->delta,
+                'observed_at' => $prior->created_at];
+        }
+        $target = $this->target((string) $storeId, $facilityId, $variantId);
+        $balanceId = $this->balanceId((string) $storeId, $facilityId, $variantId);
+        $providerLocation = $target['facility']?->provider_facility_id;
+        return DB::transaction(function () use ($target, $actor, $storeId, $facilityId, $variantId,
+            $itemId, $quantity, $observedAt, $expectedVersion, $eventKey, $balanceId, $providerLocation): array {
+            $configuration = DB::table('inventory_configuration')->where('id', 1)->lockForUpdate()->first();
+            if (! $configuration || $configuration->operating_mode !== 'independent_stores'
+                || $configuration->active_rebaseline_epoch_id !== null) {
+                throw ValidationException::withMessages(['inventory' => 'Independent Current Stock mode is required.']);
+            }
+            $balance = DB::table('inventory_balances')->where('id', $balanceId)->lockForUpdate()->first();
+            if (! $balance || (int) $balance->version !== $expectedVersion) {
+                throw ValidationException::withMessages(['stock' => 'JW Current Stock changed during retrieval. Retry this location.']);
+            }
+            $first = $balance->current_stock === null && $balance->counted_at === null;
+            $previous = $first ? null : (int) $balance->current_stock;
+            $movement = app(CurrentStockLedger::class)->setAbsolute($balanceId, $quantity,
+                $first ? 'baseline:'.$eventKey : $eventKey,
+                $first ? 'Marketplace First Count baseline' : 'Marketplace bulk stock audit adjustment');
+            DB::table('inventory_balances')->where('id', $balanceId)->update([
+                'counted_at' => CarbonImmutable::parse($observedAt)->utc()->format('Y-m-d H:i:s'),
+            ]);
+            if ($first) {
+                DB::table('inventory_store_accounts')->where('marketplace_store_id', $storeId)
+                    ->update(['management_status' => 'managed', 'updated_at' => now()]);
+                app(CatalogInventoryState::class)->markVerified($variantId, 'bulk-retrieve-'.$itemId);
+            }
+            app(CatalogStockProjection::class)->refresh($variantId);
+            DB::table('inventory_store_sync_tasks')->insert([
+                'id' => (string) Str::uuid(), 'marketplace_store_id' => $storeId,
+                'product_variant_id' => $variantId, 'inventory_balance_id' => $balanceId,
+                'marketplace_store_facility_id' => $facilityId, 'listing_variant_id' => $target['listing']->id,
+                'provider_external_product_id' => $target['listing']->external_product_id,
+                'provider_external_variant_id' => $target['listing']->external_variant_id,
+                'provider_location_id' => $providerLocation, 'stage' => $first ? 'baseline' : 'provider_import',
+                'status' => 'confirmed', 'target_quantity' => $quantity,
+                'balance_version' => $movement['balance_version'],
+                'event_key' => $first ? 'baseline:'.$eventKey : $eventKey,
+                'provider_receipt' => json_encode(['observed_quantity' => $quantity,
+                    'provider_location_id' => $providerLocation, 'observed_at' => $observedAt,
+                    'confirmation_method' => 'provider_import_no_write'], JSON_THROW_ON_ERROR),
+                'attempts' => 0, 'created_at' => now(), 'updated_at' => now(),
+            ]);
+            return ['action' => $first ? 'first_count' : 'audit_adjustment', 'quantity' => $quantity,
+                'previous_quantity' => $previous, 'observed_at' => $observedAt];
+        }, 3);
+    }
+
+    public function revision(User $actor, int $storeId, ?int $facilityId, int $variantId): int
+    {
+        $this->authorize($actor);
+        $this->target((string) $storeId, $facilityId, $variantId);
+        $balanceId = $this->balanceId((string) $storeId, $facilityId, $variantId);
+        return (int) DB::table('inventory_balances')->where('id', $balanceId)->value('version');
+    }
+
     public function commit(User $actor, string $storeKey, ?int $facilityId, int $variantId,
         string $source, int $quantity, ?int $expectedProviderQuantity, string $operationKey,
         bool $allowProviderOverwrite = false): array

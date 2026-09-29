@@ -130,6 +130,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
   const [pageSize, setPageSize] = useState(25);
   const [jumpPageInput, setJumpPageInput] = useState('');
   const [selectedSkus, setSelectedSkus] = useState<string[]>([]);
+  const [collapsedProducts, setCollapsedProducts] = useState<string[]>([]);
   const [stockRetrievalRun, setStockRetrievalRun] = useState<StockRetrievalRun | null>(null);
   const [showStockRetrieval, setShowStockRetrieval] = useState(false);
   const [startingStockRetrieval, setStartingStockRetrieval] = useState(false);
@@ -363,13 +364,26 @@ export const MarketplaceInventoryPage: React.FC = () => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter, platformFilter, selectedStoreFilter, pageSize]);
 
-  // Pagination Slice - Keeps DOM light and responsive even with 5,000+ items
-  const paginatedInventory = useMemo(() => {
+  // Keep every visible SKU of a product on the same page. The SKU rows retain
+  // their individual stock accounts and Manage Stock actions.
+  const filteredProducts = useMemo(() => {
+    const groups = new Map<string, {key:string; name:string; imageUrl:string; items:MarketplaceInventoryItem[]}>();
+    const matching = new Set(filteredInventory.map(item => item.productId ? `product:${item.productId}` : `sku:${item.masterSku}`));
+    safeInventory.forEach(item => {
+      const key = item.productId ? `product:${item.productId}` : `sku:${item.masterSku}`;
+      if (!matching.has(key)) return;
+      if (!groups.has(key)) groups.set(key, {key, name:item.productName, imageUrl:item.imageUrl, items:[]});
+      groups.get(key)!.items.push(item);
+    });
+    return [...groups.values()];
+  }, [filteredInventory, safeInventory]);
+  const paginatedProducts = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
-    return filteredInventory.slice(start, start + pageSize);
-  }, [filteredInventory, currentPage, pageSize]);
+    return filteredProducts.slice(start, start + pageSize);
+  }, [filteredProducts, currentPage, pageSize]);
+  const paginatedInventory = useMemo(() => paginatedProducts.flatMap(group => group.items), [paginatedProducts]);
 
-  const totalItems = filteredInventory.length;
+  const totalItems = filteredProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const startIndex = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endIndex = Math.min(totalItems, currentPage * pageSize);
@@ -378,6 +392,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
   const selectedOnCurrentPage = useMemo(() => {
     return paginatedInventory.filter(item => selectedSkus.includes(item.masterSku));
   }, [paginatedInventory, selectedSkus]);
+  const selectedProductCount = filteredProducts.filter(group => group.items.every(item => selectedSkus.includes(item.masterSku))).length;
 
   const isAllCurrentPageSelected =
     paginatedInventory.length > 0 && selectedOnCurrentPage.length === paginatedInventory.length;
@@ -436,7 +451,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
 
   const handleBatchExportSelected = () => {
     if (selectedSkus.length === 0) return;
-    const selectedItems = filteredInventory.filter(i => selectedSkus.includes(i.masterSku));
+    const selectedItems = safeInventory.filter(i => selectedSkus.includes(i.masterSku));
     const csvHeader = singleCurrentStock ? 'Master SKU,Product Name,Variant,Barcode,Current Stock,Sync Status\n' : 'Master SKU,Product Name,Variant,Barcode,Physical Stock,Reserved,Available (ATP),Sync Status\n';
     const csvRows = selectedItems.map(i => 
       singleCurrentStock ? `"${i.masterSku}","${i.productName}","${i.variantName || ''}","${i.barcode || ''}",${i.availableStock ?? 0},"${i.syncStatus || ''}"` : `"${i.masterSku}","${i.productName}","${i.variantName || ''}","${i.barcode || ''}",${i.totalPhysicalStock ?? 0},${i.reservedStock ?? 0},${i.availableStock ?? 0},"${i.syncStatus || ''}"`
@@ -1277,17 +1292,17 @@ export const MarketplaceInventoryPage: React.FC = () => {
           {selectedSkus.length > 0 && (
             <div className="p-3 bg-indigo-50 dark:bg-indigo-950/60 rounded-xl border border-indigo-200 dark:border-indigo-800 flex flex-wrap items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2 text-indigo-900 dark:text-indigo-200 font-semibold">
-                <span>{selectedSkus.length} SKU(s) selected</span>
+                <span>{selectedProductCount} product(s) selected · {selectedSkus.length} SKU(s) included</span>
                 <span className="text-[11px] text-indigo-500 dark:text-indigo-400 font-normal">
-                  ({selectedOnCurrentPage.length} on this page)
+                  ({paginatedProducts.filter(group => group.items.every(item => selectedSkus.includes(item.masterSku))).length} products on this page)
                 </span>
-                {filteredInventory.length > selectedSkus.length && (
+                {filteredProducts.flatMap(group => group.items).some(item => !selectedSkus.includes(item.masterSku)) && (
                   <button
                     type="button"
-                    onClick={() => setSelectedSkus(filteredInventory.map(i => i.masterSku))}
+                    onClick={() => setSelectedSkus(Array.from(new Set(filteredProducts.flatMap(group => group.items.map(item => item.masterSku)))))}
                     className="ml-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer font-bold"
                   >
-                    Select all {filteredInventory.length.toLocaleString()} SKUs
+                    Select all {filteredProducts.length.toLocaleString()} products
                   </button>
                 )}
               </div>
@@ -1339,7 +1354,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                         checked={isAllCurrentPageSelected}
                         onChange={handleToggleSelectAllCurrentPage}
                         className="rounded border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
-                        title="Select all SKUs on current page"
+                        title="Select all products on current page"
                       />
                     </th>
                     <th className="py-3.5 px-4 min-w-[220px]">Product / Master SKU</th>
@@ -1348,7 +1363,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                     </th>
                     {!singleCurrentStock && <th className="py-3.5 px-4 min-w-[120px] whitespace-nowrap">Reserved (Locked)</th>}
                     {!singleCurrentStock && <th className="py-3.5 px-4 min-w-[130px] whitespace-nowrap">Available to Sell (ATP)</th>}
-                    <th className="py-3.5 px-4 min-w-[240px]">{currentMode === 'independent' ? 'Mapped stores · JW stock' : 'Connected Stores & Sync States'}</th>
+                    <th className="py-3.5 px-4 min-w-[240px]">{currentMode === 'independent' ? 'Mapped Stores' : 'Connected Stores & Sync States'}</th>
                     <th className="py-3.5 px-4 text-center w-36 min-w-[144px] sticky right-0 z-20 bg-neutral-100 dark:bg-neutral-800 shadow-[-4px_0_12px_rgba(0,0,0,0.15)] dark:shadow-[-6px_0_16px_rgba(0,0,0,0.6)] border-l border-neutral-200 dark:border-neutral-700/80 text-neutral-700 dark:text-neutral-300">
                       Actions
                     </th>
@@ -1364,7 +1379,37 @@ export const MarketplaceInventoryPage: React.FC = () => {
                       </td>
                     </tr>
                   ) : (
-                    paginatedInventory.map(item => {
+                    paginatedProducts.map(group => <React.Fragment key={group.key}>
+                      <tr className="bg-neutral-50 dark:bg-neutral-900 border-t border-neutral-300 dark:border-neutral-700">
+                        <td className="py-4 px-3.5 text-center">
+                          <input type="checkbox" aria-label={`Select ${group.name} and all its SKUs`}
+                            checked={group.items.every(item => selectedSkus.includes(item.masterSku))}
+                            onChange={() => {
+                              const skus = group.items.map(item => item.masterSku);
+                              const all = skus.every(sku => selectedSkus.includes(sku));
+                              setSelectedSkus(previous => all ? previous.filter(sku => !skus.includes(sku))
+                                : Array.from(new Set([...previous, ...skus])));
+                            }}
+                            className="w-4 h-4 cursor-pointer accent-violet-600" />
+                        </td>
+                        <td colSpan={singleCurrentStock ? 4 : 6} className="py-4 px-4">
+                          <div className="flex items-center gap-3">
+                            <span className="w-11 h-11 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 overflow-hidden flex items-center justify-center shrink-0">
+                              {group.imageUrl ? <img src={group.imageUrl} alt="" className="w-full h-full object-cover" /> : <Boxes className="w-5 h-5 text-neutral-400" />}
+                            </span>
+                            <strong className="text-sm text-neutral-900 dark:text-white flex-1">{group.name}</strong>
+                            <span className="font-semibold text-neutral-800 dark:text-neutral-100 whitespace-nowrap">{group.items.length} SKU{group.items.length === 1 ? '' : 's'}</span>
+                            <button type="button" aria-label={`${collapsedProducts.includes(group.key) ? 'Expand' : 'Collapse'} ${group.name} SKUs`}
+                              aria-expanded={!collapsedProducts.includes(group.key)}
+                              onClick={() => setCollapsedProducts(previous => previous.includes(group.key)
+                                ? previous.filter(key => key !== group.key) : [...previous, group.key])}
+                              className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 cursor-pointer">
+                              <ChevronDown className={`w-4 h-4 transition-transform ${collapsedProducts.includes(group.key) ? '-rotate-90' : ''}`} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {!collapsedProducts.includes(group.key) && group.items.map(item => {
                       const isSelected = selectedSkus.includes(item.masterSku);
                     const isUncounted = item.physicalStockStatus === 'unknown' || item.totalPhysicalStock === null;
                     const physicalStock = item.totalPhysicalStock ?? 0;
@@ -1384,15 +1429,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                           isSelected ? 'bg-indigo-50/40 dark:bg-indigo-950/20' : ''
                         }`}
                       >
-                        {/* Checkbox column */}
-                        <td className="py-3.5 px-3.5 w-10 text-center">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => handleToggleSelectItem(item.masterSku)}
-                            className="rounded border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
-                          />
-                        </td>
+                        <td className="py-3.5 px-3.5 w-10" />
 
                         {/* 1. Product & SKU */}
                         <td className="py-3.5 px-4 min-w-[220px]">
@@ -1415,9 +1452,6 @@ export const MarketplaceInventoryPage: React.FC = () => {
                                   </span>
                                 )}
                               </div>
-                              <div className="font-semibold text-neutral-900 dark:text-white truncate max-w-[220px] mt-0.5">
-                                {item.productName}
-                              </div>
                               <div className="text-[11px] text-neutral-400 truncate mt-0.5">
                                 {item.variantName} {item.barcode && `• ${item.barcode}`}
                               </div>
@@ -1432,17 +1466,17 @@ export const MarketplaceInventoryPage: React.FC = () => {
                               <span className="inline-block text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800/40">
                                 Not Counted
                               </span>
-                              <div className="text-[10px] text-neutral-400">Staff verification required</div>
+                              {!singleCurrentStock && <div className="text-[10px] text-neutral-400">Staff verification required</div>}
                             </div>
                           ) : (
                             <div className="space-y-1">
                               <div className="font-mono font-bold text-sm text-neutral-900 dark:text-white">
-                                {physicalStock} <span className="text-xs text-neutral-400 font-normal">units</span>
+                                {physicalStock} {!singleCurrentStock && <span className="text-xs text-neutral-400 font-normal">units</span>}
                               </div>
-                              <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[10px] text-neutral-600 dark:text-neutral-300">
+                              {!singleCurrentStock && <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[10px] text-neutral-600 dark:text-neutral-300">
                                 <Warehouse className="w-3 h-3 text-indigo-500 shrink-0" />
                                 <span>{singleCurrentStock ? 'JW Current Stock ledger' : 'JW physical ledger'}</span>
-                              </div>
+                              </div>}
                             </div>
                           )}
                         </td>
@@ -1640,7 +1674,8 @@ export const MarketplaceInventoryPage: React.FC = () => {
                         </td>
                       </tr>
                     );
-                  })
+                  })}
+                    </React.Fragment>)
                 )}
               </tbody>
               </table>
@@ -1653,13 +1688,13 @@ export const MarketplaceInventoryPage: React.FC = () => {
                 <div>
                   Showing <span className="font-mono font-bold text-neutral-900 dark:text-white">{totalItems > 0 ? startIndex : 0}</span> to{' '}
                   <span className="font-mono font-bold text-neutral-900 dark:text-white">{endIndex}</span> of{' '}
-                  <span className="font-mono font-bold text-neutral-900 dark:text-white">{totalItems.toLocaleString()}</span> SKUs
+                  <span className="font-mono font-bold text-neutral-900 dark:text-white">{totalItems.toLocaleString()}</span> products
                 </div>
 
                 <span className="text-neutral-300 dark:text-neutral-700 hidden sm:inline">|</span>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-neutral-500 dark:text-neutral-400">Rows per page:</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">Products per page:</span>
                   <select
                     value={pageSize}
                     onChange={(e) => {

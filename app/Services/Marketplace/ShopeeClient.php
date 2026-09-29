@@ -57,6 +57,34 @@ class ShopeeClient
         return ['location_id' => ($matches[0]['location_id'] ?? '') ?: null, 'quantity' => $matches[0]['stock']];
     }
 
+    /** Read all models and seller locations of one item without repeating reads per warehouse. */
+    public function itemStockSnapshot(#[\SensitiveParameter] string $accessToken, string $shopId, string $itemId): array
+    {
+        $items = $this->itemDetails($accessToken, $shopId, [$itemId]);
+        if (count($items) !== 1 || (string) ($items[0]['item_id'] ?? '') !== $itemId
+            || ! is_bool($items[0]['has_model'] ?? null)) {
+            throw new RuntimeException('Shopee item identity changed.');
+        }
+        $models = $items[0]['has_model'] ? $this->models($accessToken, $shopId, $itemId)
+            : [['model_id' => 0, 'stock_info_v2' => $items[0]['stock_info_v2'] ?? null]];
+        $result = [];
+        foreach ($models as $model) {
+            $modelId = (string) ($model['model_id'] ?? '');
+            $rows = $model['stock_info_v2']['seller_stock'] ?? null;
+            if ($modelId === '' || isset($result[$modelId]) || ! is_array($rows) || ! array_is_list($rows)
+                || $rows === []) throw new RuntimeException('Shopee seller stock is unavailable.');
+            foreach ($rows as $row) {
+                $location = (string) ($row['location_id'] ?? '');
+                $key = $location === '' ? 'store' : $location;
+                if (isset($result[$modelId][$key]) || ! is_int($row['stock'] ?? null) || $row['stock'] < 0) {
+                    throw new RuntimeException('Shopee seller stock is incomplete.');
+                }
+                $result[$modelId][$key] = $row['stock'];
+            }
+        }
+        return $result;
+    }
+
     /** @return array{request_id:?string} */
     public function updateAbsoluteStock(#[\SensitiveParameter] string $accessToken, string $shopId, string $itemId,
         string $modelId, ?string $locationId, int $quantity): array

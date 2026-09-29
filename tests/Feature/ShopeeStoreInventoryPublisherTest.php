@@ -40,6 +40,23 @@ class ShopeeStoreInventoryPublisherTest extends TestCase
         ]);
     }
 
+    public function test_one_item_read_returns_all_models_and_seller_locations(): void
+    {
+        Http::fake(['*' => Http::sequence()->push($this->item(true))->push([
+            'error' => '', 'response' => ['model' => [
+                ['model_id' => 88, 'tier_index' => [], 'stock_info_v2' => ['seller_stock' => [
+                    ['location_id' => 'LOC-1', 'stock' => 10], ['location_id' => 'LOC-2', 'stock' => 20],
+                ]]],
+                ['model_id' => 89, 'tier_index' => [], 'stock_info_v2' => ['seller_stock' => [
+                    ['location_id' => 'LOC-1', 'stock' => 30],
+                ]]],
+            ], 'tier_variation' => []],
+        ])]);
+        $stock = app(ShopeeClient::class)->itemStockSnapshot('token', '55', '77');
+        $this->assertSame(['88' => ['LOC-1' => 10, 'LOC-2' => 20], '89' => ['LOC-1' => 30]], $stock);
+        Http::assertSentCount(2);
+    }
+
     public function test_model_stock_is_written_to_one_exact_location_and_independently_read_back(): void
     {
         [$publisher, $store, $listing] = $this->publisher('88');

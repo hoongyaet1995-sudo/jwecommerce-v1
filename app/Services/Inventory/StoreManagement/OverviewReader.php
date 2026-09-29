@@ -48,7 +48,7 @@ final class OverviewReader
                 'facility.id as facility_id', 'facility.provider_facility_id', 'facility.marketplace_store_id as facility_store_id',
                 'facility_store.platform as facility_platform', 'facility_store.shop_name as facility_store_name',
                 'mapping.id as mapping_id', 'mapping.listing_variant_id',
-                'store.platform', 'store.shop_name', 'store.status as connection_status', 'v.sku', 'v.title as variant_title',
+                'store.platform', 'store.shop_name', 'store.status as connection_status', 'v.product_id', 'v.sku', 'v.title as variant_title',
                 'product.title as product_title']);
         $activeEpochId = $configuration?->active_rebaseline_epoch_id;
         if ($activeEpochId !== null) {
@@ -87,6 +87,7 @@ final class OverviewReader
             return [
                 'balance_id' => (int) $row->id,
                 'variant_id' => (int) $row->product_variant_id,
+                'product_id' => (int) $row->product_id,
                 'sku' => $row->sku,
                 'product' => $row->product_title,
                 'variant' => $row->variant_title,

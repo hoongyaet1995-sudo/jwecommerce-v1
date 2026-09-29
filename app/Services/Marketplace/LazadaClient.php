@@ -165,6 +165,49 @@ final class LazadaClient
         return ['warehouse_code' => $code, 'quantity' => (int) $quantity];
     }
 
+    /** One GetProductItem call provides every SKU and warehouse for this item. */
+    public function itemStockSnapshot(#[\SensitiveParameter] string $accessToken, string $itemId, ?int $storeId = null): array
+    {
+        $credentials = $this->credentials($storeId);
+        $item = app(LazadaStockCallGate::class)->run($storeId, $credentials['key'],
+            fn () => $this->read('/product/item/get', $accessToken, ['item_id' => $itemId], $storeId));
+        if ((string) ($item['item_id'] ?? $item['ItemId'] ?? '') !== $itemId) {
+            throw new RuntimeException('Lazada item identity changed.');
+        }
+        $skus = $item['skus'] ?? $item['Skus'] ?? null;
+        if (is_array($skus) && isset($skus['Sku'])) $skus = $skus['Sku'];
+        if (! is_array($skus) || ! array_is_list($skus) || $skus === []) {
+            throw new RuntimeException('Lazada SKU stock response was incomplete.');
+        }
+        $result = [];
+        foreach ($skus as $sku) {
+            $skuId = (string) ($sku['sku_id'] ?? $sku['SkuId'] ?? '');
+            if ($skuId === '' || isset($result[$skuId])) throw new RuntimeException('Lazada SKU identity is ambiguous.');
+            $warehouses = $sku['multiWarehouseInventories'] ?? $sku['MultiWarehouseInventories'] ?? null;
+            if (is_array($warehouses) && isset($warehouses['MultiWarehouseInventory'])) {
+                $warehouses = $warehouses['MultiWarehouseInventory'];
+            }
+            if (is_array($warehouses) && array_is_list($warehouses) && $warehouses !== []) {
+                foreach ($warehouses as $row) {
+                    $code = (string) ($row['warehouseCode'] ?? $row['WarehouseCode'] ?? '');
+                    $quantity = $row['sellableQuantity'] ?? $row['SellableQuantity'] ?? null;
+                    if ($code === '' || isset($result[$skuId][$code]) || ! is_numeric($quantity)
+                        || (string) (int) $quantity !== (string) $quantity || (int) $quantity < 0) {
+                        throw new RuntimeException('Lazada warehouse stock response was incomplete.');
+                    }
+                    $result[$skuId][$code] = (int) $quantity;
+                }
+            } else {
+                $quantity = $sku['sellableQuantity'] ?? $sku['SellableQuantity'] ?? $sku['quantity'] ?? null;
+                if (! is_numeric($quantity) || (string) (int) $quantity !== (string) $quantity || (int) $quantity < 0) {
+                    throw new RuntimeException('Lazada sellable quantity was incomplete.');
+                }
+                $result[$skuId]['dropshipping'] = (int) $quantity;
+            }
+        }
+        return $result;
+    }
+
     /** Separate test boundary; does not enable the production transport flag. */
     public function updateSandboxQuantity(array $snapshot, \App\Models\User $actor):void
     {

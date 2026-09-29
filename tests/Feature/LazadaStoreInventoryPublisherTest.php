@@ -6,6 +6,7 @@ use App\Exceptions\StoreInventoryAuthorizationExpired;
 use App\Exceptions\StoreInventoryResultUncertain;
 use App\Models\MarketplaceStoreToken;
 use App\Services\Inventory\StoreManagement\LazadaStoreInventoryPublisher;
+use App\Services\Marketplace\LazadaClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +32,24 @@ class LazadaStoreInventoryPublisherTest extends TestCase
             'marketplace.lazada.test_app_key' => '123',
             'marketplace.lazada.test_app_secret' => 'secret',
         ]);
+    }
+
+    public function test_one_item_call_returns_multiple_skus_and_warehouses(): void
+    {
+        Http::fake(['*' => Http::response(['code' => '0', 'data' => [
+            'item_id' => '1001', 'skus' => [
+                ['sku_id' => '2001', 'multiWarehouseInventories' => [
+                    ['warehouseCode' => 'WH-A', 'sellableQuantity' => '10'],
+                    ['warehouseCode' => 'WH-B', 'sellableQuantity' => '20'],
+                ]],
+                ['sku_id' => '2002', 'multiWarehouseInventories' => [
+                    ['warehouseCode' => 'WH-A', 'sellableQuantity' => '30'],
+                ]],
+            ],
+        ]])]);
+        $stock = app(LazadaClient::class)->itemStockSnapshot('token', '1001');
+        $this->assertSame(['2001' => ['WH-A' => 10, 'WH-B' => 20], '2002' => ['WH-A' => 30]], $stock);
+        Http::assertSentCount(1);
     }
 
     public function test_single_stock_identity_is_written_and_read_back_exactly(): void

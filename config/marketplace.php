@@ -65,6 +65,7 @@ return [
     'import_operations_enabled' => env('MARKETPLACE_IMPORT_OPERATIONS_ENABLED', false),
     'oauth_acceptance_enabled' => env('MARKETPLACE_OAUTH_ACCEPTANCE_ENABLED', false),
     'shopee' => [
+        'stock_call_interval_ms' => (int) env('MARKETPLACE_SHOPEE_STOCK_CALL_INTERVAL_MS', 1000),
         'applications' => [
             'production' => ['partner_id' => env('MARKETPLACE_SHOPEE_PARTNER_ID'),
                 'partner_key' => env('MARKETPLACE_SHOPEE_PARTNER_KEY'),

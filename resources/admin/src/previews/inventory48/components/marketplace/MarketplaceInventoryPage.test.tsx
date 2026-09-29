@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 const inventoryItem: any = {
-  id: 'variant:7', variantId: 7, masterSku: 'SKU-7', productName: 'Baju Kurung Joshua',
+  id: 'variant:7', variantId: 7, productId: 4, masterSku: 'SKU-7', productName: 'Baju Kurung Joshua',
   variantName: 'Pink', barcode: '', imageUrl: '', physicalStockStatus: 'verified',
   totalPhysicalStock: 42, reservedStock: 2, availableStock: 40, mappedStoreIds: ['11'],
   storeAssociations: [], historyLog: [], channelMappings: {},
@@ -42,7 +42,7 @@ afterEach(async () => { await act(async () => root.unmount()); host.remove(); })
 it('shows the mapped store total and opens its existing Manage Stock flow without showing unmapped stores', async () => {
   await act(async () => root.render(<MarketplaceInventoryPage />));
 
-  expect(host.textContent).toContain('Mapped stores · JW stock');
+  expect(host.textContent).toContain('Mapped Stores');
   expect(host.textContent).toContain('Mapped Lazada');
   expect(host.textContent).toContain('40 units');
   expect(host.querySelector('tbody tr td:nth-child(6)')?.textContent).not.toContain('Unmapped Shopee');
@@ -50,4 +50,17 @@ it('shows the mapped store total and opens its existing Manage Stock flow withou
   expect(store).not.toBeNull();
   await act(async () => store!.click());
   expect(host.querySelector('[data-testid="manage-stock-target"]')?.textContent).toBe('11');
+});
+
+it('selects all variants from one product row while keeping SKU actions separate', async () => {
+  context.marketplaceInventory = [inventoryItem, {...inventoryItem, id:'variant:8', variantId:8,
+    masterSku:'SKU-8', variantName:'Beige'}];
+  await act(async () => root.render(<MarketplaceInventoryPage />));
+  expect(host.textContent).toContain('2 SKUs');
+  expect(host.querySelectorAll('button[aria-label^="View Mapped Lazada stock for"]')).toHaveLength(2);
+  const checkbox = host.querySelector<HTMLInputElement>('input[aria-label="Select Baju Kurung Joshua and all its SKUs"]');
+  expect(checkbox).not.toBeNull();
+  await act(async () => { checkbox!.click(); });
+  expect(host.textContent).toContain('1 product(s) selected · 2 SKU(s) included');
+  context.marketplaceInventory = [inventoryItem];
 });

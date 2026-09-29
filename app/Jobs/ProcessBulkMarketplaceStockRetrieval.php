@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\User;
 use App\Services\Inventory\StoreManagement\MarketplaceBaselineFirstCount;
+use App\Services\Inventory\StoreManagement\MarketplaceItemStockSnapshot;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
-/** Processes one location per job, then automatically queues the next location. */
+/** Processes item groups within one bounded worker run; resumes from persisted location progress. */
 final class ProcessBulkMarketplaceStockRetrieval implements ShouldQueue
 {
     use Queueable;
@@ -27,7 +28,22 @@ final class ProcessBulkMarketplaceStockRetrieval implements ShouldQueue
         $this->onConnection('marketplace')->onQueue('marketplace');
     }
 
-    public function handle(MarketplaceBaselineFirstCount $baseline): void
+    public function handle(MarketplaceBaselineFirstCount $baseline, ?MarketplaceItemStockSnapshot $snapshots = null): void
+    {
+        $snapshots ??= app(MarketplaceItemStockSnapshot::class);
+        $started = microtime(true);
+        for ($processed = 0; $processed < 250; $processed++) {
+            if (microtime(true) - $started > 900) {
+                self::dispatch($this->runId);
+                return;
+            }
+            if ($this->handleItemGroup($baseline, $snapshots)) continue;
+            if (! $this->processSingleLocation($baseline)) return;
+        }
+        self::dispatch($this->runId);
+    }
+
+    private function processSingleLocation(MarketplaceBaselineFirstCount $baseline): bool
     {
         $claim = DB::transaction(function (): ?array {
             $run = DB::table('marketplace_stock_retrieval_runs')->where('id', $this->runId)->lockForUpdate()->first();
@@ -59,7 +75,7 @@ final class ProcessBulkMarketplaceStockRetrieval implements ShouldQueue
                 (int) $run->actor_id];
         }, 3);
         if (! $claim) {
-            return;
+            return false;
         }
         [$itemId, $variantId, $storeId, $facilityId, $actorId] = $claim;
         $this->claimedItemId = $itemId;
@@ -110,7 +126,121 @@ final class ProcessBulkMarketplaceStockRetrieval implements ShouldQueue
                 'last_error_code' => $errorCode ?: $run->last_error_code,
                 'heartbeat_at' => now(), 'updated_at' => now(),
             ]);
-            self::dispatch($this->runId)->afterCommit();
+        }, 3);
+        return true;
+    }
+
+    /** Claim all pending locations of one store item and share two item-level reads. */
+    private function handleItemGroup(MarketplaceBaselineFirstCount $baseline, MarketplaceItemStockSnapshot $snapshots): bool
+    {
+        $claim = DB::transaction(function (): ?array {
+            $run = DB::table('marketplace_stock_retrieval_runs')->where('id', $this->runId)->lockForUpdate()->first();
+            if (! $run || ! in_array($run->status, ['queued', 'running'], true)
+                || DB::table('marketplace_stock_retrieval_items')->where('run_id', $this->runId)
+                    ->where('status', 'processing')->exists()) return null;
+            $first = DB::table('marketplace_stock_retrieval_items as item')
+                ->join('marketplace_variant_mappings as mapping', function ($join): void {
+                    $join->on('mapping.product_variant_id', '=', 'item.product_variant_id')
+                        ->on('mapping.store_id', '=', 'item.marketplace_store_id');
+                })->join('marketplace_listing_variants as listing', 'listing.id', '=', 'mapping.listing_variant_id')
+                ->where('item.run_id', $this->runId)->where('item.status', 'pending')
+                ->whereNotNull('item.marketplace_store_id')->orderBy('item.id')
+                ->first(['item.id', 'item.marketplace_store_id', 'listing.external_product_id']);
+            if (! $first) return null;
+            $items = DB::table('marketplace_stock_retrieval_items as item')
+                ->join('marketplace_variant_mappings as mapping', function ($join): void {
+                    $join->on('mapping.product_variant_id', '=', 'item.product_variant_id')
+                        ->on('mapping.store_id', '=', 'item.marketplace_store_id');
+                })->join('marketplace_listing_variants as listing', 'listing.id', '=', 'mapping.listing_variant_id')
+                ->where('item.run_id', $this->runId)->where('item.status', 'pending')
+                ->where('item.marketplace_store_id', $first->marketplace_store_id)
+                ->where('listing.external_product_id', $first->external_product_id)
+                ->orderBy('item.id')->distinct()->get(['item.id', 'item.product_variant_id',
+                    'item.marketplace_store_facility_id', 'listing.id as listing_id',
+                    'listing.external_variant_id', 'listing.external_product_id']);
+            if ($items->count() < 2) return null;
+            $ids = $items->pluck('id')->all();
+            DB::table('marketplace_stock_retrieval_items')->whereIn('id', $ids)->update([
+                'status' => 'processing', 'updated_at' => now(),
+            ]);
+            DB::table('marketplace_stock_retrieval_items')->whereIn('id', $ids)->increment('attempts');
+            DB::table('marketplace_stock_retrieval_runs')->where('id', $this->runId)->update([
+                'status' => 'running', 'heartbeat_at' => now(), 'updated_at' => now(),
+            ]);
+            return ['items' => $items, 'store_id' => (int) $first->marketplace_store_id,
+                'item_id' => (string) $first->external_product_id, 'actor_id' => (int) $run->actor_id];
+        }, 3);
+        if (! $claim) return false;
+        $this->claimedItemId = (int) $claim['items']->first()->id;
+        $store = DB::table('marketplace_stores')->where('id', $claim['store_id'])->first();
+        $actor = User::find($claim['actor_id']);
+        $prepared = [];
+        foreach ($claim['items'] as $item) {
+            try {
+                if (! $store || ! $actor) throw new \RuntimeException('Store or actor is unavailable.');
+                $facility = $item->marketplace_store_facility_id === null ? null
+                    : DB::table('marketplace_store_facilities')->where('id', $item->marketplace_store_facility_id)->first();
+                $prepared[] = ['item' => $item, 'facility' => $facility,
+                    'version' => $baseline->revision($actor, $claim['store_id'],
+                        $item->marketplace_store_facility_id === null ? null : (int) $item->marketplace_store_facility_id,
+                        (int) $item->product_variant_id)];
+            } catch (Throwable $error) {
+                $this->finishGroupedItem((int) $item->id, null, $error instanceof ValidationException
+                    ? 'location_conflict_or_unavailable' : 'provider_or_ledger_error');
+            }
+        }
+        if ($prepared !== []) {
+            try {
+                $first = $snapshots->read($store, $claim['item_id']);
+                $second = $snapshots->read($store, $claim['item_id']);
+                foreach ($prepared as $row) {
+                    $item = $row['item'];
+                    $listing = (object) ['external_variant_id' => $item->external_variant_id];
+                    try {
+                        $one = $snapshots->quantity($first, $listing, $row['facility'], $store->platform);
+                        $two = $snapshots->quantity($second, $listing, $row['facility'], $store->platform);
+                        if ($one !== $two) {
+                            throw ValidationException::withMessages(['stock' => 'Marketplace stock changed during retrieval.']);
+                        }
+                        $result = $baseline->reconcileObserved($actor, $claim['store_id'],
+                            $item->marketplace_store_facility_id === null ? null : (int) $item->marketplace_store_facility_id,
+                            (int) $item->product_variant_id, (int) $item->id, $two,
+                            $second['observed_at'], $row['version']);
+                        $this->finishGroupedItem((int) $item->id, $result, null);
+                    } catch (Throwable $error) {
+                        if (! $error instanceof ValidationException) report($error);
+                        $this->finishGroupedItem((int) $item->id, null, $error instanceof ValidationException
+                            ? 'stock_changed_during_retrieval' : 'provider_or_ledger_error');
+                    }
+                }
+            } catch (Throwable $error) {
+                report($error);
+                foreach ($prepared as $row) $this->finishGroupedItem((int) $row['item']->id, null, 'provider_or_ledger_error');
+            }
+        }
+        return true;
+    }
+
+    private function finishGroupedItem(int $itemId, ?array $result, ?string $errorCode): void
+    {
+        DB::transaction(function () use ($itemId, $result, $errorCode): void {
+            $run = DB::table('marketplace_stock_retrieval_runs')->where('id', $this->runId)->lockForUpdate()->first();
+            $item = DB::table('marketplace_stock_retrieval_items')->where('id', $itemId)->lockForUpdate()->first();
+            if (! $run || ! $item || $item->status !== 'processing') return;
+            DB::table('marketplace_stock_retrieval_items')->where('id', $itemId)->update([
+                'status' => $errorCode ? 'failed' : 'succeeded', 'action' => $result['action'] ?? null,
+                'observed_quantity' => $result['quantity'] ?? null,
+                'previous_quantity' => $result['previous_quantity'] ?? null,
+                'observed_at' => isset($result['observed_at'])
+                    ? CarbonImmutable::parse($result['observed_at'])->utc()->format('Y-m-d H:i:s') : null,
+                'error_code' => $errorCode, 'updated_at' => now(),
+            ]);
+            DB::table('marketplace_stock_retrieval_runs')->where('id', $this->runId)->update([
+                'completed_locations' => (int) $run->completed_locations + ($errorCode ? 0 : 1),
+                'failed_locations' => (int) $run->failed_locations + ($errorCode ? 1 : 0),
+                'last_error_code' => $errorCode ?: $run->last_error_code,
+                'heartbeat_at' => now(), 'updated_at' => now(),
+            ]);
         }, 3);
     }
 
