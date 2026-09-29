@@ -34,6 +34,8 @@ class MarketplaceBaselineFirstCountTest extends TestCase
             $c['variant_id'], 'marketplace', 20, 20, 'baseline-test-a');
         $this->assertSame('matched_at_import', $receipt['provider_sync_status']);
         $this->assertDatabaseHas('inventory_balances', ['product_variant_id' => $c['variant_id'], 'current_stock' => 20]);
+        $this->assertSame('2026-09-29 10:00:00', DB::table('inventory_balances')
+            ->where('product_variant_id', $c['variant_id'])->where('current_stock', 20)->value('counted_at'));
         $this->assertDatabaseHas('inventory_store_sync_tasks', [
             'marketplace_store_facility_id' => $c['facility_a'], 'status' => 'confirmed',
             'target_quantity' => 20, 'attempts' => 0,

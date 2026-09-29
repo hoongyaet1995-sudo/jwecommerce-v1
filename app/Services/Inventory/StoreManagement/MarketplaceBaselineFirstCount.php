@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\Inventory\CatalogInventoryState;
 use App\Services\Inventory\CatalogStockProjection;
 use App\Services\Inventory\CurrentStockLedger;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -118,7 +119,10 @@ final class MarketplaceBaselineFirstCount
             $movement = app(CurrentStockLedger::class)->setAbsolute($balanceId, $quantity,
                 'baseline:'.$operationKey, $source === 'marketplace' ? 'Marketplace First Count baseline' : 'Manual First Count');
             // The order boundary is the provider read time, not a later browser acknowledgement.
-            DB::table('inventory_balances')->where('id', $balanceId)->update(['counted_at' => $observedAt]);
+            // MySQL DATETIME needs a timezone-free value; preserve the provider instant in UTC.
+            DB::table('inventory_balances')->where('id', $balanceId)->update([
+                'counted_at' => CarbonImmutable::parse($observedAt)->utc()->format('Y-m-d H:i:s'),
+            ]);
             if ($target['store']) {
                 DB::table('inventory_store_accounts')->where('marketplace_store_id', $target['store']->id)
                     ->update(['management_status' => 'managed', 'updated_at' => now()]);
