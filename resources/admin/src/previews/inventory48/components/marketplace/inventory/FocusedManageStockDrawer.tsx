@@ -7,7 +7,7 @@ import { ManageStockDrawer } from './ManageStockDrawer';
 import { StockTakeRecoveryFlow } from './StockTakeRecoveryFlow';
 import { warehouseDisplayCode } from './warehouseDisplay';
 
-type Balance = { physical: number | null; reserved: number | null; available: number | null; current?: number | null; counted: boolean };
+type Balance = { physical: number | null; reserved: number | null; available: number | null; current?: number | null; counted: boolean; unknownFacilities?: number };
 type Facility = Balance & { id: string; name: string; providerId: string; inventoryWarehouseId: number | null };
 type StoreRow = {
   id: string; name: string; platform: string; environment?: string; topology: string | null; status: string;
@@ -46,7 +46,7 @@ function StockSummary({ balance, singleCurrentStock = false }: { balance: Balanc
   return <div className={`grid ${singleCurrentStock ? 'grid-cols-1' : 'grid-cols-3'} gap-2 rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-4`}>
     {entries.map(([label, value, color]) => <div key={label} className="flex min-w-0 flex-col items-center gap-2 text-center">
       <span className="text-[10px] leading-snug text-neutral-400 sm:text-xs">{label}</span>
-      <strong className={`font-mono text-sm sm:text-lg ${color}`}>{number(value, balance?.counted)}</strong>
+      <strong className={`font-mono text-sm sm:text-lg ${color}`}>{number(value, singleCurrentStock ? value !== null && value !== undefined : balance?.counted)}</strong>
     </div>)}
   </div>;
 }
@@ -56,7 +56,7 @@ function CompactBalances({ balance, singleCurrentStock = false }: { balance: Bal
     {(singleCurrentStock ? [['Current Stock', balance?.current ?? balance?.available]] : [['Physical', balance?.physical], ['Reserved', balance?.reserved], ['Available', balance?.available]] as const)
       .map(([label, value]) => <span key={label} className="flex min-w-[44px] flex-col items-center gap-1 sm:min-w-[58px]">
         <span className="text-[9px] text-neutral-400 sm:text-[10px]">{label}</span>
-        <strong className={`font-mono text-xs ${label === 'Available' ? 'text-emerald-400' : 'text-white'}`}>{number(value, balance?.counted)}</strong>
+        <strong className={`font-mono text-xs ${label === 'Available' ? 'text-emerald-400' : 'text-white'}`}>{number(value, singleCurrentStock ? value !== null && value !== undefined : balance?.counted)}</strong>
       </span>)}
   </span>;
 }
@@ -126,12 +126,15 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
           available: facility.available ?? null, current: facility.current_stock ?? null, counted: facility.counted === true,
         }));
         const counted = facilities.length > 0 && facilities.every(facility => facility.counted);
+        const knownCurrent = facilities.filter(facility => facility.counted && facility.current !== null);
+        const currentSubtotal = knownCurrent.length > 0
+          ? knownCurrent.reduce((sum, facility) => sum + Number(facility.current), 0) : null;
         const balance: Balance = {
           physical: counted ? facilities.reduce((sum, facility) => sum + (facility.physical || 0), 0) : null,
           reserved: counted ? facilities.reduce((sum, facility) => sum + (facility.reserved || 0), 0) : null,
           available: counted ? facilities.reduce((sum, facility) => sum + (facility.available || 0), 0) : null,
-          current: counted ? facilities.reduce((sum, facility) => sum + (facility.current || 0), 0) : null,
-          counted,
+          current: singleCurrentStock ? currentSubtotal : counted ? facilities.reduce((sum, facility) => sum + (facility.current || 0), 0) : null,
+          counted, unknownFacilities: singleCurrentStock ? facilities.length - knownCurrent.length : undefined,
         };
         return { ...base, topology: result.topology ?? null, status: result.status, facilities, balance,
           error: result.error_code || undefined };
@@ -257,6 +260,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
         </>}
         {selectedStore && !atLocation && <>
           <StockSummary balance={selectedStore.balance} singleCurrentStock={singleCurrentStock} />
+          {singleCurrentStock && !!selectedStore.balance?.unknownFacilities && selectedStore.balance.current !== null && <p className="text-xs text-amber-300">Counted warehouse subtotal: {selectedStore.balance.current} units. {selectedStore.balance.unknownFacilities} warehouse(s) have not had a First Count; the full store total is not yet known.</p>}
           {selectedStore.status !== 'verified' && <div role="status" className="rounded-xl border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-300">Warehouse verification is pending. Stock changes are unavailable until it completes.</div>}
           <p className="text-xs font-semibold text-neutral-300">{shopeeDefault ? 'Stock locations · 1' : `Platform warehouses · ${selectedStore.facilities.length}`}</p>
           {shopeeDefault && <button type="button" onClick={() => { setFacilityId('default'); setActionsOpen(false); }} className="flex w-full flex-col gap-3 rounded-xl border border-neutral-700 bg-neutral-800/60 p-4 text-left hover:border-purple-500 sm:flex-row sm:items-center sm:justify-between">

@@ -66,6 +66,16 @@ describe('store inventory adapters', () => {
 
     expect(balances['SKU-7']['11']).toMatchObject({ physicalStock: null, availableStock: null, isCounted: false, facilityCount: 2 });
   });
+  it('shows known Current Stock as a subtotal while other warehouses remain uncounted', () => {
+    const balances = adaptBalances({ ...overview, single_current_stock: true, data: [
+      { ...overview.data[0], pool_kind: 'facility', facility_id: 1, current_stock: 20, available: 20 },
+      { ...overview.data[0], pool_kind: 'facility', facility_id: 2, current_stock: 20, available: 20 },
+      { ...overview.data[0], pool_kind: 'facility', facility_id: 3, current_stock: null, available: null, counted: false },
+    ] } as any);
+
+    expect(balances['SKU-7']['11']).toMatchObject({ currentStock: 40, availableStock: 40,
+      isCounted: false, unknownFacilities: 1, facilityCount: 3 });
+  });
   it('keeps JW direct stock when an active facility epoch represents it as a website row', () => {
     const balances = adaptBalances({ ...overview, data: [
       { ...overview.data[0], pool_kind: 'facility', account_key: 'website', store_id: null, facility_id: null, platform: 'website', physical: 15, available: 15 },

@@ -1440,7 +1440,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                           {currentMode === 'independent' ? (
                             <div className="space-y-1.5">
                               {mappedSummaries.length === 0 && <span className="text-[11px] text-neutral-500">No mapped stores for this SKU</span>}
-                              {mappedSummaries.map(({ store, availableStock, facilityCount, needsAttention }) => (
+                              {mappedSummaries.map(({ store, availableStock, facilityCount, unknownFacilities, needsAttention }) => (
                                 <button
                                   key={store.id}
                                   type="button"
@@ -1460,6 +1460,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                                   <span className="flex shrink-0 items-center gap-2">
                                     <span className="text-right">
                                       <strong className="block whitespace-nowrap text-xs text-neutral-900 dark:text-white">{availableStock === null ? 'Not counted' : `${availableStock} units`}</strong>
+                                      {unknownFacilities > 0 && availableStock !== null && <small className="block text-[10px] text-amber-600 dark:text-amber-400">Counted subtotal · {unknownFacilities} uncounted</small>}
                                       {needsAttention && <small className="block text-[10px] text-amber-600 dark:text-amber-400">Needs attention</small>}
                                     </span>
                                     <ChevronRight className="h-3.5 w-3.5 text-purple-400" aria-hidden="true" />

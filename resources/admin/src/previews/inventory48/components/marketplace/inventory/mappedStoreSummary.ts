@@ -6,6 +6,7 @@ export type MappedStoreSummary = {
   availableStock: number | null;
   isCounted: boolean;
   facilityCount: number | null;
+  unknownFacilities: number;
   needsAttention: boolean;
 };
 
@@ -21,11 +22,14 @@ export function mappedStoreSummaries(
     const balance = balances[store.id];
     const tasks = balance?.syncTasks || [];
     const counted = balance?.isCounted === true && balance.availableStock !== null && balance.availableStock !== undefined;
+    const partialCurrent = (balance as any)?.singleCurrentStock === true && balance?.availableStock !== null
+      && balance?.availableStock !== undefined;
     return {
       store,
-      availableStock: counted ? balance.availableStock : null,
+      availableStock: counted || partialCurrent ? balance.availableStock : null,
       isCounted: counted,
       facilityCount: balance?.facilityCount ?? null,
+      unknownFacilities: Number((balance as any)?.unknownFacilities || 0),
       needsAttention: store.connectionState !== 'connected' || tasks.some(task => ['failed', 'auth_expired', 'facility_blocked', 'uncertain'].includes(task.status || '')),
     };
   });

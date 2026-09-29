@@ -23,4 +23,11 @@ describe('mappedStoreSummaries', () => {
     } as any);
     expect(result).toMatchObject([{ availableStock: null, needsAttention: true }]);
   });
+  it('labels a partially counted Current Stock store without treating the subtotal as complete', () => {
+    const result = mappedStoreSummaries({ mappedStoreIds: ['11'] } as any, stores as any, {
+      '11': { availableStock: 40, isCounted: false, singleCurrentStock: true,
+        unknownFacilities: 6, facilityCount: 8 },
+    } as any);
+    expect(result).toMatchObject([{ availableStock: 40, isCounted: false, unknownFacilities: 6 }]);
+  });
 });

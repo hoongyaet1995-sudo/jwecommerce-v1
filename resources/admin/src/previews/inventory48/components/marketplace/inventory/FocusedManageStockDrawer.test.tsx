@@ -38,6 +38,21 @@ it('shows only Current Stock in every Manage Stock summary when the single ledge
   expect(host.textContent).not.toMatch(/Physical stock|Reserved for orders|Available to sell/);
 });
 
+it('shows the counted Current Stock subtotal when other warehouses remain uncounted', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({
+    status: 'verified', topology: 'multi_warehouse', facilities: [
+      { id: 7, name: 'Warehouse A', provider_id: 'A', inventory_warehouse_id: 19, counted: true, current_stock: 20 },
+      { id: 8, name: 'Warehouse B', provider_id: 'B', inventory_warehouse_id: 20, counted: true, current_stock: 20 },
+      { id: 9, name: 'Warehouse C', provider_id: 'C', inventory_warehouse_id: 21, counted: false, current_stock: null },
+    ],
+  }) }) as Response));
+  await act(async () => root.render(<FocusedManageStockDrawer isOpen onClose={() => {}}
+    item={{ ...item, singleCurrentStock: true }} mode="independent" stores={[stores[1]]} />));
+  await click('Lazada Test');
+  expect(host.textContent).toContain('Current Stock40');
+  expect(host.textContent).toContain('1 warehouse(s) have not had a First Count');
+});
+
 it('opens Shopee default inventory as a selectable location and preserves store ledger action targets', async () => {
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({ ok: true, json: async () =>
     String(input).includes('/sync') ? { status: 'synced', can_check: true }
