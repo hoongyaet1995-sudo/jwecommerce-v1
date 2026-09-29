@@ -325,6 +325,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/inventory/store-management/direct-allocations', [\App\Http\Controllers\Admin\DirectStockAllocationController::class, 'store']);
     Route::post('/api/inventory/store-management/first-count-baseline/observe', [\App\Http\Controllers\Admin\MarketplaceBaselineFirstCountController::class, 'observe'])->middleware('throttle:20,1');
     Route::post('/api/inventory/store-management/first-count-baseline/commit', [\App\Http\Controllers\Admin\MarketplaceBaselineFirstCountController::class, 'commit'])->middleware('throttle:10,1');
+    Route::post('/api/inventory/store-management/stock-retrieval-runs', [\App\Http\Controllers\Admin\BulkMarketplaceStockRetrievalController::class, 'start'])->middleware('throttle:5,1');
+    Route::get('/api/inventory/store-management/stock-retrieval-runs/latest', [\App\Http\Controllers\Admin\BulkMarketplaceStockRetrievalController::class, 'latest']);
+    Route::get('/api/inventory/store-management/stock-retrieval-runs/{run}', [\App\Http\Controllers\Admin\BulkMarketplaceStockRetrievalController::class, 'show'])->whereUuid('run');
+    Route::post('/api/inventory/store-management/stock-retrieval-runs/{run}/resume', [\App\Http\Controllers\Admin\BulkMarketplaceStockRetrievalController::class, 'resume'])->whereUuid('run')->middleware('throttle:10,1');
     Route::post('/api/inventory/store-management/batch-first-counts/{review}/confirm', [\App\Http\Controllers\Admin\BatchFirstCountController::class, 'confirm'])->whereUuid('review');
     Route::get('/api/inventory/store-management/overview', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'overview']);
     Route::get('/api/inventory/store-management/rebaseline/readiness', [\App\Http\Controllers\Admin\InventoryRebaselineController::class, 'readiness']);

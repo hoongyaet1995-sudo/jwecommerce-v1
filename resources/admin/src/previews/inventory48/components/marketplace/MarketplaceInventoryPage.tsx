@@ -49,6 +49,7 @@ import {
 
 import { InitialStockCountModal } from './inventory/InitialStockCountModal';
 import { LocationFirstCountBaseline } from './inventory/LocationFirstCountBaseline';
+import { BulkStockRetrievalModal, StockRetrievalRun } from './inventory/BulkStockRetrievalModal';
 import { StockIntakeAdjustmentModal } from './inventory/StockIntakeAdjustmentModal';
 import { FocusedManageStockDrawer } from './inventory/FocusedManageStockDrawer';
 import { StoreStockTransfersTab } from './inventory/StoreStockTransfersTab';
@@ -129,6 +130,22 @@ export const MarketplaceInventoryPage: React.FC = () => {
   const [pageSize, setPageSize] = useState(25);
   const [jumpPageInput, setJumpPageInput] = useState('');
   const [selectedSkus, setSelectedSkus] = useState<string[]>([]);
+  const [stockRetrievalRun, setStockRetrievalRun] = useState<StockRetrievalRun | null>(null);
+  const [showStockRetrieval, setShowStockRetrieval] = useState(false);
+  const [startingStockRetrieval, setStartingStockRetrieval] = useState(false);
+  useEffect(() => {
+    void storeInventoryApi.latestStockRetrieval().then((run:StockRetrievalRun | null)=>setStockRetrievalRun(run)).catch(()=>{});
+  }, []);
+  useEffect(() => {
+    if (!stockRetrievalRun || showStockRetrieval || !['queued','running'].includes(stockRetrievalRun.status)) return;
+    const timer = window.setInterval(() => {
+      void storeInventoryApi.stockRetrieval(stockRetrievalRun.id).then((run:StockRetrievalRun) => {
+        setStockRetrievalRun(run);
+        if (['succeeded','completed_with_errors'].includes(run.status)) void reloadInventory();
+      }).catch(()=>{});
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [stockRetrievalRun?.id, stockRetrievalRun?.status, showStockRetrieval]);
 
   // Modals & Drawers
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
@@ -399,6 +416,22 @@ export const MarketplaceInventoryPage: React.FC = () => {
       });
       setSelectedSkus([]);
     }, 1200);
+  };
+
+  const handleBulkRetrieveStock = async () => {
+    const selected = safeInventory.filter(item => selectedSkus.includes(item.masterSku));
+    const variantIds = selected.map(item => Number((item as any).variantId)).filter(id => Number.isInteger(id) && id > 0);
+    if (variantIds.length !== selectedSkus.length) {
+      addToast({type:'error',title:'Cannot start retrieval',message:'Refresh Inventory and select valid mapped SKUs.'});
+      return;
+    }
+    setStartingStockRetrieval(true);
+    try {
+      const run = await storeInventoryApi.startStockRetrieval(variantIds) as StockRetrievalRun;
+      setStockRetrievalRun(run);setShowStockRetrieval(true);
+    } catch (error) {
+      addToast({type:'error',title:'Cannot start retrieval',message:error instanceof Error?error.message:'Please try again.'});
+    } finally {setStartingStockRetrieval(false);}
   };
 
   const handleBatchExportSelected = () => {
@@ -1223,6 +1256,10 @@ export const MarketplaceInventoryPage: React.FC = () => {
               </select>
 
               {/* Quick Intake Button */}
+              {stockRetrievalRun && <button type="button" onClick={()=>setShowStockRetrieval(true)}
+                className="px-3.5 py-2 rounded-xl border border-violet-700 text-violet-600 dark:text-violet-300 text-xs font-bold">
+                View Retrieval Progress {['queued','running'].includes(stockRetrievalRun.status)?'· Running':''}
+              </button>}
               {safeInventory.length > 0 && (
                 <button
                   type="button"
@@ -1256,6 +1293,10 @@ export const MarketplaceInventoryPage: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2">
+                {currentMode === 'independent' && singleCurrentStock && <button type="button" onClick={handleBulkRetrieveStock} disabled={startingStockRetrieval}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-bold shadow-xs transition-colors cursor-pointer disabled:opacity-50">
+                  <Download className="w-3.5 h-3.5" /> Bulk Retrieve Stock from Marketplace ({selectedSkus.length})
+                </button>}
                 <button
                   type="button"
                   onClick={handleBatchSyncSelected}
@@ -1769,6 +1810,9 @@ export const MarketplaceInventoryPage: React.FC = () => {
       )}
 
       {/* MODAL 1: Allocate Stock Modal */}
+      {showStockRetrieval && stockRetrievalRun && <BulkStockRetrievalModal run={stockRetrievalRun}
+        onClose={()=>{setShowStockRetrieval(false);void storeInventoryApi.stockRetrieval(stockRetrievalRun.id).then((run:StockRetrievalRun)=>setStockRetrievalRun(run));}}
+        onFinished={()=>{void reloadInventory();}} />}
       {currentMode === 'independent' && selectedItemForCount && targetFirstCountStoreId && targetFirstCountWarehouseId ? <LocationFirstCountBaseline
         key={`${selectedItemForCount.id}:${targetFirstCountStoreId}:${targetFirstCountWarehouseId}`}
         item={selectedItemForCount}

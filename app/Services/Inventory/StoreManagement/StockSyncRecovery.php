@@ -85,7 +85,7 @@ final class StockSyncRecovery
                 'listing_not_participating' => 'This listing is not currently eligible for stock updates.',
                 default => 'Stock synchronization is currently unavailable for this store SKU.',
             };
-        } elseif ($task && $task->stage === 'baseline' && $task->status === 'confirmed'
+        } elseif ($task && in_array($task->stage, ['baseline', 'provider_import'], true) && $task->status === 'confirmed'
             && $c['quantity'] !== null && (int) $task->target_quantity === $c['quantity']) {
             $status = 'synced';
         } elseif ($observation && (! $task || $observation->sync_task_id === $task->id) && $c['quantity'] !== null && (int) $observation->quantity === $c['quantity']) {
@@ -102,7 +102,7 @@ final class StockSyncRecovery
         $confirmedAt = DB::table('inventory_store_sync_attempts as a')->join('inventory_store_sync_tasks as t', 't.id', '=', 'a.task_id')
             ->where('t.marketplace_store_id', $storeId)->where('t.product_variant_id', $variantId)->where('a.status', 'confirmed')
             ->max('a.created_at');
-        $baselineReceipt = $task?->stage === 'baseline' && $task->status === 'confirmed'
+        $baselineReceipt = in_array($task?->stage, ['baseline', 'provider_import'], true) && $task->status === 'confirmed'
             ? (json_decode($task->provider_receipt ?? '{}', true) ?: []) : [];
         $quantity = isset($baselineReceipt['observed_quantity']) ? (int) $baselineReceipt['observed_quantity']
             : ($observation ? (int) $observation->quantity : null);

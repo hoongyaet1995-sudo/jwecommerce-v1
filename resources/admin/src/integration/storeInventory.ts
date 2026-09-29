@@ -40,6 +40,10 @@ export const storeInventoryApi={
   },
   baselineObserve:(storeKey:string,facilityId:number|null,variantId:number)=>json('/admin/api/inventory/store-management/first-count-baseline/observe',{method:'POST',body:JSON.stringify({store_key:storeKey,facility_id:facilityId,variant_id:variantId})}),
   baselineCommit:(payload:{store_key:string;facility_id:number|null;variant_id:number;source:'marketplace'|'manual';quantity:number;expected_provider_quantity:number|null;operation_key:string;allow_provider_overwrite?:boolean})=>json('/admin/api/inventory/store-management/first-count-baseline/commit',{method:'POST',body:JSON.stringify(payload)}),
+  startStockRetrieval:(variantIds:number[])=>json('/admin/api/inventory/store-management/stock-retrieval-runs',{method:'POST',body:JSON.stringify({variant_ids:variantIds})}),
+  latestStockRetrieval:()=>json('/admin/api/inventory/store-management/stock-retrieval-runs/latest'),
+  stockRetrieval:(runId:string)=>json(`/admin/api/inventory/store-management/stock-retrieval-runs/${encodeURIComponent(runId)}`),
+  resumeStockRetrieval:(runId:string)=>json(`/admin/api/inventory/store-management/stock-retrieval-runs/${encodeURIComponent(runId)}/resume`,{method:'POST',body:'{}'}),
   async facilityTransfer(variantId:number,sourceFacilityId:number|null,destinationFacilityId:number|null,quantity:number,reason:string){
     const review=await json('/admin/api/inventory/store-management/facility-transfer-reviews',{method:'POST',body:JSON.stringify({variant_id:variantId,source_facility_id:sourceFacilityId,destination_facility_id:destinationFacilityId,quantity,reason})});
     return json(`/admin/api/inventory/store-management/facility-transfer-reviews/${encodeURIComponent(review.id)}/confirm`,{method:'POST',body:JSON.stringify({operation_key:crypto.randomUUID()})});
