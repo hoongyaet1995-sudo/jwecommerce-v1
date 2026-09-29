@@ -1342,74 +1342,53 @@ export const MarketplaceInventoryPage: React.FC = () => {
             </div>
           )}
 
-          {/* Master SKU Inventory Matrix Table (OMS Screenshot 2 Theme & Contrast) */}
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse min-w-[980px]">
-                <thead className="bg-neutral-100 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700/80 text-neutral-700 dark:text-neutral-300 font-bold uppercase tracking-wider text-[11px]">
-                  <tr>
-                    <th className="py-3.5 px-3.5 w-10 text-center">
-                      <input
-                        type="checkbox"
-                        checked={isAllCurrentPageSelected}
-                        onChange={handleToggleSelectAllCurrentPage}
-                        className="rounded border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
-                        title="Select all products on current page"
-                      />
-                    </th>
-                    <th className="py-3.5 px-4 min-w-[220px]">Product / Master SKU</th>
-                    <th className="py-3.5 px-4 min-w-[130px] whitespace-nowrap">
-                      {singleCurrentStock ? 'Current Stock' : currentMode === 'shared' ? 'Total Physical' : 'Physical Allocation'}
-                    </th>
-                    {!singleCurrentStock && <th className="py-3.5 px-4 min-w-[120px] whitespace-nowrap">Reserved (Locked)</th>}
-                    {!singleCurrentStock && <th className="py-3.5 px-4 min-w-[130px] whitespace-nowrap">Available to Sell (ATP)</th>}
-                    <th className="py-3.5 px-4 min-w-[240px]">{currentMode === 'independent' ? 'Mapped Stores' : 'Connected Stores & Sync States'}</th>
-                    <th className="py-3.5 px-4 text-center w-36 min-w-[144px] sticky right-0 z-20 bg-neutral-100 dark:bg-neutral-800 shadow-[-4px_0_12px_rgba(0,0,0,0.15)] dark:shadow-[-6px_0_16px_rgba(0,0,0,0.6)] border-l border-neutral-200 dark:border-neutral-700/80 text-neutral-700 dark:text-neutral-300">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
-                  {paginatedInventory.length === 0 ? (
-                    <tr>
-                      <td colSpan={singleCurrentStock ? 5 : 7} className="py-12 text-center text-neutral-400">
-                        <Boxes className="w-8 h-8 mx-auto mb-2 text-neutral-300 dark:text-neutral-700" />
-                        <p className="font-semibold text-neutral-700 dark:text-neutral-300">No inventory SKUs found</p>
-                        <p className="text-xs text-neutral-500 mt-0.5">Try changing filters or search terms.</p>
-                      </td>
-                    </tr>
-                  ) : (
-                    paginatedProducts.map(group => <React.Fragment key={group.key}>
-                      <tr className="bg-neutral-50 dark:bg-neutral-900 border-t border-neutral-300 dark:border-neutral-700">
-                        <td className="py-4 px-3.5 text-center">
-                          <input type="checkbox" aria-label={`Select ${group.name} and all its SKUs`}
-                            checked={group.items.every(item => selectedSkus.includes(item.masterSku))}
-                            onChange={() => {
-                              const skus = group.items.map(item => item.masterSku);
-                              const all = skus.every(sku => selectedSkus.includes(sku));
-                              setSelectedSkus(previous => all ? previous.filter(sku => !skus.includes(sku))
-                                : Array.from(new Set([...previous, ...skus])));
-                            }}
-                            className="w-4 h-4 cursor-pointer accent-violet-600" />
-                        </td>
-                        <td colSpan={singleCurrentStock ? 4 : 6} className="py-4 px-4">
-                          <div className="flex items-center gap-3">
-                            <span className="w-11 h-11 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 overflow-hidden flex items-center justify-center shrink-0">
-                              {group.imageUrl ? <img src={group.imageUrl} alt="" className="w-full h-full object-cover" /> : <Boxes className="w-5 h-5 text-neutral-400" />}
-                            </span>
-                            <strong className="text-sm text-neutral-900 dark:text-white flex-1">{group.name}</strong>
-                            <span className="font-semibold text-neutral-800 dark:text-neutral-100 whitespace-nowrap">{group.items.length} SKU{group.items.length === 1 ? '' : 's'}</span>
-                            <button type="button" aria-label={`${collapsedProducts.includes(group.key) ? 'Expand' : 'Collapse'} ${group.name} SKUs`}
-                              aria-expanded={!collapsedProducts.includes(group.key)}
-                              onClick={() => setCollapsedProducts(previous => previous.includes(group.key)
-                                ? previous.filter(key => key !== group.key) : [...previous, group.key])}
-                              className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 cursor-pointer">
-                              <ChevronDown className={`w-4 h-4 transition-transform ${collapsedProducts.includes(group.key) ? '-rotate-90' : ''}`} />
-                            </button>
-                          </div>
-                        </td>
+          {/* Each product owns its header and SKU table, as in the approved sample. */}
+          <div className="space-y-4">
+            {paginatedProducts.length === 0 ? (
+              <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 py-12 text-center text-neutral-400">
+                <Boxes className="w-8 h-8 mx-auto mb-2 text-neutral-300 dark:text-neutral-700" />
+                <p className="font-semibold text-neutral-700 dark:text-neutral-300">No inventory SKUs found</p>
+                <p className="text-xs text-neutral-500 mt-0.5">Try changing filters or search terms.</p>
+              </div>
+            ) : paginatedProducts.map(group => (
+              <section key={group.key} aria-label={group.name} className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-xs overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-5 bg-neutral-50 dark:bg-neutral-900">
+                  <input type="checkbox" aria-label={`Select ${group.name} and all its SKUs`}
+                    checked={group.items.every(item => selectedSkus.includes(item.masterSku))}
+                    onChange={() => {
+                      const skus = group.items.map(item => item.masterSku);
+                      const all = skus.every(sku => selectedSkus.includes(sku));
+                      setSelectedSkus(previous => all ? previous.filter(sku => !skus.includes(sku))
+                        : Array.from(new Set([...previous, ...skus])));
+                    }} className="w-4 h-4 cursor-pointer accent-violet-600 shrink-0" />
+                  <span className="w-11 h-11 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 overflow-hidden flex items-center justify-center shrink-0">
+                    {group.imageUrl ? <img src={group.imageUrl} alt="" className="w-full h-full object-cover" /> : <Boxes className="w-5 h-5 text-neutral-400" />}
+                  </span>
+                  <strong className="text-sm text-neutral-900 dark:text-white flex-1">{group.name}</strong>
+                  <span className="font-semibold text-neutral-800 dark:text-neutral-100 whitespace-nowrap text-xs">{group.items.length} SKU{group.items.length === 1 ? '' : 's'}</span>
+                  <button type="button" aria-label={`${collapsedProducts.includes(group.key) ? 'Expand' : 'Collapse'} ${group.name} SKUs`}
+                    aria-expanded={!collapsedProducts.includes(group.key)}
+                    onClick={() => setCollapsedProducts(previous => previous.includes(group.key)
+                      ? previous.filter(key => key !== group.key) : [...previous, group.key])}
+                    className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 cursor-pointer">
+                    <ChevronDown className={`w-4 h-4 transition-transform ${collapsedProducts.includes(group.key) ? '-rotate-90' : ''}`} />
+                  </button>
+                </div>
+                {!collapsedProducts.includes(group.key) && <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse min-w-[980px]">
+                    <thead className="bg-neutral-100 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700/80 text-neutral-700 dark:text-neutral-300 font-bold uppercase tracking-wider text-[11px]">
+                      <tr>
+                        <th className="py-3.5 px-3.5 w-10" aria-hidden="true" />
+                        <th className="py-3.5 px-4 min-w-[220px]">Product / Master SKU</th>
+                        <th className="py-3.5 px-4 min-w-[130px] whitespace-nowrap">{singleCurrentStock ? 'Current Stock' : currentMode === 'shared' ? 'Total Physical' : 'Physical Allocation'}</th>
+                        {!singleCurrentStock && <th className="py-3.5 px-4 min-w-[120px] whitespace-nowrap">Reserved (Locked)</th>}
+                        {!singleCurrentStock && <th className="py-3.5 px-4 min-w-[130px] whitespace-nowrap">Available to Sell (ATP)</th>}
+                        <th className="py-3.5 px-4 min-w-[240px]">{currentMode === 'independent' ? 'Mapped Stores' : 'Connected Stores & Sync States'}</th>
+                        <th className="py-3.5 px-4 text-center w-36 min-w-[144px] sticky right-0 z-20 bg-neutral-100 dark:bg-neutral-800 shadow-[-4px_0_12px_rgba(0,0,0,0.15)] dark:shadow-[-6px_0_16px_rgba(0,0,0,0.6)] border-l border-neutral-200 dark:border-neutral-700/80 text-neutral-700 dark:text-neutral-300">Actions</th>
                       </tr>
-                      {!collapsedProducts.includes(group.key) && group.items.map(item => {
+                    </thead>
+                    <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                      {group.items.map(item => {
                       const isSelected = selectedSkus.includes(item.masterSku);
                     const isUncounted = item.physicalStockStatus === 'unknown' || item.totalPhysicalStock === null;
                     const physicalStock = item.totalPhysicalStock ?? 0;
@@ -1675,11 +1654,13 @@ export const MarketplaceInventoryPage: React.FC = () => {
                       </tr>
                     );
                   })}
-                    </React.Fragment>)
-                )}
-              </tbody>
-              </table>
-            </div>
+                    </tbody>
+                  </table>
+                </div>}
+              </section>
+            ))}
+          </div>
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-xs overflow-hidden">
 
             {/* Pagination Controls Bar (Matching Orders OMS layout & controls) */}
             <div className="px-5 py-4 border-t border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-4 text-xs bg-neutral-50/50 dark:bg-neutral-950/40">

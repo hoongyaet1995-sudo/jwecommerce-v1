@@ -64,3 +64,22 @@ it('selects all variants from one product row while keeping SKU actions separate
   expect(host.textContent).toContain('1 product(s) selected · 2 SKU(s) included');
   context.marketplaceInventory = [inventoryItem];
 });
+
+it('renders a separate card and table header for every product', async () => {
+  context.marketplaceInventory = [{...inventoryItem, singleCurrentStock: true}, {...inventoryItem, id:'variant:9', variantId:9,
+    productId: 5, productName: 'Another Product', masterSku: 'SKU-9', singleCurrentStock: true}];
+  await act(async () => root.render(<MarketplaceInventoryPage />));
+  const cards = host.querySelectorAll('section[aria-label]');
+  expect(cards).toHaveLength(2);
+  for (const card of cards) {
+    expect(card.querySelectorAll('thead')).toHaveLength(1);
+    expect(card.querySelector('thead')?.textContent).toContain('Current Stock');
+    expect(card.querySelector('thead')?.textContent).toContain('Mapped Stores');
+    expect(card.querySelectorAll('tbody tr')).toHaveLength(1);
+  }
+  const collapse = cards[0].querySelector<HTMLButtonElement>('button[aria-label^="Collapse"]');
+  await act(async () => collapse!.click());
+  expect(cards[0].querySelector('table')).toBeNull();
+  expect(cards[1].querySelector('table')).not.toBeNull();
+  context.marketplaceInventory = [inventoryItem];
+});
