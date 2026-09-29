@@ -260,6 +260,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
     const base = marketplaceInventory || [];
     return base;
   }, [marketplaceInventory]);
+  const singleCurrentStock = (safeInventory[0] as MarketplaceInventoryItem & { singleCurrentStock?: boolean } | undefined)?.singleCurrentStock === true;
 
   // Identify uncounted items (First Count required)
   const uncountedItems = useMemo(() => {
@@ -402,9 +403,9 @@ export const MarketplaceInventoryPage: React.FC = () => {
   const handleBatchExportSelected = () => {
     if (selectedSkus.length === 0) return;
     const selectedItems = filteredInventory.filter(i => selectedSkus.includes(i.masterSku));
-    const csvHeader = 'Master SKU,Product Name,Variant,Barcode,Physical Stock,Reserved,Available (ATP),Sync Status\n';
+    const csvHeader = singleCurrentStock ? 'Master SKU,Product Name,Variant,Barcode,Current Stock,Sync Status\n' : 'Master SKU,Product Name,Variant,Barcode,Physical Stock,Reserved,Available (ATP),Sync Status\n';
     const csvRows = selectedItems.map(i => 
-      `"${i.masterSku}","${i.productName}","${i.variantName || ''}","${i.barcode || ''}",${i.totalPhysicalStock ?? 0},${i.reservedStock ?? 0},${i.availableStock ?? 0},"${i.syncStatus || ''}"`
+      singleCurrentStock ? `"${i.masterSku}","${i.productName}","${i.variantName || ''}","${i.barcode || ''}",${i.availableStock ?? 0},"${i.syncStatus || ''}"` : `"${i.masterSku}","${i.productName}","${i.variantName || ''}","${i.barcode || ''}",${i.totalPhysicalStock ?? 0},${i.reservedStock ?? 0},${i.availableStock ?? 0},"${i.syncStatus || ''}"`
     ).join('\n');
 
     const blob = new Blob([csvHeader + csvRows], { type: 'text/csv;charset=utf-8;' });
@@ -469,7 +470,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
     await storeInventoryApi.directAllocation((item as any).variantId,payload.physicalCount,
       payload.batchAllocations,reason);
     await reloadInventory();
-    addToast({type:'success',title:'Physical count saved',message:'JW ledger updated. Check platform sync status separately.'});
+    addToast({type:'success',title:singleCurrentStock ? 'Current Stock saved' : 'Physical count saved',message:'JW ledger updated. Check platform sync status separately.'});
   };
 
   const handleRealSaveIntake = async (payload: {
@@ -927,7 +928,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
         parentSection="marketplace"
         parentLabel="Marketplace Ecosystem"
         currentLabel="Inventory Management"
-        subtitle="Omnichannel store inventory allocation, Available-To-Promise (ATP) calculation, and physical stock verification."
+        subtitle={singleCurrentStock ? 'Current Stock for each connected store and stock location.' : 'Omnichannel store inventory allocation, Available-To-Promise (ATP) calculation, and physical stock verification.'}
         actions={
           <div className="flex items-center gap-2">
             <button
@@ -1037,7 +1038,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
       {activeTab === 'overview' && (
         <div className="space-y-6 animate-in fade-in duration-150">
           {/* Top Key Metrics */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+          <div className={`grid grid-cols-2 sm:grid-cols-2 ${singleCurrentStock ? 'lg:grid-cols-3' : 'lg:grid-cols-5'} gap-3.5`}>
             {/* 1. Total Master SKUs */}
             <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs hover:border-neutral-700 transition-all">
               <div className="flex items-center justify-between text-neutral-500 dark:text-neutral-400 text-xs mb-1">
@@ -1053,7 +1054,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
             {/* 2. Verified Physical Stock */}
             <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs hover:border-neutral-700 transition-all">
               <div className="flex items-center justify-between text-neutral-500 dark:text-neutral-400 text-xs mb-1">
-                <span>Physical Stock</span>
+                <span>{singleCurrentStock ? 'Current Stock' : 'Physical Stock'}</span>
                 <Boxes className="w-4 h-4 text-neutral-400" />
               </div>
               <div className="font-mono font-bold text-2xl text-neutral-900 dark:text-white">
@@ -1065,7 +1066,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
             </div>
 
             {/* 3. Reserved Stock (Active Orders) */}
-            <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs hover:border-neutral-700 transition-all">
+            {!singleCurrentStock && <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs hover:border-neutral-700 transition-all">
               <div className="flex items-center justify-between text-neutral-500 dark:text-neutral-400 text-xs mb-1">
                 <span>Reserved Stock</span>
                 <Radio className="w-4 h-4 text-neutral-400" />
@@ -1074,10 +1075,10 @@ export const MarketplaceInventoryPage: React.FC = () => {
                 {metrics.totalReserved}
               </div>
               <div className="text-[11px] text-neutral-400 mt-1">Locked by customer orders</div>
-            </div>
+            </div>}
 
             {/* 4. Available to Sell (ATP) */}
-            <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs hover:border-neutral-700 transition-all">
+            {!singleCurrentStock && <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs hover:border-neutral-700 transition-all">
               <div className="flex items-center justify-between text-neutral-500 dark:text-neutral-400 text-xs font-semibold mb-1">
                 <span>Available to Sell (ATP)</span>
                 <Sparkles className="w-4 h-4 text-neutral-400" />
@@ -1088,7 +1089,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
               <div className="text-[11px] text-neutral-400 font-medium mt-1">
                 Physical - Reserved
               </div>
-            </div>
+            </div>}
 
             {/* 5. Sales Channels & Stores */}
             <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs hover:border-neutral-700 transition-all col-span-2 lg:col-span-1">
@@ -1118,7 +1119,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                 </div>
                 <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-3xl">
                   {currentMode === 'shared'
-                    ? 'All connected sales channels draw from a single shared pool of Available stock. When an item sells on Shopee, the remaining quantity decreases across Lazada and Webstore immediately. Platform reported stock numbers are channel references only and do not increase physical inventory.'
+                    ? singleCurrentStock ? 'All connected sales channels draw from one shared Current Stock. Each accepted order deducts once.' : 'All connected sales channels draw from a single shared pool of Available stock. When an item sells on Shopee, the remaining quantity decreases across Lazada and Webstore immediately. Platform reported stock numbers are channel references only and do not increase physical inventory.'
                     : 'Each store holds an isolated stock ledger. Inventory is explicitly assigned per store, and inter-store rebalancing is performed through the Stock Transfers tab. Total stock across stores is strictly conserved.'}
                 </p>
               </div>
@@ -1142,10 +1143,10 @@ export const MarketplaceInventoryPage: React.FC = () => {
                 </div>
                 <div className="text-xs">
                   <div className="font-bold text-amber-950 dark:text-amber-200">
-                    {uncountedItems.length} Master SKU(s) Awaiting Initial Physical Stock Verification
+                    {uncountedItems.length} Master SKU(s) Awaiting Initial {singleCurrentStock ? 'Current Stock Count' : 'Physical Stock Verification'}
                   </div>
                   <p className="text-amber-900/80 dark:text-amber-300/80 mt-0.5">
-                    Items imported from marketplace stores remain in <strong>Not Counted</strong> status until staff performs an initial stock check. External channel quantities are reference snapshots only and cannot be released for sale without physical verification.
+                    {singleCurrentStock ? <>Items remain <strong>Not Counted</strong> until staff enters the first absolute Current Stock. Marketplace quantities are reference snapshots only.</> : <>Items imported from marketplace stores remain in <strong>Not Counted</strong> status until staff performs an initial stock check. External channel quantities are reference snapshots only and cannot be released for sale without physical verification.</>}
                   </p>
                 </div>
               </div>
@@ -1301,10 +1302,10 @@ export const MarketplaceInventoryPage: React.FC = () => {
                     </th>
                     <th className="py-3.5 px-4 min-w-[220px]">Product / Master SKU</th>
                     <th className="py-3.5 px-4 min-w-[130px] whitespace-nowrap">
-                      {currentMode === 'shared' ? 'Total Physical' : 'Physical Allocation'}
+                      {singleCurrentStock ? 'Current Stock' : currentMode === 'shared' ? 'Total Physical' : 'Physical Allocation'}
                     </th>
-                    <th className="py-3.5 px-4 min-w-[120px] whitespace-nowrap">Reserved (Locked)</th>
-                    <th className="py-3.5 px-4 min-w-[130px] whitespace-nowrap">Available to Sell (ATP)</th>
+                    {!singleCurrentStock && <th className="py-3.5 px-4 min-w-[120px] whitespace-nowrap">Reserved (Locked)</th>}
+                    {!singleCurrentStock && <th className="py-3.5 px-4 min-w-[130px] whitespace-nowrap">Available to Sell (ATP)</th>}
                     <th className="py-3.5 px-4 min-w-[240px]">{currentMode === 'independent' ? 'Mapped stores · JW stock' : 'Connected Stores & Sync States'}</th>
                     <th className="py-3.5 px-4 text-center w-36 min-w-[144px] sticky right-0 z-20 bg-neutral-100 dark:bg-neutral-800 shadow-[-4px_0_12px_rgba(0,0,0,0.15)] dark:shadow-[-6px_0_16px_rgba(0,0,0,0.6)] border-l border-neutral-200 dark:border-neutral-700/80 text-neutral-700 dark:text-neutral-300">
                       Actions
@@ -1314,7 +1315,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                 <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
                   {paginatedInventory.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-neutral-400">
+                      <td colSpan={singleCurrentStock ? 5 : 7} className="py-12 text-center text-neutral-400">
                         <Boxes className="w-8 h-8 mx-auto mb-2 text-neutral-300 dark:text-neutral-700" />
                         <p className="font-semibold text-neutral-700 dark:text-neutral-300">No inventory SKUs found</p>
                         <p className="text-xs text-neutral-500 mt-0.5">Try changing filters or search terms.</p>
@@ -1398,14 +1399,14 @@ export const MarketplaceInventoryPage: React.FC = () => {
                               </div>
                               <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[10px] text-neutral-600 dark:text-neutral-300">
                                 <Warehouse className="w-3 h-3 text-indigo-500 shrink-0" />
-                                <span>JW physical ledger</span>
+                                <span>{singleCurrentStock ? 'JW Current Stock ledger' : 'JW physical ledger'}</span>
                               </div>
                             </div>
                           )}
                         </td>
 
                         {/* 3. Reserved Stock */}
-                        <td className="py-3.5 px-4 whitespace-nowrap min-w-[120px]">
+                        {!singleCurrentStock && <td className="py-3.5 px-4 whitespace-nowrap min-w-[120px]">
                           <div className="flex items-center gap-1.5">
                             <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">
                               {reservedStock}
@@ -1413,10 +1414,10 @@ export const MarketplaceInventoryPage: React.FC = () => {
                             <span className="text-xs text-neutral-400">units</span>
                           </div>
                           <div className="text-[10px] text-neutral-400">Active orders locked</div>
-                        </td>
+                        </td>}
 
                         {/* 4. Available to Sell (ATP) */}
-                        <td className="py-3.5 px-4 whitespace-nowrap min-w-[130px]">
+                        {!singleCurrentStock && <td className="py-3.5 px-4 whitespace-nowrap min-w-[130px]">
                           {isUncounted ? (
                             <div className="font-mono text-xs text-neutral-400 italic">
                               0 (Locked until counted)
@@ -1431,7 +1432,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                               </div>
                             </div>
                           )}
-                        </td>
+                        </td>}
 
                         {/* 5. Connected Stores & Sync States */}
                         <td className="py-3.5 px-4 min-w-[240px]">

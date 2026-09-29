@@ -5,6 +5,7 @@ namespace App\Services\Inventory\StoreManagement;
 use App\Models\User;
 use App\Services\Inventory\CatalogInventoryState;
 use App\Services\Inventory\CatalogStockProjection;
+use App\Services\Inventory\CurrentStockLedger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -127,13 +128,18 @@ final class DirectStockAllocation
             $destinations = [];
             foreach ($targets as $target) {
                 $balance = DB::table('inventory_balances')->where('id', $target['balance_id'])->lockForUpdate()->first();
-                $version = (int) $balance->version + 1;
-                DB::table('inventory_balances')->where('id', $balance->id)->update([
-                    'physical_stock' => $target['quantity'],
-                    'reserved_stock' => $balance->reserved_stock ?? 0,
-                    'safety_stock' => $balance->safety_stock ?? 0,
-                    'counted_at' => $balance->counted_at ?? now(), 'version' => $version, 'updated_at' => now(),
-                ]);
+                if (config('inventory.current_stock_only')) {
+                    app(CurrentStockLedger::class)->setAbsolute((int) $balance->id, $target['quantity'],
+                        'batch-allocation:'.$operationId.':'.$target['key'], 'Direct stock allocation');
+                } else {
+                    $version = (int) $balance->version + 1;
+                    DB::table('inventory_balances')->where('id', $balance->id)->update([
+                        'physical_stock' => $target['quantity'],
+                        'reserved_stock' => $balance->reserved_stock ?? 0,
+                        'safety_stock' => $balance->safety_stock ?? 0,
+                        'counted_at' => $balance->counted_at ?? now(), 'version' => $version, 'updated_at' => now(),
+                    ]);
+                }
                 $fresh = DB::table('inventory_balances')->find($balance->id);
                 $eventKey = 'batch-allocation:'.$operationId.':'.$target['key'];
                 $sync = $target['facility']
@@ -142,12 +148,16 @@ final class DirectStockAllocation
                 DB::table('inventory_store_sync_tasks')->where('id', $sync['id'])
                     ->update(['target_quantity' => $target['quantity'], 'updated_at' => now()]);
                 $sync['target_quantity'] = $target['quantity'];
-                $destinations[$target['key']] = ['physical' => $target['quantity'], 'sync' => $sync];
+                $destinations[$target['key']] = [
+                    config('inventory.current_stock_only') ? 'current_stock' : 'physical' => $target['quantity'],
+                    'sync' => $sync,
+                ];
             }
             app(CatalogInventoryState::class)->markVerified($variantId, $operationId);
             app(CatalogStockProjection::class)->refresh($variantId);
             $receipt = ['operation_id' => $operationId, 'review_id' => $reviewId,
-                'ledger_status' => 'applied', 'physical_total' => $total, 'destinations' => $destinations];
+                'ledger_status' => 'applied', 'destinations' => $destinations];
+            $receipt[config('inventory.current_stock_only') ? 'current_total' : 'physical_total'] = $total;
             DB::table('inventory_store_operations')->where('id', $operationId)->update([
                 'receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'updated_at' => now(),
             ]);

@@ -63,6 +63,7 @@ interface Props {
 }
 
 export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
+  const singleCurrentStock = (props.item as MarketplaceInventoryItem & { singleCurrentStock?: boolean }).singleCurrentStock === true;
   const [inputView, setInputView] = useState<'count' | 'destinations'>('count');
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [syncStates, setSyncStates] = useState<Record<string, 'synced' | 'pending' | 'failed' | 'unavailable'>>({});
@@ -92,7 +93,7 @@ export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
     : remaining === 0 ? 'All units allocated'
       : remaining > 0 ? 'Units left to allocate' : 'Allocation exceeds verified total';
   const blocker = props.hasIncompleteTopology ? 'A mapped store is still verifying its warehouses.'
-    : props.hasReservationConflict ? 'An allocation is lower than reserved customer orders.'
+    : !singleCurrentStock && props.hasReservationConflict ? 'An allocation is lower than reserved customer orders.'
       : props.hasConnectionBlocker ? 'Reconnect the affected store before allocating stock.'
         : props.hasVerificationPendingAttempt ? 'A warehouse is still being verified.'
           : props.hasInvalidAllocationNumber || props.hasNegativeAllocation ? 'Enter whole numbers of zero or more.'
@@ -154,13 +155,13 @@ export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
         {props.step === 'input' && inputView === 'count' && <>
           <p className="allocation-focus-kicker">Step 1 · Verified total</p>
           <h3>How many units were counted?</h3>
-          <p className="allocation-focus-intro">Use the approved physical count for this SKU. Marketplace quantities are reference only.</p>
+          <p className="allocation-focus-intro">{singleCurrentStock ? 'Enter the absolute Current Stock for this SKU. Marketplace quantities are reference only.' : 'Use the approved physical count for this SKU. Marketplace quantities are reference only.'}</p>
           <div className="allocation-focus-count">
-            <div className="allocation-focus-count-top"><strong>Verified physical quantity</strong>{props.isCountLocked && <span><Lock size={12} /> Approved physical count</span>}</div>
-            <div className="allocation-focus-count-input"><input aria-label="Verified physical quantity" type="number" min="0" step="1" value={props.physicalCountInput} disabled={props.isCountLocked} placeholder="Enter count" onChange={event => props.onPhysicalCountChange(event.target.value)} /><span>units</span></div>
+            <div className="allocation-focus-count-top"><strong>{singleCurrentStock ? 'Verified Current Stock' : 'Verified physical quantity'}</strong>{props.isCountLocked && <span><Lock size={12} /> {singleCurrentStock ? 'Approved Current Stock' : 'Approved physical count'}</span>}</div>
+            <div className="allocation-focus-count-input"><input aria-label={singleCurrentStock ? 'Verified Current Stock' : 'Verified physical quantity'} type="number" min="0" step="1" value={props.physicalCountInput} disabled={props.isCountLocked} placeholder="Enter count" onChange={event => props.onPhysicalCountChange(event.target.value)} /><span>units</span></div>
             {props.isCountLocked && <button type="button" className="allocation-focus-link" onClick={props.onUnlockCount}>Recount / edit total</button>}
           </div>
-          <details className="allocation-focus-reference"><summary>View marketplace reference quantities</summary><p>Provider readings are not a physical count and never fill the JW ledger automatically.</p>
+          <details className="allocation-focus-reference"><summary>View marketplace reference quantities</summary><p>{singleCurrentStock ? 'Provider readings do not replace JW Current Stock automatically.' : 'Provider readings are not a physical count and never fill the JW ledger automatically.'}</p>
             {props.activeStores.filter(store => store.platform !== 'webstore').map(store => {
               const config = storeConfig(store);
               const facilities = config?.warehouses ?? [];
@@ -177,12 +178,12 @@ export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
           <p className="allocation-focus-kicker">Step 2 · {selectedStore ? selectedStore.nickname || selectedStore.name : 'Destinations'}</p>
           <h3>{selectedStore ? 'Allocate to warehouses' : 'Where should the stock go?'}</h3>
           <p className="allocation-focus-intro">{selectedStore ? `Only these ${selectedConfig?.warehouses.length ?? 0} locations belong to this store. Enter each warehouse's verified allocation.` : 'Only mapped stores appear. Enter a quantity directly for stores without platform warehouses; open a store to allocate across its warehouses.'}</p>
-          <div className={`allocation-focus-balance ${balanceClass}`} role="status"><div><strong>{balanceMessage}</strong><small>{props.isVerifiedCountValid ? `${props.verifiedCountNum} verified − ${allocated} allocated` : 'Waiting for a physical count'}</small></div><b>{props.isVerifiedCountValid ? remaining === 0 ? <Check size={23} /> : Math.abs(remaining) : '—'}</b></div>
+          <div className={`allocation-focus-balance ${balanceClass}`} role="status"><div><strong>{balanceMessage}</strong><small>{props.isVerifiedCountValid ? `${props.verifiedCountNum} verified − ${allocated} allocated` : singleCurrentStock ? 'Waiting for a Current Stock count' : 'Waiting for a physical count'}</small></div><b>{props.isVerifiedCountValid ? remaining === 0 ? <Check size={23} /> : Math.abs(remaining) : '—'}</b></div>
           {selectedStore && selectedConfig ? <div className="allocation-focus-warehouse-list">
             {selectedConfig.warehouses.map(warehouse => {
               const blocked = disabledStore(selectedStore, selectedConfig) || warehouse.status !== 'active' || !warehouse.inventoryWarehouseId;
               const conflict = props.warehouseReservationConflicts[warehouse.id];
-              return <div className="allocation-focus-warehouse" key={warehouse.id}><div><strong>{warehouse.warehouseName}</strong><small>{warehouseDisplayCode(warehouse.codeValue)}</small>{blocked && <small className="allocation-focus-warning">Warehouse unavailable</small>}{conflict && <small className="allocation-focus-warning">Below {conflict.reserved} reserved units</small>}</div><input aria-label={`${selectedStore.nickname || selectedStore.name} ${warehouse.warehouseName} first count`} type="number" min="0" step="1" disabled={blocked} value={props.warehouseAllocations[warehouse.id] ?? ''} placeholder="0" onChange={event => props.onWarehouseAllocationChange(selectedStore.id, warehouse.id, event.target.value)} /></div>;
+              return <div className="allocation-focus-warehouse" key={warehouse.id}><div><strong>{warehouse.warehouseName}</strong><small>{warehouseDisplayCode(warehouse.codeValue)}</small>{blocked && <small className="allocation-focus-warning">Warehouse unavailable</small>}{!singleCurrentStock && conflict && <small className="allocation-focus-warning">Below {conflict.reserved} reserved units</small>}</div><input aria-label={`${selectedStore.nickname || selectedStore.name} ${warehouse.warehouseName} first count`} type="number" min="0" step="1" disabled={blocked} value={props.warehouseAllocations[warehouse.id] ?? ''} placeholder="0" onChange={event => props.onWarehouseAllocationChange(selectedStore.id, warehouse.id, event.target.value)} /></div>;
             })}
           </div> : <><p className="allocation-focus-section-label">Stock locations</p><div className="allocation-focus-store-list">{props.activeStores.map(store => {
             const config = storeConfig(store);
@@ -190,7 +191,7 @@ export const FocusedIndependentAllocationModal: React.FC<Props> = props => {
             const warehouses = config.warehouses;
             const blocked = disabledStore(store, config);
             const conflict = props.storeReservationConflicts[store.id];
-            return <div className="allocation-focus-store" key={store.id}><div className="allocation-focus-store-identity"><span className="allocation-focus-platform"><MarketplaceLogo platform={store.platform} size="xs" /></span><div><strong>{store.nickname || store.name}</strong><small>{config.warehouseSyncStatus !== 'synced' ? 'Warehouse verification pending' : warehouses.length ? `${warehouses.length} platform ${warehouses.length === 1 ? 'warehouse' : 'warehouses'}` : store.platform === 'webstore' ? 'Your own stock' : 'No platform warehouse'}</small>{conflict && <small className="allocation-focus-warning">Below {conflict.reserved} reserved units</small>}</div></div><div className="allocation-focus-store-action">{warehouses.length ? <><b>{storeTotal(store)}</b><button type="button" disabled={blocked} onClick={() => setSelectedStoreId(store.id)}>Choose warehouses <ChevronDown size={13} className="allocation-focus-side-chevron" /></button></> : <input aria-label={`${store.nickname || store.name} allocation`} type="number" min="0" step="1" disabled={blocked} value={props.allocations[store.id] ?? ''} placeholder="0" onChange={event => props.onAllocationChange(store.id, event.target.value)} />}</div></div>;
+            return <div className="allocation-focus-store" key={store.id}><div className="allocation-focus-store-identity"><span className="allocation-focus-platform"><MarketplaceLogo platform={store.platform} size="xs" /></span><div><strong>{store.nickname || store.name}</strong><small>{config.warehouseSyncStatus !== 'synced' ? 'Warehouse verification pending' : warehouses.length ? `${warehouses.length} platform ${warehouses.length === 1 ? 'warehouse' : 'warehouses'}` : store.platform === 'webstore' ? 'Your own stock' : 'No platform warehouse'}</small>{!singleCurrentStock && conflict && <small className="allocation-focus-warning">Below {conflict.reserved} reserved units</small>}</div></div><div className="allocation-focus-store-action">{warehouses.length ? <><b>{storeTotal(store)}</b><button type="button" disabled={blocked} onClick={() => setSelectedStoreId(store.id)}>Choose warehouses <ChevronDown size={13} className="allocation-focus-side-chevron" /></button></> : <input aria-label={`${store.nickname || store.name} allocation`} type="number" min="0" step="1" disabled={blocked} value={props.allocations[store.id] ?? ''} placeholder="0" onChange={event => props.onAllocationChange(store.id, event.target.value)} />}</div></div>;
           })}</div></>}
           {!props.canProceedToReview && blocker && <div className="allocation-focus-warning allocation-focus-blocker"><p>{blocker}</p></div>}
           {props.saveError && <div className="allocation-focus-error" role="alert">{props.saveError}</div>}

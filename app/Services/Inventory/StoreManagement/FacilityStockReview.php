@@ -3,6 +3,7 @@
 namespace App\Services\Inventory\StoreManagement;
 
 use App\Models\User;
+use App\Services\Inventory\CurrentStockLedger;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -99,12 +100,18 @@ final class FacilityStockReview
             if ($after !== json_decode($review->after, true, 512, JSON_THROW_ON_ERROR)) {
                 $this->conflict('balance_changed');
             }
-            $version = (int) $balance->version + 1;
-            DB::table('inventory_balances')->where('id', $balance->id)->update([
-                'physical_stock' => $after['physical'], 'reserved_stock' => $after['reserved'],
-                'safety_stock' => $after['safety'], 'counted_at' => $balance->counted_at ?? now(),
-                'version' => $version, 'updated_at' => now(),
-            ]);
+            if (config('inventory.current_stock_only')) {
+                $movement = app(CurrentStockLedger::class)->setAbsolute((int) $balance->id,
+                    (int) $after['current_stock'], 'facility-stock:'.$reviewId, 'Facility '.$review->kind);
+                $version = $movement['balance_version'];
+            } else {
+                $version = (int) $balance->version + 1;
+                DB::table('inventory_balances')->where('id', $balance->id)->update([
+                    'physical_stock' => $after['physical'], 'reserved_stock' => $after['reserved'],
+                    'safety_stock' => $after['safety'], 'counted_at' => $balance->counted_at ?? now(),
+                    'version' => $version, 'updated_at' => now(),
+                ]);
+            }
             $countingEpoch = $configuration->active_rebaseline_epoch_id !== null;
             $sync = $countingEpoch
                 ? ['status' => 'awaiting_rebaseline_release', 'id' => null]
@@ -113,7 +120,7 @@ final class FacilityStockReview
                     DB::table('inventory_balances')->find($balance->id), $facility
                 );
             $activation = null;
-            if (! $countingEpoch && $review->kind === 'count' && config('marketplace.multiwarehouse_orders_enabled') === true
+            if (! config('inventory.current_stock_only') && ! $countingEpoch && $review->kind === 'count' && config('marketplace.multiwarehouse_orders_enabled') === true
                 && DB::table('marketplace_stores')->where('id', $review->marketplace_store_id)
                     ->value('platform') === 'lazada') {
                 $activation = app(FacilityOrderActivation::class)->activate($actor,
@@ -204,6 +211,23 @@ final class FacilityStockReview
 
     private function project(string $kind, object $balance, int $quantity): array
     {
+        if (config('inventory.current_stock_only')) {
+            $current = $balance->current_stock === null ? null : (int) $balance->current_stock;
+            if (($kind === 'count' && $current !== null) || ($kind !== 'count' && $current === null)) {
+                throw ValidationException::withMessages(['quantity' => $kind === 'count'
+                    ? 'This facility has already been counted.' : 'Complete First Count for this facility.']);
+            }
+            $target = match ($kind) {
+                'count', 'audit' => $quantity,
+                'intake' => $current + $quantity,
+                default => throw ValidationException::withMessages(['kind' => 'Choose First Count, intake or audit.']),
+            };
+            if ($target < 0 || $target > 2147483647) {
+                throw ValidationException::withMessages(['quantity' => 'Current Stock is outside the allowed range.']);
+            }
+
+            return ['current_stock' => $target];
+        }
         $physical = $balance->physical_stock === null ? null : (int) $balance->physical_stock;
         $reserved = (int) ($balance->reserved_stock ?? 0);
         $safety = (int) ($balance->safety_stock ?? 0);
@@ -226,6 +250,9 @@ final class FacilityStockReview
 
     private function state(object $balance): array
     {
+        if (config('inventory.current_stock_only')) {
+            return ['current_stock' => $balance->current_stock === null ? null : (int) $balance->current_stock];
+        }
         $physical = $balance->physical_stock === null ? null : (int) $balance->physical_stock;
         $reserved = $balance->reserved_stock === null ? null : (int) $balance->reserved_stock;
         $safety = $balance->safety_stock === null ? null : (int) $balance->safety_stock;

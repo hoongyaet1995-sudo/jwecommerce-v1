@@ -17,9 +17,8 @@ final class FacilitySyncRecovery
             ->where('status', '!=', 'superseded')
             ->orderByRaw("CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END")
             ->orderByDesc('created_at')->orderByDesc('id')->first();
-        if ($task && ! str_starts_with((string) $task->event_key, 'facility-manual-push:')
-            && (! $c['balance'] || $c['balance']->counted_at === null
-                || (int) $task->balance_version !== (int) $c['balance']->version)) {
+        if ($task && (! $c['balance'] || $c['balance']->counted_at === null
+            || (int) $task->balance_version !== (int) $c['balance']->version)) {
             $task = null;
         }
         $receipt = $task ? json_decode($task->provider_receipt ?? '{}', true) ?: [] : [];
@@ -30,9 +29,7 @@ final class FacilitySyncRecovery
                 - (int) $c['balance']->safety_stock) : null;
         $observed = isset($receipt['observed_quantity']) ? (int) $receipt['observed_quantity'] : null;
         $status = match ($task?->status) {
-            'confirmed' => $observed === ($task && str_starts_with((string) $task->event_key, 'facility-manual-push:')
-                    ? (int) $task->target_quantity : $quantity)
-                && ($receipt['provider_location_id'] ?? null)
+            'confirmed' => $observed === $quantity && ($receipt['provider_location_id'] ?? null)
                 === $c['facility']->provider_facility_id ? 'synced' : 'not_synced',
             'processing', 'facility_pending', 'uncertain' => 'awaiting_confirmation',
             'auth_expired' => 'auth_expired',
@@ -94,14 +91,13 @@ final class FacilitySyncRecovery
                 return;
             }
             $balance = DB::table('inventory_balances')->find($task->inventory_balance_id);
-            $manualPush = str_starts_with((string) $task->event_key, 'facility-manual-push:');
-            if (! $manualPush && (! $balance || $balance->counted_at === null
-                || (int) $balance->version !== (int) $task->balance_version)) {
+            if (! $balance || $balance->counted_at === null
+                || (int) $balance->version !== (int) $task->balance_version) {
                 DB::table('inventory_store_sync_tasks')->where('id', $task->id)
                     ->update(['status' => 'superseded', 'updated_at' => now()]);
                 return;
             }
-            $matches = ($manualPush || ($balance && (int) $balance->version === (int) $task->balance_version))
+            $matches = $balance && (int) $balance->version === (int) $task->balance_version
                 && (int) $task->target_quantity === $observation['observed_quantity'];
             DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update([
                 'status' => $matches ? 'confirmed' : (in_array($task->status, ['confirmed', 'uncertain'], true) ? 'failed' : $task->status),
@@ -165,65 +161,6 @@ final class FacilitySyncRecovery
         }, 3);
 
         return $this->details($storeId, $facilityId, $variantId);
-    }
-
-    /** Explicit provider push when a warehouse ledger cannot yet be counted. Never mutates JW stock. */
-    public function pushExplicit(int $storeId, int $facilityId, int $variantId, int $quantity,
-        string $operationKey, int $actorId, string $reason): array
-    {
-        if ($quantity < 0 || $quantity > 2147483647 || trim($reason) === ''
-            || mb_strlen($reason) > 255
-            || ! preg_match('/\A[A-Za-z0-9:_-]{1,120}\z/D', $operationKey)) {
-            $this->reject('Enter a valid quantity, reason and operation key.');
-        }
-        if (! LazadaTestFacilityAcceptance::stockSyncAllowed($storeId)) {
-            $this->reject('Facility stock sync is not enabled.');
-        }
-        $c = $this->context($storeId, $facilityId, $variantId);
-        if ($c['scan']?->status !== 'verified' || ! $c['facility']->is_active
-            || ! $c['facility']->inventory_warehouse_id || ! $c['listing']
-            || $c['store']->status !== 'connected'
-            || ! DB::table('inventory_warehouses')->where('id', $c['facility']->inventory_warehouse_id)
-                ->where('is_active', true)->where('status', 'active')->exists()
-            || DB::table('marketplace_variant_mappings')->where('store_id', $storeId)
-                ->where('product_variant_id', $variantId)->count() !== 1) {
-            $this->reject('Verify the exact store, SKU mapping and warehouse before pushing stock.');
-        }
-        $eventKey = 'facility-manual-push:'.$operationKey;
-        $existing = $this->tasks($storeId, $facilityId, $variantId)->where('event_key', $eventKey)->first();
-        if ($existing) {
-            return ['task_id' => $existing->id, 'status' => $existing->status,
-                'target_quantity' => (int) $existing->target_quantity];
-        }
-        return DB::transaction(function () use ($c, $storeId, $facilityId, $variantId, $quantity,
-            $eventKey, $actorId, $reason): array {
-            $id = (string) \Illuminate\Support\Str::uuid();
-            $this->tasks($storeId, $facilityId, $variantId)
-                ->whereIn('status', ['queued', 'failed', 'facility_blocked', 'waiting_source', 'facility_pending', 'uncertain', 'confirmed'])
-                ->update(['status' => 'superseded', 'updated_at' => now()]);
-            DB::table('inventory_store_sync_tasks')->insert([
-                'id' => $id, 'operation_id' => null, 'marketplace_store_id' => $storeId,
-                'product_variant_id' => $variantId, 'inventory_balance_id' => null,
-                'marketplace_store_facility_id' => $facilityId, 'listing_variant_id' => $c['listing']->id,
-                'provider_external_product_id' => $c['listing']->external_product_id,
-                'provider_external_variant_id' => $c['listing']->external_variant_id,
-                'provider_location_id' => $c['facility']->provider_facility_id,
-                'stage' => 'facility', 'status' => 'facility_pending',
-                'target_quantity' => $quantity, 'balance_version' => 0,
-                'event_key' => $eventKey, 'attempts' => 0,
-                'created_at' => now(), 'updated_at' => now(),
-            ]);
-            DB::table('inventory_store_sync_attempts')->insert([
-                'id' => (string) \Illuminate\Support\Str::uuid(), 'task_id' => $id,
-                'attempt_number' => 0, 'status' => 'queued', 'actor_id' => $actorId,
-                'source' => 'manual', 'target_quantity' => $quantity,
-                'provider_receipt' => json_encode(['reason' => trim($reason),
-                    'jw_ledger_unchanged' => true], JSON_THROW_ON_ERROR),
-                'created_at' => now(),
-            ]);
-            \App\Jobs\ProcessFacilityInventorySync::dispatch($id)->afterCommit();
-            return ['task_id' => $id, 'status' => 'facility_pending', 'target_quantity' => $quantity];
-        }, 3);
     }
 
     private function context(int $storeId, int $facilityId, int $variantId): array

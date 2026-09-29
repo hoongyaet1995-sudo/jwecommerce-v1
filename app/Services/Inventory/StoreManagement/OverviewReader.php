@@ -43,7 +43,7 @@ final class OverviewReader
                 $join->on('mapping.product_variant_id', '=', 'b.product_variant_id')
                     ->on('mapping.store_id', '=', 'p.marketplace_store_id');
             })
-            ->select(['b.id', 'b.product_variant_id', 'b.physical_stock', 'b.reserved_stock', 'b.safety_stock',
+            ->select(['b.id', 'b.product_variant_id', 'b.physical_stock', 'b.reserved_stock', 'b.safety_stock', 'b.current_stock',
                 'b.counted_at', 'b.version', 'p.pool_key', 'p.kind', 'p.marketplace_store_id',
                 'facility.id as facility_id', 'facility.provider_facility_id', 'facility.marketplace_store_id as facility_store_id',
                 'facility_store.platform as facility_platform', 'facility_store.shop_name as facility_store_name',
@@ -70,12 +70,19 @@ final class OverviewReader
             ->orderByDesc('created_at')
             ->get(['id', 'product_variant_id', 'marketplace_store_id', 'status', 'target_quantity', 'attempts'])
             ->groupBy('product_variant_id');
-        $rows = $balanceRows->map(function (object $row) use ($syncTasks, $readiness, $mode, $activeEpochId): array {
+        $singleCurrentStock = config('inventory.current_stock_only') === true;
+        $rows = $balanceRows->map(function (object $row) use ($syncTasks, $readiness, $mode, $activeEpochId, $singleCurrentStock): array {
             $physical = $row->physical_stock === null ? null : (int) $row->physical_stock;
             $reserved = $row->reserved_stock === null ? null : (int) $row->reserved_stock;
             $safety = $row->safety_stock === null ? null : (int) $row->safety_stock;
             $available = $physical === null || $reserved === null || $safety === null
                 ? null : max(0, $physical - $reserved - $safety);
+            $current = $row->current_stock === null ? null : (int) $row->current_stock;
+            if ($singleCurrentStock) {
+                $physical = null;
+                $reserved = null;
+                $available = $current;
+            }
 
             return [
                 'balance_id' => (int) $row->id,
@@ -95,8 +102,9 @@ final class OverviewReader
                 'pool_kind' => $row->kind,
                 'physical' => $physical,
                 'reserved' => $reserved,
+                'current_stock' => $current,
                 'available' => $available,
-                'counted' => $row->counted_at !== null,
+                'counted' => $singleCurrentStock ? $current !== null : $row->counted_at !== null,
                 'allocation_eligible' => $activeEpochId !== null ? $row->kind === 'facility'
                     : ($mode === 'shared'
                         ? $row->kind === 'shared'
@@ -120,19 +128,25 @@ final class OverviewReader
             if (! $row['allocation_eligible']) {
                 continue;
             }
-            if (! $row['counted'] || $row['physical'] === null || $row['reserved'] === null || $row['available'] === null) {
+            if (! $row['counted'] || ($singleCurrentStock ? $row['current_stock'] === null
+                : ($row['physical'] === null || $row['reserved'] === null || $row['available'] === null))) {
                 $unknown++;
 
                 continue;
             }
-            $known['physical'] += $row['physical'];
-            $known['reserved'] += $row['reserved'];
-            $known['available'] += $row['available'];
+            if ($singleCurrentStock) {
+                $known['available'] += $row['current_stock'];
+            } else {
+                $known['physical'] += $row['physical'];
+                $known['reserved'] += $row['reserved'];
+                $known['available'] += $row['available'];
+            }
         }
 
         $website = DB::table('inventory_store_accounts')->where('account_key', 'website')->first();
 
-        return ['mode' => $mode, 'configuration_version' => (int) ($configuration?->version ?? 0),
+        return ['mode' => $mode, 'single_current_stock' => $singleCurrentStock,
+            'configuration_version' => (int) ($configuration?->version ?? 0),
             'website_account' => ['management_status' => 'managed', 'inventory_membership' => 'enrolled', 'sync_state' => 'active',
                 'management_version' => (int) ($website?->version ?? 0)],
             'totals' => ['known' => $known, 'unknown_accounts' => $unknown], 'mode_catalog' => $modeCatalog,

@@ -25,7 +25,32 @@ final class FacilityBalanceReader
             ->where('pool.kind', 'facility')->whereIn('pool.warehouse_id', $warehouseIds)
             ->get(['pool.warehouse_id', 'warehouse.is_active', 'balance.id as balance_id',
                 'balance.physical_stock', 'balance.reserved_stock', 'balance.safety_stock',
-                'balance.counted_at', 'balance.version'])->keyBy('warehouse_id');
+                'balance.current_stock', 'balance.counted_at', 'balance.version'])->keyBy('warehouse_id');
+
+        if (config('inventory.current_stock_only')) {
+            $knownCurrent = 0;
+            $unknownCurrent = 0;
+            $result['facilities'] = array_map(function (array $facility) use ($balances, &$knownCurrent, &$unknownCurrent): array {
+                $balance = $balances->get($facility['inventory_warehouse_id']);
+                $current = $balance && (bool) $balance->is_active && $balance->current_stock !== null
+                    ? (int) $balance->current_stock : null;
+                if ($current === null) {
+                    $unknownCurrent++;
+                } else {
+                    $knownCurrent += $current;
+                }
+
+                return $facility + ['balance_id' => $balance?->balance_id === null ? null : (int) $balance->balance_id,
+                    'current_stock' => $current, 'physical' => null, 'reserved' => null,
+                    'available' => $current, 'counted' => $current !== null,
+                    'balance_version' => $balance?->version === null ? null : (int) $balance->version];
+            }, $result['facilities']);
+            $result['variant_id'] = $variantId;
+            $result['single_current_stock'] = true;
+            $result['totals'] = ['known_current_stock' => $knownCurrent, 'unknown_facilities' => $unknownCurrent];
+
+            return $result;
+        }
 
         $knownPhysical = 0;
         $knownReserved = 0;

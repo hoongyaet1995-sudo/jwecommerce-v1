@@ -107,8 +107,9 @@ class OrderApiController extends Controller
 
     public function refund(Request $request, Order $order, OrderOperationsService $operations, OrderDataService $data): JsonResponse
     {
-        $validated = $request->validate(['amount' => ['required', 'numeric', 'min:0.01'], 'reason' => ['required', 'string', 'max:2000']]);
-        $saved = $operations->refund($order, (int) round(((float) $validated['amount']) * 100), $validated['reason'], (int) $request->user()->id);
+        $validated = $request->validate(['amount' => ['required', 'numeric', 'min:0.01'], 'reason' => ['required', 'string', 'max:2000'],
+            'restock_items' => ['sometimes', 'array'], 'restock_items.*' => ['required', 'integer', 'min:1']]);
+        $saved = $operations->refund($order, (int) round(((float) $validated['amount']) * 100), $validated['reason'], (int) $request->user()->id, $validated['restock_items'] ?? []);
 
         return response()->json(['data' => $data->data($saved)]);
     }

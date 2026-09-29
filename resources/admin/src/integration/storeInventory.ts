@@ -1,4 +1,4 @@
-export type InventoryOverview = {mode:'shared'|'independent';configuration_version:number;website_account?:any;totals:any;stores:any[];data:any[];mode_catalog?:any};
+export type InventoryOverview = {mode:'shared'|'independent';single_current_stock?:boolean;configuration_version:number;website_account?:any;totals:any;stores:any[];data:any[];mode_catalog?:any};
 
 const csrf=()=>document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content??'';
 async function json(url:string,init:RequestInit={}){
@@ -26,7 +26,6 @@ export const storeInventoryApi={
   facilityBalances:(storeId:string,variantId:number)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/facilities`),
   testFacilityAcceptance:(storeId:string,variantId:number,facilityId:number)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/test-facility-acceptance?facility=${facilityId}`),
   stockTakeRecovery:(storeId:string,facilityId:number,variantId:number)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/facilities/${facilityId}/skus/${variantId}/stock-take-recovery`),
-  pushExplicitFacilityStock:(storeId:string,facilityId:number,variantId:number,quantity:number,reason:string,operationKey:string)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/facilities/${facilityId}/skus/${variantId}/sync/push-explicit`,{method:'POST',body:JSON.stringify({quantity,reason,operation_key:operationKey})}),
   reviewHistoricalStockTakeOrders:(storeId:string,facilityId:number,variantId:number,lines:Array<{order_id:number;line_key:string;decision:'historical'|'risk_accepted'}>,reason:string)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/facilities/${facilityId}/skus/${variantId}/stock-take-recovery/order-line-review`,{method:'POST',body:JSON.stringify({lines,reason})}),
   facilityMigrationPreview:(storeId:string,variantId:number,physicalByProviderId:Record<string,number>)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/facilities/migration-preview`,{method:'POST',body:JSON.stringify({physical_by_provider_id:physicalByProviderId})}),
   refreshFacilities:(storeId:string)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/facilities/refresh`,{method:'POST',body:'{}'}),
@@ -80,13 +79,13 @@ export function adaptInventory(overview:InventoryOverview){
     const mappedIds=new Set((modeItem?.mapped_stores||[]).map((store:any)=>String(store.id)));
     const currentModeRows=rows.filter(r=>overview.mode==='shared' ? r.account_key==='shared' : r.account_key!=='shared');
     const eligibleRows=currentModeRows.filter(r=>r.allocation_eligible ?? (!r.store_id || mappedIds.has(String(r.store_id))));
-    const knownPhysical=currentModeRows.filter(r=>r.counted&&r.physical!==null);
+    const knownPhysical=currentModeRows.filter(r=>r.counted&&(overview.single_current_stock?r.current_stock!==null:r.physical!==null));
     const knownSellable=eligibleRows.filter(r=>r.counted&&r.available!==null);
-    const physical=knownPhysical.length?knownPhysical.reduce((n,r)=>n+r.physical,0):null;
-    const reserved=knownPhysical.reduce((n,r)=>n+(r.reserved||0),0);
+    const physical=knownPhysical.length?knownPhysical.reduce((n,r)=>n+(overview.single_current_stock?r.current_stock:r.physical),0):null;
+    const reserved=overview.single_current_stock?0:knownPhysical.reduce((n,r)=>n+(r.reserved||0),0);
     const available=knownSellable.length?knownSellable.reduce((n,r)=>n+r.available,0):null;
     const identity=currentModeRows[0] || rows[0] || modeItem || {};
-    return {id:eligibleRows[0]?.balance_id ? String(eligibleRows[0].balance_id) : `variant:${variantId}`,variantId,catalogStatus:modeItem?.product_status||'active',isTest:modeItem?.classification==='sandbox_test',masterSku:identity.sku||'',barcode:'',productName:identity.product||'',variantName:identity.variant||'',imageUrl:modeItem?.thumbnail_url||'',warehouseLocation:'',mappedStoreIds:(modeItem?.mapped_stores||[]).map((store:any)=>String(store.id)),
+    return {id:eligibleRows[0]?.balance_id ? String(eligibleRows[0].balance_id) : `variant:${variantId}`,variantId,catalogStatus:modeItem?.product_status||'active',isTest:modeItem?.classification==='sandbox_test',masterSku:identity.sku||'',barcode:'',productName:identity.product||'',variantName:identity.variant||'',imageUrl:modeItem?.thumbnail_url||'',warehouseLocation:'',mappedStoreIds:(modeItem?.mapped_stores||[]).map((store:any)=>String(store.id)),singleCurrentStock:overview.single_current_stock===true,currentStock:physical,
       physicalStockStatus:physical===null?'unknown':'verified',hasUncountedAccounts:eligibleRows.some(r=>!r.counted),totalPhysicalStock:physical,reservedStock:reserved,safetyStock:0,availableStock:available,reorderPoint:0,costPrice:0,sellingPrice:0,
       channelMappings:{},autoSyncEnabled:false,historyLog:[],storeAssociations:currentModeRows.filter(r=>r.store_id).map(r=>({connectionId:String(r.store_id),storeName:r.store_name||r.account_key,platform:r.platform,
         externalSku:r.sku,connectionState:r.connection_status||'connected',syncState:'enabled',syncReadiness:r.sync_readiness,lastSyncStatus:r.external_sync?.status,syncTasks:r.external_sync?.tasks||[],balanceId:r.balance_id}))};
@@ -107,14 +106,14 @@ export function adaptBalances(overview:InventoryOverview){
     }
     result[row.sku]??={};
     const key=row.store_id?String(row.store_id):'website';
-    result[row.sku][key]={storeId:key,storeName:row.store_name||(key==='website'?'JW Ecom Storefront':row.account_key),platform:row.platform,isManagedByJw:true,connectionState:row.connection_status||'connected',isCounted:row.counted,physicalStock:row.physical,reservedStock:row.reserved??0,availableStock:row.available,syncState:'enabled',syncReadiness:row.sync_readiness,lastSyncStatus:row.external_sync?.status,syncTasks:row.external_sync?.tasks||[],balanceId:row.balance_id};
+    result[row.sku][key]={storeId:key,storeName:row.store_name||(key==='website'?'JW Ecom Storefront':row.account_key),platform:row.platform,isManagedByJw:true,connectionState:row.connection_status||'connected',isCounted:row.counted,physicalStock:overview.single_current_stock?row.current_stock:row.physical,reservedStock:overview.single_current_stock?0:row.reserved??0,availableStock:row.available,currentStock:overview.single_current_stock?row.current_stock:undefined,singleCurrentStock:overview.single_current_stock===true,syncState:'enabled',syncReadiness:row.sync_readiness,lastSyncStatus:row.external_sync?.status,syncTasks:row.external_sync?.tasks||[],balanceId:row.balance_id};
   }
   for(const rows of facilities.values()){
     const first=rows[0];
     const key=first.store_id?String(first.store_id):'website';
-    const counted=rows.every(row=>row.counted===true&&Number.isFinite(row.physical)&&Number.isFinite(row.reserved)&&Number.isFinite(row.available));
+    const counted=rows.every(row=>row.counted===true&&Number.isFinite(overview.single_current_stock?row.current_stock:row.physical)&&Number.isFinite(row.available));
     result[first.sku]??={};
-    result[first.sku][key]={storeId:key,storeName:first.store_name||(key==='website'?'JW Ecom Storefront':first.account_key),platform:first.platform,isManagedByJw:true,connectionState:first.connection_status||'connected',isCounted:counted,physicalStock:counted?rows.reduce((sum,row)=>sum+row.physical,0):null,reservedStock:rows.reduce((sum,row)=>sum+(row.reserved??0),0),availableStock:counted?rows.reduce((sum,row)=>sum+row.available,0):null,facilityCount:rows.length,syncState:'enabled',syncReadiness:first.sync_readiness,lastSyncStatus:first.external_sync?.status,syncTasks:first.external_sync?.tasks||[]};
+    result[first.sku][key]={storeId:key,storeName:first.store_name||(key==='website'?'JW Ecom Storefront':first.account_key),platform:first.platform,isManagedByJw:true,connectionState:first.connection_status||'connected',isCounted:counted,physicalStock:counted?rows.reduce((sum,row)=>sum+(overview.single_current_stock?row.current_stock:row.physical),0):null,reservedStock:overview.single_current_stock?0:rows.reduce((sum,row)=>sum+(row.reserved??0),0),availableStock:counted?rows.reduce((sum,row)=>sum+row.available,0):null,currentStock:overview.single_current_stock&&counted?rows.reduce((sum,row)=>sum+row.current_stock,0):undefined,singleCurrentStock:overview.single_current_stock===true,facilityCount:rows.length,syncState:'enabled',syncReadiness:first.sync_readiness,lastSyncStatus:first.external_sync?.status,syncTasks:first.external_sync?.tasks||[]};
   }
   return result;
 }

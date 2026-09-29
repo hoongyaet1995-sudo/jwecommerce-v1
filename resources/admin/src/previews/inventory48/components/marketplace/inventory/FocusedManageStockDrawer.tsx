@@ -7,7 +7,7 @@ import { ManageStockDrawer } from './ManageStockDrawer';
 import { StockTakeRecoveryFlow } from './StockTakeRecoveryFlow';
 import { warehouseDisplayCode } from './warehouseDisplay';
 
-type Balance = { physical: number | null; reserved: number | null; available: number | null; counted: boolean };
+type Balance = { physical: number | null; reserved: number | null; available: number | null; current?: number | null; counted: boolean };
 type Facility = Balance & { id: string; name: string; providerId: string; inventoryWarehouseId: number | null };
 type StoreRow = {
   id: string; name: string; platform: string; environment?: string; topology: string | null; status: string;
@@ -35,13 +35,15 @@ interface Props {
 
 const number = (value: number | null | undefined, counted = true) => counted && value !== null && value !== undefined ? value.toLocaleString() : 'Not counted';
 
-function StockSummary({ balance }: { balance: Balance | null }) {
-  const entries = [
+function StockSummary({ balance, singleCurrentStock = false }: { balance: Balance | null; singleCurrentStock?: boolean }) {
+  const entries = singleCurrentStock ? [
+    ['Current Stock', balance?.current ?? balance?.available, 'text-emerald-400'],
+  ] as const : [
     ['Physical stock', balance?.physical, 'text-white'],
     ['Reserved for orders', balance?.reserved, 'text-amber-400'],
     ['Available to sell', balance?.available, 'text-emerald-400'],
   ] as const;
-  return <div className="grid grid-cols-3 gap-2 rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-4">
+  return <div className={`grid ${singleCurrentStock ? 'grid-cols-1' : 'grid-cols-3'} gap-2 rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-4`}>
     {entries.map(([label, value, color]) => <div key={label} className="flex min-w-0 flex-col items-center gap-2 text-center">
       <span className="text-[10px] leading-snug text-neutral-400 sm:text-xs">{label}</span>
       <strong className={`font-mono text-sm sm:text-lg ${color}`}>{number(value, balance?.counted)}</strong>
@@ -49,9 +51,9 @@ function StockSummary({ balance }: { balance: Balance | null }) {
   </div>;
 }
 
-function CompactBalances({ balance }: { balance: Balance | null }) {
-  return <span className="grid shrink-0 grid-cols-3 gap-2 text-center sm:gap-3">
-    {([['Physical', balance?.physical], ['Reserved', balance?.reserved], ['Available', balance?.available]] as const)
+function CompactBalances({ balance, singleCurrentStock = false }: { balance: Balance | null; singleCurrentStock?: boolean }) {
+  return <span className={`grid shrink-0 ${singleCurrentStock ? 'grid-cols-1' : 'grid-cols-3'} gap-2 text-center sm:gap-3`}>
+    {(singleCurrentStock ? [['Current Stock', balance?.current ?? balance?.available]] : [['Physical', balance?.physical], ['Reserved', balance?.reserved], ['Available', balance?.available]] as const)
       .map(([label, value]) => <span key={label} className="flex min-w-[44px] flex-col items-center gap-1 sm:min-w-[58px]">
         <span className="text-[9px] text-neutral-400 sm:text-[10px]">{label}</span>
         <strong className={`font-mono text-xs ${label === 'Available' ? 'text-emerald-400' : 'text-white'}`}>{number(value, balance?.counted)}</strong>
@@ -85,6 +87,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
   const [acceptance, setAcceptance] = useState<any>(null);
   const [recovering, setRecovering] = useState(false);
   const [reload, setReload] = useState(0);
+  const singleCurrentStock = (item as any)?.singleCurrentStock === true;
 
   useEffect(() => {
     if (!isOpen || !item) return;
@@ -106,7 +109,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
         const balance = storeBalances?.[id];
         return { ...base, topology: 'no_warehouse', status: 'verified', facilities: [],
           balance: { physical: balance?.physicalStock ?? null, reserved: balance?.reservedStock ?? null,
-            available: balance?.availableStock ?? null, counted: !!balance?.isCounted } };
+            available: balance?.availableStock ?? null, current: balance?.currentStock ?? null, counted: !!balance?.isCounted } };
       }
       try {
         const result = await storeInventoryApi.facilityBalances(id, (item as any).variantId);
@@ -114,19 +117,20 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
           const balance = storeBalances?.[id];
           return { ...base, topology: result.topology, status: result.status, facilities: [],
             balance: { physical: balance?.physicalStock ?? null, reserved: balance?.reservedStock ?? null,
-              available: balance?.availableStock ?? null, counted: !!balance?.isCounted } };
+              available: balance?.availableStock ?? null, current: balance?.currentStock ?? null, counted: !!balance?.isCounted } };
         }
         const facilities: Facility[] = (result.facilities || []).map((facility: any) => ({
           id: String(facility.id), name: String(facility.name), providerId: String(facility.provider_id),
           inventoryWarehouseId: facility.inventory_warehouse_id ?? null,
-          physical: facility.physical ?? null, reserved: facility.reserved ?? null,
-          available: facility.available ?? null, counted: facility.counted === true,
+          physical: facility.current_stock ?? facility.physical ?? null, reserved: facility.reserved ?? null,
+          available: facility.available ?? null, current: facility.current_stock ?? null, counted: facility.counted === true,
         }));
         const counted = facilities.length > 0 && facilities.every(facility => facility.counted);
         const balance: Balance = {
           physical: counted ? facilities.reduce((sum, facility) => sum + (facility.physical || 0), 0) : null,
           reserved: counted ? facilities.reduce((sum, facility) => sum + (facility.reserved || 0), 0) : null,
           available: counted ? facilities.reduce((sum, facility) => sum + (facility.available || 0), 0) : null,
+          current: counted ? facilities.reduce((sum, facility) => sum + (facility.current || 0), 0) : null,
           counted,
         };
         return { ...base, topology: result.topology ?? null, status: result.status, facilities, balance,
@@ -248,33 +252,33 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
           {rows.map(row => <button key={row.id} type="button" onClick={() => openStore(row)} className="flex w-full flex-col gap-3 rounded-xl border border-neutral-700 bg-neutral-800/60 p-4 text-left hover:border-purple-500 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-3"><MarketplaceLogo platform={row.platform as any} size="sm" />
               <div className="min-w-0"><strong className="block truncate text-xs text-white">{row.name}</strong><span className="text-[11px] text-neutral-400">{row.topology === 'no_warehouse' ? row.platform === 'shopee' ? 'Default Inventory' : 'No platform warehouse' : row.status !== 'verified' ? 'Warehouse verification pending' : `${row.facilities.length} platform warehouse${row.facilities.length === 1 ? '' : 's'}`}</span></div></div>
-            <div className="flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto"><CompactBalances balance={row.balance} /><ChevronRight className="h-4 w-4 text-neutral-400" /></div>
+            <div className="flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto"><CompactBalances balance={row.balance} singleCurrentStock={singleCurrentStock} /><ChevronRight className="h-4 w-4 text-neutral-400" /></div>
           </button>)}
         </>}
         {selectedStore && !atLocation && <>
-          <StockSummary balance={selectedStore.balance} />
+          <StockSummary balance={selectedStore.balance} singleCurrentStock={singleCurrentStock} />
           {selectedStore.status !== 'verified' && <div role="status" className="rounded-xl border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-300">Warehouse verification is pending. Stock changes are unavailable until it completes.</div>}
           <p className="text-xs font-semibold text-neutral-300">{shopeeDefault ? 'Stock locations · 1' : `Platform warehouses · ${selectedStore.facilities.length}`}</p>
           {shopeeDefault && <button type="button" onClick={() => { setFacilityId('default'); setActionsOpen(false); }} className="flex w-full flex-col gap-3 rounded-xl border border-neutral-700 bg-neutral-800/60 p-4 text-left hover:border-purple-500 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0"><strong className="block truncate text-xs text-white">Default Inventory</strong><span className="text-[10px] text-neutral-400">Shopee store inventory</span></div>
-            <div className="flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto"><CompactBalances balance={selectedStore.balance} /><ChevronRight className="h-4 w-4 text-neutral-400" /></div>
+            <div className="flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto"><CompactBalances balance={selectedStore.balance} singleCurrentStock={singleCurrentStock} /><ChevronRight className="h-4 w-4 text-neutral-400" /></div>
           </button>}
           {selectedStore.facilities.map(facility => <button key={facility.id} type="button" onClick={() => openFacility(facility)} className="flex w-full flex-col gap-3 rounded-xl border border-neutral-700 bg-neutral-800/60 p-4 text-left hover:border-purple-500 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0"><strong className="block truncate text-xs text-white">{facility.name}</strong><span className="font-mono text-[10px] text-neutral-400">{warehouseDisplayCode(facility.providerId)}</span></div>
-            <div className="flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto"><CompactBalances balance={facility} /><ChevronRight className="h-4 w-4 text-neutral-400" /></div>
+            <div className="flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto"><CompactBalances balance={facility} singleCurrentStock={singleCurrentStock} /><ChevronRight className="h-4 w-4 text-neutral-400" /></div>
           </button>)}
         </>}
         {atLocation && !actionsOpen && <>
           <p className="text-xs font-semibold text-neutral-300">{selectedStore!.name} · {direct ? 'Store ledger' : `Platform warehouse ${warehouseDisplayCode(selectedFacility!.providerId)}`}</p>
-          <StockSummary balance={activeBalance} />
+          <StockSummary balance={activeBalance} singleCurrentStock={singleCurrentStock} />
           {!actionable && !awaitingSync && !failedSync && <div role="status" className="rounded-xl border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-300">{selectedStore!.status !== 'verified' ? 'Warehouse verification is pending.' : !acceptanceReady ? 'This stock location is not yet eligible for a stock change.' : 'This warehouse does not yet have an active stock ledger.'}</div>}
           {canRecover && !awaitingSync && !failedSync && <button type="button" onClick={() => setRecovering(true)} className="w-full rounded-xl border border-purple-700 bg-purple-950/30 p-4 text-left text-xs font-bold text-purple-200 hover:border-purple-400">Resolve stock issue <ArrowRight className="ml-2 inline h-4 w-4" /></button>}
           {selectedStore!.platform !== 'webstore' && <div role="status" className={`rounded-xl border p-4 text-xs ${sync?.status === 'synced' ? 'border-emerald-800 bg-emerald-950/40' : failedSync ? 'border-rose-800 bg-rose-950/30' : awaitingSync ? 'border-amber-800 bg-amber-950/30' : 'border-neutral-700 bg-neutral-800/60'}`}>
             <strong className={sync?.status === 'synced' ? 'text-emerald-300' : failedSync ? 'text-rose-300' : awaitingSync ? 'text-amber-300' : 'text-white'}>{sync?.status === 'synced' ? 'Marketplace stock confirmed' : failedSync ? 'Marketplace sync failed' : awaitingSync ? 'Marketplace result needs confirmation' : 'Marketplace stock sync'}</strong>
-            <p className="mt-2 text-neutral-300">{sync?.status === 'synced' ? 'The marketplace readback matches JW available stock for this location.' : checkedMismatch ? `JW has ${sync.jw_available_stock} available; the marketplace reports ${sync.marketplace_reported_stock}. Review this difference before resyncing.` : failedSync ? 'The previous stock update failed. JW stock remains available to manage; check the exact marketplace location before resending.' : awaitingSync ? 'The previous update may have reached the marketplace. Check this exact location before sending another update.' : 'Check the exact marketplace location to confirm its stock.'}</p>
+            <p className="mt-2 text-neutral-300">{sync?.status === 'synced' ? `The marketplace readback matches JW ${singleCurrentStock ? 'Current Stock' : 'available stock'} for this location.` : checkedMismatch ? `JW has ${sync.jw_available_stock} ${singleCurrentStock ? 'Current Stock' : 'available'}; the marketplace reports ${sync.marketplace_reported_stock}. Review this difference before resyncing.` : failedSync ? 'The previous stock update failed. JW stock remains available to manage; check the exact marketplace location before resending.' : awaitingSync ? 'The previous update may have reached the marketplace. Check this exact location before sending another update.' : 'Check the exact marketplace location to confirm its stock.'}</p>
             {syncError && <p role="alert" className="mt-2 text-rose-300">{syncError}</p>}
             {sync?.can_resync && <button type="button" onClick={() => setConfirmResync(true)} className="mt-3 rounded-lg border border-purple-600 px-3 py-2 font-semibold text-purple-200">Resend current stock</button>}
-            {confirmResync && <div className="mt-3 rounded-lg border border-purple-700 bg-purple-950/30 p-3"><p>Send JW available stock ({sync?.jw_available_stock}) to this exact marketplace location?</p><div className="mt-3 flex gap-2"><button type="button" onClick={() => setConfirmResync(false)} className="rounded border border-neutral-600 px-3 py-2">Cancel</button><button type="button" disabled={syncBusy} onClick={() => void syncAction(true)} className="rounded bg-purple-600 px-3 py-2 font-bold disabled:opacity-40">Confirm resync</button></div></div>}
+            {confirmResync && <div className="mt-3 rounded-lg border border-purple-700 bg-purple-950/30 p-3"><p>Send JW {singleCurrentStock ? 'Current Stock' : 'available stock'} ({sync?.jw_available_stock}) to this exact marketplace location?</p><div className="mt-3 flex gap-2"><button type="button" onClick={() => setConfirmResync(false)} className="rounded border border-neutral-600 px-3 py-2">Cancel</button><button type="button" disabled={syncBusy} onClick={() => void syncAction(true)} className="rounded bg-purple-600 px-3 py-2 font-bold disabled:opacity-40">Confirm resync</button></div></div>}
           </div>}
         </>}
         {atLocation && actionsOpen && <div className="space-y-3">

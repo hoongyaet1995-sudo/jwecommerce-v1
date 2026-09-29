@@ -3,6 +3,7 @@
 namespace App\Services\Inventory\StoreManagement;
 
 use App\Models\User;
+use App\Services\Inventory\CurrentStockLedger;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -30,7 +31,9 @@ final class FacilityTransferReview
                 throw ValidationException::withMessages(['transfer' => 'Source and destination share the same physical stock owner.']);
             }
             $available = $this->available($source['balance']);
-            if ($quantity > $available || (int) $destination['balance']->physical_stock > 2147483647 - $quantity) {
+            $destinationQuantity = config('inventory.current_stock_only')
+                ? (int) $destination['balance']->current_stock : (int) $destination['balance']->physical_stock;
+            if ($quantity > $available || $destinationQuantity > 2147483647 - $quantity) {
                 throw ValidationException::withMessages(['quantity' => 'Quantity exceeds source ATP or destination capacity.']);
             }
             $id = (string) Str::uuid();
@@ -103,16 +106,23 @@ final class FacilityTransferReview
                 $this->conflict('facility_or_balance_changed');
             }
             $quantity = (int) $review->quantity;
+            $destinationQuantity = config('inventory.current_stock_only')
+                ? (int) $destination['balance']->current_stock : (int) $destination['balance']->physical_stock;
             if ($this->available($source['balance']) < $quantity
-                || (int) $destination['balance']->physical_stock > 2147483647 - $quantity) {
+                || $destinationQuantity > 2147483647 - $quantity) {
                 $this->conflict('insufficient_source_atp');
             }
             foreach ([[$source, -$quantity], [$destination, $quantity]] as [$endpoint, $delta]) {
                 $balance = $endpoint['balance'];
-                DB::table('inventory_balances')->where('id', $balance->id)->update([
-                    'physical_stock' => (int) $balance->physical_stock + $delta,
-                    'version' => (int) $balance->version + 1, 'updated_at' => now(),
-                ]);
+                if (config('inventory.current_stock_only')) {
+                    app(CurrentStockLedger::class)->change((int) $balance->id, $delta,
+                        'facility-transfer:'.$reviewId.':'.$balance->id, 'Facility transfer');
+                } else {
+                    DB::table('inventory_balances')->where('id', $balance->id)->update([
+                        'physical_stock' => (int) $balance->physical_stock + $delta,
+                        'version' => (int) $balance->version + 1, 'updated_at' => now(),
+                    ]);
+                }
             }
             $sync = [];
             foreach ([$source, $destination] as $endpoint) {
@@ -147,8 +157,10 @@ final class FacilityTransferReview
                 ->where('pool.kind', 'store')->where('pool.pool_key', 'store:website')
                 ->whereNull('pool.marketplace_store_id')
                 ->where('balance.product_variant_id', $variantId)->first(['balance.*']);
-            if (! $balance || $balance->counted_at === null || $balance->physical_stock === null
-                || $balance->reserved_stock === null || $balance->safety_stock === null) {
+            if (! $balance || (config('inventory.current_stock_only')
+                ? $balance->current_stock === null
+                : ($balance->counted_at === null || $balance->physical_stock === null
+                    || $balance->reserved_stock === null || $balance->safety_stock === null))) {
                 throw ValidationException::withMessages(['facility' => 'Complete the website physical count first.']);
             }
             return ['facility' => null, 'scan' => null, 'balance' => $balance];
@@ -168,9 +180,11 @@ final class FacilityTransferReview
             ->where('pool.kind', 'facility')->where('pool.warehouse_id', $facility->inventory_warehouse_id)
             ->where('warehouse.is_active', true)->where('warehouse.status', 'active')
             ->where('balance.product_variant_id', $variantId)->first(['balance.*']);
-        if (! $scan || $scan->status !== 'verified' || ! $balance || $balance->counted_at === null
-            || $balance->physical_stock === null || $balance->reserved_stock === null
-            || $balance->safety_stock === null
+        if (! $scan || $scan->status !== 'verified' || ! $balance
+            || (config('inventory.current_stock_only')
+                ? $balance->current_stock === null
+                : ($balance->counted_at === null || $balance->physical_stock === null
+                    || $balance->reserved_stock === null || $balance->safety_stock === null))
             || DB::table('marketplace_variant_mappings')->where('store_id', $facility->marketplace_store_id)
                 ->where('product_variant_id', $variantId)->count() !== 1) {
             throw ValidationException::withMessages(['facility' => 'Verify topology, SKU mapping and a physical count first.']);
@@ -191,12 +205,23 @@ final class FacilityTransferReview
 
     private function available(object $balance): int
     {
+        if (config('inventory.current_stock_only')) {
+            return (int) $balance->current_stock;
+        }
         return max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock);
     }
 
     private function summary(array $endpoint, int $delta): array
     {
         $balance = $endpoint['balance'];
+
+        if (config('inventory.current_stock_only')) {
+            return ['facility_id' => $endpoint['facility']?->id,
+                'provider_facility_id' => $endpoint['facility']?->provider_facility_id,
+                'balance_id' => (int) $balance->id,
+                'current_before' => (int) $balance->current_stock,
+                'current_after' => (int) $balance->current_stock + $delta];
+        }
 
         return ['facility_id' => $endpoint['facility']?->id,
             'provider_facility_id' => $endpoint['facility']?->provider_facility_id,

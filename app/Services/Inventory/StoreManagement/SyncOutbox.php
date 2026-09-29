@@ -81,7 +81,9 @@ final class SyncOutbox
             ->whereIn('status', ['queued', 'failed', 'facility_blocked', 'waiting_source', 'facility_pending', 'uncertain'])
             ->update(['status' => 'superseded', 'updated_at' => now()]);
         $id = (string) Str::uuid();
-        $target = max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock);
+        $target = config('inventory.current_stock_only')
+            ? \App\Services\Inventory\CurrentStockTarget::current($balance)
+            : max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock);
         DB::table('inventory_store_sync_tasks')->insert([
             'id' => $id, 'operation_id' => null, 'marketplace_store_id' => $storeId,
             'product_variant_id' => $balance->product_variant_id,
@@ -115,7 +117,9 @@ final class SyncOutbox
             ->where('marketplace_store_id', $storeId)->value('management_status') === 'managed';
         $id = (string) Str::uuid();
         $status = $storeId === null ? 'confirmed' : ($managed ? 'queued' : 'not_applicable');
-        $target = max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock);
+        $target = config('inventory.current_stock_only')
+            ? \App\Services\Inventory\CurrentStockTarget::current($balance)
+            : max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock);
         $listing = $storeId === null ? null : DB::table('marketplace_variant_mappings as mapping')
             ->join('marketplace_listing_variants as listing', 'listing.id', '=', 'mapping.listing_variant_id')
             ->where('mapping.store_id', $storeId)->where('mapping.product_variant_id', $balance->product_variant_id)

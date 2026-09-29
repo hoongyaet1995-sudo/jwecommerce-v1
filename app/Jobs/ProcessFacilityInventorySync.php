@@ -25,26 +25,23 @@ final class ProcessFacilityInventorySync implements ShouldQueue
 
     public function handle(StoreInventoryPublisher $publisher): void
     {
-        $explicitPush = DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)
-            ->value('event_key');
-        if (! str_starts_with((string) $explicitPush, 'facility-manual-push:')
-            && app(\App\Services\Inventory\StoreManagement\RebaselineFreeze::class)->isPaused()) {
+        if (app(\App\Services\Inventory\StoreManagement\RebaselineFreeze::class)->isPaused()) {
             return;
         }
-        if (! str_starts_with((string) $explicitPush, 'batch-allocation:')
+        $directAllocationTask = DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)
+            ->value('event_key');
+        if (! str_starts_with((string) $directAllocationTask, 'batch-allocation:')
             && config('marketplace.multiwarehouse_stock_sync_enabled') !== true
             && config('marketplace.multiwarehouse_test_acceptance_enabled') !== true) {
             return;
         }
         $context = DB::transaction(function (): ?array {
             $task = DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)->lockForUpdate()->first();
-            $manualPush = $task && str_starts_with((string) $task->event_key, 'facility-manual-push:');
             if (! $task || $task->status !== 'facility_pending' || ! $task->marketplace_store_facility_id
-                || (! $manualPush && ! $task->inventory_balance_id)) {
+                || ! $task->inventory_balance_id) {
                 return null;
             }
-            $directAllocation = str_starts_with((string) $task->event_key, 'batch-allocation:');
-            if (! $directAllocation
+            if (! str_starts_with((string) $task->event_key, 'batch-allocation:')
                 && ! \App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::stockSyncAllowed((int) $task->marketplace_store_id)) {
                 return null;
             }
@@ -71,21 +68,24 @@ final class ProcessFacilityInventorySync implements ShouldQueue
                 ->where('product_variant_id', $task->product_variant_id)->exists();
             $account = DB::table('inventory_store_accounts')
                 ->where('marketplace_store_id', $task->marketplace_store_id)->first();
+            $directAllocation = str_starts_with((string) $task->event_key, 'batch-allocation:');
             if ((! $directAllocation && (! $scan || $scan->status !== 'verified')) || ! $facility || ! $facility->is_active
                 || (int) $facility->marketplace_store_id !== (int) $task->marketplace_store_id
                 || $facility->provider_facility_id !== $task->provider_location_id
-                || (! $manualPush && (! $pool || $pool->kind !== 'facility'
-                    || (int) $pool->warehouse_id !== (int) $facility->inventory_warehouse_id))
+                || ! $pool || $pool->kind !== 'facility'
+                || (int) $pool->warehouse_id !== (int) $facility->inventory_warehouse_id
                 || ! $store || (! $directAllocation && $store->status !== 'connected') || ! $mapping
-                || (! $manualPush && ! $directAllocation && $account && $account->management_status === 'paused')
-                || (! $manualPush && (! $balance || $balance->counted_at === null
-                    || $balance->physical_stock === null || $balance->reserved_stock === null
-                    || $balance->safety_stock === null))) {
+                || ($account && $account->management_status === 'paused'
+                    && ! str_starts_with((string) $task->event_key, 'batch-allocation:'))
+                || ! $balance || (config('inventory.current_stock_only')
+                    ? $balance->current_stock === null
+                    : ($balance->counted_at === null || $balance->physical_stock === null
+                        || $balance->reserved_stock === null || $balance->safety_stock === null))) {
                 $this->mark($task->id, 'facility_blocked', 'facility_identity_or_readiness_changed');
 
                 return null;
             }
-            if (! $manualPush && (int) $balance->version !== (int) $task->balance_version) {
+            if ((int) $balance->version !== (int) $task->balance_version) {
                 $this->mark($task->id, 'superseded', 'balance_version_changed');
 
                 return null;
@@ -104,7 +104,8 @@ final class ProcessFacilityInventorySync implements ShouldQueue
 
                 return null;
             }
-            if (! $manualPush && ! $directAllocation && ! str_starts_with((string) $task->event_key, 'facility-resync:')
+            if (! str_starts_with((string) $task->event_key, 'facility-resync:')
+                && ! str_starts_with((string) $task->event_key, 'batch-allocation:')
                 && \App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::appliesToStore((int) $task->marketplace_store_id)) {
                 try {
                     app(\App\Services\Inventory\StoreManagement\LazadaTestFacilityAcceptance::class)
@@ -123,10 +124,12 @@ final class ProcessFacilityInventorySync implements ShouldQueue
 
                 return null;
             }
-            $target = $manualPush ? (int) $task->target_quantity
-                : ($directAllocation ? (int) $balance->physical_stock
-                : max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock));
-            if (! $manualPush && $target !== (int) $task->target_quantity) {
+            $target = config('inventory.current_stock_only')
+                ? \App\Services\Inventory\CurrentStockTarget::current($balance)
+                : (str_starts_with((string) $task->event_key, 'batch-allocation:')
+                    ? (int) $balance->physical_stock
+                    : max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock));
+            if ($target !== (int) $task->target_quantity) {
                 $this->mark($task->id, 'superseded', 'atp_changed');
 
                 return null;
@@ -181,8 +184,7 @@ final class ProcessFacilityInventorySync implements ShouldQueue
                 return;
             }
             $balance = DB::table('inventory_balances')->where('id', $task->inventory_balance_id)->first();
-            $status = str_starts_with((string) $task->event_key, 'facility-manual-push:')
-                || ($balance && (int) $balance->version === (int) $task->balance_version)
+            $status = $balance && (int) $balance->version === (int) $task->balance_version
                 ? 'confirmed' : 'superseded';
             DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update([
                 'status' => $status, 'provider_receipt' => json_encode($receipt, JSON_THROW_ON_ERROR),

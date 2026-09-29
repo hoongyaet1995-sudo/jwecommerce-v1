@@ -48,7 +48,8 @@ final class ProcessStoreInventorySync implements ShouldQueue
                 : DB::table('inventory_pools')->where('marketplace_store_id', $task->marketplace_store_id)->lockForUpdate()->first();
             $balance = $pool ? DB::table('inventory_balances')->where('inventory_pool_id', $pool->id)
                 ->where('product_variant_id', $task->product_variant_id)->lockForUpdate()->first() : null;
-            if (! $balance || $balance->counted_at === null) {
+            if (! $balance || (config('inventory.current_stock_only')
+                ? $balance->current_stock === null : $balance->counted_at === null)) {
                 throw new RuntimeException('Managed store balance is not counted.');
             }
             if ((int) $balance->version !== (int) $task->balance_version) {
@@ -69,8 +70,10 @@ final class ProcessStoreInventorySync implements ShouldQueue
 
                 return null;
             }
-            $target = $directAllocation ? (int) $balance->physical_stock
-                : max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock);
+            $target = config('inventory.current_stock_only')
+                ? \App\Services\Inventory\CurrentStockTarget::current($balance)
+                : ($directAllocation ? (int) $balance->physical_stock
+                    : max(0, (int) $balance->physical_stock - (int) $balance->reserved_stock - (int) $balance->safety_stock));
             DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update([
                 'status' => 'processing', 'target_quantity' => $target, 'balance_version' => $balance->version,
                 'attempts' => DB::raw('attempts + 1'), 'updated_at' => now(),

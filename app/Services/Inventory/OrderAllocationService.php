@@ -10,6 +10,7 @@ class OrderAllocationService
 {
     public function reservePaid(Order $order): void
     {
+        if (config('inventory.current_stock_only')) return;
         DB::transaction(function() use($order){
             $locked=Order::query()->lockForUpdate()->findOrFail($order->id);
             if (!in_array($locked->status,['paid','processing'],true)) return;
@@ -31,6 +32,7 @@ class OrderAllocationService
 
     public function consume(Order $order): void
     {
+        if (config('inventory.current_stock_only')) return;
         DB::transaction(function () use ($order): void {
             $locked = Order::query()->lockForUpdate()->findOrFail($order->id);
             foreach ($locked->items()->orderBy('product_variant_id')->orderBy('id')->get() as $item) {

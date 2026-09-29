@@ -94,9 +94,12 @@ final class AllocationReviewService
             if ($projected !== $savedAfter['accounts']) $this->conflict('balance_changed', 'Allocation inputs changed after review.');
             $operationId = (string) Str::uuid();
             $result = [];
-            foreach ($payload['balance_ids'] as $key => $id) $result[] = $this->counts->apply($balances[(int) $id], $projected[$key]);
+            foreach ($payload['balance_ids'] as $key => $id) $result[] = $this->counts->apply(
+                $balances[(int) $id], $projected[$key], 'stock-allocation:'.$reviewId.':'.$id);
             $receipt = ['operation_id' => $operationId, 'review_id' => $reviewId, 'ledger_status' => 'applied',
-                'balances' => $result, 'physical_total' => collect($result)->sum('physical'), 'external_stages' => []];
+                'balances' => $result,
+                'physical_total' => collect($result)->sum(config('inventory.current_stock_only') ? 'current_stock' : 'physical'),
+                'external_stages' => []];
             DB::table('inventory_store_operations')->insert(['id' => $operationId, 'review_id' => $reviewId,
                 'operation_key' => $operationKey, 'kind' => 'allocation', 'actor_id' => $actor->id,
                 'ledger_status' => 'applied', 'receipt' => json_encode($receipt, JSON_THROW_ON_ERROR),

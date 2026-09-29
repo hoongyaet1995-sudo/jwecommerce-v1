@@ -12,6 +12,15 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+Artisan::command('inventory:drain-current-stock-sync {--limit=100}', function () {
+    $result = app(\App\Services\Inventory\CurrentStockSyncIntentDrain::class)
+        ->run((int) $this->option('limit'));
+    $this->line(json_encode($result, JSON_THROW_ON_ERROR));
+})->purpose('Queue latest Current Stock order changes for marketplace sync');
+
+Schedule::command('inventory:drain-current-stock-sync')->everyMinute()->withoutOverlapping()
+    ->when(fn () => config('inventory.current_stock_only') === true);
+
 Artisan::command('marketplace:hub-heartbeat', function () {
     $url = rtrim((string) config('marketplace.hub.url'), '/');
     $clientId = (string) config('marketplace.hub.client_id');

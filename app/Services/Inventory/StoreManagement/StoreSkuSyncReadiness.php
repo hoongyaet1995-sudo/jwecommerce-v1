@@ -54,8 +54,10 @@ final class StoreSkuSyncReadiness
             }
 
             $balance = $this->balance($storeId, $variantId);
-            if (! $balance || $balance->counted_at === null || $balance->physical_stock === null
-                || $balance->reserved_stock === null || $balance->safety_stock === null) {
+            if (! $balance || (config('inventory.current_stock_only')
+                ? $balance->current_stock === null
+                : ($balance->counted_at === null || $balance->physical_stock === null
+                    || $balance->reserved_stock === null || $balance->safety_stock === null))) {
                 $blockers[] = $this->blocker('initial_count_required', 'Complete the first count for this store SKU.');
 
             }

@@ -39,6 +39,15 @@ const overview: any = {
 };
 
 describe('store inventory adapters', () => {
+  it('uses only the exact current stock in single-ledger mode', () => {
+    const current = { ...overview, single_current_stock: true, data: [
+      { ...overview.data[0], physical: null, reserved: null, available: 6, current_stock: 6 },
+    ] } as any;
+    const [item] = adaptInventory(current);
+    const balance = adaptBalances(current)['SKU-7']['11'];
+    expect(item).toMatchObject({ singleCurrentStock: true, currentStock: 6, availableStock: 6 });
+    expect(balance).toMatchObject({ currentStock: 6, availableStock: 6, isCounted: true });
+  });
   it('totals mapped multi-warehouse stock from facility ledgers without counting a legacy store pool twice', () => {
     const balances = adaptBalances({ ...overview, data: [
       { ...overview.data[0], pool_kind: 'store', physical: 99, available: 99 },

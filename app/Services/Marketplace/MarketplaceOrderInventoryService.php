@@ -17,6 +17,23 @@ class MarketplaceOrderInventoryService
             $storeId = DB::table('marketplace_orders')->where('id', $orderId)->value('store_id');
             $store = DB::table('marketplace_stores')->where('id', $storeId)->lockForUpdate()->first();
             if (!$store || $store->status !== 'connected' || !in_array($store->platform,['shopee','lazada'],true)) return;
+            if (config('inventory.current_stock_only')) {
+                $order = DB::table('marketplace_orders')->where('id', $orderId)->lockForUpdate()->first();
+                $payload = json_decode(Crypt::decryptString($order->encrypted_payload), true, 512, JSON_THROW_ON_ERROR);
+                try {
+                    $status = DB::transaction(fn () => app(CurrentStockMarketplaceOrder::class)->apply($store, $order, $payload));
+                    $error = null;
+                } catch (MarketplaceInventoryException $exception) {
+                    $status = 'exception';
+                    $error = $exception->getMessage();
+                }
+                DB::table('marketplace_order_inventory')->updateOrInsert(['order_id' => $orderId], [
+                    'platform_updated_at' => $order->platform_updated_at, 'status' => $status,
+                    'error_code' => $error, 'updated_at' => now(),
+                ]);
+
+                return;
+            }
             if ($store->platform === 'shopee' && $store->region === 'SG') return;
             if (app(\App\Services\Inventory\StoreManagement\RebaselineFreeze::class)->isPaused()) {
                 $order = DB::table('marketplace_orders')->where('id', $orderId)->lockForUpdate()->first();

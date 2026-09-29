@@ -125,6 +125,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
   const selectedItem = useMemo(() => {
     return safeInventory.find(i => i.masterSku === selectedSku) || safeInventory[0];
   }, [safeInventory, selectedSku]);
+  const singleCurrentStock = (selectedItem as MarketplaceInventoryItem & { singleCurrentStock?: boolean } | undefined)?.singleCurrentStock === true;
 
   useEffect(()=>{
     if(!selectedItem)return;
@@ -406,7 +407,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
           </div>
           <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
             Store transfers shift sellable stock allocations between specific stores' JW ledgers. This represents business allocation, not physical freight transportation. 
-            Transfers are strictly constrained by the source store's <strong>Available Stock</strong>. Units locked in <strong>Reserved Stock</strong> (pending customer orders) cannot be transferred. Total company stock is conserved.
+            {singleCurrentStock ? <>Transfers are constrained by the source store's <strong>Current Stock</strong>. Total company stock is conserved.</> : <>Transfers are strictly constrained by the source store's <strong>Available Stock</strong>. Units locked in <strong>Reserved Stock</strong> (pending customer orders) cannot be transferred. Total company stock is conserved.</>}
           </p>
         </div>
       </div>
@@ -581,7 +582,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                                 Total Avail: {totalAvail}
                               </div>
                               <div className="text-[10px] text-neutral-400">
-                                Physical: {item.totalPhysicalStock ?? 0}
+                                {singleCurrentStock ? 'Current Stock' : 'Physical'}: {item.totalPhysicalStock ?? 0}
                               </div>
                             </div>
                           </div>
@@ -643,7 +644,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                   {/* Stock Distribution across all connected stores */}
                   <div className="border-t border-neutral-200/80 dark:border-neutral-700/60 pt-3">
                     <div className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                      Available Stock Across Connected Stores:
+                      {singleCurrentStock ? 'Current Stock Across Connected Stores:' : 'Available Stock Across Connected Stores:'}
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                       {safeStores.filter(s => !s.isComingSoon).map(st => {
@@ -694,15 +695,15 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                               )}
                             </div>
                             <div className="flex items-baseline justify-between pt-0.5">
-                              <span className="text-[10px] text-neutral-400">Available</span>
+                              <span className="text-[10px] text-neutral-400">{singleCurrentStock ? 'Current Stock' : 'Available'}</span>
                               <span className={`font-mono text-xs font-bold ${avail > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-400'}`}>
                                 {avail} Units
                               </span>
                             </div>
-                            <div className="flex items-baseline justify-between text-[10px] text-neutral-400">
+                            {!singleCurrentStock && <div className="flex items-baseline justify-between text-[10px] text-neutral-400">
                               <span>Physical</span>
                               <span className="font-mono">{phys}</span>
-                            </div>
+                            </div>}
                           </div>
                         );
                       })}
@@ -730,7 +731,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                       <span>From Store (Source) *</span>
                     </label>
                     <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white">
-                      Avail: {sourceAvailable}
+                      {singleCurrentStock ? 'Current Stock' : 'Avail'}: {sourceAvailable}
                     </span>
                   </div>
 
@@ -797,25 +798,25 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                     </div>
                   )}
 
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
+                  <div className={`grid ${singleCurrentStock ? 'grid-cols-1' : 'grid-cols-3'} gap-2 text-center text-xs pt-1`}>
                     <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
-                      <span className="text-[10px] text-neutral-400 block">Facility Physical</span>
+                      <span className="text-[10px] text-neutral-400 block">{singleCurrentStock ? 'Current Stock' : 'Facility Physical'}</span>
                       <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200">
                         {sourcePhysical}
                       </span>
                     </div>
-                    <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
+                    {!singleCurrentStock && <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
                       <span className="text-[10px] text-neutral-400 block">Locked Reserved</span>
                       <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
                         {sourceReserved}
                       </span>
-                    </div>
-                    <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
+                    </div>}
+                    {!singleCurrentStock && <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
                       <span className="text-[10px] text-neutral-400 block">Available (ATP)</span>
                       <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
                         {sourceAvailable}
                       </span>
-                    </div>
+                    </div>}
                   </div>
                 </div>
 
@@ -890,7 +891,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                       <span>To Store (Destination) *</span>
                     </label>
                     <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white">
-                      Avail: {destAvailable}
+                      {singleCurrentStock ? 'Current Stock' : 'Avail'}: {destAvailable}
                     </span>
                   </div>
 
@@ -953,25 +954,25 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                     </div>
                   )}
 
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
+                  <div className={`grid ${singleCurrentStock ? 'grid-cols-1' : 'grid-cols-3'} gap-2 text-center text-xs pt-1`}>
                     <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
-                      <span className="text-[10px] text-neutral-400 block">Facility Physical</span>
+                      <span className="text-[10px] text-neutral-400 block">{singleCurrentStock ? 'Current Stock' : 'Facility Physical'}</span>
                       <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200">
                         {destPhysical}
                       </span>
                     </div>
-                    <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
+                    {!singleCurrentStock && <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
                       <span className="text-[10px] text-neutral-400 block">Locked Reserved</span>
                       <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
                         {destReserved}
                       </span>
-                    </div>
-                    <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
+                    </div>}
+                    {!singleCurrentStock && <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
                       <span className="text-[10px] text-neutral-400 block">Available (ATP)</span>
                       <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
                         {destAvailable}
                       </span>
-                    </div>
+                    </div>}
                   </div>
                 </div>
               </div>
@@ -997,7 +998,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                 <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 flex items-center gap-2 text-xs text-red-700 dark:text-red-300 font-semibold">
                   <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
                   <span>
-                    Requested transfer ({numericQty} units) exceeds available stock in {sourceWarehouseObj?.name || sourceStore.name} ({sourceAvailable} units). Units reserved for customer orders cannot be moved.
+                    Requested transfer ({numericQty} units) exceeds {singleCurrentStock ? 'Current Stock' : 'available stock'} in {sourceWarehouseObj?.name || sourceStore.name} ({sourceAvailable} units). {!singleCurrentStock && 'Units reserved for customer orders cannot be moved.'}
                   </span>
                 </div>
               )}
@@ -1080,7 +1081,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                       Location: <strong className="text-purple-300">{warehouseDisplayCode(sourceWarehouseObj?.codeValue)}</strong>
                     </div>
                     <div className="pt-1 text-[11px] font-mono text-amber-400">
-                      Phys: {sourcePhysical} → {sourceAfterPhysical} • Avail: {sourceAvailable} → {sourceAfterAvailable}
+                      {singleCurrentStock ? `Current Stock: ${sourcePhysical} → ${sourceAfterPhysical}` : `Phys: ${sourcePhysical} → ${sourceAfterPhysical} • Avail: ${sourceAvailable} → ${sourceAfterAvailable}`}
                     </div>
                   </div>
 
@@ -1095,7 +1096,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                       Location: <strong className="text-purple-300">{warehouseDisplayCode(destWarehouseObj?.codeValue)}</strong>
                     </div>
                     <div className="pt-1 text-[11px] font-mono text-emerald-400">
-                      Phys: {destPhysical} → {destAfterPhysical} • Avail: {destAvailable} → {destAfterAvailable}
+                      {singleCurrentStock ? `Current Stock: ${destPhysical} → ${destAfterPhysical}` : `Phys: ${destPhysical} → ${destAfterPhysical} • Avail: ${destAvailable} → ${destAfterAvailable}`}
                     </div>
                   </div>
                 </div>
@@ -1553,7 +1554,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                       {sourceTransferStatus === 'succeeded'
                         ? activeTransferExecution.record?.sourcePlatform==='webstore'?'Saved in JW Storefront.':'Provider stock confirmed.'
                         : sourceTransferStatus === 'failed'?'Stock update needs attention.'
-                        : activeTransferExecution.stage === 'source_syncing'?'Sending updated ATP…':'JW ledger saved. Provider delivery has not been confirmed.'}
+                        : activeTransferExecution.stage === 'source_syncing'?`Sending updated ${singleCurrentStock ? 'Current Stock' : 'ATP'}…`:'JW ledger saved. Provider delivery has not been confirmed.'}
                     </div>
                   </div>
                 </div>
@@ -1588,7 +1589,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                       {destinationTransferStatus === 'succeeded'
                         ? activeTransferExecution.record?.destinationPlatform==='webstore'?'Saved in JW Storefront.':'Provider stock confirmed.'
                         : destinationTransferStatus === 'failed'?'Stock update needs attention.'
-                        : activeTransferExecution.stage === 'dest_syncing'?'Sending updated ATP…':'JW ledger saved. Provider delivery has not been confirmed.'}
+                        : activeTransferExecution.stage === 'dest_syncing'?`Sending updated ${singleCurrentStock ? 'Current Stock' : 'ATP'}…`:'JW ledger saved. Provider delivery has not been confirmed.'}
                     </div>
                   </div>
                 </div>

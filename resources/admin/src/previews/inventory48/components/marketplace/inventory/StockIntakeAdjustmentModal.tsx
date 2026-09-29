@@ -64,6 +64,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
   initialWarehouseId,
   onSave
 }) => {
+  const singleCurrentStock = (item as MarketplaceInventoryItem & { singleCurrentStock?: boolean } | null)?.singleCurrentStock === true;
   const [actionType, setActionType] = useState<'intake' | 'adjustment' | 'count'>(initialType);
   const [quantityInput, setQuantityInput] = useState<string>('');
   const [selectedStoreId, setSelectedStoreId] = useState<string>(initialStoreId || '');
@@ -108,11 +109,11 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
       setActionType(initialType);
       setQuantityInput('');
       setNotes('');
-      setReason(initialType === 'intake' ? 'Supplier PO Delivery Verification' : initialType === 'count' ? 'Initial Warehouse Physical Count' : 'Physical Cycle Count Reconciliation');
+      setReason(initialType === 'intake' ? 'Supplier PO Delivery Verification' : singleCurrentStock ? 'Current Stock Count Reconciliation' : initialType === 'count' ? 'Initial Warehouse Physical Count' : 'Physical Cycle Count Reconciliation');
       if (initialStoreId) setSelectedStoreId(initialStoreId);
       if (initialWarehouseId) setSelectedWarehouseId(initialWarehouseId);
     }
-  }, [isOpen, initialType, initialStoreId, initialWarehouseId, item?.id]);
+  }, [isOpen, initialType, initialStoreId, initialWarehouseId, item?.id, singleCurrentStock]);
 
   useEffect(()=>{
     if(!isOpen || !item) return;
@@ -176,7 +177,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
 
   const delta = newPhysical - currentPhysical;
   const newAvailable = Math.max(0, newPhysical - currentReserved);
-  const hasDeficit = newPhysical < currentReserved;
+  const hasDeficit = !singleCurrentStock && newPhysical < currentReserved;
 
   // Blocked submission check
   const isSubmissionBlocked = !isValidQty || hasDeficit || isVerificationPending || isUnmapped
@@ -280,7 +281,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
           <div className="rounded-xl bg-emerald-950/40 border border-emerald-800 p-4 flex justify-between gap-3"><div><b className="text-sm">Step 1: JW Inventory Ledger</b><p className="text-xs text-emerald-200 mt-1">Stock change recorded in the JW ledger.</p></div><span className="text-xs text-emerald-200">Done</span></div>
           <div className={`rounded-xl border p-4 flex justify-between gap-3 ${confirmed ? 'bg-emerald-950/40 border-emerald-800' : failed ? 'bg-rose-950/40 border-rose-800' : 'bg-amber-950/30 border-amber-800'}`}><div><b className="text-sm">Step 2: Marketplace Stock Update</b>
             <p className="text-xs text-neutral-300 mt-1">{notDispatched ? syncState?.failureReason || 'No stock API request was sent.' : confirmed ? 'Marketplace readback matches JW available stock.' : syncState?.failureReason || (syncBusy ? 'Reading the latest task status…' : 'Marketplace delivery is not yet confirmed.')}</p>
-            {syncState?.jwAvailableStock != null && <p className="text-xs text-neutral-400 mt-2">JW available: {syncState.jwAvailableStock} · Marketplace readback: {syncState.marketplaceReportedStock ?? syncState.marketplace_reported_stock ?? 'Not available'}</p>}
+            {syncState?.jwAvailableStock != null && <p className="text-xs text-neutral-400 mt-2">JW {singleCurrentStock ? 'Current Stock' : 'available'}: {syncState.jwAvailableStock} · Marketplace readback: {syncState.marketplaceReportedStock ?? syncState.marketplace_reported_stock ?? 'Not available'}</p>}
           </div><span className="text-xs whitespace-nowrap">{stateLabel}</span></div>
           {syncError && <p role="alert" className="text-xs text-rose-300">{syncError}</p>}
           {notDispatched && <p className="text-xs text-amber-200">No Shopee stock push was attempted for this task. Resync sends the latest JW available quantity when available.</p>}
@@ -312,8 +313,8 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
               </h3>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {actionType === 'intake'
-                  ? 'Record newly arrived physical merchandise from suppliers or manufacturing to a specific facility.'
-                  : 'Adjust inventory ledger to reflect physical stock variances, damage, or recount audit.'}
+                  ? singleCurrentStock ? 'Add received units to this facility’s Current Stock.' : 'Record newly arrived physical merchandise from suppliers or manufacturing to a specific facility.'
+                  : singleCurrentStock ? 'Set the corrected absolute Current Stock after an audit.' : 'Adjust inventory ledger to reflect physical stock variances, damage, or recount audit.'}
               </p>
             </div>
           </div>
@@ -350,7 +351,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
               onClick={() => {
                 setActionType('adjustment');
                 setQuantityInput('');
-                setReason('Physical Cycle Count Reconciliation');
+                setReason(singleCurrentStock ? 'Current Stock Count Reconciliation' : 'Physical Cycle Count Reconciliation');
               }}
               className={`flex-1 py-2 rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 actionType === 'adjustment'
@@ -364,7 +365,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
           </div>
           {hasWarehouses && !currentWarehouseObj?.balance?.isCounted && !isVerificationPending && !isUnmapped && (
             <div className="mt-3 p-3 rounded-xl border border-purple-700/50 bg-purple-950/20 text-xs text-neutral-200 flex items-center justify-between gap-3">
-              <span>{actionType === 'count' ? 'Enter the verified physical stock for this warehouse.' : 'This warehouse has no verified opening count. Use Manage Stock to complete First Count before intake or adjustment.'}</span>
+              <span>{actionType === 'count' ? singleCurrentStock ? 'Enter the first absolute Current Stock for this warehouse.' : 'Enter the verified physical stock for this warehouse.' : 'This warehouse has no verified opening count. Use Manage Stock to complete First Count before intake or adjustment.'}</span>
             </div>
           )}
         </div>
@@ -387,7 +388,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
               </div>
             </div>
             <div className="text-right">
-              <div className="text-[10px] text-neutral-400">SKU Global Physical</div>
+              <div className="text-[10px] text-neutral-400">{singleCurrentStock ? 'SKU Total Current Stock' : 'SKU Global Physical'}</div>
               <div className="font-mono font-bold text-neutral-800 dark:text-neutral-200 text-xs">
                 {item.totalPhysicalStock !== null ? `${item.totalPhysicalStock} units` : 'Not Counted'}
               </div>
@@ -600,9 +601,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
                           </span>
                         </div>
                         <div className="flex items-center gap-3 font-mono text-[11px]">
-                          <span>Phys: <strong>{b?.physicalStock ?? 'N/A'}</strong></span>
-                          <span>Res: <strong className="text-amber-400">{b?.reservedStock ?? 0}</strong></span>
-                          <span>Avail: <strong className="text-emerald-400">{b?.availableStock ?? 'N/A'}</strong></span>
+                          {singleCurrentStock ? <span>Current Stock: <strong>{b?.currentStock ?? b?.availableStock ?? 'N/A'}</strong></span> : <><span>Phys: <strong>{b?.physicalStock ?? 'N/A'}</strong></span><span>Res: <strong className="text-amber-400">{b?.reservedStock ?? 0}</strong></span><span>Avail: <strong className="text-emerald-400">{b?.availableStock ?? 'N/A'}</strong></span></>}
                         </div>
                       </div>
                     );
@@ -626,17 +625,17 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
                   </div>
                   <div className="flex items-center gap-4 text-xs font-mono text-right">
                     <div>
-                      <span className="text-[10px] text-neutral-400 block font-sans">Current Phys</span>
+                      <span className="text-[10px] text-neutral-400 block font-sans">{singleCurrentStock ? 'Current Stock' : 'Current Phys'}</span>
                       <span className="font-bold text-white">{currentPhysical}</span>
                     </div>
-                    <div>
+                    {!singleCurrentStock && <div>
                       <span className="text-[10px] text-neutral-400 block font-sans">Reserved</span>
                       <span className="font-bold text-amber-400">{currentReserved}</span>
-                    </div>
-                    <div>
+                    </div>}
+                    {!singleCurrentStock && <div>
                       <span className="text-[10px] text-neutral-400 block font-sans">Current Avail</span>
                       <span className="font-bold text-emerald-400">{currentAvailable}</span>
-                    </div>
+                    </div>}
                   </div>
                 </div>
               )}
@@ -648,7 +647,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
             <label className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
               {actionType === 'intake' 
                 ? 'Arrived Inbound Quantity (+ Units) *' 
-                : actionType === 'count' ? 'Verified Warehouse Physical Count (0 is allowed) *' : 'New Confirmed Physical Stock Count (Total Units) *'}
+                : singleCurrentStock ? 'New Confirmed Current Stock (Total Units) *' : actionType === 'count' ? 'Verified Warehouse Physical Count (0 is allowed) *' : 'New Confirmed Physical Stock Count (Total Units) *'}
             </label>
             <div className="relative">
               <input
@@ -681,7 +680,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
           {isValidQty && !hasDeficit && !isVerificationPending && !isUnmapped && (
             <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 grid grid-cols-3 gap-2 text-center text-xs">
               <div>
-                <span className="text-neutral-400 text-[10px] block">Previous Facility Physical</span>
+                <span className="text-neutral-400 text-[10px] block">{singleCurrentStock ? 'Previous Current Stock' : 'Previous Facility Physical'}</span>
                 <span className="font-mono font-semibold text-neutral-700 dark:text-neutral-300">{currentPhysical}</span>
               </div>
               <div>
@@ -693,8 +692,8 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
                 </span>
               </div>
               <div>
-                <span className="text-neutral-400 text-[10px] block">New Facility Available</span>
-                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{newAvailable}</span>
+                <span className="text-neutral-400 text-[10px] block">{singleCurrentStock ? 'New Current Stock' : 'New Facility Available'}</span>
+                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{singleCurrentStock ? newPhysical : newAvailable}</span>
               </div>
             </div>
           )}
@@ -719,7 +718,7 @@ export const StockIntakeAdjustmentModal: React.FC<StockIntakeAdjustmentModalProp
                 <div>
                   <span className="text-neutral-500 block">Stock Movement:</span>
                   <span className="font-mono font-bold text-emerald-400">
-                    Phys: {currentPhysical} → {newPhysical} (Avail: {currentAvailable} → {newAvailable})
+                    {singleCurrentStock ? `Current Stock: ${currentPhysical} → ${newPhysical}` : `Phys: ${currentPhysical} → ${newPhysical} (Avail: ${currentAvailable} → ${newAvailable})`}
                   </span>
                 </div>
                 <div>

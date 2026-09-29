@@ -16,9 +16,11 @@ final class CatalogStockProjection
             ->where('pool.pool_key', $poolKey)
             ->select('balance.*')
             ->first();
-        $available = $balance && $balance->physical_stock !== null
-            ? max(0, (int) $balance->physical_stock - (int) ($balance->reserved_stock ?? 0) - (int) ($balance->safety_stock ?? 0))
-            : 0;
+        $available = config('inventory.current_stock_only')
+            ? (int) ($balance?->current_stock ?? 0)
+            : ($balance && $balance->physical_stock !== null
+                ? max(0, (int) $balance->physical_stock - (int) ($balance->reserved_stock ?? 0) - (int) ($balance->safety_stock ?? 0))
+                : 0);
 
         DB::table('product_variants')->where('id', $variantId)->update([
             'stock' => $available,

@@ -2,6 +2,7 @@
 
 namespace App\Services\Inventory\StoreManagement;
 
+use App\Services\Inventory\CurrentStockLedger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -10,6 +11,20 @@ final class CountMutation
     /** @return array{before:array<string,mixed>,after:array<string,mixed>} */
     public function preview(string $kind, object $balance, array $input): array
     {
+        if (config('inventory.current_stock_only')) {
+            $current = $balance->current_stock === null ? null : (int) $balance->current_stock;
+            $target = match ($kind) {
+                'count' => array_key_exists('physical_count', $input) ? (int) $input['physical_count'] : null,
+                'intake' => $current === null ? null : $current + (int) ($input['quantity'] ?? 0),
+                'correction' => $current === null ? null : $current + (int) ($input['quantity_delta'] ?? 0),
+                default => null,
+            };
+            if ($target === null || $target < 0 || $target > 2147483647) {
+                throw ValidationException::withMessages(['current_stock' => 'Count Current Stock first and use a valid quantity.']);
+            }
+
+            return ['before' => ['current_stock' => $current], 'after' => ['current_stock' => $target]];
+        }
         $physical = $balance->physical_stock === null ? null : (int) $balance->physical_stock;
         $reserved = $balance->reserved_stock === null ? 0 : (int) $balance->reserved_stock;
         $target = match ($kind) {
@@ -33,8 +48,19 @@ final class CountMutation
     }
 
     /** @return array<string,mixed> */
-    public function apply(object $balance, array $after): array
+    public function apply(object $balance, array $after, ?string $eventKey = null): array
     {
+        if (config('inventory.current_stock_only')) {
+            if ($eventKey === null) {
+                throw new \RuntimeException('Current Stock operation identity is required.');
+            }
+            $movement = app(CurrentStockLedger::class)->setAbsolute((int) $balance->id,
+                (int) $after['current_stock'], $eventKey, 'Stock count or adjustment');
+
+            return ['id' => (int) $balance->id, 'variant_id' => (int) $balance->product_variant_id,
+                'current_stock' => $movement['after'], 'counted' => true,
+                'version' => $movement['balance_version']];
+        }
         $version = (int) $balance->version + 1;
         DB::table('inventory_balances')->where('id', $balance->id)->update([
             'physical_stock' => $after['physical'],

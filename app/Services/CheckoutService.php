@@ -16,6 +16,7 @@ use App\Services\Inventory\OrderAllocationService;
 use App\Services\Inventory\StockAllocationService;
 use App\Services\Inventory\StoreManagement\OrderInventoryRouter;
 use App\Services\Inventory\WebsiteInventoryAvailability;
+use App\Services\Inventory\WebsiteCurrentStockOrderEffects;
 use App\Services\Notifications\OrderNotificationMilestoneService;
 use App\Services\Payments\PaymentProofService;
 use App\Services\Shipping\EasyParcelBookingGuard;
@@ -110,6 +111,9 @@ class CheckoutService
                 OrderItem::query()->create(['order_id' => $order->id, 'product_variant_id' => $variant->id, 'sku' => $variant->sku, 'title' => $product->title, 'variant_title' => $variant->title, 'image_url' => $product->images->sortBy('position')->first()?->path, 'package_snapshot' => ['weight_grams' => $variant->weight_grams, 'length_cm' => $variant->package_length_cm, 'width_cm' => $variant->package_width_cm, 'height_cm' => $variant->package_height_cm], 'unit_price' => $variant->price, 'quantity' => $line['quantity'], 'line_total' => $line['line_total']]);
             }
             foreach ($order->items as $inventoryItem) {
+                if (config('inventory.current_stock_only')) {
+                    continue;
+                }
                 $activation = app(ManagedInventoryActivation::class)->eligible('website', (int) $inventoryItem->product_variant_id, $order->created_at);
                 if ($activation) {
                     DB::table('order_items')->where('id', $inventoryItem->id)->update(['inventory_order_activation_id' => $activation['id']]);
@@ -125,6 +129,9 @@ class CheckoutService
                     continue;
                 }
                 app(StockAllocationService::class)->reserve('order', (int) $order->id, 'item:'.$inventoryItem->id, (int) $inventoryItem->product_variant_id, (int) $inventoryItem->quantity);
+            }
+            if (config('inventory.current_stock_only')) {
+                app(WebsiteCurrentStockOrderEffects::class)->debit($order);
             }
             $this->persistTaxSnapshot($order, $summary['tax_quote']);
             $payment = $this->paymentAttempts->createPendingPayment($order, $method, $order->currency, $bankAccountId);
@@ -199,6 +206,13 @@ class CheckoutService
             }
             $this->easyParcelBookings->assertLegacyOrderMutationAllowed($locked);
             if ($status === 'cancelled') {
+                if (config('inventory.current_stock_only')) {
+                    app(WebsiteCurrentStockOrderEffects::class)->restore(
+                        $locked,
+                        app(WebsiteCurrentStockOrderEffects::class)->remaining($locked),
+                        'cancelled'
+                    );
+                } else {
                 foreach ($locked->items as $item) {
                     if ($item->product_variant_id) {
                         $storeLine = 'order-item:'.$item->id;
@@ -220,6 +234,7 @@ class CheckoutService
                             app(InventoryMutationService::class)->change((int) $item->product_variant_id, (int) $item->quantity, 'order-item:'.$item->id.':cancel', 'Order cancellation', $userId);
                         }
                     }
+                }
                 }
             }
             if ($status === 'paid') {
@@ -290,6 +305,9 @@ class CheckoutService
 
     private function consumeOrderAllocations(Order $order): void
     {
+        if (config('inventory.current_stock_only')) {
+            return;
+        }
         $managed = false;
         foreach ($order->items()->orderBy('id')->get() as $item) {
             $lineKey = 'order-item:'.$item->id;

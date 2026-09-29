@@ -23,6 +23,21 @@ const click = async (label: string) => {
   await act(async () => button!.click());
 };
 
+it('shows only Current Stock in every Manage Stock summary when the single ledger is active', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({ ok: true, json: async () =>
+    String(input).includes('/sync') ? { status: 'not_synced', can_check: false } :
+      { status: 'verified', topology: 'no_warehouse', facilities: [] } }) as Response));
+  await act(async () => root.render(<FocusedManageStockDrawer isOpen onClose={() => {}}
+    item={{ ...item, singleCurrentStock: true }} mode="independent"
+    stores={[{ id: '3', name: 'Shopee Test', platform: 'shopee' }]}
+    storeBalances={{ 3: { currentStock: 12, physicalStock: 12, reservedStock: 0,
+      availableStock: 12, isCounted: true } }} />));
+  await click('Shopee Test');
+  await click('Default Inventory');
+  expect(host.textContent).toContain('Current Stock12');
+  expect(host.textContent).not.toMatch(/Physical stock|Reserved for orders|Available to sell/);
+});
+
 it('opens Shopee default inventory as a selectable location and preserves store ledger action targets', async () => {
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({ ok: true, json: async () =>
     String(input).includes('/sync') ? { status: 'synced', can_check: true }

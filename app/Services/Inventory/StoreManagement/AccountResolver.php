@@ -51,7 +51,7 @@ final class AccountResolver
                 ->lockForUpdate()
                 ->first();
             if (! $existing) {
-                $knownElsewhere = DB::table('inventory_balances')
+                $knownElsewhere = ! config('inventory.current_stock_only') && DB::table('inventory_balances')
                     ->where('product_variant_id', $variantId)
                     ->whereNotNull('counted_at')
                     ->exists();
@@ -113,6 +113,21 @@ final class AccountResolver
 
     private function present(object $balance, string $accountKey): array
     {
+        if (config('inventory.current_stock_only')) {
+            $current = $balance->current_stock === null ? null : (int) $balance->current_stock;
+
+            return [
+                'id' => (int) $balance->id,
+                'variant_id' => (int) $balance->product_variant_id,
+                'account_key' => $accountKey,
+                'physical' => null,
+                'reserved' => null,
+                'available' => $current,
+                'current_stock' => $current,
+                'counted' => $current !== null,
+                'version' => (int) $balance->version,
+            ];
+        }
         $physical = $balance->physical_stock === null ? null : (int) $balance->physical_stock;
         $reserved = $balance->reserved_stock === null ? null : (int) $balance->reserved_stock;
         $safety = $balance->safety_stock === null ? null : (int) $balance->safety_stock;

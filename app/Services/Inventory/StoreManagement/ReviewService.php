@@ -168,7 +168,7 @@ final class ReviewService
             $operationId = (string) Str::uuid();
             $result = $review->kind === 'transfer'
                 ? $this->transfers->apply($source, $destination, $saved)
-                : [$this->counts->apply($balance, $saved)];
+                : [$this->counts->apply($balance, $saved, 'stock-review:'.$reviewId)];
             $receipt = ['operation_id' => $operationId, 'review_id' => $reviewId,
                 'ledger_status' => 'applied', 'balances' => $result, 'external_stages' => []];
             DB::table('inventory_store_operations')->insert([

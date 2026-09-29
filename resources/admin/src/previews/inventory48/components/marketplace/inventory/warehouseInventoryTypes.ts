@@ -35,6 +35,7 @@ export interface StorePlatformWarehouse {
 
 export interface SkuWarehouseStockBalance {
   warehouseId: string;
+  currentStock?: number | null;
   physicalOwnerId?: string;
   storeId: string;
   warehouseName: string;
