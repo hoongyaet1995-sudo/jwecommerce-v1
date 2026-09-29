@@ -11,7 +11,7 @@ use App\Services\Marketplace\MarketplaceOrderImage;
 
 class MarketplaceOrderController extends Controller
 {
-    public function refresh(int $order, \App\Services\Marketplace\MarketplaceOrderDetailService $details): \Illuminate\Http\JsonResponse
+    public function refresh(\Illuminate\Http\Request $request, int $order, \App\Services\Marketplace\MarketplaceOrderDetailService $details): \Illuminate\Http\JsonResponse
     {
         $row=DB::table('marketplace_orders as o')->join('marketplace_stores as s','s.id','=','o.store_id')
             ->where('o.id',$order)->first(['o.id','s.platform']);
@@ -24,7 +24,35 @@ class MarketplaceOrderController extends Controller
             \Illuminate\Support\Facades\Log::warning('Marketplace single-order refresh failed',['order_id'=>$order,'platform'=>$row->platform,'exception'=>get_class($e)]);
             return response()->json(['message'=>'The platform order could not be refreshed. Check the store connection and try again.'],409)->header('Cache-Control','no-store');
         }
-        return response()->json(['data'=>$details->read($id)])->header('Cache-Control','no-store');
+        $audit = null;
+        if ($row->platform === 'lazada'
+            && DB::table('inventory_configuration')->where('id', 1)->value('operating_mode') === 'independent_stores') {
+            try {
+                $saved = DB::table('marketplace_orders')->find($id);
+                $payload = json_decode(Crypt::decryptString($saved->encrypted_payload), true, 512, JSON_THROW_ON_ERROR);
+                $plan = \App\Services\Marketplace\LazadaInventoryPlan::build($payload, 0);
+                $createdAt = \Carbon\CarbonImmutable::createFromFormat('!Y-m-d H:i:s O', $payload['created_at']);
+                $audit = app(\App\Services\Inventory\StoreManagement\LazadaManualOrderInventoryAudit::class)
+                    ->reconcile($id, $plan, $request->user(), $createdAt);
+                app(\App\Services\Marketplace\MarketplaceOrderInventoryService::class)->process($id);
+                $inventory = DB::table('marketplace_order_inventory')->where('order_id', $id)->first();
+                if ($inventory?->status === 'exception') {
+                    return response()->json(['message' => 'Order refreshed, but inventory accounting needs review.',
+                        'inventory_audit' => $audit, 'inventory_error' => $inventory->error_code], 409)
+                        ->header('Cache-Control', 'no-store');
+                }
+            } catch (\App\Services\Marketplace\MarketplaceInventoryException|\App\Services\Inventory\WarehouseAllocationException $exception) {
+                return response()->json(['message' => 'Order refreshed, but exact warehouse inventory could not be reconciled.',
+                    'inventory_error' => $exception->getMessage()], 409)->header('Cache-Control', 'no-store');
+            } catch (\RuntimeException $exception) {
+                \Illuminate\Support\Facades\Log::warning('Marketplace inventory audit failed', [
+                    'order_id' => $id, 'exception' => get_class($exception),
+                ]);
+                return response()->json(['message' => 'Order refreshed, but inventory accounting could not be completed. Review the exact warehouse and retry.'], 409)
+                    ->header('Cache-Control', 'no-store');
+            }
+        }
+        return response()->json(['data'=>$details->read($id), 'inventory_audit' => $audit])->header('Cache-Control','no-store');
     }
     public function pack(Request $request,int $order,\App\Services\Marketplace\MarketplacePackingAttempts $attempts,\App\Services\Marketplace\LazadaPackingDispatch $dispatch)
     {

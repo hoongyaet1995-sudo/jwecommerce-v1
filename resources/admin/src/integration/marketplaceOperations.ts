@@ -180,7 +180,7 @@ export const marketplaceOperations = {
   retryCatalog: (id: string) => marketplaceRequest<{runId: number}>(`/catalog-runs/${idPath(id)}/retry`, 'POST'),
   orders: (filters: Filters = {}) => marketplaceRequest<Page<OrderSummary>>(`/orders?${query(filters)}`),
   orderDetail: (id: string, options: {includeRecipient?: boolean} = {}) => marketplaceRequest<{data: MarketplaceOrderDetail}>(`/orders/${idPath(id)}${options.includeRecipient ? '?includeRecipient=1' : ''}`),
-  refreshOrder: (id: string) => marketplaceRequest<{data: MarketplaceOrderDetail}>(`/orders/${idPath(id)}/refresh`, 'POST'),
+  refreshOrder: (id: string) => marketplaceRequest<{data: MarketplaceOrderDetail; inventory_audit?: Array<{line_key:string; result:string; stock_sync?:string}>}>(`/orders/${idPath(id)}/refresh`, 'POST'),
   fetchOrders: (id: string, from: number, to: number) => marketplaceRequest<{runId: number}>(`/stores/${idPath(id)}/orders-fetch`, 'POST', {from, to}),
   latestOrderRun: async (id: string) => {
     const run=await marketplaceRequest<SyncRun|null>(`/stores/${idPath(id)}/order-runs/latest`);

@@ -53,7 +53,8 @@ final class LazadaInventoryExecutor
      } else {
       $activationId=null;
       $facilityActivationId=null;
-      $hasFacilityActivation=config('marketplace.multiwarehouse_orders_enabled') === true
+      $hasFacilityActivation=(config('marketplace.multiwarehouse_orders_enabled') === true
+        || DB::table('inventory_configuration')->where('id',1)->value('operating_mode')==='independent_stores')
        && DB::table('inventory_facility_order_activations')->where('marketplace_store_id',$storeId)
         ->where('product_variant_id',$variant)->exists();
       if ($hasFacilityActivation) {

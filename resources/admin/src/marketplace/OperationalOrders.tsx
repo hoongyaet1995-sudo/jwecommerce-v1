@@ -28,7 +28,12 @@ export function OperationalOrders(){
   const result=await marketplaceOperations.refreshOrder(id);
   setRevision(value=>value+1);
   if(selected===id){try{setDetail(await marketplaceOperations.orderDetail(id,{includeRecipient:true}).then(response=>response.data));}catch{setDetail(null);setDetailError('Order updated, but details could not be loaded. Close and retry.');}}
-  setRefreshNotice(`Order ${result.data.external_order_id} updated from ${result.data.platform}.`);
+  const audited=result.inventory_audit||[];
+  const corrected=audited.filter(line=>line.result==='corrected').length;
+  const booked=audited.filter(line=>['reserved','released','consumed'].includes(line.result)).length;
+  const skipped=audited.filter(line=>line.result==='skipped_unmapped').length;
+  const pendingSync=audited.filter(line=>line.stock_sync==='requires_retry').length;
+  setRefreshNotice(`Order ${result.data.external_order_id} updated from ${result.data.platform}. ${audited.length ? `Inventory checked: ${corrected} warehouse corrections, ${booked} status entries, ${audited.length-corrected-booked-skipped} already correct, ${skipped} unmapped.${pendingSync ? ` ${pendingSync} stock sync task needs retry.` : ''}` : ''}`);
  }catch(error){setRefreshError(error instanceof Error?error.message:'Order refresh failed. Try again.');}finally{setRefreshingId(null);}};
  const refreshRuns=useCallback(async()=>{if(!stores.length)return;setRefreshing(true);try{const values=await Promise.all(stores.filter(s=>s.platform==='shopee'||s.platform==='lazada').map(async store=>[store.id,await marketplaceOperations.latestOrderRun(store.id)] as const));setRuns(previous=>({...previous,...Object.fromEntries(values)}));}catch{/* Keep the last confirmed statuses visible; the operator can refresh again. */}finally{setRefreshing(false);}},[stores]);
  useEffect(()=>{let active=true;marketplaceOperations.connections().then(data=>{if(active){setStores(data.stores);setCapabilities(data.capabilities);setOrderPlatforms(Object.entries(data.capabilities).filter(([,value])=>value.orders).map(([platform])=>platform));}}).catch(()=>{if(active)setConnectionError('Store connections could not be loaded. Reload this page to retry.');});return()=>{active=false;};},[]);

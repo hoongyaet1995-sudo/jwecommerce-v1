@@ -27,8 +27,10 @@ class StockAllocationService
             throw new RuntimeException('An order line cannot have two physical stock owners.');
         }
         if ($facilityActivationId !== null && ($ownerType !== 'marketplace_order'
-            || config('marketplace.multiwarehouse_orders_enabled') !== true)) {
-            throw new RuntimeException('Facility order accounting is not enabled.');
+            || ! (config('marketplace.multiwarehouse_orders_enabled') === true
+                || DB::table('inventory_configuration')->where('id', 1)->value('operating_mode') === 'independent_stores')
+            || ! DB::table('inventory_facility_order_activations')->where('id', $facilityActivationId)->exists())) {
+            throw new RuntimeException('Facility order accounting has no verified stock owner.');
         }
 
         return DB::transaction(function () use ($ownerType, $ownerId, $lineKey, $variantId, $quantity, $activationId, $facilityActivationId) {

@@ -73,3 +73,21 @@ it('keeps the selected order after an older detail request returns and clears it
   expect(marketplaceOperations.orders).toHaveBeenLastCalledWith(expect.objectContaining({storeId:'7',page:1}));
  }finally{await act(async()=>root.unmount());}
 });
+it('shows exact inventory audit results after an operator refreshes a Lazada order',async()=>{
+ vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+ const row={id:130,store_id:4,external_order_id:'510635037743475',platform:'lazada' as const,
+  shop_name:'Test',platform_status:'pending',currency:'MYR',total_amount:'1.10',platform_updated_at:200,fetched_at:''};
+ vi.spyOn(marketplaceOperations,'connections').mockResolvedValue({stores:[{id:'4',platform:'lazada',shopName:'Test',status:'connected'} as any],capabilities:{lazada:{orders:true}} as any});
+ vi.spyOn(marketplaceOperations,'orders').mockResolvedValue({data:[row],total:1,current_page:1,last_page:1,per_page:15});
+ vi.spyOn(marketplaceOperations,'orderSummary').mockResolvedValue({total:1,statuses:{pending:1}});
+ vi.spyOn(marketplaceOperations,'latestOrderRun').mockResolvedValue(null);
+ const refresh=vi.spyOn(marketplaceOperations,'refreshOrder').mockResolvedValue({data:row as any,
+  inventory_audit:[{line_key:'510635037843475',result:'corrected',stock_sync:'queued'}]});
+ const container=document.createElement('div');const root=createRoot(container);
+ try{
+  await act(async()=>root.render(<OperationalOrders/>));
+  await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Refresh order 510635037743475"]')!.click());
+  expect(refresh).toHaveBeenCalledExactlyOnceWith('130');
+  expect(container.textContent).toContain('Inventory checked: 1 warehouse corrections');
+ }finally{await act(async()=>root.unmount());}
+});

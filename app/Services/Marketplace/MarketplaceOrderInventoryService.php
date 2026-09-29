@@ -29,7 +29,9 @@ class MarketplaceOrderInventoryService
                 return;
             }
             $managed=DB::table('inventory_order_activations')->where('channel_key','marketplace:'.$storeId)->exists()
-                || ($store->platform === 'lazada' && config('marketplace.multiwarehouse_orders_enabled') === true
+                || ($store->platform === 'lazada'
+                    && (config('marketplace.multiwarehouse_orders_enabled') === true
+                        || DB::table('inventory_configuration')->where('id', 1)->value('operating_mode') === 'independent_stores')
                     && DB::table('inventory_facility_order_activations')->where('marketplace_store_id', $storeId)->exists());
             if (!$managed && config('marketplace.inventory_accounting_enabled')!==true) return;
             $policy = DB::table('marketplace_inventory_policies')->where('store_id', $storeId)->lockForUpdate()->first();
