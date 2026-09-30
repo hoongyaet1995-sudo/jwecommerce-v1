@@ -16,11 +16,15 @@ final class CountMutation
             $target = match ($kind) {
                 'count' => array_key_exists('physical_count', $input) ? (int) $input['physical_count'] : null,
                 'intake' => $current === null ? null : $current + (int) ($input['quantity'] ?? 0),
-                'correction' => $current === null ? null : $current + (int) ($input['quantity_delta'] ?? 0),
+                'correction' => $current === null ? null : (array_key_exists('confirmed_total', $input)
+                    ? (int) $input['confirmed_total'] : $current + (int) ($input['quantity_delta'] ?? 0)),
                 default => null,
             };
             if ($target === null || $target < 0 || $target > 2147483647) {
                 throw ValidationException::withMessages(['current_stock' => 'Count Current Stock first and use a valid quantity.']);
+            }
+            if ($kind === 'correction' && $target === $current) {
+                throw ValidationException::withMessages(['confirmed_total' => 'The verified total matches Current Stock; there is no adjustment to save.']);
             }
 
             return ['before' => ['current_stock' => $current], 'after' => ['current_stock' => $target]];
@@ -48,14 +52,14 @@ final class CountMutation
     }
 
     /** @return array<string,mixed> */
-    public function apply(object $balance, array $after, ?string $eventKey = null): array
+    public function apply(object $balance, array $after, ?string $eventKey = null, ?string $reason = null): array
     {
         if (config('inventory.current_stock_only')) {
             if ($eventKey === null) {
                 throw new \RuntimeException('Current Stock operation identity is required.');
             }
             $movement = app(CurrentStockLedger::class)->setAbsolute((int) $balance->id,
-                (int) $after['current_stock'], $eventKey, 'Stock count or adjustment');
+                (int) $after['current_stock'], $eventKey, $reason ?: 'Stock count or adjustment');
 
             return ['id' => (int) $balance->id, 'variant_id' => (int) $balance->product_variant_id,
                 'current_stock' => $movement['after'], 'counted' => true,

@@ -15,9 +15,10 @@ interface Props {
   initialActionsOpen?: boolean;
   onClose: () => void;
   onFirstCount: (item: MarketplaceInventoryItem, quantity: number) => Promise<{operation_id:string;external_stages?:SyncStage[]}>;
+  onSelectStockAction?: (item: MarketplaceInventoryItem, action:'intake'|'audit') => void;
 }
 
-export const SharedPoolManageStockDrawer: React.FC<Props> = ({ isOpen, item, initialActionsOpen = false, onClose, onFirstCount }) => {
+export const SharedPoolManageStockDrawer: React.FC<Props> = ({ isOpen, item, initialActionsOpen = false, onClose, onFirstCount, onSelectStockAction }) => {
   const [step, setStep] = useState<Step>('home');
   const [quantity, setQuantity] = useState('');
   const [completedStock, setCompletedStock] = useState<number | null>(null);
@@ -120,7 +121,7 @@ export const SharedPoolManageStockDrawer: React.FC<Props> = ({ isOpen, item, ini
     <strong className={`mt-2 block font-mono ${counted ? 'text-xl text-emerald-400' : 'text-base text-amber-400'}`}>{counted ? Number(currentStock).toLocaleString() : 'Not counted'}</strong>
     <p className="mt-2 text-[11px] text-neutral-500">{counted ? 'One SKU balance. This is not the sum of marketplace stock.' : 'No JW stock changes or marketplace pushes until First Count is completed.'}</p>
   </div>;
-  const choice = (label: string, next: Step, primary = false) => <button type="button" onClick={() => setPage(next)}
+  const choice = (label: string, next: Step, primary = false) => <button type="button" onClick={() => (next === 'intake' || next === 'audit') && onSelectStockAction ? onSelectStockAction(item, next) : setPage(next)}
     className={`flex w-full items-center justify-between rounded-xl border p-4 text-left text-sm font-bold text-white hover:border-purple-500 ${primary ? 'border-purple-600 bg-purple-900' : 'border-neutral-700 bg-neutral-800'}`}>
     <span>{label}</span><ChevronRight className="h-4 w-4 shrink-0 text-neutral-300" />
   </button>;

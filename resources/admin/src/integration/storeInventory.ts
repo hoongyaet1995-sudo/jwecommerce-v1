@@ -4,7 +4,7 @@ const csrf=()=>document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]'
 async function json(url:string,init:RequestInit={}){
   const response=await fetch(url,{credentials:'same-origin',...init,headers:{Accept:'application/json',...(init.body?{'Content-Type':'application/json','X-CSRF-TOKEN':csrf()}:{}),...(init.headers||{})}});
   const body=await response.json().catch(()=>({}));
-  if(!response.ok){const detail=body?.error?.message||body?.message||Object.values(body?.errors||{}).flat().join(' ')||`Request failed (${response.status})`;throw new Error(detail);}
+  if(!response.ok){const detail=body?.error?.message||body?.message||Object.values(body?.errors||{}).flat().join(' ')||`Request failed (${response.status})`;throw Object.assign(new Error(detail),{status:response.status,code:body?.error?.code});}
   return body;
 }
 const terminalSyncStatuses=new Set(['confirmed','not_applicable','superseded','uncertain','auth_expired','failed']);
@@ -66,6 +66,8 @@ export const storeInventoryApi={
     const review=await json('/admin/api/inventory/store-management/reviews',{method:'POST',body:JSON.stringify({kind,...payload})});
     return json(`/admin/api/inventory/store-management/reviews/${review.id}/confirm`,{method:'POST',body:JSON.stringify({operation_key:crypto.randomUUID()})});
   },
+  reviewDraft:(kind:string,payload:Record<string,unknown>)=>json('/admin/api/inventory/store-management/reviews',{method:'POST',body:JSON.stringify({kind,...payload})}),
+  confirmReview:(reviewId:string,operationKey:string)=>json(`/admin/api/inventory/store-management/reviews/${encodeURIComponent(reviewId)}/confirm`,{method:'POST',body:JSON.stringify({operation_key:operationKey})}),
   async allocate(payload:Record<string,unknown>){
     const review=await json('/admin/api/inventory/store-management/allocations',{method:'POST',body:JSON.stringify(payload)});
     return json(`/admin/api/inventory/store-management/allocations/${review.id}/confirm`,{method:'POST',body:JSON.stringify({operation_key:crypto.randomUUID()})});

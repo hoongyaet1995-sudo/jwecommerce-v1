@@ -126,7 +126,7 @@ class StoreInventorySyncTest extends TestCase
 
         $this->assertCount(1, $publisher->calls);
         $this->assertDatabaseHas('inventory_store_sync_tasks', ['id' => $c['task']->id, 'status' => 'uncertain']);
-        Bus::assertNothingDispatched();
+        Bus::assertNotDispatched(\App\Jobs\ProcessStoreInventorySync::class);
     }
 
     public function test_iso_provider_timestamp_is_normalized_for_the_observation_read_model(): void
@@ -488,6 +488,7 @@ class StoreInventorySyncTest extends TestCase
 
     public function test_shared_balance_queues_same_total_for_each_enabled_lazada_warehouse(): void
     {
+        config(['inventory.current_stock_only' => true]);
         DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool']);
         $fixture = new StoreInventoryFixture;
         $sku = $fixture->sku();

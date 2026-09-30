@@ -31,7 +31,7 @@ interface Props {
   onSelectTransfer?: (item: MarketplaceInventoryItem, storeId?: string, warehouseId?: string) => void;
   onViewLedger?: (item: MarketplaceInventoryItem, storeId?: string, warehouseId?: string) => void;
   onNavigateToMapping?: () => void;
-  onSaveSharedFirstCount?: (item: MarketplaceInventoryItem, quantity: number) => Promise<void>;
+  onSaveSharedFirstCount?: (item: MarketplaceInventoryItem, quantity: number) => Promise<{operation_id:string;external_stages?:any[]}>;
 }
 
 const number = (value: number | null | undefined, counted = true) => counted && value !== null && value !== undefined ? value.toLocaleString() : 'Not counted';
@@ -312,5 +312,6 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
 export const FocusedManageStockDrawer: React.FC<Props> = props => props.mode === 'shared'
   ? <SharedPoolManageStockDrawer isOpen={props.isOpen} onClose={props.onClose} item={props.item}
       initialActionsOpen={props.initialActionsOpen}
-      onFirstCount={props.onSaveSharedFirstCount ?? (async () => { throw new Error('First Count is unavailable.'); })} />
+      onFirstCount={props.onSaveSharedFirstCount ?? (async () => { throw new Error('First Count is unavailable.'); })}
+      onSelectStockAction={(item,action)=>action==='intake'?props.onSelectIntake?.(item):props.onSelectAdjustment?.(item)} />
   : <FocusedIndependentDrawer {...props} />;

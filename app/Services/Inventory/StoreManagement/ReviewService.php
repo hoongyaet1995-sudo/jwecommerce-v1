@@ -24,9 +24,9 @@ final class ReviewService
         if (! in_array($kind, ['count', 'intake', 'correction', 'transfer'], true)) {
             throw ValidationException::withMessages(['kind' => 'Choose count, intake, correction, or transfer.']);
         }
-        if ($kind === 'count' && empty($input['balance_id']) && ! empty($input['variant_id'])) {
+        if (in_array($kind, ['count', 'intake', 'correction'], true) && empty($input['balance_id']) && ! empty($input['variant_id'])) {
             $epochId = DB::table('inventory_configuration')->where('id', 1)->value('active_rebaseline_epoch_id');
-            if ($epochId !== null) {
+            if ($epochId !== null && $kind === 'count') {
                 $warehouseId = $this->epochPhysicalRoute(
                     (string) ($input['channel_key'] ?? 'website'), (int) $input['variant_id']);
                 $input['balance_id'] = DB::table('inventory_balances as balance')
@@ -60,6 +60,7 @@ final class ReviewService
                 $this->rejectFacilityBalances($locked->all());
             }
             $this->assertSharedFirstCount($configuration, $kind, $locked->all());
+            $this->assertSharedStockAction($configuration, $kind, $input, $locked->all());
             if ($kind === 'transfer') {
                 $source = $locked[(int) $input['source_balance_id']];
                 $destination = $locked[(int) $input['destination_balance_id']];
@@ -150,6 +151,7 @@ final class ReviewService
                 $this->rejectFacilityBalances($locked->all());
             }
             $this->assertSharedFirstCount($configuration, $review->kind, $locked->all());
+            $this->assertSharedStockAction($configuration, $review->kind, $payload, $locked->all());
             foreach ($locked as $balance) {
                 if ((int) $balance->version !== (int) ($versions[(string) $balance->id] ?? -1)) {
                     $this->conflict('balance_changed', 'Inventory changed after review.', 'Review current stock again.');
@@ -168,9 +170,17 @@ final class ReviewService
                 $this->conflict('balance_changed', 'Inventory inputs changed after review.', 'Review current stock again.');
             }
             $operationId = (string) Str::uuid();
+            $ledgerLabel = match ($review->kind) {
+                'intake' => 'Actual Stock Intake: ',
+                'correction' => 'Stock Audit Adjustment: ',
+                default => 'First Count: ',
+            };
+            $ledgerReason = mb_strcut(trim($ledgerLabel.($payload['reason'] ?? '').
+                (empty($payload['reference']) ? '' : ' ['.$payload['reference'].']')), 0, 255, 'UTF-8');
             $result = $review->kind === 'transfer'
                 ? $this->transfers->apply($source, $destination, $saved)
-                : [$this->counts->apply($balance, $saved, 'stock-review:'.$reviewId)];
+                : [$this->counts->apply($balance, $saved, 'stock-review:'.$reviewId,
+                    $configuration->operating_mode === 'shared_pool' ? $ledgerReason : null)];
             $receipt = ['operation_id' => $operationId, 'review_id' => $reviewId,
                 'ledger_status' => 'applied', 'balances' => $result, 'external_stages' => []];
             DB::table('inventory_store_operations')->insert([
@@ -179,11 +189,15 @@ final class ReviewService
                 'receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'created_at' => now(), 'updated_at' => now(),
             ]);
             $created = true;
-            if ($review->kind === 'count' && $configuration->active_rebaseline_epoch_id === null) {
-                app(CatalogInventoryState::class)
-                    ->markVerified((int) $identity->product_variant_id, $operationId);
-                app(CatalogStockProjection::class)
-                    ->refresh((int) $identity->product_variant_id);
+            if ($configuration->active_rebaseline_epoch_id === null) {
+                if ($review->kind === 'count') {
+                    app(CatalogInventoryState::class)
+                        ->markVerified((int) $identity->product_variant_id, $operationId);
+                }
+                if ($configuration->operating_mode === 'shared_pool' || $review->kind === 'count') {
+                    app(CatalogStockProjection::class)
+                        ->refresh((int) $identity->product_variant_id);
+                }
             }
             if ($review->kind === 'transfer') {
                 $freshBalances = collect($result)->map(fn (array $item) => DB::table('inventory_balances')->find($item['id']))->all();
@@ -265,6 +279,30 @@ final class ReviewService
         if (! $balance || ! $pool || $pool->kind !== 'shared' || $balance->current_stock !== null) {
             throw ValidationException::withMessages(['physical_count' =>
                 'This SKU already has a Shared Pool First Count. Use Stock Audit Adjustment for a correction.']);
+        }
+    }
+
+    private function assertSharedStockAction(object $configuration, string $kind, array $input, array $balances): void
+    {
+        if ($configuration->operating_mode !== 'shared_pool' || ! in_array($kind, ['intake', 'correction'], true)) {
+            if (array_key_exists('confirmed_total', $input)) {
+                throw ValidationException::withMessages(['confirmed_total' => 'Absolute audit total is available only for Shared Pool correction.']);
+            }
+            return;
+        }
+        $balance = count($balances) === 1 ? reset($balances) : null;
+        $pool = $balance ? DB::table('inventory_pools')->find($balance->inventory_pool_id) : null;
+        if (! config('inventory.current_stock_only')) {
+            throw ValidationException::withMessages(['kind' => 'Shared Pool Intake and Audit require Current Stock mode.']);
+        }
+        if (! $balance || $pool?->kind !== 'shared' || $balance->current_stock === null || $balance->counted_at === null) {
+            throw ValidationException::withMessages(['balance_id' => 'Complete this SKU Shared Pool First Count before changing Current Stock.']);
+        }
+        if ($kind === 'correction' && ! array_key_exists('confirmed_total', $input)) {
+            throw ValidationException::withMessages(['confirmed_total' => 'Enter the verified absolute SKU total.']);
+        }
+        if ($kind === 'intake' && (! isset($input['quantity']) || (int) $input['quantity'] < 1)) {
+            throw ValidationException::withMessages(['quantity' => 'Enter received units greater than zero.']);
         }
     }
 

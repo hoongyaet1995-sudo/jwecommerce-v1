@@ -52,6 +52,7 @@ import { SharedFirstCountModal } from './inventory/SharedFirstCountModal';
 import { LocationFirstCountBaseline } from './inventory/LocationFirstCountBaseline';
 import { BulkStockRetrievalModal, StockRetrievalRun } from './inventory/BulkStockRetrievalModal';
 import { StockIntakeAdjustmentModal } from './inventory/StockIntakeAdjustmentModal';
+import { SharedPoolStockActionModal } from './inventory/SharedPoolStockActionModal';
 import { FocusedManageStockDrawer } from './inventory/FocusedManageStockDrawer';
 import { StoreStockTransfersTab } from './inventory/StoreStockTransfersTab';
 import { InventoryActivityHistoryTab } from './inventory/InventoryActivityHistoryTab';
@@ -155,6 +156,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
   const [targetFirstCountWarehouseId, setTargetFirstCountWarehouseId] = useState<string | undefined>(undefined);
 
   const [isIntakeModalOpen, setIsIntakeModalOpen] = useState(false);
+  const [sharedStockAction, setSharedStockAction] = useState<{item:MarketplaceInventoryItem;action:'intake'|'audit'}|null>(null);
   const [selectedItemForIntake, setSelectedItemForIntake] = useState<MarketplaceInventoryItem | null>(null);
   const [intakeInitialType, setIntakeInitialType] = useState<'intake' | 'adjustment'>('intake');
   const [intakeTargetStoreId, setIntakeTargetStoreId] = useState<string | undefined>(undefined);
@@ -741,6 +743,10 @@ export const MarketplaceInventoryPage: React.FC = () => {
     targetStoreId?: string,
     targetWarehouseId?: string
   ) => {
+    if (currentMode === 'shared') {
+      setSharedStockAction({item,action:type==='intake'?'intake':'audit'});
+      return;
+    }
     setSelectedItemForIntake(item);
     setIntakeInitialType(type);
     setIntakeTargetStoreId(targetStoreId);
@@ -1875,6 +1881,9 @@ export const MarketplaceInventoryPage: React.FC = () => {
       />}
 
       {/* MODAL 2: Stock Intake & Audit Adjustment (Warehouse-Aware) */}
+      {sharedStockAction && <SharedPoolStockActionModal key={`${sharedStockAction.item.id}:${sharedStockAction.action}`}
+        item={sharedStockAction.item} initialAction={sharedStockAction.action} stores={stores}
+        onClose={() => setSharedStockAction(null)} onSaved={async () => { await reloadInventory(); }} />}
       <StockIntakeAdjustmentModal
         isOpen={isIntakeModalOpen}
         onClose={() => {

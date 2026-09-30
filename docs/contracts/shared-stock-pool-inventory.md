@@ -16,18 +16,27 @@ For a verified Lazada warehouse store, the approved Store Inventory Management U
 
 When a JW Current Stock mutation generates provider sync intents, the store id is checked against this flag. Only mapped, connected, takeover-enabled stores may be considered for marketplace push. The worker checks the flag again immediately before publishing so a paused store does not receive a queued future write. For a verified Lazada warehouse store, only active warehouses with their own Shared Pool takeover flag are destinations. The same JW Current Stock total is pushed independently to **each** enabled warehouse; it is not divided among them. A warehouse disabled before its task runs must not receive that queued write. Every destination needs its own delivery and read-back status. API batching, retries, and other port-specific flows remain separate phases.
 
+## Common Shared Pool stock-update boundary
+
+First Count, Actual Inbound Intake, Audit Stock Adjustment, and marketplace order changes received through either webhooks or manual pulls must use the same outgoing stock-sync boundary whenever they change a counted SKU's JW Current Stock. Each operation first records its one authoritative JW ledger mutation, then creates durable sync intents for eligible destinations. The sync boundary applies the mapping, connection, store takeover, and (for verified Lazada warehouse stores) individual active-warehouse takeover checks described above. Pausing a store or warehouse affects outgoing provider stock sync; it does not prevent an eligible marketplace order from deducting or restoring the counted JW stock balance.
+
+Webhook delivery, manual order pull, and subsequent order-status refresh must share idempotent order-line effects: replaying the same event must not change the JW ledger twice or create duplicate stock effects. An uncounted SKU cannot receive a marketplace-order stock mutation or an outgoing provider push. Provider delivery or confirmation failure must retain a visible pending/failed sync state without reversing or duplicating the committed JW ledger mutation. This boundary also governs future stock-update ports.
+For the approved Actual Intake and Audit form, the review records the operator's reason and optional reference, and confirmation rechecks the balance version before saving. A changed balance requires a fresh review. Repeating a confirmation with the same operation key returns the same receipt without a second JW movement or provider sync.
+
 ## Manage Stock phase and remaining phases
 
 | Phase | Boundary for its own chat or agent |
 | --- | --- |
-| Manage Stock | The approved compact modal uses one JW Current Stock balance per SKU, a guarded First Count, and a read-only JW movement ledger. Actual Intake and Audit Adjustment are visible as later-phase placeholders; Stock Transfer is unavailable. Independent Mode retains its existing modal. |
-| Actual Intake | Define Shared Pool receiving and First Count semantics separately; no store-specific ledger mutation. |
-| Audit Count Adjustment | Define one Shared Pool correction and later per-store push intents, without reusing Independent per-location accounting. |
+| Manage Stock | The approved compact modal uses one JW Current Stock balance per SKU, a guarded First Count, and a read-only JW movement ledger. Actual Intake and Audit Adjustment open the approved Independent-style form adapted for Shared Pool; Stock Transfer is unavailable. Independent Mode retains its existing modal. |
+| Actual Intake | User-approved current phase (2026-09-30); implementation present locally, supervision acceptance remains pending. After First Count, enter a positive received quantity. Review and confirm one additive JW Current Stock movement, then use the common takeover-gated sync outbox; no store-specific ledger mutation. |
+| Audit Count Adjustment | User-approved current phase (2026-09-30); implementation present locally, supervision acceptance remains pending. After First Count, enter the verified absolute SKU total, including zero. The server computes the delta from the locked JW balance; an unchanged total creates no movement. Review and confirm through the same outbox as intake. |
 | Stock Transfer | Do not expose this operation in Shared Stock Pool mode. Preserve Independent transfers. |
 
 Order-webhook deductions/increases remain blocked for an uncounted SKU after mode reset. Each future phase must prove this gate, the shared-ledger invariant, per-store takeover gating, and no regression in Independent mode before claiming completion.
 
 ## Cross-chat development protocol
+
+Current supervision evidence and unresolved release gates: `docs/acceptance/2026-09-30-shared-pool-intake-audit-supervision.md`. The user reported the implementation conversation complete; that report does not itself establish supervision acceptance. Intake and Audit are approved together for this round as an explicit exception to the one-phase rule below.
 
 Each chat or agent starts by reading `AGENTS.md` and this contract, then works on exactly one phase from the table. It should record its concrete API/data-flow plan and acceptance evidence before editing. Changes to these invariants require an explicit user decision and an update to this contract; do not silently reinterpret them from an older spec or a context summary. Keep phases separate for review, tests, and local browser acceptance. Follow the repo's delivery order: localhost first, then user-approved GitHub `main` sync and deployment of that exact SHA to Hostinger.
 
