@@ -41,7 +41,7 @@ interface StoreStockTransfersTabProps {
   storeBalances: Record<string, Record<string, StoreStockAccountBalance>>;
   transfersList: StoreStockTransferRecord[];
   onExecuteTransfer: (transfer: Omit<StoreStockTransferRecord, 'id' | 'transferNumber' | 'timestamp' | 'ledgerStatus' | 'sourcePlatformSyncStatus' | 'destinationPlatformSyncStatus'>) => Promise<StoreStockTransferRecord>;
-  onCheckTransferStatus: (transfer: StoreStockTransferRecord) => Promise<StoreStockTransferRecord>;
+  onCheckTransferStatus: (transfer: StoreStockTransferRecord, verifyProvider?: boolean) => Promise<StoreStockTransferRecord>;
   onRetryPlatformSync: (transferId: string, target: 'source' | 'destination') => Promise<void>;
 }
 
@@ -103,6 +103,11 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
   });
   const [checkingTransferStatus,setCheckingTransferStatus]=useState(false);
   const [transferStatusError,setTransferStatusError]=useState('');
+  const transferStatusInFlight=useRef(false);
+  const activeTransferRecord=useRef<StoreStockTransferRecord|undefined>(undefined);
+  const checkTransferStatusRef=useRef(onCheckTransferStatus);
+  activeTransferRecord.current=activeTransferExecution.record;
+  checkTransferStatusRef.current=onCheckTransferStatus;
 
   // Transfer history filter
   const [historySearch, setHistorySearch] = useState<string>('');
@@ -352,13 +357,14 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
     }
   };
 
-  const handleCheckStatus = async () => {
-    const record=activeTransferExecution.record;
-    if(!record || checkingTransferStatus)return;
+  const handleCheckStatus = async (verifyProvider = true) => {
+    const record=activeTransferRecord.current;
+    if(!record || transferStatusInFlight.current)return;
+    transferStatusInFlight.current=true;
     setCheckingTransferStatus(true);
     setTransferStatusError('');
     try {
-      const updated=await onCheckTransferStatus(record);
+      const updated=await checkTransferStatusRef.current(record,verifyProvider);
       setActiveTransferExecution(previous=>({...previous,record:updated,
         stage:updated.sourcePlatformSyncStatus==='failed'||updated.destinationPlatformSyncStatus==='failed'
           ?'has_platform_error':updated.sourcePlatformSyncStatus==='succeeded'
@@ -366,9 +372,22 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
     } catch {
       setTransferStatusError('Stock status could not be checked. Please try again.');
     } finally {
+      transferStatusInFlight.current=false;
       setCheckingTransferStatus(false);
     }
   };
+
+  useEffect(()=>{
+    const record=activeTransferExecution.record;
+    if(!activeTransferExecution.isOpen || !record ||
+      (record.sourcePlatformSyncStatus!=='pending' && record.destinationPlatformSyncStatus!=='pending'))return;
+    const timer=window.setInterval(()=>{
+      if(document.visibilityState==='visible')void handleCheckStatus(false);
+    },5000);
+    return ()=>window.clearInterval(timer);
+  },[activeTransferExecution.isOpen,activeTransferExecution.record?.id,
+    activeTransferExecution.record?.sourcePlatformSyncStatus,
+    activeTransferExecution.record?.destinationPlatformSyncStatus]);
 
   const sourceTransferStatus=activeTransferExecution.record?.sourcePlatformSyncStatus??'pending';
   const destinationTransferStatus=activeTransferExecution.record?.destinationPlatformSyncStatus??'pending';
@@ -1614,10 +1633,12 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
             <div className="pt-2 flex items-center justify-between gap-2">
               <div>
                 {transferStatusError && <p role="alert" className="text-xs text-amber-500">{transferStatusError}</p>}
+                {(sourceTransferStatus === 'pending' || destinationTransferStatus === 'pending') &&
+                  <p className="text-[11px] text-neutral-500">Status updates automatically every 5 seconds.</p>}
               </div>
               <div className="flex gap-2">
                 <button type="button" disabled={!activeTransferExecution.record || checkingTransferStatus}
-                  onClick={handleCheckStatus}
+                  onClick={()=>void handleCheckStatus(true)}
                   className="px-4 py-2 rounded-xl border border-neutral-300 dark:border-neutral-700 text-xs font-bold text-neutral-900 dark:text-white disabled:opacity-50 cursor-pointer flex items-center gap-1.5">
                   <RefreshCw className={`w-3.5 h-3.5 ${checkingTransferStatus?'animate-spin':''}`} />
                   {checkingTransferStatus?'Checking…':'Check Status'}

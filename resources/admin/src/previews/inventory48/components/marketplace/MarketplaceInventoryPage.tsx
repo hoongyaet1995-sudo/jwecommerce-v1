@@ -569,7 +569,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
     return record;
   };
 
-  const handleCheckTransferStatus = async (record:StoreStockTransferRecord):Promise<StoreStockTransferRecord> => {
+  const handleCheckTransferStatus = async (record:StoreStockTransferRecord,verifyProvider=true):Promise<StoreStockTransferRecord> => {
     const item=safeInventory.find(entry=>entry.masterSku===record.masterSku);
     if(!item) throw new Error('Refresh inventory, then check this transfer again.');
     const check=async(storeId:string,warehouseId:string|undefined,platform:string) => {
@@ -578,7 +578,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
       const current=isFacility
         ? await storeInventoryApi.facilitySyncDetails(storeId,Number(warehouseId),(item as any).variantId)
         : await storeInventoryApi.syncDetails(storeId,(item as any).variantId);
-      const result=current.status!=='synced'&&(current.can_check??current.canCheck)
+      const result=verifyProvider&&current.status!=='synced'&&(current.can_check??current.canCheck)
         ? isFacility
           ? await storeInventoryApi.facilitySyncCheck(storeId,Number(warehouseId),(item as any).variantId)
           : await storeInventoryApi.checkStock(storeId,(item as any).variantId)

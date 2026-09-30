@@ -51,6 +51,7 @@ it('checks a completed transfer without repeating its ledger mutation',async()=>
   expect(check).toBeDefined();
   await act(async()=>check.click());
   expect(onCheckTransferStatus).toHaveBeenCalledTimes(1);
+  expect(onCheckTransferStatus).toHaveBeenCalledWith(expect.anything(),true);
   expect(onExecuteTransfer).toHaveBeenCalledTimes(1);
   expect(host.textContent).toContain('Provider stock confirmed.');
   await act(async()=>root.unmount());
@@ -72,4 +73,42 @@ it('shows an uncounted JW location as Not counted and blocks transfer',async()=>
   const execute=[...host.querySelectorAll('button')].find(button=>button.textContent?.includes('Execute Stock Transfer'))!;
   expect(execute.disabled).toBe(true);
   await act(async()=>root.unmount());
+});
+
+it('automatically refreshes pending transfer steps without provider verification or page reload',async()=>{
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
+  const host=document.createElement('div');document.body.append(host);
+  const root=createRoot(host);
+  const onExecuteTransfer=vi.fn().mockResolvedValue({
+    id:'review-auto',transferNumber:'review-auto',timestamp:new Date().toISOString(),masterSku:'0189618',
+    productName:'Bushing',variantName:'',sourceStoreId:'4',sourceWarehouseId:'5',
+    sourceStoreName:'Lazada Test',sourcePlatform:'lazada',destinationStoreId:'website',
+    destinationWarehouseId:'direct:website',destinationStoreName:'JW Storefront',
+    destinationPlatform:'webstore',quantity:1,operator:'Admin',reason:'Rebalance',
+    ledgerStatus:'succeeded',sourcePlatformSyncStatus:'pending',destinationPlatformSyncStatus:'succeeded',
+  });
+  const onCheckTransferStatus=vi.fn(async(record,verifyProvider)=>({...record,sourcePlatformSyncStatus:'succeeded'}));
+  await act(async()=>root.render(<StoreStockTransfersTab
+    initialSku="0189618" initialSourceStoreId="4" initialSourceWarehouseId="5"
+    inventory={[{id:'1',variantId:120,masterSku:'0189618',productName:'Bushing',variantName:'',singleCurrentStock:true} as any]}
+    stores={[{id:'4',name:'Lazada Test',platform:'lazada',platformDisplayName:'Lazada'} as any,
+      {id:'website',name:'JW Storefront',platform:'webstore',platformDisplayName:'JW Storefront'} as any]}
+    storeBalances={{}} transfersList={[]} onExecuteTransfer={onExecuteTransfer}
+    onCheckTransferStatus={onCheckTransferStatus} onRetryPlatformSync={vi.fn()} />));
+  await act(async()=>{await Promise.resolve();await Promise.resolve()});
+  vi.useFakeTimers();
+  try {
+    const execute=[...host.querySelectorAll('button')].find(button=>button.textContent?.includes('Execute Stock Transfer'))!;
+    await act(async()=>execute.click());
+    expect(host.textContent).toContain('Not confirmed');
+    await act(async()=>{await vi.advanceTimersByTimeAsync(5000)});
+    expect(onCheckTransferStatus).toHaveBeenCalledTimes(1);
+    expect(onCheckTransferStatus).toHaveBeenCalledWith(expect.anything(),false);
+    expect(host.textContent).toContain('Provider stock confirmed.');
+    await act(async()=>{await vi.advanceTimersByTimeAsync(10000)});
+    expect(onCheckTransferStatus).toHaveBeenCalledTimes(1);
+  } finally {
+    vi.useRealTimers();
+    await act(async()=>root.unmount());
+  }
 });
