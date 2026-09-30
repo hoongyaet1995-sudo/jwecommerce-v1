@@ -54,7 +54,25 @@ final class SyncOutbox
             return [$this->enqueue($operationId, $balance, $stage, $eventKey)];
         }
 
-        return $storeIds->map(fn ($storeId) => $this->enqueue($operationId, $balance, $stage, $eventKey, (int) $storeId))->all();
+        $stages = [];
+        foreach ($storeIds as $storeId) {
+            $storeId = (int) $storeId;
+            $scan = DB::table('marketplace_store_facility_scans')->where('marketplace_store_id', $storeId)->first();
+            $warehouseMode = DB::table('marketplace_stores')->where('id', $storeId)->value('platform') === 'lazada'
+                && $scan?->status === 'verified'
+                && in_array($scan?->topology, ['single_warehouse', 'multi_warehouse'], true);
+            if (! $warehouseMode) {
+                $stages[] = $this->enqueue($operationId, $balance, $stage, $eventKey, $storeId);
+                continue;
+            }
+            $facilities = DB::table('marketplace_store_facilities')->where('marketplace_store_id', $storeId)
+                ->where('is_active', true)->where('shared_pool_takeover_enabled', true)->get();
+            foreach ($facilities as $facility) {
+                $stages[] = $this->enqueue($operationId, $balance, $stage, $eventKey, $storeId, true, $facility);
+            }
+        }
+
+        return $stages;
     }
 
     public function enqueueStore(?string $operationId, object $balance, int $storeId, string $stage, string $eventKey): array
@@ -108,7 +126,7 @@ final class SyncOutbox
     }
 
     private function enqueue(?string $operationId, object $balance, string $stage, ?string $eventKey = null,
-        ?int $overrideStoreId = null, bool $dispatch = true): array
+        ?int $overrideStoreId = null, bool $dispatch = true, ?object $facility = null): array
     {
         app(RebaselineFreeze::class)->assertOrdinaryPushAllowed();
         $pool = DB::table('inventory_pools')->where('id', $balance->inventory_pool_id)->first();
@@ -127,22 +145,26 @@ final class SyncOutbox
             ->join('marketplace_listing_variants as listing', 'listing.id', '=', 'mapping.listing_variant_id')
             ->where('mapping.store_id', $storeId)->where('mapping.product_variant_id', $balance->product_variant_id)
             ->first(['listing.id', 'listing.external_product_id', 'listing.external_variant_id']);
-        $providerLocationId = $storeId === null ? null : DB::table('inventory_fulfillment_routes')
-            ->where('channel_key', 'marketplace:'.$storeId)->where('is_enabled', true)->value('platform_location_id');
+        $providerLocationId = $facility?->provider_facility_id ?? ($storeId === null ? null : DB::table('inventory_fulfillment_routes')
+            ->where('channel_key', 'marketplace:'.$storeId)->where('is_enabled', true)->value('platform_location_id'));
         if ($storeId !== null) {
             $this->createBoundaryForReviewedMutation($operationId, $storeId, $balance);
             DB::table('inventory_store_sync_tasks')->where('marketplace_store_id', $storeId)
-                ->where('product_variant_id', $balance->product_variant_id)->whereIn('status', ['queued', 'failed', 'waiting_source', 'uncertain'])
+                ->where('product_variant_id', $balance->product_variant_id)
+                ->where('marketplace_store_facility_id', $facility?->id)
+                ->whereIn('status', ['queued', 'failed', 'waiting_source', 'uncertain'])
                 ->update(['status' => 'superseded', 'updated_at' => now()]);
         }
         DB::table('inventory_store_sync_tasks')->insert([
             'id' => $id, 'operation_id' => $operationId, 'marketplace_store_id' => $storeId,
-            'product_variant_id' => $balance->product_variant_id, 'listing_variant_id' => $listing?->id,
+            'product_variant_id' => $balance->product_variant_id, 'inventory_balance_id' => $balance->id,
+            'listing_variant_id' => $listing?->id,
+            'marketplace_store_facility_id' => $facility?->id,
             'provider_external_product_id' => $listing?->external_product_id,
             'provider_external_variant_id' => $listing?->external_variant_id,
             'provider_location_id' => $providerLocationId, 'stage' => $stage,
             'status' => $status, 'target_quantity' => $target, 'balance_version' => $balance->version,
-            'event_key' => ($eventKey ?? $operationId.':'.$stage).':'.($storeId ?? 'website'),
+            'event_key' => ($eventKey ?? $operationId.':'.$stage).':'.($storeId ?? 'website').($facility ? ':'.$facility->id : ''),
             'provider_receipt' => $storeId === null ? json_encode(['local' => true], JSON_THROW_ON_ERROR) : null,
             'available_at' => $status === 'queued' ? now() : null, 'attempts' => 0,
             'created_at' => now(), 'updated_at' => now(),
@@ -151,7 +173,8 @@ final class SyncOutbox
             ProcessStoreInventorySync::dispatch($id)->afterCommit();
         }
 
-        return ['id' => $id, 'stage' => $stage, 'store_id' => $storeId, 'status' => $status, 'target_quantity' => $target];
+        return ['id' => $id, 'stage' => $stage, 'store_id' => $storeId,
+            'facility_id' => $facility?->id, 'status' => $status, 'target_quantity' => $target];
     }
 
     private function createBoundaryForReviewedMutation(?string $operationId, int $storeId, object $balance): void

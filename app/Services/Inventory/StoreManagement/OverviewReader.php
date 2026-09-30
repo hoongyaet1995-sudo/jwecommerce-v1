@@ -73,7 +73,7 @@ final class OverviewReader
             ->whereIn('product_variant_id', $balanceRows->pluck('product_variant_id')->unique()->values())
             ->whereNotNull('marketplace_store_id')
             ->orderByDesc('created_at')
-            ->get(['id', 'product_variant_id', 'marketplace_store_id', 'inventory_balance_id', 'listing_variant_id', 'balance_version', 'status', 'target_quantity', 'attempts', 'created_at'])
+            ->get(['id', 'product_variant_id', 'marketplace_store_id', 'marketplace_store_facility_id', 'inventory_balance_id', 'listing_variant_id', 'balance_version', 'status', 'target_quantity', 'attempts', 'created_at'])
             ->groupBy('product_variant_id');
         $sharedStoreSyncStates = [];
         if ($mode === 'shared') {
@@ -83,17 +83,26 @@ final class OverviewReader
                 $balance = $sharedBalances->get($variantId);
                 foreach ($item['mapped_stores'] as $store) {
                     $storeId = (int) $store['id'];
-                    $task = $syncTasks->get($variantId, collect())
+                    $storeTasks = $syncTasks->get($variantId, collect())
                         ->where('marketplace_store_id', $storeId)
                         ->where('inventory_balance_id', $balance?->id)
-                        ->sortByDesc(fn (object $task) => $task->created_at.'|'.$task->id)
-                        ->first();
+                        ->sortByDesc(fn (object $task) => $task->created_at.'|'.$task->id);
+                    $scan = DB::table('marketplace_store_facility_scans')->where('marketplace_store_id', $storeId)->first();
+                    $warehouseMode = $store['platform'] === 'lazada' && $scan?->status === 'verified'
+                        && in_array($scan?->topology, ['single_warehouse', 'multi_warehouse'], true);
+                    $facilityIds = $warehouseMode ? DB::table('marketplace_store_facilities')
+                        ->where('marketplace_store_id', $storeId)->where('is_active', true)
+                        ->where('shared_pool_takeover_enabled', true)->pluck('id') : collect();
+                    $latestTasks = $warehouseMode ? $facilityIds->map(fn ($id) => $storeTasks
+                        ->first(fn (object $task) => (int) $task->marketplace_store_facility_id === (int) $id))
+                        : collect([$storeTasks->first(fn (object $task) => $task->marketplace_store_facility_id === null)]);
                     $sharedStoreSyncStates[$variantId][$storeId] = $balance !== null
                         && $balance->current_stock !== null
-                        && $task?->status === 'confirmed'
-                        && (int) $task->listing_variant_id === (int) $store['listing_variant_id']
-                        && (int) $task->balance_version === (int) $balance->version
-                        && (int) $task->target_quantity === (int) $balance->current_stock
+                        && $latestTasks->isNotEmpty()
+                        && $latestTasks->every(fn ($task) => $task?->status === 'confirmed'
+                            && (int) $task->listing_variant_id === (int) $store['listing_variant_id']
+                            && (int) $task->balance_version === (int) $balance->version
+                            && (int) $task->target_quantity === (int) $balance->current_stock)
                             ? 'synced' : 'not_synced';
                 }
             }
@@ -370,6 +379,7 @@ final class OverviewReader
         $reviewInput = $reviewPayload ? json_decode($reviewPayload, true, 512, JSON_THROW_ON_ERROR) : [];
         $stages = DB::table('inventory_store_sync_tasks')->where('operation_id', $id)->orderBy('created_at')->get()
             ->map(fn (object $stage): array => ['id' => $stage->id, 'store_id' => $stage->marketplace_store_id,
+                'facility_id' => $stage->marketplace_store_facility_id,
                 'variant_id' => (int) $stage->product_variant_id, 'stage' => $stage->stage, 'status' => $stage->status,
                 'target_quantity' => $stage->target_quantity, 'attempts' => (int) $stage->attempts,
                 'provider_receipt' => $stage->provider_receipt ? $this->sanitize(json_decode($stage->provider_receipt, true, 512, JSON_THROW_ON_ERROR)) : null]);

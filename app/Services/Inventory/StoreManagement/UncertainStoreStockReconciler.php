@@ -19,8 +19,12 @@ final class UncertainStoreStockReconciler
 
     public function sweep(int $limit = 20): int
     {
-        $ids = DB::table('inventory_store_sync_tasks')->where('status', 'uncertain')
-            ->whereNull('marketplace_store_facility_id')
+        $shared = DB::table('inventory_configuration')->where('id', 1)->value('operating_mode') === 'shared_pool';
+        $query = DB::table('inventory_store_sync_tasks')->where('status', 'uncertain');
+        if (! $shared) {
+            $query->whereNull('marketplace_store_facility_id');
+        }
+        $ids = $query
             ->where('readback_attempts', '<', self::MAX_READBACKS)
             ->whereNull('readback_exhausted_at')
             ->where(function ($query): void {
@@ -39,7 +43,9 @@ final class UncertainStoreStockReconciler
     public function run(string $taskId): void
     {
         $candidate = DB::table('inventory_store_sync_tasks')->where('id', $taskId)->first();
-        if (! $candidate || $candidate->status !== 'uncertain' || $candidate->marketplace_store_facility_id !== null) {
+        if (! $candidate || $candidate->status !== 'uncertain'
+            || ($candidate->marketplace_store_facility_id !== null
+                && DB::table('inventory_configuration')->where('id', 1)->value('operating_mode') !== 'shared_pool')) {
             return;
         }
         $lock = Cache::lock('stock-auto-readback:'.$candidate->marketplace_store_id, 90);
@@ -49,7 +55,7 @@ final class UncertainStoreStockReconciler
         try {
             $context = DB::transaction(function () use ($taskId): ?array {
                 $task = DB::table('inventory_store_sync_tasks')->where('id', $taskId)->lockForUpdate()->first();
-                if (! $task || $task->status !== 'uncertain' || $task->marketplace_store_facility_id !== null
+                if (! $task || $task->status !== 'uncertain'
                     || (int) $task->readback_attempts >= self::MAX_READBACKS || $task->readback_exhausted_at !== null
                     || ($task->next_readback_at !== null && now()->lt($task->next_readback_at))
                     || ($task->next_readback_at === null && now()->lt(\Carbon\Carbon::parse($task->updated_at)->addSeconds(15)))) {
@@ -57,6 +63,17 @@ final class UncertainStoreStockReconciler
                 }
                 $store = DB::table('marketplace_stores')->find($task->marketplace_store_id);
                 $mode = DB::table('inventory_configuration')->where('id', 1)->value('operating_mode');
+                if ($task->marketplace_store_facility_id !== null && ($mode !== 'shared_pool'
+                    || ! DB::table('marketplace_store_facilities')->where('id', $task->marketplace_store_facility_id)
+                        ->where('marketplace_store_id', $task->marketplace_store_id)
+                        ->where('provider_facility_id', $task->provider_location_id)
+                        ->where('is_active', true)->where('shared_pool_takeover_enabled', true)->exists())) {
+                    DB::table('inventory_store_sync_tasks')->where('id', $taskId)->update([
+                        'status' => 'superseded', 'provider_receipt' => json_encode(['code' => 'facility_takeover_changed']),
+                        'next_readback_at' => null, 'updated_at' => now(),
+                    ]);
+                    return null;
+                }
                 $pool = $mode === 'shared_pool' ? DB::table('inventory_pools')->where('kind', 'shared')->first()
                     : DB::table('inventory_pools')->where('pool_key', 'store:marketplace:'.$task->marketplace_store_id)->first();
                 $balance = $pool ? DB::table('inventory_balances')->where('inventory_pool_id', $pool->id)
@@ -87,6 +104,7 @@ final class UncertainStoreStockReconciler
                     'updated_at' => now(),
                 ]);
                 $listing->sync_provider_location_id = $task->provider_location_id;
+                $listing->sync_strict_facility = $task->marketplace_store_facility_id !== null;
 
                 return compact('task', 'store', 'listing');
             }, 3);

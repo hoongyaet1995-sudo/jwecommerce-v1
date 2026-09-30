@@ -485,4 +485,49 @@ class StoreInventorySyncTest extends TestCase
         $this->assertSame((int) $stores[0]->id, $stages[0]['store_id']);
         $this->assertDatabaseMissing('inventory_store_sync_tasks', ['marketplace_store_id' => $stores[1]->id]);
     }
+
+    public function test_shared_balance_queues_same_total_for_each_enabled_lazada_warehouse(): void
+    {
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool']);
+        $fixture = new StoreInventoryFixture;
+        $sku = $fixture->sku();
+        $store = $fixture->store('lazada', 'WAREHOUSES');
+        $balance = app(AccountResolver::class)->balance($sku['variant']->id, 'website');
+        DB::table('inventory_balances')->where('id', $balance['id'])->update(['current_stock' => 17, 'counted_at' => now()]);
+        DB::table('inventory_store_accounts')->insert(['account_key' => 'marketplace:'.$store->id,
+            'marketplace_store_id' => $store->id, 'management_status' => 'managed',
+            'shared_pool_takeover_enabled' => true, 'version' => 1,
+            'created_at' => now(), 'updated_at' => now()]);
+        $listing = DB::table('marketplace_listing_variants')->insertGetId(['store_id' => $store->id,
+            'external_product_id' => '123', 'external_variant_id' => '456',
+            'observed_data' => '{}', 'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('marketplace_variant_mappings')->insert(['listing_variant_id' => $listing,
+            'store_id' => $store->id, 'product_variant_id' => $sku['variant']->id,
+            'created_at' => now(), 'updated_at' => now()]);
+        DB::table('marketplace_store_facility_scans')->insert(['marketplace_store_id' => $store->id,
+            'status' => 'verified', 'topology' => 'multi_warehouse', 'created_at' => now(), 'updated_at' => now()]);
+        foreach ([1, 2, 3] as $number) {
+            DB::table('marketplace_store_facilities')->insert(['marketplace_store_id' => $store->id,
+                'provider_facility_id' => 'WH-'.$number, 'name' => 'Warehouse '.$number,
+                'is_active' => true, 'shared_pool_takeover_enabled' => $number !== 3,
+                'observed_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+        }
+
+        $stages = app(SyncOutbox::class)->enqueueMutation(null,
+            DB::table('inventory_balances')->find($balance['id']), 'order', 'shared-warehouse-test');
+
+        $this->assertCount(2, $stages);
+        $this->assertSame([17, 17], array_column($stages, 'target_quantity'));
+        $this->assertSame(['WH-1', 'WH-2'], DB::table('inventory_store_sync_tasks')
+            ->orderBy('provider_location_id')->pluck('provider_location_id')->all());
+        $this->assertNotNull($stages[0]['facility_id']);
+        $this->assertNotSame($stages[0]['facility_id'], $stages[1]['facility_id']);
+        $actor = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        DB::table('inventory_store_sync_tasks')->where('id', $stages[0]['id'])->update(['status' => 'confirmed']);
+        $this->actingAs($actor)->getJson('/admin/api/inventory/store-management/overview')->assertOk()
+            ->assertJsonPath('shared_store_sync_states.'.$sku['variant']->id.'.'.$store->id, 'not_synced');
+        DB::table('inventory_store_sync_tasks')->where('id', $stages[1]['id'])->update(['status' => 'confirmed']);
+        $this->getJson('/admin/api/inventory/store-management/overview')->assertOk()
+            ->assertJsonPath('shared_store_sync_states.'.$sku['variant']->id.'.'.$store->id, 'synced');
+    }
 }

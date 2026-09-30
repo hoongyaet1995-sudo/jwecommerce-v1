@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\Inventory\StoreManagement\ModeMutation;
 use App\Services\Inventory\StoreManagement\ReadinessReader;
 use App\Services\Inventory\StoreManagement\SharedPoolTakeover;
+use App\Services\Inventory\StoreManagement\SharedPoolFacilityTakeover;
 use App\Services\Inventory\StoreManagement\StoreSyncReadinessReader;
 use App\Services\Inventory\StoreManagement\StoreSyncStateMutation;
 use Illuminate\Http\JsonResponse;
@@ -49,6 +50,18 @@ final class StoreInventorySettingsController extends Controller
     public function pause(Request $request, int $store, SharedPoolTakeover $takeover): JsonResponse
     {
         return response()->json($takeover->set($store, false, $request->user()));
+    }
+
+    public function facilityTakeover(Request $request, int $store, int $facility,
+        SharedPoolFacilityTakeover $takeover): JsonResponse
+    {
+        return response()->json($takeover->set($store, $facility, true, $request->user()));
+    }
+
+    public function facilityPause(Request $request, int $store, int $facility,
+        SharedPoolFacilityTakeover $takeover): JsonResponse
+    {
+        return response()->json($takeover->set($store, $facility, false, $request->user()));
     }
 
     public function mode(Request $request, ModeMutation $mutation): JsonResponse

@@ -19,6 +19,10 @@ import {
 import { MarketplaceInventoryItem } from '../../../types';
 import { InventoryStoreChannel, PreSwitchSafetyBlocker } from './inventoryTypes';
 import { MarketplaceLogo } from '../MarketplaceLogo';
+import { storeInventoryApi } from '../../../../../integration/storeInventory';
+
+type TakeoverFacility = { id:number; name:string; provider_id:string; shared_pool_takeover_enabled:boolean };
+type TakeoverFacilityList = { status:string; topology:string|null; facilities:TakeoverFacility[] };
 
 interface InventorySettingsModalProps {
   isOpen: boolean;
@@ -55,6 +59,10 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
   const [switchReason, setSwitchReason] = useState('Strategic business policy realignment');
   const [isExecutingSwitch, setIsExecutingSwitch] = useState(false);
   const [resetAcknowledged, setResetAcknowledged] = useState(false);
+  const [warehouseLists, setWarehouseLists] = useState<Record<string, TakeoverFacilityList>>({});
+  const [warehouseLoading, setWarehouseLoading] = useState<Record<string, boolean>>({});
+  const [warehouseErrors, setWarehouseErrors] = useState<Record<string, string>>({});
+  const [warehouseBusy, setWarehouseBusy] = useState<Record<number, boolean>>({});
 
   // Store takeover modal state
   const [takeoverStoreTarget, setTakeoverStoreTarget] = useState<InventoryStoreChannel | null>(null);
@@ -72,8 +80,36 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
       setResetAcknowledged(false);
       setTargetMode(currentMode === 'shared' ? 'independent' : 'shared');
       setTakeoverStoreTarget(null);
+      setWarehouseLists({}); setWarehouseErrors({}); setWarehouseLoading({}); setWarehouseBusy({});
     }
   }, [isOpen, currentMode]);
+
+  React.useEffect(() => {
+    if (!isOpen || currentMode !== 'shared' || activeTab !== 'stores') return;
+    let active = true;
+    const lazada = stores.filter(store => store.platform === 'lazada' && /^\d+$/.test(store.id));
+    for (const store of lazada) {
+      setWarehouseLoading(previous => ({...previous,[store.id]:true}));
+      storeInventoryApi.facilities(store.id)
+        .then((result:TakeoverFacilityList) => {if(active) setWarehouseLists(previous=>({...previous,[store.id]:result}));})
+        .catch((error:Error) => {if(active) setWarehouseErrors(previous=>({...previous,[store.id]:error.message||'Warehouses could not be loaded.'}));})
+        .finally(() => {if(active) setWarehouseLoading(previous=>({...previous,[store.id]:false}));});
+    }
+    return () => {active=false;};
+  }, [isOpen, currentMode, activeTab, stores.map(store=>store.id).join(',')]);
+
+  const toggleWarehouse = async (storeId:string, facility:TakeoverFacility) => {
+    if (warehouseBusy[facility.id]) return;
+    setWarehouseBusy(previous=>({...previous,[facility.id]:true}));
+    setWarehouseErrors(previous=>({...previous,[storeId]:''}));
+    try {
+      const enabled = !facility.shared_pool_takeover_enabled;
+      await storeInventoryApi.sharedPoolFacilityTakeover(storeId,facility.id,enabled);
+      setWarehouseLists(previous=>({...previous,[storeId]:{...previous[storeId],facilities:previous[storeId].facilities.map(row=>row.id===facility.id?{...row,shared_pool_takeover_enabled:enabled}:row)}}));
+    } catch(error:any) {
+      setWarehouseErrors(previous=>({...previous,[storeId]:error?.message||'Warehouse takeover was not changed.'}));
+    } finally {setWarehouseBusy(previous=>({...previous,[facility.id]:false}));}
+  };
 
   // Safety Blockers Check
   const safetyBlockers: PreSwitchSafetyBlocker[] = useMemo(() => {
@@ -653,7 +689,8 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                     Lazada Stores ({safeStores.filter(s => s.platform === 'lazada').length})
                   </h4>
                   {safeStores.filter(s => s.platform === 'lazada').map(store => (
-                    <div key={store.id} className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
+                    <div key={store.id} className="rounded-xl border border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800/60">
+                    <div className="p-4 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <MarketplaceLogo platform="lazada" size="sm" />
                         <div>
@@ -686,6 +723,24 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                           {store.isManagedByJw ? 'Pause Takeover' : 'Takeover Inventory'}
                         </button>
                       </div>
+                    </div>
+                    {warehouseLoading[store.id] && <div className="px-4 pb-4 text-[11px] text-neutral-500">Loading verified warehouses…</div>}
+                    {warehouseErrors[store.id] && <div role="alert" className="px-4 pb-4 text-[11px] text-rose-500">{warehouseErrors[store.id]}</div>}
+                    {warehouseLists[store.id] && ['single_warehouse','multi_warehouse'].includes(warehouseLists[store.id].topology || '') && warehouseLists[store.id].status === 'verified' && (
+                      <div className="space-y-2 px-4 pb-4 pl-10">
+                        <div className="text-[11px] text-neutral-500">Warehouses · {warehouseLists[store.id].facilities.filter(facility=>facility.shared_pool_takeover_enabled).length} of {warehouseLists[store.id].facilities.length} selected</div>
+                        {warehouseLists[store.id].facilities.map(facility => <div key={facility.id} className="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white/40 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900/60">
+                          <div className="min-w-0"><div className="truncate text-xs font-bold text-neutral-900 dark:text-white">{facility.name}</div><div className="text-[10px] text-neutral-500">{store.isManagedByJw ? 'Eligible when this SKU is mapped' : 'Store takeover paused · selection retained'}</div></div>
+                          <div className="flex shrink-0 items-center gap-2"><span className={`rounded px-2 py-0.5 text-[10px] font-bold ${facility.shared_pool_takeover_enabled ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'}`}>{facility.shared_pool_takeover_enabled ? 'Managed by JW' : 'Not Managed'}</span>
+                            <button type="button" disabled={!store.isManagedByJw || store.connectionState !== 'connected' || !!warehouseBusy[facility.id]}
+                              onClick={() => void toggleWarehouse(store.id,facility)}
+                              className="cursor-pointer rounded-lg border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800">
+                              {warehouseBusy[facility.id] ? 'Saving…' : facility.shared_pool_takeover_enabled ? 'Pause Takeover' : 'Takeover'}
+                            </button></div>
+                        </div>)}
+                      </div>
+                    )}
+                    {warehouseLists[store.id] && warehouseLists[store.id].status !== 'verified' && <div className="px-4 pb-4 text-[11px] text-amber-500">Warehouse verification pending. Takeover is unavailable.</div>}
                     </div>
                   ))}
                 </div>

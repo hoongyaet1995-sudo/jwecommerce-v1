@@ -332,6 +332,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/inventory/store-management/batch-first-counts/{review}/confirm', [\App\Http\Controllers\Admin\BatchFirstCountController::class, 'confirm'])->whereUuid('review');
     Route::get('/api/inventory/store-management/overview', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'overview']);
     Route::get('/api/inventory/store-management/shared-skus/{variant}/ledger', [\App\Http\Controllers\Admin\SharedPoolLedgerController::class, 'show'])->whereNumber('variant');
+    Route::post('/api/inventory/store-management/shared-skus/{variant}/marketplace-stock', \App\Http\Controllers\Admin\SharedFirstCountMarketplaceReadController::class)->whereNumber('variant')->middleware('throttle:20,1');
     Route::get('/api/inventory/store-management/rebaseline/readiness', [\App\Http\Controllers\Admin\InventoryRebaselineController::class, 'readiness']);
     Route::get('/inventory/thumbnails/{variant}', \App\Http\Controllers\Admin\InventoryThumbnailController::class)
         ->whereNumber('variant')->name('admin.inventory.thumbnail');
@@ -368,6 +369,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/inventory/store-management/stores/{store}/resume-sync', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'resumeSync'])->whereNumber('store');
     Route::post('/api/inventory/store-management/stores/{store}/takeover', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'takeover'])->whereNumber('store');
     Route::post('/api/inventory/store-management/stores/{store}/pause', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'pause'])->whereNumber('store');
+    Route::post('/api/inventory/store-management/stores/{store}/facilities/{facility}/takeover', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'facilityTakeover'])->whereNumber(['store', 'facility']);
+    Route::post('/api/inventory/store-management/stores/{store}/facilities/{facility}/pause', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'facilityPause'])->whereNumber(['store', 'facility']);
     Route::post('/api/inventory/store-management/mode', [\App\Http\Controllers\Admin\StoreInventorySettingsController::class, 'mode']);
     Route::get('/api/marketplace/connections', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'connections']);
     Route::get('/api/marketplace/oauth-result', [\App\Http\Controllers\Admin\MarketplaceOAuthController::class, 'result']);

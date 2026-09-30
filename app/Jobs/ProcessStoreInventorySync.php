@@ -38,7 +38,9 @@ final class ProcessStoreInventorySync implements ShouldQueue
                 return null;
             }
             $inFlight = DB::table('inventory_store_sync_tasks')->where('marketplace_store_id', $task->marketplace_store_id)
-                ->where('product_variant_id', $task->product_variant_id)->where('status', 'processing')->where('id', '!=', $task->id)
+                ->where('product_variant_id', $task->product_variant_id)
+                ->where('marketplace_store_facility_id', $task->marketplace_store_facility_id)
+                ->where('status', 'processing')->where('id', '!=', $task->id)
                 ->lockForUpdate()->exists();
             if ($inFlight) {
                 return null;
@@ -53,6 +55,20 @@ final class ProcessStoreInventorySync implements ShouldQueue
                 ]);
 
                 return null;
+            }
+            if ($mode === 'shared_pool' && $task->marketplace_store_facility_id !== null) {
+                $facilityReady = DB::table('marketplace_store_facilities')
+                    ->where('id', $task->marketplace_store_facility_id)
+                    ->where('marketplace_store_id', $task->marketplace_store_id)
+                    ->where('provider_facility_id', $task->provider_location_id)
+                    ->where('is_active', true)->where('shared_pool_takeover_enabled', true)->exists();
+                if (! $facilityReady) {
+                    DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update([
+                        'status' => 'superseded', 'provider_receipt' => json_encode(['code' => 'facility_takeover_changed']),
+                        'updated_at' => now(),
+                    ]);
+                    return null;
+                }
             }
             $pool = $mode === 'shared_pool' ? DB::table('inventory_pools')->where('kind', 'shared')->lockForUpdate()->first()
                 : DB::table('inventory_pools')->where('marketplace_store_id', $task->marketplace_store_id)->lockForUpdate()->first();
@@ -109,6 +125,7 @@ final class ProcessStoreInventorySync implements ShouldQueue
             $listing->external_product_id = $task->provider_external_product_id;
             $listing->external_variant_id = $task->provider_external_variant_id;
             $listing->sync_provider_location_id = $task->provider_location_id;
+            $listing->sync_strict_facility = $mode === 'shared_pool' && $task->marketplace_store_facility_id !== null;
             $listing->sync_task_id = $task->id;
 
             return ['task' => $task, 'target' => $target, 'listing' => $listing,
@@ -170,7 +187,9 @@ final class ProcessStoreInventorySync implements ShouldQueue
                 }
                 if ($this->dispatchFollowing) {
                     DB::table('inventory_store_sync_tasks')->where('marketplace_store_id', $task->marketplace_store_id)
-                        ->where('product_variant_id', $task->product_variant_id)->where('status', 'queued')
+                        ->where('product_variant_id', $task->product_variant_id)
+                        ->where('marketplace_store_facility_id', $task->marketplace_store_facility_id)
+                        ->where('status', 'queued')
                         ->orderByDesc('created_at')->limit(1)->pluck('id')->each(fn ($id) => self::dispatch((string) $id)->afterCommit());
                 }
             }, 3);

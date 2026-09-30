@@ -5,13 +5,16 @@ import { storeInventoryApi } from '../../../../../integration/storeInventory';
 
 type Step = 'home' | 'actions' | 'count' | 'review' | 'complete' | 'intake' | 'audit' | 'ledger';
 type Movement = { id: number; delta: number; current_after: number; reason: string; created_at: string };
+type MarketplaceStoreRead = { store_id:number; name:string; platform:string; connected:boolean; takeover_enabled:boolean; warehouse_mode?:boolean; status:'read'|'unavailable'; quantity:number|null; warehouses:Array<{id:number;name:string}>; reason?:string };
+type MarketplaceRead = { stores:MarketplaceStoreRead[]; available_total:number; all_read:boolean };
+type SyncStage = {store_id:number|null;facility_id?:number|null;status:string;target_quantity:number|null};
 
 interface Props {
   isOpen: boolean;
   item: MarketplaceInventoryItem | null;
   initialActionsOpen?: boolean;
   onClose: () => void;
-  onFirstCount: (item: MarketplaceInventoryItem, quantity: number) => Promise<void>;
+  onFirstCount: (item: MarketplaceInventoryItem, quantity: number) => Promise<{operation_id:string;external_stages?:SyncStage[]}>;
 }
 
 export const SharedPoolManageStockDrawer: React.FC<Props> = ({ isOpen, item, initialActionsOpen = false, onClose, onFirstCount }) => {
@@ -22,12 +25,40 @@ export const SharedPoolManageStockDrawer: React.FC<Props> = ({ isOpen, item, ini
   const [error, setError] = useState('');
   const [ledger, setLedger] = useState<{ current_stock: number | null; movements: Movement[] } | null>(null);
   const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [marketplaceRead, setMarketplaceRead] = useState<MarketplaceRead | null>(null);
+  const [marketplaceLoading, setMarketplaceLoading] = useState(false);
+  const [marketplaceError, setMarketplaceError] = useState('');
+  const [operationId, setOperationId] = useState<string | null>(null);
+  const [syncStages, setSyncStages] = useState<SyncStage[]>([]);
 
   useEffect(() => {
     if (!isOpen) return;
     setStep(initialActionsOpen && item?.currentStock != null ? 'actions' : 'home');
     setQuantity(''); setCompletedStock(null); setSaving(false); setError(''); setLedger(null);
+    setMarketplaceRead(null); setMarketplaceLoading(false); setMarketplaceError(''); setOperationId(null); setSyncStages([]);
   }, [isOpen, item?.id, initialActionsOpen]);
+
+  useEffect(() => {
+    if (!isOpen || step !== 'count' || !item?.variantId) return;
+    let active = true;
+    setMarketplaceLoading(true); setMarketplaceError('');
+    storeInventoryApi.sharedFirstCountMarketplaceStock(item.variantId)
+      .then((result: MarketplaceRead) => { if (active) setMarketplaceRead(result); })
+      .catch((cause: Error) => { if (active) setMarketplaceError(cause.message || 'Marketplace stock could not be read.'); })
+      .finally(() => { if (active) setMarketplaceLoading(false); });
+    return () => { active = false; };
+  }, [isOpen, item?.variantId, step]);
+
+  useEffect(() => {
+    if (!isOpen || step !== 'complete' || !operationId) return;
+    let active = true;
+    const refresh = () => storeInventoryApi.operation(operationId)
+      .then((result: {external_stages:SyncStage[]}) => { if (active) setSyncStages(result.external_stages || []); })
+      .catch(() => {});
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 5000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [isOpen, step, operationId]);
 
   useEffect(() => {
     if (!isOpen || step !== 'ledger' || !item) return;
@@ -55,7 +86,9 @@ export const SharedPoolManageStockDrawer: React.FC<Props> = ({ isOpen, item, ini
     if (!validQuantity || saving) return;
     setSaving(true); setError('');
     try {
-      await onFirstCount(item, Number(quantity));
+      const receipt = await onFirstCount(item, Number(quantity));
+      setOperationId(receipt.operation_id);
+      setSyncStages(receipt.external_stages || []);
       setCompletedStock(Number(quantity));
       setStep('complete');
     } catch (cause: any) {
@@ -91,6 +124,18 @@ export const SharedPoolManageStockDrawer: React.FC<Props> = ({ isOpen, item, ini
     className={`flex w-full items-center justify-between rounded-xl border p-4 text-left text-sm font-bold text-white hover:border-purple-500 ${primary ? 'border-purple-600 bg-purple-900' : 'border-neutral-700 bg-neutral-800'}`}>
     <span>{label}</span><ChevronRight className="h-4 w-4 shrink-0 text-neutral-300" />
   </button>;
+  const storeRows = (phase: 'count'|'review'|'complete') => <div className="space-y-2">{marketplaceRead?.stores.map(store => {
+    const stages = syncStages.filter(entry => entry.store_id === store.store_id);
+    const expected = store.warehouses.length || 1;
+    const status = phase === 'count' ? store.status === 'read' ? `${store.quantity?.toLocaleString()} units` : 'Unavailable'
+      : phase === 'review' ? !store.takeover_enabled ? 'Takeover paused' : !store.connected ? 'Disconnected' : store.warehouse_mode && !store.warehouses.length ? 'No takeover warehouses' : store.warehouses.length > 1 ? `Push to ${store.warehouses.length} warehouses` : 'Push after JW count'
+      : !store.takeover_enabled ? 'No push' : store.warehouse_mode && !store.warehouses.length ? 'No takeover warehouses' : stages.length >= expected && stages.every(entry => entry.status === 'confirmed') ? 'Synced' : stages.some(entry => ['failed', 'uncertain', 'auth_expired'].includes(entry.status)) ? 'Needs attention' : stages.some(entry => ['queued', 'processing', 'waiting_source'].includes(entry.status)) ? 'Confirmation pending' : stages.length > 0 && stages.every(entry => ['not_applicable', 'superseded'].includes(entry.status)) ? 'Not pushed' : 'Awaiting sync status';
+    return <div key={store.store_id} className="flex items-center justify-between gap-3 rounded-xl border border-neutral-700 bg-neutral-800 p-3 text-xs">
+      <div className="min-w-0"><b className="block truncate">{store.name}</b><span className="mt-1 block text-[11px] text-neutral-400">{store.platform} · mapped · {store.takeover_enabled ? 'Takeover on' : 'Paused'}</span>
+        {store.warehouses.length > 0 && <span className="mt-1 block text-[11px] text-neutral-400">Takeover warehouses: {store.warehouses.map(warehouse => warehouse.name).join(' · ')}</span>}</div>
+      <b className={`shrink-0 text-right ${store.status === 'unavailable' || status === 'Needs attention' ? 'text-rose-300' : 'text-emerald-400'}`}>{status}</b>
+    </div>;
+  })}</div>;
 
   return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 text-neutral-100 backdrop-blur-sm sm:p-6">
     <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
@@ -109,18 +154,23 @@ export const SharedPoolManageStockDrawer: React.FC<Props> = ({ isOpen, item, ini
             : <><div className="rounded-xl border border-purple-800 bg-purple-950/30 p-4 text-xs leading-relaxed text-purple-100"><b className="text-white">First Count starts the JW stock ledger.</b><br />Count the physical units held for this SKU once. Shopee and Lazada quantities are reference snapshots; do not add them together.</div>{choice('First Count this SKU', 'count', true)}</>}
         </>}
         {step === 'actions' && <>{summary}<div className="space-y-3">{choice('Actual Stock Intake', 'intake')}{choice('Stock Audit Adjustment', 'audit')}{choice('View JW stock ledger', 'ledger')}</div><p className="text-xs text-neutral-400">Stock Transfer is unavailable in Shared Pool mode.</p></>}
-        {step === 'count' && <><label htmlFor="shared-first-count-quantity" className="block text-xs font-semibold text-neutral-200">Physical units counted for this SKU</label>
+        {step === 'count' && <><div className="space-y-2"><div className="flex items-center justify-between"><b className="text-xs">Current marketplace stock · mapped stores ({marketplaceRead?.stores.length ?? '…'})</b><button type="button" disabled={marketplaceLoading} onClick={() => { setMarketplaceRead(null); setMarketplaceLoading(true); setMarketplaceError(''); void storeInventoryApi.sharedFirstCountMarketplaceStock(item.variantId!).then((result: MarketplaceRead) => setMarketplaceRead(result)).catch((cause: Error) => setMarketplaceError(cause.message || 'Marketplace stock could not be read.')).finally(() => setMarketplaceLoading(false)); }} className="text-xs text-purple-300 disabled:opacity-40">Check again</button></div>
+          {marketplaceLoading && <p className="text-xs text-neutral-400">Checking mapped marketplace stores…</p>}
+          {marketplaceError && <p role="alert" className="text-xs text-rose-300">{marketplaceError}</p>}
+          {marketplaceRead && storeRows('count')}
+          {marketplaceRead && <p className="rounded-xl border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-200">Marketplace quantities can mirror the same physical stock. Available subtotal {marketplaceRead.available_total.toLocaleString()} includes successful reads only; unavailable stock is unknown, not zero.</p>}</div>
+          <label htmlFor="shared-first-count-quantity" className="block text-xs font-semibold text-neutral-200">Physical units counted for this SKU · JW opening stock</label>
           <input id="shared-first-count-quantity" type="number" min="0" max="2147483647" step="1" inputMode="numeric" value={quantity} onChange={event => setQuantity(event.target.value)} placeholder="Enter quantity, including 0"
             className="w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
           {quantity && !validQuantity && <p role="alert" className="text-xs text-rose-300">Enter a whole number from 0 to 2,147,483,647.</p>}
-          <div className="rounded-xl border border-amber-800 bg-amber-950/30 p-4 text-xs leading-relaxed text-amber-200"><b className="text-amber-300">Count once across the stock you physically hold</b><br />Do not total marketplace display quantities. No store or warehouse gets its own JW ledger in Shared Pool.</div></>}
+          <div className="flex flex-wrap gap-2"><button type="button" disabled={!marketplaceRead} onClick={() => setQuantity(String(marketplaceRead?.available_total ?? ''))} className="rounded-lg border border-neutral-700 px-3 py-2 text-xs disabled:opacity-40">Use Marketplace Total</button><button type="button" onClick={() => setQuantity('')} className="rounded-lg border border-neutral-700 px-3 py-2 text-xs">Manual Total</button></div></>}
         {step === 'review' && <><div className="space-y-3 rounded-xl border border-neutral-700 bg-neutral-800 p-4 text-xs">
           <div className="flex justify-between gap-3"><span className="text-neutral-400">SKU</span><b>{item.masterSku}</b></div>
           <div className="flex justify-between gap-3"><span className="text-neutral-400">Ledger</span><b>Shared JW Current Stock</b></div>
           <div className="flex justify-between gap-3"><span className="text-neutral-400">Opening quantity</span><b>{Number(quantity).toLocaleString()}</b></div>
-          <div className="flex justify-between gap-3"><span className="text-neutral-400">Marketplace stock</span><b>Not used as baseline</b></div>
-        </div><div className="rounded-xl border border-amber-800 bg-amber-950/30 p-4 text-xs leading-relaxed text-amber-200"><b className="text-amber-300">After confirmation</b><br />The SKU becomes counted. Later stock movements may create push intents only for mapped, connected stores with Shared Pool takeover enabled. Provider delivery is tracked separately.</div></>}
-        {step === 'complete' && <><div className="rounded-xl border border-emerald-800 bg-emerald-950/30 p-4 text-xs leading-relaxed text-emerald-200"><b>JW ledger: counted · {Number(completedStock).toLocaleString()} units</b><br />The JW First Count was saved. Marketplace delivery has its own status and is not confirmed by this count.</div>{summary}</>}
+          <div className="flex justify-between gap-3"><span className="text-neutral-400">Marketplace reads</span><b>Reference only</b></div>
+        </div><b className="text-xs">After JW Ledger is saved</b>{storeRows('review')}<div className="rounded-xl border border-amber-800 bg-amber-950/30 p-4 text-xs leading-relaxed text-amber-200">The JW First Count is saved once. Provider delivery is tracked separately; a failed push does not undo the JW Ledger.</div></>}
+        {step === 'complete' && <><div className="rounded-xl border border-emerald-800 bg-emerald-950/30 p-4 text-xs leading-relaxed text-emerald-200"><b>JW ledger: counted · {Number(completedStock).toLocaleString()} units</b><br />The JW First Count was saved.</div><b className="text-xs">Per-store delivery</b>{storeRows('complete')}{summary}</>}
         {(step === 'intake' || step === 'audit') && <>{summary}<div className="rounded-xl border border-purple-800 bg-purple-950/30 p-4 text-xs leading-relaxed text-purple-100"><b>{pageTitle[step]}</b><br />{step === 'intake' ? 'Received physical units will add to this one shared SKU balance.' : 'A verified physical recount will correct the absolute balance of this one SKU.'}</div><div className="rounded-xl border border-amber-800 bg-amber-950/30 p-4 text-xs text-amber-200">This stock-writing flow will be connected in its own later phase.</div></>}
         {step === 'ledger' && <><p className="text-xs text-neutral-400">Latest 50 JW Current Stock movements for this SKU.</p>
           {ledgerLoading && <p className="text-xs text-neutral-400">Loading JW ledger…</p>}

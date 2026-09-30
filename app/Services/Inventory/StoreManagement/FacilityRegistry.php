@@ -106,11 +106,12 @@ final class FacilityRegistry
         $scan = DB::table('marketplace_store_facility_scans')->where('marketplace_store_id', $storeId)->first();
         $facilities = DB::table('marketplace_store_facilities')->where('marketplace_store_id', $storeId)
             ->where('is_active', true)->orderBy('provider_facility_id')
-            ->get(['id', 'provider_facility_id', 'inventory_warehouse_id', 'name', 'observed_at'])
+            ->get(['id', 'provider_facility_id', 'inventory_warehouse_id', 'name', 'observed_at', 'shared_pool_takeover_enabled'])
             ->map(fn (object $row): array => [
                 'id' => (int) $row->id, 'provider_id' => $row->provider_facility_id,
                 'inventory_warehouse_id' => $row->inventory_warehouse_id === null ? null : (int) $row->inventory_warehouse_id,
                 'name' => $row->name, 'observed_at' => $row->observed_at,
+                'shared_pool_takeover_enabled' => (bool) $row->shared_pool_takeover_enabled,
             ])->all();
 
         return ['status' => $scan?->status ?? 'verification_pending',

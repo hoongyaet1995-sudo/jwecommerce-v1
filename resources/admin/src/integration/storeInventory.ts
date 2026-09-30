@@ -23,6 +23,7 @@ export async function waitForInventoryOperation(id:string,options:{maxAttempts?:
 export const storeInventoryApi={
   overview:()=>json('/admin/api/inventory/store-management/overview'),
   sharedLedger:(variantId:number)=>json(`/admin/api/inventory/store-management/shared-skus/${variantId}/ledger`),
+  sharedFirstCountMarketplaceStock:(variantId:number)=>json(`/admin/api/inventory/store-management/shared-skus/${variantId}/marketplace-stock`,{method:'POST',body:'{}'}),
   facilities:(storeId:string)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/facilities`),
   facilityBalances:(storeId:string,variantId:number)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/facilities`),
   testFacilityAcceptance:(storeId:string,variantId:number,facilityId:number)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/test-facility-acceptance?facility=${facilityId}`),
@@ -75,6 +76,7 @@ export const storeInventoryApi={
   resumeSync:(id:string,reason:string,review_token:string)=>json(`/admin/api/inventory/store-management/stores/${id}/resume-sync`,{method:'POST',body:JSON.stringify({reason,review_token})}),
   pauseSync:(id:string,reason:string)=>json(`/admin/api/inventory/store-management/stores/${id}/pause-sync`,{method:'POST',body:JSON.stringify({reason})}),
   sharedPoolTakeover:(id:string,enabled:boolean)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(id)}/${enabled?'takeover':'pause'}`,{method:'POST',body:'{}'}),
+  sharedPoolFacilityTakeover:(storeId:string,facilityId:number,enabled:boolean)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/facilities/${facilityId}/${enabled?'takeover':'pause'}`,{method:'POST',body:'{}'}),
   mode:(target:'shared_pool'|'independent_stores',version:number,distribution:Record<string,unknown>,confirmReset=false)=>json('/admin/api/inventory/store-management/mode',{method:'POST',body:JSON.stringify({target,configuration_version:version,distribution,confirm_reset:confirmReset})}),
 };
 
