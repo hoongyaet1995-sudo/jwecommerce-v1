@@ -60,8 +60,11 @@ final class StockSyncRecovery
             $status = 'sku_not_mapped';
             $reason = 'Link this JW SKU to exactly one listing in this store.';
         } elseif ($pending) {
-            $status = 'awaiting_confirmation';
-            $reason = 'A previous update is awaiting marketplace confirmation. You can check status or resend the latest stock.';
+            $status = $pending->status === 'uncertain' && $pending->readback_exhausted_at !== null
+                ? 'confirmation_needs_review' : 'awaiting_confirmation';
+            $reason = $status === 'confirmation_needs_review'
+                ? 'Automatic marketplace readback could not confirm this update. Check the exact location before resending stock.'
+                : 'A previous update is awaiting marketplace confirmation. You can check status or resend the latest stock.';
         } elseif ($transferPending) {
             $status = 'sync_failed';
             $reason = 'A previous transfer stock update is incomplete. You can resend the latest stock for this store.';

@@ -111,6 +111,13 @@ Schedule::command('marketplace:sync-managed-stock')->everyMinute()->withoutOverl
 Schedule::command('marketplace:store-stock-process')->everyMinute()->withoutOverlapping(3)
     ->when(fn () => config('marketplace.stock_sync_operations_enabled') === true);
 
+Artisan::command('marketplace:store-stock-readback-sweep', function () {
+    $this->line((string) app(\App\Services\Inventory\StoreManagement\UncertainStoreStockReconciler::class)->sweep());
+})->purpose('Queue read-only reconciliation for uncertain marketplace stock updates');
+
+Schedule::command('marketplace:store-stock-readback-sweep')->everyMinute()->withoutOverlapping()
+    ->when(fn () => config('marketplace.stock_sync_operations_enabled') === true);
+
 Artisan::command('marketplace:discover-facilities', function () {
     $this->line(json_encode(app(\App\Services\Inventory\StoreManagement\FacilityDiscoverySweep::class)->run(), JSON_THROW_ON_ERROR));
 })->purpose('Verify one connected marketplace store warehouse topology without changing inventory');

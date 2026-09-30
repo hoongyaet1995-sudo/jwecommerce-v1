@@ -584,7 +584,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
           : await storeInventoryApi.checkStock(storeId,(item as any).variantId)
         : current;
       return result.status==='synced'?'succeeded' as const
-        : ['sync_failed','auth_expired','verification_pending'].includes(result.status)?'failed' as const:'pending' as const;
+        : ['sync_failed','auth_expired','verification_pending','confirmation_needs_review'].includes(result.status)?'failed' as const:'pending' as const;
     };
     const [sourcePlatformSyncStatus,destinationPlatformSyncStatus]=await Promise.all([
       check(record.sourceStoreId,record.sourceWarehouseId,record.sourcePlatform),

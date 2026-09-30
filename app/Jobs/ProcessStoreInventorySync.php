@@ -181,9 +181,14 @@ final class ProcessStoreInventorySync implements ShouldQueue
                 return;
             }
             DB::table('inventory_store_sync_tasks')->where('id', $this->taskId)->update([
-                'status' => $status, 'provider_receipt' => json_encode($receipt, JSON_THROW_ON_ERROR), 'updated_at' => now(),
+                'status' => $status, 'provider_receipt' => json_encode($receipt, JSON_THROW_ON_ERROR),
+                'next_readback_at' => $status === 'uncertain' ? now()->addSeconds(15) : null,
+                'updated_at' => now(),
             ]);
             app(StoreSyncAttemptLedger::class)->record($task, $status, $receipt);
+            if ($status === 'uncertain') {
+                ReconcileUncertainStoreStock::dispatch($this->taskId)->delay(now()->addSeconds(15))->afterCommit();
+            }
         }, 3);
     }
 }
