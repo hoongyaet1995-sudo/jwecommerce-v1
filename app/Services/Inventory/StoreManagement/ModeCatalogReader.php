@@ -35,7 +35,7 @@ final class ModeCatalogReader
             ->join('marketplace_stores as s', 's.id', '=', 'm.store_id')
             ->leftJoin('inventory_store_accounts as a', 'a.marketplace_store_id', '=', 's.id')
             ->whereIn('m.product_variant_id', $variants->pluck('id'))
-            ->get(['m.product_variant_id', 's.id as store_id', 's.platform', 's.shop_name', 's.status as connection_status',
+            ->get(['m.product_variant_id', 'm.listing_variant_id', 's.id as store_id', 's.platform', 's.shop_name', 's.status as connection_status',
                 's.data_classification as store_classification', 'a.management_status'])
             ->groupBy('product_variant_id');
 
@@ -61,6 +61,7 @@ final class ModeCatalogReader
                 'counted' => $balance?->counted_at !== null,
                 'mapped_stores' => $stores->map(fn (object $store): array => [
                     'id' => (int) $store->store_id,
+                    'listing_variant_id' => (int) $store->listing_variant_id,
                     'platform' => $store->platform,
                     'name' => $store->shop_name,
                     'connection_status' => $store->connection_status,

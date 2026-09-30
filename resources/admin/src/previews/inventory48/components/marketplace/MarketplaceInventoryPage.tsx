@@ -192,6 +192,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
     const status:StoreSyncItemState['status']=store.platform==='webstore'?'jw_internal'
       :store.connectionState!=='connected'?'auth_expired'
       :!mapped?'sku_not_mapped'
+      :currentMode==='shared'&&item.sharedStoreSyncStates?.[store.id]==='synced'?'synced'
       :['queued','processing','uncertain','facility_pending'].includes(task?.status)?'awaiting_confirmation'
       :['failed','auth_expired','facility_blocked'].includes(task?.status)?'sync_failed'
       :'not_synced';
@@ -1517,7 +1518,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                             </div>
                           ) : (
                           <div className="space-y-1.5">
-                            {(stores || []).filter(s => !s.isComingSoon).map(store => {
+                            {(stores || []).filter(s => !s.isComingSoon && (s.platform === 'webstore' || item.mappedStoreIds?.includes(String(s.id)))).map(store => {
                               const syncState = getStoreSyncItemState(item, store);
                               const channelStock = syncState.marketplaceReportedStock ?? store.platformStockSnapshot ?? null;
 
@@ -1529,7 +1530,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                                   badgeElement = (
                                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-1">
                                       <CheckCircle2 className="w-2.5 h-2.5 shrink-0" />
-                                      <span>{syncState.status === 'jw_internal' ? 'JW Ledger' : `Synced (${channelStock ?? 'Unknown'})`}</span>
+                                      <span>{syncState.status === 'jw_internal' ? 'JW Ledger' : 'Synced'}</span>
                                     </span>
                                   );
                                   break;
@@ -1607,7 +1608,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                                   role="button"
                                   tabIndex={0}
                                   title={`Click to view Stock Sync Details for ${store.nickname || store.name}`}
-                                  className="flex items-center justify-between p-1.5 rounded-lg bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800/60 dark:hover:bg-neutral-750 border border-neutral-200/60 hover:border-neutral-400 dark:border-neutral-700/60 dark:hover:border-neutral-500 text-[11px] transition cursor-pointer group/store"
+                                  className="flex items-center justify-between p-2.5 rounded-lg bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800/60 dark:hover:bg-neutral-750 border border-neutral-200/60 hover:border-neutral-400 dark:border-neutral-700/60 dark:hover:border-neutral-500 text-[11px] transition cursor-pointer group/store"
                                 >
                                   <div className="flex items-center gap-1.5 truncate max-w-[130px]">
                                     <MarketplaceLogo platform={store.platform as any} size="xs" />

@@ -39,6 +39,11 @@ const overview: any = {
 };
 
 describe('store inventory adapters', () => {
+  it('keeps the server-confirmed shared sync state on the matching SKU', () => {
+    const shared = { ...overview, mode: 'shared', shared_store_sync_states: { '7': { '11': 'synced' } },
+      data: [{ ...overview.data[0], account_key: 'shared', store_id: null, pool_kind: 'shared', current_stock: 40, available: 40 }] } as any;
+    expect(adaptInventory(shared)[0].sharedStoreSyncStates).toEqual({ '11': 'synced' });
+  });
   it('uses only the exact current stock in single-ledger mode', () => {
     const current = { ...overview, single_current_stock: true, data: [
       { ...overview.data[0], physical: null, reserved: null, available: 6, current_stock: 6 },

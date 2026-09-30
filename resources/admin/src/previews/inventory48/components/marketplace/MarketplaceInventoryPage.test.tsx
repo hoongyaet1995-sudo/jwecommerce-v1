@@ -52,6 +52,23 @@ it('shows the mapped store total and opens its existing Manage Stock flow withou
   expect(host.querySelector('[data-testid="manage-stock-target"]')?.textContent).toBe('11');
 });
 
+it('shows only mapped shared-pool stores and a confirmed state for the current JW balance', async () => {
+  context.inventoryMode = 'shared';
+  context.marketplaceInventory = [{ ...inventoryItem, sharedStoreSyncStates: { '11': 'synced' } }];
+  try {
+    await act(async () => root.render(<MarketplaceInventoryPage />));
+    const cell = host.querySelector('tbody tr td:nth-child(6)');
+    expect(cell?.textContent).toContain('JW Storefront');
+    expect(cell?.textContent).toContain('Mapped Lazada');
+    expect(cell?.textContent).toContain('Synced');
+    expect(cell?.textContent).not.toContain('Unmapped Shopee');
+    expect(cell?.textContent).not.toContain('SKU Not Mapped');
+  } finally {
+    context.inventoryMode = 'independent';
+    context.marketplaceInventory = [inventoryItem];
+  }
+});
+
 it('selects all variants from one product row while keeping SKU actions separate', async () => {
   context.marketplaceInventory = [inventoryItem, {...inventoryItem, id:'variant:8', variantId:8,
     masterSku:'SKU-8', variantName:'Beige'}];

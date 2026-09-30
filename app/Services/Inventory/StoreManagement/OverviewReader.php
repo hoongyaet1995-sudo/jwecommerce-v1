@@ -73,8 +73,31 @@ final class OverviewReader
             ->whereIn('product_variant_id', $balanceRows->pluck('product_variant_id')->unique()->values())
             ->whereNotNull('marketplace_store_id')
             ->orderByDesc('created_at')
-            ->get(['id', 'product_variant_id', 'marketplace_store_id', 'status', 'target_quantity', 'attempts'])
+            ->get(['id', 'product_variant_id', 'marketplace_store_id', 'inventory_balance_id', 'listing_variant_id', 'balance_version', 'status', 'target_quantity', 'attempts', 'created_at'])
             ->groupBy('product_variant_id');
+        $sharedStoreSyncStates = [];
+        if ($mode === 'shared') {
+            $sharedBalances = $balanceRows->where('kind', 'shared')->keyBy('product_variant_id');
+            foreach ($modeCatalog['items'] as $item) {
+                $variantId = (int) $item['variant_id'];
+                $balance = $sharedBalances->get($variantId);
+                foreach ($item['mapped_stores'] as $store) {
+                    $storeId = (int) $store['id'];
+                    $task = $syncTasks->get($variantId, collect())
+                        ->where('marketplace_store_id', $storeId)
+                        ->where('inventory_balance_id', $balance?->id)
+                        ->sortByDesc(fn (object $task) => $task->created_at.'|'.$task->id)
+                        ->first();
+                    $sharedStoreSyncStates[$variantId][$storeId] = $balance !== null
+                        && $balance->current_stock !== null
+                        && $task?->status === 'confirmed'
+                        && (int) $task->listing_variant_id === (int) $store['listing_variant_id']
+                        && (int) $task->balance_version === (int) $balance->version
+                        && (int) $task->target_quantity === (int) $balance->current_stock
+                            ? 'synced' : 'not_synced';
+                }
+            }
+        }
         $singleCurrentStock = config('inventory.current_stock_only') === true;
         $rows = $balanceRows->map(function (object $row) use ($syncTasks, $readiness, $mode, $activeEpochId, $singleCurrentStock): array {
             $physical = $row->physical_stock === null ? null : (int) $row->physical_stock;
@@ -157,6 +180,7 @@ final class OverviewReader
             'website_account' => ['management_status' => 'managed', 'inventory_membership' => 'enrolled', 'sync_state' => 'active',
                 'management_version' => (int) ($website?->version ?? 0)],
             'totals' => ['known' => $known, 'unknown_accounts' => $unknown], 'mode_catalog' => $modeCatalog,
+            'shared_store_sync_states' => $sharedStoreSyncStates,
             'stores' => $this->stores($filters), 'data' => $rows];
     }
 

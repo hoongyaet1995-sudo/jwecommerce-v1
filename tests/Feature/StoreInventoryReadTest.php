@@ -54,6 +54,49 @@ class StoreInventoryReadTest extends TestCase
         $this->assertCount(1, $response->json('data'));
     }
 
+    public function test_shared_overview_reports_per_store_confirmation_only_for_current_shared_balance(): void
+    {
+        $fixture = new StoreInventoryFixture;
+        $sku = $fixture->sku();
+        $mapped = $fixture->store('shopee', 'MAPPED');
+        $unmapped = $fixture->store('shopee', 'UNMAPPED');
+        $this->map($mapped->id, $sku['variant']->id);
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool']);
+        $balance = app(AccountResolver::class)->balance($sku['variant']->id, 'website');
+        DB::table('inventory_balances')->where('id', $balance['id'])->update([
+            'current_stock' => 40, 'counted_at' => now(), 'version' => 2,
+        ]);
+        $listingId = DB::table('marketplace_variant_mappings')->where('store_id', $mapped->id)
+            ->where('product_variant_id', $sku['variant']->id)->value('listing_variant_id');
+        DB::table('inventory_store_sync_tasks')->insert([
+            'id' => '00000000-0000-4000-8000-000000000041',
+            'marketplace_store_id' => $mapped->id, 'product_variant_id' => $sku['variant']->id,
+            'inventory_balance_id' => $balance['id'], 'listing_variant_id' => $listingId,
+            'stage' => 'account', 'status' => 'confirmed',
+            'target_quantity' => 40, 'balance_version' => 2, 'event_key' => 'shared-sync-current',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->admin())->getJson('/admin/api/inventory/store-management/overview')->assertOk();
+        $response->assertJsonPath('shared_store_sync_states.'.$sku['variant']->id.'.'.$mapped->id, 'synced');
+        $this->assertArrayNotHasKey((string) $unmapped->id, $response->json('shared_store_sync_states.'.$sku['variant']->id));
+
+        DB::table('inventory_balances')->where('id', $balance['id'])->update(['version' => 3]);
+        $this->actingAs($this->admin())->getJson('/admin/api/inventory/store-management/overview')->assertOk()
+            ->assertJsonPath('shared_store_sync_states.'.$sku['variant']->id.'.'.$mapped->id, 'not_synced');
+
+        DB::table('inventory_balances')->where('id', $balance['id'])->update(['version' => 2]);
+        $replacementListing = DB::table('marketplace_listing_variants')->insertGetId([
+            'store_id' => $mapped->id, 'external_product_id' => 'REPLACED',
+            'external_variant_id' => 'REPLACED-V', 'observed_data' => '{}',
+            'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('marketplace_variant_mappings')->where('store_id', $mapped->id)
+            ->where('product_variant_id', $sku['variant']->id)->update(['listing_variant_id' => $replacementListing]);
+        $this->actingAs($this->admin())->getJson('/admin/api/inventory/store-management/overview')->assertOk()
+            ->assertJsonPath('shared_store_sync_states.'.$sku['variant']->id.'.'.$mapped->id, 'not_synced');
+    }
+
     public function test_independent_overview_sums_known_balances_and_keeps_unknown_distinct_from_zero(): void
     {
         $fixture = new StoreInventoryFixture;
