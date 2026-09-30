@@ -48,6 +48,7 @@ import {
 
 
 import { InitialStockCountModal } from './inventory/InitialStockCountModal';
+import { SharedFirstCountModal } from './inventory/SharedFirstCountModal';
 import { LocationFirstCountBaseline } from './inventory/LocationFirstCountBaseline';
 import { BulkStockRetrievalModal, StockRetrievalRun } from './inventory/BulkStockRetrievalModal';
 import { StockIntakeAdjustmentModal } from './inventory/StockIntakeAdjustmentModal';
@@ -940,7 +941,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
         const item=safeInventory.find(candidate=>candidate.masterSku===sku);
         return [String((item as any)?.variantId||sku),Object.fromEntries(Object.entries(byStore).map(([id,quantity])=>[id==='website'?'website':`marketplace:${id}`,quantity]))];
       })) : {};
-      await switchInventoryMode(newMode,distribution);
+      await switchInventoryMode(newMode,distribution,true);
       await reloadInventory();
       return {success:true};
     } catch(error:any) {
@@ -1825,7 +1826,16 @@ export const MarketplaceInventoryPage: React.FC = () => {
       {showStockRetrieval && stockRetrievalRun && <BulkStockRetrievalModal run={stockRetrievalRun}
         onClose={()=>{setShowStockRetrieval(false);void storeInventoryApi.stockRetrieval(stockRetrievalRun.id).then((run:StockRetrievalRun)=>setStockRetrievalRun(run));}}
         onFinished={()=>{void reloadInventory();}} />}
-      {currentMode === 'independent' && selectedItemForCount && targetFirstCountStoreId && targetFirstCountWarehouseId ? <LocationFirstCountBaseline
+      {currentMode === 'shared' && isCountModalOpen && selectedItemForCount ? <SharedFirstCountModal
+        key={selectedItemForCount.id}
+        item={selectedItemForCount}
+        onClose={() => { setIsCountModalOpen(false); setSelectedItemForCount(null); }}
+        onSave={async (count, reason) => {
+          await storeInventoryApi.review('count', {variant_id:(selectedItemForCount as any).variantId, channel_key:'website', physical_count:count, reason});
+          await reloadInventory();
+          addToast({type:'success', title:'First Count saved', message:'The shared JW ledger is now active for this SKU.'});
+        }}
+      /> : currentMode === 'independent' && selectedItemForCount && targetFirstCountStoreId && targetFirstCountWarehouseId ? <LocationFirstCountBaseline
         key={`${selectedItemForCount.id}:${targetFirstCountStoreId}:${targetFirstCountWarehouseId}`}
         item={selectedItemForCount}
         storeId={targetFirstCountStoreId}

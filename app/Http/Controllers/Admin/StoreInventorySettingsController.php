@@ -52,8 +52,10 @@ final class StoreInventorySettingsController extends Controller
 
     public function mode(Request $request, ModeMutation $mutation): JsonResponse
     {
-        $data = $request->validate(['target' => ['required', 'string'], 'configuration_version' => ['required', 'integer'], 'distribution' => ['present', 'array']]);
+        $data = $request->validate(['target' => ['required', 'string'], 'configuration_version' => ['required', 'integer'],
+            'distribution' => ['present', 'array'], 'confirm_reset' => ['sometimes', 'boolean']]);
 
-        return response()->json($mutation->switch($data['target'], $data['distribution'], $data['configuration_version'], $request->user()));
+        return response()->json($mutation->switch($data['target'], $data['distribution'], $data['configuration_version'],
+            $request->user(), (bool) ($data['confirm_reset'] ?? false)));
     }
 }

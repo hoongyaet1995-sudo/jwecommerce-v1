@@ -54,6 +54,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
   const [adminName, setAdminName] = useState('Alexander (Super Admin)');
   const [switchReason, setSwitchReason] = useState('Strategic business policy realignment');
   const [isExecutingSwitch, setIsExecutingSwitch] = useState(false);
+  const [resetAcknowledged, setResetAcknowledged] = useState(false);
 
   // Store takeover modal state
   const [takeoverStoreTarget, setTakeoverStoreTarget] = useState<InventoryStoreChannel | null>(null);
@@ -66,7 +67,9 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
   // Reset when opened
   React.useEffect(() => {
     if (isOpen) {
+      setActiveTab('mode');
       setSwitchFlowStep('view');
+      setResetAcknowledged(false);
       setTargetMode(currentMode === 'shared' ? 'independent' : 'shared');
       setTakeoverStoreTarget(null);
     }
@@ -124,7 +127,8 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
 
   const handleStartSwitchFlow = () => {
     setTargetMode(currentMode === 'shared' ? 'independent' : 'shared');
-    setSwitchFlowStep('checklist');
+    setResetAcknowledged(false);
+    setSwitchFlowStep('confirm');
   };
 
   const handleProceedFromChecklist = () => {
@@ -137,6 +141,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
   };
 
   const handleExecuteModeSwitch = async () => {
+    if (!resetAcknowledged) return;
     setIsExecutingSwitch(true);
     try {
       const res = await onSwitchMode(
@@ -203,7 +208,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
             <Layers className="w-4 h-4" />
             <span>Global Stock Mode</span>
           </button>
-          <button
+          {currentMode === 'shared' && <button
             type="button"
             onClick={() => setActiveTab('stores')}
             className={`pb-3 text-xs font-bold transition-colors cursor-pointer border-b-2 flex items-center gap-2 ${
@@ -214,7 +219,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
           >
             <Store className="w-4 h-4" />
             <span>Store Inventory Management</span>
-          </button>
+          </button>}
         </div>
 
         {/* Modal Body */}
@@ -516,58 +521,41 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
               {/* SWITCH STEP 3: ADMIN CONFIRMATION */}
               {switchFlowStep === 'confirm' && (
                 <div className="space-y-5">
-                  <div className="p-4 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 space-y-2">
-                    <h4 className="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider">
-                      Confirm Global Operating Mode Transition
+                  <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-300 dark:border-red-800 space-y-2">
+                    <h4 className="text-sm font-bold text-red-900 dark:text-red-200">
+                      Reset JW inventory and switch to {targetMode === 'shared' ? 'Shared Stock Pool' : 'Independent Stock'}?
                     </h4>
-                    <p className="text-xs text-neutral-600 dark:text-neutral-300">
-                      You are switching the entire JW Ecommerce platform from <strong>{currentMode === 'shared' ? 'Shared Stock' : 'Independent Stock'}</strong> to <strong>{targetMode === 'shared' ? 'Shared Stock' : 'Independent Stock'}</strong>. 
-                      This transition will be recorded in the system audit trail.
+                    <p className="text-xs text-red-800 dark:text-red-200 leading-relaxed">
+                      All JW Current Stock balances, reservations, and historical stock ledger entries will be cleared.
+                      Every SKU becomes Not Counted and requires a new First Count.
+                    </p>
+                    <p className="text-xs text-red-800 dark:text-red-200 leading-relaxed">
+                      Marketplace orders remain recorded, but their webhooks cannot change JW stock for an uncounted SKU.
+                      Orders created before its new First Count will not be applied later. This switch does not push a stock value to a marketplace.
                     </p>
                   </div>
-
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
-                        Admin Signature / Operator Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={adminName}
-                        onChange={e => setAdminName(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white font-medium"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
-                        Operational Reason *
-                      </label>
-                      <input
-                        type="text"
-                        value={switchReason}
-                        onChange={e => setSwitchReason(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                      />
-                    </div>
-                  </div>
+                  <label className="flex items-start gap-2 text-xs text-neutral-700 dark:text-neutral-200">
+                    <input type="checkbox" checked={resetAcknowledged} onChange={event => setResetAcknowledged(event.target.checked)}
+                      className="mt-0.5 accent-red-600" />
+                    I understand that the JW stock and ledger history will be cleared for every SKU.
+                  </label>
 
                   <div className="pt-2 flex justify-between border-t border-neutral-100 dark:border-neutral-800">
                     <button
                       type="button"
-                      onClick={() => setSwitchFlowStep('checklist')}
+                      onClick={() => setSwitchFlowStep('view')}
                       className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-xs font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
                     >
                       Back
                     </button>
                     <button
                       type="button"
-                      disabled={isExecutingSwitch}
+                      disabled={isExecutingSwitch || !resetAcknowledged}
                       onClick={handleExecuteModeSwitch}
                       className="px-6 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 text-xs font-bold transition shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       {isExecutingSwitch ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                      <span>Execute Global Mode Transition</span>
+                      <span>Confirm Reset &amp; Switch Mode</span>
                     </button>
                   </div>
                 </div>
@@ -576,7 +564,7 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
           )}
 
           {/* TAB 2: STORE INVENTORY MANAGEMENT (TAKEOVER) */}
-          {activeTab === 'stores' && (
+          {currentMode === 'shared' && activeTab === 'stores' && (
             <div className="space-y-6">
               {/* Educational Warning on Unmanaged Stores */}
               <div className="p-4 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-200/80 dark:border-amber-800/50 flex items-start gap-3.5">
@@ -647,8 +635,10 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                         )}
                         <button
                           type="button"
+                          disabled={!store.isManagedByJw && store.connectionState !== 'connected'}
+                          title={!store.isManagedByJw && store.connectionState !== 'connected' ? 'Connect this store through OAuth before takeover.' : undefined}
                           onClick={() => onToggleStoreManagement(store.id, !store.isManagedByJw)}
-                          className="px-3 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-xs font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer text-neutral-700 dark:text-neutral-300"
+                          className="px-3 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-xs font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer text-neutral-700 dark:text-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {store.isManagedByJw ? 'Pause Takeover' : 'Takeover Inventory'}
                         </button>
@@ -688,8 +678,10 @@ export const InventorySettingsModal: React.FC<InventorySettingsModalProps> = ({
                         )}
                         <button
                           type="button"
+                          disabled={!store.isManagedByJw && store.connectionState !== 'connected'}
+                          title={!store.isManagedByJw && store.connectionState !== 'connected' ? 'Connect this store through OAuth before takeover.' : undefined}
                           onClick={() => onToggleStoreManagement(store.id, !store.isManagedByJw)}
-                          className="px-3 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-xs font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer text-neutral-700 dark:text-neutral-300"
+                          className="px-3 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-xs font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer text-neutral-700 dark:text-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {store.isManagedByJw ? 'Pause Takeover' : 'Takeover Inventory'}
                         </button>

@@ -11,6 +11,7 @@ final class CurrentStockReset
     /** Children precede parents so foreign keys remain enforced throughout the reset. */
     private const EFFECT_TABLES = [
         'inventory_current_stock_sync_intents',
+        'inventory_current_stock_order_events',
         'inventory_current_stock_order_lines',
         'inventory_current_stock_movements',
         'inventory_store_sync_attempts',
@@ -68,6 +69,12 @@ final class CurrentStockReset
         ];
     }
 
+    /** Clear the active JW stock epoch inside the caller's locked mode-switch transaction. */
+    public function resetForModeSwitch(): void
+    {
+        $this->clearStockEffects(now());
+    }
+
     public function execute(string $backupPath, string $backupSha256, string $expectedDatabase, string $cutoverKey, bool $allowProduction = false): array
     {
         $production = $allowProduction && app()->environment('production')
@@ -123,34 +130,41 @@ final class CurrentStockReset
                     });
             }
 
-            // Keep order and listing records, while severing pointers to the old stock-effect epoch.
-            if (Schema::hasColumn('order_items', 'inventory_order_activation_id')) {
-                DB::table('order_items')->whereNotNull('inventory_order_activation_id')
-                    ->update(['inventory_order_activation_id' => null]);
-            }
-            if (Schema::hasColumn('marketplace_inventory_items', 'stock_allocation_id')) {
-                DB::table('marketplace_inventory_items')->whereNotNull('stock_allocation_id')
-                    ->update(['stock_allocation_id' => null]);
-            }
-
-            foreach (self::EFFECT_TABLES as $table) {
-                if (Schema::hasTable($table)) {
-                    DB::table($table)->delete();
-                }
-            }
-            DB::table('inventory_balances')->update([
-                'current_stock' => null, 'physical_stock' => 0, 'reserved_stock' => 0,
-                'safety_stock' => 0, 'counted_at' => null, 'obligations_reconciled_at' => null,
-                'rebaseline_epoch_id' => null, 'version' => DB::raw('version + 1'), 'updated_at' => $cutoverAt,
-            ]);
-            DB::table('product_variants')->update([
-                'stock' => 0, 'stock_version' => DB::raw('stock_version + 1'),
-                'inventory_initialized_at' => null,
-            ]);
+            $this->clearStockEffects($cutoverAt);
             DB::table('inventory_current_stock_cutovers')->where('id', $cutoverKey)->update(['status' => 'complete']);
         });
 
         return ['cutover_id' => $cutoverKey, 'backup_sha256' => strtolower($backupSha256),
             'before' => $before, 'after' => $this->inspect()];
+    }
+
+    private function clearStockEffects(\DateTimeInterface $cutoverAt): void
+    {
+        // Preserve orders, listings, and the cutover audit; remove all JW stock effects.
+        if (Schema::hasColumn('order_items', 'inventory_order_activation_id')) {
+            DB::table('order_items')->whereNotNull('inventory_order_activation_id')
+                ->update(['inventory_order_activation_id' => null]);
+        }
+        if (Schema::hasColumn('marketplace_inventory_items', 'stock_allocation_id')) {
+            DB::table('marketplace_inventory_items')->whereNotNull('stock_allocation_id')
+                ->update(['stock_allocation_id' => null]);
+        }
+        DB::table('inventory_configuration')->where('id', 1)->update(['active_rebaseline_epoch_id' => null]);
+        DB::table('inventory_balances')->update(['rebaseline_epoch_id' => null]);
+        foreach (self::EFFECT_TABLES as $table) {
+            if (Schema::hasTable($table)) {
+                DB::table($table)->delete();
+            }
+        }
+        DB::table('inventory_balances')->update([
+            'current_stock' => null, 'physical_stock' => 0, 'reserved_stock' => 0,
+            'safety_stock' => 0, 'counted_at' => null, 'obligations_reconciled_at' => null,
+            'rebaseline_epoch_id' => null, 'version' => DB::raw('version + 1'), 'updated_at' => $cutoverAt,
+        ]);
+        DB::table('product_variants')->update([
+            'stock' => 0, 'stock_version' => DB::raw('stock_version + 1'),
+            'inventory_initialized_at' => null, 'first_physical_verified_at' => null,
+            'first_physical_verification_operation' => null, 'updated_at' => $cutoverAt,
+        ]);
     }
 }

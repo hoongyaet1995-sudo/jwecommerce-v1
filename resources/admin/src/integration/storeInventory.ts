@@ -73,7 +73,7 @@ export const storeInventoryApi={
   syncReadiness:(id:string)=>json(`/admin/api/inventory/store-management/stores/${id}/sync-readiness`),
   resumeSync:(id:string,reason:string,review_token:string)=>json(`/admin/api/inventory/store-management/stores/${id}/resume-sync`,{method:'POST',body:JSON.stringify({reason,review_token})}),
   pauseSync:(id:string,reason:string)=>json(`/admin/api/inventory/store-management/stores/${id}/pause-sync`,{method:'POST',body:JSON.stringify({reason})}),
-  mode:(target:'shared_pool'|'independent_stores',version:number,distribution:Record<string,unknown>)=>json('/admin/api/inventory/store-management/mode',{method:'POST',body:JSON.stringify({target,configuration_version:version,distribution})}),
+  mode:(target:'shared_pool'|'independent_stores',version:number,distribution:Record<string,unknown>,confirmReset=false)=>json('/admin/api/inventory/store-management/mode',{method:'POST',body:JSON.stringify({target,configuration_version:version,distribution,confirm_reset:confirmReset})}),
 };
 
 export function adaptInventory(overview:InventoryOverview){

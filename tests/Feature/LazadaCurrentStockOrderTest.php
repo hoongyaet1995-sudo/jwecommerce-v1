@@ -38,18 +38,19 @@ class LazadaCurrentStockOrderTest extends TestCase
             'product_variant_id' => $variant->id, 'version' => 0]);
         app(CurrentStockLedger::class)->setAbsolute($balance, 5, 'lz:test:count', 'First Count');
         $snapshot = app(MarketplaceOrderSnapshotService::class);
+        $createdAt = now()->addMinute()->setTimezone('Asia/Kuala_Lumpur')->format('Y-m-d H:i:s O');
         $order = fn (string $status, string $updated) => [
-            'order_id' => '123456', 'created_at' => '2026-09-29 11:00:00 +0800',
+            'order_id' => '123456', 'created_at' => $createdAt,
             'updated_at' => $updated, 'statuses' => [$status], 'currency' => 'MYR',
             'order_items' => [['order_item_id' => '987654', 'order_id' => '123456',
                 'is_fbl' => 0, 'semi_managed' => false, 'warehouse_code' => 'WH-1',
                 'status' => $status, 'product_id' => '100', 'sku_id' => '200']],
         ];
-        $id = $snapshot->saveLazada($store, $order('unpaid', '2026-09-29T11:01:00+08:00'));
+        $id = $snapshot->saveLazada($store, $order('unpaid', now()->addMinutes(2)->toIso8601String()));
         $this->assertSame(4, app(CurrentStockLedger::class)->quantity($balance));
-        $snapshot->saveLazada($store, $order('shipped', '2026-09-29T11:02:00+08:00'));
+        $snapshot->saveLazada($store, $order('shipped', now()->addMinutes(3)->toIso8601String()));
         $this->assertSame(4, app(CurrentStockLedger::class)->quantity($balance));
-        $snapshot->saveLazada($store, $order('canceled', '2026-09-29T11:03:00+08:00'));
+        $snapshot->saveLazada($store, $order('canceled', now()->addMinutes(4)->toIso8601String()));
         $this->assertSame(5, app(CurrentStockLedger::class)->quantity($balance));
         $this->assertDatabaseHas('marketplace_order_inventory', ['order_id' => $id, 'status' => 'released']);
     }

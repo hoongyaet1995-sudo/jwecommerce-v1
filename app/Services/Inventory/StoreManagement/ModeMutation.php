@@ -3,32 +3,52 @@
 namespace App\Services\Inventory\StoreManagement;
 
 use App\Models\User;
+use App\Services\Inventory\CurrentStockReset;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 final class ModeMutation
 {
     public function __construct(private ReadinessReader $readiness, private AccountResolver $accounts,
-        private SyncOutbox $outbox, private ModeCatalogReader $modeCatalog) {}
+        private SyncOutbox $outbox, private ModeCatalogReader $modeCatalog,
+        private CurrentStockReset $reset) {}
 
-    public function switch(string $target, array $distribution, int $expectedVersion, User $actor): array
+    public function switch(string $target, array $distribution, int $expectedVersion, User $actor, bool $confirmReset = false): array
     {
         abort_unless($actor->is_admin && $actor->is_super_admin, 403);
         if (! in_array($target, ['shared_pool', 'independent_stores'], true)) {
             throw ValidationException::withMessages(['target' => 'Choose Shared or Independent Stock.']);
         }
 
-        return DB::transaction(function () use ($target, $distribution, $expectedVersion): array {
+        return DB::transaction(function () use ($target, $distribution, $expectedVersion, $actor, $confirmReset): array {
             $configuration = DB::table('inventory_configuration')->where('id', 1)->lockForUpdate()->first();
             if ((int) $configuration->version !== $expectedVersion) {
                 throw ValidationException::withMessages(['version' => 'Inventory settings changed. Review again.']);
             }
+            if ($target === $configuration->operating_mode) {
+                throw ValidationException::withMessages(['target' => 'This inventory mode is already active.']);
+            }
+            if (config('inventory.current_stock_only')) {
+                if (! $confirmReset) {
+                    throw ValidationException::withMessages(['confirm_reset' => 'Confirm that all JW stock and ledger history will be cleared.']);
+                }
+                $this->reset->resetForModeSwitch();
+                DB::table('inventory_configuration')->where('id', 1)->update([
+                    'operating_mode' => $target, 'version' => $expectedVersion + 1,
+                    'mode_reset_at' => now(),
+                ]);
+                DB::table('inventory_mode_resets')->insert([
+                    'actor_id' => $actor->id, 'source_mode' => $configuration->operating_mode,
+                    'target_mode' => $target, 'configuration_version' => $expectedVersion + 1,
+                    'created_at' => now(),
+                ]);
+
+                return ['operating_mode' => $target, 'configuration_version' => $expectedVersion + 1,
+                    'physical_total' => 0, 'reset' => true, 'external_stages' => []];
+            }
             $ready = $this->readiness->mode();
             if (! $ready['ready']) {
                 throw ValidationException::withMessages(['mode' => collect($ready['blockers'])->pluck('code')->all()]);
-            }
-            if ($target === $configuration->operating_mode) {
-                throw ValidationException::withMessages(['target' => 'This inventory mode is already active.']);
             }
             if (DB::table('inventory_balances as balance')
                 ->join('inventory_pools as pool', 'pool.id', '=', 'balance.inventory_pool_id')

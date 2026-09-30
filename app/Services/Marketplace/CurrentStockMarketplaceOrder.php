@@ -31,6 +31,11 @@ final class CurrentStockMarketplaceOrder
         $plan = $store->platform === 'lazada'
             ? LazadaInventoryPlan::build($payload, 0)
             : $this->shopeePlan($order, $payload);
+        // Serialize order effects with a destructive mode reset or a First Count review.
+        $configuration = DB::table('inventory_configuration')->where('id', 1)
+            ->lockForUpdate()->first(['operating_mode', 'mode_reset_at']);
+        $mode = $configuration?->operating_mode;
+        $afterModeReset = $configuration?->mode_reset_at !== null;
         $statuses = [];
         foreach ($plan as $line) {
             $existing = DB::table('inventory_current_stock_order_lines')
@@ -46,9 +51,21 @@ final class CurrentStockMarketplaceOrder
             if (! $variantId) {
                 throw new MarketplaceInventoryException('sku_unmapped');
             }
-            $balanceId = $existing?->inventory_balance_id ?? ($store->platform === 'lazada'
+            $balanceId = $existing?->inventory_balance_id ?? ($store->platform === 'lazada' && $mode !== 'shared_pool'
                 ? $this->facilityBalance((int) $store->id, (int) $variantId, $line['warehouse_code'])
                 : $this->accounts->balance((int) $variantId, 'marketplace:'.$store->id)['id']);
+            $balance = DB::table('inventory_balances')->where('id', $balanceId)->first();
+            if ($afterModeReset && (! $balance || $balance->current_stock === null || $balance->counted_at === null)) {
+                $statuses[] = 'skipped_not_counted';
+
+                continue;
+            }
+            if ($afterModeReset && ! $existing
+                && $created->lessThanOrEqualTo(CarbonImmutable::parse($balance->counted_at, 'UTC'))) {
+                $statuses[] = 'skipped_before_first_count';
+
+                continue;
+            }
             $terminal = ($line['target'] ?? null) === 'released' || ($line['terminal'] ?? false);
             $quantity = (int) $line['quantity'];
             $debit = $terminal && ! $existing ? 0 : $quantity;
