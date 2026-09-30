@@ -228,9 +228,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
   const isTransferBlocked = !isValidQty || isSameRoute || sourceAvailable <= 0 || isSourceVerificationPending || isDestVerificationPending || isSourceUnmapped || isDestUnmapped
     || !sourceWarehouseObj?.balance?.isCounted || !destWarehouseObj?.balance?.isCounted
     || (sourceHasWarehouses && (sourceWarehouseObj as any)?.status!=='active')
-    || (destHasWarehouses && (destWarehouseObj as any)?.status!=='active')
-    || (sourceHasWarehouses !== destHasWarehouses
-      && (sourceHasWarehouses ? destinationStoreId !== 'website' : sourceStoreId !== 'website'));
+    || (destHasWarehouses && (destWarehouseObj as any)?.status!=='active');
 
   // Before / After calculations for visual reference
   const sourceAfterPhysical = sourcePhysical - (isValidQty ? numericQty : 0);
@@ -657,6 +655,9 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                         const phys = facilities.length > 0
                           ? facilityBalances.reduce((sum, facility) => sum + facility.physicalStock, 0)
                           : bal?.physicalStock ?? 0;
+                        const counted = facilities.length > 0
+                          ? facilityBalances.length === facilities.length && facilityBalances.every(facility => facility.isCounted)
+                          : bal?.isCounted === true;
                         const isSource = st.id === sourceStoreId;
                         const isDest = st.id === destinationStoreId;
 
@@ -696,8 +697,8 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                             </div>
                             <div className="flex items-baseline justify-between pt-0.5">
                               <span className="text-[10px] text-neutral-400">{singleCurrentStock ? 'Current Stock' : 'Available'}</span>
-                              <span className={`font-mono text-xs font-bold ${avail > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-400'}`}>
-                                {avail} Units
+                              <span className={`font-mono text-xs font-bold ${avail > 0 && (!singleCurrentStock || counted) ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-400'}`}>
+                                {singleCurrentStock && !counted ? 'Not counted' : `${avail} Units`}
                               </span>
                             </div>
                             {!singleCurrentStock && <div className="flex items-baseline justify-between text-[10px] text-neutral-400">
@@ -731,7 +732,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                       <span>From Store (Source) *</span>
                     </label>
                     <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white">
-                      {singleCurrentStock ? 'Current Stock' : 'Avail'}: {sourceAvailable}
+                      {singleCurrentStock ? 'Current Stock' : 'Avail'}: {singleCurrentStock && !sourceWarehouseObj?.balance?.isCounted ? 'Not counted' : sourceAvailable}
                     </span>
                   </div>
 
@@ -776,7 +777,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                           const b = currentSkuBalances[w.id];
                           return (
                             <option key={w.id} value={w.id}>
-                              {w.name} [{warehouseDisplayCode(w.codeValue)}] — Avail: {b?.availableStock ?? 'N/A'} (Phys: {b?.physicalStock ?? 'N/A'})
+                              {w.name} [{warehouseDisplayCode(w.codeValue)}] — {singleCurrentStock ? `Current Stock: ${b?.isCounted ? b.physicalStock : 'Not counted'}` : `Avail: ${b?.availableStock ?? 'N/A'} (Phys: ${b?.physicalStock ?? 'N/A'})`}
                             </option>
                           );
                         })}
@@ -802,7 +803,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                     <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
                       <span className="text-[10px] text-neutral-400 block">{singleCurrentStock ? 'Current Stock' : 'Facility Physical'}</span>
                       <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200">
-                        {sourcePhysical}
+                        {singleCurrentStock && !sourceWarehouseObj?.balance?.isCounted ? 'Not counted' : sourcePhysical}
                       </span>
                     </div>
                     {!singleCurrentStock && <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
@@ -891,7 +892,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                       <span>To Store (Destination) *</span>
                     </label>
                     <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white">
-                      {singleCurrentStock ? 'Current Stock' : 'Avail'}: {destAvailable}
+                      {singleCurrentStock ? 'Current Stock' : 'Avail'}: {singleCurrentStock && !destWarehouseObj?.balance?.isCounted ? 'Not counted' : destAvailable}
                     </span>
                   </div>
 
@@ -932,7 +933,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                           const b = currentSkuBalances[w.id];
                           return (
                             <option key={w.id} value={w.id}>
-                              {w.name} [{warehouseDisplayCode(w.codeValue)}] — Avail: {b?.availableStock ?? 'N/A'} (Phys: {b?.physicalStock ?? 'N/A'})
+                              {w.name} [{warehouseDisplayCode(w.codeValue)}] — {singleCurrentStock ? `Current Stock: ${b?.isCounted ? b.physicalStock : 'Not counted'}` : `Avail: ${b?.availableStock ?? 'N/A'} (Phys: ${b?.physicalStock ?? 'N/A'})`}
                             </option>
                           );
                         })}
@@ -958,7 +959,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                     <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
                       <span className="text-[10px] text-neutral-400 block">{singleCurrentStock ? 'Current Stock' : 'Facility Physical'}</span>
                       <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200">
-                        {destPhysical}
+                        {singleCurrentStock && !destWarehouseObj?.balance?.isCounted ? 'Not counted' : destPhysical}
                       </span>
                     </div>
                     {!singleCurrentStock && <div className="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-700/60">
@@ -987,14 +988,14 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                 </div>
               )}
 
-              {sourceAvailable <= 0 && !isSameRoute && (
+              {sourceAvailable <= 0 && sourceWarehouseObj?.balance?.isCounted && !isSameRoute && (
                 <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300 font-semibold">
                   <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
                   <span>The selected source facility ({sourceWarehouseObj?.name || sourceStore.name}) has 0 available units. Please choose another facility or replenish inventory.</span>
                 </div>
               )}
 
-              {numericQty > sourceAvailable && (
+              {numericQty > sourceAvailable && sourceWarehouseObj?.balance?.isCounted && (
                 <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 flex items-center gap-2 text-xs text-red-700 dark:text-red-300 font-semibold">
                   <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
                   <span>
@@ -1081,7 +1082,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                       Location: <strong className="text-purple-300">{warehouseDisplayCode(sourceWarehouseObj?.codeValue)}</strong>
                     </div>
                     <div className="pt-1 text-[11px] font-mono text-amber-400">
-                      {singleCurrentStock ? `Current Stock: ${sourcePhysical} → ${sourceAfterPhysical}` : `Phys: ${sourcePhysical} → ${sourceAfterPhysical} • Avail: ${sourceAvailable} → ${sourceAfterAvailable}`}
+                      {singleCurrentStock ? sourceWarehouseObj?.balance?.isCounted ? `Current Stock: ${sourcePhysical} → ${sourceAfterPhysical}` : 'Current Stock: Not counted' : `Phys: ${sourcePhysical} → ${sourceAfterPhysical} • Avail: ${sourceAvailable} → ${sourceAfterAvailable}`}
                     </div>
                   </div>
 
@@ -1096,7 +1097,7 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
                       Location: <strong className="text-purple-300">{warehouseDisplayCode(destWarehouseObj?.codeValue)}</strong>
                     </div>
                     <div className="pt-1 text-[11px] font-mono text-emerald-400">
-                      {singleCurrentStock ? `Current Stock: ${destPhysical} → ${destAfterPhysical}` : `Phys: ${destPhysical} → ${destAfterPhysical} • Avail: ${destAvailable} → ${destAfterAvailable}`}
+                      {singleCurrentStock ? destWarehouseObj?.balance?.isCounted ? `Current Stock: ${destPhysical} → ${destAfterPhysical}` : 'Current Stock: Not counted' : `Phys: ${destPhysical} → ${destAfterPhysical} • Avail: ${destAvailable} → ${destAfterAvailable}`}
                     </div>
                   </div>
                 </div>
@@ -1110,9 +1111,8 @@ export const StoreStockTransfersTab: React.FC<StoreStockTransfersTabProps> = ({
 
             {/* ================= SECTION 4: SUBMIT ACTION BAR ================= */}
             {transferError && <p role="alert" className="text-xs text-rose-500">{transferError}</p>}
-            {sourceHasWarehouses !== destHasWarehouses
-              && (sourceHasWarehouses ? destinationStoreId !== 'website' : sourceStoreId !== 'website') &&
-              <p role="status" className="text-xs text-amber-500">Select JW Storefront as the direct account for a reviewed warehouse transfer.</p>}
+            {(!sourceWarehouseObj?.balance?.isCounted || !destWarehouseObj?.balance?.isCounted) &&
+              <p role="status" className="text-xs text-amber-500">Complete Current Stock First Count at both locations before transferring.</p>}
             <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="text-xs text-neutral-500">
                 {isValidQty && !isSameRoute ? (

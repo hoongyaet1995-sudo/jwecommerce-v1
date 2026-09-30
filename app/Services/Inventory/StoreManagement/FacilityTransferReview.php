@@ -13,20 +13,22 @@ use Illuminate\Validation\ValidationException;
 final class FacilityTransferReview
 {
     public function review(User $actor, int $variantId, ?int $sourceId, ?int $destinationId,
-        int $quantity, string $reason): array
+        int $quantity, string $reason, ?int $sourceStoreId = null, ?int $destinationStoreId = null): array
     {
         $this->authorize($actor);
-        if ($sourceId === $destinationId || $quantity < 1 || $quantity > 2147483647
+        if (($sourceId === $destinationId && $sourceStoreId === $destinationStoreId)
+            || $quantity < 1 || $quantity > 2147483647
             || trim($reason) === '' || mb_strlen($reason) > 255) {
-            throw ValidationException::withMessages(['transfer' => 'Choose two different facilities, a positive quantity and a reason.']);
+            throw ValidationException::withMessages(['transfer' => 'Choose two different stock locations, a positive quantity and a reason.']);
         }
 
-        return DB::transaction(function () use ($actor, $variantId, $sourceId, $destinationId, $quantity, $reason): array {
+        return DB::transaction(function () use ($actor, $variantId, $sourceId, $destinationId,
+            $quantity, $reason, $sourceStoreId, $destinationStoreId): array {
             $configuration = $this->configuration();
             $this->assertTestAcceptance($sourceId, $variantId);
             $this->assertTestAcceptance($destinationId, $variantId);
-            $source = $this->endpoint($sourceId, $variantId);
-            $destination = $this->endpoint($destinationId, $variantId);
+            $source = $this->endpoint($sourceId, $variantId, $sourceStoreId);
+            $destination = $this->endpoint($destinationId, $variantId, $destinationStoreId);
             if ((int) $source['balance']->id === (int) $destination['balance']->id) {
                 throw ValidationException::withMessages(['transfer' => 'Source and destination share the same physical stock owner.']);
             }
@@ -40,6 +42,7 @@ final class FacilityTransferReview
             DB::table('marketplace_facility_transfer_reviews')->insert([
                 'id' => $id, 'product_variant_id' => $variantId,
                 'source_facility_id' => $sourceId, 'destination_facility_id' => $destinationId,
+                'source_store_id' => $sourceStoreId, 'destination_store_id' => $destinationStoreId,
                 'source_balance_id' => $source['balance']->id,
                 'destination_balance_id' => $destination['balance']->id,
                 'actor_id' => $actor->id, 'configuration_version' => $configuration->version,
@@ -95,8 +98,10 @@ final class FacilityTransferReview
             sort($ids);
             $locked = DB::table('inventory_balances')->whereIn('id', $ids)->orderBy('id')
                 ->lockForUpdate()->get()->keyBy('id');
-            $source = $this->endpoint($review->source_facility_id === null ? null : (int) $review->source_facility_id, (int) $review->product_variant_id);
-            $destination = $this->endpoint($review->destination_facility_id === null ? null : (int) $review->destination_facility_id, (int) $review->product_variant_id);
+            $source = $this->endpoint($review->source_facility_id === null ? null : (int) $review->source_facility_id,
+                (int) $review->product_variant_id, $review->source_store_id === null ? null : (int) $review->source_store_id);
+            $destination = $this->endpoint($review->destination_facility_id === null ? null : (int) $review->destination_facility_id,
+                (int) $review->product_variant_id, $review->destination_store_id === null ? null : (int) $review->destination_store_id);
             if ((int) ($source['scan']?->revision ?? 0) !== (int) $review->source_topology_revision
                 || (int) ($destination['scan']?->revision ?? 0) !== (int) $review->destination_topology_revision
                 || (int) $source['balance']->id !== (int) $review->source_balance_id
@@ -126,14 +131,14 @@ final class FacilityTransferReview
             }
             $sync = [];
             foreach ([$source, $destination] as $endpoint) {
-                if ($endpoint['facility'] === null) {
+                if ($endpoint['facility'] === null && $endpoint['store_id'] === null) {
                     $sync[] = ['status' => 'confirmed', 'store_id' => null, 'target_quantity' => $this->available(
                         DB::table('inventory_balances')->find($endpoint['balance']->id))];
                     continue;
                 }
                 $balance = DB::table('inventory_balances')->find($endpoint['balance']->id);
                 $sync[] = app(SyncOutbox::class)->enqueueMutation(
-                    'facility-transfer:'.$reviewId, $balance, 'transfer',
+                    null, $balance, 'transfer',
                     'facility-transfer:'.$reviewId.':'.$balance->id);
             }
             $receipt = ['review_id' => $reviewId, 'status' => 'applied', 'quantity' => $quantity,
@@ -149,21 +154,36 @@ final class FacilityTransferReview
         }, 3);
     }
 
-    private function endpoint(?int $facilityId, int $variantId): array
+    private function endpoint(?int $facilityId, int $variantId, ?int $storeId = null): array
     {
         if ($facilityId === null) {
+            $store = $storeId === null ? null : DB::table('marketplace_stores')
+                ->where('id', $storeId)->where('status', 'connected')
+                ->whereIn('platform', ['shopee', 'lazada'])->first();
+            if ($storeId !== null && ! $store) {
+                throw ValidationException::withMessages(['store' => 'Choose a connected Marketplace store.']);
+            }
+            $scan = $storeId === null ? null : DB::table('marketplace_store_facility_scans')
+                ->where('marketplace_store_id', $storeId)->first();
+            if ($storeId !== null && (! $scan || $scan->status !== 'verified'
+                || $scan->topology !== 'no_warehouse'
+                || DB::table('marketplace_variant_mappings')->where('store_id', $storeId)
+                    ->where('product_variant_id', $variantId)->count() !== 1)) {
+                throw ValidationException::withMessages(['store' => 'Verify the direct store and SKU mapping first.']);
+            }
             $balance = DB::table('inventory_pools as pool')
                 ->join('inventory_balances as balance', 'balance.inventory_pool_id', '=', 'pool.id')
-                ->where('pool.kind', 'store')->where('pool.pool_key', 'store:website')
-                ->whereNull('pool.marketplace_store_id')
+                ->where('pool.kind', 'store')
+                ->where('pool.pool_key', $storeId === null ? 'store:website' : 'store:marketplace:'.$storeId)
+                ->where('pool.marketplace_store_id', $storeId)
                 ->where('balance.product_variant_id', $variantId)->first(['balance.*']);
             if (! $balance || (config('inventory.current_stock_only')
                 ? $balance->current_stock === null
                 : ($balance->counted_at === null || $balance->physical_stock === null
                     || $balance->reserved_stock === null || $balance->safety_stock === null))) {
-                throw ValidationException::withMessages(['facility' => 'Complete the website physical count first.']);
+                throw ValidationException::withMessages(['facility' => 'Complete the Current Stock First Count at both locations before transferring.']);
             }
-            return ['facility' => null, 'scan' => null, 'balance' => $balance];
+            return ['facility' => null, 'scan' => $scan, 'balance' => $balance, 'store_id' => $storeId];
         }
         $facility = DB::table('marketplace_store_facilities as facility')
             ->join('marketplace_stores as store', 'store.id', '=', 'facility.marketplace_store_id')
@@ -171,6 +191,9 @@ final class FacilityTransferReview
             ->where('store.status', 'connected')->first(['facility.*']);
         if (! $facility || ! $facility->inventory_warehouse_id) {
             throw ValidationException::withMessages(['facility' => 'Link an active provider facility first.']);
+        }
+        if ($storeId !== null && (int) $facility->marketplace_store_id !== $storeId) {
+            throw ValidationException::withMessages(['facility' => 'The selected warehouse belongs to another store.']);
         }
         $scan = DB::table('marketplace_store_facility_scans')
             ->where('marketplace_store_id', $facility->marketplace_store_id)->first();
@@ -190,7 +213,8 @@ final class FacilityTransferReview
             throw ValidationException::withMessages(['facility' => 'Verify topology, SKU mapping and a physical count first.']);
         }
 
-        return ['facility' => $facility, 'scan' => $scan, 'balance' => $balance];
+        return ['facility' => $facility, 'scan' => $scan, 'balance' => $balance,
+            'store_id' => (int) $facility->marketplace_store_id];
     }
 
     private function configuration(): object

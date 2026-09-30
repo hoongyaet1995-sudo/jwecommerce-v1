@@ -3,7 +3,7 @@ import { storeInventoryApi } from '../../../../../integration/storeInventory';
 
 export type StockRetrievalRun = {
   id: string; status: string; selected_skus: number; completed_skus: number; remaining_skus: number;
-  total_locations: number; completed_locations: number; failed_locations: number;
+  total_locations: number; completed_locations: number; failed_locations: number; skipped_locations?: number;
   last_error_code: string | null; heartbeat_at: string | null; updated_at:string; can_resume:boolean;
   items: Array<{id:number;sku:string;store_name:string|null;facility_name:string|null;
     status:string;action:string|null;observed_quantity:number|null;previous_quantity:number|null;error_code:string|null}>;
@@ -45,7 +45,7 @@ export function BulkStockRetrievalModal({run:initialRun,onClose,onFinished}:{
         <div className="p-4 rounded-xl border border-neutral-700 bg-neutral-800">
           <div className="flex justify-between gap-3 text-sm font-semibold"><span>{run.completed_skus} / {run.selected_skus} SKUs completed</span><span>{run.remaining_skus} SKU(s) remaining</span></div>
           <div className="mt-3 h-2.5 rounded-full bg-neutral-700 overflow-hidden"><div className="h-full bg-violet-600" style={{width:`${percent}%`}} /></div>
-          <p className="mt-2 text-xs text-neutral-400">{run.completed_locations} / {run.total_locations} locations completed · {run.failed_locations} need review</p>
+          <p className="mt-2 text-xs text-neutral-400">{run.completed_locations} / {run.total_locations} locations processed · {run.skipped_locations||0} not applicable · {run.failed_locations} need review</p>
         </div>
         {error&&<p className="rounded-lg border border-red-700 p-3 text-sm text-red-300">{error}</p>}
         {run.last_error_code&&<p className="rounded-lg border border-amber-700 p-3 text-sm text-amber-300">Latest issue: {run.last_error_code}</p>}
@@ -53,6 +53,7 @@ export function BulkStockRetrievalModal({run:initialRun,onClose,onFinished}:{
           {run.items.map(item=><div key={item.id} className="p-3 flex justify-between gap-3 text-xs">
             <div><strong>{item.sku}</strong><div className="text-neutral-400 mt-1">{item.store_name||'Unmapped store'} · {item.facility_name||'Store stock'}</div></div>
             <div className="text-right"><span className={item.status==='failed'?'text-amber-300':item.status==='succeeded'?'text-emerald-300':'text-violet-300'}>{item.action?.replaceAll('_',' ')||item.status}</span>
+              {item.status==='skipped'&&<div className="text-neutral-400 mt-1">SKU is not stocked at this warehouse</div>}
               {item.observed_quantity!==null&&<div className="text-neutral-400 mt-1">Current Stock {item.observed_quantity}</div>}
               {item.error_code&&<div className="text-amber-300 mt-1">{item.error_code}</div>}</div>
           </div>)}

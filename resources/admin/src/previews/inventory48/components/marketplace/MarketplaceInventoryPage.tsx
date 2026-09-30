@@ -91,7 +91,6 @@ export const MarketplaceInventoryPage: React.FC = () => {
     inventoryActivityHistory = []
     ,reloadInventory,
     allocateStock,
-    executeStoreTransfer,
     switchInventoryMode,
     toggleStoreManagement
   } = useAdmin();
@@ -551,19 +550,16 @@ export const MarketplaceInventoryPage: React.FC = () => {
     const source=payload.sourceWarehouseId||'';
     const destination=payload.destinationWarehouseId||'';
     let id:string;
-    if((/^\d+$/.test(source)||source==='direct:website')
-      && (/^\d+$/.test(destination)||destination==='direct:website')
-      && (/^\d+$/.test(source)||/^\d+$/.test(destination))) {
-      const receipt=await storeInventoryApi.facilityTransfer((item as any).variantId,
-        /^\d+$/.test(source)?Number(source):null,
-        /^\d+$/.test(destination)?Number(destination):null,payload.quantity,payload.reason);
-      id=receipt.review_id;
-    } else if(source.startsWith('direct:')&&destination.startsWith('direct:')) {
-      const receipt=await executeStoreTransfer(payload);
-      id=receipt.operation_id||crypto.randomUUID();
-    } else {
-      throw new Error('Mixed direct-account and facility transfers require a reviewed physical route.');
+    if (!(source === `direct:${payload.sourceStoreId}` || /^\d+$/.test(source))
+      || !(destination === `direct:${payload.destinationStoreId}` || /^\d+$/.test(destination))) {
+      throw new Error('Choose a verified source and destination stock location.');
     }
+    const receipt=await storeInventoryApi.facilityTransfer((item as any).variantId,
+      /^\d+$/.test(source)?Number(source):null,
+      /^\d+$/.test(destination)?Number(destination):null,payload.quantity,payload.reason,
+      payload.sourceStoreId==='website'?null:Number(payload.sourceStoreId),
+      payload.destinationStoreId==='website'?null:Number(payload.destinationStoreId));
+    id=receipt.review_id;
     await reloadInventory();
     const record:StoreStockTransferRecord={...payload,id,transferNumber:id,
       timestamp:new Date().toISOString(),ledgerStatus:'succeeded',

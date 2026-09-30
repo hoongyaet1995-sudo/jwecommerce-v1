@@ -101,8 +101,9 @@ final class BulkMarketplaceStockRetrieval
                 'facility.name as facility_name', 'item.status', 'item.action', 'item.observed_quantity',
                 'item.previous_quantity', 'item.error_code', 'item.attempts', 'item.observed_at']);
         $successfulSkus = $items->groupBy('product_variant_id')
-            ->filter(fn ($group) => $group->every(fn ($item) => $item->status === 'succeeded'))->count();
-        $completed = $items->where('status', 'succeeded')->count();
+            ->filter(fn ($group) => $group->every(fn ($item) => in_array($item->status, ['succeeded', 'skipped'], true)))->count();
+        $completed = $items->filter(fn ($item) => in_array($item->status, ['succeeded', 'skipped'], true))->count();
+        $skipped = $items->where('status', 'skipped')->count();
         $failed = $items->where('status', 'failed')->count();
 
         return ['id' => $run->id, 'status' => $run->status, 'selected_skus' => (int) $run->selected_skus,
@@ -111,7 +112,8 @@ final class BulkMarketplaceStockRetrieval
                     && $run->updated_at < now()->subMinutes(25)->toDateTimeString()),
             'completed_skus' => $successfulSkus, 'remaining_skus' => (int) $run->selected_skus - $successfulSkus,
             'total_locations' => (int) $run->total_locations, 'completed_locations' => $completed,
-            'failed_locations' => $failed, 'last_error_code' => $run->last_error_code,
+            'failed_locations' => $failed, 'skipped_locations' => $skipped,
+            'last_error_code' => $run->last_error_code,
             'heartbeat_at' => $run->heartbeat_at, 'updated_at' => $run->updated_at,
             'finished_at' => $run->finished_at,
             'items' => $items->map(fn ($item) => (array) $item)->all()];

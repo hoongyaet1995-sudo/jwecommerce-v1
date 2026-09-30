@@ -76,6 +76,18 @@ describe('store inventory adapters', () => {
     expect(balances['SKU-7']['11']).toMatchObject({ currentStock: 40, availableStock: 40,
       isCounted: false, unknownFacilities: 1, facilityCount: 3 });
   });
+  it('excludes a provider-confirmed non-applicable warehouse from uncounted Current Stock', () => {
+    const current = { ...overview, single_current_stock: true, data: [
+      { ...overview.data[0], pool_kind: 'facility', facility_id: 1, current_stock: 0, available: 0 },
+      { ...overview.data[0], pool_kind: 'facility', facility_id: 2, current_stock: null,
+        available: null, counted: false, allocation_eligible: false, not_applicable: true },
+    ] } as any;
+    const balance = adaptBalances(current)['SKU-7']['11'];
+    const [item] = adaptInventory(current);
+    expect(balance).toMatchObject({ currentStock: 0, unknownFacilities: 0,
+      notApplicableFacilities: 1, isCounted: true });
+    expect(item).toMatchObject({ currentStock: 0, hasUncountedAccounts: false });
+  });
   it('keeps JW direct stock when an active facility epoch represents it as a website row', () => {
     const balances = adaptBalances({ ...overview, data: [
       { ...overview.data[0], pool_kind: 'facility', account_key: 'website', store_id: null, facility_id: null, platform: 'website', physical: 15, available: 15 },

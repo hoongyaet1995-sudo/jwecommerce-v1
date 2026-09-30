@@ -10,7 +10,7 @@ export async function loadFacilityView(item:any,stores:any[],storeBalances:any =
       const id=`direct:${storeId}`;const balance=storeBalances[item.masterSku]?.[storeId];
       return {config:{...basic,warehouseMode:'no_warehouse',warehouseSyncStatus:'synced',syncStatus:'synced',warehouses:[]} as StoreWithWarehouses,
         balances:{[id]:{warehouseId:id,storeId,warehouseName:store.name,codeType:'internal_bin',codeValue:'DIRECT-WEB',
-          isCounted:!!balance?.isCounted,physicalStock:balance?.physicalStock??null,reservedStock:balance?.reservedStock??0,
+          isCounted:!!balance?.isCounted,physicalStock:item.singleCurrentStock?balance?.currentStock??null:balance?.physicalStock??null,reservedStock:balance?.reservedStock??0,
           availableStock:balance?.availableStock??null,lastSyncAt:'',syncState:'synced'} as SkuWarehouseStockBalance}};
     }
     try {
@@ -22,7 +22,7 @@ export async function loadFacilityView(item:any,stores:any[],storeBalances:any =
           syncStatus:'synced',warehouses:[]} as StoreWithWarehouses,
           balances:{[id]:{warehouseId:id,storeId,warehouseName:store.name,
             codeType:'internal_bin',codeValue:'DIRECT',isCounted:!!balance?.isCounted,
-            physicalStock:balance?.physicalStock??null,reservedStock:balance?.reservedStock??0,
+            physicalStock:item.singleCurrentStock?balance?.currentStock??null:balance?.physicalStock??null,reservedStock:balance?.reservedStock??0,
             availableStock:balance?.availableStock??null,lastSyncAt:'',syncState:'sync_unknown'} as SkuWarehouseStockBalance}};
       }
       const warehouses:StorePlatformWarehouse[]=(response.facilities||[]).map((facility:any)=>({
@@ -38,7 +38,7 @@ export async function loadFacilityView(item:any,stores:any[],storeBalances:any =
         balances[id]={warehouseId:id,storeId,warehouseName:facility.name,
           physicalOwnerId:facility.inventory_warehouse_id?`warehouse:${facility.inventory_warehouse_id}`:undefined,
           codeType:store.platform==='shopee'?'location_id':'warehouse_code',codeValue:facility.provider_id,
-          isCounted:!!facility.counted,physicalStock:facility.physical??null,
+          isCounted:!!facility.counted,physicalStock:response.single_current_stock?facility.current_stock??null:facility.physical??null,
           reservedStock:facility.reserved??0,availableStock:facility.available??null,
           lastSyncAt:'',syncState:verified?'sync_unknown':'verification_pending'};
       }

@@ -54,4 +54,13 @@ class MarketplaceItemStockSnapshot
         if (! is_int($value) || $value < 0) throw new RuntimeException('Exact provider SKU/warehouse stock is unavailable.');
         return $value;
     }
+
+    public function notApplicable(array $snapshot, object $listing, ?object $facility, string $platform): bool
+    {
+        if ($platform !== 'lazada' || ! $facility) return false;
+        $stock = $snapshot['stock'][(string) $listing->external_variant_id] ?? null;
+        if (! is_array($stock) || array_keys($stock) !== ['dropshipping']) return false;
+        $location = (string) ($facility->provider_facility_id ?? '');
+        return $location !== '' && $location !== 'dropshipping';
+    }
 }

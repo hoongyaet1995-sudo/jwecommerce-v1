@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\User;
+use App\Exceptions\MarketplaceStockLocationNotApplicable;
 use App\Services\Inventory\StoreManagement\MarketplaceBaselineFirstCount;
 use App\Services\Inventory\StoreManagement\MarketplaceItemStockSnapshot;
 use Carbon\CarbonImmutable;
@@ -88,8 +89,27 @@ final class ProcessBulkMarketplaceStockRetrieval implements ShouldQueue
             }
             $actor = User::findOrFail($actorId);
             $result = $baseline->reconcile($actor, $storeId, $facilityId, $variantId, $itemId);
+            if ($facilityId !== null) {
+                $this->clearFacilityScope((object) ['product_variant_id' => $variantId,
+                    'marketplace_store_facility_id' => $facilityId]);
+            }
         } catch (Throwable $error) {
-            if ($error instanceof ValidationException) {
+            if ($error instanceof MarketplaceStockLocationNotApplicable && $facilityId !== null) {
+                $facility = DB::table('marketplace_store_facilities')->where('id', $facilityId)->first();
+                $hasLedger = DB::table('inventory_balances as balance')
+                    ->join('inventory_pools as pool', 'pool.id', '=', 'balance.inventory_pool_id')
+                    ->where('balance.product_variant_id', $variantId)
+                    ->where('pool.warehouse_id', $facility?->inventory_warehouse_id)
+                    ->whereNotNull('balance.current_stock')->exists();
+                if (! $hasLedger) {
+                    $this->recordFacilityScope((object) ['product_variant_id' => $variantId,
+                        'marketplace_store_id' => $storeId, 'marketplace_store_facility_id' => $facilityId],
+                        'not_applicable', now()->toIso8601String());
+                    $result = ['action' => 'not_applicable', 'observed_at' => now()->toIso8601String()];
+                } else {
+                    $errorCode = 'provider_omitted_counted_warehouse';
+                }
+            } elseif ($error instanceof ValidationException) {
                 $field = array_key_first($error->errors());
                 $errorCode = match ($field) {
                     'store' => 'listing_mapping_unavailable',
@@ -112,7 +132,7 @@ final class ProcessBulkMarketplaceStockRetrieval implements ShouldQueue
                 return;
             }
             DB::table('marketplace_stock_retrieval_items')->where('id', $itemId)->update([
-                'status' => $errorCode ? 'failed' : 'succeeded',
+                'status' => $errorCode ? 'failed' : (($result['action'] ?? null) === 'not_applicable' ? 'skipped' : 'succeeded'),
                 'action' => $result['action'] ?? null,
                 'observed_quantity' => $result['quantity'] ?? null,
                 'previous_quantity' => $result['previous_quantity'] ?? null,
@@ -155,7 +175,7 @@ final class ProcessBulkMarketplaceStockRetrieval implements ShouldQueue
                 ->where('item.run_id', $this->runId)->where('item.status', 'pending')
                 ->where('item.marketplace_store_id', $first->marketplace_store_id)
                 ->where('listing.external_product_id', $first->external_product_id)
-                ->orderBy('item.id')->distinct()->get(['item.id', 'item.product_variant_id',
+                ->orderBy('item.id')->distinct()->get(['item.id', 'item.product_variant_id', 'item.marketplace_store_id',
                     'item.marketplace_store_facility_id', 'listing.id as listing_id',
                     'listing.external_variant_id', 'listing.external_product_id']);
             if ($items->count() < 2) return null;
@@ -197,6 +217,22 @@ final class ProcessBulkMarketplaceStockRetrieval implements ShouldQueue
                     $item = $row['item'];
                     $listing = (object) ['external_variant_id' => $item->external_variant_id];
                     try {
+                        $notApplicable = $snapshots->notApplicable($first, $listing, $row['facility'], $store->platform)
+                            && $snapshots->notApplicable($second, $listing, $row['facility'], $store->platform);
+                        if ($notApplicable) {
+                            $hasLedger = DB::table('inventory_balances as balance')
+                                ->join('inventory_pools as pool', 'pool.id', '=', 'balance.inventory_pool_id')
+                                ->where('balance.product_variant_id', $item->product_variant_id)
+                                ->where('pool.warehouse_id', $row['facility']->inventory_warehouse_id)
+                                ->whereNotNull('balance.current_stock')->exists();
+                            if ($hasLedger) {
+                                throw ValidationException::withMessages(['stock' => 'Marketplace omitted a warehouse with an existing JW stock ledger. Review it manually.']);
+                            }
+                            $this->recordFacilityScope($item, 'not_applicable', $second['observed_at']);
+                            $this->finishGroupedItem((int) $item->id, ['action' => 'not_applicable',
+                                'observed_at' => $second['observed_at']], null);
+                            continue;
+                        }
                         $one = $snapshots->quantity($first, $listing, $row['facility'], $store->platform);
                         $two = $snapshots->quantity($second, $listing, $row['facility'], $store->platform);
                         if ($one !== $two) {
@@ -206,6 +242,7 @@ final class ProcessBulkMarketplaceStockRetrieval implements ShouldQueue
                             $item->marketplace_store_facility_id === null ? null : (int) $item->marketplace_store_facility_id,
                             (int) $item->product_variant_id, (int) $item->id, $two,
                             $second['observed_at'], $row['version']);
+                        $this->clearFacilityScope($item);
                         $this->finishGroupedItem((int) $item->id, $result, null);
                     } catch (Throwable $error) {
                         if (! $error instanceof ValidationException) report($error);
@@ -221,6 +258,27 @@ final class ProcessBulkMarketplaceStockRetrieval implements ShouldQueue
         return true;
     }
 
+    private function recordFacilityScope(object $item, string $status, string $observedAt): void
+    {
+        if ($item->marketplace_store_facility_id === null) return;
+        DB::table('marketplace_variant_facility_scope')->upsert([[
+            'product_variant_id' => (int) $item->product_variant_id,
+            'marketplace_store_id' => (int) $item->marketplace_store_id,
+            'marketplace_store_facility_id' => (int) $item->marketplace_store_facility_id,
+            'status' => $status,
+            'observed_at' => CarbonImmutable::parse($observedAt)->utc()->format('Y-m-d H:i:s'),
+            'created_at' => now(), 'updated_at' => now(),
+        ]], ['product_variant_id', 'marketplace_store_facility_id'], ['status', 'observed_at', 'updated_at']);
+    }
+
+    private function clearFacilityScope(object $item): void
+    {
+        if ($item->marketplace_store_facility_id === null) return;
+        DB::table('marketplace_variant_facility_scope')
+            ->where('product_variant_id', $item->product_variant_id)
+            ->where('marketplace_store_facility_id', $item->marketplace_store_facility_id)->delete();
+    }
+
     private function finishGroupedItem(int $itemId, ?array $result, ?string $errorCode): void
     {
         DB::transaction(function () use ($itemId, $result, $errorCode): void {
@@ -228,7 +286,8 @@ final class ProcessBulkMarketplaceStockRetrieval implements ShouldQueue
             $item = DB::table('marketplace_stock_retrieval_items')->where('id', $itemId)->lockForUpdate()->first();
             if (! $run || ! $item || $item->status !== 'processing') return;
             DB::table('marketplace_stock_retrieval_items')->where('id', $itemId)->update([
-                'status' => $errorCode ? 'failed' : 'succeeded', 'action' => $result['action'] ?? null,
+                'status' => $errorCode ? 'failed' : (($result['action'] ?? null) === 'not_applicable' ? 'skipped' : 'succeeded'),
+                'action' => $result['action'] ?? null,
                 'observed_quantity' => $result['quantity'] ?? null,
                 'previous_quantity' => $result['previous_quantity'] ?? null,
                 'observed_at' => isset($result['observed_at'])

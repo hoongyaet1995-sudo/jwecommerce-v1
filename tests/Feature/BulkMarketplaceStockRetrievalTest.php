@@ -21,6 +21,78 @@ class BulkMarketplaceStockRetrievalTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_dropshipping_only_snapshot_skips_unstocked_facility_without_creating_zero_ledger(): void
+    {
+        config(['inventory.current_stock_only' => true]);
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'independent_stores']);
+        $fixture = new StoreInventoryFixture;
+        $store = $fixture->store('lazada', 'BULK-SCOPE');
+        $variant = $fixture->sku()['variant'];
+        app(FacilityRegistry::class)->confirm((int) $store->id, [
+            ['provider_id' => 'dropshipping', 'name' => 'Default'],
+            ['provider_id' => 'WH-OTHER', 'name' => 'Other'],
+        ]);
+        foreach (['dropshipping', 'WH-OTHER'] as $code) {
+            $warehouseId = DB::table('inventory_warehouses')->insertGetId([
+                'code' => 'JW-SCOPE-'.$code, 'name' => $code, 'is_active' => true,
+                'status' => 'active', 'created_at' => now(), 'updated_at' => now(),
+            ]);
+            DB::table('marketplace_store_facilities')->where('marketplace_store_id', $store->id)
+                ->where('provider_facility_id', $code)->update(['inventory_warehouse_id' => $warehouseId]);
+        }
+        $listingId = DB::table('marketplace_listing_variants')->insertGetId([
+            'store_id' => $store->id, 'external_product_id' => '100', 'external_variant_id' => '200',
+            'observed_data' => '{}', 'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('marketplace_variant_mappings')->insert([
+            'store_id' => $store->id, 'listing_variant_id' => $listingId,
+            'product_variant_id' => $variant->id, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $actor = User::factory()->create(['is_admin' => true, 'is_super_admin' => true]);
+        $snapshot = Mockery::mock(MarketplaceItemStockSnapshot::class)->makePartial();
+        $snapshot->shouldReceive('read')->twice()->andReturn([
+            'stock' => ['200' => ['dropshipping' => 0]], 'observed_at' => '2026-09-30T10:00:00+00:00',
+        ]);
+        Queue::fake();
+        $run = app(BulkMarketplaceStockRetrieval::class)->start($actor, [(int) $variant->id]);
+        (new ProcessBulkMarketplaceStockRetrieval($run['id']))->handle(app(MarketplaceBaselineFirstCount::class), $snapshot);
+        $status = app(BulkMarketplaceStockRetrieval::class)->status($actor, $run['id']);
+        $this->assertSame('succeeded', $status['status'], json_encode($status['items']));
+        $this->assertSame(2, $status['completed_locations']);
+        $this->assertSame(1, $status['skipped_locations']);
+        $this->assertSame(0, $status['failed_locations']);
+        $this->assertSame(1, $status['completed_skus']);
+        $this->assertDatabaseHas('marketplace_stock_retrieval_items', [
+            'run_id' => $run['id'], 'status' => 'skipped', 'action' => 'not_applicable',
+        ]);
+        $this->assertDatabaseHas('marketplace_variant_facility_scope', [
+            'product_variant_id' => $variant->id, 'status' => 'not_applicable',
+        ]);
+        $this->assertDatabaseCount('inventory_current_stock_movements', 1);
+        $balances = app(\App\Services\Inventory\StoreManagement\FacilityBalanceReader::class)
+            ->read((int) $store->id, (int) $variant->id);
+        $this->assertSame(0, $balances['totals']['unknown_facilities']);
+        $this->assertSame(0, $balances['totals']['known_current_stock']);
+        $overview = app(\App\Services\Inventory\StoreManagement\OverviewReader::class)->read();
+        $excluded = collect($overview['data'])->first(fn (array $row) => $row['variant_id'] === (int) $variant->id
+            && $row['not_applicable'] === true);
+        $this->assertNotNull($excluded);
+        $this->assertFalse($excluded['allocation_eligible']);
+
+        $returned = Mockery::mock(MarketplaceItemStockSnapshot::class)->makePartial();
+        $returned->shouldReceive('read')->twice()->andReturn([
+            'stock' => ['200' => ['dropshipping' => 0, 'WH-OTHER' => 3]],
+            'observed_at' => '2026-09-30T11:00:00+00:00',
+        ]);
+        $second = app(BulkMarketplaceStockRetrieval::class)->start($actor, [(int) $variant->id]);
+        (new ProcessBulkMarketplaceStockRetrieval($second['id']))->handle(app(MarketplaceBaselineFirstCount::class), $returned);
+        $this->assertSame('succeeded', app(BulkMarketplaceStockRetrieval::class)->status($actor, $second['id'])['status']);
+        $this->assertDatabaseMissing('marketplace_variant_facility_scope', ['product_variant_id' => $variant->id]);
+        $this->assertDatabaseHas('marketplace_stock_retrieval_items', [
+            'run_id' => $second['id'], 'observed_quantity' => 3, 'action' => 'first_count',
+        ]);
+    }
+
     public function test_snapshot_distinguishes_verified_lazada_zero_stock_from_missing_shopee_stock(): void
     {
         $reader = app(MarketplaceItemStockSnapshot::class);

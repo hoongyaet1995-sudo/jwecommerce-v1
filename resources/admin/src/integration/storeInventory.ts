@@ -44,8 +44,9 @@ export const storeInventoryApi={
   latestStockRetrieval:()=>json('/admin/api/inventory/store-management/stock-retrieval-runs/latest'),
   stockRetrieval:(runId:string)=>json(`/admin/api/inventory/store-management/stock-retrieval-runs/${encodeURIComponent(runId)}`),
   resumeStockRetrieval:(runId:string)=>json(`/admin/api/inventory/store-management/stock-retrieval-runs/${encodeURIComponent(runId)}/resume`,{method:'POST',body:'{}'}),
-  async facilityTransfer(variantId:number,sourceFacilityId:number|null,destinationFacilityId:number|null,quantity:number,reason:string){
-    const review=await json('/admin/api/inventory/store-management/facility-transfer-reviews',{method:'POST',body:JSON.stringify({variant_id:variantId,source_facility_id:sourceFacilityId,destination_facility_id:destinationFacilityId,quantity,reason})});
+  async facilityTransfer(variantId:number,sourceFacilityId:number|null,destinationFacilityId:number|null,quantity:number,reason:string,
+    sourceStoreId:number|null=null,destinationStoreId:number|null=null){
+    const review=await json('/admin/api/inventory/store-management/facility-transfer-reviews',{method:'POST',body:JSON.stringify({variant_id:variantId,source_facility_id:sourceFacilityId,destination_facility_id:destinationFacilityId,source_store_id:sourceStoreId,destination_store_id:destinationStoreId,quantity,reason})});
     return json(`/admin/api/inventory/store-management/facility-transfer-reviews/${encodeURIComponent(review.id)}/confirm`,{method:'POST',body:JSON.stringify({operation_key:crypto.randomUUID()})});
   },
   facilitySyncDetails:(storeId:string,facilityId:number,variantId:number)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/facilities/${facilityId}/skus/${variantId}/sync`),
@@ -85,7 +86,7 @@ export function adaptInventory(overview:InventoryOverview){
     const mappedIds=new Set((modeItem?.mapped_stores||[]).map((store:any)=>String(store.id)));
     const currentModeRows=rows.filter(r=>overview.mode==='shared' ? r.account_key==='shared' : r.account_key!=='shared');
     const eligibleRows=currentModeRows.filter(r=>r.allocation_eligible ?? (!r.store_id || mappedIds.has(String(r.store_id))));
-    const knownPhysical=currentModeRows.filter(r=>r.counted&&(overview.single_current_stock?r.current_stock!==null:r.physical!==null));
+    const knownPhysical=currentModeRows.filter(r=>r.not_applicable!==true&&r.counted&&(overview.single_current_stock?r.current_stock!==null:r.physical!==null));
     const knownSellable=eligibleRows.filter(r=>r.counted&&r.available!==null);
     const physical=knownPhysical.length?knownPhysical.reduce((n,r)=>n+(overview.single_current_stock?r.current_stock:r.physical),0):null;
     const reserved=overview.single_current_stock?0:knownPhysical.reduce((n,r)=>n+(r.reserved||0),0);
@@ -117,11 +118,12 @@ export function adaptBalances(overview:InventoryOverview){
   for(const rows of facilities.values()){
     const first=rows[0];
     const key=first.store_id?String(first.store_id):'website';
-    const counted=rows.every(row=>row.counted===true&&Number.isFinite(overview.single_current_stock?row.current_stock:row.physical)&&Number.isFinite(row.available));
-    const knownCurrentRows=overview.single_current_stock?rows.filter(row=>row.counted===true&&Number.isFinite(row.current_stock)):[];
+    const applicableRows=rows.filter(row=>row.not_applicable!==true);
+    const counted=applicableRows.length>0&&applicableRows.every(row=>row.counted===true&&Number.isFinite(overview.single_current_stock?row.current_stock:row.physical)&&Number.isFinite(row.available));
+    const knownCurrentRows=overview.single_current_stock?applicableRows.filter(row=>row.counted===true&&Number.isFinite(row.current_stock)):[];
     const knownCurrent=knownCurrentRows.length?knownCurrentRows.reduce((sum,row)=>sum+Number(row.current_stock),0):null;
     result[first.sku]??={};
-    result[first.sku][key]={storeId:key,storeName:first.store_name||(key==='website'?'JW Ecom Storefront':first.account_key),platform:first.platform,isManagedByJw:true,connectionState:first.connection_status||'connected',isCounted:counted,physicalStock:overview.single_current_stock?knownCurrent:counted?rows.reduce((sum,row)=>sum+row.physical,0):null,reservedStock:overview.single_current_stock?0:rows.reduce((sum,row)=>sum+(row.reserved??0),0),availableStock:overview.single_current_stock?knownCurrent:counted?rows.reduce((sum,row)=>sum+row.available,0):null,currentStock:overview.single_current_stock?knownCurrent:undefined,unknownFacilities:overview.single_current_stock?rows.length-knownCurrentRows.length:undefined,singleCurrentStock:overview.single_current_stock===true,facilityCount:rows.length,syncState:'enabled',syncReadiness:first.sync_readiness,lastSyncStatus:first.external_sync?.status,syncTasks:first.external_sync?.tasks||[]};
+    result[first.sku][key]={storeId:key,storeName:first.store_name||(key==='website'?'JW Ecom Storefront':first.account_key),platform:first.platform,isManagedByJw:true,connectionState:first.connection_status||'connected',isCounted:counted,physicalStock:overview.single_current_stock?knownCurrent:counted?applicableRows.reduce((sum,row)=>sum+row.physical,0):null,reservedStock:overview.single_current_stock?0:applicableRows.reduce((sum,row)=>sum+(row.reserved??0),0),availableStock:overview.single_current_stock?knownCurrent:counted?applicableRows.reduce((sum,row)=>sum+row.available,0):null,currentStock:overview.single_current_stock?knownCurrent:undefined,unknownFacilities:overview.single_current_stock?applicableRows.length-knownCurrentRows.length:undefined,notApplicableFacilities:rows.length-applicableRows.length,singleCurrentStock:overview.single_current_stock===true,facilityCount:rows.length,syncState:'enabled',syncReadiness:first.sync_readiness,lastSyncStatus:first.external_sync?.status,syncTasks:first.external_sync?.tasks||[]};
   }
   return result;
 }

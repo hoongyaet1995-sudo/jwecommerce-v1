@@ -39,6 +39,10 @@ final class OverviewReader
                     ->where('p.kind', '=', 'facility');
             })
             ->leftJoin('marketplace_stores as facility_store', 'facility_store.id', '=', 'facility.marketplace_store_id')
+            ->leftJoin('marketplace_variant_facility_scope as scope', function ($join): void {
+                $join->on('scope.product_variant_id', '=', 'b.product_variant_id')
+                    ->on('scope.marketplace_store_facility_id', '=', 'facility.id');
+            })
             ->leftJoin('marketplace_variant_mappings as mapping', function ($join): void {
                 $join->on('mapping.product_variant_id', '=', 'b.product_variant_id')
                     ->on('mapping.store_id', '=', 'p.marketplace_store_id');
@@ -47,6 +51,7 @@ final class OverviewReader
                 'b.counted_at', 'b.version', 'p.pool_key', 'p.kind', 'p.marketplace_store_id',
                 'facility.id as facility_id', 'facility.provider_facility_id', 'facility.marketplace_store_id as facility_store_id',
                 'facility_store.platform as facility_platform', 'facility_store.shop_name as facility_store_name',
+                'scope.status as facility_scope_status',
                 'mapping.id as mapping_id', 'mapping.listing_variant_id',
                 'store.platform', 'store.shop_name', 'store.status as connection_status', 'v.product_id', 'v.sku', 'v.title as variant_title',
                 'product.title as product_title']);
@@ -100,17 +105,18 @@ final class OverviewReader
                 'platform' => $row->kind === 'facility' ? $row->facility_platform : ($row->platform ?? 'website'),
                 'facility_id' => $row->facility_id === null ? null : (int) $row->facility_id,
                 'provider_facility_id' => $row->provider_facility_id,
+                'not_applicable' => $row->facility_scope_status === 'not_applicable',
                 'pool_kind' => $row->kind,
                 'physical' => $physical,
                 'reserved' => $reserved,
                 'current_stock' => $current,
                 'available' => $available,
                 'counted' => $singleCurrentStock ? $current !== null : $row->counted_at !== null,
-                'allocation_eligible' => $activeEpochId !== null ? $row->kind === 'facility'
-                    : ($mode === 'shared'
+                'allocation_eligible' => $activeEpochId !== null ? $row->kind === 'facility' && $row->facility_scope_status !== 'not_applicable'
+                    : ($row->facility_scope_status === 'not_applicable' ? false : ($mode === 'shared'
                         ? $row->kind === 'shared'
                         : ($row->kind === 'store' && ($row->marketplace_store_id === null || $row->mapping_id !== null))
-                            || ($row->kind === 'facility' && $row->facility_id !== null)),
+                            || ($row->kind === 'facility' && $row->facility_id !== null))),
                 'version' => (int) $row->version,
                 'provider_observation' => null,
                 'sync_readiness' => $row->marketplace_store_id === null ? null

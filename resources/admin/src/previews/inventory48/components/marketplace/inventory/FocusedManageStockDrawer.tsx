@@ -8,7 +8,7 @@ import { StockTakeRecoveryFlow } from './StockTakeRecoveryFlow';
 import { warehouseDisplayCode } from './warehouseDisplay';
 
 type Balance = { physical: number | null; reserved: number | null; available: number | null; current?: number | null; counted: boolean; unknownFacilities?: number };
-type Facility = Balance & { id: string; name: string; providerId: string; inventoryWarehouseId: number | null };
+type Facility = Balance & { id: string; name: string; providerId: string; inventoryWarehouseId: number | null; notApplicable?: boolean };
 type StoreRow = {
   id: string; name: string; platform: string; environment?: string; topology: string | null; status: string;
   balance: Balance | null; facilities: Facility[]; error?: string;
@@ -124,9 +124,11 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
           inventoryWarehouseId: facility.inventory_warehouse_id ?? null,
           physical: facility.current_stock ?? facility.physical ?? null, reserved: facility.reserved ?? null,
           available: facility.available ?? null, current: facility.current_stock ?? null, counted: facility.counted === true,
+          notApplicable: facility.not_applicable === true,
         }));
-        const counted = facilities.length > 0 && facilities.every(facility => facility.counted);
-        const knownCurrent = facilities.filter(facility => facility.counted && facility.current !== null);
+        const applicable = facilities.filter(facility => !facility.notApplicable);
+        const counted = applicable.length > 0 && applicable.every(facility => facility.counted);
+        const knownCurrent = applicable.filter(facility => facility.counted && facility.current !== null);
         const currentSubtotal = knownCurrent.length > 0
           ? knownCurrent.reduce((sum, facility) => sum + Number(facility.current), 0) : null;
         const balance: Balance = {
@@ -134,7 +136,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
           reserved: counted ? facilities.reduce((sum, facility) => sum + (facility.reserved || 0), 0) : null,
           available: counted ? facilities.reduce((sum, facility) => sum + (facility.available || 0), 0) : null,
           current: singleCurrentStock ? currentSubtotal : counted ? facilities.reduce((sum, facility) => sum + (facility.current || 0), 0) : null,
-          counted, unknownFacilities: singleCurrentStock ? facilities.length - knownCurrent.length : undefined,
+          counted, unknownFacilities: singleCurrentStock ? applicable.length - knownCurrent.length : undefined,
         };
         return { ...base, topology: result.topology ?? null, status: result.status, facilities, balance,
           error: result.error_code || undefined };
@@ -161,7 +163,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
       || (acceptance.eligible === true && acceptanceFacility?.eligible === true)));
   const canRecover = requiresTestAcceptance && !!selectedFacility && acceptance?.test_acceptance_enabled === true
     && acceptance?.eligible === false;
-  const actionable = selectedStore?.status === 'verified' && (direct || !!selectedFacility?.inventoryWarehouseId)
+  const actionable = selectedStore?.status === 'verified' && !selectedFacility?.notApplicable && (direct || !!selectedFacility?.inventoryWarehouseId)
     && acceptanceReady;
   const awaitingSync = sync?.status === 'awaiting_confirmation';
   const failedSync = sync?.status === 'sync_failed';
@@ -269,13 +271,13 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
           </button>}
           {selectedStore.facilities.map(facility => <button key={facility.id} type="button" onClick={() => openFacility(facility)} className="flex w-full flex-col gap-3 rounded-xl border border-neutral-700 bg-neutral-800/60 p-4 text-left hover:border-purple-500 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0"><strong className="block truncate text-xs text-white">{facility.name}</strong><span className="font-mono text-[10px] text-neutral-400">{warehouseDisplayCode(facility.providerId)}</span></div>
-            <div className="flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto"><CompactBalances balance={facility} singleCurrentStock={singleCurrentStock} /><ChevronRight className="h-4 w-4 text-neutral-400" /></div>
+            <div className="flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto">{facility.notApplicable ? <span className="text-xs text-neutral-400">Not applicable</span> : <CompactBalances balance={facility} singleCurrentStock={singleCurrentStock} />}<ChevronRight className="h-4 w-4 text-neutral-400" /></div>
           </button>)}
         </>}
         {atLocation && !actionsOpen && <>
           <p className="text-xs font-semibold text-neutral-300">{selectedStore!.name} · {direct ? 'Store ledger' : `Platform warehouse ${warehouseDisplayCode(selectedFacility!.providerId)}`}</p>
           <StockSummary balance={activeBalance} singleCurrentStock={singleCurrentStock} />
-          {!actionable && !awaitingSync && !failedSync && <div role="status" className="rounded-xl border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-300">{selectedStore!.status !== 'verified' ? 'Warehouse verification is pending.' : !acceptanceReady ? 'This stock location is not yet eligible for a stock change.' : 'This warehouse does not yet have an active stock ledger.'}</div>}
+          {!actionable && !awaitingSync && !failedSync && <div role="status" className="rounded-xl border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-300">{selectedFacility?.notApplicable ? 'Lazada does not stock this SKU at this warehouse.' : selectedStore!.status !== 'verified' ? 'Warehouse verification is pending.' : !acceptanceReady ? 'This stock location is not yet eligible for a stock change.' : 'This warehouse does not yet have an active stock ledger.'}</div>}
           {canRecover && !awaitingSync && !failedSync && <button type="button" onClick={() => setRecovering(true)} className="w-full rounded-xl border border-purple-700 bg-purple-950/30 p-4 text-left text-xs font-bold text-purple-200 hover:border-purple-400">Resolve stock issue <ArrowRight className="ml-2 inline h-4 w-4" /></button>}
           {selectedStore!.platform !== 'webstore' && <div role="status" className={`rounded-xl border p-4 text-xs ${sync?.status === 'synced' ? 'border-emerald-800 bg-emerald-950/40' : failedSync ? 'border-rose-800 bg-rose-950/30' : awaitingSync ? 'border-amber-800 bg-amber-950/30' : 'border-neutral-700 bg-neutral-800/60'}`}>
             <strong className={sync?.status === 'synced' ? 'text-emerald-300' : failedSync ? 'text-rose-300' : awaitingSync ? 'text-amber-300' : 'text-white'}>{sync?.status === 'synced' ? 'Marketplace stock confirmed' : failedSync ? 'Marketplace sync failed' : awaitingSync ? 'Marketplace result needs confirmation' : 'Marketplace stock sync'}</strong>
@@ -295,7 +297,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
       <footer className="flex items-center justify-between gap-3 border-t border-neutral-800 bg-neutral-950/70 px-5 py-4 sm:px-6">
         <button type="button" onClick={back} className="rounded-lg border border-neutral-700 px-4 py-2 text-xs text-neutral-300 hover:bg-neutral-800">{selectedStore ? 'Back' : 'Close'}</button>
         {atLocation && !actionsOpen && <div className="flex gap-2">{selectedStore?.platform !== 'webstore' && sync?.can_check && (failedSync || awaitingSync || sync?.status === 'not_synced') && <button type="button" disabled={syncBusy} onClick={() => void syncAction(false)} className={`rounded-lg px-4 py-2 text-xs font-bold disabled:opacity-40 ${awaitingSync ? 'bg-purple-600 text-white' : 'border border-neutral-600 text-neutral-200'}`}>Check status</button>}
-          <button type="button" onClick={() => setActionsOpen(true)} className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-bold text-white hover:bg-purple-500">Manage this stock</button></div>}
+          {!selectedFacility?.notApplicable && <button type="button" onClick={() => setActionsOpen(true)} className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-bold text-white hover:bg-purple-500">Manage this stock</button>}</div>}
         {atLocation && actionsOpen && onViewLedger && <button type="button" onClick={() => onViewLedger(item, selectedStore!.id, targetWarehouseId)} className="flex items-center gap-1 rounded-lg border border-neutral-700 px-4 py-2 text-xs text-neutral-300"><History className="h-3 w-3" />View ledger</button>}
       </footer>
     </div>

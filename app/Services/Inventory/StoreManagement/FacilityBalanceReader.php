@@ -30,11 +30,18 @@ final class FacilityBalanceReader
         if (config('inventory.current_stock_only')) {
             $knownCurrent = 0;
             $unknownCurrent = 0;
-            $result['facilities'] = array_map(function (array $facility) use ($balances, &$knownCurrent, &$unknownCurrent): array {
+            $notApplicable = DB::table('marketplace_variant_facility_scope')
+                ->where('product_variant_id', $variantId)->where('marketplace_store_id', $storeId)
+                ->where('status', 'not_applicable')->pluck('marketplace_store_facility_id')
+                ->mapWithKeys(fn ($id) => [(int) $id => true]);
+            $result['facilities'] = array_map(function (array $facility) use ($balances, $notApplicable, &$knownCurrent, &$unknownCurrent): array {
                 $balance = $balances->get($facility['inventory_warehouse_id']);
+                $excluded = $notApplicable->has((int) $facility['id']);
                 $current = $balance && (bool) $balance->is_active && $balance->current_stock !== null
                     ? (int) $balance->current_stock : null;
-                if ($current === null) {
+                if ($excluded) {
+                    // A provider-absent location is not a zero-stock ledger entry.
+                } elseif ($current === null) {
                     $unknownCurrent++;
                 } else {
                     $knownCurrent += $current;
@@ -43,6 +50,7 @@ final class FacilityBalanceReader
                 return $facility + ['balance_id' => $balance?->balance_id === null ? null : (int) $balance->balance_id,
                     'current_stock' => $current, 'physical' => null, 'reserved' => null,
                     'available' => $current, 'counted' => $current !== null,
+                    'not_applicable' => $excluded,
                     'balance_version' => $balance?->version === null ? null : (int) $balance->version];
             }, $result['facilities']);
             $result['variant_id'] = $variantId;

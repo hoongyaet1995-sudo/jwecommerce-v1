@@ -265,6 +265,11 @@ final class MarketplaceBaselineFirstCount
             DB::table('inventory_balances')->where('id', $balanceId)->update([
                 'counted_at' => CarbonImmutable::parse($observedAt)->utc()->format('Y-m-d H:i:s'),
             ]);
+            if ($facilityId !== null) {
+                DB::table('marketplace_variant_facility_scope')
+                    ->where('product_variant_id', $variantId)
+                    ->where('marketplace_store_facility_id', $facilityId)->delete();
+            }
             if ($target['store']) {
                 DB::table('inventory_store_accounts')->where('marketplace_store_id', $target['store']->id)
                     ->update(['management_status' => 'managed', 'updated_at' => now()]);

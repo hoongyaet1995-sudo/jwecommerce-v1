@@ -3,6 +3,7 @@
 namespace App\Services\Marketplace;
 
 use App\Exceptions\StoreInventoryAuthorizationExpired;
+use App\Exceptions\MarketplaceStockLocationNotApplicable;
 use App\Exceptions\StoreInventoryResultUncertain;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -147,6 +148,10 @@ final class LazadaClient
             $rows = array_values(array_filter($warehouses, fn ($row): bool => is_array($row)
                 && ($warehouseCode === null || (string) ($row['warehouseCode'] ?? $row['WarehouseCode'] ?? '') === $warehouseCode)));
             if (count($rows) !== 1) {
+                if ($rows === [] && $warehouseCode !== null && count($warehouses) === 1
+                    && (string) ($warehouses[0]['warehouseCode'] ?? $warehouses[0]['WarehouseCode'] ?? '') === 'dropshipping') {
+                    throw new MarketplaceStockLocationNotApplicable('This SKU is not stocked at the selected Lazada warehouse.');
+                }
                 throw new RuntimeException('Lazada warehouse stock identity is ambiguous or absent.');
             }
             $code = (string) ($rows[0]['warehouseCode'] ?? $rows[0]['WarehouseCode'] ?? '');
