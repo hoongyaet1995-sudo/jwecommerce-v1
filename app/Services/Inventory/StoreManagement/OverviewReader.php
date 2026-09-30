@@ -171,7 +171,7 @@ final class OverviewReader
         }
 
         return $query->orderBy('s.id')->get(['s.id', 's.platform', 's.shop_name', 's.region', 's.status', 's.account_mode',
-            'a.management_status', 'a.version as management_version'])->map(fn (object $store): array => [
+            'a.management_status', 'a.shared_pool_takeover_enabled', 'a.version as management_version'])->map(fn (object $store): array => [
                 'id' => (int) $store->id,
                 'platform' => $store->platform,
                 'account_mode' => $store->account_mode,
@@ -179,6 +179,7 @@ final class OverviewReader
                 'region' => $store->region,
                 'connection_status' => $store->status,
                 'management_status' => $store->management_status ?? 'setup_required',
+                'shared_pool_takeover_enabled' => (bool) ($store->shared_pool_takeover_enabled ?? false),
                 'inventory_membership' => 'enrolled',
                 'sync_state' => match ($store->management_status ?? 'setup_required') {
                     'managed' => 'active',

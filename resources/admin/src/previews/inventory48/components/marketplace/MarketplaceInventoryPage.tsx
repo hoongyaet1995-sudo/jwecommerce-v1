@@ -953,12 +953,8 @@ export const MarketplaceInventoryPage: React.FC = () => {
 
   // Handler: Toggle Store Takeover Management
   const handleToggleStoreManagement = (storeId: string, enable: boolean) => {
-    void toggleStoreManagement(storeId,enable,enable?'Reviewed inventory takeover':'Inventory management paused')
-      .then((result:any)=>{
-        if(result?.ready===false)throw new Error(result?.reason||'Store is not ready for inventory takeover.');
-        return reloadInventory();
-      })
-      .catch((error:any)=>addToast({type:'error',title:'Store management unchanged',message:error?.message||'Review store readiness.'}));
+    void toggleStoreManagement(storeId,enable,'Shared Pool takeover preference')
+      .catch((error:any)=>addToast({type:'error',title:'Store management unchanged',message:error?.message||'Could not update Shared Pool takeover.'}));
   };
 
   // Handler: Batch broadcast to all channels

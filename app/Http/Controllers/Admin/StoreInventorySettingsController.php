@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Services\Inventory\StoreManagement\ModeMutation;
 use App\Services\Inventory\StoreManagement\ReadinessReader;
+use App\Services\Inventory\StoreManagement\SharedPoolTakeover;
 use App\Services\Inventory\StoreManagement\StoreSyncReadinessReader;
 use App\Services\Inventory\StoreManagement\StoreSyncStateMutation;
 use Illuminate\Http\JsonResponse;
@@ -40,14 +41,14 @@ final class StoreInventorySettingsController extends Controller
         return response()->json($mutation->resume($store, $request->user(), $data['reason'], $data['review_token']));
     }
 
-    public function takeover(Request $request, int $store): JsonResponse
+    public function takeover(Request $request, int $store, SharedPoolTakeover $takeover): JsonResponse
     {
-        return response()->json(['message' => 'Inventory takeover is automatic. Use sync-readiness, pause-sync, or resume-sync.'], 410);
+        return response()->json($takeover->set($store, true, $request->user()));
     }
 
-    public function pause(Request $request, int $store): JsonResponse
+    public function pause(Request $request, int $store, SharedPoolTakeover $takeover): JsonResponse
     {
-        return response()->json(['message' => 'Inventory takeover is automatic. Use sync-readiness, pause-sync, or resume-sync.'], 410);
+        return response()->json($takeover->set($store, false, $request->user()));
     }
 
     public function mode(Request $request, ModeMutation $mutation): JsonResponse

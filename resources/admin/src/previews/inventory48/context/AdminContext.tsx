@@ -20,7 +20,7 @@ export function Inventory39Provider({children,onNavigate=()=>{}}:{children:React
     syncAll:async()=>{const r=await storeInventoryApi.syncAll();await reload();return r},retrySync:storeInventoryApi.retry,bulkCheckStock:storeInventoryApi.bulkCheckStock,
     getInventoryOperation:storeInventoryApi.operation,checkInventoryOperation:storeInventoryApi.checkOperation,waitForInventoryOperation:storeInventoryApi.waitForOperation,
     switchInventoryMode:async(mode:any,distribution:any,confirmReset=false)=>{const r=await storeInventoryApi.mode(mode==='shared'?'shared_pool':'independent_stores',overview.configuration_version,distribution||{},confirmReset);await reload();return r},
-    toggleStoreManagement:async(id:string,enable:boolean,reason:string)=>{let r;if(enable){const review=await storeInventoryApi.syncReadiness(id);if(!review.ready)return review;r=await storeInventoryApi.resumeSync(id,reason,review.review_token)}else r=await storeInventoryApi.pauseSync(id,reason);await reload();return r},
+    toggleStoreManagement:async(id:string,enable:boolean,_reason:string)=>{const r=await storeInventoryApi.sharedPoolTakeover(id,enable);await reload();return r},
     broadcastStockToChannels:()=>{},
   }),[overview,history,onNavigate]);
   return <PreviewContext.Provider value={value}><div role="status" className="px-4 pt-3 text-xs text-amber-600">{notice}</div>{children}</PreviewContext.Provider>;

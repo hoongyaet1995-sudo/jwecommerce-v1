@@ -442,10 +442,10 @@ class StoreInventorySyncTest extends TestCase
         $fixture = new StoreInventoryFixture;
         $sku = $fixture->sku();
         $balance = app(AccountResolver::class)->balance($sku['variant']->id, 'website');
-        DB::table('inventory_balances')->where('id', $balance['id'])->update(['physical_stock' => 7, 'reserved_stock' => 1, 'safety_stock' => 0, 'counted_at' => now()]);
+        DB::table('inventory_balances')->where('id', $balance['id'])->update(['current_stock' => 6, 'physical_stock' => 7, 'reserved_stock' => 1, 'safety_stock' => 0, 'counted_at' => now()]);
         foreach (['lazada', 'shopee'] as $platform) {
             $store = $fixture->store($platform, strtoupper($platform));
-            DB::table('inventory_store_accounts')->insert(['account_key' => 'marketplace:'.$store->id, 'marketplace_store_id' => $store->id, 'management_status' => 'managed', 'version' => 1, 'created_at' => now(), 'updated_at' => now()]);
+            DB::table('inventory_store_accounts')->insert(['account_key' => 'marketplace:'.$store->id, 'marketplace_store_id' => $store->id, 'management_status' => 'managed', 'shared_pool_takeover_enabled' => true, 'version' => 1, 'created_at' => now(), 'updated_at' => now()]);
             $listing = DB::table('marketplace_listing_variants')->insertGetId(['store_id' => $store->id, 'external_product_id' => 'p'.$store->id, 'external_variant_id' => 'v'.$store->id, 'observed_data' => '{}', 'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
             DB::table('marketplace_variant_mappings')->insert(['listing_variant_id' => $listing, 'store_id' => $store->id, 'product_variant_id' => $sku['variant']->id, 'created_at' => now(), 'updated_at' => now()]);
         }
@@ -454,5 +454,35 @@ class StoreInventorySyncTest extends TestCase
         $this->assertCount(2, $stages);
         $this->assertSame([6, 6], array_column($stages, 'target_quantity'));
         $this->assertDatabaseCount('inventory_store_sync_tasks', 2);
+    }
+
+    public function test_shared_balance_skips_a_store_after_takeover_is_paused(): void
+    {
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool']);
+        $fixture = new StoreInventoryFixture;
+        $sku = $fixture->sku();
+        $balance = app(AccountResolver::class)->balance($sku['variant']->id, 'website');
+        DB::table('inventory_balances')->where('id', $balance['id'])->update(['current_stock' => 8, 'counted_at' => now()]);
+        $stores = [];
+        foreach (['lazada', 'shopee'] as $platform) {
+            $store = $fixture->store($platform, strtoupper($platform));
+            $stores[] = $store;
+            DB::table('inventory_store_accounts')->insert(['account_key' => 'marketplace:'.$store->id,
+                'marketplace_store_id' => $store->id, 'management_status' => 'managed',
+                'shared_pool_takeover_enabled' => $platform === 'lazada', 'version' => 1,
+                'created_at' => now(), 'updated_at' => now()]);
+            $listing = DB::table('marketplace_listing_variants')->insertGetId(['store_id' => $store->id,
+                'external_product_id' => 'p'.$store->id, 'external_variant_id' => 'v'.$store->id,
+                'observed_data' => '{}', 'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+            DB::table('marketplace_variant_mappings')->insert(['listing_variant_id' => $listing,
+                'store_id' => $store->id, 'product_variant_id' => $sku['variant']->id,
+                'created_at' => now(), 'updated_at' => now()]);
+        }
+
+        $stages = app(SyncOutbox::class)->enqueueMutation(null,
+            DB::table('inventory_balances')->find($balance['id']), 'order', 'paused-store-test');
+        $this->assertCount(1, $stages);
+        $this->assertSame((int) $stores[0]->id, $stages[0]['store_id']);
+        $this->assertDatabaseMissing('inventory_store_sync_tasks', ['marketplace_store_id' => $stores[1]->id]);
     }
 }

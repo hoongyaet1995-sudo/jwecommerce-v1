@@ -49,7 +49,10 @@ final class StoreSkuSyncReadiness
             }
 
             $account = DB::table('inventory_store_accounts')->where('marketplace_store_id', $storeId)->first();
-            if (($account?->management_status ?? null) === 'paused') {
+            $shared = DB::table('inventory_configuration')->where('id', 1)->value('operating_mode') === 'shared_pool';
+            if ($shared && ! ($account?->shared_pool_takeover_enabled ?? false)) {
+                $blockers[] = $this->blocker('sync_paused', 'Enable Shared Pool takeover for this store.');
+            } elseif (! $shared && ($account?->management_status ?? null) === 'paused') {
                 $blockers[] = $this->blocker('sync_paused', 'Resume inventory sync for this store.');
             }
 

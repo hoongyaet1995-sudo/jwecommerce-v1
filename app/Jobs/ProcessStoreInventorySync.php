@@ -44,6 +44,16 @@ final class ProcessStoreInventorySync implements ShouldQueue
                 return null;
             }
             $mode = DB::table('inventory_configuration')->where('id', 1)->value('operating_mode');
+            if ($mode === 'shared_pool' && ! DB::table('inventory_store_accounts')
+                ->where('marketplace_store_id', $task->marketplace_store_id)
+                ->where('shared_pool_takeover_enabled', true)->exists()) {
+                DB::table('inventory_store_sync_tasks')->where('id', $task->id)->update([
+                    'status' => 'superseded', 'provider_receipt' => json_encode(['code' => 'shared_pool_takeover_disabled']),
+                    'updated_at' => now(),
+                ]);
+
+                return null;
+            }
             $pool = $mode === 'shared_pool' ? DB::table('inventory_pools')->where('kind', 'shared')->lockForUpdate()->first()
                 : DB::table('inventory_pools')->where('marketplace_store_id', $task->marketplace_store_id)->lockForUpdate()->first();
             $balance = $pool ? DB::table('inventory_balances')->where('inventory_pool_id', $pool->id)

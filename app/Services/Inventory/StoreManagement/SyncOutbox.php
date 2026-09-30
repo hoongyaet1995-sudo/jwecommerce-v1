@@ -49,7 +49,7 @@ final class SyncOutbox
             return [$this->enqueue($operationId, $balance, $stage, $eventKey)];
         }
         $storeIds = DB::table('inventory_store_accounts as a')->join('marketplace_variant_mappings as m', 'm.store_id', '=', 'a.marketplace_store_id')
-            ->where('a.management_status', 'managed')->where('m.product_variant_id', $balance->product_variant_id)->distinct()->pluck('a.marketplace_store_id');
+            ->where('a.shared_pool_takeover_enabled', true)->where('m.product_variant_id', $balance->product_variant_id)->distinct()->pluck('a.marketplace_store_id');
         if ($storeIds->isEmpty()) {
             return [$this->enqueue($operationId, $balance, $stage, $eventKey)];
         }
@@ -113,8 +113,11 @@ final class SyncOutbox
         app(RebaselineFreeze::class)->assertOrdinaryPushAllowed();
         $pool = DB::table('inventory_pools')->where('id', $balance->inventory_pool_id)->first();
         $storeId = $overrideStoreId ?? ($pool?->marketplace_store_id === null ? null : (int) $pool->marketplace_store_id);
-        $managed = $storeId === null || DB::table('inventory_store_accounts')
-            ->where('marketplace_store_id', $storeId)->value('management_status') === 'managed';
+        $account = $storeId === null ? null : DB::table('inventory_store_accounts')
+            ->where('marketplace_store_id', $storeId)->first();
+        $managed = $storeId === null || ($pool?->kind === 'shared'
+            ? (bool) ($account?->shared_pool_takeover_enabled ?? false)
+            : $account?->management_status === 'managed');
         $id = (string) Str::uuid();
         $status = $storeId === null ? 'confirmed' : ($managed ? 'queued' : 'not_applicable');
         $target = config('inventory.current_stock_only')
