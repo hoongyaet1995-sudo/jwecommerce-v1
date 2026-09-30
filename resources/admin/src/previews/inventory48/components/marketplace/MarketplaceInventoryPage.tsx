@@ -1909,6 +1909,16 @@ export const MarketplaceInventoryPage: React.FC = () => {
         mode={currentMode}
         stores={stores}
         storeBalances={selectedDrawerItem ? storeBalances[selectedDrawerItem.masterSku] : undefined}
+        onSaveSharedFirstCount={async (item, quantity) => {
+          await storeInventoryApi.review('count', {
+            variant_id: item.variantId,
+            channel_key: 'website',
+            physical_count: quantity,
+            reason: 'Shared Pool First Count',
+          });
+          await reloadInventory();
+          addToast({ type: 'success', title: 'First Count saved', message: 'The shared JW ledger is now active for this SKU.' });
+        }}
         onSelectFirstCount={(item, storeId, warehouseId) => {
           setIsManageStockDrawerOpen(false);
           handleOpenFirstCount(item, storeId, warehouseId);

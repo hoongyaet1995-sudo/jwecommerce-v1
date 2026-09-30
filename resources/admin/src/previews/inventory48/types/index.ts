@@ -1051,6 +1051,8 @@ export interface MarketplaceInventoryItem {
   productId?: number;
   mappedStoreIds?: string[]; // Store-specific SKU mappings returned by the inventory overview
   masterSku: string;
+  variantId?: number;
+  currentStock?: number | null;
   barcode: string;
   productName: string;
   variantName: string;

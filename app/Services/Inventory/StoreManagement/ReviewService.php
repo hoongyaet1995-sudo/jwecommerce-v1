@@ -59,6 +59,7 @@ final class ReviewService
             } else {
                 $this->rejectFacilityBalances($locked->all());
             }
+            $this->assertSharedFirstCount($configuration, $kind, $locked->all());
             if ($kind === 'transfer') {
                 $source = $locked[(int) $input['source_balance_id']];
                 $destination = $locked[(int) $input['destination_balance_id']];
@@ -148,6 +149,7 @@ final class ReviewService
             } else {
                 $this->rejectFacilityBalances($locked->all());
             }
+            $this->assertSharedFirstCount($configuration, $review->kind, $locked->all());
             foreach ($locked as $balance) {
                 if ((int) $balance->version !== (int) ($versions[(string) $balance->id] ?? -1)) {
                     $this->conflict('balance_changed', 'Inventory changed after review.', 'Review current stock again.');
@@ -249,6 +251,20 @@ final class ReviewService
                         'Verify this store has no platform warehouse before using store-level stock actions.']);
                 }
             }
+        }
+    }
+
+    private function assertSharedFirstCount(object $configuration, string $kind, array $balances): void
+    {
+        if ($kind !== 'count' || $configuration->operating_mode !== 'shared_pool'
+            || ! config('inventory.current_stock_only')) {
+            return;
+        }
+        $balance = count($balances) === 1 ? reset($balances) : null;
+        $pool = $balance ? DB::table('inventory_pools')->where('id', $balance->inventory_pool_id)->first() : null;
+        if (! $balance || ! $pool || $pool->kind !== 'shared' || $balance->current_stock !== null) {
+            throw ValidationException::withMessages(['physical_count' =>
+                'This SKU already has a Shared Pool First Count. Use Stock Audit Adjustment for a correction.']);
         }
     }
 

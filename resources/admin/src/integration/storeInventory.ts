@@ -22,6 +22,7 @@ export async function waitForInventoryOperation(id:string,options:{maxAttempts?:
 }
 export const storeInventoryApi={
   overview:()=>json('/admin/api/inventory/store-management/overview'),
+  sharedLedger:(variantId:number)=>json(`/admin/api/inventory/store-management/shared-skus/${variantId}/ledger`),
   facilities:(storeId:string)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/facilities`),
   facilityBalances:(storeId:string,variantId:number)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/facilities`),
   testFacilityAcceptance:(storeId:string,variantId:number,facilityId:number)=>json(`/admin/api/inventory/store-management/stores/${encodeURIComponent(storeId)}/skus/${variantId}/test-facility-acceptance?facility=${facilityId}`),

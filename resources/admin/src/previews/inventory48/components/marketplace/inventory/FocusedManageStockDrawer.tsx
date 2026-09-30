@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight, Boxes, ChevronRight, ClipboardCheck, History, Re
 import { MarketplaceInventoryItem } from '../../../types';
 import { storeInventoryApi } from '../../../../../integration/storeInventory';
 import { MarketplaceLogo } from '../MarketplaceLogo';
-import { ManageStockDrawer } from './ManageStockDrawer';
+import { SharedPoolManageStockDrawer } from './SharedPoolManageStockDrawer';
 import { StockTakeRecoveryFlow } from './StockTakeRecoveryFlow';
 import { warehouseDisplayCode } from './warehouseDisplay';
 
@@ -31,6 +31,7 @@ interface Props {
   onSelectTransfer?: (item: MarketplaceInventoryItem, storeId?: string, warehouseId?: string) => void;
   onViewLedger?: (item: MarketplaceInventoryItem, storeId?: string, warehouseId?: string) => void;
   onNavigateToMapping?: () => void;
+  onSaveSharedFirstCount?: (item: MarketplaceInventoryItem, quantity: number) => Promise<void>;
 }
 
 const number = (value: number | null | undefined, counted = true) => counted && value !== null && value !== undefined ? value.toLocaleString() : 'Not counted';
@@ -309,5 +310,7 @@ const FocusedIndependentDrawer: React.FC<Props> = ({ isOpen, onClose, item, stor
 };
 
 export const FocusedManageStockDrawer: React.FC<Props> = props => props.mode === 'shared'
-  ? <ManageStockDrawer {...props} />
+  ? <SharedPoolManageStockDrawer isOpen={props.isOpen} onClose={props.onClose} item={props.item}
+      initialActionsOpen={props.initialActionsOpen}
+      onFirstCount={props.onSaveSharedFirstCount ?? (async () => { throw new Error('First Count is unavailable.'); })} />
   : <FocusedIndependentDrawer {...props} />;

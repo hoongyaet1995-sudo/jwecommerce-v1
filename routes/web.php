@@ -331,6 +331,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/inventory/store-management/stock-retrieval-runs/{run}/resume', [\App\Http\Controllers\Admin\BulkMarketplaceStockRetrievalController::class, 'resume'])->whereUuid('run')->middleware('throttle:10,1');
     Route::post('/api/inventory/store-management/batch-first-counts/{review}/confirm', [\App\Http\Controllers\Admin\BatchFirstCountController::class, 'confirm'])->whereUuid('review');
     Route::get('/api/inventory/store-management/overview', [\App\Http\Controllers\Admin\StoreInventoryReadController::class, 'overview']);
+    Route::get('/api/inventory/store-management/shared-skus/{variant}/ledger', [\App\Http\Controllers\Admin\SharedPoolLedgerController::class, 'show'])->whereNumber('variant');
     Route::get('/api/inventory/store-management/rebaseline/readiness', [\App\Http\Controllers\Admin\InventoryRebaselineController::class, 'readiness']);
     Route::get('/inventory/thumbnails/{variant}', \App\Http\Controllers\Admin\InventoryThumbnailController::class)
         ->whereNumber('variant')->name('admin.inventory.thumbnail');

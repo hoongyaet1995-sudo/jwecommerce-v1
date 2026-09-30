@@ -14,11 +14,11 @@ Clicking either action must not read or write provider stock, enqueue a push, al
 
 When a later JW Current Stock mutation generates provider sync intents, the store id is checked against this flag. Only mapped, connected, takeover-enabled stores may be considered for marketplace push. The worker checks the flag again immediately before publishing so a paused store does not receive a queued future write. Provider warehouse selection, API batching, delivery confirmation, retries, and exact stock-update triggers belong to the later port-specific phases; this flag alone does not claim any of them work.
 
-## Future phases, deliberately excluded here
+## Manage Stock phase and remaining phases
 
 | Phase | Boundary for its own chat or agent |
 | --- | --- |
-| Manage Stock | Redesign Shared Pool backend against the single SKU Current Stock ledger; retain the Independent visual patterns where feasible. |
+| Manage Stock | The approved compact modal uses one JW Current Stock balance per SKU, a guarded First Count, and a read-only JW movement ledger. Actual Intake and Audit Adjustment are visible as later-phase placeholders; Stock Transfer is unavailable. Independent Mode retains its existing modal. |
 | Actual Intake | Define Shared Pool receiving and First Count semantics separately; no store-specific ledger mutation. |
 | Audit Count Adjustment | Define one Shared Pool correction and later per-store push intents, without reusing Independent per-location accounting. |
 | Stock Transfer | Do not expose this operation in Shared Stock Pool mode. Preserve Independent transfers. |
