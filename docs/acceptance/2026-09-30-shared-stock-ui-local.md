@@ -44,3 +44,17 @@ The user explicitly requested GitHub synchronization and Hostinger deployment of
 Preflight matched every accepted source/document/manifest/screenshot SHA-256 in `tmp/shared-stock-ui-final-evidence.json`. Local main, GitHub main and Hostinger HEAD were all `df409dacc088cdc169d5769d5ac478e952feb2c1`. No local Git/SSH/SCP release process or index lock was observed; Hostinger had no tracked drift. Its pre-existing environment backups, RELEASE_COMMIT and old untracked assets are preserved. Production origin remained the approved SSH deploy-key remote. No database migration, reset or credential change is required.
 
 Release checks reuse the unchanged accepted full suite (742 passed / the same four baseline failures), isolated PHP 9/99 and intercepted localhost browser evidence, with fresh focused UI, build and TypeScript preflight results in `tmp/shared-stock-ui-release-*.log`. The actual inventory route is confirmed by `routes/web.php:507`: `/admin/marketplace/inventory`, requiring admin authentication. HTTPS route/asset and exact-SHA results are recorded at completion below; no authenticated live-stock or real-provider-write acceptance is implied.
+
+## Completed Shared Stock UI application release: 2026-10-01 02:18 UTC
+
+Application commit: `7be2a57e797ad8904cbaeac3b1cd71d0fd60168d`. Explicitly scoped commit included the accepted UI/source tests, contract/acceptance records, five browser screenshots and admin build artifacts; samples, preview build, unrelated Intake/Audit screenshot and tmp files were excluded. GitHub main push succeeded. Hostinger `/home/u762348670/apps/jwecommerce` fast-forward and `/usr/bin/php artisan optimize:clear` succeeded. Local, GitHub and Hostinger matched this SHA; server tracked worktree was clean. No migration/reset/credential change or real inventory/provider write was performed.
+
+Fresh release preflight: 13 focused UI tests passed; build passed and its output hashes matched the previously accepted artifacts. TypeScript remained 168 diagnostics with zero differences from the accepted baseline. The unchanged full Admin result was 742 passed / four reproduced baseline failures; isolated PHP 9 tests / 99 assertions and intercepted existing-App browser acceptance remained tied to unchanged source hashes. These baseline failures/type diagnostics are disclosed exceptions, not successful checks.
+
+HTTPS verification at 02:17:55 UTC: [home](https://ecom.jwaistudio.online/) and [admin login](https://ecom.jwaistudio.online/admin/login) returned 200. The actual route [inventory](https://ecom.jwaistudio.online/admin/marketplace/inventory) returned 302 to the admin login, as required without an authenticated session. Main and inventory JS plus inventory CSS returned 200 and matched local hashes. SSH checks independently matched server file hashes:
+
+- `assets/main-BDXP_sOa.js`: `548a53f8fdfcbbafe0726a3ffb3167cbc6dae367a95ff43b59775dc2a9b1dda5`.
+- `assets/Inventory48Runtime-DPmWm6Vh.js`: `69e572c902b4ed81ce0db16b8f856016a004baaee52c2c55c60ab83e5156a92d`.
+- Inventory CSS: `c2bd3a228063f7ce9a7f5b9511e42721964ef4ed4c4619a5ed09fea9c3b630a7`.
+
+Evidence: `tmp/shared-stock-ui-release-https.json` / release smoke script and logs. Authenticated live inventory rendering and real-provider stock writes were not tested. The completion record is synchronized in a documentation-only follow-up commit with the identical application/bundle content; the final HEAD is reported in the release handoff receipt, avoiding a self-referential commit SHA in this file.

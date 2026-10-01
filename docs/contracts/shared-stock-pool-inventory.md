@@ -42,9 +42,9 @@ Each chat or agent starts by reading `AGENTS.md` and this contract, then works o
 
 For handoff, report the branch/SHA, files changed, migrations, tests, browser evidence, unfinished provider assumptions, and any contract decision that needs user approval. A subsequent chat should use this file as the stable source of scope rather than relying on a previous chat's remaining context window.
 
-## Shared Stock inventory overview UI: approved release phase
+## Shared Stock inventory overview UI: released phase
 
-The user selected the first visual direction and approved implantation in the existing localhost Admin inventory page. On 2026-10-01 the user explicitly approved synchronizing this accepted phase to GitHub main and deploying it to Hostinger. The development baseline is `df409dacc088cdc169d5769d5ac478e952feb2c1`.
+The user selected the first visual direction and approved implantation in the existing localhost Admin inventory page. On 2026-10-01 the user explicitly approved synchronizing this accepted phase to GitHub main and deploying it to Hostinger. The development baseline is `df409dacc088cdc169d5769d5ac478e952feb2c1`. The accepted application was released as `7be2a57e797ad8904cbaeac3b1cd71d0fd60168d`; verified SHA/HTTPS/bundle results are in the phase acceptance record.
 
 Show one Shared Stock total per SKU. Unknown stock displays `Awaiting first count`, with `First Count` opening the existing unified Manage Stock flow. A counted SKU, including zero, uses `Manage Stock`. Mapped marketplace cards are read-only; clicking the store name must not open the old stock operation modal. Warehouse details support hover, keyboard focus and a small expansion control. Each warehouse shows its own saved readback, takeover/sync state and the same shared target; never sum warehouse observations or substitute an Independent ledger/store-wide snapshot. Missing or mismatched receipts remain `Unknown`. Distinguish a verified store-level topology from undiscovered/failed warehouse discovery. Preserve real error information. JW Storefront displays the local `Shared ledger` / `JW Ledger` semantics.
 
