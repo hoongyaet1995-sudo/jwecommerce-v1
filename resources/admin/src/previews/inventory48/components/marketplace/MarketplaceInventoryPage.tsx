@@ -62,6 +62,9 @@ import { StockSyncDetailsModal } from './inventory/StockSyncDetailsModal';
 import { StoreSyncItemState } from './inventory/stockSyncTypes';
 import { mappedStoreSummaries } from './inventory/mappedStoreSummary';
 import {storeInventoryApi} from '../../../../integration/storeInventory';
+import {BatchSyncDialog} from './inventory/batchSync/BatchSyncDialog';
+import {previewReview} from './inventory/batchSync/previewReview';
+import type {Review} from './inventory/batchSync/types';
 
 function adaptFacilitySync(detail:any, previous:StoreSyncItemState):StoreSyncItemState {
   return {...previous,
@@ -132,6 +135,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
   const [pageSize, setPageSize] = useState(25);
   const [jumpPageInput, setJumpPageInput] = useState('');
   const [selectedSkus, setSelectedSkus] = useState<string[]>([]);
+  const [batchPreview, setBatchPreview] = useState<Review|null>(null);
   const [collapsedProducts, setCollapsedProducts] = useState<string[]>([]);
   const [stockRetrievalRun, setStockRetrievalRun] = useState<StockRetrievalRun | null>(null);
   const [showStockRetrieval, setShowStockRetrieval] = useState(false);
@@ -417,24 +421,17 @@ export const MarketplaceInventoryPage: React.FC = () => {
     );
   };
 
-  const handleBatchSyncSelected = async () => {
+  const handleBatchSyncSelected = () => {
     if (selectedSkus.length === 0) return;
-    setIsBroadcastingAll(true);
-    addToast({
-      type: 'info',
-      title: 'Batch Syncing Started',
-      message: `Broadcasting stock updates for ${selectedSkus.length} selected SKU(s) to connected stores...`
-    });
-
-    setTimeout(() => {
-      setIsBroadcastingAll(false);
-      addToast({
-        type: 'success',
-        title: 'Batch Sync Completed',
-        message: `Successfully synchronized ${selectedSkus.length} SKU(s) across all connected marketplace channels.`
-      });
-      setSelectedSkus([]);
-    }, 1200);
+    const selected=safeInventory.filter(item=>selectedSkus.includes(item.masterSku));
+    // Existing selection is SKU-based. Refuse ambiguous/missing identities rather
+    // than displaying a different variant under an operator's selection.
+    if(selected.length!==selectedSkus.length||selected.some(item=>!Number.isSafeInteger((item as any).variantId)||(item as any).variantId<=0)
+      ||new Set(selected.map(item=>(item as any).variantId)).size!==selected.length){
+      addToast({type:'error',title:'Cannot open batch preview',message:'Selection identity is not verified. Refresh Inventory and select unique SKUs.'});
+      return;
+    }
+    setBatchPreview(previewReview(selected,stores,currentMode));
   };
 
   const handleBulkRetrieveStock = async () => {
@@ -1954,6 +1951,8 @@ export const MarketplaceInventoryPage: React.FC = () => {
         }}
       />
 
+      <BatchSyncDialog previewOnly state={batchPreview?{kind:'review',generation:0,review:batchPreview,frozenVariantIds:batchPreview.variantIds,reviewRequestKey:''}:{kind:'idle',generation:0}}
+        onClose={()=>setBatchPreview(null)} onStart={()=>{}} onReviewAgain={()=>{}} onReviewFailed={()=>{}} onCheck={()=>{}} />
     </div>
   );
 };

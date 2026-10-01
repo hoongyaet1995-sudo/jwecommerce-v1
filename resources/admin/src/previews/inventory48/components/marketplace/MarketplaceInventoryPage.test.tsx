@@ -31,6 +31,8 @@ vi.mock('./inventory/FocusedManageStockDrawer', () => ({
 }));
 
 import { MarketplaceInventoryPage } from './MarketplaceInventoryPage';
+import {previewReview} from './inventory/batchSync/previewReview';
+import {storeInventoryApi} from '../../../../integration/storeInventory';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -39,6 +41,35 @@ beforeEach(() => {
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
 });
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); });
+
+it('opens the actual selected inventory preview, preserves per-location quantities and closes/reopens without batch requests', async () => {
+  const balances=[{storeId:11,facilityId:51,providerFacilityId:'A',poolKind:'facility',counted:true,quantity:0},{storeId:11,facilityId:52,providerFacilityId:'B',poolKind:'facility',counted:true,quantity:23}];
+  context.marketplaceInventory=[{...inventoryItem,batchPreviewBalances:balances}];
+  try {
+    const shared=previewReview([{...inventoryItem,batchPreviewBalances:[{poolKind:'shared',counted:true,quantity:37},...balances]}],context.inventoryStores,'shared');
+    expect(shared.targets.every(row=>row.quantity===37&&row.disposition==='skipped')).toBe(true);
+    expect(shared.counts.validDestinations).toBe(0);
+    expect(previewReview([{...inventoryItem,batchPreviewBalances:[]}],context.inventoryStores,'shared').targets[0].quantity).toBeNull();
+    await act(async()=>root.render(<MarketplaceInventoryPage/>));
+    await act(async()=>host.querySelector<HTMLInputElement>('[aria-label="Select Baju Kurung Joshua and all its SKUs"]')!.click());
+    const launch=()=>[...host.querySelectorAll<HTMLButtonElement>('button')].find(button=>button.textContent?.includes('Batch Sync Selected'))!;
+    await act(async()=>launch().click());
+    const dialog=()=>host.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(dialog().textContent).toContain('UI preview — batch sync is not connected');
+    expect(dialog().querySelector('[data-target-quantity="0"]')).not.toBeNull();
+    expect(dialog().querySelector('[data-target-quantity="23"]')).not.toBeNull();
+    expect(dialog().textContent).toContain('0Eligible SKUs');
+    const start=[...dialog().querySelectorAll<HTMLButtonElement>('button')].find(button=>button.textContent?.includes('Start sync'))!;
+    expect(start.disabled).toBe(true);
+    await act(async()=>start.click());
+    await act(async()=>dialog().querySelector<HTMLButtonElement>('[aria-label="Close"]')!.click());
+    expect(host.querySelector('[role="dialog"]')).toBeNull();
+    await act(async()=>launch().click());
+    expect(dialog().textContent).toContain('SKU-7');
+    expect(storeInventoryApi.facilities).not.toHaveBeenCalled();
+    expect(context.addToast).not.toHaveBeenCalled();
+  } finally {context.marketplaceInventory=[inventoryItem];}
+});
 
 it('shows the mapped store total and opens its existing Manage Stock flow without showing unmapped stores', async () => {
   await act(async () => root.render(<MarketplaceInventoryPage />));
