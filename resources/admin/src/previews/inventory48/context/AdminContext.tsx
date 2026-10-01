@@ -7,14 +7,9 @@ export const useAdmin=()=>useContext(PreviewContext);
 
 export function Inventory39Provider({children,onNavigate=()=>{}}:{children:React.ReactNode;onNavigate?:(section:any)=>void}){
   const [overview,setOverview]=useState<any>(null);const [history,setHistory]=useState<any[]>([]);const [notice,setNotice]=useState('Loading inventory…');
-  const request=useRef(0);const polling=useRef(false);
+  const request=useRef(0);
   const reload=useCallback(async()=>{const version=++request.current;try{const [o,h]=await Promise.all([storeInventoryApi.overview(),storeInventoryApi.history()]);if(version!==request.current)return;setOverview(o);setHistory(h.data||[]);setNotice('');}catch(e:any){if(version===request.current)setNotice(e.message)}},[]);
   useEffect(()=>{void reload();return()=>{request.current++}},[reload]);
-  const confirming=Object.values(overview?.shared_store_confirmations || {}).some((stores:any)=>
-    Object.values(stores).some((tasks:any)=>tasks.some((task:any)=>task.status==='Confirming stock')));
-  useEffect(()=>{if(!confirming)return;const timer=window.setInterval(()=>{
-    if(polling.current)return;polling.current=true;void reload().finally(()=>{polling.current=false});
-  },5000);return()=>window.clearInterval(timer)},[confirming,reload]);
   const value=useMemo(()=>({currentSection:'marketplace-inventory',setCurrentSection:onNavigate,marketplaceOrders:[],connections:[],
     marketplaceInventory:overview?adaptInventory(overview):[],inventoryModeCatalog:overview?.mode_catalog||{items:[],summary:{total:0,ready:0,blocked:0,excluded:0}},inventoryMode:overview?.mode||'shared',inventoryConfigurationVersion:overview?.configuration_version||0,
     inventoryStores:overview?adaptStores(overview):[],inventoryStoreBalances:overview?adaptBalances(overview):{},inventoryActivityHistory:history.map(adaptInventoryHistoryEntry),
