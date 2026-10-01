@@ -3,6 +3,7 @@ import { useAdmin } from '../../context/AdminContext';
 import { MarketplaceInventoryItem } from '../../types';
 import { SubNavHeader } from '../common/SubNavHeader';
 import { MarketplaceLogo } from './MarketplaceLogo';
+import { SharedPoolStoreCard } from './SharedPoolStoreCard';
 import {
   Boxes,
   Layers,
@@ -1364,7 +1365,8 @@ export const MarketplaceInventoryPage: React.FC = () => {
                   <span className="w-11 h-11 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 overflow-hidden flex items-center justify-center shrink-0">
                     {group.imageUrl ? <img src={group.imageUrl} alt="" className="w-full h-full object-cover" /> : <Boxes className="w-5 h-5 text-neutral-400" />}
                   </span>
-                  <strong className="text-sm text-neutral-900 dark:text-white flex-1">{group.name}</strong>
+                  <div className="flex flex-1 items-center gap-3"><strong className="text-sm text-neutral-900 dark:text-white">{group.name}</strong>
+                    {currentMode === 'shared' && <span className="rounded-md border border-purple-700/40 bg-purple-950/30 px-2 py-1 text-[10px] font-semibold text-purple-400">Shared Stock</span>}</div>
                   <span className="font-semibold text-neutral-800 dark:text-neutral-100 whitespace-nowrap text-xs">{group.items.length} SKU{group.items.length === 1 ? '' : 's'}</span>
                   <button type="button" aria-label={`${collapsedProducts.includes(group.key) ? 'Expand' : 'Collapse'} ${group.name} SKUs`}
                     aria-expanded={!collapsedProducts.includes(group.key)}
@@ -1380,10 +1382,10 @@ export const MarketplaceInventoryPage: React.FC = () => {
                       <tr>
                         <th className="py-3.5 px-3.5 w-10" aria-hidden="true" />
                         <th className="py-3.5 px-4 min-w-[220px]">Product / Master SKU</th>
-                        <th className="py-3.5 px-4 min-w-[130px] whitespace-nowrap">{singleCurrentStock ? 'Current Stock' : currentMode === 'shared' ? 'Total Physical' : 'Physical Allocation'}</th>
-                        {!singleCurrentStock && <th className="py-3.5 px-4 min-w-[120px] whitespace-nowrap">Reserved (Locked)</th>}
-                        {!singleCurrentStock && <th className="py-3.5 px-4 min-w-[130px] whitespace-nowrap">Available to Sell (ATP)</th>}
-                        <th className="py-3.5 px-4 min-w-[240px]">{currentMode === 'independent' ? 'Mapped Stores' : 'Connected Stores & Sync States'}</th>
+                        <th className="py-3.5 px-4 min-w-[130px] whitespace-nowrap">{currentMode === 'shared' ? 'Shared Stock' : singleCurrentStock ? 'Current Stock' : 'Physical Allocation'}</th>
+                        {!singleCurrentStock && currentMode === 'independent' && <th className="py-3.5 px-4 min-w-[120px] whitespace-nowrap">Reserved (Locked)</th>}
+                        {!singleCurrentStock && currentMode === 'independent' && <th className="py-3.5 px-4 min-w-[130px] whitespace-nowrap">Available to Sell (ATP)</th>}
+                        <th className="py-3.5 px-4 min-w-[240px]">{currentMode === 'independent' ? 'Mapped Stores' : 'Connected Stores & Sync'}</th>
                         <th className="py-3.5 px-4 text-center w-36 min-w-[144px] sticky right-0 z-20 bg-neutral-100 dark:bg-neutral-800 shadow-[-4px_0_12px_rgba(0,0,0,0.15)] dark:shadow-[-6px_0_16px_rgba(0,0,0,0.6)] border-l border-neutral-200 dark:border-neutral-700/80 text-neutral-700 dark:text-neutral-300">Actions</th>
                       </tr>
                     </thead>
@@ -1391,7 +1393,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                       {group.items.map(item => {
                       const isSelected = selectedSkus.includes(item.masterSku);
                     const isUncounted = item.physicalStockStatus === 'unknown' || item.totalPhysicalStock === null;
-                    const physicalStock = item.totalPhysicalStock ?? 0;
+                    const physicalStock = currentMode === 'shared' ? ((item as any).currentStock ?? item.totalPhysicalStock) : item.totalPhysicalStock ?? 0;
                     const reservedStock = item.reservedStock ?? 0;
                     const availableStock = item.availableStock ?? 0;
 
@@ -1440,7 +1442,12 @@ export const MarketplaceInventoryPage: React.FC = () => {
 
                         {/* 2. Physical Stock */}
                         <td className="py-3.5 px-4 whitespace-nowrap min-w-[130px]">
-                          {isUncounted ? (
+                          {currentMode === 'shared' ? <div className="space-y-2">
+                            <div className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2.5 font-semibold ${isUncounted ? 'border-amber-800/50 bg-amber-950/20 text-amber-500' : 'border-emerald-800/50 bg-emerald-950/20 text-emerald-400'}`}>
+                              <Boxes className="w-4 h-4" /><span>{isUncounted ? 'Awaiting first count' : `${physicalStock} units`}</span>
+                            </div>
+                            <p className="text-[10px] text-neutral-500">{isUncounted ? 'Shared stock across stores' : 'Same stock across stores'}</p>
+                          </div> : isUncounted ? (
                             <div className="space-y-1">
                               <span className="inline-block text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800/40">
                                 Not Counted
@@ -1461,7 +1468,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                         </td>
 
                         {/* 3. Reserved Stock */}
-                        {!singleCurrentStock && <td className="py-3.5 px-4 whitespace-nowrap min-w-[120px]">
+                        {!singleCurrentStock && currentMode === 'independent' && <td className="py-3.5 px-4 whitespace-nowrap min-w-[120px]">
                           <div className="flex items-center gap-1.5">
                             <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">
                               {reservedStock}
@@ -1472,7 +1479,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                         </td>}
 
                         {/* 4. Available to Sell (ATP) */}
-                        {!singleCurrentStock && <td className="py-3.5 px-4 whitespace-nowrap min-w-[130px]">
+                        {!singleCurrentStock && currentMode === 'independent' && <td className="py-3.5 px-4 whitespace-nowrap min-w-[130px]">
                           {isUncounted ? (
                             <div className="font-mono text-xs text-neutral-400 italic">
                               0 (Locked until counted)
@@ -1483,14 +1490,14 @@ export const MarketplaceInventoryPage: React.FC = () => {
                                 {availableStock} <span className="text-xs font-normal text-neutral-400">ATP</span>
                               </div>
                               <div className="text-[10px] text-neutral-400">
-                                {currentMode === 'shared' ? 'Shared across all channels' : 'Total sellable'}
+                                Total sellable
                               </div>
                             </div>
                           )}
                         </td>}
 
                         {/* 5. Connected Stores & Sync States */}
-                        <td className="py-3.5 px-4 min-w-[240px]">
+                        <td data-testid="connected-stores" className="py-3.5 px-4 min-w-[300px]">
                           {currentMode === 'independent' ? (
                             <div className="space-y-1.5">
                               {mappedSummaries.length === 0 && <span className="text-[11px] text-neutral-500">No mapped stores for this SKU</span>}
@@ -1525,110 +1532,8 @@ export const MarketplaceInventoryPage: React.FC = () => {
                           ) : (
                           <div className="space-y-1.5">
                             {(stores || []).filter(s => !s.isComingSoon && (s.platform === 'webstore' || item.mappedStoreIds?.includes(String(s.id)))).map(store => {
-                              const syncState = getStoreSyncItemState(item, store);
-                              const channelStock = syncState.marketplaceReportedStock ?? store.platformStockSnapshot ?? null;
-
-                              // Render status badge based on operational sync status
-                              let badgeElement = null;
-                              switch (syncState.status) {
-                                case 'synced':
-                                case 'jw_internal':
-                                  badgeElement = (
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-1">
-                                      <CheckCircle2 className="w-2.5 h-2.5 shrink-0" />
-                                      <span>{syncState.status === 'jw_internal' ? 'JW Ledger' : 'Synced'}</span>
-                                    </span>
-                                  );
-                                  break;
-                                case 'not_synced':
-                                  badgeElement = (
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 flex items-center gap-1">
-                                      <Clock className="w-2.5 h-2.5 shrink-0" />
-                                      <span>Not Synced{channelStock === null ? '' : ` (${channelStock})`}</span>
-                                    </span>
-                                  );
-                                  break;
-                                case 'sync_failed':
-                                  badgeElement = (
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 flex items-center gap-1">
-                                      <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
-                                      <span>Sync Failed</span>
-                                    </span>
-                                  );
-                                  break;
-                                case 'awaiting_confirmation':
-                                  badgeElement = (
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 flex items-center gap-1">
-                                      <RefreshCw className="w-2.5 h-2.5 shrink-0 animate-spin" />
-                                      <span>Awaiting Conf.</span>
-                                    </span>
-                                  );
-                                  break;
-                                case 'auth_expired':
-                                  badgeElement = (
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 flex items-center gap-1">
-                                      <ShieldAlert className="w-2.5 h-2.5 shrink-0" />
-                                      <span>Auth Expired</span>
-                                    </span>
-                                  );
-                                  break;
-                                case 'sku_not_mapped':
-                                  badgeElement = (
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 flex items-center gap-1">
-                                      <Link2 className="w-2.5 h-2.5 shrink-0" />
-                                      <span>SKU Not Mapped</span>
-                                    </span>
-                                  );
-                                  break;
-                                case 'listing_not_eligible':
-                                  badgeElement = (
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 flex items-center gap-1">
-                                      <Info className="w-2.5 h-2.5 shrink-0" />
-                                      <span>Not Eligible</span>
-                                    </span>
-                                  );
-                                  break;
-                                case 'sync_replaced':
-                                  badgeElement = (
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 flex items-center gap-1">
-                                      <RotateCcw className="w-2.5 h-2.5 shrink-0" />
-                                      <span>Replaced</span>
-                                    </span>
-                                  );
-                                  break;
-                                default:
-                                  badgeElement = (
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
-                                      Unmanaged
-                                    </span>
-                                  );
-                              }
-
-                              return (
-                                <div
-                                  key={store.id}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleOpenStockSync(item, store, syncState);
-                                  }}
-                                  role="button"
-                                  tabIndex={0}
-                                  title={`Click to view Stock Sync Details for ${store.nickname || store.name}`}
-                                  className="flex items-center justify-between p-2.5 rounded-lg bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800/60 dark:hover:bg-neutral-750 border border-neutral-200/60 hover:border-neutral-400 dark:border-neutral-700/60 dark:hover:border-neutral-500 text-[11px] transition cursor-pointer group/store"
-                                >
-                                  <div className="flex items-center gap-1.5 truncate max-w-[130px]">
-                                    <MarketplaceLogo platform={store.platform as any} size="xs" />
-                                    <span className="truncate font-medium text-neutral-800 dark:text-neutral-200 group-hover/store:text-neutral-900 dark:group-hover/store:text-white">
-                                      {store.nickname || store.name}
-                                    </span>
-                                  </div>
-
-                                  {/* Sync & Takeover Badges */}
-                                  <div className="flex items-center gap-1.5 shrink-0">
-                                    {badgeElement}
-                                  </div>
-                                </div>
-                              );
+                              return <SharedPoolStoreCard key={store.id} item={item} store={store}
+                                history={inventoryActivityHistory || []} syncState={(item as any).sharedStoreSyncStates?.[store.id] || 'not_synced'} />;
                             })}
                           </div>
                           )}
@@ -1644,10 +1549,10 @@ export const MarketplaceInventoryPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => openManageStock(item)}
-                                className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-neutral-800 dark:hover:bg-neutral-750 text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer border border-neutral-700/80 shrink-0"
+                                className={`px-3 py-2 rounded-xl text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer border shrink-0 ${currentMode === 'shared' && isUncounted ? 'bg-purple-600 hover:bg-purple-500 border-purple-500' : 'bg-neutral-900 hover:bg-neutral-800 dark:bg-neutral-800 dark:hover:bg-neutral-750 border-neutral-700/80'}`}
                               >
-                                <Warehouse className="w-3.5 h-3.5 text-indigo-400" />
-                                <span>Manage Stock</span>
+                                {currentMode === 'shared' && isUncounted ? <Boxes className="w-3.5 h-3.5" /> : <Warehouse className="w-3.5 h-3.5 text-indigo-400" />}
+                                <span>{currentMode === 'shared' && isUncounted ? 'First Count' : 'Manage Stock'}</span>
                             </button>
                           </div>
                         </td>

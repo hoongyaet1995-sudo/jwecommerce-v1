@@ -2,6 +2,7 @@
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+vi.mock('../../../../integration/storeInventory',()=>({storeInventoryApi:{latestStockRetrieval:vi.fn().mockResolvedValue(null),facilities:vi.fn().mockResolvedValue({status:'verified',topology:'no_warehouse',facilities:[]})}}));
 
 const inventoryItem: any = {
   id: 'variant:7', variantId: 7, productId: 4, masterSku: 'SKU-7', productName: 'Baju Kurung Joshua',
@@ -57,10 +58,10 @@ it('shows only mapped shared-pool stores and a confirmed state for the current J
   context.marketplaceInventory = [{ ...inventoryItem, sharedStoreSyncStates: { '11': 'synced' } }];
   try {
     await act(async () => root.render(<MarketplaceInventoryPage />));
-    const cell = host.querySelector('tbody tr td:nth-child(6)');
+    const cell = host.querySelector('[data-testid=connected-stores]');
     expect(cell?.textContent).toContain('JW Storefront');
     expect(cell?.textContent).toContain('Mapped Lazada');
-    expect(cell?.textContent).toContain('Synced');
+    expect(cell?.textContent).toContain('Shared ledger');
     expect(cell?.textContent).not.toContain('Unmapped Shopee');
     expect(cell?.textContent).not.toContain('SKU Not Mapped');
   } finally {
@@ -99,4 +100,25 @@ it('renders a separate card and table header for every product', async () => {
   expect(cards[0].querySelector('table')).toBeNull();
   expect(cards[1].querySelector('table')).not.toBeNull();
   context.marketplaceInventory = [inventoryItem];
+});
+
+it('offers First Count for an unknown shared total and Manage Stock for zero, with no store stock action',async()=>{
+ context.inventoryMode='shared';
+ context.marketplaceInventory=[{...inventoryItem,currentStock:null,totalPhysicalStock:null,physicalStockStatus:'unknown'}];
+ try {
+  await act(async()=>root.render(<MarketplaceInventoryPage />));
+  expect(host.querySelector('thead')?.textContent).toContain('Shared Stock');
+  expect(host.querySelector('thead')?.textContent).not.toContain('Reserved');
+  expect(host.textContent).toContain('Awaiting first count');
+  const first=Array.from(host.querySelectorAll('button')).find(button=>button.textContent==='First Count')!;
+  expect(first).toBeDefined();
+  await act(async()=>first.click());
+  expect(host.querySelector('[data-testid=manage-stock-target]')).not.toBeNull();
+  expect(host.querySelector('[data-testid=connected-stores] [role=button]')).toBeNull();
+  context.marketplaceInventory=[{...inventoryItem,currentStock:0,totalPhysicalStock:0}];
+  await act(async()=>root.render(<MarketplaceInventoryPage />));
+  expect(host.textContent).toContain('0 units');
+  expect(Array.from(host.querySelectorAll('button')).some(button=>button.textContent==='First Count')).toBe(false);
+  expect(Array.from(host.querySelectorAll('button')).some(button=>button.textContent==='Manage Stock')).toBe(true);
+ } finally {context.inventoryMode='independent';context.marketplaceInventory=[inventoryItem]}
 });
