@@ -48,3 +48,20 @@ it('keeps counted Shared Pool actions distinct from Independent store and transf
   expect(host.textContent).toContain('View JW stock ledger');
   expect([...host.querySelectorAll('button')].some(button => button.textContent?.includes('Transfer'))).toBe(false);
 });
+
+it.each(['Confirming stock', 'Confirmation needs review', 'Sync failed', 'Stock changed', 'Synced'])
+('uses the operation confirmation snapshot for %s after First Count', async status => {
+  vi.mocked(storeInventoryApi.sharedFirstCountMarketplaceStock).mockResolvedValue({stores:[{
+    store_id:11,name:'QA store',platform:'shopee',connected:true,takeover_enabled:true,status:'read',quantity:0,warehouses:[],
+  }],available_total:0,all_read:true});
+  const stage={store_id:11,status:'uncertain',target_quantity:0,confirmation:{status}};
+  vi.mocked(storeInventoryApi.operation).mockResolvedValue({external_stages:[stage]});
+  await act(async()=>root.render(<SharedPoolManageStockDrawer isOpen item={{...item,currentStock:null}}
+    onClose={()=>{}} onFirstCount={vi.fn(async()=>({operation_id:'op',external_stages:[stage]}))}/>));
+  await click('First Count this SKU');
+  const input=host.querySelector<HTMLInputElement>('#shared-first-count-quantity')!;
+  await act(async()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,'0');input.dispatchEvent(new Event('input',{bubbles:true}))});
+  await click('Review First Count');await click('Confirm First Count');
+  expect(host.textContent).toContain(status);
+  expect(host.textContent).not.toContain('Needs attention');
+});

@@ -142,7 +142,7 @@ final class ProcessStoreInventorySync implements ShouldQueue
 
             return;
         } catch (StoreInventoryResultUncertain $error) {
-            $this->finish('uncertain', ['code' => 'provider_result_unknown', 'message' => $error->getMessage()]);
+            $this->finish('uncertain', ['code' => 'provider_result_unknown', 'message' => $error->getMessage(), 'provider_shop_id' => (string) $context['store']->external_shop_id, ...$error->diagnostics]);
 
             return;
         } catch (\Throwable) {

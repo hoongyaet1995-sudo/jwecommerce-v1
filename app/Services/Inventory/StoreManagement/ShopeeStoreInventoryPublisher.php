@@ -51,19 +51,25 @@ class ShopeeStoreInventoryPublisher implements StoreInventoryPublisher
         $write = $client->updateAbsoluteStock($token, (string) $store->external_shop_id,
             (string) $listing->external_product_id, (string) $listing->external_variant_id,
             $before['location_id'], $quantity);
+        $diagnostics = ['write_accepted' => true, 'write_request_id' => $write['request_id'] ?? null,
+            'write_accepted_at' => now()->toIso8601String(), 'requested_quantity' => $quantity,
+            'provider_shop_id' => (string) $store->external_shop_id, 'provider_location_id' => $before['location_id'],
+            'readback_checked_at' => now()->toIso8601String()];
         try {
             $observed = $client->exactStockContext($token, (string) $store->external_shop_id,
                 (string) $listing->external_product_id, (string) $listing->external_variant_id, $before['location_id']);
         } catch (StoreInventoryAuthorizationExpired) {
-            throw new StoreInventoryResultUncertain('Shopee write was accepted but authorization expired before read-back. Reconcile before retrying.');
+            throw new StoreInventoryResultUncertain('Shopee write was accepted but authorization expired before read-back. Reconcile before retrying.', $diagnostics);
         } catch (\Throwable) {
-            throw new StoreInventoryResultUncertain('Shopee write succeeded but read-back could not be confirmed. Reconcile before retrying.');
+            throw new StoreInventoryResultUncertain('Shopee write succeeded but read-back could not be confirmed. Reconcile before retrying.', $diagnostics);
         }
+        $diagnostics['readback_checked_at'] = now()->toIso8601String();
+        $diagnostics['observed_quantity'] = $observed['quantity'];
         if ($observed['quantity'] !== $quantity) {
-            throw new StoreInventoryResultUncertain('Shopee read-back differs from the requested quantity. Reconcile before retrying.');
+            throw new StoreInventoryResultUncertain('Shopee read-back differs from the requested quantity. Reconcile before retrying.', $diagnostics);
         }
 
-        return ['provider' => 'shopee', 'requested_quantity' => $quantity, 'observed_quantity' => $observed['quantity'],
+        return [...$diagnostics, 'provider' => 'shopee', 'requested_quantity' => $quantity, 'observed_quantity' => $observed['quantity'],
             'provider_location_id' => $before['location_id'],
             'event_fingerprint' => hash('sha256', $eventKey), 'request_id' => $write['request_id'],
             'confirmation_method' => 'provider_readback',

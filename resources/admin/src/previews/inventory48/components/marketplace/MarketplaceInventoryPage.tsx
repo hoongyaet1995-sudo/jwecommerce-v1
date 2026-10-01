@@ -1533,7 +1533,7 @@ export const MarketplaceInventoryPage: React.FC = () => {
                           <div className="space-y-1.5">
                             {(stores || []).filter(s => !s.isComingSoon && (s.platform === 'webstore' || item.mappedStoreIds?.includes(String(s.id)))).map(store => {
                               return <SharedPoolStoreCard key={store.id} item={item} store={store}
-                                history={inventoryActivityHistory || []} syncState={(item as any).sharedStoreSyncStates?.[store.id] || 'not_synced'} />;
+                                onChecked={reloadInventory} history={inventoryActivityHistory || []} syncState={(item as any).sharedStoreSyncStates?.[store.id] || 'not_synced'} />;
                             })}
                           </div>
                           )}

@@ -55,24 +55,30 @@ class LazadaStoreInventoryPublisher implements StoreInventoryPublisher
             : ($before['warehouse_code'] === 'dropshipping' ? null : $before['warehouse_code']);
         $write = $this->client->updateAbsoluteQuantity($token, (string) $listing->external_product_id,
             (string) $listing->external_variant_id, $quantity, $writeWarehouse, (int) $store->id);
+        $diagnostics = ['write_accepted' => true, 'write_request_id' => $write['request_id'] ?? null,
+            'write_accepted_at' => now()->toIso8601String(), 'requested_quantity' => $quantity,
+            'provider_shop_id' => (string) $store->external_shop_id, 'provider_location_id' => ($strictFacility ? $warehouse : $before['warehouse_code']),
+            'readback_checked_at' => now()->toIso8601String()];
         try {
             $observed = $this->client->exactStockQuantity($token, (string) $listing->external_product_id,
                 (string) $listing->external_variant_id, $strictFacility ? $warehouse : $writeWarehouse,
                 (int) $store->id);
         } catch (StoreInventoryAuthorizationExpired) {
-            throw new StoreInventoryResultUncertain('Lazada write was accepted but authorization expired before read-back. Reconcile before retrying.');
+            throw new StoreInventoryResultUncertain('Lazada write was accepted but authorization expired before read-back. Reconcile before retrying.', $diagnostics);
         } catch (\Throwable) {
-            throw new StoreInventoryResultUncertain('Lazada write succeeded but read-back could not be confirmed. Reconcile before retrying.');
+            throw new StoreInventoryResultUncertain('Lazada write succeeded but read-back could not be confirmed. Reconcile before retrying.', $diagnostics);
         }
+        $diagnostics['readback_checked_at'] = now()->toIso8601String();
+        $diagnostics['observed_quantity'] = $observed['quantity'];
         if ($observed['quantity'] !== $quantity) {
-            throw new StoreInventoryResultUncertain('Lazada read-back differs from the requested quantity. Reconcile before retrying.');
+            throw new StoreInventoryResultUncertain('Lazada read-back differs from the requested quantity. Reconcile before retrying.', $diagnostics);
         }
         $observedLocation = $observed['warehouse_code'] ?? 'dropshipping';
         if ($strictFacility && $observedLocation !== $warehouse) {
-            throw new StoreInventoryResultUncertain('Lazada read-back returned another warehouse. Reconcile before retrying.');
+            throw new StoreInventoryResultUncertain('Lazada read-back returned another warehouse. Reconcile before retrying.', $diagnostics);
         }
 
-        return ['provider' => 'lazada', 'requested_quantity' => $quantity, 'observed_quantity' => $observed['quantity'],
+        return [...$diagnostics, 'provider' => 'lazada', 'requested_quantity' => $quantity, 'observed_quantity' => $observed['quantity'],
             'provider_location_id' => $strictFacility ? $warehouse : $before['warehouse_code'],
             'event_fingerprint' => hash('sha256', $eventKey), 'request_id' => $write['request_id'],
             'confirmation_method' => 'provider_readback',

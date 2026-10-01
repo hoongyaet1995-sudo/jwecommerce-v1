@@ -1,4 +1,4 @@
-export type InventoryOverview = {mode:'shared'|'independent';single_current_stock?:boolean;configuration_version:number;website_account?:any;totals:any;stores:any[];data:any[];mode_catalog?:any;shared_store_sync_states?:Record<string,Record<string,'synced'|'not_synced'>>};
+export type InventoryOverview = {shared_store_confirmations?:Record<string,Record<string,any[]>>;mode:'shared'|'independent';single_current_stock?:boolean;configuration_version:number;website_account?:any;totals:any;stores:any[];data:any[];mode_catalog?:any;shared_store_sync_states?:Record<string,Record<string,'synced'|'not_synced'>>};
 
 const csrf=()=>document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content??'';
 async function json(url:string,init:RequestInit={}){
@@ -21,6 +21,7 @@ export async function waitForInventoryOperation(id:string,options:{maxAttempts?:
   return latest;
 }
 export const storeInventoryApi={
+  checkConfirmation:(operation:string,task:string,payload:any)=>json(`/admin/api/inventory/store-management/operations/${encodeURIComponent(operation)}/tasks/${encodeURIComponent(task)}/confirmation-check`,{method:'POST',body:JSON.stringify(payload)}),
   overview:()=>json('/admin/api/inventory/store-management/overview'),
   sharedLedger:(variantId:number)=>json(`/admin/api/inventory/store-management/shared-skus/${variantId}/ledger`),
   sharedFirstCountMarketplaceStock:(variantId:number)=>json(`/admin/api/inventory/store-management/shared-skus/${variantId}/marketplace-stock`,{method:'POST',body:'{}'}),
@@ -98,7 +99,7 @@ export function adaptInventory(overview:InventoryOverview){
     const reserved=overview.single_current_stock?0:knownPhysical.reduce((n,r)=>n+(r.reserved||0),0);
     const available=knownSellable.length?knownSellable.reduce((n,r)=>n+r.available,0):null;
     const identity=currentModeRows[0] || rows[0] || modeItem || {};
-    return {id:eligibleRows[0]?.balance_id ? String(eligibleRows[0].balance_id) : `variant:${variantId}`,variantId,productId:Number(modeItem?.product_id||identity.product_id||0),catalogStatus:modeItem?.product_status||'active',isTest:modeItem?.classification==='sandbox_test',masterSku:identity.sku||'',barcode:'',productName:identity.product||modeItem?.product||'',variantName:identity.variant||'',imageUrl:modeItem?.thumbnail_url||'',warehouseLocation:'',mappedStoreIds:(modeItem?.mapped_stores||[]).map((store:any)=>String(store.id)),sharedStoreSyncStates:overview.shared_store_sync_states?.[String(variantId)]||{},singleCurrentStock:overview.single_current_stock===true,currentStock:physical,currentStockVersion:eligibleRows[0]?.version,
+    return {id:eligibleRows[0]?.balance_id ? String(eligibleRows[0].balance_id) : `variant:${variantId}`,variantId,productId:Number(modeItem?.product_id||identity.product_id||0),catalogStatus:modeItem?.product_status||'active',isTest:modeItem?.classification==='sandbox_test',masterSku:identity.sku||'',barcode:'',productName:identity.product||modeItem?.product||'',variantName:identity.variant||'',imageUrl:modeItem?.thumbnail_url||'',warehouseLocation:'',mappedStoreIds:(modeItem?.mapped_stores||[]).map((store:any)=>String(store.id)),sharedStoreConfirmations:overview.shared_store_confirmations?.[String(variantId)]||{},sharedStoreSyncStates:overview.shared_store_sync_states?.[String(variantId)]||{},singleCurrentStock:overview.single_current_stock===true,currentStock:physical,currentStockVersion:eligibleRows[0]?.version,
       physicalStockStatus:physical===null?'unknown':'verified',hasUncountedAccounts:eligibleRows.some(r=>!r.counted),totalPhysicalStock:physical,reservedStock:reserved,safetyStock:0,availableStock:available,reorderPoint:0,costPrice:0,sellingPrice:0,
       channelMappings:{},autoSyncEnabled:false,historyLog:[],storeAssociations:currentModeRows.filter(r=>r.store_id).map(r=>({connectionId:String(r.store_id),storeName:r.store_name||r.account_key,platform:r.platform,
         externalSku:r.sku,connectionState:r.connection_status||'connected',syncState:'enabled',syncReadiness:r.sync_readiness,lastSyncStatus:r.external_sync?.status,syncTasks:r.external_sync?.tasks||[],balanceId:r.balance_id}))};

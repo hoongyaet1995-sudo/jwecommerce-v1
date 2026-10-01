@@ -7,7 +7,7 @@ type Step = 'home' | 'actions' | 'count' | 'review' | 'complete' | 'intake' | 'a
 type Movement = { id: number; delta: number; current_after: number; reason: string; created_at: string };
 type MarketplaceStoreRead = { store_id:number; name:string; platform:string; connected:boolean; takeover_enabled:boolean; warehouse_mode?:boolean; status:'read'|'unavailable'; quantity:number|null; warehouses:Array<{id:number;name:string}>; reason?:string };
 type MarketplaceRead = { stores:MarketplaceStoreRead[]; available_total:number; all_read:boolean };
-type SyncStage = {store_id:number|null;facility_id?:number|null;status:string;target_quantity:number|null};
+type SyncStage = {store_id:number|null;facility_id?:number|null;status:string;target_quantity:number|null;confirmation?:{status:string;last_checked_at?:string|null;check_count?:number}};
 
 interface Props {
   isOpen: boolean;
@@ -130,11 +130,11 @@ export const SharedPoolManageStockDrawer: React.FC<Props> = ({ isOpen, item, ini
     const expected = store.warehouses.length || 1;
     const status = phase === 'count' ? store.status === 'read' ? `${store.quantity?.toLocaleString()} units` : 'Unavailable'
       : phase === 'review' ? !store.takeover_enabled ? 'Takeover paused' : !store.connected ? 'Disconnected' : store.warehouse_mode && !store.warehouses.length ? 'No takeover warehouses' : store.warehouses.length > 1 ? `Push to ${store.warehouses.length} warehouses` : 'Push after JW count'
-      : !store.takeover_enabled ? 'No push' : store.warehouse_mode && !store.warehouses.length ? 'No takeover warehouses' : stages.length >= expected && stages.every(entry => entry.status === 'confirmed') ? 'Synced' : stages.some(entry => ['failed', 'uncertain', 'auth_expired'].includes(entry.status)) ? 'Needs attention' : stages.some(entry => ['queued', 'processing', 'waiting_source'].includes(entry.status)) ? 'Confirmation pending' : stages.length > 0 && stages.every(entry => ['not_applicable', 'superseded'].includes(entry.status)) ? 'Not pushed' : 'Awaiting sync status';
+      : !store.takeover_enabled ? 'No push' : store.warehouse_mode && !store.warehouses.length ? 'No takeover warehouses' : stages.length >= expected && stages.every(entry => entry.confirmation ? entry.confirmation.status === 'Synced' : entry.status === 'confirmed') ? 'Synced' : stages.some(entry => entry.confirmation?.status === 'Stock changed') ? 'Stock changed' : stages.some(entry => entry.confirmation?.status === 'Confirmation needs review') ? 'Confirmation needs review' : stages.some(entry => entry.confirmation ? entry.confirmation.status === 'Sync failed' : ['failed', 'auth_expired'].includes(entry.status)) ? 'Sync failed' : stages.some(entry => entry.confirmation ? entry.confirmation.status === 'Confirming stock' : ['uncertain', 'queued', 'processing', 'waiting_source'].includes(entry.status)) ? 'Confirming stock' : stages.length > 0 && stages.every(entry => ['not_applicable', 'superseded'].includes(entry.status)) ? 'Not pushed' : 'Awaiting sync status';
     return <div key={store.store_id} className="flex items-center justify-between gap-3 rounded-xl border border-neutral-700 bg-neutral-800 p-3 text-xs">
       <div className="min-w-0"><b className="block truncate">{store.name}</b><span className="mt-1 block text-[11px] text-neutral-400">{store.platform} · mapped · {store.takeover_enabled ? 'Takeover on' : 'Paused'}</span>
         {store.warehouses.length > 0 && <span className="mt-1 block text-[11px] text-neutral-400">Takeover warehouses: {store.warehouses.map(warehouse => warehouse.name).join(' · ')}</span>}</div>
-      <b className={`shrink-0 text-right ${store.status === 'unavailable' || status === 'Needs attention' ? 'text-rose-300' : 'text-emerald-400'}`}>{status}</b>
+      <b className={`shrink-0 text-right ${store.status === 'unavailable' || ['Sync failed', 'Confirmation needs review'].includes(status) ? 'text-rose-300' : 'text-emerald-400'}`}>{status}</b>
     </div>;
   })}</div>;
 

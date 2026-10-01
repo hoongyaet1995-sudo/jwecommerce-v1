@@ -10,6 +10,26 @@ use Throwable;
 
 final class StockSyncRecoveryController extends Controller
 {
+    public function confirmation(Request $request, string $operation, string $task,
+        \App\Services\Inventory\StoreManagement\TaskStockReadback $readback)
+    {
+        $this->authorizeActor($request);
+        $fields = ['operation_key', 'store_id', 'variant_id', 'balance_version', 'facility_id', 'provider_location_id', 'provider_shop_id'];
+        abort_if(array_diff(array_keys($request->all()), [...$fields, '_token']), 422, 'Unsupported confirmation fields.');
+        $input = $request->validate(['operation_key' => ['required', 'uuid'],
+            'store_id' => ['required', 'integer', 'min:1'], 'variant_id' => ['required', 'integer', 'min:1'],
+            'balance_version' => ['required', 'integer', 'min:0'], 'facility_id' => ['present', 'nullable', 'integer'],
+            'provider_location_id' => ['present', 'nullable', 'string', 'max:255'],
+            'provider_shop_id' => ['required', 'string', 'max:255']]);
+        foreach (['store_id', 'variant_id', 'balance_version', 'facility_id'] as $key) {
+            $input[$key] = $input[$key] === null ? null : (int) $input[$key];
+        }
+        $readback->check($task, $operation, $input, (int) $request->user()->id);
+        $row = \Illuminate\Support\Facades\DB::table('inventory_store_sync_tasks')->find($task);
+        $balance = \Illuminate\Support\Facades\DB::table('inventory_balances')->find($row->inventory_balance_id);
+        return response()->json(['confirmation' => \App\Services\Inventory\StoreManagement\StockConfirmationSnapshot::current($row, $balance)])->header('Cache-Control', 'no-store');
+    }
+
     public function show(Request $request, int $store, int $variant, StockSyncRecovery $sync)
     {
         $this->authorizeActor($request);

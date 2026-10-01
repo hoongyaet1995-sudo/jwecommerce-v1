@@ -73,9 +73,10 @@ final class OverviewReader
             ->whereIn('product_variant_id', $balanceRows->pluck('product_variant_id')->unique()->values())
             ->whereNotNull('marketplace_store_id')
             ->orderByDesc('created_at')
-            ->get(['id', 'product_variant_id', 'marketplace_store_id', 'marketplace_store_facility_id', 'inventory_balance_id', 'listing_variant_id', 'balance_version', 'status', 'target_quantity', 'attempts', 'created_at'])
+            ->get(['id', 'product_variant_id', 'marketplace_store_id', 'marketplace_store_facility_id', 'inventory_balance_id', 'listing_variant_id', 'balance_version', 'status', 'target_quantity', 'attempts', 'created_at', 'operation_id', 'provider_receipt', 'provider_location_id', 'readback_attempts', 'readback_exhausted_at', 'provider_external_product_id', 'provider_external_variant_id'])
             ->groupBy('product_variant_id');
         $sharedStoreSyncStates = [];
+        $sharedStoreConfirmations = [];
         if ($mode === 'shared') {
             $sharedBalances = $balanceRows->where('kind', 'shared')->keyBy('product_variant_id');
             foreach ($modeCatalog['items'] as $item) {
@@ -87,6 +88,9 @@ final class OverviewReader
                         ->where('marketplace_store_id', $storeId)
                         ->where('inventory_balance_id', $balance?->id)
                         ->sortByDesc(fn (object $task) => $task->created_at.'|'.$task->id);
+                    $sharedStoreConfirmations[$variantId][$storeId] = $storeTasks
+                        ->unique(fn ($task) => $task->marketplace_store_facility_id ?? 'direct')
+                        ->map(fn ($task) => StockConfirmationSnapshot::current($task, $balance))->values()->all();
                     $scan = DB::table('marketplace_store_facility_scans')->where('marketplace_store_id', $storeId)->first();
                     $warehouseMode = $store['platform'] === 'lazada' && $scan?->status === 'verified'
                         && in_array($scan?->topology, ['single_warehouse', 'multi_warehouse'], true);
@@ -190,6 +194,7 @@ final class OverviewReader
                 'management_version' => (int) ($website?->version ?? 0)],
             'totals' => ['known' => $known, 'unknown_accounts' => $unknown], 'mode_catalog' => $modeCatalog,
             'shared_store_sync_states' => $sharedStoreSyncStates,
+            'shared_store_confirmations' => $sharedStoreConfirmations,
             'stores' => $this->stores($filters), 'data' => $rows];
     }
 
@@ -382,6 +387,7 @@ final class OverviewReader
                 'facility_id' => $stage->marketplace_store_facility_id,
                 'variant_id' => (int) $stage->product_variant_id, 'stage' => $stage->stage, 'status' => $stage->status,
                 'target_quantity' => $stage->target_quantity, 'attempts' => (int) $stage->attempts,
+                'confirmation' => StockConfirmationSnapshot::current($stage),
                 'provider_receipt' => $stage->provider_receipt ? $this->sanitize(json_decode($stage->provider_receipt, true, 512, JSON_THROW_ON_ERROR)) : null]);
 
         return [...$receipt,

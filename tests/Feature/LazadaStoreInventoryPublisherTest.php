@@ -22,6 +22,10 @@ class LazadaStoreInventoryPublisherTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->assertSame('sqlite', config('database.default'));
+        $this->assertSame(':memory:', config('database.connections.sqlite.database'));
+        Http::preventStrayRequests();
+        \Illuminate\Support\Facades\Queue::fake();
         config([
             'marketplace.stock_sync_operations_enabled' => true,
             'marketplace.stock_sync_platforms.lazada' => true,
@@ -217,10 +221,19 @@ class LazadaStoreInventoryPublisherTest extends TestCase
     public function test_mismatched_readback_is_uncertain(): void
     {
         [$publisher, $store, $listing] = $this->publisher();
-        Http::fake(['*' => Http::sequence()->push($this->item(3))->push(['code' => '0'])->push($this->item(6))]);
+        Http::fake(['*' => Http::sequence()->push($this->item(3))->push(['code' => '0', 'request_id' => 'REQ-L'])->push($this->item(6))]);
 
-        $this->expectException(StoreInventoryResultUncertain::class);
-        $publisher->publish($store, $listing, 7, 'mismatch');
+        try {
+            $publisher->publish($store, $listing, 7, 'mismatch');
+            $this->fail('Expected an uncertain readback.');
+        } catch (StoreInventoryResultUncertain $error) {
+            $this->assertTrue($error->diagnostics['write_accepted']);
+            $this->assertSame('REQ-L', $error->diagnostics['write_request_id']);
+            $this->assertSame(6, $error->diagnostics['observed_quantity']);
+            $this->assertSame((string) $store->external_shop_id, $error->diagnostics['provider_shop_id']);
+            $this->assertNotEmpty($error->diagnostics['readback_checked_at']);
+            $this->assertArrayNotHasKey('access_token', $error->diagnostics);
+        }
     }
 
     public function test_post_write_authorization_failure_is_uncertain(): void
