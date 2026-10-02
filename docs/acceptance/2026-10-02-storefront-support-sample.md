@@ -1,0 +1,14 @@
+# Storefront Support chat UI sample — 2026-10-02
+
+Baseline: 2dad160367b13e29b52cc630dfd6b26e52d3d6fb. Existing unrelated inventory and release-document changes preserved.
+Scope: public/storefront-support-sample.html only; actual local storefront in iframe, no production renderer changes, no API/LLM requests. Three launcher choices, desktop panel, mobile fullscreen, light/dark chat themes, local sample messages.
+Design: reuse purple rounded storefront language; native SVG controls, no third-party copied component. No invented shipping/policy answers or online-agent claim.
+Issue ledger: initial browser verification planned for desktop/mobile opening, close/reopen, quick topic and typed text, theme, overflow, screenshot. Unexpected failures: 0. Token usage/elapsed time unavailable.
+
+Browser result: passed desktop and 390x844 mobile. Mobile panel fills viewport, document horizontal overflow=false. Three launcher selections, quick topic, typed send, dark theme and close/reopen preserve two sample messages. Captured console errors: 0. Screenshots inspected: output/playwright/storefront-chat-desktop.png and storefront-chat-mobile.png. Viewport reset and preview tab retained. No build needed for standalone HTML. Unexpected failures=0; backend/AI integration deferred as requested; no push/deploy.
+
+## Approved storefront integration
+User approved local storefront integration. Scope: shared Blade layout + isolated support-chat component, default Spark chat launcher. No API/AI/backend writes, no release. Existing unrelated changes preserved. Pre-check: browser verification of home/PDP/PLP, desktop/mobile, navigation/cart coexistence and console. New unexpected failure count: 0. Timing/tokens unavailable.
+Integration issue I1: mobile background scrollbar consumed 15px of panel width. Count=1, resolved by 100vw fullscreen width and restoring background overflow on close. Recheck after this concrete change: mobile PDP/PLP screenshots and viewport bounds; no blind rerun.
+I2: existing home Explore Now URL /collections/all returns 404 (not chat code); count=1. Stop this route check, use observed storefront /shop navigation for PLP verification. Existing link defect outside integration scope.
+Integration final: localhost homepage, real PDP and /shop PLP render the widget; desktop local messages send; cart drawer opens/closes; mobile 390x844 full viewport and no horizontal overflow, background scroll locked only while open. Screenshots saved in output/playwright/storefront-chat-integrated-desktop.png and storefront-chat-integrated-mobile.png and inspected. Captured console errors=0 on valid storefront routes. I1 resolved count1; I2 existing /collections/all 404 remains outside scope count1. Build not required for inline Blade CSS/JS; real HTTP render verifies Blade compilation. No GitHub/Hostinger sync performed.

@@ -1,3 +1,4 @@
+import { useSupportChat } from '../integration/supportChat';
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { initialSectionFromLocation, navigateToSection, subscribeToSectionChanges } from '../integration/adminRoutes';
 import { readAdminBootstrap } from '../integration/adminBootstrap';
@@ -140,7 +141,6 @@ import {
   MessageAttachment
 } from '../types/support';
 import {
-  INITIAL_SUPPORT_CONVERSATIONS,
   INITIAL_CANNED_RESPONSES,
   INITIAL_INTERNAL_COPILOT_MESSAGES
 } from '../data/supportData';
@@ -465,6 +465,9 @@ interface AdminContextType {
 
   // Customer Support Hub & AI Copilot
   supportConversations: SupportConversation[];
+  supportLoading: boolean;
+  supportError: string;
+  supportBusy: boolean;
   supportDrafts: Record<string, string>;
   setSupportDraft: (conversationId: string, text: string) => void;
   selectedConversationId: string | null;
@@ -477,7 +480,7 @@ interface AdminContextType {
     type?: MessageType,
     attachments?: MessageAttachment[],
     options?: { role?: SenderRole; productCard?: any; orderCard?: any }
-  ) => void;
+  ) => Promise<boolean>;
   takeOverConversation: (conversationId: string) => void;
   handBackToAI: (conversationId: string) => void;
   resolveConversation: (conversationId: string) => void;
@@ -487,7 +490,7 @@ interface AdminContextType {
   generateAIDraft: (conversationId: string) => Promise<void>;
   togglePinConversation: (conversationId: string) => void;
   markConversationAsRead: (conversationId: string) => void;
-  addStaffNote: (conversationId: string, noteContent: string) => void;
+  addStaffNote: (conversationId: string, noteContent: string) => Promise<boolean>;
   retryFailedMessage: (conversationId: string, messageId: string) => void;
   cannedResponses: CannedResponse[];
   copilotMessages: CopilotQueryMessage[];
@@ -544,7 +547,6 @@ const STORAGE_KEYS = {
   COUNTRIES_SETTING: 'aurora_admin_countries_setting',
   ZONES_SETTING: 'aurora_admin_zones_setting',
   ORDER_TOTAL_MODULES: 'aurora_admin_order_total_modules',
-  SUPPORT_CONVERSATIONS: 'aurora_admin_support_conversations',
   COPILOT_MESSAGES: 'aurora_admin_copilot_messages',
   AI_AUTO_REPLY_CONFIG: 'aurora_admin_ai_auto_reply_config',
 };
@@ -872,12 +874,9 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   // Customer Support Hub & AI Copilot State
-  const [supportConversations, setSupportConversations] = useState<SupportConversation[]>(INITIAL_SUPPORT_CONVERSATIONS);
-  const [supportDrafts, setSupportDrafts] = useState<Record<string, string>>({});
-  const setSupportDraft = (conversationId: string, text: string) => {
-    setSupportDrafts(previous => ({ ...previous, [conversationId]: text }));
-  };
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(INITIAL_SUPPORT_CONVERSATIONS[0]?.id || null);
+  const { supportConversations, supportDrafts, setSupportDraft, selectedConversationId, setSelectedConversationId,
+    supportLoading, supportError, supportBusy, refreshSupport, sendMessageToConversation, resolveConversation,
+    reopenConversation, markConversationAsRead, addStaffNote } = useSupportChat(currentSection === 'support');
   const [supportActiveTab, setSupportActiveTab] = useState<'inbox' | 'copilot'>('inbox');
   const [cannedResponses, setCannedResponses] = useState<CannedResponse[]>(INITIAL_CANNED_RESPONSES);
   const [copilotMessages, setCopilotMessages] = useState<CopilotQueryMessage[]>(INITIAL_INTERNAL_COPILOT_MESSAGES);
@@ -925,8 +924,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const savedOrderTotals = safeParseArray(STORAGE_KEYS.ORDER_TOTAL_MODULES, INITIAL_ORDER_TOTAL_MODULES);
       setOrderTotalModules(savedOrderTotals);
 
-      const savedSupportConvs = safeParseArray(STORAGE_KEYS.SUPPORT_CONVERSATIONS, INITIAL_SUPPORT_CONVERSATIONS);
-      setSupportConversations(savedSupportConvs);
 
       const savedCopilotMsgs = safeParseArray(STORAGE_KEYS.COPILOT_MESSAGES, INITIAL_INTERNAL_COPILOT_MESSAGES);
       setCopilotMessages(savedCopilotMsgs);
@@ -3205,381 +3202,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Customer Support & Copilot Handlers
   // ---------------------------
 
-  const sendMessageToConversation = (
-    conversationId: string,
-    content: string,
-    type: MessageType = 'text',
-    attachments?: MessageAttachment[],
-    options?: { role?: SenderRole; productCard?: any; orderCard?: any }
-  ) => {
-    const role = options?.role || 'human_agent';
-    const isSimFail = content.includes('[sim-fail]');
-    const cleanContent = content.replace('[sim-fail]', '').trim();
-
-    const newMsg: ChatMessage = {
-      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      conversationId,
-      senderRole: role,
-      senderName: role === 'human_agent' ? (user?.name || 'Human Specialist') : 'JW AI Agent',
-      senderAvatar: role === 'human_agent' ? user?.avatar : undefined,
-      timestamp: 'Just now',
-      content: cleanContent,
-      type,
-      attachments,
-      deliveryStatus: isSimFail ? 'failed' : 'delivered',
-      productCard: options?.productCard,
-      orderCard: options?.orderCard
-    };
-
-    setSupportConversations(prev => {
-      const updated = prev.map(conv => {
-        if (conv.id !== conversationId) return conv;
-        const updatedMsgs = [...conv.messages, newMsg];
-        return {
-          ...conv,
-          messages: updatedMsgs,
-          snippet: cleanContent || (type === 'voice' ? 'Voice note' : (type === 'image' ? 'Image attachment' : 'File attachment')),
-          lastMessageAt: 'Just now',
-          unreadCount: 0,
-          status: role === 'human_agent' && conv.status === 'open' ? ('human_mode' as ConversationStatus) : conv.status,
-          activeAiDraft: role === 'human_agent' ? null : conv.activeAiDraft
-        };
-      });
-      try {
-        localStorage.setItem(STORAGE_KEYS.SUPPORT_CONVERSATIONS, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-
-    if (isSimFail) {
-      addToast({
-        type: 'error',
-        title: 'Delivery Failed',
-        message: 'Message could not be sent to WhatsApp gateway. Please click retry.'
-      });
-    }
-  };
-
-  const takeOverConversation = (conversationId: string) => {
-    const agentInfo = {
-      id: user?.id || 'agent-1',
-      name: user?.name || 'Admin Specialist',
-      avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      isLocked: true
-    };
-
-    const sysMsg: ChatMessage = {
-      id: `sys-${Date.now()}`,
-      conversationId,
-      senderRole: 'system',
-      senderName: 'System Bot',
-      timestamp: 'Just now',
-      content: `Conversation taken over by ${agentInfo.name}. AI automated response paused.`,
-      type: 'system_event'
-    };
-
-    setSupportConversations(prev => {
-      const updated = prev.map(conv => {
-        if (conv.id !== conversationId) return conv;
-        return {
-          ...conv,
-          status: 'human_mode' as ConversationStatus,
-          assignedAgent: agentInfo,
-          activeAiDraft: null,
-          messages: [...conv.messages, sysMsg]
-        };
-      });
-      try {
-        localStorage.setItem(STORAGE_KEYS.SUPPORT_CONVERSATIONS, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-
-    addToast({
-      type: 'info',
-      title: 'Human Takeover Activated',
-      message: 'You are now directly messaging the customer.'
-    });
-  };
-
-  const handBackToAI = (conversationId: string) => {
-    const sysMsg: ChatMessage = {
-      id: `sys-${Date.now()}`,
-      conversationId,
-      senderRole: 'system',
-      senderName: 'System Bot',
-      timestamp: 'Just now',
-      content: 'Conversation handed back to JW AI Agent. Real-time smart triage and drafting re-enabled.',
-      type: 'system_event'
-    };
-
-    setSupportConversations(prev => {
-      const updated = prev.map(conv => {
-        if (conv.id !== conversationId) return conv;
-        return {
-          ...conv,
-          status: 'open' as ConversationStatus,
-          assignedAgent: undefined,
-          messages: [...conv.messages, sysMsg]
-        };
-      });
-      try {
-        localStorage.setItem(STORAGE_KEYS.SUPPORT_CONVERSATIONS, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-
-    addToast({
-      type: 'success',
-      title: 'Handed Back to AI',
-      message: 'AI Copilot auto-handling resumed.'
-    });
-  };
-
-  const resolveConversation = (conversationId: string) => {
-    const sysMsg: ChatMessage = {
-      id: `sys-${Date.now()}`,
-      conversationId,
-      senderRole: 'system',
-      senderName: 'System Bot',
-      timestamp: 'Just now',
-      content: `Ticket marked as Resolved by ${user?.name || 'Staff Specialist'}.`,
-      type: 'system_event'
-    };
-
-    setSupportConversations(prev => {
-      const updated = prev.map(conv => {
-        if (conv.id !== conversationId) return conv;
-        return {
-          ...conv,
-          status: 'resolved' as ConversationStatus,
-          unreadCount: 0,
-          activeAiDraft: null,
-          messages: [...conv.messages, sysMsg]
-        };
-      });
-      try {
-        localStorage.setItem(STORAGE_KEYS.SUPPORT_CONVERSATIONS, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-
-    addToast({
-      type: 'success',
-      title: 'Conversation Resolved',
-      message: 'Ticket closed and archived.'
-    });
-  };
-
-  const reopenConversation = (conversationId: string) => {
-    const sysMsg: ChatMessage = {
-      id: `sys-${Date.now()}`,
-      conversationId,
-      senderRole: 'system',
-      senderName: 'System Bot',
-      timestamp: 'Just now',
-      content: 'Conversation reopened.',
-      type: 'system_event'
-    };
-
-    setSupportConversations(prev => {
-      const updated = prev.map(conv => {
-        if (conv.id !== conversationId) return conv;
-        return {
-          ...conv,
-          status: 'open' as ConversationStatus,
-          messages: [...conv.messages, sysMsg]
-        };
-      });
-      try {
-        localStorage.setItem(STORAGE_KEYS.SUPPORT_CONVERSATIONS, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-
-    addToast({
-      type: 'info',
-      title: 'Conversation Reopened',
-      message: 'Ticket restored to active queue.'
-    });
-  };
-
-  const approveAIDraft = (conversationId: string) => {
-    const target = supportConversations.find(c => c.id === conversationId);
-    if (!target || !target.activeAiDraft) return;
-
-    const draftText = target.activeAiDraft.content;
-    const aiMsg: ChatMessage = {
-      id: `msg-ai-${Date.now()}`,
-      conversationId,
-      senderRole: 'ai_agent',
-      senderName: 'JW AI Copilot',
-      timestamp: 'Just now',
-      content: draftText,
-      type: 'text',
-      deliveryStatus: 'delivered',
-      aiMetadata: {
-        confidenceScore: target.activeAiDraft.confidence,
-        modelUsed: target.activeAiDraft.model
-      }
-    };
-
-    setSupportConversations(prev => {
-      const updated = prev.map(conv => {
-        if (conv.id !== conversationId) return conv;
-        return {
-          ...conv,
-          messages: [...conv.messages, aiMsg],
-          activeAiDraft: null,
-          snippet: draftText,
-          lastMessageAt: 'Just now'
-        };
-      });
-      try {
-        localStorage.setItem(STORAGE_KEYS.SUPPORT_CONVERSATIONS, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-
-    addToast({
-      type: 'success',
-      title: 'AI Draft Approved & Sent',
-      message: 'Message dispatched across customer channel.'
-    });
-  };
-
-  const discardAIDraft = (conversationId: string) => {
-    setSupportConversations(prev => {
-      const updated = prev.map(conv => (conv.id === conversationId ? { ...conv, activeAiDraft: null } : conv));
-      try {
-        localStorage.setItem(STORAGE_KEYS.SUPPORT_CONVERSATIONS, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-    addToast({
-      type: 'info',
-      title: 'AI Draft Discarded',
-      message: 'Draft response removed.'
-    });
-  };
-
-  const generateAIDraft = async (conversationId: string) => {
-    const target = supportConversations.find(c => c.id === conversationId);
-    if (!target) return;
-
-    setSupportConversations(prev =>
-      prev.map(c => (c.id === conversationId ? { ...c, isAiTyping: true } : c))
-    );
-
-    await new Promise(r => setTimeout(r, 900));
-
-    let generatedText = `Hello ${target.customer.name}! Thank you for reaching out to JW Studio. We've verified your query regarding ${target.aiSummary.intent}. Our team is ready to assist you immediately.`;
-    if (target.channel === 'whatsapp') {
-      generatedText = `Hi ${target.customer.name}! We've checked our system regarding your order status. Everything is on schedule for expedited dispatch from our Selangor fulfillment hub. Let us know if you need an official SST tax invoice as well!`;
-    }
-
-    const newDraft = {
-      id: `draft-${Date.now()}`,
-      content: generatedText,
-      suggestedAt: 'Just now',
-      confidence: 0.96,
-      reasoning: `Synthesized customer history (LTV: RM ${target.customer.lifetimeValue.toFixed(2)}) and active inquiry context.`,
-      model: 'Gemini 2.5 Flash B2B Agent',
-      sourceContext: 'OMS + CRM Knowledge Engine'
-    };
-
-    setSupportConversations(prev => {
-      const updated = prev.map(conv => {
-        if (conv.id !== conversationId) return conv;
-        return {
-          ...conv,
-          isAiTyping: false,
-          activeAiDraft: newDraft
-        };
-      });
-      try {
-        localStorage.setItem(STORAGE_KEYS.SUPPORT_CONVERSATIONS, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-
-    addToast({
-      type: 'info',
-      title: 'AI Draft Generated',
-      message: 'New recommended response ready for human review.'
-    });
-  };
-
-  const togglePinConversation = (conversationId: string) => {
-    setSupportConversations(prev => {
-      const updated = prev.map(conv => (conv.id === conversationId ? { ...conv, isPinned: !conv.isPinned } : conv));
-      try {
-        localStorage.setItem(STORAGE_KEYS.SUPPORT_CONVERSATIONS, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-  };
-
-  const markConversationAsRead = (conversationId: string) => {
-    setSupportConversations(prev => {
-      const updated = prev.map(conv => (conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv));
-      try {
-        localStorage.setItem(STORAGE_KEYS.SUPPORT_CONVERSATIONS, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-  };
-
-  const addStaffNote = (conversationId: string, noteContent: string) => {
-    if (!noteContent.trim()) return;
-    const newNote = {
-      id: `note-${Date.now()}`,
-      authorName: user?.name || 'Staff Specialist',
-      authorAvatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      timestamp: 'Just now',
-      content: noteContent.trim()
-    };
-
-    setSupportConversations(prev => {
-      const updated = prev.map(conv => {
-        if (conv.id !== conversationId) return conv;
-        return {
-          ...conv,
-          internalNotes: [...conv.internalNotes, newNote]
-        };
-      });
-      try {
-        localStorage.setItem(STORAGE_KEYS.SUPPORT_CONVERSATIONS, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-
-    addToast({
-      type: 'success',
-      title: 'Internal Note Added',
-      message: 'Private teammate note saved.'
-    });
-  };
-
-  const retryFailedMessage = (conversationId: string, messageId: string) => {
-    setSupportConversations(prev => {
-      const updated = prev.map(conv => {
-        if (conv.id !== conversationId) return conv;
-        const updatedMsgs = conv.messages.map(m => (m.id === messageId ? { ...m, deliveryStatus: 'delivered' as const } : m));
-        return { ...conv, messages: updatedMsgs };
-      });
-      try {
-        localStorage.setItem(STORAGE_KEYS.SUPPORT_CONVERSATIONS, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-
-    addToast({
-      type: 'success',
-      title: 'Message Delivered',
-      message: 'Retry succeeded via secondary carrier gateway.'
-    });
-  };
+  // External AI/social support actions remain inactive until their provider integrations exist.
+  const unavailableSupportAction = (_id: string) => addToast({type: 'info', title: 'Not connected', message: 'AI and social-channel integrations are not enabled.'});
+  const takeOverConversation = unavailableSupportAction, handBackToAI = unavailableSupportAction,
+    approveAIDraft = unavailableSupportAction, discardAIDraft = unavailableSupportAction,
+    togglePinConversation = unavailableSupportAction;
+  const generateAIDraft = async (id: string) => { unavailableSupportAction(id); };
+  const retryFailedMessage = (id: string, _messageId: string) => unavailableSupportAction(id);
 
   const askInternalCopilot = async (query: string, reasoningLevel: CopilotReasoningLevel = 'flash') => {
     if (!query.trim()) return;
@@ -3988,7 +3617,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
     setCountriesSetting(INITIAL_COUNTRIES);
     setZonesSetting(INITIAL_ZONES);
     setOrderTotalModules(INITIAL_ORDER_TOTAL_MODULES);
-    setSupportConversations(INITIAL_SUPPORT_CONVERSATIONS);
+    void refreshSupport();
     setCopilotMessages(INITIAL_INTERNAL_COPILOT_MESSAGES);
     setAiAutoReplyConfig(DEFAULT_AI_AUTO_REPLY_CONFIG);
     localStorage.clear();
@@ -4213,6 +3842,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
         saveTaxRate,
         deleteTaxRate,
         saveGlobalTaxEngine,
+        supportLoading, supportError, supportBusy,
         supportConversations,
         supportDrafts,
         setSupportDraft,

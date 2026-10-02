@@ -61,6 +61,8 @@ Route::post('/api/marketplace/hub/events', \App\Http\Controllers\MarketplaceHubE
     ->middleware('throttle:120,1');
 
 Route::get('/', [StorefrontController::class, 'home'])->name('storefront.home');
+Route::get('/support/chat', [\App\Http\Controllers\Storefront\SupportChatController::class, 'show'])->middleware('throttle:60,1');
+Route::post('/support/chat/messages', [\App\Http\Controllers\Storefront\SupportChatController::class, 'send'])->middleware('throttle:20,1');
 Route::get('/shop', [StorefrontController::class, 'index'])->name('storefront.index');
 Route::get('/categories/{category:slug}', [StorefrontController::class, 'category'])->name('storefront.categories.show');
 Route::get('/collections/{collection:slug}', [StorefrontController::class, 'collection'])->name('storefront.collections.show');
@@ -148,6 +150,11 @@ Route::get('/admin/shipping/easyparcel/callback/denied', [ShippingProviderApiCon
     ->name('admin.shipping.easyparcel.callback.denied');
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function (): void {
+    Route::get('/api/support/conversations', [\App\Http\Controllers\Admin\SupportChatController::class, 'index']);
+    Route::post('/api/support/conversations/{conversation}/messages', [\App\Http\Controllers\Admin\SupportChatController::class, 'send'])->whereUuid('conversation')->middleware('throttle:60,1');
+    Route::patch('/api/support/conversations/{conversation}/status', [\App\Http\Controllers\Admin\SupportChatController::class, 'status'])->whereUuid('conversation');
+    Route::post('/api/support/conversations/{conversation}/read', [\App\Http\Controllers\Admin\SupportChatController::class, 'read'])->whereUuid('conversation');
+    Route::post('/api/support/conversations/{conversation}/notes', [\App\Http\Controllers\Admin\SupportChatController::class, 'note'])->whereUuid('conversation')->middleware('throttle:30,1');
     Route::get('/api/dashboard', DashboardDataController::class)->name('api.dashboard');
     Route::get('/api/customers', [CustomerDirectoryDataController::class, 'index'])->name('api.customers');
     Route::get('/api/staff/review-permissions', [StaffReviewPermissionController::class, 'index'])->name('api.staff.review-permissions.index');

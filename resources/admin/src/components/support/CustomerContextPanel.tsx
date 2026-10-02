@@ -32,14 +32,13 @@ interface CustomerContextPanelProps {
 export const CustomerContextPanel: React.FC<CustomerContextPanelProps> = ({
   conversation, onClose
 }) => {
-  const { addStaffNote, addToast } = useAdmin();
+  const { addStaffNote, addToast, supportBusy } = useAdmin();
   const [newNote, setNewNote] = useState('');
 
-  const handleAddNote = (e: React.FormEvent) => {
+  const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNote.trim()) return;
-    addStaffNote(conversation.id, newNote);
-    setNewNote('');
+    if(await addStaffNote(conversation.id, newNote)) setNewNote('');
   };
 
   const handleApplyVoucher = () => {
@@ -149,14 +148,14 @@ export const CustomerContextPanel: React.FC<CustomerContextPanelProps> = ({
         <form onSubmit={handleAddNote} className="space-y-2 pt-1 border-t border-neutral-200 dark:border-neutral-700/60">
           <input
             type="text"
-            placeholder="Add internal teammate note..."
+            placeholder="Add internal teammate note..." maxLength={2000} disabled={supportBusy}
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
           <button
             type="submit"
-            disabled={!newNote.trim()}
+            disabled={!newNote.trim()||supportBusy}
             className="w-full flex items-center justify-center gap-1 py-1 text-xs font-medium bg-neutral-900 hover:bg-neutral-800 disabled:opacity-40 text-white rounded-lg transition-colors dark:bg-neutral-100 dark:text-neutral-900"
           >
             <Plus className="w-3.5 h-3.5" />

@@ -44,7 +44,7 @@ interface ConversationListPanelProps {
 
 // Channel display metadata
 export const CHANNEL_META: Record<SupportChannel, { label: string; bg: string; text: string; icon: any }> = {
-  web_guest: { label: 'Web Guest', bg: 'bg-blue-50 dark:bg-blue-950/60', text: 'text-blue-600 dark:text-blue-400', icon: Globe },
+  web_guest: { label: 'Storefront', bg: 'bg-blue-50 dark:bg-blue-950/60', text: 'text-blue-600 dark:text-blue-400', icon: Globe },
   whatsapp: { label: 'WhatsApp', bg: 'bg-emerald-50 dark:bg-emerald-950/60', text: 'text-emerald-600 dark:text-emerald-400', icon: Phone },
   facebook: { label: 'Facebook', bg: 'bg-indigo-50 dark:bg-indigo-950/60', text: 'text-indigo-600 dark:text-indigo-400', icon: Facebook },
   instagram: { label: 'Instagram', bg: 'bg-pink-50 dark:bg-pink-950/60', text: 'text-pink-600 dark:text-pink-400', icon: Instagram },
@@ -202,7 +202,7 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
                     {/* Intent / Topic line */}
                     <div className="flex items-center gap-1.5 mt-0.5 text-[11px]">
                       <span className="text-neutral-500 dark:text-neutral-400 font-medium truncate">
-                        {channelMeta.label} · Sample
+                        {channelMeta.label}
                       </span>
                     </div>
 

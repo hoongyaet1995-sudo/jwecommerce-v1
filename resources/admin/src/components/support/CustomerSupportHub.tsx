@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import {
   MessageSquareText,
@@ -18,7 +18,7 @@ import { sectionFromPath } from '../../integration/adminRoutes';
 
 export const CustomerSupportHub: React.FC = () => {
   const {
-    supportConversations,
+    supportConversations, supportLoading, supportError,
     selectedConversationId,
     setSelectedConversationId,
     setCurrentSection,
@@ -36,6 +36,11 @@ export const CustomerSupportHub: React.FC = () => {
   const activeConversation = useMemo(() => {
     return supportConversations.find(c => c.id === selectedConversationId) || null;
   }, [supportConversations, selectedConversationId]);
+
+  useEffect(() => {
+    const matches = supportConversations.filter(c => statusFilter === 'resolved' ? c.status === 'resolved' : c.status !== 'resolved');
+    if (!matches.some(c => c.id === selectedConversationId)) setSelectedConversationId(matches[0]?.id || null);
+  }, [supportConversations, selectedConversationId, statusFilter, setSelectedConversationId]);
 
   // Overall statistics
   const stats = useMemo(() => {
@@ -78,8 +83,8 @@ export const CustomerSupportHub: React.FC = () => {
                 Customer Support
               </h1>
             </div>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 hidden sm:block">
-              Interactive sample · No API or AI connections
+            <p role={supportError ? "alert" : "status"} className={"text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 " + (supportError ? "" : "hidden sm:block")}>
+              {supportError || (supportLoading ? 'Loading conversations…' : 'Storefront inbox')}
             </p>
           </div>
         </div>
