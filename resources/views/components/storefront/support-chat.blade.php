@@ -46,7 +46,7 @@ function render(conversation){
   meta.className='meta'+(user?' user':'');meta.textContent=(user?'You':'Support team')+' · '+new Date(message.createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
   stream.append(msg,meta);
  }
- if(nearBottom||previous!==conversation?.messages?.at(-1)?.id)stream.scrollTop=stream.scrollHeight;
+ if(conversation?.messages?.length&&(nearBottom||previous!==conversation.messages.at(-1)?.id))stream.scrollTop=stream.scrollHeight;
  status.textContent=conversation?.status==='resolved'?'Conversation resolved · Send a message to reopen':'Messages go to our support team';
 }
 async function refresh(){
