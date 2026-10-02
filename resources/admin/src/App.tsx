@@ -38,6 +38,8 @@ import { PromotionsHub } from './components/promotions/PromotionsHub';
 const AdminLayoutContent: React.FC = () => {
   const { currentSection, isSidebarCollapsed, selectedPageId } = useAdmin();
   const isPageEditorStandalone = currentSection === 'pages-builder' && Boolean(selectedPageId);
+  const isSupportStandalone = currentSection === 'support';
+  const isStandalone = isPageEditorStandalone || isSupportStandalone;
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const renderActiveSection = () => {
@@ -108,29 +110,29 @@ const AdminLayoutContent: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-neutral-100 dark:bg-neutral-950 font-sans text-neutral-900 dark:text-neutral-100 antialiased selection:bg-indigo-500 selection:text-white">
+    <div className={`${isSupportStandalone ? 'h-dvh w-full' : 'h-screen w-screen'} flex overflow-hidden bg-neutral-100 dark:bg-neutral-950 font-sans text-neutral-900 dark:text-neutral-100 antialiased selection:bg-indigo-500 selection:text-white`}>
       {/* Left Sidebar */}
-      {!isPageEditorStandalone && <AdminSidebar
+      {!isStandalone && <AdminSidebar
         isOpen={mobileSidebarOpen}
         onCloseMobile={() => setMobileSidebarOpen(false)}
       />}
 
       {/* Mobile Backdrop Overlay */}
-      {!isPageEditorStandalone && mobileSidebarOpen && (
+      {!isStandalone && mobileSidebarOpen && (
         <div
           onClick={() => setMobileSidebarOpen(false)}
           className="fixed inset-0 z-30 bg-black/60 backdrop-blur-xs lg:hidden transition-opacity"
         />
       )}
 
-      {/* Main Content Area (Offset by 72 on lg screens when not collapsed) */}
-      <div className={`flex flex-col flex-1 min-w-0 h-full overflow-hidden transition-all duration-300 ease-in-out ${isPageEditorStandalone ? 'lg:pl-0' : isSidebarCollapsed ? 'lg:pl-0' : 'lg:pl-72'}`}>
+      {/* Main content offset matches the sidebar's w-64 width. */}
+      <div className={`flex flex-col flex-1 min-w-0 h-full overflow-hidden transition-all duration-300 ease-in-out ${isStandalone ? 'lg:pl-0' : isSidebarCollapsed ? 'lg:pl-0' : 'lg:pl-64'}`}>
         {/* Top Header */}
-        {!isPageEditorStandalone && <AdminHeader onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />}
+        {!isStandalone && <AdminHeader onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />}
 
         {/* Dynamic Route View */}
-        <main className={`flex-1 overflow-hidden ${isPageEditorStandalone ? 'p-0 m-0 w-full h-full' : currentSection === 'pages-builder' ? 'overflow-y-auto p-2 sm:p-4' : 'overflow-y-auto p-4 sm:p-6 lg:p-8'} bg-neutral-100/70 dark:bg-neutral-950/70`}>
-          <div className={currentSection === 'pages-builder' ? 'w-full h-full' : 'max-w-7xl mx-auto'}>
+        <main className={`flex-1 min-h-0 overflow-hidden ${isStandalone ? 'p-0 m-0 w-full h-full' : currentSection === 'pages-builder' ? 'overflow-y-auto p-2 sm:p-4' : 'overflow-y-auto p-4 sm:p-6 lg:p-8'} bg-neutral-100/70 dark:bg-neutral-950/70`}>
+          <div className={isStandalone || currentSection === 'pages-builder' ? 'w-full h-full' : 'max-w-7xl mx-auto'}>
             {renderActiveSection()}
           </div>
         </main>

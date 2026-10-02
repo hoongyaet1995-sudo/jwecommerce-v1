@@ -78,7 +78,7 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
     // Status filter
     if (statusFilter === 'unread' && (!c.unreadCount || c.unreadCount === 0)) return false;
     if (statusFilter === 'high_priority' && c.priority !== 'urgent' && c.priority !== 'high') return false;
-    if (statusFilter === 'open' && c.status !== 'open') return false;
+    if (statusFilter === 'open' && c.status === 'resolved') return false;
     if (statusFilter === 'human_mode' && c.status !== 'human_mode') return false;
     if (statusFilter === 'resolved' && c.status !== 'resolved') return false;
 
@@ -89,8 +89,8 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
       const matchPhone = c.customer.phone?.toLowerCase().includes(q);
       const matchEmail = c.customer.email?.toLowerCase().includes(q);
       const matchSnippet = c.snippet.toLowerCase().includes(q);
-      const matchIntent = c.aiSummary.intent.toLowerCase().includes(q);
-      if (!matchName && !matchPhone && !matchEmail && !matchSnippet && !matchIntent) {
+      const matchMessage = c.messages.some(message => message.content.toLowerCase().includes(q));
+      if (!matchName && !matchPhone && !matchEmail && !matchSnippet && !matchMessage) {
         return false;
       }
     }
@@ -115,9 +115,9 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
           <input
-            id="support-inbox-search"
+            id="support-inbox-search" aria-label="Search conversations"
             type="text"
-            placeholder="Search name, phone, order, intent..."
+            placeholder="Search customer or message…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700/80 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
@@ -132,100 +132,11 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
           )}
         </div>
 
-        {/* Channel Horizontal Scroll Filters */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 text-[11px]">
-          <button
-            onClick={() => setSelectedChannel('all')}
-            className={`px-2.5 py-1 rounded-full whitespace-nowrap font-medium transition-colors ${
-              selectedChannel === 'all'
-                ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 shadow-xs'
-                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900'
-            }`}
-          >
-            All Channels
-          </button>
-          {(Object.keys(CHANNEL_META) as SupportChannel[]).map((ch) => {
-            const meta = CHANNEL_META[ch];
-            const isSelected = selectedChannel === ch;
-            const Icon = meta.icon;
-            return (
-              <button
-                key={ch}
-                onClick={() => setSelectedChannel(ch)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-full whitespace-nowrap font-medium transition-colors ${
-                  isSelected
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
-                }`}
-              >
-                <Icon className="w-3 h-3" />
-                <span>{meta.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Status Tab Filters */}
-        <div className="flex items-center justify-between gap-1 text-[11px] font-medium border-t border-neutral-100 dark:border-neutral-800/60 pt-2">
-          <button
-            onClick={() => setStatusFilter('all')}
-            className={`px-2 py-0.5 rounded transition-colors ${
-              statusFilter === 'all'
-                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 font-semibold'
-                : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300'
-            }`}
-          >
-            All ({stats.total})
-          </button>
-
-          <button
-            onClick={() => setStatusFilter('unread')}
-            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-colors ${
-              statusFilter === 'unread'
-                ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 font-semibold'
-                : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300'
-            }`}
-          >
-            <span>Unread</span>
-            {stats.unread > 0 && (
-              <span className="px-1 py-0.2 text-[9px] bg-amber-500 text-white rounded-full font-bold">
-                {stats.unread}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setStatusFilter('open')}
-            className={`px-2 py-0.5 rounded transition-colors ${
-              statusFilter === 'open'
-                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 font-semibold'
-                : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300'
-            }`}
-          >
-            AI Active ({stats.aiHandling})
-          </button>
-
-          <button
-            onClick={() => setStatusFilter('human_mode')}
-            className={`px-2 py-0.5 rounded transition-colors ${
-              statusFilter === 'human_mode'
-                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 font-semibold'
-                : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300'
-            }`}
-          >
-            Human ({stats.humanHandling})
-          </button>
-
-          <button
-            onClick={() => setStatusFilter('resolved')}
-            className={`px-2 py-0.5 rounded transition-colors ${
-              statusFilter === 'resolved'
-                ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 font-semibold'
-                : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300'
-            }`}
-          >
-            Resolved ({stats.resolved})
-          </button>
+        <div className="flex items-center gap-1 text-[11px] font-medium border-t border-neutral-100 dark:border-neutral-800/60 pt-2">
+          {(['open','resolved'] as const).map(status => <button key={status} onClick={() => setStatusFilter(status)} aria-pressed={statusFilter === status}
+            className={'flex-1 px-2 py-1.5 rounded transition-colors '+(statusFilter === status ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 font-semibold' : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300')}>
+            {status === 'open' ? 'Pending' : 'Resolved'} ({supportConversations.filter(c => status === 'open' ? c.status !== 'resolved' : c.status === 'resolved').length})
+          </button>)}
         </div>
       </div>
 
@@ -235,7 +146,7 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
           <div className="p-8 text-center text-neutral-400">
             <MessageSquare className="w-8 h-8 mx-auto stroke-[1.2] mb-2 text-neutral-300 dark:text-neutral-700" />
             <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400">No conversations found</p>
-            <p className="text-[11px] text-neutral-400 mt-0.5">Try resetting search or channel filters</p>
+            <p className="text-[11px] text-neutral-400 mt-0.5">Try another search or switch between Pending and Resolved</p>
           </div>
         ) : (
           sortedList.map((conv) => {
@@ -244,14 +155,16 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
             const ChannelIcon = channelMeta.icon;
 
             return (
-              <div
+              <button type="button"
+                aria-label={'Open conversation with ' + conv.customer.name}
+                aria-pressed={isSelected}
                 key={conv.id}
                 id={`conversation-item-${conv.id}`}
                 onClick={() => {
                   onSelectConversation(conv.id);
                   if (conv.unreadCount > 0) markConversationAsRead(conv.id);
                 }}
-                className={`p-3 cursor-pointer transition-all relative ${
+                className={`w-full text-left p-3 cursor-pointer transition-all relative ${
                   isSelected
                     ? 'bg-indigo-50/60 dark:bg-indigo-950/40 border-l-3 border-indigo-600 dark:border-indigo-500'
                     : 'hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40'
@@ -280,9 +193,6 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
                         <span className={`text-xs font-medium truncate ${isSelected ? 'text-indigo-900 dark:text-indigo-100 font-semibold' : 'text-neutral-900 dark:text-neutral-100'}`}>
                           {conv.customer.name}
                         </span>
-                        {conv.isPinned && (
-                          <Pin className="w-3 h-3 text-amber-500 flex-shrink-0 fill-amber-500" />
-                        )}
                       </div>
                       <span className="text-[10px] text-neutral-400 dark:text-neutral-500 flex-shrink-0">
                         {conv.lastMessageAt}
@@ -292,7 +202,7 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
                     {/* Intent / Topic line */}
                     <div className="flex items-center gap-1.5 mt-0.5 text-[11px]">
                       <span className="text-neutral-500 dark:text-neutral-400 font-medium truncate">
-                        {conv.aiSummary.intent}
+                        {channelMeta.label} · Sample
                       </span>
                     </div>
 
@@ -301,48 +211,10 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
                       {conv.snippet}
                     </p>
 
-                    {/* Bottom Status Tags & AI Draft Indication */}
-                    <div className="flex items-center justify-between gap-1.5 mt-2">
-                      <div className="flex items-center gap-1 overflow-hidden">
-                        {/* Conversation State Badge */}
-                        {conv.status === 'open' && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60">
-                            <Bot className="w-2.5 h-2.5" />
-                            AI Triage
-                          </span>
-                        )}
-                        {conv.status === 'human_mode' && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-blue-50 text-blue-700 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
-                            <UserCheck className="w-2.5 h-2.5" />
-                            Human {conv.assignedAgent ? `(${conv.assignedAgent.name.split(' ')[0]})` : ''}
-                          </span>
-                        )}
-                        {conv.status === 'resolved' && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
-                            <Check className="w-2.5 h-2.5" />
-                            Resolved
-                          </span>
-                        )}
-
-                        {/* AI Draft ready indicator */}
-                        {conv.activeAiDraft && conv.status !== 'resolved' && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-semibold rounded bg-amber-50 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/60">
-                            <Sparkles className="w-2.5 h-2.5" />
-                            Draft Ready
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Unread Counter Badge */}
-                      {conv.unreadCount > 0 && (
-                        <span className="px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-amber-500 text-white flex-shrink-0">
-                          {conv.unreadCount}
-                        </span>
-                      )}
-                    </div>
+                    {conv.unreadCount > 0 && <span aria-label="Unread" className="inline-block w-2 h-2 rounded-full bg-indigo-500 mt-2" />}
                   </div>
                 </div>
-              </div>
+              </button>
             );
           })
         )}

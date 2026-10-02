@@ -465,6 +465,8 @@ interface AdminContextType {
 
   // Customer Support Hub & AI Copilot
   supportConversations: SupportConversation[];
+  supportDrafts: Record<string, string>;
+  setSupportDraft: (conversationId: string, text: string) => void;
   selectedConversationId: string | null;
   setSelectedConversationId: (id: string | null) => void;
   supportActiveTab: 'inbox' | 'copilot';
@@ -558,7 +560,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   const setCurrentSection = (section: NavSection) => {
+    const previousPath = window.location.pathname;
     navigateToSection(section);
+    if (section === 'support' && previousPath !== '/admin/support') {
+      window.history.replaceState({ supportReturnPath: previousPath }, '');
+    }
     setCurrentSectionState(section);
   };
 
@@ -867,6 +873,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Customer Support Hub & AI Copilot State
   const [supportConversations, setSupportConversations] = useState<SupportConversation[]>(INITIAL_SUPPORT_CONVERSATIONS);
+  const [supportDrafts, setSupportDrafts] = useState<Record<string, string>>({});
+  const setSupportDraft = (conversationId: string, text: string) => {
+    setSupportDrafts(previous => ({ ...previous, [conversationId]: text }));
+  };
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(INITIAL_SUPPORT_CONVERSATIONS[0]?.id || null);
   const [supportActiveTab, setSupportActiveTab] = useState<'inbox' | 'copilot'>('inbox');
   const [cannedResponses, setCannedResponses] = useState<CannedResponse[]>(INITIAL_CANNED_RESPONSES);
@@ -4204,6 +4214,8 @@ Would you like me to drill down into customer records, inventory allocation, or 
         deleteTaxRate,
         saveGlobalTaxEngine,
         supportConversations,
+        supportDrafts,
+        setSupportDraft,
         selectedConversationId,
         setSelectedConversationId,
         supportActiveTab,

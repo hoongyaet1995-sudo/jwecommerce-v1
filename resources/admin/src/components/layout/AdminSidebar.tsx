@@ -13,7 +13,6 @@ import {
   ChevronRight,
   ChevronDown,
   Zap,
-  PanelLeftClose,
   Radio,
   Layers,
   Sparkles,
@@ -39,7 +38,6 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
     pages = [],
     staffUsers = [],
     isSidebarCollapsed,
-    toggleSidebarCollapse,
     connections = [],
     marketplaceOrders = [],
     marketplaceInventory = [],
@@ -360,15 +358,6 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
           </div>
         </div>
 
-        {/* Collapse Sidebar Button */}
-        <button
-          onClick={toggleSidebarCollapse}
-          className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
-          title="Collapse Sidebar"
-          aria-label="Collapse Navigation"
-        >
-          <PanelLeftClose className="w-4 h-4" />
-        </button>
       </div>
 
       {/* Navigation Group Items */}
