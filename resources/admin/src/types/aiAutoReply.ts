@@ -45,7 +45,7 @@ export interface AIPersonalityConfig {
 
 export interface FAQKnowledgeItem {
   id: string;
-  category: 'shipping' | 'returns' | 'sizing' | 'payment' | 'store_info' | 'custom';
+  category: string;
   question: string;
   answer: string;
   keywords: string[];
@@ -78,6 +78,8 @@ export interface CustomKnowledgeDoc {
 
 export interface AIKnowledgeScopeConfig {
   faqKnowledge: {
+    categories?: { id: string; label: string }[];
+    deletedCategoryIds?: string[];
     isEnabled: boolean;
     retrievalDepth: 'strict' | 'semantic' | 'deep';
     items: FAQKnowledgeItem[];
@@ -117,34 +119,34 @@ export interface AIKnowledgeScopeConfig {
 }
 
 export interface AIGuardrailsConfig {
-  preventCompetitorMentions: {
-    isEnabled: boolean;
-    competitorBlacklist: string[];
-    standardRefusalMessage: string;
+  competitorMentions: {
+    blockOrNeutralize: boolean;
+    blacklistedCompetitors: string[];
+    neutralizeStrategy: 'redirect_to_store_advantages' | 'neutral_polite_refusal';
+    customCannedResponse: string;
   };
-  strictPriceBargainingGuard: {
-    isEnabled: boolean;
-    enforcementMode: 'strict_refusal' | 'redirect_to_public_promotions';
-    refusalResponse: string;
+  priceBargaining: {
+    blockUnauthorizedDiscounts: boolean;
+    suggestOfficialVouchersOnly: boolean;
+    refusalTemplate: string;
   };
   antiHallucinationRules: {
-    isEnabled: boolean;
-    neverPromiseOutOfStock: boolean;
-    strictStoreContextOnly: boolean; // Rejects general non-ecommerce queries (e.g. politics, coding, unrelated topics)
-    confidenceCutoffThreshold: number; // 0.0 - 1.0 (e.g. 0.75)
-    unrelatedQueryResponse: string;
+    strictStoreContextOnly: boolean;
+    confidenceThresholdCutoff: number; // 50 - 95
+    refuseNonEcommerceQueries: boolean;
+    nonEcommerceRefusalMessage: string;
   };
-  piiAndDataMasking: {
-    maskCreditCardNumbers: boolean;
-    maskNationalIdOrIC: boolean;
-    maskCustomerPersonalPhoneInLogs: boolean;
+  piiDataMasking: {
+    maskCreditCards: boolean;
+    maskNationalIds: boolean;
+    maskFullAddresses: boolean;
+    maskPhoneNumbers: boolean;
   };
-  toxicAndProfanityFilter: {
-    isEnabled: boolean;
-    escalateToSupervisorImmediately: boolean;
-    blockedProfanityResponse: string;
+  profanityAndHarassment: {
+    profanityFilterLevel: 'strict' | 'moderate' | 'lenient';
+    banAfterAbuseCount: number;
+    customForbiddenPhrases: string[];
   };
-  customForbiddenWords: string[];
 }
 
 export interface AIAutoReplyMasterConfig {

@@ -156,9 +156,6 @@ export const AIPersonalityTab: React.FC = () => {
               <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
                 AI Bot Identity & Profile
               </h2>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Define the public avatar, naming, and role title displayed across Storefront Web Chat & WhatsApp.
-              </p>
             </div>
           </div>
           <span className="px-2.5 py-1 text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-full flex items-center gap-1.5">
@@ -240,9 +237,6 @@ export const AIPersonalityTab: React.FC = () => {
             <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
               AI Tone of Voice & Conversational Style
             </h2>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Select the conversational temperament that best matches your brand identity.
-            </p>
           </div>
         </div>
 
@@ -270,9 +264,6 @@ export const AIPersonalityTab: React.FC = () => {
                       {preset.badge}
                     </span>
                   </div>
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed mb-3">
-                    {preset.desc}
-                  </p>
                 </div>
                 <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg p-2.5 text-[11px] italic text-neutral-700 dark:text-neutral-300">
                   {preset.sample}
@@ -289,7 +280,7 @@ export const AIPersonalityTab: React.FC = () => {
           </label>
           <textarea
             rows={2}
-            value={personality.customToneInstructions || ''}
+            maxLength={2000} value={personality.customToneInstructions || ''}
             onChange={e => handleUpdate('customToneInstructions', e.target.value)}
             placeholder="e.g. Always mention that 280GSM heavy cotton feels premium and drop-shoulder fits true to size. Use respectful Malaysian English phrasing."
             className="w-full text-xs p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
@@ -306,11 +297,8 @@ export const AIPersonalityTab: React.FC = () => {
             </div>
             <div>
               <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                Brand Mission & Master System Instructions
+                Brand Mission & Master System Instructions · Not connected
               </h2>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                The primary instruction prompt passed to the LLM runtime model before processing customer input.
-              </p>
             </div>
           </div>
           <div className="text-[11px] font-mono text-neutral-400">
@@ -331,7 +319,7 @@ export const AIPersonalityTab: React.FC = () => {
 
           <textarea
             rows={7}
-            value={personality.brandMissionPrompt}
+            disabled value={personality.brandMissionPrompt}
             onChange={e => handleUpdate('brandMissionPrompt', e.target.value)}
             className="w-full font-mono text-xs p-3.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-xl text-neutral-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500 leading-relaxed"
           />
@@ -340,7 +328,7 @@ export const AIPersonalityTab: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-3">
             <div>
               <div className="flex items-center justify-between text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                <span>Creativity Temperature</span>
+                <span>Creativity Temperature · Not connected</span>
                 <span className="font-mono text-indigo-600 dark:text-indigo-400">{personality.creativityTemperature.toFixed(2)}</span>
               </div>
               <input
@@ -348,13 +336,10 @@ export const AIPersonalityTab: React.FC = () => {
                 min="0.0"
                 max="1.0"
                 step="0.05"
-                value={personality.creativityTemperature}
+                disabled value={personality.creativityTemperature}
                 onChange={e => handleUpdate('creativityTemperature', parseFloat(e.target.value))}
                 className="w-full accent-indigo-600"
               />
-              <p className="text-[10px] text-neutral-400 mt-1">
-                Lower (0.1 - 0.3) = Deterministic & exact factual answers (Recommended for orders & policy).
-              </p>
             </div>
 
             <div>
@@ -364,21 +349,19 @@ export const AIPersonalityTab: React.FC = () => {
               </div>
               <input
                 type="range"
-                min="100"
-                max="800"
+                min="150"
+                max="600"
                 step="20"
                 value={personality.maxOutputTokens}
                 onChange={e => handleUpdate('maxOutputTokens', parseInt(e.target.value))}
                 className="w-full accent-indigo-600"
               />
-              <p className="text-[10px] text-neutral-400 mt-1">
-                Keeps responses crisp and scannable on mobile chat interfaces.
-              </p>
             </div>
           </div>
         </div>
       </section>
 
+      <fieldset disabled className="space-y-6"><p className="text-xs text-neutral-500">Greetings, offline messages and escalation rules: Not connected</p>
       {/* 4. Automated Greeting & Offline Auto-Responders */}
       <section id="ai-multilingual-messages-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
         <div className="flex items-center justify-between pb-4 border-b border-neutral-100 dark:border-neutral-800">
@@ -390,9 +373,6 @@ export const AIPersonalityTab: React.FC = () => {
               <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
                 Multilingual Greeting & System Fallbacks
               </h2>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Customized greetings when a customer opens chat, after-hours offline responses, and handoff notices.
-              </p>
             </div>
           </div>
 
@@ -436,7 +416,6 @@ export const AIPersonalityTab: React.FC = () => {
           <div>
             <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5 flex items-center justify-between">
               <span>👋 Welcome Greeting Message ({activeLangTab.toUpperCase()})</span>
-              <span className="text-[10px] text-neutral-400 font-normal">Sent immediately when chat is opened</span>
             </label>
             <textarea
               rows={2}
@@ -450,7 +429,6 @@ export const AIPersonalityTab: React.FC = () => {
           <div>
             <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5 flex items-center justify-between">
               <span>🌙 After-Hours / Offline Message ({activeLangTab.toUpperCase()})</span>
-              <span className="text-[10px] text-neutral-400 font-normal">Triggered when human staff are offline</span>
             </label>
             <textarea
               rows={2}
@@ -464,7 +442,6 @@ export const AIPersonalityTab: React.FC = () => {
           <div>
             <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5 flex items-center justify-between">
               <span>🤝 Human Agent Handoff Notice ({activeLangTab.toUpperCase()})</span>
-              <span className="text-[10px] text-neutral-400 font-normal">Sent when conversation is transferred to human agent</span>
             </label>
             <textarea
               rows={2}
@@ -486,9 +463,6 @@ export const AIPersonalityTab: React.FC = () => {
             <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
               Human Agent Escalation & Fallback Rules
             </h2>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Configure conditions when the AI must safely bow out and hand the customer to an on-duty human agent.
-            </p>
           </div>
         </div>
 
@@ -514,9 +488,6 @@ export const AIPersonalityTab: React.FC = () => {
             />
             <label htmlFor="trigger-frustration" className="cursor-pointer">
               <span className="text-xs font-bold text-neutral-900 dark:text-white block">Auto-detect Customer Frustration & Anger</span>
-              <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block mt-0.5">
-                Uses sentiment analysis to immediately ring staff when high distress or anger is sensed.
-              </span>
             </label>
           </div>
 
@@ -541,9 +512,6 @@ export const AIPersonalityTab: React.FC = () => {
             />
             <label htmlFor="trigger-refund" className="cursor-pointer">
               <span className="text-xs font-bold text-neutral-900 dark:text-white block">Immediate Escalation on RMA / Refund Disputes</span>
-              <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block mt-0.5">
-                Prevents AI hallucination on bank transfers or financial claims by passing to finance staff.
-              </span>
             </label>
           </div>
 
@@ -568,9 +536,6 @@ export const AIPersonalityTab: React.FC = () => {
             />
             <label htmlFor="trigger-vip" className="cursor-pointer">
               <span className="text-xs font-bold text-neutral-900 dark:text-white block">VIP Tier White-Glove Direct Routing</span>
-              <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block mt-0.5">
-                Customers with LTV &gt; RM 1,500 are automatically prioritized for personal human concierge.
-              </span>
             </label>
           </div>
 
@@ -580,9 +545,6 @@ export const AIPersonalityTab: React.FC = () => {
                 <span>Consecutive Failure Threshold</span>
                 <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">{personality.humanHandoffTriggers.consecutiveFailureCount} failed turns</span>
               </div>
-              <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                If the AI fails to answer or clarify twice in a row, automatically page human staff.
-              </p>
             </div>
           </div>
         </div>
@@ -627,6 +589,7 @@ export const AIPersonalityTab: React.FC = () => {
           </div>
         </div>
       </section>
+      </fieldset>
     </div>
   );
 };

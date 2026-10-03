@@ -102,6 +102,7 @@ export const AIGuardrailsTab: React.FC = () => {
 
   return (
     <div id="ai-guardrails-tab-container" className="space-y-6 animate-in fade-in duration-150">
+      <p className="text-xs text-neutral-500">FAQ grounding is enforced by the server. Other controls below are Not connected.</p><fieldset disabled className="space-y-6">
       {/* 1. Competitor Mentions & Neutralizer */}
       <section id="competitor-guardrail-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
@@ -115,12 +116,9 @@ export const AIGuardrailsTab: React.FC = () => {
                   Competitor Brand Neutralizer & Blacklist
                 </h2>
                 <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 rounded-full">
-                  {guardrails.competitorMentions.blacklistedCompetitors.length} Brands Blocked
+                  {guardrails.competitorMentions.blacklistedCompetitors.length} Brands · Not connected
                 </span>
               </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Prevents the AI from validating, praising, or discussing competitor stores and fast-fashion platforms.
-              </p>
             </div>
           </div>
 
@@ -133,7 +131,7 @@ export const AIGuardrailsTab: React.FC = () => {
             }`}
           >
             {guardrails.competitorMentions.blockOrNeutralize ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-            {guardrails.competitorMentions.blockOrNeutralize ? 'Shield Active' : 'Shield Inactive'}
+            Not connected
           </button>
         </div>
 
@@ -219,9 +217,6 @@ export const AIGuardrailsTab: React.FC = () => {
               <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
                 Price Bargaining & Unauthorized Discount Blocker
               </h2>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Guarantees the AI never agrees to ad-hoc customer discounts, haggle requests, or price matching.
-              </p>
             </div>
           </div>
 
@@ -234,7 +229,7 @@ export const AIGuardrailsTab: React.FC = () => {
             }`}
           >
             {guardrails.priceBargaining.blockUnauthorizedDiscounts ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-            {guardrails.priceBargaining.blockUnauthorizedDiscounts ? 'Bargain Blocker Active' : 'Blocker Disabled'}
+            Not connected
           </button>
         </div>
 
@@ -249,9 +244,6 @@ export const AIGuardrailsTab: React.FC = () => {
             />
             <label htmlFor="suggest-official-only" className="cursor-pointer">
               <span className="text-xs font-bold text-neutral-900 dark:text-white block">Auto-Pivot: Offer Official Active Vouchers Only</span>
-              <span className="text-[11px] text-neutral-600 dark:text-neutral-400 block mt-0.5">
-                When customer asks "Can give cheaper?", AI politely explains fixed pricing but offers valid codes (e.g. JWVIP10 or WELCOME50).
-              </span>
             </label>
           </div>
 
@@ -280,9 +272,6 @@ export const AIGuardrailsTab: React.FC = () => {
               <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
                 Anti-Hallucination & Strict Store Context Grounding
               </h2>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Restricts AI exclusively to store operations and prevents answering off-topic prompts or code generation.
-              </p>
             </div>
           </div>
 
@@ -295,7 +284,7 @@ export const AIGuardrailsTab: React.FC = () => {
             }`}
           >
             {guardrails.antiHallucinationRules.strictStoreContextOnly ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-            {guardrails.antiHallucinationRules.strictStoreContextOnly ? 'Grounding Enforced' : 'Grounding Relaxed'}
+            FAQ Grounding · Always enforced
           </button>
         </div>
 
@@ -303,7 +292,7 @@ export const AIGuardrailsTab: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <div className="flex items-center justify-between text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                <span>RAG Confidence Cutoff Score</span>
+                <span>RAG Confidence Cutoff Score · Not connected</span>
                 <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">{guardrails.antiHallucinationRules.confidenceThresholdCutoff}%</span>
               </div>
               <input
@@ -315,9 +304,6 @@ export const AIGuardrailsTab: React.FC = () => {
                 onChange={e => handleUpdate('antiHallucinationRules', 'confidenceThresholdCutoff', parseInt(e.target.value))}
                 className="w-full accent-indigo-600"
               />
-              <p className="text-[10px] text-neutral-400 mt-1">
-                Responses below {guardrails.antiHallucinationRules.confidenceThresholdCutoff}% confidence will safely escalate to human staff instead of guessing.
-              </p>
             </div>
 
             <div className="flex items-center gap-3 p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700">
@@ -329,17 +315,14 @@ export const AIGuardrailsTab: React.FC = () => {
                 className="rounded-sm text-indigo-600"
               />
               <label htmlFor="refuse-non-ecom" className="cursor-pointer">
-                <span className="text-xs font-bold text-neutral-900 dark:text-white block">Block Off-Topic Chit-Chat</span>
-                <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block mt-0.5">
-                  Rejects queries unrelated to apparel, shipping, sizing, or orders.
-                </span>
+                <span className="text-xs font-bold text-neutral-900 dark:text-white block">Block Off-Topic Chit-Chat · Not connected</span>
               </label>
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">
-              Off-Topic Refusal Statement
+              Off-Topic Refusal Statement · Not connected
             </label>
             <input
               type="text"
@@ -361,9 +344,6 @@ export const AIGuardrailsTab: React.FC = () => {
             <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
               PII Data Redaction & Privacy Guard (PDPA Compliance)
             </h2>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Protects sensitive customer information by automatically scrubbing cards, ICs, and addresses from logs.
-            </p>
           </div>
         </div>
 
@@ -377,7 +357,6 @@ export const AIGuardrailsTab: React.FC = () => {
             />
             <div>
               <span className="text-xs font-bold text-neutral-900 dark:text-white block">Credit Card Numbers</span>
-              <span className="text-[10px] text-neutral-500 block mt-0.5">Masks 16-digit PAN to **** 1234</span>
             </div>
           </label>
 
@@ -390,7 +369,6 @@ export const AIGuardrailsTab: React.FC = () => {
             />
             <div>
               <span className="text-xs font-bold text-neutral-900 dark:text-white block">NRIC / Passport IDs</span>
-              <span className="text-[10px] text-neutral-500 block mt-0.5">Masks Malaysian IC / Passport</span>
             </div>
           </label>
 
@@ -403,7 +381,6 @@ export const AIGuardrailsTab: React.FC = () => {
             />
             <div>
               <span className="text-xs font-bold text-neutral-900 dark:text-white block">Home Addresses</span>
-              <span className="text-[10px] text-neutral-500 block mt-0.5">Shows City/State only</span>
             </div>
           </label>
 
@@ -416,7 +393,6 @@ export const AIGuardrailsTab: React.FC = () => {
             />
             <div>
               <span className="text-xs font-bold text-neutral-900 dark:text-white block">Phone Numbers</span>
-              <span className="text-[10px] text-neutral-500 block mt-0.5">Masks to +60 12-*** 9912</span>
             </div>
           </label>
         </div>
@@ -433,9 +409,6 @@ export const AIGuardrailsTab: React.FC = () => {
               <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
                 Profanity, Abuse & Custom Keyword Blacklist
               </h2>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Filters abusive language and blocks sensitive terms from triggering AI outputs.
-              </p>
             </div>
           </div>
 
@@ -456,9 +429,6 @@ export const AIGuardrailsTab: React.FC = () => {
           <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
             <div>
               <span className="text-xs font-bold text-neutral-900 dark:text-white block">Auto-Block Abusive User Sessions</span>
-              <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block mt-0.5">
-                Automatically disables AI chat for 1 hour after {guardrails.profanityAndHarassment.banAfterAbuseCount} repeated toxic attempts.
-              </span>
             </div>
             <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-md bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300">
               {guardrails.profanityAndHarassment.banAfterAbuseCount} strikes limit
@@ -507,6 +477,7 @@ export const AIGuardrailsTab: React.FC = () => {
           </div>
         </div>
       </section>
+    </fieldset>
     </div>
   );
 };

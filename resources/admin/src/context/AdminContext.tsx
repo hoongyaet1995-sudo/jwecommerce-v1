@@ -151,6 +151,9 @@ import {
   CustomKnowledgeDoc
 } from '../types/aiAutoReply';
 import { DEFAULT_AI_AUTO_REPLY_CONFIG } from '../data/defaultAIAutoReply';
+import { normalizeAIAutoReplyConfig } from '../data/normalizeAIAutoReply';
+import { supportFaqRequest } from '../integration/supportFaq';
+import { faqCategories } from '../data/faqCategories';
 
 const ORDERS_POLL_INTERVAL_MS = 15_000;
 
@@ -500,7 +503,7 @@ interface AdminContextType {
   // AI Auto Reply (Storefront AI Support Personality, Knowledge Scope & Guardrails)
   aiAutoReplyConfig: AIAutoReplyMasterConfig;
   updateAIAutoReplyConfig: (updater: (prev: AIAutoReplyMasterConfig) => AIAutoReplyMasterConfig) => void;
-  saveAIAutoReplyConfig: (newConfig: AIAutoReplyMasterConfig) => void;
+  saveAIAutoReplyConfig: (newConfig: AIAutoReplyMasterConfig) => Promise<boolean>;
   addFAQItem: (item: Omit<FAQKnowledgeItem, 'id' | 'lastUpdatedAt'>) => void;
   updateFAQItem: (id: string, updates: Partial<FAQKnowledgeItem>) => void;
   deleteFAQItem: (id: string) => void;
@@ -881,6 +884,17 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [cannedResponses, setCannedResponses] = useState<CannedResponse[]>(INITIAL_CANNED_RESPONSES);
   const [copilotMessages, setCopilotMessages] = useState<CopilotQueryMessage[]>(INITIAL_INTERNAL_COPILOT_MESSAGES);
   const [aiAutoReplyConfig, setAiAutoReplyConfig] = useState<AIAutoReplyMasterConfig>(DEFAULT_AI_AUTO_REPLY_CONFIG);
+  const faqServerVersion = useRef<number | null>(null);
+  const faqSaving = useRef(false);
+  useEffect(() => {
+    let active = true;
+    void supportFaqRequest().then(data => {
+      if (!active) return;
+      faqServerVersion.current = data.version;
+      if (data.faq || data.identity || typeof data.autoReplyEnabled === "boolean") setAiAutoReplyConfig(prev => normalizeAIAutoReplyConfig({ ...prev, personality: {...prev.personality, ...(data.identity || {}), ...(data.personality || {}), ...(data.primaryLanguage ? {primaryLanguage:data.primaryLanguage} : {}), ...(typeof data.autoReplyEnabled === "boolean" ? {isEnabled:data.autoReplyEnabled} : {})}, knowledgeScope: { ...prev.knowledgeScope, faqKnowledge: data.faq || prev.knowledgeScope.faqKnowledge } }));
+    }).catch(() => { if (active) addToast({ type: 'error', title: 'FAQ unavailable', message: 'Reload saved FAQs before publishing.' }); });
+    return () => { active = false; };
+  }, []);
 
   // Selected drawers
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
@@ -933,13 +947,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         try {
           const parsed = JSON.parse(savedAiConfig);
           if (parsed && typeof parsed === 'object') {
-            setAiAutoReplyConfig({
-              ...DEFAULT_AI_AUTO_REPLY_CONFIG,
-              ...parsed,
-              personality: { ...DEFAULT_AI_AUTO_REPLY_CONFIG.personality, ...(parsed.personality || {}) },
-              knowledgeScope: { ...DEFAULT_AI_AUTO_REPLY_CONFIG.knowledgeScope, ...(parsed.knowledgeScope || {}) },
-              guardrails: { ...DEFAULT_AI_AUTO_REPLY_CONFIG.guardrails, ...(parsed.guardrails || {}) },
-            });
+            setAiAutoReplyConfig(normalizeAIAutoReplyConfig(parsed));
           }
         } catch {}
       }
@@ -3324,9 +3332,17 @@ Would you like me to drill down into customer records, inventory allocation, or 
   };
 
   // AI Auto Reply Actions & Knowledge Base CRUD
-  const saveAIAutoReplyConfig = (newConfig: AIAutoReplyMasterConfig) => {
+  const saveAIAutoReplyConfig = async (newConfig: AIAutoReplyMasterConfig) => {
+    if (faqSaving.current) return false;
+    if (faqServerVersion.current === null) { addToast({ type: 'error', title: 'FAQ unavailable', message: 'Reload saved FAQs before publishing.' }); return false; }
+    faqSaving.current = true;
+    try {
+    const draft = newConfig.knowledgeScope.faqKnowledge;
+    const data = await supportFaqRequest({ version: faqServerVersion.current, personality:{toneOfVoice:newConfig.personality.toneOfVoice,customToneInstructions:newConfig.personality.customToneInstructions,maxOutputTokens:Math.max(150,Math.min(600,newConfig.personality.maxOutputTokens))}, autoReplyEnabled:newConfig.personality.isEnabled, primaryLanguage:newConfig.personality.primaryLanguage, identity: {botName: newConfig.personality.botName, roleTitle: newConfig.personality.roleTitle}, faq: { ...draft, categories: faqCategories(draft.categories, draft.items, draft.deletedCategoryIds).map(({ id, label }) => ({ id, label })) } });
+    faqServerVersion.current = data.version;
     const updated: AIAutoReplyMasterConfig = {
       ...newConfig,
+      knowledgeScope: { ...newConfig.knowledgeScope, faqKnowledge: data.faq || draft },
       lastUpdatedAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ' MYT'
     };
     setAiAutoReplyConfig(updated);
@@ -3336,8 +3352,11 @@ Would you like me to drill down into customer records, inventory allocation, or 
     addToast({
       type: 'success',
       title: 'AI Auto Reply Saved',
-      message: 'Personality, knowledge scope and guardrails updated live.'
+      message: 'FAQs and bot identity published to Support Chat. Reply style saved. Other AI settings remain local.'
     });
+    return true;
+    } catch (failure) { addToast({ type: 'error', title: 'FAQ not published', message: (failure as Error).message }); return false; }
+    finally { faqSaving.current = false; }
   };
 
   const updateAIAutoReplyConfig = (updater: (prev: AIAutoReplyMasterConfig) => AIAutoReplyMasterConfig) => {

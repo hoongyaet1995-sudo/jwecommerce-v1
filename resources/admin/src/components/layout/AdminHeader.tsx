@@ -78,6 +78,8 @@ export const AdminHeader: React.FC<{ onToggleMobileSidebar: () => void }> = ({
     }
 
     switch (currentSection) {
+      case 'integration': return { category: 'Connections', title: 'Integration' };
+      case 'integration-ai-connect': return { category: 'Integration', title: 'AI Connect' };
       case 'dashboard': return { category: 'Executive', title: 'Dashboard Overview' };
       case 'marketplace': return { category: 'Marketplace Ecosystem', title: 'Overview Hub' };
       case 'marketplace-auth': return { category: 'Marketplace Ecosystem', title: 'Connect Store' };

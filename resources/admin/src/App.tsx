@@ -34,6 +34,7 @@ import { CustomerSupportHub } from './components/support/CustomerSupportHub';
 import { ReportsHub } from './components/reports/ReportsHub';
 import { AIAutoReplyStudioHub } from './components/ai-auto-reply/AIAutoReplyStudioHub';
 import { PromotionsHub } from './components/promotions/PromotionsHub';
+import { IntegrationHub, AIConnectPage } from './components/integrations/IntegrationPages';
 
 const AdminLayoutContent: React.FC = () => {
   const { currentSection, isSidebarCollapsed, selectedPageId } = useAdmin();
@@ -54,6 +55,10 @@ const AdminLayoutContent: React.FC = () => {
     }
 
     switch (currentSection) {
+      case 'integration':
+        return <IntegrationHub />;
+      case 'integration-ai-connect':
+        return <AIConnectPage />;
       case 'dashboard':
         return <DashboardOverview />;
       case 'promotions':

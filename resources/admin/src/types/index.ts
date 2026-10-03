@@ -1110,6 +1110,8 @@ export type NavSection =
   | 'reports-shipping'
   | 'reports-tax'
   | 'ai-auto-reply'
+  | 'integration'
+  | 'integration-ai-connect'
   | 'promotions'
   | 'settings-ai-agent'
   | 'architecture-spec';

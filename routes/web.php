@@ -62,6 +62,7 @@ Route::post('/api/marketplace/hub/events', \App\Http\Controllers\MarketplaceHubE
 
 Route::get('/', [StorefrontController::class, 'home'])->name('storefront.home');
 Route::get('/support/chat', [\App\Http\Controllers\Storefront\SupportChatController::class, 'show'])->middleware('throttle:60,1');
+Route::get('/support/faq', [\App\Http\Controllers\SupportFaqController::class, 'show'])->middleware('throttle:60,1');
 Route::post('/support/chat/messages', [\App\Http\Controllers\Storefront\SupportChatController::class, 'send'])->middleware('throttle:20,1');
 Route::get('/shop', [StorefrontController::class, 'index'])->name('storefront.index');
 Route::get('/categories/{category:slug}', [StorefrontController::class, 'category'])->name('storefront.categories.show');
@@ -150,6 +151,11 @@ Route::get('/admin/shipping/easyparcel/callback/denied', [ShippingProviderApiCon
     ->name('admin.shipping.easyparcel.callback.denied');
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function (): void {
+    Route::get('/api/support/faq', [\App\Http\Controllers\SupportFaqController::class, 'index']);
+    Route::put('/api/support/faq', [\App\Http\Controllers\SupportFaqController::class, 'save'])->middleware('throttle:20,1');
+    Route::get('/api/integration/ai', [\App\Http\Controllers\Admin\AiConnectionController::class, 'index']);
+    Route::put('/api/integration/ai/{provider}', [\App\Http\Controllers\Admin\AiConnectionController::class, 'save'])->middleware('throttle:ai-provider-save');
+    Route::post('/api/integration/ai/{provider}/verify', [\App\Http\Controllers\Admin\AiConnectionController::class, 'verify'])->middleware('throttle:ai-provider-check');
     Route::get('/api/support/conversations', [\App\Http\Controllers\Admin\SupportChatController::class, 'index']);
     Route::post('/api/support/conversations/{conversation}/messages', [\App\Http\Controllers\Admin\SupportChatController::class, 'send'])->whereUuid('conversation')->middleware('throttle:60,1');
     Route::patch('/api/support/conversations/{conversation}/status', [\App\Http\Controllers\Admin\SupportChatController::class, 'status'])->whereUuid('conversation');
@@ -520,6 +526,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/menus/header', AdminAppController::class)->name('menus.index');
     Route::get('/menus/footer', AdminAppController::class)->name('ui.menus.footer');
     Route::get('/support', AdminAppController::class)->name('support');
+    Route::get('/integration', AdminAppController::class)->name('integration');
+    Route::get('/integration/ai-connect', AdminAppController::class)->name('integration.ai-connect');
     Route::get('/ai-auto-reply', AdminAppController::class)->name('ai-auto-reply');
     Route::get('/reports', AdminAppController::class)->name('reports');
     Route::get('/reports/sales', AdminAppController::class)->name('reports.sales');

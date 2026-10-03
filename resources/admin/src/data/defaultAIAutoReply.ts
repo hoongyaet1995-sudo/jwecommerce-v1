@@ -52,53 +52,7 @@ export const DEFAULT_AI_AUTO_REPLY_CONFIG: AIAutoReplyMasterConfig = {
     faqKnowledge: {
       isEnabled: true,
       retrievalDepth: 'semantic',
-      items: [
-        {
-          id: 'faq-1',
-          category: 'shipping',
-          question: 'What are the delivery times and shipping rates within Malaysia?',
-          answer: 'We provide free standard shipping across West Malaysia on orders over RM 150 (Flat RM 8 for below). Peninsular delivery takes 1-2 working days via Pos Laju or Ninja Van. East Malaysia (Sabah & Sarawak) takes 3-5 working days (Flat RM 15). Tracking numbers are sent via WhatsApp/SMS immediately upon packing.',
-          keywords: ['shipping fee', 'postage', 'delivery time', 'how long', 'pos laju', 'ninja van', 'sabah', 'sarawak', 'west malaysia', 'postage cost'],
-          isActive: true,
-          lastUpdatedAt: '2026-08-15'
-        },
-        {
-          id: 'faq-2',
-          category: 'returns',
-          question: 'What is the return and exchange policy?',
-          answer: 'JW Studio offers a 14-day hassle-free exchange and return policy for unworn items with original tags and packaging attached. Size exchanges within West Malaysia enjoy one-time complimentary return courier pickup.',
-          keywords: ['return', 'exchange', 'wrong size', 'refund', '14 days', 'tukar saiz', 'pulang barang', '退货', '换尺码'],
-          isActive: true,
-          lastUpdatedAt: '2026-08-16'
-        },
-        {
-          id: 'faq-3',
-          category: 'sizing',
-          question: 'How do I choose the right size for JW Heavyweight Oversized Tees?',
-          answer: 'Our 280GSM Heavyweight Luxury Tees are tailored with a modern drop-shoulder relaxed silhouette. For a standard streetwear oversized look, choose your true size. For a fitted classic silhouette, we recommend sizing down one size. S (160-170cm, 50-65kg), M (170-178cm, 65-78kg), L (175-185cm, 78-90kg), XL (180-192cm, 90kg+).',
-          keywords: ['sizing', 'size chart', 'oversized fit', 'measurement', 'how to choose size', 'cm kg', 'berat badan', 'tinggi', '尺码推荐'],
-          isActive: true,
-          lastUpdatedAt: '2026-08-16'
-        },
-        {
-          id: 'faq-4',
-          category: 'payment',
-          question: 'What payment methods do you accept?',
-          answer: 'We accept FPX Online Banking (Maybank2u, CIMB Clicks, Public Bank, Hong Leong), Credit/Debit Cards (Visa & Mastercard), Touch \'n Go eWallet, GrabPay, Atome 3x Buy-Now-Pay-Later (0% interest), DuitNow QR, and Cash on Delivery (COD) via Pos Laju nationwide.',
-          keywords: ['payment', 'fpx', 'tng', 'touch n go', 'duitnow', 'credit card', 'atome', 'installment', 'cod', 'cash on delivery', 'bayar masa sampai', '货到付款'],
-          isActive: true,
-          lastUpdatedAt: '2026-08-17'
-        },
-        {
-          id: 'faq-5',
-          category: 'store_info',
-          question: 'What is the customer support contact and official showroom location?',
-          answer: 'You can contact JW Studio Customer Care via WhatsApp at +0142244200 or email at joshua@jwaistudio.online. Our flagship showroom is located in Kuala Lumpur, open Tuesday to Sunday from 11:00 AM to 8:00 PM.',
-          keywords: ['contact', 'whatsapp', 'telephone', 'phone number', 'email', 'showroom', 'location', 'address', 'kedai fizikal', 'hubungi kami', '联系方式'],
-          isActive: true,
-          lastUpdatedAt: '2026-08-17'
-        }
-      ]
+      items: []
     },
     orderLookup: {
       isEnabled: true,
@@ -194,9 +148,9 @@ export const DEFAULT_AI_AUTO_REPLY_CONFIG: AIAutoReplyMasterConfig = {
     ]
   },
   guardrails: {
-    preventCompetitorMentions: {
-      isEnabled: true,
-      competitorBlacklist: [
+    competitorMentions: {
+      blockOrNeutralize: true,
+      blacklistedCompetitors: [
         'Uniqlo',
         'Zara',
         'H&M',
@@ -209,39 +163,39 @@ export const DEFAULT_AI_AUTO_REPLY_CONFIG: AIAutoReplyMasterConfig = {
         'Shein',
         'Taobao'
       ],
-      standardRefusalMessage: 'At JW Studio, our focus is exclusively on crafting proprietary luxury 280GSM heavy streetwear tailored for Malaysia. We cannot comment on or compare with third-party brands.'
+      neutralizeStrategy: 'redirect_to_store_advantages',
+      customCannedResponse: 'At JW Studio, our focus is exclusively on crafting proprietary luxury 280GSM heavy streetwear tailored for Malaysia. We cannot comment on or compare with third-party brands.'
     },
-    strictPriceBargainingGuard: {
-      isEnabled: true,
-      enforcementMode: 'redirect_to_public_promotions',
-      refusalResponse: 'All JW Studio prices are standardized to guarantee fair, premium direct-from-factory pricing. We cannot offer custom discounts, but you are welcome to use our active voucher code **JWVIP10** for 10% off orders over RM 200!'
+    priceBargaining: {
+      blockUnauthorizedDiscounts: true,
+      suggestOfficialVouchersOnly: true,
+      refusalTemplate: 'All JW Studio prices are standardized to guarantee fair, premium direct-from-factory pricing. We cannot offer manual discounts, but you are welcome to apply active promotional codes at checkout.'
     },
     antiHallucinationRules: {
-      isEnabled: true,
-      neverPromiseOutOfStock: true,
       strictStoreContextOnly: true,
-      confidenceCutoffThreshold: 0.78,
-      unrelatedQueryResponse: 'I specialize specifically in JW Studio fashion collections, orders, shipping, and styling advice. How can I help with your store experience today?'
+      confidenceThresholdCutoff: 75,
+      refuseNonEcommerceQueries: true,
+      nonEcommerceRefusalMessage: 'I specialize specifically in JW Studio fashion collections, orders, shipping, and styling advice. How can I help with your store experience today?'
     },
-    piiAndDataMasking: {
-      maskCreditCardNumbers: true,
-      maskNationalIdOrIC: true,
-      maskCustomerPersonalPhoneInLogs: true
+    piiDataMasking: {
+      maskCreditCards: true,
+      maskNationalIds: true,
+      maskFullAddresses: true,
+      maskPhoneNumbers: true
     },
-    toxicAndProfanityFilter: {
-      isEnabled: true,
-      escalateToSupervisorImmediately: true,
-      blockedProfanityResponse: 'JW Studio maintains a respectful and safe community. Please refrain from using abusive language, and our supervisor will be glad to assist you.'
-    },
-    customForbiddenWords: [
-      'fake',
-      'cheap copy',
-      'pirated',
-      'scam shop',
-      'counterfeit',
-      'free gift without order',
-      'free item please'
-    ]
+    profanityAndHarassment: {
+      profanityFilterLevel: 'strict',
+      banAfterAbuseCount: 3,
+      customForbiddenPhrases: [
+        'fake',
+        'cheap copy',
+        'pirated',
+        'scam shop',
+        'counterfeit',
+        'free gift without order',
+        'free item please'
+      ]
+    }
   },
   lastUpdatedBy: 'Admin (Joshua W.)',
   lastUpdatedAt: '2026-08-17 20:10 MYT'

@@ -282,9 +282,6 @@ export const AISimulatorTab: React.FC = () => {
                   Live Preview
                 </span>
               </div>
-              <p className="text-[11px] text-neutral-500">
-                {personality.roleTitle} • Tone: <span className="font-semibold capitalize text-neutral-700 dark:text-neutral-300">{personality.toneOfVoice.replace('_', ' ')}</span>
-              </p>
             </div>
           </div>
 

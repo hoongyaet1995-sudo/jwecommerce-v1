@@ -1,8 +1,8 @@
 <?php
+
 namespace App\Services\Support;
 
 use App\Models\SupportConversation;
-use App\Models\SupportMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -13,18 +13,20 @@ class SupportChatService
     public function owner(Request $request): array
     {
         $user = auth('customer')->user();
-        if ($user && !$user->is_admin) {
+        if ($user && ! $user->is_admin) {
             return [hash('sha256', 'customer:'.$user->id), $user->id];
         }
-        if (!$request->session()->has('support_guest_key')) {
+        if (! $request->session()->has('support_guest_key')) {
             $request->session()->put('support_guest_key', (string) Str::uuid());
         }
+
         return [hash('sha256', 'guest:'.$request->session()->get('support_guest_key')), null];
     }
 
     public function current(Request $request): ?SupportConversation
     {
         [$owner] = $this->owner($request);
+
         return SupportConversation::where('owner_hash', $owner)->first();
     }
 
@@ -34,6 +36,7 @@ class SupportChatService
         $conversation = SupportConversation::firstOrCreate(['owner_hash' => $owner], [
             'id' => (string) Str::uuid(), 'customer_user_id' => $userId,
         ]);
+
         return $this->append($conversation, $data, 'customer');
     }
 
@@ -46,6 +49,7 @@ class SupportChatService
                 if ($existing->sender_role !== $role || $existing->content !== $data['content'] || $existing->staff_user_id !== $staffId) {
                     throw ValidationException::withMessages(['client_message_id' => 'This message identifier has already been used.']);
                 }
+
                 return $locked;
             }
             if ($role !== 'customer' && $locked->status === 'resolved') {
@@ -56,6 +60,7 @@ class SupportChatService
                 'staff_user_id' => $staffId, 'content' => $data['content'],
             ]);
             $locked->update(['status' => 'open', 'last_message_at' => now()]);
+
             return $locked;
         });
     }
@@ -71,11 +76,14 @@ class SupportChatService
 
     public function publicView(?SupportConversation $conversation): ?array
     {
-        if (!$conversation) return null;
+        if (! $conversation) {
+            return null;
+        }
+
         return ['id' => $conversation->id, 'status' => $conversation->status,
             'messages' => $conversation->messages()->orderBy('id')->get()->map(fn ($message) => [
                 'id' => (string) $message->id, 'clientMessageId' => $message->client_message_id,
-                'role' => $message->sender_role === 'customer' ? 'customer' : 'staff',
+                'role' => $message->sender_role === 'customer' ? 'customer' : ($message->sender_role === 'ai' ? 'ai' : 'staff'),
                 'content' => $message->content, 'createdAt' => $message->created_at->toIso8601String(),
             ])->all()];
     }
@@ -88,6 +96,7 @@ class SupportChatService
         $avatar = '/images/support-person.svg';
         $messages = $conversation->messages->sortBy('id');
         $last = $messages->last();
+
         return [
             'id' => $conversation->id, 'channel' => 'web_guest', 'title' => 'Storefront Support',
             'customer' => [
@@ -105,7 +114,7 @@ class SupportChatService
             'createdAt' => $conversation->created_at->toIso8601String(),
             'messages' => $messages->map(fn ($m) => [
                 'id' => (string) $m->id, 'conversationId' => $conversation->id, 'senderRole' => $m->sender_role,
-                'senderName' => $m->sender_role === 'customer' ? $name : ($m->staff?->name ?? 'Support'),
+                'senderName' => $m->sender_role === 'customer' ? $name : ($m->sender_role === 'ai' ? 'AI Support' : ($m->staff?->name ?? 'Support')),
                 'senderAvatar' => $avatar, 'timestamp' => $m->created_at->format('d M H:i'),
                 'content' => $m->content, 'type' => 'text', 'deliveryStatus' => 'sent',
             ])->values()->all(),

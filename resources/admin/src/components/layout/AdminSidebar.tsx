@@ -22,7 +22,8 @@ import {
   BarChart3,
   Bot,
   Tag,
-  Percent
+  Percent,
+  Plug
 } from 'lucide-react';
 
 export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => void }> = ({
@@ -234,6 +235,12 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
   ];
 
   const customerCareNav = [
+    {
+      id: 'integration' as NavSection,
+      label: 'Integration',
+      icon: Plug,
+      isActive: currentSection === 'integration' || currentSection === 'integration-ai-connect',
+    },
     {
       id: 'support' as NavSection,
       label: 'Customer Support',

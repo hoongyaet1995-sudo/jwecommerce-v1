@@ -71,9 +71,6 @@ export const AIAutoReplyStudioHub: React.FC = () => {
                   {isMasterEnabled ? 'AI Auto-Reply Active' : 'AI Offline (Human Only)'}
                 </span>
               </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 max-w-2xl leading-relaxed">
-                Universal E-Commerce LLM Support Engine: Configure bot personality, define read-only access boundaries (FAQs, Order Tracking, Product Matrix, Active Vouchers), and enforce rigid safety guardrails.
-              </p>
             </div>
           </div>
 
@@ -134,7 +131,7 @@ export const AIAutoReplyStudioHub: React.FC = () => {
             },
             {
               id: 'simulator' as AIStudioTab,
-              label: 'Interactive Simulator',
+              label: 'Interactive Simulator · Not connected',
               sub: 'Live preview test & policy inspector',
               icon: PlayCircle,
               color: 'text-emerald-600 dark:text-emerald-400'
@@ -145,6 +142,7 @@ export const AIAutoReplyStudioHub: React.FC = () => {
             return (
               <button
                 key={tab.id}
+                disabled={tab.id === 'simulator'}
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-4 py-2.5 rounded-xl border transition-all text-left flex items-center gap-3 whitespace-nowrap ${
                   isActive
@@ -155,9 +153,6 @@ export const AIAutoReplyStudioHub: React.FC = () => {
                 <Icon className={`w-4 h-4 ${isActive ? 'text-white dark:text-neutral-900' : tab.color}`} />
                 <div>
                   <div className="text-xs font-bold">{tab.label}</div>
-                  <div className={`text-[10px] ${isActive ? 'opacity-80' : 'text-neutral-400'}`}>
-                    {tab.sub}
-                  </div>
                 </div>
               </button>
             );

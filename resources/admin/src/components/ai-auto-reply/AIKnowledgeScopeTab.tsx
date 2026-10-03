@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import {
   Database,
@@ -23,10 +23,12 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { FAQKnowledgeItem, VoucherRule, CustomKnowledgeDoc } from '../../types/aiAutoReply';
+import { faqCategories, removeFAQCategory } from '../../data/faqCategories';
 
 export const AIKnowledgeScopeTab: React.FC = () => {
   const {
     aiAutoReplyConfig,
+    saveAIAutoReplyConfig,
     updateAIAutoReplyConfig,
     addFAQItem,
     updateFAQItem,
@@ -48,11 +50,54 @@ export const AIKnowledgeScopeTab: React.FC = () => {
   const [faqSearchQuery, setFaqSearchQuery] = useState<string>('');
   const [isAddingFaq, setIsAddingFaq] = useState(false);
   const [editingFaqId, setEditingFaqId] = useState<string | null>(null);
+  const [faqFormSaving, setFaqFormSaving] = useState(false);
+  const faqToggleLock = useRef(false);
+  const [faqToggleSaving, setFaqToggleSaving] = useState(false);
+  const toggleFaqActive = async (faq: FAQKnowledgeItem) => {
+    if (faqToggleLock.current) return;
+    faqToggleLock.current = true; setFaqToggleSaving(true);
+    try {
+      await saveAIAutoReplyConfig({...aiAutoReplyConfig, knowledgeScope: {...aiAutoReplyConfig.knowledgeScope, faqKnowledge: {...faqKnowledge, items: faqKnowledge.items.map(item => item.id === faq.id ? {...item, isActive: !faq.isActive} : item)}}});
+    } finally { faqToggleLock.current = false; setFaqToggleSaving(false); }
+  };
+
+  const closeFaqForm = () => { setIsAddingFaq(false); setEditingFaqId(null); setNewFaqQuestion(''); setNewFaqAnswer(''); setNewFaqKeywords(''); };
+  const editFaq = (faq: FAQKnowledgeItem) => { setEditingFaqId(faq.id); setNewFaqQuestion(faq.question); setNewFaqAnswer(faq.answer); setNewFaqCategory(faq.category); setNewFaqKeywords(faq.keywords.join(', ')); setIsAddingFaq(true); };
+
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const categories = faqCategories(faqKnowledge.categories, faqKnowledge.items, faqKnowledge.deletedCategoryIds);
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
+  const deletingCategory = categories.find(category => category.id === deletingCategoryId);
+  const confirmDeleteCategory = () => {
+    if (!deletingCategory || deletingCategory.id === 'others') return;
+    const id = deletingCategory.id;
+    updateAIAutoReplyConfig(prev => ({ ...prev, knowledgeScope: { ...prev.knowledgeScope, faqKnowledge: removeFAQCategory(prev.knowledgeScope.faqKnowledge, id) } }));
+    if (faqCategoryFilter === id) setFaqCategoryFilter('others');
+    if (newFaqCategory === id) setNewFaqCategory('others');
+    setDeletingCategoryId(null);
+    addToast({ type: 'success', title: 'Category Deleted', message: 'Affected FAQs moved to Others.' });
+  };
+
+  const handleAddCategory = () => {
+    const label = newCategoryName.trim().replace(/\s+/g, ' ');
+    if (!label) return;
+    if (categories.some(c => [c.label, c.shortLabel].some(name => name.toLocaleLowerCase() === label.toLocaleLowerCase())) || label.toLocaleLowerCase() === 'all faqs') {
+      addToast({ type: 'warning', title: 'Category Exists', message: 'Choose a different category name.' });
+      return;
+    }
+    const id = 'faq-category-' + crypto.randomUUID();
+    updateAIAutoReplyConfig(prev => ({ ...prev, knowledgeScope: { ...prev.knowledgeScope, faqKnowledge: { ...prev.knowledgeScope.faqKnowledge, categories: [...(prev.knowledgeScope.faqKnowledge.categories || []), { id, label }] } } }));
+    setNewFaqCategory(id);
+    setNewCategoryName('');
+    setIsAddingCategory(false);
+    addToast({ type: 'success', title: 'Category Added', message: label });
+  };
 
   // New FAQ Form
   const [newFaqQuestion, setNewFaqQuestion] = useState('');
   const [newFaqAnswer, setNewFaqAnswer] = useState('');
-  const [newFaqCategory, setNewFaqCategory] = useState<FAQKnowledgeItem['category']>('shipping');
+  const [newFaqCategory, setNewFaqCategory] = useState<FAQKnowledgeItem['category']>(() => categories.some(category => category.id === 'shipping') ? 'shipping' : 'others');
   const [newFaqKeywords, setNewFaqKeywords] = useState('');
 
   // Voucher Form State
@@ -80,23 +125,15 @@ export const AIKnowledgeScopeTab: React.FC = () => {
     return matchesCat && matchesSearch;
   });
 
-  const handleSaveNewFaq = () => {
-    if (!newFaqQuestion.trim() || !newFaqAnswer.trim()) {
-      addToast({ type: 'warning', title: 'Missing Info', message: 'Question and Answer are required.' });
-      return;
-    }
-    const keywordsArr = newFaqKeywords.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
-    addFAQItem({
-      category: newFaqCategory,
-      question: newFaqQuestion.trim(),
-      answer: newFaqAnswer.trim(),
-      keywords: keywordsArr.length > 0 ? keywordsArr : [newFaqCategory],
-      isActive: true
-    });
-    setNewFaqQuestion('');
-    setNewFaqAnswer('');
-    setNewFaqKeywords('');
-    setIsAddingFaq(false);
+  const handleSaveNewFaq = async () => {
+    if (faqFormSaving) return;
+    if (!newFaqQuestion.trim() || !newFaqAnswer.trim()) { addToast({ type: 'warning', title: 'Missing Info', message: 'Question and Answer are required.' }); return; }
+    const keywords = newFaqKeywords.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+    const changes = { category: newFaqCategory, question: newFaqQuestion.trim(), answer: newFaqAnswer.trim(), keywords, lastUpdatedAt: new Date().toISOString().slice(0, 10) };
+    const items = editingFaqId ? faqKnowledge.items.map(faq => faq.id === editingFaqId ? { ...faq, ...changes } : faq) : [...faqKnowledge.items, { ...changes, id: 'faq-' + crypto.randomUUID(), isActive: true }];
+    setFaqFormSaving(true);
+    try { if (await saveAIAutoReplyConfig({ ...aiAutoReplyConfig, knowledgeScope: { ...aiAutoReplyConfig.knowledgeScope, faqKnowledge: { ...faqKnowledge, items } } })) closeFaqForm(); }
+    finally { setFaqFormSaving(false); }
   };
 
   const handleSaveNewVoucher = () => {
@@ -156,9 +193,6 @@ export const AIKnowledgeScopeTab: React.FC = () => {
                   {faqKnowledge.items.length} Questions Indexed
                 </span>
               </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Grounds the AI with official answers for shipping rates, returns, sizing charts, and payment methods.
-              </p>
             </div>
           </div>
 
@@ -187,7 +221,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setIsAddingFaq(true)}
+              onClick={() => { closeFaqForm(); setIsAddingFaq(true); }}
               className="px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-semibold rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow-xs"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -199,19 +233,18 @@ export const AIKnowledgeScopeTab: React.FC = () => {
         {/* Filter & Search Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4">
           <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
-            {['all', 'shipping', 'returns', 'sizing', 'payment', 'store_info'].map(cat => (
+            {[{ id: 'all', label: 'All FAQs', shortLabel: 'All FAQs' }, ...categories].map(category => (
+              <div key={category.id} className={`inline-flex items-center shrink-0 rounded-lg overflow-hidden transition-colors ${faqCategoryFilter === category.id ? 'bg-indigo-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'}`}>
               <button
-                key={cat}
-                onClick={() => setFaqCategoryFilter(cat)}
-                className={`px-2.5 py-1 text-[11px] font-medium rounded-lg capitalize whitespace-nowrap transition-colors ${
-                  faqCategoryFilter === cat
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-                }`}
+                onClick={() => setFaqCategoryFilter(category.id)}
+                className="px-2.5 py-1 text-[11px] font-medium capitalize whitespace-nowrap hover:opacity-80 transition-opacity"
               >
-                {cat === 'all' ? 'All FAQs' : cat.replace('_', ' ')}
+                {category.shortLabel}
               </button>
+              {category.id !== 'all' && category.id !== 'others' && <button type="button" aria-label={`Delete ${category.shortLabel} category`} onClick={() => setDeletingCategoryId(category.id)} className="pr-2 pl-0.5 py-1 opacity-60 hover:opacity-100 hover:text-rose-500 transition-colors"><Trash2 className="w-3 h-3" /></button>}
+              </div>
             ))}
+            <button type="button" onClick={() => setIsAddingCategory(!isAddingCategory)} aria-label="Add FAQ Category" className="px-2.5 py-1 text-[11px] font-medium rounded-lg whitespace-nowrap bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Add Category</button>
           </div>
 
           <div className="relative w-full sm:w-64">
@@ -227,12 +260,27 @@ export const AIKnowledgeScopeTab: React.FC = () => {
         </div>
 
         {/* FAQ Add Form Modal / Inline Box */}
+        {deletingCategory && <div role="dialog" aria-modal="true" aria-labelledby="delete-faq-category-title" className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onKeyDown={e => { if (e.key === 'Escape') setDeletingCategoryId(null); }}>
+          <div className="w-full max-w-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
+            <h3 id="delete-faq-category-title" className="text-sm font-semibold text-neutral-900 dark:text-white">Delete “{deletingCategory.shortLabel}”?</h3>
+            <p className="mt-3 text-xs text-neutral-600 dark:text-neutral-300">{faqKnowledge.items.filter(item => item.category === deletingCategory.id).length} FAQ(s) will move to Others. FAQ content will be kept.</p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" autoFocus onClick={() => setDeletingCategoryId(null)} className="px-3 py-2 text-xs font-semibold rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">Cancel</button>
+              <button type="button" onClick={confirmDeleteCategory} className="px-3 py-2 text-xs font-semibold rounded-lg bg-rose-600 text-white">Delete Category</button>
+            </div>
+          </div>
+        </div>}
+        {isAddingCategory && <form onSubmit={e => { e.preventDefault(); handleAddCategory(); }} className="mt-4 p-4 rounded-xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800 flex flex-wrap items-center gap-2">
+          <input aria-label="FAQ Category Name" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} maxLength={60} placeholder="Category name" autoFocus className="flex-1 min-w-0 text-xs px-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white" />
+          <button type="submit" disabled={!newCategoryName.trim()} className="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg disabled:opacity-50">Add Category</button>
+          <button type="button" onClick={() => { setIsAddingCategory(false); setNewCategoryName(''); }} className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400">Cancel</button>
+        </form>}
         {isAddingFaq && (
           <div className="mt-4 p-4 rounded-xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800 animate-in slide-in-from-top-2 duration-150">
             <h3 className="text-xs font-bold text-neutral-900 dark:text-white mb-3 flex items-center justify-between">
-              <span>Add New FAQ Knowledge Node</span>
+              <span>{editingFaqId ? 'Edit FAQ' : 'Add New FAQ Knowledge Node'}</span>
               <button
-                onClick={() => setIsAddingFaq(false)}
+                onClick={closeFaqForm}
                 className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
               >
                 ✕
@@ -245,6 +293,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
                     Customer Question
                   </label>
                   <input
+                    aria-label="FAQ Question" maxLength={1000}
                     type="text"
                     value={newFaqQuestion}
                     onChange={e => setNewFaqQuestion(e.target.value)}
@@ -257,16 +306,12 @@ export const AIKnowledgeScopeTab: React.FC = () => {
                     Category
                   </label>
                   <select
+                    aria-label="FAQ Category"
                     value={newFaqCategory}
                     onChange={e => setNewFaqCategory(e.target.value as any)}
                     className="w-full text-xs px-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white"
                   >
-                    <option value="shipping">Shipping & Postage</option>
-                    <option value="returns">Returns & Exchanges</option>
-                    <option value="sizing">Sizing & Measurement</option>
-                    <option value="payment">Payment Methods</option>
-                    <option value="store_info">Store Info & Location</option>
-                    <option value="custom">Custom Policy</option>
+                    {categories.map(category => <option key={category.id} value={category.id}>{category.label}</option>)}
                   </select>
                 </div>
               </div>
@@ -276,6 +321,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
                   Official AI Grounded Answer
                 </label>
                 <textarea
+                  aria-label="FAQ Answer" maxLength={10000}
                   rows={3}
                   value={newFaqAnswer}
                   onChange={e => setNewFaqAnswer(e.target.value)}
@@ -290,6 +336,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
                 </label>
                 <input
                   type="text"
+                  aria-label="FAQ Keywords"
                   value={newFaqKeywords}
                   onChange={e => setNewFaqKeywords(e.target.value)}
                   placeholder="e.g. atome, installment, 0% interest, buy now pay later"
@@ -299,16 +346,17 @@ export const AIKnowledgeScopeTab: React.FC = () => {
 
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
-                  onClick={() => setIsAddingFaq(false)}
+                  onClick={closeFaqForm}
                   className="px-3 py-1.5 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveNewFaq}
+                  disabled={faqFormSaving}
                   className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700"
                 >
-                  Save to Knowledge Base
+                  {faqFormSaving ? 'Saving…' : 'Save to Knowledge Base'}
                 </button>
               </div>
             </div>
@@ -325,7 +373,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2.5">
                   <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 mt-0.5">
-                    {faq.category}
+                    {categories.find(category => category.id === faq.category)?.shortLabel || faq.category}
                   </span>
                   <h4 className="text-xs font-bold text-neutral-900 dark:text-white">
                     {faq.question}
@@ -333,8 +381,12 @@ export const AIKnowledgeScopeTab: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button type="button" aria-label={`Edit FAQ: ${faq.question}`} onClick={() => editFaq(faq)} className="p-1.5 rounded-lg text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40"><Edit2 className="w-3.5 h-3.5" /></button>
                   <button
-                    onClick={() => updateFAQItem(faq.id, { isActive: !faq.isActive })}
+                    type="button"
+                    disabled={faqToggleSaving}
+                    aria-label={`${faq.isActive ? 'Deactivate' : 'Activate'} FAQ: ${faq.question}`}
+                    onClick={() => void toggleFaqActive(faq)}
                     title={faq.isActive ? 'Active in AI Scope' : 'Disabled'}
                     className={`p-1.5 rounded-lg border text-xs ${
                       faq.isActive
@@ -373,6 +425,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
         </div>
       </section>
 
+      <fieldset disabled className="space-y-6"><p className="text-xs text-neutral-500">Order, product, voucher and document sources: Not connected</p>
       {/* 2. Order Lookup & OMS Scope Access Boundaries */}
       <section id="order-lookup-scope-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
@@ -384,9 +437,6 @@ export const AIKnowledgeScopeTab: React.FC = () => {
               <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
                 Order Tracking & OMS Access Boundaries (订单询问权限)
               </h2>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Control how the AI queries real customer order records and prevents sensitive address leakage.
-              </p>
             </div>
           </div>
 
@@ -410,7 +460,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
             }`}
           >
             {orderLookup.isEnabled ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-            {orderLookup.isEnabled ? 'Order Query Active' : 'Order Query Disabled'}
+            Not connected
           </button>
         </div>
 
@@ -422,9 +472,6 @@ export const AIKnowledgeScopeTab: React.FC = () => {
                 <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 <span className="text-xs font-bold text-neutral-900 dark:text-white">Security Verification Gate</span>
               </div>
-              <p className="text-[11px] text-neutral-600 dark:text-neutral-400 mt-1">
-                Before providing tracking details or order summary, customer must verify their identity.
-              </p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -511,9 +558,6 @@ export const AIKnowledgeScopeTab: React.FC = () => {
               <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
                 Product Matrix & Live Inventory Scope (产品询问与库存)
               </h2>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Enables AI to query SKU inventory, fabric GSM weights, and recommend matching streetwear pieces.
-              </p>
             </div>
           </div>
 
@@ -537,7 +581,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
             }`}
           >
             {productCatalog.isEnabled ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-            {productCatalog.isEnabled ? 'Catalog Active' : 'Catalog Disabled'}
+            Not connected
           </button>
         </div>
 
@@ -563,9 +607,6 @@ export const AIKnowledgeScopeTab: React.FC = () => {
             />
             <label htmlFor="check-live-stock" className="cursor-pointer">
               <span className="text-xs font-bold text-neutral-900 dark:text-white block">Real-time Stock & Size Availability</span>
-              <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block mt-0.5">
-                AI checks warehouse Available-to-Promise (ATP) stock before confirming size in-stock.
-              </span>
             </label>
           </div>
 
@@ -590,9 +631,6 @@ export const AIKnowledgeScopeTab: React.FC = () => {
             />
             <label htmlFor="check-upsell" className="cursor-pointer">
               <span className="text-xs font-bold text-neutral-900 dark:text-white block">Smart Upsell & Style Pairing</span>
-              <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block mt-0.5">
-                Suggests matching cargo pants or caps when customer asks about a graphic t-shirt.
-              </span>
             </label>
           </div>
 
@@ -617,9 +655,6 @@ export const AIKnowledgeScopeTab: React.FC = () => {
             />
             <label htmlFor="check-materials" className="cursor-pointer">
               <span className="text-xs font-bold text-neutral-900 dark:text-white block">Heavyweight Cotton & Fit Guide Explainer</span>
-              <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block mt-0.5">
-                Explains 280GSM fabric weight, drop-shoulder tailoring, and recommends size by height/weight.
-              </span>
             </label>
           </div>
 
@@ -629,9 +664,6 @@ export const AIKnowledgeScopeTab: React.FC = () => {
                 <span>Max Product Recommendations</span>
                 <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">{productCatalog.maxRecommendations} items</span>
               </div>
-              <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                Limits the number of product cards shown per reply to prevent chat screen clutter.
-              </p>
             </div>
           </div>
         </div>
@@ -650,12 +682,9 @@ export const AIKnowledgeScopeTab: React.FC = () => {
                   Promotions, Vouchers & Discounts Scope (优惠券询问与规则)
                 </h2>
                 <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded-full">
-                  {promotionsAndDiscounts.vouchers.length} Active Codes
+                  Not connected
                 </span>
               </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Allow AI to provide legitimate campaign vouchers while strictly prohibiting custom price bargaining.
-              </p>
             </div>
           </div>
 
@@ -796,7 +825,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
 
               <div className="mt-3 pt-2 border-t border-emerald-100 dark:border-emerald-900/40 flex items-center justify-between text-[10px] text-emerald-700 dark:text-emerald-400">
                 <span>AI Auto-Disclose</span>
-                <span className="font-bold">Active</span>
+                <span className="font-bold">Not connected</span>
               </div>
             </div>
           ))}
@@ -814,9 +843,6 @@ export const AIKnowledgeScopeTab: React.FC = () => {
               <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
                 Custom Knowledge Documents & Sizing Manuals
               </h2>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Upload or edit markdown policy documents (e.g. 280GSM cotton care, wholesale B2B guidelines).
-              </p>
             </div>
           </div>
 
@@ -957,6 +983,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
           ))}
         </div>
       </section>
+      </fieldset>
     </div>
   );
 };

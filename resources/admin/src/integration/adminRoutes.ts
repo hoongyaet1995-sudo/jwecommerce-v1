@@ -25,6 +25,8 @@ export const ADMIN_PATH_BY_SECTION = {
   'menu-footer': '/admin/menus/footer',
   support: '/admin/support',
   'ai-auto-reply': '/admin/ai-auto-reply',
+  integration: '/admin/integration',
+  'integration-ai-connect': '/admin/integration/ai-connect',
   reports: '/admin/reports',
   'reports-sales': '/admin/reports/sales',
   'reports-orders': '/admin/reports/orders',
