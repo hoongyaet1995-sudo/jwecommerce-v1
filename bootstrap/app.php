@@ -39,6 +39,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 : route('admin.login'),
         );
         $middleware->redirectUsersTo(static function (Request $request): string {
+            if ($request->is('account', 'account/*')) {
+                return $request->user('customer')
+                    ? route('customer.account')
+                    : route('customer.login');
+            }
+
             if ($request->user()?->is_admin) {
                 return route('admin.dashboard');
             }
@@ -57,6 +63,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash([
+            'api_key',
             'clientId',
             'clientSecret',
             'authorizationCode',

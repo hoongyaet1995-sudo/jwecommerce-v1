@@ -19,6 +19,16 @@ class AiConnectionApiTest extends TestCase
 {
     private const KEY = 'fixture-secret-never-return-this';
 
+    public function test_sampling_uses_none_reasoning_for_gpt56_and_rejects_unsupported_models(): void
+    {
+        Http::fake(['api.openai.com/v1/responses' => Http::response(['output' => [['content' => [['type' => 'output_text', 'text' => 'OK']]]]])]);
+        $client = app(\App\Services\AI\OpenAiClient::class);
+        $this->assertSame('OK', $client->text(self::KEY, null, 'gpt-5.6-luna', 'Fixture', 280, 0.25));
+        Http::assertSent(fn ($r) => $r['temperature'] === 0.25 && $r['reasoning']['effort'] === 'none');
+        $this->expectException(\App\Services\AI\ProviderFailure::class);
+        $client->text(self::KEY, null, 'o3', 'Fixture', 280, 0.25);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -107,8 +117,8 @@ class AiConnectionApiTest extends TestCase
         $this->fakeOpenai();
         $this->save(overrides: ['enabled' => true])->assertUnprocessable();
         $this->ready();
-        $this->assertSame('OK', app(AiConnectionService::class)->generateText('support', 'Fixture question', 100));
-        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/responses') && $r['store'] === false && $r['max_output_tokens'] === 100);
+        $this->assertSame('OK', app(AiConnectionService::class)->generateText('support', 'Fixture question', 100, 0.3));
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/responses') && $r['store'] === false && $r['max_output_tokens'] === 100 && $r['temperature'] === 0.3);
         $this->save(overrides: ['version' => 3, 'api_key' => null, 'text_model' => 'gpt-fixture', 'enabled' => true, 'support_enabled' => false])->assertOk();
         $this->expectException(ValidationException::class);
         app(AiConnectionService::class)->generateText('support', 'Blocked question');

@@ -24,6 +24,8 @@ export interface AIPersonalityConfig {
     ms: string;
     zh: string;
   };
+  unknownAnswerMessage: {en:string;ms:string;zh:string};
+  serviceUnavailableMessage: {en:string;ms:string;zh:string};
   offlineMessage: {
     en: string;
     ms: string;
@@ -108,6 +110,7 @@ export interface AIKnowledgeScopeConfig {
     maxRecommendations: number;
     allowedCategories: string[];
   };
+  discountKnowledge?: {isEnabled:boolean;activeIds:string[]};
   promotionsAndDiscounts: {
     isEnabled: boolean;
     canDiscloseActiveVouchers: boolean;

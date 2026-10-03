@@ -30,6 +30,8 @@ export const DEFAULT_AI_AUTO_REPLY_CONFIG: AIAutoReplyMasterConfig = {
       ms: 'Selamat datang ke JW Studio! Ada apa-apa yang boleh saya bantu mengenai pesanan atau koleksi kami?',
       zh: '您好！欢迎来到 JW Studio 官方精品店。请问有什么可以为您服务或查询订单吗？'
     },
+    unknownAnswerMessage: {en:"I couldn't find a confirmed answer in our FAQ. Please leave your question here for our support team.",ms:'Jawapan yang disahkan belum tersedia dalam FAQ kami. Sila tinggalkan soalan untuk pasukan sokongan.',zh:'暂时无法从 FAQ 确认答案。请留下问题，我们的客服团队会协助你。'},
+    serviceUnavailableMessage: {en:'Automatic assistance is temporarily unavailable. Your message has been saved for our support team.',ms:'Bantuan automatik tidak tersedia buat sementara. Mesej anda telah disimpan untuk pasukan sokongan.',zh:'自动客服暂时无法使用。你的消息已保存，客服团队会协助你。'},
     offlineMessage: {
       en: 'Our human team is currently offline (Operating hours: 9:00 AM - 10:00 PM MYT). I am your 24/7 AI Concierge, here to answer questions or check your orders!',
       ms: 'Pasukan kami kini di luar talian. Saya ialah Pembantu AI JW Studio yang sedia membantu 24/7!',
@@ -119,33 +121,7 @@ export const DEFAULT_AI_AUTO_REPLY_CONFIG: AIAutoReplyMasterConfig = {
         }
       ]
     },
-    customKnowledgeDocs: [
-      {
-        id: 'doc-1',
-        title: 'Heavyweight Cotton Garment Care & Washing Guide',
-        category: 'Product Care',
-        contentMarkdown: `### JW Studio Luxury Cotton Care Guide
-- **Water Temperature:** Machine wash cold inside-out (under 30°C) to preserve fabric density.
-- **Drying:** Air dry flat in shade. Do not tumble dry on high heat to prevent shrinkage.
-- **Ironing:** Iron on low-to-medium heat on reverse side. Avoid direct heat on high-density puff prints.`,
-        tags: ['cotton care', 'washing', 'shrinkage', 'puff print', 'garment care'],
-        isActive: true,
-        characterCount: 374,
-        lastUpdatedAt: '2026-08-10'
-      },
-      {
-        id: 'doc-2',
-        title: 'Pos Laju & Ninja Van Weekend Pickup Schedule',
-        category: 'Logistics',
-        contentMarkdown: `### Warehouse Dispatch Timing
-- Orders placed before **2:00 PM (Monday - Friday)** are packed and collected by courier on the same day.
-- Saturday dispatch cutoff is **11:30 AM**. Orders placed on Sunday are picked up Monday morning.`,
-        tags: ['cut off', 'dispatch', 'same day delivery', 'weekend delivery'],
-        isActive: true,
-        characterCount: 268,
-        lastUpdatedAt: '2026-08-12'
-      }
-    ]
+    customKnowledgeDocs: []
   },
   guardrails: {
     competitorMentions: {

@@ -18,6 +18,14 @@ class SupportChatApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->mock(\App\Services\Support\SupportActionResolver::class)->shouldReceive('resolve')->andReturnUsing(fn($r,$c)=>['content'=>$c,'actions'=>[]]);
+        app(\App\Services\Support\SupportActionResolver::class)->shouldReceive('references')->andReturn([]);
+        $this->mock(\App\Services\Support\SupportKnowledgeRetriever::class)->shouldReceive("retrieve")->andReturn([]);
+        $this->mock(\App\Services\Support\UnifiedKnowledgeService::class)->shouldReceive('tools')->andReturn(['faq.search'=>'Policies']);
+        app(\App\Services\Support\UnifiedKnowledgeService::class)->shouldReceive('redact')->andReturnUsing(fn($s)=>$s);
+        app(\App\Services\Support\UnifiedKnowledgeService::class)->shouldReceive('retrieve')->andReturnUsing(function($q,$settings,$history){
+            return array_merge(array_map(fn($i)=>$i+['id'=>'faq'],array_values(array_filter(($settings['faq']['isEnabled']??false)?($settings['faq']['items']??[]):[],fn($i)=>$i['isActive']))),app(\App\Services\Support\DiscountKnowledgeService::class)->facts($settings['discountKnowledge']??[],$q),app(\App\Services\Support\SupportKnowledgeRetriever::class)->retrieve($q,$settings['productCatalog']??[],$history));
+        });
         config(['database.default' => 'sqlite', 'database.connections.sqlite.database' => ':memory:']);
         DB::purge('sqlite');
         DB::setDefaultConnection('sqlite');
@@ -46,6 +54,74 @@ class SupportChatApiTest extends TestCase
             $t->timestamps();
         });
         (require database_path('migrations/2026_10_02_160000_create_support_chat_tables.php'))->up();
+        (require database_path('migrations/2026_10_03_100000_add_support_message_actions.php'))->up();
+    }
+
+    public function test_private_order_reply_never_reaches_model():void
+    {
+        $this->app->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService());
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'productCatalog'=>['isEnabled'=>false],'faq'=>['isEnabled'=>false,'items'=>[]],'orderLookup'=>['isEnabled'=>true,'allowedFields'=>['orderStatus'=>true]]]]);
+        $this->mock(\App\Services\Support\OrderKnowledgeService::class)->shouldReceive('reply')->once()->andReturn('LOCAL_PRIVATE_ORDER_STATUS');
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($p,$prompt,$n)=>str_contains($prompt,'order.lookup')&&!str_contains($prompt,'LOCAL_PRIVATE_ORDER_STATUS')&&!str_contains($prompt,'person@example.com'))->andReturn('{"tools":[{"name":"order.lookup","query":"order status"}]}');
+        $this->postJson('/support/chat/messages',$this->payload('My order status, person@example.com'))->assertOk()->assertJsonPath('conversation.messages.1.content','LOCAL_PRIVATE_ORDER_STATUS');
+    }
+
+    public function test_unified_route_runs_one_plan_then_one_grounded_reply(): void
+    {
+        $this->app->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService());
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'productCatalog'=>['isEnabled'=>false],'faq'=>['isEnabled'=>true,'items'=>[
+            ['id'=>'shipping','category'=>'shipping','question'=>'Shipping coverage','answer'=>'We only deliver within Malaysia; no overseas delivery.','keywords'=>['shipping'],'isActive'=>true],
+            ['id'=>'payment','category'=>'payment','question'=>'Payment methods','answer'=>'PRIVATE_UNRELATED_PAYMENT','keywords'=>['payment'],'isActive'=>true]
+        ]]]]);
+        $ai=$this->mock(AiConnectionService::class);
+        $ai->shouldReceive('generateText')->once()->ordered()->withArgs(fn($purpose,$prompt,$tokens)=>$tokens===250&&str_contains($prompt,'available_tools')&&!str_contains($prompt,'We only deliver'))->andReturn('{"tools":[{"name":"faq.search","query":"shipping coverage"}]}');
+        $ai->shouldReceive('generateText')->once()->ordered()->withArgs(fn($purpose,$prompt,$tokens,$temp)=>str_contains($prompt,'no overseas delivery')&&!str_contains($prompt,'PRIVATE_UNRELATED_PAYMENT'))->andReturn('{"answer":"We only deliver within Malaysia, so we cannot ship to China.","faq_ids":["shipping"]}');
+        $this->postJson('/support/chat/messages',$this->payload('Do you deliver to China?'))->assertOk()->assertJsonPath('conversation.messages.1.content','We only deliver within Malaysia, so we cannot ship to China.');
+    }
+
+    public function test_official_discount_question_reaches_model_with_grounded_rules(): void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'productCatalog'=>['isEnabled'=>false],'faq'=>['isEnabled'=>false,'items'=>[]],'discountKnowledge'=>['isEnabled'=>true,'activeIds'=>['1']]]]);
+        $this->mock(\App\Services\Support\DiscountKnowledgeService::class)->shouldReceive('facts')->once()->with(['isEnabled'=>true,'activeIds'=>['1']], 'What discounts are available?')->andReturn([['id'=>'discount:1','question'=>'Welcome offer','answer'=>'WELCOME10 gives 10% off with RM200 minimum. Eligibility unverified.']]);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($purpose,$prompt,$limit,$temp)=>$purpose==='support'&&str_contains($prompt,'WELCOME10')&&str_contains($prompt,'never guarantee customer eligibility'))->andReturn('{' . '"answer":"WELCOME10 offers 10% off with RM200 minimum; checkout confirms eligibility.","faq_ids":["discount:1"]}');
+        $this->postJson('/support/chat/messages',$this->payload('What discounts are available?'))->assertOk()->assertJsonPath('conversation.messages.1.content','WELCOME10 offers 10% off with RM200 minimum; checkout confirms eligibility.');
+    }
+
+    public function test_catalogue_zero_result_is_rendered_without_second_model_call(): void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $mock=\Mockery::mock(\App\Services\Support\SupportKnowledgeRetriever::class);
+        $mock->shouldReceive('retrieve')->once()->andReturn([['id'=>'catalogue:search','question'=>'Catalogue search result','answer'=>'{"matches":0}']]);
+        $this->app->instance(\App\Services\Support\SupportKnowledgeRetriever::class,$mock);
+        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
+        $this->postJson('/support/chat/messages',$this->payload('do you sell PS5?'))->assertOk()->assertJsonPath('conversation.messages.1.content','I could not find a matching product in our current published online catalogue. Please contact support to confirm availability.');
+    }
+
+    public function test_product_facts_reach_preset_model_with_source_and_price_boundaries(): void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>false,'items'=>[]]]]);
+        $mock=\Mockery::mock(\App\Services\Support\SupportKnowledgeRetriever::class);
+        $mock->shouldReceive('retrieve')->once()->andReturn([['id'=>'product:1','question'=>'Speaker One','answer'=>'{"name":"Speaker One","base_price":"RM 100.00"}']]);
+        $this->app->instance(\App\Services\Support\SupportKnowledgeRetriever::class,$mock);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($feature,$prompt,$limit)=>$feature==='support' && str_contains($prompt,'RM 100.00') && str_contains($prompt,'Never offer negotiated prices') && str_contains($prompt,'product:1'))->andReturn('{"answer":"Speaker One is RM 100.00.","faq_ids":["product:1"]}');
+        $this->postJson('/support/chat/messages',$this->payload('How much is Speaker One?'))->assertOk()->assertJsonPath('conversation.messages.1.content','Speaker One is RM 100.00.');
+    }
+
+    public function test_bargaining_is_blocked_without_a_model_call(): void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
+        $this->postJson('/support/chat/messages', $this->payload('Can you give a cheaper price?'))->assertOk()->assertJsonPath('conversation.messages.1.content', 'I can share listed prices, but cannot negotiate prices or promise an unauthorized discount.');
+    }
+
+    public function test_brand_context_and_selected_language_fallbacks_are_enforced(): void
+    {
+        StoreSetting::create(['key' => 'support_faq', 'value' => ['autoReplyEnabled' => true, 'personality' => ['brandMissionPrompt' => 'Our brand serves with care.', 'unknownAnswerMessage' => ['zh' => '请向客服确认。'], 'serviceUnavailableMessage' => ['zh' => '服务暂时不可用。']], 'faq' => ['isEnabled' => true, 'items' => [['id' => 's', 'question' => 'Shipping?', 'answer' => 'RM8', 'isActive' => true]]]]]);
+        $mock = $this->mock(AiConnectionService::class);
+        $mock->shouldReceive('generateText')->once()->withArgs(fn ($f, $p, $l) => str_contains($p, 'Our brand serves with care.') && str_contains($p, 'Mandatory rules override') && !str_contains($p, '请向客服确认。'))->andReturn('{"answer":"","faq_ids":[]}');
+        $this->postJson('/support/chat/messages', $this->payload('Unknown question') + ['language' => 'zh'])->assertOk()->assertJsonPath('conversation.messages.1.content', '请向客服确认。');
+        $mock->shouldReceive('generateText')->once()->andThrow(new \RuntimeException('provider down'));
+        $this->postJson('/support/chat/messages', $this->payload('Explain delivery') + ['language' => 'zh'])->assertOk()->assertJsonPath('conversation.messages.3.content', '服务暂时不可用。');
     }
 
     public function test_faq_reply_is_free_idempotent_and_stops_after_human_reply(): void
@@ -98,7 +174,7 @@ class SupportChatApiTest extends TestCase
         $this->postJson('/support/chat/messages', $this->payload('shipping cost') + ['language' => 'invalid'])->assertUnprocessable();
     }
 
-    public function test_all_active_faqs_reach_model_without_keyword_match_and_settings_are_style_only(): void
+    public function test_retrieved_faqs_reach_model_and_settings_are_style_only(): void
     {
         StoreSetting::create(['key' => 'support_faq', 'value' => ['autoReplyEnabled' => true, 'personality' => ['toneOfVoice' => 'concise_efficient', 'customToneInstructions' => 'Be brief', 'maxOutputTokens' => 240], 'faq' => ['isEnabled' => true, 'items' => [['id' => 'overseas', 'question' => 'Oversea shipping fee?', 'answer' => 'We only deliver within Malaysia.', 'keywords' => ['oversea'], 'isActive' => true], ['id' => 'hidden', 'question' => 'Hidden', 'answer' => 'SECRET_INACTIVE', 'keywords' => [], 'isActive' => false]]]]]);
         $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn ($f, $p, $n) => str_contains($p, 'We only deliver within Malaysia.') && ! str_contains($p, 'SECRET_INACTIVE') && str_contains($p, 'style only') && $n === 240)->andReturn(json_encode(['answer' => 'We do not ship to China.', 'faq_ids' => ['overseas']]));

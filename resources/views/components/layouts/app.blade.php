@@ -13,6 +13,9 @@
     @if($description)<meta name="description" content="{{ $description }}">@endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <livewire:styles />
+    @if($isStorefront)
+        <link rel="stylesheet" href="{{ asset('css/storefront-scrollbars.css') }}?v={{ filemtime(public_path('css/storefront-scrollbars.css')) }}">
+    @endif
     {{ $head ?? '' }}
 </head>
 <body>

@@ -11,7 +11,7 @@ class SupportFaqController extends Controller
     {
         abort_unless($request->user()?->is_super_admin, 403);
 
-        return response()->json($service->read())->header('Cache-Control', 'no-store');
+        return response()->json($service->read() + ['discountRecords'=>app(\App\Services\Support\DiscountKnowledgeService::class)->records()])->header('Cache-Control', 'no-store');
     }
 
     public function save(Request $request, SupportFaqService $service)

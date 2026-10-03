@@ -102,7 +102,7 @@ export const AIGuardrailsTab: React.FC = () => {
 
   return (
     <div id="ai-guardrails-tab-container" className="space-y-6 animate-in fade-in duration-150">
-      <p className="text-xs text-neutral-500">FAQ grounding is enforced by the server. Other controls below are Not connected.</p><fieldset disabled className="space-y-6">
+      <p className="text-xs text-neutral-500">FAQ/product grounding and listed-price boundaries are enforced by the server. Other controls below are Not connected.</p><fieldset disabled className="space-y-6">
       {/* 1. Competitor Mentions & Neutralizer */}
       <section id="competitor-guardrail-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
@@ -229,7 +229,7 @@ export const AIGuardrailsTab: React.FC = () => {
             }`}
           >
             {guardrails.priceBargaining.blockUnauthorizedDiscounts ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-            Not connected
+            Always enforced
           </button>
         </div>
 

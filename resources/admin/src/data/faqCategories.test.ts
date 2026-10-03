@@ -18,3 +18,10 @@ it('keeps deleted categories absent after serialization and protects Others', ()
   expect(faqCategories(restored.categories, restored.items, restored.deletedCategoryIds).some(c => c.id === 'care')).toBe(false);
   expect(removeFAQCategory(original, 'others')).toBe(original);
 });
+
+it('uses saved labels without injecting default categories', () => {
+  const result = faqCategories([{ id: 'shipping', label: 'Delivery Policy' }], []);
+  expect(result).toEqual([{ id: 'others', label: 'Others', shortLabel: 'Others' }, { id: 'shipping', label: 'Delivery Policy', shortLabel: 'Delivery Policy' }]);
+  expect(faqCategories([], []).map(c => c.id)).toEqual(['others']);
+  expect(faqCategories(undefined, []).find(c => c.id === 'shipping')?.shortLabel).toBe('Shipping & Postage');
+});

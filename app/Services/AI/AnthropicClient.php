@@ -37,10 +37,13 @@ class AnthropicClient implements ProviderClient
         throw new ProviderFailure('models');
     }
 
-    public function text(string $key, ?string $baseUrl, string $model, string $prompt, int $maxTokens): string
+    public function text(string $key, ?string $baseUrl, string $model, string $prompt, int $maxTokens, ?float $temperature = null): string
     {
+        if ($temperature !== null && preg_match('/claude-(?:opus-4-[7-9]|sonnet-5|mythos)/', $model)) {
+            throw new ProviderFailure('temperature');
+        }
         $data = $this->http->json('POST', 'https://api.anthropic.com/v1/messages', $this->headers($key), [
-            'model' => $model, 'messages' => [['role' => 'user', 'content' => $prompt]], 'max_tokens' => $maxTokens,
+            'model' => $model, 'messages' => [['role' => 'user', 'content' => $prompt]], 'max_tokens' => $maxTokens, ...($temperature !== null ? ['temperature' => $temperature] : []),
         ]);
         $text = '';
         foreach ($data['content'] ?? [] as $part) {

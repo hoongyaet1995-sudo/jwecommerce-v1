@@ -1,3 +1,4 @@
+import {DiscountKnowledgeCard} from './DiscountKnowledgeCard';
 import React, { useState, useRef } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import {
@@ -42,7 +43,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
     addToast
   } = useAdmin();
 
-  const { faqKnowledge, orderLookup, productCatalog, promotionsAndDiscounts, customKnowledgeDocs } =
+  const { faqKnowledge, orderLookup, productCatalog, promotionsAndDiscounts } =
     aiAutoReplyConfig.knowledgeScope;
 
   // Local state for modals & search
@@ -82,7 +83,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
   const handleAddCategory = () => {
     const label = newCategoryName.trim().replace(/\s+/g, ' ');
     if (!label) return;
-    if (categories.some(c => [c.label, c.shortLabel].some(name => name.toLocaleLowerCase() === label.toLocaleLowerCase())) || label.toLocaleLowerCase() === 'all faqs') {
+    if (categories.some(c => [c.label].some(name => name.toLocaleLowerCase() === label.toLocaleLowerCase())) || label.toLocaleLowerCase() === 'all faqs') {
       addToast({ type: 'warning', title: 'Category Exists', message: 'Choose a different category name.' });
       return;
     }
@@ -107,13 +108,6 @@ export const AIKnowledgeScopeTab: React.FC = () => {
   const [newVoucherValue, setNewVoucherValue] = useState<number>(10);
   const [newVoucherMinSpend, setNewVoucherMinSpend] = useState<number>(150);
   const [newVoucherDesc, setNewVoucherDesc] = useState('');
-
-  // Doc Form State
-  const [isAddingDoc, setIsAddingDoc] = useState(false);
-  const [newDocTitle, setNewDocTitle] = useState('');
-  const [newDocCategory, setNewDocCategory] = useState('Product Care');
-  const [newDocContent, setNewDocContent] = useState('');
-  const [newDocTags, setNewDocTags] = useState('');
 
   // Filtered FAQs
   const filteredFaqs = faqKnowledge.items.filter(item => {
@@ -156,24 +150,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
     setIsAddingVoucher(false);
   };
 
-  const handleSaveNewDoc = () => {
-    if (!newDocTitle.trim() || !newDocContent.trim()) {
-      addToast({ type: 'warning', title: 'Missing Content', message: 'Title and Markdown content are required.' });
-      return;
-    }
-    const tagsArr = newDocTags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-    addKnowledgeDoc({
-      title: newDocTitle.trim(),
-      category: newDocCategory.trim(),
-      contentMarkdown: newDocContent.trim(),
-      tags: tagsArr.length > 0 ? tagsArr : ['general'],
-      isActive: true
-    });
-    setNewDocTitle('');
-    setNewDocContent('');
-    setNewDocTags('');
-    setIsAddingDoc(false);
-  };
+
 
   return (
     <div id="ai-knowledge-scope-tab-container" className="space-y-6 animate-in fade-in duration-150">
@@ -239,9 +216,9 @@ export const AIKnowledgeScopeTab: React.FC = () => {
                 onClick={() => setFaqCategoryFilter(category.id)}
                 className="px-2.5 py-1 text-[11px] font-medium capitalize whitespace-nowrap hover:opacity-80 transition-opacity"
               >
-                {category.shortLabel}
+                {category.label}
               </button>
-              {category.id !== 'all' && category.id !== 'others' && <button type="button" aria-label={`Delete ${category.shortLabel} category`} onClick={() => setDeletingCategoryId(category.id)} className="pr-2 pl-0.5 py-1 opacity-60 hover:opacity-100 hover:text-rose-500 transition-colors"><Trash2 className="w-3 h-3" /></button>}
+              {category.id !== 'all' && category.id !== 'others' && <button type="button" aria-label={`Delete ${category.label} category`} onClick={() => setDeletingCategoryId(category.id)} className="pr-2 pl-0.5 py-1 opacity-60 hover:opacity-100 hover:text-rose-500 transition-colors"><Trash2 className="w-3 h-3" /></button>}
               </div>
             ))}
             <button type="button" onClick={() => setIsAddingCategory(!isAddingCategory)} aria-label="Add FAQ Category" className="px-2.5 py-1 text-[11px] font-medium rounded-lg whitespace-nowrap bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Add Category</button>
@@ -262,7 +239,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
         {/* FAQ Add Form Modal / Inline Box */}
         {deletingCategory && <div role="dialog" aria-modal="true" aria-labelledby="delete-faq-category-title" className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onKeyDown={e => { if (e.key === 'Escape') setDeletingCategoryId(null); }}>
           <div className="w-full max-w-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
-            <h3 id="delete-faq-category-title" className="text-sm font-semibold text-neutral-900 dark:text-white">Delete “{deletingCategory.shortLabel}”?</h3>
+            <h3 id="delete-faq-category-title" className="text-sm font-semibold text-neutral-900 dark:text-white">Delete “{deletingCategory.label}”?</h3>
             <p className="mt-3 text-xs text-neutral-600 dark:text-neutral-300">{faqKnowledge.items.filter(item => item.category === deletingCategory.id).length} FAQ(s) will move to Others. FAQ content will be kept.</p>
             <div className="mt-5 flex justify-end gap-2">
               <button type="button" autoFocus onClick={() => setDeletingCategoryId(null)} className="px-3 py-2 text-xs font-semibold rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">Cancel</button>
@@ -373,7 +350,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2.5">
                   <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 mt-0.5">
-                    {categories.find(category => category.id === faq.category)?.shortLabel || faq.category}
+                    {categories.find(category => category.id === faq.category)?.label || faq.category}
                   </span>
                   <h4 className="text-xs font-bold text-neutral-900 dark:text-white">
                     {faq.question}
@@ -425,7 +402,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
         </div>
       </section>
 
-      <fieldset disabled className="space-y-6"><p className="text-xs text-neutral-500">Order, product, voucher and document sources: Not connected</p>
+      <div className="space-y-6"><p className="text-xs text-neutral-500">Order access requires customer login or verified order email code. Private replies stay on the server.</p>
       {/* 2. Order Lookup & OMS Scope Access Boundaries */}
       <section id="order-lookup-scope-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
@@ -460,7 +437,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
             }`}
           >
             {orderLookup.isEnabled ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-            Not connected
+            {orderLookup.isEnabled ? "AI access: On" : "AI access: Off"}
           </button>
         </div>
 
@@ -475,26 +452,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              <select
-                value={orderLookup.verificationMethod}
-                onChange={e => {
-                  updateAIAutoReplyConfig(prev => ({
-                    ...prev,
-                    knowledgeScope: {
-                      ...prev.knowledgeScope,
-                      orderLookup: {
-                        ...prev.knowledgeScope.orderLookup,
-                        verificationMethod: e.target.value as any
-                      }
-                    }
-                  }));
-                }}
-                className="text-xs px-3 py-1.5 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white"
-              >
-                <option value="phone_last4">Match Last 4 Digits of Phone (Recommended)</option>
-                <option value="full_phone">Match Full Phone Number</option>
-                <option value="email_match">Match Customer Email Address</option>
-              </select>
+              <span className="text-xs font-medium">Customer login / verified email code (required)</span>
             </div>
           </div>
 
@@ -509,7 +467,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
                 { key: 'trackingNumberAndCourier', label: 'Courier & AWB Tracking Number' },
                 { key: 'estimatedDeliveryDate', label: 'Estimated Delivery Date (EDD)' },
                 { key: 'itemSummary', label: 'Purchased Item & Variant List' },
-                { key: 'shippingAddressMasked', label: 'Masked Shipping Address (Privacy)' },
+                { key: 'shippingAddressMasked', label: 'Shipping Region Only (State / Country)' },
                 { key: 'paymentStatus', label: 'Payment Method & Paid Status' }
               ].map(field => {
                 const isChecked = (orderLookup.allowedFields as any)[field.key];
@@ -547,6 +505,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
         </div>
       </section>
 
+      </div>
       {/* 3. Product Catalog & Live Stock Boundaries */}
       <section id="product-catalog-scope-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
@@ -556,7 +515,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
             </div>
             <div>
               <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                Product Matrix & Live Inventory Scope (产品询问与库存)
+                Product Knowledge & Recommendations
               </h2>
             </div>
           </div>
@@ -581,7 +540,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
             }`}
           >
             {productCatalog.isEnabled ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-            Not connected
+            {productCatalog.isEnabled ? "Active" : "Disabled"}
           </button>
         </div>
 
@@ -606,7 +565,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
               className="mt-0.5 rounded-sm text-indigo-600"
             />
             <label htmlFor="check-live-stock" className="cursor-pointer">
-              <span className="text-xs font-bold text-neutral-900 dark:text-white block">Real-time Stock & Size Availability</span>
+              <span className="text-xs font-bold text-neutral-900 dark:text-white block">Price & Variant Availability</span>
             </label>
           </div>
 
@@ -630,7 +589,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
               className="mt-0.5 rounded-sm text-indigo-600"
             />
             <label htmlFor="check-upsell" className="cursor-pointer">
-              <span className="text-xs font-bold text-neutral-900 dark:text-white block">Smart Upsell & Style Pairing</span>
+              <span className="text-xs font-bold text-neutral-900 dark:text-white block">Product, Category & Collection Search</span>
             </label>
           </div>
 
@@ -654,336 +613,24 @@ export const AIKnowledgeScopeTab: React.FC = () => {
               className="mt-0.5 rounded-sm text-indigo-600"
             />
             <label htmlFor="check-materials" className="cursor-pointer">
-              <span className="text-xs font-bold text-neutral-900 dark:text-white block">Heavyweight Cotton & Fit Guide Explainer</span>
+              <span className="text-xs font-bold text-neutral-900 dark:text-white block">Product Details & Specifications</span>
             </label>
           </div>
 
           <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 flex items-start gap-3">
             <div className="flex-1">
               <div className="flex items-center justify-between text-xs font-bold text-neutral-900 dark:text-white mb-1">
-                <span>Max Product Recommendations</span>
+                <span>Max Products per Reply</span>
                 <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">{productCatalog.maxRecommendations} items</span>
               </div>
+              <input aria-label="Max Products per Reply" type="range" min={1} max={5} value={productCatalog.maxRecommendations} onChange={e => updateAIAutoReplyConfig(prev => ({...prev, knowledgeScope:{...prev.knowledgeScope, productCatalog:{...prev.knowledgeScope.productCatalog, maxRecommendations:Number(e.target.value)}}}))} className="w-full accent-indigo-600" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* 4. Promotions, Vouchers & Discounts Scope */}
-      <section id="promotions-scope-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center flex-shrink-0">
-              <Tag className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                  Promotions, Vouchers & Discounts Scope (优惠券询问与规则)
-                </h2>
-                <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded-full">
-                  Not connected
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => setIsAddingVoucher(true)}
-              className="px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-semibold rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow-xs"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add Voucher
-            </button>
-          </div>
-        </div>
-
-        {/* Voucher Add Modal */}
-        {isAddingVoucher && (
-          <div className="mt-4 p-4 rounded-xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 animate-in slide-in-from-top-2 duration-150">
-            <h3 className="text-xs font-bold text-neutral-900 dark:text-white mb-3 flex items-center justify-between">
-              <span>Register Active Campaign Voucher</span>
-              <button
-                onClick={() => setIsAddingVoucher(false)}
-                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
-              >
-                ✕
-              </button>
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-              <div>
-                <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                  Voucher Code
-                </label>
-                <input
-                  type="text"
-                  value={newVoucherCode}
-                  onChange={e => setNewVoucherCode(e.target.value)}
-                  placeholder="e.g. MERDEKA67"
-                  className="w-full text-xs px-3 py-2 uppercase font-mono bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                  Discount Type
-                </label>
-                <select
-                  value={newVoucherType}
-                  onChange={e => setNewVoucherType(e.target.value as any)}
-                  className="w-full text-xs px-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white"
-                >
-                  <option value="percentage">Percentage OFF (%)</option>
-                  <option value="fixed_myr">Fixed Rebate (RM)</option>
-                  <option value="free_shipping">Free Shipping Waiver</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                  Discount Value
-                </label>
-                <input
-                  type="number"
-                  value={newVoucherValue}
-                  onChange={e => setNewVoucherValue(Number(e.target.value))}
-                  className="w-full text-xs px-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                  Min Spend (RM)
-                </label>
-                <input
-                  type="number"
-                  value={newVoucherMinSpend}
-                  onChange={e => setNewVoucherMinSpend(Number(e.target.value))}
-                  className="w-full text-xs px-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white"
-                />
-              </div>
-
-              <div className="sm:col-span-4">
-                <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                  Public Promotion Description
-                </label>
-                <input
-                  type="text"
-                  value={newVoucherDesc}
-                  onChange={e => setNewVoucherDesc(e.target.value)}
-                  placeholder="e.g. 15% OFF Merdeka Special on orders over RM 200"
-                  className="w-full text-xs px-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-3">
-              <button
-                onClick={() => setIsAddingVoucher(false)}
-                className="px-3 py-1.5 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveNewVoucher}
-                className="px-4 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700"
-              >
-                Register Voucher
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Voucher Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-4">
-          {promotionsAndDiscounts.vouchers.map(v => (
-            <div
-              key={v.id}
-              className="p-3.5 rounded-xl border border-emerald-200/70 dark:border-emerald-800/60 bg-emerald-50/30 dark:bg-emerald-950/20 flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="font-mono text-xs font-bold text-emerald-800 dark:text-emerald-300 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/60 rounded-md border border-emerald-300 dark:border-emerald-700">
-                    {v.code}
-                  </span>
-                  <button
-                    onClick={() => deleteVoucherRule(v.id)}
-                    className="text-neutral-400 hover:text-rose-600 transition-colors p-1"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <p className="text-xs font-semibold text-neutral-900 dark:text-white mb-1">
-                  {v.description}
-                </p>
-                <div className="text-[11px] text-neutral-500 space-y-0.5">
-                  <div>Min Spend: <span className="font-medium text-neutral-700 dark:text-neutral-300">RM {v.minSpend}</span></div>
-                  <div>Expires: <span className="font-mono">{v.expiresAt}</span></div>
-                </div>
-              </div>
-
-              <div className="mt-3 pt-2 border-t border-emerald-100 dark:border-emerald-900/40 flex items-center justify-between text-[10px] text-emerald-700 dark:text-emerald-400">
-                <span>AI Auto-Disclose</span>
-                <span className="font-bold">Not connected</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 5. Custom Knowledge Docs Section */}
-      <section id="custom-docs-scope-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center flex-shrink-0">
-              <FileText className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                Custom Knowledge Documents & Sizing Manuals
-              </h2>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setIsAddingDoc(true)}
-            className="px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-semibold rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow-xs"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add Document
-          </button>
-        </div>
-
-        {/* Add Doc Form */}
-        {isAddingDoc && (
-          <div className="mt-4 p-4 rounded-xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800 animate-in slide-in-from-top-2 duration-150">
-            <h3 className="text-xs font-bold text-neutral-900 dark:text-white mb-3 flex items-center justify-between">
-              <span>Embed New Policy / Care Manual Document</span>
-              <button
-                onClick={() => setIsAddingDoc(false)}
-                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
-              >
-                ✕
-              </button>
-            </h3>
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                    Document Title
-                  </label>
-                  <input
-                    type="text"
-                    value={newDocTitle}
-                    onChange={e => setNewDocTitle(e.target.value)}
-                    placeholder="e.g. Heavyweight Cotton Garment Care & Washing Guide"
-                    className="w-full text-xs px-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                    Category
-                  </label>
-                  <input
-                    type="text"
-                    value={newDocCategory}
-                    onChange={e => setNewDocCategory(e.target.value)}
-                    placeholder="e.g. Product Care"
-                    className="w-full text-xs px-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                  Markdown Content
-                </label>
-                <textarea
-                  rows={4}
-                  value={newDocContent}
-                  onChange={e => setNewDocContent(e.target.value)}
-                  placeholder="### Care Guidelines&#10;- Wash inside out with cold water below 30°C&#10;- Hang dry in shade"
-                  className="w-full font-mono text-xs p-3 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                  Tags (Comma-separated)
-                </label>
-                <input
-                  type="text"
-                  value={newDocTags}
-                  onChange={e => setNewDocTags(e.target.value)}
-                  placeholder="e.g. washing, cotton care, shrinkage, dry flat"
-                  className="w-full text-xs px-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  onClick={() => setIsAddingDoc(false)}
-                  className="px-3 py-1.5 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveNewDoc}
-                  className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700"
-                >
-                  Embed Document
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Doc List */}
-        <div className="mt-4 space-y-3">
-          {customKnowledgeDocs.map(doc => (
-            <div
-              key={doc.id}
-              className="p-4 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-800 flex flex-col gap-2"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300">
-                    {doc.category}
-                  </span>
-                  <h4 className="text-xs font-bold text-neutral-900 dark:text-white">
-                    {doc.title}
-                  </h4>
-                </div>
-
-                <button
-                  onClick={() => deleteKnowledgeDoc(doc.id)}
-                  className="text-neutral-400 hover:text-rose-600 transition-colors p-1"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="bg-white dark:bg-neutral-900 p-3 rounded-lg border border-neutral-200 dark:border-neutral-700 text-[11px] font-mono text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">
-                {doc.contentMarkdown}
-              </div>
-
-              <div className="flex items-center justify-between text-[10px] text-neutral-400 pt-1">
-                <div className="flex items-center gap-1.5">
-                  <span>Tags:</span>
-                  {doc.tags.map((t, i) => (
-                    <span key={i} className="px-1.5 py-0.5 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300">
-                      #{t}
-                    </span>
-                  ))}
-                </div>
-                <span>{doc.characterCount} chars • Updated {doc.lastUpdatedAt}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-      </fieldset>
+      <DiscountKnowledgeCard />
+      {/* Guides & Manuals is deferred until its persisted, permissioned retrieval source is implemented. */}
     </div>
   );
 };

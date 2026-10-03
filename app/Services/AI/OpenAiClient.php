@@ -38,11 +38,20 @@ class OpenAiClient implements ProviderClient
         return $models;
     }
 
-    public function text(string $key, ?string $baseUrl, string $model, string $prompt, int $maxTokens): string
+    public function text(string $key, ?string $baseUrl, string $model, string $prompt, int $maxTokens, ?float $temperature = null): string
     {
         $payload = [
             'model' => $model, 'input' => $prompt, 'max_output_tokens' => $maxTokens, 'store' => false,
         ];
+        if ($temperature !== null) {
+            if (preg_match('/^o[1-9]|^gpt-5(?:-|$)|^gpt-6-astra|^gpt-6\.1-sol/', $model)) {
+                throw new ProviderFailure('temperature');
+            }
+            $payload['temperature'] = $temperature;
+            if (preg_match('/^gpt-5\.[1-9]|^gpt-6-(?:sol|luna)/', $model)) {
+                $payload['reasoning'] = ['effort' => 'none'];
+            }
+        }
         $data = $this->http->json('POST', $this->base($baseUrl).'/responses', ['Authorization' => 'Bearer '.$key], $payload);
         $text = '';
         foreach ($data['output'] ?? [] as $output) {

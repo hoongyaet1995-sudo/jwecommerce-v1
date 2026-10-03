@@ -11,12 +11,13 @@ export const DEFAULT_FAQ_CATEGORIES = [
 ];
 
 export function faqCategories(saved: unknown, items: { category: string }[], deleted: string[] = []) {
-  const categories = DEFAULT_FAQ_CATEGORIES.filter(c => c.id === 'others' || !deleted.includes(c.id));
+  const categories: typeof DEFAULT_FAQ_CATEGORIES = Array.isArray(saved) ? [] : DEFAULT_FAQ_CATEGORIES.filter(c => c.id === 'others' || !deleted.includes(c.id)).map(c => ({ ...c, shortLabel: c.label }));
   if (Array.isArray(saved)) for (const category of saved) {
-    if (category && typeof category.id === 'string' && category.id !== 'all' && !deleted.includes(category.id) && typeof category.label === 'string' && category.label.trim() && !categories.some(c => c.id === category.id)) {
+    if (category && typeof category.id === 'string' && category.id !== 'all' && (category.id === 'others' || !deleted.includes(category.id)) && typeof category.label === 'string' && category.label.trim() && !categories.some(c => c.id === category.id)) {
       categories.push({ id: category.id, label: category.label.trim(), shortLabel: category.label.trim() });
     }
   }
+  if (!categories.some(c => c.id === 'others')) categories.unshift({ id: 'others', label: 'Others', shortLabel: 'Others' });
   for (const item of items) if (!deleted.includes(item.category) && !categories.some(c => c.id === item.category)) {
     categories.push({ id: item.category, label: item.category, shortLabel: item.category });
   }

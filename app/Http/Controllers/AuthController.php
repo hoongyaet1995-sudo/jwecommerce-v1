@@ -29,19 +29,30 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($credentials + ['is_admin' => true], $request->boolean('remember'))) {
+        if (! Auth::guard('web')->attempt($credentials + ['is_admin' => true], $request->boolean('remember'))) {
             return back()->withErrors(['email' => 'The provided credentials do not match our records.'])->onlyInput('email');
         }
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('admin.dashboard'));
+        $intended = $request->session()->get('url.intended');
+        $parts = is_string($intended) ? parse_url($intended) : false;
+        $sameOrigin = $parts !== false
+            && (! isset($parts['host']) || $parts['host'] === $request->getHost())
+            && (! isset($parts['scheme']) || $parts['scheme'] === $request->getScheme())
+            && (! isset($parts['port']) || $parts['port'] === $request->getPort());
+        if ($sameOrigin && $this->safeAdminIntendedPath($parts['path'] ?? null)) {
+            return redirect()->intended(route('admin.dashboard'));
+        }
+
+        return redirect()->route('admin.dashboard');
     }
 
     public function destroy(Request $request): RedirectResponse
     {
-        Auth::logout();
-        $request->session()->invalidate();
+        Auth::guard('web')->logout();
+        // Preserve the independently authenticated customer guard.
+        $request->session()->regenerate();
         $request->session()->regenerateToken();
 
         return redirect()->route('storefront.home');

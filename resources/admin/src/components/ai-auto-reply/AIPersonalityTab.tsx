@@ -297,7 +297,7 @@ export const AIPersonalityTab: React.FC = () => {
             </div>
             <div>
               <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                Brand Mission & Master System Instructions · Not connected
+                Brand Mission & Master System Instructions
               </h2>
             </div>
           </div>
@@ -307,19 +307,9 @@ export const AIPersonalityTab: React.FC = () => {
         </div>
 
         <div className="pt-4 space-y-3">
-          <div className="flex items-center justify-between text-xs text-neutral-500">
-            <span>Available Variable Tags:</span>
-            <div className="flex items-center gap-1.5 font-mono text-[10px]">
-              <span className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">{`{shop_name}`}</span>
-              <span className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">{`{telephone}`}</span>
-              <span className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">{`{email}`}</span>
-              <span className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">{`{currency}`}</span>
-            </div>
-          </div>
-
           <textarea
             rows={7}
-            disabled value={personality.brandMissionPrompt}
+            maxLength={4000} value={personality.brandMissionPrompt}
             onChange={e => handleUpdate('brandMissionPrompt', e.target.value)}
             className="w-full font-mono text-xs p-3.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-xl text-neutral-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500 leading-relaxed"
           />
@@ -328,7 +318,7 @@ export const AIPersonalityTab: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-3">
             <div>
               <div className="flex items-center justify-between text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                <span>Creativity Temperature · Not connected</span>
+                <span>Creativity Temperature</span>
                 <span className="font-mono text-indigo-600 dark:text-indigo-400">{personality.creativityTemperature.toFixed(2)}</span>
               </div>
               <input
@@ -336,7 +326,7 @@ export const AIPersonalityTab: React.FC = () => {
                 min="0.0"
                 max="1.0"
                 step="0.05"
-                disabled value={personality.creativityTemperature}
+                value={personality.creativityTemperature}
                 onChange={e => handleUpdate('creativityTemperature', parseFloat(e.target.value))}
                 className="w-full accent-indigo-600"
               />
@@ -361,7 +351,7 @@ export const AIPersonalityTab: React.FC = () => {
         </div>
       </section>
 
-      <fieldset disabled className="space-y-6"><p className="text-xs text-neutral-500">Greetings, offline messages and escalation rules: Not connected</p>
+      <fieldset className="space-y-6">
       {/* 4. Automated Greeting & Offline Auto-Responders */}
       <section id="ai-multilingual-messages-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
         <div className="flex items-center justify-between pb-4 border-b border-neutral-100 dark:border-neutral-800">
@@ -425,13 +415,22 @@ export const AIPersonalityTab: React.FC = () => {
             />
           </div>
 
+          <div>
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">No Confirmed Answer ({activeLangTab.toUpperCase()})</label>
+            <textarea rows={2} maxLength={2000} value={personality.unknownAnswerMessage[activeLangTab]} onChange={e => handleUpdate('unknownAnswerMessage', {...personality.unknownAnswerMessage, [activeLangTab]:e.target.value})} className="w-full text-xs p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">AI Service Unavailable ({activeLangTab.toUpperCase()})</label>
+            <textarea rows={2} maxLength={2000} value={personality.serviceUnavailableMessage[activeLangTab]} onChange={e => handleUpdate('serviceUnavailableMessage', {...personality.serviceUnavailableMessage, [activeLangTab]:e.target.value})} className="w-full text-xs p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500" />
+          </div>
           {/* Offline Notice */}
           <div>
             <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5 flex items-center justify-between">
-              <span>🌙 After-Hours / Offline Message ({activeLangTab.toUpperCase()})</span>
+              <span>🌙 After-Hours / Offline Message · Not connected ({activeLangTab.toUpperCase()})</span>
             </label>
             <textarea
               rows={2}
+              disabled
               value={personality.offlineMessage[activeLangTab]}
               onChange={e => handleOfflineChange(activeLangTab, e.target.value)}
               className="w-full text-xs p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
@@ -441,10 +440,11 @@ export const AIPersonalityTab: React.FC = () => {
           {/* Handoff Message */}
           <div>
             <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5 flex items-center justify-between">
-              <span>🤝 Human Agent Handoff Notice ({activeLangTab.toUpperCase()})</span>
+              <span>🤝 Human Agent Handoff Notice · Not connected ({activeLangTab.toUpperCase()})</span>
             </label>
             <textarea
               rows={2}
+              disabled
               value={personality.fallbackHandoffMessage[activeLangTab]}
               onChange={e => handleHandoffChange(activeLangTab, e.target.value)}
               className="w-full text-xs p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
@@ -453,6 +453,7 @@ export const AIPersonalityTab: React.FC = () => {
         </div>
       </section>
 
+      </fieldset><fieldset disabled className="space-y-6">
       {/* 5. Human Agent Escalation Triggers */}
       <section id="ai-escalation-triggers-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
         <div className="flex items-center gap-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">

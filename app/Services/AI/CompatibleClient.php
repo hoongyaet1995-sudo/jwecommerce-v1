@@ -21,10 +21,10 @@ class CompatibleClient extends OpenAiClient
         return rtrim($url, '/');
     }
 
-    public function text(string $key, ?string $baseUrl, string $model, string $prompt, int $maxTokens): string
+    public function text(string $key, ?string $baseUrl, string $model, string $prompt, int $maxTokens, ?float $temperature = null): string
     {
         $data = $this->http->json('POST', $this->base($baseUrl).'/chat/completions', ['Authorization' => 'Bearer '.$key], [
-            'model' => $model, 'messages' => [['role' => 'user', 'content' => $prompt]], 'max_tokens' => $maxTokens,
+            'model' => $model, 'messages' => [['role' => 'user', 'content' => $prompt]], 'max_tokens' => $maxTokens, ...($temperature !== null ? ['temperature' => $temperature] : []),
         ], custom: true);
         $text = $data['choices'][0]['message']['content'] ?? null;
         if (! is_string($text) || trim($text) === '') {

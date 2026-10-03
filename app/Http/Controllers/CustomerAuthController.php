@@ -54,7 +54,9 @@ class CustomerAuthController extends Controller
         Auth::guard('customer')->login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
-        return redirect()->intended('/account');
+        // A shared session may contain an Admin intended URL. Customer login
+        // always lands in the customer account, never in the Admin portal.
+        return redirect()->route('customer.account');
     }
 
     public function register(Request $request): RedirectResponse
@@ -106,7 +108,8 @@ class CustomerAuthController extends Controller
     public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('customer')->logout();
-        $request->session()->invalidate();
+        // Preserve the independently authenticated Admin guard.
+        $request->session()->regenerate();
         $request->session()->regenerateToken();
 
         return redirect()->route('storefront.home');

@@ -10,6 +10,40 @@ use Tests\TestCase;
 
 class SupportFaqTest extends TestCase
 {
+    public function test_order_fields_persist_privately_and_unsafe_verification_is_rejected():void
+    {
+        $this->owner();$p=$this->payload();$p['orderLookup']=['isEnabled'=>true,'allowedFields'=>['orderStatus'=>true,'paymentStatus'=>false]];
+        $this->putJson('/admin/api/support/faq',$p)->assertOk()->assertJsonPath('orderLookup.allowedFields.paymentStatus',false);
+        $this->assertArrayNotHasKey('orderLookup',$this->getJson('/support/faq')->json());
+        $p['version']=1;$p['orderLookup']['verificationMethod']='phone_last4';$this->putJson('/admin/api/support/faq',$p)->assertUnprocessable();
+    }
+
+    public function test_discount_permissions_persist_without_public_exposure(): void
+    {
+        $this->owner();
+        Schema::create('coupons', function(Blueprint $t){$t->id();});
+        DB::table('coupons')->insert(['id'=>1]);
+        $p=$this->payload();$p['discountKnowledge']=['isEnabled'=>true,'activeIds'=>['1']];
+        $this->putJson('/admin/api/support/faq',$p)->assertOk()->assertJsonPath('discountKnowledge.activeIds.0','1');
+        $this->assertArrayNotHasKey('discountKnowledge',$this->getJson('/support/faq')->json());
+        $p['version']=1;$p['discountKnowledge']['activeIds']=['999'];
+        $this->putJson('/admin/api/support/faq',$p)->assertUnprocessable();
+        $this->assertSame(['1'],app(\App\Services\SupportFaqService::class)->read()['discountKnowledge']['activeIds']);
+        $p['discountKnowledge']=['isEnabled'=>false,'activeIds'=>[]];
+        $this->putJson('/admin/api/support/faq',$p)->assertOk()->assertJsonPath('discountKnowledge.isEnabled',false);
+    }
+
+    public function test_product_controls_are_saved_validated_and_private(): void
+    {
+        $this->owner(); $p=$this->payload();
+        $p['productCatalog']=['isEnabled'=>false,'canCheckLiveStock'=>false,'canExplainSizingAndMaterials'=>true,'canRecommendUpsells'=>false,'maxRecommendations'=>2];
+        $this->putJson('/admin/api/support/faq',$p)->assertOk()->assertJsonPath('productCatalog.isEnabled',false);
+        $this->getJson('/admin/api/support/faq')->assertJsonPath('productCatalog.maxRecommendations',2);
+        $this->assertArrayNotHasKey('productCatalog',$this->getJson('/support/faq')->json());
+        $p['version']=1;$p['productCatalog']['maxRecommendations']=6;
+        $this->putJson('/admin/api/support/faq',$p)->assertUnprocessable();
+    }
+
     public function test_existing_faq_edits_keep_identity_and_update_public_answers(): void
     {
         $this->owner();
@@ -53,7 +87,36 @@ class SupportFaqTest extends TestCase
         $this->getJson('/admin/api/support/faq')->assertJsonPath('personality.customToneInstructions', 'Be brief');
         $this->assertArrayNotHasKey('personality', $this->getJson('/support/faq')->json());
         $p['version'] = 1;
-        $p['personality']['brandMissionPrompt'] = 'Invent free worldwide delivery';
+        $p['personality']['offlineMessage'] = ['en' => 'Claim offline state'];
+        $this->putJson('/admin/api/support/faq', $p)->assertUnprocessable();
+    }
+
+    public function test_multilingual_greeting_is_public_even_without_faqs_and_persists(): void
+    {
+        $this->getJson('/support/faq')->assertOk()->assertJsonPath('greetingMessage.en', 'Hello! Welcome to JW Studio. How can we help you today?');
+        $this->owner();
+        $p = $this->payload();
+        $p['greetingMessage'] = ['en' => 'Hello there!', 'ms' => 'Selamat datang!', 'zh' => '欢迎！'];
+        $p['faq']['isEnabled'] = false;
+        $this->putJson('/admin/api/support/faq', $p)->assertOk();
+        $this->getJson('/support/faq')->assertJsonPath('greetingMessage.zh', '欢迎！')->assertJsonCount(0, 'categories');
+        unset($p['greetingMessage']);
+        $p['version'] = 1;
+        $this->putJson('/admin/api/support/faq', $p)->assertOk()->assertJsonPath('greetingMessage.ms', 'Selamat datang!');
+        $p['version'] = 2;
+        $p['greetingMessage'] = ['en' => 'Only English'];
+        $this->putJson('/admin/api/support/faq', $p)->assertUnprocessable();
+    }
+
+    public function test_brand_instructions_and_fallbacks_are_saved_privately(): void
+    {
+        $this->owner();
+        $p = $this->payload();
+        $p['personality'] = ['toneOfVoice' => 'friendly_helpful', 'maxOutputTokens' => 250, 'brandMissionPrompt' => 'Be our helpful brand concierge.', 'creativityTemperature' => 0.25, 'unknownAnswerMessage' => ['en' => 'Ask support.', 'ms' => 'Tanya sokongan.', 'zh' => '请询问客服。'], 'serviceUnavailableMessage' => ['en' => 'Try later.', 'ms' => 'Cuba lagi.', 'zh' => '请稍后再试。']];
+        $this->putJson('/admin/api/support/faq', $p)->assertOk()->assertJsonPath('personality.brandMissionPrompt', 'Be our helpful brand concierge.')->assertJsonPath('personality.creativityTemperature', 0.25);
+        $this->getJson('/support/faq')->assertJsonMissingPath('personality');
+        $p['version'] = 1;
+        $p['personality']['unknownAnswerMessage'] = ['en' => 'Incomplete'];
         $this->putJson('/admin/api/support/faq', $p)->assertUnprocessable();
     }
 

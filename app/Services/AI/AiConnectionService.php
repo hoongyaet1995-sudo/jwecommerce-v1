@@ -119,9 +119,9 @@ class AiConnectionService
     }
 
     /** Internal consumer boundary. Public chat/CMS endpoints do not invoke it yet. */
-    public function generateText(string $feature, string $prompt, int $maxTokens = 1024): string
+    public function generateText(string $feature, string $prompt, int $maxTokens = 1024, ?float $temperature = null): string
     {
-        if (! in_array($feature, ['support', 'builder'], true) || trim($prompt) === '' || strlen($prompt) > 32000 || $maxTokens < 1 || $maxTokens > 4096) {
+        if (! in_array($feature, ['support', 'builder'], true) || trim($prompt) === '' || strlen($prompt) > 32000 || $maxTokens < 1 || $maxTokens > 4096 || ($temperature !== null && (!is_finite($temperature) || $temperature < 0 || $temperature > 1))) {
             throw ValidationException::withMessages(['feature' => 'Invalid AI generation request.']);
         }
         $record = AiConnection::where('enabled', true)->where($feature.'_enabled', true)->first();
@@ -129,6 +129,6 @@ class AiConnectionService
             throw ValidationException::withMessages(['connection' => 'AI is not configured for this feature.']);
         }
 
-        return $this->providers->client($record->provider)->text($record->api_key, $record->base_url, $record->text_model, $prompt, $maxTokens);
+        return $this->providers->client($record->provider)->text($record->api_key, $record->base_url, $record->text_model, $prompt, $maxTokens, $temperature);
     }
 }

@@ -891,7 +891,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     void supportFaqRequest().then(data => {
       if (!active) return;
       faqServerVersion.current = data.version;
-      if (data.faq || data.identity || typeof data.autoReplyEnabled === "boolean") setAiAutoReplyConfig(prev => normalizeAIAutoReplyConfig({ ...prev, personality: {...prev.personality, ...(data.identity || {}), ...(data.personality || {}), ...(data.primaryLanguage ? {primaryLanguage:data.primaryLanguage} : {}), ...(typeof data.autoReplyEnabled === "boolean" ? {isEnabled:data.autoReplyEnabled} : {})}, knowledgeScope: { ...prev.knowledgeScope, faqKnowledge: data.faq || prev.knowledgeScope.faqKnowledge } }));
+      if (data.faq || data.identity || typeof data.autoReplyEnabled === "boolean") setAiAutoReplyConfig(prev => normalizeAIAutoReplyConfig({ ...prev, personality: {...prev.personality, ...(data.identity || {}), ...(data.personality || {}), ...(data.greetingMessage ? {greetingMessage:data.greetingMessage} : {}), ...(data.primaryLanguage ? {primaryLanguage:data.primaryLanguage} : {}), ...(typeof data.autoReplyEnabled === "boolean" ? {isEnabled:data.autoReplyEnabled} : {})}, knowledgeScope: { ...prev.knowledgeScope, orderLookup: {...prev.knowledgeScope.orderLookup,...data.orderLookup}, discountKnowledge: data.discountKnowledge || {isEnabled:false,activeIds:[]}, productCatalog: {...prev.knowledgeScope.productCatalog, ...data.productCatalog}, faqKnowledge: data.faq || prev.knowledgeScope.faqKnowledge } }));
     }).catch(() => { if (active) addToast({ type: 'error', title: 'FAQ unavailable', message: 'Reload saved FAQs before publishing.' }); });
     return () => { active = false; };
   }, []);
@@ -3338,7 +3338,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
     faqSaving.current = true;
     try {
     const draft = newConfig.knowledgeScope.faqKnowledge;
-    const data = await supportFaqRequest({ version: faqServerVersion.current, personality:{toneOfVoice:newConfig.personality.toneOfVoice,customToneInstructions:newConfig.personality.customToneInstructions,maxOutputTokens:Math.max(150,Math.min(600,newConfig.personality.maxOutputTokens))}, autoReplyEnabled:newConfig.personality.isEnabled, primaryLanguage:newConfig.personality.primaryLanguage, identity: {botName: newConfig.personality.botName, roleTitle: newConfig.personality.roleTitle}, faq: { ...draft, categories: faqCategories(draft.categories, draft.items, draft.deletedCategoryIds).map(({ id, label }) => ({ id, label })) } });
+    const data = await supportFaqRequest({ version: faqServerVersion.current, orderLookup:{isEnabled:newConfig.knowledgeScope.orderLookup.isEnabled,allowedFields:newConfig.knowledgeScope.orderLookup.allowedFields}, discountKnowledge:newConfig.knowledgeScope.discountKnowledge || {isEnabled:false,activeIds:[]}, productCatalog:{isEnabled:newConfig.knowledgeScope.productCatalog.isEnabled,canCheckLiveStock:newConfig.knowledgeScope.productCatalog.canCheckLiveStock,canExplainSizingAndMaterials:newConfig.knowledgeScope.productCatalog.canExplainSizingAndMaterials,canRecommendUpsells:newConfig.knowledgeScope.productCatalog.canRecommendUpsells,maxRecommendations:newConfig.knowledgeScope.productCatalog.maxRecommendations}, greetingMessage:newConfig.personality.greetingMessage, personality:{creativityTemperature:newConfig.personality.creativityTemperature,brandMissionPrompt:newConfig.personality.brandMissionPrompt,unknownAnswerMessage:newConfig.personality.unknownAnswerMessage,serviceUnavailableMessage:newConfig.personality.serviceUnavailableMessage,toneOfVoice:newConfig.personality.toneOfVoice,customToneInstructions:newConfig.personality.customToneInstructions,maxOutputTokens:Math.max(150,Math.min(600,newConfig.personality.maxOutputTokens))}, autoReplyEnabled:newConfig.personality.isEnabled, primaryLanguage:newConfig.personality.primaryLanguage, identity: {botName: newConfig.personality.botName, roleTitle: newConfig.personality.roleTitle}, faq: { ...draft, categories: faqCategories(draft.categories, draft.items, draft.deletedCategoryIds).map(({ id, label }) => ({ id, label })) } });
     faqServerVersion.current = data.version;
     const updated: AIAutoReplyMasterConfig = {
       ...newConfig,
@@ -3352,7 +3352,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
     addToast({
       type: 'success',
       title: 'AI Auto Reply Saved',
-      message: 'FAQs and bot identity published to Support Chat. Reply style saved. Other AI settings remain local.'
+      message: 'FAQs and bot identity published to Support Chat. Brand instructions and reply fallbacks saved. Other AI settings remain local.'
     });
     return true;
     } catch (failure) { addToast({ type: 'error', title: 'FAQ not published', message: (failure as Error).message }); return false; }

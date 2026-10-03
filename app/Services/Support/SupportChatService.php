@@ -84,7 +84,7 @@ class SupportChatService
             'messages' => $conversation->messages()->orderBy('id')->get()->map(fn ($message) => [
                 'id' => (string) $message->id, 'clientMessageId' => $message->client_message_id,
                 'role' => $message->sender_role === 'customer' ? 'customer' : ($message->sender_role === 'ai' ? 'ai' : 'staff'),
-                'content' => $message->content, 'createdAt' => $message->created_at->toIso8601String(),
+                ...($message->sender_role === 'ai' ? app(SupportActionResolver::class)->resolve($message->actions ?? [], $message->content, empty($message->actions)) : ['content'=>$message->content,'actions'=>[]]), 'createdAt' => $message->created_at->toIso8601String(),
             ])->all()];
     }
 

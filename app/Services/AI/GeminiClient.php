@@ -31,10 +31,10 @@ class GeminiClient implements ProviderClient
         throw new ProviderFailure('models');
     }
 
-    public function text(string $key, ?string $baseUrl, string $model, string $prompt, int $maxTokens): string
+    public function text(string $key, ?string $baseUrl, string $model, string $prompt, int $maxTokens, ?float $temperature = null): string
     {
         $data = $this->http->json('POST', 'https://generativelanguage.googleapis.com/v1beta/models/'.rawurlencode($model).':generateContent', ['x-goog-api-key' => $key], [
-            'contents' => [['role' => 'user', 'parts' => [['text' => $prompt]]]], 'generationConfig' => ['maxOutputTokens' => $maxTokens],
+            'contents' => [['role' => 'user', 'parts' => [['text' => $prompt]]]], 'generationConfig' => ['maxOutputTokens' => $maxTokens] + ($temperature !== null ? ['temperature' => $temperature] : []),
         ]);
         $text = '';
         foreach ($data['candidates'][0]['content']['parts'] ?? [] as $part) {

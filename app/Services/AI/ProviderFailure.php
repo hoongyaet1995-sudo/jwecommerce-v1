@@ -10,6 +10,7 @@ class ProviderFailure extends RuntimeException
     public function __construct(public readonly string $reason)
     {
         parent::__construct(match ($reason) {
+            'temperature' => 'The selected model does not support custom temperature. Select a compatible model.',
             'authentication' => 'The provider rejected this API key. Check the key and its permissions.',
             'quota' => 'The provider reported a quota, billing or rate limit. Check your provider account.',
             'endpoint' => 'The selected API endpoint is not allowed or is unavailable.',

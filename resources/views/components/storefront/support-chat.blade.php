@@ -46,6 +46,17 @@
 #storefront-support-widget .faq-empty-primary:focus-visible,#storefront-support-widget .faq-empty-secondary:focus-visible{outline:2px solid #8067ea;outline-offset:3px}
 @media(max-width:600px){#storefront-support-widget .faq-empty{margin:18px 0;padding:42px 24px 32px}}
 #storefront-support-widget button,#storefront-support-widget input,#storefront-support-widget textarea{font-family:inherit}
+#storefront-support-widget .message-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;white-space:normal}#storefront-support-widget .message-action{display:inline-flex;align-items:center;min-height:36px;padding:7px 12px;border:1px solid #9c87ef;border-radius:10px;color:var(--ink);background:var(--soft);font:inherit;font-weight:600;text-decoration:none}#storefront-support-widget .message-action:hover{border-color:#6549e9;color:#8067ea}#storefront-support-widget .message-action:focus-visible{outline:3px solid #a99aff;outline-offset:3px}
+#storefront-support-widget .product-cards{width:88%;display:grid;gap:12px;margin:8px 0 0;white-space:normal}#storefront-support-widget .product-card{padding:6px;border:1px solid var(--line);border-radius:16px;background:var(--bg);overflow:hidden;box-shadow:0 3px 12px #0000000b}html.dark #storefront-support-widget .product-card{border-color:#443852;background:#1d1925}#storefront-support-widget .product-card-image{position:relative;width:100%;height:200px;border-radius:11px;background:#eeeef0;overflow:hidden;display:grid;place-items:center}#storefront-support-widget .product-card-image img{position:absolute;width:100%;height:100%;object-fit:contain;display:block}#storefront-support-widget .product-image-placeholder{font-size:52px;color:#aaa4b6}#storefront-support-widget .product-image-placeholder[hidden]{display:none}#storefront-support-widget .product-card-info{padding:13px 9px 8px}#storefront-support-widget .product-card h3{margin:0;font-size:16px;font-weight:700;line-height:1.35;overflow-wrap:anywhere;color:var(--ink)}#storefront-support-widget .product-card-price{font-size:18px;font-weight:700;margin-top:9px;line-height:1.3;color:var(--ink)}#storefront-support-widget .product-card-footer{border-top:1px solid var(--line);padding-top:12px;margin-top:13px}#storefront-support-widget .product-card .message-action{width:100%;justify-content:center;min-height:40px;background:transparent;color:#8067ea;border-color:#9c87ef;font-size:13px}html.dark #storefront-support-widget .product-card .message-action{color:#b99aff}#storefront-support-widget .product-card .message-action:hover{background:var(--soft)}
+#storefront-support-widget .message.enter{animation:sf-message-in .22s ease-out both}
+#storefront-support-widget .thinking{display:flex;align-items:center;gap:9px;color:var(--muted);width:fit-content}
+#storefront-support-widget .thinking-dots{display:flex;gap:4px}
+#storefront-support-widget .thinking-dots i{width:5px;height:5px;border-radius:50%;background:#9c87ef;animation:sf-thinking 1.2s ease-in-out infinite}
+#storefront-support-widget .thinking-dots i:nth-child(2){animation-delay:.16s}
+#storefront-support-widget .thinking-dots i:nth-child(3){animation-delay:.32s}
+@keyframes sf-message-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes sf-thinking{0%,80%,100%{opacity:.35;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+@media(prefers-reduced-motion:reduce){#storefront-support-widget .message.enter,#storefront-support-widget .thinking-dots i{animation:none}}
 </style>
 
 
@@ -62,13 +73,17 @@
 
 const panel=root.querySelector('#sf-support-panel'),launcher=root.querySelector('#sf-support-launcher'),input=root.querySelector('#sf-support-input'),send=root.querySelector('#sf-support-send'),stream=root.querySelector('#sf-support-stream');
 let previousOverflow=null;
+function latest(){requestAnimationFrame(()=>{if(!panel.hidden&&!stream.hidden)stream.scrollTop=stream.scrollHeight})}
+const seenMessages=new Set();
 function syncBackgroundScroll(){const lock=!panel.hidden&&matchMedia('(max-width:600px)').matches;if(lock&&previousOverflow===null){previousOverflow=document.body.style.overflow;document.body.style.overflow='hidden'}else if(!lock&&previousOverflow!==null){document.body.style.overflow=previousOverflow;previousOverflow=null}}
-function openChat(){panel.hidden=false;launcher.hidden=true;launcher.setAttribute('aria-expanded','true');syncBackgroundScroll();root.querySelector('#sf-support-close').focus()}
+function openChat(){panel.hidden=false;tab('chat');launcher.hidden=true;launcher.setAttribute('aria-expanded','true');syncBackgroundScroll();latest();root.querySelector('#sf-support-close').focus()}
 function closeChat(){panel.hidden=true;launcher.hidden=false;launcher.setAttribute('aria-expanded','false');syncBackgroundScroll();launcher.focus()}
 window.addEventListener('resize',syncBackgroundScroll);
 launcher.onclick=openChat;root.querySelector('#sf-support-close').onclick=closeChat;
-const languageSelect=root.querySelector('#sf-support-language');let selectedLanguage=localStorage.getItem('sf-support-language');if(!['en','ms','zh'].includes(selectedLanguage))selectedLanguage=null;languageSelect.value=selectedLanguage||'en';languageSelect.onchange=()=>{selectedLanguage=languageSelect.value;localStorage.setItem('sf-support-language',selectedLanguage)};
+const languageSelect=root.querySelector('#sf-support-language');let selectedLanguage=localStorage.getItem('sf-support-language');if(!['en','ms','zh'].includes(selectedLanguage))selectedLanguage=null;languageSelect.value=selectedLanguage||'en';languageSelect.onchange=()=>{selectedLanguage=languageSelect.value;localStorage.setItem('sf-support-language',selectedLanguage);renderGreeting()};
 let sending=false, loaded=false, timer=null, retry=null, version=0;
+let greetings=null,hasMessages=false;
+function renderGreeting(){stream.querySelectorAll('[data-greeting]').forEach(node=>node.remove());if(hasMessages||!greetings)return;const text=greetings[languageSelect.value]||greetings.en;if(!text)return;const bubble=document.createElement('div');bubble.className='message';bubble.dataset.greeting='true';bubble.textContent=text;stream.prepend(bubble);}
 const status=root.querySelector('.demo');
 async function request(method='GET',data){
  const response=await fetch(method==='GET'?'/support/chat':'/support/chat/messages',{method,credentials:'same-origin',headers:{Accept:'application/json',...(data?{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content}:{})},body:data?JSON.stringify({...data,language:languageSelect.value}):undefined});
@@ -77,16 +92,29 @@ async function request(method='GET',data){
  return payload.conversation;
 }
 function render(conversation){
+ hasMessages=Boolean(conversation?.messages?.length);
+ const oldTop=stream.scrollTop;
  const nearBottom=stream.scrollHeight-stream.scrollTop-stream.clientHeight<80;
  const previous=[...stream.querySelectorAll('.message')].at(-1)?.dataset.id;
- stream.querySelectorAll('.message,.meta').forEach(node=>node.remove());
+ stream.querySelectorAll('.message,.meta,.product-cards').forEach(node=>node.remove());
  for(const message of conversation?.messages||[]){
   const user=message.role==='customer',msg=document.createElement('div'),meta=document.createElement('div');
-  msg.className='message'+(user?' user':'');msg.dataset.id=message.id;msg.textContent=message.content;
+  msg.className='message'+(user?' user':'');msg.dataset.id=message.id;msg.textContent=message.content;if(loaded&& !seenMessages.has(message.id))msg.classList.add('enter');seenMessages.add(message.id);
+  const cards=document.createElement('div');cards.className='product-cards';
+  if(!user&&message.actions?.length){for(const action of message.actions){if(action.type==='view_order_tracking'&&action.url==='/order-tracking'){const link=document.createElement('a');link.className='message-action';link.href=action.url;link.textContent='Order Tracking →';cards.append(link);continue;}if(['view_category','view_collection'].includes(action.type)&&typeof action.url==='string'&&/^\/(categories|collections)\/[^/]+$/.test(action.url)){const link=document.createElement('a');link.className='message-action';link.href=action.url;link.textContent=action.label+': '+action.title+' →';cards.append(link);continue;}if(action.type!=='view_product'||typeof action.url!=='string'||!action.url.startsWith('/products/')||action.url.startsWith('//'))continue;
+   const card=document.createElement('article');card.className='product-card';
+   const imageBox=document.createElement('div');imageBox.className='product-card-image';
+   const fallback=document.createElement('span');fallback.className='product-image-placeholder';fallback.textContent='◇';fallback.setAttribute('aria-label','Product image unavailable');imageBox.append(fallback);
+   if(typeof action.image==='string'&&(/^(https?:\/\/|\/(?!\/))/.test(action.image))){const image=document.createElement('img');image.src=action.image;image.alt=action.title;image.loading='lazy';image.onload=()=>fallback.hidden=true;image.onerror=()=>image.remove();imageBox.append(image)}
+   const info=document.createElement('div');info.className='product-card-info';const title=document.createElement('h3');title.textContent=action.title;info.append(title);
+   if(action.price){const price=document.createElement('div');price.className='product-card-price';price.textContent=action.price;info.append(price)}
+   const footer=document.createElement('div');footer.className='product-card-footer';const link=document.createElement('a');link.className='message-action';link.href=action.url;link.textContent=action.label+' →';link.setAttribute('aria-label',action.label+': '+action.title);footer.append(link);info.append(footer);card.append(imageBox,info);cards.append(card);
+  }}
   meta.className='meta'+(user?' user':'');meta.textContent=(user?'You':(message.role==='ai'?root.querySelector('#sf-bot-name').textContent:'Support team'))+' · '+new Date(message.createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-  stream.append(msg,meta);
+  stream.append(msg);if(cards.childElementCount)stream.append(cards);stream.append(meta);
  }
- if(conversation?.messages?.length&&(nearBottom||previous!==conversation.messages.at(-1)?.id))stream.scrollTop=stream.scrollHeight;
+ renderGreeting();
+ if(conversation?.messages?.length&&(nearBottom||previous!==conversation.messages.at(-1)?.id))latest();else stream.scrollTop=oldTop;
  status.textContent='';status.hidden=true;
 }
 async function refresh(){
@@ -100,19 +128,25 @@ root.querySelector('#sf-support-close').onclick=()=>{originalClose();clearTimeou
 async function submit(text){
  text=text.trim();if(!text||sending)return;
  sending=true;send.disabled=true;input.disabled=true;version++;
+ stream.querySelectorAll('[data-greeting]').forEach(n=>n.remove());
+ const pending=document.createElement('div');pending.className='message user enter';pending.dataset.pending='true';pending.textContent=text;
+ const thinking=document.createElement('div');thinking.className='message thinking enter';thinking.dataset.pending='true';thinking.setAttribute('role','status');
+ const dots=document.createElement('span');dots.className='thinking-dots';dots.setAttribute('aria-hidden','true');for(let i=0;i<3;i++)dots.append(document.createElement('i'));
+ const label=document.createElement('span');label.textContent={en:'AI is thinking…',ms:'AI sedang berfikir…',zh:'AI 正在思考…'}[languageSelect.value]||'AI is thinking…';thinking.append(dots,label);
+ stream.append(pending,thinking);input.value='';status.hidden=true;latest();
  if(!retry||retry.content!==text)retry={content:text,id:crypto.randomUUID()};
  try{
   if(!loaded){await request();loaded=true}
   const conversation=await request('POST',{content:text,client_message_id:retry.id});render(conversation);input.value='';retry=null;stream.scrollTop=stream.scrollHeight;
- }catch(error){status.textContent=error.message;status.hidden=false;input.value=text}
- finally{version++;sending=false;input.disabled=false;send.disabled=!input.value.trim()}
+ }catch(error){stream.querySelectorAll('[data-pending]').forEach(n=>n.remove());status.textContent=error.message;status.hidden=false;input.value=text;renderGreeting()}
+ finally{stream.querySelectorAll('[data-pending]').forEach(n=>n.remove());version++;sending=false;input.disabled=false;send.disabled=!input.value.trim()}
 }
 input.oninput=()=>send.disabled=sending||!input.value.trim();root.querySelector('#sf-support-form').onsubmit=e=>{e.preventDefault();void submit(input.value)};input.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();void submit(input.value)}};
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden)closeChat();if(e.key==='Tab'&&!panel.hidden){const nodes=[...panel.querySelectorAll('button,textarea')].filter(n=>!n.disabled);if(e.shiftKey&&document.activeElement===nodes[0]){e.preventDefault();nodes.at(-1).focus()}else if(!e.shiftKey&&document.activeElement===nodes.at(-1)){e.preventDefault();nodes[0].focus()}}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden)closeChat();if(e.key==='Tab'&&!panel.hidden){const nodes=[...panel.querySelectorAll('button,textarea,a[href],select')].filter(n=>!n.disabled);if(e.shiftKey&&document.activeElement===nodes[0]){e.preventDefault();nodes.at(-1).focus()}else if(!e.shiftKey&&document.activeElement===nodes.at(-1)){e.preventDefault();nodes[0].focus()}}});
 
 const faqStream=root.querySelector('#sf-faq-stream');let groups=[];
 const make=(tag,text,cls)=>{const el=document.createElement(tag);el.textContent=text;if(cls)el.className=cls;return el};
-let activeCategory='all',activeTab='faq',expanded=null;
+let activeCategory='all',activeTab='chat',expanded=null;
 const tools=root.querySelector('#faq-tools'),composer=root.querySelector('.composer'),search=root.querySelector('#faq-search'),categoryBar=root.querySelector('#faq-categories');
 
 function renderCategories(){categoryBar.replaceChildren();[{name:'All Topics'},...groups].forEach((group,index)=>{const id=index===0?'all':group.name;const btn=make('button',group.name);btn.type='button';btn.setAttribute('role','tab');btn.setAttribute('aria-selected',String(id===activeCategory));btn.onclick=()=>{activeCategory=id;expanded=null;renderCategories();renderFaq()};categoryBar.append(btn)})}
@@ -125,15 +159,15 @@ function emptyFaq(query){
  return card;
 }
 function renderFaq(){faqStream.replaceChildren();const list=make('div','','faq-list');let total=0;const query=search.value.trim().toLowerCase();groups.forEach((group,gi)=>{if(activeCategory!=='all'&&activeCategory!==group.name)return;group.items.forEach(([question,answer],qi)=>{if(query&&!`${question} ${answer} ${group.name}`.toLowerCase().includes(query))return;total++;const id=`faq-${gi}-${qi}`;const row=make('div','','faq-row'),button=make('button','','faq-question'),label=make('span','','faq-label'),body=make('div',answer,'faq-answer');label.append(make('strong',question),make('small',group.name));button.append(make('span','ⓘ','faq-glyph'),label);const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.innerHTML='<use href="#sf-support-arrow"/>';button.append(svg);button.type='button';button.setAttribute('aria-expanded',String(expanded===id));button.setAttribute('aria-controls',id);body.id=id;body.hidden=expanded!==id;button.onclick=()=>{expanded=expanded===id?null:id;renderFaq()};row.append(button,body);list.append(row)})});if(!total)list.append(emptyFaq(query));faqStream.append(list)}
-function tab(value){activeTab=value;root.querySelector('#sample-chat-tab').setAttribute('aria-selected',String(value==='chat'));root.querySelector('#sample-faq-tab').setAttribute('aria-selected',String(value==='faq'));tools.hidden=value!=='faq';composer.hidden=value==='faq';stream.hidden=value==='faq';faqStream.hidden=value!=='faq';status.hidden=value==='faq'||!status.textContent;if(value==='faq'){renderFaq()}else{input.focus()}}
+function tab(value){activeTab=value;root.querySelector('#sample-chat-tab').setAttribute('aria-selected',String(value==='chat'));root.querySelector('#sample-faq-tab').setAttribute('aria-selected',String(value==='faq'));tools.hidden=value!=='faq';composer.hidden=value==='faq';stream.hidden=value==='faq';faqStream.hidden=value!=='faq';status.hidden=value==='faq'||!status.textContent;if(value==='faq'){renderFaq()}else{latest();input.focus()}}
 search.oninput=()=>{expanded=null;renderFaq()};root.querySelector('#sample-chat-tab').onclick=()=>tab('chat');root.querySelector('#sample-faq-tab').onclick=()=>tab('faq');
 
 async function loadFAQs(){
- try{const response=await fetch('/support/faq',{headers:{Accept:'application/json'},cache:'no-store'});if(!response.ok)throw new Error();const data=await response.json();if(!selectedLanguage){const defaultLanguage=data.primaryLanguage==='auto_detect'?((navigator.language||'en').startsWith('zh')?'zh':(navigator.language||'en').startsWith('ms')?'ms':'en'):data.primaryLanguage;languageSelect.value=['en','ms','zh'].includes(defaultLanguage)?defaultLanguage:'en';}if(data.identity){root.querySelector('#sf-bot-name').textContent=data.identity.botName;root.querySelector('#sf-bot-role').textContent=data.identity.roleTitle;root.querySelector('.foot').textContent='Chat with '+data.identity.botName;}groups=data.categories.map(c=>({name:c.label,items:c.items.map(i=>[i.question,i.answer])}));root.querySelector('#faq-total').textContent=groups.reduce((sum,g)=>sum+g.items.length,0);if(activeCategory!=='all'&&!groups.some(g=>g.name===activeCategory))activeCategory='all';renderCategories();if(activeTab==='faq')renderFaq();}
+ try{const response=await fetch('/support/faq',{headers:{Accept:'application/json'},cache:'no-store'});if(!response.ok)throw new Error();const data=await response.json();greetings=data.greetingMessage;renderGreeting();if(!selectedLanguage){const defaultLanguage=data.primaryLanguage==='auto_detect'?((navigator.language||'en').startsWith('zh')?'zh':(navigator.language||'en').startsWith('ms')?'ms':'en'):data.primaryLanguage;languageSelect.value=['en','ms','zh'].includes(defaultLanguage)?defaultLanguage:'en';}if(data.identity){root.querySelector('#sf-bot-name').textContent=data.identity.botName;root.querySelector('#sf-bot-role').textContent=data.identity.roleTitle;root.querySelector('.foot').textContent='Chat with '+data.identity.botName;}renderGreeting();groups=data.categories.map(c=>({name:c.label,items:c.items.map(i=>[i.question,i.answer])}));root.querySelector('#faq-total').textContent=groups.reduce((sum,g)=>sum+g.items.length,0);if(activeCategory!=='all'&&!groups.some(g=>g.name===activeCategory))activeCategory='all';renderCategories();if(activeTab==='faq')renderFaq();}
  catch{faqStream.replaceChildren(make('p','Unable to load FAQs. Please try again.'),Object.assign(make('button','Retry','topic'),{onclick:loadFAQs}));}
 }
 setInterval(()=>{if(!panel.hidden&&activeTab==='faq')void loadFAQs()},5000);
-renderCategories();tab('faq');void loadFAQs();launcher.addEventListener('click',loadFAQs);root.querySelector('#sample-faq-tab').addEventListener('click',loadFAQs);
+renderCategories();tab('chat');void loadFAQs();launcher.addEventListener('click',loadFAQs);root.querySelector('#sample-faq-tab').addEventListener('click',loadFAQs);
 
 })();
 </script>
