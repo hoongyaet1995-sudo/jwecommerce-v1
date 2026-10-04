@@ -1,7 +1,7 @@
 import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React, { useEffect, useRef, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
-import {useFacebookAccounts,facebookOAuthNotice} from '../../integration/facebookAccounts';
+import {useFacebookAccounts} from '../../integration/facebookAccounts';
 import {
   ShoppingBag,
   Users,
@@ -17,9 +17,8 @@ import {
 
 export const SupportOverviewHub: React.FC = () => {
   const { setCurrentSection } = useAdmin();
-  const callbackResult=new URLSearchParams(window.location.search).get('facebook');
-  const [channelsOpen,setChannelsOpen]=useState(Boolean(callbackResult));
-  const [selectedChannel,setSelectedChannel]=useState<string|null>(callbackResult?'Facebook':null);
+  const [channelsOpen,setChannelsOpen]=useState(false);
+  const [selectedChannel,setSelectedChannel]=useState<string|null>(null);
   const facebook=useFacebookAccounts(channelsOpen);
   const dialogRef=useRef<HTMLDialogElement>(null);
   useEffect(()=>{const dialog=dialogRef.current;if(channelsOpen&&!dialog?.open)dialog?.showModal();else if(!channelsOpen&&dialog?.open)dialog.close();},[channelsOpen]);
@@ -145,21 +144,10 @@ export const SupportOverviewHub: React.FC = () => {
           <div className="p-5 sm:p-6 space-y-5">
             <div className="flex gap-3 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200"><Info className="w-4 h-4 shrink-0 mt-0.5"/><div><p className="text-sm font-semibold">Connect a messaging account</p><p className="mt-1 text-xs leading-relaxed">Authorize your Facebook Pages and verify their connection. Message delivery will be enabled in a later phase. Other channels still require setup.</p></div></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {channels.map(channel=>{const Icon=channel.icon;return <button key={channel.name} type="button" aria-pressed={selectedChannel===channel.name} onClick={()=>setSelectedChannel(channel.name)} className={'flex items-center gap-3 text-left p-4 sm:p-5 rounded-xl border transition-colors '+(selectedChannel===channel.name?'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30':'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/40 hover:border-indigo-400')}><span className={'w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0 '+channel.color}><Icon className="w-5 h-5"/></span><span className="flex-1 min-w-0"><span className="flex items-center justify-between gap-2 flex-wrap"><span className="text-sm font-semibold">{channel.name}</span><span className="text-[10px] font-semibold rounded-full px-2 py-1 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">Setup required</span></span><span className="block mt-2 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">{channel.description}</span></span><Settings className="w-4 h-4 shrink-0 text-neutral-400"/></button>})}
+              {channels.map(channel=>{const Icon=channel.icon;return <button key={channel.name} type="button" aria-pressed={selectedChannel===channel.name} onClick={()=>{if(channel.name==='Facebook'){setChannelsOpen(false);setCurrentSection('support-facebook');}else setSelectedChannel(channel.name);}} className={'flex items-center gap-3 text-left p-4 sm:p-5 rounded-xl border transition-colors '+(selectedChannel===channel.name?'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30':'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/40 hover:border-indigo-400')}><span className={'w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0 '+channel.color}><Icon className="w-5 h-5"/></span><span className="flex-1 min-w-0"><span className="flex items-center justify-between gap-2 flex-wrap"><span className="text-sm font-semibold">{channel.name}</span><span className="text-[10px] font-semibold rounded-full px-2 py-1 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">Setup required</span></span><span className="block mt-2 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">{channel.description}</span></span><Settings className="w-4 h-4 shrink-0 text-neutral-400"/></button>})}
             </div>
             {selectedChannel&&selectedChannel!=='Facebook'&&<p role="status" className="text-xs text-neutral-500 dark:text-neutral-400">{selectedChannel} selected. Connection setup is not available yet.</p>}
-            {selectedChannel==='Facebook'&&<section aria-label="Facebook connection" className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 space-y-3">
-              <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-semibold">Facebook Pages</h3><button type="button" disabled={facebook.loading} onClick={()=>void facebook.refresh()} className="text-xs text-indigo-600 dark:text-indigo-400 disabled:opacity-50">Check connection</button></div>
-              {callbackResult&&facebookOAuthNotice[callbackResult]&&<p role="status" className="text-xs text-amber-700 dark:text-amber-300">{facebookOAuthNotice[callbackResult]}</p>}
-              {facebook.error&&<p role="alert" className="text-xs text-red-600 dark:text-red-400">{facebook.error}</p>}
-              {facebook.loading&&<p role="status" className="text-xs text-neutral-500">Verifying with Meta…</p>}
-              {facebook.data?.pages.map(page=><button key={page.id} disabled={facebook.loading} onClick={()=>void facebook.select(page.id)} className="w-full flex items-center justify-between gap-3 text-left p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:border-indigo-500 disabled:opacity-50"><span><span className="block text-sm font-semibold">{page.name}</span><span className="text-xs text-neutral-500">Page ID: {page.id}</span></span><span className="text-xs text-indigo-600 dark:text-indigo-400">Connect Page →</span></button>)}
-              {facebook.data?.accounts.map(account=><div key={account.id} className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-1"><div className="flex items-center justify-between gap-2"><span className="text-sm font-semibold">{account.name}</span><span className={'text-xs '+(account.state==='connected'?'text-emerald-600 dark:text-emerald-400':'text-amber-700 dark:text-amber-300')}>{account.state==='connected'?'Connected':account.state==='authorization_expired'?'Reconnect required':'Unable to verify'}</span></div><p className="text-xs text-neutral-500">Page ID: {account.pageId}</p><p className="text-xs text-neutral-500">{account.checkedAt?'Last verified: '+new Date(account.checkedAt).toLocaleString():'Not yet verified'}</p><p className="text-xs text-neutral-500">Page authorization only · Messaging not enabled</p></div>)}
-              {facebook.data&&!facebook.data.pages.length&&!facebook.data.accounts.length&&<p className="text-xs text-neutral-500 dark:text-neutral-400">No Facebook Pages connected to this store.</p>}
-              {facebook.data?.canManage&&facebook.data.configured&&<a href="/admin/social/facebook/authorize" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"><Facebook className="w-4 h-4"/>Continue with Facebook</a>}
-              {facebook.data&&!facebook.data.configured&&<p className="text-xs text-amber-700 dark:text-amber-300">Server credentials and an HTTPS OAuth callback are required. Ask your administrator to complete setup.</p>}
-              {facebook.data&&!facebook.data.canManage&&<p className="text-xs text-neutral-500">A store administrator must authorize new Pages. Existing connections are shared with this store’s staff.</p>}
-            </section>}
+
           </div>
         </div>
       </dialog>

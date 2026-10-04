@@ -44,7 +44,7 @@ class FacebookManagedAccountTest extends TestCase
     {
         $this->get('/admin/social/facebook/authorize')->assertRedirect();
         $state=session('facebook_oauth.state');
-        $this->get('/admin/social/facebook/callback?state='.urlencode($state).'&code=test-code')->assertRedirect('/admin/support-overview?facebook=select');
+        $this->get('/admin/social/facebook/callback?state='.urlencode($state).'&code=test-code')->assertRedirect('/admin/social/facebook?facebook=select');
     }
 
     public function test_real_provider_selection_is_encrypted_private_and_shared_by_shop_staff(): void
@@ -65,14 +65,14 @@ class FacebookManagedAccountTest extends TestCase
     {
         $this->owner();$this->provider();
         $this->get('/admin/social/facebook/authorize');
-        $this->get('/admin/social/facebook/callback?state=wrong&code=test')->assertRedirect('/admin/support-overview?facebook=invalid_state');
+        $this->get('/admin/social/facebook/callback?state=wrong&code=test')->assertRedirect('/admin/social/facebook?facebook=invalid_state');
         Http::assertNothingSent();
         $this->get('/admin/social/facebook/authorize');$state=session('facebook_oauth.state');
         $this->travel(11)->minutes();
-        $this->get('/admin/social/facebook/callback?state='.$state.'&code=test')->assertRedirect('/admin/support-overview?facebook=invalid_state');
+        $this->get('/admin/social/facebook/callback?state='.$state.'&code=test')->assertRedirect('/admin/social/facebook?facebook=invalid_state');
         Http::assertNothingSent();
         $this->travelBack();$this->completeOAuth();$sent=count(Http::recorded());
-        $this->get('/admin/social/facebook/callback?state='.urlencode(session('facebook_oauth.state','')).'&code=test')->assertRedirect('/admin/support-overview?facebook=invalid_state');
+        $this->get('/admin/social/facebook/callback?state='.urlencode(session('facebook_oauth.state','')).'&code=test')->assertRedirect('/admin/social/facebook?facebook=invalid_state');
         $this->assertCount($sent,Http::recorded());
     }
 
@@ -87,7 +87,7 @@ class FacebookManagedAccountTest extends TestCase
     {
         $this->getJson('/admin/api/social/facebook')->assertUnauthorized();
         $this->owner();config(['services.facebook.client_secret'=>null]);
-        $this->get('/admin/social/facebook/authorize')->assertRedirect('/admin/support-overview?facebook=not_configured');
+        $this->get('/admin/social/facebook/authorize')->assertRedirect('/admin/social/facebook?facebook=not_configured');
         Http::assertNothingSent();
     }
 
@@ -105,7 +105,7 @@ class FacebookManagedAccountTest extends TestCase
     {
         $this->owner();$this->provider();$this->get('/admin/social/facebook/authorize');$state=session('facebook_oauth.state');
         $this->actingAs(User::factory()->create(['is_admin'=>true,'is_super_admin'=>true]));
-        $this->get('/admin/social/facebook/callback?state='.$state.'&code=test')->assertRedirect('/admin/support-overview?facebook=invalid_state');
+        $this->get('/admin/social/facebook/callback?state='.$state.'&code=test')->assertRedirect('/admin/social/facebook?facebook=invalid_state');
         Http::assertNothingSent();
         $this->completeOAuth();config(['services.facebook.client_id'=>'different-app']);
         $this->postJson('/admin/api/social/facebook/select',['page_id'=>'page-1'])->assertUnprocessable();
@@ -115,12 +115,12 @@ class FacebookManagedAccountTest extends TestCase
     public function test_cancelled_or_denied_authorization_cannot_persist_pages(): void
     {
         $this->owner();$this->provider();$this->get('/admin/social/facebook/authorize');$state=session('facebook_oauth.state');
-        $this->get('/admin/social/facebook/callback?state='.$state.'&error=access_denied')->assertRedirect('/admin/support-overview?facebook=cancelled');
+        $this->get('/admin/social/facebook/callback?state='.$state.'&error=access_denied')->assertRedirect('/admin/social/facebook?facebook=cancelled');
         Http::assertNothingSent();
         Http::swap(new \Illuminate\Http\Client\Factory()); Http::preventStrayRequests(); Http::fake(['graph.facebook.com/*/oauth/access_token*'=>Http::response(['access_token'=>'private-user-token']),
             'graph.facebook.com/*/me/permissions*'=>Http::response(['data'=>[['permission'=>'pages_show_list','status'=>'declined']]])]);
         $this->get('/admin/social/facebook/authorize');$state=session('facebook_oauth.state');
-        $this->get('/admin/social/facebook/callback?state='.$state.'&code=test')->assertRedirect('/admin/support-overview?facebook=permission_required');
+        $this->get('/admin/social/facebook/callback?state='.$state.'&code=test')->assertRedirect('/admin/social/facebook?facebook=permission_required');
         $this->assertNull(session('facebook_pending'));
     }
 }

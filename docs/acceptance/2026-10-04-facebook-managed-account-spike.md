@@ -60,3 +60,52 @@ Facebook7/57 passed2.76s, Admin build passed14.05s (combined local inventory rem
 Combined support/Facebook57 tests405 assertions passed6.84s. Read-only localhost connection UI renders honest no-account/unconfigured state. Meta user reports confirmation completed; fresh page still Standard Access, opening flow reveals saved Data handling draft with Hostinger processor, controller JW Studio/Malaysia, No authority disclosures, None listed processes; Submit remains pending. No declaration submitted by agent. Need exact confirmation before Submit, plus scoped deployment/new OAuth redirect authorization before real provider acceptance.
 
 User approved exact Meta declarations, Facebook-only GitHub/Hostinger release, provided private credentials and new Ecommerce redirect registration. Meta Submit requests password reauthentication; user asked to complete privately. No credential guessed. Isolated release build14.65s; independent dependencies copied, no junction. Real OAuth closure pending.
+
+## 2026-10-04 production checkpoint
+- User completed Meta password reauthentication; public_profile Advanced Access granted observed in Chrome.
+- Approved Ecommerce callback saved and observed after Meta page reload; both legacy callback entries retained.
+- Local HEAD, GitHub main, Hostinger HEAD verified equal: 7cd61cee6e28f8e8484cccd2917ea56cd9a06e7e.
+- Authenticated production channel modal verified: Facebook Pages section present; server reports credentials/HTTPS callback setup required.
+- Credential transfer command rejected by automatic policy before execution. No secret transferred. Reason detail unavailable beyond blocked by policy. Do not retry through alternate transport.
+- User asked to install selected provider settings directly in production .env; real OAuth/Page persistence acceptance remains pending. After confirmation clear config and proceed with real consent flow.
+- Elapsed time and token usage: unavailable.
+
+
+## Real provider acceptance completed 2026-10-04
+- User confirmed production provider .env configured. optimize:clear succeeded.
+- Authenticated live UI now offers Continue with Facebook. Meta showed existing JW App authorization; continued with previous settings (no new permission grant).
+- Callback returned selectable JW Studio Page 1045679445296291. Selected Page and real Meta check displayed Connected.
+- Reload triggered another provider check; connection persisted and last verified advanced to 2026-10-04T04:18:30+00:00.
+- Read-only production DB check confirmed state connected, encrypted_at_rest=true, decrypts_successfully=true. No raw token emitted.
+- Screenshot output/playwright/facebook-production-connected.png.
+- Minimum OAuth -> Page selection -> encrypted persistence -> fresh live status gate passed for existing-authorized Joshua/JW Studio account. First-time external customer grant remains separate acceptance; messaging/webhooks not enabled by this phase.
+
+
+## Facebook detail-view UI checkpoint
+- Scope: Facebook connection region moved to second modal view with Back to channels; callback opens detail directly. API unchanged. Local only pending release approval.
+- Build command npm run build at resources/admin. UI changed SupportOverviewHub.tsx. Ledger write initially used wrong cwd (unexpected failure 1), corrected absolute path without product changes.
+
+
+- Build passed in measured 13.49s; existing chunk-size warning only.
+- Authenticated localhost browser passed: first view has four channels only; Facebook click opens Facebook detail without platform grid; Back to channels restores four cards; close/reopen works. Light/dark screenshots verified. Local shows no saved Page; production connected Page is not copied to local.
+- Screenshots output/playwright/facebook-detail-local-light.png and facebook-detail-local-dark.png. Product change is local only; await phase synchronization approval.
+
+
+## Dedicated Facebook management page correction
+- User clarified dedicated URL, not a modal detail. Route /admin/social/facebook uses existing authenticated Admin shell. OAuth results now return here; Facebook card navigates here, channel chooser retained.
+- Existing connection region reused in FacebookAccountPage.tsx; sidebar/header route mapping added. API and token storage unchanged.
+- Before validation: php artisan test --compact --filter=FacebookManagedAccountTest and npm run build. Redirect assertions updated for dedicated route. Unexpected failures this product issue 0.
+
+
+- Tests passed 7 / 57 assertions. Build passed 14.29s. Browser verified navigation URL and direct reload. Dark screenshot identified missing inherited text color after section extraction; added explicit existing dark/light surface colors before next build (new visual finding, no blind rerun).
+
+
+- Final build passed 13.93s after dark text fix. Browser showed correct dedicated URL, Admin shell, Facebook Pages and authorization action; dark heading/surface colors verified screenshot.
+- During follow-up capture tab changed to /admin, causing region locator timeout twice (unexpected browser issue count 2; no product test failure). No repeated build/test; direct target navigation provided final visual proof. Origin of external navigation not determined. Screenshots facebook-management-page-dark.png and facebook-management-page-light.png.
+- New phase remains local, not committed/pushed/deployed. Time/token accounting unavailable except measured build/test durations above.
+
+
+## Approved dedicated-page release
+- User approved synchronization. Clean release copy build passed 13.48s; canonical Facebook tests passed 7 / 57 in 2.65s. Diff check found one blank line whitespace issue, removed; no behavior change.
+- Pre-release heads equal 7cd61cee6e28f8e8484cccd2917ea56cd9a06e7e. Only dedicated Facebook page, route navigation, redirect tests and generated admin assets included.
+

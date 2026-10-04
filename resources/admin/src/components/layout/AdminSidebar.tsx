@@ -245,7 +245,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
       id: 'support-overview' as NavSection,
       label: 'Customer Support',
       icon: MessageSquareText,
-      isActive: currentSection === 'support' || currentSection === 'support-overview',
+      isActive: currentSection === 'support' || currentSection === 'support-overview' || currentSection === 'support-facebook',
       badge: unreadSupportCount > 0 ? `${unreadSupportCount} New` : 'Inbox',
       badgeVariant: unreadSupportCount > 0 ? 'warning' : 'info',
     },

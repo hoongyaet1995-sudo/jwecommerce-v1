@@ -1064,6 +1064,7 @@ export interface MarketplaceSyncLog {
 export type NavSection = 
   | 'dashboard'
   | 'support-overview'
+  | 'support-facebook'
   | 'support'
   | 'shipping-malaysia'
   | 'marketplace'

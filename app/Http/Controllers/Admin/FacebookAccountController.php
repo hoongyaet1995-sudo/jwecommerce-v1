@@ -13,7 +13,7 @@ class FacebookAccountController extends Controller
 {
     public function __construct(private FacebookAccountService $facebook) {}
     private function requireManager(Request $request): void {abort_unless($request->user()?->is_super_admin,403);}
-    private function result(string $status){return redirect('/admin/support-overview?facebook='.$status)->header('Referrer-Policy','no-referrer');}
+    private function result(string $status){return redirect('/admin/social/facebook?facebook='.$status)->header('Referrer-Policy','no-referrer');}
     public function authorize(Request $request)
     {
         $this->requireManager($request);
