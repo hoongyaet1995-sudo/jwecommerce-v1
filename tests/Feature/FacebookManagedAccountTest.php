@@ -47,6 +47,33 @@ class FacebookManagedAccountTest extends TestCase
         $this->get('/admin/social/facebook/callback?state='.urlencode($state).'&code=test-code')->assertRedirect('/admin/social/facebook?facebook=select');
     }
 
+    public function test_authorization_requests_business_page_discovery_and_rerequests_declined_scopes(): void
+    {
+        $this->owner();
+        $response=$this->get('/admin/social/facebook/authorize')->assertRedirect();
+        parse_str(parse_url($response->headers->get('Location'),PHP_URL_QUERY),$query);
+        $this->assertEqualsCanonicalizing(['pages_show_list','business_management'],explode(',',$query['scope']));
+        $this->assertSame('rerequest',$query['auth_type']??null);
+    }
+
+    public function test_empty_page_list_distinguishes_missing_business_grant_from_no_accessible_assets(): void
+    {
+        $this->owner();
+        foreach ([false,true] as $businessGranted) {
+            Http::swap(new \Illuminate\Http\Client\Factory()); Http::preventStrayRequests();
+            $permissions=[['permission'=>'pages_show_list','status'=>'granted']];
+            if($businessGranted)$permissions[]=['permission'=>'business_management','status'=>'granted'];
+            Http::fake([
+                'graph.facebook.com/*/oauth/access_token*'=>Http::response(['access_token'=>'private-user-token']),
+                'graph.facebook.com/*/me/permissions*'=>Http::response(['data'=>$permissions]),
+                'graph.facebook.com/*/me/accounts*'=>Http::response(['data'=>[]]),
+            ]);
+            $this->get('/admin/social/facebook/authorize');$state=session('facebook_oauth.state');
+            $this->get('/admin/social/facebook/callback?state='.$state.'&code=test')->assertRedirect('/admin/social/facebook?facebook='.($businessGranted?'no_pages':'business_permission_required'));
+            $this->assertSame(0,DB::table('managed_social_accounts')->count());
+        }
+    }
+
     public function test_real_provider_selection_is_encrypted_private_and_shared_by_shop_staff(): void
     {
         $this->owner();$this->provider();$this->completeOAuth();

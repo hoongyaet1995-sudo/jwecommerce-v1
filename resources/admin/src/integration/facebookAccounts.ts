@@ -39,7 +39,8 @@ export const facebookOAuthNotice:Record<string,string>={
   invalid_state:'This authorization expired or could not be verified. Connect Facebook again.',
   cancelled:'Facebook authorization was cancelled. No Page was connected.',
   permission_required:'Page list permission was not granted. Connect again and allow Page access.',
-  no_pages:'No authorized Facebook Pages were returned. Check your Page access in Meta and reconnect.',
+  business_permission_required:'Business access was not granted and Meta returned no Pages. Connect Facebook again, allow Business access, and select the Business Portfolio and Pages you manage.',
+  no_pages:'Meta returned no accessible Pages. Check that the Facebook account has Page access in the correct Business Portfolio and that the Page is selected in the authorization settings, then reconnect.',
   provider_error:'Meta could not complete authorization. Please try again.',
   not_configured:'Facebook OAuth requires server credentials and an HTTPS callback before connecting.',
 };

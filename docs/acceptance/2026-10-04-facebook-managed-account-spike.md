@@ -130,3 +130,24 @@ User approved exact Meta declarations, Facebook-only GitHub/Hostinger release, p
 - User approved GitHub/Hostinger synchronization. Preflight local HEAD / GitHub main / Hostinger HEAD all 47bb4dd49b8a75ef5165d0aba18cd08edcea5c3d. Production pre-existing untracked config backups/assets preserved. Clean archive built with only accepted FacebookAccountPage.tsx and phase record added; OAuth callback route remains /admin/social/facebook.
 - Canonical local feature verification already passed 7 / 57; clean release build validation recorded before commit. Scope excludes all unrelated inventory/test/preview edits.
 - Clean release build passed 10.06s (existing chunk-size warning). Cleanup command rejected by automatic review; no deletion executed. Copied clean build, stage only tracked changes and clean-build filenames; other generated files excluded.
+
+## Facebook accounts table release verified
+- Released bac411fdd66a3ee8b2dcaa85fd894f5cc3380f49; local HEAD / GitHub main / Hostinger HEAD equal. Hostinger fast-forward and optimize:clear succeeded.
+- Authenticated HTTPS new table displays real JW Studio Page 1045679445296291 Connected, provider check at 13:41:51 MYT. Manage expanded real granted permissions and review authorization link. Screenshot output/playwright/facebook-accounts-live-release.jpg. OAuth callback remains dedicated management URL; new OAuth grant not repeated this release.
+- Phase released. Unrelated dirty files preserved; this post-release evidence addendum remains local. Time/token accounting unavailable except measured build/test timings above.
+
+## New-account OAuth read-only diagnosis
+- 2026-10-04: user authorized checking App access levels and new-account authorization outcome. Meta App 1280202060726106 UI confirmed Advanced access granted for public_profile, pages_show_list, business_management, pages_messaging, pages_manage_metadata, pages_read_engagement.
+- Read-only scoped recent encrypted pending sessions: failed authorization granted only pages_show_list/public_profile with zero usable Pages; comparison successful session had business_management and other grants, two usable Pages. No token/secret printed or saved in diagnostics.
+- Direct server-side read-only Meta /me/accounts replay of failed authorization: HTTP 200, no error code, raw data count 0, no pagination. Therefore not a local filtering issue or single-account limit. Missing business_management request is a verified integration gap; specific Page/Business Portfolio asset grant and user role remain unverified, so causation not closed. No code or provider setting changes made.
+
+## Business Page discovery permission repair (local)
+- User authorized completing missing permission request. Bounded fix: request pages_show_list + business_management with auth_type=rerequest; distinguish empty discovery with missing Business grant from genuinely inaccessible assets. Existing successful Page connections preserved.
+- Intentional initial TDD red: FacebookManagedAccountTest new scope/rerequest and empty-list diagnostic tests, before service/controller change. Unexpected failure count 0. Baseline HEAD bac411f; unrelated work preserved.
+- Intentional initial red confirmed both missing scope and generic empty-list handling (2 failed, 4 assertions, 1.69s). Service/controller and callback notices now changed; run full FacebookManagedAccountTest and admin build for regression verification.
+- Regression verification passed 9 tests / 66 assertions (1.79s), admin build passed (10.59s, existing chunk-size warning). Authenticated localhost presentation of business_permission_required notice confirmed via query-state URL, not a real grant; screenshot output/playwright/facebook-business-permission-notice.jpg. Real new-account OAuth retest remains pending deployment and customer consent. Source remains local; no synchronization performed.
+
+## Approved business discovery permission release
+- User approved synchronization. Baseline local/GitHub/Hostinger bac411fdd66a3ee8b2dcaa85fd894f5cc3380f49 equal. Release scope only OAuth request scopes/rerequest, empty-list diagnosis, callback notice, tests and clean generated admin assets. Previous clean archive contains accepted Facebook table source; updated only integration notice before rebuild.
+- Pre-release validation: previous local feature tests 9 / 66 and build passed; clean archive build scheduled now. Unrelated dirty changes excluded.
+- Clean archive build passed; stage exact accepted source, tracked asset removals, clean-build asset filenames and phase ledger. No credentials/provider settings changed.

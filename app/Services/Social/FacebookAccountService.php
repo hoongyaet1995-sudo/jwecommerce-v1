@@ -18,7 +18,8 @@ class FacebookAccountService
     {
         return 'https://www.facebook.com/'.$this->version().'/dialog/oauth?'.http_build_query([
             'client_id'=>config('services.facebook.client_id'),'redirect_uri'=>config('services.facebook.redirect'),
-            'state'=>$state,'response_type'=>'code','scope'=>'pages_show_list','return_scopes'=>'true',
+            'state'=>$state,'response_type'=>'code','scope'=>'pages_show_list,business_management','return_scopes'=>'true',
+            'auth_type'=>'rerequest',
         ]);
     }
     private function version(): string {return (string)config('services.facebook.graph_version','v25.0');}

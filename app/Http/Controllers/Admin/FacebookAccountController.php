@@ -41,7 +41,7 @@ class FacebookAccountController extends Controller
             $request->session()->put('facebook_pending',Crypt::encryptString(json_encode([
                 'token'=>$token,'actor'=>$request->user()->id,'merchant'=>$state['merchant'],'app'=>$state['app'],
                 'expires'=>now()->addMinutes(10)->timestamp,'pages'=>$pages,'permissions'=>$permissions],JSON_THROW_ON_ERROR)));
-            return $this->result($pages?'select':'no_pages');
+            return $this->result($pages?'select':(in_array('business_management',$permissions,true)?'no_pages':'business_permission_required'));
         } catch(\Throwable $e){return $this->result('provider_error');}
     }
     private function pending(Request $request): ?array
