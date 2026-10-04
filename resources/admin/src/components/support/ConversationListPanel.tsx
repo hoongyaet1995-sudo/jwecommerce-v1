@@ -79,7 +79,7 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
     // Status filter
     if (statusFilter === 'unread' && (!c.unreadCount || c.unreadCount === 0)) return false;
     if (statusFilter === 'high_priority' && c.priority !== 'urgent' && c.priority !== 'high') return false;
-    if (statusFilter === 'open' && c.status === 'resolved') return false;
+    if (statusFilter === 'open' && c.status !== 'open') return false;
     if (statusFilter === 'human_mode' && !['waiting_human','human_mode'].includes(c.status)) return false;
     if (statusFilter === 'resolved' && c.status !== 'resolved') return false;
 
@@ -133,7 +133,7 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
         <div className="flex items-center gap-1 text-[11px] font-medium border-t border-neutral-100 dark:border-neutral-800/60 pt-2">
           {(['open','human_mode','resolved','archived'] as const).map(status => <button key={status} onClick={() => setStatusFilter(status)} aria-pressed={statusFilter === status}
             className={'flex-1 px-2 py-1.5 rounded transition-colors '+(statusFilter === status ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 font-semibold' : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300')}>
-            {status === 'open' ? 'Pending' : status === 'human_mode' ? 'Human' : status === 'archived' ? 'Archived' : 'Resolved'} {supportConversations.some(c => c.unreadCount > 0 && (status === 'archived' ? c.isArchived : !c.isArchived && (status === 'open' ? c.status !== 'resolved' : status === 'human_mode' ? ['waiting_human','human_mode'].includes(c.status) : c.status === 'resolved'))) && <span aria-label='Unread' className='inline-block w-1.5 h-1.5 rounded-full bg-red-500 ml-1' />}
+            {status === 'open' ? 'Pending' : status === 'human_mode' ? 'Human' : status === 'archived' ? 'Archived' : 'Resolved'} {supportConversations.some(c => c.unreadCount > 0 && (status === 'archived' ? c.isArchived : !c.isArchived && (status === 'open' ? c.status === 'open' : status === 'human_mode' ? ['waiting_human','human_mode'].includes(c.status) : c.status === 'resolved'))) && <span aria-label='Unread' className='inline-block w-1.5 h-1.5 rounded-full bg-red-500 ml-1' />}
           </button>)}
         </div>
       </div>

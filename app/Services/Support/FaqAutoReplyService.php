@@ -13,15 +13,16 @@ use Ramsey\Uuid\Uuid;
 
 class FaqAutoReplyService
 {
-    public function reply(SupportConversation $conversation, array $incoming): void
+    public function reply(SupportConversation $conversation, array $incoming): bool
     {
         $settings = app(SupportFaqService::class)->read();
-        if (! ($settings['autoReplyEnabled'] ?? false) || (! ($settings['faq']['isEnabled'] ?? false) && ! ($settings['productCatalog']['isEnabled'] ?? false) && ! ($settings['discountKnowledge']['isEnabled'] ?? false) && ! ($settings['orderLookup']['isEnabled'] ?? false))) {
-            return;
+        $explicitRequest = app(SupportEscalationPolicy::class)->requested($incoming['content'], $settings);
+        if (!$explicitRequest && (! ($settings['autoReplyEnabled'] ?? false) || (! ($settings['faq']['isEnabled'] ?? false) && ! ($settings['productCatalog']['isEnabled'] ?? false) && ! ($settings['discountKnowledge']['isEnabled'] ?? false) && ! ($settings['orderLookup']['isEnabled'] ?? false)))) {
+            return true;
         }
-        $lock = Cache::lock('support-ai:'.$conversation->id, 45);
+        $lock = Cache::lock('support-ai:'.$conversation->id, 90);
         if (! $lock->get()) {
-            return;
+            return false;
         }
         try {
             $source = $conversation->messages()->where('client_message_id', $incoming['client_message_id'])->firstOrFail();
@@ -29,7 +30,7 @@ class FaqAutoReplyService
             $conversation->refresh();
             $controlVersion = (int) $conversation->notes()->max('id');
             if ($conversation->status !== 'open' || (int) $conversation->messages()->where('sender_role', 'human_agent')->max('id') >= $source->id || $conversation->messages()->where('client_message_id', $replyId)->exists()) {
-                return;
+                return true;
             }
             $language = $incoming['language'] ?? ($settings['primaryLanguage'] ?? 'auto_detect');
             if ($language === 'auto_detect') {
@@ -118,16 +119,28 @@ class FaqAutoReplyService
                     return;
                 }
                 $current = app(SupportFaqService::class)->read();
-                if (! ($current['autoReplyEnabled'] ?? false) || (! ($current['faq']['isEnabled'] ?? false) && ! ($current['productCatalog']['isEnabled'] ?? false) && ! ($current['discountKnowledge']['isEnabled'] ?? false) && ! ($current['orderLookup']['isEnabled'] ?? false)) || ($current['version'] ?? 0) !== ($settings['version'] ?? 0)) {
+                if (($current['version'] ?? 0) !== ($settings['version'] ?? 0) || ($escalationReason === 'explicit_request' && !app(SupportEscalationPolicy::class)->rules($current)['onExplicitRequest']) || ($escalationReason !== 'explicit_request' && (! ($current['autoReplyEnabled'] ?? false) || (! ($current['faq']['isEnabled'] ?? false) && ! ($current['productCatalog']['isEnabled'] ?? false) && ! ($current['discountKnowledge']['isEnabled'] ?? false) && ! ($current['orderLookup']['isEnabled'] ?? false))))) {
                     return;
                 }
                 $actions = array_merge($actions, app(SupportEscalationPolicy::class)->actions($locked, $answer === $unknownAnswer, $escalationReason, $settings));
-                $locked->messages()->create(['client_message_id' => $replyId, 'sender_role' => 'ai', 'actions' => $actions, 'content' => mb_substr(trim($answer), 0, 10000)]);
+                if ($escalationReason === 'explicit_request') {
+                    $language = preg_match('/\p{Han}/u',$source->content) ? 'zh' : ($settings['primaryLanguage'] ?? 'en');
+                    if (!in_array($language,['en','ms','zh'],true)) $language='en';
+                    $answer = $settings['personality']['fallbackHandoffMessage'][$language];
+                    $locked->notes()->create(['content'=>'[Control] open → waiting_human (customer requested human)']);
+                    $locked->update(['status'=>'waiting_human']);
+                    \App\Models\User::where('is_admin',true)->chunkById(100,fn($staff)=>\Illuminate\Support\Facades\Notification::send($staff,new \App\Notifications\SupportHumanRequested($locked->id)));
+                } elseif ($locked->channel === 'facebook' && collect($actions)->contains(fn($a)=>($a['type']??'')==='request_human')) {
+                    $answer .= "\n".['en'=>'To request a human agent, reply: Talk to a human.','ms'=>'Untuk meminta ejen manusia, balas: Talk to a human.','zh'=>'如需人工协助，请回复：转人工。'][preg_match('/\p{Han}/u',$source->content)?'zh':'en'];
+                }
+                $locked->messages()->create(['client_message_id' => $replyId, 'sender_role' => 'ai', 'actions' => $actions, 'content' => mb_substr(trim($answer), 0, $locked->channel === 'facebook' ? 2000 : 10000),
+                    ...($locked->channel === 'facebook' ? ['ai_settings_version'=>(int)($settings['version'] ?? 0),'ai_control_version'=>(int)$locked->notes()->max('id')] : [])]);
                 $locked->update(['last_message_at' => now()]);
             });
         } finally {
             $lock->release();
         }
+        return true;
     }
 
     private function normalize(string $text): string

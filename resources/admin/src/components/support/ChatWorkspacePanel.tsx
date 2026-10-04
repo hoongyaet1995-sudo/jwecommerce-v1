@@ -85,7 +85,7 @@ export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
                 {'Human Specialist'}
               </span>
 
-              {conversation.channel!=='facebook'&&<button
+              <button
                 id="btn-hand-back-ai"
                 disabled={supportBusy} onClick={() => handBackToAI(conversation.id)}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700 rounded-lg transition-colors"
@@ -93,7 +93,7 @@ export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
               >
                 <Bot className="w-3.5 h-3.5 text-indigo-500" />
                 <span className="hidden sm:inline">Hand to AI</span>
-              </button>}
+              </button>
             </div>
           )}
 

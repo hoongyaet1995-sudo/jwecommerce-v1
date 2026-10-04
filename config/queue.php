@@ -31,6 +31,16 @@ return [
 
     'connections' => [
 
+        // Same database as support ingress: receipt, message and queued work commit atomically.
+        'support' => [
+            'driver' => 'database',
+            'connection' => null,
+            'table' => 'jobs',
+            'queue' => 'support-ai',
+            'retry_after' => 120,
+            'after_commit' => false,
+        ],
+
         'marketplace' => [
             'driver' => 'database',
             'connection' => env('DB_QUEUE_CONNECTION'),

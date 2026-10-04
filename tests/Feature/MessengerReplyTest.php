@@ -25,7 +25,7 @@ class MessengerReplyTest extends TestCase
         Schema::create('store_settings',function(Blueprint $t){$t->id();$t->string('key')->unique();$t->json('value');$t->timestamps();});
         foreach(['2026_10_02_160000_create_support_chat_tables.php','2026_10_03_100000_add_support_message_actions.php','2026_10_03_180000_create_notifications_table.php','2026_10_04_120000_create_managed_social_accounts.php'] as $file)(require database_path('migrations/'.$file))->up();
         if(file_exists(database_path('migrations/2026_10_04_180000_add_messenger_inbound.php')))(require database_path('migrations/2026_10_04_180000_add_messenger_inbound.php'))->up();
-        Schema::table('support_messages',function(Blueprint $t){$t->string('delivery_status',16)->nullable();$t->string('provider_message_id',512)->nullable();$t->string('send_error',255)->nullable();});
+        Schema::table('support_messages',function(Blueprint $t){$t->string('delivery_status',16)->nullable();$t->string('provider_message_id',512)->nullable();$t->string('send_error',255)->nullable();$t->unsignedInteger('ai_settings_version')->nullable();$t->unsignedBigInteger('ai_control_version')->nullable();});
         Schema::table('managed_social_accounts',function(Blueprint $t){$t->string('messaging_error',255)->nullable();});
         config(['services.facebook.inbound_routing_ready'=>true]);
         Http::preventStrayRequests();
@@ -40,6 +40,118 @@ class MessengerReplyTest extends TestCase
     }
     private function send(SupportConversation $c,string $uuid,string $content='Reply')
     {return $this->postJson('/admin/api/support/conversations/'.$c->id.'/messages',['content'=>$content,'client_message_id'=>$uuid]);}
+    private function aiSettings(): void
+    {
+        \App\Models\StoreSetting::create(['key'=>'support_faq','value'=>['version'=>1,'autoReplyEnabled'=>true,'primaryLanguage'=>'en','productCatalog'=>['isEnabled'=>false], 'faq'=>['isEnabled'=>true,'items'=>[['id'=>'wash','question'=>'Wash?','answer'=>'Cold wash.','isActive'=>true]]]]]);
+    }
+    private function runAi(SupportConversation $c, string $text): void
+    {
+        $c->update(['status'=>'open']);$source=$c->messages()->first();$source->update(['content'=>$text]);
+        (new \App\Jobs\ProcessMessengerSupportReply($source->id))->handle(app(\App\Services\Support\FaqAutoReplyService::class),app(\App\Services\Social\MessengerReplyService::class));
+    }
+    public function test_messenger_uses_shared_faq_and_sends_once_while_remaining_pending(): void
+    {
+        $c=$this->thread();$this->aiSettings();
+        Http::fake(['graph.facebook.com/*/messages'=>Http::response(['recipient_id'=>'222','message_id'=>'ai-out'])]);
+        $this->runAi($c,'Wash?');$this->runAi($c,'Wash?');
+        $reply=$c->messages()->where('sender_role','ai')->firstOrFail();
+        $this->assertSame('Cold wash.',$reply->content);$this->assertSame('sent',$reply->delivery_status);
+        $this->assertSame('open',$c->fresh()->status);Http::assertSentCount(1);
+    }
+    public function test_explicit_request_uses_shared_handoff_and_notifies_once(): void
+    {
+        $c=$this->thread();$this->aiSettings();
+        Http::fake(['graph.facebook.com/*/messages'=>Http::response(['recipient_id'=>'222','message_id'=>'handoff-out'])]);
+        $this->runAi($c,'talk to a human');
+        $this->assertSame('waiting_human',$c->fresh()->status);
+        $this->assertSame(1,DB::table('notifications')->count());
+        $this->assertSame('sent',$c->messages()->where('sender_role','ai')->first()->delivery_status);
+    }
+    public function test_generated_ai_cannot_send_after_takeover_or_a_newer_customer_message(): void
+    {
+        $c=$this->thread();$source=$c->messages()->first();
+        $reply=$c->messages()->create(['client_message_id'=>(string)\Illuminate\Support\Str::uuid(),'sender_role'=>'ai','content'=>'AI draft']);
+        app(\App\Services\Social\MessengerReplyService::class)->sendGenerated($reply,$source);Http::assertNothingSent();
+        $c->update(['status'=>'open']);$c->messages()->create(['client_message_id'=>(string)\Illuminate\Support\Str::uuid(),'sender_role'=>'customer','content'=>'New question']);
+        app(\App\Services\Social\MessengerReplyService::class)->sendGenerated($reply,$source);Http::assertNothingSent();
+    }
+    public function test_ai_timeout_remains_unknown_without_job_resending(): void
+    {
+        $c=$this->thread();$this->aiSettings();$attempts=0;
+        Http::fake(function()use(&$attempts){$attempts++;throw new \Illuminate\Http\Client\ConnectionException('timeout');});
+        $this->runAi($c,'Wash?');$this->runAi($c,'Wash?');
+        $this->assertSame(1,$attempts);$this->assertSame('unknown',$c->messages()->where('sender_role','ai')->first()->delivery_status);
+    }
+    public function test_semantic_human_request_in_messenger_uses_existing_ai_intent_planner(): void
+    {
+        $c=$this->thread();$this->aiSettings();
+        $this->mock(\App\Services\AI\AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[],"escalation":"explicit_request"}');
+        Http::fake(['graph.facebook.com/*/messages'=>Http::response(['recipient_id'=>'222','message_id'=>'semantic-out'])]);
+        $this->runAi($c,'Could somebody from your team personally help me?');
+        $this->assertSame('waiting_human',$c->fresh()->status);Http::assertSentCount(1);
+    }
+    public function test_ai_is_silent_during_human_mode_and_resumes_on_next_turn_after_hand_back(): void
+    {
+        $c=$this->thread();$this->aiSettings();$source=$c->messages()->first();$source->update(['content'=>'Wash?']);
+        Http::fake(['graph.facebook.com/*/messages'=>Http::response(['recipient_id'=>'222','message_id'=>'resume-out'])]);
+        $job=new \App\Jobs\ProcessMessengerSupportReply($source->id);
+        $job->handle(app(\App\Services\Support\FaqAutoReplyService::class),app(\App\Services\Social\MessengerReplyService::class));Http::assertNothingSent();
+        $this->patchJson('/admin/api/support/conversations/'.$c->id.'/status',['status'=>'open'])->assertOk();
+        $source=$c->messages()->create(['client_message_id'=>(string)\Illuminate\Support\Str::uuid(),'sender_role'=>'customer','content'=>'Wash?']);
+        (new \App\Jobs\ProcessMessengerSupportReply($source->id))->handle(app(\App\Services\Support\FaqAutoReplyService::class),app(\App\Services\Social\MessengerReplyService::class));
+        Http::assertSentCount(1);$this->assertSame('open',$c->fresh()->status);
+    }
+    public function test_inbound_job_and_receipt_commit_atomically_on_same_database(): void
+    {
+        $c=$this->thread();$c->update(['status'=>'open']);
+        Schema::create('jobs',function(Blueprint $t){$t->id();$t->string('queue');$t->longText('payload');$t->unsignedTinyInteger('attempts');$t->unsignedInteger('reserved_at')->nullable();$t->unsignedInteger('available_at');$t->unsignedInteger('created_at');});
+        $payload=['object'=>'page','entry'=>[['id'=>'111','messaging'=>[['sender'=>['id'=>'222'],'recipient'=>['id'=>'111'],'message'=>['mid'=>'durable','text'=>'Wash?']]]]]];
+        $service=app(\App\Services\Social\MessengerInboundService::class);
+        $this->assertSame(1,$service->receive($payload));$this->assertSame(0,$service->receive($payload));
+        $this->assertSame(1,DB::table('jobs')->count());$this->assertSame('support-ai',DB::table('jobs')->value('queue'));
+        DB::beginTransaction();$payload['entry'][0]['messaging'][0]['message']['mid']='rollback';$service->receive($payload);DB::rollBack();
+        $this->assertSame(1,DB::table('jobs')->count());$this->assertSame(1,DB::table('messenger_inbound_receipts')->count());
+    }
+    public function test_human_request_routes_internally_even_when_page_cannot_send(): void
+    {
+        $c=$this->thread();$this->aiSettings();ManagedSocialAccount::where('provider_account_id','111')->update(['state'=>'unknown']);
+        $this->runAi($c,'talk to a human');
+        $this->assertSame('waiting_human',$c->fresh()->status);$this->assertSame(1,DB::table('notifications')->count());Http::assertNothingSent();
+        $this->assertSame('failed',$c->messages()->where('sender_role','ai')->first()->delivery_status);
+    }
+    public function test_busy_generation_releases_explicit_handoff_even_with_auto_reply_disabled(): void
+    {
+        $c=$this->thread();$c->update(['status'=>'open']);$this->aiSettings();
+        $settings=\App\Models\StoreSetting::where('key','support_faq')->first();$data=$settings->value;$data['autoReplyEnabled']=false;$settings->update(['value'=>$data]);
+        $source=$c->messages()->first();$source->update(['content'=>'talk to a human']);
+        $lock=\Illuminate\Support\Facades\Cache::lock('support-ai:'.$c->id,90);$this->assertTrue($lock->get());
+        $queued=\Mockery::mock(\Illuminate\Contracts\Queue\Job::class);$queued->shouldReceive('release')->once()->with(5);
+        $job=new \App\Jobs\ProcessMessengerSupportReply($source->id);$job->setJob($queued);
+        try{$job->handle(app(\App\Services\Support\FaqAutoReplyService::class),app(\App\Services\Social\MessengerReplyService::class));}finally{$lock->release();}
+        $this->assertSame('open',$c->fresh()->status);Http::assertNothingSent();
+    }
+    public function test_recovered_ai_draft_is_cancelled_after_settings_or_control_change(): void
+    {
+        $c=$this->thread();$this->aiSettings();$c->update(['status'=>'open']);$source=$c->messages()->first();$source->update(['content'=>'Wash?']);
+        app(\App\Services\Support\FaqAutoReplyService::class)->reply($c,['content'=>'Wash?','client_message_id'=>$source->client_message_id]);
+        $settings=\App\Models\StoreSetting::where('key','support_faq')->first();$data=$settings->value;$data['version']=2;$settings->update(['value'=>$data]);
+        (new \App\Jobs\ProcessMessengerSupportReply($source->id))->handle(app(\App\Services\Support\FaqAutoReplyService::class),app(\App\Services\Social\MessengerReplyService::class));
+        Http::assertNothingSent();$this->assertSame('failed',$c->messages()->where('sender_role','ai')->first()->delivery_status);
+        $b=$this->thread('333');$b->update(['status'=>'open']);$source=$b->messages()->first();$source->update(['content'=>'Wash?']);
+        app(\App\Services\Support\FaqAutoReplyService::class)->reply($b,['content'=>'Wash?','client_message_id'=>$source->client_message_id]);
+        $this->patchJson('/admin/api/support/conversations/'.$b->id.'/status',['status'=>'human_mode'])->assertOk();
+        $this->patchJson('/admin/api/support/conversations/'.$b->id.'/status',['status'=>'open'])->assertOk();
+        (new \App\Jobs\ProcessMessengerSupportReply($source->id))->handle(app(\App\Services\Support\FaqAutoReplyService::class),app(\App\Services\Social\MessengerReplyService::class));
+        Http::assertNothingSent();$this->assertSame('failed',$b->messages()->where('sender_role','ai')->first()->delivery_status);
+    }
+    public function test_first_reply_automatically_takes_over(): void
+    {
+        $c=$this->thread();$c->update(['status'=>'open']);
+        Http::fake(['graph.facebook.com/*/messages'=>Http::response(['recipient_id'=>'222','message_id'=>'mid-first'])]);
+        $this->send($c,(string)\Illuminate\Support\Str::uuid())->assertOk()->assertJsonPath('sendStatus','sent');
+        $this->assertSame('human_mode',$c->fresh()->status);
+        $this->assertSame(1,$c->notes()->count());
+    }
     public function test_reply_uses_exact_page_token_and_recipient_and_is_idempotent(): void
     {
         $a=$this->thread();$b=$this->thread('333');
@@ -54,7 +166,7 @@ class MessengerReplyTest extends TestCase
     public function test_takeover_window_archived_and_mapping_guards_never_call_provider(): void
     {
         $c=$this->thread();$id=(string)\Illuminate\Support\Str::uuid();
-        $c->update(['status'=>'waiting_human']);$this->send($c,$id)->assertConflict();
+        $c->update(['status'=>'resolved']);$this->send($c,$id)->assertConflict();
         $c->update(['status'=>'human_mode']);$c->messages()->update(['created_at'=>now()->subHours(24)]);$this->send($c,$id)->assertConflict();
         $c->messages()->update(['created_at'=>now()]);$c->notes()->create(['content'=>'[Archive] true']);$this->send($c,$id)->assertConflict();
         $c->notes()->delete();$c->update(['merchant_key'=>'other-shop']);$this->send($c,$id)->assertConflict();

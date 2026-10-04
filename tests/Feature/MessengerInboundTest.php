@@ -26,6 +26,7 @@ class MessengerInboundTest extends TestCase
         foreach(['2026_10_02_160000_create_support_chat_tables.php','2026_10_03_100000_add_support_message_actions.php','2026_10_03_180000_create_notifications_table.php','2026_10_04_120000_create_managed_social_accounts.php'] as $file)(require database_path('migrations/'.$file))->up();
         if(file_exists(database_path('migrations/2026_10_04_180000_add_messenger_inbound.php')))(require database_path('migrations/2026_10_04_180000_add_messenger_inbound.php'))->up();
         Http::preventStrayRequests();
+        \Illuminate\Support\Facades\Bus::fake([\App\Jobs\ProcessMessengerSupportReply::class]);
     }
 
     private function page(string $id='111', array $extra=[]): ManagedSocialAccount
@@ -55,9 +56,10 @@ class MessengerInboundTest extends TestCase
         $this->page();$staff=User::factory()->create(['is_admin'=>true]);
         $this->deliver($this->payload())->assertOk();$this->deliver($this->payload())->assertOk();
         $this->assertSame(1,DB::table('support_messages')->count());
-        $this->assertSame(1,DB::table('notifications')->count());
+        $this->assertSame(0,DB::table('notifications')->count());
+        \Illuminate\Support\Facades\Bus::assertDispatchedTimes(\App\Jobs\ProcessMessengerSupportReply::class,1);
         $conversation=SupportConversation::firstOrFail();
-        $this->assertSame('waiting_human',$conversation->status);
+        $this->assertSame('open',$conversation->status);
         $this->actingAs($staff)->getJson('/admin/api/support/conversations')->assertOk()->assertJsonFragment(['channel'=>'facebook','title'=>'Page 111','unreadCount'=>1,'content'=>'Hello']);
         $this->deliver($this->payload('111','mid-two','Again'))->assertOk();
         $this->assertSame(1,SupportConversation::count());$this->assertSame(2,DB::table('support_messages')->count());
@@ -80,7 +82,7 @@ class MessengerInboundTest extends TestCase
         $conversation=SupportConversation::where('provider_page_id','111')->firstOrFail();
         $conversation->update(['status'=>'resolved']);$conversation->notes()->create(['content'=>'[Archive] true']);
         $this->deliver($this->payload('111','mid-next'))->assertOk();
-        $this->assertSame('waiting_human',$conversation->fresh()->status);
+        $this->assertSame('open',$conversation->fresh()->status);
         $this->assertSame('[Archive] false',$conversation->notes()->latest('id')->value('content'));
     }
 
@@ -89,10 +91,10 @@ class MessengerInboundTest extends TestCase
         $this->page();$this->deliver($this->payload())->assertOk();$conversation=SupportConversation::firstOrFail();
         $this->actingAs(User::factory()->create(['is_admin'=>true]));
         $this->postJson('/admin/api/support/conversations/'.$conversation->id.'/messages',['content'=>'Reply','client_message_id'=>(string)\Illuminate\Support\Str::uuid()])->assertStatus(409);
-        $this->patchJson('/admin/api/support/conversations/'.$conversation->id.'/status',['status'=>'open'])->assertStatus(409);
+        $this->patchJson('/admin/api/support/conversations/'.$conversation->id.'/status',['status'=>'open'])->assertOk();
         $this->assertSame(1,DB::table('support_messages')->count());
         $conversation->update(['status'=>'resolved']);
-        $this->patchJson('/admin/api/support/conversations/'.$conversation->id.'/status',['status'=>'open'])->assertOk()->assertJsonPath('conversation.status','waiting_human');
+        $this->patchJson('/admin/api/support/conversations/'.$conversation->id.'/status',['status'=>'open'])->assertOk()->assertJsonPath('conversation.status','open');
     }
 
     public function test_activation_requires_routing_and_grants_and_preserves_shared_subscription_fields(): void

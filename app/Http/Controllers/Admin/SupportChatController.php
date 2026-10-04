@@ -41,10 +41,6 @@ class SupportChatController extends Controller
     public function status(Request $request, SupportConversation $conversation, SupportChatService $chat)
     {
         $data = $request->validate(['status' => ['required', 'in:open,human_mode,resolved']]);
-        if($conversation->channel==='facebook'&&$data['status']==='open'){
-            abort_unless($conversation->status==='resolved',409,'AI replies are not enabled for Messenger.');
-            $data['status']='waiting_human';
-        }
         \Illuminate\Support\Facades\DB::transaction(function () use ($conversation, $data, $request) {
             $locked = SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
             if ($locked->status !== $data['status']) {

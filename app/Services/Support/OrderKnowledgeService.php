@@ -8,7 +8,7 @@ class OrderKnowledgeService {
  public function reply(string $question,array $scope,?SupportConversation $conversation,string $language='en'):string{
  if(!($scope['isEnabled']??false))return '';
  $verify=['en'=>'Please sign in to your customer account, or verify your order email code on the Order Tracking page before I can access order details.','ms'=>'Sila log masuk ke akaun pelanggan atau sahkan kod e-mel pada halaman Order Tracking sebelum butiran pesanan boleh diakses.','zh'=>'请先登录客户账户，或在 Order Tracking 页面完成订单邮箱验证码验证，然后才能查询订单资料。'];
- if(!$conversation)return $verify[$language];
+ if(!$conversation || $conversation->channel === 'facebook')return $verify[$language];
  [$owner,$userId]=app(SupportChatService::class)->owner(request());
  if(!hash_equals($conversation->owner_hash,$owner)||$conversation->customer_user_id!==$userId)return $verify[$language];
  $q=Order::query();$authorized=false;

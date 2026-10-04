@@ -31,9 +31,8 @@ class MessengerReplyService
         $expires = $lastCustomer ? \Illuminate\Support\Carbon::parse($lastCustomer)->addHours(24) : null;
         $reason = match (true) {
             $conversation->merchant_key !== app(FacebookAccountService::class)->merchant() || !$account => 'The Page connection is unavailable for this store.',
-            $conversation->status === 'resolved' => 'Conversation resolved. Reopen and take over to reply.',
+            $conversation->status === 'resolved' => 'Conversation resolved. Reopen to reply.',
             $archived === '[Archive] true' => 'Restore this conversation before replying.',
-            $conversation->status !== 'human_mode' => 'Take over this conversation to reply.',
             config('services.facebook.inbound_routing_ready') !== true => 'Messenger setup is awaiting your administrator.',
             $account->state !== 'connected' || !$account->inbound_enabled || !$account->inbound_verified_at => $account->messaging_error ?: 'Reconnect this Page and verify its messaging permissions.',
             !in_array('pages_messaging', $account->permissions ?? [], true) => 'Review Facebook authorization and grant messaging permission.',
@@ -71,23 +70,84 @@ class MessengerReplyService
                 'content' => $data['content'], 'delivery_status' => 'sending',
             ]);
             if ($existing) $message->update(['delivery_status' => 'sending', 'send_error' => null]);
-            $locked->touch();
+            if ($locked->status !== 'human_mode') {
+                $locked->notes()->create(['staff_user_id'=>$staffId,'content'=>'[Control] '.$locked->status.' → human_mode']);
+                $locked->update(['status'=>'human_mode']);
+            } else $locked->touch();
             return [$message, $account, true];
         });
         if (!$reserved) return $message;
 
+        return $this->deliver($message, $account, $data['content'], $conversation->provider_sender_id);
+    }
+
+    public function sendGenerated(SupportMessage $reply, SupportMessage $source): void
+    {
+        $reserved = DB::transaction(function () use ($reply, $source) {
+            $conversation = SupportConversation::find($reply->conversation_id);
+            if (!$conversation || $conversation->channel !== 'facebook' || $source->conversation_id !== $conversation->id) return null;
+            $account = $this->account($conversation);
+            if ($account) $account = ManagedSocialAccount::whereKey($account->id)->lockForUpdate()->first();
+            $locked = SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
+            $stored = $locked->messages()->whereKey($reply->id)->firstOrFail();
+            // The durable generated message is its own one-attempt delivery reservation.
+            if ($stored->sender_role !== 'ai') return null;
+            if ($stored->delivery_status !== null) {
+                if ($stored->delivery_status === 'sending' && $stored->updated_at->lt(now()->subSeconds(30))) {
+                    $stored->update(['delivery_status'=>'unknown','send_error'=>'Send confirmation is unavailable. Check Messenger; do not resend this reply.']);
+                    $locked->touch();
+                }
+                return null;
+            }
+            $acknowledgement = collect($stored->actions ?? [])->contains(fn($a) => ($a['type'] ?? '') === 'request_human' && ($a['reason'] ?? '') === 'explicit_request');
+            $settings = app(\App\Services\SupportFaqService::class)->read();
+            $enabled = $settings['autoReplyEnabled'] ?? false;
+            $eligible = ($locked->status === 'open' && $enabled) || ($locked->status === 'waiting_human' && $acknowledgement);
+            $eligible = $eligible && $stored->ai_settings_version !== null && $stored->ai_control_version !== null
+                && (int)$stored->ai_settings_version === (int)($settings['version'] ?? 0)
+                && (int)$stored->ai_control_version === (int)$locked->notes()->max('id');
+            if (!$eligible || (int)$locked->messages()->where('sender_role','customer')->max('id') !== $source->id
+                || (int)$locked->messages()->where('sender_role','human_agent')->max('id') >= $source->id) {
+                $stored->update(['delivery_status'=>'failed','send_error'=>'AI reply cancelled after the conversation changed.']);
+                $locked->touch();
+                return null;
+            }
+            $ready = $this->readiness($locked,$account,false);
+            if (!$ready['canReply']) {
+                $stored->update(['delivery_status'=>'failed','send_error'=>$ready['replyBlockedReason']]);
+                $locked->touch();
+                return null;
+            }
+            $content = $stored->content;
+            $resolved = app(\App\Services\Support\SupportActionResolver::class)->resolve($stored->actions ?? [],$content);
+            foreach ($resolved['actions'] as $action) {
+                // Messenger renders trusted web actions as ordinary public links; never identity-derived order access.
+                if (isset($action['url']) && str_starts_with($action['url'],'/') && !str_starts_with($action['url'],'//')) {
+                    $line = "\n".($action['label'] ?? 'View').': '.rtrim(config('app.url'),'/').$action['url'];
+                    if (mb_strlen($content.$line) <= 2000) $content .= $line;
+                }
+            }
+            $stored->update(['content'=>$content,'delivery_status'=>'sending','send_error'=>null]);
+            $locked->touch();
+            return [$stored,$account,$locked->provider_sender_id];
+        });
+        if ($reserved) $this->deliver($reserved[0],$reserved[1],$reserved[0]->content,$reserved[2]);
+    }
+
+    private function deliver(SupportMessage $message, ManagedSocialAccount $account, string $content, string $recipient): SupportMessage
+    {
         $status = 'unknown'; $providerId = null;
         $error = 'Send confirmation is unavailable. Check Messenger; do not resend this reply.';
         try {
             $token = $account->access_token;
             $response = Http::withToken($token)->acceptJson()->connectTimeout(5)->timeout(12)->post(
                 'https://graph.facebook.com/'.config('services.facebook.graph_version', 'v25.0').'/'.$account->provider_account_id.'/messages',
-                ['messaging_type' => 'RESPONSE', 'recipient' => ['id' => $conversation->provider_sender_id],
-                    'message' => ['text' => $data['content']], 'appsecret_proof' => hash_hmac('sha256', $token, (string) config('services.facebook.client_secret'))]
+                ['messaging_type' => 'RESPONSE', 'recipient' => ['id' => $recipient],
+                    'message' => ['text' => $content], 'appsecret_proof' => hash_hmac('sha256', $token, (string) config('services.facebook.client_secret'))]
             );
             $body = $response->json();
             if ($response->successful() && is_string($body['message_id'] ?? null) && $body['message_id'] !== ''
-                && strlen($body['message_id']) <= 512 && (string) ($body['recipient_id'] ?? '') === $conversation->provider_sender_id) {
+                && strlen($body['message_id']) <= 512 && (string) ($body['recipient_id'] ?? '') === $recipient) {
                 $status = 'sent'; $providerId = $body['message_id']; $error = null;
             } elseif (is_array($body['error'] ?? null)) {
                 $status = 'failed';

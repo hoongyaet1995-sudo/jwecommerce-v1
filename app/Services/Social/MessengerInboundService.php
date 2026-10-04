@@ -51,20 +51,20 @@ class MessengerInboundService
             $owner=hash('sha256',json_encode(['messenger',$account->merchant_key,$account->app_id,$page,$sender]));
             $conversation=SupportConversation::firstOrCreate(['owner_hash'=>$owner],[
                 'id'=>(string)Str::uuid(),'channel'=>'facebook','merchant_key'=>$account->merchant_key,
-                'provider_page_id'=>$page,'provider_sender_id'=>$sender,'provider_page_name'=>$account->name,'status'=>'waiting_human',
+                'provider_page_id'=>$page,'provider_sender_id'=>$sender,'provider_page_name'=>$account->name,'status'=>'open',
             ]);
             $conversation=SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
             $timestamp=$event['timestamp']??null;
             $sentAt=is_numeric($timestamp)&&$timestamp>0&&$timestamp<=now()->addMinutes(5)->timestamp*1000
                 ? Carbon::createFromTimestampMs((int)$timestamp):now();
-            $conversation->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'customer','content'=>$text,'created_at'=>$sentAt,'updated_at'=>now()]);
+            $message=$conversation->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'customer','content'=>$text,'created_at'=>$sentAt,'updated_at'=>now()]);
             if($conversation->notes()->where('content','like','[Archive] %')->latest('id')->value('content')==='[Archive] true')
                 $conversation->notes()->create(['content'=>'[Archive] false']);
-            $conversation->update(['status'=>$conversation->status==='human_mode'?'human_mode':'waiting_human',
+            $conversation->update(['status'=>in_array($conversation->status,['human_mode','waiting_human'],true)?$conversation->status:'open',
                 'provider_page_name'=>$account->name,'last_message_at'=>$conversation->last_message_at?->greaterThan($sentAt)?$conversation->last_message_at:$sentAt]);
             DB::table('messenger_inbound_receipts')->insert(['event_key'=>$key,'conversation_id'=>$conversation->id,'page_id'=>$page,'message_id'=>$mid,'created_at'=>now(),'updated_at'=>now()]);
             $account->update(['last_inbound_at'=>now()]);
-            User::where('is_admin',true)->chunkById(100,fn($staff)=>Notification::send($staff,new SupportHumanRequested($conversation->id,'New Messenger message','A customer messaged '.$account->name.'.')));
+            \App\Jobs\ProcessMessengerSupportReply::dispatch($message->id)->onConnection('support')->onQueue('support-ai')->beforeCommit();
             return true;
         },3);
     }

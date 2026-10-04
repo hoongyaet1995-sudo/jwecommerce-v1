@@ -135,7 +135,7 @@ class SupportChatApiTest extends TestCase
         $this->app->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService());
         StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
         $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($purpose,$prompt,$limit)=>$limit===250&&str_contains($prompt,'explicit_request'))->andReturn('{"tools":[],"escalation":"explicit_request"}');
-        $this->postJson('/support/chat/messages',$this->payload('Could somebody from your team personally help me?'))->assertOk()->assertJsonPath('conversation.status','open')->assertJsonCount(2,'conversation.messages');
+        $this->postJson('/support/chat/messages',$this->payload('Could somebody from your team personally help me?'))->assertOk()->assertJsonPath('conversation.status','waiting_human')->assertJsonCount(2,'conversation.messages');
         $this->assertSame('explicit_request', SupportConversation::first()->messages()->latest('id')->first()->actions[0]['reason']);
     }
 
@@ -180,7 +180,7 @@ class SupportChatApiTest extends TestCase
     {
         StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[['id'=>'shipping','question'=>'Shipping?','answer'=>'RM8','isActive'=>true,'keywords'=>[]]]]]]);
         $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
-        $id=$this->postJson('/support/chat/messages',$this->payload('I want a human agent'))->assertOk()->assertJsonPath('conversation.status','open')->assertJsonCount(2,'conversation.messages')->json('conversation.id');
+        $id=$this->postJson('/support/chat/messages',$this->payload('I want a human agent'))->assertOk()->assertJsonPath('conversation.status','waiting_human')->assertJsonCount(2,'conversation.messages')->json('conversation.id');
         $this->assertSame('explicit_request',SupportConversation::first()->messages()->latest('id')->first()->actions[0]['reason']);
         $confirm=$this->payload('Please connect me.');$confirm['request_human']=true;$confirm['contact']=['name'=>'Support Guest','email'=>'support-guest@example.test'];
         $this->postJson('/support/chat/messages',$confirm)->assertJsonPath('conversation.status','waiting_human');
@@ -200,8 +200,8 @@ class SupportChatApiTest extends TestCase
         StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
         $first=User::factory()->create(['is_admin'=>true]);$second=User::factory()->create(['is_admin'=>true]);$customer=User::factory()->create(['is_admin'=>false]);
         $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
-        $this->postJson('/support/chat/messages',$this->payload('I want a human agent'))->assertJsonPath('conversation.status','open');
-        $this->assertSame(0,DB::table('notifications')->count());
+        $this->postJson('/support/chat/messages',$this->payload('I want a human agent'))->assertJsonPath('conversation.status','waiting_human');
+        $this->assertSame(2,DB::table('notifications')->count());
         $p=$this->payload('Please connect me.');$p['request_human']=true;$p['contact']=['name'=>'Support Guest','email'=>'support-guest@example.test'];
         $id=$this->postJson('/support/chat/messages',$p)->assertJsonPath('conversation.status','waiting_human')->json('conversation.id');
         $this->postJson('/support/chat/messages',$p)->assertOk();
@@ -455,6 +455,7 @@ class SupportChatApiTest extends TestCase
 
     public function test_incremental_inbox_keeps_timestamp_boundary_and_note_changes(): void
     {
+        $this->freezeTime();
         $this->withSession(['support_guest_key' => 'incremental']);
         $id = $this->postJson('/support/chat/messages', $this->payload())->json('conversation.id');
         $this->actingAs(User::factory()->create(['is_admin' => true]));
