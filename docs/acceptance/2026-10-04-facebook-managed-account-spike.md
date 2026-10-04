@@ -40,3 +40,23 @@ Local Dashboard code reviewed; user confirms parity with production. Supplied .e
 - Configurations list JW Studio Embedded Signup (1496764641846624) and JW Studio Embed Signup 2 (1273401224216535). Their names/IDs alone do not establish Facebook Page OAuth suitability; contents not inspected.
 - Messenger appears under Available products / Set up, but pages_messaging is already Advanced access and active. Do not infer absent messaging capability solely from the product tile.
 - No settings saved, permissions changed, secrets revealed, webhook switched or messages sent. OAuth connection and message delivery remain unverified in Ecommerce.
+
+Implementation approved by user: OAuth -> Page selection -> encrypted installation-scoped persistence -> live connection state. Initial intentional TDD red: FacebookManagedAccountTest, new migration/routes absent. No provider actions or production mutation. Command php artisan test --filter FacebookManagedAccountTest.
+
+Environment issue E1 unexpected count1: prior managed worktree archive traversed vendor/node_modules junction targets; autoload absent. Pause product tests; restore canonical dependencies from lockfiles. No source/db deletion. Initial TDD red not yet achieved (environment failure).
+
+E1 fixed: composer install and npm ci succeeded from locks, vendor restored and Admin377 packages installed; no manifest updates. Intentional TDD red now reattempted after concrete environment restoration, migration/routes still absent.
+
+Fixture issue F1 unexpected count1: helper callback collided with PHPUnit final callback method. Renamed completeOAuth; initial product TDD red pending. Retry after concrete fixture fix.
+
+Initial TDD red achieved: migration absent,4 failures expected. Implemented state binding/replay expiry, encrypted pending token and persisted accounts, live Page ID check, install owner isolation and safe errors. Green verification FacebookManagedAccountTest follows; Http fake only, not real OAuth acceptance.
+
+Green4/34 passed2.57s. Added actor/config switch, cancellation, denied scope, revoked token vs network uncertainty regressions; verification php artisan test --filter FacebookManagedAccountTest. UI wired to native dialog with page selection and live status. No provider credentials sent or settings changed.
+
+Fixture issue F2 unexpected count1: repeated Http::fake registers cumulative stubs; earlier success stub shadowed revoked/denied replacements. Reset HTTP Factory before changing responses, retain preventStrayRequests. Retry with concrete fixture correction.
+
+Facebook7/57 passed2.76s, Admin build passed14.05s (combined local inventory remains excluded from later release). Local selected two Facebook private keys installed; local migration applied only managed_social_accounts. Public HTTP localhost intentionally not a valid external OAuth redirect. UI badge edit shell parser failed before writes (F3 count1); corrected with apply_patch. Live provider writes still unperformed.
+
+Combined support/Facebook57 tests405 assertions passed6.84s. Read-only localhost connection UI renders honest no-account/unconfigured state. Meta user reports confirmation completed; fresh page still Standard Access, opening flow reveals saved Data handling draft with Hostinger processor, controller JW Studio/Malaysia, No authority disclosures, None listed processes; Submit remains pending. No declaration submitted by agent. Need exact confirmation before Submit, plus scoped deployment/new OAuth redirect authorization before real provider acceptance.
+
+User approved exact Meta declarations, Facebook-only GitHub/Hostinger release, provided private credentials and new Ecommerce redirect registration. Meta Submit requests password reauthentication; user asked to complete privately. No credential guessed. Isolated release build14.65s; independent dependencies copied, no junction. Real OAuth closure pending.

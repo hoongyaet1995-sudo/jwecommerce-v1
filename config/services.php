@@ -2,6 +2,14 @@
 
 return [
 
+    'facebook' => [
+        'client_id' => env('FACEBOOK_CLIENT_ID'),
+        'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
+        'redirect' => env('FACEBOOK_REDIRECT_URI', rtrim(env('APP_URL', ''), '/').'/admin/social/facebook/callback'),
+        'merchant_key' => env('SOCIAL_MERCHANT_KEY', 'jw-ecommerce'),
+        'graph_version' => env('FACEBOOK_GRAPH_VERSION', 'v25.0'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
