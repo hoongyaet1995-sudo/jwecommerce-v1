@@ -10,7 +10,7 @@ export async function supportRequest(path = '', method = 'GET', body?: unknown, 
   });
   const payload = await response.json().catch(() => null);
   if (!response.ok || !payload) throw new Error(payload?.message || 'Unable to connect to Support. Please try again.');
-  return payload as { syncedAt?: string; conversations?: SupportConversation[]; conversation?: SupportConversation };
+  return payload as { syncedAt?: string; conversations?: SupportConversation[]; conversation?: SupportConversation; sendStatus?: string; sendError?: string | null };
 }
 
 export function useSupportChat(active: boolean) {
@@ -74,13 +74,17 @@ export function useSupportChat(active: boolean) {
     try {
       const result = await supportRequest(`/${id}/${action}`, method, data);
       if (result.conversation) setConversations(previous => previous.map(c => c.id === id ? result.conversation! : c));
+      if (action === 'messages' && result.sendStatus && result.sendStatus !== 'sent') {
+        setError(result.sendError || (result.sendStatus === 'sending' ? 'Reply is sending. Wait for confirmation before sending again.' : 'Reply could not be confirmed. Your draft is retained.'));
+        return false;
+      }
       setError(''); return true;
     } catch (error) { setError(error instanceof Error ? error.message : 'Unable to save Support changes.'); return false; }
     finally { revision.current++; busy.current = false; setBusy(false); }
   };
   const sendMessageToConversation = async (id: string, content: string) => {
     if (!retries.current[id] || retries.current[id].content !== content) retries.current[id] = { content, id: crypto.randomUUID() };
-    const ok = await mutate(id, 'messages', { content, client_message_id: retries.current[id].id });
+    const ok = await mutate(id, 'messages', { content, client_message_id: retries.current[id].id, retry: true });
     if (ok) delete retries.current[id];
     return ok;
   };

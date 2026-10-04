@@ -29,10 +29,13 @@ class SupportChatController extends Controller
     }
     public function send(Request $request, SupportConversation $conversation, SupportChatService $chat)
     {
-        abort_if($conversation->channel==='facebook',409,'Messenger receiving is enabled. Sending replies is not enabled yet.');
-        $data = $request->validate(['content' => ['required', 'string', 'max:2000'], 'client_message_id' => ['required', 'uuid']]);
+        $data = $request->validate(['content' => ['required', 'string', 'max:2000'], 'client_message_id' => ['required', 'uuid'], 'retry' => ['sometimes', 'boolean']]);
         $data['content'] = trim($data['content']);
         abort_if($data['content'] === '', 422, 'Message cannot be empty.');
+        if ($conversation->channel === 'facebook') {
+            $message = app(\App\Services\Social\MessengerReplyService::class)->send($conversation, $data, $request->user()->id);
+            return response()->json(['conversation' => $chat->adminView($conversation->fresh()), 'sendStatus' => $message->delivery_status, 'sendError' => $message->send_error]);
+        }
         return response()->json(['conversation' => $chat->adminView($chat->append($conversation, $data, 'human_agent', $request->user()->id))]);
     }
     public function status(Request $request, SupportConversation $conversation, SupportChatService $chat)

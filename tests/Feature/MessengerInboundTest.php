@@ -18,7 +18,7 @@ class MessengerInboundTest extends TestCase
         parent::setUp();
         config(['database.default'=>'sqlite','database.connections.sqlite.database'=>':memory:',
             'services.facebook.client_id'=>'app-test','services.facebook.client_secret'=>'secret-test',
-            'services.facebook.webhook_verify_token'=>'verify-test','services.facebook.merchant_key'=>'shop-test']);
+            'services.facebook.inbound_routing_ready'=>false,'services.facebook.webhook_verify_token'=>'verify-test','services.facebook.merchant_key'=>'shop-test']);
         DB::purge('sqlite'); DB::setDefaultConnection('sqlite');
         Schema::create('users',function(Blueprint $t){$t->id();$t->string('name');$t->string('email');$t->string('password');$t->boolean('is_admin')->default(false);$t->boolean('is_super_admin')->default(false);$t->timestamp('email_verified_at')->nullable();$t->rememberToken();$t->timestamps();});
         Schema::create('customers',function(Blueprint $t){$t->id();$t->foreignId('user_id')->nullable();});

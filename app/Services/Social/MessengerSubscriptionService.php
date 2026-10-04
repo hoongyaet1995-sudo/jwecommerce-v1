@@ -17,9 +17,20 @@ class MessengerSubscriptionService
             $url='https://graph.facebook.com/'.config('services.facebook.graph_version','v25.0').'/'.$account->provider_account_id.'/subscribed_apps';
             $response=$method==='POST'?$client->asForm()->post($url,$data):$client->get($url,$data);
             $body=$response->json();
-            if(!$response->successful()||!is_array($body)||isset($body['error']))throw new RuntimeException('Meta could not verify the Page subscription. Review authorization and try again.');
+            if(!$response->successful()||!is_array($body)||isset($body['error'])) {
+                $code=(int)($body['error']['code']??0);
+                throw new RuntimeException(match($code){
+                    190=>'Page authorization expired. Reconnect this Page.',
+                    10,200=>'Page messaging or webhook permission is missing. Review authorization and grant access to this Page.',
+                    default=>'Meta could not verify the Page subscription. Try checking the connection later.',
+                });
+            }
             return $body;
-        } catch(\Throwable $e){throw new RuntimeException('Meta could not verify the Page subscription. Review authorization and try again.');}
+        } catch(RuntimeException $e){
+            $safe=['Page authorization expired. Reconnect this Page.','Page messaging or webhook permission is missing. Review authorization and grant access to this Page.','Meta could not verify the Page subscription. Try checking the connection later.'];
+            throw new RuntimeException(in_array($e->getMessage(),$safe,true)?$e->getMessage():'Meta could not verify the Page subscription. Try checking the connection later.');
+        }
+        catch(\Throwable $e){throw new RuntimeException('Meta could not verify the Page subscription. Try checking the connection later.');}
     }
     private function fields(ManagedSocialAccount $account): array
     {
@@ -47,8 +58,18 @@ class MessengerSubscriptionService
         if(!in_array('messages',$this->fields($account),true))throw new RuntimeException('Meta has not enabled the messages subscription.');
         $updated=ManagedSocialAccount::whereKey($account->id)->where('state','connected')
             ->where('access_token',$account->getRawOriginal('access_token'))
-            ->update(['inbound_enabled'=>true,'inbound_verified_at'=>now(),'updated_at'=>now()]);
+            ->update(['inbound_enabled'=>true,'inbound_verified_at'=>now(),'updated_at'=>now()]+(array_key_exists('messaging_error',$account->getAttributes())?['messaging_error'=>null]:[]));
         abort_unless($updated,409,'The Page connection changed. Refresh and try again.');
+        app(FacebookAccountService::class)->invalidateInbox($account);
+    }
+    public function activate(ManagedSocialAccount $account): void
+    {
+        try {$this->enable($account);}
+        catch(\Symfony\Component\HttpKernel\Exception\HttpException|RuntimeException $e){
+            ManagedSocialAccount::whereKey($account->id)->where('access_token',$account->getRawOriginal('access_token'))
+                ->update(['inbound_verified_at'=>null,'messaging_error'=>mb_substr($e->getMessage(),0,255),'updated_at'=>now()]);
+            app(FacebookAccountService::class)->invalidateInbox($account);
+        }
     }
     public function verify(ManagedSocialAccount $account): bool
     {

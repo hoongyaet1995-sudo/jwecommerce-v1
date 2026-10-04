@@ -75,6 +75,7 @@ class FacebookAccountController extends Controller
         $values=['access_token'=>'','state'=>'disconnected','checked_at'=>now()];
         if(array_key_exists('inbound_enabled',$account->getAttributes()))$values+=['inbound_enabled'=>false,'inbound_verified_at'=>null];
         $account->update($values);
+        $this->facebook->invalidateInbox($account);
         $request->session()->forget('facebook_pending');
         return $this->index($request);
     }
@@ -104,9 +105,12 @@ class FacebookAccountController extends Controller
             abort_unless($page,422,'Page authorization is no longer available.');
             $account=ManagedSocialAccount::updateOrCreate(['merchant_key'=>$this->facebook->merchant(),'platform'=>'facebook','provider_account_id'=>$page['id']],
                 ['app_id'=>config('services.facebook.client_id'),'name'=>mb_substr($page['name'],0,255),'access_token'=>$page['access_token'],
-                    'permissions'=>$permissions,'tasks'=>$page['tasks']??[],'authorized_by'=>$request->user()->id,'state'=>'unknown']);
+                    'permissions'=>$permissions,'tasks'=>$page['tasks']??[],'authorized_by'=>$request->user()->id,'state'=>'unknown','inbound_enabled'=>false,'inbound_verified_at'=>null,'messaging_error'=>null]);
+            $this->facebook->check($account);
+            app(\App\Services\Social\MessengerSubscriptionService::class)->activate($account->fresh());
             $request->session()->forget('facebook_pending');
             return $this->index($request);
-        }catch(\RuntimeException $e){return response()->json(['message'=>'Meta could not verify the connection. Try again.'],502);}
+        }catch(\Symfony\Component\HttpKernel\Exception\HttpException $e){throw $e;}
+        catch(\RuntimeException $e){return response()->json(['message'=>'Meta could not verify the connection. Try again.'],502);}
     }
 }

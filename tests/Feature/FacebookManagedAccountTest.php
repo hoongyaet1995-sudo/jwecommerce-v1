@@ -20,7 +20,10 @@ class FacebookManagedAccountTest extends TestCase
             'services.facebook.merchant_key'=>'shop-one']);
         DB::purge('sqlite'); DB::setDefaultConnection('sqlite');
         Schema::create('users',function(Blueprint $t){$t->id();$t->string('name');$t->string('email');$t->string('password');$t->boolean('is_admin')->default(false);$t->boolean('is_super_admin')->default(false);$t->timestamp('email_verified_at')->nullable();$t->rememberToken();$t->timestamps();});
+        (require database_path('migrations/2026_10_02_160000_create_support_chat_tables.php'))->up();
         (require database_path('migrations/2026_10_04_120000_create_managed_social_accounts.php'))->up();
+        Schema::table('managed_social_accounts',function(Blueprint $t){$t->boolean('inbound_enabled')->default(false);$t->timestamp('inbound_verified_at')->nullable();$t->timestamp('last_inbound_at')->nullable();$t->string('messaging_error',255)->nullable();});
+        Schema::table('support_conversations',function(Blueprint $t){$t->string('channel')->default('web_guest');$t->string('merchant_key')->nullable();$t->string('provider_page_id')->nullable();});
         Http::preventStrayRequests();
     }
 

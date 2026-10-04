@@ -1,0 +1,113 @@
+<?php
+
+namespace App\Services\Social;
+
+use App\Models\ManagedSocialAccount;
+use App\Models\SupportConversation;
+use App\Models\SupportMessage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
+
+class MessengerReplyService
+{
+    private function account(SupportConversation $conversation): ?ManagedSocialAccount
+    {
+        if ($conversation->merchant_key !== app(FacebookAccountService::class)->merchant()) return null;
+        return ManagedSocialAccount::where('merchant_key', $conversation->merchant_key)->where('platform', 'facebook')
+            ->where('app_id', (string) config('services.facebook.client_id'))->where('provider_account_id', $conversation->provider_page_id)->first();
+    }
+
+    public function readiness(SupportConversation $conversation, ?ManagedSocialAccount $account = null, bool $lookup = true): array
+    {
+        if (!$account && $lookup) $account = $this->account($conversation);
+        if ($account && ($account->merchant_key !== $conversation->merchant_key || $account->provider_account_id !== $conversation->provider_page_id || $account->app_id !== (string) config('services.facebook.client_id'))) $account = null;
+        $lastCustomer = $conversation->relationLoaded('messages')
+            ? $conversation->messages->where('sender_role', 'customer')->sortByDesc('created_at')->first()?->created_at
+            : $conversation->messages()->where('sender_role', 'customer')->latest('created_at')->value('created_at');
+        $archived = $conversation->relationLoaded('notes')
+            ? $conversation->notes->filter(fn($n) => str_starts_with($n->content, '[Archive] '))->sortBy('id')->last()?->content
+            : $conversation->notes()->where('content', 'like', '[Archive] %')->latest('id')->value('content');
+        $expires = $lastCustomer ? \Illuminate\Support\Carbon::parse($lastCustomer)->addHours(24) : null;
+        $reason = match (true) {
+            $conversation->merchant_key !== app(FacebookAccountService::class)->merchant() || !$account => 'The Page connection is unavailable for this store.',
+            $conversation->status === 'resolved' => 'Conversation resolved. Reopen and take over to reply.',
+            $archived === '[Archive] true' => 'Restore this conversation before replying.',
+            $conversation->status !== 'human_mode' => 'Take over this conversation to reply.',
+            config('services.facebook.inbound_routing_ready') !== true => 'Messenger setup is awaiting your administrator.',
+            $account->state !== 'connected' || !$account->inbound_enabled || !$account->inbound_verified_at => $account->messaging_error ?: 'Reconnect this Page and verify its messaging permissions.',
+            !in_array('pages_messaging', $account->permissions ?? [], true) => 'Review Facebook authorization and grant messaging permission.',
+            !$expires || $expires->lessThanOrEqualTo(now()) => 'The 24-hour Messenger reply window has ended. Wait for a new customer message.',
+            !preg_match('/^\d+$/', (string) $conversation->provider_sender_id) || !preg_match('/^\d+$/', (string) $conversation->provider_page_id) => 'The Messenger recipient could not be verified.',
+            default => null,
+        };
+        return ['canReply' => $reason === null, 'replyBlockedReason' => $reason, 'replyWindowExpiresAt' => $expires?->toIso8601String()];
+    }
+
+    public function send(SupportConversation $conversation, array $data, int $staffId): SupportMessage
+    {
+        // Lock order matches ingress: Page first, then conversation. No provider call holds database locks.
+        [$message, $account, $reserved] = DB::transaction(function () use ($conversation, $data, $staffId) {
+            $account = $this->account($conversation);
+            if ($account) $account = ManagedSocialAccount::whereKey($account->id)->lockForUpdate()->first();
+            $locked = SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
+            $existing = $locked->messages()->where('client_message_id', $data['client_message_id'])->first();
+            if ($existing) {
+                if ($existing->sender_role !== 'human_agent' || $existing->staff_user_id !== $staffId || $existing->content !== $data['content']) {
+                    throw ValidationException::withMessages(['client_message_id' => 'This message identifier was already used.']);
+                }
+                if ($existing->delivery_status === 'sending' && $existing->updated_at->lt(now()->subSeconds(30))) {
+                    $existing->update(['delivery_status' => 'unknown', 'send_error' => 'Send confirmation is unavailable. Check Messenger; do not resend this reply.']);
+                    $locked->touch();
+                }
+                if ($existing->delivery_status !== 'failed' || empty($data['retry'])) return [$existing, $account, false];
+            }
+            $ready = $this->readiness($locked, $account, false);
+            abort_unless($ready['canReply'], 409, $ready['replyBlockedReason']);
+            // An uncertain prior send must be reconciled by a person, never silently repeated under a new UUID.
+            abort_if($locked->messages()->where('sender_role', 'human_agent')->where('content', $data['content'])->whereIn('delivery_status', ['sending', 'unknown'])->exists(), 409, 'This reply is awaiting confirmation. Check Messenger before sending it again.');
+            $message = $existing ?? $locked->messages()->create([
+                'client_message_id' => $data['client_message_id'], 'sender_role' => 'human_agent', 'staff_user_id' => $staffId,
+                'content' => $data['content'], 'delivery_status' => 'sending',
+            ]);
+            if ($existing) $message->update(['delivery_status' => 'sending', 'send_error' => null]);
+            $locked->touch();
+            return [$message, $account, true];
+        });
+        if (!$reserved) return $message;
+
+        $status = 'unknown'; $providerId = null;
+        $error = 'Send confirmation is unavailable. Check Messenger; do not resend this reply.';
+        try {
+            $token = $account->access_token;
+            $response = Http::withToken($token)->acceptJson()->connectTimeout(5)->timeout(12)->post(
+                'https://graph.facebook.com/'.config('services.facebook.graph_version', 'v25.0').'/'.$account->provider_account_id.'/messages',
+                ['messaging_type' => 'RESPONSE', 'recipient' => ['id' => $conversation->provider_sender_id],
+                    'message' => ['text' => $data['content']], 'appsecret_proof' => hash_hmac('sha256', $token, (string) config('services.facebook.client_secret'))]
+            );
+            $body = $response->json();
+            if ($response->successful() && is_string($body['message_id'] ?? null) && $body['message_id'] !== ''
+                && strlen($body['message_id']) <= 512 && (string) ($body['recipient_id'] ?? '') === $conversation->provider_sender_id) {
+                $status = 'sent'; $providerId = $body['message_id']; $error = null;
+            } elseif (is_array($body['error'] ?? null)) {
+                $status = 'failed';
+                $error = match ((int) ($body['error']['code'] ?? 0)) {
+                    190 => 'Page authorization expired. Reconnect this Page.',
+                    10, 200 => 'Meta rejected the reply. Review Page messaging permission and the 24-hour reply window.',
+                    default => 'Meta rejected this reply. Your draft is retained; retry after checking the connection.',
+                };
+            }
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            $status = 'failed'; $error = 'Page authorization is unavailable. Reconnect this Page.';
+        } catch (\Throwable $e) {
+            // Timeout, malformed response and 5xx without a Graph error are ambiguous, not safe retry signals.
+        }
+        DB::transaction(function () use ($message, $status, $providerId, $error) {
+            $thread = SupportConversation::whereKey($message->conversation_id)->lockForUpdate()->firstOrFail();
+            $stored = SupportMessage::whereKey($message->id)->lockForUpdate()->firstOrFail();
+            $stored->update(['delivery_status' => $status, 'provider_message_id' => $providerId, 'send_error' => $error]);
+            $thread->update($status === 'sent' ? ['last_message_at' => now(), 'updated_at' => now()] : ['updated_at' => now()]);
+        });
+        return $message->fresh();
+    }
+}

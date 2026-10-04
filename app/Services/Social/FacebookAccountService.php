@@ -73,8 +73,14 @@ class FacebookAccountService
         return array_values(array_filter($this->collection('me/accounts',$token,['fields'=>'id,name,access_token,tasks']),
             fn($p)=>is_array($p)&&is_string($p['id']??null)&&is_string($p['name']??null)&&is_string($p['access_token']??null)));
     }
+    public function invalidateInbox(ManagedSocialAccount $account): void
+    {
+        \App\Models\SupportConversation::where('channel','facebook')->where('merchant_key',$account->merchant_key)
+            ->where('provider_page_id',$account->provider_account_id)->update(['updated_at'=>now()]);
+    }
     public function check(ManagedSocialAccount $account): array
     {
+        $previous=[$account->state,(bool)$account->inbound_enabled,$account->inbound_verified_at!==null,$account->messaging_error];
         if($account->state==='disconnected')return $this->summary($account,'This Page is disconnected from this store.');
         $state='unknown';$reason=null;
         try {
@@ -82,9 +88,12 @@ class FacebookAccountService
             $body=$this->graph($account->provider_account_id,['fields'=>'id,name'],$account->access_token);
             if(($body['id']??null)!==$account->provider_account_id)throw new RuntimeException('authorization_expired');
             if($account->inbound_enabled){
-                try {$verified=app(MessengerSubscriptionService::class)->verify($account);}
-                catch(RuntimeException $e){$verified=null;}
+                $messagingError=null;
+                try {$verified=app(MessengerSubscriptionService::class)->verify($account); if(!$verified)$messagingError='Message subscription is not active. Retry the connection.';}
+                catch(RuntimeException $e){$verified=null;$messagingError=$e->getMessage();}
                 $values=['inbound_verified_at'=>$verified===true?now():null];
+                if(array_key_exists('messaging_error',$account->getAttributes()))$values['messaging_error']=$messagingError;
+                $account->messaging_error=$messagingError;
                 if($verified!==null)$values['inbound_enabled']=$verified;
                 ManagedSocialAccount::whereKey($account->id)->where('state','!=','disconnected')->where('access_token',$account->getRawOriginal('access_token'))->update($values);
                 if($verified!==null)$account->inbound_enabled=$verified;
@@ -99,13 +108,14 @@ class FacebookAccountService
             ->update(['state'=>$state,'name'=>$account->name,'checked_at'=>now(),'updated_at'=>now()]);
         if(!$updated){$fresh=ManagedSocialAccount::find($account->id);return $fresh?$this->summary($fresh,$fresh->state==='disconnected'?'This Page is disconnected from this store.':null):$this->summary($account,'Connection changed during verification. Refresh the list.');}
         $account->state=$state;$account->checked_at=now();
+        if($previous!==[$account->state,(bool)$account->inbound_enabled,$account->inbound_verified_at!==null,$account->messaging_error])$this->invalidateInbox($account);
         return $this->summary($account,$reason);
     }
     public function summary(ManagedSocialAccount $account,?string $reason=null): array
     {
         return ['id'=>(string)$account->id,'pageId'=>$account->provider_account_id,'name'=>$account->name,
             'state'=>$account->state,'checkReason'=>$reason,'checkedAt'=>$account->checked_at?->toIso8601String(),'permissions'=>$account->permissions,
-            'messagingReady'=>false,'inboundEnabled'=>(bool)$account->inbound_enabled&&$account->state!=='disconnected',
+            'messagingReady'=>$account->state==='connected'&&(bool)$account->inbound_enabled&&$account->inbound_verified_at!==null&&config('services.facebook.inbound_routing_ready')===true&&in_array('pages_messaging',$account->permissions??[],true),'messagingError'=>$account->messaging_error,'inboundEnabled'=>(bool)$account->inbound_enabled&&$account->state!=='disconnected',
             'inboundRoutingReady'=>config('services.facebook.inbound_routing_ready')===true,
             'inboundVerifiedAt'=>$account->inbound_verified_at?->toIso8601String(),'lastInboundAt'=>$account->last_inbound_at?->toIso8601String()];
     }

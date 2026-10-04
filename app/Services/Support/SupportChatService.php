@@ -10,6 +10,7 @@ use Illuminate\Validation\ValidationException;
 
 class SupportChatService
 {
+    private ?\Illuminate\Support\Collection $messengerAccounts = null;
     public function owner(Request $request): array
     {
         $user = auth('customer')->user();
@@ -142,6 +143,10 @@ class SupportChatService
         $contactNote=$conversation->notes->filter(fn($n)=>str_starts_with($n->content,'[Contact] '))->last();
         $contact=$contactNote ? json_decode(substr($contactNote->content,10),true) : [];
         $messenger=($conversation->channel??'web_guest')==='facebook';
+        if ($messenger && $this->messengerAccounts === null) {
+            $this->messengerAccounts = \App\Models\ManagedSocialAccount::where('merchant_key', config('services.facebook.merchant_key','jw-ecommerce'))
+                ->where('platform','facebook')->where('app_id',(string)config('services.facebook.client_id'))->get()->keyBy('provider_account_id');
+        }
         $name = $user ? $user->name : ($contact['name']??($messenger?'Messenger customer':'Guest'));
         $avatar = '/images/support-person.svg';
         $messages = $conversation->messages->sortBy('id');
@@ -149,7 +154,7 @@ class SupportChatService
 
         return [
             'id' => $conversation->id, 'channel' => $conversation->channel??'web_guest', 'title' => $messenger?$conversation->provider_page_name:'Storefront Support',
-            'canReply'=>!$messenger,'pageName'=>$messenger?$conversation->provider_page_name:null,
+            ...($messenger ? app(\App\Services\Social\MessengerReplyService::class)->readiness($conversation, $this->messengerAccounts?->get($conversation->provider_page_id), false) : ['canReply'=>true]),'pageName'=>$messenger?$conversation->provider_page_name:null,
             'customer' => [
                 'id' => $user ? 'customer-'.$user->id : $conversation->id, 'name' => $name, 'avatar' => $avatar,
                 'email' => $user?->email ?? ($contact['email']??null), 'phone' => $user?->customer?->phone ?? ($contact['phone']??null), 'language' => 'en',
@@ -169,7 +174,7 @@ class SupportChatService
                 'id' => (string) $m->id, 'conversationId' => $conversation->id, 'senderRole' => $m->sender_role,
                 'senderName' => $m->sender_role === 'customer' ? $name : ($m->sender_role === 'ai' ? 'AI Support' : ($m->staff?->name ?? 'Support')),
                 'senderAvatar' => $avatar, 'timestamp' => $m->created_at->format('d M H:i'),
-                'content' => $m->content, 'type' => 'text', 'deliveryStatus' => 'sent',
+                'content' => $m->content, 'type' => 'text', 'deliveryStatus' => $m->delivery_status ?? 'sent', 'sendError' => $m->send_error, 'clientMessageId' => $m->client_message_id,
             ])->values()->all(),
             'internalNotes' => $conversation->notes->map(fn ($n) => [
                 'id' => (string) $n->id, 'authorName' => $n->staff?->name ?? 'Support',

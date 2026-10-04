@@ -58,3 +58,20 @@ describe('real Support state ownership', () => {
     expect(state.supportConversations[0].snippet).toBe('Saved reply');
   });
 });
+
+describe('Messenger provider confirmation', () => {
+  it.each(['failed', 'unknown', 'sending'])('retains draft and UUID when provider state is %s even on HTTP 200', async (sendStatus) => {
+    mockFetch.mockResolvedValueOnce(response({ conversations: [conversation] }));
+    await act(async () => { await state.refreshSupport(); state.setSupportDraft(conversation.id, 'Keep this reply'); });
+    mockFetch.mockResolvedValueOnce(response({ conversation: { ...conversation, channel: 'facebook' }, sendStatus, sendError: 'Not confirmed' }));
+    let saved = true;
+    await act(async () => { saved = await state.sendMessageToConversation(conversation.id, 'Keep this reply'); });
+    expect(saved).toBe(false); expect(state.supportDrafts[conversation.id]).toBe('Keep this reply');
+    expect(state.supportError).toBe('Not confirmed');
+    const original = JSON.parse(mockFetch.mock.calls[1][1].body);
+    mockFetch.mockResolvedValueOnce(response({ conversation, sendStatus: 'sent' }));
+    await act(async () => { saved = await state.sendMessageToConversation(conversation.id, 'Keep this reply'); });
+    expect(saved).toBe(true);
+    expect(JSON.parse(mockFetch.mock.calls[2][1].body).client_message_id).toBe(original.client_message_id);
+  });
+});

@@ -2,7 +2,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 
 export interface FacebookConnection {
   id:string;pageId:string;name:string;state:'connected'|'authorization_expired'|'permission_required'|'disconnected'|'unknown';
-  checkReason?:string|null;checkedAt:string|null;permissions:string[];messagingReady:false;
+  checkReason?:string|null;checkedAt:string|null;permissions:string[];messagingReady:boolean;messagingError?:string|null;
   inboundEnabled?:boolean;inboundRoutingReady?:boolean;inboundVerifiedAt?:string|null;lastInboundAt?:string|null;
 }
 interface FacebookAccounts {configured:boolean;canManage:boolean;pages:{id:string;name:string}[];accounts:FacebookConnection[]}

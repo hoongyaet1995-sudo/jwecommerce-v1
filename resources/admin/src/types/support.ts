@@ -31,7 +31,7 @@ export type MessageType =
   | 'order_card' 
   | 'system_event';
 
-export type MessageDeliveryStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+export type MessageDeliveryStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'failed' | 'unknown';
 
 export interface MessageAttachment {
   id: string;
@@ -55,6 +55,8 @@ export interface ChatMessage {
   type: MessageType;
   attachments?: MessageAttachment[];
   deliveryStatus?: MessageDeliveryStatus;
+  sendError?: string | null;
+  clientMessageId?: string;
   aiMetadata?: {
     confidenceScore?: number;
     reasoningSteps?: string[];
@@ -125,6 +127,8 @@ export interface InternalStaffNote {
 
 export interface SupportConversation {
   canReply?: boolean;
+  replyBlockedReason?: string | null;
+  replyWindowExpiresAt?: string | null;
   pageName?: string | null;
   isArchived?: boolean;
   id: string;
