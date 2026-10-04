@@ -109,3 +109,24 @@ User approved exact Meta declarations, Facebook-only GitHub/Hostinger release, p
 - User approved synchronization. Clean release copy build passed 13.48s; canonical Facebook tests passed 7 / 57 in 2.65s. Diff check found one blank line whitespace issue, removed; no behavior change.
 - Pre-release heads equal 7cd61cee6e28f8e8484cccd2917ea56cd9a06e7e. Only dedicated Facebook page, route navigation, redirect tests and generated admin assets included.
 
+
+## Dedicated Facebook page release verified
+- Released SHA 47bb4dd49b8a75ef5165d0aba18cd08edcea5c3d verified equal local HEAD, GitHub main, Hostinger HEAD.
+- Hostinger fast-forward and optimize:clear succeeded. Admin manifest SHA256 equal eeeebabab412a0433b59196be05aa5f02d63614605a6bb9ffd649bc12bf704b1.
+- Authenticated live HTTPS /admin/social/facebook loaded full Admin shell, JW Studio 1045679445296291 Connected with fresh provider verification. Back to Customer Support and Facebook card roundtrip passed.
+- Screenshot output/playwright/facebook-management-live-release.png. Messaging remains not enabled.
+- Other dirty changes preserved; this verification addendum remains local after released checkpoint.
+
+
+## Approved SleekFlow-style accounts UI (local)
+- 2026-10-04: user approved JW light/dark sample. Bounded presentation change, existing OAuth/API/storage preserved; only real account rows, no sample records. Manage expands provider details; connection guide describes actual flow.
+- Baseline HEAD 47bb4dd49b8a75ef5165d0aba18cd08edcea5c3d; unrelated dirty changes preserved. Patch application rejected duplicate file operations once before mutation; replaced via literal file write. Unexpected tooling issue count 1, resolved.
+- Validation planned: admin build, Facebook feature tests, authenticated localhost visual/interaction checks. No release approval for this phase. Elapsed/token usage unavailable.
+
+- Validation completed: npm run build passed (9.93s, existing chunk warning); FacebookManagedAccountTest passed 7 tests / 57 assertions (2.00s). Authenticated localhost showed real empty account state, Connect Facebook action, correct guide tab content, and light/dark surfaces. Screenshot output/playwright/facebook-accounts-table-dark.jpg. Local has no saved account, so populated rows and Manage interaction remain browser-unverified; no provider reauthorization performed for this visual change.
+- Existing OAuth endpoint and select handler retained; sample accounts not persisted or rendered. Source and generated admin bundle are local only, not synchronized. Unexpected product verification failures 0.
+
+## Approved Facebook accounts table release
+- User approved GitHub/Hostinger synchronization. Preflight local HEAD / GitHub main / Hostinger HEAD all 47bb4dd49b8a75ef5165d0aba18cd08edcea5c3d. Production pre-existing untracked config backups/assets preserved. Clean archive built with only accepted FacebookAccountPage.tsx and phase record added; OAuth callback route remains /admin/social/facebook.
+- Canonical local feature verification already passed 7 / 57; clean release build validation recorded before commit. Scope excludes all unrelated inventory/test/preview edits.
+- Clean release build passed 10.06s (existing chunk-size warning). Cleanup command rejected by automatic review; no deletion executed. Copied clean build, stage only tracked changes and clean-build filenames; other generated files excluded.
