@@ -11,7 +11,7 @@ export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
  const followLatest=useRef(true),previousConversation=useRef('');
  const channelMeta=CHANNEL_META[conversation.channel]||CHANNEL_META.web_guest,ChannelIcon=channelMeta.icon;
  useEffect(()=>{const stream=streamRef.current;if(!stream)return;const switched=previousConversation.current!==conversation.id;previousConversation.current=conversation.id;if(switched||followLatest.current){stream.scrollTop=stream.scrollHeight;followLatest.current=true;}},[conversation.id,conversation.messages.length]);
- const send=async()=>{if(!inputText.trim()||conversation.status==='resolved'||supportBusy)return;const draft=inputText;if(await sendMessageToConversation(conversation.id,draft.trim(),'text'))setSupportDraft(conversation.id,'')};
+ const send=async()=>{if(conversation.canReply===false||!inputText.trim()||conversation.status==='resolved'||supportBusy)return;const draft=inputText;if(await sendMessageToConversation(conversation.id,draft.trim(),'text'))setSupportDraft(conversation.id,'')};
  return <div id="chat-workspace-container" className="flex flex-col h-full min-h-0 overflow-hidden bg-neutral-50 dark:bg-neutral-950">
       {/* 1. Header Toolbar */}
       <div
@@ -49,7 +49,7 @@ export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
               </h2>
             </div>
 
-            <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400 mt-0.5"><span>{conversation.status === 'resolved' ? 'Resolved' : conversation.status === 'waiting_human' ? 'Waiting for human' : conversation.status === 'human_mode' ? 'Human handling' : 'AI handling'}</span><span>·</span><span>{channelMeta.label}</span></div>
+            <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400 mt-0.5"><span>{conversation.status === 'resolved' ? 'Resolved' : conversation.status === 'waiting_human' ? 'Waiting for human' : conversation.status === 'human_mode' ? 'Human handling' : 'AI handling'}</span><span>·</span><span>{channelMeta.label}{conversation.pageName ? ` · ${conversation.pageName}` : ''}</span></div>
           </div>
         </div>
 
@@ -74,7 +74,7 @@ export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
             </div>
           )}
 
-          {conversation.status === 'human_mode' && (
+          {conversation.status === 'human_mode' && conversation.canReply!==false && (
             <div className="flex items-center gap-1.5">
               <span className="hidden lg:inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                 <UserCheck className="w-3.5 h-3.5" />
@@ -122,14 +122,14 @@ export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
 
 
  <div id="chat-message-stream" ref={streamRef} onScroll={()=>{const stream=streamRef.current;if(stream)followLatest.current=stream.scrollHeight-stream.scrollTop-stream.clientHeight<80;}} className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
- <div className="flex items-center justify-center my-2"><div className="flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-200/60 dark:bg-neutral-800/60 text-neutral-500 text-[11px]"><ChannelIcon className="w-3 h-3"/><span>Storefront conversation</span></div></div>
+ <div className="flex items-center justify-center my-2"><div className="flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-200/60 dark:bg-neutral-800/60 text-neutral-500 text-[11px]"><ChannelIcon className="w-3 h-3"/><span>{conversation.channel==='facebook'?'Facebook Messenger conversation':'Storefront conversation'}</span></div></div>
  {conversation.messages.filter(msg=>msg.type==='text'||msg.senderRole==='system').map(msg=>{
  const customer=msg.senderRole==='customer';
  if(msg.senderRole==='system')return <div key={msg.id} className="flex justify-center my-3"><div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-neutral-100 dark:bg-neutral-800/80 text-neutral-600 dark:text-neutral-400 text-xs border border-neutral-200 dark:border-neutral-700"><Info className="w-3.5 h-3.5 text-neutral-400"/><span>{msg.content}</span></div></div>;
  return <div key={msg.id} className={'flex items-start gap-2.5 max-w-2xl '+(customer?'mr-auto':'ml-auto flex-row-reverse')}><img src={customer?conversation.customer.avatar:msg.senderAvatar||conversation.customer.avatar} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0 ring-1 ring-neutral-200 dark:ring-neutral-800"/><div className="min-w-0 space-y-1.5"><div className={'text-[11px] text-neutral-500 '+(customer?'':'text-right')}>{customer?conversation.customer.name:(msg.senderName || 'Support')}</div><div className={'p-3 rounded-2xl border shadow-xs text-xs leading-relaxed whitespace-pre-wrap break-words '+(customer?'rounded-tl-sm bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200':'rounded-tr-sm bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200')}>{msg.content}</div><div className={'text-[10px] text-neutral-400 '+(customer?'':'text-right')}>{msg.timestamp}</div></div></div>})}
  </div>
  <div id="chat-composer-container" className="flex-shrink-0 p-4 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 space-y-2.5">
- {conversation.status==='resolved'?<p className="text-xs text-neutral-500 dark:text-neutral-400">Conversation resolved. Reopen to reply.</p>:<><div className="flex items-end gap-2 p-2 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700"><textarea aria-label="Reply" rows={2} maxLength={2000} disabled={supportBusy} placeholder="Write a reply…" value={inputText} onChange={e=>setSupportDraft(conversation.id,e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();send()}}} className="flex-1 min-w-0 bg-transparent border-0 resize-none text-xs text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:ring-0 p-1.5 max-h-32"/><button id="btn-send-chat-message" aria-label="Send reply" onClick={send} disabled={!inputText.trim()||supportBusy} className="p-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white transition-colors flex-shrink-0 shadow-xs"><Send className="w-4 h-4"/></button></div><p className="text-[10px] text-neutral-400">Enter to send · Shift + Enter for a new line</p></>}
+ {conversation.canReply===false?<p className="text-xs text-neutral-500 dark:text-neutral-400">Messenger receiving is enabled. Replies will be available in the next phase.</p>:conversation.status==='resolved'?<p className="text-xs text-neutral-500 dark:text-neutral-400">Conversation resolved. Reopen to reply.</p>:<><div className="flex items-end gap-2 p-2 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700"><textarea aria-label="Reply" rows={2} maxLength={2000} disabled={supportBusy} placeholder="Write a reply…" value={inputText} onChange={e=>setSupportDraft(conversation.id,e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();send()}}} className="flex-1 min-w-0 bg-transparent border-0 resize-none text-xs text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:ring-0 p-1.5 max-h-32"/><button id="btn-send-chat-message" aria-label="Send reply" onClick={send} disabled={!inputText.trim()||supportBusy} className="p-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white transition-colors flex-shrink-0 shadow-xs"><Send className="w-4 h-4"/></button></div><p className="text-[10px] text-neutral-400">Enter to send · Shift + Enter for a new line</p></>}
  </div></div>;
 };
 

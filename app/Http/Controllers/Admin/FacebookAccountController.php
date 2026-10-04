@@ -72,7 +72,9 @@ class FacebookAccountController extends Controller
     public function disconnect(Request $request,string $id)
     {
         $this->requireManager($request);$account=$this->ownedAccount($id);
-        $account->update(['access_token'=>'','state'=>'disconnected','checked_at'=>now()]);
+        $values=['access_token'=>'','state'=>'disconnected','checked_at'=>now()];
+        if(array_key_exists('inbound_enabled',$account->getAttributes()))$values+=['inbound_enabled'=>false,'inbound_verified_at'=>null];
+        $account->update($values);
         $request->session()->forget('facebook_pending');
         return $this->index($request);
     }
@@ -81,6 +83,14 @@ class FacebookAccountController extends Controller
         $this->requireManager($request);$account=$this->ownedAccount($id);
         abort_unless($account->state==='disconnected',422,'Disconnect this Page before deleting its saved connection.');
         $account->delete();return $this->index($request);
+    }
+    public function inbound(Request $request,string $id)
+    {
+        $this->requireManager($request);$account=$this->ownedAccount($id);
+        try {app(\App\Services\Social\MessengerSubscriptionService::class)->enable($account);}
+        catch(\Symfony\Component\HttpKernel\Exception\HttpException $e){throw $e;}
+        catch(\RuntimeException $e){return response()->json(['message'=>$e->getMessage()],502);}
+        return response()->json(['account'=>$this->facebook->summary($account->fresh())])->header('Cache-Control','no-store');
     }
     public function select(Request $request)
     {

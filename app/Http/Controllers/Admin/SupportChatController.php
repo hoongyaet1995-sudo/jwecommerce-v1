@@ -29,6 +29,7 @@ class SupportChatController extends Controller
     }
     public function send(Request $request, SupportConversation $conversation, SupportChatService $chat)
     {
+        abort_if($conversation->channel==='facebook',409,'Messenger receiving is enabled. Sending replies is not enabled yet.');
         $data = $request->validate(['content' => ['required', 'string', 'max:2000'], 'client_message_id' => ['required', 'uuid']]);
         $data['content'] = trim($data['content']);
         abort_if($data['content'] === '', 422, 'Message cannot be empty.');
@@ -37,6 +38,10 @@ class SupportChatController extends Controller
     public function status(Request $request, SupportConversation $conversation, SupportChatService $chat)
     {
         $data = $request->validate(['status' => ['required', 'in:open,human_mode,resolved']]);
+        if($conversation->channel==='facebook'&&$data['status']==='open'){
+            abort_unless($conversation->status==='resolved',409,'AI replies are not enabled for Messenger.');
+            $data['status']='waiting_human';
+        }
         \Illuminate\Support\Facades\DB::transaction(function () use ($conversation, $data, $request) {
             $locked = SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
             if ($locked->status !== $data['status']) {

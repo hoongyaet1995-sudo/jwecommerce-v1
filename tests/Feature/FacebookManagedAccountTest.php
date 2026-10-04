@@ -52,7 +52,7 @@ class FacebookManagedAccountTest extends TestCase
         $this->owner();
         $response=$this->get('/admin/social/facebook/authorize')->assertRedirect();
         parse_str(parse_url($response->headers->get('Location'),PHP_URL_QUERY),$query);
-        $this->assertEqualsCanonicalizing(['pages_show_list','business_management','pages_read_engagement'],explode(',',$query['scope']));
+        $this->assertEqualsCanonicalizing(['pages_show_list','business_management','pages_read_engagement','pages_messaging','pages_manage_metadata'],explode(',',$query['scope']));
         $this->assertSame('rerequest',$query['auth_type']??null);
     }
 

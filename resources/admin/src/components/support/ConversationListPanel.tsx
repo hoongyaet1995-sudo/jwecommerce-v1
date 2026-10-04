@@ -201,7 +201,7 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
                     {/* Intent / Topic line */}
                     <div className="flex items-center gap-1.5 mt-0.5 text-[11px]">
                       <span className="text-neutral-500 dark:text-neutral-400 font-medium truncate">
-                        {channelMeta.label}
+                        {channelMeta.label}{conv.pageName ? ` · ${conv.pageName}` : ''}
                       </span>
                       {['waiting_human','human_mode'].includes(conv.status) && <span className="text-[10px] text-indigo-600 dark:text-indigo-400">{conv.status==='waiting_human'?'Waiting for human':'Human handling'}</span>}
                     </div>

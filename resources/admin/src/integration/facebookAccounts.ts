@@ -3,6 +3,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 export interface FacebookConnection {
   id:string;pageId:string;name:string;state:'connected'|'authorization_expired'|'permission_required'|'disconnected'|'unknown';
   checkReason?:string|null;checkedAt:string|null;permissions:string[];messagingReady:false;
+  inboundEnabled?:boolean;inboundRoutingReady?:boolean;inboundVerifiedAt?:string|null;lastInboundAt?:string|null;
 }
 interface FacebookAccounts {configured:boolean;canManage:boolean;pages:{id:string;name:string}[];accounts:FacebookConnection[]}
 
@@ -32,7 +33,7 @@ export function useFacebookAccounts(active:boolean) {
     }catch(e){if(current===sequence.current)setError(e instanceof Error?e.message:'Could not connect Facebook.');}
     finally{if(current===sequence.current)setLoading(false);}
   };
-  const manage=async(id:string,action:'check'|'disconnect'|'delete')=>{
+  const manage=async(id:string,action:'check'|'disconnect'|'delete'|'inbound')=>{
     const current=++sequence.current;setLoading(true);setError('');
     try{
       const csrf=document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content||'';
@@ -40,7 +41,7 @@ export function useFacebookAccounts(active:boolean) {
       const result=await response.json();
       if(!response.ok)throw new Error(result.message||'Could not update this connection. Please try again.');
       if(current===sequence.current){
-        if(action==='check')setData(previous=>previous?{...previous,accounts:previous.accounts.map(account=>account.id===id?result.account:account)}:previous);
+        if(action==='check'||action==='inbound')setData(previous=>previous?{...previous,accounts:previous.accounts.map(account=>account.id===id?result.account:account)}:previous);
         else setData(result);
       }
       return true;

@@ -124,6 +124,8 @@ export interface InternalStaffNote {
 }
 
 export interface SupportConversation {
+  canReply?: boolean;
+  pageName?: string | null;
   isArchived?: boolean;
   id: string;
   channel: SupportChannel;

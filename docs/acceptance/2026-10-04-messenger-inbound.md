@@ -1,0 +1,35 @@
+# Messenger inbound phase
+
+Approved scope: external Facebook user -> connected Page -> verified Meta webhook -> existing Support Inbox. Text messages first; no Ecommerce AI or human outbound sends in this phase. Existing Storefront layout and incremental polling retained. Page/PSID/merchant isolation, duplicate MID handling, unread indication and alerts required.
+
+Baseline: local HEAD d7ecf37a950ae6954d048b41e3944fe04f205a56. Existing dirty docs, inventory tests, storefront build and preview files preserved.
+
+Live read-only inspection: Meta App 1280202060726106 has Advanced Access for pages_messaging and pages_manage_metadata. Page callback is https://www.jwaistudio.online/api/webhooks/meta-social; feed v25 subscribed; messages not subscribed. No Meta settings changed. Ecommerce currently has no Messenger webhook.
+
+Routing: retain old App callback. A verified, durable relay at the existing ingress must deliver the original body/signature to Ecommerce before enabling Page subscriptions. Never silently replace the old callback or unsubscribe shared Page/App subscriptions on local disconnect. Ecommerce accepts only locally enabled connected Pages in its configured merchant/App.
+
+Release gate: local automated tests, MySQL migration and authenticated browser proof first. Explicit synchronization approval required before deployment. Live callback bridge + Page subscription verification + real DM per Page required before claiming usable.
+
+Issue ledger: historical accounting for this new phase starts here. Time/token usage unavailable unless measured. No unexpected test failures yet. Initial TDD red intentionally checks missing ingress behavior.
+
+
+## Local verification ledger
+- Initial missing-behavior run: 5 failures / 1 assertion / 2.61s. Fixture setup deficiencies (missing store_settings and required authorized_by) each unexpected count 1, corrected before implementation; these were not claimed as successful TDD evidence.
+- Corrected fixture red: 5 failures / 1 assertion / 1.61s, missing webhook route and new inbound_enabled schema are expected initial red.
+- Ingress implementation green: 5 tests / 31 assertions / 1.70s.
+- Activation initial red: 2 failures / 2 assertions / 1.42s, absent activation route expected.
+- Combined ingress/account/Storefront run: 51 passed, 2 failed / 375 assertions / 5.04s. HTTP abort exceptions accidentally caught as provider RuntimeException: unexpected count 1. Corrected by rethrowing HttpException. Next combined run 53 tests / 382 assertions / 4.46s.
+- Clean UI build first failed 1.67s: source replacement also matched a JSX title attribute; unexpected count 1. Corrected exact attribute; clean build passed 10.46s, existing chunk-size warning only.
+- Local MySQL targeted migration 2026_10_04_180000 succeeded 133.57ms; no other migrations run.
+- Added merchant/App/disabled guards, transient verification behavior, encrypted retained-ingress queue transport tests. Combined 55 tests / 393 assertions / 4.75s.
+- Legacy bridge PHP syntax checks passed. Bridge is packaged here, not installed in old project or deployed. Old callback remains unchanged. Meta messages subscription unchanged. No real customer DM yet.
+- Test execution timestamps for the runs above were not captured before execution; historical timing accounting incomplete. All issue counts below Attention threshold. Token usage unavailable.
+- Next: copy final frontend sources into clean build workspace and build for authenticated local Inbox/browser verification; new evidence is the final receive-only presentation and Page activation state.
+
+- 2026-10-04 19:07 MYT: authenticated localhost MySQL synthetic Page A/B events appeared via polling without navigation/reload. Existing selected Storefront thread and unsent draft retained when Page B arrived. Each duplicate processed=0. Found static Storefront stream label in Messenger view; corrected to channel-specific label. Reopen resolved Messenger normalizes to waiting_human while hand-back-to-AI remains denied. Next: combined test and final clean build, then recheck light/dark actual Inbox.
+
+- Reopen assertion was initially inserted into the wrong test before its conversation variable existed: unexpected test-placement issue count 1, corrected exact location. Final combined 55 tests / 395 assertions / 4.65s; final clean frontend build 10.24s. Static stream label correction verified in actual authenticated Inbox.
+- Dark/light screenshots: output/playwright/messenger-inbound-local-dark.png and messenger-inbound-local-light.png. Both show explicit Local QA Page labels and synthetic messages; they are local MySQL/rendering evidence, not real Meta delivery proof. Two Pages remained separate and latest Page A message moved above Page B. Receive-only composer correctly hides sending UI.
+- Local QA accounts, conversations, receipt records and notifications removed with explicit local-proof merchant/App/Page scoping. No real accounts modified. Existing unrelated dirty work preserved. Meta configuration, old ingress installation and production release pending approval.
+- Remaining gates: verify the actual retained old ingress route/controller and queue infrastructure in production; install the packaged bridge after approval; deploy exact approved Ecommerce commit and targeted migration; App-level messages v25 subscription; user grants per Page if absent; enable receiving; real DM tests JW Studio then Elmina. Receipt/subscription success alone is not a complete delivery claim.
+`n- Release approval received 2026-10-04: synchronize this Messenger inbound phase, install retained old-project relay and enable Meta messages subscription. Preflight local/GitHub/Hostinger all d7ecf37; unrelated changes preserved. Before release rerun targeted tests for approved unchanged source.

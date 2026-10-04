@@ -91,7 +91,7 @@ export const CustomerSupportHub: React.FC = () => {
               </h1>
             </div>
             <p role={supportError ? "alert" : "status"} className={"text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 " + (supportError ? "" : "hidden sm:block")}>
-              {supportError || (supportLoading ? 'Loading conversations…' : 'Storefront inbox')}
+              {supportError || (supportLoading ? 'Loading conversations…' : 'Support inbox')}
             </p>
           </div>
         </div>

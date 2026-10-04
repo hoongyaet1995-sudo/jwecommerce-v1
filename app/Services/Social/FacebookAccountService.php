@@ -18,7 +18,7 @@ class FacebookAccountService
     {
         return 'https://www.facebook.com/'.$this->version().'/dialog/oauth?'.http_build_query([
             'client_id'=>config('services.facebook.client_id'),'redirect_uri'=>config('services.facebook.redirect'),
-            'state'=>$state,'response_type'=>'code','scope'=>'pages_show_list,business_management,pages_read_engagement','return_scopes'=>'true',
+            'state'=>$state,'response_type'=>'code','scope'=>'pages_show_list,business_management,pages_read_engagement,pages_messaging,pages_manage_metadata','return_scopes'=>'true',
             'auth_type'=>'rerequest',
         ]);
     }
@@ -81,6 +81,15 @@ class FacebookAccountService
             if($account->app_id!==(string)config('services.facebook.client_id'))throw new RuntimeException('authorization_expired');
             $body=$this->graph($account->provider_account_id,['fields'=>'id,name'],$account->access_token);
             if(($body['id']??null)!==$account->provider_account_id)throw new RuntimeException('authorization_expired');
+            if($account->inbound_enabled){
+                try {$verified=app(MessengerSubscriptionService::class)->verify($account);}
+                catch(RuntimeException $e){$verified=null;}
+                $values=['inbound_verified_at'=>$verified===true?now():null];
+                if($verified!==null)$values['inbound_enabled']=$verified;
+                ManagedSocialAccount::whereKey($account->id)->where('state','!=','disconnected')->where('access_token',$account->getRawOriginal('access_token'))->update($values);
+                if($verified!==null)$account->inbound_enabled=$verified;
+                $account->inbound_verified_at=$verified===true?now():null;
+            }
             $state='connected';$account->name=mb_substr((string)($body['name']??$account->name),0,255);$account->checked_at=now();
         } catch(\Illuminate\Contracts\Encryption\DecryptException $e){$state='authorization_expired';}
         catch(RuntimeException $e){$state=in_array($e->getMessage(),['authorization_expired','permission_required'],true)?$e->getMessage():'unknown';}
@@ -96,6 +105,8 @@ class FacebookAccountService
     {
         return ['id'=>(string)$account->id,'pageId'=>$account->provider_account_id,'name'=>$account->name,
             'state'=>$account->state,'checkReason'=>$reason,'checkedAt'=>$account->checked_at?->toIso8601String(),'permissions'=>$account->permissions,
-            'messagingReady'=>false];
+            'messagingReady'=>false,'inboundEnabled'=>(bool)$account->inbound_enabled&&$account->state!=='disconnected',
+            'inboundRoutingReady'=>config('services.facebook.inbound_routing_ready')===true,
+            'inboundVerifiedAt'=>$account->inbound_verified_at?->toIso8601String(),'lastInboundAt'=>$account->last_inbound_at?->toIso8601String()];
     }
 }

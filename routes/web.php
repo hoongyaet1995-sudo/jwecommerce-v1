@@ -1,5 +1,8 @@
 <?php
 
+Route::get('/webhooks/facebook/messenger', [\App\Http\Controllers\MessengerWebhookController::class, 'verify']);
+Route::post('/webhooks/facebook/messenger', [\App\Http\Controllers\MessengerWebhookController::class, 'handle']);
+
 use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AdminAppController;
 use App\Http\Controllers\Admin\CatalogApiController;
@@ -166,6 +169,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/integration/ai', [\App\Http\Controllers\Admin\AiConnectionController::class, 'index']);
     Route::put('/api/integration/ai/{provider}', [\App\Http\Controllers\Admin\AiConnectionController::class, 'save'])->middleware('throttle:ai-provider-save');
     Route::post('/api/integration/ai/{provider}/verify', [\App\Http\Controllers\Admin\AiConnectionController::class, 'verify'])->middleware('throttle:ai-provider-check');
+    Route::post('/api/social/facebook/{id}/inbound', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'inbound'])->middleware('throttle:10,1');
     Route::get('/api/support/conversations', [\App\Http\Controllers\Admin\SupportChatController::class, 'index']);
     Route::post('/api/support/conversations/{conversation}/messages', [\App\Http\Controllers\Admin\SupportChatController::class, 'send'])->whereUuid('conversation')->middleware('throttle:60,1');
     Route::patch('/api/support/conversations/{conversation}/status', [\App\Http\Controllers\Admin\SupportChatController::class, 'status'])->whereUuid('conversation');

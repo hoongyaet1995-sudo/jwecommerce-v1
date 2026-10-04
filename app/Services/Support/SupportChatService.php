@@ -141,13 +141,15 @@ class SupportChatService
         $user = $conversation->customerUser;
         $contactNote=$conversation->notes->filter(fn($n)=>str_starts_with($n->content,'[Contact] '))->last();
         $contact=$contactNote ? json_decode(substr($contactNote->content,10),true) : [];
-        $name = $user ? $user->name : ($contact['name']??'Guest');
+        $messenger=($conversation->channel??'web_guest')==='facebook';
+        $name = $user ? $user->name : ($contact['name']??($messenger?'Messenger customer':'Guest'));
         $avatar = '/images/support-person.svg';
         $messages = $conversation->messages->sortBy('id');
         $last = $messages->last();
 
         return [
-            'id' => $conversation->id, 'channel' => 'web_guest', 'title' => 'Storefront Support',
+            'id' => $conversation->id, 'channel' => $conversation->channel??'web_guest', 'title' => $messenger?$conversation->provider_page_name:'Storefront Support',
+            'canReply'=>!$messenger,'pageName'=>$messenger?$conversation->provider_page_name:null,
             'customer' => [
                 'id' => $user ? 'customer-'.$user->id : $conversation->id, 'name' => $name, 'avatar' => $avatar,
                 'email' => $user?->email ?? ($contact['email']??null), 'phone' => $user?->customer?->phone ?? ($contact['phone']??null), 'language' => 'en',
