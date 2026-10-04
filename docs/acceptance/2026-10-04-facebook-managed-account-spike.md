@@ -177,3 +177,14 @@ User approved exact Meta declarations, Facebook-only GitHub/Hostinger release, p
 ## Approved connection management release
 - User approved sync of Page modal plus check/permission/disconnect/delete management. Local/GitHub baseline fbcb43b; clean HEAD archive plus two approved frontend sources built separately; unrelated inventory/storefront assets excluded. Actual Hostinger root verified before deployment. Prior 12/93 tests and local browser evidence apply. Clean build scheduled; no credentials or real provider grant changed.
 - Clean archive build passed 12.94s (existing bundle-size warning). Stage only approved Facebook source/routes/tests/ledger and exact clean bundle. Unrelated inventory/storefront files remain excluded.
+
+## Connection management release verified
+- Released 47956dd90c8266931a003f5008c8817c15c3b687; local HEAD / GitHub main / Hostinger equal. Fast-forward pull and optimize:clear succeeded. Authenticated HTTPS shows Elmina Connected and JW Studio Permission required with actionable reason; Actions includes details/check/review/disconnect. Live per-Page check updated JW Studio timestamp to 15:51:27 MYT without page reload. Screenshot output/playwright/facebook-management-47956dd-live.jpg.
+- Real Disconnect/Delete were not performed on customer accounts. New scope requires user Meta consent; OAuth modal remains pending real callback reacceptance. Unrelated work preserved. Post-release evidence addendum local only.
+
+## Three-dot Actions menu (local)
+- User requested screenshot-style vertical menu. Replaced text trigger with ellipsis, native auto popover floats above table clipping boundary without row growth; viewport-aware placement, outside click/Escape dismissal, keyboard menu navigation, light/dark. Existing actions/API guards preserved. Baseline 47956dd; no release approval for this phase.
+- Validation planned build plus local rendered fixture menu, layout/no row growth, outside/Escape dismissal and confirmation. Unexpected failures 0; elapsed/token unavailable.
+- Rendered localhost fixture passed: ellipsis opens four vertical items, row height identical before/after (115.975px), menu escapes table clipping, outside click and Escape close, focus returns to trigger, light/dark screenshots saved, Disconnect still opens existing confirmation. Product API unchanged. Final clean build result recorded separately; phase local only.
+- Three-dot phase build passed 11.48s, user approved synchronization. Release scope one frontend component, ledger and clean build. Preflight SHA equality checked; unrelated changes excluded.
+- Approved clean release build passed 11.37s (existing chunk warning). Stage exact clean outputs plus component and ledger; no backend/config/provider changes.
