@@ -13,14 +13,36 @@ class SupportChatService
     public function owner(Request $request): array
     {
         $user = auth('customer')->user();
+        $generation = $request->session()->get('support_generation', '');
         if ($user && ! $user->is_admin) {
-            return [hash('sha256', 'customer:'.$user->id), $user->id];
+            return [hash('sha256', 'customer:'.$user->id.$generation), $user->id];
         }
         if (! $request->session()->has('support_guest_key')) {
             $request->session()->put('support_guest_key', (string) Str::uuid());
         }
 
-        return [hash('sha256', 'guest:'.$request->session()->get('support_guest_key')), null];
+        return [hash('sha256', 'guest:'.$request->session()->get('support_guest_key').$generation), null];
+    }
+
+    public function resolvedAction(Request $request, string $action): ?SupportConversation
+    {
+        return DB::transaction(function () use ($request, $action) {
+            $current = $this->current($request);
+            abort_unless($current, 409, 'No resolved conversation.');
+            $locked = SupportConversation::whereKey($current->id)->lockForUpdate()->firstOrFail();
+            if ($action === 'reopen' && $locked->status === 'waiting_human') return $locked;
+            abort_unless($locked->status === 'resolved', 409, 'This conversation is not resolved.');
+            if ($action === 'new') {
+                $request->session()->put('support_generation', ':'.Str::uuid());
+                return null;
+            }
+            $locked->notes()->create(['content'=>'[Control] resolved → waiting_human (customer reopened)']);
+            $locked->update(['status'=>'waiting_human']);
+            \App\Models\User::where('is_admin',true)->chunkById(100, function($staff) use($locked) {
+                \Illuminate\Support\Facades\Notification::send($staff,new \App\Notifications\SupportHumanRequested($locked->id));
+            });
+            return $locked;
+        });
     }
 
     public function current(Request $request): ?SupportConversation
@@ -55,11 +77,35 @@ class SupportChatService
             if ($role !== 'customer' && $locked->status === 'resolved') {
                 throw ValidationException::withMessages(['content' => 'Reopen the conversation before replying.']);
             }
+            $lastAi = $locked->messages()->where('sender_role','ai')->latest('id')->first();
+            $buttonRequest = ($data['request_human'] ?? false) && collect($lastAi?->actions ?? [])->contains(fn($a)=>($a['type']??'')==='request_human' && app(SupportEscalationPolicy::class)->enabledAction($a,$locked,app(\App\Services\SupportFaqService::class)->read()));
+            if ($role === 'customer' && $buttonRequest && !$locked->customer_user_id) {
+                if (empty($data['contact'])) throw ValidationException::withMessages(['contact'=>'Please provide your name and email for human support.']);
+                $contact=$data['contact'];
+                $contact['email']=strtolower(trim($contact['email']));
+                $contact['name']=trim($contact['name']);
+                $locked->notes()->create(['content'=>'[Contact] '.json_encode($contact,JSON_UNESCAPED_UNICODE)]);
+                \App\Models\Customer::firstOrCreate(['email'=>$contact['email']],['first_name'=>$contact['name'],'phone'=>$contact['phone']??null,'status'=>'active','tags'=>['Storefront','Support Chat'],'notes'=>'Support Chat contact; email unverified.']);
+            }
             $locked->messages()->create([
                 'client_message_id' => $data['client_message_id'], 'sender_role' => $role,
                 'staff_user_id' => $staffId, 'content' => $data['content'],
             ]);
-            $locked->update(['status' => 'open', 'last_message_at' => now()]);
+            $status = $locked->status === 'resolved' ? 'open' : $locked->status;
+            if ($role==='customer' && $locked->notes()->where('content','like','[Archive] %')->latest('id')->value('content')==='[Archive] true') {
+                $locked->notes()->create(['content'=>'[Archive] false']);
+            }
+            if ($role === 'human_agent') $status = 'human_mode';
+            if ($role === 'customer' && $status !== 'human_mode' && $buttonRequest) $status = 'waiting_human';
+            if ($status !== $locked->status) {
+                $locked->notes()->create(['staff_user_id' => $staffId, 'content' => '[Control] '.$locked->status.' → '.$status]);
+                if ($status === 'waiting_human') {
+                    \App\Models\User::where('is_admin',true)->chunkById(100, function($staff) use($locked) {
+                        \Illuminate\Support\Facades\Notification::send($staff,new \App\Notifications\SupportHumanRequested($locked->id));
+                    });
+                }
+            }
+            $locked->update(['status' => $status, 'last_message_at' => now()]);
 
             return $locked;
         });
@@ -80,11 +126,12 @@ class SupportChatService
             return null;
         }
 
-        return ['id' => $conversation->id, 'status' => $conversation->status,
+        $settings = app(\App\Services\SupportFaqService::class)->read();
+        return ['requiresContact'=>!auth('customer')->check(), 'id' => $conversation->id, 'status' => $conversation->status, 'waitingNotice'=>$conversation->status === 'waiting_human' ? $settings['personality']['fallbackHandoffMessage'] : null,
             'messages' => $conversation->messages()->orderBy('id')->get()->map(fn ($message) => [
                 'id' => (string) $message->id, 'clientMessageId' => $message->client_message_id,
                 'role' => $message->sender_role === 'customer' ? 'customer' : ($message->sender_role === 'ai' ? 'ai' : 'staff'),
-                ...($message->sender_role === 'ai' ? app(SupportActionResolver::class)->resolve($message->actions ?? [], $message->content, empty($message->actions)) : ['content'=>$message->content,'actions'=>[]]), 'createdAt' => $message->created_at->toIso8601String(),
+                ...($message->sender_role === 'ai' ? app(SupportActionResolver::class)->resolve(array_values(array_filter($message->actions ?? [], fn($a)=>app(SupportEscalationPolicy::class)->enabledAction($a,$conversation,$settings))), $message->content, empty($message->actions)) : ['content'=>$message->content,'actions'=>[]]), 'createdAt' => $message->created_at->toIso8601String(),
             ])->all()];
     }
 
@@ -92,7 +139,9 @@ class SupportChatService
     {
         $conversation->loadMissing(['customerUser.customer', 'messages.staff', 'notes.staff']);
         $user = $conversation->customerUser;
-        $name = $user ? $user->name : 'Guest';
+        $contactNote=$conversation->notes->filter(fn($n)=>str_starts_with($n->content,'[Contact] '))->last();
+        $contact=$contactNote ? json_decode(substr($contactNote->content,10),true) : [];
+        $name = $user ? $user->name : ($contact['name']??'Guest');
         $avatar = '/images/support-person.svg';
         $messages = $conversation->messages->sortBy('id');
         $last = $messages->last();
@@ -101,16 +150,18 @@ class SupportChatService
             'id' => $conversation->id, 'channel' => 'web_guest', 'title' => 'Storefront Support',
             'customer' => [
                 'id' => $user ? 'customer-'.$user->id : $conversation->id, 'name' => $name, 'avatar' => $avatar,
-                'email' => $user?->email, 'phone' => $user?->customer?->phone, 'language' => 'en',
+                'email' => $user?->email ?? ($contact['email']??null), 'phone' => $user?->customer?->phone ?? ($contact['phone']??null), 'language' => 'en',
                 'firstSeenAt' => $conversation->created_at->toDateString(), 'lastSeenAt' => $conversation->updated_at->toDateString(),
                 'tags' => [], 'totalOrdersCount' => 0, 'lifetimeValue' => 0, 'leadScore' => 0,
                 'leadStage' => 'Discovery', 'qualification' => 'support_ticket',
             ],
             'snippet' => $last?->content ?? '', 'status' => $conversation->status,
+            'isArchived' => $conversation->notes->filter(fn($n)=>str_starts_with($n->content,'[Archive] '))->sortBy('id')->last()?->content==='[Archive] true',
             'unreadCount' => $messages->filter(fn ($m) => $m->sender_role === 'customer' && $m->id > $conversation->staff_read_message_id)->count(),
             'isPinned' => false, 'priority' => 'normal', 'activeAiDraft' => null,
             'aiSummary' => ['intent' => '', 'sentiment' => 'neutral', 'keyIssue' => '', 'suggestedAction' => '', 'summaryMarkdown' => ''],
             'lastMessageAt' => $conversation->last_message_at?->diffForHumans() ?? '',
+            'lastMessageTimestamp' => $conversation->last_message_at?->toIso8601String(),
             'createdAt' => $conversation->created_at->toIso8601String(),
             'messages' => $messages->map(fn ($m) => [
                 'id' => (string) $m->id, 'conversationId' => $conversation->id, 'senderRole' => $m->sender_role,
@@ -125,3 +176,4 @@ class SupportChatService
         ];
     }
 }
+

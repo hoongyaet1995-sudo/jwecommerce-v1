@@ -40,7 +40,8 @@ export interface AIPersonalityConfig {
     onFrustrationDetected: boolean;
     consecutiveFailureCount: number;
     onRefundOrDispute: boolean;
-    onVipCustomer: boolean;
+    onExplicitRequest: boolean;
+    onServiceUnavailable: boolean;
     urgentKeywords: string[];
   };
 }

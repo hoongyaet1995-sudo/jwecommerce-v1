@@ -24,3 +24,25 @@ it('shows messages immediately, replaces thinking, restores failures and scrolls
  document.querySelector('#sf-support-form')!.dispatchEvent(new Event('submit',{cancelable:true}));expect(postIds[1]).toBe(postIds[2]);finish();await vi.waitFor(()=>expect(input.disabled).toBe(false));
  stream.scrollTop=0;document.querySelector<HTMLButtonElement>('#sf-support-close')!.click();document.querySelector<HTMLButtonElement>('#sf-support-launcher')!.click();expect(stream.scrollTop).toBe(900);
 });
+
+it('renders escalation only in the AI bubble and submits a human request without a thinking bubble',async()=>{
+ document.body.innerHTML='<meta name="csrf-token" content="test">'+blade.replace(/<script>[\s\S]*?<\/script>/,'');
+ vi.stubGlobal('matchMedia',()=>({matches:false}));vi.stubGlobal('requestAnimationFrame',(fn:any)=>{fn();return 1});vi.stubGlobal('setTimeout',()=>1);
+ let finish:any;let posted:any;
+ const response={status:'open',messages:[{id:'1',role:'ai',content:'Need help?',actions:[{type:'request_human'}],createdAt:new Date().toISOString()}]};
+ vi.stubGlobal('fetch',vi.fn((url:string,options:any)=>{
+  if(url==='/support/faq')return Promise.resolve({ok:true,json:async()=>({categories:[],primaryLanguage:'en'})});
+  if(options?.method==='POST'){posted=JSON.parse(options.body);return new Promise(resolve=>{finish=()=>resolve({ok:true,json:async()=>({conversation:{status:'waiting_human',messages:response.messages}})})})}
+  return Promise.resolve({ok:true,json:async()=>({conversation:response})});
+ }));
+ new Function(blade.match(/<script>([\s\S]*?)<\/script>/)![1])();
+ document.querySelector<HTMLButtonElement>('#sf-support-launcher')!.click();
+ await vi.waitFor(()=>expect(document.querySelector('[data-request-human]')).not.toBeNull());
+ expect(document.querySelector('.composer [data-request-human]')).toBeNull();expect(document.querySelector('#sf-request-human')).toBeNull();
+ expect(document.querySelector('.message [data-request-human]')).not.toBeNull();
+ document.querySelector<HTMLButtonElement>('[data-request-human]')!.click();
+ const form=document.querySelector<HTMLFormElement>('[data-contact-form]')!;expect(form.classList.contains('contact-form')).toBe(true);expect(posted).toBeUndefined();form.querySelector<HTMLInputElement>('[name=name]')!.value='Visitor';form.querySelector<HTMLInputElement>('[name=email]')!.value='visitor@example.test';document.querySelector<HTMLButtonElement>('#sf-support-close')!.click();document.querySelector<HTMLButtonElement>('#sf-support-launcher')!.click();await Promise.resolve();await Promise.resolve();expect(document.querySelector('[data-contact-form]')).toBe(form);expect(form.querySelector<HTMLInputElement>('[name=name]')!.value).toBe('Visitor');form.dispatchEvent(new Event('submit',{cancelable:true}));expect(posted.contact.name).toBe('Visitor');expect(posted.content).toContain('human agent');expect(document.querySelector('.thinking')).toBeNull();
+ finish();await vi.waitFor(()=>expect(document.querySelector('[data-request-human]')).toBeNull());
+ expect(document.querySelector('.conversation-status')!.textContent).toContain('waiting');
+});
+

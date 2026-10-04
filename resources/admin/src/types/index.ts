@@ -1063,6 +1063,7 @@ export interface MarketplaceSyncLog {
 
 export type NavSection = 
   | 'dashboard'
+  | 'support-overview'
   | 'support'
   | 'shipping-malaysia'
   | 'marketplace'
@@ -1123,3 +1124,4 @@ export * from './reports';
 export * from './aiAutoReply';
 export * from './promotions';
 export * from './notifications';
+

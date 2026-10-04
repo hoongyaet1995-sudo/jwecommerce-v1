@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 export const NotificationDrawer: React.FC = () => {
-  const { isNotificationOpen, setIsNotificationOpen, setCurrentSection, setSelectedOrderId } = useAdmin();
+  const { isNotificationOpen, setIsNotificationOpen, supportAlerts, supportAlertUnread, supportAlertError, markSupportAlertRead } = useAdmin();
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -40,57 +40,9 @@ export const NotificationDrawer: React.FC = () => {
 
   if (!isNotificationOpen) return null;
 
-  const mockNotifications = [
-    {
-      id: 'notif-1',
-      type: 'order',
-      title: 'New High-Value Order #ORD-9842',
-      description: 'Elena Rostova placed an order for $561.42 (Stripe Paid).',
-      time: '12 mins ago',
-      unread: true,
-      action: () => {
-        setCurrentSection('orders');
-        setSelectedOrderId('ord-1001');
-        setIsNotificationOpen(false);
-      }
-    },
-    {
-      id: 'notif-2',
-      type: 'stock',
-      title: 'Low Stock Alert: Nexus 75% Keyboard',
-      description: 'Only 26 units remaining in "Tactile Matcha / Cream" variant.',
-      time: '1 hour ago',
-      unread: true,
-      action: () => {
-        setCurrentSection('catalog-products');
-        setIsNotificationOpen(false);
-      }
-    },
-    {
-      id: 'notif-3',
-      type: 'user',
-      title: 'New Customer Registered',
-      description: 'David Chen created an account from Seattle, WA.',
-      time: '3 hours ago',
-      unread: false,
-      action: () => {
-        setCurrentSection('customers');
-        setIsNotificationOpen(false);
-      }
-    },
-    {
-      id: 'notif-4',
-      type: 'system',
-      title: 'Header Navigation Synced',
-      description: 'Mega-menu 3-tier structure deployed to Production CDN Edge.',
-      time: '5 hours ago',
-      unread: false,
-      action: () => {
-        setCurrentSection('menu-header');
-        setIsNotificationOpen(false);
-      }
-    }
-  ];
+  const notifications=supportAlerts.map(n=>({...n,type:'user',action:async()=>{
+    if(await markSupportAlertRead(n.id)) window.location.assign('/admin/support?conversation='+encodeURIComponent(n.conversationId)+'&filter=human');
+  }}));
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black/40 backdrop-blur-xs">
@@ -107,7 +59,7 @@ export const NotificationDrawer: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-sm font-bold text-neutral-900 dark:text-white">Live Activity & Alerts</h2>
-                <p className="text-[11px] text-neutral-500 dark:text-neutral-400">2 unread notifications</p>
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400">{supportAlertUnread} unread notifications</p>
               </div>
             </div>
             <button
@@ -120,7 +72,9 @@ export const NotificationDrawer: React.FC = () => {
 
           {/* List */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {mockNotifications.map((n) => {
+            {supportAlertError && <p role="alert" className="text-xs text-rose-600">{supportAlertError}</p>}
+            {!supportAlertError && notifications.length === 0 && <p className="text-xs text-neutral-500">No support notifications yet.</p>}
+            {notifications.map((n) => {
               let Icon = Bell;
               let iconBg = 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400';
               if (n.type === 'order') {
@@ -137,7 +91,7 @@ export const NotificationDrawer: React.FC = () => {
               return (
                 <div
                   key={n.id}
-                  onClick={n.action}
+                  onClick={n.action} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();void n.action();}}}
                   className={`group relative p-3.5 rounded-2xl border transition-all cursor-pointer ${
                     n.unread
                       ? 'bg-indigo-50/40 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-900/50 hover:border-indigo-300 dark:hover:border-indigo-800'
@@ -169,9 +123,9 @@ export const NotificationDrawer: React.FC = () => {
 
           {/* Footer */}
           <div className="p-4 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-between text-xs">
-            <span className="text-[11px] text-neutral-500">Real-time WebSocket active</span>
+            <span className="text-[11px] text-neutral-500">Updates every 5 seconds</span>
             <button
-              onClick={() => setIsNotificationOpen(false)}
+              onClick={() => void markSupportAlertRead("all")}
               className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
             >
               Mark all as read
@@ -182,3 +136,4 @@ export const NotificationDrawer: React.FC = () => {
     </div>
   );
 };
+

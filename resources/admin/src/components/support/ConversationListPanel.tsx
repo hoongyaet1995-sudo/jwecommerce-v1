@@ -72,6 +72,7 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
 
   // Filter conversations
   const filteredList = supportConversations.filter(c => {
+    if (statusFilter === 'archived' ? !c.isArchived : c.isArchived) return false;
     // Channel filter
     if (selectedChannel !== 'all' && c.channel !== selectedChannel) return false;
 
@@ -79,7 +80,7 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
     if (statusFilter === 'unread' && (!c.unreadCount || c.unreadCount === 0)) return false;
     if (statusFilter === 'high_priority' && c.priority !== 'urgent' && c.priority !== 'high') return false;
     if (statusFilter === 'open' && c.status === 'resolved') return false;
-    if (statusFilter === 'human_mode' && c.status !== 'human_mode') return false;
+    if (statusFilter === 'human_mode' && !['waiting_human','human_mode'].includes(c.status)) return false;
     if (statusFilter === 'resolved' && c.status !== 'resolved') return false;
 
     // Search query (customer name, phone, email, snippet, intent)
@@ -98,13 +99,10 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
     return true;
   });
 
-  // Sort pinned items to top, then by unread, then by status
+  // Latest message first across the currently selected queue.
   const sortedList = [...filteredList].sort((a, b) => {
-    if (a.isPinned && !b.isPinned) return -1;
-    if (!a.isPinned && b.isPinned) return 1;
-    if ((b.unreadCount || 0) > (a.unreadCount || 0)) return 1;
-    if ((a.unreadCount || 0) > (b.unreadCount || 0)) return -1;
-    return 0;
+    const newest = (value: string) => Number.isFinite(Date.parse(value)) ? Date.parse(value) : 0;
+    return newest(b.lastMessageTimestamp || b.createdAt) - newest(a.lastMessageTimestamp || a.createdAt) || a.id.localeCompare(b.id);
   });
 
   return (
@@ -133,9 +131,9 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
         </div>
 
         <div className="flex items-center gap-1 text-[11px] font-medium border-t border-neutral-100 dark:border-neutral-800/60 pt-2">
-          {(['open','resolved'] as const).map(status => <button key={status} onClick={() => setStatusFilter(status)} aria-pressed={statusFilter === status}
+          {(['open','human_mode','resolved','archived'] as const).map(status => <button key={status} onClick={() => setStatusFilter(status)} aria-pressed={statusFilter === status}
             className={'flex-1 px-2 py-1.5 rounded transition-colors '+(statusFilter === status ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 font-semibold' : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300')}>
-            {status === 'open' ? 'Pending' : 'Resolved'} ({supportConversations.filter(c => status === 'open' ? c.status !== 'resolved' : c.status === 'resolved').length})
+            {status === 'open' ? 'Pending' : status === 'human_mode' ? 'Human' : status === 'archived' ? 'Archived' : 'Resolved'} {supportConversations.some(c => c.unreadCount > 0 && (status === 'archived' ? c.isArchived : !c.isArchived && (status === 'open' ? c.status !== 'resolved' : status === 'human_mode' ? ['waiting_human','human_mode'].includes(c.status) : c.status === 'resolved'))) && <span aria-label='Unread' className='inline-block w-1.5 h-1.5 rounded-full bg-red-500 ml-1' />}
           </button>)}
         </div>
       </div>
@@ -146,7 +144,7 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
           <div className="p-8 text-center text-neutral-400">
             <MessageSquare className="w-8 h-8 mx-auto stroke-[1.2] mb-2 text-neutral-300 dark:text-neutral-700" />
             <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400">No conversations found</p>
-            <p className="text-[11px] text-neutral-400 mt-0.5">Try another search or switch between Pending and Resolved</p>
+            <p className="text-[11px] text-neutral-400 mt-0.5">Try another search or conversation filter</p>
           </div>
         ) : (
           sortedList.map((conv) => {
@@ -194,9 +192,10 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
                           {conv.customer.name}
                         </span>
                       </div>
-                      <span className="text-[10px] text-neutral-400 dark:text-neutral-500 flex-shrink-0">
-                        {conv.lastMessageAt}
-                      </span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-[10px] text-neutral-400 dark:text-neutral-500">{conv.lastMessageAt}</span>
+                        {conv.unreadCount > 0 && <span aria-label="Unread" title="Unread messages" className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />}
+                      </div>
                     </div>
 
                     {/* Intent / Topic line */}
@@ -204,6 +203,7 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
                       <span className="text-neutral-500 dark:text-neutral-400 font-medium truncate">
                         {channelMeta.label}
                       </span>
+                      {['waiting_human','human_mode'].includes(conv.status) && <span className="text-[10px] text-indigo-600 dark:text-indigo-400">{conv.status==='waiting_human'?'Waiting for human':'Human handling'}</span>}
                     </div>
 
                     {/* Last Snippet */}
@@ -211,7 +211,6 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
                       {conv.snippet}
                     </p>
 
-                    {conv.unreadCount > 0 && <span aria-label="Unread" className="inline-block w-2 h-2 rounded-full bg-indigo-500 mt-2" />}
                   </div>
                 </div>
               </button>
@@ -222,3 +221,4 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
     </div>
   );
 };
+

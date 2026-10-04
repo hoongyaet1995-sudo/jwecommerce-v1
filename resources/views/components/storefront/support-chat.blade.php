@@ -57,6 +57,12 @@
 @keyframes sf-message-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 @keyframes sf-thinking{0%,80%,100%{opacity:.35;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
 @media(prefers-reduced-motion:reduce){#storefront-support-widget .message.enter,#storefront-support-widget .thinking-dots i{animation:none}}
+#storefront-support-widget .conversation-status{margin:22px auto 8px;padding:11px 14px;max-width:92%;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--muted);font-size:12px;line-height:1.6;text-align:center;white-space:normal}
+ #storefront-support-widget form.contact-form{display:flex;flex-direction:column;align-items:stretch;gap:12px;width:100%;max-width:100%;padding:18px;margin:14px 0;background:var(--soft);border:1px solid var(--line);border-radius:16px;color:var(--ink);font-size:13px;line-height:1.5;white-space:normal;overflow-wrap:normal}
+ #storefront-support-widget .contact-form input{width:100%;min-width:0;height:42px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);padding:10px 12px;font:inherit}
+ #storefront-support-widget .contact-form input:focus{outline:2px solid #9c87ef;outline-offset:1px}
+ #storefront-support-widget .contact-form small{color:var(--muted);font-size:11px;line-height:1.6}
+ #storefront-support-widget .contact-form button[type=submit]{width:100%;padding:11px;background:#6549e9;color:white;border:0;border-radius:10px;font-weight:600}
 </style>
 
 
@@ -91,17 +97,22 @@ async function request(method='GET',data){
  if(!response.ok||!payload)throw new Error(payload?.message||'Unable to connect. Please try again.');
  return payload.conversation;
 }
+async function resolvedAction(action){
+ if(sending)return;sending=true;version++;
+ try{const response=await fetch('/support/chat/resolved',{method:'POST',credentials:'same-origin',headers:{Accept:'application/json','Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content},body:JSON.stringify({action})});const data=await response.json();if(!response.ok)throw new Error(data.message||'Unable to update conversation.');retry=null;input.value='';render(data.conversation);latest();}catch(error){status.textContent=error.message;status.hidden=false;}finally{sending=false;version++;}
+}
 function render(conversation){
- hasMessages=Boolean(conversation?.messages?.length);
+ if(stream.querySelector('[data-contact-form]')&&!sending)return;
+ requiresContact=conversation?.requiresContact!==false;hasMessages=Boolean(conversation?.messages?.length);
  const oldTop=stream.scrollTop;
  const nearBottom=stream.scrollHeight-stream.scrollTop-stream.clientHeight<80;
  const previous=[...stream.querySelectorAll('.message')].at(-1)?.dataset.id;
- stream.querySelectorAll('.message,.meta,.product-cards').forEach(node=>node.remove());
+ stream.querySelectorAll('.message,.meta,.product-cards,.conversation-status').forEach(node=>node.remove());
  for(const message of conversation?.messages||[]){
   const user=message.role==='customer',msg=document.createElement('div'),meta=document.createElement('div');
   msg.className='message'+(user?' user':'');msg.dataset.id=message.id;msg.textContent=message.content;if(loaded&& !seenMessages.has(message.id))msg.classList.add('enter');seenMessages.add(message.id);
   const cards=document.createElement('div');cards.className='product-cards';
-  if(!user&&message.actions?.length){for(const action of message.actions){if(action.type==='view_order_tracking'&&action.url==='/order-tracking'){const link=document.createElement('a');link.className='message-action';link.href=action.url;link.textContent='Order Tracking →';cards.append(link);continue;}if(['view_category','view_collection'].includes(action.type)&&typeof action.url==='string'&&/^\/(categories|collections)\/[^/]+$/.test(action.url)){const link=document.createElement('a');link.className='message-action';link.href=action.url;link.textContent=action.label+': '+action.title+' →';cards.append(link);continue;}if(action.type!=='view_product'||typeof action.url!=='string'||!action.url.startsWith('/products/')||action.url.startsWith('//'))continue;
+  if(!user&&message.actions?.length){for(const action of message.actions){if(action.type==='request_human'&&conversation?.status==='open'&&message.id===conversation.messages.filter(m=>m.role==='ai').at(-1)?.id){const button=document.createElement('button');button.type='button';button.className='message-action';button.dataset.requestHuman='true';button.textContent={en:'Talk to human →',ms:'Bercakap dengan ejen →',zh:'转人工客服 →'}[languageSelect.value]||'Talk to human →';button.disabled=sending;button.onclick=()=>{if(!sending)void submit({en:'I would like to talk to a human agent.',ms:'Saya ingin bercakap dengan ejen manusia.',zh:'我想转人工客服。'}[languageSelect.value],true)};const row=document.createElement('div');row.className='message-actions';row.append(button);msg.append(row);continue;}if(action.type==='view_order_tracking'&&action.url==='/order-tracking'){const link=document.createElement('a');link.className='message-action';link.href=action.url;link.textContent='Order Tracking →';cards.append(link);continue;}if(['view_category','view_collection'].includes(action.type)&&typeof action.url==='string'&&/^\/(categories|collections)\/[^/]+$/.test(action.url)){const link=document.createElement('a');link.className='message-action';link.href=action.url;link.textContent=action.label+': '+action.title+' →';cards.append(link);continue;}if(action.type!=='view_product'||typeof action.url!=='string'||!action.url.startsWith('/products/')||action.url.startsWith('//'))continue;
    const card=document.createElement('article');card.className='product-card';
    const imageBox=document.createElement('div');imageBox.className='product-card-image';
    const fallback=document.createElement('span');fallback.className='product-image-placeholder';fallback.textContent='◇';fallback.setAttribute('aria-label','Product image unavailable');imageBox.append(fallback);
@@ -115,7 +126,7 @@ function render(conversation){
  }
  renderGreeting();
  if(conversation?.messages?.length&&(nearBottom||previous!==conversation.messages.at(-1)?.id))latest();else stream.scrollTop=oldTop;
- status.textContent='';status.hidden=true;
+ currentStatus=conversation?.status||'open'; input.disabled=currentStatus==='resolved'; root.querySelector('#sf-support-form').hidden=currentStatus==='resolved'; if(currentStatus==='resolved'){const copy={en:['✓ This support conversation has ended.','Issue not resolved','Ask a new question'],ms:['✓ Perbualan ini telah ditutup.','Masalah belum selesai','Tanya soalan baharu'],zh:['✓ 此次客服会话已结束','问题还没解决','咨询新问题']}[languageSelect.value]||['✓ This support conversation has ended.','Issue not resolved','Ask a new question'];const card=document.createElement('div');card.className='conversation-status';card.setAttribute('role','status');const label=document.createElement('div');label.textContent=copy[0];card.append(label);const actions=document.createElement('div');actions.className='message-actions';['reopen','new'].forEach((action,i)=>{const button=document.createElement('button');button.type='button';button.className='message-action';button.textContent=copy[i+1];button.onclick=()=>void resolvedAction(action);actions.append(button)});card.append(actions);stream.append(card);if(nearBottom)latest();}  const notices={en:{waiting_human:'Your request is waiting for our support team.',human_mode:'A support agent is handling this conversation.'},ms:{waiting_human:'Permintaan anda sedang menunggu khidmat pelanggan.',human_mode:'Ejen khidmat pelanggan sedang mengendalikan perbualan ini.'},zh:{waiting_human:'已提交请求，正在等待客服接手。',human_mode:'客服已接手本次对话。'}};const notice=(currentStatus==='waiting_human'?conversation?.waitingNotice?.[languageSelect.value]:null)||notices[languageSelect.value]?.[currentStatus]||'';status.textContent='';status.hidden=true;if(notice){const row=document.createElement('div');row.className='conversation-status';row.setAttribute('role','status');row.textContent=notice;stream.append(row);if(nearBottom)latest();}
 }
 async function refresh(){
  const revision=version;
@@ -125,21 +136,32 @@ async function poll(){if(panel.hidden)return;if(!document.hidden&&!sending)await
 const originalOpen=openChat,originalClose=closeChat;
 launcher.onclick=()=>{originalOpen();clearTimeout(timer);void poll()};
 root.querySelector('#sf-support-close').onclick=()=>{originalClose();clearTimeout(timer)};
-async function submit(text){
- text=text.trim();if(!text||sending)return;
- sending=true;send.disabled=true;input.disabled=true;version++;
+let currentStatus='open',requiresContact=true,contactDraft=null;
+async function submit(text,humanRequest=false){
+ if(humanRequest&&requiresContact&&!contactDraft){
+  if(stream.querySelector('[data-contact-form]'))return;
+  const form=document.createElement('form');form.className='contact-form';form.dataset.contactForm='true';
+  const title=document.createElement('div');title.textContent={en:'How can our team contact you?',ms:'Bagaimana kami boleh menghubungi anda?',zh:'请留下联系方式，方便客服协助。'}[languageSelect.value];form.append(title);
+  for(const [name,label,type,required] of [['name','Name','text',true],['email','Email','email',true],['phone','Telephone (optional)','tel',false]]){const field=document.createElement('input');field.name=name;field.placeholder=label;field.setAttribute('aria-label',label);field.type=type;field.required=required;field.maxLength=name==='phone'?30:name==='name'?100:255;field.className='message-action';field.style.cssText='display:block;width:100%;box-sizing:border-box;margin-top:8px';form.append(field);}
+  const note=document.createElement('small');note.textContent='Used for this support request. This does not create a login account.';form.append(note);
+  const button=document.createElement('button');button.type='submit';button.className='message-action';button.textContent='Request human support';form.append(button);
+  const cancel=document.createElement('button');cancel.type='button';cancel.className='message-action';cancel.textContent={en:'Cancel',ms:'Batal',zh:'取消'}[languageSelect.value]||'Cancel';cancel.onclick=()=>{if(sending)return;contactDraft=null;form.remove();void refresh();};form.append(cancel);
+  form.onsubmit=e=>{e.preventDefault();if(sending)return;contactDraft=Object.fromEntries(new FormData(form));void submit(text,true);};stream.append(form);latest();return;
+ }
+ text=text.trim();if(!text||sending||currentStatus==='resolved')return;
+ sending=true;send.disabled=true;input.disabled=true;version++;stream.querySelectorAll('[data-request-human]').forEach(button=>button.disabled=true);
  stream.querySelectorAll('[data-greeting]').forEach(n=>n.remove());
  const pending=document.createElement('div');pending.className='message user enter';pending.dataset.pending='true';pending.textContent=text;
  const thinking=document.createElement('div');thinking.className='message thinking enter';thinking.dataset.pending='true';thinking.setAttribute('role','status');
  const dots=document.createElement('span');dots.className='thinking-dots';dots.setAttribute('aria-hidden','true');for(let i=0;i<3;i++)dots.append(document.createElement('i'));
  const label=document.createElement('span');label.textContent={en:'AI is thinking…',ms:'AI sedang berfikir…',zh:'AI 正在思考…'}[languageSelect.value]||'AI is thinking…';thinking.append(dots,label);
- stream.append(pending,thinking);input.value='';status.hidden=true;latest();
+ stream.append(pending);if(!humanRequest&&currentStatus==='open')stream.append(thinking);input.value='';status.hidden=true;latest();
  if(!retry||retry.content!==text)retry={content:text,id:crypto.randomUUID()};
  try{
   if(!loaded){await request();loaded=true}
-  const conversation=await request('POST',{content:text,client_message_id:retry.id});render(conversation);input.value='';retry=null;stream.scrollTop=stream.scrollHeight;
+  const conversation=await request('POST',{content:text,client_message_id:retry.id,...(humanRequest?{request_human:true,...(contactDraft?{contact:contactDraft}:{})}:{})});render(conversation);stream.querySelectorAll('[data-contact-form]').forEach(n=>n.remove());input.value='';retry=null;contactDraft=null;stream.scrollTop=stream.scrollHeight;
  }catch(error){stream.querySelectorAll('[data-pending]').forEach(n=>n.remove());status.textContent=error.message;status.hidden=false;input.value=text;renderGreeting()}
- finally{stream.querySelectorAll('[data-pending]').forEach(n=>n.remove());version++;sending=false;input.disabled=false;send.disabled=!input.value.trim()}
+ finally{stream.querySelectorAll('[data-pending]').forEach(n=>n.remove());version++;sending=false;stream.querySelectorAll('[data-request-human]').forEach(button=>button.disabled=false);input.disabled=false;send.disabled=!input.value.trim()}
 }
 input.oninput=()=>send.disabled=sending||!input.value.trim();root.querySelector('#sf-support-form').onsubmit=e=>{e.preventDefault();void submit(input.value)};input.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();void submit(input.value)}};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden)closeChat();if(e.key==='Tab'&&!panel.hidden){const nodes=[...panel.querySelectorAll('button,textarea,a[href],select')].filter(n=>!n.disabled);if(e.shiftKey&&document.activeElement===nodes[0]){e.preventDefault();nodes.at(-1).focus()}else if(!e.shiftKey&&document.activeElement===nodes.at(-1)){e.preventDefault();nodes[0].focus()}}});
@@ -172,3 +194,4 @@ renderCategories();tab('chat');void loadFAQs();launcher.addEventListener('click'
 })();
 </script>
 </div>
+

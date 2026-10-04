@@ -2,6 +2,7 @@ import type { NavSection } from '../types';
 
 export const ADMIN_PATH_BY_SECTION = {
   dashboard: '/admin',
+  'support-overview': '/admin/support-overview',
   commerce: '/admin/commerce',
   orders: '/admin/orders',
   customers: '/admin/customers',
@@ -116,3 +117,4 @@ export function subscribeToSectionChanges(
   navigationWindow.addEventListener('popstate', onPopstate);
   return () => navigationWindow.removeEventListener('popstate', onPopstate);
 }
+

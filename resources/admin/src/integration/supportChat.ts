@@ -15,7 +15,7 @@ export async function supportRequest(path = '', method = 'GET', body?: unknown, 
 
 export function useSupportChat(active: boolean) {
   const [supportConversations, setConversations] = useState<SupportConversation[]>([]);
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(()=>new URLSearchParams(window.location.search).get('conversation'));
   const [supportDrafts, setDrafts] = useState<Record<string, string>>({});
   const [supportLoading, setLoading] = useState(true);
   const [supportError, setError] = useState('');
@@ -31,10 +31,15 @@ export function useSupportChat(active: boolean) {
       const data = await supportRequest(incremental ? '?since=' + encodeURIComponent(syncedAt.current) : '', 'GET', undefined, signal);
       if (version !== revision.current || busy.current || signal?.aborted) return;
       setConversations(previous => {
-        if (!incremental) return data.conversations || [];
-        const merged = new Map(previous.map(c => [c.id, c]));
-        for (const conversation of data.conversations || []) merged.set(conversation.id, conversation);
-        return [...merged.values()];
+        const incoming = data.conversations || [];
+        const merged = new Map((incremental ? previous : []).map(c => [c.id, c]));
+        let changed = !incremental && previous.length !== incoming.length;
+        for (const conversation of incoming) {
+          const existing = previous.find(c => c.id === conversation.id);
+          if (existing && JSON.stringify(existing) === JSON.stringify(conversation)) merged.set(conversation.id, existing);
+          else { merged.set(conversation.id, conversation); changed = true; }
+        }
+        return changed ? [...merged.values()] : previous;
       });
       setSelectedConversationId(current => current || data.conversations?.find(c => c.status !== 'resolved')?.id || null);
       syncedAt.current = data.syncedAt || '';
@@ -47,12 +52,21 @@ export function useSupportChat(active: boolean) {
     if (!active) return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
-    const poll = async () => {
-      if (!document.hidden) await refreshSupport(controller.signal);
-      if (!controller.signal.aborted) timer = setTimeout(poll, 4000);
+    let inFlight = false;
+    const refresh = async () => {
+      if (document.hidden || inFlight || controller.signal.aborted) return;
+      inFlight = true;
+      try { await refreshSupport(controller.signal); } finally { inFlight = false; }
     };
+    const poll = async () => {
+      await refresh();
+      if (!controller.signal.aborted) timer = setTimeout(poll, 5000);
+    };
+    const wake = () => { void refresh(); };
+    window.addEventListener('focus', wake);
+    document.addEventListener('visibilitychange', wake);
     void poll();
-    return () => { controller.abort(); clearTimeout(timer); };
+    return () => { controller.abort(); clearTimeout(timer); window.removeEventListener('focus', wake); document.removeEventListener('visibilitychange', wake); };
   }, [active, refreshSupport]);
   const mutate = async (id: string, action: string, data: unknown, method = 'POST') => {
     if (busy.current) return false;
@@ -80,6 +94,9 @@ export function useSupportChat(active: boolean) {
     supportLoading, supportError, supportBusy, refreshSupport, sendMessageToConversation,
     resolveConversation: (id: string) => { void mutate(id, 'status', { status: 'resolved' }, 'PATCH'); },
     reopenConversation: (id: string) => { void mutate(id, 'status', { status: 'open' }, 'PATCH'); },
+    takeOverConversation: (id: string) => { void mutate(id, "status", { status: "human_mode" }, "PATCH"); },
+    handBackToAI: (id: string) => { void mutate(id, "status", { status: "open" }, "PATCH"); },
+    archiveConversation: (id: string, archived: boolean) => { void mutate(id, 'archive', { archived }, 'PATCH'); },
     markConversationAsRead,
     addStaffNote: (id: string, content: string) => mutate(id, 'notes', { content }),
   };

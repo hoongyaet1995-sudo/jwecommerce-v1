@@ -38,16 +38,17 @@ export const DEFAULT_AI_AUTO_REPLY_CONFIG: AIAutoReplyMasterConfig = {
       zh: '人工客服当前为非工作时间（工作时间：9:00 AM - 10:00 PM）。我是 JW Studio 24小时智能顾问，随时为您解答疑问或查询订单！'
     },
     fallbackHandoffMessage: {
-      en: 'I understand this requires specialized human attention. I am transferring this chat to a JW Studio Senior Support Specialist.',
-      ms: 'Saya sedang menyambungkan perbualan ini kepada Pegawai Khidmat Pelanggan Kanan JW Studio.',
-      zh: '我已为您转接至 JW Studio 人工高级客服专员，请稍候片刻。'
+      en: 'Your request has been submitted. Please wait for our support team to take over.',
+      ms: 'Permintaan anda telah dihantar. Sila tunggu pasukan khidmat pelanggan.',
+      zh: '已提交人工请求，请等待客服接手。'
     },
     humanHandoffTriggers: {
       onFrustrationDetected: true,
       consecutiveFailureCount: 2,
       onRefundOrDispute: true,
-      onVipCustomer: true,
-      urgentKeywords: ['human', 'scam', 'police', 'lawyer', 'bank dispute', 'broken item', '真人', '人工', '投诉', 'agent', 'manager', 'rosak', 'refund urgent']
+      onExplicitRequest: true,
+      onServiceUnavailable: true,
+      urgentKeywords: []
     }
   },
   knowledgeScope: {

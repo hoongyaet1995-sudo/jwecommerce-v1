@@ -26,7 +26,9 @@ class FaqAutoReplyService
         try {
             $source = $conversation->messages()->where('client_message_id', $incoming['client_message_id'])->firstOrFail();
             $replyId = (string) Uuid::uuid5(Uuid::NAMESPACE_DNS, 'support-ai:'.$source->id);
-            if ($conversation->messages()->where('sender_role', 'human_agent')->exists() || $conversation->messages()->where('client_message_id', $replyId)->exists()) {
+            $conversation->refresh();
+            $controlVersion = (int) $conversation->notes()->max('id');
+            if ($conversation->status !== 'open' || (int) $conversation->messages()->where('sender_role', 'human_agent')->max('id') >= $source->id || $conversation->messages()->where('client_message_id', $replyId)->exists()) {
                 return;
             }
             $language = $incoming['language'] ?? ($settings['primaryLanguage'] ?? 'auto_detect');
@@ -38,23 +40,25 @@ class FaqAutoReplyService
             $unknown = array_replace($defaults['unknownAnswerMessage'], $settings['personality']['unknownAnswerMessage'] ?? []);
             $unavailable = array_replace($defaults['serviceUnavailableMessage'], $settings['personality']['serviceUnavailableMessage'] ?? []);
             $query = $this->normalize($incoming['content']);
-            if (preg_match('/\b(human|agent|refund dispute)\b|人工|真人|投诉/u', $query)) {
-                return;
-            }
+
             $facts = app(FaqKnowledgeSearch::class)->exact($incoming['content'], $settings['faq'] ?? []);
             $answer = $unknown[$language];
             $actions = [];
+            $escalationReason = app(SupportEscalationPolicy::class)->requested($incoming['content'],$settings) ? 'explicit_request' : app(SupportEscalationPolicy::class)->reason($conversation, $incoming['content'], $settings);
             // Only an exact FAQ question can bypass understanding, never keyword counts.
             $exact = array_values(array_filter($facts, fn ($i) => $query === $this->normalize($i['question'])));
-            if (preg_match('/\b(cheaper|bargain|negotiate|best price|lower price)\b|便宜|议价|murah|tawar/iu', $incoming['content'])) {
+            if ($escalationReason) {
+                $answer = ['en'=>'Our support team can help with this request. You can request assistance below.','ms'=>'Pasukan khidmat pelanggan boleh membantu. Anda boleh meminta bantuan di bawah.','zh'=>'这个问题可以请客服协助处理，你可以通过下方入口提出请求。'][$language];
+            } elseif (preg_match('/\b(cheaper|bargain|negotiate|best price|lower price)\b|便宜|议价|murah|tawar/iu', $incoming['content'])) {
                 $answer = ['en'=>'I can share listed prices, but cannot negotiate prices or promise an unauthorized discount.','ms'=>'Saya boleh berkongsi harga yang disenaraikan, tetapi tidak boleh merundingkan harga atau menjanjikan diskaun tanpa kebenaran.','zh'=>'我可以提供商品标价，但不能议价或承诺未经授权的折扣。'][$language];
             } elseif (count($exact) === 1 && !str_starts_with($exact[0]['id'], 'product:') && $language === 'en' && ! preg_match('/\p{Han}|\b(penghantaran|ialah|pesanan|sila|anda|boleh)\b/iu', $exact[0]['answer'])) {
                 $answer = $exact[0]['answer'];
             } elseif (app(UnifiedKnowledgeService::class)->tools($settings)) {
                 $key = 'support-llm-daily:'.$conversation->owner_hash.':'.now()->toDateString();
                 if (RateLimiter::tooManyAttempts($key, 20)) {
-                    return;
-                }
+                    $escalationReason = 'service_unavailable';
+                    $answer = $unavailable[$language];
+                } else {
                 RateLimiter::hit($key, 86400);
                 $style = array_intersect_key($settings['personality'] ?? [], array_flip(['toneOfVoice', 'customToneInstructions', 'maxOutputTokens', 'brandMissionPrompt']));
                 $limit = max(150, min(600, (int) ($style['maxOutputTokens'] ?? 350)));
@@ -62,6 +66,12 @@ class FaqAutoReplyService
                 $history = $conversation->messages()->where('sender_role', 'customer')->orderByDesc('id')->limit(3)->get()->reverse()->map(fn ($m) => mb_substr($m->content, 0, 1200))->values()->all();
                 try {
                     $facts = app(UnifiedKnowledgeService::class)->retrieve($incoming['content'], $settings, $history, $conversation, $language);
+                    $intent = array_values(array_filter($facts, fn($f)=>$f['id']==='support:intent'))[0]['answer'] ?? 'none';
+                    $facts = array_values(array_filter($facts, fn($f)=>$f['id']!=='support:intent'));
+                    $rules = app(SupportEscalationPolicy::class)->rules($settings);
+                    if ($intent === 'explicit_request' && $rules['onExplicitRequest']) $escalationReason = 'explicit_request';
+                    if ($intent === 'unresolved' && $rules['onFrustrationDetected'] && $conversation->messages()->where('sender_role','ai')->exists()) $escalationReason = 'unresolved';
+                    if ($intent === 'human_required' && $rules['onRefundOrDispute']) $escalationReason = 'human_required';
                     $orderReplies=array_column(array_filter($facts,fn($f)=>$f['id']==='order:private'),'answer');
                     $facts=array_values(array_filter($facts,fn($f)=>$f['id']!=='order:private'));
                     $safeQuestion=app(UnifiedKnowledgeService::class)->redact($incoming['content']);
@@ -93,17 +103,25 @@ class FaqAutoReplyService
                 } catch (\Throwable) {
                     Log::warning('support_ai_generation_unavailable', ['conversation_id' => $conversation->id]);
                     $answer = $unavailable[$language];
+                    $escalationReason = 'service_unavailable';
+                }
                 }
             }
-            DB::transaction(function () use ($conversation, $source, $replyId, $answer, $settings, $actions) {
+            if ($escalationReason && $escalationReason !== 'service_unavailable') {
+                $answer = ['en'=>'Our support team can help with this request. You can request assistance below.','ms'=>'Pasukan khidmat pelanggan boleh membantu. Anda boleh meminta bantuan di bawah.','zh'=>'这个问题可以请客服协助处理，你可以通过下方入口提出请求。'][$language];
+                $actions = [];
+            }
+            $unknownAnswer = $unknown[$language];
+            DB::transaction(function () use ($conversation, $source, $replyId, $answer, $settings, $actions, $controlVersion, $unknownAnswer, $escalationReason) {
                 $locked = SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
-                if ($locked->status !== 'open' || $locked->messages()->where('sender_role', 'human_agent')->exists() || (int) $locked->messages()->where('sender_role', 'customer')->max('id') !== $source->id || $locked->messages()->where('client_message_id', $replyId)->exists()) {
+                if ($locked->status !== 'open' || (int) $locked->notes()->max('id') !== $controlVersion || (int) $locked->messages()->where('sender_role', 'human_agent')->max('id') >= $source->id || (int) $locked->messages()->where('sender_role', 'customer')->max('id') !== $source->id || $locked->messages()->where('client_message_id', $replyId)->exists()) {
                     return;
                 }
                 $current = app(SupportFaqService::class)->read();
                 if (! ($current['autoReplyEnabled'] ?? false) || (! ($current['faq']['isEnabled'] ?? false) && ! ($current['productCatalog']['isEnabled'] ?? false) && ! ($current['discountKnowledge']['isEnabled'] ?? false) && ! ($current['orderLookup']['isEnabled'] ?? false)) || ($current['version'] ?? 0) !== ($settings['version'] ?? 0)) {
                     return;
                 }
+                $actions = array_merge($actions, app(SupportEscalationPolicy::class)->actions($locked, $answer === $unknownAnswer, $escalationReason, $settings));
                 $locked->messages()->create(['client_message_id' => $replyId, 'sender_role' => 'ai', 'actions' => $actions, 'content' => mb_substr(trim($answer), 0, 10000)]);
                 $locked->update(['last_message_at' => now()]);
             });

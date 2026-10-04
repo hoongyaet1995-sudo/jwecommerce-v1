@@ -7,7 +7,7 @@ export type SupportChannel =
   | 'reddit'
   | 'x';
 
-export type ConversationStatus = 'open' | 'human_mode' | 'resolved';
+export type ConversationStatus = 'open' | 'waiting_human' | 'human_mode' | 'resolved' | 'archived';
 
 export type PriorityLevel = 'low' | 'normal' | 'high' | 'urgent';
 
@@ -124,6 +124,7 @@ export interface InternalStaffNote {
 }
 
 export interface SupportConversation {
+  isArchived?: boolean;
   id: string;
   channel: SupportChannel;
   customer: CustomerProfile;
@@ -149,6 +150,7 @@ export interface SupportConversation {
   activeAiDraft?: AIDraft | null;
   isAiTyping?: boolean;
   lastMessageAt: string;
+  lastMessageTimestamp?: string;
   messages: ChatMessage[];
   internalNotes: InternalStaffNote[];
   createdAt: string;
@@ -190,3 +192,4 @@ export interface CannedResponse {
   category: 'Shipping' | 'Payment' | 'Returns' | 'Discounts' | 'Greeting';
   content: string;
 }
+

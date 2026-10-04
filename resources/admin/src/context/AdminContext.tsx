@@ -1,3 +1,4 @@
+import {useSupportAlerts, type SupportAlert} from '../integration/supportAlerts';
 import { useSupportChat } from '../integration/supportChat';
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { initialSectionFromLocation, navigateToSection, subscribeToSectionChanges } from '../integration/adminRoutes';
@@ -201,6 +202,10 @@ interface AdminContextType {
   // Modals & Panels
   isCommandPaletteOpen: boolean;
   setIsCommandPaletteOpen: (open: boolean) => void;
+  supportAlerts: SupportAlert[];
+  supportAlertUnread: number;
+  supportAlertError: string;
+  markSupportAlertRead: (id:string)=>Promise<boolean>;
   isNotificationOpen: boolean;
   setIsNotificationOpen: (open: boolean) => void;
   searchQuery: string;
@@ -486,6 +491,7 @@ interface AdminContextType {
   ) => Promise<boolean>;
   takeOverConversation: (conversationId: string) => void;
   handBackToAI: (conversationId: string) => void;
+  archiveConversation: (conversationId: string, archived: boolean) => void;
   resolveConversation: (conversationId: string) => void;
   reopenConversation: (conversationId: string) => void;
   approveAIDraft: (conversationId: string) => void;
@@ -785,6 +791,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }));
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const {supportAlerts,supportAlertUnread,supportAlertError,markSupportAlertRead}=useSupportAlerts();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -879,7 +886,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Customer Support Hub & AI Copilot State
   const { supportConversations, supportDrafts, setSupportDraft, selectedConversationId, setSelectedConversationId,
     supportLoading, supportError, supportBusy, refreshSupport, sendMessageToConversation, resolveConversation,
-    reopenConversation, markConversationAsRead, addStaffNote } = useSupportChat(currentSection === 'support');
+    reopenConversation, markConversationAsRead, addStaffNote, takeOverConversation, handBackToAI, archiveConversation } = useSupportChat(currentSection === 'support');
   const [supportActiveTab, setSupportActiveTab] = useState<'inbox' | 'copilot'>('inbox');
   const [cannedResponses, setCannedResponses] = useState<CannedResponse[]>(INITIAL_CANNED_RESPONSES);
   const [copilotMessages, setCopilotMessages] = useState<CopilotQueryMessage[]>(INITIAL_INTERNAL_COPILOT_MESSAGES);
@@ -3212,7 +3219,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // External AI/social support actions remain inactive until their provider integrations exist.
   const unavailableSupportAction = (_id: string) => addToast({type: 'info', title: 'Not connected', message: 'AI and social-channel integrations are not enabled.'});
-  const takeOverConversation = unavailableSupportAction, handBackToAI = unavailableSupportAction,
+  const
     approveAIDraft = unavailableSupportAction, discardAIDraft = unavailableSupportAction,
     togglePinConversation = unavailableSupportAction;
   const generateAIDraft = async (id: string) => { unavailableSupportAction(id); };
@@ -3338,7 +3345,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
     faqSaving.current = true;
     try {
     const draft = newConfig.knowledgeScope.faqKnowledge;
-    const data = await supportFaqRequest({ version: faqServerVersion.current, orderLookup:{isEnabled:newConfig.knowledgeScope.orderLookup.isEnabled,allowedFields:newConfig.knowledgeScope.orderLookup.allowedFields}, discountKnowledge:newConfig.knowledgeScope.discountKnowledge || {isEnabled:false,activeIds:[]}, productCatalog:{isEnabled:newConfig.knowledgeScope.productCatalog.isEnabled,canCheckLiveStock:newConfig.knowledgeScope.productCatalog.canCheckLiveStock,canExplainSizingAndMaterials:newConfig.knowledgeScope.productCatalog.canExplainSizingAndMaterials,canRecommendUpsells:newConfig.knowledgeScope.productCatalog.canRecommendUpsells,maxRecommendations:newConfig.knowledgeScope.productCatalog.maxRecommendations}, greetingMessage:newConfig.personality.greetingMessage, personality:{creativityTemperature:newConfig.personality.creativityTemperature,brandMissionPrompt:newConfig.personality.brandMissionPrompt,unknownAnswerMessage:newConfig.personality.unknownAnswerMessage,serviceUnavailableMessage:newConfig.personality.serviceUnavailableMessage,toneOfVoice:newConfig.personality.toneOfVoice,customToneInstructions:newConfig.personality.customToneInstructions,maxOutputTokens:Math.max(150,Math.min(600,newConfig.personality.maxOutputTokens))}, autoReplyEnabled:newConfig.personality.isEnabled, primaryLanguage:newConfig.personality.primaryLanguage, identity: {botName: newConfig.personality.botName, roleTitle: newConfig.personality.roleTitle}, faq: { ...draft, categories: faqCategories(draft.categories, draft.items, draft.deletedCategoryIds).map(({ id, label }) => ({ id, label })) } });
+    const data = await supportFaqRequest({ version: faqServerVersion.current, orderLookup:{isEnabled:newConfig.knowledgeScope.orderLookup.isEnabled,allowedFields:newConfig.knowledgeScope.orderLookup.allowedFields}, discountKnowledge:newConfig.knowledgeScope.discountKnowledge || {isEnabled:false,activeIds:[]}, productCatalog:{isEnabled:newConfig.knowledgeScope.productCatalog.isEnabled,canCheckLiveStock:newConfig.knowledgeScope.productCatalog.canCheckLiveStock,canExplainSizingAndMaterials:newConfig.knowledgeScope.productCatalog.canExplainSizingAndMaterials,canRecommendUpsells:newConfig.knowledgeScope.productCatalog.canRecommendUpsells,maxRecommendations:newConfig.knowledgeScope.productCatalog.maxRecommendations}, greetingMessage:newConfig.personality.greetingMessage, personality:{humanHandoffTriggers:newConfig.personality.humanHandoffTriggers,fallbackHandoffMessage:newConfig.personality.fallbackHandoffMessage,creativityTemperature:newConfig.personality.creativityTemperature,brandMissionPrompt:newConfig.personality.brandMissionPrompt,unknownAnswerMessage:newConfig.personality.unknownAnswerMessage,serviceUnavailableMessage:newConfig.personality.serviceUnavailableMessage,toneOfVoice:newConfig.personality.toneOfVoice,customToneInstructions:newConfig.personality.customToneInstructions,maxOutputTokens:Math.max(150,Math.min(600,newConfig.personality.maxOutputTokens))}, autoReplyEnabled:newConfig.personality.isEnabled, primaryLanguage:newConfig.personality.primaryLanguage, identity: {botName: newConfig.personality.botName, roleTitle: newConfig.personality.roleTitle}, faq: { ...draft, categories: faqCategories(draft.categories, draft.items, draft.deletedCategoryIds).map(({ id, label }) => ({ id, label })) } });
     faqServerVersion.current = data.version;
     const updated: AIAutoReplyMasterConfig = {
       ...newConfig,
@@ -3662,6 +3669,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
         setIsLoginModalOpen,
         isCommandPaletteOpen,
         setIsCommandPaletteOpen,
+        supportAlerts,supportAlertUnread,supportAlertError,markSupportAlertRead,
         isNotificationOpen,
         setIsNotificationOpen,
         searchQuery,
@@ -3871,7 +3879,7 @@ Would you like me to drill down into customer records, inventory allocation, or 
         setSupportActiveTab,
         sendMessageToConversation,
         takeOverConversation,
-        handBackToAI,
+        handBackToAI, archiveConversation,
         resolveConversation,
         reopenConversation,
         approveAIDraft,
@@ -3914,3 +3922,4 @@ export const useAdmin = () => {
   return context;
 };
 import { loadShopBranding, persistShopBranding } from '../integration/shopBrandingData';
+

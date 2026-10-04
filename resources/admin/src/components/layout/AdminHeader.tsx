@@ -30,6 +30,7 @@ export const AdminHeader: React.FC<{ onToggleMobileSidebar: () => void }> = ({
     user,
     logout,
     setIsCommandPaletteOpen,
+    supportAlertUnread,
     isNotificationOpen,
     setIsNotificationOpen,
     setIsLoginModalOpen,
@@ -95,6 +96,7 @@ export const AdminHeader: React.FC<{ onToggleMobileSidebar: () => void }> = ({
       case 'catalog-categories': return { category: 'Catalog Management', title: 'Category Taxonomy' };
       case 'catalog-collections': return { category: 'Catalog Management', title: 'Collections & Dynamic Rules' };
       case 'catalog-products': return { category: 'Catalog Management', title: 'Products & SKU Variant Matrix' };
+      case 'support-overview': return { category: 'Customer Care & AI', title: 'Customer Support Overview' };
       case 'commerce': return { category: 'Orders & Customers', title: 'Commerce Overview Hub' };
       case 'customers': return { category: 'Orders & Customers', title: 'Customer Directory' };
       case 'orders': return { category: 'Orders & Customers', title: 'Store Orders & Fulfillment' };
@@ -210,7 +212,7 @@ export const AdminHeader: React.FC<{ onToggleMobileSidebar: () => void }> = ({
             aria-label="Notifications"
           >
             <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-neutral-900" />
+            {supportAlertUnread > 0 && <span aria-label={`${supportAlertUnread} unread notifications`} className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] ring-2 ring-white dark:ring-neutral-900">{supportAlertUnread > 99 ? "99+" : supportAlertUnread}</span>}
           </button>
         </div>
 
@@ -323,3 +325,4 @@ export const AdminHeader: React.FC<{ onToggleMobileSidebar: () => void }> = ({
     </header>
   );
 };
+

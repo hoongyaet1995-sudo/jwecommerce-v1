@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import {
   MessageSquareText,
@@ -27,7 +27,7 @@ export const CustomerSupportHub: React.FC = () => {
 
   // Filter States
   const [selectedChannel, setSelectedChannel] = useState<SupportChannel | 'all'>('all');
-  const [statusFilter, setStatusFilter] = useState<ConversationStatus | 'all' | 'unread' | 'high_priority'>('open');
+  const [statusFilter, setStatusFilter] = useState<ConversationStatus | 'all' | 'unread' | 'high_priority'>(()=>new URLSearchParams(window.location.search).get('filter')==='human'?'human_mode':'open');
   const [searchQuery, setSearchQuery] = useState('');
   const [isContextPanelOpen, setIsContextPanelOpen] = useState(false);
   const [isMobileListOpen, setIsMobileListOpen] = useState(true);
@@ -37,17 +37,24 @@ export const CustomerSupportHub: React.FC = () => {
     return supportConversations.find(c => c.id === selectedConversationId) || null;
   }, [supportConversations, selectedConversationId]);
 
+  const notificationSelectionApplied=useRef(false);
   useEffect(() => {
-    const matches = supportConversations.filter(c => statusFilter === 'resolved' ? c.status === 'resolved' : c.status !== 'resolved');
+    if (supportLoading) return;
+    if (!notificationSelectionApplied.current) {
+      notificationSelectionApplied.current=true;
+      const target=supportConversations.find(c=>c.id===new URLSearchParams(window.location.search).get('conversation'));
+      if(target){setSelectedConversationId(target.id);setStatusFilter(target.status==='resolved'?'resolved':target.status==='open'?'open':'human_mode');return;}
+    }
+    const matches = supportConversations.filter(c => statusFilter === 'archived' ? c.isArchived : !c.isArchived && (statusFilter === 'resolved' ? c.status === 'resolved' : statusFilter === 'human_mode' ? ['waiting_human','human_mode'].includes(c.status) : c.status !== 'resolved'));
     if (!matches.some(c => c.id === selectedConversationId)) setSelectedConversationId(matches[0]?.id || null);
-  }, [supportConversations, selectedConversationId, statusFilter, setSelectedConversationId]);
+  }, [supportConversations, supportLoading, selectedConversationId, statusFilter, setSelectedConversationId]);
 
   // Overall statistics
   const stats = useMemo(() => {
     const total = supportConversations.length;
     const unread = supportConversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
     const aiHandling = supportConversations.filter(c => c.status === 'open').length;
-    const humanHandling = supportConversations.filter(c => c.status === 'human_mode').length;
+    const humanHandling = supportConversations.filter(c => ['waiting_human','human_mode'].includes(c.status)).length;
     const resolved = supportConversations.filter(c => c.status === 'resolved').length;
     const highPriority = supportConversations.filter(c => c.priority === 'urgent' || c.priority === 'high').length;
     const aiAutomationRate = total > 0 ? Math.round((aiHandling / total) * 100) : 75;
@@ -144,7 +151,7 @@ export const CustomerSupportHub: React.FC = () => {
               statusFilter={statusFilter}
               setStatusFilter={(status) => {
                 setStatusFilter(status);
-                const matches = supportConversations.filter(c => status === 'resolved' ? c.status === 'resolved' : c.status !== 'resolved');
+                const matches = supportConversations.filter(c => status === 'archived' ? c.isArchived : !c.isArchived && (status === 'resolved' ? c.status === 'resolved' : status === 'human_mode' ? ['waiting_human','human_mode'].includes(c.status) : c.status !== 'resolved'));
                 if (!matches.some(c => c.id === selectedConversationId)) setSelectedConversationId(matches[0]?.id || null);
               }}
               searchQuery={searchQuery}
@@ -194,3 +201,5 @@ export const CustomerSupportHub: React.FC = () => {
     </div>
   );
 };
+
+

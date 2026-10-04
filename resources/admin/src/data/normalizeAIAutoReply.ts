@@ -31,6 +31,8 @@ export function normalizeAIAutoReplyConfig(value: unknown): AIAutoReplyMasterCon
       profanityAndHarassment: { profanityFilterLevel: toxic.isEnabled === undefined ? undefined : toxic.isEnabled ? 'strict' : 'lenient', customForbiddenPhrases: g.customForbiddenWords, ...object(g.profanityAndHarassment) },
     },
   };
-  return merge(DEFAULT_AI_AUTO_REPLY_CONFIG, mapped);
+  const result=merge(DEFAULT_AI_AUTO_REPLY_CONFIG, mapped);
+  delete result.personality.humanHandoffTriggers.onVipCustomer;
+  return result;
 }
 

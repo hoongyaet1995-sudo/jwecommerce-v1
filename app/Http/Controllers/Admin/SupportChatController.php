@@ -8,6 +8,16 @@ use Illuminate\Http\Request;
 
 class SupportChatController extends Controller
 {
+    public function archive(Request $request, SupportConversation $conversation, SupportChatService $chat)
+    {
+        $data=$request->validate(['archived'=>['required','boolean']]);
+        \Illuminate\Support\Facades\DB::transaction(function() use($conversation,$request,$data){
+            $locked=SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
+            $locked->notes()->create(['staff_user_id'=>$request->user()->id,'content'=>'[Archive] '.($data['archived']?'true':'false')]);
+            $locked->touch();
+        });
+        return response()->json(['conversation'=>$chat->adminView($conversation->fresh())]);
+    }
     public function index(Request $request, SupportChatService $chat)
     {
         $data = $request->validate(['since' => ['nullable', 'date']]);
@@ -26,9 +36,13 @@ class SupportChatController extends Controller
     }
     public function status(Request $request, SupportConversation $conversation, SupportChatService $chat)
     {
-        $data = $request->validate(['status' => ['required', 'in:open,resolved']]);
-        \Illuminate\Support\Facades\DB::transaction(function () use ($conversation, $data) {
-            SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail()->update($data);
+        $data = $request->validate(['status' => ['required', 'in:open,human_mode,resolved']]);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($conversation, $data, $request) {
+            $locked = SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
+            if ($locked->status !== $data['status']) {
+                $locked->notes()->create(['staff_user_id' => $request->user()->id, 'content' => '[Control] '.$locked->status.' → '.$data['status']]);
+                $locked->update($data);
+            }
         });
         return response()->json(['conversation' => $chat->adminView($conversation->fresh())]);
     }

@@ -242,10 +242,10 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
       isActive: currentSection === 'integration' || currentSection === 'integration-ai-connect',
     },
     {
-      id: 'support' as NavSection,
+      id: 'support-overview' as NavSection,
       label: 'Customer Support',
       icon: MessageSquareText,
-      isActive: currentSection === 'support',
+      isActive: currentSection === 'support' || currentSection === 'support-overview',
       badge: unreadSupportCount > 0 ? `${unreadSupportCount} New` : 'Inbox',
       badgeVariant: unreadSupportCount > 0 ? 'warning' : 'info',
     },
@@ -591,3 +591,4 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
     </aside>
   );
 };
+

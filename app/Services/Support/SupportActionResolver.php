@@ -19,6 +19,9 @@ class SupportActionResolver
   }
   $actions=[];
   foreach(array_slice($references,0,5) as $ref){
+   if (($ref['type']??null)==='request_human' && in_array($ref['reason']??null,['unanswered_twice','unresolved','service_unavailable','human_required','custom_keyword','explicit_request'],true)) {
+    $actions['handoff']=['type'=>'request_human'];continue;
+   }
    if(($ref['type']??null)==='view_order_tracking'){$actions['order_tracking']=['type'=>'view_order_tracking','resource_id'=>0,'label'=>'Order Tracking','title'=>'Verify or view your order','url'=>route('order-tracking.show',[],false)];continue;}
    if(in_array($ref['type']??null,['view_category','view_collection'],true)&&ctype_digit((string)($ref['resource_id']??''))){
     $category=$ref['type']==='view_category';$model=$category?\App\Models\Category::class:\App\Models\Collection::class;

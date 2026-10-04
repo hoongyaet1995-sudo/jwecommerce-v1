@@ -2,14 +2,15 @@ import React,{useRef,useEffect} from 'react';
 import {useAdmin} from '../../context/AdminContext';
 import {SupportConversation} from '../../types/support';
 import {CHANNEL_META} from './ConversationListPanel';
-import {Send,ArrowLeft,CheckCircle2,RotateCcw,Info} from 'lucide-react';
+import {Send,ArrowLeft,CheckCircle2,RotateCcw,Info,Bot,UserCheck,Archive,ArchiveRestore} from 'lucide-react';
 interface Props {conversation:SupportConversation;onBackToList:()=>void;isContextOpen:boolean;onToggleContext:()=>void}
 export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
- const {sendMessageToConversation,resolveConversation,reopenConversation,supportDrafts,setSupportDraft,supportBusy}=useAdmin();
+ const {sendMessageToConversation,resolveConversation,reopenConversation,supportDrafts,setSupportDraft,supportBusy,takeOverConversation,handBackToAI,archiveConversation}=useAdmin();
  const inputText=supportDrafts[conversation.id]||'';
  const streamRef=useRef<HTMLDivElement>(null);
+ const followLatest=useRef(true),previousConversation=useRef('');
  const channelMeta=CHANNEL_META[conversation.channel]||CHANNEL_META.web_guest,ChannelIcon=channelMeta.icon;
- useEffect(()=>{if(streamRef.current)streamRef.current.scrollTop=streamRef.current.scrollHeight},[conversation.id,conversation.messages.length]);
+ useEffect(()=>{const stream=streamRef.current;if(!stream)return;const switched=previousConversation.current!==conversation.id;previousConversation.current=conversation.id;if(switched||followLatest.current){stream.scrollTop=stream.scrollHeight;followLatest.current=true;}},[conversation.id,conversation.messages.length]);
  const send=async()=>{if(!inputText.trim()||conversation.status==='resolved'||supportBusy)return;const draft=inputText;if(await sendMessageToConversation(conversation.id,draft.trim(),'text'))setSupportDraft(conversation.id,'')};
  return <div id="chat-workspace-container" className="flex flex-col h-full min-h-0 overflow-hidden bg-neutral-50 dark:bg-neutral-950">
       {/* 1. Header Toolbar */}
@@ -48,12 +49,52 @@ export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
               </h2>
             </div>
 
-            <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400 mt-0.5"><span>{conversation.status === 'resolved' ? 'Resolved' : 'Pending'}</span><span>·</span><span>{channelMeta.label}</span></div>
+            <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400 mt-0.5"><span>{conversation.status === 'resolved' ? 'Resolved' : conversation.status === 'waiting_human' ? 'Waiting for human' : conversation.status === 'human_mode' ? 'Human handling' : 'AI handling'}</span><span>·</span><span>{channelMeta.label}</span></div>
           </div>
         </div>
 
         {/* Right: State Machine Actions (AI Mode / Human Takeover / Resolve) */}
         <div className="flex items-center gap-2 flex-shrink-0">
+
+{(conversation.status === 'open' || conversation.status === 'waiting_human') && (
+            <div className="flex items-center gap-1.5">
+              <span className="hidden lg:inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                <Bot className="w-3.5 h-3.5" />
+                {conversation.status === 'waiting_human' ? 'Waiting for human' : 'AI Active'}
+              </span>
+
+              <button
+                id="btn-take-over-chat"
+                disabled={supportBusy} onClick={() => takeOverConversation(conversation.id)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-xs"
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                <span>Take Over</span>
+              </button>
+            </div>
+          )}
+
+          {conversation.status === 'human_mode' && (
+            <div className="flex items-center gap-1.5">
+              <span className="hidden lg:inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                <UserCheck className="w-3.5 h-3.5" />
+                {'Human Specialist'}
+              </span>
+
+              <button
+                id="btn-hand-back-ai"
+                disabled={supportBusy} onClick={() => handBackToAI(conversation.id)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700 rounded-lg transition-colors"
+                title="Return conversation to automated AI handling"
+              >
+                <Bot className="w-3.5 h-3.5 text-indigo-500" />
+                <span className="hidden sm:inline">Hand to AI</span>
+              </button>
+            </div>
+          )}
+
+          
+          <button type="button" aria-label={conversation.isArchived?"Restore conversation":"Archive conversation"} title={conversation.isArchived?"Restore conversation":"Archive conversation"} disabled={supportBusy} onClick={()=>archiveConversation(conversation.id,!conversation.isArchived)} className="p-2 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-500 hover:text-indigo-500">{conversation.isArchived?<ArchiveRestore className="w-4 h-4"/>:<Archive className="w-4 h-4"/>}</button>
           {/* Resolve / Reopen Button */}
           {conversation.status !== 'resolved' ? (
             <button
@@ -80,7 +121,7 @@ export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
       </div>
 
 
- <div id="chat-message-stream" ref={streamRef} className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
+ <div id="chat-message-stream" ref={streamRef} onScroll={()=>{const stream=streamRef.current;if(stream)followLatest.current=stream.scrollHeight-stream.scrollTop-stream.clientHeight<80;}} className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
  <div className="flex items-center justify-center my-2"><div className="flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-200/60 dark:bg-neutral-800/60 text-neutral-500 text-[11px]"><ChannelIcon className="w-3 h-3"/><span>Storefront conversation</span></div></div>
  {conversation.messages.filter(msg=>msg.type==='text'||msg.senderRole==='system').map(msg=>{
  const customer=msg.senderRole==='customer';
@@ -91,3 +132,4 @@ export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
  {conversation.status==='resolved'?<p className="text-xs text-neutral-500 dark:text-neutral-400">Conversation resolved. Reopen to reply.</p>:<><div className="flex items-end gap-2 p-2 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700"><textarea aria-label="Reply" rows={2} maxLength={2000} disabled={supportBusy} placeholder="Write a reply…" value={inputText} onChange={e=>setSupportDraft(conversation.id,e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();send()}}} className="flex-1 min-w-0 bg-transparent border-0 resize-none text-xs text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:ring-0 p-1.5 max-h-32"/><button id="btn-send-chat-message" aria-label="Send reply" onClick={send} disabled={!inputText.trim()||supportBusy} className="p-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white transition-colors flex-shrink-0 shadow-xs"><Send className="w-4 h-4"/></button></div><p className="text-[10px] text-neutral-400">Enter to send · Shift + Enter for a new line</p></>}
  </div></div>;
 };
+

@@ -127,7 +127,7 @@ export const AIPersonalityTab: React.FC = () => {
       }
     }));
     setNewKeyword('');
-    addToast({ type: 'success', title: 'Keyword Added', message: 'Added to urgent escalation list.' });
+    addToast({ type: 'success', title: 'Keyword Added', message: 'Added to human assistance suggestions.' });
   };
 
   const handleRemoveKeyword = (kw: string) => {
@@ -440,11 +440,10 @@ export const AIPersonalityTab: React.FC = () => {
           {/* Handoff Message */}
           <div>
             <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5 flex items-center justify-between">
-              <span>🤝 Human Agent Handoff Notice · Not connected ({activeLangTab.toUpperCase()})</span>
+              <span>🤝 Waiting for Human Support Notice ({activeLangTab.toUpperCase()})</span>
             </label>
             <textarea
               rows={2}
-              disabled
               value={personality.fallbackHandoffMessage[activeLangTab]}
               onChange={e => handleHandoffChange(activeLangTab, e.target.value)}
               className="w-full text-xs p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
@@ -453,7 +452,7 @@ export const AIPersonalityTab: React.FC = () => {
         </div>
       </section>
 
-      </fieldset><fieldset disabled className="space-y-6">
+      </fieldset><fieldset className="space-y-6">
       {/* 5. Human Agent Escalation Triggers */}
       <section id="ai-escalation-triggers-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
         <div className="flex items-center gap-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
@@ -488,7 +487,7 @@ export const AIPersonalityTab: React.FC = () => {
               className="mt-0.5 rounded-sm text-indigo-600"
             />
             <label htmlFor="trigger-frustration" className="cursor-pointer">
-              <span className="text-xs font-bold text-neutral-900 dark:text-white block">Auto-detect Customer Frustration & Anger</span>
+              <span className="text-xs font-bold text-neutral-900 dark:text-white block">Customer Says the Issue Is Not Resolved</span>
             </label>
           </div>
 
@@ -512,15 +511,15 @@ export const AIPersonalityTab: React.FC = () => {
               className="mt-0.5 rounded-sm text-indigo-600"
             />
             <label htmlFor="trigger-refund" className="cursor-pointer">
-              <span className="text-xs font-bold text-neutral-900 dark:text-white block">Immediate Escalation on RMA / Refund Disputes</span>
+              <span className="text-xs font-bold text-neutral-900 dark:text-white block">Offer Human Support for Disputes / Paid Order Changes</span>
             </label>
           </div>
 
           <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 flex items-start gap-3">
             <input
               type="checkbox"
-              id="trigger-vip"
-              checked={personality.humanHandoffTriggers.onVipCustomer}
+              id="trigger-explicit"
+              checked={personality.humanHandoffTriggers.onExplicitRequest}
               onChange={e => {
                 updateAIAutoReplyConfig(prev => ({
                   ...prev,
@@ -528,15 +527,15 @@ export const AIPersonalityTab: React.FC = () => {
                     ...prev.personality,
                     humanHandoffTriggers: {
                       ...prev.personality.humanHandoffTriggers,
-                      onVipCustomer: e.target.checked
+                      onExplicitRequest: e.target.checked
                     }
                   }
                 }));
               }}
               className="mt-0.5 rounded-sm text-indigo-600"
             />
-            <label htmlFor="trigger-vip" className="cursor-pointer">
-              <span className="text-xs font-bold text-neutral-900 dark:text-white block">VIP Tier White-Glove Direct Routing</span>
+            <label htmlFor="trigger-explicit" className="cursor-pointer">
+              <span className="text-xs font-bold text-neutral-900 dark:text-white block">Offer Confirmation When Customer Requests a Human</span>
             </label>
           </div>
 
@@ -546,14 +545,20 @@ export const AIPersonalityTab: React.FC = () => {
                 <span>Consecutive Failure Threshold</span>
                 <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">{personality.humanHandoffTriggers.consecutiveFailureCount} failed turns</span>
               </div>
+              <input type="range" aria-label="Consecutive failure threshold" min={0} max={5} value={personality.humanHandoffTriggers.consecutiveFailureCount} onChange={e => updateAIAutoReplyConfig(prev => ({...prev,personality:{...prev.personality,humanHandoffTriggers:{...prev.personality.humanHandoffTriggers,consecutiveFailureCount:Number(e.target.value)}}}))} className="w-full accent-indigo-600" />
+              <span className="text-xs text-neutral-500">0 disables this trigger.</span>
             </div>
+          </div>
+          <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 flex items-start gap-3">
+            <input type="checkbox" id="trigger-unavailable" checked={personality.humanHandoffTriggers.onServiceUnavailable} onChange={e=>updateAIAutoReplyConfig(prev=>({...prev,personality:{...prev.personality,humanHandoffTriggers:{...prev.personality.humanHandoffTriggers,onServiceUnavailable:e.target.checked}}}))} className="mt-0.5 rounded-sm text-indigo-600" />
+            <label htmlFor="trigger-unavailable" className="cursor-pointer"><span className="text-xs font-bold text-neutral-900 dark:text-white block">Offer Human Support When AI Is Unavailable</span></label>
           </div>
         </div>
 
         {/* Urgent Keywords List */}
         <div className="mt-5 pt-4 border-t border-neutral-100 dark:border-neutral-800">
           <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-            Urgent Trigger Keywords (Triggers Instant Human Page)
+            Additional Keywords (Offer Human Support)
           </label>
           <div className="flex flex-wrap items-center gap-2 mb-3">
             {personality.humanHandoffTriggers.urgentKeywords.map(kw => (

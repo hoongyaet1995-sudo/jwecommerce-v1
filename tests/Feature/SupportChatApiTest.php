@@ -43,7 +43,7 @@ class SupportChatApiTest extends TestCase
         });
         Schema::create('customers', function (Blueprint $t) {
             $t->id();
-            $t->foreignId('user_id')->nullable();
+            $t->foreignId('user_id')->nullable();$t->string('email')->nullable()->unique();$t->string('first_name')->nullable();$t->string('last_name')->nullable();$t->string('status')->nullable();$t->json('tags')->nullable();$t->text('notes')->nullable();
             $t->string('phone')->nullable();
             $t->timestamps();
         });
@@ -55,8 +55,180 @@ class SupportChatApiTest extends TestCase
         });
         (require database_path('migrations/2026_10_02_160000_create_support_chat_tables.php'))->up();
         (require database_path('migrations/2026_10_03_100000_add_support_message_actions.php'))->up();
+        (require database_path('migrations/2026_10_03_180000_create_notifications_table.php'))->up();
     }
 
+    public function test_resolved_customer_can_explicitly_reopen_or_start_new_without_overwriting_history(): void
+    {
+        $staff=User::create(['name'=>'Staff','email'=>'resolved@example.test','password'=>bcrypt('test'),'is_admin'=>true]);
+        $id=$this->postJson('/support/chat/messages',['content'=>'Help','client_message_id'=>(string)Str::uuid()])->assertOk()->json('conversation.id');
+        SupportConversation::findOrFail($id)->update(['status'=>'resolved']);
+        $this->postJson('/support/chat/resolved',['action'=>'reopen'])->assertOk()->assertJsonPath('conversation.status','waiting_human');
+        $this->postJson('/support/chat/resolved',['action'=>'reopen'])->assertOk();
+        $this->assertSame(1,$staff->notifications()->count());
+        SupportConversation::findOrFail($id)->update(['status'=>'resolved']);
+        $this->postJson('/support/chat/resolved',['action'=>'new'])->assertOk()->assertJsonPath('conversation',null);
+        $new=$this->postJson('/support/chat/messages',['content'=>'New question','client_message_id'=>(string)Str::uuid()])->assertOk()->json('conversation.id');
+        $this->assertNotSame($id,$new);
+        $this->assertSame('resolved',SupportConversation::findOrFail($id)->status);
+        $this->assertSame('Help',SupportConversation::findOrFail($id)->messages()->first()->content);
+    }
+
+    public function test_guest_contact_gate_creates_contact_without_login_or_existing_email_overwrite(): void
+    {
+        $id=$this->postJson('/support/chat/messages',$this->payload('Can I talk to human?'))->assertOk()->json('conversation.id');
+        SupportConversation::findOrFail($id)->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'ai','content'=>'Ask support','actions'=>[['type'=>'request_human','reason'=>'explicit_request']]]);
+        $payload=$this->payload('Please connect me.');$payload['request_human']=true;
+        $this->postJson('/support/chat/messages',$payload)->assertUnprocessable();
+        $payload['contact']=['name'=>'Test Contact','email'=>'contact@example.test','phone'=>'123456'];
+        $this->postJson('/support/chat/messages',$payload)->assertOk()->assertJsonPath('conversation.status','waiting_human');
+        $contact=\App\Models\Customer::where('email','contact@example.test')->firstOrFail();
+        $this->assertNull($contact->user_id);
+        $this->assertSame(['Storefront','Support Chat'],$contact->tags);
+        $this->assertNull(SupportConversation::findOrFail($id)->customer_user_id);
+        $this->assertSame('Test Contact',app(SupportChatService::class)->adminView(SupportConversation::findOrFail($id))['customer']['name']);
+        $this->assertGuest('customer');
+    }
+
+    public function test_staff_archive_is_reversible_and_new_customer_message_restores_queue(): void
+    {
+        $id=$this->postJson('/support/chat/messages',$this->payload('Hello'))->assertOk()->json('conversation.id');
+        $staff=User::create(['name'=>'Archive Staff','email'=>'archive@example.test','password'=>bcrypt('test'),'is_admin'=>true]);
+        $this->actingAs($staff,'web')->patchJson('/admin/api/support/conversations/'.$id.'/archive',['archived'=>true])->assertOk()->assertJsonPath('conversation.isArchived',true)->assertJsonPath('conversation.status','open');
+        $this->patchJson('/admin/api/support/conversations/'.$id.'/archive',['archived'=>false])->assertOk()->assertJsonPath('conversation.isArchived',false);
+        $this->patchJson('/admin/api/support/conversations/'.$id.'/archive',['archived'=>true])->assertOk();
+        $this->postJson('/support/chat/messages',$this->payload('Another question'))->assertOk();
+        $this->assertFalse(app(SupportChatService::class)->adminView(SupportConversation::findOrFail($id))['isArchived']);
+        $this->assertSame('Hello',SupportConversation::findOrFail($id)->messages()->first()->content);
+    }
+
+    public function test_disabling_explicit_request_keeps_typed_request_open_but_authorized_button_still_works(): void
+    {
+        $personality=app(\App\Services\SupportFaqService::class)->defaultPersonality();
+        $personality['humanHandoffTriggers']['onExplicitRequest']=false;
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'personality'=>$personality,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
+        $this->postJson('/support/chat/messages',$this->payload('I want a human agent'))->assertJsonPath('conversation.status','open');
+        $this->postJson('/support/chat/messages',$this->payload('another unknown'))->assertJsonPath('conversation.status','open');
+        $p=$this->payload('I would like to talk to a human agent.');$p['request_human']=true;$p['contact']=['name'=>'Support Guest','email'=>'support-guest@example.test'];
+        $this->postJson('/support/chat/messages',$p)->assertJsonPath('conversation.status','waiting_human');
+    }
+
+    public function test_saved_threshold_and_disabled_triggers_control_actual_replies(): void
+    {
+        $personality=app(\App\Services\SupportFaqService::class)->defaultPersonality();
+        $personality['humanHandoffTriggers']['consecutiveFailureCount']=3;
+        $personality['humanHandoffTriggers']['onFrustrationDetected']=false;
+        $personality['humanHandoffTriggers']['onRefundOrDispute']=false;
+        $personality['humanHandoffTriggers']['onServiceUnavailable']=false;
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'personality'=>$personality,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
+        foreach (['unknown one','you misunderstood','refund dispute'] as $index=>$text) {
+            $this->postJson('/support/chat/messages',$this->payload($text))->assertOk();
+            $types=array_column(SupportConversation::first()->messages()->latest('id')->first()->actions,'type');
+            $this->assertSame($index===2,in_array('request_human',$types));
+        }
+    }
+
+    public function test_semantic_human_request_is_classified_in_existing_planner_without_extra_call(): void
+    {
+        $this->app->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService());
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($purpose,$prompt,$limit)=>$limit===250&&str_contains($prompt,'explicit_request'))->andReturn('{"tools":[],"escalation":"explicit_request"}');
+        $this->postJson('/support/chat/messages',$this->payload('Could somebody from your team personally help me?'))->assertOk()->assertJsonPath('conversation.status','open')->assertJsonCount(2,'conversation.messages');
+        $this->assertSame('explicit_request', SupportConversation::first()->messages()->latest('id')->first()->actions[0]['reason']);
+    }
+
+    public function test_contextual_escalation_requires_two_unanswered_turns_and_resets_after_answer(): void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[['id'=>'shipping','question'=>'Shipping?','answer'=>'RM8','isActive'=>true,'keywords'=>[]]]]]]);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->andReturn('{"answer":"","faq_ids":[]}');
+        $this->postJson('/support/chat/messages',$this->payload('Unknown one'))->assertOk();
+        $this->assertSame([['type'=>'unanswered']], SupportConversation::first()->messages()->latest('id')->first()->actions);
+        $this->postJson('/support/chat/messages',$this->payload('Unknown two'))->assertOk();
+        $this->assertContains('request_human', array_column(SupportConversation::first()->messages()->latest('id')->first()->actions,'type'));
+        $this->postJson('/support/chat/messages',$this->payload('Shipping?'))->assertOk();
+        $this->assertSame([], SupportConversation::first()->messages()->latest('id')->first()->actions);
+        $this->postJson('/support/chat/messages',$this->payload('Unknown three'))->assertOk();
+        $this->assertSame([['type'=>'unanswered']], SupportConversation::first()->messages()->latest('id')->first()->actions);
+    }
+
+    public function test_internal_outcome_is_hidden_and_handoff_action_is_whitelisted(): void
+    {
+        $resolver = new \App\Services\Support\SupportActionResolver();
+        $this->assertSame(['content'=>'Reply','actions'=>[['type'=>'request_human']]], $resolver->resolve([
+            ['type'=>'unanswered'], ['type'=>'request_human','reason'=>'unanswered_twice'],
+        ], 'Reply'));
+        $this->assertSame([], $resolver->resolve([['type'=>'request_human','reason'=>'model_says_so']], 'Reply')['actions']);
+        $policy = new \App\Services\Support\SupportEscalationPolicy();
+        $this->assertFalse($policy->requested('Is this safe for human use?'));
+        $this->assertTrue($policy->requested('我想转人工客服'));
+    }
+
+    public function test_dissatisfaction_and_service_failure_offer_human_but_do_not_queue_automatically(): void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[['id'=>'shipping','question'=>'Shipping?','answer'=>'RM8','isActive'=>true,'keywords'=>[]]]]]]);
+        $this->postJson('/support/chat/messages',$this->payload('Shipping?'))->assertOk();
+        $this->postJson('/support/chat/messages',$this->payload('you misunderstood'))->assertJsonPath('conversation.status','open');
+        $this->assertSame('unresolved', SupportConversation::first()->messages()->latest('id')->first()->actions[0]['reason']);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andThrow(new \RuntimeException('Unavailable'));
+        $this->postJson('/support/chat/messages',$this->payload('Explain postage'))->assertOk();
+        $this->assertSame('service_unavailable', SupportConversation::first()->messages()->latest('id')->first()->actions[0]['reason']);
+    }
+
+    public function test_human_request_takeover_and_return_to_ai(): void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[['id'=>'shipping','question'=>'Shipping?','answer'=>'RM8','isActive'=>true,'keywords'=>[]]]]]]);
+        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
+        $id=$this->postJson('/support/chat/messages',$this->payload('I want a human agent'))->assertOk()->assertJsonPath('conversation.status','open')->assertJsonCount(2,'conversation.messages')->json('conversation.id');
+        $this->assertSame('explicit_request',SupportConversation::first()->messages()->latest('id')->first()->actions[0]['reason']);
+        $confirm=$this->payload('Please connect me.');$confirm['request_human']=true;$confirm['contact']=['name'=>'Support Guest','email'=>'support-guest@example.test'];
+        $this->postJson('/support/chat/messages',$confirm)->assertJsonPath('conversation.status','waiting_human');
+        $this->postJson('/support/chat/messages',$this->payload('Shipping?'))->assertJsonPath('conversation.status','waiting_human');
+        $this->actingAs(User::factory()->create(['is_admin'=>true]),'web');
+        $this->patchJson("/admin/api/support/conversations/$id/status",['status'=>'human_mode'])->assertOk()->assertJsonPath('conversation.status','human_mode');
+        $this->postJson("/admin/api/support/conversations/$id/messages",$this->payload('Staff here'))->assertOk();
+        $this->postJson('/support/chat/messages',$this->payload('Shipping?'))->assertJsonPath('conversation.status','human_mode');
+        $this->patchJson("/admin/api/support/conversations/$id/status",['status'=>'open'])->assertOk();
+        $this->postJson('/support/chat/messages',$this->payload('Shipping?'))->assertOk();
+        $this->assertSame('RM8',SupportConversation::first()->messages()->latest('id')->first()->content);
+        $this->assertStringNotContainsString('[Control]',json_encode($this->getJson('/support/chat')->json()));
+    }
+
+    public function test_confirmed_handoff_creates_private_per_staff_alert_once_and_marks_owned_alert_read(): void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $first=User::factory()->create(['is_admin'=>true]);$second=User::factory()->create(['is_admin'=>true]);$customer=User::factory()->create(['is_admin'=>false]);
+        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
+        $this->postJson('/support/chat/messages',$this->payload('I want a human agent'))->assertJsonPath('conversation.status','open');
+        $this->assertSame(0,DB::table('notifications')->count());
+        $p=$this->payload('Please connect me.');$p['request_human']=true;$p['contact']=['name'=>'Support Guest','email'=>'support-guest@example.test'];
+        $id=$this->postJson('/support/chat/messages',$p)->assertJsonPath('conversation.status','waiting_human')->json('conversation.id');
+        $this->postJson('/support/chat/messages',$p)->assertOk();
+        $this->assertSame(2,DB::table('notifications')->count());$this->assertSame(0,$customer->notifications()->count());
+        $this->actingAs($first,'web');
+        $alert=$this->getJson('/admin/api/support/alerts')->assertOk()->assertJsonPath('unreadCount',1)->assertJsonPath('notifications.0.conversationId',$id)->json('notifications.0.id');
+        $foreign=$second->notifications()->first()->id;
+        $this->patchJson('/admin/api/support/alerts/'.$foreign.'/read')->assertNotFound();
+        $this->patchJson('/admin/api/support/alerts/'.$alert.'/read')->assertOk()->assertJsonPath('unreadCount',0);
+        $this->assertNull($second->notifications()->first()->read_at);
+        $this->actingAs($customer,'web');$this->getJson('/admin/api/support/alerts')->assertUnauthorized();
+    }
+
+    public function test_takeover_then_handback_blocks_inflight_ai_reply(): void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[['id'=>'shipping','question'=>'Shipping?','answer'=>'RM8','isActive'=>true,'keywords'=>[]]]]]]);
+        $staff=User::factory()->create(['is_admin'=>true]);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturnUsing(function()use($staff){
+            $c=SupportConversation::firstOrFail();
+            $c->update(['status'=>'human_mode']);
+            $c->notes()->create(['staff_user_id'=>$staff->id,'content'=>'[Control] takeover']);
+            $c->update(['status'=>'open']);
+            $c->notes()->create(['staff_user_id'=>$staff->id,'content'=>'[Control] handback']);
+            return '{"answer":"RM8","faq_ids":["shipping"]}';
+        });
+        $this->postJson('/support/chat/messages',$this->payload('What is postage?'))->assertOk()->assertJsonCount(1,'conversation.messages');
+    }
     public function test_private_order_reply_never_reaches_model():void
     {
         $this->app->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService());
@@ -303,3 +475,5 @@ class SupportChatApiTest extends TestCase
         $this->postJson('/support/chat/messages', $this->payload(), ['X-CSRF-TOKEN' => 'support-csrf-test'])->assertOk();
     }
 }
+
+

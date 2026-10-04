@@ -10,6 +10,20 @@ use Tests\TestCase;
 
 class SupportFaqTest extends TestCase
 {
+    public function test_escalation_settings_are_persisted_validated_and_private(): void
+    {
+        $this->owner(); $p=$this->payload();
+        $p['personality']=app(\App\Services\SupportFaqService::class)->defaultPersonality();
+        $p['personality']['humanHandoffTriggers']['consecutiveFailureCount']=3;
+        $p['personality']['humanHandoffTriggers']['onFrustrationDetected']=false;
+        $p['personality']['fallbackHandoffMessage']['en']='Please wait for our team.';
+        $this->putJson('/admin/api/support/faq',$p)->assertOk()->assertJsonPath('personality.humanHandoffTriggers.consecutiveFailureCount',3);
+        $this->getJson('/admin/api/support/faq')->assertJsonPath('personality.humanHandoffTriggers.onFrustrationDetected',false)->assertJsonPath('personality.fallbackHandoffMessage.en','Please wait for our team.');
+        $this->getJson('/support/faq')->assertJsonMissingPath('personality');
+        $p['version']=1;$p['personality']['humanHandoffTriggers']['consecutiveFailureCount']=6;
+        $this->putJson('/admin/api/support/faq',$p)->assertUnprocessable();
+    }
+
     public function test_order_fields_persist_privately_and_unsafe_verification_is_rejected():void
     {
         $this->owner();$p=$this->payload();$p['orderLookup']=['isEnabled'=>true,'allowedFields'=>['orderStatus'=>true,'paymentStatus'=>false]];

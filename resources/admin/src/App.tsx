@@ -30,6 +30,7 @@ import { CatalogHub } from './components/catalog/CatalogHub';
 import { ProductReviewsAdmin } from './components/catalog/ProductReviewsAdmin';
 import { CommerceHub } from './components/orders/CommerceHub';
 import { ShippingDashboard } from './components/shipping/ShippingDashboard';
+import { SupportOverviewHub } from './components/support/SupportOverviewHub';
 import { CustomerSupportHub } from './components/support/CustomerSupportHub';
 import { ReportsHub } from './components/reports/ReportsHub';
 import { AIAutoReplyStudioHub } from './components/ai-auto-reply/AIAutoReplyStudioHub';
@@ -63,6 +64,7 @@ const AdminLayoutContent: React.FC = () => {
         return <DashboardOverview />;
       case 'promotions':
         return <PromotionsHub />;
+      case 'support-overview': return <SupportOverviewHub />;
       case 'support':
         return <CustomerSupportHub />;
       case 'ai-auto-reply':
@@ -158,3 +160,4 @@ export default function App() {
     </AdminProvider>
   );
 }
+

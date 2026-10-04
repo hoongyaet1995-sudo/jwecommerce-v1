@@ -15,6 +15,8 @@ class SupportFaqService
         $settings['discountKnowledge'] ??= ['isEnabled'=>false,'activeIds'=>[]];
         $settings['greetingMessage'] ??= $this->defaultGreeting();
         $settings['personality'] = array_replace($this->defaultPersonality(), $settings['personality'] ?? []);
+        $settings['personality']['humanHandoffTriggers'] = array_replace($this->defaultPersonality()['humanHandoffTriggers'], $settings['personality']['humanHandoffTriggers'] ?? []);
+        unset($settings['personality']['humanHandoffTriggers']['onVipCustomer']);
 
         return $settings;
     }
@@ -41,7 +43,19 @@ class SupportFaqService
             'greetingMessage.en' => 'required_with:greetingMessage|string|max:2000',
             'greetingMessage.ms' => 'required_with:greetingMessage|string|max:2000',
             'greetingMessage.zh' => 'required_with:greetingMessage|string|max:2000',
-            'personality' => 'sometimes|array:creativityTemperature,toneOfVoice,customToneInstructions,maxOutputTokens,brandMissionPrompt,unknownAnswerMessage,serviceUnavailableMessage',
+            'personality' => 'sometimes|array:creativityTemperature,toneOfVoice,customToneInstructions,maxOutputTokens,brandMissionPrompt,unknownAnswerMessage,serviceUnavailableMessage,humanHandoffTriggers,fallbackHandoffMessage',
+            'personality.humanHandoffTriggers' => 'sometimes|array:onExplicitRequest,onFrustrationDetected,onRefundOrDispute,onServiceUnavailable,consecutiveFailureCount,urgentKeywords',
+            'personality.humanHandoffTriggers.onExplicitRequest' => 'required_with:personality.humanHandoffTriggers|boolean',
+            'personality.humanHandoffTriggers.onFrustrationDetected' => 'required_with:personality.humanHandoffTriggers|boolean',
+            'personality.humanHandoffTriggers.onRefundOrDispute' => 'required_with:personality.humanHandoffTriggers|boolean',
+            'personality.humanHandoffTriggers.onServiceUnavailable' => 'required_with:personality.humanHandoffTriggers|boolean',
+            'personality.humanHandoffTriggers.consecutiveFailureCount' => 'required_with:personality.humanHandoffTriggers|integer|min:0|max:5',
+            'personality.humanHandoffTriggers.urgentKeywords' => 'present_with:personality.humanHandoffTriggers|array|max:30',
+            'personality.humanHandoffTriggers.urgentKeywords.*' => 'string|max:80|distinct',
+            'personality.fallbackHandoffMessage' => 'sometimes|array:en,ms,zh',
+            'personality.fallbackHandoffMessage.en' => 'required_with:personality.fallbackHandoffMessage|string|max:1000',
+            'personality.fallbackHandoffMessage.ms' => 'required_with:personality.fallbackHandoffMessage|string|max:1000',
+            'personality.fallbackHandoffMessage.zh' => 'required_with:personality.fallbackHandoffMessage|string|max:1000',
             'personality.toneOfVoice' => 'required_with:personality|in:luxury_professional,friendly_helpful,concise_efficient,energetic_streetwear,formal_corporate,custom',
             'personality.creativityTemperature' => 'sometimes|numeric|min:0|max:1',
             'personality.brandMissionPrompt' => 'nullable|string|max:4000',
@@ -101,6 +115,8 @@ class SupportFaqService
     public function defaultPersonality(): array
     {
         return [
+            'humanHandoffTriggers'=>['onExplicitRequest'=>true,'onFrustrationDetected'=>true,'onRefundOrDispute'=>true,'onServiceUnavailable'=>true,'consecutiveFailureCount'=>2,'urgentKeywords'=>[]],
+            'fallbackHandoffMessage'=>['en'=>'Your request has been submitted. Please wait for our support team to take over.','ms'=>'Permintaan anda telah dihantar. Sila tunggu pasukan khidmat pelanggan.','zh'=>'已提交人工请求，请等待客服接手。'],
             'toneOfVoice' => 'friendly_helpful', 'customToneInstructions' => '', 'maxOutputTokens' => 350, 'brandMissionPrompt' => '',
             'unknownAnswerMessage' => ['en' => "I couldn't find a confirmed answer in our FAQ. Please leave your question here for our support team.", 'ms' => 'Jawapan yang disahkan belum tersedia dalam FAQ kami. Sila tinggalkan soalan untuk pasukan sokongan.', 'zh' => '暂时无法从 FAQ 确认答案。请留下问题，我们的客服团队会协助你。'],
             'serviceUnavailableMessage' => ['en' => 'Automatic assistance is temporarily unavailable. Your message has been saved for our support team.', 'ms' => 'Bantuan automatik tidak tersedia buat sementara. Mesej anda telah disimpan untuk pasukan sokongan.', 'zh' => '自动客服暂时无法使用。你的消息已保存，客服团队会协助你。'],
