@@ -52,7 +52,7 @@ class FacebookManagedAccountTest extends TestCase
         $this->owner();
         $response=$this->get('/admin/social/facebook/authorize')->assertRedirect();
         parse_str(parse_url($response->headers->get('Location'),PHP_URL_QUERY),$query);
-        $this->assertEqualsCanonicalizing(['pages_show_list','business_management'],explode(',',$query['scope']));
+        $this->assertEqualsCanonicalizing(['pages_show_list','business_management','pages_read_engagement'],explode(',',$query['scope']));
         $this->assertSame('rerequest',$query['auth_type']??null);
     }
 
@@ -150,4 +150,42 @@ class FacebookManagedAccountTest extends TestCase
         $this->get('/admin/social/facebook/callback?state='.$state.'&code=test')->assertRedirect('/admin/social/facebook?facebook=permission_required');
         $this->assertNull(session('facebook_pending'));
     }
+    public function test_permission_failure_reports_safe_actionable_reason_and_check_time(): void
+    {
+        $this->owner();$this->provider();$this->completeOAuth();
+        $this->postJson('/admin/api/social/facebook/select',['page_id'=>'page-1']);
+        Http::swap(new \Illuminate\Http\Client\Factory());Http::preventStrayRequests();
+        Http::fake(['graph.facebook.com/*'=>Http::response(['error'=>['code'=>100,'message'=>"This endpoint requires the 'pages_read_engagement' permission. private-token"]],400)]);
+        $r=$this->getJson('/admin/api/social/facebook')->assertOk()->assertJsonPath('accounts.0.state','permission_required')
+            ->assertJsonPath('accounts.0.checkReason','Page read permission is missing. Reconnect and grant Page access.')->assertDontSee('private-token');
+        $this->assertNotNull($r->json('accounts.0.checkedAt'));
+    }
+    public function test_disconnect_clears_token_delete_requires_disconnect_and_owner_scope(): void
+    {
+        $this->owner();$this->provider();$this->completeOAuth();
+        $this->postJson('/admin/api/social/facebook/select',['page_id'=>'page-1']);$id=DB::table('managed_social_accounts')->value('id');
+        $this->deleteJson('/admin/api/social/facebook/'.$id)->assertUnprocessable();
+        config(['services.facebook.merchant_key'=>'other-shop']);
+        $this->postJson('/admin/api/social/facebook/'.$id.'/disconnect')->assertNotFound();
+        config(['services.facebook.merchant_key'=>'shop-one']);
+        $this->actingAs(User::factory()->create(['is_admin'=>true,'is_super_admin'=>false]));
+        $this->postJson('/admin/api/social/facebook/'.$id.'/disconnect')->assertForbidden();
+        $this->owner();
+        $this->postJson('/admin/api/social/facebook/'.$id.'/disconnect')->assertOk()->assertJsonPath('accounts.0.state','disconnected');
+        $this->assertSame('',\App\Models\ManagedSocialAccount::findOrFail($id)->access_token);
+        Http::swap(new \Illuminate\Http\Client\Factory());Http::preventStrayRequests();
+        $this->getJson('/admin/api/social/facebook')->assertOk()->assertJsonPath('accounts.0.state','disconnected');Http::assertNothingSent();
+        $this->deleteJson('/admin/api/social/facebook/'.$id)->assertOk()->assertJsonCount(0,'accounts');
+    }
+
+    public function test_inflight_check_cannot_reactivate_a_disconnected_account(): void
+    {
+        $this->owner();$this->provider();$this->completeOAuth();$this->postJson('/admin/api/social/facebook/select',['page_id'=>'page-1']);
+        $account=\App\Models\ManagedSocialAccount::firstOrFail();
+        Http::swap(new \Illuminate\Http\Client\Factory());Http::preventStrayRequests();
+        Http::fake(function()use($account){$fresh=$account->fresh();$fresh->update(['state'=>'disconnected','access_token'=>'']);return Http::response(['id'=>'page-1','name'=>'Real Page']);});
+        $result=app(\App\Services\Social\FacebookAccountService::class)->check($account);
+        $this->assertSame('disconnected',$result['state']);$this->assertSame('',$account->fresh()->access_token);
+    }
+
 }

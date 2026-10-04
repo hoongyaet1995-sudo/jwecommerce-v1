@@ -60,6 +60,28 @@ class FacebookAccountController extends Controller
             'pages'=>array_map(fn($p)=>['id'=>$p['id'],'name'=>$p['name']],$pending['pages']??[]),
             'accounts'=>$accounts->map(fn($a)=>$this->facebook->check($a))])->header('Cache-Control','no-store');
     }
+    private function ownedAccount(string $id): ManagedSocialAccount
+    {
+        return ManagedSocialAccount::where('merchant_key',$this->facebook->merchant())->where('platform','facebook')->findOrFail($id);
+    }
+    public function check(Request $request,string $id)
+    {
+        $account=$this->ownedAccount($id);
+        return response()->json(['account'=>$this->facebook->check($account)])->header('Cache-Control','no-store');
+    }
+    public function disconnect(Request $request,string $id)
+    {
+        $this->requireManager($request);$account=$this->ownedAccount($id);
+        $account->update(['access_token'=>'','state'=>'disconnected','checked_at'=>now()]);
+        $request->session()->forget('facebook_pending');
+        return $this->index($request);
+    }
+    public function destroy(Request $request,string $id)
+    {
+        $this->requireManager($request);$account=$this->ownedAccount($id);
+        abort_unless($account->state==='disconnected',422,'Disconnect this Page before deleting its saved connection.');
+        $account->delete();return $this->index($request);
+    }
     public function select(Request $request)
     {
         $this->requireManager($request);$data=$request->validate(['page_id'=>['required','string','max:100']]);

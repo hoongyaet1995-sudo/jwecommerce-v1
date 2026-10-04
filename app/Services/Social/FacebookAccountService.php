@@ -18,7 +18,7 @@ class FacebookAccountService
     {
         return 'https://www.facebook.com/'.$this->version().'/dialog/oauth?'.http_build_query([
             'client_id'=>config('services.facebook.client_id'),'redirect_uri'=>config('services.facebook.redirect'),
-            'state'=>$state,'response_type'=>'code','scope'=>'pages_show_list,business_management','return_scopes'=>'true',
+            'state'=>$state,'response_type'=>'code','scope'=>'pages_show_list,business_management,pages_read_engagement','return_scopes'=>'true',
             'auth_type'=>'rerequest',
         ]);
     }
@@ -31,11 +31,13 @@ class FacebookAccountService
             $response=$client->get('https://graph.facebook.com/'.$this->version().'/'.$path,$query);
             $body=$response->json();
             if(!$response->successful() || !is_array($body) || isset($body['error'])){
-                throw new RuntimeException(((int)($body['error']['code']??0)===190)?'authorization_expired':'provider_unavailable');
+                $code=(int)($body['error']['code']??0);
+                $reason=$code===190?'authorization_expired':((in_array($code,[10,200],true)||($code===100&&str_contains((string)($body['error']['message']??''),'pages_read_engagement')))?'permission_required':'provider_unavailable');
+                throw new RuntimeException($reason);
             }
             return $body;
         } catch (RuntimeException $e) {
-            if(in_array($e->getMessage(),['authorization_expired','provider_unavailable'],true))throw $e;
+            if(in_array($e->getMessage(),['authorization_expired','permission_required','provider_unavailable'],true))throw $e;
             throw new RuntimeException('provider_unavailable');
         } catch (\Throwable $e) {throw new RuntimeException('provider_unavailable');}
     }
@@ -73,17 +75,27 @@ class FacebookAccountService
     }
     public function check(ManagedSocialAccount $account): array
     {
-        $state='unknown';
+        if($account->state==='disconnected')return $this->summary($account,'This Page is disconnected from this store.');
+        $state='unknown';$reason=null;
         try {
             if($account->app_id!==(string)config('services.facebook.client_id'))throw new RuntimeException('authorization_expired');
             $body=$this->graph($account->provider_account_id,['fields'=>'id,name'],$account->access_token);
             if(($body['id']??null)!==$account->provider_account_id)throw new RuntimeException('authorization_expired');
             $state='connected';$account->name=mb_substr((string)($body['name']??$account->name),0,255);$account->checked_at=now();
         } catch(\Illuminate\Contracts\Encryption\DecryptException $e){$state='authorization_expired';}
-        catch(RuntimeException $e){$state=$e->getMessage()==='authorization_expired'?'authorization_expired':'unknown';}
-        $account->state=$state;$account->save();
+        catch(RuntimeException $e){$state=in_array($e->getMessage(),['authorization_expired','permission_required'],true)?$e->getMessage():'unknown';}
+        $reason=match($state){'permission_required'=>'Page read permission is missing. Reconnect and grant Page access.','authorization_expired'=>'Authorization is no longer valid. Reconnect this Page.','unknown'=>'Meta could not verify this Page. Try again later.',default=>null};
+        $updated=ManagedSocialAccount::whereKey($account->id)->where('state','!=','disconnected')
+            ->where('access_token',$account->getRawOriginal('access_token'))
+            ->update(['state'=>$state,'name'=>$account->name,'checked_at'=>now(),'updated_at'=>now()]);
+        if(!$updated){$fresh=ManagedSocialAccount::find($account->id);return $fresh?$this->summary($fresh,$fresh->state==='disconnected'?'This Page is disconnected from this store.':null):$this->summary($account,'Connection changed during verification. Refresh the list.');}
+        $account->state=$state;$account->checked_at=now();
+        return $this->summary($account,$reason);
+    }
+    public function summary(ManagedSocialAccount $account,?string $reason=null): array
+    {
         return ['id'=>(string)$account->id,'pageId'=>$account->provider_account_id,'name'=>$account->name,
-            'state'=>$state,'checkedAt'=>$account->checked_at?->toIso8601String(),'permissions'=>$account->permissions,
+            'state'=>$account->state,'checkReason'=>$reason,'checkedAt'=>$account->checked_at?->toIso8601String(),'permissions'=>$account->permissions,
             'messagingReady'=>false];
     }
 }

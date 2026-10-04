@@ -156,6 +156,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/social/facebook/callback', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'callback'])->middleware('throttle:20,1');
     Route::get('/api/social/facebook', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'index'])->middleware('throttle:30,1');
     Route::post('/api/social/facebook/select', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'select'])->middleware('throttle:10,1');
+    Route::post('/api/social/facebook/{id}/check', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'check'])->middleware('throttle:30,1');
+    Route::post('/api/social/facebook/{id}/disconnect', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'disconnect'])->middleware('throttle:10,1');
+    Route::delete('/api/social/facebook/{id}', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'destroy'])->middleware('throttle:10,1');
     Route::get('/api/support/alerts', [\App\Http\Controllers\Admin\SupportAlertController::class, 'index']);
     Route::patch('/api/support/alerts/{id}/read', [\App\Http\Controllers\Admin\SupportAlertController::class, 'read']);
     Route::get('/api/support/faq', [\App\Http\Controllers\SupportFaqController::class, 'index']);
