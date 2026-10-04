@@ -1,5 +1,9 @@
 # Retained Meta ingress bridge
 
+## Retired for Ecommerce on 2026-10-04
+
+The user approved direct Ecommerce ingress because the old project will be removed. The Meta App Page callback is now `https://ecom.jwaistudio.online/webhooks/facebook/messenger`; `messages` and the existing `feed` field remain subscribed at v25.0. Ecommerce handles Messenger text events only; old feed processing is not migrated. The legacy relay is disabled and this package is retained solely as rollback/history, not an operational dependency. Do not reinstall or re-enable it for normal Ecommerce operation. The other Meta object callbacks are outside this Page callback cutover.
+
 These files are deployment sources, not automatically loaded by Ecommerce. The old application callback remains https://www.jwaistudio.online/api/webhooks/meta-social. Do not change it to Ecommerce while other Meta capabilities use it.
 
 Install the two PHP files at the paths noted in their headers in the old project, after approval. At the beginning of `MetaSocialWebhookController::handle`, before existing normalization, add:
