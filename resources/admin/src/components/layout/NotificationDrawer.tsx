@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import {
   Bell,
+  Globe,
   X,
   CheckCircle2,
   Package,
@@ -41,7 +42,7 @@ export const NotificationDrawer: React.FC = () => {
   if (!isNotificationOpen) return null;
 
   const notifications=supportAlerts.map(n=>({...n,type:'user',action:async()=>{
-    if(await markSupportAlertRead(n.id)) window.location.assign('/admin/support?conversation='+encodeURIComponent(n.conversationId)+'&filter=human');
+    if(await markSupportAlertRead(n.id)) window.location.assign('/admin/support?conversation='+encodeURIComponent(n.conversationId));
   }}));
 
   return (
@@ -77,7 +78,13 @@ export const NotificationDrawer: React.FC = () => {
             {notifications.map((n) => {
               let Icon = Bell;
               let iconBg = 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400';
-              if (n.type === 'order') {
+              if (n.channel === 'facebook') {
+                Icon = MessengerIcon;
+                iconBg = 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400';
+              } else if (n.channel === 'web_guest') {
+                Icon = Globe;
+                iconBg = 'bg-cyan-100 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400';
+              } else if (n.type === 'order') {
                 Icon = ShoppingBag;
                 iconBg = 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400';
               } else if (n.type === 'stock') {
@@ -137,3 +144,7 @@ export const NotificationDrawer: React.FC = () => {
   );
 };
 
+
+function MessengerIcon({className}:{className?:string}) {
+  return <svg className={className} viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Messenger"><path d="M12 2C6.48 2 2 6.14 2 11.25c0 2.91 1.45 5.5 3.72 7.2V22l3.4-1.87c.91.25 1.88.37 2.88.37 5.52 0 10-4.14 10-9.25S17.52 2 12 2Z"/><path d="m5.7 14.2 4.15-4.4 3.15 2.36 5.3-2.96-4.15 4.4L11 11.24l-5.3 2.96Z" fill="white"/></svg>;
+}

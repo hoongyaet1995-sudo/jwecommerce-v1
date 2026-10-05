@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-export interface SupportAlert {id:string;title:string;description:string;conversationId:string;time:string;unread:boolean}
+export interface SupportAlert {id:string;title:string;description:string;conversationId:string;channel?:string|null;time:string;unread:boolean}
 export function useSupportAlerts(){
  const [supportAlerts,setAlerts]=useState<SupportAlert[]>([]),[supportAlertUnread,setUnread]=useState(0),[supportAlertError,setError]=useState('');
  const revision=useRef(0);

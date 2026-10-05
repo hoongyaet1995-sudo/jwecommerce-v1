@@ -56,6 +56,7 @@ class SupportChatApiTest extends TestCase
         (require database_path('migrations/2026_10_02_160000_create_support_chat_tables.php'))->up();
         (require database_path('migrations/2026_10_03_100000_add_support_message_actions.php'))->up();
         (require database_path('migrations/2026_10_03_180000_create_notifications_table.php'))->up();
+        Schema::table('support_conversations',fn(Blueprint $t)=>$t->string('channel')->default('web_guest'));
     }
 
     public function test_resolved_customer_can_explicitly_reopen_or_start_new_without_overwriting_history(): void
@@ -65,7 +66,7 @@ class SupportChatApiTest extends TestCase
         SupportConversation::findOrFail($id)->update(['status'=>'resolved']);
         $this->postJson('/support/chat/resolved',['action'=>'reopen'])->assertOk()->assertJsonPath('conversation.status','waiting_human');
         $this->postJson('/support/chat/resolved',['action'=>'reopen'])->assertOk();
-        $this->assertSame(1,$staff->notifications()->count());
+        $this->assertSame(1,$staff->notifications()->where('type',\App\Notifications\SupportHumanRequested::class)->count());
         SupportConversation::findOrFail($id)->update(['status'=>'resolved']);
         $this->postJson('/support/chat/resolved',['action'=>'new'])->assertOk()->assertJsonPath('conversation',null);
         $new=$this->postJson('/support/chat/messages',['content'=>'New question','client_message_id'=>(string)Str::uuid()])->assertOk()->json('conversation.id');
@@ -201,16 +202,16 @@ class SupportChatApiTest extends TestCase
         $first=User::factory()->create(['is_admin'=>true]);$second=User::factory()->create(['is_admin'=>true]);$customer=User::factory()->create(['is_admin'=>false]);
         $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
         $this->postJson('/support/chat/messages',$this->payload('I want a human agent'))->assertJsonPath('conversation.status','waiting_human');
-        $this->assertSame(2,DB::table('notifications')->count());
+        $this->assertSame(2,DB::table('notifications')->where('type',\App\Notifications\SupportHumanRequested::class)->count());
         $p=$this->payload('Please connect me.');$p['request_human']=true;$p['contact']=['name'=>'Support Guest','email'=>'support-guest@example.test'];
         $id=$this->postJson('/support/chat/messages',$p)->assertJsonPath('conversation.status','waiting_human')->json('conversation.id');
         $this->postJson('/support/chat/messages',$p)->assertOk();
-        $this->assertSame(2,DB::table('notifications')->count());$this->assertSame(0,$customer->notifications()->count());
+        $this->assertSame(2,DB::table('notifications')->where('type',\App\Notifications\SupportHumanRequested::class)->count());$this->assertSame(0,$customer->notifications()->count());
         $this->actingAs($first,'web');
-        $alert=$this->getJson('/admin/api/support/alerts')->assertOk()->assertJsonPath('unreadCount',1)->assertJsonPath('notifications.0.conversationId',$id)->json('notifications.0.id');
+        $alert=$this->getJson('/admin/api/support/alerts')->assertOk()->assertJsonPath('unreadCount',3)->assertJsonPath('notifications.0.conversationId',$id)->json('notifications.0.id');
         $foreign=$second->notifications()->first()->id;
         $this->patchJson('/admin/api/support/alerts/'.$foreign.'/read')->assertNotFound();
-        $this->patchJson('/admin/api/support/alerts/'.$alert.'/read')->assertOk()->assertJsonPath('unreadCount',0);
+        $this->patchJson('/admin/api/support/alerts/'.$alert.'/read')->assertOk()->assertJsonPath('unreadCount',2);
         $this->assertNull($second->notifications()->first()->read_at);
         $this->actingAs($customer,'web');$this->getJson('/admin/api/support/alerts')->assertUnauthorized();
     }
@@ -475,6 +476,19 @@ class SupportChatApiTest extends TestCase
         $this->postJson('/support/chat/messages', $this->payload())->assertStatus(419);
         $this->postJson('/support/chat/messages', $this->payload(), ['X-CSRF-TOKEN' => 'support-csrf-test'])->assertOk();
     }
+    public function test_storefront_new_messages_share_alerts_without_changing_ai_status_or_replaying(): void
+    {
+        $staff=User::factory()->create(['is_admin'=>true]);$customer=User::factory()->create(['is_admin'=>false]);
+        $data=$this->payload('Hello');
+        $id=$this->postJson('/support/chat/messages',$data)->assertOk()->assertJsonPath('conversation.status','open')->json('conversation.id');
+        $this->postJson('/support/chat/messages',$data)->assertOk();
+        $this->assertSame(1,$staff->notifications()->where('type',\App\Notifications\SupportMessageReceived::class)->count());
+        $this->assertSame(0,$customer->notifications()->count());
+        $alert=$staff->notifications()->first();$this->assertSame($id,$alert->data['conversation_id']);
+        $this->assertStringContainsString('Storefront',$alert->data['description']);
+        $this->actingAs($staff)->getJson('/admin/api/support/alerts')->assertOk()->assertJsonPath('unreadCount',1)->assertJsonPath('notifications.0.channel','web_guest');
+    }
+
 }
 
 

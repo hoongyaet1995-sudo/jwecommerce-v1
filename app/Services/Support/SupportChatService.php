@@ -88,7 +88,7 @@ class SupportChatService
                 $locked->notes()->create(['content'=>'[Contact] '.json_encode($contact,JSON_UNESCAPED_UNICODE)]);
                 \App\Models\Customer::firstOrCreate(['email'=>$contact['email']],['first_name'=>$contact['name'],'phone'=>$contact['phone']??null,'status'=>'active','tags'=>['Storefront','Support Chat'],'notes'=>'Support Chat contact; email unverified.']);
             }
-            $locked->messages()->create([
+            $message=$locked->messages()->create([
                 'client_message_id' => $data['client_message_id'], 'sender_role' => $role,
                 'staff_user_id' => $staffId, 'content' => $data['content'],
             ]);
@@ -107,6 +107,7 @@ class SupportChatService
                 }
             }
             $locked->update(['status' => $status, 'last_message_at' => now()]);
+            app(SupportMessageAlertService::class)->received($locked,$message);
 
             return $locked;
         });

@@ -64,6 +64,7 @@ class MessengerInboundService
                 'provider_page_name'=>$account->name,'last_message_at'=>$conversation->last_message_at?->greaterThan($sentAt)?$conversation->last_message_at:$sentAt]);
             DB::table('messenger_inbound_receipts')->insert(['event_key'=>$key,'conversation_id'=>$conversation->id,'page_id'=>$page,'message_id'=>$mid,'created_at'=>now(),'updated_at'=>now()]);
             $account->update(['last_inbound_at'=>now()]);
+            app(\App\Services\Support\SupportMessageAlertService::class)->received($conversation,$message);
             \App\Jobs\ProcessMessengerSupportReply::dispatch($message->id)->onConnection('support')->onQueue('support-ai')->beforeCommit();
             return true;
         },3);

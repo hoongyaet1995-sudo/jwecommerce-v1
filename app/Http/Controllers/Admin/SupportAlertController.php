@@ -10,19 +10,21 @@ class SupportAlertController extends Controller
 {
     public function index(Request $request)
     {
-        $query=$request->user()->notifications()->where('type',SupportHumanRequested::class);
+        $query=$request->user()->notifications()->whereIn('type',[SupportHumanRequested::class,\App\Notifications\SupportMessageReceived::class]);
+        $notifications=(clone $query)->latest()->limit(50)->get();
+        $channels=\App\Models\SupportConversation::whereIn('id',$notifications->map(fn($n)=>$n->data['conversation_id']))->pluck('channel','id');
         return response()->json(['unreadCount'=>(clone $query)->whereNull('read_at')->count(),
-            'notifications'=>$query->latest()->limit(50)->get()->map(fn($n)=>[
+            'notifications'=>$notifications->map(fn($n)=>[
                 'id'=>$n->id,'title'=>$n->data['title'],'description'=>$n->data['description'],
-                'conversationId'=>$n->data['conversation_id'],'time'=>$n->created_at->diffForHumans(),
+                'conversationId'=>$n->data['conversation_id'],'channel'=>$channels[$n->data['conversation_id']]??null,'time'=>$n->created_at->diffForHumans(),
                 'unread'=>$n->read_at===null,
             ])])->header('Cache-Control','no-store');
     }
     public function read(Request $request, string $id)
     {
-        $query=$request->user()->notifications()->where('type',SupportHumanRequested::class)->whereNull('read_at');
+        $query=$request->user()->notifications()->whereIn('type',[SupportHumanRequested::class,\App\Notifications\SupportMessageReceived::class])->whereNull('read_at');
         if ($id!=='all') {
-            abort_unless($request->user()->notifications()->where('type',SupportHumanRequested::class)->whereKey($id)->exists(),404);
+            abort_unless($request->user()->notifications()->whereIn('type',[SupportHumanRequested::class,\App\Notifications\SupportMessageReceived::class])->whereKey($id)->exists(),404);
             $query->whereKey($id);
         }
         $query->update(['read_at'=>now()]);

@@ -110,7 +110,7 @@ class MessengerReplyTest extends TestCase
         $this->assertSame(1,$service->receive($payload));$this->assertSame(0,$service->receive($payload));
         $this->assertSame(1,DB::table('jobs')->count());$this->assertSame('support-ai',DB::table('jobs')->value('queue'));
         DB::beginTransaction();$payload['entry'][0]['messaging'][0]['message']['mid']='rollback';$service->receive($payload);DB::rollBack();
-        $this->assertSame(1,DB::table('jobs')->count());$this->assertSame(1,DB::table('messenger_inbound_receipts')->count());
+        $this->assertSame(1,DB::table('jobs')->count());$this->assertSame(1,DB::table('messenger_inbound_receipts')->count());$this->assertSame(1,DB::table('notifications')->count());
     }
     public function test_human_request_routes_internally_even_when_page_cannot_send(): void
     {

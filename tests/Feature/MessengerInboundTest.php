@@ -53,16 +53,19 @@ class MessengerInboundTest extends TestCase
 
     public function test_signed_text_is_deduplicated_and_updates_the_existing_inbox(): void
     {
-        $this->page();$staff=User::factory()->create(['is_admin'=>true]);
+        $this->page();$staff=User::factory()->create(['is_admin'=>true]);$customer=User::factory()->create(['is_admin'=>false]);
         $this->deliver($this->payload())->assertOk();$this->deliver($this->payload())->assertOk();
         $this->assertSame(1,DB::table('support_messages')->count());
-        $this->assertSame(0,DB::table('notifications')->count());
+        $this->assertSame(1,DB::table('notifications')->count());$this->assertSame(0,$customer->notifications()->count());
         \Illuminate\Support\Facades\Bus::assertDispatchedTimes(\App\Jobs\ProcessMessengerSupportReply::class,1);
         $conversation=SupportConversation::firstOrFail();
         $this->assertSame('open',$conversation->status);
+        $alert=$this->actingAs($staff)->getJson('/admin/api/support/alerts')->assertOk()->assertJsonPath('unreadCount',1)->assertJsonPath('notifications.0.conversationId',$conversation->id)->assertJsonPath('notifications.0.channel','facebook')->json('notifications.0.id');
+        $this->assertStringContainsString('Page 111',$staff->notifications()->first()->data['description']);
+        $this->patchJson('/admin/api/support/alerts/'.$alert.'/read')->assertOk()->assertJsonPath('unreadCount',0);
         $this->actingAs($staff)->getJson('/admin/api/support/conversations')->assertOk()->assertJsonFragment(['channel'=>'facebook','title'=>'Page 111','unreadCount'=>1,'content'=>'Hello']);
         $this->deliver($this->payload('111','mid-two','Again'))->assertOk();
-        $this->assertSame(1,SupportConversation::count());$this->assertSame(2,DB::table('support_messages')->count());
+        $this->assertSame(1,SupportConversation::count());$this->assertSame(2,DB::table('support_messages')->count());$this->assertSame(2,DB::table('notifications')->count());
     }
 
     public function test_bad_signature_unmapped_disconnected_and_echo_events_are_not_ingested(): void
@@ -77,8 +80,10 @@ class MessengerInboundTest extends TestCase
 
     public function test_same_sender_is_isolated_by_page_and_resolved_archived_threads_reopen(): void
     {
-        $this->page();$this->page('333');$this->deliver($this->payload())->assertOk();$this->deliver($this->payload('333'))->assertOk();
+        $staff=User::factory()->create(['is_admin'=>true]);$this->page();$this->page('333');$this->deliver($this->payload())->assertOk();$this->deliver($this->payload('333'))->assertOk();
         $this->assertSame(2,SupportConversation::count());
+        $this->assertSame(2,$staff->notifications()->count());
+        $this->assertCount(2,$staff->notifications()->get()->pluck('data.conversation_id')->unique());
         $conversation=SupportConversation::where('provider_page_id','111')->firstOrFail();
         $conversation->update(['status'=>'resolved']);$conversation->notes()->create(['content'=>'[Archive] true']);
         $this->deliver($this->payload('111','mid-next'))->assertOk();
