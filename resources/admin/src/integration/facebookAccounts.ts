@@ -32,11 +32,11 @@ export function useFacebookAccounts(active:boolean) {
     finally{if(current===sequence.current)setLoading(false);}
   },[]);
   useEffect(()=>{if(active)void refresh();return()=>{sequence.current++;};},[active,refresh]);
-  const select=async(pageId:string)=>{
+  const select=async(pageIds:string[])=>{
     const current=++sequence.current;setLoading(true);setError('');
     try{
       const csrf=document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content||'';
-      const response=await fetch('/admin/api/social/facebook/select',{method:'POST',credentials:'same-origin',headers:{Accept:'application/json','Content-Type':'application/json','X-CSRF-TOKEN':csrf},body:JSON.stringify({page_id:pageId})});
+      const response=await fetch('/admin/api/social/facebook/select',{method:'POST',credentials:'same-origin',headers:{Accept:'application/json','Content-Type':'application/json','X-CSRF-TOKEN':csrf},body:JSON.stringify({page_ids:pageIds})});
       const result=await response.json();
       if(!response.ok)throw new Error(result.message||'Could not save the selected Page.');
       if(current===sequence.current)setData(result);

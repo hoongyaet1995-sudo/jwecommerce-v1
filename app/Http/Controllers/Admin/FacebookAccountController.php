@@ -109,20 +109,36 @@ class FacebookAccountController extends Controller
     }
     public function select(Request $request)
     {
-        $this->requireManager($request);$data=$request->validate(['page_id'=>['required','string','max:100']]);
+        $this->requireManager($request);$data=$request->validate([
+            'page_id'=>['required_without:page_ids',\Illuminate\Validation\Rule::prohibitedIf($request->has('page_ids')),'string','max:100'],
+            'page_ids'=>['required_without:page_id','array','min:1','max:100'],
+            'page_ids.*'=>['required','string','distinct','max:100']]);
+        $ids=$data['page_ids']??[$data['page_id']];
         $pending=$this->pending($request);abort_unless($pending,422,'Authorization expired. Connect Facebook again.');
-        abort_unless(collect($pending['pages'])->contains('id',$data['page_id']),422,'Choose an authorized Page.');
+        foreach($ids as $id)abort_unless(collect($pending['pages'])->contains('id',$id),422,'Choose an authorized Page.');
         try {
-            $grant=app(SocialHubOAuth::class)->call('select',['transaction_id'=>$pending['transaction'],'page_id'=>$data['page_id']]);
-            $page=$grant['page']??null;$permissions=$grant['permissions']??null;
-            abort_unless(is_array($page)&&($page['id']??null)===$data['page_id']&&is_string($page['name']??null)
-                &&is_string($page['access_token']??null)&&$page['access_token']!==''&&is_array($permissions)
+            $grant=app(SocialHubOAuth::class)->call('select',['transaction_id'=>$pending['transaction']]+(isset($data['page_ids'])?['page_ids'=>$ids]:['page_id'=>$ids[0]]));
+            $pages=$grant['pages']??(isset($grant['page'])?[$grant['page']]:[]);$permissions=$grant['permissions']??null;
+            abort_unless(is_array($pages)&&count($pages)===count($ids)&&is_array($permissions)
                 &&in_array('pages_show_list',$permissions,true)&&count(array_filter($permissions,'is_string'))===count($permissions),502,'The authorization receipt could not be verified.');
-            $account=ManagedSocialAccount::updateOrCreate(['merchant_key'=>$this->facebook->merchant(),'platform'=>'facebook','provider_account_id'=>$page['id']],
-                ['app_id'=>config('services.facebook.client_id'),'name'=>mb_substr($page['name'],0,255),'access_token'=>$page['access_token'],
-                    'permissions'=>$permissions,'tasks'=>$page['tasks']??[],'authorized_by'=>$request->user()->id,'state'=>'unknown','inbound_enabled'=>false,'inbound_verified_at'=>null,'messaging_error'=>null]);
-            $this->facebook->check($account);
-            app(\App\Services\Social\MessengerSubscriptionService::class)->activate($account->fresh());
+            $returned=[];
+            foreach($pages as $page){
+                abort_unless(is_array($page)&&is_string($page['id']??null)&&in_array($page['id'],$ids,true)
+                    &&!in_array($page['id'],$returned,true)&&is_string($page['name']??null)
+                    &&is_string($page['access_token']??null)&&$page['access_token']!=='',502,'The authorization receipt could not be verified.');
+                $returned[]=$page['id'];
+            }
+            $accounts=\Illuminate\Support\Facades\DB::transaction(function()use($pages,$permissions,$request){
+                $accounts=[];
+                foreach($pages as $page)$accounts[]=ManagedSocialAccount::updateOrCreate(['merchant_key'=>$this->facebook->merchant(),'platform'=>'facebook','provider_account_id'=>$page['id']],
+                    ['app_id'=>config('services.facebook.client_id'),'name'=>mb_substr($page['name'],0,255),'access_token'=>$page['access_token'],
+                        'permissions'=>$permissions,'tasks'=>$page['tasks']??[],'authorized_by'=>$request->user()->id,'state'=>'unknown','inbound_enabled'=>false,'inbound_verified_at'=>null,'messaging_error'=>null]);
+                return $accounts;
+            });
+            foreach($accounts as $account){
+                $this->facebook->check($account);
+                app(\App\Services\Social\MessengerSubscriptionService::class)->activate($account->fresh());
+            }
             $request->session()->forget('facebook_pending');
             return $this->index($request);
         }catch(\Symfony\Component\HttpKernel\Exception\HttpException $e){throw $e;}

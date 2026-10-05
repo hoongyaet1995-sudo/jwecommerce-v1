@@ -77,4 +77,34 @@ class SocialHubOAuthTest extends TestCase
         $this->get('/admin/social/facebook/authorize');$state=session('facebook_oauth.state');$this->travel(11)->minutes();
         $this->get($this->back($state))->assertRedirect('/admin/social/facebook?facebook=invalid_state');Http::assertSentCount(3);$this->travelBack();
     }
+    public function test_multiple_pages_are_saved_together_and_reconnect_does_not_duplicate(): void
+    {
+        (require database_path('migrations/2026_10_04_120000_create_managed_social_accounts.php'))->up();
+        \Illuminate\Support\Facades\Schema::table('managed_social_accounts',function(\Illuminate\Database\Schema\Blueprint $t){$t->boolean('inbound_enabled')->default(false);$t->timestamp('inbound_verified_at')->nullable();$t->string('messaging_error')->nullable();});
+        $pages=[['id'=>'111','name'=>'Page One'],['id'=>'222','name'=>'Page Two']];
+        $pending=['actor'=>1,'merchant'=>app(\App\Services\Social\FacebookAccountService::class)->merchant(),
+            'app'=>'test-app','transaction'=>$this->transaction,'installation'=>app(\App\Services\Social\SocialHubOAuth::class)->fingerprint(),
+            'expires'=>now()->addMinutes(5)->timestamp,'pages'=>$pages];
+        $facebook=\Mockery::mock(\App\Services\Social\FacebookAccountService::class)->makePartial();
+        $facebook->shouldReceive('check')->andReturnUsing(fn($a)=>['id'=>$a->id,'pageId'=>$a->provider_account_id]);
+        $this->app->instance(\App\Services\Social\FacebookAccountService::class,$facebook);
+        $subscription=\Mockery::mock(\App\Services\Social\MessengerSubscriptionService::class);
+        $subscription->shouldReceive('activate')->times(4);$this->app->instance(\App\Services\Social\MessengerSubscriptionService::class,$subscription);
+        Http::fake(function($r)use($pages){
+            $this->assertSame(['111','222'],json_decode($r->body(),true)['page_ids']);
+            $d=['transaction_id'=>$this->transaction,'app_id'=>'test-app','pages'=>array_map(fn($p)=>$p+['access_token'=>'private-'.$p['id']],$pages),'permissions'=>['pages_show_list']];
+            $body=json_encode($d);$h=collect($r->headers())->map(fn($x)=>$x[0])->all();
+            return Http::response($body,200,['X-Social-Response-Signature'=>SocialProtocol::responseSignature($h,'installation-secret','client-to-hub',200,$body)]);
+        });
+        $this->withSession(['facebook_pending'=>Crypt::encryptString(json_encode($pending))]);
+        $this->postJson('/admin/api/social/facebook/select',['page_ids'=>['111','999']])->assertUnprocessable();Http::assertNothingSent();
+        foreach(range(1,2) as $attempt){
+            $this->withSession(['facebook_pending'=>Crypt::encryptString(json_encode($pending))]);
+            $r=$this->postJson('/admin/api/social/facebook/select',['page_ids'=>['111','222']]);$r->assertOk()->assertJsonCount(2,'accounts')->assertJsonCount(0,'pages');
+            $this->assertSame(2,DB::table('managed_social_accounts')->count());
+            $this->assertNull(session('facebook_pending'));
+        }
+        $this->assertStringNotContainsString('private-',DB::table('managed_social_accounts')->value('access_token'));
+    }
+
 }
