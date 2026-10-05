@@ -1,13 +1,23 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
+import {createPortal} from 'react-dom';
 import { useAdmin } from '../../context/AdminContext';
 import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
 
 export const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useAdmin();
+  const [activeDialog, setActiveDialog] = useState<Element|null>(null);
+  useEffect(() => {
+    if (!toasts.length) {setActiveDialog(null); return;}
+    const update = () => setActiveDialog(document.querySelector('dialog[open]'));
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(document.body, {subtree:true, childList:true, attributes:true, attributeFilter:['open']});
+    return () => observer.disconnect();
+  }, [toasts.length]);
 
   if (toasts.length === 0) return null;
 
-  return (
+  const content = (
     <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-md w-full pointer-events-none">
       {toasts.map((toast) => {
         let Icon = Info;
@@ -50,4 +60,5 @@ export const ToastContainer: React.FC = () => {
       })}
     </div>
   );
+  return activeDialog?createPortal(content,activeDialog):content;
 };

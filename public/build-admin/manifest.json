@@ -1,6 +1,6 @@
 {
-  "_index-CE04QAOF.js": {
-    "file": "assets/index-CE04QAOF.js",
+  "_index-Dylai0jG.js": {
+    "file": "assets/index-Dylai0jG.js",
     "name": "index",
     "css": [
       "assets/index-hEFswCUn.css"
@@ -11,24 +11,24 @@
     "src": "_index-hEFswCUn.css"
   },
   "src/main.tsx": {
-    "file": "assets/main-CgoDSIVv.js",
+    "file": "assets/main-BJ636zfq.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
     "imports": [
-      "_index-CE04QAOF.js"
+      "_index-Dylai0jG.js"
     ],
     "dynamicImports": [
       "src/previews/inventory48/Inventory48Runtime.tsx"
     ]
   },
   "src/previews/inventory48/Inventory48Runtime.tsx": {
-    "file": "assets/Inventory48Runtime-SLl-Q0A4.js",
+    "file": "assets/Inventory48Runtime-DpAbftuv.js",
     "name": "Inventory48Runtime",
     "src": "src/previews/inventory48/Inventory48Runtime.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_index-CE04QAOF.js",
+      "_index-Dylai0jG.js",
       "src/main.tsx"
     ],
     "css": [
@@ -36,12 +36,12 @@
     ]
   },
   "src/public-page.tsx": {
-    "file": "assets/public-page-DbHaKXzX.js",
+    "file": "assets/public-page-BAWiV_S0.js",
     "name": "public-page",
     "src": "src/public-page.tsx",
     "isEntry": true,
     "imports": [
-      "_index-CE04QAOF.js"
+      "_index-Dylai0jG.js"
     ]
   }
 }
