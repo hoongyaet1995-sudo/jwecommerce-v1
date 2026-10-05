@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'webhooks/easyparcel/*',
             'api/social/hub/challenge',
             'api/social/hub/events',
+            'api/social/hub/pair',
             'api/marketplace/hub/refresh',
             'api/marketplace/hub/events',
             'api/marketplace/hub/verify-shopee',
@@ -68,6 +69,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash([
             'api_key',
+            'secret',
+            'pairing_code',
             'clientId',
             'clientSecret',
             'authorizationCode',

@@ -11,7 +11,7 @@
     "src": "_index-VgRSI--Z.css"
   },
   "src/main.tsx": {
-    "file": "assets/main-cVmWD0Nr.js",
+    "file": "assets/main-DZdPcv36.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
@@ -23,7 +23,7 @@
     ]
   },
   "src/previews/inventory48/Inventory48Runtime.tsx": {
-    "file": "assets/Inventory48Runtime-Cr0eJ6QD.js",
+    "file": "assets/Inventory48Runtime-BM6_x5hi.js",
     "name": "Inventory48Runtime",
     "src": "src/previews/inventory48/Inventory48Runtime.tsx",
     "isDynamicEntry": true,

@@ -57,10 +57,11 @@ use App\Http\Controllers\StorefrontPageController;
 use Illuminate\Support\Facades\Route;
 Route::post('/api/social/hub/challenge',[\App\Http\Controllers\SocialHubReceiverController::class,'receive'])->middleware('throttle:60,1');
 Route::post('/api/social/hub/events',[\App\Http\Controllers\SocialHubReceiverController::class,'receive'])->middleware('throttle:60,1');
+Route::post('/api/social/hub/pair',\App\Http\Controllers\SocialHubPairingController::class)->middleware('throttle:5,1');
 Route::middleware(['auth','admin'])->group(function(){
- Route::get('/admin/social-hub/installation',[\App\Http\Controllers\Admin\SocialHubInstallationController::class,'page']);
+ Route::get('/admin/social-hub/installation',fn()=>abort(404));
  Route::get('/admin/api/social-hub/installation',[\App\Http\Controllers\Admin\SocialHubInstallationController::class,'index']);
- Route::put('/admin/api/social-hub/installation',[\App\Http\Controllers\Admin\SocialHubInstallationController::class,'save']);
+ Route::put('/admin/api/social-hub/installation',fn()=>abort(404));
  Route::post('/admin/api/social-hub/heartbeat',[\App\Http\Controllers\Admin\SocialHubInstallationController::class,'heartbeat'])->middleware('throttle:10,1');
 });
 

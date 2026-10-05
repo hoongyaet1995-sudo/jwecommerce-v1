@@ -13,6 +13,38 @@ use Tests\TestCase;
 class SocialHubOAuthTest extends TestCase
 {
     private string $transaction;
+    public function test_pairing_binds_once_and_rejects_wrong_code_domain_expiry_and_replay(): void
+    {
+        DB::table('social_hub_settings')->delete();config(['app.url'=>'https://shop.example.com']);
+        Http::fake(['*'=>Http::response([],503)]);
+        $code=str_repeat('a',64);$client=(string)Str::uuid();$key=(string)Str::uuid();$secret=str_repeat('b',64);
+        DB::table('social_pairing_tokens')->insert(['token_hash'=>hash('sha256',$code),'domain'=>'shop.example.com','expires_at'=>now()->addHour()]);
+        $path='/api/social/hub/pair';$data=['client_id'=>$client,'key_id'=>$key,'secret'=>$secret,'registered_domain'=>'shop.example.com','hub_url'=>'https://social.jwaistudio.online'];
+        $send=function($token,$domain='shop.example.com')use($data,$client,$key,$secret,$path){$d=array_replace($data,['registered_domain'=>$domain]);$body=json_encode($d);$headers=SocialProtocol::headers($client,$key,$secret,'hub-to-client','POST',$path,$body);return $this->call('POST',$path,[],[],[],array_merge(['CONTENT_TYPE'=>'application/json','HTTP_ACCEPT'=>'application/json','HTTP_X_SOCIAL_PAIRING_CODE'=>$token],collect($headers)->mapWithKeys(fn($v,$k)=>['HTTP_'.strtoupper(str_replace('-','_',$k))=>$v])->all()),$body);};
+        $send(str_repeat('c',64))->assertForbidden();$send($code,'other.example.com')->assertForbidden();
+        DB::table('social_pairing_tokens')->update(['expires_at'=>now()->subMinute()]);$send($code)->assertForbidden();
+        DB::table('social_pairing_tokens')->update(['expires_at'=>now()->addHour()]);$send($code)->assertOk()->assertJsonPath('status','paired');
+        $this->assertSame($secret,Crypt::decryptString(DB::table('social_hub_settings')->value('encrypted_secret')));
+        $send($code)->assertForbidden();$this->assertSame($client,DB::table('social_hub_settings')->value('client_id'));
+    }
+    public function test_installation_is_developer_only_even_for_store_super_admins(): void
+    {
+        \Illuminate\Support\Facades\Schema::create('store_settings', function (\Illuminate\Database\Schema\Blueprint $table) {
+            $table->string('key')->primary();
+            $table->text('value')->nullable();
+        });
+        config(['services.social_hub.developer_user_ids'=>[]]);
+        $this->get('/admin/social-hub/installation')->assertNotFound();
+        $this->getJson('/admin/api/social-hub/installation')->assertForbidden();
+        $this->putJson('/admin/api/social-hub/installation',[])->assertNotFound();
+        $this->postJson('/admin/api/social-hub/heartbeat')->assertForbidden();
+        config(['services.social_hub.developer_user_ids'=>['1']]);
+        $this->get('/admin/social-hub/installation')->assertNotFound();
+        $this->getJson('/admin/api/social-hub/installation')->assertOk()->assertJsonMissingPath('installation.encrypted_secret');
+        $this->putJson('/admin/api/social-hub/installation',[])->assertNotFound();
+        $this->actingAs((new User)->forceFill(['id'=>2,'is_admin'=>true,'is_super_admin'=>true]));
+        $this->getJson('/admin/api/social-hub/installation')->assertForbidden();
+    }
     protected function setUp(): void
     {
         parent::setUp();

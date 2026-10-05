@@ -12,7 +12,8 @@ final class SocialHubInstallationController extends Controller
 {
     private function guard(Request $r): void
     {
-        abort_unless($r->user()?->is_super_admin, 403);
+        $developerIds = array_map('strval', config('services.social_hub.developer_user_ids', []));
+        abort_unless($r->user()?->is_super_admin && in_array((string) $r->user()->getAuthIdentifier(), $developerIds, true), 403);
     }
 
     public function page(Request $r)

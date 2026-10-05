@@ -79,4 +79,7 @@ return [
         'cron_lock_seconds' => env('EASYPARCEL_CRON_LOCK_SECONDS', 180),
     ],
 
+    'social_hub' => [
+        'developer_user_ids' => array_values(array_filter(array_map('trim', explode(',', (string) env('SOCIAL_HUB_DEVELOPER_USER_IDS', ''))), fn ($id) => ctype_digit($id))),
+    ],
 ];
