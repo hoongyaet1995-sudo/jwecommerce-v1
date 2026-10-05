@@ -191,4 +191,48 @@ class FacebookManagedAccountTest extends TestCase
         $this->assertSame('disconnected',$result['state']);$this->assertSame('',$account->fresh()->access_token);
     }
 
+    public function test_manager_check_recovers_messaging_subscription_without_another_oauth(): void
+    {
+        $owner=$this->owner();config(['services.facebook.inbound_routing_ready'=>true]);
+        $account=\App\Models\ManagedSocialAccount::create(['merchant_key'=>'shop-one','platform'=>'facebook','app_id'=>'test-app','provider_account_id'=>'111','name'=>'Page','access_token'=>'private-page-token','permissions'=>['pages_messaging','pages_manage_metadata'],'tasks'=>['MESSAGE'],'state'=>'connected','authorized_by'=>$owner->id,'inbound_enabled'=>false,'messaging_error'=>'Temporary failure']);
+        $subscribed=false;
+        Http::fake(function($request)use(&$subscribed){
+            if(str_contains($request->url(),'/subscribed_apps')){
+                if($request->method()==='POST'){$subscribed=true;return Http::response(['success'=>true]);}
+                return Http::response(['data'=>$subscribed?[['id'=>'test-app','subscribed_fields'=>['messages']]]:[]]);
+            }
+            return Http::response(['id'=>'111','name'=>'Page']);
+        });
+        $this->postJson('/admin/api/social/facebook/'.$account->id.'/check')->assertOk()->assertJsonPath('account.messagingReady',true);
+        $this->assertTrue($subscribed);
+    }
+
+    public function test_staff_read_check_does_not_activate_subscription(): void
+    {
+        $owner=$this->owner();config(['services.facebook.inbound_routing_ready'=>true]);
+        $account=\App\Models\ManagedSocialAccount::create(['merchant_key'=>'shop-one','platform'=>'facebook','app_id'=>'test-app','provider_account_id'=>'111','name'=>'Page','access_token'=>'private-page-token','permissions'=>['pages_messaging','pages_manage_metadata'],'tasks'=>[],'state'=>'connected','authorized_by'=>$owner->id,'inbound_enabled'=>false]);
+        $this->actingAs(User::factory()->create(['is_admin'=>true,'is_super_admin'=>false]));
+        Http::fake(['graph.facebook.com/*'=>Http::response(['id'=>'111','name'=>'Page'])]);
+        $this->postJson('/admin/api/social/facebook/'.$account->id.'/check')->assertOk()->assertJsonPath('account.messagingReady',false);
+        Http::assertNotSent(fn($request)=>$request->method()==='POST');
+    }
+
+    public function test_manager_retry_keeps_missing_permissions_not_ready_without_subscription_write(): void
+    {
+        $owner=$this->owner();config(['services.facebook.inbound_routing_ready'=>true]);
+        $account=\App\Models\ManagedSocialAccount::create(['merchant_key'=>'shop-one','platform'=>'facebook','app_id'=>'test-app','provider_account_id'=>'111','name'=>'Page','access_token'=>'private-page-token','permissions'=>['pages_show_list'],'tasks'=>[],'state'=>'connected','authorized_by'=>$owner->id,'inbound_enabled'=>false]);
+        Http::fake(['graph.facebook.com/*'=>Http::response(['id'=>'111','name'=>'Page'])]);
+        $this->postJson('/admin/api/social/facebook/'.$account->id.'/check')->assertOk()->assertJsonPath('account.messagingReady',false)->assertJsonPath('account.messagingError','Review Facebook authorization and grant messaging and Page webhook permissions.')->assertDontSee('private-page-token');
+        Http::assertNotSent(fn($request)=>$request->method()==='POST');
+    }
+
+    public function test_manager_listing_does_not_repair_missing_subscription(): void
+    {
+        $owner=$this->owner();config(['services.facebook.inbound_routing_ready'=>true]);
+        \App\Models\ManagedSocialAccount::create(['merchant_key'=>'shop-one','platform'=>'facebook','app_id'=>'test-app','provider_account_id'=>'111','name'=>'Page','access_token'=>'private-page-token','permissions'=>['pages_messaging','pages_manage_metadata'],'tasks'=>[],'state'=>'connected','authorized_by'=>$owner->id,'inbound_enabled'=>false]);
+        Http::fake(['graph.facebook.com/*'=>Http::response(['id'=>'111','name'=>'Page'])]);
+        $this->getJson('/admin/api/social/facebook')->assertOk()->assertJsonPath('accounts.0.messagingReady',false);
+        Http::assertSentCount(1);Http::assertNotSent(fn($request)=>$request->method()==='POST');
+    }
+
 }

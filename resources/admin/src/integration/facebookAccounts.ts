@@ -11,12 +11,22 @@ export function useFacebookAccounts(active:boolean) {
   const [data,setData]=useState<FacebookAccounts|null>(null);
   const [loading,setLoading]=useState(false),[error,setError]=useState('');
   const sequence=useRef(0);
-  const refresh=useCallback(async()=>{
+  const refresh=useCallback(async(retryMessaging=false)=>{
     const current=++sequence.current;setLoading(true);setError('');
     try{
       const response=await fetch('/admin/api/social/facebook',{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
       if(!response.ok)throw new Error('Could not load Facebook connections. Please try again.');
       const result:FacebookAccounts=await response.json();
+      if(retryMessaging && result.canManage){
+        const csrf=document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content||'';
+        for(const account of result.accounts){
+          if(account.state==='disconnected')continue;
+          const checked=await fetch('/admin/api/social/facebook/'+encodeURIComponent(account.id)+'/check',{method:'POST',credentials:'same-origin',headers:{Accept:'application/json','X-CSRF-TOKEN':csrf}});
+          const body=await checked.json();
+          if(!checked.ok)throw new Error(body.message||'Could not check this Page.');
+          result.accounts=result.accounts.map(item=>item.id===account.id?body.account:item);
+        }
+      }
       if(current===sequence.current)setData(result);
     }catch(e){if(current===sequence.current)setError(e instanceof Error?e.message:'Could not load connections.');}
     finally{if(current===sequence.current)setLoading(false);}

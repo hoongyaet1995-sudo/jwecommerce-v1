@@ -67,7 +67,7 @@ class FacebookAccountController extends Controller
     public function check(Request $request,string $id)
     {
         $account=$this->ownedAccount($id);
-        return response()->json(['account'=>$this->facebook->check($account)])->header('Cache-Control','no-store');
+        return response()->json(['account'=>$this->facebook->check($account,(bool)$request->user()->is_super_admin)])->header('Cache-Control','no-store');
     }
     public function disconnect(Request $request,string $id)
     {

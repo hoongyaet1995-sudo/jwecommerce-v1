@@ -78,7 +78,7 @@ class FacebookAccountService
         \App\Models\SupportConversation::where('channel','facebook')->where('merchant_key',$account->merchant_key)
             ->where('provider_page_id',$account->provider_account_id)->update(['updated_at'=>now()]);
     }
-    public function check(ManagedSocialAccount $account): array
+    public function check(ManagedSocialAccount $account,bool $retryMessaging=false): array
     {
         $previous=[$account->state,(bool)$account->inbound_enabled,$account->inbound_verified_at!==null,$account->messaging_error];
         if($account->state==='disconnected')return $this->summary($account,'This Page is disconnected from this store.');
@@ -108,6 +108,11 @@ class FacebookAccountService
             ->update(['state'=>$state,'name'=>$account->name,'checked_at'=>now(),'updated_at'=>now()]);
         if(!$updated){$fresh=ManagedSocialAccount::find($account->id);return $fresh?$this->summary($fresh,$fresh->state==='disconnected'?'This Page is disconnected from this store.':null):$this->summary($account,'Connection changed during verification. Refresh the list.');}
         $account->state=$state;$account->checked_at=now();
+        // Only an explicit manager action may repair subscription state; listing stays read-only.
+        if($retryMessaging && $state==='connected' && (!$account->inbound_enabled || !$account->inbound_verified_at)){
+            app(MessengerSubscriptionService::class)->activate($account->fresh());
+            $account=$account->fresh();
+        }
         if($previous!==[$account->state,(bool)$account->inbound_enabled,$account->inbound_verified_at!==null,$account->messaging_error])$this->invalidateInbox($account);
         return $this->summary($account,$reason);
     }
