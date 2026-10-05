@@ -4,7 +4,7 @@ import {useAdmin} from '../../context/AdminContext';
 import {useFacebookAccounts, facebookOAuthNotice} from '../../integration/facebookAccounts';
 
 export const FacebookAccountPage:React.FC=()=>{
-  const {setCurrentSection}=useAdmin();
+  const {setCurrentSection,addToast}=useAdmin();
   const facebook=useFacebookAccounts(true);
   const [tab,setTab]=useState<'accounts'|'guide'>('accounts');
   const confirmationDialog=useRef<HTMLDialogElement>(null);
@@ -16,6 +16,15 @@ export const FacebookAccountPage:React.FC=()=>{
   useEffect(()=>{if(pendingPages&&facebook.data?.canManage)pageDialog.current?.showModal();else pageDialog.current?.close();},[pendingPages,facebook.data?.canManage]);
   const [expanded,setExpanded]=useState<string|null>(null);
   const callbackResult=new URLSearchParams(window.location.search).get('facebook');
+  const cancellationNotified=useRef(false);
+  useEffect(()=>{
+    if(callbackResult!=='cancelled'||cancellationNotified.current)return;
+    cancellationNotified.current=true;
+    addToast({type:'info',title:'Facebook authorization cancelled',message:facebookOAuthNotice.cancelled});
+    const url=new URL(window.location.href);
+    url.searchParams.delete('facebook');
+    window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);
+  },[callbackResult,addToast]);
   const canConnect=facebook.data?.canManage&&facebook.data.configured;
   const menuItemClass='flex w-full items-center px-3 py-2.5 rounded-md text-left text-sm whitespace-nowrap hover:bg-neutral-100 dark:hover:bg-neutral-800 focus-visible:outline-none focus-visible:bg-neutral-100 dark:focus-visible:bg-neutral-800';
   const actionClass='inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-neutral-50 dark:hover:bg-neutral-800';
@@ -28,7 +37,7 @@ export const FacebookAccountPage:React.FC=()=>{
     <div className="flex gap-6 border-b border-neutral-200 dark:border-neutral-800" role="tablist" aria-label="Facebook management">
       {(['accounts','guide'] as const).map(value=><button key={value} type="button" role="tab" aria-selected={tab===value} onClick={()=>setTab(value)} className={'pb-3 text-sm font-medium border-b-2 '+(tab===value?'border-indigo-500 text-indigo-600 dark:text-indigo-400':'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white')}>{value==='accounts'?'Accounts':'Connection guide'}</button>)}
     </div>
-    {callbackResult&&facebookOAuthNotice[callbackResult]&&<p role="status" className="text-sm text-amber-700 dark:text-amber-300">{facebookOAuthNotice[callbackResult]}</p>}
+    {callbackResult&&callbackResult!=='cancelled'&&facebookOAuthNotice[callbackResult]&&<p role="status" className="text-sm text-amber-700 dark:text-amber-300">{facebookOAuthNotice[callbackResult]}</p>}
     {facebook.error&&<p role="alert" className="text-sm text-red-600 dark:text-red-400">{facebook.error}</p>}
     {facebook.data&&!facebook.data.configured&&<p className="text-sm text-amber-700 dark:text-amber-300">Server credentials and an HTTPS OAuth callback are required. Ask your administrator to complete setup.</p>}
     {facebook.data&&!facebook.data.canManage&&<p className="text-sm text-neutral-500 dark:text-neutral-400">A store administrator must authorize new Pages. Existing connections are shared with this store’s staff.</p>}
