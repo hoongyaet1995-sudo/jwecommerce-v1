@@ -140,8 +140,10 @@ class MessengerReplyService
         $error = 'Send confirmation is unavailable. Check Messenger; do not resend this reply.';
         try {
             $token = $account->access_token;
+            // Facebook Login issues a Page token; Instagram messaging uses its Page endpoint.
+            $sendAccount = $account->platform === 'instagram' ? 'me' : $account->provider_account_id;
             $response = Http::withToken($token)->acceptJson()->connectTimeout(5)->timeout(12)->post(
-                'https://graph.facebook.com/'.config('services.facebook.graph_version', 'v25.0').'/'.$account->provider_account_id.'/messages',
+                'https://graph.facebook.com/'.config('services.facebook.graph_version', 'v25.0').'/'.$sendAccount.'/messages',
                 [...($account->platform==='facebook'?['messaging_type'=>'RESPONSE']:[]), 'recipient' => ['id' => $recipient],
                     'message' => ['text' => $content], 'appsecret_proof' => hash_hmac('sha256', $token, (string) config('services.facebook.client_secret'))]
             );

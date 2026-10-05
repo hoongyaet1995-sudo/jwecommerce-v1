@@ -289,7 +289,11 @@ class MessengerReplyTest extends TestCase
     }
     public function test_instagram_uses_shared_ai_and_explicit_handoff_then_staff_reply(): void {
       $c=$this->instagramThread();$this->aiSettings();
-      Http::fake(['graph.facebook.com/*/messages'=>Http::response(['recipient_id'=>'222','message_id'=>'ig-out'])]);
+      Http::fake(fn($request)=>$request->url()==='https://graph.facebook.com/v25.0/me/messages'
+        && $request->hasHeader('Authorization','Bearer token-111')
+        && $request['recipient']['id']==='222'
+        ? Http::response(['recipient_id'=>'222','message_id'=>'ig-out'])
+        : Http::response(['error'=>['code'=>3,'message'=>'Wrong Facebook Login messaging endpoint']],400));
       $this->runAi($c,'Wash?');
       $this->assertSame('open',$c->fresh()->status);
       $this->assertSame('sent',$c->messages()->where('sender_role','ai')->firstOrFail()->delivery_status);
