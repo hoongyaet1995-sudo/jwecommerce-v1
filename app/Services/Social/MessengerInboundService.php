@@ -15,7 +15,8 @@ class MessengerInboundService
 {
     public function receive(array $payload): int
     {
-        if(($payload['object']??null)!=='page')return 0;
+        if(!in_array($payload['object']??null,['page','instagram'],true))return 0;
+        $platform=$payload['object']==='instagram'?'instagram':'facebook';
         $processed=0;
         foreach((array)($payload['entry']??[]) as $entry){
             if(!is_array($entry))continue;
@@ -27,7 +28,7 @@ class MessengerInboundService
                 $mid=data_get($event,'message.mid');$text=data_get($event,'message.text');
                 if(!$this->identity($sender)||$sender===$page||$recipient!==$page||data_get($event,'message.is_echo')
                     ||!is_string($mid)||$mid===''||strlen($mid)>512||!is_string($text)||trim($text)===''||mb_strlen($text)>16000)continue;
-                $processed += $this->append($page,$sender,$mid,$text,$event)?1:0;
+                $processed += $this->append($page,$sender,$mid,$text,$event,$platform)?1:0;
             }
         }
         return $processed;
@@ -38,19 +39,19 @@ class MessengerInboundService
         return is_string($value)&&preg_match('/^[0-9]{1,100}$/D',$value)===1;
     }
 
-    private function append(string $page,string $sender,string $mid,string $text,array $event): bool
+    private function append(string $page,string $sender,string $mid,string $text,array $event,string $platform): bool
     {
-        return DB::transaction(function()use($page,$sender,$mid,$text,$event){
+        return DB::transaction(function()use($page,$sender,$mid,$text,$event,$platform){
             // Serializes inbound events and disconnects for this Page. No remote calls in the transaction.
             $account=ManagedSocialAccount::where('merchant_key',config('services.facebook.merchant_key','jw-ecommerce'))
-                ->where('platform','facebook')->where('app_id',(string)config('services.facebook.client_id'))
+                ->where('platform',$platform)->where('app_id',(string)config('services.facebook.client_id'))
                 ->where('provider_account_id',$page)->lockForUpdate()->first();
             if(!$account||$account->state==='disconnected'||!$account->inbound_enabled)return false;
-            $key=hash('sha256',json_encode([$account->merchant_key,$account->app_id,$page,$mid]));
+            $key=hash('sha256',json_encode($platform==='facebook'?[$account->merchant_key,$account->app_id,$page,$mid]:[$platform,$account->merchant_key,$account->app_id,$page,$mid]));
             if(DB::table('messenger_inbound_receipts')->where('event_key',$key)->exists())return false;
-            $owner=hash('sha256',json_encode(['messenger',$account->merchant_key,$account->app_id,$page,$sender]));
+            $owner=hash('sha256',json_encode([$platform==='facebook'?'messenger':$platform,$account->merchant_key,$account->app_id,$page,$sender]));
             $conversation=SupportConversation::firstOrCreate(['owner_hash'=>$owner],[
-                'id'=>(string)Str::uuid(),'channel'=>'facebook','merchant_key'=>$account->merchant_key,
+                'id'=>(string)Str::uuid(),'channel'=>$platform,'merchant_key'=>$account->merchant_key,
                 'provider_page_id'=>$page,'provider_sender_id'=>$sender,'provider_page_name'=>$account->name,'status'=>'open',
             ]);
             $conversation=SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();

@@ -3,6 +3,7 @@ import { useAdmin } from '../../context/AdminContext';
 import {
   Bell,
   Globe,
+  Instagram,
   X,
   CheckCircle2,
   Package,
@@ -81,6 +82,9 @@ export const NotificationDrawer: React.FC = () => {
               if (n.channel === 'facebook') {
                 Icon = MessengerIcon;
                 iconBg = 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400';
+              } else if (n.channel === 'instagram') {
+                Icon = Instagram;
+                iconBg = 'bg-pink-50 dark:bg-pink-950/60 text-pink-600 dark:text-pink-400';
               } else if (n.channel === 'web_guest') {
                 Icon = Globe;
                 iconBg = 'bg-cyan-100 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400';

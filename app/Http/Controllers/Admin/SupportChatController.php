@@ -32,7 +32,7 @@ class SupportChatController extends Controller
         $data = $request->validate(['content' => ['required', 'string', 'max:2000'], 'client_message_id' => ['required', 'uuid'], 'retry' => ['sometimes', 'boolean']]);
         $data['content'] = trim($data['content']);
         abort_if($data['content'] === '', 422, 'Message cannot be empty.');
-        if ($conversation->channel === 'facebook') {
+        if (in_array($conversation->channel,['facebook','instagram'],true)) {
             $message = app(\App\Services\Social\MessengerReplyService::class)->send($conversation, $data, $request->user()->id);
             return response()->json(['conversation' => $chat->adminView($conversation->fresh()), 'sendStatus' => $message->delivery_status, 'sendError' => $message->send_error]);
         }

@@ -8,6 +8,7 @@ use RuntimeException;
 
 class FacebookAccountService
 {
+    protected function subscription(ManagedSocialAccount $account): MessengerSubscriptionService {return app($account->platform==='instagram'?InstagramSubscriptionService::class:MessengerSubscriptionService::class);}
     public function merchant(): string { return (string)config('services.facebook.merchant_key','jw-ecommerce'); }
     public function configured(): bool
     {
@@ -23,7 +24,7 @@ class FacebookAccountService
         ]);
     }
     private function version(): string {return (string)config('services.facebook.graph_version','v25.0');}
-    private function graph(string $path,array $query=[],?string $token=null): array
+    protected function graph(string $path,array $query=[],?string $token=null): array
     {
         try {
             $client=Http::connectTimeout(5)->timeout(12)->acceptJson();
@@ -75,7 +76,7 @@ class FacebookAccountService
     }
     public function invalidateInbox(ManagedSocialAccount $account): void
     {
-        \App\Models\SupportConversation::where('channel','facebook')->where('merchant_key',$account->merchant_key)
+        \App\Models\SupportConversation::where('channel',$account->platform)->where('merchant_key',$account->merchant_key)
             ->where('provider_page_id',$account->provider_account_id)->update(['updated_at'=>now()]);
     }
     public function check(ManagedSocialAccount $account,bool $retryMessaging=false): array
@@ -89,7 +90,7 @@ class FacebookAccountService
             if(($body['id']??null)!==$account->provider_account_id)throw new RuntimeException('authorization_expired');
             if($account->inbound_enabled){
                 $messagingError=null;
-                try {$verified=app(MessengerSubscriptionService::class)->verify($account); if(!$verified)$messagingError='Message subscription is not active. Retry the connection.';}
+                try {$verified=$this->subscription($account)->verify($account); if(!$verified)$messagingError='Message subscription is not active. Retry the connection.';}
                 catch(RuntimeException $e){$verified=null;$messagingError=$e->getMessage();}
                 $values=['inbound_verified_at'=>$verified===true?now():null];
                 if(array_key_exists('messaging_error',$account->getAttributes()))$values['messaging_error']=$messagingError;
@@ -110,7 +111,7 @@ class FacebookAccountService
         $account->state=$state;$account->checked_at=now();
         // Only an explicit manager action may repair subscription state; listing stays read-only.
         if($retryMessaging && $state==='connected' && (!$account->inbound_enabled || !$account->inbound_verified_at)){
-            app(MessengerSubscriptionService::class)->activate($account->fresh());
+            $this->subscription($account)->activate($account->fresh());
             $account=$account->fresh();
         }
         if($previous!==[$account->state,(bool)$account->inbound_enabled,$account->inbound_verified_at!==null,$account->messaging_error])$this->invalidateInbox($account);
@@ -120,8 +121,8 @@ class FacebookAccountService
     {
         return ['id'=>(string)$account->id,'pageId'=>$account->provider_account_id,'name'=>$account->name,
             'state'=>$account->state,'checkReason'=>$reason,'checkedAt'=>$account->checked_at?->toIso8601String(),'permissions'=>$account->permissions,
-            'messagingReady'=>$account->state==='connected'&&(bool)$account->inbound_enabled&&$account->inbound_verified_at!==null&&config('services.facebook.inbound_routing_ready')===true&&in_array('pages_messaging',$account->permissions??[],true),'messagingError'=>$account->messaging_error,'inboundEnabled'=>(bool)$account->inbound_enabled&&$account->state!=='disconnected',
-            'inboundRoutingReady'=>config('services.facebook.inbound_routing_ready')===true,
+            'messagingReady'=>$account->state==='connected'&&(bool)$account->inbound_enabled&&$account->inbound_verified_at!==null&&config('services.'.$account->platform.'.inbound_routing_ready')===true&&in_array($account->platform==='instagram'?'instagram_manage_messages':'pages_messaging',$account->permissions??[],true),'messagingError'=>$account->messaging_error,'inboundEnabled'=>(bool)$account->inbound_enabled&&$account->state!=='disconnected',
+            'inboundRoutingReady'=>config('services.'.$account->platform.'.inbound_routing_ready')===true,
             'inboundVerifiedAt'=>$account->inbound_verified_at?->toIso8601String(),'lastInboundAt'=>$account->last_inbound_at?->toIso8601String()];
     }
 }

@@ -14,14 +14,14 @@ class MessengerReplyService
     private function account(SupportConversation $conversation): ?ManagedSocialAccount
     {
         if ($conversation->merchant_key !== app(FacebookAccountService::class)->merchant()) return null;
-        return ManagedSocialAccount::where('merchant_key', $conversation->merchant_key)->where('platform', 'facebook')
+        return ManagedSocialAccount::where('merchant_key', $conversation->merchant_key)->where('platform', $conversation->channel)
             ->where('app_id', (string) config('services.facebook.client_id'))->where('provider_account_id', $conversation->provider_page_id)->first();
     }
 
     public function readiness(SupportConversation $conversation, ?ManagedSocialAccount $account = null, bool $lookup = true): array
     {
         if (!$account && $lookup) $account = $this->account($conversation);
-        if ($account && ($account->merchant_key !== $conversation->merchant_key || $account->provider_account_id !== $conversation->provider_page_id || $account->app_id !== (string) config('services.facebook.client_id'))) $account = null;
+        if ($account && ($account->platform !== $conversation->channel || $account->merchant_key !== $conversation->merchant_key || $account->provider_account_id !== $conversation->provider_page_id || $account->app_id !== (string) config('services.facebook.client_id'))) $account = null;
         $lastCustomer = $conversation->relationLoaded('messages')
             ? $conversation->messages->where('sender_role', 'customer')->sortByDesc('created_at')->first()?->created_at
             : $conversation->messages()->where('sender_role', 'customer')->latest('created_at')->value('created_at');
@@ -33,9 +33,9 @@ class MessengerReplyService
             $conversation->merchant_key !== app(FacebookAccountService::class)->merchant() || !$account => 'The Page connection is unavailable for this store.',
             $conversation->status === 'resolved' => 'Conversation resolved. Reopen to reply.',
             $archived === '[Archive] true' => 'Restore this conversation before replying.',
-            config('services.facebook.inbound_routing_ready') !== true => 'Messenger setup is awaiting your administrator.',
+            config('services.'.$conversation->channel.'.inbound_routing_ready') !== true => 'Messenger setup is awaiting your administrator.',
             $account->state !== 'connected' || !$account->inbound_enabled || !$account->inbound_verified_at => $account->messaging_error ?: 'Reconnect this Page and verify its messaging permissions.',
-            !in_array('pages_messaging', $account->permissions ?? [], true) => 'Review Facebook authorization and grant messaging permission.',
+            !in_array($conversation->channel==='instagram'?'instagram_manage_messages':'pages_messaging', $account->permissions ?? [], true) => 'Review Facebook authorization and grant messaging permission.',
             !$expires || $expires->lessThanOrEqualTo(now()) => 'The 24-hour Messenger reply window has ended. Wait for a new customer message.',
             !preg_match('/^\d+$/', (string) $conversation->provider_sender_id) || !preg_match('/^\d+$/', (string) $conversation->provider_page_id) => 'The Messenger recipient could not be verified.',
             default => null,
@@ -85,7 +85,7 @@ class MessengerReplyService
     {
         $reserved = DB::transaction(function () use ($reply, $source) {
             $conversation = SupportConversation::find($reply->conversation_id);
-            if (!$conversation || $conversation->channel !== 'facebook' || $source->conversation_id !== $conversation->id) return null;
+            if (!$conversation || !in_array($conversation->channel,['facebook','instagram'],true) || $source->conversation_id !== $conversation->id) return null;
             $account = $this->account($conversation);
             if ($account) $account = ManagedSocialAccount::whereKey($account->id)->lockForUpdate()->first();
             $locked = SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
@@ -142,7 +142,7 @@ class MessengerReplyService
             $token = $account->access_token;
             $response = Http::withToken($token)->acceptJson()->connectTimeout(5)->timeout(12)->post(
                 'https://graph.facebook.com/'.config('services.facebook.graph_version', 'v25.0').'/'.$account->provider_account_id.'/messages',
-                ['messaging_type' => 'RESPONSE', 'recipient' => ['id' => $recipient],
+                [...($account->platform==='facebook'?['messaging_type'=>'RESPONSE']:[]), 'recipient' => ['id' => $recipient],
                     'message' => ['text' => $content], 'appsecret_proof' => hash_hmac('sha256', $token, (string) config('services.facebook.client_secret'))]
             );
             $body = $response->json();

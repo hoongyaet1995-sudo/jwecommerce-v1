@@ -14,7 +14,7 @@ class MessengerSubscriptionService
             $token=$account->access_token;
             $client=Http::withToken($token)->acceptJson()->connectTimeout(5)->timeout(12);
             $data['appsecret_proof']=hash_hmac('sha256',$token,(string)config('services.facebook.client_secret'));
-            $url='https://graph.facebook.com/'.config('services.facebook.graph_version','v25.0').'/'.$account->provider_account_id.'/subscribed_apps';
+            $url='https://graph.facebook.com/'.config('services.facebook.graph_version','v25.0').'/'.($account->platform==='instagram'?$account->linked_page_id:$account->provider_account_id).'/subscribed_apps';
             $response=$method==='POST'?$client->asForm()->post($url,$data):$client->get($url,$data);
             $body=$response->json();
             if(!$response->successful()||!is_array($body)||isset($body['error'])) {
@@ -47,9 +47,10 @@ class MessengerSubscriptionService
     }
     public function enable(ManagedSocialAccount $account): void
     {
-        abort_unless(config('services.facebook.inbound_routing_ready')===true,409,'Messenger webhook routing is not ready. Ask your administrator to finish setup.');
+        abort_unless(config('services.'.$account->platform.'.inbound_routing_ready')===true,409,'Messenger webhook routing is not ready. Ask your administrator to finish setup.');
         abort_unless($account->state==='connected'&&$account->app_id===(string)config('services.facebook.client_id'),422,'Reconnect and verify this Page first.');
-        abort_unless(count(array_intersect(['pages_messaging','pages_manage_metadata'],$account->permissions??[]))===2,422,'Review Facebook authorization and grant messaging and Page webhook permissions.');
+        abort_unless(count(array_intersect([$account->platform==='instagram'?'instagram_manage_messages':'pages_messaging','pages_manage_metadata'],$account->permissions??[]))===2,422,'Review Facebook authorization and grant messaging and Page webhook permissions.');
+        abort_if($account->platform==='instagram'&&!preg_match('/^[0-9]{1,100}$/D',(string)$account->linked_page_id),422,'The linked Facebook Page is unavailable. Reconnect Instagram.');
         $fields=$this->fields($account);
         if(!in_array('messages',$fields,true)){
             $body=$this->request($account,'POST',['subscribed_fields'=>implode(',',array_unique([...$fields,'messages']))]);
@@ -73,6 +74,6 @@ class MessengerSubscriptionService
     }
     public function verify(ManagedSocialAccount $account): bool
     {
-        return config('services.facebook.inbound_routing_ready')===true&&in_array('messages',$this->fields($account),true);
+        return config('services.'.$account->platform.'.inbound_routing_ready')===true&&in_array('messages',$this->fields($account),true);
     }
 }

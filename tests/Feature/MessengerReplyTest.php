@@ -264,4 +264,44 @@ class MessengerReplyTest extends TestCase
         $this->postJson('/admin/api/social/facebook/'.$a->id.'/disconnect')->assertOk();
         $this->getJson('/admin/api/support/conversations?since='.urlencode($since))->assertOk()->assertJsonCount(1,'conversations')->assertJsonPath('conversations.0.canReply',false);
     }
+
+    private function instagramThread(): SupportConversation {
+      $c=$this->thread();$c->update(['channel'=>'instagram']);
+      ManagedSocialAccount::where('provider_account_id','111')->update(['platform'=>'instagram','permissions'=>json_encode(['instagram_manage_messages','pages_manage_metadata'])]);
+      config(['services.instagram.inbound_routing_ready'=>true]);return $c->fresh();
+    }
+    public function test_instagram_subscription_uses_linked_page_and_preserves_existing_fields(): void {
+      Schema::table('managed_social_accounts',fn(Blueprint $t)=>$t->string('linked_page_id',100)->nullable());
+      $this->instagramThread();$account=ManagedSocialAccount::first();$account->forceFill(['linked_page_id'=>'555','inbound_enabled'=>false,'inbound_verified_at'=>null])->save();
+      $this->assertSame('555',(string)$account->fresh()->linked_page_id);
+      $reads=0;
+      Http::fake(function($request)use(&$reads){
+        $this->assertStringContainsString('/555/subscribed_apps',$request->url());
+        if($request->method()==='POST'){
+          $this->assertStringContainsString('feed',$request['subscribed_fields']);
+          $this->assertStringContainsString('messages',$request['subscribed_fields']);
+          return Http::response(['success'=>true]);
+        }
+        return Http::response(['data'=>[['id'=>'app-test','subscribed_fields'=>++$reads===1?['feed']:['feed','messages']]]]);
+      });
+      app(\App\Services\Social\InstagramSubscriptionService::class)->enable($account);
+      $this->assertTrue($account->fresh()->inbound_enabled);Http::assertSentCount(3);
+    }
+    public function test_instagram_uses_shared_ai_and_explicit_handoff_then_staff_reply(): void {
+      $c=$this->instagramThread();$this->aiSettings();
+      Http::fake(['graph.facebook.com/*/messages'=>Http::response(['recipient_id'=>'222','message_id'=>'ig-out'])]);
+      $this->runAi($c,'Wash?');
+      $this->assertSame('open',$c->fresh()->status);
+      $this->assertSame('sent',$c->messages()->where('sender_role','ai')->firstOrFail()->delivery_status);
+      $c->messages()->delete();$c->messages()->create(['client_message_id'=>(string)\Illuminate\Support\Str::uuid(),'sender_role'=>'customer','content'=>'talk to a human']);
+      $this->runAi($c,'talk to a human');$this->assertSame('waiting_human',$c->fresh()->status);
+      $this->send($c,(string)\Illuminate\Support\Str::uuid())->assertOk();
+      $this->assertSame('human_mode',$c->fresh()->status);Http::assertSentCount(3);
+    }
+    public function test_instagram_does_not_use_facebook_connection_and_respects_reply_window(): void {
+      $c=$this->instagramThread();$c->messages()->update(['created_at'=>now()->subHours(25)]);
+      $this->send($c,(string)\Illuminate\Support\Str::uuid())->assertStatus(409);Http::assertNothingSent();
+      $c->messages()->update(['created_at'=>now()]);ManagedSocialAccount::query()->update(['platform'=>'facebook']);
+      $this->send($c,(string)\Illuminate\Support\Str::uuid())->assertStatus(409);Http::assertNothingSent();
+    }
 }

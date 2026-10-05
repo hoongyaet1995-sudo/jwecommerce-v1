@@ -1065,6 +1065,7 @@ export type NavSection =
   | 'dashboard'
   | 'support-overview'
   | 'support-facebook'
+  | 'support-instagram'
   | 'support'
   | 'shipping-malaysia'
   | 'marketplace'

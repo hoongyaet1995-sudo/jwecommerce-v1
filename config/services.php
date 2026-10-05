@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'instagram'=>[
+      'inbound_routing_ready'=>env('INSTAGRAM_INBOUND_ROUTING_READY',false),
+      'webhook_verify_token'=>env('INSTAGRAM_WEBHOOK_VERIFY_TOKEN',env('FACEBOOK_WEBHOOK_VERIFY_TOKEN')),
+    ],
 
     'facebook' => [
         'webhook_verify_token' => env('FACEBOOK_WEBHOOK_VERIFY_TOKEN'),

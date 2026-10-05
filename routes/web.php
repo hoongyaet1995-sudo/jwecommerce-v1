@@ -613,3 +613,18 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/social-links/{socialLink}', [OperationsController::class, 'updateSocialLink'])->name('social-links.update');
     Route::delete('/social-links/{socialLink}', [OperationsController::class, 'destroySocialLink'])->name('social-links.destroy');
 });
+
+Route::get('/webhooks/instagram/messages', [\App\Http\Controllers\InstagramWebhookController::class, 'verify']);
+Route::post('/webhooks/instagram/messages', [\App\Http\Controllers\InstagramWebhookController::class, 'handle']);
+Route::middleware(["auth","admin"])->prefix("admin")->group(function(){
+    Route::get('/social/instagram/authorize', [\App\Http\Controllers\Admin\InstagramAccountController::class, 'authorize'])->middleware('throttle:10,1');
+    Route::get('/social/instagram/callback', [\App\Http\Controllers\Admin\InstagramAccountController::class, 'callback'])->middleware('throttle:20,1');
+    Route::get('/social/instagram/hub-return', [\App\Http\Controllers\Admin\InstagramAccountController::class, 'hubReturn'])->middleware('throttle:20,1');
+    Route::get('/api/social/instagram', [\App\Http\Controllers\Admin\InstagramAccountController::class, 'index'])->middleware('throttle:30,1');
+    Route::post('/api/social/instagram/select', [\App\Http\Controllers\Admin\InstagramAccountController::class, 'select'])->middleware('throttle:10,1');
+    Route::post('/api/social/instagram/{id}/check', [\App\Http\Controllers\Admin\InstagramAccountController::class, 'check'])->middleware('throttle:30,1');
+    Route::post('/api/social/instagram/{id}/disconnect', [\App\Http\Controllers\Admin\InstagramAccountController::class, 'disconnect'])->middleware('throttle:10,1');
+    Route::delete('/api/social/instagram/{id}', [\App\Http\Controllers\Admin\InstagramAccountController::class, 'destroy'])->middleware('throttle:10,1');
+    Route::post('/api/social/instagram/{id}/inbound', [\App\Http\Controllers\Admin\InstagramAccountController::class, 'inbound'])->middleware('throttle:10,1');
+    Route::get('/social/instagram', AdminAppController::class)->name('social.instagram');
+});

@@ -156,4 +156,23 @@ class MessengerInboundTest extends TestCase
             return true;
         });
     }
+
+    public function test_instagram_signed_ingress_is_isolated_deduplicated_and_alerted(): void
+    {
+        $staff=User::factory()->create(['is_admin'=>true]);
+        $this->page('111',['platform'=>'instagram']);
+        $this->page('111');
+        $payload=$this->payload();$payload['object']='instagram';
+        $body=json_encode($payload);
+        $server=['CONTENT_TYPE'=>'application/json','HTTP_ACCEPT'=>'application/json','HTTP_X_HUB_SIGNATURE_256'=>'sha256='.hash_hmac('sha256',$body,'secret-test')];
+        $this->call('POST','/webhooks/instagram/messages',[],[],[],$server,$body)->assertOk()->assertJsonPath('processed',1);
+        $this->call('POST','/webhooks/instagram/messages',[],[],[],$server,$body)->assertOk()->assertJsonPath('processed',0);
+        $this->assertSame('instagram',SupportConversation::first()->channel);
+        $this->assertSame(1,$staff->notifications()->count());
+        $this->assertStringContainsString('Instagram',$staff->notifications()->first()->data['description']);
+        $server['HTTP_X_HUB_SIGNATURE_256']='sha256='.str_repeat('0',64);
+        $this->call('POST','/webhooks/instagram/messages',[],[],[],$server,$body)->assertForbidden();
+        $this->deliver($this->payload())->assertOk()->assertJsonPath('processed',1);
+        $this->assertSame(2,SupportConversation::count());
+    }
 }

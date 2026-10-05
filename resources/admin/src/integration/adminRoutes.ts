@@ -3,6 +3,7 @@ import type { NavSection } from '../types';
 export const ADMIN_PATH_BY_SECTION = {
   dashboard: '/admin',
   'support-overview': '/admin/support-overview',
+  'support-instagram': '/admin/social/instagram',
   'support-facebook': '/admin/social/facebook',
   commerce: '/admin/commerce',
   orders: '/admin/orders',

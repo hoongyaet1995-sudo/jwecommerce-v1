@@ -130,11 +130,11 @@ class FaqAutoReplyService
                     $locked->notes()->create(['content'=>'[Control] open → waiting_human (customer requested human)']);
                     $locked->update(['status'=>'waiting_human']);
                     \App\Models\User::where('is_admin',true)->chunkById(100,fn($staff)=>\Illuminate\Support\Facades\Notification::send($staff,new \App\Notifications\SupportHumanRequested($locked->id)));
-                } elseif ($locked->channel === 'facebook' && collect($actions)->contains(fn($a)=>($a['type']??'')==='request_human')) {
+                } elseif (in_array($locked->channel,['facebook','instagram'],true) && collect($actions)->contains(fn($a)=>($a['type']??'')==='request_human')) {
                     $answer .= "\n".['en'=>'To request a human agent, reply: Talk to a human.','ms'=>'Untuk meminta ejen manusia, balas: Talk to a human.','zh'=>'如需人工协助，请回复：转人工。'][preg_match('/\p{Han}/u',$source->content)?'zh':'en'];
                 }
-                $locked->messages()->create(['client_message_id' => $replyId, 'sender_role' => 'ai', 'actions' => $actions, 'content' => mb_substr(trim($answer), 0, $locked->channel === 'facebook' ? 2000 : 10000),
-                    ...($locked->channel === 'facebook' ? ['ai_settings_version'=>(int)($settings['version'] ?? 0),'ai_control_version'=>(int)$locked->notes()->max('id')] : [])]);
+                $locked->messages()->create(['client_message_id' => $replyId, 'sender_role' => 'ai', 'actions' => $actions, 'content' => mb_substr(trim($answer), 0, in_array($locked->channel,['facebook','instagram'],true) ? 2000 : 10000),
+                    ...(in_array($locked->channel,['facebook','instagram'],true) ? ['ai_settings_version'=>(int)($settings['version'] ?? 0),'ai_control_version'=>(int)$locked->notes()->max('id')] : [])]);
                 $locked->update(['last_message_at' => now()]);
             });
         } finally {

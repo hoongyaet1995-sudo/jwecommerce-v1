@@ -107,4 +107,20 @@ class SocialHubOAuthTest extends TestCase
         $this->assertStringNotContainsString('private-',DB::table('managed_social_accounts')->value('access_token'));
     }
 
+
+    public function test_instagram_denied_hub_never_redirects_to_meta(): void {
+      Http::fake(['social.jwaistudio.online/*'=>Http::response(['message'=>'oauth_not_permitted'],403)]);
+      $this->get('/admin/social/instagram/authorize')->assertRedirect('/admin/social/instagram?instagram=hub_not_permitted');
+      $this->assertNull(session('instagram_oauth'));Http::assertSentCount(1);
+    }
+    public function test_instagram_launch_uses_signed_receipt_and_separate_client_state(): void {
+      Http::fake(function($r){
+        $body=json_encode(['transaction_id'=>$this->transaction,'app_id'=>'test-app','launch_url'=>'https://social.jwaistudio.online/oauth/instagram/launch?ticket='.str_repeat('a',64)]);
+        $h=collect($r->headers())->map(fn($x)=>$x[0])->all();
+        return Http::response($body,200,['X-Social-Response-Signature'=>SocialProtocol::responseSignature($h,'installation-secret','client-to-hub',200,$body)]);
+      });
+      $this->get('/admin/social/instagram/authorize')->assertRedirect('https://social.jwaistudio.online/oauth/instagram/launch?ticket='.str_repeat('a',64));
+      $this->assertSame($this->transaction,session('instagram_oauth.transaction'));
+      $this->assertNull(session('facebook_oauth'));Http::assertSent(fn($r)=>str_ends_with($r->url(),'/api/v1/oauth/instagram/start'));
+    }
 }

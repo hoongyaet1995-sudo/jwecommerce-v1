@@ -31,6 +31,7 @@ import { ProductReviewsAdmin } from './components/catalog/ProductReviewsAdmin';
 import { CommerceHub } from './components/orders/CommerceHub';
 import { ShippingDashboard } from './components/shipping/ShippingDashboard';
 import { SupportOverviewHub } from './components/support/SupportOverviewHub';
+import { InstagramAccountPage } from './components/support/InstagramAccountPage';
 import { FacebookAccountPage } from './components/support/FacebookAccountPage';
 import { CustomerSupportHub } from './components/support/CustomerSupportHub';
 import { ReportsHub } from './components/reports/ReportsHub';
@@ -66,6 +67,7 @@ const AdminLayoutContent: React.FC = () => {
       case 'promotions':
         return <PromotionsHub />;
       case 'support-overview': return <SupportOverviewHub />;
+      case 'support-instagram': return <InstagramAccountPage />;
       case 'support-facebook': return <FacebookAccountPage />;
       case 'support':
         return <CustomerSupportHub />;

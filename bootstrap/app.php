@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: [
             'webhooks/facebook/messenger',
+            'webhooks/instagram/messages',
             'payments/webhooks/stripe',
             'payments/webhooks/billplz',
             'payments/webhooks/paypal',
