@@ -55,4 +55,18 @@ class SocialHubConnectivityTest extends TestCase
         $u->forceFill(['id' => 1, 'is_admin' => true, 'is_super_admin' => false]);
         $this->actingAs($u)->getJson('/admin/api/social-hub/installation')->assertForbidden();
     }
+
+    public function test_instagram_relay_validates_signature_tenant_and_replay():void
+    {
+        $service=$this->mock(\App\Services\Social\MessengerInboundService::class);
+        $service->shouldReceive('receive')->once()->with(['object'=>'instagram','entry'=>[]])->andReturn(0);
+        $d=['client_id'=>'client-a','registered_domain'=>'a.example.com','payload'=>['object'=>'instagram','entry'=>[]]];
+        $path='/api/social/hub/instagram';$body=json_encode($d);
+        $h=SocialProtocol::headers('client-a','key-a','fixture-secret','hub-to-client','POST',$path,$body);
+        $this->send($path,$d,$h)->assertOk()->assertJsonPath('status','accepted');
+        $this->send($path,$d,$h)->assertStatus(409);
+        $d['client_id']='client-b';$this->send($path,$d)->assertForbidden();
+        $d['client_id']='client-a';$h=SocialProtocol::headers('client-a','key-a','wrong','hub-to-client','POST',$path,json_encode($d));
+        $this->send($path,$d,$h)->assertUnauthorized();
+    }
 }

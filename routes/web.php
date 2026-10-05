@@ -57,6 +57,7 @@ use App\Http\Controllers\StorefrontPageController;
 use Illuminate\Support\Facades\Route;
 Route::post('/api/social/hub/challenge',[\App\Http\Controllers\SocialHubReceiverController::class,'receive'])->middleware('throttle:60,1');
 Route::post('/api/social/hub/events',[\App\Http\Controllers\SocialHubReceiverController::class,'receive'])->middleware('throttle:60,1');
+Route::post('/api/social/hub/instagram',[\App\Http\Controllers\SocialHubReceiverController::class,'receive']);
 Route::post('/api/social/hub/pair',\App\Http\Controllers\SocialHubPairingController::class)->middleware('throttle:5,1');
 Route::middleware(['auth','admin'])->group(function(){
  Route::get('/admin/social-hub/installation',fn()=>abort(404));

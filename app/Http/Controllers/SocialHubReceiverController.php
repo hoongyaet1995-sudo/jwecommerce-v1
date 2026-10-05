@@ -24,12 +24,19 @@ final class SocialHubReceiverController extends Controller
         if ($r->is('api/social/hub/challenge')) {
             $d = $r->validate(['check_id' => 'required|string|max:100', 'challenge' => 'required|regex:/^[a-f0-9]{64}$/D']);
             $response = ['status' => 'verified', 'check_id' => $d['check_id'], 'challenge' => $d['challenge']];
+        } elseif ($r->is('api/social/hub/instagram')) {
+            abort_if(strlen($r->getContent())>1048576,413);
+            abort_unless(is_array($d['payload']??null)&&($d['payload']['object']??null)==='instagram',422);
+            $response=['status'=>'accepted'];
         } else {
             $d = $r->validate(['client_id' => 'required|string', 'event_id' => 'required|string|max:100', 'type' => 'required|in:connectivity.test', 'correlation_id' => 'required|string|max:100', 'created_at' => 'required|date', 'payload' => 'required|array']);
             $response = ['status' => 'accepted', 'event_id' => $d['event_id']];
         }
         DB::table('social_hub_request_nonces')->where('expires_at', '<', now())->delete();
         abort_unless(DB::table('social_hub_request_nonces')->insertOrIgnore(['client_id' => $s->client_id, 'key_id' => $s->key_id, 'nonce' => $h['X-Social-Nonce'], 'expires_at' => now()->addMinutes(10)]), 409, 'request_replayed');
+        if ($r->is('api/social/hub/instagram')) {
+            $response['processed']=app(\App\Services\Social\MessengerInboundService::class)->receive($d['payload']);
+        }
         if ($r->is('api/social/hub/events')) {
             $hash = hash('sha256', $r->getContent());
             DB::table('social_hub_test_event_inbox')->insertOrIgnore(['client_id' => $s->client_id, 'event_id' => $d['event_id'], 'payload_hash' => $hash, 'received_at' => now()]);

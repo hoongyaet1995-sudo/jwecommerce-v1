@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'webhooks/easyparcel/*',
             'api/social/hub/challenge',
             'api/social/hub/events',
+            'api/social/hub/instagram',
             'api/social/hub/pair',
             'api/marketplace/hub/refresh',
             'api/marketplace/hub/events',
