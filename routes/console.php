@@ -137,3 +137,13 @@ Schedule::command('marketplace:prune-oauth-seeds')->hourly()->withoutOverlapping
 // Hostinger runs Laravel's scheduler each minute; drain marketplace jobs without requiring a resident daemon.
 Schedule::command('queue:work --queue=marketplace --stop-when-empty --tries=3 --timeout=120')
     ->everyMinute()->withoutOverlapping(10);
+
+\Illuminate\Support\Facades\Artisan::command('social:heartbeat', function () {
+ $lock=\Illuminate\Support\Facades\Cache::lock('social-heartbeat',30);
+ if(!$lock->get()){ $this->warn('Heartbeat already running.'); return 1; }
+ try { $r=app(\App\Services\Social\SocialHubInstallation::class)->heartbeat(); $this->line($r['reason']); return $r['ok']?0:1; } finally { $lock->release(); }
+});
+
+Schedule::command('social:heartbeat')->everyFiveMinutes()->withoutOverlapping(2)
+    ->when(fn () => \Illuminate\Support\Facades\Schema::hasTable('social_hub_settings')
+        && \Illuminate\Support\Facades\DB::table('social_hub_settings')->where('id', 1)->where('enabled', true)->exists());

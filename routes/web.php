@@ -55,6 +55,15 @@ use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\StorefrontCurrencyController;
 use App\Http\Controllers\StorefrontPageController;
 use Illuminate\Support\Facades\Route;
+Route::post('/api/social/hub/challenge',[\App\Http\Controllers\SocialHubReceiverController::class,'receive'])->middleware('throttle:60,1');
+Route::post('/api/social/hub/events',[\App\Http\Controllers\SocialHubReceiverController::class,'receive'])->middleware('throttle:60,1');
+Route::middleware(['auth','admin'])->group(function(){
+ Route::get('/admin/social-hub/installation',[\App\Http\Controllers\Admin\SocialHubInstallationController::class,'page']);
+ Route::get('/admin/api/social-hub/installation',[\App\Http\Controllers\Admin\SocialHubInstallationController::class,'index']);
+ Route::put('/admin/api/social-hub/installation',[\App\Http\Controllers\Admin\SocialHubInstallationController::class,'save']);
+ Route::post('/admin/api/social-hub/heartbeat',[\App\Http\Controllers\Admin\SocialHubInstallationController::class,'heartbeat'])->middleware('throttle:10,1');
+});
+
 
 Route::post('/api/marketplace/hub/refresh', \App\Http\Controllers\MarketplaceHubRefreshController::class)
     ->middleware('throttle:30,1');

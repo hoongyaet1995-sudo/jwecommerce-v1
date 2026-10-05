@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 export const SupportOverviewHub: React.FC = () => {
-  const { setCurrentSection } = useAdmin();
+  const { setCurrentSection, user } = useAdmin();
   const [channelsOpen,setChannelsOpen]=useState(false);
   const [selectedChannel,setSelectedChannel]=useState<string|null>(null);
   const facebook=useFacebookAccounts(true);
@@ -46,6 +46,7 @@ export const SupportOverviewHub: React.FC = () => {
             </span>
             <span className="text-xs text-neutral-400">Customer Care & Messaging</span>
           </div>
+          {user?.role === 'super_admin' && <a href="/admin/social-hub/installation" className="inline-flex text-xs px-3 py-2 rounded-lg bg-white/10 text-white border border-white/20">Social Hub Installation</a>}
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             Customer Support
           </h1>
