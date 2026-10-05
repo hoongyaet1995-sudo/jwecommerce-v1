@@ -11,6 +11,7 @@ use Tests\TestCase;
 
 class FacebookManagedAccountTest extends TestCase
 {
+    private string $oauthResult='select';
     protected function setUp(): void
     {
         parent::setUp();
@@ -25,6 +26,30 @@ class FacebookManagedAccountTest extends TestCase
         Schema::table('managed_social_accounts',function(Blueprint $t){$t->boolean('inbound_enabled')->default(false);$t->timestamp('inbound_verified_at')->nullable();$t->timestamp('last_inbound_at')->nullable();$t->string('messaging_error',255)->nullable();});
         Schema::table('support_conversations',function(Blueprint $t){$t->string('channel')->default('web_guest');$t->string('merchant_key')->nullable();$t->string('provider_page_id')->nullable();});
         Http::preventStrayRequests();
+        $this->artisan('migrate',['--path'=>'database/migrations/social','--force'=>true]);
+        DB::table('social_hub_settings')->insert(['id'=>1,'hub_url'=>'https://social.jwaistudio.online','client_id'=>'client-a','key_id'=>'key-a',
+            'encrypted_secret'=>\Illuminate\Support\Facades\Crypt::encryptString('installation-secret'),'registered_domain'=>'ecom.example.test','enabled'=>true,'created_at'=>now(),'updated_at'=>now()]);
+        $this->hubProvider();
+    }
+
+    private function hubProvider(): void
+    {
+        Http::fake(['social.jwaistudio.online/api/v1/oauth/facebook/*'=>function($r){
+            $d=json_decode($r->body(),true);$action=basename(parse_url($r->url(),PHP_URL_PATH));
+            $tx='12345678-1234-4234-8234-123456789abc';
+            $reply=['app_id'=>'test-app','transaction_id'=>$tx]+match($action){
+                'start'=>['launch_url'=>'https://social.jwaistudio.online/oauth/facebook/launch?ticket='.str_repeat('a',64)],
+                'redeem'=>['result'=>$this->oauthResult,'pages'=>$this->oauthResult==='select'?[['id'=>'page-1','name'=>'Real Page']]:[]],
+                'select'=>['page'=>['id'=>'page-1','name'=>'Real Page','access_token'=>'private-page-token','tasks'=>['MANAGE']],'permissions'=>['pages_show_list']],
+            };
+            $body=json_encode($reply);$h=collect($r->headers())->map(fn($v)=>$v[0])->all();
+            return Http::response($body,200,['X-Social-Response-Signature'=>\App\Services\Social\SocialProtocol::responseSignature($h,'installation-secret','client-to-hub',200,$body)]);
+        }]);
+    }
+
+    private function returnUrl(string $state): string
+    {
+        return '/admin/social/facebook/hub-return?state='.urlencode($state).'&transaction=12345678-1234-4234-8234-123456789abc&handoff='.str_repeat('b',64);
     }
 
     private function owner(): User
@@ -47,16 +72,15 @@ class FacebookManagedAccountTest extends TestCase
     {
         $this->get('/admin/social/facebook/authorize')->assertRedirect();
         $state=session('facebook_oauth.state');
-        $this->get('/admin/social/facebook/callback?state='.urlencode($state).'&code=test-code')->assertRedirect('/admin/social/facebook?facebook=select');
+        $this->get($this->returnUrl($state))->assertRedirect('/admin/social/facebook?facebook=select');
     }
 
-    public function test_authorization_requests_business_page_discovery_and_rerequests_declined_scopes(): void
+    public function test_authorization_enters_hub_and_never_direct_meta_oauth(): void
     {
         $this->owner();
         $response=$this->get('/admin/social/facebook/authorize')->assertRedirect();
-        parse_str(parse_url($response->headers->get('Location'),PHP_URL_QUERY),$query);
-        $this->assertEqualsCanonicalizing(['pages_show_list','business_management','pages_read_engagement','pages_messaging','pages_manage_metadata'],explode(',',$query['scope']));
-        $this->assertSame('rerequest',$query['auth_type']??null);
+        $this->assertStringStartsWith('https://social.jwaistudio.online/oauth/facebook/launch?ticket=',$response->headers->get('Location'));
+        Http::assertNotSent(fn($r)=>str_contains($r->url(),'graph.facebook.com'));
     }
 
     public function test_empty_page_list_distinguishes_missing_business_grant_from_no_accessible_assets(): void
@@ -71,8 +95,9 @@ class FacebookManagedAccountTest extends TestCase
                 'graph.facebook.com/*/me/permissions*'=>Http::response(['data'=>$permissions]),
                 'graph.facebook.com/*/me/accounts*'=>Http::response(['data'=>[]]),
             ]);
+            $this->oauthResult=$businessGranted?'no_pages':'business_permission_required';$this->hubProvider();
             $this->get('/admin/social/facebook/authorize');$state=session('facebook_oauth.state');
-            $this->get('/admin/social/facebook/callback?state='.$state.'&code=test')->assertRedirect('/admin/social/facebook?facebook='.($businessGranted?'no_pages':'business_permission_required'));
+            $this->get($this->returnUrl($state))->assertRedirect('/admin/social/facebook?facebook='.$this->oauthResult);
             $this->assertSame(0,DB::table('managed_social_accounts')->count());
         }
     }
@@ -95,14 +120,16 @@ class FacebookManagedAccountTest extends TestCase
     {
         $this->owner();$this->provider();
         $this->get('/admin/social/facebook/authorize');
-        $this->get('/admin/social/facebook/callback?state=wrong&code=test')->assertRedirect('/admin/social/facebook?facebook=invalid_state');
-        Http::assertNothingSent();
+        $sent=count(Http::recorded());
+        $this->get($this->returnUrl('wrong'))->assertRedirect('/admin/social/facebook?facebook=invalid_state');
+        $this->assertCount($sent,Http::recorded());
         $this->get('/admin/social/facebook/authorize');$state=session('facebook_oauth.state');
+        $sent=count(Http::recorded());
         $this->travel(11)->minutes();
-        $this->get('/admin/social/facebook/callback?state='.$state.'&code=test')->assertRedirect('/admin/social/facebook?facebook=invalid_state');
-        Http::assertNothingSent();
+        $this->get($this->returnUrl($state))->assertRedirect('/admin/social/facebook?facebook=invalid_state');
+        $this->assertCount($sent,Http::recorded());
         $this->travelBack();$this->completeOAuth();$sent=count(Http::recorded());
-        $this->get('/admin/social/facebook/callback?state='.urlencode(session('facebook_oauth.state','')).'&code=test')->assertRedirect('/admin/social/facebook?facebook=invalid_state');
+        $this->get($this->returnUrl(session('facebook_oauth.state','')))->assertRedirect('/admin/social/facebook?facebook=invalid_state');
         $this->assertCount($sent,Http::recorded());
     }
 
@@ -134,9 +161,10 @@ class FacebookManagedAccountTest extends TestCase
     public function test_actor_and_configuration_changes_reject_pending_state_and_pages(): void
     {
         $this->owner();$this->provider();$this->get('/admin/social/facebook/authorize');$state=session('facebook_oauth.state');
+        $sent=count(Http::recorded());
         $this->actingAs(User::factory()->create(['is_admin'=>true,'is_super_admin'=>true]));
-        $this->get('/admin/social/facebook/callback?state='.$state.'&code=test')->assertRedirect('/admin/social/facebook?facebook=invalid_state');
-        Http::assertNothingSent();
+        $this->get($this->returnUrl($state))->assertRedirect('/admin/social/facebook?facebook=invalid_state');
+        $this->assertCount($sent,Http::recorded());
         $this->completeOAuth();config(['services.facebook.client_id'=>'different-app']);
         $this->postJson('/admin/api/social/facebook/select',['page_id'=>'page-1'])->assertUnprocessable();
         $this->assertSame(0,DB::table('managed_social_accounts')->count());
@@ -144,13 +172,14 @@ class FacebookManagedAccountTest extends TestCase
 
     public function test_cancelled_or_denied_authorization_cannot_persist_pages(): void
     {
-        $this->owner();$this->provider();$this->get('/admin/social/facebook/authorize');$state=session('facebook_oauth.state');
-        $this->get('/admin/social/facebook/callback?state='.$state.'&error=access_denied')->assertRedirect('/admin/social/facebook?facebook=cancelled');
-        Http::assertNothingSent();
+        $this->owner();$this->provider();$this->oauthResult='cancelled';$this->get('/admin/social/facebook/authorize');$state=session('facebook_oauth.state');
+        $this->get($this->returnUrl($state))->assertRedirect('/admin/social/facebook?facebook=cancelled');
+        Http::assertNotSent(fn($r)=>str_contains($r->url(),'graph.facebook.com'));
         Http::swap(new \Illuminate\Http\Client\Factory()); Http::preventStrayRequests(); Http::fake(['graph.facebook.com/*/oauth/access_token*'=>Http::response(['access_token'=>'private-user-token']),
             'graph.facebook.com/*/me/permissions*'=>Http::response(['data'=>[['permission'=>'pages_show_list','status'=>'declined']]])]);
+        $this->oauthResult='permission_required';$this->hubProvider();
         $this->get('/admin/social/facebook/authorize');$state=session('facebook_oauth.state');
-        $this->get('/admin/social/facebook/callback?state='.$state.'&code=test')->assertRedirect('/admin/social/facebook?facebook=permission_required');
+        $this->get($this->returnUrl($state))->assertRedirect('/admin/social/facebook?facebook=permission_required');
         $this->assertNull(session('facebook_pending'));
     }
     public function test_permission_failure_reports_safe_actionable_reason_and_check_time(): void

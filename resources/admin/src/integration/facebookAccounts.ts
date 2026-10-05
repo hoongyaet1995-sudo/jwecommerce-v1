@@ -69,5 +69,10 @@ export const facebookOAuthNotice:Record<string,string>={
   business_permission_required:'Business access was not granted and Meta returned no Pages. Connect Facebook again, allow Business access, and select the Business Portfolio and Pages you manage.',
   no_pages:'Meta returned no accessible Pages. Check that the Facebook account has Page access in the correct Business Portfolio and that the Page is selected in the authorization settings, then reconnect.',
   provider_error:'Meta could not complete authorization. Please try again.',
+  authorization_expired:'Facebook authorization expired. Connect Facebook again.',
+  hub_not_permitted:'Social Hub has not permitted Facebook OAuth for this website. Ask your administrator to enable authorization.',
+  hub_not_configured:'Configure and enable this website’s Social Hub installation before authorizing Facebook.',
+  hub_unavailable:'Social Hub could not verify authorization. Please try again; no Page was connected.',
+  page_not_authorized:'The selected Page was not authorized. Connect Facebook again.',
   not_configured:'Facebook OAuth requires server credentials and an HTTPS callback before connecting.',
 };

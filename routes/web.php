@@ -166,6 +166,7 @@ Route::get('/admin/shipping/easyparcel/callback/denied', [ShippingProviderApiCon
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/social/facebook/authorize', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'authorize'])->middleware('throttle:10,1');
     Route::get('/social/facebook/callback', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'callback'])->middleware('throttle:20,1');
+    Route::get('/social/facebook/hub-return', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'hubReturn'])->middleware('throttle:20,1');
     Route::get('/api/social/facebook', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'index'])->middleware('throttle:30,1');
     Route::post('/api/social/facebook/select', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'select'])->middleware('throttle:10,1');
     Route::post('/api/social/facebook/{id}/check', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'check'])->middleware('throttle:30,1');

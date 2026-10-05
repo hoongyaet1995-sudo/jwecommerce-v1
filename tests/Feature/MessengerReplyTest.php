@@ -189,8 +189,18 @@ class MessengerReplyTest extends TestCase
     public function test_page_selection_automatically_subscribes_and_permission_failure_is_not_ready(): void
     {
         $staff=User::factory()->create(['is_admin'=>true,'is_super_admin'=>true]);$this->actingAs($staff);
+        $this->artisan('migrate',['--path'=>'database/migrations/social','--force'=>true]);
+        DB::table('social_hub_settings')->insert(['id'=>1,'hub_url'=>'https://social.jwaistudio.online','client_id'=>'client-a','key_id'=>'key-a',
+            'encrypted_secret'=>\Illuminate\Support\Facades\Crypt::encryptString('installation-secret'),'registered_domain'=>'ecom.example.test','enabled'=>true,'created_at'=>now(),'updated_at'=>now()]);
+        $hubResponse=function($r,string $token){
+            $d=json_decode($r->body(),true);$body=json_encode(['app_id'=>'app-test','transaction_id'=>$d['transaction_id'],
+                'page'=>['id'=>'111','name'=>'Selected','access_token'=>$token],'permissions'=>['pages_show_list','pages_messaging','pages_manage_metadata']]);
+            $h=collect($r->headers())->map(fn($v)=>$v[0])->all();
+            return Http::response($body,200,['X-Social-Response-Signature'=>\App\Services\Social\SocialProtocol::responseSignature($h,'installation-secret','client-to-hub',200,$body)]);
+        };
         $subscribed=false;
-        Http::fake(function($r)use(&$subscribed){
+        Http::fake(function($r)use(&$subscribed,$hubResponse){
+            if(str_contains($r->url(),'social.jwaistudio.online'))return $hubResponse($r,'page-token');
             if(str_contains($r->url(),'/me/permissions'))return Http::response(['data'=>array_map(fn($p)=>['permission'=>$p,'status'=>'granted'],['pages_show_list','pages_messaging','pages_manage_metadata'])]);
             if(str_contains($r->url(),'/me/accounts'))return Http::response(['data'=>[['id'=>'111','name'=>'Selected','access_token'=>'page-token']]]);
             if(str_contains($r->url(),'/subscribed_apps')){
@@ -199,12 +209,14 @@ class MessengerReplyTest extends TestCase
             }
             return Http::response(['id'=>'111','name'=>'Selected']);
         });
-        $pending=\Illuminate\Support\Facades\Crypt::encryptString(json_encode(['actor'=>$staff->id,'merchant'=>'shop-test','app'=>'app-test','expires'=>now()->addMinutes(10)->timestamp,'token'=>'user-token','pages'=>[['id'=>'111','name'=>'Selected']]]));
+        $pending=\Illuminate\Support\Facades\Crypt::encryptString(json_encode(['actor'=>$staff->id,'merchant'=>'shop-test','app'=>'app-test','expires'=>now()->addMinutes(5)->timestamp,
+            'installation'=>app(\App\Services\Social\SocialHubOAuth::class)->fingerprint(),'transaction'=>'12345678-1234-4234-8234-123456789abc','pages'=>[['id'=>'111','name'=>'Selected']]]));
         $this->withSession(['facebook_pending'=>$pending])->postJson('/admin/api/social/facebook/select',['page_id'=>'111'])->assertOk()->assertJsonPath('accounts.0.messagingReady',true);
         $this->assertTrue($subscribed);$this->assertTrue(ManagedSocialAccount::first()->inbound_enabled);
         Http::assertSent(fn($r)=>str_contains($r->url(),'/111/subscribed_apps')&&$r->method()==='POST'&&$r['subscribed_fields']==='feed,messages');
         Http::swap(new \Illuminate\Http\Client\Factory());Http::preventStrayRequests();
-        Http::fake(function($r){
+        Http::fake(function($r)use($hubResponse){
+            if(str_contains($r->url(),'social.jwaistudio.online'))return $hubResponse($r,'new-token');
             if(str_contains($r->url(),'/me/permissions'))return Http::response(['data'=>array_map(fn($p)=>['permission'=>$p,'status'=>'granted'],['pages_show_list','pages_messaging','pages_manage_metadata'])]);
             if(str_contains($r->url(),'/me/accounts'))return Http::response(['data'=>[['id'=>'111','name'=>'Selected','access_token'=>'new-token']]]);
             if(str_contains($r->url(),'/subscribed_apps'))return Http::response(['error'=>['code'=>200,'message'=>'private error']],403);
