@@ -2,6 +2,7 @@ import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React, { useEffect, useRef, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import {useFacebookAccounts} from '../../integration/facebookAccounts';
+import {useInstagramAccounts} from '../../integration/instagramAccounts';
 import {
   ShoppingBag,
   Users,
@@ -21,6 +22,10 @@ export const SupportOverviewHub: React.FC = () => {
   const [selectedChannel,setSelectedChannel]=useState<string|null>(null);
   const facebook=useFacebookAccounts(true);
   const facebookStatus=facebook.loading?'Checking...':facebook.error?'Unable to verify':facebook.data?.accounts.some(account=>account.messagingReady)?'Ready to chat':facebook.data?.accounts.some(account=>account.state!=='disconnected')?'Action required':'Setup required';
+  const instagram=useInstagramAccounts(true);
+  const instagramStatus=instagram.loading?'Checking...':instagram.error?'Unable to verify':instagram.data?.accounts.some(account=>account.messagingReady)?'Ready to chat':instagram.data?.accounts.some(account=>account.state!=='disconnected')?'Action required':'Setup required';
+  const connectedChannels=[facebook.data?.accounts.some(a=>a.state==='connected')?'Facebook':null,instagram.data?.accounts.some(a=>a.state==='connected')?'Instagram':null].filter(Boolean);
+  const connectionSummary=connectedChannels.length?connectedChannels.join(' & ')+' connected':'Check connections';
   const dialogRef=useRef<HTMLDialogElement>(null);
   useEffect(()=>{const dialog=dialogRef.current;if(channelsOpen&&!dialog?.open)dialog?.showModal();else if(!channelsOpen&&dialog?.open)dialog.close();},[channelsOpen]);
   const channels=[
@@ -32,7 +37,7 @@ export const SupportOverviewHub: React.FC = () => {
 
   const cards = [
     {id:'support' as const,title:'Customer Support',shortName:'Support Inbox',description:'Manage storefront conversations, respond to customers, take over from AI, and resolve support requests.',icon:Users,iconBg:'from-amber-500 to-orange-600',badge:'Storefront',badgeColor:'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20',highlights:['AI and human conversations','Human handoff and follow-up','Resolved and archived conversations'],actionLabel:'Open Customer Support'},
-    {id:'support-overview' as const,title:'Connect Multichannel Account',shortName:'Messaging Channels',description:'Manage Facebook Messenger connections. Instagram, TikTok and WhatsApp setup will follow.',icon:ShoppingBag,iconBg:'from-orange-500 to-rose-600',badge:facebookStatus,badgeColor:'bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/20',highlights:['Facebook Messenger','Instagram Direct Messages','TikTok and WhatsApp'],actionLabel:'Coming soon'},
+    {id:'support-overview' as const,title:'Connect Multichannel Account',shortName:'Messaging Channels',description:'Manage Facebook Messenger and Instagram Direct Message connections. TikTok and WhatsApp setup will follow.',icon:ShoppingBag,iconBg:'from-orange-500 to-rose-600',badge:connectionSummary,badgeColor:'bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/20',highlights:['Facebook Messenger','Instagram Direct Messages','TikTok and WhatsApp'],actionLabel:'Coming soon'},
   ];
   return (
     <div className="space-y-6">
@@ -68,7 +73,7 @@ export const SupportOverviewHub: React.FC = () => {
           </div>
           <div className="p-3 rounded-xl bg-white/5 border border-white/5">
             <p className="text-[11px] font-medium text-neutral-400">Multichannel Accounts</p>
-            <p className="text-xl font-bold text-white mt-0.5">{facebook.data?.accounts.some(a=>a.state==='connected')?'Facebook connected':'Check connections'}</p>
+            <p className="text-xl font-bold text-white mt-0.5">{connectionSummary}</p>
             <span className="text-[10px] text-emerald-400">Select a channel to view status</span>
           </div>
         </div>
@@ -100,7 +105,7 @@ export const SupportOverviewHub: React.FC = () => {
                       <Icon className="w-5 h-5" />
                     </div>
                     <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${card.badgeColor}`}>
-                      {card.id==='support-overview' && facebook.data?.accounts.some(a=>a.state==='connected')?'Facebook connected':card.badge}
+                      {card.badge}
                     </span>
                   </div>
 
@@ -145,7 +150,7 @@ export const SupportOverviewHub: React.FC = () => {
           <div className="p-5 sm:p-6 space-y-5">
             <div className="flex gap-3 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200"><Info className="w-4 h-4 shrink-0 mt-0.5"/><div><p className="text-sm font-semibold">Connect a messaging account</p><p className="mt-1 text-xs leading-relaxed">Connect Facebook or Instagram to authorize an account. JW automatically verifies and enables text conversations. Other channels still require setup.</p></div></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {channels.map(channel=>{const Icon=channel.icon;return <button key={channel.name} type="button" aria-pressed={selectedChannel===channel.name} onClick={()=>{if(channel.name==='Facebook'){setChannelsOpen(false);setCurrentSection('support-facebook');}else if(channel.name==='Instagram'){setChannelsOpen(false);setCurrentSection('support-instagram');}else setSelectedChannel(channel.name);}} className={'flex items-center gap-3 text-left p-4 sm:p-5 rounded-xl border transition-colors '+(selectedChannel===channel.name?'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30':'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/40 hover:border-indigo-400')}><span className={'w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0 '+channel.color}><Icon className="w-5 h-5"/></span><span className="flex-1 min-w-0"><span className="flex items-center justify-between gap-2 flex-wrap"><span className="text-sm font-semibold">{channel.name}</span><span className="text-[10px] font-semibold rounded-full px-2 py-1 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">{channel.name==='Facebook'?facebookStatus:'Setup required'}</span></span><span className="block mt-2 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">{channel.description}</span></span><Settings className="w-4 h-4 shrink-0 text-neutral-400"/></button>})}
+              {channels.map(channel=>{const Icon=channel.icon;return <button key={channel.name} type="button" aria-pressed={selectedChannel===channel.name} onClick={()=>{if(channel.name==='Facebook'){setChannelsOpen(false);setCurrentSection('support-facebook');}else if(channel.name==='Instagram'){setChannelsOpen(false);setCurrentSection('support-instagram');}else setSelectedChannel(channel.name);}} className={'flex items-center gap-3 text-left p-4 sm:p-5 rounded-xl border transition-colors '+(selectedChannel===channel.name?'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30':'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/40 hover:border-indigo-400')}><span className={'w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0 '+channel.color}><Icon className="w-5 h-5"/></span><span className="flex-1 min-w-0"><span className="flex items-center justify-between gap-2 flex-wrap"><span className="text-sm font-semibold">{channel.name}</span><span className="text-[10px] font-semibold rounded-full px-2 py-1 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">{channel.name==='Facebook'?facebookStatus:channel.name==='Instagram'?instagramStatus:'Setup required'}</span></span><span className="block mt-2 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">{channel.description}</span></span><Settings className="w-4 h-4 shrink-0 text-neutral-400"/></button>})}
             </div>
             {selectedChannel&&selectedChannel!=='Facebook'&&<p role="status" className="text-xs text-neutral-500 dark:text-neutral-400">{selectedChannel} selected. Connection setup is not available yet.</p>}
 
