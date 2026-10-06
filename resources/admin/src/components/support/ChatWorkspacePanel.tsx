@@ -1,11 +1,36 @@
 import React,{useRef,useEffect,useState} from 'react';
 import {useAdmin} from '../../context/AdminContext';
 import {SupportConversation} from '../../types/support';
+import {SupportActionConfirmation} from './SupportActionConfirmation';
 import {CHANNEL_META} from './ConversationListPanel';
 import {Send,ArrowLeft,CheckCircle2,RotateCcw,Info,Bot,UserCheck,Archive,ArchiveRestore} from 'lucide-react';
 interface Props {conversation:SupportConversation;onBackToList:()=>void;isContextOpen:boolean;onToggleContext:()=>void}
 export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
  const {sendMessageToConversation,resolveConversation,reopenConversation,supportDrafts,setSupportDraft,supportBusy,takeOverConversation,handBackToAI,archiveConversation}=useAdmin();
+ type Action='takeover'|'ai'|'archive'|'restore'|'resolve'|'reopen';
+ const [confirmation,setConfirmation]=useState<{action:Action;id:string}|null>(null);
+ const confirming=useRef(false);
+ useEffect(()=>setConfirmation(null),[conversation.id,conversation.status,conversation.isArchived]);
+ const actionDetails:Record<Action,{title:string;description:string}>={
+  takeover:{title:'Take Over',description:'You will take over this conversation. Automatic AI replies will pause.'},
+  ai:{title:'Hand to AI',description:'Return this conversation to AI handling. New customer messages may receive automatic replies.'},
+  archive:{title:'Archive',description:'Move this conversation to Archived. Its message history will be retained.'},
+  restore:{title:'Restore',description:'Return this conversation to the active inbox.'},
+  resolve:{title:'Resolve',description:'Mark this conversation as resolved. Reopen it before sending another reply.'},
+  reopen:{title:'Reopen',description:'Reopen this conversation and return it to the active inbox.'},
+ };
+ const confirmAction=async()=>{
+  if(!confirmation||confirming.current||supportBusy||confirmation.id!==conversation.id)return;
+  confirming.current=true;const {action,id}=confirmation;
+  try{setConfirmation(null);switch(action){
+   case 'takeover':await takeOverConversation(id);break;
+   case 'ai':await handBackToAI(id);break;
+   case 'archive':await archiveConversation(id,true);break;
+   case 'restore':await archiveConversation(id,false);break;
+   case 'resolve':await resolveConversation(id);break;
+   case 'reopen':await reopenConversation(id);break;
+  }}finally{confirming.current=false;}
+ };
  const inputText=supportDrafts[conversation.id]||'';
  const [clock,setClock]=useState(Date.now());
  useEffect(()=>{if(!['facebook','instagram','whatsapp'].includes(conversation.channel)||!conversation.replyWindowExpiresAt)return;const timer=setInterval(()=>setClock(Date.now()),5000);return()=>clearInterval(timer);},[conversation.channel,conversation.replyWindowExpiresAt]);
@@ -17,6 +42,7 @@ export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
  useEffect(()=>{const stream=streamRef.current;if(!stream)return;const switched=previousConversation.current!==conversation.id;previousConversation.current=conversation.id;if(switched||followLatest.current){stream.scrollTop=stream.scrollHeight;followLatest.current=true;}},[conversation.id,conversation.messages.length]);
  const send=async()=>{if(blocked||!inputText.trim()||conversation.status==='resolved'||supportBusy)return;const draft=inputText;if(await sendMessageToConversation(conversation.id,draft.trim(),'text'))setSupportDraft(conversation.id,'')};
  return <div id="chat-workspace-container" className="flex flex-col h-full min-h-0 overflow-hidden bg-neutral-50 dark:bg-neutral-950">
+      {confirmation && <SupportActionConfirmation title={actionDetails[confirmation.action].title} description={actionDetails[confirmation.action].description} customerName={conversation.customer.name} pending={supportBusy} onCancel={()=>setConfirmation(null)} onConfirm={confirmAction}/>}
       {/* 1. Header Toolbar */}
       <div
         id="chat-workspace-header"
@@ -69,8 +95,8 @@ export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
 
               <button
                 id="btn-take-over-chat"
-                disabled={supportBusy} onClick={() => takeOverConversation(conversation.id)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-xs"
+                disabled={supportBusy} onClick={() => setConfirmation({action:'takeover',id:conversation.id})}
+                className="h-8 box-border flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-xs"
               >
                 <UserCheck className="w-3.5 h-3.5" />
                 <span>Take Over</span>
@@ -87,8 +113,8 @@ export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
 
               <button
                 id="btn-hand-back-ai"
-                disabled={supportBusy} onClick={() => handBackToAI(conversation.id)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700 rounded-lg transition-colors"
+                disabled={supportBusy} onClick={() => setConfirmation({action:'ai',id:conversation.id})}
+                className="h-8 box-border flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700 rounded-lg transition-colors"
                 title="Return conversation to automated AI handling"
               >
                 <Bot className="w-3.5 h-3.5 text-indigo-500" />
@@ -98,13 +124,13 @@ export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
           )}
 
           
-          <button type="button" aria-label={conversation.isArchived?"Restore conversation":"Archive conversation"} title={conversation.isArchived?"Restore conversation":"Archive conversation"} disabled={supportBusy} onClick={()=>archiveConversation(conversation.id,!conversation.isArchived)} className="p-2 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-500 hover:text-indigo-500">{conversation.isArchived?<ArchiveRestore className="w-4 h-4"/>:<Archive className="w-4 h-4"/>}</button>
+          <button type="button" aria-label={conversation.isArchived?"Restore conversation":"Archive conversation"} title={conversation.isArchived?"Restore conversation":"Archive conversation"} disabled={supportBusy} onClick={()=>setConfirmation({action:conversation.isArchived?'restore':'archive',id:conversation.id})} className="h-8 w-8 box-border flex items-center justify-center p-0 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-500 hover:text-indigo-500">{conversation.isArchived?<ArchiveRestore className="w-4 h-4"/>:<Archive className="w-4 h-4"/>}</button>
           {/* Resolve / Reopen Button */}
           {conversation.status !== 'resolved' ? (
             <button
               id="btn-resolve-chat" disabled={supportBusy}
-              onClick={() => resolveConversation(conversation.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg transition-colors"
+              onClick={() => setConfirmation({action:'resolve',id:conversation.id})}
+              className="h-8 box-border flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg transition-colors"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Resolve</span>
@@ -112,8 +138,8 @@ export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
           ) : (
             <button
               id="btn-reopen-chat" disabled={supportBusy}
-              onClick={() => reopenConversation(conversation.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-lg transition-colors"
+              onClick={() => setConfirmation({action:'reopen',id:conversation.id})}
+              className="h-8 box-border flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-lg transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reopen</span>

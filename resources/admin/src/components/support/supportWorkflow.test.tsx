@@ -39,3 +39,24 @@ it('shows scoped platform ID and handle in customer details with a copy control'
  const html=renderToStaticMarkup(<CustomerContextPanel conversation={conversation} onClose={vi.fn()}/>);
  expect(html).toContain('12345');expect(html).toContain('@buyer');expect(html).toContain('Copy platform user ID');
 });
+
+it.each([
+ ['human_mode','#btn-hand-back-ai','handBackToAI'],
+ ['open','#btn-take-over-chat','takeOverConversation'],
+ ['human_mode','button[aria-label="Archive conversation"]','archiveConversation'],
+ ['human_mode','#btn-resolve-chat','resolveConversation'],
+])('requires confirmation for %s %s',async(status,selector,method)=>{
+ (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
+ const callback=vi.fn().mockResolvedValue(true);(state as any)[method]=callback;
+ const host=document.createElement('div');document.body.appendChild(host);const root=createRoot(host);
+ const conversation={id:'confirm-me',status,channel:'web_guest',customer:{name:'Buyer',avatar:'/images/customer.png'},messages:[],internalNotes:[]} as any;
+ await act(async()=>root.render(<ChatWorkspacePanel conversation={conversation} onBackToList={vi.fn()} isContextOpen={false} onToggleContext={vi.fn()}/>));
+ await act(async()=>(host.querySelector(selector) as HTMLButtonElement).click());
+ expect(callback).not.toHaveBeenCalled();expect(host.querySelector('[role="dialog"]')).not.toBeNull();
+ await act(async()=>(host.querySelector('[data-support-confirm-cancel]') as HTMLButtonElement).click());
+ expect(callback).not.toHaveBeenCalled();
+ await act(async()=>(host.querySelector(selector) as HTMLButtonElement).click());
+ await act(async()=>(host.querySelector('[data-support-confirm-submit]') as HTMLButtonElement).click());
+ expect(callback).toHaveBeenCalledTimes(1);expect(callback.mock.calls[0][0]).toBe('confirm-me');
+ await act(async()=>root.unmount());host.remove();
+});
