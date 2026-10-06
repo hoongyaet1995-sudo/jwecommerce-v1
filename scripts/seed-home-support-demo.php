@@ -41,6 +41,8 @@ try{
  DB::table('order_items')->whereNotNull('product_variant_id')->update(['product_variant_id'=>null]);
  foreach($refs as $ref)if(in_array($ref->REFERENCED_TABLE_NAME,$delete,true)&&!in_array($ref->TABLE_NAME,$delete,true)&&DB::table($ref->TABLE_NAME)->whereNotNull($ref->COLUMN_NAME)->exists())throw new RuntimeException('Unreviewed reference: '.$ref->TABLE_NAME.'.'.$ref->COLUMN_NAME);
  DB::table('catalog_media_references')->where('owner_type','product')->delete();
+ // Old publishing revisions form a nullable self-reference chain; unlink only these disposable tasks.
+ if(Schema::hasColumn('marketplace_publishing_tasks','previous_task_id'))DB::table('marketplace_publishing_tasks')->whereNotNull('previous_task_id')->update(['previous_task_id'=>null]);
  $remaining=$delete;$deleted=[];
  // Empty tables have no live FK dependencies, including the nullable batch review cycles.
  foreach($remaining as $table)if(DB::table($table)->count()===0){$deleted[$table]=0;$remaining=array_values(array_diff($remaining,[$table]));}
@@ -76,4 +78,4 @@ try{
  $report=['mode'=>$apply?'apply':'preview-rolled-back','database'=>$db->getDatabaseName(),'backup_sha256'=>$backup['sha256'],'deleted'=>$deleted,'after'=>$checks,'protected'=>$before,'seconds'=>round(microtime(true)-$started,2)];
  if($apply)DB::commit();else DB::rollBack();
  file_put_contents($production?storage_path('app/private/home-demo-'.($apply?'apply':'preview').'-report.json'):base_path('tmp/home-demo-'.($localVerification?'validation-':'').($apply?'apply':'preview').'-report.json'),json_encode($report,JSON_PRETTY_PRINT));echo json_encode(['mode'=>$report['mode'],'after'=>$checks,'protected_records_unchanged'=>true,'seconds'=>$report['seconds']])."\n";
-}catch(Throwable $e){DB::rollBack();throw $e;}finally{DB::select("SELECT RELEASE_LOCK('jw-home-demo-reset')");}
+}catch(Throwable $e){DB::rollBack();DB::select("SELECT RELEASE_LOCK('jw-home-demo-reset')");fwrite(STDERR,get_class($e).': '.$e->getMessage()."\n");exit(1);}finally{DB::select("SELECT RELEASE_LOCK('jw-home-demo-reset')");}
