@@ -96,6 +96,10 @@ export const AdminHeader: React.FC<{ onToggleMobileSidebar: () => void }> = ({
       case 'catalog-categories': return { category: 'Catalog Management', title: 'Category Taxonomy' };
       case 'catalog-collections': return { category: 'Catalog Management', title: 'Collections & Dynamic Rules' };
       case 'catalog-products': return { category: 'Catalog Management', title: 'Products & SKU Variant Matrix' };
+      case 'ai-auto-reply': return {category:'Customer Care & AI',title:'AI Auto Reply Overview'};
+      case 'ai-personality': return {category:'Agent Studio',title:'AI Personality & Tone'};
+      case 'ai-knowledge': return {category:'Agent Studio',title:'AI Knowledge Scope'};
+      case 'ai-guardrails': return {category:'Agent Studio',title:'AI Safety Guardrails'};
       case 'support-overview': return { category: 'Customer Care & AI', title: 'Customer Support Overview' };
       case 'support-tiktok-prototype': return { category: 'Customer Care & AI', title: 'TikTok Review Prototype' };
       case 'support-tiktok': return { category: 'Customer Care & AI', title: 'TikTok Account Management' };

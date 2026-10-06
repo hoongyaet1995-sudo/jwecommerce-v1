@@ -120,13 +120,13 @@ class MessengerReplyTest extends TestCase
         $this->assertSame('waiting_human',$c->fresh()->status);$this->assertSame(1,DB::table('notifications')->count());Http::assertNothingSent();
         $this->assertSame('failed',$c->messages()->where('sender_role','ai')->first()->delivery_status);
     }
-    public function test_busy_generation_releases_explicit_handoff_even_with_auto_reply_disabled(): void
+    public function test_master_pause_does_not_generate_or_requeue_explicit_handoff(): void
     {
         $c=$this->thread();$c->update(['status'=>'open']);$this->aiSettings();
         $settings=\App\Models\StoreSetting::where('key','support_faq')->first();$data=$settings->value;$data['autoReplyEnabled']=false;$settings->update(['value'=>$data]);
         $source=$c->messages()->first();$source->update(['content'=>'talk to a human']);
         $lock=\Illuminate\Support\Facades\Cache::lock('support-ai:'.$c->id,90);$this->assertTrue($lock->get());
-        $queued=\Mockery::mock(\Illuminate\Contracts\Queue\Job::class);$queued->shouldReceive('release')->once()->with(5);
+        $queued=\Mockery::mock(\Illuminate\Contracts\Queue\Job::class);$queued->shouldNotReceive('release');
         $job=new \App\Jobs\ProcessMessengerSupportReply($source->id);$job->setJob($queued);
         try{$job->handle(app(\App\Services\Support\FaqAutoReplyService::class),app(\App\Services\Social\MessengerReplyService::class));}finally{$lock->release();}
         $this->assertSame('open',$c->fresh()->status);Http::assertNothingSent();

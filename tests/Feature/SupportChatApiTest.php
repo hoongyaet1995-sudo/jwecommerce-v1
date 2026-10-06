@@ -61,6 +61,17 @@ class SupportChatApiTest extends TestCase
         (require database_path('migrations/2026_10_06_150000_add_customer_channel_identity.php'))->up();
     }
 
+    public function test_channel_pause_keeps_incoming_message_without_ai_even_for_human_request(): void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'aiChannels'=>['storefront'=>false],'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
+        $id=$this->postJson('/support/chat/messages',$this->payload('Talk to a human'))->assertOk()->json('conversation.id');
+        $c=SupportConversation::findOrFail($id);
+        $this->assertSame(1,$c->messages()->count());
+        $this->assertSame('customer',$c->messages()->first()->sender_role);
+        $this->assertSame('open',$c->status);
+    }
+
     public function test_resolved_customer_can_explicitly_reopen_or_start_new_without_overwriting_history(): void
     {
         $staff=User::create(['name'=>'Staff','email'=>'resolved@example.test','password'=>bcrypt('test'),'is_admin'=>true]);

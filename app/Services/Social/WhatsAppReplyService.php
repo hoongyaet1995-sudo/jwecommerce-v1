@@ -71,7 +71,7 @@ class WhatsAppReplyService
             ]);
             if ($existing) $message->update(['delivery_status' => 'sending', 'send_error' => null]);
             if ($locked->status !== 'human_mode') {
-                $locked->notes()->create(['staff_user_id'=>$staffId,'content'=>'[Control] '.$locked->status.' → human_mode']);
+                $locked->notes()->create(['staff_user_id'=>$staffId,'content'=>'[Control] '.$locked->status.' â†’ human_mode']);
                 $locked->update(['status'=>'human_mode']);
             } else $locked->touch();
             return [$message, $account, true];
@@ -101,8 +101,8 @@ class WhatsAppReplyService
             }
             $acknowledgement = collect($stored->actions ?? [])->contains(fn($a) => ($a['type'] ?? '') === 'request_human' && ($a['reason'] ?? '') === 'explicit_request');
             $settings = app(\App\Services\SupportFaqService::class)->read();
-            $enabled = $settings['autoReplyEnabled'] ?? false;
-            $eligible = ($locked->status === 'open' && $enabled) || ($locked->status === 'waiting_human' && $acknowledgement);
+            $enabled = app(\App\Services\Support\SupportAiPolicy::class)->enabled($settings, $locked->channel);
+            $eligible = $enabled && ($locked->status === 'open' || ($locked->status === 'waiting_human' && $acknowledgement));
             $eligible = $eligible && $stored->ai_settings_version !== null && $stored->ai_control_version !== null
                 && (int)$stored->ai_settings_version === (int)($settings['version'] ?? 0)
                 && (int)$stored->ai_control_version === (int)$locked->notes()->max('id');

@@ -9,6 +9,7 @@ export type AIToneOfVoice =
 export type AIPrimaryLanguage = 'auto_detect' | 'en' | 'ms' | 'zh';
 
 export interface AIPersonalityConfig {
+  isEnabled: boolean;
   botName: string;
   avatarUrl: string;
   roleTitle: string;
@@ -154,6 +155,7 @@ export interface AIGuardrailsConfig {
 }
 
 export interface AIAutoReplyMasterConfig {
+  aiChannels?: Record<'storefront'|'facebook'|'instagram'|'whatsapp'|'tiktok',boolean>;
   isAutoReplyGloballyEnabled: boolean;
   activeChannels: {
     storefrontWebChat: boolean;

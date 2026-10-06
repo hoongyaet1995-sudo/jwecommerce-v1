@@ -558,6 +558,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/social/facebook', AdminAppController::class)->name('social.facebook');
     Route::get('/integration', AdminAppController::class)->name('integration');
     Route::get('/integration/ai-connect', AdminAppController::class)->name('integration.ai-connect');
+    Route::get('/ai-auto-reply/{section}', AdminAppController::class)->whereIn('section',['personality','knowledge','guardrails']);
     Route::get('/ai-auto-reply', AdminAppController::class)->name('ai-auto-reply');
     Route::get('/reports', AdminAppController::class)->name('reports');
     Route::get('/reports/sales', AdminAppController::class)->name('reports.sales');

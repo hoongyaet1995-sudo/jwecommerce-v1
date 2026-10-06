@@ -77,6 +77,9 @@ const AdminLayoutContent: React.FC = () => {
       case 'support-facebook': return <FacebookAccountPage />;
       case 'support':
         return <CustomerSupportHub />;
+      case 'ai-personality':
+      case 'ai-knowledge':
+      case 'ai-guardrails':
       case 'ai-auto-reply':
         return <AIAutoReplyStudioHub />;
       case 'shipping-malaysia':

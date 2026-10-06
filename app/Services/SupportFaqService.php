@@ -10,6 +10,7 @@ class SupportFaqService
     public function read(): array
     {
         $settings = StoreSetting::where('key', 'support_faq')->value('value') ?? ['version' => 0, 'faq' => null];
+        $settings['aiChannels'] = array_replace(\App\Services\Support\SupportAiPolicy::DEFAULTS, $settings['aiChannels'] ?? []);
         $settings['productCatalog'] ??= ['isEnabled'=>true,'canCheckLiveStock'=>true,'canExplainSizingAndMaterials'=>true,'canRecommendUpsells'=>true,'maxRecommendations'=>3];
         $settings['orderLookup'] ??= ['isEnabled'=>false,'allowedFields'=>['orderStatus'=>true,'trackingNumberAndCourier'=>true,'estimatedDeliveryDate'=>false,'itemSummary'=>false,'shippingAddressMasked'=>false,'paymentStatus'=>false]];
         $settings['discountKnowledge'] ??= ['isEnabled'=>false,'activeIds'=>[]];
@@ -39,6 +40,8 @@ class SupportFaqService
             'productCatalog.canRecommendUpsells' => 'required_with:productCatalog|boolean',
             'productCatalog.maxRecommendations' => 'required_with:productCatalog|integer|min:1|max:5',
             'autoReplyEnabled' => 'sometimes|boolean',
+            'aiChannels'=>'sometimes|array:storefront,facebook,instagram,whatsapp,tiktok',
+            'aiChannels.*'=>'boolean',
             'greetingMessage' => 'sometimes|array:en,ms,zh',
             'greetingMessage.en' => 'required_with:greetingMessage|string|max:2000',
             'greetingMessage.ms' => 'required_with:greetingMessage|string|max:2000',
@@ -105,7 +108,7 @@ class SupportFaqService
             DB::table('store_settings')->insertOrIgnore(['key' => 'support_faq', 'value' => json_encode(['version' => 0, 'faq' => null]), 'created_at' => now(), 'updated_at' => now()]);
             $row = StoreSetting::where('key', 'support_faq')->lockForUpdate()->firstOrFail();
             abort_if(($row->value['version'] ?? 0) !== $data['version'], 409, 'FAQs changed in another session. Reload before saving.');
-            $result = ['orderLookup'=>$data['orderLookup'] ?? ($row->value['orderLookup'] ?? ['isEnabled'=>false,'allowedFields'=>[]]), 'discountKnowledge'=>$data['discountKnowledge'] ?? ($row->value['discountKnowledge'] ?? ['isEnabled'=>false,'activeIds'=>[]]), 'productCatalog' => $data['productCatalog'] ?? ($row->value['productCatalog'] ?? ['isEnabled'=>true,'canCheckLiveStock'=>true,'canExplainSizingAndMaterials'=>true,'canRecommendUpsells'=>true,'maxRecommendations'=>3]), 'greetingMessage' => $data['greetingMessage'] ?? ($row->value['greetingMessage'] ?? $this->defaultGreeting()), 'version' => $data['version'] + 1, 'faq' => $faq, 'personality' => array_replace($this->defaultPersonality(), $row->value['personality'] ?? [], $data['personality'] ?? []), 'primaryLanguage' => $data['primaryLanguage'] ?? ($row->value['primaryLanguage'] ?? 'auto_detect'), 'autoReplyEnabled' => $data['autoReplyEnabled'] ?? ($row->value['autoReplyEnabled'] ?? false), 'identity' => $data['identity'] ?? ($row->value['identity'] ?? null)];
+            $result = ['aiChannels'=>array_replace(\App\Services\Support\SupportAiPolicy::DEFAULTS,$row->value['aiChannels'] ?? [],$data['aiChannels'] ?? []),'orderLookup'=>$data['orderLookup'] ?? ($row->value['orderLookup'] ?? ['isEnabled'=>false,'allowedFields'=>[]]), 'discountKnowledge'=>$data['discountKnowledge'] ?? ($row->value['discountKnowledge'] ?? ['isEnabled'=>false,'activeIds'=>[]]), 'productCatalog' => $data['productCatalog'] ?? ($row->value['productCatalog'] ?? ['isEnabled'=>true,'canCheckLiveStock'=>true,'canExplainSizingAndMaterials'=>true,'canRecommendUpsells'=>true,'maxRecommendations'=>3]), 'greetingMessage' => $data['greetingMessage'] ?? ($row->value['greetingMessage'] ?? $this->defaultGreeting()), 'version' => $data['version'] + 1, 'faq' => $faq, 'personality' => array_replace($this->defaultPersonality(), $row->value['personality'] ?? [], $data['personality'] ?? []), 'primaryLanguage' => $data['primaryLanguage'] ?? ($row->value['primaryLanguage'] ?? 'auto_detect'), 'autoReplyEnabled' => $data['autoReplyEnabled'] ?? ($row->value['autoReplyEnabled'] ?? false), 'identity' => $data['identity'] ?? ($row->value['identity'] ?? null)];
             $row->update(['value' => $result]);
 
             return $result;

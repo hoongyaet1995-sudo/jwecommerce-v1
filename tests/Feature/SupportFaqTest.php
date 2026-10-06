@@ -10,6 +10,17 @@ use Tests\TestCase;
 
 class SupportFaqTest extends TestCase
 {
+    public function test_channel_choices_persist_across_master_pause_and_reject_unknown_keys(): void
+    {
+        $this->owner();$p=$this->payload();$p['autoReplyEnabled']=true;$p['aiChannels']=['facebook'=>false,'instagram'=>true];
+        $this->putJson('/admin/api/support/faq',$p)->assertOk()->assertJsonPath('aiChannels.facebook',false);
+        $p['version']=1;$p['autoReplyEnabled']=false;unset($p['aiChannels']);
+        $this->putJson('/admin/api/support/faq',$p)->assertOk()->assertJsonPath('aiChannels.instagram',true);
+        $this->getJson('/admin/api/support/faq')->assertJsonPath('aiChannels.facebook',false);
+        $this->getJson('/support/faq')->assertJsonMissingPath('aiChannels');
+        $p['version']=2;$p['aiChannels']=['invalid'=>true];$this->putJson('/admin/api/support/faq',$p)->assertUnprocessable();
+    }
+
     public function test_escalation_settings_are_persisted_validated_and_private(): void
     {
         $this->owner(); $p=$this->payload();

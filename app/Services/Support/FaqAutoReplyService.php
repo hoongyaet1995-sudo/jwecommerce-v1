@@ -16,6 +16,7 @@ class FaqAutoReplyService
     public function reply(SupportConversation $conversation, array $incoming): bool
     {
         $settings = app(SupportFaqService::class)->read();
+        if (!app(SupportAiPolicy::class)->enabled($settings, $conversation->channel)) return true;
         $explicitRequest = app(SupportEscalationPolicy::class)->requested($incoming['content'], $settings);
         if (!$explicitRequest && (! ($settings['autoReplyEnabled'] ?? false) || (! ($settings['faq']['isEnabled'] ?? false) && ! ($settings['productCatalog']['isEnabled'] ?? false) && ! ($settings['discountKnowledge']['isEnabled'] ?? false) && ! ($settings['orderLookup']['isEnabled'] ?? false)))) {
             return true;
@@ -119,6 +120,7 @@ class FaqAutoReplyService
                     return;
                 }
                 $current = app(SupportFaqService::class)->read();
+                if (!app(SupportAiPolicy::class)->enabled($current, $conversation->channel)) return;
                 if (($current['version'] ?? 0) !== ($settings['version'] ?? 0) || ($escalationReason === 'explicit_request' && !app(SupportEscalationPolicy::class)->rules($current)['onExplicitRequest']) || ($escalationReason !== 'explicit_request' && (! ($current['autoReplyEnabled'] ?? false) || (! ($current['faq']['isEnabled'] ?? false) && ! ($current['productCatalog']['isEnabled'] ?? false) && ! ($current['discountKnowledge']['isEnabled'] ?? false) && ! ($current['orderLookup']['isEnabled'] ?? false))))) {
                     return;
                 }

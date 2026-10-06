@@ -253,7 +253,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
       id: 'ai-auto-reply' as NavSection,
       label: 'AI Auto Reply',
       icon: Bot,
-      isActive: currentSection === 'ai-auto-reply' || currentSection === 'settings-ai-agent',
+      isActive: currentSection.startsWith('ai-') || currentSection === 'settings-ai-agent',
       badge: 'Agent Studio',
       badgeVariant: 'success',
     },
