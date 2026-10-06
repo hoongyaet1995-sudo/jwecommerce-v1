@@ -4,6 +4,7 @@ import {
   Bell,
   Globe,
   Instagram,
+  MessageCircle,
   X,
   CheckCircle2,
   Package,
@@ -82,6 +83,9 @@ export const NotificationDrawer: React.FC = () => {
               if (n.channel === 'facebook') {
                 Icon = MessengerIcon;
                 iconBg = 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400';
+              } else if (n.channel === 'whatsapp') {
+                Icon = MessageCircle;
+                iconBg = 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400';
               } else if (n.channel === 'instagram') {
                 Icon = Instagram;
                 iconBg = 'bg-pink-50 dark:bg-pink-950/60 text-pink-600 dark:text-pink-400';

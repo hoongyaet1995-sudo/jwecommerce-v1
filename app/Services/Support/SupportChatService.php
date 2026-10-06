@@ -143,19 +143,19 @@ class SupportChatService
         $user = $conversation->customerUser;
         $contactNote=$conversation->notes->filter(fn($n)=>str_starts_with($n->content,'[Contact] '))->last();
         $contact=$contactNote ? json_decode(substr($contactNote->content,10),true) : [];
-        $messenger=in_array($conversation->channel??'web_guest',['facebook','instagram'],true);
+        $messenger=in_array($conversation->channel??'web_guest',['facebook','instagram','whatsapp'],true);
         if ($messenger && $this->messengerAccounts === null) {
             $this->messengerAccounts = \App\Models\ManagedSocialAccount::where('merchant_key', config('services.facebook.merchant_key','jw-ecommerce'))
-                ->whereIn('platform',['facebook','instagram'])->where('app_id',(string)config('services.facebook.client_id'))->get()->keyBy(fn($a)=>$a->platform.':'.$a->provider_account_id);
+                ->whereIn('platform',['facebook','instagram','whatsapp'])->get()->keyBy(fn($a)=>$a->platform.':'.$a->provider_account_id);
         }
-        $name = $user ? $user->name : ($contact['name']??($messenger?($conversation->channel==='instagram'?'Instagram customer':'Messenger customer'):'Guest'));
+        $name = $user ? $user->name : ($contact['name']??($messenger?(match($conversation->channel){'instagram'=>'Instagram customer','whatsapp'=>'WhatsApp customer',default=>'Messenger customer'}):'Guest'));
         $avatar = '/images/support-person.svg';
         $messages = $conversation->messages->sortBy('id');
         $last = $messages->last();
 
         return [
             'id' => $conversation->id, 'channel' => $conversation->channel??'web_guest', 'title' => $messenger?$conversation->provider_page_name:'Storefront Support',
-            ...($messenger ? app(\App\Services\Social\MessengerReplyService::class)->readiness($conversation, $this->messengerAccounts?->get($conversation->channel.':'.$conversation->provider_page_id), false) : ['canReply'=>true]),'pageName'=>$messenger?$conversation->provider_page_name:null,
+            ...($messenger ? app($conversation->channel==='whatsapp'?\App\Services\Social\WhatsAppReplyService::class:\App\Services\Social\MessengerReplyService::class)->readiness($conversation, $this->messengerAccounts?->get($conversation->channel.':'.$conversation->provider_page_id), false) : ['canReply'=>true]),'pageName'=>$messenger?$conversation->provider_page_name:null,
             'customer' => [
                 'id' => $user ? 'customer-'.$user->id : $conversation->id, 'name' => $name, 'avatar' => $avatar,
                 'email' => $user?->email ?? ($contact['email']??null), 'phone' => $user?->customer?->phone ?? ($contact['phone']??null), 'language' => 'en',

@@ -1,3 +1,5 @@
+import {TikTokReviewPrototype} from './components/support/TikTokReviewPrototype';
+import {TikTokAccountPage} from './components/support/TikTokAccountPage';
 import React, { useState } from 'react';
 import { AdminProvider, useAdmin } from './context/AdminContext';
 import { AdminSidebar } from './components/layout/AdminSidebar';
@@ -31,6 +33,7 @@ import { ProductReviewsAdmin } from './components/catalog/ProductReviewsAdmin';
 import { CommerceHub } from './components/orders/CommerceHub';
 import { ShippingDashboard } from './components/shipping/ShippingDashboard';
 import { SupportOverviewHub } from './components/support/SupportOverviewHub';
+import { WhatsAppAccountPage } from './components/support/WhatsAppAccountPage';
 import { InstagramAccountPage } from './components/support/InstagramAccountPage';
 import { FacebookAccountPage } from './components/support/FacebookAccountPage';
 import { CustomerSupportHub } from './components/support/CustomerSupportHub';
@@ -67,6 +70,9 @@ const AdminLayoutContent: React.FC = () => {
       case 'promotions':
         return <PromotionsHub />;
       case 'support-overview': return <SupportOverviewHub />;
+      case 'support-tiktok-prototype': return <TikTokReviewPrototype />;
+      case 'support-tiktok': return <TikTokAccountPage />;
+      case 'support-whatsapp': return <WhatsAppAccountPage />;
       case 'support-instagram': return <InstagramAccountPage />;
       case 'support-facebook': return <FacebookAccountPage />;
       case 'support':

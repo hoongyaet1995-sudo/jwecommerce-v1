@@ -24,9 +24,9 @@ final class SocialHubReceiverController extends Controller
         if ($r->is('api/social/hub/challenge')) {
             $d = $r->validate(['check_id' => 'required|string|max:100', 'challenge' => 'required|regex:/^[a-f0-9]{64}$/D']);
             $response = ['status' => 'verified', 'check_id' => $d['check_id'], 'challenge' => $d['challenge']];
-        } elseif ($r->is('api/social/hub/instagram')) {
+        } elseif ($r->is('api/social/hub/instagram','api/social/hub/whatsapp')) {
             abort_if(strlen($r->getContent())>1048576,413);
-            abort_unless(is_array($d['payload']??null)&&($d['payload']['object']??null)==='instagram',422);
+            abort_unless(is_array($d['payload']??null)&&($d['payload']['object']??null)===($r->is('api/social/hub/whatsapp')?'whatsapp_business_account':'instagram'),422);
             $response=['status'=>'accepted'];
         } else {
             $d = $r->validate(['client_id' => 'required|string', 'event_id' => 'required|string|max:100', 'type' => 'required|in:connectivity.test', 'correlation_id' => 'required|string|max:100', 'created_at' => 'required|date', 'payload' => 'required|array']);
@@ -36,6 +36,9 @@ final class SocialHubReceiverController extends Controller
         abort_unless(DB::table('social_hub_request_nonces')->insertOrIgnore(['client_id' => $s->client_id, 'key_id' => $s->key_id, 'nonce' => $h['X-Social-Nonce'], 'expires_at' => now()->addMinutes(10)]), 409, 'request_replayed');
         if ($r->is('api/social/hub/instagram')) {
             $response['processed']=app(\App\Services\Social\MessengerInboundService::class)->receive($d['payload']);
+        }
+        if ($r->is('api/social/hub/whatsapp')) {
+            $response['processed']=app(\App\Services\Social\WhatsAppInboundService::class)->receive($d['payload']);
         }
         if ($r->is('api/social/hub/events')) {
             $hash = hash('sha256', $r->getContent());

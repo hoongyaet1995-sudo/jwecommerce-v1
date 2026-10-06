@@ -97,6 +97,9 @@ export const AdminHeader: React.FC<{ onToggleMobileSidebar: () => void }> = ({
       case 'catalog-collections': return { category: 'Catalog Management', title: 'Collections & Dynamic Rules' };
       case 'catalog-products': return { category: 'Catalog Management', title: 'Products & SKU Variant Matrix' };
       case 'support-overview': return { category: 'Customer Care & AI', title: 'Customer Support Overview' };
+      case 'support-tiktok-prototype': return { category: 'Customer Care & AI', title: 'TikTok Review Prototype' };
+      case 'support-tiktok': return { category: 'Customer Care & AI', title: 'TikTok Account Management' };
+      case 'support-whatsapp': return { category: 'Customer Care & AI', title: 'WhatsApp Account Management' };
       case 'support-instagram': return { category: 'Customer Care & AI', title: 'Instagram Account Management' };
       case 'support-facebook': return { category: 'Customer Care & AI', title: 'Facebook Account Management' };
       case 'commerce': return { category: 'Orders & Customers', title: 'Commerce Overview Hub' };

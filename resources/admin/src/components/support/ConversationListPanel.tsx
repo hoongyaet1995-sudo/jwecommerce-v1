@@ -14,7 +14,7 @@ import {
   AlertCircle,
   MessageSquare,
   Sparkles,
-  Phone,
+  MessageCircle,
   Globe,
   Facebook,
   Instagram,
@@ -45,7 +45,7 @@ interface ConversationListPanelProps {
 // Channel display metadata
 export const CHANNEL_META: Record<SupportChannel, { label: string; bg: string; text: string; icon: any }> = {
   web_guest: { label: 'Storefront', bg: 'bg-blue-50 dark:bg-blue-950/60', text: 'text-blue-600 dark:text-blue-400', icon: Globe },
-  whatsapp: { label: 'WhatsApp', bg: 'bg-emerald-50 dark:bg-emerald-950/60', text: 'text-emerald-600 dark:text-emerald-400', icon: Phone },
+  whatsapp: { label: 'WhatsApp', bg: 'bg-emerald-50 dark:bg-emerald-950/60', text: 'text-emerald-600 dark:text-emerald-400', icon: MessageCircle },
   facebook: { label: 'Facebook', bg: 'bg-indigo-50 dark:bg-indigo-950/60', text: 'text-indigo-600 dark:text-indigo-400', icon: Facebook },
   instagram: { label: 'Instagram', bg: 'bg-pink-50 dark:bg-pink-950/60', text: 'text-pink-600 dark:text-pink-400', icon: Instagram },
   tiktok: { label: 'TikTok', bg: 'bg-neutral-100 dark:bg-neutral-800', text: 'text-neutral-900 dark:text-neutral-100', icon: Sparkles },

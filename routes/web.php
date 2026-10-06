@@ -58,6 +58,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('/api/social/hub/challenge',[\App\Http\Controllers\SocialHubReceiverController::class,'receive'])->middleware('throttle:60,1');
 Route::post('/api/social/hub/events',[\App\Http\Controllers\SocialHubReceiverController::class,'receive'])->middleware('throttle:60,1');
 Route::post('/api/social/hub/instagram',[\App\Http\Controllers\SocialHubReceiverController::class,'receive']);
+Route::post('/api/social/hub/whatsapp',[\App\Http\Controllers\SocialHubReceiverController::class,'receive']);
 Route::post('/api/social/hub/pair',\App\Http\Controllers\SocialHubPairingController::class)->middleware('throttle:5,1');
 Route::middleware(['auth','admin'])->group(function(){
  Route::get('/admin/social-hub/installation',fn()=>abort(404));
@@ -628,5 +629,14 @@ Route::middleware(["auth","admin"])->prefix("admin")->group(function(){
     Route::post('/api/social/instagram/{id}/disconnect', [\App\Http\Controllers\Admin\InstagramAccountController::class, 'disconnect'])->middleware('throttle:10,1');
     Route::delete('/api/social/instagram/{id}', [\App\Http\Controllers\Admin\InstagramAccountController::class, 'destroy'])->middleware('throttle:10,1');
     Route::post('/api/social/instagram/{id}/inbound', [\App\Http\Controllers\Admin\InstagramAccountController::class, 'inbound'])->middleware('throttle:10,1');
+    Route::get('/social/tiktok/prototype', AdminAppController::class)->name('social.tiktok.prototype');
+    Route::get('/social/tiktok', AdminAppController::class)->name('social.tiktok');
     Route::get('/social/instagram', AdminAppController::class)->name('social.instagram');
+    Route::get('/social/whatsapp', AdminAppController::class)->name('social.whatsapp');
+    Route::get('/social/whatsapp/authorize',[\App\Http\Controllers\Admin\WhatsAppAccountController::class,'authorize'])->middleware('throttle:10,1');
+    Route::get('/social/whatsapp/hub-return',[\App\Http\Controllers\Admin\WhatsAppAccountController::class,'hubReturn'])->middleware('throttle:20,1');
+    Route::post('/api/social/whatsapp/select',[\App\Http\Controllers\Admin\WhatsAppAccountController::class,'select'])->middleware('throttle:20,1');
+    Route::get('/api/social/whatsapp',[\App\Http\Controllers\Admin\WhatsAppAccountController::class,'index'])->middleware('throttle:30,1');
+    Route::post('/api/social/whatsapp/{id}/{action}',[\App\Http\Controllers\Admin\WhatsAppAccountController::class,'manage'])->middleware('throttle:30,1');
+    Route::delete('/api/social/whatsapp/{id}',[\App\Http\Controllers\Admin\WhatsAppAccountController::class,'destroy'])->middleware('throttle:10,1');
 });

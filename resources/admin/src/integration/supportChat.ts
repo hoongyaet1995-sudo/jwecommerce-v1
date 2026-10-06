@@ -74,7 +74,7 @@ export function useSupportChat(active: boolean) {
     try {
       const result = await supportRequest(`/${id}/${action}`, method, data);
       if (result.conversation) setConversations(previous => previous.map(c => c.id === id ? result.conversation! : c));
-      if (action === 'messages' && result.sendStatus && result.sendStatus !== 'sent') {
+      if (action === 'messages' && result.sendStatus && !['sent','accepted','delivered','read'].includes(result.sendStatus)) {
         setError(result.sendError || (result.sendStatus === 'sending' ? 'Reply is sending. Wait for confirmation before sending again.' : 'Reply could not be confirmed. Your draft is retained.'));
         return false;
       }

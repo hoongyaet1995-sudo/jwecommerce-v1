@@ -31,7 +31,7 @@ export type MessageType =
   | 'order_card' 
   | 'system_event';
 
-export type MessageDeliveryStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'failed' | 'unknown';
+export type MessageDeliveryStatus = 'sending' | 'accepted' | 'sent' | 'delivered' | 'read' | 'failed' | 'unknown';
 
 export interface MessageAttachment {
   id: string;

@@ -1,6 +1,17 @@
 <?php
 
 return [
+    'whatsapp' => [
+        'oauth_routing_ready' => env('WHATSAPP_OAUTH_ROUTING_READY', false),
+        'inbound_routing_ready' => env('WHATSAPP_INBOUND_ROUTING_READY', false),
+        'app_id' => env('WHATSAPP_APP_ID'),
+        'app_secret' => env('WHATSAPP_APP_SECRET'),
+        'graph_version' => env('WHATSAPP_GRAPH_VERSION', 'v25.0'),
+        'waba_id' => env('WHATSAPP_PRODUCTION_WABA_ID'),
+        'phone_number_id' => env('WHATSAPP_PRODUCTION_PHONE_NUMBER_ID'),
+        'access_token' => env('WHATSAPP_PRODUCTION_ACCESS_TOKEN'),
+        'embedded_signup_config_id' => env('WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID'),
+    ],
     'instagram'=>[
       'inbound_routing_ready'=>env('INSTAGRAM_INBOUND_ROUTING_READY',false),
       'webhook_verify_token'=>env('INSTAGRAM_WEBHOOK_VERIFY_TOKEN',env('FACEBOOK_WEBHOOK_VERIFY_TOKEN')),

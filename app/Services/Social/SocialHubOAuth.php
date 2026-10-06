@@ -20,7 +20,8 @@ class SocialHubOAuth
             $expected=SocialProtocol::responseSignature($h,$secret,'client-to-hub',$r->status(),$r->body());
             if(!hash_equals($expected,(string)$r->header('X-Social-Response-Signature'))||$r->json('client_id')!==$s->client_id)throw new RuntimeException('invalid_receipt');
             $ok=in_array($platform,$r->json('enabled_channels',[]),true);
-            return ['oauthPermitted'=>$ok,'oauthReason'=>$ok?null:'Social Hub has not permitted Instagram OAuth for this website.'];
+            $label=match($platform){'whatsapp'=>'WhatsApp','facebook'=>'Facebook','tiktok'=>'TikTok',default=>'Instagram'};
+            return ['oauthPermitted'=>$ok,'oauthReason'=>$ok?null:'Social Hub has not permitted '.$label.' OAuth for this website.'];
         }catch(\Throwable){return ['oauthPermitted'=>false,'oauthReason'=>'Social Hub is unavailable or this website installation is not configured.'];}
     }
     public function installation(): object
@@ -38,8 +39,8 @@ class SocialHubOAuth
     }
     public function call(string $action,array $data,string $platform="facebook"): array
     {
-        if(!in_array($action,['start','redeem','select'],true))throw new RuntimeException('hub_unavailable');
-        if(!in_array($platform,['facebook','instagram'],true))throw new RuntimeException('hub_unavailable');
+        if(!in_array($action,['start','redeem','select'],true)&&!($platform==='whatsapp'&&$action==='import'))throw new RuntimeException('hub_unavailable');
+        if(!in_array($platform,['facebook','instagram','whatsapp'],true))throw new RuntimeException('hub_unavailable');
         $s=$this->installation();$path='/api/v1/oauth/'.$platform.'/'.$action;
         try{
             $secret=Crypt::decryptString($s->encrypted_secret);
@@ -54,7 +55,7 @@ class SocialHubOAuth
         $expected=SocialProtocol::responseSignature($h,$secret,'client-to-hub',$r->status(),$r->body());
         if(!hash_equals($expected,(string)$r->header('X-Social-Response-Signature'))||!is_array($r->json()))throw new RuntimeException('hub_unavailable');
         $d=$r->json();
-        if(($d['app_id']??null)!==(string)config('services.facebook.client_id'))throw new RuntimeException('not_configured');
+        if(($d['app_id']??null)!==(string)config($platform==='whatsapp'?'services.whatsapp.app_id':'services.facebook.client_id'))throw new RuntimeException('not_configured');
         if(isset($data['transaction_id'])&&($d['transaction_id']??null)!==$data['transaction_id'])throw new RuntimeException('hub_unavailable');
         return $d;
     }

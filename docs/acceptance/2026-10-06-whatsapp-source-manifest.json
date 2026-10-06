@@ -1,0 +1,350 @@
+{
+  "scope": "Canonical workspace source snapshot; preserves baseline TikTok and unrelated dirty files. Select release scope before staging.",
+  "sources": [
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "app/Console/Commands/WhatsAppImportLegacy.php",
+      "sha256": "f212cdfc3817eaf7e8c0b4aae033d0ee46bda8280321d2dad86232d5cd99919e"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "app/Http/Controllers/Admin/SupportChatController.php",
+      "sha256": "40cd8ccb179883027af5535c1a997fef703052210dd328cd2abce30c271df80e"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "app/Http/Controllers/Admin/WhatsAppAccountController.php",
+      "sha256": "9baadbfa130d021ac284f17fa10eafc53b5abd8e3c92b74da3e5a1de2f6fa380"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "app/Http/Controllers/SocialHubReceiverController.php",
+      "sha256": "9a3645495130cbc9e2c6ef4de9db25e62e103dfd3845b63c4e1bda9695ec3409"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "app/Jobs/ProcessWhatsAppSupportReply.php",
+      "sha256": "d7390a5b9b0e09d8d9151e56c9383b7d84265e5829816adf69ead96fd200b294"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "app/Services/Social/SocialHubOAuth.php",
+      "sha256": "5aa9099ab280057aa9905f3b3688d526f9704c6af8421948ca2f6873966607e3"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "app/Services/Social/WhatsAppAccountService.php",
+      "sha256": "4c8021f869decad80980b39c0a908ed1f451a7fa76b79e134277184a99355e04"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "app/Services/Social/WhatsAppInboundService.php",
+      "sha256": "9cd7f8c5e3a70cffc04e92f1b793791673090eb1ee067fc37643b09f7081f30a"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "app/Services/Social/WhatsAppReplyService.php",
+      "sha256": "89f0153c81bdfa412b1bfe6700e211194ed41b701168a33d57a906c5a7bd2351"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "app/Services/Social/WhatsAppStatusService.php",
+      "sha256": "5192ec571098207f00716bccd05cb9b4ee5098e10584ca75623dbddd19559fc0"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "app/Services/Social/WhatsAppSubscriptionService.php",
+      "sha256": "76e20a9dd32619bf049bce818a6b5a0277ef3f55c1983ffeee5b461df968eb18"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "app/Services/Support/FaqAutoReplyService.php",
+      "sha256": "db3086c5f7464a967af2fc4a6bdca5ab1561ef4010ca3a904676207b6f8e6979"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "app/Services/Support/OrderKnowledgeService.php",
+      "sha256": "f631754b4275ddd9fb65520ada2ef74b32b5a351f700c5aad2924567ec0ed0ec"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "app/Services/Support/SupportChatService.php",
+      "sha256": "3e37d7817d7c285863858a55a9e39b6c8814e07b89c1dddbdd3a3329f90398a9"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "app/Services/Support/SupportMessageAlertService.php",
+      "sha256": "184da9e0120ed556a5b42366557788320ba7ff35824f406dc060fce9da3bdf65"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "bootstrap/app.php",
+      "sha256": "07abe174b87fc07ce0390b6fd71a2ddd07151052db20ceaebf1a8fbc0595ef4d"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "config/services.php",
+      "sha256": "ba2921bd9625472a2db5e99782e63ee957c7e8dc8c1621b66ebb4c283ab2789d"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "database/migrations/2026_10_06_110000_add_whatsapp_account_metadata.php",
+      "sha256": "cfb6044d885ad2976ada694bce22e86846e1d593d17bf7003c64718792493555"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "database/migrations/2026_10_06_120000_create_whatsapp_status_receipts.php",
+      "sha256": "d6ce17e45aeb14c19342c140ccdd61af38d54a87efcfa6b69f611c4846532910"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/acceptance/2026-10-01-stock-confirmation-local.md",
+      "sha256": "8f9f2d278afec416b20e57fb09fb21c6bac23722bd101721082542970b677108"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/acceptance/2026-10-02-ai-studio-tab-repair.md",
+      "sha256": "01ade6c9a623e4352ec290918c8cb30014332012f31e23c3950b0ca0de4ee04d"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/acceptance/2026-10-02-support-chat-api.md",
+      "sha256": "75e6dfe424f0be3ae4081443156853f4a4e4f71bb63f40b4d05465d3c6a149cc"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/acceptance/2026-10-02-support-release.md",
+      "sha256": "c700b06a9333bf38eca286dce9c8b0589d9a94afdcb81911b0848e641d20737a"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/acceptance/2026-10-03-support-knowledge-tools.md",
+      "sha256": "1f31baf490229643a4bf786d19ab2ea6fd9c0d025fcfdeba3bd10e8f4cb59662"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/acceptance/2026-10-04-facebook-managed-account-spike.md",
+      "sha256": "87842c0cb38bd5d83f13eca4c38d3b189e5db0ce9b3c6d561101058e9ba0de46"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/acceptance/2026-10-04-messenger-replies.md",
+      "sha256": "2c736ba9a0dd059800a9cbfacc4285b1841cb6ce0c940ee30d68f75562cfba21"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/acceptance/2026-10-04-unified-messenger-support.md",
+      "sha256": "481bc69f7a8ce5ed648045a175f49fe1247a6b52393b82423d72a8553cba9104"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/acceptance/2026-10-05-facebook-multi-page.md",
+      "sha256": "bb19e4efe4ae058c42932d1e65010e82a815da1a068d5d581b43c16f96305c8b"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/acceptance/2026-10-05-facebook-text-closure.md",
+      "sha256": "568ac69e67e2214baed932af32fb28163df77c1e3f96ed403fec600cdff19bec"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/acceptance/2026-10-05-instagram-closure-release.md",
+      "sha256": "6ccc5709b603c09356b61aa34295e59b26c7dbae0bfff2a9dd86657b02b0b7fc"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/acceptance/2026-10-05-instagram-text-chat.md",
+      "sha256": "f15439e4e0b82e3165ff4e400100f87b36fa3a380cd10d984c10b9ced8f6ea1b"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/acceptance/2026-10-05-social-hub-connectivity.md",
+      "sha256": "7f3cbde6f735fa777364ddfa73535d563709f0e5b5077c14f3c88d3d85f9e530"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/acceptance/2026-10-06-whatsapp-implementation.md",
+      "sha256": "123adb5502df163e114974356372ad273d596a94eb42f4f702e00aa1365789a1"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/contracts/shared-stock-pool-inventory.md",
+      "sha256": "1ffde4e7a8148d3dc4fa5daaa54252798509524e63bbca10b92e760425e655bd"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/superpowers/plans/2026-10-06-whatsapp-hub.md",
+      "sha256": "8aa59c5fb2e51d7cb48ab15541daf0ba5a9aceeb54f9a415c3d514cc56cb1baa"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "docs/superpowers/specs/2026-10-06-whatsapp-hub-design.md",
+      "sha256": "516ef06a95170ceb00c657f79c77e8a5fc7f51be3831777082511deb13e1d0f5"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "resources/admin/src/App.tsx",
+      "sha256": "7e41a55968edebc3afa3f688d3034b43cf48d60a5f16676688b4b638b9b5dae1"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "resources/admin/src/components/layout/AdminHeader.tsx",
+      "sha256": "ce11d1cbf1dbc16c5485eb712ec1df319799564790788ad4e8cc75a270bf2747"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "resources/admin/src/components/layout/AdminSidebar.tsx",
+      "sha256": "d43d73dff7ae65c5a55f391d70d2e02eec78e807ac2c86337598b84bfe60cb42"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "resources/admin/src/components/layout/NotificationDrawer.tsx",
+      "sha256": "93be9d0f6e8bcfb4c38a874c62698531f97baf8b3edf4f4f62e6cef600f050a7"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "resources/admin/src/components/support/ChatWorkspacePanel.tsx",
+      "sha256": "d0012269200b1d4623e04f8b988b3222fdd13ad0cbce550185760247bb16248f"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "resources/admin/src/components/support/ConversationListPanel.tsx",
+      "sha256": "8c41dd9cedb07ddc3a8206f3edeee91d0378554c82a3b9bf4442c66f7fa8a8c8"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "resources/admin/src/components/support/SupportOverviewHub.test.tsx",
+      "sha256": "2debde8843d213c8c6e7545d048030076c043a2dab8fa350fb29d9dec3c18fe4"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "resources/admin/src/components/support/SupportOverviewHub.tsx",
+      "sha256": "644e61e1d2a9d8bcc024251d8a5047b223e7ff7bb5d6e1089d481cc355141e12"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "resources/admin/src/components/support/WhatsAppAccountPage.test.tsx",
+      "sha256": "2fafd075eeca06294282c08b468159ab69b6a1f4973ddc44c6ea4359e7d1d5dc"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "resources/admin/src/components/support/WhatsAppAccountPage.tsx",
+      "sha256": "47faedca06cf01f6ffea0547876251b368f5abe45182a71af6155136622337da"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "resources/admin/src/integration/adminRoutes.ts",
+      "sha256": "424631fcd93852120bf66cb3d04da087d4d1641fa41af80ca90cc4e868789821"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "resources/admin/src/integration/supportChat.ts",
+      "sha256": "78f927fc466f700feeebad30b391cd4a747db1d891df81cba8db96eb51e02875"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "resources/admin/src/integration/whatsappAccounts.ts",
+      "sha256": "254485ba5fe7bda95d33dd0835af6003a4be45052c23f10b542d46ef0a49b07e"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "resources/admin/src/types/index.ts",
+      "sha256": "1078eab3748429aa85aff4c263da071f694bee5e4c9020b52a44641c6cbd4bed"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "resources/admin/src/types/support.ts",
+      "sha256": "05bae373459af6cd8fbfcd54e301b7dd93d63d0bb057126f52c3e83ab3a21783"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "routes/web.php",
+      "sha256": "8f6eb9ce09a542b6e31a112b20347421c7c1b5fac8be989ab0d844cb71d3a436"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "tests/Feature/WhatsAppAccountTest.php",
+      "sha256": "f18cddcfffb4009b7a6281d3a9bd63aed11f7853f31bbc5b119099ac4399ff99"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jwstudio-ecommerce",
+      "path": "tests/Feature/WhatsAppSupportTest.php",
+      "sha256": "dbc5c9a8d7d1cbc1dfc6f94eb174269a5222a46c038ae371f4d725e81b9735eb"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jw-social-hub",
+      "path": "app/Http/Controllers/WhatsAppOAuthController.php",
+      "sha256": "ad39207021b6f4fdee080d8c6f6a94ef6402f375c70e6b512d554e3a66cd3b70"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jw-social-hub",
+      "path": "app/Http/Controllers/WhatsAppWebhookController.php",
+      "sha256": "a3b1a5a538b262341ede93c277b561b2cc0d9be519378964c2bbd02a8bb41589"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jw-social-hub",
+      "path": "app/Http/Middleware/SocialPhaseOne.php",
+      "sha256": "6292d8841196a965287a261ba64c650beb4c6fe2d6bd639f25d40e98f3e43ce1"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jw-social-hub",
+      "path": "app/Services/Social/SocialDelivery.php",
+      "sha256": "311457a3df917a2238d140f9aedfb6cdd1c1e7896102d446e9410a7d52a30232"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jw-social-hub",
+      "path": "app/Services/Social/WhatsAppOAuthProvider.php",
+      "sha256": "5132ca4314b40b5c7e204a5eba4de405506d69a66f0e0d4eb63a79dd0601eb7e"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jw-social-hub",
+      "path": "bootstrap/app.php",
+      "sha256": "d2aa9c68fbd256300576b9c0982cd09eb3ac2f5eb640e30a11c6aa0b42dc70ce"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jw-social-hub",
+      "path": "config/services.php",
+      "sha256": "e015b209ff6783c104961c90ec4aeaca3df13e8e64d1aa5dccd0a9f07da8b366"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jw-social-hub",
+      "path": "database/migrations/social/2026_10_06_110000_add_whatsapp_routing_identity.php",
+      "sha256": "1c0febb0a5198ceb0750f1677eff8c23c8fa9a525d71ca96ebd67df9adf679cf"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jw-social-hub",
+      "path": "resources/views/social/whatsapp-signup.blade.php",
+      "sha256": "294505b48b4cc2a612d5764a462f934cd907c9ca916be3c76e25e7f29cb5e0cf"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jw-social-hub",
+      "path": "routes/api.php",
+      "sha256": "b37d60428236d541c596bef8d08e1a762dc108a7d9c7a99eb024dd0c756fc79b"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jw-social-hub",
+      "path": "routes/web.php",
+      "sha256": "8e5c9400fb9fd78f18e4b19edb3b4bbf728fa6055a02f38ea4fc7d3981538503"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jw-social-hub",
+      "path": "tests/Feature/WhatsAppOAuthProviderTest.php",
+      "sha256": "7a242c8a32dc4e4d0babcdc38bb3858b7731222b2ebc96b59584904fe952495d"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jw-social-hub",
+      "path": "tests/Feature/WhatsAppOAuthRelayTest.php",
+      "sha256": "2b82171450fc45156d526990488e3ef917c021f2d93427063e06dd10d23fc1df"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jw-social-hub",
+      "path": "tests/Feature/WhatsAppWebhookTest.php",
+      "sha256": "e26d60291e7d74f3e5f0168979dee55905f334b81a68bd2564af6f4f4b1be26c"
+    },
+    {
+      "root": "C:\\xampp\\htdocs\\jw-social-hub",
+      "path": "vite.config.js",
+      "sha256": "e7d8d028f49e8cb98abbf094a94826cac59b5d1713a517796a88880ee3cbeb0f"
+    }
+  ]
+}

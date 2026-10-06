@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/social/hub/challenge',
             'api/social/hub/events',
             'api/social/hub/instagram',
+            'api/social/hub/whatsapp',
             'api/social/hub/pair',
             'api/marketplace/hub/refresh',
             'api/marketplace/hub/events',
