@@ -365,4 +365,10 @@ class MessengerReplyTest extends TestCase
         $this->assertSame('failed',$failed->fresh()->status);
         $this->assertStringNotContainsString('secret',$failed->fresh()->error);
     }
+ public function test_facebook_pdf_transport_uses_signed_file_attachment():void {
+  \Illuminate\Support\Facades\Storage::fake('support-private');$c=$this->thread();$account=ManagedSocialAccount::where('provider_account_id',$c->provider_page_id)->firstOrFail();
+  $a=app(\App\Services\Support\SupportAttachmentService::class)->uploadDocument($c,\Illuminate\Http\UploadedFile::fake()->createWithContent('receipt.pdf',file_get_contents(base_path('tests/Fixtures/support-document.pdf'))),auth()->id());
+  $m=$c->messages()->create(['sender_role'=>'human_agent','staff_user_id'=>auth()->id(),'client_message_id'=>(string)\Illuminate\Support\Str::uuid(),'content'=>'']);$a->update(['message_id'=>$m->id]);
+  $p=app(\App\Services\Support\SupportImageTransport::class)->payload($m,$account);$this->assertSame('file',$p['attachment']['type']);$this->assertStringContainsString('signature=',$p['attachment']['payload']['url']);
+ }
 }

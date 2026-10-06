@@ -26,8 +26,9 @@ class WhatsAppInboundService
       if(!is_array($event)||!$this->identity($event['from']??null)||!is_string($event['id']??null)||strlen($event['id'])>512||$event['id']==='')continue;
       $image=($event['type']??null)==='image' && is_string(data_get($event,'image.id')) && preg_match('/^\d{1,100}$/D',$event['image']['id']);
       $audio=($event['type']??null)==='audio' && is_string(data_get($event,'audio.id')) && preg_match('/^\d{1,100}$/D',$event['audio']['id']);
-      $text=$audio?'':($image?(string)data_get($event,'image.caption',''):(($event['type']??null)==='text'?data_get($event,'text.body'):'[Unsupported WhatsApp message: '.substr((string)($event['type']??'unknown'),0,40).']'));
-      if(!is_string($text)||(trim($text)===''&&!$image&&!$audio)||mb_strlen($text)>16000)continue;
+      $document=($event['type']??null)==='document'&&is_string(data_get($event,'document.id'))&&preg_match('/^\d{1,100}$/D',$event['document']['id']);
+      $text=$document?(string)data_get($event,'document.caption',''):($audio?'':($image?(string)data_get($event,'image.caption',''):(($event['type']??null)==='text'?data_get($event,'text.body'):'[Unsupported WhatsApp message: '.substr((string)($event['type']??'unknown'),0,40).']')));
+      if(!is_string($text)||(trim($text)===''&&!$image&&!$audio&&!$document)||mb_strlen($text)>16000)continue;
       $key=hash('sha256',json_encode(['whatsapp',$account->merchant_key,$account->app_id,$phone,$event['id']]));
       if(DB::table('messenger_inbound_receipts')->where('event_key',$key)->exists())continue;
       $owner=hash('sha256',json_encode(['whatsapp',$account->merchant_key,$account->app_id,$phone,$event['from']]));
@@ -39,13 +40,14 @@ class WhatsAppInboundService
       $sentAt=is_string($timestamp)&&ctype_digit($timestamp)&&(int)$timestamp>0&&(int)$timestamp<=now()->timestamp?Carbon::createFromTimestamp((int)$timestamp):now()->subHours(24);
       $message=$conversation->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'customer','content'=>$text,'created_at'=>$sentAt,'updated_at'=>now()]);
       if($image)app(\App\Services\Support\SupportAttachmentService::class)->incoming($conversation,$message,$account,$event['image']['id']);
+      if($document)app(\App\Services\Support\SupportAttachmentService::class)->incoming($conversation,$message,$account,$event['document']['id'],'document',is_string(data_get($event,'document.filename'))?$event['document']['filename']:null);
       if($audio)app(\App\Services\Support\SupportAttachmentService::class)->incoming($conversation,$message,$account,$event['audio']['id'],'audio');
       if($conversation->notes()->where('content','like','[Archive] %')->latest('id')->value('content')==='[Archive] true')$conversation->notes()->create(['content'=>'[Archive] false']);
       $conversation->update(['status'=>in_array($conversation->status,['human_mode','waiting_human'],true)?$conversation->status:'open','provider_page_name'=>$account->name,'last_message_at'=>$conversation->last_message_at?->greaterThan($sentAt)?$conversation->last_message_at:$sentAt]);
       app(\App\Services\Customers\CustomerContactResolver::class)->associate($conversation,['platform'=>'whatsapp','merchant_key'=>$account->merchant_key,'app_id'=>$account->app_id,'account_id'=>$phone,'sender_id'=>$event['from']],['name'=>data_get($profile,'profile.name','WhatsApp customer'),'phone'=>'+'.$event['from'],'phone_trusted'=>true]);
       DB::table('messenger_inbound_receipts')->insert(['event_key'=>$key,'conversation_id'=>$conversation->id,'page_id'=>$phone,'message_id'=>$event['id'],'created_at'=>now(),'updated_at'=>now()]);
       $account->update(['last_inbound_at'=>now()]);app(\App\Services\Support\SupportMessageAlertService::class)->received($conversation,$message);
-      if((($event['type']??null)==='text' || $image) && trim($text)!=='')\App\Jobs\ProcessWhatsAppSupportReply::dispatch($message->id)->onConnection('support')->onQueue('support-ai')->afterCommit();
+      if(!$document && (($event['type']??null)==='text' || $image) && trim($text)!=='')\App\Jobs\ProcessWhatsAppSupportReply::dispatch($message->id)->onConnection('support')->onQueue('support-ai')->afterCommit();
       $count++;
      }
      foreach($value['statuses']??[] as $event){if(is_array($event))app(WhatsAppStatusService::class)->record($account,$event);}

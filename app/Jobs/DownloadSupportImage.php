@@ -28,10 +28,12 @@ class DownloadSupportImage implements ShouldQueue
             if(!$response->successful() || (string)$response->json('id')!==$url || !is_string($response->json('url')))throw new \RuntimeException('Media lookup unavailable.');
             $url=$response->json('url');$token=$account->access_token;
         }
-        if($a->kind==='audio'){
+        if($a->kind==='document'){
+            $bytes=app(\App\Services\Support\SupportPdfProcessor::class)->validate($download->download($url,$token,\App\Services\Support\SupportPdfProcessor::MAX_BYTES));$mime='application/pdf';$width=$height=$duration=null;
+        }elseif($a->kind==='audio'){
             [$bytes,$mime,$duration]=app(\App\Services\Support\SupportAudioProcessor::class)->normalize($download->download($url,$token,\App\Services\Support\SupportAudioProcessor::MAX_BYTES));$width=$height=null;
         }else{[$bytes,$mime,$width,$height]=$media->encode($download->download($url,$token));$duration=null;}
-        $path=($a->kind==='audio'?'audio/':'images/').$a->id.'.'.match($mime){'audio/ogg; codecs=opus'=>'ogg','image/jpeg'=>'jpg','image/webp'=>'webp',default=>'png'};
+        $path=(match($a->kind){'audio'=>'audio/','document'=>'documents/',default=>'images/'}).$a->id.'.'.match($mime){'application/pdf'=>'pdf','audio/ogg; codecs=opus'=>'ogg','image/jpeg'=>'jpg','image/webp'=>'webp',default=>'png'};
         Storage::disk($a->disk)->put($path,$bytes);
         $a->update(['path'=>$path,'duration_seconds'=>$duration,'mime'=>$mime,'width'=>$width,'height'=>$height,'bytes'=>strlen($bytes),'sha256'=>hash('sha256',$bytes),'status'=>'ready','error'=>null,'provider_reference'=>null]);
         $a->conversation->touch();

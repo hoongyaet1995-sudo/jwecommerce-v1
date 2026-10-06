@@ -19,10 +19,17 @@ it('keeps an empty support welcome at the top when polling', async () => {
   new Function(script)();
   document.querySelector<HTMLButtonElement>('#sf-support-launcher')!.click();
   await vi.advanceTimersByTimeAsync(0);
-  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(fetchMock.mock.calls.filter(c=>c[0]==='/support/chat')).toHaveLength(1);
   expect(stream.scrollTop).toBe(0);
   await vi.advanceTimersByTimeAsync(4000);
-  expect(fetchMock).toHaveBeenCalledTimes(2);
+  expect(fetchMock.mock.calls.filter(c=>c[0]==='/support/chat')).toHaveLength(2);
   expect(stream.scrollTop).toBe(0);
   document.querySelector<HTMLButtonElement>('#sf-support-close')!.click();
+});
+
+it('renders PDF upload and document cards without inline PDF embedding',async()=>{
+ vi.useFakeTimers();const component=readFileSync(resolve('../views/components/storefront/support-chat.blade.php'),'utf8');document.body.innerHTML=component;
+ vi.stubGlobal('matchMedia',()=>({matches:false}));vi.stubGlobal('fetch',vi.fn().mockResolvedValue({ok:true,json:async()=>({conversation:{id:'test',status:'human_mode',messages:[{id:'one',role:'staff',createdAt:new Date().toISOString(),content:'',attachments:[{id:'pdf',type:'document',name:'receipt.pdf',sizeBytes:4096,status:'ready',url:'/support/chat/attachments/pdf'}]}]}})}));
+ new Function(component.match(/<script>([\s\S]*?)<\/script>/)![1])();document.querySelector<HTMLButtonElement>('#sf-support-launcher')!.click();await vi.advanceTimersByTimeAsync(0);
+ expect(document.querySelector('[aria-label="Attach PDF"]')).not.toBeNull();expect(document.querySelector('[aria-label="Download document receipt.pdf"]')).not.toBeNull();expect(document.querySelector('iframe,embed')).toBeNull();document.querySelector<HTMLButtonElement>('#sf-support-close')!.click();
 });

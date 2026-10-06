@@ -53,6 +53,18 @@ class SupportAttachmentService
         catch(\Throwable $e){Storage::disk('support-private')->delete($path);throw $e;}
     }
 
+    public function safeName(string $name,string $fallback='Document.pdf'):string {
+        $name=mb_substr(preg_replace('/[\x00-\x1f\x7f\\\\\/]/u','_',basename($name)),0,160);
+        return trim($name)!==''?$name:$fallback;
+    }
+    public function uploadDocument(SupportConversation $c, UploadedFile $file, ?int $staffId):SupportAttachment {
+        if(strtolower($file->getClientOriginalExtension())!=='pdf')throw ValidationException::withMessages(['document'=>'Use a PDF file.']);
+        $bytes=app(SupportPdfProcessor::class)->validate(file_get_contents($file->getRealPath()));
+        $id=(string)Str::uuid();$path='documents/'.$id.'.pdf';Storage::disk('support-private')->put($path,$bytes);
+        try{return SupportAttachment::create(['id'=>$id,'conversation_id'=>$c->id,'owner_hash'=>$c->owner_hash,'staff_user_id'=>$staffId,'merchant_key'=>$c->merchant_key,'kind'=>'document','path'=>$path,'name'=>$this->safeName($file->getClientOriginalName()),'mime'=>'application/pdf','bytes'=>strlen($bytes),'sha256'=>hash('sha256',$bytes)]);}
+        catch(\Throwable $e){Storage::disk('support-private')->delete($path);throw $e;}
+    }
+
     public function bind(SupportConversation $c, SupportMessage $message, ?string $id, ?int $staffId): void
     {
         $existing=SupportAttachment::where('message_id',$message->id)->value('id');
@@ -62,18 +74,19 @@ class SupportAttachmentService
         abort_unless($a && $a->status==='ready' && ($a->message_id===$message->id || (!$a->message_id && $a->created_at->gt(now()->subDay()))),404,'Image upload unavailable.');
         abort_if($a->message_id && $a->message_id!==$message->id,422,'This image belongs to another message.');
         abort_if($a->kind==='audio' && ($c->channel!=='whatsapp' || $message->content!==''),422,'Send WhatsApp audio and text as separate messages.');
+        abort_if($a->kind==='document'&&!app(SupportMediaCapabilities::class)->forChannel($c->channel??'web_guest')['documents'],422,'Documents are unavailable for this channel.');
         $a->update(['message_id'=>$message->id]);
     }
 
-    public function incoming(SupportConversation $c, SupportMessage $message, \App\Models\ManagedSocialAccount $account, string $reference, string $kind='image'): void
+    public function incoming(SupportConversation $c, SupportMessage $message, \App\Models\ManagedSocialAccount $account, string $reference, string $kind='image', ?string $name=null): void
     {
-        $a=SupportAttachment::create(['id'=>(string)Str::uuid(),'conversation_id'=>$c->id,'message_id'=>$message->id,'owner_hash'=>$c->owner_hash,'merchant_key'=>$c->merchant_key,'account_id'=>$account->id,'provider_reference'=>$reference,'name'=>$kind==='audio'?'Customer voice message':'Customer image','kind'=>$kind,'status'=>'pending']);
+        $a=SupportAttachment::create(['id'=>(string)Str::uuid(),'conversation_id'=>$c->id,'message_id'=>$message->id,'owner_hash'=>$c->owner_hash,'merchant_key'=>$c->merchant_key,'account_id'=>$account->id,'provider_reference'=>$reference,'name'=>$kind==='document'?$this->safeName($name??'Customer document.pdf'):($kind==='audio'?'Customer voice message':'Customer image'),'kind'=>$kind,'status'=>'pending']);
         \App\Jobs\DownloadSupportImage::dispatch($a->id)->onConnection('support')->onQueue('support-ai')->afterCommit();
     }
 
     public function view(SupportMessage $message, bool $admin=false): array
     {
         return $message->attachments->map(fn($a)=>['id'=>$a->id,'type'=>$a->kind ?? 'image','durationSeconds'=>$a->duration_seconds,'name'=>$a->name,'mimeType'=>$a->mime,'sizeBytes'=>$a->bytes,'status'=>$a->status,
-            'url'=>$a->status==='ready'?($admin?'/admin/api/support/attachments/':'/support/chat/attachments/').$a->id:null,'error'=>$a->error])->all();
+            'url'=>$a->status==='ready'?($admin?'/admin/api/support/attachments/':'/support/chat/attachments/').$a->id:null,'error'=>$a->error,'retryUrl'=>$admin&&$a->status==='failed'&&$a->account_id&&$a->provider_reference?'/admin/api/support/attachments/'.$a->id.'/retry':null])->all();
     }
 }

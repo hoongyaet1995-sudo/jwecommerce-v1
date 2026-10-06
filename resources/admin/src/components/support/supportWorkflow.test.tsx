@@ -64,3 +64,16 @@ it.each([
  expect(callback).toHaveBeenCalledTimes(1);expect(callback.mock.calls[0][0]).toBe('confirm-me');
  await act(async()=>root.unmount());host.remove();
 });
+
+it('shows PDF only on supported channels and respects server capability',async()=>{
+ (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;const host=document.createElement('div'),root=createRoot(host);const c={id:'pdf',status:'human_mode',channel:'facebook',canReply:true,customer:{name:'Customer',avatar:'/images/customer.png'},messages:[]} as any;
+ await act(async()=>root.render(<ChatWorkspacePanel conversation={c} onBackToList={()=>{}} isContextOpen={false} onToggleContext={()=>{}}/>));expect(host.querySelector('[aria-label="Attach PDF"]')).not.toBeNull();
+ await act(async()=>root.render(<ChatWorkspacePanel conversation={{...c,channel:'instagram'}} onBackToList={()=>{}} isContextOpen={false} onToggleContext={()=>{}}/>));expect(host.querySelector('[aria-label="Attach PDF"]')).toBeNull();
+ await act(async()=>root.render(<ChatWorkspacePanel conversation={{...c,mediaCapabilities:{images:true,documents:false,audio:false}}} onBackToList={()=>{}} isContextOpen={false} onToggleContext={()=>{}}/>));expect(host.querySelector('[aria-label="Attach PDF"]')).toBeNull();await act(async()=>root.unmount());
+});
+
+it('renders document messages in the actual chat stream',async()=>{
+ const host=document.createElement('div'),root=createRoot(host);const c:any={id:'pdf-render',status:'human_mode',channel:'web_guest',customer:{name:'Customer',avatar:'/images/customer.png'},messages:[{id:'doc',senderRole:'customer',type:'document',content:'Receipt',attachments:[{id:'file',type:'document',status:'ready',url:'/private/pdf',name:'receipt.pdf',sizeBytes:1000}]}]};
+ await act(async()=>root.render(<ChatWorkspacePanel conversation={c} onBackToList={()=>{}} isContextOpen={false} onToggleContext={()=>{}}/>));
+ expect(host.querySelector('[aria-label="Download document receipt.pdf"]')).not.toBeNull();await act(async()=>root.unmount());
+});

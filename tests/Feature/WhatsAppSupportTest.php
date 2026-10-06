@@ -188,4 +188,20 @@ class WhatsAppSupportTest extends TestCase
   [$bytes,$mime,$duration]=app(\App\Services\Support\SupportAudioProcessor::class)->normalize(file_get_contents(base_path('tests/Fixtures/support-streaming-tone.webm')));
   $this->assertNotEmpty($bytes);$this->assertSame('audio/ogg; codecs=opus',$mime);$this->assertGreaterThan(0,$duration);$this->assertLessThan(2,$duration);
  }
+ public function test_pdf_receipt_deduplicates_without_ai_and_sends_document_payload():void {
+  $p=$this->payload('wamid.pdf');$e=&$p['entry'][0]['changes'][0]['value']['messages'][0];unset($e['text']);$e['type']='document';$e['document']=['id'=>'888','filename'=>'receipt.pdf','caption'=>'Details'];
+  $service=app(\App\Services\Social\WhatsAppInboundService::class);$this->assertSame(1,$service->receive($p));$this->assertSame(0,$service->receive($p));
+  $a=\App\Models\SupportAttachment::firstOrFail();$this->assertSame('document',$a->kind);Bus::assertNotDispatched(\App\Jobs\ProcessWhatsAppSupportReply::class);
+  \Illuminate\Support\Facades\Storage::fake('support-private');$c=SupportConversation::firstOrFail();
+  $a=$this->post('/admin/api/support/conversations/'.$c->id.'/attachments',['document'=>\Illuminate\Http\UploadedFile::fake()->createWithContent('receipt.pdf',file_get_contents(base_path('tests/Fixtures/support-document.pdf')))],['Accept'=>'application/json'])->assertCreated()->json('attachment');
+  Http::fake(['*/media'=>Http::response(['id'=>'999']),'*/messages'=>Http::response(['messaging_product'=>'whatsapp','contacts'=>[['wa_id'=>'60123']],'messages'=>[['id'=>'wamid.doc']]])]);
+  $this->postJson('/admin/api/support/conversations/'.$c->id.'/messages',['content'=>'Please review','attachment_id'=>$a['id'],'client_message_id'=>(string)Str::uuid()])->assertOk();
+  Http::assertSent(fn($r)=>str_ends_with($r->url(),'/messages')&&$r['type']==='document'&&$r['document']['id']==='999'&&$r['document']['filename']==='receipt.pdf');
+ }
+ public function test_media_download_retry_is_scoped_and_dispatches_once():void {
+  $c=$this->ingest();$a=\App\Models\SupportAttachment::create(['id'=>(string)Str::uuid(),'conversation_id'=>$c->id,'owner_hash'=>$c->owner_hash,'merchant_key'=>'shop','message_id'=>$c->messages()->first()->id,'account_id'=>ManagedSocialAccount::first()->id,'provider_reference'=>'888','kind'=>'document','status'=>'failed','name'=>'receipt.pdf']);
+  $this->postJson('/admin/api/support/attachments/'.$a->id.'/retry')->assertOk();$this->assertSame('pending',$a->fresh()->status);
+  $this->postJson('/admin/api/support/attachments/'.$a->id.'/retry')->assertStatus(409);Bus::assertDispatchedTimes(\App\Jobs\DownloadSupportImage::class,1);
+  $a->update(['status'=>'failed']);ManagedSocialAccount::first()->update(['state'=>'disconnected']);$this->postJson('/admin/api/support/attachments/'.$a->id.'/retry')->assertStatus(409);
+ }
 }

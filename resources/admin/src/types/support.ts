@@ -44,6 +44,7 @@ export interface MessageAttachment {
   transcription?: string;
   status?: 'pending' | 'ready' | 'failed';
   error?: string | null;
+  retryUrl?: string | null;
 }
 
 export interface ChatMessage {
@@ -129,6 +130,7 @@ export interface InternalStaffNote {
 }
 
 export interface SupportConversation {
+  mediaCapabilities?: {images:boolean;documents:boolean;audio:boolean};
   canReply?: boolean;
   replyBlockedReason?: string | null;
   replyWindowExpiresAt?: string | null;

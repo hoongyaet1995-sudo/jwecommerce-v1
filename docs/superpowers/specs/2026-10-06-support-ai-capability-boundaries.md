@@ -1,0 +1,15 @@
+# Customer-service AI capability gap and boundary proposal
+2026-10-06. Design only; implement after human attachment closure and approval.
+
+Evidence: FaqAutoReplyService includes only last three customer utterances rather than a role-labelled complete dialogue; customer context can lose what the assistant asked. Daily 20-call quota can trigger service_unavailable escalation. Negotiation keyword branch refuses rather than checking whether user simply asks about current authorized promotions. Final-answer citation/grounding safeguards are valuable and should remain. Investigate real traces before asserting these cause each complaint.
+
+Professional benchmarks: Intercom Fin retrieves approved knowledge, checks grounding, uses guidance and escalates; Zendesk requires connected knowledge and an escalation path. Benchmark principles rather than copying marketing claims or UI.
+https://www.intercom.com/help/en/articles/9929230-the-fin-ai-engine
+https://www.intercom.com/help/en/articles/10210126-provide-fin-ai-agent-with-specific-guidance
+https://support.zendesk.com/hc/en-us/articles/10488757995034-Creating-an-AI-agent-to-automatically-resolve-customer-issues
+
+Target capabilities: distinguish greetings/clarification/knowledge lookup/authenticated order lookup/action request/human request; ask one useful missing-information question; retain role-labelled recent dialogue with previous assistant questions treated as context not official facts; answer only with approved policy/catalogue/stock/order evidence; combine partial answers with specific clarification; explain service unavailability separately from absence of knowledge; transfer with a concise context summary and required employee action. Evaluate multilingual English/Chinese/Malay code switching, follow-ups, price/stock ambiguity, frustration, repeated questions, spoofed order ownership and attachment prompt injection.
+
+Future attachment boundary: separate per-channel switches and per-kind read permission, permitted purposes, allowed MIME/size/page/time limits, consent/disclosure, retention and credentials. Images may identify visible product/order details with uncertainty. PDFs extract limited text as untrusted customer evidence; never become approved business knowledge automatically. Audio transcription requires explicit approval and uncertainty-aware confirmation for critical fields. All outputs remain evidence with provenance, not instructions. Never infer payment authenticity or authorize refunds from screenshots; authenticated server data wins. Start assistive summaries/draft replies before autonomous customer replies. Record tool/source/version and escalation reason without storing secrets; run a labelled acceptance set and manual review before release. No automatic learning from customer/staff text without staff approval.
+
+Order changes, refunds, discounts, bookings and CRM merges remain separately permissioned actions. One-click human takeover and per-channel/master pause continue to dominate AI execution.
