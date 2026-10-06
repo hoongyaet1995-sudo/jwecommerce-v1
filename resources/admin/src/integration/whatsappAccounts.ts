@@ -1,11 +1,11 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 
 export interface WhatsAppConnection {
-  id:string;pageId:string;name:string;state:'connected'|'authorization_expired'|'permission_required'|'disconnected'|'unknown';
+  id:string;pageId:string;name:string;displayPhoneNumber?:string|null;state:'connected'|'authorization_expired'|'permission_required'|'disconnected'|'unknown';
   checkReason?:string|null;checkedAt:string|null;permissions:string[];messagingReady:boolean;messagingError?:string|null;
   inboundEnabled?:boolean;inboundRoutingReady?:boolean;inboundVerifiedAt?:string|null;lastInboundAt?:string|null;
 }
-interface WhatsAppAccounts {configured:boolean;canManage:boolean;oauthPermitted?:boolean;oauthReason?:string;pages:{id:string;name:string}[];accounts:WhatsAppConnection[]}
+interface WhatsAppAccounts {configured:boolean;canManage:boolean;oauthPermitted?:boolean;oauthReason?:string;pages:{id:string;name:string;display_phone_number?:string|null}[];accounts:WhatsAppConnection[]}
 
 export function useWhatsAppAccounts(active:boolean) {
   const [data,setData]=useState<WhatsAppAccounts|null>(null);

@@ -29,6 +29,13 @@ class WhatsAppSupportTest extends TestCase
  }
  private function payload(string $mid='wamid.in'):array {return ['object'=>'whatsapp_business_account','entry'=>[['id'=>'789','changes'=>[['field'=>'messages','value'=>['metadata'=>['phone_number_id'=>'456'],'messages'=>[['from'=>'60123','id'=>$mid,'timestamp'=>(string)now()->timestamp,'type'=>'text','text'=>['body'=>'Hello']]]]]]]]];}
  private function ingest(): SupportConversation {app(\App\Services\Social\WhatsAppInboundService::class)->receive($this->payload());return SupportConversation::firstOrFail();}
+ public function test_new_message_reopens_resolved_archive_without_stealing_human_control():void {
+  $c=$this->ingest();$c->update(['status'=>'resolved']);$c->notes()->create(['content'=>'[Archive] true']);
+  $service=app(\App\Services\Social\WhatsAppInboundService::class);
+  $this->assertSame(1,$service->receive($this->payload('wamid.reopen')));
+  $this->assertSame('open',$c->fresh()->status);$this->assertSame('[Archive] false',$c->notes()->latest('id')->value('content'));
+  foreach(['human_mode','waiting_human'] as $status){$c->update(['status'=>$status]);$this->assertSame(1,$service->receive($this->payload('wamid.'.$status)));$this->assertSame($status,$c->fresh()->status);}
+ }
  public function test_inbound_deduplicates_and_emits_whatsapp_alert_once():void {
   $service=app(\App\Services\Social\WhatsAppInboundService::class);$this->assertSame(1,$service->receive($this->payload()));$this->assertSame(0,$service->receive($this->payload()));
   $this->assertSame(1,DB::table('support_messages')->count());$this->assertSame(1,DB::table('notifications')->count());
@@ -57,6 +64,7 @@ class WhatsAppSupportTest extends TestCase
   $message=$service->send($c,$data,auth()->id());$this->assertSame('unknown',$message->delivery_status);$service->send($c,$data+['retry'=>true],auth()->id());Http::assertSentCount(1);
  }
  public function test_management_has_safe_accounts_and_no_fabricated_oauth():void {
+  config(['services.whatsapp.oauth_routing_ready'=>false]);
   $this->mock(\App\Services\Social\SocialHubOAuth::class,fn($m)=>$m->shouldReceive('permitted')->with('whatsapp')->andReturn(['oauthPermitted'=>true,'oauthReason'=>null]));
   $this->getJson('/admin/api/social/whatsapp')->assertOk()->assertJsonPath('configured',false)->assertJsonPath('accounts.0.pageId','456')->assertJsonMissingPath('accounts.0.access_token');
   $this->get('/admin/social/whatsapp/authorize')->assertRedirect('/admin/social/whatsapp?whatsapp=not_configured');

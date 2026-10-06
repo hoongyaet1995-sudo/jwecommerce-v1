@@ -10,6 +10,11 @@ const {addToast,state}=vi.hoisted(()=>({addToast:vi.fn(),state:{data:null as any
 vi.mock('../../context/AdminContext',()=>({useAdmin:()=>({setCurrentSection:vi.fn(),addToast})}));
 vi.mock('../../integration/whatsappAccounts',async original=>({...await original(),useWhatsAppAccounts:()=>state}));
 let root:ReturnType<typeof createRoot>|undefined;
+it('distinguishes same-name numbers in the account list and authorization picker',async()=>{
+ window.history.replaceState({},'','/admin/social/whatsapp');
+ state.data={configured:true,canManage:true,oauthPermitted:true,pages:[{id:'222',name:'JW Studio',display_phone_number:'+60 12 222 2222'}],accounts:[{id:'1',pageId:'111',name:'JW Studio',displayPhoneNumber:'+60 11 111 1111',state:'connected',permissions:[],messagingReady:true,checkedAt:null}]};await render();
+ expect(document.body.textContent).toContain('+60 11 111 1111');expect(document.body.textContent).toContain('+60 12 222 2222');
+});
 afterEach(async()=>{if(root)await act(async()=>root!.unmount());root=undefined;document.body.innerHTML='';addToast.mockClear();state.error='';state.data=null;state.select.mockClear();});
 async function render(){(globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;const host=document.createElement('div');document.body.append(host);root=createRoot(host);await act(async()=>root!.render(<WhatsAppAccountPage/>));}
 it.each(Object.entries(whatsappOAuthNotice))('OAuth result %s uses one Toast and consumes only callback query',async(key,message)=>{
