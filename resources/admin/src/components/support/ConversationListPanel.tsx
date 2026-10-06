@@ -130,8 +130,8 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
           )}
         </div>
 
-        <div className="flex flex-wrap gap-1" aria-label="Channel filters">
-          {(['all','web_guest','whatsapp','facebook','instagram','tiktok'] as const).map(channel=>{const Icon=channel==='all'?Globe:CHANNEL_META[channel].icon;return <button key={channel} type="button" aria-pressed={selectedChannel===channel} onClick={()=>setSelectedChannel(channel)} className={'flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-colors '+(selectedChannel===channel?'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400':'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300')}><Icon className="w-3 h-3"/>{channel==='all'?'All Channels':CHANNEL_META[channel].label}</button>})}
+        <div className="flex flex-nowrap gap-1 overflow-x-auto no-scrollbar" aria-label="Channel filters">
+          {(['all','web_guest','whatsapp','facebook','instagram','tiktok'] as const).map(channel=>{const Icon=channel==='all'?Globe:CHANNEL_META[channel].icon;return <button key={channel} type="button" aria-pressed={selectedChannel===channel} onClick={()=>setSelectedChannel(channel)} className={'flex shrink-0 whitespace-nowrap items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-colors '+(selectedChannel===channel?'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400':'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300')}><Icon className="w-3 h-3"/>{channel==='all'?'All Channels':CHANNEL_META[channel].label}</button>})}
         </div>
 
         <div className="flex items-center gap-1 text-[11px] font-medium border-t border-neutral-100 dark:border-neutral-800/60 pt-2">
