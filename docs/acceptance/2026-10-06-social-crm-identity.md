@@ -65,3 +65,13 @@ Release acceptance: 118 PHP passed / 675 assertions, 8 frontend passed, admin bu
 2026-10-06T15:05:18.8685313+08:00 Initial RED as expected, 4 confirmation checks failed before implementation. RUN GREEN after modal, scoped pending action and uniform h-8 buttons.
 
 Support actions GREEN: 7 frontend tests passed including four confirmation/cancel/exactly-once cases; admin build passed. Local DOM geometry: AI/archive/resolve height 32, top 72. Light/dark modal checked, cancellation keeps state; screenshots tmp/support-confirm-dark.png and tmp/support-confirm-light.png. Restore/reopen also protected. Previous support UI synchronization authorization applies to this follow-up correction; no backend workflow changes.
+
+2026-10-06T15:08:51.2949457+08:00 Approved Actions dropdown follow-up: intentional RED, actions hidden until opened; confirmation behavior retained.
+
+2026-10-06T15:09:34.8112784+08:00 RED expected missing Actions trigger. RUN GREEN after contextual menu, keyboard navigation, outside dismissal and confirmation handoff.
+
+Menu replacement introduced one extra closing div; one test transform and one dependent build failed, same syntax root cause count 2. Removed extra closing div. 2026-10-06T15:10:13.5934345+08:00 RUN repaired GREEN/build.
+
+Attention: previous literal edit missed CRLF; syntax issue cumulative count 4 including dependent build. New evidence line 121 still present; normalized newline removal applied. 2026-10-06T15:10:36.4477833+08:00 RUN repaired transform; build only if tests pass.
+
+Menu GREEN 7 tests, build GREEN. Syntax issue resolved. Local browser verified contextual dropdown layout and menu -> confirmation handoff; screenshot tmp/support-actions-menu-local.png. Approved synchronization, no provider messages/state changes during browser acceptance.

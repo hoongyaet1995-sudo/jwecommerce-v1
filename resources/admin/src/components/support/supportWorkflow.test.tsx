@@ -28,6 +28,8 @@ it('offers the same composer before takeover and Hand to AI after takeover for M
  await act(async()=>root.render(<ChatWorkspacePanel conversation={conversation} onBackToList={vi.fn()} isContextOpen={false} onToggleContext={vi.fn()}/>));
  expect(host.querySelector('textarea')).not.toBeNull();
  await act(async()=>root.render(<ChatWorkspacePanel conversation={{...conversation,status:'human_mode'}} onBackToList={vi.fn()} isContextOpen={false} onToggleContext={vi.fn()}/>));
+ expect(host.querySelector('#btn-hand-back-ai')).toBeNull();
+ await act(async()=>(host.querySelector('#btn-support-actions') as HTMLButtonElement).click());
  expect(host.querySelector('#btn-hand-back-ai')).not.toBeNull();
  await act(async()=>root.unmount());
 });
@@ -51,10 +53,12 @@ it.each([
  const host=document.createElement('div');document.body.appendChild(host);const root=createRoot(host);
  const conversation={id:'confirm-me',status,channel:'web_guest',customer:{name:'Buyer',avatar:'/images/customer.png'},messages:[],internalNotes:[]} as any;
  await act(async()=>root.render(<ChatWorkspacePanel conversation={conversation} onBackToList={vi.fn()} isContextOpen={false} onToggleContext={vi.fn()}/>));
+ await act(async()=>(host.querySelector('#btn-support-actions') as HTMLButtonElement).click());
  await act(async()=>(host.querySelector(selector) as HTMLButtonElement).click());
  expect(callback).not.toHaveBeenCalled();expect(host.querySelector('[role="dialog"]')).not.toBeNull();
  await act(async()=>(host.querySelector('[data-support-confirm-cancel]') as HTMLButtonElement).click());
  expect(callback).not.toHaveBeenCalled();
+ await act(async()=>(host.querySelector('#btn-support-actions') as HTMLButtonElement).click());
  await act(async()=>(host.querySelector(selector) as HTMLButtonElement).click());
  await act(async()=>(host.querySelector('[data-support-confirm-submit]') as HTMLButtonElement).click());
  expect(callback).toHaveBeenCalledTimes(1);expect(callback.mock.calls[0][0]).toBe('confirm-me');

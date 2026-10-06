@@ -3,13 +3,23 @@ import {useAdmin} from '../../context/AdminContext';
 import {SupportConversation} from '../../types/support';
 import {SupportActionConfirmation} from './SupportActionConfirmation';
 import {CHANNEL_META} from './ConversationListPanel';
-import {Send,ArrowLeft,CheckCircle2,RotateCcw,Info,Bot,UserCheck,Archive,ArchiveRestore} from 'lucide-react';
+import {Send,ArrowLeft,CheckCircle2,RotateCcw,Info,Bot,UserCheck,Archive,ArchiveRestore,ChevronDown} from 'lucide-react';
 interface Props {conversation:SupportConversation;onBackToList:()=>void;isContextOpen:boolean;onToggleContext:()=>void}
 export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
  const {sendMessageToConversation,resolveConversation,reopenConversation,supportDrafts,setSupportDraft,supportBusy,takeOverConversation,handBackToAI,archiveConversation}=useAdmin();
  type Action='takeover'|'ai'|'archive'|'restore'|'resolve'|'reopen';
  const [confirmation,setConfirmation]=useState<{action:Action;id:string}|null>(null);
  const confirming=useRef(false);
+ const [actionsOpen,setActionsOpen]=useState(false);
+ const actionsRef=useRef<HTMLDivElement>(null),actionsButton=useRef<HTMLButtonElement>(null);
+ useEffect(()=>{setActionsOpen(false);},[conversation.id,conversation.status,conversation.isArchived]);
+ useEffect(()=>{
+  if(!actionsOpen)return;
+  actionsRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
+  const outside=(e:PointerEvent)=>{if(!actionsRef.current?.contains(e.target as Node))setActionsOpen(false);};
+  document.addEventListener('pointerdown',outside);return()=>document.removeEventListener('pointerdown',outside);
+ },[actionsOpen]);
+ const chooseAction=(action:Action)=>{setActionsOpen(false);actionsButton.current?.focus();setConfirmation({action,id:conversation.id});};
  useEffect(()=>setConfirmation(null),[conversation.id,conversation.status,conversation.isArchived]);
  const actionDetails:Record<Action,{title:string;description:string}>={
   takeover:{title:'Take Over',description:'You will take over this conversation. Automatic AI replies will pause.'},
@@ -83,70 +93,29 @@ export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
           </div>
         </div>
 
-        {/* Right: State Machine Actions (AI Mode / Human Takeover / Resolve) */}
+        {/* Status and contextual actions */}
         <div className="flex items-center gap-2 flex-shrink-0">
-
-{(conversation.status === 'open' || conversation.status === 'waiting_human') && (
-            <div className="flex items-center gap-1.5">
-              <span className="hidden lg:inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-                <Bot className="w-3.5 h-3.5" />
-                {conversation.status === 'waiting_human' ? 'Waiting for human' : 'AI Active'}
-              </span>
-
-              <button
-                id="btn-take-over-chat"
-                disabled={supportBusy} onClick={() => setConfirmation({action:'takeover',id:conversation.id})}
-                className="h-8 box-border flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-xs"
-              >
-                <UserCheck className="w-3.5 h-3.5" />
-                <span>Take Over</span>
-              </button>
-            </div>
-          )}
-
-          {conversation.status === 'human_mode' && (
-            <div className="flex items-center gap-1.5">
-              <span className="hidden lg:inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                <UserCheck className="w-3.5 h-3.5" />
-                {'Human Specialist'}
-              </span>
-
-              <button
-                id="btn-hand-back-ai"
-                disabled={supportBusy} onClick={() => setConfirmation({action:'ai',id:conversation.id})}
-                className="h-8 box-border flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700 rounded-lg transition-colors"
-                title="Return conversation to automated AI handling"
-              >
-                <Bot className="w-3.5 h-3.5 text-indigo-500" />
-                <span className="hidden sm:inline">Hand to AI</span>
-              </button>
-            </div>
-          )}
-
-          
-          <button type="button" aria-label={conversation.isArchived?"Restore conversation":"Archive conversation"} title={conversation.isArchived?"Restore conversation":"Archive conversation"} disabled={supportBusy} onClick={()=>setConfirmation({action:conversation.isArchived?'restore':'archive',id:conversation.id})} className="h-8 w-8 box-border flex items-center justify-center p-0 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-500 hover:text-indigo-500">{conversation.isArchived?<ArchiveRestore className="w-4 h-4"/>:<Archive className="w-4 h-4"/>}</button>
-          {/* Resolve / Reopen Button */}
-          {conversation.status !== 'resolved' ? (
-            <button
-              id="btn-resolve-chat" disabled={supportBusy}
-              onClick={() => setConfirmation({action:'resolve',id:conversation.id})}
-              className="h-8 box-border flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg transition-colors"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Resolve</span>
-            </button>
-          ) : (
-            <button
-              id="btn-reopen-chat" disabled={supportBusy}
-              onClick={() => setConfirmation({action:'reopen',id:conversation.id})}
-              className="h-8 box-border flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-lg transition-colors"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reopen</span>
-            </button>
-          )}
-
-
+          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+            {conversation.status==='human_mode'?<UserCheck className="w-3.5 h-3.5"/>:<Bot className="w-3.5 h-3.5"/>}
+            {conversation.status==='human_mode'?'Human Specialist':conversation.status==='resolved'?'Resolved':conversation.status==='waiting_human'?'Waiting for human':'AI Active'}
+          </span>
+          <div ref={actionsRef} className="relative" onKeyDown={e=>{
+            if(e.key==='Escape'){e.preventDefault();setActionsOpen(false);actionsButton.current?.focus();}
+            if(actionsOpen&&['ArrowDown','ArrowUp','Home','End'].includes(e.key)){
+              const items=Array.from(actionsRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')||[]);if(!items.length)return;
+              e.preventDefault();const index=items.indexOf(document.activeElement as HTMLButtonElement);
+              items[e.key==='Home'?0:e.key==='End'?items.length-1:(index+(e.key==='ArrowDown'?1:-1)+items.length)%items.length].focus();
+            }
+          }}>
+            <button ref={actionsButton} id="btn-support-actions" type="button" aria-haspopup="menu" aria-expanded={actionsOpen} aria-controls="support-actions-menu" disabled={supportBusy} onClick={()=>setActionsOpen(!actionsOpen)} className="h-8 flex items-center justify-center gap-2 px-3 text-xs font-medium rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50">Actions<ChevronDown className="w-3.5 h-3.5"/></button>
+            {actionsOpen && <div id="support-actions-menu" role="menu" aria-label="Conversation actions" className="absolute right-0 top-full mt-2 w-48 p-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl z-50">
+              {(conversation.status==='open'||conversation.status==='waiting_human')&&<button role="menuitem" id="btn-take-over-chat" onClick={()=>chooseAction('takeover')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:bg-neutral-100 dark:focus:bg-neutral-800"><UserCheck className="w-4 h-4 text-indigo-500"/>Take Over</button>}
+              {conversation.status==='human_mode'&&<button role="menuitem" id="btn-hand-back-ai" onClick={()=>chooseAction('ai')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:bg-neutral-100 dark:focus:bg-neutral-800"><Bot className="w-4 h-4 text-indigo-500"/>Hand to AI</button>}
+              <button role="menuitem" id={conversation.status==='resolved'?'btn-reopen-chat':'btn-resolve-chat'} onClick={()=>chooseAction(conversation.status==='resolved'?'reopen':'resolve')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:bg-neutral-100 dark:focus:bg-neutral-800">{conversation.status==='resolved'?<RotateCcw className="w-4 h-4 text-emerald-500"/>:<CheckCircle2 className="w-4 h-4 text-emerald-500"/>}{conversation.status==='resolved'?'Reopen':'Resolve'}</button>
+              <div className="my-1 border-t border-neutral-200 dark:border-neutral-800"/>
+              <button role="menuitem" aria-label={conversation.isArchived?'Restore conversation':'Archive conversation'} onClick={()=>chooseAction(conversation.isArchived?'restore':'archive')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:bg-neutral-100 dark:focus:bg-neutral-800">{conversation.isArchived?<ArchiveRestore className="w-4 h-4"/>:<Archive className="w-4 h-4"/>}{conversation.isArchived?'Restore':'Archive'}</button>
+            </div>}
+          </div>
         </div>
       </div>
 
