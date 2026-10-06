@@ -8,6 +8,13 @@ use App\Services\Support\ProductKnowledgeService;
 use App\Services\Inventory\WebsiteInventoryAvailability;
 use App\Support\StorefrontCurrencyContext;
 class ProductKnowledgeTest extends TestCase {
+ public function test_named_product_is_ranked_before_generic_description_matches():void {
+ DB::table('products')->where('status','active')->update(['description'=>'Not machine washable']);
+ DB::table('products')->insert(['id'=>4,'title'=>'Other furniture','handle'=>'other','status'=>'active','base_price'=>1000,'description'=>'Not machine washable']);
+ DB::table('products')->insert(['id'=>5,'title'=>'DRÖNA Fabric box','handle'=>'ikea-drona-fabric-box','status'=>'active','base_price'=>1900,'description'=>'Not washable']);
+ $facts=app(ProductKnowledgeService::class)->facts('DRONA washing machine',$this->scope());
+ $this->assertSame('product:5',$facts[0]['id']);
+ }
  protected function setUp():void {parent::setUp();config(['database.default'=>'sqlite','database.connections.sqlite.database'=>':memory:']);DB::purge('sqlite');DB::setDefaultConnection('sqlite');$this->assertSame(':memory:',DB::connection()->getDatabaseName());
  Schema::create('products',function(Blueprint $t){$t->id();foreach(['title','handle','brand','description','status','features'] as $c)$t->text($c)->nullable();$t->integer('base_price');});
  Schema::create('product_variants',function(Blueprint $t){$t->id();$t->integer('product_id');foreach(['title','options','size','material'] as $c)$t->text($c)->nullable();$t->boolean('enabled')->default(true);$t->integer('price')->nullable();});

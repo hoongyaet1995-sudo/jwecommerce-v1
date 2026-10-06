@@ -397,7 +397,7 @@ class SupportChatApiTest extends TestCase
     public function test_retrieved_faqs_reach_model_and_settings_are_style_only(): void
     {
         StoreSetting::create(['key' => 'support_faq', 'value' => ['autoReplyEnabled' => true, 'personality' => ['toneOfVoice' => 'concise_efficient', 'customToneInstructions' => 'Be brief', 'maxOutputTokens' => 240], 'faq' => ['isEnabled' => true, 'items' => [['id' => 'overseas', 'question' => 'Oversea shipping fee?', 'answer' => 'We only deliver within Malaysia.', 'keywords' => ['oversea'], 'isActive' => true], ['id' => 'hidden', 'question' => 'Hidden', 'answer' => 'SECRET_INACTIVE', 'keywords' => [], 'isActive' => false]]]]]);
-        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn ($f, $p, $n) => str_contains($p, 'We only deliver within Malaysia.') && ! str_contains($p, 'SECRET_INACTIVE') && str_contains($p, 'style only') && $n === 240)->andReturn(json_encode(['answer' => 'We do not ship to China.', 'faq_ids' => ['overseas']]));
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn ($f, $p, $n) => str_contains($p, 'We only deliver within Malaysia.') && ! str_contains($p, 'SECRET_INACTIVE') && str_contains($p, 'style only') && $n === 240)->andReturn(json_encode(['answer' => 'We do not ship to China. [overseas]', 'faq_ids' => ['overseas']]));
         $this->postJson('/support/chat/messages', $this->payload('i am from china, how long do i receive the parcel?'))->assertOk()->assertJsonPath('conversation.messages.1.content', 'We do not ship to China.');
     }
 

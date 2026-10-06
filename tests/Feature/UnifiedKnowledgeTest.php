@@ -7,6 +7,13 @@ use App\Services\Support\ProductKnowledgeService;
 use App\Services\Support\DiscountKnowledgeService;
 use App\Services\AI\AiConnectionService;
 class UnifiedKnowledgeTest extends TestCase {
+ public function test_product_only_plan_still_checks_applicable_store_policy():void{
+ $s=$this->settings();$s['faq']['items']=[['id'=>'assembly','category'=>'service','question'=>'Is assembly included?','answer'=>'Assembly is not included. Staff must confirm any separate service.','keywords'=>['assembly'],'isActive'=>true]];
+ $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[{"name":"product.search","query":"BILLY"}]}');
+ $this->mock(ProductKnowledgeService::class)->shouldReceive('facts')->once()->andReturn([['id'=>'product:1','question'=>'BILLY','answer'=>'Wall anchoring required']]);
+ $facts=app(UnifiedKnowledgeService::class)->retrieve('Is assembly included for BILLY?',$s);
+ $this->assertEqualsCanonicalizing(['product:1','assembly'],array_column($facts,'id'));
+ }
  private function settings():array{return ['faq'=>['isEnabled'=>true,'items'=>[
  ['id'=>'ship','category'=>'shipping','question'=>'Delivery time','answer'=>'Local delivery 3 days','keywords'=>['shipping'],'isActive'=>true],
  ['id'=>'overseas','category'=>'shipping','question'=>'Overseas shipping','answer'=>'No overseas delivery','keywords'=>[],'isActive'=>true],

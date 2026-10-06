@@ -46,8 +46,15 @@ class UnifiedKnowledgeService
             };
             $facts=array_merge($facts,$result);
         }
+        // A product record cannot replace store care/service restrictions. Check
+        // the customer's full question even when the planner selects only products.
+        $selectedTools=array_column($plan['tools'],'name');
+        if(isset($tools['faq.search'])&&in_array('product.search',$selectedTools,true)&&!in_array('faq.search',$selectedTools,true)){
+            $facts=array_merge($facts,app(FaqKnowledgeSearch::class)->search($question,$settings['faq']));
+            $selectedTools[]='faq.search';
+        }
         $facts=$this->bounded(array_values(array_column($facts,null,'id')));
-        \Illuminate\Support\Facades\Log::info('support_knowledge_routed',['tools'=>array_column($plan['tools'],'name'),'fact_count'=>count($facts),'fact_bytes'=>strlen(json_encode($facts,JSON_UNESCAPED_UNICODE))]);
+        \Illuminate\Support\Facades\Log::info('support_knowledge_routed',['tools'=>$selectedTools,'fact_count'=>count($facts),'fact_bytes'=>strlen(json_encode($facts,JSON_UNESCAPED_UNICODE))]);
         return $facts;
     }
     public function redact(string $text):string

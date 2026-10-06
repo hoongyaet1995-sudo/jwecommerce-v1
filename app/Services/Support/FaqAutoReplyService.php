@@ -111,6 +111,8 @@ class FaqAutoReplyService
                     $ids = is_array($result) ? ($result['faq_ids'] ?? null) : null;
                     if (is_array($ids) && count($ids) > 0 && ! array_diff($ids, array_column($facts, 'id')) && is_string($result['answer'] ?? null) && trim($result['answer']) !== '') {
                         $answer = preg_replace('~https?://[^\s<>]+~u', '', $result['answer']);
+                        // Sources belong in server-rendered actions, not customer prose.
+                        foreach($ids as $id)$answer=preg_replace('~\s*\['.preg_quote($id,'~').'\]~u','',$answer);
                         $actions = app(SupportActionResolver::class)->references($ids);
                     }
                     }
