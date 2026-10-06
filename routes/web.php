@@ -76,6 +76,9 @@ Route::post('/api/marketplace/hub/events', \App\Http\Controllers\MarketplaceHubE
     ->middleware('throttle:120,1');
 
 Route::get('/', [StorefrontController::class, 'home'])->name('storefront.home');
+Route::get('/support/provider-image/{attachment}', [\App\Http\Controllers\SupportAttachmentController::class, 'provider'])->whereUuid('attachment')->middleware(['signed','throttle:120,1'])->name('support.provider-image');
+Route::post('/support/chat/attachments', [\App\Http\Controllers\SupportAttachmentController::class, 'upload'])->middleware('throttle:20,1');
+Route::get('/support/chat/attachments/{attachment}', [\App\Http\Controllers\SupportAttachmentController::class, 'show'])->whereUuid('attachment')->middleware('throttle:60,1');
 Route::get('/support/chat', [\App\Http\Controllers\Storefront\SupportChatController::class, 'show'])->middleware('throttle:60,1');
 Route::get('/support/faq', [\App\Http\Controllers\SupportFaqController::class, 'show'])->middleware('throttle:60,1');
 Route::post('/support/chat/messages', [\App\Http\Controllers\Storefront\SupportChatController::class, 'send'])->middleware('throttle:20,1');
@@ -183,6 +186,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/api/integration/ai/{provider}', [\App\Http\Controllers\Admin\AiConnectionController::class, 'save'])->middleware('throttle:ai-provider-save');
     Route::post('/api/integration/ai/{provider}/verify', [\App\Http\Controllers\Admin\AiConnectionController::class, 'verify'])->middleware('throttle:ai-provider-check');
     Route::post('/api/social/facebook/{id}/inbound', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'inbound'])->middleware('throttle:10,1');
+    Route::post('/api/support/conversations/{conversation}/attachments', [\App\Http\Controllers\SupportAttachmentController::class, 'upload'])->whereUuid('conversation')->middleware('throttle:20,1');
+    Route::get('/api/support/attachments/{attachment}', [\App\Http\Controllers\SupportAttachmentController::class, 'show'])->whereUuid('attachment');
     Route::get('/api/support/conversations', [\App\Http\Controllers\Admin\SupportChatController::class, 'index']);
     Route::post('/api/support/conversations/{conversation}/messages', [\App\Http\Controllers\Admin\SupportChatController::class, 'send'])->whereUuid('conversation')->middleware('throttle:60,1');
     Route::patch('/api/support/conversations/{conversation}/status', [\App\Http\Controllers\Admin\SupportChatController::class, 'status'])->whereUuid('conversation');

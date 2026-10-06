@@ -147,3 +147,18 @@ Schedule::command('queue:work --queue=marketplace --stop-when-empty --tries=3 --
 Schedule::command('social:heartbeat')->everyFiveMinutes()->withoutOverlapping(2)
     ->when(fn () => \Illuminate\Support\Facades\Schema::hasTable('social_hub_settings')
         && \Illuminate\Support\Facades\DB::table('social_hub_settings')->where('id', 1)->where('enabled', true)->exists());
+
+
+Artisan::command('support:prune-uploads', function () {
+    $count=0;
+    \App\Models\SupportAttachment::whereNull('message_id')->where('created_at','<',now()->subDay())->chunkById(100,function($uploads)use(&$count){
+        foreach($uploads as $a) \Illuminate\Support\Facades\DB::transaction(function()use($a,&$count){
+            $current=\App\Models\SupportAttachment::whereKey($a->id)->lockForUpdate()->first();
+            if(!$current||$current->message_id)return;
+            if($current->path)\Illuminate\Support\Facades\Storage::disk($current->disk)->delete($current->path);
+            $current->delete();$count++;
+        });
+    });
+    $this->info('Expired uploads removed: '.$count);
+})->purpose('Remove abandoned support image uploads after 24 hours');
+Schedule::command('support:prune-uploads')->hourly()->withoutOverlapping();

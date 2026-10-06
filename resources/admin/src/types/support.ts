@@ -42,6 +42,8 @@ export interface MessageAttachment {
   thumbnailUrl?: string;
   durationSeconds?: number;
   transcription?: string;
+  status?: 'pending' | 'ready' | 'failed';
+  error?: string | null;
 }
 
 export interface ChatMessage {

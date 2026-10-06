@@ -69,7 +69,7 @@ class SupportChatService
             $locked = SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
             $existing = $locked->messages()->where('client_message_id', $data['client_message_id'])->first();
             if ($existing) {
-                if ($existing->sender_role !== $role || $existing->content !== $data['content'] || $existing->staff_user_id !== $staffId) {
+                if ($existing->sender_role !== $role || $existing->content !== $data['content'] || $existing->staff_user_id !== $staffId || $existing->attachments()->value('id') !== ($data['attachment_id'] ?? null)) {
                     throw ValidationException::withMessages(['client_message_id' => 'This message identifier has already been used.']);
                 }
 
@@ -92,6 +92,7 @@ class SupportChatService
                 'client_message_id' => $data['client_message_id'], 'sender_role' => $role,
                 'staff_user_id' => $staffId, 'content' => $data['content'],
             ]);
+            app(SupportAttachmentService::class)->bind($locked,$message,$data['attachment_id'] ?? null,$staffId);
             $status = $locked->status === 'resolved' ? 'open' : $locked->status;
             if ($role==='customer' && $locked->notes()->where('content','like','[Archive] %')->latest('id')->value('content')==='[Archive] true') {
                 $locked->notes()->create(['content'=>'[Archive] false']);
@@ -131,8 +132,9 @@ class SupportChatService
 
         $settings = app(\App\Services\SupportFaqService::class)->read();
         return ['requiresContact'=>!auth('customer')->check(), 'id' => $conversation->id, 'status' => $conversation->status, 'waitingNotice'=>$conversation->status === 'waiting_human' ? $settings['personality']['fallbackHandoffMessage'] : null,
-            'messages' => $conversation->messages()->orderBy('id')->get()->map(fn ($message) => [
+            'messages' => $conversation->messages()->with('attachments')->orderBy('id')->get()->map(fn ($message) => [
                 'id' => (string) $message->id, 'clientMessageId' => $message->client_message_id,
+                'attachments'=>app(SupportAttachmentService::class)->view($message),
                 'role' => $message->sender_role === 'customer' ? 'customer' : ($message->sender_role === 'ai' ? 'ai' : 'staff'),
                 ...($message->sender_role === 'ai' ? app(SupportActionResolver::class)->resolve(array_values(array_filter($message->actions ?? [], fn($a)=>app(SupportEscalationPolicy::class)->enabledAction($a,$conversation,$settings))), $message->content, empty($message->actions)) : ['content'=>$message->content,'actions'=>[]]), 'createdAt' => $message->created_at->toIso8601String(),
             ])->all()];
@@ -140,7 +142,7 @@ class SupportChatService
 
     public function adminView(SupportConversation $conversation): array
     {
-        $conversation->loadMissing(['customerUser.customer', 'customer.channelIdentities', 'messages.staff', 'notes.staff']);
+        $conversation->loadMissing(['customerUser.customer', 'customer.channelIdentities', 'messages.staff', 'messages.attachments', 'notes.staff']);
         $user = $conversation->customerUser;
         $contactNote=$conversation->notes->filter(fn($n)=>str_starts_with($n->content,'[Contact] '))->last();
         $contact=$contactNote ? json_decode(substr($contactNote->content,10),true) : [];
@@ -176,7 +178,7 @@ class SupportChatService
                 'tags' => [], 'totalOrdersCount' => 0, 'lifetimeValue' => 0, 'leadScore' => 0,
                 'leadStage' => 'Discovery', 'qualification' => 'support_ticket',
             ],
-            'snippet' => $last?->content ?? '', 'status' => $conversation->status,
+            'snippet' => $last?->content ?: ($last?->attachments->isNotEmpty() ? 'Image' : ''), 'status' => $conversation->status,
             'isArchived' => $conversation->notes->filter(fn($n)=>str_starts_with($n->content,'[Archive] '))->sortBy('id')->last()?->content==='[Archive] true',
             'unreadCount' => $messages->filter(fn ($m) => $m->sender_role === 'customer' && $m->id > $conversation->staff_read_message_id)->count(),
             'isPinned' => false, 'priority' => 'normal', 'activeAiDraft' => null,
@@ -188,7 +190,7 @@ class SupportChatService
                 'id' => (string) $m->id, 'conversationId' => $conversation->id, 'senderRole' => $m->sender_role,
                 'senderName' => $m->sender_role === 'customer' ? $name : ($m->sender_role === 'ai' ? 'AI Support' : ($m->staff?->name ?? 'Support')),
                 'senderAvatar' => $m->sender_role === 'customer' ? $avatar : '/images/support-person.svg', 'timestamp' => $m->created_at->format('d M H:i'),
-                'content' => $m->content, 'type' => 'text', 'deliveryStatus' => $m->delivery_status ?? 'sent', 'sendError' => $m->send_error, 'clientMessageId' => $m->client_message_id,
+                'attachments'=>app(SupportAttachmentService::class)->view($m,true), 'content' => $m->content, 'type' => $m->attachments->isNotEmpty() ? 'image' : 'text', 'deliveryStatus' => $m->delivery_status ?? 'sent', 'sendError' => $m->send_error, 'clientMessageId' => $m->client_message_id,
             ])->values()->all(),
             'internalNotes' => $conversation->notes->map(fn ($n) => [
                 'id' => (string) $n->id, 'authorName' => $n->staff?->name ?? 'Support',

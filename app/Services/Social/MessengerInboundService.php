@@ -25,9 +25,10 @@ class MessengerInboundService
             foreach((array)($entry['messaging']??[]) as $event){
                 if(!is_array($event))continue;
                 $sender=data_get($event,'sender.id');$recipient=data_get($event,'recipient.id');
-                $mid=data_get($event,'message.mid');$text=data_get($event,'message.text');
+                $mid=data_get($event,'message.mid');$text=data_get($event,'message.text','');
+                $images=array_values(array_filter((array)data_get($event,'message.attachments',[]),fn($a)=>is_array($a)&&($a['type']??null)==='image'&&is_string(data_get($a,'payload.url'))));
                 if(!$this->identity($sender)||$sender===$page||$recipient!==$page||data_get($event,'message.is_echo')
-                    ||!is_string($mid)||$mid===''||strlen($mid)>512||!is_string($text)||trim($text)===''||mb_strlen($text)>16000)continue;
+                    ||!is_string($mid)||$mid===''||strlen($mid)>512||!is_string($text)||(trim($text)===''&&!$images)||mb_strlen($text)>16000)continue;
                 $processed += $this->append($page,$sender,$mid,$text,$event,$platform)?1:0;
             }
         }
@@ -60,6 +61,7 @@ class MessengerInboundService
             $sentAt=is_numeric($timestamp)&&$timestamp>0&&$timestamp<=now()->addMinutes(5)->timestamp*1000
                 ? Carbon::createFromTimestampMs((int)$timestamp):now();
             $message=$conversation->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'customer','content'=>$text,'created_at'=>$sentAt,'updated_at'=>now()]);
+            foreach(array_slice((array)data_get($event,'message.attachments',[]),0,10) as $a){if(is_array($a)&&($a['type']??null)==='image'&&is_string(data_get($a,'payload.url')))app(\App\Services\Support\SupportAttachmentService::class)->incoming($conversation,$message,$account,$a['payload']['url']);}
             if($conversation->notes()->where('content','like','[Archive] %')->latest('id')->value('content')==='[Archive] true')
                 $conversation->notes()->create(['content'=>'[Archive] false']);
             $conversation->update(['status'=>in_array($conversation->status,['human_mode','waiting_human'],true)?$conversation->status:'open',
@@ -68,7 +70,7 @@ class MessengerInboundService
             DB::table('messenger_inbound_receipts')->insert(['event_key'=>$key,'conversation_id'=>$conversation->id,'page_id'=>$page,'message_id'=>$mid,'created_at'=>now(),'updated_at'=>now()]);
             $account->update(['last_inbound_at'=>now()]);
             app(\App\Services\Support\SupportMessageAlertService::class)->received($conversation,$message);
-            \App\Jobs\ProcessMessengerSupportReply::dispatch($message->id)->onConnection('support')->onQueue('support-ai')->beforeCommit();
+            if(trim($text)!=='') \App\Jobs\ProcessMessengerSupportReply::dispatch($message->id)->onConnection('support')->onQueue('support-ai')->beforeCommit();
             return true;
         },3);
     }

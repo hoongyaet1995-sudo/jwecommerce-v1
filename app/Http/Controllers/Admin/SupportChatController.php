@@ -29,9 +29,11 @@ class SupportChatController extends Controller
     }
     public function send(Request $request, SupportConversation $conversation, SupportChatService $chat)
     {
-        $data = $request->validate(['content' => ['required', 'string', 'max:2000'], 'client_message_id' => ['required', 'uuid'], 'retry' => ['sometimes', 'boolean']]);
-        $data['content'] = trim($data['content']);
-        abort_if($data['content'] === '', 422, 'Message cannot be empty.');
+        $data = $request->validate(['attachment_id'=>['nullable','uuid'], 'content' => ['nullable', 'string', 'max:2000'], 'client_message_id' => ['required', 'uuid'], 'retry' => ['sometimes', 'boolean']]);
+        $data['content'] = trim($data['content'] ?? '');
+        abort_if($data['content'] === '' && empty($data['attachment_id']) && empty($data['attachment_id']), 422, 'Message cannot be empty.');
+        abort_if(!empty($data['attachment_id']) && $data['content']!=='' && in_array($conversation->channel,['facebook','instagram'],true),422,'Send the image and text as separate messages on this channel.');
+        abort_if(!empty($data['attachment_id']) && $conversation->channel==='whatsapp' && mb_strlen($data['content'])>1024,422,'WhatsApp image captions can contain up to 1024 characters.');
         if (in_array($conversation->channel,['facebook','instagram','whatsapp'],true)) {
             $message = app($conversation->channel==='whatsapp'?\App\Services\Social\WhatsAppReplyService::class:\App\Services\Social\MessengerReplyService::class)->send($conversation, $data, $request->user()->id);
             return response()->json(['conversation' => $chat->adminView($conversation->fresh()), 'sendStatus' => $message->delivery_status, 'sendError' => $message->send_error]);
@@ -58,8 +60,8 @@ class SupportChatController extends Controller
     }
     public function note(Request $request, SupportConversation $conversation, SupportChatService $chat)
     {
-        $data = $request->validate(['content' => ['required', 'string', 'max:2000']]);
-        $data['content'] = trim($data['content']);
+        $data = $request->validate(['attachment_id'=>['nullable','uuid'], 'content' => ['nullable', 'string', 'max:2000']]);
+        $data['content'] = trim($data['content'] ?? '');
         abort_if($data['content'] === '', 422, 'Note cannot be empty.');
         $conversation->notes()->create(['content' => $data['content'], 'staff_user_id' => $request->user()->id]);
         $conversation->touch();

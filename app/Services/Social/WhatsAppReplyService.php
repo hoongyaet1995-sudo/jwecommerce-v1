@@ -52,7 +52,7 @@ class WhatsAppReplyService
             $locked = SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
             $existing = $locked->messages()->where('client_message_id', $data['client_message_id'])->first();
             if ($existing) {
-                if ($existing->sender_role !== 'human_agent' || $existing->staff_user_id !== $staffId || $existing->content !== $data['content']) {
+                if ($existing->sender_role !== 'human_agent' || $existing->staff_user_id !== $staffId || $existing->content !== $data['content'] || $existing->attachments()->value('id') !== ($data['attachment_id'] ?? null)) {
                     throw ValidationException::withMessages(['client_message_id' => 'This message identifier was already used.']);
                 }
                 if ($existing->delivery_status === 'sending' && $existing->updated_at->lt(now()->subSeconds(30))) {
@@ -63,12 +63,14 @@ class WhatsAppReplyService
             }
             $ready = $this->readiness($locked, $account, false);
             abort_unless($ready['canReply'], 409, $ready['replyBlockedReason']);
+            $imageHash=!empty($data['attachment_id'])?\App\Models\SupportAttachment::whereKey($data['attachment_id'])->where('conversation_id',$locked->id)->where('staff_user_id',$staffId)->value('sha256'):null;
             // An uncertain prior send must be reconciled by a person, never silently repeated under a new UUID.
-            abort_if($locked->messages()->where('sender_role', 'human_agent')->where('content', $data['content'])->whereIn('delivery_status', ['sending', 'unknown'])->exists(), 409, 'This reply is awaiting confirmation. Check WhatsApp before sending it again.');
+            abort_if($locked->messages()->where('sender_role', 'human_agent')->where('content', $data['content'])->when(!empty($data['attachment_id']),fn($q)=>$q->whereHas('attachments',fn($a)=>$a->where('sha256',$imageHash)),fn($q)=>$q->whereDoesntHave('attachments'))->whereIn('delivery_status', ['sending', 'unknown'])->exists(), 409, 'This reply is awaiting confirmation. Check WhatsApp before sending it again.');
             $message = $existing ?? $locked->messages()->create([
                 'client_message_id' => $data['client_message_id'], 'sender_role' => 'human_agent', 'staff_user_id' => $staffId,
                 'content' => $data['content'], 'delivery_status' => 'sending',
             ]);
+            app(\App\Services\Support\SupportAttachmentService::class)->bind($locked,$message,$data['attachment_id'] ?? null,$staffId);
             if ($existing) $message->update(['delivery_status' => 'sending', 'send_error' => null]);
             if ($locked->status !== 'human_mode') {
                 $locked->notes()->create(['staff_user_id'=>$staffId,'content'=>'[Control] '.$locked->status.' â†’ human_mode']);
@@ -137,15 +139,18 @@ class WhatsAppReplyService
     private function deliver(SupportMessage $message, ManagedSocialAccount $account, string $content, string $recipient): SupportMessage
     {
         $status='unknown';$providerId=null;$error='Send confirmation is unavailable. Check WhatsApp; do not resend this reply.';
+        $deliveryAttempted=false;
         try {
+            $payload=app(\App\Services\Support\SupportImageTransport::class)->payload($message,$account);
+            $deliveryAttempted=true;
             $response=Http::withToken($account->access_token)->acceptJson()->connectTimeout(5)->timeout(12)->post(
                 'https://graph.facebook.com/'.config('services.whatsapp.graph_version','v25.0').'/'.$account->provider_account_id.'/messages',
-                ['messaging_product'=>'whatsapp','recipient_type'=>'individual','to'=>$recipient,'type'=>'text','text'=>['body'=>$content]]);
+                ['messaging_product'=>'whatsapp','recipient_type'=>'individual','to'=>$recipient,...$payload]);
             $body=$response->json();$id=data_get($body,'messages.0.id');
             if($response->successful()&&($body['messaging_product']??null)==='whatsapp'&&is_string($id)&&strlen($id)>0&&strlen($id)<=512&&(string)data_get($body,'contacts.0.wa_id')===$recipient){$status='accepted';$providerId=$id;$error=null;}
             elseif(is_array($body['error']??null)){$status='failed';$error=match((int)($body['error']['code']??0)){190=>'WhatsApp authorization expired. Reconnect this account.',131047=>'An approved WhatsApp template is required outside the customer service window.',default=>'Meta rejected this WhatsApp reply. Check the account before retrying.'};}
         } catch(\Illuminate\Contracts\Encryption\DecryptException $e){$status='failed';$error='WhatsApp authorization is unavailable.';}
-        catch(\Throwable $e){}
+        catch(\Throwable $e){if(!$deliveryAttempted){$status='failed';$error='Image upload failed. Your attachment is retained; check the connection before retrying.';}}
         DB::transaction(function()use($message,$account,$recipient,$status,$providerId,$error){
             ManagedSocialAccount::whereKey($account->id)->lockForUpdate()->firstOrFail();
             $thread=SupportConversation::whereKey($message->conversation_id)->lockForUpdate()->firstOrFail();

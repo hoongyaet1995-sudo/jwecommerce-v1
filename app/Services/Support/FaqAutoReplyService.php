@@ -15,6 +15,7 @@ class FaqAutoReplyService
 {
     public function reply(SupportConversation $conversation, array $incoming): bool
     {
+        if (trim($incoming['content'] ?? '') === '') return true;
         $settings = app(SupportFaqService::class)->read();
         if (!app(SupportAiPolicy::class)->enabled($settings, $conversation->channel)) return true;
         $explicitRequest = app(SupportEscalationPolicy::class)->requested($incoming['content'], $settings);
@@ -65,7 +66,7 @@ class FaqAutoReplyService
                 $style = array_intersect_key($settings['personality'] ?? [], array_flip(['toneOfVoice', 'customToneInstructions', 'maxOutputTokens', 'brandMissionPrompt']));
                 $limit = max(150, min(600, (int) ($style['maxOutputTokens'] ?? 350)));
                 // Past replies are NOT official facts; include recent customer context only.
-                $history = $conversation->messages()->where('sender_role', 'customer')->orderByDesc('id')->limit(3)->get()->reverse()->map(fn ($m) => mb_substr($m->content, 0, 1200))->values()->all();
+                $history = $conversation->messages()->where('sender_role', 'customer')->where('content','!=','')->orderByDesc('id')->limit(3)->get()->reverse()->map(fn ($m) => mb_substr($m->content, 0, 1200))->values()->all();
                 try {
                     $facts = app(UnifiedKnowledgeService::class)->retrieve($incoming['content'], $settings, $history, $conversation, $language);
                     $intent = array_values(array_filter($facts, fn($f)=>$f['id']==='support:intent'))[0]['answer'] ?? 'none';

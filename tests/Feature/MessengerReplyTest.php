@@ -29,6 +29,7 @@ class MessengerReplyTest extends TestCase
         Schema::table('managed_social_accounts',function(Blueprint $t){$t->string('messaging_error',255)->nullable();});
         config(['services.facebook.inbound_routing_ready'=>true]);
   (require database_path('migrations/2026_10_06_150000_add_customer_channel_identity.php'))->up();
+        (require database_path('migrations/2026_10_06_190000_create_support_attachments.php'))->up();
         Http::preventStrayRequests();
     }
 
@@ -308,5 +309,59 @@ class MessengerReplyTest extends TestCase
       $this->send($c,(string)\Illuminate\Support\Str::uuid())->assertStatus(409);Http::assertNothingSent();
       $c->messages()->update(['created_at'=>now()]);ManagedSocialAccount::query()->update(['platform'=>'facebook']);
       $this->send($c,(string)\Illuminate\Support\Str::uuid())->assertStatus(409);Http::assertNothingSent();
+    }
+
+    public function test_image_send_uses_attachment_and_replay_keeps_image_identity(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('support-private');
+        $c=$this->thread();
+        $a=$this->post('/admin/api/support/conversations/'.$c->id.'/attachments',['image'=>\Illuminate\Http\UploadedFile::fake()->image('screen.png')],['Accept'=>'application/json'])->assertCreated()->json('attachment');
+        Http::fake(['*/messages'=>Http::response(['recipient_id'=>'222','message_id'=>'image-out'])]);
+        $data=['content'=>'','attachment_id'=>$a['id'],'client_message_id'=>(string)\Illuminate\Support\Str::uuid()];
+        $this->postJson('/admin/api/support/conversations/'.$c->id.'/messages',$data)->assertOk()->assertJsonPath('sendStatus','sent');
+        Http::assertSent(fn($r)=>$r['message']['attachment']['type']==='image' && str_contains($r['message']['attachment']['payload']['url'],'signature='));
+        $this->postJson('/admin/api/support/conversations/'.$c->id.'/messages',$data)->assertOk();Http::assertSentCount(1);
+        unset($data['attachment_id']);$data['content']='Changed';$this->postJson('/admin/api/support/conversations/'.$c->id.'/messages',$data)->assertUnprocessable();
+    }
+    public function test_image_only_inbound_is_retained_without_ai_job(): void
+    {
+        \Illuminate\Support\Facades\Bus::fake();$this->thread();
+        $p=['object'=>'page','entry'=>[['id'=>'111','messaging'=>[['sender'=>['id'=>'222'],'recipient'=>['id'=>'111'],'message'=>['mid'=>'image.in','attachments'=>[['type'=>'image','payload'=>['url'=>'https://scontent.xx.fbcdn.net/image.jpg']]]]]]]]];
+        $service=app(\App\Services\Social\MessengerInboundService::class);
+        $this->assertSame(1,$service->receive($p));$this->assertSame(0,$service->receive($p));
+        $this->assertSame(1,\App\Models\SupportAttachment::count());
+        \Illuminate\Support\Facades\Bus::assertNotDispatched(\App\Jobs\ProcessMessengerSupportReply::class);
+        \Illuminate\Support\Facades\Bus::assertDispatched(\App\Jobs\DownloadSupportImage::class);
+    }
+    public function test_same_image_reupload_cannot_bypass_unknown_send_protection(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('support-private');$c=$this->thread();
+        $upload=fn()=> $this->post('/admin/api/support/conversations/'.$c->id.'/attachments',['image'=>\Illuminate\Http\UploadedFile::fake()->image('screen.png',20,20)],['Accept'=>'application/json'])->assertCreated()->json('attachment.id');
+        $attempts=0;Http::fake(function()use(&$attempts){$attempts++;throw new \Illuminate\Http\Client\ConnectionException('timeout');});
+        $this->postJson('/admin/api/support/conversations/'.$c->id.'/messages',['content'=>'','attachment_id'=>$upload(),'client_message_id'=>(string)\Illuminate\Support\Str::uuid()])->assertOk()->assertJsonPath('sendStatus','unknown');
+        $this->postJson('/admin/api/support/conversations/'.$c->id.'/messages',['content'=>'','attachment_id'=>$upload(),'client_message_id'=>(string)\Illuminate\Support\Str::uuid()])->assertStatus(409);
+        $this->assertSame(1,$attempts);
+    }
+    public function test_incoming_image_download_is_private_and_failure_is_visible(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('support-private');
+        \Illuminate\Support\Facades\Bus::fake();
+        $c=$this->thread();$account=ManagedSocialAccount::first();
+        $message=$c->messages()->create(['client_message_id'=>(string)\Illuminate\Support\Str::uuid(),'sender_role'=>'customer','content'=>'']);
+        $media=app(\App\Services\Support\SupportAttachmentService::class);
+        $media->incoming($c,$message,$account,'https://scontent.xx.fbcdn.net/image.png');
+        $a=$message->attachments()->firstOrFail();
+        $fixture=\Illuminate\Http\UploadedFile::fake()->image('safe.png',20,20);$bytes=file_get_contents($fixture->getRealPath());
+        $download=\Mockery::mock(\App\Services\Support\SupportMediaDownload::class);
+        $download->shouldReceive('download')->once()->with('https://scontent.xx.fbcdn.net/image.png',null)->andReturn($bytes);
+        $job=new \App\Jobs\DownloadSupportImage($a->id);$job->handle($download,$media);
+        $this->assertSame('ready',$a->fresh()->status);
+        $this->assertNull($a->fresh()->provider_reference);
+        \Illuminate\Support\Facades\Storage::disk('support-private')->assertExists($a->fresh()->path);
+        $media->incoming($c,$message,$account,'https://scontent.xx.fbcdn.net/expired.png');
+        $failed=$message->attachments()->where('status','pending')->firstOrFail();
+        (new \App\Jobs\DownloadSupportImage($failed->id))->failed(new \RuntimeException('secret provider response'));
+        $this->assertSame('failed',$failed->fresh()->status);
+        $this->assertStringNotContainsString('secret',$failed->fresh()->error);
     }
 }

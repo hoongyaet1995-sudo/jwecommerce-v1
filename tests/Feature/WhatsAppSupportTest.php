@@ -23,6 +23,7 @@ class WhatsAppSupportTest extends TestCase
   if(file_exists(database_path('migrations/2026_10_06_120000_create_whatsapp_status_receipts.php')))(require database_path('migrations/2026_10_06_120000_create_whatsapp_status_receipts.php'))->up();
   Schema::table('support_messages',function(Blueprint $t){$t->unsignedInteger('ai_settings_version')->nullable();$t->unsignedBigInteger('ai_control_version')->nullable();});
   (require database_path('migrations/2026_10_06_150000_add_customer_channel_identity.php'))->up();
+        (require database_path('migrations/2026_10_06_190000_create_support_attachments.php'))->up();
   Http::preventStrayRequests();Bus::fake();
   $staff=User::factory()->create(['is_admin'=>true,'is_super_admin'=>true]);$this->actingAs($staff);
   ManagedSocialAccount::unguarded(fn()=>ManagedSocialAccount::create(['merchant_key'=>'shop','platform'=>'whatsapp','app_id'=>'123','provider_account_id'=>'456','waba_id'=>'789','name'=>'JW','access_token'=>'private','permissions'=>['whatsapp_business_messaging'],'tasks'=>[],'state'=>'connected','inbound_enabled'=>true,'inbound_verified_at'=>now(),'authorized_by'=>$staff->id]));
@@ -126,5 +127,26 @@ class WhatsAppSupportTest extends TestCase
  public function test_unregistered_phone_never_becomes_ready():void {
   $a=ManagedSocialAccount::first();$a->update(['permissions'=>['whatsapp_business_management','whatsapp_business_messaging']]);
   Http::fake(['*/789/subscribed_apps*'=>Http::response(['data'=>[['whatsapp_business_api_data'=>['id'=>'123']]]]),'*/456*'=>Http::response(['id'=>'456','status'=>'PENDING','platform_type'=>'CLOUD_API'])]);app(\App\Services\Social\WhatsAppSubscriptionService::class)->activate($a);$this->assertFalse($a->fresh()->inbound_enabled);$this->assertStringContainsString('registration',$a->fresh()->messaging_error);
+ }
+
+ public function test_image_send_uploads_media_and_sends_caption():void {
+  \Illuminate\Support\Facades\Storage::fake('support-private');$c=$this->ingest();
+  $a=$this->post('/admin/api/support/conversations/'.$c->id.'/attachments',['image'=>\Illuminate\Http\UploadedFile::fake()->image('photo.png')],['Accept'=>'application/json'])->assertCreated()->json('attachment');
+  Http::fake(['*/media'=>Http::response(['id'=>'999']),'*/messages'=>Http::response(['messaging_product'=>'whatsapp','contacts'=>[['wa_id'=>'60123']],'messages'=>[['id'=>'wamid.image']]])]);
+  $this->postJson('/admin/api/support/conversations/'.$c->id.'/messages',['content'=>'Your photo','attachment_id'=>$a['id'],'client_message_id'=>(string)Str::uuid()])->assertOk()->assertJsonPath('sendStatus','accepted');
+  Http::assertSent(fn($r)=>str_ends_with($r->url(),'/messages') && $r['type']==='image' && $r['image']['id']==='999' && $r['image']['caption']==='Your photo');
+  Http::assertSentCount(2);
+ }
+ public function test_image_caption_over_provider_limit_is_rejected_before_reservation():void {
+  \Illuminate\Support\Facades\Storage::fake('support-private');$c=$this->ingest();
+  $a=$this->post('/admin/api/support/conversations/'.$c->id.'/attachments',['image'=>\Illuminate\Http\UploadedFile::fake()->image('photo.png')],['Accept'=>'application/json'])->assertCreated()->json('attachment');
+  $this->postJson('/admin/api/support/conversations/'.$c->id.'/messages',['content'=>str_repeat('x',1025),'attachment_id'=>$a['id'],'client_message_id'=>(string)Str::uuid()])->assertUnprocessable();
+  $this->assertSame(1,$c->messages()->count());Http::assertNothingSent();
+ }
+ public function test_image_inbound_is_durable_and_never_generates_media_ai():void {
+  $p=$this->payload();$event=&$p['entry'][0]['changes'][0]['value']['messages'][0];unset($event['text']);$event['type']='image';$event['image']=['id'=>'999'];
+  $this->assertSame(1,app(\App\Services\Social\WhatsAppInboundService::class)->receive($p));
+  $this->assertSame(1,\App\Models\SupportAttachment::count());
+  Bus::assertDispatched(\App\Jobs\DownloadSupportImage::class);Bus::assertNotDispatched(\App\Jobs\ProcessWhatsAppSupportReply::class);
  }
 }

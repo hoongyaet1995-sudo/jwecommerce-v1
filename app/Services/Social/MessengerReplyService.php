@@ -52,7 +52,7 @@ class MessengerReplyService
             $locked = SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
             $existing = $locked->messages()->where('client_message_id', $data['client_message_id'])->first();
             if ($existing) {
-                if ($existing->sender_role !== 'human_agent' || $existing->staff_user_id !== $staffId || $existing->content !== $data['content']) {
+                if ($existing->sender_role !== 'human_agent' || $existing->staff_user_id !== $staffId || $existing->content !== $data['content'] || $existing->attachments()->value('id') !== ($data['attachment_id'] ?? null)) {
                     throw ValidationException::withMessages(['client_message_id' => 'This message identifier was already used.']);
                 }
                 if ($existing->delivery_status === 'sending' && $existing->updated_at->lt(now()->subSeconds(30))) {
@@ -63,12 +63,14 @@ class MessengerReplyService
             }
             $ready = $this->readiness($locked, $account, false);
             abort_unless($ready['canReply'], 409, $ready['replyBlockedReason']);
+            $imageHash=!empty($data['attachment_id'])?\App\Models\SupportAttachment::whereKey($data['attachment_id'])->where('conversation_id',$locked->id)->where('staff_user_id',$staffId)->value('sha256'):null;
             // An uncertain prior send must be reconciled by a person, never silently repeated under a new UUID.
-            abort_if($locked->messages()->where('sender_role', 'human_agent')->where('content', $data['content'])->whereIn('delivery_status', ['sending', 'unknown'])->exists(), 409, 'This reply is awaiting confirmation. Check Messenger before sending it again.');
+            abort_if($locked->messages()->where('sender_role', 'human_agent')->where('content', $data['content'])->when(!empty($data['attachment_id']),fn($q)=>$q->whereHas('attachments',fn($a)=>$a->where('sha256',$imageHash)),fn($q)=>$q->whereDoesntHave('attachments'))->whereIn('delivery_status', ['sending', 'unknown'])->exists(), 409, 'This reply is awaiting confirmation. Check Messenger before sending it again.');
             $message = $existing ?? $locked->messages()->create([
                 'client_message_id' => $data['client_message_id'], 'sender_role' => 'human_agent', 'staff_user_id' => $staffId,
                 'content' => $data['content'], 'delivery_status' => 'sending',
             ]);
+            app(\App\Services\Support\SupportAttachmentService::class)->bind($locked,$message,$data['attachment_id'] ?? null,$staffId);
             if ($existing) $message->update(['delivery_status' => 'sending', 'send_error' => null]);
             if ($locked->status !== 'human_mode') {
                 $locked->notes()->create(['staff_user_id'=>$staffId,'content'=>'[Control] '.$locked->status.' â†’ human_mode']);
@@ -138,14 +140,17 @@ class MessengerReplyService
     {
         $status = 'unknown'; $providerId = null;
         $error = 'Send confirmation is unavailable. Check Messenger; do not resend this reply.';
+        $deliveryAttempted=false;
         try {
+            $payload=app(\App\Services\Support\SupportImageTransport::class)->payload($message,$account);
+            $deliveryAttempted=true;
             $token = $account->access_token;
             // Facebook Login issues a Page token; Instagram messaging uses its Page endpoint.
             $sendAccount = $account->platform === 'instagram' ? 'me' : $account->provider_account_id;
             $response = Http::withToken($token)->acceptJson()->connectTimeout(5)->timeout(12)->post(
                 'https://graph.facebook.com/'.config('services.facebook.graph_version', 'v25.0').'/'.$sendAccount.'/messages',
                 [...($account->platform==='facebook'?['messaging_type'=>'RESPONSE']:[]), 'recipient' => ['id' => $recipient],
-                    'message' => ['text' => $content], 'appsecret_proof' => hash_hmac('sha256', $token, (string) config('services.facebook.client_secret'))]
+                    'message' => $payload, 'appsecret_proof' => hash_hmac('sha256', $token, (string) config('services.facebook.client_secret'))]
             );
             $body = $response->json();
             if ($response->successful() && is_string($body['message_id'] ?? null) && $body['message_id'] !== ''
@@ -162,6 +167,7 @@ class MessengerReplyService
         } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
             $status = 'failed'; $error = 'Page authorization is unavailable. Reconnect this Page.';
         } catch (\Throwable $e) {
+            if(!$deliveryAttempted){$status='failed';$error='Image preparation failed. Your attachment is retained; check the connection before retrying.';}
             // Timeout, malformed response and 5xx without a Graph error are ambiguous, not safe retry signals.
         }
         DB::transaction(function () use ($message, $status, $providerId, $error) {

@@ -59,6 +59,7 @@ class SupportChatApiTest extends TestCase
         (require database_path('migrations/2026_10_03_180000_create_notifications_table.php'))->up();
         Schema::table('support_conversations',fn(Blueprint $t)=>$t->string('channel')->default('web_guest'));
         (require database_path('migrations/2026_10_06_150000_add_customer_channel_identity.php'))->up();
+        (require database_path('migrations/2026_10_06_190000_create_support_attachments.php'))->up();
     }
 
     public function test_channel_pause_keeps_incoming_message_without_ai_even_for_human_request(): void

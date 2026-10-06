@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { SupportConversation } from '../types/support';
+import type { SupportConversation, MessageAttachment, MessageType } from '../types/support';
 
 export async function supportRequest(path = '', method = 'GET', body?: unknown, signal?: AbortSignal) {
   const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
@@ -22,7 +22,7 @@ export function useSupportChat(active: boolean) {
   const [supportBusy, setBusy] = useState(false);
   const revision = useRef(0), busy = useRef(false);
   const syncedAt = useRef('');
-  const retries = useRef<Record<string, { content: string; id: string }>>({});
+  const retries = useRef<Record<string, { content: string; attachmentId?: string; id: string }>>({});
   const setSupportDraft = (id: string, text: string) => setDrafts(previous => ({ ...previous, [id]: text }));
   const refreshSupport = useCallback(async (signal?: AbortSignal) => {
     const version = revision.current;
@@ -82,9 +82,10 @@ export function useSupportChat(active: boolean) {
     } catch (error) { setError(error instanceof Error ? error.message : 'Unable to save Support changes.'); return false; }
     finally { revision.current++; busy.current = false; setBusy(false); }
   };
-  const sendMessageToConversation = async (id: string, content: string) => {
-    if (!retries.current[id] || retries.current[id].content !== content) retries.current[id] = { content, id: crypto.randomUUID() };
-    const ok = await mutate(id, 'messages', { content, client_message_id: retries.current[id].id, retry: true });
+  const sendMessageToConversation = async (id: string, content: string, _type?: MessageType, attachments?: MessageAttachment[]) => {
+    const attachmentId=attachments?.[0]?.id;
+    if (!retries.current[id] || retries.current[id].content !== content || retries.current[id].attachmentId !== attachmentId) retries.current[id] = { content, attachmentId, id: crypto.randomUUID() };
+    const ok = await mutate(id, 'messages', { content, attachment_id: attachmentId, client_message_id: retries.current[id].id, retry: true });
     if (ok) delete retries.current[id];
     return ok;
   };

@@ -29,6 +29,7 @@ return [
     */
 
     'disks' => [
+        'support-private' => ['driver'=>'local','root'=>storage_path('app/support-private'),'throw'=>true],
 
         'local' => [
             'driver' => 'local',
