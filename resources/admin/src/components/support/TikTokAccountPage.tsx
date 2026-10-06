@@ -11,7 +11,7 @@ export function TikTokAccountPage(){
       <div className="flex items-center gap-4"><span className="w-12 h-12 rounded-full flex items-center justify-center text-white shrink-0 bg-neutral-900 dark:bg-neutral-700"><Music2 className="w-7 h-7"/></span><div><h2 className="text-2xl font-bold tracking-tight">TikTok Direct Messages</h2><p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Manage TikTok Business Accounts authorized to this store.</p></div></div>
       <button disabled className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-neutral-900 dark:bg-neutral-700 text-white text-sm font-semibold opacity-40"><Plus className="w-4 h-4"/>Connect TikTok</button>
     </div>
-    <p role="status" className="text-xs text-neutral-500 dark:text-neutral-400">等待 Tiktok 授权 · Business Messaging access must be enabled before accounts can connect.</p>
+    <p role="status" className="text-xs text-neutral-500 dark:text-neutral-400">Awaiting TikTok approval - Business Messaging access must be enabled before accounts can connect.</p>
     <div className="flex gap-6 border-b border-neutral-200 dark:border-neutral-800" role="tablist" aria-label="TikTok management">
       {(['accounts','guide'] as const).map(value=><button key={value} type="button" role="tab" aria-selected={tab===value} onClick={()=>setTab(value)} className={'pb-3 text-sm font-medium border-b-2 '+(tab===value?'border-indigo-500 text-indigo-600 dark:text-indigo-400':'border-transparent text-neutral-500 dark:text-neutral-400')}>{value==='accounts'?'Accounts':'Connection guide'}</button>)}
     </div>

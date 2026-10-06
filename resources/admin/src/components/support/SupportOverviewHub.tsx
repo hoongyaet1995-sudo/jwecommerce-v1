@@ -3,6 +3,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import {useFacebookAccounts} from '../../integration/facebookAccounts';
 import {useInstagramAccounts} from '../../integration/instagramAccounts';
+import {useWhatsAppAccounts} from '../../integration/whatsappAccounts';
+import {useSupportChat} from '../../integration/supportChat';
 import {
   ShoppingBag,
   Users,
@@ -24,8 +26,15 @@ export const SupportOverviewHub: React.FC = () => {
   const facebookStatus=facebook.loading?'Checking...':facebook.error?'Unable to verify':facebook.data?.accounts.some(account=>account.messagingReady)?'Ready to chat':facebook.data?.accounts.some(account=>account.state!=='disconnected')?'Action required':'Setup required';
   const instagram=useInstagramAccounts(true);
   const instagramStatus=instagram.loading?'Checking...':instagram.error?'Unable to verify':instagram.data?.accounts.some(account=>account.messagingReady)?'Ready to chat':instagram.data?.accounts.some(account=>account.state!=='disconnected')?'Action required':'Setup required';
-  const connectedChannels=[facebook.data?.accounts.some(a=>a.state==='connected')?'Facebook':null,instagram.data?.accounts.some(a=>a.state==='connected')?'Instagram':null].filter(Boolean);
-  const connectionSummary=connectedChannels.length?connectedChannels.join(' & ')+' connected':'Check connections';
+  const whatsapp=useWhatsAppAccounts(true);
+  const whatsappStatus=whatsapp.loading?'Checking...':whatsapp.error?'Unable to verify':whatsapp.data?.accounts.some(a=>a.messagingReady)?'Ready to chat':whatsapp.data?.accounts.some(a=>a.state!=='disconnected')?'Action required':'Setup required';
+  const support=useSupportChat(true);
+  const activeConversations=support.supportConversations.filter(c=>!c.isArchived&&c.status!=='archived');
+  const unread=activeConversations.reduce((total,c)=>total+(c.unreadCount||0),0);
+  const waiting=activeConversations.filter(c=>c.status==='waiting_human').length;
+  const metric=(value:number)=>support.supportError?'Unable to load':support.supportLoading?'Checking...':String(value);
+  const connectedChannels=[{name:'Facebook',icon:Facebook,color:'text-blue-400',section:'support-facebook',data:facebook},{name:'Instagram',icon:Instagram,color:'text-pink-400',section:'support-instagram',data:instagram},{name:'WhatsApp',icon:MessageCircle,color:'text-emerald-400',section:'support-whatsapp',data:whatsapp}].filter(c=>!c.data.loading&&!c.data.error&&c.data.data?.accounts.some(a=>a.state==='connected'));
+  const connectionSummary=connectedChannels.length+' '+(connectedChannels.length===1?'channel':'channels')+' connected';
   const dialogRef=useRef<HTMLDialogElement>(null);
   useEffect(()=>{const dialog=dialogRef.current;if(channelsOpen&&!dialog?.open)dialog?.showModal();else if(!channelsOpen&&dialog?.open)dialog.close();},[channelsOpen]);
   const channels=[
@@ -36,8 +45,8 @@ export const SupportOverviewHub: React.FC = () => {
   ];
 
   const cards = [
-    {id:'support' as const,title:'Customer Support',shortName:'Support Inbox',description:'Manage storefront conversations, respond to customers, take over from AI, and resolve support requests.',icon:Users,iconBg:'from-amber-500 to-orange-600',badge:'Storefront',badgeColor:'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20',highlights:['AI and human conversations','Human handoff and follow-up','Resolved and archived conversations'],actionLabel:'Open Customer Support'},
-    {id:'support-overview' as const,title:'Connect Multichannel Account',shortName:'Messaging Channels',description:'Manage Facebook Messenger and Instagram Direct Message connections. TikTok and WhatsApp setup will follow.',icon:ShoppingBag,iconBg:'from-orange-500 to-rose-600',badge:connectionSummary,badgeColor:'bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/20',highlights:['Facebook Messenger','Instagram Direct Messages','TikTok and WhatsApp'],actionLabel:'Coming soon'},
+    {id:'support' as const,title:'Customer Support',shortName:'Support Inbox',description:'Manage customer conversations across connected channels, take over from AI, and resolve support requests.',icon:Users,iconBg:'from-amber-500 to-orange-600',badge:'All channels',badgeColor:'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20',highlights:['AI and human conversations','Human handoff and follow-up','Resolved and archived conversations'],actionLabel:'Open Customer Support'},
+    {id:'support-overview' as const,title:'Connect Multichannel Account',shortName:'Messaging Channels',description:'Manage Facebook, Instagram and WhatsApp connections. TikTok is awaiting approval.',icon:ShoppingBag,iconBg:'from-orange-500 to-rose-600',badge:connectionSummary,badgeColor:'bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/20',highlights:['Facebook Messenger and Instagram','WhatsApp Business messages','TikTok: awaiting approval'],actionLabel:'Coming soon'},
   ];
   return (
     <div className="space-y-6">
@@ -61,19 +70,19 @@ export const SupportOverviewHub: React.FC = () => {
 
         {/* Quick KPI Bar */}
         <div className="mt-6 pt-6 border-t border-neutral-800 grid grid-cols-3 gap-4">
-          <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-            <p className="text-[11px] font-medium text-neutral-400">Support Inbox</p>
-            <p className="text-xl font-bold text-white mt-0.5">Storefront</p>
-            <span className="text-[10px] text-amber-400">AI & human support</span>
+          <div aria-label="Unread Messages" className="p-3 rounded-xl bg-white/5 border border-white/5">
+            <p className="text-[11px] font-medium text-neutral-400">Unread Messages</p>
+            <p className="text-xl font-bold text-white mt-0.5">{metric(unread)}</p>
+            <span className="text-[10px] text-amber-400">Customer messages awaiting review</span>
           </div>
-          <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-            <p className="text-[11px] font-medium text-neutral-400">Conversation Workflow</p>
-            <p className="text-xl font-bold text-white mt-0.5">Ready</p>
-            <span className="text-[10px] text-orange-400">Take over, resolve & archive</span>
+          <div aria-label="Needs Human Support" className="p-3 rounded-xl bg-white/5 border border-white/5">
+            <p className="text-[11px] font-medium text-neutral-400">Needs Human Support</p>
+            <p className="text-xl font-bold text-white mt-0.5">{metric(waiting)}</p>
+            <span className="text-[10px] text-orange-400">Conversations waiting for an agent</span>
           </div>
           <div className="p-3 rounded-xl bg-white/5 border border-white/5">
             <p className="text-[11px] font-medium text-neutral-400">Multichannel Accounts</p>
-            <p className="text-xl font-bold text-white mt-0.5">{connectionSummary}</p>
+            <div className="flex items-center gap-3 mt-0.5">{connectedChannels.map(channel=>{const Icon=channel.icon;return <button key={channel.name} type="button" aria-label={channel.name+' connected'} title={channel.name+' connected'} onClick={()=>setCurrentSection(channel.section as any)} className={'inline-flex items-center justify-center w-7 h-7 rounded-lg '+channel.color}><Icon className="w-5 h-5"/></button>;})}{!connectedChannels.length&&<span className="text-sm text-neutral-400">{facebook.error||instagram.error||whatsapp.error?'Unable to verify':'No verified connections'}</span>}</div>
             <span className="text-[10px] text-emerald-400">Select a channel to view status</span>
           </div>
         </div>
@@ -148,9 +157,9 @@ export const SupportOverviewHub: React.FC = () => {
             <button type="button" aria-label="Close channel selection" onClick={()=>setChannelsOpen(false)} className="p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"><X className="w-5 h-5"/></button>
           </header>
           <div className="p-5 sm:p-6 space-y-5">
-            <div className="flex gap-3 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200"><Info className="w-4 h-4 shrink-0 mt-0.5"/><div><p className="text-sm font-semibold">Connect a messaging account</p><p className="mt-1 text-xs leading-relaxed">Connect Facebook or Instagram to authorize an account. JW automatically verifies and enables text conversations. Other channels still require setup.</p></div></div>
+            <div className="flex gap-3 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200"><Info className="w-4 h-4 shrink-0 mt-0.5"/><div><p className="text-sm font-semibold">Connect a messaging account</p><p className="mt-1 text-xs leading-relaxed">Connect Facebook, Instagram or WhatsApp. JW checks account authorization and messaging readiness. Instagram access for external customers requires Meta approval; TikTok is awaiting approval.</p></div></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {channels.map(channel=>{const Icon=channel.icon;return <button key={channel.name} type="button" aria-pressed={selectedChannel===channel.name} onClick={()=>{if(channel.name==='Facebook'){setChannelsOpen(false);setCurrentSection('support-facebook');}else if(channel.name==='Instagram'){setChannelsOpen(false);setCurrentSection('support-instagram');}else if(channel.name==='TikTok'){setChannelsOpen(false);setCurrentSection('support-tiktok');}else if(channel.name==='WhatsApp'){setChannelsOpen(false);setCurrentSection('support-whatsapp');}else setSelectedChannel(channel.name);}} className={'flex items-center gap-3 text-left p-4 sm:p-5 rounded-xl border transition-colors '+(selectedChannel===channel.name?'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30':'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/40 hover:border-indigo-400')}><span className={'w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0 '+channel.color}><Icon className="w-5 h-5"/></span><span className="flex-1 min-w-0"><span className="flex items-center justify-between gap-2 flex-wrap"><span className="text-sm font-semibold">{channel.name}</span><span className="text-[10px] font-semibold rounded-full px-2 py-1 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">{channel.name==='Facebook'?facebookStatus:channel.name==='Instagram'?instagramStatus:channel.name==='TikTok'?'等待 Tiktok 授权':'Setup required'}</span></span><span className="block mt-2 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">{channel.description}</span></span><Settings className="w-4 h-4 shrink-0 text-neutral-400"/></button>})}
+              {channels.map(channel=>{const Icon=channel.icon;const status=channel.name==='Facebook'?facebookStatus:channel.name==='Instagram'?instagramStatus:channel.name==='WhatsApp'?whatsappStatus:'Awaiting TikTok approval';return <button key={channel.name} type="button" aria-pressed={selectedChannel===channel.name} onClick={()=>{if(channel.name==='Facebook'){setChannelsOpen(false);setCurrentSection('support-facebook');}else if(channel.name==='Instagram'){setChannelsOpen(false);setCurrentSection('support-instagram');}else if(channel.name==='TikTok'){setChannelsOpen(false);setCurrentSection('support-tiktok');}else if(channel.name==='WhatsApp'){setChannelsOpen(false);setCurrentSection('support-whatsapp');}else setSelectedChannel(channel.name);}} className={'flex items-center gap-3 text-left p-4 sm:p-5 rounded-xl border transition-colors '+(selectedChannel===channel.name?'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30':'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/40 hover:border-indigo-400')}><span className={'w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0 '+channel.color}><Icon className="w-5 h-5"/></span><span className="flex-1 min-w-0"><span className="flex items-center justify-between gap-2 flex-wrap"><span className="text-sm font-semibold">{channel.name}</span><span className={"text-[10px] font-semibold rounded-full px-2 py-1 "+(status==='Ready to chat'?'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-800 dark:text-cyan-300':'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300')}>{status}</span></span><span className="block mt-2 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">{channel.description}{channel.name==='Instagram'&&' Test access - Review pending.'}</span></span><Settings className="w-4 h-4 shrink-0 text-neutral-400"/></button>})}
             </div>
             {selectedChannel&&selectedChannel!=='Facebook'&&<p role="status" className="text-xs text-neutral-500 dark:text-neutral-400">{selectedChannel} selected. Connection setup is not available yet.</p>}
 
