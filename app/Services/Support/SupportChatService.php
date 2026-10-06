@@ -178,7 +178,7 @@ class SupportChatService
                 'tags' => [], 'totalOrdersCount' => 0, 'lifetimeValue' => 0, 'leadScore' => 0,
                 'leadStage' => 'Discovery', 'qualification' => 'support_ticket',
             ],
-            'snippet' => $last?->content ?: ($last?->attachments->isNotEmpty() ? 'Image' : ''), 'status' => $conversation->status,
+            'snippet' => $last?->content ?: ($last?->attachments->isNotEmpty() ? ($last->attachments->first()->kind==='audio'?'Voice message':'Image') : ''), 'status' => $conversation->status,
             'isArchived' => $conversation->notes->filter(fn($n)=>str_starts_with($n->content,'[Archive] '))->sortBy('id')->last()?->content==='[Archive] true',
             'unreadCount' => $messages->filter(fn ($m) => $m->sender_role === 'customer' && $m->id > $conversation->staff_read_message_id)->count(),
             'isPinned' => false, 'priority' => 'normal', 'activeAiDraft' => null,
@@ -190,7 +190,7 @@ class SupportChatService
                 'id' => (string) $m->id, 'conversationId' => $conversation->id, 'senderRole' => $m->sender_role,
                 'senderName' => $m->sender_role === 'customer' ? $name : ($m->sender_role === 'ai' ? 'AI Support' : ($m->staff?->name ?? 'Support')),
                 'senderAvatar' => $m->sender_role === 'customer' ? $avatar : '/images/support-person.svg', 'timestamp' => $m->created_at->format('d M H:i'),
-                'attachments'=>app(SupportAttachmentService::class)->view($m,true), 'content' => $m->content, 'type' => $m->attachments->isNotEmpty() ? 'image' : 'text', 'deliveryStatus' => $m->delivery_status ?? 'sent', 'sendError' => $m->send_error, 'clientMessageId' => $m->client_message_id,
+                'attachments'=>app(SupportAttachmentService::class)->view($m,true), 'content' => $m->content, 'type' => $m->attachments->isNotEmpty() ? ($m->attachments->first()->kind ?? 'image') : 'text', 'deliveryStatus' => $m->delivery_status ?? 'sent', 'sendError' => $m->send_error, 'clientMessageId' => $m->client_message_id,
             ])->values()->all(),
             'internalNotes' => $conversation->notes->map(fn ($n) => [
                 'id' => (string) $n->id, 'authorName' => $n->staff?->name ?? 'Support',

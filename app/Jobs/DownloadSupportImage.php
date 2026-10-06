@@ -13,7 +13,7 @@ class DownloadSupportImage implements ShouldQueue
 {
     use Queueable;
     public int $tries=3;
-    public int $timeout=45;
+    public int $timeout=100;
     public function __construct(public string $attachmentId) {}
     public function backoff(): array {return [10,60,180];}
     public function handle(SupportMediaDownload $download, SupportAttachmentService $media): void
@@ -28,15 +28,17 @@ class DownloadSupportImage implements ShouldQueue
             if(!$response->successful() || (string)$response->json('id')!==$url || !is_string($response->json('url')))throw new \RuntimeException('Media lookup unavailable.');
             $url=$response->json('url');$token=$account->access_token;
         }
-        [$bytes,$mime,$width,$height]=$media->encode($download->download($url,$token));
-        $path='images/'.$a->id.'.'.match($mime){'image/jpeg'=>'jpg','image/webp'=>'webp',default=>'png'};
+        if($a->kind==='audio'){
+            [$bytes,$mime,$duration]=app(\App\Services\Support\SupportAudioProcessor::class)->normalize($download->download($url,$token,\App\Services\Support\SupportAudioProcessor::MAX_BYTES));$width=$height=null;
+        }else{[$bytes,$mime,$width,$height]=$media->encode($download->download($url,$token));$duration=null;}
+        $path=($a->kind==='audio'?'audio/':'images/').$a->id.'.'.match($mime){'audio/ogg; codecs=opus'=>'ogg','image/jpeg'=>'jpg','image/webp'=>'webp',default=>'png'};
         Storage::disk($a->disk)->put($path,$bytes);
-        $a->update(['path'=>$path,'mime'=>$mime,'width'=>$width,'height'=>$height,'bytes'=>strlen($bytes),'sha256'=>hash('sha256',$bytes),'status'=>'ready','error'=>null,'provider_reference'=>null]);
+        $a->update(['path'=>$path,'duration_seconds'=>$duration,'mime'=>$mime,'width'=>$width,'height'=>$height,'bytes'=>strlen($bytes),'sha256'=>hash('sha256',$bytes),'status'=>'ready','error'=>null,'provider_reference'=>null]);
         $a->conversation->touch();
     }
     public function failed(?\Throwable $error): void
     {
         $a=SupportAttachment::find($this->attachmentId);
-        if($a && $a->status!=='ready'){$a->update(['status'=>'failed','error'=>'Image unavailable. Ask the customer to resend it.']);$a->conversation->touch();}
+        if($a && $a->status!=='ready'){$a->update(['status'=>'failed','error'=>'Media unavailable. Ask the customer to resend it.']);$a->conversation->touch();}
     }
 }

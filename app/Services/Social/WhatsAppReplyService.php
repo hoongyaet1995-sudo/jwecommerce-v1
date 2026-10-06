@@ -150,7 +150,7 @@ class WhatsAppReplyService
             if($response->successful()&&($body['messaging_product']??null)==='whatsapp'&&is_string($id)&&strlen($id)>0&&strlen($id)<=512&&(string)data_get($body,'contacts.0.wa_id')===$recipient){$status='accepted';$providerId=$id;$error=null;}
             elseif(is_array($body['error']??null)){$status='failed';$error=match((int)($body['error']['code']??0)){190=>'WhatsApp authorization expired. Reconnect this account.',131047=>'An approved WhatsApp template is required outside the customer service window.',default=>'Meta rejected this WhatsApp reply. Check the account before retrying.'};}
         } catch(\Illuminate\Contracts\Encryption\DecryptException $e){$status='failed';$error='WhatsApp authorization is unavailable.';}
-        catch(\Throwable $e){if(!$deliveryAttempted){$status='failed';$error='Image upload failed. Your attachment is retained; check the connection before retrying.';}}
+        catch(\Throwable $e){if(!$deliveryAttempted){$status='failed';$error='Media upload failed. Your attachment is retained; check the connection before retrying.';}}
         DB::transaction(function()use($message,$account,$recipient,$status,$providerId,$error){
             ManagedSocialAccount::whereKey($account->id)->lockForUpdate()->firstOrFail();
             $thread=SupportConversation::whereKey($message->conversation_id)->lockForUpdate()->firstOrFail();

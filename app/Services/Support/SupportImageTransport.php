@@ -19,6 +19,7 @@ class SupportImageTransport
                 'https://graph.facebook.com/'.config('services.whatsapp.graph_version','v25.0').'/'.$account->provider_account_id.'/media',['messaging_product'=>'whatsapp','type'=>$a->mime]);
             $id=$result->json('id');
             if(!$result->successful() || !is_string($id) || !preg_match('/^\d{1,100}$/D',$id))throw new \RuntimeException('Image upload rejected.');
+            if($a->kind==='audio')return ['type'=>'audio','audio'=>['id'=>$id]];
             return ['type'=>'image','image'=>['id'=>$id,...($m->content!==''?['caption'=>$m->content]:[])]];
         }
         return ['attachment'=>['type'=>'image','payload'=>['url'=>URL::temporarySignedRoute('support.provider-image',now()->addMinutes(15),['attachment'=>$a->id])]]];

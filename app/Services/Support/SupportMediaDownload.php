@@ -11,7 +11,7 @@ class SupportMediaDownload
             || !preg_match('/(^|\.)(fbcdn\.net|fbsbx\.com|facebook\.com)$/D',$host)) throw new \RuntimeException('Untrusted media destination.');
         return $host;
     }
-    public function download(string $url, ?string $token=null): string
+    public function download(string $url, ?string $token=null, int $maxBytes=SupportAttachmentService::MAX_BYTES): string
     {
         $host=$this->host($url);
         $ips=gethostbynamel($host)?:[];
@@ -20,9 +20,9 @@ class SupportMediaDownload
         $request=Http::connectTimeout(5)->timeout(20)->withoutRedirecting()->withOptions(['stream'=>true,'curl'=>[CURLOPT_RESOLVE=>[$host.':443:'.$ips[0]],CURLOPT_PROXY=>'']]);
         if($token)$request=$request->withToken($token);
         try{$response=$request->get($url);}catch(\Throwable){throw new \RuntimeException('Media request unavailable.');}
-        if(!$response->successful() || (int)$response->header('Content-Length')>SupportAttachmentService::MAX_BYTES)throw new \RuntimeException('Media response unavailable.');
+        if(!$response->successful() || (int)$response->header('Content-Length')>$maxBytes)throw new \RuntimeException('Media response unavailable.');
         $stream=$response->toPsrResponse()->getBody();$bytes='';
-        try {while(!$stream->eof()) {$bytes.=$stream->read(65536);if(strlen($bytes)>SupportAttachmentService::MAX_BYTES)throw new \RuntimeException('Media exceeds size limit.');}}finally{$stream->close();}
+        try {while(!$stream->eof()) {$bytes.=$stream->read(65536);if(strlen($bytes)>$maxBytes)throw new \RuntimeException('Media exceeds size limit.');}}finally{$stream->close();}
         return $bytes;
     }
 }

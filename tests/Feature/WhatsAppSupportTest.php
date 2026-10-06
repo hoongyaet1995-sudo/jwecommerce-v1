@@ -24,6 +24,7 @@ class WhatsAppSupportTest extends TestCase
   Schema::table('support_messages',function(Blueprint $t){$t->unsignedInteger('ai_settings_version')->nullable();$t->unsignedBigInteger('ai_control_version')->nullable();});
   (require database_path('migrations/2026_10_06_150000_add_customer_channel_identity.php'))->up();
         (require database_path('migrations/2026_10_06_190000_create_support_attachments.php'))->up();
+  (require database_path('migrations/2026_10_06_200000_add_support_audio.php'))->up();
   Http::preventStrayRequests();Bus::fake();
   $staff=User::factory()->create(['is_admin'=>true,'is_super_admin'=>true]);$this->actingAs($staff);
   ManagedSocialAccount::unguarded(fn()=>ManagedSocialAccount::create(['merchant_key'=>'shop','platform'=>'whatsapp','app_id'=>'123','provider_account_id'=>'456','waba_id'=>'789','name'=>'JW','access_token'=>'private','permissions'=>['whatsapp_business_messaging'],'tasks'=>[],'state'=>'connected','inbound_enabled'=>true,'inbound_verified_at'=>now(),'authorized_by'=>$staff->id]));
@@ -148,5 +149,43 @@ class WhatsAppSupportTest extends TestCase
   $this->assertSame(1,app(\App\Services\Social\WhatsAppInboundService::class)->receive($p));
   $this->assertSame(1,\App\Models\SupportAttachment::count());
   Bus::assertDispatched(\App\Jobs\DownloadSupportImage::class);Bus::assertNotDispatched(\App\Jobs\ProcessWhatsAppSupportReply::class);
+ }
+ public function test_audio_inbound_is_durable_and_never_generates_ai():void {
+  $p=$this->payload();$event=&$p['entry'][0]['changes'][0]['value']['messages'][0];unset($event['text']);$event['type']='audio';$event['audio']=['id'=>'999','mime_type'=>'audio/ogg; codecs=opus','voice'=>true];
+  $service=app(\App\Services\Social\WhatsAppInboundService::class);$this->assertSame(1,$service->receive($p));$this->assertSame(0,$service->receive($p));
+  $a=\App\Models\SupportAttachment::firstOrFail();$this->assertSame('audio',$a->kind);
+  Bus::assertDispatched(\App\Jobs\DownloadSupportImage::class);Bus::assertNotDispatched(\App\Jobs\ProcessWhatsAppSupportReply::class);
+ }
+ public function test_audio_upload_normalizes_and_sends_without_caption():void {
+  \Illuminate\Support\Facades\Storage::fake('support-private');$c=$this->ingest();
+  $fixture=\Illuminate\Http\UploadedFile::fake()->createWithContent('recording.webm',file_get_contents(base_path('tests/Fixtures/support-tone.webm')));
+  $a=$this->post('/admin/api/support/conversations/'.$c->id.'/attachments',['audio'=>$fixture],['Accept'=>'application/json'])->assertCreated()->json('attachment');
+  $this->assertSame('audio',$a['type']);$this->assertGreaterThan(0,$a['durationSeconds']);
+  $this->postJson('/admin/api/support/conversations/'.$c->id.'/messages',['content'=>'Caption forbidden','attachment_id'=>$a['id'],'client_message_id'=>(string)Str::uuid()])->assertUnprocessable();
+  Http::assertNothingSent();$this->assertSame(1,$c->messages()->count());
+  Http::fake(['*/media'=>Http::response(['id'=>'999']),'*/messages'=>Http::response(['messaging_product'=>'whatsapp','contacts'=>[['wa_id'=>'60123']],'messages'=>[['id'=>'wamid.audio']]])]);
+  $this->postJson('/admin/api/support/conversations/'.$c->id.'/messages',['content'=>'','attachment_id'=>$a['id'],'client_message_id'=>(string)Str::uuid()])->assertOk()->assertJsonPath('sendStatus','accepted');
+  Http::assertSent(fn($r)=>str_ends_with($r->url(),'/messages')&&$r['type']==='audio'&&$r['audio']['id']==='999'&&!isset($r['audio']['caption']));
+ }
+ public function test_invalid_audio_is_rejected_and_other_channels_cannot_upload_audio():void {
+  $c=$this->ingest();$upload=fn()=>\Illuminate\Http\UploadedFile::fake()->createWithContent('wrong.mp3','not an audio file');
+  $this->post('/admin/api/support/conversations/'.$c->id.'/attachments',['audio'=>$upload()],['Accept'=>'application/json'])->assertUnprocessable();
+  $c->update(['channel'=>'instagram']);
+  $this->post('/admin/api/support/conversations/'.$c->id.'/attachments',['audio'=>$upload()],['Accept'=>'application/json'])->assertUnprocessable();
+ }
+ public function test_audio_manifest_cannot_reference_local_media_and_size_is_bounded():void {
+  $processor=app(\App\Services\Support\SupportAudioProcessor::class);
+  foreach(["#EXTM3U\n#EXTINF:1,\n".str_replace('\\','/',base_path('tests/Fixtures/support-tone.webm'))."\n",str_repeat('x',16777217)] as $bytes){
+   try{$processor->normalize($bytes);$this->fail('Unsafe audio accepted');}catch(\Illuminate\Validation\ValidationException){$this->addToAssertionCount(1);}
+  }
+ }
+ public function test_audio_normalization_has_stable_fingerprint_for_duplicate_protection():void {
+  $p=app(\App\Services\Support\SupportAudioProcessor::class);$bytes=file_get_contents(base_path('tests/Fixtures/support-tone.webm'));
+  [$first]=$p->normalize($bytes);[$second]=$p->normalize($bytes);
+  $this->assertSame(hash('sha256',$first),hash('sha256',$second));
+ }
+ public function test_streaming_webm_without_duration_is_supported():void {
+  [$bytes,$mime,$duration]=app(\App\Services\Support\SupportAudioProcessor::class)->normalize(file_get_contents(base_path('tests/Fixtures/support-streaming-tone.webm')));
+  $this->assertNotEmpty($bytes);$this->assertSame('audio/ogg; codecs=opus',$mime);$this->assertGreaterThan(0,$duration);$this->assertLessThan(2,$duration);
  }
 }
