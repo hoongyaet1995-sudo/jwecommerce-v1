@@ -886,7 +886,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Customer Support Hub & AI Copilot State
   const { supportConversations, supportDrafts, setSupportDraft, selectedConversationId, setSelectedConversationId,
     supportLoading, supportError, supportBusy, refreshSupport, sendMessageToConversation, resolveConversation,
-    reopenConversation, markConversationAsRead, addStaffNote, takeOverConversation, handBackToAI, archiveConversation } = useSupportChat(currentSection === 'support');
+    reopenConversation, markConversationAsRead, addStaffNote, takeOverConversation, handBackToAI, archiveConversation, togglePinConversation } = useSupportChat(currentSection === 'support');
   const [supportActiveTab, setSupportActiveTab] = useState<'inbox' | 'copilot'>('inbox');
   const [cannedResponses, setCannedResponses] = useState<CannedResponse[]>(INITIAL_CANNED_RESPONSES);
   const [copilotMessages, setCopilotMessages] = useState<CopilotQueryMessage[]>(INITIAL_INTERNAL_COPILOT_MESSAGES);
@@ -3220,8 +3220,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // External AI/social support actions remain inactive until their provider integrations exist.
   const unavailableSupportAction = (_id: string) => addToast({type: 'info', title: 'Not connected', message: 'AI and social-channel integrations are not enabled.'});
   const
-    approveAIDraft = unavailableSupportAction, discardAIDraft = unavailableSupportAction,
-    togglePinConversation = unavailableSupportAction;
+    approveAIDraft = unavailableSupportAction, discardAIDraft = unavailableSupportAction;
   const generateAIDraft = async (id: string) => { unavailableSupportAction(id); };
   const retryFailedMessage = (id: string, _messageId: string) => unavailableSupportAction(id);
 

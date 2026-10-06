@@ -77,3 +77,23 @@ it('renders document messages in the actual chat stream',async()=>{
  await act(async()=>root.render(<ChatWorkspacePanel conversation={c} onBackToList={()=>{}} isContextOpen={false} onToggleContext={()=>{}}/>));
  expect(host.querySelector('[aria-label="Download document receipt.pdf"]')).not.toBeNull();await act(async()=>root.unmount());
 });
+
+it('filters platform and search together and ranks older pinned conversation first',async()=>{
+ const host=document.createElement('div'),root=createRoot(host),channel=vi.fn();
+ state.supportConversations=[{id:'new',channel:'whatsapp',isPinned:false,createdAt:'2026-10-06',customer:{name:'Buyer new',avatar:'',tags:[]},status:'human_mode',messages:[],snippet:'',unreadCount:0},{id:'old',channel:'whatsapp',isPinned:true,createdAt:'2026-10-01',customer:{name:'Buyer old',avatar:'',tags:[]},status:'human_mode',messages:[],snippet:'',unreadCount:0},{id:'fb',channel:'facebook',createdAt:'2026-10-06',customer:{name:'Buyer FB',avatar:'',tags:[]},status:'human_mode',messages:[],snippet:'',unreadCount:0}];
+ const props:any={selectedChannel:'whatsapp',setSelectedChannel:channel,statusFilter:'human_mode',setStatusFilter:vi.fn(),searchQuery:'Buyer',setSearchQuery:vi.fn(),onSelectConversation:vi.fn(),stats:{}};
+ await act(async()=>root.render(<ConversationListPanel {...props}/>));
+ expect(Array.from(host.querySelectorAll('[id^="conversation-item-"]')).map(el=>el.id)).toEqual(['conversation-item-old','conversation-item-new']);
+ expect(host.querySelector('[aria-label="Pinned conversation"]')).not.toBeNull();
+ await act(async()=>Array.from(host.querySelectorAll('button')).find(b=>b.textContent==='Instagram')!.click());expect(channel).toHaveBeenCalledWith('instagram');
+ await act(async()=>root.render(<ConversationListPanel {...props} selectedChannel="tiktok"/>));expect(host.textContent).toContain('No conversations found');
+ await act(async()=>root.unmount());
+});
+it('pins and unpins directly from Actions without a confirmation dialog',async()=>{
+ const host=document.createElement('div'),root=createRoot(host),pin=vi.fn();(state as any).togglePinConversation=pin;
+ const c:any={id:'pin',status:'human_mode',channel:'web_guest',isPinned:false,customer:{name:'Buyer',avatar:''},messages:[]};
+ await act(async()=>root.render(<ChatWorkspacePanel conversation={c} onBackToList={()=>{}} isContextOpen={false} onToggleContext={()=>{}}/>));
+ await act(async()=>host.querySelector<HTMLButtonElement>('#btn-support-actions')!.click());
+ await act(async()=>Array.from(host.querySelectorAll('button')).find(b=>b.textContent==='Pin conversation')!.click());expect(pin).toHaveBeenCalledWith('pin');expect(host.querySelector('[role="dialog"]')).toBeNull();
+ await act(async()=>root.render(<ChatWorkspacePanel conversation={{...c,isPinned:true}} onBackToList={()=>{}} isContextOpen={false} onToggleContext={()=>{}}/>));await act(async()=>host.querySelector<HTMLButtonElement>('#btn-support-actions')!.click());expect(host.textContent).toContain('Unpin conversation');await act(async()=>root.unmount());
+});

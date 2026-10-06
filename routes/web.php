@@ -192,6 +192,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/support/conversations', [\App\Http\Controllers\Admin\SupportChatController::class, 'index']);
     Route::post('/api/support/conversations/{conversation}/messages', [\App\Http\Controllers\Admin\SupportChatController::class, 'send'])->whereUuid('conversation')->middleware('throttle:60,1');
     Route::patch('/api/support/conversations/{conversation}/status', [\App\Http\Controllers\Admin\SupportChatController::class, 'status'])->whereUuid('conversation');
+    Route::patch('/api/support/conversations/{conversation}/pin', [\App\Http\Controllers\Admin\SupportChatController::class, 'pin'])->whereUuid('conversation');
     Route::patch('/api/support/conversations/{conversation}/archive', [\App\Http\Controllers\Admin\SupportChatController::class, 'archive'])->whereUuid('conversation');
     Route::post('/api/support/conversations/{conversation}/read', [\App\Http\Controllers\Admin\SupportChatController::class, 'read'])->whereUuid('conversation');
     Route::post('/api/support/conversations/{conversation}/notes', [\App\Http\Controllers\Admin\SupportChatController::class, 'note'])->whereUuid('conversation')->middleware('throttle:30,1');

@@ -102,6 +102,7 @@ export function useSupportChat(active: boolean) {
     takeOverConversation: (id: string) => { void mutate(id, "status", { status: "human_mode" }, "PATCH"); },
     handBackToAI: (id: string) => { void mutate(id, "status", { status: "open" }, "PATCH"); },
     archiveConversation: (id: string, archived: boolean) => { void mutate(id, 'archive', { archived }, 'PATCH'); },
+    togglePinConversation: (id: string) => mutate(id, 'pin', { pinned: !supportConversations.find(c=>c.id===id)?.isPinned }, 'PATCH'),
     markConversationAsRead,
     addStaffNote: (id: string, content: string) => mutate(id, 'notes', { content }),
   };

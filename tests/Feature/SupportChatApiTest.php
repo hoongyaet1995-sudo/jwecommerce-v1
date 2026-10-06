@@ -63,6 +63,20 @@ class SupportChatApiTest extends TestCase
   (require database_path('migrations/2026_10_06_200000_add_support_audio.php'))->up();
     }
 
+    public function test_pin_is_shared_persistent_idempotent_and_admin_only(): void
+    {
+        $id=$this->postJson('/support/chat/messages',$this->payload('Pin acceptance'))->assertOk()->json('conversation.id');
+        $this->patchJson("/admin/api/support/conversations/$id/pin",['pinned'=>true])->assertUnauthorized();
+        $this->actingAs(User::factory()->create(['is_admin'=>true]));
+        $this->patchJson("/admin/api/support/conversations/$id/pin",['pinned'=>true])->assertOk()->assertJsonPath('conversation.isPinned',true);
+        $count=SupportConversation::findOrFail($id)->notes()->count();
+        $this->patchJson("/admin/api/support/conversations/$id/pin",['pinned'=>true])->assertOk();
+        $this->assertSame($count,SupportConversation::findOrFail($id)->notes()->count());
+        $this->getJson('/admin/api/support/conversations')->assertOk()->assertJsonPath('conversations.0.isPinned',true);
+        $this->patchJson("/admin/api/support/conversations/$id/pin",['pinned'=>false])->assertOk()->assertJsonPath('conversation.isPinned',false);
+        $this->patchJson("/admin/api/support/conversations/$id/pin",['pinned'=>'invalid'])->assertUnprocessable();
+    }
+
     public function test_channel_pause_keeps_incoming_message_without_ai_even_for_human_request(): void
     {
         StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'aiChannels'=>['storefront'=>false],'faq'=>['isEnabled'=>true,'items'=>[]]]]);

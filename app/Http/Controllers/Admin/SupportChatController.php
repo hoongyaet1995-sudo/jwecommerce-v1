@@ -8,6 +8,19 @@ use Illuminate\Http\Request;
 
 class SupportChatController extends Controller
 {
+    public function pin(Request $request, SupportConversation $conversation, SupportChatService $chat)
+    {
+        $data=$request->validate(['pinned'=>['required','boolean']]);
+        \Illuminate\Support\Facades\DB::transaction(function() use($conversation,$request,$data){
+            $locked=SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
+            $latest=$locked->notes()->where('content','like','[Pin] %')->latest('id')->first();
+            if (($latest?->content==='[Pin] true') !== $data['pinned']) {
+                $locked->notes()->create(['staff_user_id'=>$request->user()->id,'content'=>'[Pin] '.($data['pinned']?'true':'false')]);
+                $locked->touch();
+            }
+        });
+        return response()->json(['conversation'=>$chat->adminView($conversation->fresh())]);
+    }
     public function archive(Request $request, SupportConversation $conversation, SupportChatService $chat)
     {
         $data=$request->validate(['archived'=>['required','boolean']]);

@@ -3,14 +3,14 @@ import {useAdmin} from '../../context/AdminContext';
 import {SupportConversation,MessageAttachment} from '../../types/support';
 import {SupportActionConfirmation} from './SupportActionConfirmation';
 import {CHANNEL_META} from './ConversationListPanel';
-import {Send,ArrowLeft,CheckCircle2,RotateCcw,Info,Bot,UserCheck,Archive,ArchiveRestore,ChevronDown,Paperclip,X,Music,FileText} from 'lucide-react';
+import {Send,ArrowLeft,CheckCircle2,RotateCcw,Info,Bot,UserCheck,Archive,ArchiveRestore,ChevronDown,Paperclip,X,Music,FileText,Pin,PinOff} from 'lucide-react';
 import {uploadSupportMedia,mediaSize} from './supportMediaUpload';
 import {WhatsAppAudioRecorder} from './WhatsAppAudioRecorder';
 import {SupportMessageImages} from './SupportMessageImages';
 import {imageValidation,imageFromClipboard} from './supportImages';
 interface Props {conversation:SupportConversation;onBackToList:()=>void;isContextOpen:boolean;onToggleContext:()=>void}
 export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
- const {sendMessageToConversation,resolveConversation,reopenConversation,supportDrafts,setSupportDraft,supportBusy,takeOverConversation,handBackToAI,archiveConversation}=useAdmin();
+ const {sendMessageToConversation,resolveConversation,reopenConversation,supportDrafts,setSupportDraft,supportBusy,takeOverConversation,handBackToAI,archiveConversation,togglePinConversation}=useAdmin();
  type Action='takeover'|'ai'|'archive'|'restore'|'resolve'|'reopen';
  const [confirmation,setConfirmation]=useState<{action:Action;id:string}|null>(null);
  const confirming=useRef(false);
@@ -136,6 +136,7 @@ export const ChatWorkspacePanel:React.FC<Props>=({conversation,onBackToList})=>{
           }}>
             <button ref={actionsButton} id="btn-support-actions" type="button" aria-haspopup="menu" aria-expanded={actionsOpen} aria-controls="support-actions-menu" disabled={supportBusy} onClick={()=>setActionsOpen(!actionsOpen)} className="h-8 flex items-center justify-center gap-2 px-3 text-xs font-medium rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50">Actions<ChevronDown className="w-3.5 h-3.5"/></button>
             {actionsOpen && <div id="support-actions-menu" role="menu" aria-label="Conversation actions" className="absolute right-0 top-full mt-2 w-48 p-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl z-50">
+              <button role="menuitem" disabled={supportBusy} onClick={()=>{setActionsOpen(false);void togglePinConversation(conversation.id);}} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:bg-neutral-100 dark:focus:bg-neutral-800">{conversation.isPinned?<PinOff className="w-4 h-4 text-amber-500"/>:<Pin className="w-4 h-4 text-amber-500"/>}{conversation.isPinned?'Unpin conversation':'Pin conversation'}</button>
               {(conversation.status==='open'||conversation.status==='waiting_human')&&<button role="menuitem" id="btn-take-over-chat" onClick={()=>chooseAction('takeover')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:bg-neutral-100 dark:focus:bg-neutral-800"><UserCheck className="w-4 h-4 text-indigo-500"/>Take Over</button>}
               {conversation.status==='human_mode'&&<button role="menuitem" id="btn-hand-back-ai" onClick={()=>chooseAction('ai')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:bg-neutral-100 dark:focus:bg-neutral-800"><Bot className="w-4 h-4 text-indigo-500"/>Hand to AI</button>}
               <button role="menuitem" id={conversation.status==='resolved'?'btn-reopen-chat':'btn-resolve-chat'} onClick={()=>chooseAction(conversation.status==='resolved'?'reopen':'resolve')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:bg-neutral-100 dark:focus:bg-neutral-800">{conversation.status==='resolved'?<RotateCcw className="w-4 h-4 text-emerald-500"/>:<CheckCircle2 className="w-4 h-4 text-emerald-500"/>}{conversation.status==='resolved'?'Reopen':'Resolve'}</button>

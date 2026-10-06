@@ -45,9 +45,9 @@ export const CustomerSupportHub: React.FC = () => {
       const target=supportConversations.find(c=>c.id===new URLSearchParams(window.location.search).get('conversation'));
       if(target){setSelectedConversationId(target.id);setStatusFilter(target.status==='resolved'?'resolved':target.status==='open'?'open':'human_mode');return;}
     }
-    const matches = supportConversations.filter(c => statusFilter === 'archived' ? c.isArchived : !c.isArchived && (statusFilter === 'resolved' ? c.status === 'resolved' : statusFilter === 'human_mode' ? ['waiting_human','human_mode'].includes(c.status) : c.status !== 'resolved'));
+    const matches = supportConversations.filter(c => (selectedChannel==='all'||c.channel===selectedChannel) && (!searchQuery.trim()||[c.customer.name,c.customer.phone,c.customer.email,c.snippet,...c.messages.map(m=>m.content)].some(v=>v?.toLowerCase().includes(searchQuery.trim().toLowerCase()))) && (statusFilter === 'archived' ? c.isArchived : !c.isArchived && (statusFilter === 'resolved' ? c.status === 'resolved' : statusFilter === 'human_mode' ? ['waiting_human','human_mode'].includes(c.status) : c.status === 'open')));
     if (!matches.some(c => c.id === selectedConversationId)) setSelectedConversationId(matches[0]?.id || null);
-  }, [supportConversations, supportLoading, selectedConversationId, statusFilter, setSelectedConversationId]);
+  }, [supportConversations, supportLoading, selectedConversationId, statusFilter, selectedChannel, searchQuery, setSelectedConversationId]);
 
   // Overall statistics
   const stats = useMemo(() => {
@@ -151,7 +151,7 @@ export const CustomerSupportHub: React.FC = () => {
               statusFilter={statusFilter}
               setStatusFilter={(status) => {
                 setStatusFilter(status);
-                const matches = supportConversations.filter(c => status === 'archived' ? c.isArchived : !c.isArchived && (status === 'resolved' ? c.status === 'resolved' : status === 'human_mode' ? ['waiting_human','human_mode'].includes(c.status) : c.status !== 'resolved'));
+                const matches = supportConversations.filter(c => status === 'archived' ? c.isArchived : !c.isArchived && (status === 'resolved' ? c.status === 'resolved' : status === 'human_mode' ? ['waiting_human','human_mode'].includes(c.status) : c.status === 'open'));
                 if (!matches.some(c => c.id === selectedConversationId)) setSelectedConversationId(matches[0]?.id || null);
               }}
               searchQuery={searchQuery}
