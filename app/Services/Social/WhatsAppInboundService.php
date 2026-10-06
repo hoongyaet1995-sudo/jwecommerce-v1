@@ -31,12 +31,14 @@ class WhatsAppInboundService
       $owner=hash('sha256',json_encode(['whatsapp',$account->merchant_key,$account->app_id,$phone,$event['from']]));
       $conversation=SupportConversation::firstOrCreate(['owner_hash'=>$owner],['id'=>(string)Str::uuid(),'channel'=>'whatsapp','merchant_key'=>$account->merchant_key,'provider_page_id'=>$phone,'provider_sender_id'=>$event['from'],'provider_page_name'=>$account->name,'status'=>'open']);
       $conversation=SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
+      $profile=collect($value['contacts']??[])->first(fn($contact)=>is_array($contact)&&($contact['wa_id']??null)===$event['from']);
       $timestamp=$event['timestamp']??null;
       // Invalid/future timestamps must never open the customer-service reply window.
       $sentAt=is_string($timestamp)&&ctype_digit($timestamp)&&(int)$timestamp>0&&(int)$timestamp<=now()->timestamp?Carbon::createFromTimestamp((int)$timestamp):now()->subHours(24);
       $message=$conversation->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'customer','content'=>$text,'created_at'=>$sentAt,'updated_at'=>now()]);
       if($conversation->notes()->where('content','like','[Archive] %')->latest('id')->value('content')==='[Archive] true')$conversation->notes()->create(['content'=>'[Archive] false']);
       $conversation->update(['status'=>in_array($conversation->status,['human_mode','waiting_human'],true)?$conversation->status:'open','provider_page_name'=>$account->name,'last_message_at'=>$conversation->last_message_at?->greaterThan($sentAt)?$conversation->last_message_at:$sentAt]);
+      app(\App\Services\Customers\CustomerContactResolver::class)->associate($conversation,['platform'=>'whatsapp','merchant_key'=>$account->merchant_key,'app_id'=>$account->app_id,'account_id'=>$phone,'sender_id'=>$event['from']],['name'=>data_get($profile,'profile.name','WhatsApp customer'),'phone'=>'+'.$event['from'],'phone_trusted'=>true]);
       DB::table('messenger_inbound_receipts')->insert(['event_key'=>$key,'conversation_id'=>$conversation->id,'page_id'=>$phone,'message_id'=>$event['id'],'created_at'=>now(),'updated_at'=>now()]);
       $account->update(['last_inbound_at'=>now()]);app(\App\Services\Support\SupportMessageAlertService::class)->received($conversation,$message);
       if(($event['type']??null)==='text')\App\Jobs\ProcessWhatsAppSupportReply::dispatch($message->id)->onConnection('support')->onQueue('support-ai')->afterCommit();

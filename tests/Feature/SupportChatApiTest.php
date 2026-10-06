@@ -42,6 +42,7 @@ class SupportChatApiTest extends TestCase
             $t->timestamps();
         });
         Schema::create('customers', function (Blueprint $t) {
+            $t->string('avatar')->nullable();
             $t->id();
             $t->foreignId('user_id')->nullable();$t->string('email')->nullable()->unique();$t->string('first_name')->nullable();$t->string('last_name')->nullable();$t->string('status')->nullable();$t->json('tags')->nullable();$t->text('notes')->nullable();
             $t->string('phone')->nullable();
@@ -57,6 +58,7 @@ class SupportChatApiTest extends TestCase
         (require database_path('migrations/2026_10_03_100000_add_support_message_actions.php'))->up();
         (require database_path('migrations/2026_10_03_180000_create_notifications_table.php'))->up();
         Schema::table('support_conversations',fn(Blueprint $t)=>$t->string('channel')->default('web_guest'));
+        (require database_path('migrations/2026_10_06_150000_add_customer_channel_identity.php'))->up();
     }
 
     public function test_resolved_customer_can_explicitly_reopen_or_start_new_without_overwriting_history(): void
@@ -83,9 +85,11 @@ class SupportChatApiTest extends TestCase
         $this->postJson('/support/chat/messages',$payload)->assertUnprocessable();
         $payload['contact']=['name'=>'Test Contact','email'=>'contact@example.test','phone'=>'123456'];
         $this->postJson('/support/chat/messages',$payload)->assertOk()->assertJsonPath('conversation.status','waiting_human');
-        $contact=\App\Models\Customer::where('email','contact@example.test')->firstOrFail();
+        $contact=SupportConversation::findOrFail($id)->customer;
         $this->assertNull($contact->user_id);
-        $this->assertSame(['Storefront','Support Chat'],$contact->tags);
+        $this->assertNull($contact->email);
+        $this->assertSame('contact@example.test',$contact->channelIdentities()->first()->metadata['provided_email']);
+        $this->assertSame(['storefront'],$contact->platformPresences()->pluck('platform')->all());
         $this->assertNull(SupportConversation::findOrFail($id)->customer_user_id);
         $this->assertSame('Test Contact',app(SupportChatService::class)->adminView(SupportConversation::findOrFail($id))['customer']['name']);
         $this->assertGuest('customer');

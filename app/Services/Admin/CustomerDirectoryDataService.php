@@ -17,10 +17,11 @@ class CustomerDirectoryDataService
      *
      * @return LengthAwarePaginator<int, Customer>
      */
-    public function customers(?string $search = null): LengthAwarePaginator
+    public function customers(?string $search = null, ?string $platform = null, ?string $tag = null): LengthAwarePaginator
     {
         return Customer::query()
-            ->withCount('orders')
+            ->whereNull('merged_into_id')
+            ->with('platformPresences')->withCount('orders')
             ->withSum([
                 'orders as paid_spend' => fn ($orders) => $orders->whereIn('status', self::PAID_LIFECYCLE_STATUSES),
             ], 'total')
@@ -37,8 +38,10 @@ class CustomerDirectoryDataService
                 $customers
                     ->where('first_name', 'like', "%{$value}%")
                     ->orWhere('last_name', 'like', "%{$value}%")
-                    ->orWhere('email', 'like', "%{$value}%");
+                    ->orWhere('email', 'like', "%{$value}%")->orWhere('phone', 'like', "%{$value}%");
             }))
+            ->when($platform, fn($q) => $q->whereHas('platformPresences', fn($p) => $p->where('platform', $platform)))
+            ->when($tag, fn($q) => $q->whereJsonContains('tags', $tag))
             ->latest()
             ->paginate(30)
             ->withQueryString();
@@ -50,9 +53,9 @@ class CustomerDirectoryDataService
      *     pagination: array{currentPage: int, lastPage: int, perPage: int, total: int}
      * }
      */
-    public function data(?string $search = null): array
+    public function data(?string $search = null, ?string $platform = null, ?string $tag = null): array
     {
-        $customers = $this->customers($search);
+        $customers = $this->customers($search, $platform, $tag);
 
         return [
             'customers' => $customers->getCollection()->map(fn (Customer $customer): array => $this->customerData($customer))->values()->all(),
@@ -67,7 +70,7 @@ class CustomerDirectoryDataService
 
     public function findData(Customer $customer): array
     {
-        $customer = Customer::query()->withCount('orders')->withSum([
+        $customer = Customer::query()->with('platformPresences')->withCount('orders')->withSum([
             'orders as paid_spend' => fn ($orders) => $orders->whereIn('status', self::PAID_LIFECYCLE_STATUSES),
         ], 'total')->with(['addresses' => fn ($query) => $query->orderByDesc('is_default')->orderBy('id'), 'orders' => fn ($query) => $query->latest()->limit(1)])->findOrFail($customer->id);
 
@@ -83,7 +86,8 @@ class CustomerDirectoryDataService
                     'id' => $customer->id,
                     // The email remains the truthful display identifier for guest
                     // checkout records that have no persisted customer name.
-                    'name' => $name !== '' ? $name : $customer->email,
+                    'name' => $name !== '' ? $name : ($customer->email ?? 'Customer'),
+                    'platforms' => $customer->platformPresences->pluck('platform')->unique()->values()->all(),
                     'email' => $customer->email,
                     'phone' => $customer->phone,
                     'avatar' => $customer->avatar,

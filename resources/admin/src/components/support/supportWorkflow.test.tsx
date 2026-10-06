@@ -31,3 +31,11 @@ it('offers the same composer before takeover and Hand to AI after takeover for M
  expect(host.querySelector('#btn-hand-back-ai')).not.toBeNull();
  await act(async()=>root.unmount());
 });
+
+it('shows scoped platform ID and handle in customer details with a copy control',async()=>{
+ const {CustomerContextPanel}=await import('./CustomerContextPanel');
+ const {renderToStaticMarkup}=await import('react-dom/server');
+ const conversation={channel:'instagram',customer:{name:'Buyer',avatar:'https://example.test/a.jpg',handle:'buyer',platformUserId:'12345'},internalNotes:[]} as any;
+ const html=renderToStaticMarkup(<CustomerContextPanel conversation={conversation} onClose={vi.fn()}/>);
+ expect(html).toContain('12345');expect(html).toContain('@buyer');expect(html).toContain('Copy platform user ID');
+});

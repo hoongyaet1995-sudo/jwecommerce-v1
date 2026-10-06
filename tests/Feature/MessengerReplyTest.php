@@ -21,13 +21,14 @@ class MessengerReplyTest extends TestCase
             'services.facebook.webhook_verify_token'=>'verify-test','services.facebook.merchant_key'=>'shop-test']);
         DB::purge('sqlite'); DB::setDefaultConnection('sqlite');
         Schema::create('users',function(Blueprint $t){$t->id();$t->string('name');$t->string('email');$t->string('password');$t->boolean('is_admin')->default(false);$t->boolean('is_super_admin')->default(false);$t->timestamp('email_verified_at')->nullable();$t->rememberToken();$t->timestamps();});
-        Schema::create('customers',function(Blueprint $t){$t->id();$t->foreignId('user_id')->nullable();});
+        Schema::create('customers',function(Blueprint $t){$t->id();$t->foreignId('user_id')->nullable();$t->string('email')->nullable()->unique();$t->string('phone')->nullable();$t->string('first_name')->nullable();$t->string('last_name')->nullable();$t->string('avatar')->nullable();$t->string('status')->nullable();$t->json('tags')->nullable();$t->text('notes')->nullable();$t->timestamps();});
         Schema::create('store_settings',function(Blueprint $t){$t->id();$t->string('key')->unique();$t->json('value');$t->timestamps();});
         foreach(['2026_10_02_160000_create_support_chat_tables.php','2026_10_03_100000_add_support_message_actions.php','2026_10_03_180000_create_notifications_table.php','2026_10_04_120000_create_managed_social_accounts.php'] as $file)(require database_path('migrations/'.$file))->up();
         if(file_exists(database_path('migrations/2026_10_04_180000_add_messenger_inbound.php')))(require database_path('migrations/2026_10_04_180000_add_messenger_inbound.php'))->up();
         Schema::table('support_messages',function(Blueprint $t){$t->string('delivery_status',16)->nullable();$t->string('provider_message_id',512)->nullable();$t->string('send_error',255)->nullable();$t->unsignedInteger('ai_settings_version')->nullable();$t->unsignedBigInteger('ai_control_version')->nullable();});
         Schema::table('managed_social_accounts',function(Blueprint $t){$t->string('messaging_error',255)->nullable();});
         config(['services.facebook.inbound_routing_ready'=>true]);
+  (require database_path('migrations/2026_10_06_150000_add_customer_channel_identity.php'))->up();
         Http::preventStrayRequests();
     }
 
@@ -108,9 +109,9 @@ class MessengerReplyTest extends TestCase
         $payload=['object'=>'page','entry'=>[['id'=>'111','messaging'=>[['sender'=>['id'=>'222'],'recipient'=>['id'=>'111'],'message'=>['mid'=>'durable','text'=>'Wash?']]]]]];
         $service=app(\App\Services\Social\MessengerInboundService::class);
         $this->assertSame(1,$service->receive($payload));$this->assertSame(0,$service->receive($payload));
-        $this->assertSame(1,DB::table('jobs')->count());$this->assertSame('support-ai',DB::table('jobs')->value('queue'));
+        $this->assertSame(2,DB::table('jobs')->count());$this->assertSame('support-ai',DB::table('jobs')->value('queue'));
         DB::beginTransaction();$payload['entry'][0]['messaging'][0]['message']['mid']='rollback';$service->receive($payload);DB::rollBack();
-        $this->assertSame(1,DB::table('jobs')->count());$this->assertSame(1,DB::table('messenger_inbound_receipts')->count());$this->assertSame(1,DB::table('notifications')->count());
+        $this->assertSame(2,DB::table('jobs')->count());$this->assertSame(1,DB::table('messenger_inbound_receipts')->count());$this->assertSame(1,DB::table('notifications')->count());
     }
     public function test_human_request_routes_internally_even_when_page_cannot_send(): void
     {

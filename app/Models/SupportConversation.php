@@ -13,4 +13,5 @@ class SupportConversation extends Model
     public function messages() { return $this->hasMany(SupportMessage::class, 'conversation_id'); }
     public function notes() { return $this->hasMany(SupportStaffNote::class, 'conversation_id'); }
     public function customerUser() { return $this->belongsTo(User::class, 'customer_user_id'); }
+    public function customer() { return $this->belongsTo(Customer::class); }
 }

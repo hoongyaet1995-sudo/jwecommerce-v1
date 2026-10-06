@@ -99,6 +99,7 @@ export interface CustomerProfile {
   email?: string;
   phone?: string;
   handle?: string;
+  platformUserId?: string | null;
   location?: string;
   countryCode?: string;
   language: string;

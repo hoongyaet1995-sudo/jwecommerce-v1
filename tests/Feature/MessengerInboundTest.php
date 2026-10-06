@@ -21,12 +21,13 @@ class MessengerInboundTest extends TestCase
             'services.facebook.inbound_routing_ready'=>false,'services.facebook.webhook_verify_token'=>'verify-test','services.facebook.merchant_key'=>'shop-test']);
         DB::purge('sqlite'); DB::setDefaultConnection('sqlite');
         Schema::create('users',function(Blueprint $t){$t->id();$t->string('name');$t->string('email');$t->string('password');$t->boolean('is_admin')->default(false);$t->boolean('is_super_admin')->default(false);$t->timestamp('email_verified_at')->nullable();$t->rememberToken();$t->timestamps();});
-        Schema::create('customers',function(Blueprint $t){$t->id();$t->foreignId('user_id')->nullable();});
+        Schema::create('customers',function(Blueprint $t){$t->id();$t->foreignId('user_id')->nullable();$t->string('email')->nullable()->unique();$t->string('phone')->nullable();$t->string('first_name')->nullable();$t->string('last_name')->nullable();$t->string('avatar')->nullable();$t->string('status')->nullable();$t->json('tags')->nullable();$t->text('notes')->nullable();$t->timestamps();});
         Schema::create('store_settings',function(Blueprint $t){$t->id();$t->string('key')->unique();$t->json('value');$t->timestamps();});
         foreach(['2026_10_02_160000_create_support_chat_tables.php','2026_10_03_100000_add_support_message_actions.php','2026_10_03_180000_create_notifications_table.php','2026_10_04_120000_create_managed_social_accounts.php'] as $file)(require database_path('migrations/'.$file))->up();
         if(file_exists(database_path('migrations/2026_10_04_180000_add_messenger_inbound.php')))(require database_path('migrations/2026_10_04_180000_add_messenger_inbound.php'))->up();
+  (require database_path('migrations/2026_10_06_150000_add_customer_channel_identity.php'))->up();
         Http::preventStrayRequests();
-        \Illuminate\Support\Facades\Bus::fake([\App\Jobs\ProcessMessengerSupportReply::class]);
+        \Illuminate\Support\Facades\Bus::fake([\App\Jobs\ProcessMessengerSupportReply::class, \App\Jobs\EnrichSocialCustomerProfile::class]);
     }
 
     private function page(string $id='111', array $extra=[]): ManagedSocialAccount
@@ -43,6 +44,26 @@ class MessengerInboundTest extends TestCase
     {
         $body=json_encode($payload,JSON_UNESCAPED_UNICODE);
         return $this->call('POST','/webhooks/facebook/messenger',[],[],[],['CONTENT_TYPE'=>'application/json','HTTP_ACCEPT'=>'application/json','HTTP_X_HUB_SIGNATURE_256'=>'sha256='.hash_hmac('sha256',$body,$valid?'secret-test':'wrong')],$body);
+    }
+
+    public function test_profile_enrichment_displays_scoped_customer_identity_and_not_staff_avatar(): void
+    {
+        $account=$this->page(); $this->deliver($this->payload())->assertOk();
+        $conversation=SupportConversation::firstOrFail();
+        Http::fake(['graph.facebook.com/*'=>Http::response(['name'=>'Real Buyer','profile_pic'=>'https://example.test/avatar.jpg'])]);
+        $before=$conversation->updated_at; $this->travel(2)->seconds();
+        (new \App\Jobs\EnrichSocialCustomerProfile($conversation->id,$account->id))->handle(app(\App\Services\Social\SocialCustomerProfileService::class),app(\App\Services\Customers\CustomerContactResolver::class));
+        $conversation->refresh();$this->assertTrue($conversation->updated_at->greaterThan($before));
+        $conversation->messages()->create(['client_message_id'=>(string)\Illuminate\Support\Str::uuid(),'sender_role'=>'human_agent','content'=>'Reply']);
+        $view=app(\App\Services\Support\SupportChatService::class)->adminView($conversation);
+        $this->assertSame('Real Buyer',$view['customer']['name']);
+        $this->assertSame('222',$view['customer']['platformUserId']);
+        $this->assertSame('https://example.test/avatar.jpg',$view['customer']['avatar']);
+        $this->assertSame('/images/support-person.svg',$view['messages'][1]['senderAvatar']);
+        // A different scoped identity must not leak into this conversation.
+        $conversation->customer->channelIdentities()->update(['account_id'=>'different-page']);
+        $view=app(\App\Services\Support\SupportChatService::class)->adminView($conversation->fresh());
+        $this->assertSame('/images/support-person.svg',$view['customer']['avatar']);
     }
 
     public function test_challenge_requires_configured_verify_token(): void

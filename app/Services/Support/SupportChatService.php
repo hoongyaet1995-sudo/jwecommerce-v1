@@ -86,7 +86,7 @@ class SupportChatService
                 $contact['email']=strtolower(trim($contact['email']));
                 $contact['name']=trim($contact['name']);
                 $locked->notes()->create(['content'=>'[Contact] '.json_encode($contact,JSON_UNESCAPED_UNICODE)]);
-                \App\Models\Customer::firstOrCreate(['email'=>$contact['email']],['first_name'=>$contact['name'],'phone'=>$contact['phone']??null,'status'=>'active','tags'=>['Storefront','Support Chat'],'notes'=>'Support Chat contact; email unverified.']);
+                // Contact claims are unverified; the CRM resolver records them without merging users.
             }
             $message=$locked->messages()->create([
                 'client_message_id' => $data['client_message_id'], 'sender_role' => $role,
@@ -107,6 +107,7 @@ class SupportChatService
                 }
             }
             $locked->update(['status' => $status, 'last_message_at' => now()]);
+            if ($role === 'customer') app(\App\Services\Customers\CustomerContactResolver::class)->associate($locked, ['platform'=>'storefront','merchant_key'=>config('services.facebook.merchant_key','jw-ecommerce'),'app_id'=>'storefront','account_id'=>'storefront','sender_id'=>$locked->customer_user_id ? 'user:'.$locked->customer_user_id : $locked->owner_hash], $data['contact'] ?? ['name'=>'Guest']);
             app(SupportMessageAlertService::class)->received($locked,$message);
 
             return $locked;
@@ -139,7 +140,7 @@ class SupportChatService
 
     public function adminView(SupportConversation $conversation): array
     {
-        $conversation->loadMissing(['customerUser.customer', 'messages.staff', 'notes.staff']);
+        $conversation->loadMissing(['customerUser.customer', 'customer.channelIdentities', 'messages.staff', 'notes.staff']);
         $user = $conversation->customerUser;
         $contactNote=$conversation->notes->filter(fn($n)=>str_starts_with($n->content,'[Contact] '))->last();
         $contact=$contactNote ? json_decode(substr($contactNote->content,10),true) : [];
@@ -148,8 +149,18 @@ class SupportChatService
             $this->messengerAccounts = \App\Models\ManagedSocialAccount::where('merchant_key', config('services.facebook.merchant_key','jw-ecommerce'))
                 ->whereIn('platform',['facebook','instagram','whatsapp'])->get()->keyBy(fn($a)=>$a->platform.':'.$a->provider_account_id);
         }
-        $name = $user ? $user->name : ($contact['name']??($messenger?(match($conversation->channel){'instagram'=>'Instagram customer','whatsapp'=>'WhatsApp customer',default=>'Messenger customer'}):'Guest'));
-        $avatar = '/images/support-person.svg';
+        $crm = $conversation->customer;
+        $name = $crm ? trim($crm->first_name.' '.$crm->last_name) : ($user ? $user->name : ($contact['name']??($messenger?(match($conversation->channel){'instagram'=>'Instagram customer','whatsapp'=>'WhatsApp customer',default=>'Messenger customer'}):'Guest')));
+        $identity = $crm?->channelIdentities->first(fn ($i) =>
+            $i->platform === $conversation->channel
+            && $i->merchant_key === $conversation->merchant_key
+            && $i->account_id === $conversation->provider_page_id
+            && $i->external_sender_id === $conversation->provider_sender_id
+            && $i->app_id === $this->messengerAccounts?->get($conversation->channel.':'.$conversation->provider_page_id)?->app_id);
+        $name = $identity?->display_name ?: ($identity?->username ?: $name);
+        $profileAvatar = $identity?->avatar_url ?: $crm?->avatar;
+        $avatar = is_string($profileAvatar) && (str_starts_with($profileAvatar, 'https://') || str_starts_with($profileAvatar, '/images/'))
+            ? $profileAvatar : '/images/support-person.svg';
         $messages = $conversation->messages->sortBy('id');
         $last = $messages->last();
 
@@ -158,7 +169,9 @@ class SupportChatService
             ...($messenger ? app($conversation->channel==='whatsapp'?\App\Services\Social\WhatsAppReplyService::class:\App\Services\Social\MessengerReplyService::class)->readiness($conversation, $this->messengerAccounts?->get($conversation->channel.':'.$conversation->provider_page_id), false) : ['canReply'=>true]),'pageName'=>$messenger?$conversation->provider_page_name:null,
             'customer' => [
                 'id' => $user ? 'customer-'.$user->id : $conversation->id, 'name' => $name, 'avatar' => $avatar,
-                'email' => $user?->email ?? ($contact['email']??null), 'phone' => $user?->customer?->phone ?? ($contact['phone']??null), 'language' => 'en',
+                'platformUserId' => $messenger ? $conversation->provider_sender_id : null,
+                'handle' => $identity?->username,
+                'email' => $crm?->email ?? $user?->email ?? ($contact['email']??null), 'phone' => $crm?->phone ?? $user?->customer?->phone ?? ($contact['phone']??null), 'language' => 'en',
                 'firstSeenAt' => $conversation->created_at->toDateString(), 'lastSeenAt' => $conversation->updated_at->toDateString(),
                 'tags' => [], 'totalOrdersCount' => 0, 'lifetimeValue' => 0, 'leadScore' => 0,
                 'leadStage' => 'Discovery', 'qualification' => 'support_ticket',
@@ -174,12 +187,12 @@ class SupportChatService
             'messages' => $messages->map(fn ($m) => [
                 'id' => (string) $m->id, 'conversationId' => $conversation->id, 'senderRole' => $m->sender_role,
                 'senderName' => $m->sender_role === 'customer' ? $name : ($m->sender_role === 'ai' ? 'AI Support' : ($m->staff?->name ?? 'Support')),
-                'senderAvatar' => $avatar, 'timestamp' => $m->created_at->format('d M H:i'),
+                'senderAvatar' => $m->sender_role === 'customer' ? $avatar : '/images/support-person.svg', 'timestamp' => $m->created_at->format('d M H:i'),
                 'content' => $m->content, 'type' => 'text', 'deliveryStatus' => $m->delivery_status ?? 'sent', 'sendError' => $m->send_error, 'clientMessageId' => $m->client_message_id,
             ])->values()->all(),
             'internalNotes' => $conversation->notes->map(fn ($n) => [
                 'id' => (string) $n->id, 'authorName' => $n->staff?->name ?? 'Support',
-                'authorAvatar' => $avatar, 'timestamp' => $n->created_at->format('d M H:i'), 'content' => $n->content,
+                'authorAvatar' => '/images/support-person.svg', 'timestamp' => $n->created_at->format('d M H:i'), 'content' => $n->content,
             ])->all(),
         ];
     }

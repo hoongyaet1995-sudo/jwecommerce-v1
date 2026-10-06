@@ -14,9 +14,9 @@ class CustomerDirectoryDataController extends Controller
 {
     public function index(Request $request, CustomerDirectoryDataService $customers): JsonResponse
     {
-        $filters = $request->validate(['search' => ['nullable', 'string', 'max:255']]);
+        $filters = $request->validate(['search' => ['nullable','string','max:255'], 'platform'=>['nullable',Rule::in(['storefront','facebook','instagram','tiktok','whatsapp'])], 'tag'=>['nullable','string','max:100']]);
 
-        return response()->json($customers->data($filters['search'] ?? null));
+        return response()->json($customers->data($filters['search'] ?? null, $filters['platform'] ?? null, $filters['tag'] ?? null));
     }
 
     public function store(Request $request, CustomerDirectoryDataService $directory): JsonResponse
@@ -49,7 +49,7 @@ class CustomerDirectoryDataController extends Controller
     private function validated(Request $request, ?Customer $customer = null): array
     {
         return $request->validate([
-            'name' => ['required','string','max:255'], 'email' => ['required','email','max:255',Rule::unique('customers','email')->ignore($customer)],
+            'name' => ['required','string','max:255'], 'email' => ['nullable','email','max:255',Rule::unique('customers','email')->ignore($customer)],
             'phone' => ['nullable','string','max:50'], 'avatar' => ['nullable','string','max:2048'],
             'status' => ['required',Rule::in(['active','vip','blocked'])], 'tags' => ['array','max:100'], 'tags.*' => ['string','max:100'],
             'notes' => ['nullable','string','max:10000'], 'addresses' => ['array','max:50'], 'addresses.*.id' => ['nullable','string','max:64'],
@@ -65,7 +65,7 @@ class CustomerDirectoryDataController extends Controller
     private function customerAttributes(array $data): array
     {
         $parts = preg_split('/\s+/', trim($data['name']), 2) ?: [$data['name']];
-        return ['first_name'=>$parts[0], 'last_name'=>$parts[1] ?? null, 'email'=>$data['email'], 'phone'=>$data['phone'] ?? null,
+        return ['first_name'=>$parts[0], 'last_name'=>$parts[1] ?? null, 'email'=>filled($data['email'] ?? null) ? mb_strtolower(trim($data['email'])) : null, 'phone'=>$data['phone'] ?? null,
             'avatar'=>$data['avatar'] ?? null, 'status'=>$data['status'], 'tags'=>$data['tags'] ?? [], 'notes'=>$data['notes'] ?? null];
     }
 

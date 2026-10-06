@@ -3,7 +3,8 @@ import type { Customer, LaravelAdminBootstrap } from '../types';
 export interface CustomerDirectoryCustomer {
   id: number;
   name: string;
-  email: string;
+  email: string | null;
+  platforms?: string[];
   phone: string | null;
   avatar: string | null;
   totalOrders: number;
@@ -65,7 +66,8 @@ const isCustomer = (value: unknown): value is CustomerDirectoryCustomer => {
 
   return typeof value.id === 'number'
     && typeof value.name === 'string'
-    && typeof value.email === 'string'
+    && (typeof value.email === 'string' || value.email === null)
+    && (value.platforms === undefined || (Array.isArray(value.platforms) && value.platforms.every(p => ['storefront','facebook','instagram','tiktok','whatsapp'].includes(String(p)))))
     && (typeof value.phone === 'string' || value.phone === null)
     && (typeof value.avatar === 'string' || value.avatar === null)
     && typeof value.totalOrders === 'number'
@@ -92,10 +94,14 @@ const isCustomerDirectoryData = (value: unknown): value is CustomerDirectoryData
 export const fetchCustomerDirectoryData = async (
   bootstrap: LaravelAdminBootstrap,
   request: CustomerDirectoryRequest = window.fetch.bind(window),
+  filters: { platform?: string; tag?: string; search?: string; page?: number } = {},
 ): Promise<CustomerDirectoryData | null> => {
   if (!bootstrap.customersUrl) return null;
 
-  const response = await request(bootstrap.customersUrl, {
+  const url = new URL(bootstrap.customersUrl, typeof window === 'undefined' ? 'http://localhost' : window.location.origin);
+  Object.entries(filters).forEach(([key, value]) => { if (value && value !== 'all') url.searchParams.set(key, String(value)); });
+  const endpoint = Object.keys(filters).length ? url.pathname + url.search : bootstrap.customersUrl;
+  const response = await request(endpoint, {
     credentials: 'same-origin',
     headers: { Accept: 'application/json' },
   });
@@ -110,7 +116,7 @@ export const fetchCustomerDirectoryData = async (
 };
 
 export const customerDirectoryToCustomers = (data: CustomerDirectoryData): Customer[] => data.customers.map(customer => ({
-  id: String(customer.id), name: customer.name, email: customer.email, phone: customer.phone ?? '', avatar: customer.avatar ?? undefined,
+  id: String(customer.id), name: customer.name, email: customer.email ?? '', platforms: customer.platforms ?? [], phone: customer.phone ?? '', avatar: customer.avatar ?? undefined,
   totalOrders: customer.totalOrders, totalSpent: customer.totalSpent / 100, currency: customer.currency ?? 'USD',
   registeredAt: customer.registeredAt, lastOrderAt: customer.lastOrderAt ?? undefined, status: customer.status ?? 'active',
   tags: customer.tags, notes: customer.notes ?? undefined,

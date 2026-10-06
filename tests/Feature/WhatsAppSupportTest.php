@@ -17,11 +17,12 @@ class WhatsAppSupportTest extends TestCase
  protected function setUp():void {
   parent::setUp();config(['database.default'=>'sqlite','database.connections.sqlite.database'=>':memory:','services.whatsapp.app_id'=>'123','services.whatsapp.app_secret'=>'secret','services.whatsapp.inbound_routing_ready'=>true,'services.facebook.merchant_key'=>'shop']);DB::purge('sqlite');DB::setDefaultConnection('sqlite');
   Schema::create('users',function(Blueprint $t){$t->id();$t->string('name');$t->string('email');$t->string('password');$t->boolean('is_admin')->default(false);$t->boolean('is_super_admin')->default(false);$t->timestamp('email_verified_at')->nullable();$t->rememberToken();$t->timestamps();});
-  Schema::create('customers',function(Blueprint $t){$t->id();$t->foreignId('user_id')->nullable();});
+  Schema::create('customers',function(Blueprint $t){$t->id();$t->foreignId('user_id')->nullable();$t->string('email')->nullable()->unique();$t->string('phone')->nullable();$t->string('first_name')->nullable();$t->string('last_name')->nullable();$t->string('avatar')->nullable();$t->string('status')->nullable();$t->json('tags')->nullable();$t->text('notes')->nullable();$t->timestamps();});
   Schema::create('store_settings',function(Blueprint $t){$t->id();$t->string('key')->unique();$t->json('value');$t->timestamps();});
   foreach(['2026_10_02_160000_create_support_chat_tables.php','2026_10_03_100000_add_support_message_actions.php','2026_10_03_180000_create_notifications_table.php','2026_10_04_120000_create_managed_social_accounts.php','2026_10_04_180000_add_messenger_inbound.php','2026_10_04_200000_add_messenger_replies.php','2026_10_06_110000_add_whatsapp_account_metadata.php'] as $file)(require database_path('migrations/'.$file))->up();
   if(file_exists(database_path('migrations/2026_10_06_120000_create_whatsapp_status_receipts.php')))(require database_path('migrations/2026_10_06_120000_create_whatsapp_status_receipts.php'))->up();
   Schema::table('support_messages',function(Blueprint $t){$t->unsignedInteger('ai_settings_version')->nullable();$t->unsignedBigInteger('ai_control_version')->nullable();});
+  (require database_path('migrations/2026_10_06_150000_add_customer_channel_identity.php'))->up();
   Http::preventStrayRequests();Bus::fake();
   $staff=User::factory()->create(['is_admin'=>true,'is_super_admin'=>true]);$this->actingAs($staff);
   ManagedSocialAccount::unguarded(fn()=>ManagedSocialAccount::create(['merchant_key'=>'shop','platform'=>'whatsapp','app_id'=>'123','provider_account_id'=>'456','waba_id'=>'789','name'=>'JW','access_token'=>'private','permissions'=>['whatsapp_business_messaging'],'tasks'=>[],'state'=>'connected','inbound_enabled'=>true,'inbound_verified_at'=>now(),'authorized_by'=>$staff->id]));

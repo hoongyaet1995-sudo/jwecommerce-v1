@@ -171,7 +171,7 @@ export const ConversationListPanel: React.FC<ConversationListPanelProps> = ({
                 <div className="flex items-start gap-2.5">
                   {/* Customer Avatar & Channel Badge */}
                   <div className="relative flex-shrink-0">
-                    <img
+                    <img onError={(e) => { const img=e.currentTarget; if (!img.src.endsWith("/images/support-person.svg")) img.src="/images/support-person.svg"; }}
                       src={conv.customer.avatar}
                       alt={conv.customer.name}
                       className="w-9 h-9 rounded-full object-cover ring-1 ring-neutral-200 dark:ring-neutral-700"

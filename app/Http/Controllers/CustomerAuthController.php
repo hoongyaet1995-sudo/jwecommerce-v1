@@ -89,7 +89,7 @@ class CustomerAuthController extends Controller
             if ($customer) {
                 $customer->update(['user_id' => $user->id]);
             } else {
-                Customer::query()->create([
+                $customer = Customer::query()->create([
                     'user_id' => $user->id,
                     'email' => $user->email,
                     'first_name' => $firstName,
@@ -97,6 +97,7 @@ class CustomerAuthController extends Controller
                 ]);
             }
 
+            app(\App\Services\Customers\CustomerPlatformService::class)->record($customer, 'storefront');
             return $user;
         });
         Auth::guard('customer')->login($user);

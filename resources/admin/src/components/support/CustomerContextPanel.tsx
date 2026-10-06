@@ -3,6 +3,7 @@ import { useAdmin } from '../../context/AdminContext';
 import { SupportConversation } from '../../types/support';
 import {
   User,
+  Copy,
   Phone,
   Mail,
   MapPin,
@@ -73,7 +74,7 @@ export const CustomerContextPanel: React.FC<CustomerContextPanelProps> = ({
       {/* 1. Customer Profile Card */}
       <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/80 space-y-3">
         <div className="flex items-center gap-3">
-          <img
+          <img onError={(e) => { const img=e.currentTarget; if (!img.src.endsWith("/images/support-person.svg")) img.src="/images/support-person.svg"; }}
             src={customer.avatar}
             alt={customer.name}
             className="w-12 h-12 rounded-full object-cover ring-2 ring-indigo-500/20"
@@ -86,6 +87,17 @@ export const CustomerContextPanel: React.FC<CustomerContextPanelProps> = ({
           </div>
         </div>
 
+        {customer.handle && <div className="text-[11px] text-neutral-500 truncate">@{customer.handle.replace(/^@/, '')}</div>}
+        {customer.platformUserId && <div className="space-y-1 text-[11px] text-neutral-600 dark:text-neutral-300">
+          <div className="capitalize">{conversation.channel} user ID</div>
+          <div className="flex items-center gap-2">
+            <span className="font-mono break-all flex-1 min-w-0">{customer.platformUserId}</span>
+            <button type="button" aria-label="Copy platform user ID" className="p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800" onClick={async () => {
+              try { await navigator.clipboard.writeText(customer.platformUserId!); addToast({type:'success',title:'Copied',message:'Platform user ID copied.'}); }
+              catch { addToast({type:'error',title:'Copy unavailable',message:'Select and copy the user ID manually.'}); }
+            }}><Copy className="w-3.5 h-3.5" /></button>
+          </div>
+        </div>}
         {/* Contact info list */}
         <div className="space-y-1.5 pt-1 text-[11px] text-neutral-600 dark:text-neutral-300">
           {customer.phone && (

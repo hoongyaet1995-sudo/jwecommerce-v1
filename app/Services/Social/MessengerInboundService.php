@@ -55,6 +55,7 @@ class MessengerInboundService
                 'provider_page_id'=>$page,'provider_sender_id'=>$sender,'provider_page_name'=>$account->name,'status'=>'open',
             ]);
             $conversation=SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
+            \App\Jobs\EnrichSocialCustomerProfile::dispatch($conversation->id,$account->id)->onConnection('support')->onQueue('support-ai')->afterCommit();
             $timestamp=$event['timestamp']??null;
             $sentAt=is_numeric($timestamp)&&$timestamp>0&&$timestamp<=now()->addMinutes(5)->timestamp*1000
                 ? Carbon::createFromTimestampMs((int)$timestamp):now();
@@ -63,6 +64,7 @@ class MessengerInboundService
                 $conversation->notes()->create(['content'=>'[Archive] false']);
             $conversation->update(['status'=>in_array($conversation->status,['human_mode','waiting_human'],true)?$conversation->status:'open',
                 'provider_page_name'=>$account->name,'last_message_at'=>$conversation->last_message_at?->greaterThan($sentAt)?$conversation->last_message_at:$sentAt]);
+            app(\App\Services\Customers\CustomerContactResolver::class)->associate($conversation,['platform'=>$platform,'merchant_key'=>$account->merchant_key,'app_id'=>$account->app_id,'account_id'=>$page,'sender_id'=>$sender]);
             DB::table('messenger_inbound_receipts')->insert(['event_key'=>$key,'conversation_id'=>$conversation->id,'page_id'=>$page,'message_id'=>$mid,'created_at'=>now(),'updated_at'=>now()]);
             $account->update(['last_inbound_at'=>now()]);
             app(\App\Services\Support\SupportMessageAlertService::class)->received($conversation,$message);

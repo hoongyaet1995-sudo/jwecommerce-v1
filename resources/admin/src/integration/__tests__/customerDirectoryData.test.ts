@@ -29,6 +29,11 @@ const response = {
 };
 
 describe('Laravel customer-directory data adapter', () => {
+  it('accepts provisional contacts with null email and platform history', async () => {
+    const data = { ...response, customers: [{ ...response.customers[0], email: null, platforms: ['instagram', 'whatsapp'] }] };
+    const request = vi.fn().mockResolvedValue({ ok: true, json: async () => data });
+    await expect(fetchCustomerDirectoryData(bootstrap, request)).resolves.toEqual(data);
+  });
   it('requests the strict Laravel host endpoint and preserves null database-only fields', async () => {
     const request = vi.fn().mockResolvedValue({ ok: true, json: async () => response });
 

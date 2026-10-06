@@ -1,7 +1,9 @@
 import { useAdminCurrency } from '../../context/useAdminCurrency';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { Customer } from '../../types';
+import { customerDirectoryToCustomers, fetchCustomerDirectoryData } from '../../integration/customerDirectoryData';
+import { Facebook, Instagram, Globe, Music2, MessageCircle } from 'lucide-react';
 import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 import {
   Users,
@@ -25,17 +27,39 @@ export const CustomerAdmin: React.FC = () => {
   const { customers, saveCustomer, deleteCustomer, orders } = useAdmin();
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPlatform, setSelectedPlatform] = useState('all');
+  const [selectedTag, setSelectedTag] = useState('');
+  const [page, setPage] = useState(1);
+  const [directory, setDirectory] = useState<Customer[] | null>(null);
+  const [lastPage, setLastPage] = useState(1);
+  const [directoryError, setDirectoryError] = useState('');
+  const [directoryLoading, setDirectoryLoading] = useState(false);
+  useEffect(() => { setPage(1); }, [selectedPlatform, selectedTag, searchTerm]);
+  useEffect(() => {
+    const bootstrap = window.__JW_ADMIN__;
+    if (!bootstrap?.customersUrl) return;
+    let active = true;
+    setDirectoryLoading(true);
+    const timer = window.setTimeout(() => {
+      void fetchCustomerDirectoryData(bootstrap, window.fetch.bind(window), { platform: selectedPlatform, tag: selectedTag, search: searchTerm, page }).then(data => {
+        if (active && data) { setDirectory(customerDirectoryToCustomers(data)); setLastPage(data.pagination.lastPage); setDirectoryError(''); }
+      }).catch(() => { if (active) { setDirectory([]); setDirectoryError('Unable to load customers.'); } }).finally(() => { if (active) setDirectoryLoading(false); });
+    }, 200);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [selectedPlatform, selectedTag, searchTerm, page, customers]);
+  const platformIcons = { storefront: Globe, facebook: Facebook, instagram: Instagram, tiktok: Music2, whatsapp: MessageCircle };
+  const platformColors = { storefront: 'text-cyan-500', facebook: 'text-blue-500', instagram: 'text-pink-500', tiktok: 'text-neutral-500 dark:text-white', whatsapp: 'text-emerald-500' };
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
-  const filteredCustomers = customers.filter(c => {
+  const filteredCustomers = (directory ?? customers).filter(c => {
     const matchesSearch =
       c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.email.toLowerCase().includes(searchTerm.toLowerCase());
+      c.email.toLowerCase().includes(searchTerm.toLowerCase()) || c.phone?.includes(searchTerm);
     const matchesStatus = selectedStatus === 'all' || c.status === selectedStatus;
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && (selectedPlatform === 'all' || c.platforms?.includes(selectedPlatform)) && (!selectedTag || c.tags.includes(selectedTag));
   });
 
   const openCreateModal = () => {
@@ -120,7 +144,7 @@ export const CustomerAdmin: React.FC = () => {
           <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search name or email address..."
+            placeholder="Search name, email or telephone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
@@ -128,6 +152,10 @@ export const CustomerAdmin: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <select aria-label="Filter by platform" value={selectedPlatform} onChange={e => setSelectedPlatform(e.target.value)} className="px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white">
+            <option value="all">All Platforms</option>{Object.keys(platformIcons).map(p => <option key={p} value={p}>{p === 'storefront' ? 'Storefront' : p === 'whatsapp' ? 'WhatsApp' : p === 'tiktok' ? 'TikTok' : p[0].toUpperCase() + p.slice(1)}</option>)}
+          </select>
+          <input aria-label="Filter by tag" placeholder="Filter by tag" value={selectedTag} onChange={e => setSelectedTag(e.target.value)} className="px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white" />
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
@@ -141,6 +169,9 @@ export const CustomerAdmin: React.FC = () => {
         </div>
       </div>
 
+      {directoryError && <p role="alert" className="text-xs text-rose-500">{directoryError}</p>}
+      {directoryLoading && <p role="status" className="text-xs text-neutral-500">Loading customers...</p>}
+      {lastPage > 1 && <div className="flex items-center gap-2 text-xs"><button disabled={page <= 1 || directoryLoading} onClick={() => setPage(p => p - 1)}>Previous</button><span>Page {page} of {lastPage}</span><button disabled={page >= lastPage || directoryLoading} onClick={() => setPage(p => p + 1)}>Next</button></div>}
       {/* Customers Table */}
       <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
@@ -151,6 +182,7 @@ export const CustomerAdmin: React.FC = () => {
                 <th className="py-3.5 px-4">Account Status</th>
                 <th className="py-3.5 px-4">Orders Placed</th>
                 <th className="py-3.5 px-4">Lifetime Spend</th>
+                <th className="py-3.5 px-4">Platform</th>
                 <th className="py-3.5 px-4">Tags</th>
                 <th className="py-3.5 px-4">Registered Date</th>
                 <th className="py-3.5 px-4 text-right">Action</th>
@@ -164,7 +196,7 @@ export const CustomerAdmin: React.FC = () => {
                       {cust.avatar ? <img src={cust.avatar} alt={cust.name} className="w-9 h-9 rounded-full object-cover ring-1 ring-neutral-200 dark:ring-neutral-700" /> : null}
                       <div>
                         <div className="font-bold text-neutral-900 dark:text-white text-xs">{cust.name}</div>
-                        <div className="text-[11px] text-neutral-400 font-mono">{cust.email}</div>
+                        <div className="text-[11px] text-neutral-400 font-mono">{cust.email || cust.phone || 'Contact details not provided'}</div>
                       </div>
                     </div>
                   </td>
@@ -181,6 +213,7 @@ export const CustomerAdmin: React.FC = () => {
                     {money(cust.totalSpent)}
                   </td>
 
+                  <td className="py-3.5 px-4"><div className="flex items-center gap-2">{(cust.platforms ?? []).map(platform => { const Icon = platformIcons[platform as keyof typeof platformIcons]; if (!Icon) return null; const label = platform === 'whatsapp' ? 'WhatsApp' : platform === 'tiktok' ? 'TikTok' : platform[0].toUpperCase() + platform.slice(1); return <span key={platform} title={label} aria-label={label} className={platformColors[platform as keyof typeof platformColors]}><Icon className="w-4 h-4" /></span>; })}</div></td>
                   <td className="py-3.5 px-4">
                     <div className="flex flex-wrap gap-1">
                       {(cust.tags || []).map(t => (
@@ -282,7 +315,6 @@ export const CustomerAdmin: React.FC = () => {
                 <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Email Address</label>
                 <input
                   type="email"
-                  required
                   value={editingCustomer.email}
                   onChange={(e) => setEditingCustomer({ ...editingCustomer, email: e.target.value })}
                   className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white font-mono"

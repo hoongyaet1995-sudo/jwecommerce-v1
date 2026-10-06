@@ -405,6 +405,7 @@ export interface CustomerAddress {
 }
 
 export interface Customer {
+  platforms?: string[];
   id: string;
   name: string;
   email: string;

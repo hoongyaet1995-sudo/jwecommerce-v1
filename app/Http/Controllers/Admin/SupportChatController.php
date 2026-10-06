@@ -22,7 +22,7 @@ class SupportChatController extends Controller
     {
         $data = $request->validate(['since' => ['nullable', 'date']]);
         $syncedAt = now()->toIso8601String();
-        $query = SupportConversation::with(['customerUser.customer', 'messages.staff', 'notes.staff']);
+        $query = SupportConversation::with(['customerUser.customer', 'customer.channelIdentities', 'messages.staff', 'notes.staff']);
         if (!empty($data['since'])) $query->where('updated_at', '>=', \Illuminate\Support\Carbon::parse($data['since']));
         return response()->json(['syncedAt' => $syncedAt, 'conversations' => $query
             ->orderByDesc('last_message_at')->get()->map(fn ($c) => $chat->adminView($c))->all()])->header('Cache-Control', 'no-store');
