@@ -53,6 +53,10 @@ class FaqAutoReplyService
             $exact = array_values(array_filter($facts, fn ($i) => $query === $this->normalize($i['question'])));
             if ($escalationReason) {
                 $answer = ['en'=>'Our support team can help with this request. You can request assistance below.','ms'=>'Pasukan khidmat pelanggan boleh membantu. Anda boleh meminta bantuan di bawah.','zh'=>'这个问题可以请客服协助处理，你可以通过下方入口提出请求。'][$language];
+            } elseif (in_array($query,['hi','hello','hey','你好','您好','hai','helo'],true)) {
+                $answer=['en'=>'Hello! How can I help you today?','ms'=>'Hai! Bagaimana saya boleh membantu anda?','zh'=>'你好！请问有什么可以帮你？'][$language];
+            } elseif (in_array($query,['thanks','thank you','谢谢','多谢','terima kasih'],true)) {
+                $answer=['en'=>"You're welcome! Is there anything else I can help with?",'ms'=>'Sama-sama! Ada perkara lain yang boleh saya bantu?','zh'=>'不客气！还有什么需要帮忙的吗？'][$language];
             } elseif (preg_match('/\b(cheaper|bargain|negotiate|best price|lower price)\b|便宜|议价|murah|tawar/iu', $incoming['content'])) {
                 $answer = ['en'=>'I can share listed prices, but cannot negotiate prices or promise an unauthorized discount.','ms'=>'Saya boleh berkongsi harga yang disenaraikan, tetapi tidak boleh merundingkan harga atau menjanjikan diskaun tanpa kebenaran.','zh'=>'我可以提供商品标价，但不能议价或承诺未经授权的折扣。'][$language];
             } elseif (count($exact) === 1 && !str_starts_with($exact[0]['id'], 'product:') && $language === 'en' && ! preg_match('/\p{Han}|\b(penghantaran|ialah|pesanan|sila|anda|boleh)\b/iu', $exact[0]['answer'])) {
@@ -66,12 +70,19 @@ class FaqAutoReplyService
                 RateLimiter::hit($key, 86400);
                 $style = array_intersect_key($settings['personality'] ?? [], array_flip(['toneOfVoice', 'customToneInstructions', 'maxOutputTokens', 'brandMissionPrompt']));
                 $limit = max(150, min(600, (int) ($style['maxOutputTokens'] ?? 350)));
-                // Past replies are NOT official facts; include recent customer context only.
-                $history = $conversation->messages()->where('sender_role', 'customer')->where('content','!=','')->whereDoesntHave('attachments', fn ($q) => $q->where('kind', 'document'))->orderByDesc('id')->limit(3)->get()->reverse()->map(fn ($m) => mb_substr($m->content, 0, 1200))->values()->all();
+                // Role labels preserve clarifications; prior answers are never official facts.
+                $history = app(SupportDialogueContext::class)->recent($conversation);
                 try {
                     $facts = app(UnifiedKnowledgeService::class)->retrieve($incoming['content'], $settings, $history, $conversation, $language);
                     $intent = array_values(array_filter($facts, fn($f)=>$f['id']==='support:intent'))[0]['answer'] ?? 'none';
-                    $facts = array_values(array_filter($facts, fn($f)=>$f['id']!=='support:intent'));
+                    $clarification=array_values(array_filter($facts,fn($f)=>$f['id']==='support:clarification'))[0]['answer']??null;
+                    $facts = array_values(array_filter($facts, fn($f)=>!in_array($f['id'],['support:intent','support:clarification'],true)));
+                    $clarificationAnswer=$clarification?match($clarification){
+                     'product'=>['en'=>'Which product or model do you mean?','ms'=>'Produk atau model yang mana?','zh'=>'请问你指的是哪款商品或型号？'][$language],
+                     'destination'=>['en'=>'Which country and state should the order be delivered to?','ms'=>'Pesanan perlu dihantar ke negara dan negeri yang mana?','zh'=>'请问需要配送到哪个国家和州？'][$language],
+                     'order_reference'=>['en'=>'What is your order reference? Identity verification is still required before sharing private order details.','ms'=>'Apakah nombor rujukan pesanan anda? Pengesahan identiti masih diperlukan sebelum maklumat peribadi dikongsi.','zh'=>'请提供订单编号；查询私人订单资料前仍需验证身份。'][$language],
+                    }:null;
+                    if($clarificationAnswer&&!$facts)$answer=$clarificationAnswer;
                     $rules = app(SupportEscalationPolicy::class)->rules($settings);
                     if ($intent === 'explicit_request' && $rules['onExplicitRequest']) $escalationReason = 'explicit_request';
                     if ($intent === 'unresolved' && $rules['onFrustrationDetected'] && $conversation->messages()->where('sender_role','ai')->exists()) $escalationReason = 'unresolved';
@@ -103,6 +114,7 @@ class FaqAutoReplyService
                         $actions = app(SupportActionResolver::class)->references($ids);
                     }
                     }
+                    if($clarificationAnswer&&$facts&&!$orderReplies)$answer=($answer!==$unknown[$language]?$answer."\n\n":'').$clarificationAnswer;
                     if($orderReplies){$answer=($facts&&$answer!==$unknown[$language]?$answer."\n\n":'').implode("\n",$orderReplies);$actions[]=['type'=>'view_order_tracking','resource_id'=>0];}
                 } catch (\Throwable) {
                     Log::warning('support_ai_generation_unavailable', ['conversation_id' => $conversation->id]);

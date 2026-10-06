@@ -1,0 +1,848 @@
+{
+    "dataset": "jw-home-ikea-my-local-demo-20261006",
+    "captured_at": "2026-10-06",
+    "purpose": "Local-only AI support acceptance. Product facts are IKEA Malaysia references; service policies are fictional JW Home policies. No marketplace publication or real inventory claim.",
+    "products": [
+        {
+            "title": "LACK Side table, white, 55x55 cm",
+            "handle": "ikea-my-lack-side-table-white-10449909",
+            "sku": "IKEA-MY-10449909",
+            "article": "104.499.09",
+            "category": "Tables",
+            "price_cents": 4900,
+            "price_valid_until": null,
+            "colour": "white",
+            "material": "Particleboard and fibreboard with paper foil; honeycomb-paper-filled tabletop.",
+            "dimensions": "Width: 55 cm, Depth: 55 cm, Height: 45 cm",
+            "description": "Local test catalogue reference from IKEA Malaysia. LACK Side table, white, 55x55 cm. Particleboard and fibreboard with paper foil; honeycomb-paper-filled tabletop. Tabletop load limit: 10 kg. Reference price captured on 6 October 2026; this is not live IKEA availability.",
+            "features": [
+                "Tabletop load limit: 10 kg.",
+                "JW inventory requires First Count before availability can be confirmed."
+            ],
+            "specifications": {
+                "Width": "55 cm",
+                "Depth": "55 cm",
+                "Height": "45 cm",
+                "Material": "Particleboard and fibreboard with paper foil; honeycomb-paper-filled tabletop.",
+                "Colour": "white",
+                "IKEA article": "104.499.09",
+                "Source": "https://www.ikea.com/my/en/p/lack-side-table-white-10449909/",
+                "Snapshot date": "2026-10-06",
+                "Usage": "Local AI support test catalogue; JW stock is unverified."
+            },
+            "image_path": "/images/demo/ikea-malaysia/10449909.jpg",
+            "source_url": "https://www.ikea.com/my/en/p/lack-side-table-white-10449909/",
+            "source_image_url": "https://www.ikea.com/my/en/images/products/lack-side-table-white__0750653_pe746802_s5.jpg"
+        },
+        {
+            "title": "LACK Coffee table, white, 90x55 cm",
+            "handle": "ikea-my-lack-coffee-table-white-70449906",
+            "sku": "IKEA-MY-70449906",
+            "article": "704.499.06",
+            "category": "Tables",
+            "price_cents": 9900,
+            "price_valid_until": null,
+            "colour": "white",
+            "material": "Particleboard and fibreboard with paper/melamine foil; honeycomb-paper-filled tabletop.",
+            "dimensions": "Width: 55 cm, Depth: 90 cm, Height: 45 cm",
+            "description": "Local test catalogue reference from IKEA Malaysia. LACK Coffee table, white, 90x55 cm. Particleboard and fibreboard with paper/melamine foil; honeycomb-paper-filled tabletop. Separate shelf for magazines; check official assembly instructions. Reference price captured on 6 October 2026; this is not live IKEA availability.",
+            "features": [
+                "Separate shelf for magazines; check official assembly instructions.",
+                "JW inventory requires First Count before availability can be confirmed."
+            ],
+            "specifications": {
+                "Width": "55 cm",
+                "Depth": "90 cm",
+                "Height": "45 cm",
+                "Material": "Particleboard and fibreboard with paper/melamine foil; honeycomb-paper-filled tabletop.",
+                "Colour": "white",
+                "IKEA article": "704.499.06",
+                "Source": "https://www.ikea.com/my/en/p/lack-coffee-table-white-70449906/",
+                "Snapshot date": "2026-10-06",
+                "Usage": "Local AI support test catalogue; JW stock is unverified."
+            },
+            "image_path": "/images/demo/ikea-malaysia/70449906.jpg",
+            "source_url": "https://www.ikea.com/my/en/p/lack-coffee-table-white-70449906/",
+            "source_image_url": "https://www.ikea.com/my/en/images/products/lack-coffee-table-white__0702218_pe724350_s5.jpg"
+        },
+        {
+            "title": "KALLAX Shelving unit, white, 77x77 cm",
+            "handle": "ikea-my-kallax-shelving-unit-white-70351886",
+            "sku": "IKEA-MY-70351886",
+            "article": "703.518.86",
+            "category": "Shelving & Bookcases",
+            "price_cents": 17900,
+            "price_valid_until": null,
+            "colour": "white",
+            "material": "Particleboard, fibreboard, paper foil, honeycomb paper filling and plastic edging.",
+            "dimensions": "Width: 76.5 cm, Depth: 39 cm, Height: 76.5 cm",
+            "description": "Local test catalogue reference from IKEA Malaysia. KALLAX Shelving unit, white, 77x77 cm. Particleboard, fibreboard, paper foil, honeycomb paper filling and plastic edging. Each shelf: 13 kg maximum. Securely anchor using fixings suitable for the wall. Two-person assembly. Reference price captured on 6 October 2026; this is not live IKEA availability.",
+            "features": [
+                "Each shelf: 13 kg maximum. Securely anchor using fixings suitable for the wall. Two-person assembly.",
+                "JW inventory requires First Count before availability can be confirmed."
+            ],
+            "specifications": {
+                "Width": "76.5 cm",
+                "Depth": "39 cm",
+                "Height": "76.5 cm",
+                "Material": "Particleboard, fibreboard, paper foil, honeycomb paper filling and plastic edging.",
+                "Colour": "white",
+                "IKEA article": "703.518.86",
+                "Source": "https://www.ikea.com/my/en/p/kallax-shelving-unit-white-70351886/",
+                "Snapshot date": "2026-10-06",
+                "Usage": "Local AI support test catalogue; JW stock is unverified."
+            },
+            "image_path": "/images/demo/ikea-malaysia/70351886.jpg",
+            "source_url": "https://www.ikea.com/my/en/p/kallax-shelving-unit-white-70351886/",
+            "source_image_url": "https://www.ikea.com/my/en/images/products/kallax-shelving-unit-white__0644753_pe702937_s5.jpg"
+        },
+        {
+            "title": "KALLAX Shelving unit, white, 77x147 cm",
+            "handle": "ikea-my-kallax-shelving-unit-white-20351884",
+            "sku": "IKEA-MY-20351884",
+            "article": "203.518.84",
+            "category": "Shelving & Bookcases",
+            "price_cents": 27900,
+            "price_valid_until": null,
+            "colour": "white",
+            "material": "Particleboard, fibreboard, paper foil, honeycomb paper filling and plastic edging.",
+            "dimensions": "Width: 76.5 cm, Depth: 39 cm, Height: 146.5 cm",
+            "description": "Local test catalogue reference from IKEA Malaysia. KALLAX Shelving unit, white, 77x147 cm. Particleboard, fibreboard, paper foil, honeycomb paper filling and plastic edging. Securely anchor using fixings suitable for the wall. Can stand upright or horizontally. Reference price captured on 6 October 2026; this is not live IKEA availability.",
+            "features": [
+                "Securely anchor using fixings suitable for the wall. Can stand upright or horizontally.",
+                "JW inventory requires First Count before availability can be confirmed."
+            ],
+            "specifications": {
+                "Width": "76.5 cm",
+                "Depth": "39 cm",
+                "Height": "146.5 cm",
+                "Material": "Particleboard, fibreboard, paper foil, honeycomb paper filling and plastic edging.",
+                "Colour": "white",
+                "IKEA article": "203.518.84",
+                "Source": "https://www.ikea.com/my/en/p/kallax-shelving-unit-white-20351884/",
+                "Snapshot date": "2026-10-06",
+                "Usage": "Local AI support test catalogue; JW stock is unverified."
+            },
+            "image_path": "/images/demo/ikea-malaysia/20351884.jpg",
+            "source_url": "https://www.ikea.com/my/en/p/kallax-shelving-unit-white-20351884/",
+            "source_image_url": "https://www.ikea.com/my/en/images/products/kallax-shelving-unit-white__0644757_pe702939_s5.jpg"
+        },
+        {
+            "title": "BILLY Bookcase, white, 80x28x202 cm",
+            "handle": "ikea-my-billy-bookcase-white-00522047",
+            "sku": "IKEA-MY-00522047",
+            "article": "005.220.47",
+            "category": "Shelving & Bookcases",
+            "price_cents": 21100,
+            "price_valid_until": "2026-10-14Z",
+            "colour": "white",
+            "material": "Particleboard with paper foil and plastic edging; fibreboard back.",
+            "dimensions": "Width: 80 cm, Depth: 28 cm, Height: 202 cm",
+            "description": "Local test catalogue reference from IKEA Malaysia. BILLY Bookcase, white, 80x28x202 cm. Particleboard with paper foil and plastic edging; fibreboard back. Adjustable shelves. Securely anchor to the wall using suitable fixings. Reference price captured on 6 October 2026; this is not live IKEA availability.",
+            "features": [
+                "Adjustable shelves. Securely anchor to the wall using suitable fixings.",
+                "JW inventory requires First Count before availability can be confirmed."
+            ],
+            "specifications": {
+                "Width": "80 cm",
+                "Depth": "28 cm",
+                "Height": "202 cm",
+                "Material": "Particleboard with paper foil and plastic edging; fibreboard back.",
+                "Colour": "white",
+                "IKEA article": "005.220.47",
+                "Source": "https://www.ikea.com/my/en/p/billy-bookcase-white-00522047/",
+                "Snapshot date": "2026-10-06",
+                "Usage": "Local AI support test catalogue; JW stock is unverified."
+            },
+            "image_path": "/images/demo/ikea-malaysia/00522047.jpg",
+            "source_url": "https://www.ikea.com/my/en/p/billy-bookcase-white-00522047/",
+            "source_image_url": "https://www.ikea.com/my/en/images/products/billy-bookcase-white__1590272_pe1038911_s5.jpg"
+        },
+        {
+            "title": "BILLY Bookcase, white, 80x28x106 cm",
+            "handle": "ikea-my-billy-bookcase-white-70522044",
+            "sku": "IKEA-MY-70522044",
+            "article": "705.220.44",
+            "category": "Shelving & Bookcases",
+            "price_cents": 12600,
+            "price_valid_until": "2026-10-14Z",
+            "colour": "white",
+            "material": "Particleboard with paper foil and plastic edging; fibreboard back.",
+            "dimensions": "Width: 80 cm, Depth: 28 cm, Height: 106 cm",
+            "description": "Local test catalogue reference from IKEA Malaysia. BILLY Bookcase, white, 80x28x106 cm. Particleboard with paper foil and plastic edging; fibreboard back. Adjustable shelves. Follow the official assembly and safety instructions. Reference price captured on 6 October 2026; this is not live IKEA availability.",
+            "features": [
+                "Adjustable shelves. Follow the official assembly and safety instructions.",
+                "JW inventory requires First Count before availability can be confirmed."
+            ],
+            "specifications": {
+                "Width": "80 cm",
+                "Depth": "28 cm",
+                "Height": "106 cm",
+                "Material": "Particleboard with paper foil and plastic edging; fibreboard back.",
+                "Colour": "white",
+                "IKEA article": "705.220.44",
+                "Source": "https://www.ikea.com/my/en/p/billy-bookcase-white-70522044/",
+                "Snapshot date": "2026-10-06",
+                "Usage": "Local AI support test catalogue; JW stock is unverified."
+            },
+            "image_path": "/images/demo/ikea-malaysia/70522044.jpg",
+            "source_url": "https://www.ikea.com/my/en/p/billy-bookcase-white-70522044/",
+            "source_image_url": "https://www.ikea.com/my/en/images/products/billy-bookcase-white__1590306_pe1038945_s5.jpg"
+        },
+        {
+            "title": "RÅSKOG Trolley, white, 35x45x77 cm",
+            "handle": "ikea-my-raskog-trolley-white-20586788",
+            "sku": "IKEA-MY-20586788",
+            "article": "205.867.88",
+            "category": "Storage & Organisation",
+            "price_cents": 9900,
+            "price_valid_until": "2027-08-18Z",
+            "colour": "white",
+            "material": "Epoxy-powder-coated steel.",
+            "dimensions": "Width: 45 cm, Depth: 35 cm, Height: 77 cm",
+            "description": "Local test catalogue reference from IKEA Malaysia. RÅSKOG Trolley, white, 35x45x77 cm. Epoxy-powder-coated steel. Indoor use; 6 kg per tier, 18 kg total maximum. Not for direct food contact. Reference price captured on 6 October 2026; this is not live IKEA availability.",
+            "features": [
+                "Indoor use; 6 kg per tier, 18 kg total maximum. Not for direct food contact.",
+                "JW inventory requires First Count before availability can be confirmed."
+            ],
+            "specifications": {
+                "Width": "45 cm",
+                "Depth": "35 cm",
+                "Height": "77 cm",
+                "Material": "Epoxy-powder-coated steel.",
+                "Colour": "white",
+                "IKEA article": "205.867.88",
+                "Source": "https://www.ikea.com/my/en/p/raskog-trolley-white-20586788/",
+                "Snapshot date": "2026-10-06",
+                "Usage": "Local AI support test catalogue; JW stock is unverified."
+            },
+            "image_path": "/images/demo/ikea-malaysia/20586788.jpg",
+            "source_url": "https://www.ikea.com/my/en/p/raskog-trolley-white-20586788/",
+            "source_image_url": "https://www.ikea.com/my/en/images/products/raskog-trolley-white__1366882_pe957173_s5.jpg"
+        },
+        {
+            "title": "RÅSKOG Trolley, white, 28x38x61 cm",
+            "handle": "ikea-my-raskog-trolley-white-40586792",
+            "sku": "IKEA-MY-40586792",
+            "article": "405.867.92",
+            "category": "Storage & Organisation",
+            "price_cents": 7900,
+            "price_valid_until": "2027-08-18Z",
+            "colour": "white",
+            "material": "Epoxy-powder-coated steel.",
+            "dimensions": "Width: 38 cm, Depth: 28 cm, Height: 61 cm",
+            "description": "Local test catalogue reference from IKEA Malaysia. RÅSKOG Trolley, white, 28x38x61 cm. Epoxy-powder-coated steel. Indoor use; follow the official load limits and assembly instructions. Reference price captured on 6 October 2026; this is not live IKEA availability.",
+            "features": [
+                "Indoor use; follow the official load limits and assembly instructions.",
+                "JW inventory requires First Count before availability can be confirmed."
+            ],
+            "specifications": {
+                "Width": "38 cm",
+                "Depth": "28 cm",
+                "Height": "61 cm",
+                "Material": "Epoxy-powder-coated steel.",
+                "Colour": "white",
+                "IKEA article": "405.867.92",
+                "Source": "https://www.ikea.com/my/en/p/raskog-trolley-white-40586792/",
+                "Snapshot date": "2026-10-06",
+                "Usage": "Local AI support test catalogue; JW stock is unverified."
+            },
+            "image_path": "/images/demo/ikea-malaysia/40586792.jpg",
+            "source_url": "https://www.ikea.com/my/en/p/raskog-trolley-white-40586792/",
+            "source_image_url": "https://www.ikea.com/my/en/images/products/raskog-trolley-white__1366921_pe957210_s5.jpg"
+        },
+        {
+            "title": "DRÖNA Box, white, 33x38x33 cm",
+            "handle": "ikea-my-droena-box-white-70262828",
+            "sku": "IKEA-MY-70262828",
+            "article": "702.628.28",
+            "category": "Storage & Organisation",
+            "price_cents": 1900,
+            "price_valid_until": null,
+            "colour": "white",
+            "material": "Polyester fabric, paperboard insert and polypropylene lining.",
+            "dimensions": "Width: 33 cm, Depth: 38 cm, Height: 33 cm",
+            "description": "Local test catalogue reference from IKEA Malaysia. DRÖNA Box, white, 33x38x33 cm. Polyester fabric, paperboard insert and polypropylene lining. Fits KALLAX compartments. Vacuum or lint-roll only; do not wash. Reference price captured on 6 October 2026; this is not live IKEA availability.",
+            "features": [
+                "Fits KALLAX compartments. Vacuum or lint-roll only; do not wash.",
+                "JW inventory requires First Count before availability can be confirmed."
+            ],
+            "specifications": {
+                "Width": "33 cm",
+                "Depth": "38 cm",
+                "Height": "33 cm",
+                "Material": "Polyester fabric, paperboard insert and polypropylene lining.",
+                "Colour": "white",
+                "IKEA article": "702.628.28",
+                "Source": "https://www.ikea.com/my/en/p/droena-box-white-70262828/",
+                "Snapshot date": "2026-10-06",
+                "Usage": "Local AI support test catalogue; JW stock is unverified."
+            },
+            "image_path": "/images/demo/ikea-malaysia/70262828.jpg",
+            "source_url": "https://www.ikea.com/my/en/p/droena-box-white-70262828/",
+            "source_image_url": "https://www.ikea.com/my/en/images/products/droena-box-white__0713066_pe729170_s5.jpg"
+        },
+        {
+            "title": "FORSÅ Work lamp, nickel-plated",
+            "handle": "ikea-my-forsa-work-lamp-nickel-plated-10146766",
+            "sku": "IKEA-MY-10146766",
+            "article": "101.467.66",
+            "category": "Lighting",
+            "price_cents": 8500,
+            "price_valid_until": null,
+            "colour": "grey",
+            "material": "Nickel-plated steel with acrylic coating.",
+            "dimensions": "Height: 35 cm",
+            "description": "Local test catalogue reference from IKEA Malaysia. FORSÅ Work lamp, nickel-plated. Nickel-plated steel with acrylic coating. Adjustable arm and shade. Bulb is sold separately; recommended E14 LED bulb. Reference price captured on 6 October 2026; this is not live IKEA availability.",
+            "features": [
+                "Adjustable arm and shade. Bulb is sold separately; recommended E14 LED bulb.",
+                "JW inventory requires First Count before availability can be confirmed."
+            ],
+            "specifications": {
+                "Height": "35 cm",
+                "Material": "Nickel-plated steel with acrylic coating.",
+                "Colour": "grey",
+                "IKEA article": "101.467.66",
+                "Source": "https://www.ikea.com/my/en/p/forsa-work-lamp-nickel-plated-10146766/",
+                "Snapshot date": "2026-10-06",
+                "Usage": "Local AI support test catalogue; JW stock is unverified."
+            },
+            "image_path": "/images/demo/ikea-malaysia/10146766.jpg",
+            "source_url": "https://www.ikea.com/my/en/p/forsa-work-lamp-nickel-plated-10146766/",
+            "source_image_url": "https://www.ikea.com/my/en/images/products/forsa-work-lamp-nickel-plated__0121576_pe278160_s5.jpg"
+        }
+    ],
+    "faq": {
+        "isEnabled": true,
+        "retrievalDepth": "semantic",
+        "categories": [
+            {
+                "id": "others",
+                "label": "Others"
+            },
+            {
+                "id": "shipping",
+                "label": "Delivery"
+            },
+            {
+                "id": "returns",
+                "label": "Returns & Refunds"
+            },
+            {
+                "id": "payments",
+                "label": "Payments"
+            },
+            {
+                "id": "orders",
+                "label": "Orders & Stock"
+            },
+            {
+                "id": "assembly",
+                "label": "Assembly & Safety"
+            },
+            {
+                "id": "warranty",
+                "label": "Warranty"
+            },
+            {
+                "id": "care",
+                "label": "Product Care"
+            },
+            {
+                "id": "contact",
+                "label": "Contact"
+            }
+        ],
+        "items": [
+            {
+                "id": "jw-home-test-01",
+                "category": "shipping",
+                "question": "How long does delivery take?",
+                "answer": "JW Home test policy (fictional; local acceptance only): After dispatch, allow 3–5 working days for Peninsular parcel deliveries. Handling takes 1–2 working days. These are estimates, not guaranteed arrival dates. Bulky items and East Malaysia have separate schedules.",
+                "keywords": [
+                    "delivery",
+                    "shipping",
+                    "arrive",
+                    "几时到",
+                    "多久",
+                    "penghantaran",
+                    "sampai"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-02",
+                "category": "shipping",
+                "question": "Do you deliver to Sabah and Sarawak?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Parcel delivery to Sabah and Sarawak takes an estimated 7–12 working days after dispatch. Bulky-item delivery requires a postcode-based quotation and schedule confirmation by staff.",
+                "keywords": [
+                    "Sabah",
+                    "Sarawak",
+                    "East Malaysia",
+                    "东马",
+                    "沙巴",
+                    "砂拉越"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-03",
+                "category": "shipping",
+                "question": "How much is parcel delivery?",
+                "answer": "JW Home test policy (fictional; local acceptance only): For the test store, parcel shipping is RM8 within Peninsular Malaysia and RM29 to Sabah or Sarawak. Bulky goods are excluded. Confirm the final charge at checkout before paying.",
+                "keywords": [
+                    "shipping fee",
+                    "delivery cost",
+                    "运费",
+                    "邮费",
+                    "kos penghantaran"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-04",
+                "category": "shipping",
+                "question": "What is the bulky furniture delivery fee?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Peninsular bulky-item delivery starts at RM49 and requires staff confirmation for the destination and access conditions. East Malaysia bulky deliveries require a quotation. Do not apply parcel rates to furniture.",
+                "keywords": [
+                    "bulky",
+                    "furniture delivery",
+                    "大件",
+                    "家具运输",
+                    "perabot"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-05",
+                "category": "shipping",
+                "question": "Can you deliver to a PO Box or overseas?",
+                "answer": "JW Home test policy (fictional; local acceptance only): The test store supports covered residential and business addresses in Peninsular Malaysia, Sabah and Sarawak. PO Boxes, overseas addresses and offshore islands are excluded. Staff must verify uncertain postcode coverage.",
+                "keywords": [
+                    "PO Box",
+                    "overseas",
+                    "island",
+                    "海外",
+                    "邮政信箱",
+                    "luar negara"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-06",
+                "category": "shipping",
+                "question": "What if I miss the delivery?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Contact support to arrange the next available attempt. Redelivery may incur a fee that staff must confirm first. Do not promise a free second delivery or a same-day slot.",
+                "keywords": [
+                    "missed delivery",
+                    "not home",
+                    "不在家",
+                    "重送",
+                    "tiada di rumah"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-07",
+                "category": "shipping",
+                "question": "My item arrived damaged. What should I do?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Report damage within 48 hours of receipt with the order reference, photos of the damage and packaging. Keep the packaging. Staff will assess replacement or refund eligibility; the AI cannot approve a claim.",
+                "keywords": [
+                    "damaged",
+                    "broken",
+                    "破损",
+                    "坏了",
+                    "rosak"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-08",
+                "category": "shipping",
+                "question": "Can I collect my order myself?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Pickup is available only after staff confirms the pickup location and sends a ready-for-collection notice. Do not travel based solely on an order confirmation. No public pickup address is configured in this test dataset.",
+                "keywords": [
+                    "pickup",
+                    "collect",
+                    "自取",
+                    "ambil sendiri"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-09",
+                "category": "returns",
+                "question": "What is your return window?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Request a change-of-mind return within 14 calendar days of receipt. Items must be unused, unassembled and in their original packaging, with proof of purchase. Exclusions and staff review apply.",
+                "keywords": [
+                    "return",
+                    "change of mind",
+                    "退货",
+                    "不喜欢",
+                    "pemulangan"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-10",
+                "category": "returns",
+                "question": "Can I return opened or assembled furniture?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Opened packaging may be assessed by staff if the item remains unused, complete and unassembled. Assembled or used furniture is excluded from change-of-mind returns. A genuine damage or defect claim is assessed separately.",
+                "keywords": [
+                    "opened",
+                    "assembled return",
+                    "拆封",
+                    "组装",
+                    "dipasang"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-11",
+                "category": "returns",
+                "question": "Which items cannot be returned for change of mind?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Used or assembled furniture, personalised or made-to-order goods, clearance items labelled final sale, and incomplete items are excluded. These exclusions do not automatically reject a genuine defect claim; staff must review it.",
+                "keywords": [
+                    "return exclusion",
+                    "final sale",
+                    "custom",
+                    "定制",
+                    "清仓",
+                    "pengecualian"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-12",
+                "category": "returns",
+                "question": "How do I request a return?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Contact support with the order reference and reason. Wait for staff approval and return instructions before sending goods. For change-of-mind returns the customer pays return shipping. Approved defect cases are handled by staff.",
+                "keywords": [
+                    "return process",
+                    "return shipping",
+                    "退货流程",
+                    "退运费",
+                    "cara pulang"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-13",
+                "category": "returns",
+                "question": "When will a refund reach me?",
+                "answer": "JW Home test policy (fictional; local acceptance only): After staff approves the return and inspection is complete, a refund normally takes 7–14 working days to the original payment method. Bank processing can vary. The AI cannot issue refunds or guarantee a specific completion date.",
+                "keywords": [
+                    "refund time",
+                    "退款多久",
+                    "bayaran balik"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-14",
+                "category": "returns",
+                "question": "Can I exchange for another colour or size?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Request an exchange within 14 calendar days. The original item must meet return eligibility. Replacement stock, price differences and delivery charges require staff confirmation. Do not promise a reserved replacement.",
+                "keywords": [
+                    "exchange",
+                    "colour",
+                    "size",
+                    "换货",
+                    "换颜色",
+                    "tukar"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-15",
+                "category": "payments",
+                "question": "Which payment methods does the test store accept?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Payment methods come from the actual checkout configuration. Use only methods displayed at checkout. This FAQ does not promise Visa, Mastercard, FPX or wallets that are not enabled. Staff can assist if the required method is unavailable.",
+                "keywords": [
+                    "payment methods",
+                    "card",
+                    "FPX",
+                    "付款",
+                    "支付",
+                    "bayaran"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-16",
+                "category": "payments",
+                "question": "My payment failed but money was deducted. What should I do?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Do not pay again immediately. Contact support with the order reference, transaction time and non-sensitive bank transaction reference. Never send an OTP, password, PIN or full card number. Staff will reconcile payment status.",
+                "keywords": [
+                    "payment failed",
+                    "deducted",
+                    "扣款",
+                    "失败",
+                    "gagal"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-17",
+                "category": "payments",
+                "question": "I think I was charged twice. Can you refund me?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Provide the order reference and non-sensitive transaction references to staff for reconciliation. The AI must not confirm a duplicate charge or approve a refund without verified payment records.",
+                "keywords": [
+                    "double charge",
+                    "duplicate payment",
+                    "重复扣款",
+                    "dua kali"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-18",
+                "category": "payments",
+                "question": "Can I pay by instalments or cash on delivery?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Instalments are not promised by the test policy. Cash on delivery may be used only when the actual checkout offers it for the order. Never infer a payment option from IKEA or another retailer.",
+                "keywords": [
+                    "instalment",
+                    "COD",
+                    "分期",
+                    "货到付款",
+                    "ansuran"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-19",
+                "category": "orders",
+                "question": "Can I change my delivery address after ordering?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Staff may amend an address before dispatch after verifying the customer. After dispatch, changes depend on the courier and may incur charges. The AI cannot modify an order or promise an amendment.",
+                "keywords": [
+                    "change address",
+                    "amend",
+                    "改地址",
+                    "tukar alamat"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-20",
+                "category": "orders",
+                "question": "Can I cancel my order?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Contact staff before dispatch to request cancellation. Dispatched orders cannot be cancelled through this test policy and must follow return rules. Personalised orders require staff assessment. The AI cannot cancel or guarantee reimbursement.",
+                "keywords": [
+                    "cancel",
+                    "取消",
+                    "batal"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-21",
+                "category": "orders",
+                "question": "How can I track my order?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Provide the order reference and complete the existing customer verification flow before private order details are disclosed. A reference alone is insufficient. Staff can help if verification or tracking data is unavailable.",
+                "keywords": [
+                    "track",
+                    "tracking",
+                    "订单查询",
+                    "物流",
+                    "jejak"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-22",
+                "category": "orders",
+                "question": "Is an item in stock or can you reserve it?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Check the JW inventory record for the exact SKU. An uncounted SKU has unverified availability; zero displayed stock is not evidence of an IKEA stock shortage. The AI cannot reserve goods or promise a restock date.",
+                "keywords": [
+                    "stock",
+                    "reserve",
+                    "库存",
+                    "有货",
+                    "stok"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-23",
+                "category": "assembly",
+                "question": "Is assembly included in the price?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Assembly is not included in the test product price. Staff must confirm whether paid assembly is available for the postcode and product. Use the official product instructions for self-assembly; do not invent a service fee.",
+                "keywords": [
+                    "assembly",
+                    "installation",
+                    "安装",
+                    "组装",
+                    "pemasangan"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-24",
+                "category": "assembly",
+                "question": "My package has missing screws or parts. What should I do?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Provide the exact article/SKU, order reference, missing part number from the assembly guide and a photo if available. Staff will check the claim and replacement options. Do not assume generic screws are a safe substitute.",
+                "keywords": [
+                    "missing parts",
+                    "screws",
+                    "缺件",
+                    "螺丝",
+                    "bahagian hilang"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-25",
+                "category": "assembly",
+                "question": "Does furniture need to be secured to the wall?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Follow the safety instructions for the exact model. Products whose official instructions require anchoring must be secured with fixings suitable for the wall. If unsure, ask a qualified installer. The AI must not recommend bypassing an anchoring warning.",
+                "keywords": [
+                    "anchor",
+                    "wall",
+                    "tip",
+                    "固定",
+                    "墙",
+                    "dinding"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-26",
+                "category": "warranty",
+                "question": "What warranty does the test store offer?",
+                "answer": "JW Home test policy (fictional; local acceptance only): The test policy provides a 12-month manufacturing-defect assessment period from receipt, with proof of purchase. Eligibility is assessed by staff. This is a fictional JW Home policy, not an IKEA warranty or a promise of automatic replacement.",
+                "keywords": [
+                    "warranty",
+                    "guarantee",
+                    "保修",
+                    "质保",
+                    "jaminan"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-27",
+                "category": "warranty",
+                "question": "What does the test warranty exclude?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Normal wear, misuse, overloading, water damage, outdoor use of indoor-only goods, unauthorised modifications and incorrect assembly are excluded. Staff must assess cause and eligibility; the AI cannot diagnose a defect conclusively from an image.",
+                "keywords": [
+                    "warranty exclusions",
+                    "water damage",
+                    "保修范围",
+                    "进水",
+                    "kerosakan"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-28",
+                "category": "care",
+                "question": "How should I clean the product?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Use the care instructions for the exact SKU. Do not apply one universal cleaning method: the DRÖNA fabric box is not washable, while some coated furniture can be wiped and dried. Ask which product the customer means when unclear.",
+                "keywords": [
+                    "clean",
+                    "wash",
+                    "care",
+                    "清洁",
+                    "清洗",
+                    "cuci"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-29",
+                "category": "care",
+                "question": "Can I use this product outdoors or put hot cookware on it?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Check the official intended-use and care instructions for the exact SKU. Do not assume indoor furniture is waterproof, outdoor-safe or heat-resistant. Ask for the model and intended use when evidence is missing.",
+                "keywords": [
+                    "outdoor",
+                    "waterproof",
+                    "hot",
+                    "户外",
+                    "防水",
+                    "panas"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            },
+            {
+                "id": "jw-home-test-30",
+                "category": "contact",
+                "question": "How can I speak to a human support agent?",
+                "answer": "JW Home test policy (fictional; local acceptance only): Request a human agent in this chat. For testing, the support schedule is Monday–Friday, 9am–6pm Malaysia time, excluding public holidays. Requests outside that schedule remain queued. No fictional phone number or email is provided.",
+                "keywords": [
+                    "human",
+                    "agent",
+                    "hours",
+                    "人工",
+                    "客服时间",
+                    "ejen"
+                ],
+                "isActive": true,
+                "lastUpdatedAt": "2026-10-06T00:00:00+08:00"
+            }
+        ]
+    },
+    "taxonomy": {
+        "categories": {
+            "tables": "Tables",
+            "shelving-bookcases": "Shelving & Bookcases",
+            "storage-organisation": "Storage & Organisation",
+            "lighting": "Lighting"
+        },
+        "collections": {
+            "living-room-essentials": {
+                "title": "Living Room Essentials",
+                "families": [
+                    "LACK",
+                    "KALLAX",
+                    "DRÖNA"
+                ]
+            },
+            "organised-home": {
+                "title": "Organised Home",
+                "families": [
+                    "KALLAX",
+                    "BILLY",
+                    "RÅSKOG",
+                    "DRÖNA"
+                ]
+            },
+            "home-office-essentials": {
+                "title": "Home Office Essentials",
+                "families": [
+                    "BILLY",
+                    "RÅSKOG",
+                    "FORSÅ"
+                ]
+            }
+        }
+    }
+}

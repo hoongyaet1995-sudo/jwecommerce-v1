@@ -1,0 +1,30 @@
+# FAQ retrieval and support conversation completion
+
+Status: proposed design, product implementation not started. Baseline 27f495b7c1c5e62653b4125d31a34100271725a4. Canonical development C:/xampp/htdocs/jwstudio-ecommerce. Preserve unrelated dirty work and approved UI. Blast Campaign and attachment interpretation excluded. Existing order verification/redaction remain unchanged; no expansion of identity or employee tracing features in this phase.
+
+## Problem and verified evidence
+FAQ records already contain id, category, question, answer, keywords, isActive and lastUpdatedAt, in versioned store_settings JSON. FaqKnowledgeSearch uses exact normalization and weighted substring matching, top three hits then all category siblings within12000 bytes. UnifiedKnowledgeService routes up to three read-only tools. retrievalDepth strict/semantic/deep is saved but does not alter FAQ retrieval. FaqAutoReplyService includes only three customer messages, missing assistant clarification context; validates returned source IDs but this alone does not prove factual entailment. These are code findings, not proof of any particular failed customer interaction. Actual policy coverage is not yet audited.
+
+## Selected approach
+Incrementally extend Laravel services and current FAQ data; no external vector database or invented policies. Separate content coverage, retrieval failure, generation failure and operational errors. Only approved active store policies enter business facts. Customer messages and previous assistant answers remain untrusted dialogue context.
+
+## Phase A: audit and evaluation baseline
+Read current local and authorized production FAQ configurations without printing customer identities or private credentials. Record active counts, topic coverage, duplicates, inconsistent policy candidates, broad category sizes, multilingual question coverage and configuration modes. Missing topics are recommendations, never auto-created factual policies. Produce synthetic labelled cases with approved-source expected answers, multilingual paraphrases, mixed questions, exceptions, ambiguous followups, no-answer and injection cases. Record retrieval recall, source relevance, answer correctness, correct clarification and inappropriate claims separately; no invented performance percentages. Cases requiring missing policies are blocked pending owner-supplied facts.
+
+## Phase B: bounded retrieval
+Keep strict as deterministic lexical/exact retrieval. Semantic invokes a server-side validated model query expansion, producing a small capped list of multilingual alternative search queries, not policy answers; run deterministic retrieval over active records and combine/deduplicate hits. Clearly document this as semantic query expansion, not embeddings/vector search. Deep uses that expansion plus validated candidate ranking where needed, under explicit context/call budgets. If expansion/ranking fails, deterministic fallback; operational failure remains distinguishable from no evidence. A model-selected policy ID must belong to supplied active candidates. Policy exceptions must accompany general rules. Category overflow fails safely without partial policy truncation; benchmark broad Others categories before deciding whether explicit related-policy IDs are needed. Never silently switch disabled mode or retrieve inactive entries.
+
+## Phase C: useful conversational context
+Include bounded recent role-labelled turns and last assistant clarification, treating assistant text as context only, never an official fact. Exclude document-bearing messages including captions as currently required; no image/audio/PDF reading. Resolve pronouns/product references against explicit prior context. Ask one targeted missing-information question when the request is ambiguous; distinguish ambiguity, absent approved facts and system unavailability. Greetings and acknowledgements should not invoke unnecessary knowledge tools. Mixed questions can answer supported parts and clarify unsupported parts without inventing a policy. Keep master/channel pause, human ownership and concurrent takeover checks authoritative.
+
+## Phase D: answer and handoff checks
+Retain source-ID checks and evaluate claim grounding against supplied facts; do not describe source ID validation as complete grounding. Preserve existing handoff rules; general return-policy questions are distinct from refund execution. No new action permissions. Tests must prove customer instructions cannot override official policy, choose another customer's order, or re-enable paused AI. Existing identity checks remain intact.
+
+## Acceptance and rollout
+Phase A findings determine detailed test fixtures and measurable improvement gates before implementation. Require no regression in existing knowledge/media/AI pause/handoff tests, deterministic tests for each retrievalDepth behavior/fallback, role-history and document exclusion tests, repeatable evaluation cases and authenticated localhost acceptance. Remote model evaluation uses synthetic prompts only and the configured provider; no private customer transcript transmission in this phase. Live model quality evidence is separate from mocked unit tests. Preserve UI; any necessary configuration copy clarification is shown for approval first. Local acceptance precedes separate synchronization approval and same-SHA Hostinger release.
+
+## Alternatives and risks
+Embeddings plus hybrid lexical/vector retrieval is a later option if evaluation demonstrates query expansion cannot meet recall/latency/cost needs. It introduces an index lifecycle, invalidation/versioning and provider dependency that are not justified merely by adding a vector database. Query expansion adds latency/cost and may misinterpret intent, so output constraints, lexical fallback and evaluation are mandatory. No approach repairs missing or contradictory business policies automatically.
+
+## Approval gate
+Review this written design. After approval prepare a file-level implementation/test plan and select inline execution. No product code changed for this design.

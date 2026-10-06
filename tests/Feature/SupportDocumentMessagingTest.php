@@ -40,4 +40,17 @@ class SupportDocumentMessagingTest extends SupportChatApiTest {
   $this->postJson('/support/chat/messages',['content'=>'DOCUMENT_SECRET','attachment_id'=>$a['id'],'client_message_id'=>(string)Str::uuid()])->assertOk();
   $this->postJson('/support/chat/messages',['content'=>'What is your shipping policy?','client_message_id'=>(string)Str::uuid()])->assertOk();
  }
+ public function test_dialogue_context_preserves_question_roles_and_excludes_attachment_turns():void {
+  Storage::fake('support-private');
+  $a=$this->post('/support/chat/attachments',['document'=>UploadedFile::fake()->createWithContent('receipt.pdf',file_get_contents(base_path('tests/Fixtures/support-document.pdf')))],['Accept'=>'application/json'])->assertCreated()->json('attachment');
+  $id=$this->postJson('/support/chat/messages',['content'=>'DOCUMENT_SECRET','attachment_id'=>$a['id'],'client_message_id'=>(string)Str::uuid()])->assertOk()->json('conversation.id');
+  $c=SupportConversation::findOrFail($id);
+  $c->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'ai','content'=>'Which product do you mean?']);
+  $c->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'customer','content'=>'The speaker. Email buyer@example.test']);
+  app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService());
+  $c->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'ai','content'=>'PRIVATE_TRACKING_ORDER','actions'=>[['type'=>'view_order_tracking','resource_id'=>0]]]);
+  $history=app(\App\Services\Support\SupportDialogueContext::class)->recent($c);
+  $this->assertSame('Assistant (context only): Which product do you mean?',$history[0]);
+  $this->assertStringContainsString('[email]',$history[1]);$this->assertStringNotContainsString('DOCUMENT_SECRET',implode(' ',$history));$this->assertStringNotContainsString('PRIVATE_TRACKING_ORDER',implode(' ',$history));
+ }
 }

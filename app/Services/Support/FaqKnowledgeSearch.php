@@ -10,8 +10,13 @@ class FaqKnowledgeSearch
     }
     public function search(string $query, array $scope): array
     {
-        $terms=array_slice(array_unique(preg_split('/[^\p{L}\p{N}]+/u',mb_strtolower($query),-1,PREG_SPLIT_NO_EMPTY)),0,12);
+        $items=$this->items($scope);if(!$items)return [];
+        $mode=$scope['retrievalDepth']??'strict';
+        $queries=[$query];if(in_array($mode,['semantic','deep'],true))$queries=array_merge($queries,app(FaqQueryExpansion::class)->queries($query));
         $stop=['the','how','what','can','you','for','and','is','to','do','i','my','a'];
+        $terms=[];
+        foreach(array_unique($queries) as $search){$tokens=preg_split('/[^\p{L}\p{N}]+/u',mb_strtolower($search),-1,PREG_SPLIT_NO_EMPTY);$tokens=array_filter($tokens,fn($t)=>mb_strlen($t)>=2&&!in_array($t,$stop,true));$terms=array_merge($terms,array_slice(array_unique($tokens),0,12));}
+        $terms=array_unique($terms);
         $rank=[];
         foreach($this->items($scope) as $i){
             $score=0;foreach($terms as $t){if(mb_strlen($t)<2||in_array($t,$stop,true))continue;
@@ -22,7 +27,10 @@ class FaqKnowledgeSearch
             if($score>=3)$rank[]=['item'=>$i,'score'=>$score];
         }
         usort($rank,fn($a,$b)=>$b['score']<=>$a['score']);
-        $selected=array_slice(array_column($rank,'item'),0,3);
+        $candidates=array_slice(array_column($rank,'item'),0,10);
+        $selected=array_slice($candidates,0,3);
+        $rankingFacts=array_map(fn($i)=>array_intersect_key($i,array_flip(['id','question','answer'])),$candidates);
+        if($mode==='deep'&&$candidates&&strlen(json_encode($rankingFacts,JSON_UNESCAPED_UNICODE))<=12000){$ids=app(FaqQueryExpansion::class)->rank($query,$rankingFacts);$byId=array_column($candidates,null,'id');$selected=array_map(fn($id)=>$byId[$id],$ids);}
         // Include complete policy siblings: exclusions may override a matching general policy.
         $categories=array_unique(array_column($selected,'category'));
         foreach($this->items($scope) as $i)if(in_array($i['category']??null,$categories,true)&&!in_array($i['id'],array_column($selected,'id'),true))$selected[]=$i;

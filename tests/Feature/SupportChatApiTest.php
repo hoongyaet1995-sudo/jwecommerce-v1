@@ -63,6 +63,22 @@ class SupportChatApiTest extends TestCase
   (require database_path('migrations/2026_10_06_200000_add_support_audio.php'))->up();
     }
 
+    public function test_mixed_question_answers_supported_part_and_asks_clarification():void {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'retrievalDepth'=>'strict','items'=>[['id'=>'ship','question'=>'Shipping?','answer'=>'RM8','category'=>'shipping','keywords'=>['shipping'],'isActive'=>true]]]]]);
+        app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService());
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->twice()->andReturn('{"tools":[{"name":"faq.search","query":"shipping"}],"clarification":"product","escalation":"none"}','{"answer":"Shipping is RM8.","faq_ids":["ship"]}');
+        $r=$this->postJson('/support/chat/messages',$this->payload('What is shipping and does that fit?'))->assertOk();
+        $answer=collect($r->json('conversation.messages'))->last()['content'];$this->assertStringContainsString('Shipping is RM8.',$answer);$this->assertStringContainsString('Which product or model do you mean?',$answer);
+    }
+
+    public function test_missing_product_context_asks_safe_question_without_invented_policy():void {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'retrievalDepth'=>'strict','items'=>[['id'=>'ship','question'=>'Shipping?','answer'=>'RM8','category'=>'shipping','keywords'=>[],'isActive'=>true]]]]]);
+        app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService());
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[],"clarification":"product","escalation":"none"}');
+        $r=$this->postJson('/support/chat/messages',$this->payload('Does that fit?'))->assertOk();
+        $this->assertSame('Which product or model do you mean?',collect($r->json('conversation.messages'))->last()['content']);
+    }
+
     public function test_pin_is_shared_persistent_idempotent_and_admin_only(): void
     {
         $id=$this->postJson('/support/chat/messages',$this->payload('Pin acceptance'))->assertOk()->json('conversation.id');
