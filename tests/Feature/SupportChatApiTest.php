@@ -81,6 +81,46 @@ class SupportChatApiTest extends TestCase
         $r=$this->postJson('/support/chat/messages',$this->payload('where can i track my order?'))->assertOk();
         $this->assertNotContains('view_order_tracking',array_column(collect($r->json('conversation.messages'))->last()['actions']??[],'type'));
     }
+    public function test_partial_reply_and_staff_only_trace_persist_without_error_or_order_payload():void
+    {
+        $this->partialFixture();
+        $r=$this->postJson('/support/chat/messages',$this->payload('BILLY stock and shipping?'))->assertOk();
+        $r->assertJsonMissingPath('conversation.messages.1.aiTrace');
+        $reply=\App\Models\SupportMessage::where('sender_role','ai')->latest('id')->first();
+        $this->assertStringContainsString('RM8',$reply->content);
+        $this->assertStringContainsString('could not complete',$reply->content);
+        $this->assertSame('partial',$reply->ai_trace['decision']);
+        $this->assertStringNotContainsString('secret-token',json_encode($reply->ai_trace));
+        $staff=\App\Models\User::create(['name'=>'Staff','email'=>'phase2@example.test','password'=>bcrypt('test'),'is_admin'=>true]);
+        $this->actingAs($staff)->getJson('/admin/api/support/conversations')->assertOk()->assertJsonPath('conversations.0.messages.1.aiTrace.tools.0.status','unavailable');
+    }
+    public function test_disabling_partial_answers_suppresses_successful_fragment():void
+    {
+        $this->partialFixture(false);
+        $r=$this->postJson('/support/chat/messages',$this->payload('BILLY stock and shipping?'))->assertOk();
+        $reply=collect($r->json('conversation.messages'))->last();
+        $this->assertStringNotContainsString('RM8',$reply['content']);
+        $this->assertStringContainsString('could not complete',$reply['content']);
+    }
+    public function test_saved_clarification_switch_prevents_followup_question():void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'responsePolicy'=>['clarificationEnabled'=>false],'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[],"escalation":"none","clarification":"product","language":"en","conversation":"none","needs_business_answer":true}');
+        $r=$this->postJson('/support/chat/messages',$this->payload('Does that fit?'))->assertOk();
+        $this->assertStringNotContainsString('Which product',collect($r->json('conversation.messages'))->last()['content']);
+    }
+    private function partialFixture(bool $partial=true):void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'responsePolicy'=>['partialAnswers'=>$partial],'personality'=>['queryUnavailableMessage'=>['en'=>'I could not complete one of the requested checks. Please ask our support team.']],'productCatalog'=>['isEnabled'=>true,'canRecommendUpsells'=>true,'includeStorePolicies'=>false],'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService);
+        $model=$this->mock(AiConnectionService::class)->shouldReceive('generateText');
+        if($partial)$model->twice()->andReturn('{"tools":[{"name":"product.search","query":"BILLY"},{"name":"faq.search","query":"shipping"}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}','{"answer":"Parcel shipping is RM8.","faq_ids":["ship"]}');
+        else $model->once()->andReturn('{"tools":[{"name":"product.search","query":"BILLY"},{"name":"faq.search","query":"shipping"}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
+        $this->mock(\App\Services\Support\ProductKnowledgeService::class)->shouldReceive('facts')->once()->andThrow(new \RuntimeException('secret-token'));
+        $faq=$this->mock(\App\Services\Support\FaqKnowledgeSearch::class);$faq->shouldReceive('exact')->once()->andReturn([]);$faq->shouldReceive('search')->once()->andReturn([['id'=>'ship','question'=>'Parcel shipping fee','answer'=>'Parcel shipping is RM8.']]);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -127,6 +167,7 @@ class SupportChatApiTest extends TestCase
         (require database_path('migrations/2026_10_06_150000_add_customer_channel_identity.php'))->up();
         (require database_path('migrations/2026_10_06_190000_create_support_attachments.php'))->up();
   (require database_path('migrations/2026_10_06_200000_add_support_audio.php'))->up();
+  (require database_path('migrations/2026_10_07_120000_add_support_reply_evidence.php'))->up();
     }
 
     public function test_mixed_question_answers_supported_part_and_asks_clarification():void {
@@ -347,9 +388,12 @@ class SupportChatApiTest extends TestCase
     {
         $this->app->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService());
         StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'productCatalog'=>['isEnabled'=>false],'faq'=>['isEnabled'=>false,'items'=>[]],'orderLookup'=>['isEnabled'=>true,'allowedFields'=>['orderStatus'=>true]]]]);
-        $this->mock(\App\Services\Support\OrderKnowledgeService::class)->shouldReceive('reply')->once()->andReturn('LOCAL_PRIVATE_ORDER_STATUS');
+        $this->mock(\App\Services\Support\OrderKnowledgeService::class)->shouldReceive('outcome')->once()->andReturn(['status'=>'success','answer'=>'LOCAL_PRIVATE_ORDER_STATUS']);
         $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($p,$prompt,$n)=>str_contains($prompt,'order.lookup')&&!str_contains($prompt,'LOCAL_PRIVATE_ORDER_STATUS')&&!str_contains($prompt,'person@example.com'))->andReturn('{"tools":[{"name":"order.lookup","query":"order status"}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
         $this->postJson('/support/chat/messages',$this->payload('My order status, person@example.com'))->assertOk()->assertJsonPath('conversation.messages.1.content','LOCAL_PRIVATE_ORDER_STATUS');
+        $trace=\App\Models\SupportMessage::where('sender_role','ai')->first()->ai_trace;
+        $this->assertStringNotContainsString('LOCAL_PRIVATE_ORDER_STATUS',json_encode($trace));
+        $this->assertSame('server_order',$trace['decision']);
     }
 
     public function test_unified_route_runs_one_plan_then_one_grounded_reply(): void

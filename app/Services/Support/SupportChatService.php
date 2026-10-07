@@ -189,6 +189,7 @@ class SupportChatService
             'createdAt' => $conversation->created_at->toIso8601String(),
             'messages' => $messages->map(fn ($m) => [
                 'id' => (string) $m->id, 'conversationId' => $conversation->id, 'senderRole' => $m->sender_role,
+                'aiTrace'=>$m->sender_role==='ai'?$m->ai_trace:null,
                 'senderName' => $m->sender_role === 'customer' ? $name : ($m->sender_role === 'ai' ? 'AI Support' : ($m->staff?->name ?? 'Support')),
                 'senderAvatar' => $m->sender_role === 'customer' ? $avatar : '/images/support-person.svg', 'timestamp' => $m->created_at->format('d M H:i'),
                 'attachments'=>app(SupportAttachmentService::class)->view($m,true), 'content' => $m->content, 'type' => $m->attachments->isNotEmpty() ? ($m->attachments->first()->kind ?? 'image') : 'text', 'deliveryStatus' => $m->delivery_status ?? 'sent', 'sendError' => $m->send_error, 'clientMessageId' => $m->client_message_id,

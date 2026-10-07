@@ -28,6 +28,29 @@ class UnifiedKnowledgeTest extends TestCase {
  $facts=app(UnifiedKnowledgeService::class)->retrieve('Is assembly included for BILLY?',$s);
  $this->assertEqualsCanonicalizing(['product:1','assembly'],array_column($facts,'id'));
  }
+ public function test_failed_product_tool_keeps_successful_policy_and_safe_outcomes():void{
+ $s=$this->settings();$s['productCatalog']['includeStorePolicies']=false;
+ $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[{"name":"product.search","query":"BILLY"},{"name":"faq.search","query":"shipping"}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
+ $this->mock(ProductKnowledgeService::class)->shouldReceive('facts')->once()->andThrow(new \RuntimeException('secret-token database password'));
+ $facts=app(UnifiedKnowledgeService::class)->retrieve('BILLY and shipping?', $s, [], null, 'en', true);
+ $outcomes=json_decode(collect($facts)->firstWhere('id','support:outcomes')['answer'],true);
+ $this->assertSame('unavailable',$outcomes[0]['status']);$this->assertSame('success',$outcomes[1]['status']);
+ $this->assertContains('ship',array_column($facts,'id'));$this->assertStringNotContainsString('secret-token',json_encode($facts));
+ }
+ public function test_catalogue_no_match_and_empty_policy_have_explicit_outcomes():void{
+ $s=$this->settings();$s['productCatalog']['includeStorePolicies']=false;
+ $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[{"name":"product.search","query":"UNKNOWN"},{"name":"faq.search","query":"none"}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
+ $this->mock(ProductKnowledgeService::class)->shouldReceive('facts')->once()->andReturn([['id'=>'catalogue:search','question'=>'Search','answer'=>'{"matches":0}']]);
+ $this->mock(FaqKnowledgeSearch::class)->shouldReceive('search')->once()->andReturn([]);
+ $facts=app(UnifiedKnowledgeService::class)->retrieve('unknown',$s,[],null,'en',true);
+ $this->assertSame(['no_match','no_match'],array_column(json_decode(collect($facts)->firstWhere('id','support:outcomes')['answer'],true),'status'));
+ }
+ public function test_sessionless_order_outcome_is_verification_not_model_fact():void{
+ $s=['orderLookup'=>['isEnabled'=>true]];
+ $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[{"name":"order.lookup","query":""}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
+ $facts=app(UnifiedKnowledgeService::class)->retrieve('show order',$s,[],null,'en',true);
+ $this->assertSame('verification_required',json_decode(collect($facts)->firstWhere('id','support:outcomes')['answer'],true)[0]['status']);
+ }
  private function settings():array{return ['faq'=>['isEnabled'=>true,'items'=>[
  ['id'=>'ship','category'=>'shipping','question'=>'Delivery time','answer'=>'Local delivery 3 days','keywords'=>['shipping'],'isActive'=>true],
  ['id'=>'overseas','category'=>'shipping','question'=>'Overseas shipping','answer'=>'No overseas delivery','keywords'=>[],'isActive'=>true],

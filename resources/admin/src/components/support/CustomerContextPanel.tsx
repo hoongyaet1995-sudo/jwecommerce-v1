@@ -127,6 +127,23 @@ export const CustomerContextPanel: React.FC<CustomerContextPanelProps> = ({
         </div>
       </div>
 
+      {conversation.messages?.some(message=>message.aiTrace) && <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/80 space-y-3">
+        <h3 className="flex items-center gap-1.5 font-semibold text-neutral-900 dark:text-neutral-100"><Sparkles className="w-3.5 h-3.5 text-indigo-600"/>AI Reply Evidence</h3>
+        <p className="text-[11px] text-neutral-500">Saved query results and references. Staff only.</p>
+        {conversation.messages.filter(message=>message.aiTrace).slice(-5).reverse().map(message=>{const trace=message.aiTrace!;const labels:Record<string,string>={'product.search':'Product search','product.count':'Catalogue count','taxonomy.search':'Categories & collections','faq.search':'FAQ & policies','discount.search':'Official offers','discount.lookup_code':'Voucher check','order.lookup':'Verified order check','support.tracking':'Tracking entry',success:'Completed',no_match:'No matching source',verification_required:'Identity verification required',needs_reference:'Order reference required',unavailable:'Query unavailable',server_order:'Server verified order response',rate_limited:'Daily assistance limit',grounded:'Answered from sources',partial:'Partial answer',clarification:'Clarification requested',conversational:'Greeting / courtesy',query_unavailable:'Query unavailable',generation_unavailable:'AI unavailable',escalation_offered:'Human assistance offered',handoff_requested:'Human assistance requested'};
+        return <details key={message.id} className="p-2 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 space-y-2">
+          <summary className="cursor-pointer text-[11px] font-semibold text-neutral-800 dark:text-neutral-200">{message.timestamp} · {labels[trace.decision]??trace.decision}</summary>
+          <div className="space-y-2 text-[11px] text-neutral-600 dark:text-neutral-300">
+            {trace.tools.map((tool,index)=><div key={index} className="flex items-center justify-between gap-2"><span>{labels[tool.tool]??tool.tool}</span><span>{labels[tool.status]??tool.status}</span></div>)}
+            <div className="break-all">Retrieved: {trace.retrievedSourceIds.join(', ')||'No factual sources'}</div>
+            <div className="break-all">Used: {trace.citedSourceIds.join(', ')||'No factual sources cited'}</div>
+            {trace.clarification&&<div>Missing context: {trace.clarification}</div>}
+            {trace.escalation&&<div>Handoff reason: {trace.escalation.replace(/_/g,' ')}</div>}
+            <div>Settings version: {trace.settingsVersion}</div>
+          </div>
+        </details>;})}
+      </div>}
+
       {/* 4. Internal Teammate Notes */}
       <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/80 space-y-3">
         <div className="flex items-center justify-between font-semibold text-neutral-900 dark:text-neutral-100">

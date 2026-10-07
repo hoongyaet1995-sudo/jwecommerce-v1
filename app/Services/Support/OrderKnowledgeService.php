@@ -6,17 +6,20 @@ use App\Models\OrderTrackingVerification;
 use App\Models\SupportConversation;
 class OrderKnowledgeService {
  public function reply(string $question,array $scope,?SupportConversation $conversation,string $language='en'):string{
- if(!($scope['isEnabled']??false))return '';
+ return $this->outcome($question,$scope,$conversation,$language)['answer'];
+ }
+ public function outcome(string $question,array $scope,?SupportConversation $conversation,string $language='en'):array{
+ if(!($scope['isEnabled']??false))return ['status'=>'disabled','answer'=>''];
  $verify=['en'=>'Please sign in to your customer account, or verify your order email code on the Order Tracking page before I can access order details.','ms'=>'Sila log masuk ke akaun pelanggan atau sahkan kod e-mel pada halaman Order Tracking sebelum butiran pesanan boleh diakses.','zh'=>'请先登录客户账户，或在 Order Tracking 页面完成订单邮箱验证码验证，然后才能查询订单资料。'];
- if(!$conversation || in_array($conversation->channel,['facebook','instagram','whatsapp'],true))return $verify[$language];
- if(!request()->hasSession())return $verify[$language];
+ if(!$conversation || in_array($conversation->channel,['facebook','instagram','whatsapp'],true))return ['status'=>'verification_required','answer'=>$verify[$language]];
+ if(!request()->hasSession())return ['status'=>'verification_required','answer'=>$verify[$language]];
  [$owner,$userId]=app(SupportChatService::class)->owner(request());
- if(!hash_equals($conversation->owner_hash,$owner)||$conversation->customer_user_id!==$userId)return $verify[$language];
+ if(!hash_equals($conversation->owner_hash,$owner)||$conversation->customer_user_id!==$userId)return ['status'=>'verification_required','answer'=>$verify[$language]];
  $q=Order::query();$authorized=false;
  if($userId){$customer=Customer::where('user_id',$userId)->first();if($customer){$q->where('customer_id',$customer->id);$authorized=true;}}
  if(!$authorized){$attemptId=request()->session()->get('order_tracking.verified_attempt_id');
  $attempt=$attemptId?OrderTrackingVerification::where('public_id',$attemptId)->whereNotNull('verified_at')->where('verified_at','>=',now()->subMinutes(15))->first():null;
- if(!$attempt)return $verify[$language];$q->whereKey($attempt->order_id);$authorized=true;
+ if(!$attempt)return ['status'=>'verification_required','answer'=>$verify[$language]];$q->whereKey($attempt->order_id);$authorized=true;
  }
  // Search only the authorized set. Never look up a foreign order to reveal whether it exists.
  preg_match_all('/[\p{L}\p{N}_-]*\d[\p{L}\p{N}_-]*/u',$question,$matches);
@@ -25,7 +28,7 @@ class OrderKnowledgeService {
  $selected=$orders->filter(fn($o)=>preg_match('/(?<![\p{L}\p{N}_-])'.preg_quote($o->number,'/').'(?![\p{L}\p{N}_-])/iu',$question));
  if($selected->isEmpty()){
  if($orders->count()===1&&!preg_match('/\d/u',$question))$selected=$orders;
- else return ['en'=>'Please provide the order number for an order in your verified account. I cannot confirm other orders.','ms'=>'Sila berikan nombor pesanan dalam akaun yang disahkan. Pesanan lain tidak dapat disahkan.','zh'=>'请提供已验证账户中的订单编号，其他订单无法确认。'][$language];
+ else return ['status'=>'needs_reference','answer'=>['en'=>'Please provide the order number for an order in your verified account. I cannot confirm other orders.','ms'=>'Sila berikan nombor pesanan dalam akaun yang disahkan. Pesanan lain tidak dapat disahkan.','zh'=>'请提供已验证账户中的订单编号，其他订单无法确认。'][$language]];
  }
  $fields=$scope['allowedFields']??[];$out=[];
  foreach($selected->take(1) as $order){
@@ -39,7 +42,7 @@ class OrderKnowledgeService {
  if(count($lines)===1)$lines[]=['en'=>'Order details are not enabled for disclosure in chat.','ms'=>'Butiran pesanan tidak dibenarkan dalam sembang.','zh'=>'后台尚未开放聊天中的订单字段。'][$language];
  $out[]=implode("\n",$lines);
  }
- return implode("\n\n",$out);
+ return ['status'=>'success','answer'=>implode("\n\n",$out)];
  }
 }
 

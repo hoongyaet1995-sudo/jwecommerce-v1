@@ -31,6 +31,7 @@ class MessengerReplyTest extends TestCase
   (require database_path('migrations/2026_10_06_150000_add_customer_channel_identity.php'))->up();
         (require database_path('migrations/2026_10_06_190000_create_support_attachments.php'))->up();
   (require database_path('migrations/2026_10_06_200000_add_support_audio.php'))->up();
+  (require database_path('migrations/2026_10_07_120000_add_support_reply_evidence.php'))->up();
         Http::preventStrayRequests();
     }
 

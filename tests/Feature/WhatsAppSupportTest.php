@@ -25,6 +25,7 @@ class WhatsAppSupportTest extends TestCase
   (require database_path('migrations/2026_10_06_150000_add_customer_channel_identity.php'))->up();
         (require database_path('migrations/2026_10_06_190000_create_support_attachments.php'))->up();
   (require database_path('migrations/2026_10_06_200000_add_support_audio.php'))->up();
+  (require database_path('migrations/2026_10_07_120000_add_support_reply_evidence.php'))->up();
   Http::preventStrayRequests();Bus::fake();
   $staff=User::factory()->create(['is_admin'=>true,'is_super_admin'=>true]);$this->actingAs($staff);
   ManagedSocialAccount::unguarded(fn()=>ManagedSocialAccount::create(['merchant_key'=>'shop','platform'=>'whatsapp','app_id'=>'123','provider_account_id'=>'456','waba_id'=>'789','name'=>'JW','access_token'=>'private','permissions'=>['whatsapp_business_messaging'],'tasks'=>[],'state'=>'connected','inbound_enabled'=>true,'inbound_verified_at'=>now(),'authorized_by'=>$staff->id]));

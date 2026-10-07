@@ -48,4 +48,10 @@ class SupportUnderstandingTest extends TestCase
         $this->mock(AiConnectionService::class)->shouldReceive('generateText')->andReturn('{"tools":[],"escalation":"explicit_request","clarification":"none","language":"en","conversation":"none","needs_business_answer":false}');
         $this->assertSame('explicit_request',app(SupportUnderstandingService::class)->understand('someone help me',[],[],[])['escalation']);
     }
+    public function test_separate_questions_can_use_the_same_enabled_read_only_tool():void
+    {
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->andReturn(json_encode(['tools'=>[['name'=>'faq.search','query'=>'Penang parcel shipping'],['name'=>'faq.search','query'=>'return window']], 'escalation'=>'none','clarification'=>'none','language'=>'en','conversation'=>'none','needs_business_answer'=>true]));
+        $plan=app(SupportUnderstandingService::class)->understand('shipping and returns',['faq.search'=>'Policies'],[],[]);
+        $this->assertCount(2,$plan['tools']);
+    }
 }

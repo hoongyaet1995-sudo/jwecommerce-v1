@@ -28,31 +28,47 @@ class UnifiedKnowledgeService
 
         if(($plan['clarification']??'none')!=='none')$facts[]=['id'=>'support:clarification','question'=>'Missing context','answer'=>$plan['clarification']];
         if (($plan['escalation'] ?? 'none') !== 'none') $facts[]=['id'=>'support:intent','question'=>'Internal escalation classification','answer'=>$plan['escalation']];
-        foreach($plan['tools'] as $step){
-            $query=$step['query'];
-            if($step['name']==='order.lookup'){$facts[]=['id'=>'order:private','question'=>'Verified order response','answer'=>app(OrderKnowledgeService::class)->reply($question,$settings['orderLookup'],$conversation,$language)];continue;}
-            $result=match($step['name']){
-                'support.tracking'=>[['id'=>'support:tracking','question'=>'Public tracking entry','answer'=>'Use the Order Tracking page. Sign in or complete order-email verification before viewing private details.']],
-                'taxonomy.search'=>app(TaxonomyKnowledgeService::class)->facts($query,$settings['productCatalog']),
-                'faq.search'=>app(FaqKnowledgeSearch::class)->search($query,$settings['faq']),
-                'product.count'=>app(ProductKnowledgeService::class)->facts('__catalogue_count__',$settings['productCatalog']),
-                'product.search'=>app(ProductKnowledgeService::class)->facts(($settings['productCatalog']['canRecommendUpsells']??false)?($query?:'__catalogue_list__'):$question,$settings['productCatalog']),
-                // Code lookup uses only actual customer text, never a model-invented code.
-                'discount.lookup_code'=>array_values(array_filter(app(DiscountKnowledgeService::class)->facts($settings['discountKnowledge'],$question),fn($f)=>(json_decode($f['answer'],true)['query_mode']??null)==='specific_code')),
-                'discount.search'=>array_slice(app(DiscountKnowledgeService::class)->facts($settings['discountKnowledge']),0,5),
-            };
-            $facts=array_merge($facts,$result);
-        }
-        // A product record cannot replace store care/service restrictions. Check
-        // the customer's full question even when the planner selects only products.
-        $selectedTools=array_column($plan['tools'],'name');
+        $steps=$plan['tools'];
+        $selectedTools=array_column($steps,'name');
         if(($settings['productCatalog']['includeStorePolicies']??true)&&isset($tools['faq.search'])&&in_array('product.search',$selectedTools,true)&&!in_array('faq.search',$selectedTools,true)){
-            $facts=array_merge($facts,app(FaqKnowledgeSearch::class)->search($question,$settings['faq']));
-            $selectedTools[]='faq.search';
+            $steps[]=['name'=>'faq.search','query'=>$question];
         }
+        $outcomes=[];
+        foreach($steps as $step){
+            try {
+                if($step['name']==='order.lookup'){
+                    $order=app(OrderKnowledgeService::class)->outcome($question,$settings['orderLookup'],$conversation,$language);
+                    $result=[['id'=>'order:private','question'=>'Server-only order response','answer'=>$order['answer']]];
+                    $status=$order['status'];
+                }else{
+                    $result=$this->execute($step,$question,$settings);
+                    $status=(!$result||collect($result)->contains(fn($f)=>$f['id']==='catalogue:search'))?'no_match':'success';
+                }
+                $facts=array_merge($facts,$result);
+                $outcomes[]=['tool'=>$step['name'],'status'=>$status,'sourceIds'=>array_values(array_filter(array_column($result,'id'),fn($id)=>$id!=='order:private'))];
+            }catch(\Throwable $error){
+                // Error text may contain credentials/customer data; never expose it to model or UI.
+                \Illuminate\Support\Facades\Log::warning('support_tool_unavailable',['tool'=>$step['name'],'error_type'=>get_class($error)]);
+                $outcomes[]=['tool'=>$step['name'],'status'=>'unavailable','sourceIds'=>[]];
+            }
+        }
+        if($withUnderstanding)$facts[]=['id'=>'support:outcomes','question'=>'Internal query outcomes only','answer'=>json_encode($outcomes,JSON_UNESCAPED_UNICODE)];
         $facts=$this->bounded(array_values(array_column($facts,null,'id')));
-        \Illuminate\Support\Facades\Log::info('support_knowledge_routed',['tools'=>$selectedTools,'fact_count'=>count($facts),'fact_bytes'=>strlen(json_encode($facts,JSON_UNESCAPED_UNICODE))]);
+        \Illuminate\Support\Facades\Log::info('support_knowledge_routed',['tools'=>array_column($outcomes,'tool'),'fact_count'=>count($facts),'fact_bytes'=>strlen(json_encode($facts,JSON_UNESCAPED_UNICODE))]);
         return $facts;
+    }
+    private function execute(array $step,string $question,array $settings):array
+    {
+        $query=$step['query'];
+        return match($step['name']){
+            'support.tracking'=>[['id'=>'support:tracking','question'=>'Public tracking entry','answer'=>'Use the Order Tracking page. Sign in or complete order-email verification before viewing private details.']],
+            'taxonomy.search'=>app(TaxonomyKnowledgeService::class)->facts($query,$settings['productCatalog']),
+            'faq.search'=>app(FaqKnowledgeSearch::class)->search($query,$settings['faq']),
+            'product.count'=>app(ProductKnowledgeService::class)->facts('__catalogue_count__',$settings['productCatalog']),
+            'product.search'=>app(ProductKnowledgeService::class)->facts(($settings['productCatalog']['canRecommendUpsells']??false)?($query?:'__catalogue_list__'):$question,$settings['productCatalog']),
+            'discount.lookup_code'=>array_values(array_filter(app(DiscountKnowledgeService::class)->facts($settings['discountKnowledge'],$question),fn($f)=>(json_decode($f['answer'],true)['query_mode']??null)==='specific_code')),
+            'discount.search'=>array_slice(app(DiscountKnowledgeService::class)->facts($settings['discountKnowledge']),0,5),
+        };
     }
     public function redact(string $text):string
     {

@@ -424,6 +424,10 @@ export const AIPersonalityTab: React.FC = () => {
             <textarea rows={2} maxLength={2000} value={personality.unknownAnswerMessage[activeLangTab]} onChange={e => handleUpdate('unknownAnswerMessage', {...personality.unknownAnswerMessage, [activeLangTab]:e.target.value})} className="w-full text-xs p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500" />
           </div>
           <div>
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">Business Query Unavailable ({activeLangTab.toUpperCase()})</label>
+            <textarea aria-label="Business Query Unavailable" rows={2} maxLength={2000} value={personality.queryUnavailableMessage?.[activeLangTab]??''} onChange={e=>handleUpdate('queryUnavailableMessage',{en:'',ms:'',zh:'',...personality.queryUnavailableMessage,[activeLangTab]:e.target.value})} className="w-full text-xs p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500" />
+          </div>
+          <div>
             <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">AI Service Unavailable ({activeLangTab.toUpperCase()})</label>
             <textarea rows={2} maxLength={2000} value={personality.serviceUnavailableMessage[activeLangTab]} onChange={e => handleUpdate('serviceUnavailableMessage', {...personality.serviceUnavailableMessage, [activeLangTab]:e.target.value})} className="w-full text-xs p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500" />
           </div>

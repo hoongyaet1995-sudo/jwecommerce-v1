@@ -60,6 +60,7 @@ export interface ChatMessage {
   deliveryStatus?: MessageDeliveryStatus;
   sendError?: string | null;
   clientMessageId?: string;
+  aiTrace?: {version:number;settingsVersion:number;language:string;decision:string;clarification:string|null;escalation:string|null;tools:{tool:string;status:string;sourceIds:string[]}[];retrievedSourceIds:string[];citedSourceIds:string[]} | null;
   aiMetadata?: {
     confidenceScore?: number;
     reasoningSteps?: string[];

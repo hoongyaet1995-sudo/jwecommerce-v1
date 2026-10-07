@@ -33,6 +33,7 @@ export const DEFAULT_AI_AUTO_REPLY_CONFIG: AIAutoReplyMasterConfig = {
     },
     greetingAliases: ['hi','hello','hey','halo','hallo','hai','helo','你好','您好','good morning','good afternoon','good evening'],
     unknownAnswerMessage: {en:"I couldn't find a confirmed answer in our FAQ. Please leave your question here for our support team.",ms:'Jawapan yang disahkan belum tersedia dalam FAQ kami. Sila tinggalkan soalan untuk pasukan sokongan.',zh:'暂时无法从 FAQ 确认答案。请留下问题，我们的客服团队会协助你。'},
+    queryUnavailableMessage: {en:'I could not complete one of the requested checks. Please ask our support team for help.',ms:'Saya tidak dapat menyelesaikan salah satu semakan yang diminta. Sila minta bantuan pasukan sokongan.',zh:'有一项查询暂时无法完成，请联系客服协助确认。'},
     serviceUnavailableMessage: {en:'Automatic assistance is temporarily unavailable. Your message has been saved for our support team.',ms:'Bantuan automatik tidak tersedia buat sementara. Mesej anda telah disimpan untuk pasukan sokongan.',zh:'自动客服暂时无法使用。你的消息已保存，客服团队会协助你。'},
     offlineMessage: {
       en: 'Our human team is currently offline (Operating hours: 9:00 AM - 10:00 PM MYT). I am your 24/7 AI Concierge, here to answer questions or check your orders!',
@@ -54,6 +55,7 @@ export const DEFAULT_AI_AUTO_REPLY_CONFIG: AIAutoReplyMasterConfig = {
     }
   },
   knowledgeScope: {
+    responsePolicy: {partialAnswers:true,clarificationEnabled:true},
     faqKnowledge: {
       isEnabled: true,
       retrievalDepth: 'semantic',

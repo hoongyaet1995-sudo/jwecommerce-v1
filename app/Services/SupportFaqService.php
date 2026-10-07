@@ -10,6 +10,7 @@ class SupportFaqService
     public function read(): array
     {
         $settings = StoreSetting::where('key', 'support_faq')->value('value') ?? ['version' => 0, 'faq' => null];
+        $settings['responsePolicy'] = array_replace(['partialAnswers'=>true,'clarificationEnabled'=>true],$settings['responsePolicy']??[]);
         $settings['aiChannels'] = array_replace(\App\Services\Support\SupportAiPolicy::DEFAULTS, $settings['aiChannels'] ?? []);
         $settings['productCatalog'] ??= ['isEnabled'=>true,'canCheckLiveStock'=>true,'canExplainSizingAndMaterials'=>true,'canRecommendUpsells'=>true,'maxRecommendations'=>3];
         $settings['productCatalog']['browseAliases'] ??= $this->defaultBrowseAliases();
@@ -19,6 +20,7 @@ class SupportFaqService
         $settings['guardrails'] = array_replace_recursive($this->defaultGuardrails(),$settings['guardrails'] ?? []);
         $settings['guardrails']['priceBargaining']['blockUnauthorizedDiscounts'] = true;
         $settings['personality'] = array_replace($this->defaultPersonality(), $settings['personality'] ?? []);
+        $settings['personality']['queryUnavailableMessage']=array_replace($this->defaultPersonality()['queryUnavailableMessage'],$settings['personality']['queryUnavailableMessage']??[]);
         $settings['personality']['humanHandoffTriggers'] = array_replace($this->defaultPersonality()['humanHandoffTriggers'], $settings['personality']['humanHandoffTriggers'] ?? []);
         unset($settings['personality']['humanHandoffTriggers']['onVipCustomer']);
 
@@ -28,6 +30,9 @@ class SupportFaqService
     public function save(array $input): array
     {
         $data = validator($input, [
+            'responsePolicy'=>'sometimes|array:partialAnswers,clarificationEnabled',
+            'responsePolicy.partialAnswers'=>'required_with:responsePolicy|boolean',
+            'responsePolicy.clarificationEnabled'=>'required_with:responsePolicy|boolean',
             'guardrails'=>'sometimes|array:priceBargaining',
             'guardrails.priceBargaining'=>'required_with:guardrails|array:blockUnauthorizedDiscounts,suggestOfficialVouchersOnly,refusalTemplate,refusalMessages',
             'guardrails.priceBargaining.refusalMessages'=>'sometimes|array:ms,zh',
@@ -62,7 +67,7 @@ class SupportFaqService
             'greetingMessage.en' => 'required_with:greetingMessage|string|max:2000',
             'greetingMessage.ms' => 'required_with:greetingMessage|string|max:2000',
             'greetingMessage.zh' => 'required_with:greetingMessage|string|max:2000',
-            'personality' => 'sometimes|array:creativityTemperature,toneOfVoice,customToneInstructions,maxOutputTokens,brandMissionPrompt,unknownAnswerMessage,serviceUnavailableMessage,humanHandoffTriggers,fallbackHandoffMessage,greetingAliases',
+            'personality' => 'sometimes|array:creativityTemperature,toneOfVoice,customToneInstructions,maxOutputTokens,brandMissionPrompt,unknownAnswerMessage,serviceUnavailableMessage,humanHandoffTriggers,fallbackHandoffMessage,greetingAliases,queryUnavailableMessage',
             'personality.humanHandoffTriggers' => 'sometimes|array:onExplicitRequest,onFrustrationDetected,onRefundOrDispute,onServiceUnavailable,consecutiveFailureCount,urgentKeywords',
             'personality.humanHandoffTriggers.onExplicitRequest' => 'required_with:personality.humanHandoffTriggers|boolean',
             'personality.humanHandoffTriggers.onFrustrationDetected' => 'required_with:personality.humanHandoffTriggers|boolean',
@@ -79,6 +84,10 @@ class SupportFaqService
             'personality.creativityTemperature' => 'sometimes|numeric|min:0|max:1',
             'personality.brandMissionPrompt' => 'nullable|string|max:4000',
             'personality.unknownAnswerMessage' => 'sometimes|array:en,ms,zh',
+            'personality.queryUnavailableMessage'=>'sometimes|array:en,ms,zh',
+            'personality.queryUnavailableMessage.en'=>'required_with:personality.queryUnavailableMessage|string|max:2000',
+            'personality.queryUnavailableMessage.ms'=>'required_with:personality.queryUnavailableMessage|string|max:2000',
+            'personality.queryUnavailableMessage.zh'=>'required_with:personality.queryUnavailableMessage|string|max:2000',
             'personality.serviceUnavailableMessage' => 'sometimes|array:en,ms,zh',
             'personality.unknownAnswerMessage.en' => 'required_with:personality.unknownAnswerMessage|string|max:2000',
             'personality.unknownAnswerMessage.ms' => 'required_with:personality.unknownAnswerMessage|string|max:2000',
@@ -125,6 +134,7 @@ class SupportFaqService
             $row = StoreSetting::where('key', 'support_faq')->lockForUpdate()->firstOrFail();
             abort_if(($row->value['version'] ?? 0) !== $data['version'], 409, 'FAQs changed in another session. Reload before saving.');
             $result = ['guardrails'=>$data['guardrails'] ?? ($row->value['guardrails'] ?? $this->defaultGuardrails()),'aiChannels'=>array_replace(\App\Services\Support\SupportAiPolicy::DEFAULTS,$row->value['aiChannels'] ?? [],$data['aiChannels'] ?? []),'orderLookup'=>$data['orderLookup'] ?? ($row->value['orderLookup'] ?? ['isEnabled'=>false,'allowedFields'=>[]]), 'discountKnowledge'=>$data['discountKnowledge'] ?? ($row->value['discountKnowledge'] ?? ['isEnabled'=>false,'activeIds'=>[]]), 'productCatalog' => $data['productCatalog'] ?? ($row->value['productCatalog'] ?? ['isEnabled'=>true,'canCheckLiveStock'=>true,'canExplainSizingAndMaterials'=>true,'canRecommendUpsells'=>true,'maxRecommendations'=>3]), 'greetingMessage' => $data['greetingMessage'] ?? ($row->value['greetingMessage'] ?? $this->defaultGreeting()), 'version' => $data['version'] + 1, 'faq' => $faq, 'personality' => array_replace($this->defaultPersonality(), $row->value['personality'] ?? [], $data['personality'] ?? []), 'primaryLanguage' => $data['primaryLanguage'] ?? ($row->value['primaryLanguage'] ?? 'auto_detect'), 'autoReplyEnabled' => $data['autoReplyEnabled'] ?? ($row->value['autoReplyEnabled'] ?? false), 'identity' => $data['identity'] ?? ($row->value['identity'] ?? null)];
+            $result['responsePolicy']=array_replace(['partialAnswers'=>true,'clarificationEnabled'=>true],$row->value['responsePolicy']??[],$data['responsePolicy']??[]);
             $result['guardrails']=array_replace_recursive($this->defaultGuardrails(),$row->value['guardrails']??[],$data['guardrails']??[]);
             $result['guardrails']['priceBargaining']['blockUnauthorizedDiscounts']=true;
             $result['productCatalog']['browseAliases']=$data['productCatalog']['browseAliases']??$row->value['productCatalog']['browseAliases']??$this->defaultBrowseAliases();
@@ -140,6 +150,7 @@ class SupportFaqService
     public function defaultPersonality(): array
     {
         return [
+            'queryUnavailableMessage'=>['en'=>'I could not complete one of the requested checks. Please ask our support team for help.','ms'=>'Saya tidak dapat menyelesaikan salah satu semakan yang diminta. Sila minta bantuan pasukan sokongan.','zh'=>'有一项查询暂时无法完成，请联系客服协助确认。'],
             'greetingAliases'=>['hi','hello','hey','halo','hallo','hai','helo','你好','您好','good morning','good afternoon','good evening'],
             'humanHandoffTriggers'=>['onExplicitRequest'=>true,'onFrustrationDetected'=>true,'onRefundOrDispute'=>true,'onServiceUnavailable'=>true,'consecutiveFailureCount'=>2,'urgentKeywords'=>[]],
             'fallbackHandoffMessage'=>['en'=>'Your request has been submitted. Please wait for our support team to take over.','ms'=>'Permintaan anda telah dihantar. Sila tunggu pasukan khidmat pelanggan.','zh'=>'已提交人工请求，请等待客服接手。'],

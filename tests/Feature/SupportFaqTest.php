@@ -10,6 +10,15 @@ use Tests\TestCase;
 
 class SupportFaqTest extends TestCase
 {
+    public function test_response_policy_is_saved_and_private():void
+    {
+        $this->owner();$p=$this->payload();$p['responsePolicy']=['partialAnswers'=>false,'clarificationEnabled'=>false];
+        $this->putJson('/admin/api/support/faq',$p)->assertOk()->assertJsonPath('responsePolicy.partialAnswers',false);
+        $this->getJson('/admin/api/support/faq')->assertJsonPath('responsePolicy.clarificationEnabled',false);
+        $this->getJson('/support/faq')->assertJsonMissingPath('responsePolicy');
+        $p['version']=1;$p['responsePolicy']['disableIdentityChecks']=true;$this->putJson('/admin/api/support/faq',$p)->assertUnprocessable();
+    }
+
     public function test_operational_controls_persist_and_cannot_disable_price_safety():void
     {
         $this->owner();$p=$this->payload();

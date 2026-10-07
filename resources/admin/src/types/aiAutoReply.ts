@@ -27,6 +27,7 @@ export interface AIPersonalityConfig {
   };
   greetingAliases?: string[];
   unknownAnswerMessage: {en:string;ms:string;zh:string};
+  queryUnavailableMessage?: {en:string;ms:string;zh:string};
   serviceUnavailableMessage: {en:string;ms:string;zh:string};
   offlineMessage: {
     en: string;
@@ -82,6 +83,7 @@ export interface CustomKnowledgeDoc {
 }
 
 export interface AIKnowledgeScopeConfig {
+  responsePolicy?: {partialAnswers:boolean;clarificationEnabled:boolean};
   faqKnowledge: {
     categories?: { id: string; label: string }[];
     deletedCategoryIds?: string[];
