@@ -54,4 +54,10 @@ class SupportUnderstandingTest extends TestCase
         $plan=app(SupportUnderstandingService::class)->understand('shipping and returns',['faq.search'=>'Policies'],[],[]);
         $this->assertCount(2,$plan['tools']);
     }
+    public function test_optional_null_product_target_is_absent_not_a_permission_change():void
+    {
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->andReturn('{"tools":[{"name":"order.lookup","query":"QA-NO-ORDER-999","target":null}],"questions":["Private address"],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
+        $plan=app(SupportUnderstandingService::class)->understand('private address',['order.lookup'=>'Private'],[],[]);
+        $this->assertArrayNotHasKey('target',$plan['tools'][0]);
+    }
 }

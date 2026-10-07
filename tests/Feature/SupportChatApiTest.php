@@ -118,7 +118,40 @@ class SupportChatApiTest extends TestCase
         if($partial)$model->twice()->andReturn('{"tools":[{"name":"product.search","query":"BILLY"},{"name":"faq.search","query":"shipping"}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}','{"answer":"Parcel shipping is RM8.","faq_ids":["ship"]}');
         else $model->once()->andReturn('{"tools":[{"name":"product.search","query":"BILLY"},{"name":"faq.search","query":"shipping"}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
         $this->mock(\App\Services\Support\ProductKnowledgeService::class)->shouldReceive('facts')->once()->andThrow(new \RuntimeException('secret-token'));
-        $faq=$this->mock(\App\Services\Support\FaqKnowledgeSearch::class);$faq->shouldReceive('exact')->once()->andReturn([]);$faq->shouldReceive('search')->once()->andReturn([['id'=>'ship','question'=>'Parcel shipping fee','answer'=>'Parcel shipping is RM8.']]);
+        $faq=$this->mock(\App\Services\Support\FaqKnowledgeSearch::class);$faq->shouldReceive('exact')->andReturn([]);$faq->shouldReceive('search')->once()->andReturn([['id'=>'ship','question'=>'Parcel shipping fee','answer'=>'Parcel shipping is RM8.']]);
+    }
+
+    public function test_v1_staff_handoff_brief_uses_customer_claims_and_trace_not_private_ai_payload():void
+    {
+        app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService);
+        $c=SupportConversation::create(['id'=>(string)Str::uuid(),'owner_hash'=>str_repeat('a',64),'status'=>'waiting_human','channel'=>'storefront','last_message_at'=>now()]);
+        $c->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'customer','content'=>'BILLY arrived damaged. buyer@example.test']);
+        $c->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'ai','content'=>'PRIVATE ORDER ADDRESS','ai_trace'=>['decision'=>'partial','tools'=>[['tool'=>'faq.search','status'=>'success'],['tool'=>'product.search','status'=>'unavailable']],'escalation'=>'human_required','coverage'=>[['index'=>0,'status'=>'missing','source_ids'=>[]]]]]);
+        $view=app(SupportChatService::class)->adminView($c);
+        $this->assertStringContainsString('BILLY arrived damaged',$view['handoffBrief']['customerRequests'][0]);
+        $this->assertStringNotContainsString('buyer@example.test',json_encode($view['handoffBrief']));
+        $this->assertStringNotContainsString('PRIVATE ORDER ADDRESS',json_encode($view['handoffBrief']));
+        $this->assertSame('unavailable',$view['handoffBrief']['checks'][1]['status']);
+        $this->assertSame('human_required',$view['handoffBrief']['reason']);
+        $this->assertSame('pending',$view['handoffBrief']['handoffStatus']);
+        $this->assertArrayNotHasKey('handoffBrief',app(SupportChatService::class)->publicView($c));
+        $c->update(['status'=>'open']);
+        $this->assertSame('offered',app(SupportChatService::class)->adminView($c)['handoffBrief']['handoffStatus']);
+    }
+
+    public function test_v1_missing_answer_topic_gets_one_authorized_follow_up():void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $unified=$this->mock(\App\Services\Support\UnifiedKnowledgeService::class);
+        $unified->shouldReceive('tools')->andReturn(['faq.search'=>'Policies']);$unified->shouldReceive('redact')->andReturnUsing(fn($q)=>$q);
+        $unified->shouldReceive('retrieve')->once()->andReturn([['id'=>'support:understanding','answer'=>json_encode(['questions'=>['shipping','returns'],'language'=>'en','needs_business_answer'=>true])],['id'=>'shipping','question'=>'Shipping','answer'=>'RM8']]);
+        $unified->shouldReceive('followUp')->once()->with(['name'=>'faq.search','query'=>'returns'],\Mockery::type('array'))->andReturn([['id'=>'returns','question'=>'Returns','answer'=>'14 days']]);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->twice()->andReturn(
+            json_encode(['answer'=>'Shipping RM8.','faq_ids'=>['shipping'],'coverage'=>[['index'=>0,'status'=>'answered','source_ids'=>['shipping']],['index'=>1,'status'=>'missing','source_ids'=>[]]],'follow_up'=>['name'=>'faq.search','query'=>'returns']]),
+            json_encode(['answer'=>'Shipping RM8; return window14 days.','faq_ids'=>['shipping','returns'],'coverage'=>[['index'=>0,'status'=>'answered','source_ids'=>['shipping']],['index'=>1,'status'=>'answered','source_ids'=>['returns']]]])
+        );
+        $this->postJson('/support/chat/messages',$this->payload('Shipping and returns?'))->assertOk()->assertJsonPath('conversation.messages.1.content','Shipping RM8; return window14 days.');
+        $reply=\App\Models\SupportMessage::where('sender_role','ai')->first();$this->assertSame(1,$reply->ai_trace['followUpCount']);$this->assertCount(2,$reply->ai_trace['coverage']);
     }
 
     protected function setUp(): void

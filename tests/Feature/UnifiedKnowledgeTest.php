@@ -7,6 +7,12 @@ use App\Services\Support\ProductKnowledgeService;
 use App\Services\Support\DiscountKnowledgeService;
 use App\Services\AI\AiConnectionService;
 class UnifiedKnowledgeTest extends TestCase {
+ public function test_v1_follow_up_rejects_private_or_disabled_tools_before_execution():void{
+ foreach(['order.lookup','product.search','delete.order'] as $name){
+  try {app(UnifiedKnowledgeService::class)->followUp(['name'=>$name,'query'=>'test'],['faq'=>['isEnabled'=>false],'productCatalog'=>['isEnabled'=>false],'orderLookup'=>['isEnabled'=>true]]);$this->fail('Tool was accepted: '.$name);}
+  catch(\Illuminate\Validation\ValidationException $e){$this->assertArrayHasKey('name',$e->errors());}
+ }
+ }
  public function test_saved_catalogue_phrases_are_optional_hints_for_model():void{
  $s=$this->settings();$s['productCatalog']['browseAliases']=['what exactly you are selling with'];
  $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[{"name":"product.search","query":""},{"name":"taxonomy.search","query":""}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');

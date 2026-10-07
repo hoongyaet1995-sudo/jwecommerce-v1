@@ -183,6 +183,7 @@ class SupportChatService
             'isArchived' => $conversation->notes->filter(fn($n)=>str_starts_with($n->content,'[Archive] '))->sortBy('id')->last()?->content==='[Archive] true',
             'unreadCount' => $messages->filter(fn ($m) => $m->sender_role === 'customer' && $m->id > $conversation->staff_read_message_id)->count(),
             'isPinned' => $conversation->notes->filter(fn($n)=>str_starts_with($n->content,'[Pin] '))->sortBy('id')->last()?->content==='[Pin] true', 'priority' => 'normal', 'activeAiDraft' => null,
+            'handoffBrief'=>app(SupportHandoffBrief::class)->build($conversation),
             'aiSummary' => ['intent' => '', 'sentiment' => 'neutral', 'keyIssue' => '', 'suggestedAction' => '', 'summaryMarkdown' => ''],
             'lastMessageAt' => $conversation->last_message_at?->diffForHumans() ?? '',
             'lastMessageTimestamp' => $conversation->last_message_at?->toIso8601String(),

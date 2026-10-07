@@ -60,7 +60,7 @@ export interface ChatMessage {
   deliveryStatus?: MessageDeliveryStatus;
   sendError?: string | null;
   clientMessageId?: string;
-  aiTrace?: {version:number;settingsVersion:number;language:string;decision:string;clarification:string|null;escalation:string|null;tools:{tool:string;status:string;sourceIds:string[]}[];retrievedSourceIds:string[];citedSourceIds:string[]} | null;
+  aiTrace?: {coverage?:{index:number;status:string;source_ids:string[]}[];followUpCount?:number;version:number;settingsVersion:number;language:string;decision:string;clarification:string|null;escalation:string|null;tools:{tool:string;status:string;sourceIds:string[]}[];retrievedSourceIds:string[];citedSourceIds:string[]} | null;
   aiMetadata?: {
     confidenceScore?: number;
     reasoningSteps?: string[];
@@ -131,6 +131,7 @@ export interface InternalStaffNote {
 }
 
 export interface SupportConversation {
+  handoffBrief?: {customerRequests:string[];checks:{tool:string;status:string}[];reason:string;missingContext:string|null;unresolvedTopics:number[];handoffStatus:string}|null;
   mediaCapabilities?: {images:boolean;documents:boolean;audio:boolean};
   canReply?: boolean;
   replyBlockedReason?: string | null;

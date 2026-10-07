@@ -127,6 +127,20 @@ export const CustomerContextPanel: React.FC<CustomerContextPanelProps> = ({
         </div>
       </div>
 
+      {conversation.handoffBrief && <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/80 space-y-3">
+        <h3 className="flex items-center gap-1.5 font-semibold text-neutral-900 dark:text-neutral-100"><HeartHandshake className="w-3.5 h-3.5 text-indigo-600"/>Handoff Brief</h3>
+        <p className="text-[11px] text-neutral-500">{conversation.handoffBrief.handoffStatus==='staff_handling'?'Staff handling':conversation.handoffBrief.handoffStatus==='pending'?'Awaiting staff':'Human assistance offered'} · Customer statements are requests, not verified facts.</p>
+        <div className="text-[11px] text-neutral-600 dark:text-neutral-300 space-y-2">
+          <div className="font-semibold">Recent customer requests</div>
+          {conversation.handoffBrief.customerRequests.map((request,index)=><p key={index} className="break-words">{request}</p>)}
+          <div>Reason: {conversation.handoffBrief.reason.replace(/_/g,' ')}</div>
+          {conversation.handoffBrief.checks.map((check,index)=><div key={index}>{check.tool} · {check.status.replace(/_/g,' ')}</div>)}
+          {conversation.handoffBrief.missingContext&&<div>Missing context: {conversation.handoffBrief.missingContext}</div>}
+          {!!conversation.handoffBrief.unresolvedTopics.length&&<div>Unconfirmed topics: {conversation.handoffBrief.unresolvedTopics.map(index=>index+1).join(', ')}</div>}
+          <p>Review the conversation and evidence before acting. Completed queries do not mean the issue is resolved.</p>
+        </div>
+      </div>}
+
       {conversation.messages?.some(message=>message.aiTrace) && <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/80 space-y-3">
         <h3 className="flex items-center gap-1.5 font-semibold text-neutral-900 dark:text-neutral-100"><Sparkles className="w-3.5 h-3.5 text-indigo-600"/>AI Reply Evidence</h3>
         <p className="text-[11px] text-neutral-500">Saved query results and references. Staff only.</p>
@@ -139,6 +153,8 @@ export const CustomerContextPanel: React.FC<CustomerContextPanelProps> = ({
             <div className="break-all">Used: {trace.citedSourceIds.join(', ')||'No factual sources cited'}</div>
             {trace.clarification&&<div>Missing context: {trace.clarification}</div>}
             {trace.escalation&&<div>Handoff reason: {trace.escalation.replace(/_/g,' ')}</div>}
+            {trace.coverage?.map(part=><div key={part.index}>Topic {part.index+1}: {part.status==='answered'?'Supported answer':'Unconfirmed'}</div>)}
+            {!!trace.followUpCount&&<div>Additional lookup: {trace.followUpCount}</div>}
             <div>Settings version: {trace.settingsVersion}</div>
           </div>
         </details>;})}

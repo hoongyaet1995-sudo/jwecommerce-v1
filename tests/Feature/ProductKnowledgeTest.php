@@ -56,4 +56,15 @@ class ProductKnowledgeTest extends TestCase {
  }
  public function test_real_active_products_variants_and_missing_stock():void {$facts=app(ProductKnowledgeService::class)->facts('Speaker',$this->scope());$this->assertCount(2,$facts);$d=json_decode($facts[0]['answer'],true);$this->assertSame('Official details',$d['description']);$this->assertSame('RM 100.00',$d['base_price']);$this->assertSame(['in_stock','out_of_stock','unverified'],array_column($d['variants'],'availability'));$this->assertStringNotContainsString('Speaker Secret',json_encode($facts));}
  public function test_switches_limits_search_and_unknown():void {$s=app(ProductKnowledgeService::class);$this->assertSame([],$s->facts('Speaker',$this->scope(['isEnabled'=>false])));$this->assertSame('catalogue:search',$s->facts('Unicorn',$this->scope())[0]['id']);$this->assertCount(1,$s->facts('Speaker',$this->scope(['maxRecommendations'=>1])));$this->assertSame([],$s->facts('Speaker',$this->scope(['canRecommendUpsells'=>false])));$f=$s->facts('price of Speaker One',$this->scope(['canRecommendUpsells'=>false,'canCheckLiveStock'=>false,'canExplainSizingAndMaterials'=>false]));$this->assertCount(1,$f);$d=json_decode($f[0]['answer'],true);$this->assertArrayNotHasKey('description',$d);$this->assertArrayNotHasKey('base_price',$d);$this->assertArrayNotHasKey('variants',$d);}
+ public function test_v1_unknown_named_target_never_returns_generic_description_match():void {
+ DB::table('products')->where('status','active')->update(['description'=>'shelves QUASAR999 compatible']);
+ $facts=app(ProductKnowledgeService::class)->facts('QUASAR999 shelves',$this->scope(['_namedProduct'=>'QUASAR999']));
+ $this->assertSame('catalogue:search',$facts[0]['id']);
+ }
+ public function test_v1_named_target_and_dimensions_exclude_other_models():void {
+ DB::table('products')->insert([['id'=>4,'title'=>'BILLY Bookcase 80x28x202 cm','handle'=>'billy-202','status'=>'active','base_price'=>1000,'description'=>'shelves'],['id'=>5,'title'=>'BILLY Bookcase 80x28x106 cm','handle'=>'billy-106','status'=>'active','base_price'=>900,'description'=>'shelves']]);
+ DB::table('products')->where('id',1)->update(['description'=>'BILLY shelves']);
+ $facts=app(ProductKnowledgeService::class)->facts('BILLY 80x28x202 dimensions',$this->scope(['_namedProduct'=>'BILLY 80x28x202']));
+ $this->assertSame(['product:4'],array_column($facts,'id'));
+ }
 }
