@@ -26,3 +26,14 @@ Development-only policies, not IKEA policies. Run after this local phase is sync
 Check each: correct facts, appropriate language, context continuity, no internal source IDs or technical details, valid product buttons when applicable, no duplicate replies. Reply latency can differ by provider/channel. Identity verification requires a separate authorized valid-order test; nonexistent-order refusal alone does not prove ownership isolation.
 
 Local benchmark uses synthetic sessions and rollback; it is not proof of live provider webhook/send behavior or external-account permissions. Record channel, message, observed reply and any discrepancy during manual acceptance.
+
+
+## Phase 1 understanding / clarification acceptance
+After synchronization, test on each available channel:
+1. `bonjour` — brief greeting, no invented business facts.
+2. `你好，BILLY 有货吗？运去 Penang 多少钱？` — handle both product and delivery; do not apply parcel shipping to bulky furniture.
+3. `BILLY 80x28x202 dimensions?` then `How tall is that bookcase?` — retain exact model; height 202 cm.
+4. `What is the return window?` then `Boleh terangkan syaratnya dalam Bahasa Melayu?` — Malay answer retains 14 days and eligibility conditions.
+5. `Where can I track my order?` — usable public tracking entry; private records still require verification.
+6. `Could someone from the team help me personally?` — human assistance request; verify persisted handoff before claiming assignment.
+These cases were evaluated locally with the real model; live channel delivery and external-account access still require manual acceptance.

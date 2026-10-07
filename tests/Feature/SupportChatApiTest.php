@@ -15,43 +15,71 @@ use Tests\TestCase;
 
 class SupportChatApiTest extends TestCase
 {
-    public function test_configured_greeting_alias_and_template_are_used_without_model():void
+    public function test_dialogue_context_keeps_staff_clarification_but_not_private_order_response():void
     {
-        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'greetingMessage'=>['en'=>'Welcome from saved settings!'],'personality'=>['greetingAliases'=>['halo']],'faq'=>['isEnabled'=>true,'items'=>[]]]]);
-        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
-        $this->postJson('/support/chat/messages',$this->payload('HALO!'))->assertJsonPath('conversation.messages.1.content','Welcome from saved settings!');
+        app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService);
+        $c=SupportConversation::create(['id'=>(string)Str::uuid(),'owner_hash'=>str_repeat('a',64),'status'=>'open','channel'=>'storefront','last_message_at'=>now()]);
+        $c->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'human_agent','content'=>'Do you mean BILLY? Email example@example.test']);
+        $c->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'ai','content'=>'Private order customer address','actions'=>[['type'=>'view_order_tracking','resource_id'=>0]]]);
+        $c->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'customer','content'=>'yes, that one']);
+        $history=app(\App\Services\Support\SupportDialogueContext::class)->recent($c);
+        $this->assertStringContainsString('Staff (context only): Do you mean BILLY?',implode(' ', $history));
+        $this->assertStringNotContainsString('example@example.test',implode(' ', $history));
+        $this->assertStringNotContainsString('customer address',implode(' ', $history));
     }
 
-    public function test_configured_pricing_template_does_not_authorize_discount():void
+    public function test_unlisted_greeting_uses_understanding_not_required_aliases():void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]],'personality'=>['greetingAliases'=>[]]]]);
+        app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->twice()->andReturn('{"tools":[],"escalation":"none","clarification":"none","language":"fr","conversation":"greeting","needs_business_answer":false}', '{"answer":"Bonjour ! Comment puis-je vous aider ?","faq_ids":[]}');
+        $r=$this->postJson('/support/chat/messages',$this->payload('bonjour'))->assertOk();
+        $this->assertSame('Bonjour ! Comment puis-je vous aider ?',collect($r->json('conversation.messages'))->last()['content']);
+    }
+
+    public function test_semantic_human_request_works_when_all_business_sources_are_disabled():void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>false],'productCatalog'=>['isEnabled'=>false],'discountKnowledge'=>['isEnabled'=>false],'orderLookup'=>['isEnabled'=>false]]]);
+        app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[],"escalation":"explicit_request","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
+        $this->postJson('/support/chat/messages',$this->payload('Can somebody help me personally?'))->assertOk()->assertJsonPath('conversation.status','waiting_human');
+    }
+
+    public function test_saved_greeting_is_optional_hint_for_semantic_understanding():void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'greetingMessage'=>['en'=>'Welcome from saved settings!'],'personality'=>['greetingAliases'=>['halo']],'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->twice()->andReturn('{"tools":[],"escalation":"none","clarification":"none","language":"en","conversation":"greeting","needs_business_answer":false}','{"answer":"Hello! How can I help?","faq_ids":[]}');
+        $this->postJson('/support/chat/messages',$this->payload('HALO!'))->assertJsonPath('conversation.messages.1.content','Hello! How can I help?');
+    }
+
+    public function test_semantic_negotiation_uses_saved_refusal_without_authorizing_discount():void
     {
         StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'guardrails'=>['priceBargaining'=>['refusalTemplate'=>'Our prices are fixed.','suggestOfficialVouchersOnly'=>false]],'faq'=>['isEnabled'=>true,'items'=>[]]]]);
-        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
+        app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true,"negotiation":true}');
         $this->postJson('/support/chat/messages',$this->payload('can you give some discount?'))->assertJsonPath('conversation.messages.1.content','Our prices are fixed.');
     }
     public function test_pricing_uses_saved_language_and_only_live_selected_offers():void
     {
         StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'guardrails'=>['priceBargaining'=>['refusalMessages'=>['zh'=>'只提供已批准的价格。']]],'discountKnowledge'=>['isEnabled'=>true,'activeIds'=>['1']],'faq'=>['isEnabled'=>true,'items'=>[]]]]);
-        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
-        $this->mock(\App\Services\Support\DiscountKnowledgeService::class)->shouldReceive('facts')->once()->andReturn([
-            ['id'=>'discount:1','answer'=>json_encode(['code'=>'HOME10','benefit'=>'10% OFF','redeemable_now'=>true])],
-            ['id'=>'discount:2','answer'=>json_encode(['code'=>'EXPIRED','benefit'=>'90% OFF','redeemable_now'=>false])],
-        ]);
-        $response=$this->postJson('/support/chat/messages',$this->payload('便宜一点可以吗？'))->assertOk();
-        $content=$response->json('conversation.messages.1.content');
-        $this->assertStringContainsString('只提供已批准的价格。',$content);
-        $this->assertStringContainsString('HOME10',$content);
-        $this->assertStringNotContainsString('EXPIRED',$content);
+        app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->twice()->andReturn('{"tools":[{"name":"discount.search","query":"offers"}],"escalation":"none","clarification":"none","language":"zh","conversation":"none","needs_business_answer":true,"negotiation":true}','{"answer":"HOME10 提供 10% 优惠，需符合条件。","faq_ids":["discount:1"]}');
+        $this->mock(\App\Services\Support\DiscountKnowledgeService::class)->shouldReceive('facts')->once()->andReturn([['id'=>'discount:1','answer'=>json_encode(['code'=>'HOME10','benefit'=>'10% OFF','redeemable_now'=>true])]]);
+        $r=$this->postJson('/support/chat/messages',$this->payload('便宜一点可以吗？'))->assertOk();
+        $content=collect($r->json('conversation.messages'))->last()['content'];
+        $this->assertStringContainsString('只提供已批准的价格。',$content);$this->assertStringContainsString('HOME10',$content);$this->assertStringNotContainsString('EXPIRED',$content);
     }
     public function test_public_tracking_entry_is_switchable_without_order_disclosure():void
     {
         $row=StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'orderLookup'=>['isEnabled'=>true,'provideTrackingEntry'=>true],'faq'=>['isEnabled'=>true,'items'=>[]]]]);
-        $this->app->instance(\App\Services\Support\SupportActionResolver::class,new \App\Services\Support\SupportActionResolver);
-        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
+        app()->instance(\App\Services\Support\SupportActionResolver::class,new \App\Services\Support\SupportActionResolver);
+        app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->times(3)->andReturn('{"tools":[{"name":"support.tracking","query":""}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}','{"answer":"Use the Order Tracking page and verify identity for private details.","faq_ids":["support:tracking"]}','{"tools":[],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
         $this->postJson('/support/chat/messages',$this->payload('where can i track my order?'))->assertOk()->assertJsonPath('conversation.messages.1.actions.0.type','view_order_tracking');
         $value=$row->value;$value['orderLookup']['provideTrackingEntry']=false;$row->update(['value'=>$value]);
-        $response=$this->postJson('/support/chat/messages',$this->payload('where can i track my order?'))->assertOk();
-        $messages=$response->json('conversation.messages');
-        $this->assertNotContains('view_order_tracking',array_column(end($messages)['actions']??[],'type'));
+        $r=$this->postJson('/support/chat/messages',$this->payload('where can i track my order?'))->assertOk();
+        $this->assertNotContains('view_order_tracking',array_column(collect($r->json('conversation.messages'))->last()['actions']??[],'type'));
     }
     protected function setUp(): void
     {
@@ -104,7 +132,7 @@ class SupportChatApiTest extends TestCase
     public function test_mixed_question_answers_supported_part_and_asks_clarification():void {
         StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'retrievalDepth'=>'strict','items'=>[['id'=>'ship','question'=>'Shipping?','answer'=>'RM8','category'=>'shipping','keywords'=>['shipping'],'isActive'=>true]]]]]);
         app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService());
-        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->twice()->andReturn('{"tools":[{"name":"faq.search","query":"shipping"}],"clarification":"product","escalation":"none"}','{"answer":"Shipping is RM8.","faq_ids":["ship"]}');
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->twice()->andReturn('{"tools":[{"name":"faq.search","query":"shipping"}],"clarification":"product","escalation":"none","language":"en","conversation":"none","needs_business_answer":true}','{"answer":"Shipping is RM8.","faq_ids":["ship"]}');
         $r=$this->postJson('/support/chat/messages',$this->payload('What is shipping and does that fit?'))->assertOk();
         $answer=collect($r->json('conversation.messages'))->last()['content'];$this->assertStringContainsString('Shipping is RM8.',$answer);$this->assertStringContainsString('Which product or model do you mean?',$answer);
     }
@@ -112,7 +140,7 @@ class SupportChatApiTest extends TestCase
     public function test_missing_product_context_asks_safe_question_without_invented_policy():void {
         StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'retrievalDepth'=>'strict','items'=>[['id'=>'ship','question'=>'Shipping?','answer'=>'RM8','category'=>'shipping','keywords'=>[],'isActive'=>true]]]]]);
         app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService());
-        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[],"clarification":"product","escalation":"none"}');
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[],"clarification":"product","escalation":"none","language":"en","conversation":"none","needs_business_answer":true}');
         $r=$this->postJson('/support/chat/messages',$this->payload('Does that fit?'))->assertOk();
         $this->assertSame('Which product or model do you mean?',collect($r->json('conversation.messages'))->last()['content']);
     }
@@ -220,7 +248,7 @@ class SupportChatApiTest extends TestCase
     {
         $this->app->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService());
         StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
-        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($purpose,$prompt,$limit)=>$limit===250&&str_contains($prompt,'explicit_request'))->andReturn('{"tools":[],"escalation":"explicit_request"}');
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($purpose,$prompt,$limit)=>$limit===350&&str_contains($prompt,'explicit_request'))->andReturn('{"tools":[],"escalation":"explicit_request","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
         $this->postJson('/support/chat/messages',$this->payload('Could somebody from your team personally help me?'))->assertOk()->assertJsonPath('conversation.status','waiting_human')->assertJsonCount(2,'conversation.messages');
         $this->assertSame('explicit_request', SupportConversation::first()->messages()->latest('id')->first()->actions[0]['reason']);
     }
@@ -320,7 +348,7 @@ class SupportChatApiTest extends TestCase
         $this->app->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService());
         StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'productCatalog'=>['isEnabled'=>false],'faq'=>['isEnabled'=>false,'items'=>[]],'orderLookup'=>['isEnabled'=>true,'allowedFields'=>['orderStatus'=>true]]]]);
         $this->mock(\App\Services\Support\OrderKnowledgeService::class)->shouldReceive('reply')->once()->andReturn('LOCAL_PRIVATE_ORDER_STATUS');
-        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($p,$prompt,$n)=>str_contains($prompt,'order.lookup')&&!str_contains($prompt,'LOCAL_PRIVATE_ORDER_STATUS')&&!str_contains($prompt,'person@example.com'))->andReturn('{"tools":[{"name":"order.lookup","query":"order status"}]}');
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($p,$prompt,$n)=>str_contains($prompt,'order.lookup')&&!str_contains($prompt,'LOCAL_PRIVATE_ORDER_STATUS')&&!str_contains($prompt,'person@example.com'))->andReturn('{"tools":[{"name":"order.lookup","query":"order status"}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
         $this->postJson('/support/chat/messages',$this->payload('My order status, person@example.com'))->assertOk()->assertJsonPath('conversation.messages.1.content','LOCAL_PRIVATE_ORDER_STATUS');
     }
 
@@ -332,7 +360,7 @@ class SupportChatApiTest extends TestCase
             ['id'=>'payment','category'=>'payment','question'=>'Payment methods','answer'=>'PRIVATE_UNRELATED_PAYMENT','keywords'=>['payment'],'isActive'=>true]
         ]]]]);
         $ai=$this->mock(AiConnectionService::class);
-        $ai->shouldReceive('generateText')->once()->ordered()->withArgs(fn($purpose,$prompt,$tokens)=>$tokens===250&&str_contains($prompt,'available_tools')&&!str_contains($prompt,'We only deliver'))->andReturn('{"tools":[{"name":"faq.search","query":"shipping coverage"}]}');
+        $ai->shouldReceive('generateText')->once()->ordered()->withArgs(fn($purpose,$prompt,$tokens)=>$tokens===350&&str_contains($prompt,'available_tools')&&!str_contains($prompt,'We only deliver'))->andReturn('{"tools":[{"name":"faq.search","query":"shipping coverage"}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
         $ai->shouldReceive('generateText')->once()->ordered()->withArgs(fn($purpose,$prompt,$tokens,$temp)=>str_contains($prompt,'no overseas delivery')&&!str_contains($prompt,'PRIVATE_UNRELATED_PAYMENT'))->andReturn('{"answer":"We only deliver within Malaysia, so we cannot ship to China.","faq_ids":["shipping"]}');
         $this->postJson('/support/chat/messages',$this->payload('Do you deliver to China?'))->assertOk()->assertJsonPath('conversation.messages.1.content','We only deliver within Malaysia, so we cannot ship to China.');
     }
@@ -363,13 +391,6 @@ class SupportChatApiTest extends TestCase
         $this->app->instance(\App\Services\Support\SupportKnowledgeRetriever::class,$mock);
         $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($feature,$prompt,$limit)=>$feature==='support' && str_contains($prompt,'RM 100.00') && str_contains($prompt,'Never offer negotiated prices') && str_contains($prompt,'product:1'))->andReturn('{"answer":"Speaker One is RM 100.00. (Product source: product:1)","faq_ids":["product:1"]}');
         $this->postJson('/support/chat/messages',$this->payload('How much is Speaker One?'))->assertOk()->assertJsonPath('conversation.messages.1.content','Speaker One is RM 100.00.');
-    }
-
-    public function test_bargaining_is_blocked_without_a_model_call(): void
-    {
-        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
-        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
-        $this->postJson('/support/chat/messages', $this->payload('Can you give a cheaper price?'))->assertOk()->assertJsonPath('conversation.messages.1.content', 'I can share listed prices, but cannot negotiate prices or promise an unauthorized discount.');
     }
 
     public function test_brand_context_and_selected_language_fallbacks_are_enforced(): void

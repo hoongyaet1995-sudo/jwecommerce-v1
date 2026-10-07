@@ -84,6 +84,7 @@ class WhatsAppSupportTest extends TestCase
  public function test_ai_uses_shared_faq_and_delivers_once():void {
   $c=$this->ingest();$source=$c->messages()->first();$source->update(['content'=>'Wash?']);
   \App\Models\StoreSetting::create(['key'=>'support_faq','value'=>['version'=>1,'autoReplyEnabled'=>true,'primaryLanguage'=>'en','productCatalog'=>['isEnabled'=>false],'faq'=>['isEnabled'=>true,'items'=>[['id'=>'wash','question'=>'Wash?','answer'=>'Cold wash.','isActive'=>true]]]]]);
+  $this->mock(\App\Services\AI\AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[{"name":"faq.search","query":"Wash"}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
   Http::fake(['*'=>Http::response(['messaging_product'=>'whatsapp','contacts'=>[['wa_id'=>'60123']],'messages'=>[['id'=>'wamid.ai']]])]);
   $job=new \App\Jobs\ProcessWhatsAppSupportReply($source->id);$job->handle(app(\App\Services\Support\FaqAutoReplyService::class),app(\App\Services\Social\WhatsAppReplyService::class));$job->handle(app(\App\Services\Support\FaqAutoReplyService::class),app(\App\Services\Social\WhatsAppReplyService::class));
   $reply=$c->messages()->where('sender_role','ai')->firstOrFail();$this->assertSame('Cold wash.',$reply->content);$this->assertSame('accepted',$reply->delivery_status);Http::assertSentCount(1);

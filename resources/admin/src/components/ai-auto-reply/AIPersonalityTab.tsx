@@ -1,3 +1,4 @@
+import {AIKeywordInput, AISettingToggle} from './AISettingInputs';
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import {
@@ -415,10 +416,11 @@ export const AIPersonalityTab: React.FC = () => {
             />
           </div>
 
+          <AIKeywordInput label="Greeting phrases" values={personality.greetingAliases??[]} onChange={values=>handleUpdate('greetingAliases',values)} maxLength={80} />
+          <p className="text-xs text-neutral-500 mb-4">Optional hints for unusual expressions. Common greetings and mixed questions are understood automatically.</p>
           <div>
             <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">No Confirmed Answer ({activeLangTab.toUpperCase()})</label>
-            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">Greeting phrases · one per line</label>
-            <textarea rows={3} aria-label="Greeting phrases" value={(personality.greetingAliases??[]).join('\n')} onChange={e=>handleUpdate('greetingAliases',e.target.value.split('\n').map(v=>v.trim()).filter(Boolean))} className="w-full text-xs p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white" />
+
             <textarea rows={2} maxLength={2000} value={personality.unknownAnswerMessage[activeLangTab]} onChange={e => handleUpdate('unknownAnswerMessage', {...personality.unknownAnswerMessage, [activeLangTab]:e.target.value})} className="w-full text-xs p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500" />
           </div>
           <div>
@@ -470,8 +472,7 @@ export const AIPersonalityTab: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-5">
           <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 flex items-start gap-3">
-            <input
-              type="checkbox"
+            <AISettingToggle
               id="trigger-frustration"
               checked={personality.humanHandoffTriggers.onFrustrationDetected}
               onChange={e => {
@@ -486,16 +487,14 @@ export const AIPersonalityTab: React.FC = () => {
                   }
                 }));
               }}
-              className="mt-0.5 rounded-sm text-indigo-600"
-            />
+              className="mt-0.5 rounded-sm text-indigo-600" />
             <label htmlFor="trigger-frustration" className="cursor-pointer">
               <span className="text-xs font-bold text-neutral-900 dark:text-white block">Customer Says the Issue Is Not Resolved</span>
             </label>
           </div>
 
           <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 flex items-start gap-3">
-            <input
-              type="checkbox"
+            <AISettingToggle
               id="trigger-refund"
               checked={personality.humanHandoffTriggers.onRefundOrDispute}
               onChange={e => {
@@ -510,16 +509,14 @@ export const AIPersonalityTab: React.FC = () => {
                   }
                 }));
               }}
-              className="mt-0.5 rounded-sm text-indigo-600"
-            />
+              className="mt-0.5 rounded-sm text-indigo-600" />
             <label htmlFor="trigger-refund" className="cursor-pointer">
               <span className="text-xs font-bold text-neutral-900 dark:text-white block">Offer Human Support for Disputes / Paid Order Changes</span>
             </label>
           </div>
 
           <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 flex items-start gap-3">
-            <input
-              type="checkbox"
+            <AISettingToggle
               id="trigger-explicit"
               checked={personality.humanHandoffTriggers.onExplicitRequest}
               onChange={e => {
@@ -534,8 +531,7 @@ export const AIPersonalityTab: React.FC = () => {
                   }
                 }));
               }}
-              className="mt-0.5 rounded-sm text-indigo-600"
-            />
+              className="mt-0.5 rounded-sm text-indigo-600" />
             <label htmlFor="trigger-explicit" className="cursor-pointer">
               <span className="text-xs font-bold text-neutral-900 dark:text-white block">Offer Confirmation When Customer Requests a Human</span>
             </label>
@@ -552,7 +548,7 @@ export const AIPersonalityTab: React.FC = () => {
             </div>
           </div>
           <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 flex items-start gap-3">
-            <input type="checkbox" id="trigger-unavailable" checked={personality.humanHandoffTriggers.onServiceUnavailable} onChange={e=>updateAIAutoReplyConfig(prev=>({...prev,personality:{...prev.personality,humanHandoffTriggers:{...prev.personality.humanHandoffTriggers,onServiceUnavailable:e.target.checked}}}))} className="mt-0.5 rounded-sm text-indigo-600" />
+            <AISettingToggle id="trigger-unavailable" checked={personality.humanHandoffTriggers.onServiceUnavailable} onChange={e=>updateAIAutoReplyConfig(prev=>({...prev,personality:{...prev.personality,humanHandoffTriggers:{...prev.personality.humanHandoffTriggers,onServiceUnavailable:e.target.checked}}}))} className="mt-0.5 rounded-sm text-indigo-600" />
             <label htmlFor="trigger-unavailable" className="cursor-pointer"><span className="text-xs font-bold text-neutral-900 dark:text-white block">Offer Human Support When AI Is Unavailable</span></label>
           </div>
         </div>

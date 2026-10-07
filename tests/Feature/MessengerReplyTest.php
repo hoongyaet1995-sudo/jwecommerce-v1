@@ -55,6 +55,7 @@ class MessengerReplyTest extends TestCase
     public function test_messenger_uses_shared_faq_and_sends_once_while_remaining_pending(): void
     {
         $c=$this->thread();$this->aiSettings();
+        $this->mock(\App\Services\AI\AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[{"name":"faq.search","query":"Wash"}],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
         Http::fake(['graph.facebook.com/*/messages'=>Http::response(['recipient_id'=>'222','message_id'=>'ai-out'])]);
         $this->runAi($c,'Wash?');$this->runAi($c,'Wash?');
         $reply=$c->messages()->where('sender_role','ai')->firstOrFail();
@@ -88,7 +89,7 @@ class MessengerReplyTest extends TestCase
     public function test_semantic_human_request_in_messenger_uses_existing_ai_intent_planner(): void
     {
         $c=$this->thread();$this->aiSettings();
-        $this->mock(\App\Services\AI\AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[],"escalation":"explicit_request"}');
+        $this->mock(\App\Services\AI\AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"escalation":"explicit_request","clarification":"none","language":"en","conversation":"none","needs_business_answer":true,"tools":[]}');
         Http::fake(['graph.facebook.com/*/messages'=>Http::response(['recipient_id'=>'222','message_id'=>'semantic-out'])]);
         $this->runAi($c,'Could somebody from your team personally help me?');
         $this->assertSame('waiting_human',$c->fresh()->status);Http::assertSentCount(1);
