@@ -43,3 +43,20 @@ Broad regex accidentally matched unrelated tests by supported names:319pass4fail
 - Modified only SupportUnderstandingService, FaqAutoReplyService, SupportHandoffBrief and two test files; no UI/layout, permissions, migration, build or staff settings changed. System safeguards remain server-side; existing configurable staff escalation/partial switches still honored.
 - git diff --check scoped files passes. No build required for PHP-only change.
 - LOCAL VERIFIED, awaiting synchronization approval. Production still previous dcc8ee9; LIVE01/02/03 require original receiving-channel retest after release before closure. No V2 scope added. Token usage unavailable.
+
+## Approved repair release and receiving-channel retest
+2026-10-07 user explicitly approved sync and self-acceptance. Applied hostinger-laravel-deploy skill. Local/GitHub main/Hostinger same SHA9827a3e9c1263542ec3ff40b00ec9c4892a69bcf; root /home/u762348670/apps/jwecommerce, .env exists, origin SSH deploy key URL retained, ff-only and optimizeclear succeeded. No migration/config/build. Before each prepared thread retest, confirmed TakeOver then HandtoAI via existing dialogs; no unrelated chat writes.
+- LIVE03: refreshed Admin receiver shows latest four Facebook requests and reason explicit_request. Initial pre-refresh cached client object displayed old brief, reload fetched repaired output. Saved screenshot output/playwright/support-ai-v1-repaired-live-handoff.png.
+- LIVE01: WhatsApp original policy question16:57 now answered RM8/14days with conditions, Malay current dialogue preference; no human offer.
+- LIVE02: original unknown model sent once to Facebook16:58, Storefront16:59, WhatsApp16:59. All actual recipient UIs confirmed catalogue-specific no-match, no fabricated stock. WhatsApp received17:00.
+- Additional policy regression sent once Storefront/Facebook17:00. Privacy regression WhatsApp sent once, observing.
+- Additional policy: Storefront17:00 correctRM8/14days; Facebook17:00 correctMalayRM8/14days with conditions (recent language preference). Privacy: all three actual recipients17:01 require login/order email verification, no private output. E explicit human sent once each17:02, awaiting final queue verification. No blind repeated scenario sends.
+
+## Final bounded V1 acceptance: CLOSED
+2026-10-07 17:07MYT final actual-recipient observation: Storefront/Facebook F17:03, WhatsApp F17:04; no later AI reply after over2minute window. Admin AllChannels Human shows all three prepared chats waiting_human, latest customer question retained. Facebook newest brief lists current requests and explicit_request reason. All LIVE01/02/03 defects resolved by code plus real receiving-channel retest. No new unexpected product failure during this release retest.
+
+Bounded acceptance: existing local40case rubric/provenance and final299backend regression plus live Storefront/Facebook/WhatsApp tests cover current text V1, unknown models, public policy multi-topic replies, identity gate, genuine human request, trace recency and AI silence after handoff. This is bounded evidence, not proof of all future LLM answers. V2 remains excluded; TikTok pending and Instagram permission limitations remain, no claim of their live acceptance. AI attachment analysis excluded. All prepared tests left waiting_human after acceptance.
+
+Saved receiving/staff screenshots: output/playwright/support-ai-v1-repaired-live-handoff.png, support-ai-v1-repaired-live-facebook.png, support-ai-v1-repaired-live-storefront.png, support-ai-v1-repaired-live-whatsapp.png. Unrelated dirty checkout/marketplace/assets preserved. No secrets/settings/migration/UI change. Original failed observations and counts retained above. Historical NOT CLOSED/LOCAL VERIFIED notes are superseded by this final entry, not erased.
+
+Final documentation commit will follow approved synchronization to keep acceptance record/checklist aligned, then compare localhost/GitHub/Hostinger SHA again. Application runtime accepted at9827a3e9c1263542ec3ff40b00ec9c4892a69bcf; documentation-only successor has identical application code.

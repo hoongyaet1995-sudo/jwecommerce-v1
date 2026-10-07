@@ -9,3 +9,6 @@ Changes: product identity filter, optional planner targets/questions, per-topic 
 Preflight: local and GitHub main equal base SHA; SSH production checkout at /home/u762348670/apps/jwecommerce equals base SHA, no tracked production changes. Environment production, SSH GitHub origin verified. Existing private environment backups/untracked worker locks untouched.
 
 Release sequence: scoped commit -> push HEAD to main -> production ff-only pull -> optimize clear -> compare exact SHA -> HTTPS route/assets smoke. Live acceptance remains pending user test of available channels; V1 functionality is frozen until acceptance defects arise. TikTok pending and Instagram authorization limitations retained.
+
+
+2026-10-07 follow-up: approved live repair9827a3e delivered exact SHA. Original three live defects resolved; prepared Storefront/Facebook/WhatsApp receiving-channel retest completed17:07MYT including privacy, actual handoff and post-handoff silence. Bounded text V1 CLOSED; evidence `2026-10-07-support-ai-v1-live-acceptance.md`. No Instagram/TikTok/AI attachment-analysis acceptance claim.
