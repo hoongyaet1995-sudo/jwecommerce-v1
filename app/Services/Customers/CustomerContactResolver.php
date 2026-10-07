@@ -47,6 +47,7 @@ class CustomerContactResolver {
    $metadata=$link->metadata??[];
    foreach(['email'=>$email,'phone'=>$phone] as $key=>$value)if($value)$metadata['provided_'.$key]=$value;
    if($conflict)$metadata['matching_conflict']=true;
+   if(!$conflict&&($trustedPhone||$trustedEmail))$metadata['memory_trust_hash']=hash_hmac('sha256',$trustedPhone?'phone:'.$trustedPhone:'email:'.$trustedEmail,config('app.key'));
    $link->update(['display_name'=>isset($profile['name'])?mb_substr($profile['name'],0,255):$link->display_name,'username'=>$profile['username']??$link->username,'avatar_url'=>$profile['avatar_url']??$link->avatar_url,'metadata'=>$metadata,'first_seen_at'=>$link->first_seen_at->min($firstSeen),'last_seen_at'=>$link->last_seen_at->max($lastSeen)]);
    // Provider display names improve provisional names, never replace known buyer names.
    if(!empty($profile['name'])&&(!$customer->first_name||$customer->first_name==='Guest'||str_ends_with($customer->first_name,' customer')))$customer->update(['first_name'=>mb_substr($profile['name'],0,255)]);

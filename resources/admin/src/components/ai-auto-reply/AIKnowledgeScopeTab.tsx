@@ -1,3 +1,4 @@
+import {AICustomerMemoryControls} from './AICustomerMemoryControls';
 import {AIResponsePolicyControls} from './AIResponsePolicyControls';
 import {AIAttachmentControls} from './AIAttachmentControls';
 import {AIKeywordInput, AISettingToggle} from './AISettingInputs';
@@ -157,7 +158,8 @@ export const AIKnowledgeScopeTab: React.FC = () => {
 
   return (
       <div id="ai-knowledge-scope-tab-container" className="space-y-6 animate-in fade-in duration-150">
-        <AIAttachmentControls mode="capabilities" value={aiAutoReplyConfig.attachmentAnalysis} readiness={aiAutoReplyConfig.attachmentReadiness} onChange={attachmentAnalysis=>updateAIAutoReplyConfig(prev=>({...prev,attachmentAnalysis}))}/>
+        <AICustomerMemoryControls mode="capabilities" value={aiAutoReplyConfig.customerMemory} onChange={customerMemory=>updateAIAutoReplyConfig(prev=>({...prev,customerMemory}))}/>
+      <AIAttachmentControls mode="capabilities" value={aiAutoReplyConfig.attachmentAnalysis} readiness={aiAutoReplyConfig.attachmentReadiness} onChange={attachmentAnalysis=>updateAIAutoReplyConfig(prev=>({...prev,attachmentAnalysis}))}/>
       {/* 1. FAQ Knowledge Base Section */}
       <section id="faq-knowledge-scope-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">

@@ -190,6 +190,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/support/attachments/{attachment}/retry',[\App\Http\Controllers\SupportAttachmentController::class,'retry'])->whereUuid('attachment')->middleware('throttle:6,1');
     Route::post('/api/support/attachments/{attachment}/analysis/retry',[\App\Http\Controllers\SupportAttachmentController::class,'retryAnalysis'])->whereUuid('attachment')->middleware('throttle:3,1');
     Route::get('/api/support/attachments/{attachment}', [\App\Http\Controllers\SupportAttachmentController::class, 'show'])->whereUuid('attachment');
+    Route::get('/api/support/conversations/{conversation}/memories', [\App\Http\Controllers\Admin\SupportCustomerMemoryController::class,'index'])->whereUuid('conversation');
+    Route::patch('/api/support/conversations/{conversation}/memories/{memory}', [\App\Http\Controllers\Admin\SupportCustomerMemoryController::class,'update'])->whereUuid('conversation')->middleware('throttle:20,1');
+    Route::delete('/api/support/conversations/{conversation}/memories/{memory}', [\App\Http\Controllers\Admin\SupportCustomerMemoryController::class,'destroy'])->whereUuid('conversation')->middleware('throttle:20,1');
     Route::get('/api/support/conversations', [\App\Http\Controllers\Admin\SupportChatController::class, 'index']);
     Route::post('/api/support/conversations/{conversation}/messages', [\App\Http\Controllers\Admin\SupportChatController::class, 'send'])->whereUuid('conversation')->middleware('throttle:60,1');
     Route::patch('/api/support/conversations/{conversation}/status', [\App\Http\Controllers\Admin\SupportChatController::class, 'status'])->whereUuid('conversation');

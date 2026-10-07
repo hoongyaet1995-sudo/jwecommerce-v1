@@ -1,3 +1,4 @@
+import {AICustomerMemoryControls} from './AICustomerMemoryControls';
 import React, { useState } from 'react';
 import {AIAttachmentControls} from './AIAttachmentControls';
 import { useAdmin } from '../../context/AdminContext';
@@ -103,6 +104,7 @@ export const AIGuardrailsTab: React.FC = () => {
 
   return (
     <div id="ai-guardrails-tab-container" className="space-y-6 animate-in fade-in duration-150">
+      <AICustomerMemoryControls mode="limits" value={aiAutoReplyConfig.customerMemory} onChange={customerMemory=>updateAIAutoReplyConfig(prev=>({...prev,customerMemory}))}/>
       <AIAttachmentControls mode="limits" value={aiAutoReplyConfig.attachmentAnalysis} onChange={attachmentAnalysis=>updateAIAutoReplyConfig(prev=>({...prev,attachmentAnalysis}))}/>
       <p className="text-xs text-neutral-500">FAQ/product grounding and listed-price boundaries are enforced by the server. Other controls below are Not connected.</p><fieldset disabled className="space-y-6">
       {/* 1. Competitor Mentions & Neutralizer */}

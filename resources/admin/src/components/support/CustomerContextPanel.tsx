@@ -1,3 +1,4 @@
+import {CustomerMemoryCard} from './CustomerMemoryCard';
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { SupportConversation } from '../../types/support';
@@ -71,6 +72,7 @@ export const CustomerContextPanel: React.FC<CustomerContextPanelProps> = ({
   return (
     <div id="customer-context-panel" className="h-full flex flex-col p-4 space-y-4 text-xs overflow-y-auto">
       <div className="flex items-center justify-between"><h3 className="font-semibold">Customer details</h3><button onClick={onClose} aria-label="Close customer details" className="p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800">✕</button></div>
+      <CustomerMemoryCard key={conversation.id} conversationId={conversation.id}/>
       {/* 1. Customer Profile Card */}
       <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/80 space-y-3">
         <div className="flex items-center gap-3">

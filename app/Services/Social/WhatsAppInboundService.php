@@ -46,7 +46,7 @@ class WhatsAppInboundService
       $conversation->update(['status'=>in_array($conversation->status,['human_mode','waiting_human'],true)?$conversation->status:'open','provider_page_name'=>$account->name,'last_message_at'=>$conversation->last_message_at?->greaterThan($sentAt)?$conversation->last_message_at:$sentAt]);
       app(\App\Services\Customers\CustomerContactResolver::class)->associate($conversation,['platform'=>'whatsapp','merchant_key'=>$account->merchant_key,'app_id'=>$account->app_id,'account_id'=>$phone,'sender_id'=>$event['from']],['name'=>data_get($profile,'profile.name','WhatsApp customer'),'phone'=>'+'.$event['from'],'phone_trusted'=>true]);
       DB::table('messenger_inbound_receipts')->insert(['event_key'=>$key,'conversation_id'=>$conversation->id,'page_id'=>$phone,'message_id'=>$event['id'],'created_at'=>now(),'updated_at'=>now()]);
-      $account->update(['last_inbound_at'=>now()]);app(\App\Services\Support\SupportMessageAlertService::class)->received($conversation,$message);
+      $account->update(['last_inbound_at'=>now()]);app(\App\Services\Support\SupportCustomerMemoryService::class)->schedule($conversation,$message); app(\App\Services\Support\SupportMessageAlertService::class)->received($conversation,$message);
       if(!app(\App\Services\Support\SupportAttachmentAnalysisService::class)->schedule($message) && !$document && (($event['type']??null)==='text' || $image) && trim($text)!=='')\App\Jobs\ProcessWhatsAppSupportReply::dispatch($message->id)->onConnection('support')->onQueue('support-ai')->afterCommit();
       $count++;
      }

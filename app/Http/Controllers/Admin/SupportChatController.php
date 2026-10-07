@@ -27,6 +27,7 @@ class SupportChatController extends Controller
         \Illuminate\Support\Facades\DB::transaction(function() use($conversation,$request,$data){
             $locked=SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
             $locked->notes()->create(['staff_user_id'=>$request->user()->id,'content'=>'[Archive] '.($data['archived']?'true':'false')]);
+            if($data['archived'])app(\App\Services\Support\SupportCustomerMemoryService::class)->closeIssues($locked);
             $locked->touch();
         });
         return response()->json(['conversation'=>$chat->adminView($conversation->fresh())]);
@@ -61,6 +62,7 @@ class SupportChatController extends Controller
             if ($locked->status !== $data['status']) {
                 $locked->notes()->create(['staff_user_id' => $request->user()->id, 'content' => '[Control] '.$locked->status.' → '.$data['status']]);
                 $locked->update($data);
+                if($data['status']==='resolved')app(\App\Services\Support\SupportCustomerMemoryService::class)->closeIssues($locked);
             }
         });
         return response()->json(['conversation' => $chat->adminView($conversation->fresh())]);

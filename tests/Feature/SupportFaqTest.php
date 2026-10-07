@@ -10,6 +10,14 @@ use Tests\TestCase;
 
 class SupportFaqTest extends TestCase
 {
+    public function test_memory_settings_persist_privately_and_reject_unsafe_limits():void {
+        $this->owner();$p=$this->payload();$p['customerMemory']=['enabled'=>true,'retentionDays'=>31];
+        $this->putJson('/admin/api/support/faq',$p)->assertOk()->assertJsonPath('customerMemory.enabled',true);
+        $this->getJson('/admin/api/support/faq')->assertJsonPath('customerMemory.retentionDays',31);
+        $this->getJson('/support/faq')->assertJsonMissingPath('customerMemory');
+        $p['version']=1;$p['customerMemory']['retentionDays']=91;$this->putJson('/admin/api/support/faq',$p)->assertUnprocessable();
+        $p['customerMemory']['retentionDays']=6;$this->putJson('/admin/api/support/faq',$p)->assertUnprocessable();
+    }
     public function test_attachment_settings_persist_privately_and_reject_unsafe_limits(): void
     {
         $this->owner(); $p=$this->payload();

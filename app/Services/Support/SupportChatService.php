@@ -109,6 +109,7 @@ class SupportChatService
             }
             $locked->update(['status' => $status, 'last_message_at' => now()]);
             if ($role === 'customer') app(\App\Services\Customers\CustomerContactResolver::class)->associate($locked, ['platform'=>'storefront','merchant_key'=>config('services.facebook.merchant_key','jw-ecommerce'),'app_id'=>'storefront','account_id'=>'storefront','sender_id'=>$locked->customer_user_id ? 'user:'.$locked->customer_user_id : $locked->owner_hash], $data['contact'] ?? ['name'=>'Guest']);
+            app(SupportCustomerMemoryService::class)->schedule($locked,$message);
             app(SupportMessageAlertService::class)->received($locked,$message);
 
             return $locked;
@@ -202,4 +203,3 @@ class SupportChatService
         ];
     }
 }
-

@@ -162,6 +162,7 @@ export interface AIGuardrailsConfig {
 }
 
 export interface AIAutoReplyMasterConfig {
+  customerMemory?: {enabled:boolean;retentionDays:number};
   attachmentAnalysis?: AttachmentAnalysisConfig;
   attachmentReadiness?: {image:boolean;document:boolean;audio:boolean;provider:string|null;model:string|null};
   aiChannels?: Record<'storefront'|'facebook'|'instagram'|'whatsapp'|'tiktok',boolean>;

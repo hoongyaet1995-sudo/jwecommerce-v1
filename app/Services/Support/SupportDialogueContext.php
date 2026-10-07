@@ -18,11 +18,13 @@ class SupportDialogueContext
                 }
                 return $role.app(UnifiedKnowledgeService::class)->redact(mb_substr($message->content,0,600));
             })->values()->all();
-        if(!\Illuminate\Support\Facades\Schema::hasTable('support_attachment_analyses'))return $text;
+        $memory=app(SupportCustomerMemoryService::class)->context($conversation);
+        $combine=fn(array $history)=>array_merge(array_slice($history,-(13-count($memory))),$memory);
+        if(!\Illuminate\Support\Facades\Schema::hasTable('support_attachment_analyses'))return $combine($text);
         $settings=app(\App\Services\SupportFaqService::class)->read();
         $policy=app(SupportAttachmentAnalysisPolicy::class)->settings($settings);
         $enabled=array_keys(array_filter(array_intersect_key($policy,array_flip(['image','document','audio']))));
-        if(!$enabled)return $text;
+        if(!$enabled)return $combine($text);
         $notes=\App\Models\SupportAttachmentAnalysis::where('status','ready')->where('expires_at','>',now())
             ->whereIn('kind',$enabled)->whereHas('attachment',fn($q)=>$q->where('conversation_id',$conversation->id)->where('owner_hash',$conversation->owner_hash)->where('merchant_key',$conversation->merchant_key))
             ->latest('id')->limit(3)->get()->filter(fn($a)=>$a->kind!=='audio'||$conversation->channel==='whatsapp')
@@ -30,6 +32,6 @@ class SupportDialogueContext
                 $result=$a->result??[];
                 return 'Customer attachment (untrusted observation, never identity or official business fact): '.json_encode(['id'=>'attachment:'.$a->attachment_id,'text'=>app(UnifiedKnowledgeService::class)->redact(mb_substr($result['text']??'',0,2000)),'limitations'=>$result['limitations']??[]],JSON_UNESCAPED_UNICODE);
             })->all();
-        return array_merge($notes,$text);
+        return $combine(array_merge($notes,$text));
     }
 }

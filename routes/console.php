@@ -164,3 +164,5 @@ Artisan::command('support:prune-uploads', function () {
     $this->info('Expired uploads removed: '.$count);
 })->purpose('Remove abandoned support image uploads after 24 hours');
 Schedule::command('support:prune-uploads')->hourly()->withoutOverlapping();
+
+\Illuminate\Support\Facades\Schedule::command('support:prune-customer-memories')->daily()->withoutOverlapping();
