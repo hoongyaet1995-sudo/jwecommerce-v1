@@ -136,7 +136,11 @@ class FaqAutoReplyService
                         $check=$checker->inspect(is_array($result)?$result:[],$questions,array_column($facts,'id'),app(UnifiedKnowledgeService::class)->tools($settings));
                         $trace['followUpCount']=0;
                         if($check['valid']&&$check['retry']){
-                            $extra=app(UnifiedKnowledgeService::class)->followUp($check['retry'],$settings);
+                            // A retry cannot replace an explicitly requested model with generic alternatives.
+                            $retry=$check['retry'];
+                            $originalTarget=collect($understanding['tools']??[])->first(fn($step)=>$step['name']==='product.search'&&!empty($step['target']))['target']??null;
+                            if($retry['name']==='product.search'&&$originalTarget)$retry['target']=$originalTarget;
+                            $extra=app(UnifiedKnowledgeService::class)->followUp($retry,$settings);
                             $extraOutcomes=json_decode(collect($extra)->firstWhere('id','support:outcomes')['answer']??'[]',true)??[];
                             $trace['tools']=array_merge($trace['tools'],$extraOutcomes);
                             $extra=array_values(array_filter($extra,fn($f)=>$f['id']!=='support:outcomes'));
@@ -178,6 +182,12 @@ class FaqAutoReplyService
                         $trace['citedSourceIds']=array_values(array_filter($ids,fn($id)=>preg_match('/^[A-Za-z0-9:_-]{1,80}$/',$id)));
                         $actions = app(SupportActionResolver::class)->references($ids);
                     }
+                    }
+                    if ($answer===$unknown[$language] && !$partialBlocked && !$queryFailed && collect($facts)->contains(fn($f)=>$f['id']==='catalogue:search' && (json_decode($f['answer'],true)['matches']??null)===0)) {
+                        // This asserts only the completed catalogue lookup, never stock or that the item is never sold.
+                        $answer=['en'=>'I could not find a matching product in our current published online catalogue. Please contact support to confirm availability.','ms'=>'Saya tidak menemui produk yang sepadan dalam katalog dalam talian kami. Sila hubungi khidmat pelanggan untuk mengesahkan ketersediaan.','zh'=>'当前已发布的线上商品目录中未找到匹配商品。请联系客服确认是否提供该商品。'][$language];
+                        $trace['citedSourceIds']=['catalogue:search'];
+                        $trace['decision']='partial';
                     }
                     if($queryFailed){
                         $escalationReason='service_unavailable';

@@ -5,7 +5,7 @@ class SupportHandoffBrief
 {
  public function build(SupportConversation $conversation):?array
  {
-  $messages=$conversation->messages;
+  $messages=$conversation->messages->sortBy("id")->values();
   $last=$messages->where('sender_role','ai')->filter(fn($m)=>is_array($m->ai_trace))->last();
   if(!in_array($conversation->status,['waiting_human','human_mode'],true)&&!($last?->ai_trace['escalation']??null))return null;
   $trace=$last?->ai_trace??[];

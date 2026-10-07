@@ -60,4 +60,15 @@ class SupportUnderstandingTest extends TestCase
         $plan=app(SupportUnderstandingService::class)->understand('private address',['order.lookup'=>'Private'],[],[]);
         $this->assertArrayNotHasKey('target',$plan['tools'][0]);
     }
+    public function test_old_failure_cannot_escalate_without_current_message_evidence():void
+    {
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->andReturn('{"tools":[],"escalation":"unresolved","clarification":"none","language":"en","conversation":"none","needs_business_answer":true,"unresolved_evidence":"why are you hanging?"}');
+        $plan=app(SupportUnderstandingService::class)->understand('How much is shipping?',[],['Customer: why are you hanging?'],[]);
+        $this->assertSame('none',$plan['escalation']);
+    }
+    public function test_current_unresolved_statement_keeps_escalation():void
+    {
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->andReturn('{"tools":[],"escalation":"unresolved","clarification":"none","language":"en","conversation":"none","needs_business_answer":true,"unresolved_evidence":"That did not help"}');
+        $this->assertSame('unresolved',app(SupportUnderstandingService::class)->understand('That did not help, try again',[],[],[])['escalation']);
+    }
 }

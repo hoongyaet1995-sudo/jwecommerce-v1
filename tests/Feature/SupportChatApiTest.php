@@ -672,6 +672,37 @@ class SupportChatApiTest extends TestCase
         $this->actingAs($staff)->getJson('/admin/api/support/alerts')->assertOk()->assertJsonPath('unreadCount',1)->assertJsonPath('notifications.0.channel','web_guest');
     }
 
+    public function test_handoff_brief_orders_loaded_messages_before_selecting_latest():void
+    {
+        $c=new SupportConversation(['status'=>'waiting_human']);
+        $messages=collect();
+        for($i=1;$i<=6;$i++)$messages->push(new \App\Models\SupportMessage(['id'=>$i,'sender_role'=>'customer','content'=>'request '.$i]));
+        $messages->push(new \App\Models\SupportMessage(['id'=>7,'sender_role'=>'ai','ai_trace'=>['escalation'=>'explicit_request']]));
+        $messages->push(new \App\Models\SupportMessage(['id'=>0,'sender_role'=>'ai','ai_trace'=>['escalation'=>'unresolved']]));
+        $c->setRelation('messages',$messages->sortByDesc('id'));
+        $brief=app(\App\Services\Support\SupportHandoffBrief::class)->build($c);
+        $this->assertSame(['request 3','request 4','request 5','request 6'],$brief['customerRequests']);
+        $this->assertSame('explicit_request',$brief['reason']);
+    }
+    public function test_zero_catalogue_match_with_policy_context_has_specific_safe_fallback():void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $mock=$this->mock(\App\Services\Support\UnifiedKnowledgeService::class);
+        $mock->shouldReceive('retrieve')->andReturn([['id'=>'catalogue:search','question'=>'Catalogue search result','answer'=>'{"matches":0}'],['id'=>'policy','question'=>'Returns','answer'=>'14 days']]);
+        $mock->shouldReceive('redact')->andReturnUsing(fn($q)=>$q);$mock->shouldReceive('tools')->andReturn([]);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"answer":"","faq_ids":[]}');
+        $this->postJson('/support/chat/messages',$this->payload('Do you sell QUASAR999?'))->assertOk()->assertJsonPath('conversation.messages.1.content','I could not find a matching product in our current published online catalogue. Please contact support to confirm availability.');
+    }
+    public function test_named_model_is_preserved_in_generic_product_retry():void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $mock=$this->mock(\App\Services\Support\UnifiedKnowledgeService::class);
+        $mock->shouldReceive('tools')->andReturn(['product.search'=>'Products']);$mock->shouldReceive('redact')->andReturnUsing(fn($q)=>$q);
+        $mock->shouldReceive('retrieve')->once()->andReturn([['id'=>'support:understanding','answer'=>json_encode(['tools'=>[['name'=>'product.search','query'=>'unknown shelf','target'=>'NOVA7788']],'questions'=>['Do you sell NOVA7788?']])],['id'=>'catalogue:search','question'=>'Search','answer'=>'{"matches":0}'],['id'=>'policy','question'=>'Returns','answer'=>'14 days']]);
+        $mock->shouldReceive('followUp')->once()->with(['name'=>'product.search','query'=>'shelving','target'=>'NOVA7788'],\Mockery::type('array'))->andReturn([['id'=>'catalogue:search','question'=>'Search','answer'=>'{"matches":0}']]);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->twice()->andReturn('{"answer":"","faq_ids":[],"coverage":[{"index":0,"status":"missing","source_ids":[]}],"follow_up":{"name":"product.search","query":"shelving"}}','{"answer":"","faq_ids":[],"coverage":[{"index":0,"status":"missing","source_ids":[]}]}');
+        $this->postJson('/support/chat/messages',$this->payload('Do you sell NOVA7788?'))->assertOk()->assertJsonPath('conversation.messages.1.content','I could not find a matching product in our current published online catalogue. Please contact support to confirm availability.');
+    }
 }
 
 
