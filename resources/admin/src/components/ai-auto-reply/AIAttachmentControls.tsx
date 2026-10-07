@@ -1,4 +1,6 @@
 import React from 'react';
+import {Paperclip, ShieldCheck} from 'lucide-react';
+import {AISectionHeader} from './AISectionHeader';
 import type {AttachmentAnalysisConfig} from '../../types/aiAutoReply';
 import {DEFAULT_AI_AUTO_REPLY_CONFIG} from '../../data/defaultAIAutoReply';
 import {AISettingToggle} from './AISettingInputs';
@@ -6,8 +8,7 @@ import {AISettingToggle} from './AISettingInputs';
 export function AIAttachmentControls({mode,value,readiness,onChange}:{mode:'capabilities'|'limits';value?:AttachmentAnalysisConfig;readiness?:{image:boolean;document:boolean;audio:boolean};onChange:(value:AttachmentAnalysisConfig)=>void}){
  const config={...DEFAULT_AI_AUTO_REPLY_CONFIG.attachmentAnalysis!,...value};
  return <section className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
-  <h3 className="text-sm font-bold text-neutral-900 dark:text-white mb-2">{mode==='capabilities'?'Customer Attachment Understanding':'Attachment Analysis Boundaries'}</h3>
-  <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">{mode==='capabilities'?'Choose which customer attachments AI can read. Master and channel switches still apply; staff takeover stops automatic replies.':'Attachments are customer-provided information. They never verify identity, payment or refund eligibility.'}</p>
+  <AISectionHeader icon={mode==='capabilities'?Paperclip:ShieldCheck} title={mode==='capabilities'?'Customer Attachment Understanding':'Attachment Analysis Boundaries'} description={mode==='capabilities'?'Choose which customer attachments AI can read. Master and channel switches still apply; staff takeover stops automatic replies.':'Attachments are customer-provided information. They never verify identity, payment or refund eligibility.'}/>
   {mode==='capabilities'?<div className="grid grid-cols-1 md:grid-cols-3 gap-3">{([['image','Image understanding','Objects, readable text and visible damage'],['document','PDF analysis','Text and scanned pages within your page limit'],['audio','Voice transcription','WhatsApp voice messages; text replies only']] as const).map(([key,label,help])=><label key={key} className="p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 flex items-start justify-between gap-3 text-xs">
    <span><span className="block font-semibold text-neutral-900 dark:text-white">{label}</span><span className="block mt-1 text-neutral-500">{help}</span>{!readiness?.[key]&&<span className="block mt-1 text-amber-600 dark:text-amber-400">Unavailable with current AI connection</span>}</span>
    <AISettingToggle aria-label={label} checked={config[key]} disabled={!readiness?.[key]} onChange={e=>onChange({...config,[key]:e.target.checked})}/>

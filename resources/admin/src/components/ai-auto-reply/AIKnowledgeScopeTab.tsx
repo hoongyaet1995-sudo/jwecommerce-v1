@@ -1,3 +1,5 @@
+import {Route} from 'lucide-react';
+import {AISectionHeader} from './AISectionHeader';
 import {AICustomerMemoryControls} from './AICustomerMemoryControls';
 import {AIResponsePolicyControls} from './AIResponsePolicyControls';
 import {AIAttachmentControls} from './AIAttachmentControls';
@@ -512,7 +514,7 @@ export const AIKnowledgeScopeTab: React.FC = () => {
       </div>
       {/* 3. Product Catalog & Live Stock Boundaries */}
       <section className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
-        <h2 className="text-sm font-semibold mb-4">Knowledge Routing Controls</h2>
+        <AISectionHeader icon={Route} title="Knowledge Routing Controls"/>
         <AIKeywordInput label="Catalogue browsing phrases" values={productCatalog.browseAliases??[]} maxLength={160} onChange={values=>updateAIAutoReplyConfig(prev=>({...prev,knowledgeScope:{...prev.knowledgeScope,productCatalog:{...prev.knowledgeScope.productCatalog,browseAliases:values}}}))} />
           <p className="text-xs text-neutral-500 mb-4">Optional hints for store-specific expressions. Customers do not need to use these exact phrases.</p>
         <label className="flex items-center gap-3 text-xs mb-3"><AISettingToggle aria-label="Include store policies in product answers" checked={productCatalog.includeStorePolicies??true} onChange={e=>updateAIAutoReplyConfig(prev=>({...prev,knowledgeScope:{...prev.knowledgeScope,productCatalog:{...prev.knowledgeScope.productCatalog,includeStorePolicies:e.target.checked}}}))} />Include enabled store policies in product answers</label>
