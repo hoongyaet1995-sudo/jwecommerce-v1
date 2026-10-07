@@ -26,6 +26,8 @@ class MessengerInboundTest extends TestCase
         foreach(['2026_10_02_160000_create_support_chat_tables.php','2026_10_03_100000_add_support_message_actions.php','2026_10_03_180000_create_notifications_table.php','2026_10_04_120000_create_managed_social_accounts.php'] as $file)(require database_path('migrations/'.$file))->up();
         if(file_exists(database_path('migrations/2026_10_04_180000_add_messenger_inbound.php')))(require database_path('migrations/2026_10_04_180000_add_messenger_inbound.php'))->up();
   (require database_path('migrations/2026_10_06_150000_add_customer_channel_identity.php'))->up();
+        (require database_path('migrations/2026_10_06_190000_create_support_attachments.php'))->up();
+        (require database_path('migrations/2026_10_06_200000_add_support_audio.php'))->up();
         Http::preventStrayRequests();
         \Illuminate\Support\Facades\Bus::fake([\App\Jobs\ProcessMessengerSupportReply::class, \App\Jobs\EnrichSocialCustomerProfile::class]);
     }

@@ -417,6 +417,8 @@ export const AIPersonalityTab: React.FC = () => {
 
           <div>
             <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">No Confirmed Answer ({activeLangTab.toUpperCase()})</label>
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">Greeting phrases · one per line</label>
+            <textarea rows={3} aria-label="Greeting phrases" value={(personality.greetingAliases??[]).join('\n')} onChange={e=>handleUpdate('greetingAliases',e.target.value.split('\n').map(v=>v.trim()).filter(Boolean))} className="w-full text-xs p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white" />
             <textarea rows={2} maxLength={2000} value={personality.unknownAnswerMessage[activeLangTab]} onChange={e => handleUpdate('unknownAnswerMessage', {...personality.unknownAnswerMessage, [activeLangTab]:e.target.value})} className="w-full text-xs p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500" />
           </div>
           <div>

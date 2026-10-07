@@ -15,6 +15,44 @@ use Tests\TestCase;
 
 class SupportChatApiTest extends TestCase
 {
+    public function test_configured_greeting_alias_and_template_are_used_without_model():void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'greetingMessage'=>['en'=>'Welcome from saved settings!'],'personality'=>['greetingAliases'=>['halo']],'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
+        $this->postJson('/support/chat/messages',$this->payload('HALO!'))->assertJsonPath('conversation.messages.1.content','Welcome from saved settings!');
+    }
+
+    public function test_configured_pricing_template_does_not_authorize_discount():void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'guardrails'=>['priceBargaining'=>['refusalTemplate'=>'Our prices are fixed.','suggestOfficialVouchersOnly'=>false]],'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
+        $this->postJson('/support/chat/messages',$this->payload('can you give some discount?'))->assertJsonPath('conversation.messages.1.content','Our prices are fixed.');
+    }
+    public function test_pricing_uses_saved_language_and_only_live_selected_offers():void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'guardrails'=>['priceBargaining'=>['refusalMessages'=>['zh'=>'只提供已批准的价格。']]],'discountKnowledge'=>['isEnabled'=>true,'activeIds'=>['1']],'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
+        $this->mock(\App\Services\Support\DiscountKnowledgeService::class)->shouldReceive('facts')->once()->andReturn([
+            ['id'=>'discount:1','answer'=>json_encode(['code'=>'HOME10','benefit'=>'10% OFF','redeemable_now'=>true])],
+            ['id'=>'discount:2','answer'=>json_encode(['code'=>'EXPIRED','benefit'=>'90% OFF','redeemable_now'=>false])],
+        ]);
+        $response=$this->postJson('/support/chat/messages',$this->payload('便宜一点可以吗？'))->assertOk();
+        $content=$response->json('conversation.messages.1.content');
+        $this->assertStringContainsString('只提供已批准的价格。',$content);
+        $this->assertStringContainsString('HOME10',$content);
+        $this->assertStringNotContainsString('EXPIRED',$content);
+    }
+    public function test_public_tracking_entry_is_switchable_without_order_disclosure():void
+    {
+        $row=StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'orderLookup'=>['isEnabled'=>true,'provideTrackingEntry'=>true],'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $this->app->instance(\App\Services\Support\SupportActionResolver::class,new \App\Services\Support\SupportActionResolver);
+        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
+        $this->postJson('/support/chat/messages',$this->payload('where can i track my order?'))->assertOk()->assertJsonPath('conversation.messages.1.actions.0.type','view_order_tracking');
+        $value=$row->value;$value['orderLookup']['provideTrackingEntry']=false;$row->update(['value'=>$value]);
+        $response=$this->postJson('/support/chat/messages',$this->payload('where can i track my order?'))->assertOk();
+        $messages=$response->json('conversation.messages');
+        $this->assertNotContains('view_order_tracking',array_column(end($messages)['actions']??[],'type'));
+    }
     protected function setUp(): void
     {
         parent::setUp();
@@ -323,7 +361,7 @@ class SupportChatApiTest extends TestCase
         $mock=\Mockery::mock(\App\Services\Support\SupportKnowledgeRetriever::class);
         $mock->shouldReceive('retrieve')->once()->andReturn([['id'=>'product:1','question'=>'Speaker One','answer'=>'{"name":"Speaker One","base_price":"RM 100.00"}']]);
         $this->app->instance(\App\Services\Support\SupportKnowledgeRetriever::class,$mock);
-        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($feature,$prompt,$limit)=>$feature==='support' && str_contains($prompt,'RM 100.00') && str_contains($prompt,'Never offer negotiated prices') && str_contains($prompt,'product:1'))->andReturn('{"answer":"Speaker One is RM 100.00.","faq_ids":["product:1"]}');
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($feature,$prompt,$limit)=>$feature==='support' && str_contains($prompt,'RM 100.00') && str_contains($prompt,'Never offer negotiated prices') && str_contains($prompt,'product:1'))->andReturn('{"answer":"Speaker One is RM 100.00. (Product source: product:1)","faq_ids":["product:1"]}');
         $this->postJson('/support/chat/messages',$this->payload('How much is Speaker One?'))->assertOk()->assertJsonPath('conversation.messages.1.content','Speaker One is RM 100.00.');
     }
 

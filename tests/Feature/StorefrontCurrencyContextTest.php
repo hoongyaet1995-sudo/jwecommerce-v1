@@ -14,6 +14,18 @@ class StorefrontCurrencyContextTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_background_request_without_session_uses_store_currency(): void
+    {
+        $this->currencySettings();
+        $context=new \App\Support\StorefrontCurrencyContext(app(\App\Support\CurrencySettings::class),Request::create('/webhook','POST'));
+        $this->assertSame('MYR',$context->current()['code']);
+        $this->assertSame('RM 199.00',$context->format(19900));
+        $this->app->instance(\App\Support\StorefrontCurrencyContext::class,$context);
+        Product::create(['title'=>'BILLY','handle'=>'background-billy','status'=>'active','base_price'=>19900]);
+        $facts=app(\App\Services\Support\ProductKnowledgeService::class)->facts('BILLY',['isEnabled'=>true,'canRecommendUpsells'=>true,'canCheckLiveStock'=>true]);
+        $this->assertSame('RM 199.00',json_decode($facts[0]['answer'],true)['base_price']);
+    }
+
     public function test_it_uses_the_enabled_session_currency_and_converts_base_cents_for_display(): void
     {
         $this->currencySettings();

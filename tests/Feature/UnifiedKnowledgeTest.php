@@ -7,6 +7,20 @@ use App\Services\Support\ProductKnowledgeService;
 use App\Services\Support\DiscountKnowledgeService;
 use App\Services\AI\AiConnectionService;
 class UnifiedKnowledgeTest extends TestCase {
+ public function test_saved_catalogue_phrases_use_live_catalogue_without_model():void{
+ $s=$this->settings();$s['productCatalog']['browseAliases']=['what exactly you are selling with'];
+ $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
+ $this->mock(ProductKnowledgeService::class)->shouldReceive('facts')->once()->with('__catalogue_list__',$s['productCatalog'])->andReturn([['id'=>'product:1','question'=>'BILLY','answer'=>'Published shelf']]);
+ $this->mock(\App\Services\Support\TaxonomyKnowledgeService::class)->shouldReceive('facts')->once()->with('',$s['productCatalog'])->andReturn([]);
+ $this->assertSame(['product:1'],array_column(app(UnifiedKnowledgeService::class)->retrieve('What exactly you are selling with?',$s),'id'));
+ }
+ public function test_disabled_policy_supplement_keeps_product_only_plan():void{
+ $s=$this->settings();$s['productCatalog']['includeStorePolicies']=false;
+ $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[{"name":"product.search","query":"BILLY"}]}');
+ $this->mock(ProductKnowledgeService::class)->shouldReceive('facts')->once()->andReturn([['id'=>'product:1','question'=>'BILLY','answer'=>'Published product']]);
+ $this->mock(FaqKnowledgeSearch::class)->shouldNotReceive('search');
+ $this->assertSame(['product:1'],array_column(app(UnifiedKnowledgeService::class)->retrieve('BILLY delivery?',$s),'id'));
+ }
  public function test_product_only_plan_still_checks_applicable_store_policy():void{
  $s=$this->settings();$s['faq']['items']=[['id'=>'assembly','category'=>'service','question'=>'Is assembly included?','answer'=>'Assembly is not included. Staff must confirm any separate service.','keywords'=>['assembly'],'isActive'=>true]];
  $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[{"name":"product.search","query":"BILLY"}]}');

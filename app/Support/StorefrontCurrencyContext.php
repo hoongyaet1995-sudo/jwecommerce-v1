@@ -24,7 +24,9 @@ class StorefrontCurrencyContext
     /** @return array<string, mixed> */
     public function current(): array
     {
-        $selectedCode = strtoupper(trim((string) $this->request->session()->get(self::SESSION_KEY, '')));
+        $selectedCode = $this->request->hasSession()
+            ? strtoupper(trim((string) $this->request->session()->get(self::SESSION_KEY, '')))
+            : '';
 
         foreach ($this->settings->enabled() as $currency) {
             if ($currency['code'] === $selectedCode) {

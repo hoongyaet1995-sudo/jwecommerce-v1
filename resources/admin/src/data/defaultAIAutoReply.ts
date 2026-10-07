@@ -31,6 +31,7 @@ export const DEFAULT_AI_AUTO_REPLY_CONFIG: AIAutoReplyMasterConfig = {
       ms: 'Selamat datang ke JW Studio! Ada apa-apa yang boleh saya bantu mengenai pesanan atau koleksi kami?',
       zh: '您好！欢迎来到 JW Studio 官方精品店。请问有什么可以为您服务或查询订单吗？'
     },
+    greetingAliases: ['hi','hello','hey','halo','hallo','hai','helo','你好','您好','good morning','good afternoon','good evening'],
     unknownAnswerMessage: {en:"I couldn't find a confirmed answer in our FAQ. Please leave your question here for our support team.",ms:'Jawapan yang disahkan belum tersedia dalam FAQ kami. Sila tinggalkan soalan untuk pasukan sokongan.',zh:'暂时无法从 FAQ 确认答案。请留下问题，我们的客服团队会协助你。'},
     serviceUnavailableMessage: {en:'Automatic assistance is temporarily unavailable. Your message has been saved for our support team.',ms:'Bantuan automatik tidak tersedia buat sementara. Mesej anda telah disimpan untuk pasukan sokongan.',zh:'自动客服暂时无法使用。你的消息已保存，客服团队会协助你。'},
     offlineMessage: {
@@ -60,6 +61,7 @@ export const DEFAULT_AI_AUTO_REPLY_CONFIG: AIAutoReplyMasterConfig = {
     },
     orderLookup: {
       isEnabled: true,
+      provideTrackingEntry: true,
       requiresVerification: true,
       verificationMethod: 'phone_last4',
       allowedFields: {
@@ -75,6 +77,8 @@ export const DEFAULT_AI_AUTO_REPLY_CONFIG: AIAutoReplyMasterConfig = {
     },
     productCatalog: {
       isEnabled: true,
+      includeStorePolicies: true,
+      browseAliases: ['what do you sell','what are you selling','what exactly you are selling with','what products do you sell','你们卖什么','你们有什么商品','apa yang anda jual'],
       canCheckLiveStock: true,
       canRecommendUpsells: true,
       canExplainSizingAndMaterials: true,
@@ -147,6 +151,7 @@ export const DEFAULT_AI_AUTO_REPLY_CONFIG: AIAutoReplyMasterConfig = {
     priceBargaining: {
       blockUnauthorizedDiscounts: true,
       suggestOfficialVouchersOnly: true,
+      refusalMessages: {ms:'Saya boleh berkongsi harga yang disenaraikan, tetapi tidak boleh merundingkan harga atau menjanjikan diskaun tanpa kebenaran.',zh:'我可以提供商品标价，但不能议价或承诺未经授权的折扣。'},
       refusalTemplate: 'All JW Studio prices are standardized to guarantee fair, premium direct-from-factory pricing. We cannot offer manual discounts, but you are welcome to apply active promotional codes at checkout.'
     },
     antiHallucinationRules: {

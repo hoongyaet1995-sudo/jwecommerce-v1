@@ -25,6 +25,7 @@ export interface AIPersonalityConfig {
     ms: string;
     zh: string;
   };
+  greetingAliases?: string[];
   unknownAnswerMessage: {en:string;ms:string;zh:string};
   serviceUnavailableMessage: {en:string;ms:string;zh:string};
   offlineMessage: {
@@ -90,6 +91,7 @@ export interface AIKnowledgeScopeConfig {
   };
   orderLookup: {
     isEnabled: boolean;
+    provideTrackingEntry?: boolean;
     requiresVerification: boolean; // Phone or Email confirmation required before order status release
     verificationMethod: 'phone_last4' | 'full_phone' | 'email_match';
     allowedFields: {
@@ -105,6 +107,8 @@ export interface AIKnowledgeScopeConfig {
   };
   productCatalog: {
     isEnabled: boolean;
+    includeStorePolicies?: boolean;
+    browseAliases?: string[];
     canCheckLiveStock: boolean;
     canRecommendUpsells: boolean;
     canExplainSizingAndMaterials: boolean;
@@ -134,6 +138,7 @@ export interface AIGuardrailsConfig {
     blockUnauthorizedDiscounts: boolean;
     suggestOfficialVouchersOnly: boolean;
     refusalTemplate: string;
+    refusalMessages?: {ms: string; zh: string};
   };
   antiHallucinationRules: {
     strictStoreContextOnly: boolean;

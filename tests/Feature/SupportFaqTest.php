@@ -10,6 +10,18 @@ use Tests\TestCase;
 
 class SupportFaqTest extends TestCase
 {
+    public function test_operational_controls_persist_and_cannot_disable_price_safety():void
+    {
+        $this->owner();$p=$this->payload();
+        $p['personality']=app(\App\Services\SupportFaqService::class)->defaultPersonality();
+        $p['personality']['greetingAliases']=['halo','good morning'];
+        $p['guardrails']=['priceBargaining'=>['blockUnauthorizedDiscounts'=>true,'suggestOfficialVouchersOnly'=>false,'refusalTemplate'=>'Our prices are fixed.']];
+        $this->putJson('/admin/api/support/faq',$p)->assertOk()->assertJsonPath('guardrails.priceBargaining.refusalTemplate','Our prices are fixed.');
+        $this->getJson('/admin/api/support/faq')->assertJsonPath('personality.greetingAliases.0','halo');
+        $this->getJson('/support/faq')->assertJsonMissingPath('guardrails');
+        $p['version']=1;$p['guardrails']['priceBargaining']['blockUnauthorizedDiscounts']=false;
+        $this->putJson('/admin/api/support/faq',$p)->assertUnprocessable();
+    }
     public function test_channel_choices_persist_across_master_pause_and_reject_unknown_keys(): void
     {
         $this->owner();$p=$this->payload();$p['autoReplyEnabled']=true;$p['aiChannels']=['facebook'=>false,'instagram'=>true];

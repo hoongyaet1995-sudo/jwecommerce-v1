@@ -206,6 +206,8 @@ export const AIGuardrailsTab: React.FC = () => {
         </div>
       </section>
 
+      </fieldset>
+      <p className="text-xs text-neutral-500">Failure messages and human handoff thresholds are managed in AI Personality &amp; Tone. Identity verification and unauthorized-discount protection are always enforced.</p>
       {/* 2. Price Bargaining & Unauthorized Discount Blocker */}
       <section id="bargaining-guardrail-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
@@ -221,7 +223,7 @@ export const AIGuardrailsTab: React.FC = () => {
           </div>
 
           <button
-            onClick={() => handleUpdate('priceBargaining', 'blockUnauthorizedDiscounts', !guardrails.priceBargaining.blockUnauthorizedDiscounts)}
+            disabled title="System safety: unauthorized discounts cannot be enabled"
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors flex items-center gap-1.5 ${
               guardrails.priceBargaining.blockUnauthorizedDiscounts
                 ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
@@ -249,7 +251,7 @@ export const AIGuardrailsTab: React.FC = () => {
 
           <div>
             <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">
-              Firm Pricing Standard Response Template
+              Firm Pricing Response · English · saved and applied
             </label>
             <textarea
               rows={3}
@@ -257,10 +259,12 @@ export const AIGuardrailsTab: React.FC = () => {
               onChange={e => handleUpdate('priceBargaining', 'refusalTemplate', e.target.value)}
               className="w-full text-xs p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
             />
+            {(['ms','zh'] as const).map(language=><label key={language} className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mt-3">Firm Pricing Response · {language==='ms'?'Malay':'Chinese'} · saved and applied<textarea rows={3} aria-label={`Firm Pricing Response ${language}`} value={guardrails.priceBargaining.refusalMessages?.[language]??''} onChange={e=>handleUpdate('priceBargaining','refusalMessages',{...guardrails.priceBargaining.refusalMessages,[language]:e.target.value})} className="w-full text-xs p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500" /></label>)}
           </div>
         </div>
       </section>
 
+      <fieldset disabled className="space-y-6">
       {/* 3. Anti-Hallucination & Non-Ecommerce Blocker */}
       <section id="anti-hallucination-guardrail-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">

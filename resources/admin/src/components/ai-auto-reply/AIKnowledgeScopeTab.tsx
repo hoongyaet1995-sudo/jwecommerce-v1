@@ -507,6 +507,13 @@ export const AIKnowledgeScopeTab: React.FC = () => {
 
       </div>
       {/* 3. Product Catalog & Live Stock Boundaries */}
+      <section className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
+        <h2 className="text-sm font-semibold mb-4">Knowledge Routing Controls</h2>
+        <label className="block text-xs font-semibold mb-3">Catalogue browsing phrases · one per line<textarea aria-label="Catalogue browsing phrases" rows={4} value={(productCatalog.browseAliases??[]).join('\n')} onChange={e=>updateAIAutoReplyConfig(prev=>({...prev,knowledgeScope:{...prev.knowledgeScope,productCatalog:{...prev.knowledgeScope.productCatalog,browseAliases:e.target.value.split('\n').map(value=>value.trim()).filter(Boolean)}}}))} className="w-full text-xs p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white" /></label>
+        <label className="flex items-center gap-3 text-xs mb-3"><input type="checkbox" aria-label="Include store policies in product answers" checked={productCatalog.includeStorePolicies??true} onChange={e=>updateAIAutoReplyConfig(prev=>({...prev,knowledgeScope:{...prev.knowledgeScope,productCatalog:{...prev.knowledgeScope.productCatalog,includeStorePolicies:e.target.checked}}}))} />Include enabled store policies in product answers</label>
+        <label className="flex items-center gap-3 text-xs"><input type="checkbox" aria-label="Provide order tracking entry" checked={orderLookup.provideTrackingEntry??true} onChange={e=>updateAIAutoReplyConfig(prev=>({...prev,knowledgeScope:{...prev.knowledgeScope,orderLookup:{...prev.knowledgeScope.orderLookup,provideTrackingEntry:e.target.checked}}}))} />Provide Order Tracking entry when order knowledge is enabled</label>
+        <p className="text-xs text-neutral-500 mt-3">Private order details still require verification. Disabled knowledge sources are never used.</p>
+      </section>
       <section id="product-catalog-scope-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
           <div className="flex items-center gap-3">
