@@ -1,4 +1,5 @@
 import {AIKeywordInput, AISettingToggle} from './AISettingInputs';
+import {AIReplyCadenceControls} from './AIReplyCadenceControls';
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import {
@@ -146,6 +147,7 @@ export const AIPersonalityTab: React.FC = () => {
 
   return (
     <div id="ai-personality-tab-container" className="space-y-6 animate-in fade-in duration-150">
+      <AIReplyCadenceControls value={aiAutoReplyConfig.replyCadence} onChange={value=>updateAIAutoReplyConfig(prev=>({...prev,replyCadence:value}))}/>
       {/* 1. Bot Profile & Identity */}
       <section id="ai-bot-identity-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
         <div className="flex items-center justify-between gap-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">

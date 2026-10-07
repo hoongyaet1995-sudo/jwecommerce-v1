@@ -38,8 +38,9 @@ class SupportChatController extends Controller
         $syncedAt = now()->toIso8601String();
         $query = SupportConversation::with(['customerUser.customer', 'customer.channelIdentities', 'messages.staff', 'notes.staff']);
         if (!empty($data['since'])) $query->where('updated_at', '>=', \Illuminate\Support\Carbon::parse($data['since']));
-        return response()->json(['syncedAt' => $syncedAt, 'conversations' => $query
-            ->orderByDesc('last_message_at')->get()->map(fn ($c) => $chat->adminView($c))->all()])->header('Cache-Control', 'no-store');
+        $conversations=$query->orderByDesc('last_message_at')->get();
+        $chat->primeCadence($conversations->pluck('id')->all());
+        return response()->json(['syncedAt' => $syncedAt, 'conversations' => $conversations->map(fn ($c) => $chat->adminView($c))->all()])->header('Cache-Control', 'no-store');
     }
     public function send(Request $request, SupportConversation $conversation, SupportChatService $chat)
     {

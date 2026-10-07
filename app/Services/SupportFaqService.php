@@ -12,6 +12,7 @@ class SupportFaqService
         $settings = StoreSetting::where('key', 'support_faq')->value('value') ?? ['version' => 0, 'faq' => null];
         $settings['responsePolicy'] = array_replace(['partialAnswers'=>true,'clarificationEnabled'=>true],$settings['responsePolicy']??[]);
         $settings['customerMemory'] = app(\App\Services\Support\SupportCustomerMemoryPolicy::class)->settings($settings);
+        $settings['replyCadence'] = app(\App\Services\Support\SupportReplyCadencePolicy::class)->settings($settings);
         $settings['attachmentAnalysis'] = app(\App\Services\Support\SupportAttachmentAnalysisPolicy::class)->settings($settings);
         $settings['aiChannels'] = array_replace(\App\Services\Support\SupportAiPolicy::DEFAULTS, $settings['aiChannels'] ?? []);
         $settings['productCatalog'] ??= ['isEnabled'=>true,'canCheckLiveStock'=>true,'canExplainSizingAndMaterials'=>true,'canRecommendUpsells'=>true,'maxRecommendations'=>3];
@@ -32,6 +33,11 @@ class SupportFaqService
     public function save(array $input): array
     {
         $data = validator($input, [
+            'replyCadence'=>'sometimes|array:enabled,collectionSeconds,intervalSeconds,maxSegments',
+            'replyCadence.enabled'=>'required_with:replyCadence|boolean',
+            'replyCadence.collectionSeconds'=>'required_with:replyCadence|integer|min:0|max:3',
+            'replyCadence.intervalSeconds'=>'required_with:replyCadence|integer|min:0|max:3',
+            'replyCadence.maxSegments'=>'required_with:replyCadence|integer|min:1|max:3',
             'customerMemory'=>'sometimes|array:enabled,retentionDays',
             'customerMemory.enabled'=>'sometimes|boolean',
             'customerMemory.retentionDays'=>'sometimes|integer|min:7|max:90',
@@ -149,6 +155,7 @@ class SupportFaqService
             $result = ['guardrails'=>$data['guardrails'] ?? ($row->value['guardrails'] ?? $this->defaultGuardrails()),'aiChannels'=>array_replace(\App\Services\Support\SupportAiPolicy::DEFAULTS,$row->value['aiChannels'] ?? [],$data['aiChannels'] ?? []),'orderLookup'=>$data['orderLookup'] ?? ($row->value['orderLookup'] ?? ['isEnabled'=>false,'allowedFields'=>[]]), 'discountKnowledge'=>$data['discountKnowledge'] ?? ($row->value['discountKnowledge'] ?? ['isEnabled'=>false,'activeIds'=>[]]), 'productCatalog' => $data['productCatalog'] ?? ($row->value['productCatalog'] ?? ['isEnabled'=>true,'canCheckLiveStock'=>true,'canExplainSizingAndMaterials'=>true,'canRecommendUpsells'=>true,'maxRecommendations'=>3]), 'greetingMessage' => $data['greetingMessage'] ?? ($row->value['greetingMessage'] ?? $this->defaultGreeting()), 'version' => $data['version'] + 1, 'faq' => $faq, 'personality' => array_replace($this->defaultPersonality(), $row->value['personality'] ?? [], $data['personality'] ?? []), 'primaryLanguage' => $data['primaryLanguage'] ?? ($row->value['primaryLanguage'] ?? 'auto_detect'), 'autoReplyEnabled' => $data['autoReplyEnabled'] ?? ($row->value['autoReplyEnabled'] ?? false), 'identity' => $data['identity'] ?? ($row->value['identity'] ?? null)];
             $result['responsePolicy']=array_replace(['partialAnswers'=>true,'clarificationEnabled'=>true],$row->value['responsePolicy']??[],$data['responsePolicy']??[]);
             $result['customerMemory']=app(\App\Services\Support\SupportCustomerMemoryPolicy::class)->settings(['customerMemory'=>array_replace($row->value['customerMemory']??[],$data['customerMemory']??[])]);
+            $result['replyCadence']=app(\App\Services\Support\SupportReplyCadencePolicy::class)->settings(['replyCadence'=>array_replace($row->value['replyCadence']??[],$data['replyCadence']??[])]);
             $result['attachmentAnalysis']=app(\App\Services\Support\SupportAttachmentAnalysisPolicy::class)->settings(['attachmentAnalysis'=>array_replace($row->value['attachmentAnalysis']??[],$data['attachmentAnalysis']??[])]);
             $result['guardrails']=array_replace_recursive($this->defaultGuardrails(),$row->value['guardrails']??[],$data['guardrails']??[]);
             $result['guardrails']['priceBargaining']['blockUnauthorizedDiscounts']=true;

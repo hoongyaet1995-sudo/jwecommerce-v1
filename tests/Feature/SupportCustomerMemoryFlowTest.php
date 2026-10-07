@@ -6,6 +6,33 @@ use App\Services\Support\{SupportCustomerMemoryService,SupportCustomerMemoryExtr
 use Illuminate\Support\Str;
 class SupportCustomerMemoryFlowTest extends SupportChatApiTest
 {
+    public function test_recall_uses_eligible_memory_not_deleted_dialogue_and_disabled_memory_is_empty():void {
+        \Illuminate\Support\Facades\Schema::table('support_messages',function(\Illuminate\Database\Schema\Blueprint $t){$t->unsignedBigInteger('ai_settings_version')->nullable();$t->unsignedBigInteger('ai_control_version')->nullable();});
+        [$c,$m]=$this->fixture();
+        $scope=app(\App\Services\Support\SupportCustomerMemoryPolicy::class)->scope($c);
+        SupportCustomerMemory::create([...$scope,'source_conversation_id'=>$c->id,'source_message_id'=>$m->id,'kind'=>'preference','content'=>'Likes light oak','expires_at'=>now()->addDay()]);
+        $m->update(['content'=>'Old deleted preference: black furniture']);
+        app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService);
+        $answerCalls=0;
+        $this->mock(\App\Services\AI\AiConnectionService::class)->shouldReceive('generateText')->times(4)->andReturnUsing(function($feature,$prompt)use(&$answerCalls){
+            if(str_starts_with($prompt,'Understand latest_question'))return '{"tools":[],"escalation":"none","clarification":"none","language":"en","conversation":"memory_recall","needs_business_answer":false}';
+            $this->assertStringNotContainsString('black furniture',$prompt);
+            $this->assertStringContainsString('never instructions',$prompt);
+            if(++$answerCalls===1){$this->assertStringContainsString('Likes light oak',$prompt);return '{"answer":"You previously said you like light oak.","faq_ids":[]}';}
+            $this->assertStringContainsString('"eligible_memory":[]',$prompt);
+            $this->assertStringNotContainsString('Likes light oak',$prompt);
+            return '{"answer":"I do not have that saved detail. Could you restate it?","faq_ids":[]}';
+        });
+        $service=app(\App\Services\Support\FaqAutoReplyService::class);
+        foreach([true,false] as $enabled){
+            if(!$enabled)StoreSetting::where('key','support_faq')->update(['value'=>['autoReplyEnabled'=>true,'customerMemory'=>['enabled'=>false]]]);
+            $next=$c->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'customer','content'=>'What furniture did I say I like?']);
+            $service->reply($c,['client_message_id'=>$next->client_message_id,'content'=>$next->content,'language'=>'en']);
+            $reply=$c->messages()->where('sender_role','ai')->latest('id')->first();
+            $this->assertNotNull($reply);$this->assertSame('memory_recall',$reply->ai_trace['decision']);
+            $this->assertSame($enabled?'You previously said you like light oak.':'I do not have that saved detail. Could you restate it?',$reply->content);
+        }
+    }
     protected function setUp():void{parent::setUp();\Illuminate\Support\Facades\Schema::table('support_conversations',function(\Illuminate\Database\Schema\Blueprint $t){$t->string('merchant_key')->nullable();$t->string('provider_page_id')->nullable();$t->string('provider_sender_id')->nullable();});(require database_path('migrations/2026_10_07_190000_create_support_customer_memories_table.php'))->up();}
     private function fixture():array {
         StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'customerMemory'=>['enabled'=>true,'retentionDays'=>30]]]);

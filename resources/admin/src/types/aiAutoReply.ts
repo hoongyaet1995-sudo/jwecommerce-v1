@@ -162,6 +162,7 @@ export interface AIGuardrailsConfig {
 }
 
 export interface AIAutoReplyMasterConfig {
+  replyCadence?: ReplyCadenceConfig;
   customerMemory?: {enabled:boolean;retentionDays:number};
   attachmentAnalysis?: AttachmentAnalysisConfig;
   attachmentReadiness?: {image:boolean;document:boolean;audio:boolean;provider:string|null;model:string|null};
@@ -187,6 +188,7 @@ export interface AttachmentAnalysisConfig {
   pdfPages:number; audioSeconds:number; retentionDays:number;
   transcriptionModel:'gpt-4o-mini-transcribe'|'gpt-4o-transcribe';
 }
+export interface ReplyCadenceConfig {enabled:boolean;collectionSeconds:number;intervalSeconds:number;maxSegments:number;}
 
 export interface AISimulatorMessage {
   id: string;

@@ -15,6 +15,7 @@ class ReplyToAnalyzedSupportAttachment implements ShouldQueue
         $source=SupportMessage::find($this->sourceId); if(!$source)return;
         $c=SupportConversation::find($source->conversation_id);
         if($c&&in_array($c->channel,['web_guest','web_customer'],true)) {
+            if(app(\App\Services\Support\SupportReplyCadenceService::class)->enqueue($source))return;
             $completed=$ai->reply($c,['client_message_id'=>$source->client_message_id,'content'=>$source->content]);
             if(!$completed && $c->fresh()->status==='open' && (int)$c->messages()->where('sender_role','customer')->max('id')===$source->id) $this->release(5);
         }

@@ -10,6 +10,14 @@ use Tests\TestCase;
 
 class SupportFaqTest extends TestCase
 {
+    public function test_reply_cadence_settings_roundtrip_and_bounds():void {
+        $this->owner();$p=$this->payload();$p['replyCadence']=['enabled'=>true,'collectionSeconds'=>3,'intervalSeconds'=>2,'maxSegments'=>2];
+        $this->putJson('/admin/api/support/faq',$p)->assertOk()->assertJsonPath('replyCadence',$p['replyCadence']);
+        $this->getJson('/admin/api/support/faq')->assertJsonPath('replyCadence',$p['replyCadence']);
+        $p['version']=1;$p['replyCadence']['maxSegments']=4;
+        $this->putJson('/admin/api/support/faq',$p)->assertUnprocessable();
+        $this->getJson('/admin/api/support/faq')->assertJsonPath('replyCadence.maxSegments',2);
+    }
     public function test_memory_settings_persist_privately_and_reject_unsafe_limits():void {
         $this->owner();$p=$this->payload();$p['customerMemory']=['enabled'=>true,'retentionDays'=>31];
         $this->putJson('/admin/api/support/faq',$p)->assertOk()->assertJsonPath('customerMemory.enabled',true);

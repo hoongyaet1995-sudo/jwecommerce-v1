@@ -31,7 +31,7 @@ export type MessageType =
   | 'order_card' 
   | 'system_event';
 
-export type MessageDeliveryStatus = 'sending' | 'accepted' | 'sent' | 'delivered' | 'read' | 'failed' | 'unknown';
+export type MessageDeliveryStatus = 'pending' | 'sending' | 'accepted' | 'sent' | 'delivered' | 'read' | 'failed' | 'unknown';
 
 export interface MessageAttachment {
   analysis?: {status:'pending'|'processing'|'ready'|'failed'|'unsupported'|'expired';text?:string|null;limitations:string[];needsConfirmation:boolean;failureCode?:string|null;retryUrl?:string|null}|null;
@@ -132,6 +132,7 @@ export interface InternalStaffNote {
 }
 
 export interface SupportConversation {
+  replyCadence?: {id:string;status:string;publishedSegments:number;totalSegments:number;stopReason:string|null}|null;
   handoffBrief?: {customerRequests:string[];checks:{tool:string;status:string}[];reason:string;missingContext:string|null;unresolvedTopics:number[];handoffStatus:string}|null;
   mediaCapabilities?: {images:boolean;documents:boolean;audio:boolean};
   canReply?: boolean;

@@ -24,6 +24,7 @@ class ProcessWhatsAppSupportReply implements ShouldQueue
         if (!$source || $source->sender_role !== 'customer') return;
         $conversation = \App\Models\SupportConversation::find($source->conversation_id);
         if (!$conversation || !in_array($conversation->channel,['whatsapp'],true) || $conversation->merchant_key !== app(\App\Services\Social\FacebookAccountService::class)->merchant()) return;
+        if(app(\App\Services\Support\SupportReplyCadenceService::class)->enqueue($source))return;
         $replyId = (string) Uuid::uuid5(Uuid::NAMESPACE_DNS, 'support-ai:'.$source->id);
         $completed = $ai->reply($conversation, ['client_message_id'=>$source->client_message_id, 'content'=>$source->content]);
         $reply = $conversation->messages()->where('client_message_id',$replyId)->first();

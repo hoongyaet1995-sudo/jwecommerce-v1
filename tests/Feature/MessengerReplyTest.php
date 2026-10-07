@@ -48,6 +48,13 @@ class MessengerReplyTest extends TestCase
     {
         \App\Models\StoreSetting::create(['key'=>'support_faq','value'=>['version'=>1,'autoReplyEnabled'=>true,'primaryLanguage'=>'en','productCatalog'=>['isEnabled'=>false], 'faq'=>['isEnabled'=>true,'items'=>[['id'=>'wash','question'=>'Wash?','answer'=>'Cold wash.','isActive'=>true]]]]]);
     }
+    public function test_pending_cadence_segment_is_reserved_and_confirmed_only_once():void {
+        $c=$this->thread();$this->aiSettings();$c->update(['status'=>'open']);$source=$c->messages()->first();
+        $reply=$c->messages()->create(['client_message_id'=>(string)\Illuminate\Support\Str::uuid(),'sender_role'=>'ai','content'=>'One complete paragraph.','delivery_status'=>'pending','ai_settings_version'=>1,'ai_control_version'=>(int)$c->notes()->max('id')]);
+        Http::fake(['graph.facebook.com/*/messages'=>Http::response(['recipient_id'=>'222','message_id'=>'cadence-out'])]);
+        $transport=app(\App\Services\Social\MessengerReplyService::class);$transport->sendGenerated($reply,$source);$transport->sendGenerated($reply,$source);
+        $this->assertSame('sent',$reply->fresh()->delivery_status);Http::assertSentCount(1);
+    }
     private function runAi(SupportConversation $c, string $text): void
     {
         $c->update(['status'=>'open']);$source=$c->messages()->first();$source->update(['content'=>$text]);

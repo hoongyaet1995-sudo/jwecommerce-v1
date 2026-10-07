@@ -11,6 +11,21 @@ use Illuminate\Validation\ValidationException;
 class SupportChatService
 {
     private ?\Illuminate\Support\Collection $messengerAccounts = null;
+    private ?\Illuminate\Support\Collection $cadenceBatches = null;
+    public function primeCadence(array $ids):void
+    {
+        $this->cadenceBatches=collect();
+        if(!$ids||!\Illuminate\Support\Facades\Schema::hasTable('support_reply_batches'))return;
+        $latest=\App\Models\SupportReplyBatch::selectRaw('MAX(latest_source_id)')->whereIn('conversation_id',$ids)->groupBy('conversation_id');
+        $this->cadenceBatches=\App\Models\SupportReplyBatch::whereIn('conversation_id',$ids)->whereIn('latest_source_id',$latest)
+            ->get(['id','conversation_id','status','next_index','stop_reason','trace'])->keyBy('conversation_id');
+    }
+    private function cadenceSummary(SupportConversation $conversation):?array
+    {
+        if($this->cadenceBatches===null)$this->primeCadence([$conversation->id]);
+        $b=$this->cadenceBatches->get($conversation->id);
+        return $b?['id'=>$b->id,'status'=>$b->status,'publishedSegments'=>$b->next_index,'totalSegments'=>$b->trace['cadence']['totalSegments']??0,'stopReason'=>$b->stop_reason]:null;
+    }
     public function owner(Request $request): array
     {
         $user = auth('customer')->user();
@@ -185,6 +200,7 @@ class SupportChatService
             'unreadCount' => $messages->filter(fn ($m) => $m->sender_role === 'customer' && $m->id > $conversation->staff_read_message_id)->count(),
             'isPinned' => $conversation->notes->filter(fn($n)=>str_starts_with($n->content,'[Pin] '))->sortBy('id')->last()?->content==='[Pin] true', 'priority' => 'normal', 'activeAiDraft' => null,
             'handoffBrief'=>app(SupportHandoffBrief::class)->build($conversation),
+            'replyCadence'=>$this->cadenceSummary($conversation),
             'aiSummary' => ['intent' => '', 'sentiment' => 'neutral', 'keyIssue' => '', 'suggestedAction' => '', 'summaryMarkdown' => ''],
             'lastMessageAt' => $conversation->last_message_at?->diffForHumans() ?? '',
             'lastMessageTimestamp' => $conversation->last_message_at?->toIso8601String(),

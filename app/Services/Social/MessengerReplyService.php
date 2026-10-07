@@ -94,7 +94,7 @@ class MessengerReplyService
             $stored = $locked->messages()->whereKey($reply->id)->firstOrFail();
             // The durable generated message is its own one-attempt delivery reservation.
             if ($stored->sender_role !== 'ai') return null;
-            if ($stored->delivery_status !== null) {
+            if ($stored->delivery_status !== null && $stored->delivery_status !== 'pending') {
                 if ($stored->delivery_status === 'sending' && $stored->updated_at->lt(now()->subSeconds(30))) {
                     $stored->update(['delivery_status'=>'unknown','send_error'=>'Send confirmation is unavailable. Check Messenger; do not resend this reply.']);
                     $locked->touch();
@@ -126,7 +126,11 @@ class MessengerReplyService
                 // Messenger renders trusted web actions as ordinary public links; never identity-derived order access.
                 if (isset($action['url']) && str_starts_with($action['url'],'/') && !str_starts_with($action['url'],'//')) {
                     $line = "\n".($action['label'] ?? 'View').': '.rtrim(config('app.url'),'/').$action['url'];
-                    if (mb_strlen($content.$line) <= 2000) $content .= $line;
+                    if (mb_strlen($content.$line) > 2000) {
+                        $stored->update(['delivery_status'=>'failed','send_error'=>'Reply with required links exceeds channel limit.']);
+                        $locked->touch();return null;
+                    }
+                    $content .= $line;
                 }
             }
             $stored->update(['content'=>$content,'delivery_status'=>'sending','send_error'=>null]);

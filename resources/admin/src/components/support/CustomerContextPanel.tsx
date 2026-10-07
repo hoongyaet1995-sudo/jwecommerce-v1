@@ -129,6 +129,11 @@ export const CustomerContextPanel: React.FC<CustomerContextPanelProps> = ({
         </div>
       </div>
 
+      {conversation.replyCadence && <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/80 space-y-3">
+        <h3 className="flex items-center gap-1.5 font-semibold text-neutral-900 dark:text-neutral-100"><Sparkles className="w-3.5 h-3.5 text-indigo-600"/>Reply Delivery</h3>
+        <p className="text-[11px] text-neutral-600 dark:text-neutral-300">{({collecting:'Collecting customer messages',generating:'Preparing reply',ready:'Sending reply segments',completed:'Reply sent',cancelled:'Remaining replies cancelled',failed:'Reply stopped',unknown:'Delivery confirmation unavailable'} as Record<string,string>)[conversation.replyCadence.status]??conversation.replyCadence.status} · {conversation.replyCadence.publishedSegments}/{conversation.replyCadence.totalSegments} confirmed</p>
+        {conversation.replyCadence.stopReason&&<p className="text-[11px] text-neutral-500 dark:text-neutral-400">{conversation.replyCadence.status==='unknown'?'Check the platform before sending again.':conversation.replyCadence.stopReason.replace(/_/g,' ')}</p>}
+      </div>}
       {conversation.handoffBrief && <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/80 space-y-3">
         <h3 className="flex items-center gap-1.5 font-semibold text-neutral-900 dark:text-neutral-100"><HeartHandshake className="w-3.5 h-3.5 text-indigo-600"/>Handoff Brief</h3>
         <p className="text-[11px] text-neutral-500">{conversation.handoffBrief.handoffStatus==='staff_handling'?'Staff handling':conversation.handoffBrief.handoffStatus==='pending'?'Awaiting staff':'Human assistance offered'} · Customer statements are requests, not verified facts.</p>

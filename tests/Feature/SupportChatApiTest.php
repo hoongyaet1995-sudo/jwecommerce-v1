@@ -15,6 +15,19 @@ use Tests\TestCase;
 
 class SupportChatApiTest extends TestCase
 {
+    public function test_preference_acknowledgement_does_not_require_faq_or_promise_persistence():void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService);
+        $calls=0;
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->twice()->andReturnUsing(function($feature,$prompt)use(&$calls){
+            if(++$calls===1)return '{"tools":[],"escalation":"none","clarification":"none","language":"zh","conversation":"preference","needs_business_answer":false}';
+            $this->assertStringContainsString('never promise that it was saved',$prompt);
+            return '{"answer":"明白，你喜欢浅色橡木家具。","faq_ids":[]}';
+        });
+        $r=$this->postJson('/support/chat/messages',$this->payload('我喜欢浅色橡木家具'))->assertOk();
+        $this->assertSame('明白，你喜欢浅色橡木家具。',collect($r->json('conversation.messages'))->last()['content']);
+    }
     public function test_dialogue_context_keeps_staff_clarification_but_not_private_order_response():void
     {
         app()->instance(\App\Services\Support\UnifiedKnowledgeService::class,new \App\Services\Support\UnifiedKnowledgeService);

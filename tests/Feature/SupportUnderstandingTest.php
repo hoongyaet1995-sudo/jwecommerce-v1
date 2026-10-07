@@ -5,6 +5,22 @@ use App\Services\AI\AiConnectionService;
 use App\Services\Support\SupportUnderstandingService;
 class SupportUnderstandingTest extends TestCase
 {
+    public function test_preference_and_memory_recall_have_valid_non_business_intents(): void
+    {
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->twice()->andReturn(
+            '{"tools":[],"escalation":"none","clarification":"none","language":"zh","conversation":"preference","needs_business_answer":false}',
+            '{"tools":[],"escalation":"none","clarification":"none","language":"zh","conversation":"memory_recall","needs_business_answer":false}'
+        );
+        $service=app(SupportUnderstandingService::class);
+        $this->assertSame('preference',$service->understand('我喜欢浅色橡木家具',[],[],[])['conversation']);
+        $this->assertSame('memory_recall',$service->understand('我之前说喜欢什么家具？',[],[],[])['conversation']);
+    }
+    public function test_memory_recall_cannot_execute_private_order_tool():void
+    {
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->andReturn('{"tools":[{"name":"order.lookup","query":"QA-00000"}],"escalation":"none","clarification":"none","language":"en","conversation":"memory_recall","needs_business_answer":false}');
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        app(SupportUnderstandingService::class)->understand('Recall order address',['order.lookup'=>'Private'],[],[]);
+    }
     public function test_understanding_preserves_mixed_intents_and_language_without_aliases(): void
     {
         $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->withArgs(fn($feature,$prompt,$limit)=>str_contains($prompt,'Staff (context only): BILLY') && str_contains($prompt,'greetings are not business facts'))

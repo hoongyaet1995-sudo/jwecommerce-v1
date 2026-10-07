@@ -70,7 +70,8 @@ class MessengerInboundService
             DB::table('messenger_inbound_receipts')->insert(['event_key'=>$key,'conversation_id'=>$conversation->id,'page_id'=>$page,'message_id'=>$mid,'created_at'=>now(),'updated_at'=>now()]);
             $account->update(['last_inbound_at'=>now()]);
             app(\App\Services\Support\SupportCustomerMemoryService::class)->schedule($conversation,$message); app(\App\Services\Support\SupportMessageAlertService::class)->received($conversation,$message);
-            if(!app(\App\Services\Support\SupportAttachmentAnalysisService::class)->schedule($message) && trim($text)!==''&&!collect(data_get($event,'message.attachments',[]))->contains(fn($a)=>($a['type']??null)==='file')) \App\Jobs\ProcessMessengerSupportReply::dispatch($message->id)->onConnection('support')->onQueue('support-ai')->beforeCommit();
+            if(!app(\App\Services\Support\SupportAttachmentAnalysisService::class)->schedule($message) && trim($text)!==''&&!collect(data_get($event,'message.attachments',[]))->contains(fn($a)=>($a['type']??null)==='file')
+                && !app(\App\Services\Support\SupportReplyCadenceService::class)->enqueue($message)) \App\Jobs\ProcessMessengerSupportReply::dispatch($message->id)->onConnection('support')->onQueue('support-ai')->beforeCommit();
             return true;
         },3);
     }
