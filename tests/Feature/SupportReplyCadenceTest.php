@@ -83,6 +83,14 @@ class SupportReplyCadenceTest extends SupportChatApiTest
         $s->publish($batch->id);$this->travel(2)->seconds();$s->publish($batch->id);
         $this->assertSame('unknown',$batch->fresh()->status);$this->assertSame(1,$c->messages()->where('sender_role','ai')->count());
     }
+    public function test_whatsapp_provider_acceptance_advances_remaining_segments_without_receipt():void {
+        $c=$this->cadenceConversation();$c->update(['channel'=>'whatsapp']);$s=app(SupportReplyCadenceService::class);$source=$this->message($c,'Help');$s->enqueue($source);$batch=SupportReplyBatch::first();$batch->update(['status'=>'generating']);
+        $s->prepare($batch->id,$c,$source,"One\n\nTwo",[],['decision'=>'grounded','candidateSegments'=>['One','Two']],app(\App\Services\SupportFaqService::class)->read());
+        $this->mock(\App\Services\Social\WhatsAppReplyService::class)->shouldReceive('sendGenerated')->twice()->andReturnUsing(fn($message)=>$message->update(['delivery_status'=>'accepted']));
+        $s->publish($batch->id);$this->assertSame('ready',$batch->fresh()->status);
+        $this->travel(1)->seconds();$s->publish($batch->id);
+        $this->assertSame('completed',$batch->fresh()->status);$this->assertSame(2,$c->messages()->where('sender_role','ai')->count());
+    }
     public function test_batch_state_is_staff_only_and_failed_generation_is_visible():void {
         $c=$this->cadenceConversation();$s=app(SupportReplyCadenceService::class);$s->enqueue($this->message($c,'Help'));$batch=SupportReplyBatch::first();
         $batch->update(['status'=>'generating','generation_started_at'=>now()->subMinutes(3)]);$s->process($batch->id);

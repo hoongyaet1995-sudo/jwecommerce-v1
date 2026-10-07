@@ -166,7 +166,7 @@ class SupportReplyCadenceService
             $status=$message->fresh()->delivery_status;
             DB::transaction(function()use($batch,$status){
                 $b=SupportReplyBatch::whereKey($batch->id)->lockForUpdate()->first();if($b->status!=='ready')return;
-                if(!in_array($status,['sent','delivered','read'],true)){$b->update(['status'=>$status==='failed'?'failed':'unknown','stop_reason'=>$status==='failed'?'provider_rejected':'delivery_unconfirmed']);return;}
+                if(!in_array($status,['accepted','sent','delivered','read'],true)){$b->update(['status'=>$status==='failed'?'failed':'unknown','stop_reason'=>$status==='failed'?'provider_rejected':'delivery_unconfirmed']);return;}
                 $next=$b->next_index+1;$done=$next>=count($b->segments??[]);
                 $b->update(['next_index'=>$next,'status'=>$done?'completed':'ready','due_at'=>now()->addSeconds($b->interval_seconds)]);
                 if(!$done)$this->publishLater($b);

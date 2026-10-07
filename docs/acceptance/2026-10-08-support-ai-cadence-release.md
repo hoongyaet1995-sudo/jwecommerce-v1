@@ -9,3 +9,7 @@ Approved release includes pending Facebook preference acknowledgement and eligib
 Deployment preflight tooling: remote inline PHP PowerShell quote failed once; no env values printed/mutated. Remote crontab unavailable count1; do not retry unchanged. Existing hPanel worker task must be inspected through supported UI or repository worker command. No guessed credentials.
 
 Pre-run scoped git add/diff check/commit then push accepted HEAD to GitHub main; after push deploy ff-only, targeted cadence migration, optimize:clear, queue:restart, exactSHA andHTTPS. Rhythm stays defaultOFF unless temporarily enabled for authorized acceptance then restored. No privacy/security access change.
+
+Live WA acceptance found provider accepted incorrectly classified unknown (unexpected application failure count1). Intentional TDD red: php artisan test --filter=test_whatsapp_provider_acceptance_advances_remaining_segments_without_receipt; purpose reproduce provider accepted before receipts.
+Intentional red reproduced ready versus unknown. Before green: accept provider accepted as confirmed request admission, preserving unknown stop/no replay. Run focused cadence suite.
+Green:67passed444assertions7.32s. f08c779 deployed exact SHA with migration/clear/restart HTTPS200. FB208/209 preference and211/212 recall sent, both completed1. WA214/215 delivered/read but batch stopped after segment1 due accepted mismatch; fix regression passed. Sync scoped transport admission correction under existing release authorization; no frontend/build change.
