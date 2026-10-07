@@ -87,6 +87,7 @@ class SupportAttachmentService
     public function view(SupportMessage $message, bool $admin=false): array
     {
         return $message->attachments->map(fn($a)=>['id'=>$a->id,'type'=>$a->kind ?? 'image','durationSeconds'=>$a->duration_seconds,'name'=>$a->name,'mimeType'=>$a->mime,'sizeBytes'=>$a->bytes,'status'=>$a->status,
-            'url'=>$a->status==='ready'?($admin?'/admin/api/support/attachments/':'/support/chat/attachments/').$a->id:null,'error'=>$a->error,'retryUrl'=>$admin&&$a->status==='failed'&&$a->account_id&&$a->provider_reference?'/admin/api/support/attachments/'.$a->id.'/retry':null])->all();
+            'url'=>$a->status==='ready'?($admin?'/admin/api/support/attachments/':'/support/chat/attachments/').$a->id:null,'error'=>$a->error,'retryUrl'=>$admin&&$a->status==='failed'&&$a->account_id&&$a->provider_reference?'/admin/api/support/attachments/'.$a->id.'/retry':null]
+            +($admin&&\Illuminate\Support\Facades\Schema::hasTable('support_attachment_analyses')?['analysis'=>app(SupportAttachmentAnalysisService::class)->view($a)]:[]))->all();
     }
 }

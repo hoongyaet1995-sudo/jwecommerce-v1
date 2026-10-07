@@ -2,6 +2,7 @@ import { AIAutoReplyMasterConfig } from '../types/aiAutoReply';
 
 export const DEFAULT_AI_AUTO_REPLY_CONFIG: AIAutoReplyMasterConfig = {
   isAutoReplyGloballyEnabled: true,
+  attachmentAnalysis: {image:false,document:false,audio:false,pdfPages:10,audioSeconds:120,retentionDays:30,transcriptionModel:'gpt-4o-mini-transcribe'},
   aiChannels: {storefront:true,facebook:true,instagram:true,whatsapp:true,tiktok:false},
   activeChannels: {
     storefrontWebChat: true,

@@ -188,6 +188,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/social/facebook/{id}/inbound', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'inbound'])->middleware('throttle:10,1');
     Route::post('/api/support/conversations/{conversation}/attachments', [\App\Http\Controllers\SupportAttachmentController::class, 'upload'])->whereUuid('conversation')->middleware('throttle:20,1');
     Route::post('/api/support/attachments/{attachment}/retry',[\App\Http\Controllers\SupportAttachmentController::class,'retry'])->whereUuid('attachment')->middleware('throttle:6,1');
+    Route::post('/api/support/attachments/{attachment}/analysis/retry',[\App\Http\Controllers\SupportAttachmentController::class,'retryAnalysis'])->whereUuid('attachment')->middleware('throttle:3,1');
     Route::get('/api/support/attachments/{attachment}', [\App\Http\Controllers\SupportAttachmentController::class, 'show'])->whereUuid('attachment');
     Route::get('/api/support/conversations', [\App\Http\Controllers\Admin\SupportChatController::class, 'index']);
     Route::post('/api/support/conversations/{conversation}/messages', [\App\Http\Controllers\Admin\SupportChatController::class, 'send'])->whereUuid('conversation')->middleware('throttle:60,1');

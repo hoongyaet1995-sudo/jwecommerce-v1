@@ -37,10 +37,11 @@ class DownloadSupportImage implements ShouldQueue
         Storage::disk($a->disk)->put($path,$bytes);
         $a->update(['path'=>$path,'duration_seconds'=>$duration,'mime'=>$mime,'width'=>$width,'height'=>$height,'bytes'=>strlen($bytes),'sha256'=>hash('sha256',$bytes),'status'=>'ready','error'=>null,'provider_reference'=>null]);
         $a->conversation->touch();
+        if($source=\App\Models\SupportMessage::find($a->message_id)) app(\App\Services\Support\SupportAttachmentAnalysisService::class)->schedule($source);
     }
     public function failed(?\Throwable $error): void
     {
         $a=SupportAttachment::find($this->attachmentId);
-        if($a && $a->status!=='ready'){$a->update(['status'=>'failed','error'=>'Media unavailable. Ask the customer to resend it.']);$a->conversation->touch();}
+        if($a && $a->status!=='ready'){$a->update(['status'=>'failed','error'=>'Media unavailable. Ask the customer to resend it.']);$a->conversation->touch();if($source=\App\Models\SupportMessage::find($a->message_id))app(\App\Services\Support\SupportAttachmentAnalysisService::class)->schedule($source);}
     }
 }

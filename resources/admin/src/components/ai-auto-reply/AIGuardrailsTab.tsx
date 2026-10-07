@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import {AIAttachmentControls} from './AIAttachmentControls';
 import { useAdmin } from '../../context/AdminContext';
 import {
   ShieldAlert,
@@ -102,6 +103,7 @@ export const AIGuardrailsTab: React.FC = () => {
 
   return (
     <div id="ai-guardrails-tab-container" className="space-y-6 animate-in fade-in duration-150">
+      <AIAttachmentControls mode="limits" value={aiAutoReplyConfig.attachmentAnalysis} onChange={attachmentAnalysis=>updateAIAutoReplyConfig(prev=>({...prev,attachmentAnalysis}))}/>
       <p className="text-xs text-neutral-500">FAQ/product grounding and listed-price boundaries are enforced by the server. Other controls below are Not connected.</p><fieldset disabled className="space-y-6">
       {/* 1. Competitor Mentions & Neutralizer */}
       <section id="competitor-guardrail-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">

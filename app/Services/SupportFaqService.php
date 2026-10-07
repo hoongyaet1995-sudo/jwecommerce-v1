@@ -11,6 +11,7 @@ class SupportFaqService
     {
         $settings = StoreSetting::where('key', 'support_faq')->value('value') ?? ['version' => 0, 'faq' => null];
         $settings['responsePolicy'] = array_replace(['partialAnswers'=>true,'clarificationEnabled'=>true],$settings['responsePolicy']??[]);
+        $settings['attachmentAnalysis'] = app(\App\Services\Support\SupportAttachmentAnalysisPolicy::class)->settings($settings);
         $settings['aiChannels'] = array_replace(\App\Services\Support\SupportAiPolicy::DEFAULTS, $settings['aiChannels'] ?? []);
         $settings['productCatalog'] ??= ['isEnabled'=>true,'canCheckLiveStock'=>true,'canExplainSizingAndMaterials'=>true,'canRecommendUpsells'=>true,'maxRecommendations'=>3];
         $settings['productCatalog']['browseAliases'] ??= $this->defaultBrowseAliases();
@@ -30,6 +31,14 @@ class SupportFaqService
     public function save(array $input): array
     {
         $data = validator($input, [
+            'attachmentAnalysis'=>'sometimes|array:image,document,audio,pdfPages,audioSeconds,retentionDays,transcriptionModel',
+            'attachmentAnalysis.transcriptionModel'=>'sometimes|in:gpt-4o-mini-transcribe,gpt-4o-transcribe',
+            'attachmentAnalysis.image'=>'sometimes|boolean',
+            'attachmentAnalysis.document'=>'sometimes|boolean',
+            'attachmentAnalysis.audio'=>'sometimes|boolean',
+            'attachmentAnalysis.pdfPages'=>'sometimes|integer|min:1|max:20',
+            'attachmentAnalysis.audioSeconds'=>'sometimes|integer|min:15|max:300',
+            'attachmentAnalysis.retentionDays'=>'sometimes|integer|min:7|max:90',
             'responsePolicy'=>'sometimes|array:partialAnswers,clarificationEnabled',
             'responsePolicy.partialAnswers'=>'required_with:responsePolicy|boolean',
             'responsePolicy.clarificationEnabled'=>'required_with:responsePolicy|boolean',
@@ -135,6 +144,7 @@ class SupportFaqService
             abort_if(($row->value['version'] ?? 0) !== $data['version'], 409, 'FAQs changed in another session. Reload before saving.');
             $result = ['guardrails'=>$data['guardrails'] ?? ($row->value['guardrails'] ?? $this->defaultGuardrails()),'aiChannels'=>array_replace(\App\Services\Support\SupportAiPolicy::DEFAULTS,$row->value['aiChannels'] ?? [],$data['aiChannels'] ?? []),'orderLookup'=>$data['orderLookup'] ?? ($row->value['orderLookup'] ?? ['isEnabled'=>false,'allowedFields'=>[]]), 'discountKnowledge'=>$data['discountKnowledge'] ?? ($row->value['discountKnowledge'] ?? ['isEnabled'=>false,'activeIds'=>[]]), 'productCatalog' => $data['productCatalog'] ?? ($row->value['productCatalog'] ?? ['isEnabled'=>true,'canCheckLiveStock'=>true,'canExplainSizingAndMaterials'=>true,'canRecommendUpsells'=>true,'maxRecommendations'=>3]), 'greetingMessage' => $data['greetingMessage'] ?? ($row->value['greetingMessage'] ?? $this->defaultGreeting()), 'version' => $data['version'] + 1, 'faq' => $faq, 'personality' => array_replace($this->defaultPersonality(), $row->value['personality'] ?? [], $data['personality'] ?? []), 'primaryLanguage' => $data['primaryLanguage'] ?? ($row->value['primaryLanguage'] ?? 'auto_detect'), 'autoReplyEnabled' => $data['autoReplyEnabled'] ?? ($row->value['autoReplyEnabled'] ?? false), 'identity' => $data['identity'] ?? ($row->value['identity'] ?? null)];
             $result['responsePolicy']=array_replace(['partialAnswers'=>true,'clarificationEnabled'=>true],$row->value['responsePolicy']??[],$data['responsePolicy']??[]);
+            $result['attachmentAnalysis']=app(\App\Services\Support\SupportAttachmentAnalysisPolicy::class)->settings(['attachmentAnalysis'=>array_replace($row->value['attachmentAnalysis']??[],$data['attachmentAnalysis']??[])]);
             $result['guardrails']=array_replace_recursive($this->defaultGuardrails(),$row->value['guardrails']??[],$data['guardrails']??[]);
             $result['guardrails']['priceBargaining']['blockUnauthorizedDiscounts']=true;
             $result['productCatalog']['browseAliases']=$data['productCatalog']['browseAliases']??$row->value['productCatalog']['browseAliases']??$this->defaultBrowseAliases();

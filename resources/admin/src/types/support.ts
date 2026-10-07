@@ -34,6 +34,7 @@ export type MessageType =
 export type MessageDeliveryStatus = 'sending' | 'accepted' | 'sent' | 'delivered' | 'read' | 'failed' | 'unknown';
 
 export interface MessageAttachment {
+  analysis?: {status:'pending'|'processing'|'ready'|'failed'|'unsupported'|'expired';text?:string|null;limitations:string[];needsConfirmation:boolean;failureCode?:string|null;retryUrl?:string|null}|null;
   id: string;
   name: string;
   url: string;

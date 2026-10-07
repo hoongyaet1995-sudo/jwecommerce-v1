@@ -10,6 +10,16 @@ use Tests\TestCase;
 
 class SupportFaqTest extends TestCase
 {
+    public function test_attachment_settings_persist_privately_and_reject_unsafe_limits(): void
+    {
+        $this->owner(); $p=$this->payload();
+        $p['attachmentAnalysis']=['image'=>true,'document'=>false,'audio'=>true,'pdfPages'=>8,'audioSeconds'=>60,'retentionDays'=>14,'transcriptionModel'=>'gpt-4o-mini-transcribe'];
+        $this->putJson('/admin/api/support/faq',$p)->assertOk()->assertJsonPath('attachmentAnalysis.image',true);
+        $this->getJson('/admin/api/support/faq')->assertJsonPath('attachmentAnalysis.retentionDays',14);
+        $this->getJson('/support/faq')->assertJsonMissingPath('attachmentAnalysis');
+        $p['version']=1; $p['attachmentAnalysis']['pdfPages']=21;
+        $this->putJson('/admin/api/support/faq',$p)->assertUnprocessable();
+    }
     public function test_response_policy_is_saved_and_private():void
     {
         $this->owner();$p=$this->payload();$p['responsePolicy']=['partialAnswers'=>false,'clarificationEnabled'=>false];

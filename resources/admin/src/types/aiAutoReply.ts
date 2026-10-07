@@ -162,6 +162,8 @@ export interface AIGuardrailsConfig {
 }
 
 export interface AIAutoReplyMasterConfig {
+  attachmentAnalysis?: AttachmentAnalysisConfig;
+  attachmentReadiness?: {image:boolean;document:boolean;audio:boolean;provider:string|null;model:string|null};
   aiChannels?: Record<'storefront'|'facebook'|'instagram'|'whatsapp'|'tiktok',boolean>;
   isAutoReplyGloballyEnabled: boolean;
   activeChannels: {
@@ -177,6 +179,12 @@ export interface AIAutoReplyMasterConfig {
   guardrails: AIGuardrailsConfig;
   lastUpdatedBy: string;
   lastUpdatedAt: string;
+}
+
+export interface AttachmentAnalysisConfig {
+  image:boolean; document:boolean; audio:boolean;
+  pdfPages:number; audioSeconds:number; retentionDays:number;
+  transcriptionModel:'gpt-4o-mini-transcribe'|'gpt-4o-transcribe';
 }
 
 export interface AISimulatorMessage {

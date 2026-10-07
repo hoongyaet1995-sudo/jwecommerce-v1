@@ -25,7 +25,8 @@ class SupportChatController extends Controller
         $data['content'] = trim($data['content'] ?? '');
         abort_if($data['content'] === '' && empty($data['attachment_id']), 422, 'Message cannot be empty.');
         $conversation = $chat->sendCustomer($request, $data);
-        if(!$conversation->messages()->where('client_message_id',$data['client_message_id'])->whereHas('attachments',fn($q)=>$q->where('kind','document'))->exists())app(FaqAutoReplyService::class)->reply($conversation, $data);
+        $source=$conversation->messages()->where('client_message_id',$data['client_message_id'])->firstOrFail();
+        if(!app(\App\Services\Support\SupportAttachmentAnalysisService::class)->schedule($source) && !$source->attachments()->where('kind','document')->exists()) app(FaqAutoReplyService::class)->reply($conversation, $data);
 
         return response()->json(['conversation' => $chat->publicView($conversation->fresh())])->header('Cache-Control', 'no-store');
     }

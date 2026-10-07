@@ -1,0 +1,77 @@
+# V2-A attachment understanding — local ledger
+
+Plan: `docs/superpowers/plans/2026-10-07-support-ai-v2-attachments.md`.
+Baseline: `codex/social-crm-identity`, `ee27c7abcdb10533cd1027b947763f460a5d9812`; unrelated dirty checkout, marketplace, docs and generated assets preserved.
+User approved written spec, plan and native execution. No release approval for this phase.
+
+Ruling: Develop in canonical existing feature checkout rather than create a separate checkout — user requires this local environment first and browser fixtures are already here; preserve unrelated changes and stage only scoped files.
+
+## Tests / issue ledger
+
+- Initial TDD red declared: `php artisan test --filter=SupportAttachmentAnalysisTest`; purpose defaults, persistence boundaries and encryption; analysis classes not yet implemented. Expected missing-class failures are intentional, not unexpected failures.
+- Elapsed/token usage: unavailable unless recorded by an actual measurement.
+- Initial red result: two expected missing-class failures, 1.51 s test duration; no unexpected failure. Next implement policy/model/settings/migration and rerun focused tests.
+- Green run purpose: same assertions after policy/model implementation; `php artisan test --filter=SupportAttachmentAnalysisTest`.
+- Green result: 2 tests, 12 assertions passed (1.45 s).
+- Initial TDD red declared for provider contracts and settings persistence: `php artisan test --filter='SupportMediaProviderTest|attachment_settings_persist'`; purpose new inline image/PDF, separate transcription endpoint and bounded settings. Missing adapter and transcription-setting validation are expected initial reds.
+- Provider documentation verified: OpenAI file-inputs, images-vision, speech-to-text and gpt-5.6-luna model pages on developers.openai.com. Active local support provider OpenAI, text model gpt-5.6-luna; no credentials printed. Model documents image input, not audio input.
+- Ruling: first adapter is OpenAI, matching active deployment; other providers visibly unsupported for media until their own contracts and actual tests exist. Add admin transcriptionModel choice (gpt-4o-mini-transcribe / gpt-4o-transcribe) to avoid pretending the text model transcribes audio.
+- Provider/settings initial red: 4 expected failures, missing adapter and unrecognized new transcription field, 1.67 s. Next implement adapters/schema then run the same focused contracts plus policy.
+- Unexpected issue MP-01 (count 1): multipart HTTP test treated request data as JSON keys; adapter returned transcript correctly. Inspect Laravel Request::data showed multipart parts. Correct assertion to inspect the model form part, then rerun same contracts; no provider retry involved.
+- MP-01 count 2: later Http::fake did not replace the earlier stub; empty-transcript assertion saw the first successful fake. Change to a response sequence for the two calls. Next run provider tests with flow initial red.
+- Initial TDD red declared: `php artisan test --filter='SupportMediaProviderTest|SupportAttachmentAnalysisFlowTest'` for queue/analysis lifecycle, deduplication, pending downloads and stale sources. Flow service is intentionally absent.
+- Red result: 3 expected absent-service failures, 56 inherited/provider checks passed (6.45 s). MP-01 resolved at cumulative count 2.
+- Unexpected AF-01 count 1: process returned false in first ready-file test after service implementation; schedule/stale/provider checks pass. Add state diagnostics to identify which eligibility gate rejects fixture; next run only this test, no blind rerun.
+- AF-01 count 2 diagnostics: DB row was pending but freshly created Eloquent model lacked the DB-default status, so pending branch skipped. Set status explicitly in creation attributes; rerun focused flow/provider tests. This is a code defect, not provider/environment failure.
+- AF-01 resolved cumulative 2; focused flow/provider 6 tests, 25 assertions passed (1.76 s).
+- Initial TDD red declared for answer integration: `php artisan test --filter='SupportAttachmentAnalysisFlowTest::test_(download_completion|failure_creates)'`; caption must wait, failed analysis yields one safe deterministic fallback without LLM. These behaviors are not yet wired.
+- Answer integration initial red: two expected behavior failures (1.53 s). Wired analysis scheduling at Storefront/social ingress and download completion, then bounded attributed context and deterministic unavailable fallback. Next run focused integration plus existing document/text tests.
+- Green: focused integration, provider and existing PDF/V1 checks 68 tests, 444 assertions passed (9.44 s).
+- Initial frontend TDD red declared: `npx vitest run src/components/ai-auto-reply/AIAttachmentControls.test.tsx`; capability switches and unsupported disable behavior before component implementation.
+- Frontend red: expected absent component import. After component integration, two focused Vitest tests passed (1.54 s).
+- Local migration applied only the new analysis table (174.80 ms); no reset or production change.
+- Typecheck TC-01 count 1: `npm run lint` failed across existing catalog/dashboard/marketplace/preview types. Next diagnostic compares compiler results against HEAD using a read-only compiler-host overlay, rather than altering unrelated files or rerunning blindly.
+- Next verification: actual-model synthetic image/PDF/audio extraction, remaining authorization/retention/race tests, focused UI tests and build. No live release or real customer file used.
+- Green safety/settings/provider set: 14 tests, 71 assertions passed (2.42 s), including cross-merchant denial, derived expiry without original deletion, staff-only visibility and takeover during provider call.
+- TC-01 diagnostic: read-only HEAD compiler overlay found baseline 128 errors, current 125, no new diagnostic. Global lint remains failed due existing errors; no unrelated corrections made. TC-01 unresolved baseline limitation, no repeated lint run planned.
+- Actual provider synthetic extraction: image 5.99 s, text PDF 2.56 s, scanned PDF 4.74 s (gpt-5.6-luna), English voice 1.59 s (gpt-4o-mini-transcribe), all ready with correct content. Evidence `output/support-ai-v2-provider-evidence.json`; synthetic files only, no customer data.
+- Next command `npm run build` from resources/admin: validate production bundle after settings/render changes. Browser path uses existing authenticated Chrome via CUA; no native Browser plugin skill is available.
+- Build passed (11.32 s). Browser capability readiness becomes available after asynchronous settings load; all three default off. Added interrupted-worker terminal fallback; next focused flow regression validates queue safety.
+- Lifecycle regression after interruption fallback: 66 tests / 436 assertions passed (6.85 s). Next new multi-file and worker-interruption assertions plus bounded web lock retry validate newly added queue paths.
+- Multi-file and worker interruption checks passed: 2 tests / 10 assertions (1.56 s). Review identified missing attachment follow-up context and 1200-character truncation. Added bounded same-conversation, same-owner/merchant, enabled/unexpired untrusted notes; next regression checks V1 and analysis.
+- Follow-up changes regression: 82 tests / 545 assertions passed (8.09 s). New explicit history assertions next cover enabled and expired boundaries.
+- Follow-up enabled/expiry tests passed (1 test / 5 assertions, 1.52 s). Next synthetic local image/PDF full answer pipeline invokes actual model; settings restored in finally, no social send.
+- E2E-01 count 1: synthetic fixture used nonexistent customer_name column; no provider call occurred and finally restored settings. Removed invalid fixture-only column; next run full answer acceptance.
+- E2E-01 resolved at 1: actual synthetic image and PDF completed analysis -> RAG -> grounded answer, evidence output/support-ai-v2-answer-evidence.json. Browser image toggle and PDF pages persisted after reload; restored off / 10 pages. Save toast clarified connected settings versus unavailable controls.
+- Next actual audio test uses installed Chinese TTS synthetic question; Malay TTS not installed, so Malay real audio remains unverified rather than claiming pass.
+- Chinese synthetic audio transcribed most content but misheard 槟城 as 编程. Accuracy is not a pass; all automatic transcripts now require customer confirmation of names/destinations/numbers. This avoids silently treating uncertain speech as business parameters. Next tests verify provider/understanding and rebuild after save-toast correction.
+- Final reviewer found retry window must exceed 90-second generation lock. Changed web reply to 25 attempts / 5-second release (120-second waiting budget), matching social worker. Added executable contention/release assertion; next focused safety tests.
+- OpenAI official TTS docs verified Malay support. Generate one synthetic Malay fixture with current provider then transcribe, rather than leaving missing local TTS as blocker.
+- Malay synthetic transcription exactly preserved both questions. Next silent audio actual-provider check ensures empty speech is not accepted as a customer question.
+- Actual silent recording rejected with sanitized response code (no accepted text). Next full synthetic WhatsApp-shaped Malay voice analysis -> RAG -> answer, explicitly no WhatsApp transport invocation.
+- E2E-01 count 2 (fixture schema assumptions): voice fixture used size instead of existing bytes field. Inspected production service creation attributes, corrected fixture to bytes; settings restored in finally. No provider call occurred on failed fixture.
+- Voice full pipeline produced correct Malay policy answer but omitted requested confirmation. Added deterministic customer confirmation turn for automatic voice transcripts before business parameter use; subsequent text confirmation uses attributed history. This closes observed Chinese destination-misrecognition risk without guessed confidence. Next focused voice regression.
+- VF-01 count 1: inherited SQLite web fixture lacks existing social ai_settings_version/control_version fields; confirmation answer itself was correct. Added actual social columns to this fixture test; next focused rerun verifies persistence.
+- VF-01 resolved at1: confirmation persistence test passes (1 / 4 assertions, 1.45 s). Next real synthetic voice fixture reuses existing extraction, regenerates only its AI replies, then explicit Malay confirmation and follow-up verifies guarded voice -> text business answer.
+- Actual Malay confirmation -> subsequent question answered correctly from policy and attached context, evidence output/support-ai-v2-voice-confirmation.json. Browser staff PDF analysis expanded in dark theme, screenshot output/support-ai-v2-chat-dark.png. Final queue/provider/FAQ/document regression next reflects final voice confirmation change.
+
+## Local checkpoint 2026-10-07T18:26:28.8737209+08:00
+- Final related regression: 147 tests / 980 assertions passed (15.95 s). Final bundle built in 10.42 s. Diff whitespace check passed. Prior global TypeScript baseline remains unresolved, no newly introduced diagnostics in recorded comparison.
+- Browser verified capability toggle save/refresh, PDF limit save/refresh, light limits card and dark private analysis notes. Synthetic provider fixtures cover image, text/scanned PDF, English/Malay/Chinese transcription and silence. Chinese destination misrecognition is recorded; automatic voice now asks customer confirmation before routing business questions.
+- V2-A implementation locally present. Acceptance still pending actual Storefront upload ingress, Facebook image and WhatsApp voice production transport, noise beyond silence, and full adversarial media cases. No production release or complete V2 claim. Settings restored: analysis off, PDF 10, audio120, retention30.
+- V2-B memory, V2-C reply rhythm and V2-D FAQ draft/quality remain outside this phase.
+- Historical test timestamps incomplete; test durations are measured runner output, total elapsed/token usage unavailable. Unexpected counts: MP-01 2 resolved; AF-01 2 resolved; E2E-01 2 resolved; VF-01 1 resolved; TC-01 1 baseline limitation.
+
+- 2026-10-07T18:28:49.3165065+08:00 Next provider contracts after added malformed/oversized result, instruction boundary and single timeout-attempt assertions: php artisan test --filter=SupportMediaProviderTest. Storefront upload UI is blocked by extension file-access permission; request is pending, no native picker workaround.
+- MP-01 cumulative count3 Attention: Http::assertSentCount excludes failed fake connections (records zero completed responses), so assertion did not measure attempts. Related HTTP harness assumptions history retained. Replace with fake invocation counter; 2026-10-07T18:29:12.2864313+08:00 next command php artisan test --filter=SupportMediaProviderTest, purpose actual call count on timeout.
+- MP-01 resolved cumulative3 Attention; provider contracts 5tests/14assertions passed1.63s. 2026-10-07T18:30:20.6742233+08:00 next added private-hash and audio-duration pre-provider guards: php artisan test --filter='changed_private_file|voice_over_analysis_duration'.
+- 2026-10-07T18:31:15.3443961+08:00 Added private hash/duration guards passed: 2tests/7assertions1.60s. Provider malformed/timeout tests passed5/14. Analysis controls restored off after attempted UI upload.
+- Required browser input pending: Chrome ChatGPT extension needs Allow access to file URLs; CUA chooser reported explicit permission failure. Affected upload acceptance paused immediately, no native-dialog bypass. User asked asynchronously to enable or defer. Existing settings/model/renderer verification stands; do not claim upload ingress accepted.
+- No commit/push/deploy performed. Continue actual Storefront upload after user browser permission response, then remaining scoped acceptance before closure.
+
+## Approved release 2026-10-07T18:49:18.3241282+08:00
+- User explicitly requested synchronize V2-A, keep analysis off and discuss further cost settings after release. Local HEAD/GitHub main/Hostinger all ee27c7abcdb10533cd1027b947763f460a5d9812 before release; canonical production root verified /home/u762348670/apps/jwecommerce, read-only SSH origin preserved.
+- Scope only V2-A app/frontend/test/spec/new migration and manifest-referenced new bundles. Unrelated checkout/Marketplace/historical asset deletion changes excluded. Browser upload extension gate remains pending; release does not mark real-channel media analysis acceptance closed.
+- Next php artisan test --filter='SupportAttachmentAnalysis|SupportMediaProvider|SupportFaqTest|SupportDocumentMessaging|SupportImageMessaging' validates final accepted source before scoped commit. Global TS baseline limitation remains documented.
+- Release preflight: 209tests/1404assertions passed20.98s; frontend switch test1passed1.58s. Production OpenAI text model and qpdf runtime verified; analysis absent=>defaults off. crontab CLI unavailable; existing dedicated hPanel support queue runner documented, retention scheduled-command execution must be verified separately. 2026-10-07T18:51:07.4774540+08:00 next scoped staging excludes unrelated dirty files and obsolete bundle deletions.
+- Final typecheck comparison: baseline128/current125/newErrors0. Source-only staged whitespace check passed; generated bundle warning is inherited Markdown hard-break template whitespace verified in HEAD bundle. No generated semantic string altered.

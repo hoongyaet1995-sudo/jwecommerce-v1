@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
+Schedule::command('support:prune-attachment-analyses')->daily()->withoutOverlapping();
+
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');

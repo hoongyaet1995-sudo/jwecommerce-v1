@@ -11,7 +11,9 @@ class SupportFaqController extends Controller
     {
         abort_unless($request->user()?->is_super_admin, 403);
 
-        return response()->json($service->read() + ['discountRecords'=>app(\App\Services\Support\DiscountKnowledgeService::class)->records()])->header('Cache-Control', 'no-store');
+        $settings=$service->read();
+        $readiness=\Illuminate\Support\Facades\Schema::hasTable('ai_connections')?app(\App\Services\Support\SupportAttachmentAnalyzer::class)->readiness($settings):['image'=>false,'document'=>false,'audio'=>false,'provider'=>null,'model'=>null];
+        return response()->json($settings + ['attachmentReadiness'=>$readiness,'discountRecords'=>app(\App\Services\Support\DiscountKnowledgeService::class)->records()])->header('Cache-Control', 'no-store');
     }
 
     public function save(Request $request, SupportFaqService $service)

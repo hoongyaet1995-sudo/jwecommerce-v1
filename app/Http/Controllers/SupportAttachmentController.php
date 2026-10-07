@@ -10,6 +10,13 @@ use Illuminate\Support\Str;
 
 class SupportAttachmentController extends Controller
 {
+    public function retryAnalysis(Request $r,SupportAttachment $attachment,\App\Services\Support\SupportAttachmentAnalysisService $analysis)
+    {
+        abort_unless($r->user()?->is_admin,403);
+        abort_unless($attachment->merchant_key===null || $attachment->merchant_key===config('services.facebook.merchant_key','jw-ecommerce'),404);
+        $analysis->retry($attachment,$r->user()->id);
+        return response()->json(['status'=>'pending'])->header('Cache-Control','no-store');
+    }
     public function upload(Request $r, SupportChatService $chat, SupportAttachmentService $media, ?SupportConversation $conversation=null)
     {
         $r->validate(['image'=>['nullable','file','max:5120'],'audio'=>['nullable','file','max:16384'],'document'=>['nullable','file','max:10240']]);
