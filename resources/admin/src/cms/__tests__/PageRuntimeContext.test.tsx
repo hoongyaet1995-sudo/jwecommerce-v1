@@ -94,6 +94,23 @@ const readBootstrapText = (textContent: string) => readPageRuntimeBootstrap({
   getElementById: () => ({ textContent }),
 } as unknown as Document);
 
+describe('editorial hero public bootstrap',()=>{
+  it('accepts Story and its CTA style on a saved generic page and rejects unsupported styles',()=>{
+    const value=payload();
+    value.page.document.sections=[{id:'story',type:'media_text_split',title:'Story',isVisible:true,layoutPreset:'editorial-story',buttonStyle:'text-link',content:'One.\n\nTwo.'}];
+    expect(readBootstrapValue(value)).not.toBeNull();
+    (value.page.document.sections[0] as unknown as Record<string,unknown>).buttonStyle='unsupported';
+    expect(readBootstrapValue(value)).toBeNull();
+  });
+  it('accepts saved hero fields and rejects invalid focal positions',()=>{
+    const value=payload();
+    value.page.document.sections=[{id:'hero',type:'media_text_split',title:'Story',isVisible:true,layoutPreset:'editorial-hero',mediaAlt:'',mediaFocalPoint:'center'}];
+    expect(readBootstrapValue(value)).not.toBeNull();
+    (value.page.document.sections[0] as unknown as Record<string,unknown>).mediaFocalPoint='outside';
+    expect(readBootstrapValue(value)).toBeNull();
+  });
+});
+
 const renderRuntimeOrFallback = (parsed: PageRuntimePayload | null) => renderToStaticMarkup(parsed ? (
   <PageRuntimeProvider payload={parsed}>
     <PageSections sections={parsed.page.document.sections} mode={parsed.context.mode} />
@@ -101,10 +118,59 @@ const renderRuntimeOrFallback = (parsed: PageRuntimePayload | null) => renderToS
 ) : <PageRuntimeUnavailable />);
 
 describe('PageRuntimeContext', () => {
+  it('shares saved page width with every renderer and rejects invalid widths',()=>{
+    const value=payload();value.page.document.containerWidth='wide';value.page.document.sections=SECTION_TEMPLATES.map((template,index)=>({...template.defaultData,id:'container-'+index,isVisible:true}));
+    const parsed=readBootstrapValue(value);expect(parsed).not.toBeNull();const html=renderRuntimeOrFallback(parsed);expect((html.match(/data-page-container=/g)??[]).length).toBe(SECTION_TEMPLATES.length);expect((html.match(/max-width:1440px/g)??[]).length).toBe(SECTION_TEMPLATES.filter(template=>template.defaultData.containerMode!=='full-bleed').length);
+    (value.page.document as unknown as Record<string,unknown>).containerWidth='invented';expect(readBootstrapValue(value)).toBeNull();
+  });
+  it('loads saved image CTA through shared renderer and rejects another type owning its preset',()=>{
+    const value=payload();value.page.document.sections=[{id:'banner',type:'cta_strip',title:'Saved banner',isVisible:true,ctaPreset:'image-banner',ctaBannerHeight:'compact',mediaUrl:'https://images.unsplash.com/photo-banner',imageSlots:[{target:'mediaUrl',imageOverlay:true,imageOverlayOpacity:40}]}];
+    const parsed=readBootstrapValue(value);expect(parsed).not.toBeNull();expect(renderRuntimeOrFallback(parsed)).toContain('data-image-banner');
+    value.page.document.sections[0].type='rich_text';expect(readBootstrapValue(value)).toBeNull();
+    value.page.document.sections[0].type='cta_strip';value.page.document.sections[0].ctaPreset='default';expect(renderRuntimeOrFallback(readBootstrapValue(value))).not.toContain('data-image-banner');
+  });
+  it('loads standalone Values List through the shared saved-page renderer and validates its controls',()=>{
+    const value=payload();
+    value.page.document.sections=[{id:'v',type:'values_list',title:'Stored heading',subtitle:'OUR VALUES',isVisible:true,valuesShowHeading:false,valuesShowDividers:false,valuesRowSpacing:'compact',valuesNumberColor:'#cccccc',items:[{id:'one',title:'First',description:'Saved value'}]}];
+    const parsed=readBootstrapValue(value);
+    expect(parsed).not.toBeNull();
+    const html=renderRuntimeOrFallback(parsed);expect(html).toContain('data-values-list');expect(html).toContain('Saved value');expect(html).not.toContain('Stored heading');
+    value.page.document.sections[0].type='rich_text';expect(readBootstrapValue(value)).toBeNull();
+    value.page.document.sections[0].type='values_list';
+    (value.page.document.sections[0] as unknown as Record<string,unknown>).valuesRowSpacing='invented';expect(readBootstrapValue(value)).toBeNull();
+    value.page.document.sections[0].valuesRowSpacing='normal';
+    (value.page.document.sections[0] as unknown as Record<string,unknown>).valuesShowDividers='yes';expect(readBootstrapValue(value)).toBeNull();
+  });
+  it('loads a saved Manifesto and shares its renderer while keeping legacy rich text unchanged',()=>{
+    const value=payload();
+    value.page.document.sections=[{id:'statement',type:'rich_text',title:'Saved statement',isVisible:true,richTextPreset:'manifesto',content:'First.\n\nSecond.'}];
+    const parsed=readBootstrapValue(value);
+    expect(parsed).not.toBeNull();
+    expect(renderRuntimeOrFallback(parsed)).toContain('data-editorial-manifesto');
+    value.page.document.sections[0].type='media_text_split';
+    expect(readBootstrapValue(value)).toBeNull();
+    value.page.document.sections[0].type='rich_text';
+    delete value.page.document.sections[0].richTextPreset;
+    expect(renderRuntimeOrFallback(readBootstrapValue(value))).not.toContain('data-editorial-manifesto');
+    (value.page.document.sections[0] as unknown as Record<string,unknown>).richTextPreset='invented';
+    expect(readBootstrapValue(value)).toBeNull();
+  });
+
+  it('validates slot ownership, geometry and saved independent item settings',()=>{
+    const value=payload();
+    value.page.document.sections=[{id:'gallery',type:'media_gallery',title:'Gallery',isVisible:true,items:[{id:'photo',title:'Photo'}],imageSlots:[{target:'item:photo:imageUrl',imageRatio:'3:4'}]}];
+    expect(readBootstrapValue(value)).not.toBeNull();
+    value.page.document.sections[0].imageSlots[0].target='item:missing:imageUrl';
+    expect(readBootstrapValue(value)).toBeNull();
+    value.page.document.sections=[{id:'avatar',type:'testimonials_slider',title:'Reviews',isVisible:true,items:[{id:'review',title:'Review'}],imageSlots:[{target:'item:review:authorAvatar',imageShape:'circle'}]}];
+    expect(readBootstrapValue(value)).toBeNull();
+  });
+
   it.each(['subtle-lift', 'fade-in', 'smooth-zoom', 'dynamic-pop', 'none'] as const)('renders all section templates safely with %s without browser observers', (motionPreset) => {
     const value = payload();
     value.page.document.sections = SECTION_TEMPLATES.map((template, index) => ({ ...template.defaultData, id: 'motion-' + index, isVisible: true, motionPreset }));
-    expect(value.page.document.sections).toHaveLength(27);
+    expect(value.page.document.sections).toHaveLength(SECTION_TEMPLATES.length);
+    expect(value.page.document.sections.some(section=>section.ctaPreset==='image-banner')).toBe(true);
     expect(() => renderRuntimeOrFallback(value)).not.toThrow();
   });
 
@@ -355,19 +421,19 @@ describe('PageRuntimeContext', () => {
       'contactAddress', 'contactHours', 'contactButtonText', 'newsletterCouponId', 'subjectPlaceholder',
       'categoryPlaceholder', 'messagePlaceholder', 'comparisonDimensionName',
       'comparisonCompetitorName', 'comparisonOurBrandName', 'cardBadge', 'cardTitle', 'cardSubtitle',
-      'cardExtra',
+      'cardExtra', 'mediaAlt', 'imageForegroundColor',
     ];
     const optionalNumbers = ['overlayOpacity', 'discountPercent', 'sliderInterval'];
     const optionalEnums = [
       'mediaType', 'mediaPosition', 'mediaAspectRatio', 'textAlignment', 'textColor', 'paddingY',
-      'tickerSpeed', 'sliderHeight',
+      'tickerSpeed', 'sliderHeight', 'layoutPreset', 'mediaFocalPoint', 'buttonStyle', 'imageRatio', 'imagePosition', 'imageFit', 'imageWidth', 'imageShape', 'imageOverlayOpacity', 'imageForegroundOpacity',
     ];
     const cases: Array<[string, unknown]> = [
       ...optionalStrings.map(field => [field, {bad: true}] as [string, unknown]),
       ...optionalNumbers.map(field => [field, 'not-a-number'] as [string, unknown]),
       ...optionalEnums.map(field => [field, 'not-an-enum-value'] as [string, unknown]),
       ['columnsCount', 7],
-      ['sliderAutoplay', 'yes'],
+      ['sliderAutoplay', 'yes'], ['imageOverlay', 'yes'], ['imageForeground', 'yes'],
       ['cardPrice', {bad: true}],
     ];
 

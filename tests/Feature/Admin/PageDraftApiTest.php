@@ -19,6 +19,91 @@ use Tests\TestCase;
 class PageDraftApiTest extends TestCase
 {
     use RefreshDatabase;
+    public function test_standalone_values_list_is_saved_on_an_unrelated_page_with_order_and_style_intact(): void
+    {
+        $document = $this->fixture('standalone-values-qa');
+        $document['sections'] = [['id' => 'v', 'type' => 'values_list', 'title' => 'Stored heading', 'isVisible' => true, 'valuesShowHeading' => false, 'valuesShowDividers' => true, 'valuesRowSpacing' => 'spacious', 'valuesNumberColor' => '#bbbbbb', 'items' => [['id' => 'one', 'title' => 'First', 'description' => 'One'], ['id' => 'two', 'title' => 'Second', 'description' => 'Two']]]];
+        $page = $this->canonicalPage($document);
+        $this->actingAs($this->admin())->patchJson(route('admin.api.pages.draft.update', $page), ['lockVersion' => 1, 'document' => $document])->assertOk();
+        $document['sections'][0]['items'] = array_reverse($document['sections'][0]['items']);
+        $this->patchJson(route('admin.api.pages.draft.update', $page), ['lockVersion' => 2, 'document' => $document])->assertOk();
+        $this->assertSame($document, $this->getJson(route('admin.api.pages.draft.show', $page))->assertOk()->json('data.document'));
+    }
+
+    public function test_values_list_reordering_and_preset_switch_preserve_item_identity_and_legacy_fields(): void
+    {
+        $document = $this->fixture('generic-values-qa');
+        $document['sections'] = [['id' => 'values', 'type' => 'feature_cards', 'title' => 'Stored heading', 'isVisible' => true, 'featureCardsPreset' => 'values-list', 'valuesShowHeading' => false, 'items' => [['id' => 'one', 'title' => 'First', 'description' => 'One', 'icon' => 'Sparkles', 'badge' => 'Saved badge'], ['id' => 'two', 'title' => 'Second', 'description' => 'Two', 'icon' => 'ShieldCheck']]]];
+        $page = $this->canonicalPage($document);
+        $this->actingAs($this->admin())->patchJson(route('admin.api.pages.draft.update', $page), ['lockVersion' => 1, 'document' => $document])->assertOk();
+        $document['sections'][0]['items'] = array_reverse($document['sections'][0]['items']);
+        $document['sections'][0]['featureCardsPreset'] = 'default';
+        $this->patchJson(route('admin.api.pages.draft.update', $page), ['lockVersion' => 2, 'document' => $document])->assertOk();
+        $this->assertSame($document, $this->getJson(route('admin.api.pages.draft.show', $page))->assertOk()->json('data.document'));
+    }
+
+    public function test_manifesto_round_trips_on_a_generic_page_and_preserves_quote_on_preset_switch(): void
+    {
+        $document = $this->fixture('generic-manifesto-qa');
+        $document['sections'] = [['id' => 'statement', 'type' => 'rich_text', 'title' => 'Saved statement', 'isVisible' => true, 'richTextPreset' => 'manifesto', 'content' => "First.\n\nSecond.", 'quote' => 'Preserved quote', 'authorName' => 'Author', 'paddingY' => 'spacious']];
+        $page = $this->canonicalPage($document);
+        $this->actingAs($this->admin())->patchJson(route('admin.api.pages.draft.update', $page), ['lockVersion' => 1, 'document' => $document])->assertOk();
+        $this->assertSame($document, $this->getJson(route('admin.api.pages.draft.show', $page))->assertOk()->json('data.document'));
+        $document['sections'][0]['richTextPreset'] = 'default';
+        $this->patchJson(route('admin.api.pages.draft.update', $page), ['lockVersion' => 2, 'document' => $document])->assertOk();
+        $this->assertSame('Preserved quote', $this->getJson(route('admin.api.pages.draft.show', $page))->assertOk()->json('data.document.sections.0.quote'));
+    }
+
+    public function test_gallery_image_targets_round_trip_independently_after_reordering(): void
+    {
+        $document = $this->fixture('image-targets-qa');
+        $document['sections'] = [[
+            'id' => 'gallery', 'type' => 'media_gallery', 'title' => 'Gallery', 'isVisible' => true,
+            'items' => [['id' => 'one', 'title' => 'One', 'imageUrl' => ''], ['id' => 'two', 'title' => 'Two', 'imageUrl' => '']],
+            'imageSlots' => [['target' => 'item:one:imageUrl', 'imageRatio' => '1:1', 'imagePosition' => 'bottom-right'], ['target' => 'item:two:imageUrl', 'imageShape' => 'rounded', 'imageOverlay' => true, 'imageOverlayOpacity' => 40]],
+        ]];
+        $page = $this->canonicalPage($document);
+        $this->actingAs($this->admin())->patchJson(route('admin.api.pages.draft.update', $page), ['lockVersion' => 1, 'document' => $document])->assertOk();
+        $document['sections'][0]['items'] = array_reverse($document['sections'][0]['items']);
+        $this->patchJson(route('admin.api.pages.draft.update', $page), ['lockVersion' => 2, 'document' => $document])->assertOk();
+        $this->assertSame($document, $this->getJson(route('admin.api.pages.draft.show', $page))->assertOk()->json('data.document'));
+    }
+
+    public function test_editorial_story_settings_round_trip_on_an_unrelated_page(): void
+    {
+        $document = $this->fixture('generic-section-reuse-qa');
+        $document['title'] = 'Generic section reuse QA';
+        $document['sections'] = [[
+            'id' => 'story', 'type' => 'media_text_split', 'title' => 'Reusable story', 'isVisible' => true,
+            'layoutPreset' => 'editorial-story', 'content' => "First paragraph.\n\nSecond paragraph.",
+            'mediaPosition' => 'right', 'mediaAspectRatio' => '16:9', 'mediaAlt' => '', 'mediaFocalPoint' => 'bottom',
+            'buttonStyle' => 'text-link', 'buttonText' => 'View collection', 'buttonLink' => '/shop',
+            'imageRatio' => '3:4', 'imagePosition' => 'bottom-right', 'imageFit' => 'contain',
+            'imageWidth' => '75', 'imageShape' => 'rounded', 'imageOverlay' => true, 'imageOverlayOpacity' => 40,
+            'imageForeground' => true, 'imageForegroundColor' => '#ff0000', 'imageForegroundOpacity' => 20,
+        ]];
+        $page = $this->canonicalPage($document);
+        $this->actingAs($this->admin())->patchJson(route('admin.api.pages.draft.update', $page), [
+            'lockVersion' => 1, 'document' => $document,
+        ])->assertOk();
+        $this->assertSame($document, $this->getJson(route('admin.api.pages.draft.show', $page))->assertOk()->json('data.document'));
+    }
+
+    public function test_editorial_hero_settings_survive_a_saved_draft_reload(): void
+    {
+        $document = $this->fixture('editorial-hero-draft');
+        $document['sections'] = [[
+            'id' => 'editorial-hero', 'type' => 'media_text_split', 'title' => "A closer look\nat JW Studio.",
+            'isVisible' => true, 'layoutPreset' => 'editorial-hero', 'mediaAlt' => '', 'mediaFocalPoint' => 'top',
+        ]];
+        $page = $this->canonicalPage($document);
+        $document['sections'][0]['mediaAlt'] = 'Illustrative writing desk';
+        $this->actingAs($this->admin())->patchJson(route('admin.api.pages.draft.update', $page), [
+            'lockVersion' => 1, 'document' => $document,
+        ])->assertOk();
+        $saved = $this->getJson(route('admin.api.pages.draft.show', $page))->assertOk()->json('data.document');
+        $this->assertSame($document, $saved);
+    }
 
     public function test_admin_can_read_only_the_canonical_draft_identity_and_sections(): void
     {

@@ -43,7 +43,7 @@ it('auto slides using actual item count and pauses while hovered', () => {
   expect(track.style.transform).toBe('translateX(-0%)');
   act(()=>vi.advanceTimersByTime(3000)); expect(track.style.transform).toBe('translateX(-100%)');
   act(()=>vi.advanceTimersByTime(3000)); expect(track.style.transform).toBe('translateX(-0%)');
-  act(()=>container.querySelector('.max-w-7xl')!.dispatchEvent(new MouseEvent('mouseover',{bubbles:true})));
+  act(()=>container.querySelector('[data-page-container]')!.dispatchEvent(new MouseEvent('mouseover',{bubbles:true})));
   act(()=>vi.advanceTimersByTime(6000)); expect(track.style.transform).toBe('translateX(-0%)');
   act(()=>root.unmount());
 });

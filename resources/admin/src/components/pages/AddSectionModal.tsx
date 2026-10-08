@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Category, Collection, PageSection, PageSectionType } from '../../types';
 import { createCollectionTabMappings } from '../../cms/collectionTabMappings';
 import { createSectionColorDefaults } from '../../cms/sectionColorDefaults';
+import {aboutChaptersSections} from '../../cms/aboutChaptersTemplate';
+import {aboutStudioSections} from '../../cms/aboutStudioTemplate';
 import {
   X,
   Sparkles,
@@ -647,6 +649,25 @@ const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
 
   // --- 5. BENEFITS & TRUST ---
   {
+    type: 'values_list',
+    title: 'Values List',
+    category: 'Benefits & Trust',
+    description: 'Numbered editorial rows for brand values, principles or commitments. Titles, descriptions and automatic numbering.',
+    icon: Layers,
+    defaultData: {
+      type: 'values_list',title:'Our values',subtitle:'OUR VALUES',content:'',
+      isVisible:true,valuesShowHeading:false,valuesShowDividers:true,valuesRowSpacing:'normal',
+      valuesNumberColor:'#d4d4d4',valuesDividerColor:'#e5e5e5',
+      backgroundColor:'bg-white',textColor:'dark',paddingY:'normal',
+      customColors:{eyebrowColor:'#4f46e5',titleColor:'#171717',contentColor:'#737373'},
+      items:[
+        {id:'value-1',title:'Thoughtful choices',description:'We prioritise materials, design and function that make sense — for you and for the world around us.'},
+        {id:'value-2',title:'Clear information',description:'We keep things straightforward, from product details to how we work, so you can shop with confidence.'},
+        {id:'value-3',title:'Everyday usefulness',description:'We design for real life — pieces that are versatile, durable and made to be used, not just kept.'},
+      ],
+    },
+  },
+  {
     type: 'feature_cards',
     title: 'Value Proposition & Feature Cards',
     category: 'Benefits & Trust',
@@ -998,6 +1019,12 @@ const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
     }
   },
 
+  {
+    type: 'cta_strip', title: 'Editorial Image Banner', category: 'Conversion & Leads',
+    description: 'Background photograph with left-aligned editorial copy and a clear call to action.', icon: Megaphone, badge: 'Editorial',
+    defaultData: {type:'cta_strip',ctaPreset:'image-banner',ctaBannerHeight:'normal',content:'',mediaUrl:'',secondaryButtonText:'',secondaryButtonLink:'',title:'Simple things,\nconsidered.',subtitle:'EXPLORE',buttonText:'Explore the collection',buttonLink:'/shop',isVisible:true,backgroundColor:'bg-white',textColor:'light',paddingY:'compact',imageSlots:[{target:'mediaUrl',imageOverlay:true,imageOverlayOpacity:30}],customColors:{eyebrowColor:'#ffffff',titleColor:'#ffffff',contentColor:'#ffffff',primaryBtnBg:'#4f46e5',primaryBtnText:'#ffffff'}}
+  },
+
   // --- 8. CONVERSION & LEADS ---
   {
     type: 'cta_strip',
@@ -1046,11 +1073,26 @@ const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
   }
 ];
 
-export const SECTION_TEMPLATES: SectionTemplateOption[] = SOURCE_SECTION_TEMPLATES.map(template => ({
+const studioStarter=(index:number):Omit<PageSection,'id'>=>{const {id,...data}=aboutStudioSections('Your store','studio-starter')[index];return data;};
+const EDITORIAL_SECTION_TEMPLATES:SectionTemplateOption[]=[
+  {type:'media_gallery',title:'Editorial Montage',category:'Header & Intro',description:'A centered introduction with staggered portrait photographs. Each image uses shared image tools.',icon:Image,badge:'Editorial',defaultData:studioStarter(0)},
+  {type:'media_gallery',title:'Editorial Image Cards',category:'Media & Visuals',description:'Photographs with simple titles and captions beneath. No card borders or overlays.',icon:Grid,badge:'Editorial',defaultData:studioStarter(3)},
+  {type:'feature_cards',title:'Editorial Text Columns',category:'Storytelling & Narrative',description:'Clean columns of headings and paragraphs for brand ideas, principles and values.',icon:Columns,badge:'Editorial',defaultData:studioStarter(2)},
+];
+const chapterStarter=(index:number):Omit<PageSection,'id'>=>{const {id,...data}=aboutChaptersSections('Your store','chapter-starter')[index];return data;};
+const CHAPTER_SECTION_TEMPLATES:SectionTemplateOption[]=[
+ {type:'media_text_split',title:'Editorial Cover',category:'Header & Intro',description:'A bold heading, introduction and panoramic photograph.',icon:Image,badge:'Editorial',defaultData:chapterStarter(0)},
+ {type:'chapter_navigation',title:'Chapter Navigation',category:'Storytelling & Narrative',description:'Automatically links to visible Chapter Blocks, with matching numbers and labels.',icon:Layers,badge:'Editorial',defaultData:chapterStarter(1)},
+ {type:'chapter_block',title:'Chapter Story',category:'Storytelling & Narrative',description:'A numbered chapter with narrative paragraphs and a wide photograph.',icon:FileText,badge:'Editorial',defaultData:chapterStarter(2)},
+ {type:'chapter_block',title:'Chapter Perspective',category:'Storytelling & Narrative',description:'A numbered chapter with two photographs and a point of view.',icon:Columns,badge:'Editorial',defaultData:chapterStarter(3)},
+ {type:'chapter_block',title:'Chapter Principles',category:'Storytelling & Narrative',description:'A numbered chapter with clear title and description rows.',icon:Layers,badge:'Editorial',defaultData:chapterStarter(4)},
+ {type:'cta_strip',title:'Editorial CTA Band',category:'Conversion & Leads',description:'A lateral headline and action on a solid brand background.',icon:Megaphone,badge:'Editorial',defaultData:chapterStarter(5)},
+];
+export const SECTION_TEMPLATES: SectionTemplateOption[] = [...SOURCE_SECTION_TEMPLATES,...EDITORIAL_SECTION_TEMPLATES,...CHAPTER_SECTION_TEMPLATES].map(template => ({
   ...template,
   defaultData: {
     ...template.defaultData,
-    customColors: createSectionColorDefaults(),
+    customColors: {...createSectionColorDefaults(),...template.defaultData.customColors},
   },
 }));
 
@@ -1093,13 +1135,16 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
       ? createCollectionTabMappings(categories, collections)
       : null;
     const newSection: PageSection = {
-      ...template.defaultData,
+      ...JSON.parse(JSON.stringify(template.defaultData)),
       ...(collectionTabs ? {
         tabs: collectionTabs,
         tabCategories: collectionTabs.map(tab => tab.label),
       } : {}),
       id: 'sec-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7)
     };
+    if (newSection.type==='chapter_block'||newSection.galleryPreset?.startsWith('editorial-')||newSection.featureCardsPreset==='editorial-columns') {
+      newSection.items=newSection.items?.map((item,index)=>({...item,id:`${newSection.id}-item-${index}`}));
+    }
     onAdd(newSection);
     onClose();
   };
@@ -1203,7 +1248,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
               const Icon = tmpl.icon;
               return (
                 <button
-                  key={tmpl.type}
+                  key={`${tmpl.type}-${tmpl.title}`}
                   onClick={() => handleSelectTemplate(tmpl)}
                   className="group p-5 rounded-2xl border text-left flex flex-col justify-between transition-all duration-200
                     bg-white dark:bg-neutral-900/90

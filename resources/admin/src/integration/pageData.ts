@@ -189,6 +189,7 @@ export const createPage = async (bootstrap: LaravelAdminBootstrap, page: CmsPage
     slug: page.slug,
     description: page.description,
     template: page.template,
+    ...(page.containerWidth?{containerWidth:page.containerWidth}:{}),
     heroImage: page.heroImage,
     seoTitle: page.seoTitle,
     seoDescription: page.seoDescription,

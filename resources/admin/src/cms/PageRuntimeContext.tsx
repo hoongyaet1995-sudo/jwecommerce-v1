@@ -1,6 +1,8 @@
+import {isTypography} from './inspectorCapabilities';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Category, CmsPage, Collection, PageDocument, PageSection, Product } from '../types';
 import { SectionRenderer } from '../components/pages/SectionRenderer';
+import { imageTargets, imageSlotFamilies } from './imageTargets';
 
 export interface PageRuntimeProduct {
   id: string;
@@ -202,9 +204,9 @@ const runtimeSourceFields = ['id', 'type', 'slug', 'label', 'image'];
 
 const sectionTypes = new Set([
   'hero_banner', 'split_hero', 'hero_slider', 'announcement_bar', 'rich_text',
-  'media_text_split', 'timeline_story', 'stats_counter', 'product_grid', 'product_listing', 'collection_tabs',
+  'media_text_split', 'chapter_block', 'chapter_navigation', 'timeline_story', 'stats_counter', 'product_grid', 'product_listing', 'collection_tabs',
   'featured_deal', 'pricing_table', 'media_gallery', 'video_embed', 'before_after',
-  'instagram_feed', 'feature_cards', 'icon_list', 'comparison_matrix', 'faq_accordion',
+  'instagram_feed', 'feature_cards', 'values_list', 'icon_list', 'comparison_matrix', 'faq_accordion',
   'contact_form', 'store_locator', 'testimonials_slider', 'logo_cloud', 'cta_strip',
   'newsletter_signup',
 ]);
@@ -234,6 +236,8 @@ type PageSectionFieldRule =
 // `satisfies Record<keyof PageSection, ...>` makes a PageSection type change fail compilation
 // until its browser-bootstrap rule is deliberately classified here.
 export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
+  imageSlots: {kind: 'nested'},
+  typography: {kind:'nested'},
   motionPreset: {kind: 'optional-enum', values: ['subtle-lift', 'fade-in', 'smooth-zoom', 'dynamic-pop', 'none']},
   id: {kind: 'required-string'},
   type: {kind: 'section-type'},
@@ -247,9 +251,39 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   mediaUrl: {kind: 'optional-string'},
   mediaType: {kind: 'optional-enum', values: ['image', 'video']},
   mediaPosition: {kind: 'optional-enum', values: ['left', 'right']},
+  imageRatio: {kind: 'optional-enum', values: ["default", "auto", "16:9", "3:2", "4:3", "1:1", "3:4"]},
+  imagePosition: {kind: 'optional-enum', values: ["top-left", "top-center", "top-right", "center-left", "center", "center-right", "bottom-left", "bottom-center", "bottom-right"]},
+  imageFit: {kind: 'optional-enum', values: ["cover", "contain"]},
+  imageWidth: {kind: 'optional-enum', values: ["100", "75", "50"]},
+  imageShape: {kind: 'optional-enum', values: ["default", "rectangle", "rounded", "circle"]},
+  imageOverlay: {kind: 'optional-boolean'},
+  imageOverlayOpacity: {kind: 'optional-enum', values: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]},
+  imageForeground: {kind: 'optional-boolean'},
+  imageForegroundColor: {kind: 'optional-string'},
+  imageForegroundOpacity: {kind: 'optional-enum', values: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]},
+  layoutPreset: {kind: 'optional-enum', values: ['default', 'editorial-hero', 'editorial-story', 'editorial-cover']},
+  containerMode: {kind: 'optional-enum', values: ['page','full-bleed']},
+  sectionBorder: {kind: 'optional-enum', values: ['default','none','top','bottom','both']},
+  sectionBorderColor: {kind: 'optional-string'},
+  ctaPreset: {kind: 'optional-enum', values: ['default','image-banner','editorial-band']},
+  leadText: {kind:'optional-string'},
+  chapterPreset: {kind:'optional-enum',values:['story','perspective','principles']},
+  ctaBannerHeight: {kind: 'optional-enum', values: ['compact','normal','spacious']},
+  richTextPreset: {kind: 'optional-enum', values: ['default', 'manifesto']},
+  featureCardsPreset: {kind: 'optional-enum', values: ['default', 'values-list', 'editorial-columns']},
+  galleryPreset: {kind: 'optional-enum', values: ['default', 'editorial-montage', 'editorial-cards']},
+  showSectionHeading: {kind: 'optional-boolean'},
+  valuesShowHeading: {kind: 'optional-boolean'},
+  valuesNumberColor: {kind: 'optional-string'},
+  valuesDividerColor: {kind: 'optional-string'},
+  valuesShowDividers: {kind: 'optional-boolean'},
+  valuesRowSpacing: {kind: 'optional-enum', values: ['compact','normal','spacious']},
+  mediaAlt: {kind: 'optional-string'},
+  mediaFocalPoint: {kind: 'optional-enum', values: ['center', 'top', 'bottom', 'left', 'right']},
   mediaAspectRatio: {kind: 'optional-enum', values: ['16:9', '4:3', '1:1', 'auto']},
   buttonText: {kind: 'optional-string'},
   buttonLink: {kind: 'optional-string'},
+  buttonStyle: {kind: 'optional-enum', values: ['button', 'text-link']},
   secondaryButtonText: {kind: 'optional-string'},
   secondaryButtonLink: {kind: 'optional-string'},
   textAlignment: {kind: 'optional-enum', values: ['left', 'center', 'right']},
@@ -353,6 +387,17 @@ const isRuntimeSource = (value: unknown, type: PageRuntimeSource['type']): value
 );
 
 const isPageSection = (value: unknown): value is PageSection => {
+  if (isRecord(value) && 'galleryPreset' in value && value.type !== 'media_gallery') return false;
+  if (isRecord(value) && 'showSectionHeading' in value && !['media_gallery','feature_cards'].includes(String(value.type))) return false;
+  if (isRecord(value) && ['ctaPreset','ctaBannerHeight'].some(field=>field in value) && value.type !== 'cta_strip') return false;
+  if (isRecord(value) && 'chapterPreset' in value && value.type !== 'chapter_block') return false;
+  if (isRecord(value) && 'leadText' in value && value.type !== 'media_text_split') return false;
+  if (isRecord(value) && 'richTextPreset' in value && value.type !== 'rich_text') return false;
+  if (isRecord(value)) {
+    if ('featureCardsPreset' in value && value.type !== 'feature_cards') return false;
+    if ('valuesShowHeading' in value && !['feature_cards','values_list'].includes(String(value.type))) return false;
+    if (['valuesNumberColor','valuesDividerColor','valuesShowDividers','valuesRowSpacing'].some(field=>field in value) && value.type !== 'values_list') return false;
+  }
   if (!isRecord(value)
     || !Object.keys(value).every(field => (
       Object.prototype.hasOwnProperty.call(PAGE_SECTION_BOOTSTRAP_FIELD_RULES, field)
@@ -393,6 +438,28 @@ const isPageSection = (value: unknown): value is PageSection => {
       && typeof item.id === 'string'
       && typeof item.label === 'string'
     )))) return false;
+  if ('typography' in value && !isTypography(value.typography)) return false;
+  if ('imageSlots' in value) {
+    if (!Array.isArray(value.imageSlots)) return false;
+    const available = imageTargets(value as unknown as PageSection);
+    if (!(imageSlotFamilies as readonly string[]).includes(value.type as string)) return false;
+    const targets = new Set<string>();
+    for (const slot of value.imageSlots) {
+      if (!isRecord(slot) || typeof slot.target !== 'string' || targets.has(slot.target)) return false;
+      const target = available.find(target => target.id === slot.target);
+      if (!target) return false;
+      if (target.geometryLocked && (('imageRatio' in slot && slot.imageRatio !== 'default') || ('imageWidth' in slot && slot.imageWidth !== '100') || ('imageShape' in slot && slot.imageShape !== 'default'))) return false;
+      targets.add(slot.target);
+      if (!hasOnlyKeys(slot, ['target', 'mediaAlt', 'imageRatio', 'imagePosition', 'imageFit', 'imageWidth', 'imageShape', 'imageOverlay', 'imageOverlayOpacity', 'imageForeground', 'imageForegroundColor', 'imageForegroundOpacity'])) return false;
+      for (const [key, field] of Object.entries(slot)) {
+        if (key === 'target') continue;
+        const rule = PAGE_SECTION_BOOTSTRAP_FIELD_RULES[key as keyof PageSection];
+        if (rule.kind === 'optional-string' && typeof field !== 'string') return false;
+        if (rule.kind === 'optional-boolean' && typeof field !== 'boolean') return false;
+        if (rule.kind === 'optional-enum' && !(rule.values as readonly unknown[]).includes(field)) return false;
+      }
+    }
+  }
   if ('customColors' in value) {
     const colors = value.customColors;
     if (!isRecord(colors)
@@ -473,6 +540,7 @@ const isRuntimePayload = (value: unknown): value is PageRuntimePayload => {
     || typeof value.page.document.title !== 'string'
     || typeof value.page.document.slug !== 'string'
     || !['standard', 'fullwidth', 'landing'].includes(String(value.page.document.template))
+    || ('containerWidth' in value.page.document && !['standard','wide'].includes(String(value.page.document.containerWidth)))
     || !Array.isArray(value.page.document.sections)
     || !value.page.document.sections.every(isPageSection)
     || !isRecord(value.catalog)
@@ -644,6 +712,7 @@ export const createAdminPageRuntimePayload = (
         title: page.title,
         slug: page.slug,
         template: page.template,
+        ...(page.containerWidth?{containerWidth:page.containerWidth}:{}),
         sections: page.sections,
         ...(Object.prototype.hasOwnProperty.call(page, 'description') ? {description: page.description} : {}),
         ...(Object.prototype.hasOwnProperty.call(page, 'heroImage') ? {heroImage: page.heroImage} : {}),

@@ -16,9 +16,15 @@ import { hasOwnContractField } from '../../cms/pageContract';
 import { parseDraftImport } from '../../cms/pageImport';
 import { repairLegacyCollectionTabs } from '../../cms/collectionTabMappings';
 import { createAdminPageRuntimePayload, PageRuntimeProvider } from '../../cms/PageRuntimeContext';
+import {pruneImageSlots} from '../../cms/imageTargets';
 import { SectionRenderer } from './SectionRenderer';
 import { SectionInspector } from './SectionInspector';
 import { AddSectionModal } from './AddSectionModal';
+import { PageTemplateModal, pageTemplates } from './PageTemplateModal';
+import { createPageTemplateSections, type PageTemplateContext } from '../../cms/pageTemplates';
+import { loadShopBranding } from '../../integration/shopBrandingData';
+import { fetchCommerceSettings } from '../../integration/commerceSettingsData';
+import { currencyFor } from '../../integration/adminMoney';
 import { PagePreviewModal } from './PagePreviewModal';
 import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 import {
@@ -69,6 +75,11 @@ type PageAutosaveTakeover = {
 };
 
 export const PageAdmin: React.FC = () => {
+  const [templateOpen,setTemplateOpen]=useState(false),[templateBusy,setTemplateBusy]=useState(false);
+  const [templateContext,setTemplateContext]=useState<PageTemplateContext>({});
+  const [templateSettingsState,setTemplateSettingsState]=useState<'loading'|'ready'|'error'>('loading');
+  const templateLoadRequest=useRef(0);
+  useEffect(()=>()=>{templateLoadRequest.current++;},[]);
   const {
     pages,
     theme,
@@ -103,7 +114,10 @@ export const PageAdmin: React.FC = () => {
 
   // Mode state: null = Page Directory, non-null = Editing that Page ID
   const [editingPageId, setEditingPageId] = useState<string | null>(selectedPageId || null);
-  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  const [selectedElement,setSelectedElement]=useState<{sectionId:string;target:string;role?:string;revision:number}|null>(null);
+  const selectElement=(sectionId:string,target:string,role?:string)=>{setActiveSectionId(sectionId);setIsInspectorCollapsed(false);setSelectedElement(previous=>({sectionId,target,role,revision:(previous?.revision??0)+1}));};
+  const [selectedImage, setSelectedImage] = useState<{sectionId:string;target:string}|null>(null);
+    const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isOutlineCollapsed, setIsOutlineCollapsed] = useState(false);
@@ -111,6 +125,7 @@ export const PageAdmin: React.FC = () => {
   const [viewport, setViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'archived'>('all');
+  const [pageSettingsOpen,setPageSettingsOpen]=useState(false);
   const [isJsonModalOpen, setIsJsonModalOpen] = useState(false);
   const [jsonText, setJsonText] = useState('');
   const [pageToDelete, setPageToDelete] = useState<CmsPage | null>(null);
@@ -159,6 +174,7 @@ export const PageAdmin: React.FC = () => {
     title: page.title,
     slug: page.slug,
     template: page.template,
+    ...(page.containerWidth?{containerWidth:page.containerWidth}:{}),
     sections: page.sections,
     ...(hasOwnContractField(page, 'description') ? { description: page.description } : {}),
     ...(hasOwnContractField(page, 'heroImage') ? { heroImage: page.heroImage } : {}),
@@ -176,6 +192,7 @@ export const PageAdmin: React.FC = () => {
       slug: _slug,
       description: _description,
       template: _template,
+      containerWidth: _containerWidth,
       heroImage: _heroImage,
       seoTitle: _seoTitle,
       seoDescription: _seoDescription,
@@ -469,43 +486,47 @@ export const PageAdmin: React.FC = () => {
     pageTakeoversRef.current.clear();
   }, []);
 
-  // Handler for creating a brand new page
-  const handleCreateNewPage = async () => {
-    const newPage: CmsPage = {
-      id: 'page-' + Date.now(),
-      title: 'New Landing Page',
-      slug: 'new-landing-page-' + Math.floor(Math.random() * 1000),
-      description: 'Custom editorial landing page with media & structured sections.',
-      status: 'draft',
-      template: 'standard',
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0],
-      sections: [
-        {
-          id: 'sec-' + Date.now() + '-hero',
-          type: 'hero_banner',
-          title: 'Welcome to Our New Experience',
-          subtitle: 'NEW RELEASE',
-          content: 'Discover acoustic perfection with our new handcrafted audio system.',
-          mediaUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1600&auto=format&fit=crop&q=80',
-          mediaType: 'image',
-          buttonText: 'Explore Now',
-          buttonLink: '/collections/all',
-          textAlignment: 'center',
-          backgroundColor: 'bg-neutral-950',
-          textColor: 'light',
-          paddingY: 'spacious',
-          overlayOpacity: 50,
-          isVisible: true
-        }
-      ]
-    };
-    const saved = await savePage(newPage);
-    if (saved) {
-      await hydrateEditor(saved);
+  const handleOpenTemplates = async () => {
+    if (templateBusy || templateOpen) return;
+    const request=++templateLoadRequest.current;
+    setTemplateContext({});
+    setTemplateSettingsState('loading');
+    setTemplateOpen(true);
+    try {
+      // Read persisted facts directly; AdminContext starts with demonstration defaults.
+      const [profile,commerce] = await Promise.all([loadShopBranding(),fetchCommerceSettings(laravelBootstrap)]);
+      if(request!==templateLoadRequest.current)return;
+      setTemplateContext({shopName:profile.shopName,tagline:profile.tagline,
+        currency:currencyFor(commerce.currencies)?.code || profile.currency,shippingRates:commerce.shippingRates});
+      setTemplateSettingsState('ready');
+    } catch {
+      if(request!==templateLoadRequest.current)return;
+      setTemplateSettingsState('error');
     }
   };
-
+  const handleCloseTemplates = () => {
+    if(templateBusy)return;
+    templateLoadRequest.current++;
+    setTemplateOpen(false);
+  };
+  // Handler for creating a brand new page
+  const handleCreateNewPage = async (templateId: string) => {
+    const template = pageTemplates.find(t=>t.id===templateId && t.ready);
+    if (!template || templateBusy || (templateId!=='blank' && templateSettingsState!=='ready')) return;
+    setTemplateBusy(true);
+    try {
+      const stamp = crypto.randomUUID();
+      const newPage: CmsPage = {
+        id: 'page-' + stamp, title: template.name === 'Blank Page' ? 'New Page' : template.name,
+        slug: template.id + '-' + stamp.slice(0,8), description: template.description,
+        status:'draft', template:'standard', createdAt:new Date().toISOString().split('T')[0], updatedAt:new Date().toISOString().split('T')[0],
+        ...(['about-editorial','about-studio','about-chapters'].includes(templateId) ? {containerWidth:'standard' as const} : {}),
+        sections:createPageTemplateSections(template.id, templateContext, 'sec-'+stamp)
+      };
+      const saved = await savePage(newPage);
+      if (saved) { templateLoadRequest.current++; setTemplateOpen(false); await hydrateEditor(saved); }
+    } finally {setTemplateBusy(false);}
+  };
   // Section Manipulation in Active Page
   const handleAddSection = (newSection: PageSection) => {
     if (!currentPage) return;
@@ -520,6 +541,7 @@ export const PageAdmin: React.FC = () => {
   };
 
   const handleUpdateSection = (updatedSection: PageSection) => {
+      updatedSection = pruneImageSlots(updatedSection);
     if (!currentPage) return;
     void updatePageSection(currentPage.id, updatedSection.id, () => updatedSection)
       .then(updated => {
@@ -732,6 +754,7 @@ export const PageAdmin: React.FC = () => {
   if (!editingPageId || !currentPage) {
     return (
       <div id="page-admin-directory" className="space-y-6 animate-in fade-in">
+        {templateOpen && <PageTemplateModal context={templateContext} settingsState={templateSettingsState} busy={templateBusy} onClose={handleCloseTemplates} onCreate={handleCreateNewPage}/>}
         {/* Header Title & Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -752,7 +775,7 @@ export const PageAdmin: React.FC = () => {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={handleCreateNewPage}
+              onClick={()=>{void handleOpenTemplates();}}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs bg-indigo-600 text-white hover:bg-indigo-500 shadow-md transition-all duration-200 transform hover:-translate-y-0.5"
             >
               <Plus className="w-4 h-4" />
@@ -1157,6 +1180,16 @@ export const PageAdmin: React.FC = () => {
           </div>
         </div>
 
+        <div className="relative shrink-0">
+          <button type="button" aria-label="Page Settings" aria-expanded={pageSettingsOpen} onClick={()=>setPageSettingsOpen(!pageSettingsOpen)} className="px-3 py-2 rounded-xl text-xs font-semibold border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800">Page Settings</button>
+          {pageSettingsOpen && <div role="dialog" aria-label="Page Settings" className="absolute top-full left-0 mt-2 w-72 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl z-50">
+            <div className="flex items-center justify-between mb-3"><h3 className="text-sm font-bold text-neutral-900 dark:text-white">Page Settings</h3><button type="button" aria-label="Close Page Settings" onClick={()=>setPageSettingsOpen(false)} className="text-neutral-500">×</button></div>
+            <h4 className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-2">Layout</h4>
+            <label className="text-xs text-neutral-600 dark:text-neutral-400">Page width<select aria-label="Page width" value={currentPage.containerWidth??'standard'} onChange={event=>{const width=event.target.value as 'standard'|'wide';const updated=updatePageLocal(currentPage.id,latest=>({...latest,containerWidth:width}));if(updated)schedulePage(updated);}} className="block w-full mt-1 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-white"><option value="standard">Standard</option><option value="wide">Wide</option></select></label>
+            <p className="text-[11px] text-neutral-500 mt-3">All sections inherit this page layout. Text reading widths and image proportions follow each layout preset.</p>
+          </div>}
+        </div>
+
         {/* Center: Viewport Switchers & Zen Canvas Switch */}
         <div className="hidden md:flex items-center gap-1.5 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700">
           <button
@@ -1492,7 +1525,7 @@ export const PageAdmin: React.FC = () => {
             </div>
 
             {/* Sections Canvas */}
-            <div className="divide-y divide-white/5">
+            <div className="w-full">
               {adminRuntimePayload && (
                 <PageRuntimeProvider payload={adminRuntimePayload}>
                   {currentPage.sections.map(section => (
@@ -1502,6 +1535,9 @@ export const PageAdmin: React.FC = () => {
                       isEditingMode={true}
                       isSelected={activeSectionId === section.id}
                       onSelect={() => setActiveSectionId(section.id)}
+                      selectedImage={selectedImage?.sectionId===section.id?selectedImage.target:undefined}
+                      onSelectImage={target=>{selectElement(section.id,'image');setSelectedImage({sectionId:section.id,target});}}
+                      onSelectElement={(target,role)=>selectElement(section.id,target,role)}
                       viewport={viewport}
                     />
                   ))}
@@ -1521,9 +1557,12 @@ export const PageAdmin: React.FC = () => {
         {!isInspectorCollapsed ? (
           <div className="w-84 lg:w-96 flex-shrink-0 flex flex-col transition-all duration-300">
             <SectionInspector
+                selectedElement={selectedElement?.sectionId===activeSection?.id?selectedElement:undefined}
               key={`${currentPage.id}:${activeSection?.id ?? 'none'}`}
               pageId={currentPage.id}
               section={activeSection}
+                selectedImage={selectedImage?.sectionId===activeSection?.id?selectedImage?.target:undefined}
+                onSelectImage={target=>activeSection && setSelectedImage({sectionId:activeSection.id,target})}
               onChange={handleUpdateSection}
               onReplayMotion={handleReplayMotion}
               onApplyMotionToAll={handleApplyMotionToAll}
@@ -1661,6 +1700,7 @@ export const PageAdmin: React.FC = () => {
           </div>
         </div>
       )}
+      {templateOpen && <PageTemplateModal context={templateContext} settingsState={templateSettingsState} busy={templateBusy} onClose={handleCloseTemplates} onCreate={handleCreateNewPage}/>}
     </div>
   );
 };

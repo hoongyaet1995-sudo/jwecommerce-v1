@@ -24,11 +24,16 @@ describe('CMS section color defaults', () => {
     expect(DEFAULT_SECTION_COLORS).toEqual(manifest.definitions.sectionColorConfig.defaults);
   });
 
-  it('creates all 27 source-supported templates including ZIP27 listing with the complete palette contract', () => {
-    expect(SECTION_TEMPLATES).toHaveLength(27);
+  it('retains the original 27 palettes and adds a readable standalone Values List palette', () => {
+    expect(SECTION_TEMPLATES).toHaveLength(38);
 
+    for (const template of SECTION_TEMPLATES.filter(template => !template.defaultData.layoutPreset && !template.defaultData.ctaPreset && !template.defaultData.galleryPreset && !template.defaultData.featureCardsPreset && !template.defaultData.chapterPreset && template.type !== 'chapter_navigation')) {
+      expect(template.defaultData.customColors).toEqual(template.type==='values_list'?{...expectedDefaultColors,eyebrowColor:'#4f46e5',titleColor:'#171717',contentColor:'#737373'}:expectedDefaultColors);
+    }
     for (const template of SECTION_TEMPLATES) {
-      expect(template.defaultData.customColors).toEqual(expectedDefaultColors);
+      expect(Object.keys(template.defaultData.customColors!).sort()).toEqual(Object.keys(expectedDefaultColors).sort());
+      expect(template.defaultData.customColors!.titleColor).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(template.defaultData.customColors!.contentColor).toMatch(/^#[0-9a-f]{6}$/i);
     }
   });
 

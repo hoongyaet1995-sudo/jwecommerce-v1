@@ -1,8 +1,23 @@
+import {TypographySettings} from './TypographySettings';
+import {textRoles,textRoleLabels,roleFields,type TextRole,type InspectorTab} from '../../cms/inspectorCapabilities';
+import {SectionBorderSettings} from './SectionBorderSettings';
+import {ChapterSettings} from './ChapterSettings';
+import {CtaStripSettings} from './CtaStripSettings';
 import { useAdminCurrency } from '../../context/useAdminCurrency';
 import { MOTION_PRESET_DETAILS } from './motion/CmsMotionWrapper';
 import { SectionMotionPreset } from '../../types';
 import { Play } from 'lucide-react';
 import React, { useRef } from 'react';
+import {ImageTargetInspector} from './ImageTargetInspector';
+import {imageTargets,updateImageTarget} from '../../cms/imageTargets';
+import {MediaTextSplitSettings} from './MediaTextSplitSettings';
+import {RichTextSettings} from './RichTextSettings';
+import {isManifesto} from '../../cms/richTextPresets';
+import {ValuesListSettings,ValuesListEditor} from './ValuesListSettings';
+import {ValuesListColors} from './ValuesListColors';
+import {InspectorToggle,InspectorSwitch} from './InspectorToggle';
+import {isEditorialMediaTextSplit} from '../../cms/mediaTextSplitPresets';
+const isValuesList=(section:PageSection)=>section.type==='values_list';
 import {listingSources} from '../../cms/listingSources';
 import {
   PageSection,
@@ -1188,6 +1203,9 @@ const TabDataMappingPanel: React.FC<TabDataMappingPanelProps> = ({ tabs, categor
 };
 
 interface SectionInspectorProps {
+  selectedElement?:{target:string;role?:string;revision:number};
+  selectedImage?:string;
+  onSelectImage?:(target:string)=>void;
   pageId: string;
   section: PageSection | null;
   onChange: (updated: PageSection) => void;
@@ -1206,6 +1224,9 @@ interface SectionInspectorProps {
 export const SectionInspector: React.FC<SectionInspectorProps> = ({
   pageId,
   section,
+  selectedElement,
+  selectedImage,
+  onSelectImage,
   onChange,
   onMediaUpload,
   onDelete,
@@ -1214,6 +1235,11 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
   onReplayMotion,
   onApplyMotionToAll
 }) => {
+  const [inspectorTab,setInspectorTab]=React.useState<InspectorTab>('content');
+  const [textRole,setTextRole]=React.useState<TextRole>('title');
+  const bodyRef=React.useRef<HTMLDivElement>(null);
+  React.useEffect(()=>{if(!selectedElement)return;setInspectorTab('content');const map:Record<string,TextRole>={subtitle:'eyebrow',title:'title',content:'content',leadText:'lead',itemTitle:'itemTitle',itemContent:'itemContent'};if(selectedElement.role)setTextRole(selectedElement.role as TextRole);else if(map[selectedElement.target])setTextRole(map[selectedElement.target]);},[selectedElement?.revision]);
+  React.useLayoutEffect(()=>{if(!selectedElement||inspectorTab==='advanced')return;const root=bodyRef.current;if(!root)return;const target=selectedElement.target;const itemId=target.startsWith('items:')?target.slice(6):undefined;const control=itemId?[...root.querySelectorAll<HTMLElement>('[data-inspector-item]')].find(e=>e.dataset.inspectorItem===itemId):[...root.querySelectorAll<HTMLElement>('[data-inspector-field]')].find(e=>e.dataset.inspectorField===target);const fallback=target==='source'?root.querySelector<HTMLElement>(`[data-inspector-group="${section.type==='product_listing'?6:section.type==='collection_tabs'?4:5}"]`):target==='form'?root.querySelector<HTMLElement>('[data-inspector-group="11"], [data-inspector-group="12"]'):target==='image'?root.querySelector<HTMLElement>('[data-image-target-inspector]'):target==='button'?root.querySelector<HTMLElement>('[data-inspector-group="21"]'):target.startsWith('item')?root.querySelector<HTMLElement>('[data-inspector-group="22"], [data-inspector-group="23"]'):null;const element=inspectorTab==='design'?root.querySelector<HTMLElement>(target==='image'?'[data-inspector-image-design]':'[data-inspector-typography]'):control??fallback;if(!element)return;let parent=element.parentElement;while(parent&&parent!==root){if(parent.tagName==='DETAILS')(parent as HTMLDetailsElement).open=true;parent=parent.parentElement;}element.scrollIntoView?.({block:'nearest',behavior:'smooth'});if(element.matches('input,textarea,select'))element.focus({preventScroll:true});element.animate?.([{boxShadow:'0 0 0 2px #7965ff'},{boxShadow:'0 0 0 2px #7965ff'},{boxShadow:'none'}],{duration:1000});},[selectedElement?.revision,inspectorTab]);
   const { money, currencyCode } = useAdminCurrency();
   const { products, categories, collections, addToast } = useAdmin();
   const listingCatalog = React.useMemo(() => listingSources(categories, collections, products), [categories, collections, products]);
@@ -1260,6 +1286,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
     : null;
   const hasColorField = (key: string): boolean => (
     sectionColors !== null && hasOwnContractField(sectionColors, key)
+    && !((isValuesList(section)||['chapter_block','chapter_navigation'].includes(section.type)||section.layoutPreset==='editorial-cover') && ['primaryBtnBg','primaryBtnText','secondaryBtnBg','secondaryBtnText'].includes(key))
   );
   const hasItemField = (item: SectionItem, key: string): boolean => hasOwnContractField(item, key);
   const hasAnyItemField = (item: SectionItem, keys: readonly string[]): boolean => keys.some(key => hasItemField(item, key));
@@ -1308,6 +1335,11 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
       return;
     }
 
+    if (section.featureCardsPreset==='editorial-columns'||section.galleryPreset?.startsWith('editorial-')) {
+      const item:SectionItem={id:crypto.randomUUID(),title:section.type==='media_gallery'?'New photograph':'New idea',description:'Add your description.'};
+      if(section.type==='media_gallery')item.imageUrl='';
+      updateField('items',[...(section.items??[]),item]);return;
+    }
     const defaultIcon = section.type === 'testimonials_slider' ? 'Star' : 'Sparkles';
     const newItem: SectionItem = {
       id: 'item-' + Date.now(),
@@ -1350,6 +1382,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
     { value: 'bg-neutral-800', label: 'Neutral Gray (#262626)' },
     { value: 'bg-white', label: 'Crisp White' },
     { value: 'bg-neutral-50', label: 'Subtle Off-White' },
+    { value: 'bg-neutral-100', label: 'Light Gray' },
     { value: 'bg-gradient-indigo', label: 'Indigo Gradient' },
     { value: 'bg-gradient-slate', label: 'Slate Gradient' },
     { value: 'bg-emerald-950', label: 'Deep Emerald' },
@@ -1481,6 +1514,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
     'Sparkles', 'ShieldCheck', 'Zap', 'Globe', 'Heart', 'Truck', 'Award', 'Volume2', 'Star', 'Clock', 'ShoppingBag', 'Mail'
   ];
 
+  const editorialCollection=section.galleryPreset?.startsWith('editorial-')||section.featureCardsPreset==='editorial-columns';
   const hasItems = hasSectionField('items') && [
     'hero_slider',
     'feature_cards',
@@ -1498,7 +1532,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
     'announcement_bar'
   ].includes(section.type);
 
-  const hasMedia = hasSectionField('mediaUrl') && [
+  const hasMedia = section.ctaPreset!=='editorial-band' && hasSectionField('mediaUrl') && [
     'hero_banner',
     'split_hero',
     'media_text_split',
@@ -1507,7 +1541,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
     'video_embed'
   ].includes(section.type);
 
-  const hasButtons = hasAnySectionField([
+  const hasButtons = section.layoutPreset!=='editorial-cover' && hasAnySectionField([
     'buttonText',
     'buttonLink',
     'secondaryButtonText',
@@ -1589,10 +1623,26 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
         </div>
       </div>
 
+      <div role="tablist" aria-label="Inspector categories" className="grid grid-cols-3 px-3 border-b border-neutral-200 dark:border-neutral-800">{(['content','design','advanced'] as InspectorTab[]).map(tab=><button key={tab} role="tab" aria-selected={inspectorTab===tab} aria-controls={`inspector-panel-${section.id}`} onClick={()=>setInspectorTab(tab)} className={`py-3 text-xs font-semibold capitalize border-b-2 ${inspectorTab===tab?'border-indigo-500 text-indigo-500':'border-transparent text-neutral-500'}`}>{tab}</button>)}</div>
       {/* Form Controls */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-5 text-xs">
+      <div ref={bodyRef} id={`inspector-panel-${section.id}`} role="tabpanel" className="flex-1 overflow-y-auto p-4 space-y-5 text-xs">
+        {selectedElement&&<div className="p-3 rounded-lg bg-indigo-500/10 text-indigo-500 flex justify-between gap-2"><span>Selected: {selectedElement.target.startsWith('items:')?'List item':selectedElement.target==='image'?'Image':selectedElement.target==='button'?'Button':textRoleLabels[({subtitle:'eyebrow',title:'title',content:'content',leadText:'lead'} as Record<string,TextRole>)[selectedElement.target]]??'Section content'}</span>{(textRoles(section).length>0||selectedElement.target==='image')&&<button className="underline" onClick={()=>setInspectorTab(inspectorTab==='design'?'content':'design')}>{inspectorTab==='design'?'Edit content':'Style'}</button>}</div>}
+        <div hidden={inspectorTab!=='design'}><TypographySettings section={section} onChange={onChange} selectedRole={textRole} onSelectRole={setTextRole}/><ChapterSettings mode="design" section={section} onChange={onChange}/>{imageTargets(section).length>0&&<details data-inspector-image-design open={selectedElement?.target==='image'} className="pt-4"><summary className="font-semibold cursor-pointer">Image appearance</summary><ImageTargetInspector mode="design" section={section} selected={selectedImage} onSelect={onSelectImage} onChange={onChange} assetControl={()=>null}/></details>}</div>
+        <div hidden={inspectorTab!=='advanced'} className="text-neutral-500 leading-relaxed"><p>Page width stays in Page Settings. Typography defaults preserve the selected preset.</p>{(['hero_banner','hero_slider','cta_strip'].includes(section.type)||section.layoutPreset==='editorial-cover')&&<label className="block mt-4">Container mode<select aria-label="Container mode" value={section.containerMode??'page'} onChange={event=>updateField('containerMode',event.target.value as PageSection['containerMode'])} className="w-full mt-2 px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-900 text-white"><option value="page">Use page layout</option><option value="full-bleed">Full bleed</option></select></label>}</div>
+        <div hidden={inspectorTab!=='design'} data-inspector-group={0}>{(section.type==='media_gallery'||section.type==='feature_cards')&&<div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-500">Layout preset
+            <select aria-label="Collection layout preset" value={section.type==='media_gallery'?section.galleryPreset??'default':section.featureCardsPreset??'default'} onChange={event=>onChange({...section,...(section.type==='media_gallery'?{galleryPreset:event.target.value as PageSection['galleryPreset']}:{featureCardsPreset:event.target.value as PageSection['featureCardsPreset']}),...(event.target.value==='default'?{showSectionHeading:true}:{})})} className="w-full mt-2 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white">
+              <option value="default">Default</option>{section.type==='media_gallery'?<><option value="editorial-montage">Editorial Montage — staggered photographs</option><option value="editorial-cards">Editorial Cards — photograph and caption</option></>:<>{section.featureCardsPreset==='values-list'&&<option value="values-list">Legacy Values List</option>}<option value="editorial-columns">Editorial Columns — simple text columns</option></>}
+            </select>
+          </label>
+          {(section.galleryPreset?.startsWith('editorial-')||section.featureCardsPreset==='editorial-columns')&&<>
+            <InspectorToggle label="Show section heading" checked={section.showSectionHeading!==false} onChange={checked=>updateField('showSectionHeading',checked)}/>
+            <label className="block text-neutral-500">Columns<select aria-label="Editorial columns" value={section.columnsCount??3} onChange={event=>updateField('columnsCount',Number(event.target.value) as PageSection['columnsCount'])} className="w-full mt-1 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white"><option value={2}>Two</option><option value={3}>Three</option><option value={4}>Four</option></select></label>
+            <p className="text-[11px] leading-relaxed text-neutral-500">Edit and reorder entries below. Image layouts use the shared image tools. Mobile stacks entries in their saved order.</p>
+          </>}
+        </div>}</div>
         {/* 1. Header & Text Content */}
-        {hasAnySectionField(['title', 'subtitle', 'content']) && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={1}>{hasAnySectionField(['title', 'subtitle', 'content']) && section.showSectionHeading!==false && (
         <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
           <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
             Text & Hierarchy
@@ -1603,7 +1653,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">
               Subtitle / Eyebrow Tag
             </span>
-            <input
+            <input data-inspector-field="subtitle"
               type="text"
               value={section.subtitle || ''}
               onChange={e => updateField('subtitle', e.target.value)}
@@ -1613,27 +1663,37 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
           </div>
           )}
 
-          {hasSectionField('title') && (
+          {section.type!=='chapter_block'||section.chapterPreset!=='principles'?null:<p className="text-xs text-neutral-500">Edit each principle below. The chapter subtitle appears in navigation.</p>}
+          {!(section.type==='chapter_block'&&section.chapterPreset==='principles') && hasSectionField('title') && (!isValuesList(section) || section.valuesShowHeading) && section.showSectionHeading!==false && (
           <div>
             <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">
               Primary Headline Title <span className="text-rose-500">*</span>
             </span>
-            <input
+            {section.type==='chapter_block' || isEditorialMediaTextSplit(section) || isManifesto(section) ? <textarea data-inspector-field="title"
+              rows={3}
+              aria-label={section.type==='chapter_block'?'Chapter headline':section.layoutPreset==='editorial-cover'?'Cover headline':isManifesto(section)?'Manifesto headline':section.layoutPreset==='editorial-story'?'Editorial story headline':'Editorial hero headline'}
+              value={section.title}
+              onChange={e => updateField('title', e.target.value)}
+              placeholder="Section main heading"
+              className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white font-semibold focus:ring-2 focus:ring-indigo-500"
+            /> : <input data-inspector-field="title"
               type="text"
               value={section.title}
               onChange={e => updateField('title', e.target.value)}
               placeholder="Section main heading"
               className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white font-semibold focus:ring-2 focus:ring-indigo-500"
-            />
+            />}
           </div>
           )}
 
-          {hasSectionField('content') && (
+          {section.layoutPreset==='editorial-cover'&&<label className="block text-neutral-500">Introduction<input data-inspector-field="leadText" aria-label="Cover introduction" value={section.leadText??''} onChange={e=>updateField('leadText',e.target.value)} className="w-full mt-2 px-3 py-2 rounded-xl border border-neutral-700 bg-neutral-900 text-white"/></label>}
+
+          {!(section.type==='chapter_block'&&section.chapterPreset==='principles') && hasSectionField('content') && (!isValuesList(section) || section.valuesShowHeading) && (
           <div>
             <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">
               Editorial Description
             </span>
-            <textarea
+            <textarea data-inspector-field="content"
               rows={3}
               value={section.content || ''}
               onChange={e => updateField('content', e.target.value)}
@@ -1643,10 +1703,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
           </div>
           )}
         </div>
-        )}
+        )}</div>
 
         {/* Split Hero Card Overlay Controls */}
-        {section.type === 'split_hero' && hasAnySectionField(['cardBadge', 'cardTitle', 'cardSubtitle', 'cardPrice', 'cardExtra']) && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={2}>{section.type === 'split_hero' && hasAnySectionField(['cardBadge', 'cardTitle', 'cardSubtitle', 'cardPrice', 'cardExtra']) && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Floating Card Preview Data
@@ -1716,10 +1776,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               )}
             </div>
           </div>
-        )}
+        )}</div>
 
         {/* Announcement Ticker Speed Control */}
-        {section.type === 'announcement_bar' && hasSectionField('tickerSpeed') && (
+        <div hidden={inspectorTab!=='design'} data-inspector-group={3}>{section.type === 'announcement_bar' && hasSectionField('tickerSpeed') && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Marquee Ticker Speed
@@ -1741,10 +1801,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               ))}
             </div>
           </div>
-        )}
+        )}</div>
 
         {/* Collection Tabs - Tab Data Mapping Panel */}
-        {section.type === 'collection_tabs' && hasSectionField('tabs') && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={4}>{section.type === 'collection_tabs' && hasSectionField('tabs') && (
           <TabDataMappingPanel
             tabs={Array.isArray(section.tabs) ? section.tabs : []}
             categories={categories}
@@ -1758,10 +1818,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             }}
             addToast={addToast}
           />
-        )}
+        )}</div>
 
         {/* Product Grid - Product Selection */}
-        {section.type === 'product_grid' && hasSectionField('productIds') && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={5}>{section.type === 'product_grid' && hasSectionField('productIds') && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
@@ -1778,13 +1838,13 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               )}
             </div>
             <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-              Check the items you want to feature in this grid, or leave blank to display your catalog automatically.
+              Enable the products you want to feature in this grid, or leave blank to display your catalog automatically.
             </p>
             <div className="max-h-56 overflow-y-auto space-y-1.5 border border-neutral-200 dark:border-neutral-700 rounded-xl p-2 bg-neutral-50 dark:bg-neutral-900/50">
               {products.map(p => {
                 const isSelected = section.productIds?.includes(p.id);
                 return (
-                  <label
+                  <div
                     key={p.id}
                     className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
                       isSelected
@@ -1792,18 +1852,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                         : 'hover:bg-neutral-100 dark:hover:bg-neutral-800/60 text-neutral-700 dark:text-neutral-300'
                     }`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={!!isSelected}
-                      onChange={e => {
-                        const current = section.productIds || [];
-                        const next = e.target.checked
-                          ? [...current, p.id]
-                          : current.filter(id => id !== p.id);
-                        updateField('productIds', next);
-                      }}
-                      className="rounded accent-indigo-600"
-                    />
+
                     <img
                       src={primaryProductImage(p)}
                       alt={p.title}
@@ -1813,15 +1862,19 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                       <p className="font-semibold text-xs truncate">{p.title}</p>
                       <p className="text-[10px] text-neutral-400">{money(p.basePrice)}</p>
                     </div>
-                  </label>
+                    <InspectorSwitch label={`Include ${p.title}`} checked={!!isSelected} onChange={checked=>{
+                      const current=section.productIds||[];
+                      updateField('productIds',checked?[...current,p.id]:current.filter(id=>id!==p.id));
+                    }}/>
+                  </div>
                 );
               })}
             </div>
           </div>
-        )}
+        )}</div>
 
         {/* Product Listing - Source Type, Catalog Selection, Product Limit & Slider Controls */}
-        {section.type === 'product_listing' && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={6}>{section.type === 'product_listing' && (
           <div className="space-y-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <div>
               <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
@@ -1928,25 +1981,8 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                 Carousel & Sliding Navigation
               </label>
 
-              {/* Auto Sliding Toggle */}
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700/60">
-                <div>
-                  <div className="text-xs font-semibold text-neutral-900 dark:text-white">Auto Sliding</div>
-                  <div className="text-[10px] text-neutral-400">Automatically advance products on interval (pauses on hover)</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => updateField('autoSlide', section.autoSlide === false ? true : false)}
-                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
-                    section.autoSlide !== false ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-700'
-                  }`}
-                >
-                  <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                      section.autoSlide !== false ? 'translate-x-5' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
+              <div className="p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700/60">
+                <InspectorToggle label="Auto Sliding" description="Automatically advance products on interval (pauses on hover)" checked={section.autoSlide !== false} onChange={checked => updateField('autoSlide', checked)} />
               </div>
 
               {/* Auto Slide Interval */}
@@ -1979,25 +2015,8 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                 </div>
               )}
 
-              {/* Show Navigation Arrows */}
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700/60">
-                <div>
-                  <div className="text-xs font-semibold text-neutral-900 dark:text-white">Side Preview & Next Buttons</div>
-                  <div className="text-[10px] text-neutral-400">Display circular interactive navigation arrows on left & right</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => updateField('showNavArrows', section.showNavArrows === false ? true : false)}
-                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
-                    section.showNavArrows !== false ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-700'
-                  }`}
-                >
-                  <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                      section.showNavArrows !== false ? 'translate-x-5' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
+              <div className="p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700/60">
+                <InspectorToggle label="Side Preview & Next Buttons" description="Display circular interactive navigation arrows on left & right" checked={section.showNavArrows !== false} onChange={checked => updateField('showNavArrows', checked)} />
               </div>
 
               {/* Desktop Items Per View */}
@@ -2032,10 +2051,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               </div>
             </div>
           </div>
-        )}
+        )}</div>
 
         {/* Featured Deal Countdown, Discount & Badge */}
-        {section.type === 'featured_deal' && hasAnySectionField(['dealEndDate', 'dealBadge', 'discountPercent']) && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={7}>{section.type === 'featured_deal' && hasAnySectionField(['dealEndDate', 'dealBadge', 'discountPercent']) && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Deal Countdown & Discounts
@@ -2116,15 +2135,15 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               )}
             </div>
           </div>
-        )}
+        )}</div>
 
         {/* Before / After Slider Media */}
-        {section.type === 'before_after' && hasAnySectionField(['beforeImageUrl', 'beforeLabel', 'afterImageUrl', 'afterLabel']) && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={8}>{section.type === 'before_after' && hasAnySectionField(['beforeImageUrl', 'beforeLabel', 'afterImageUrl', 'afterLabel']) && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Before / After Images & Labels
             </label>
-            {hasSectionField('beforeImageUrl') && (
+            {hasSectionField('beforeImageUrl') && imageTargets(section).length===0 && (
             <MediaUploadField
               label="Before Image"
               value={section.beforeImageUrl || ''}
@@ -2145,7 +2164,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               />
             </div>
             )}
-            {hasSectionField('afterImageUrl') && (
+            {hasSectionField('afterImageUrl') && imageTargets(section).length===0 && (
             <MediaUploadField
               label="After Image"
               value={section.afterImageUrl || ''}
@@ -2167,10 +2186,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             </div>
             )}
           </div>
-        )}
+        )}</div>
 
         {/* Video Embed Player */}
-        {section.type === 'video_embed' && hasSectionField('videoEmbedUrl') && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={9}>{section.type === 'video_embed' && hasSectionField('videoEmbedUrl') && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Video Player Source
@@ -2186,10 +2205,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               helpText="Supports YouTube embeds, Vimeo links, or uploaded direct MP4 video files."
             />
           </div>
-        )}
+        )}</div>
 
         {/* Comparison Matrix Table Headers */}
-        {section.type === 'comparison_matrix' && hasAnySectionField(['comparisonDimensionName', 'comparisonOurBrandName', 'comparisonCompetitorName']) && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={10}>{section.type === 'comparison_matrix' && hasAnySectionField(['comparisonDimensionName', 'comparisonOurBrandName', 'comparisonCompetitorName']) && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Comparison Table Headers
@@ -2233,10 +2252,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               )}
             </div>
           </div>
-        )}
+        )}</div>
 
         {/* Contact Form Details */}
-        {section.type === 'contact_form' && hasAnySectionField(['formEmail', 'contactPhone', 'contactAddress', 'contactButtonText', 'formSuccessMessage', 'subjectPlaceholder', 'categoryPlaceholder', 'messagePlaceholder', 'inquiryCategories']) && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={11}>{section.type === 'contact_form' && hasAnySectionField(['formEmail', 'contactPhone', 'contactAddress', 'contactButtonText', 'formSuccessMessage', 'subjectPlaceholder', 'categoryPlaceholder', 'messagePlaceholder', 'inquiryCategories']) && (
           <div className="space-y-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Contact & Atelier Details
@@ -2394,10 +2413,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             </div>
             )}
           </div>
-        )}
+        )}</div>
 
         {/* Newsletter Signup Form Config */}
-        {section.type === 'newsletter_signup' && hasAnySectionField(['formSuccessMessage', 'newsletterCouponId']) && (() => {
+        <div hidden={inspectorTab!=='content'} data-inspector-group={12}>{section.type === 'newsletter_signup' && hasAnySectionField(['formSuccessMessage', 'newsletterCouponId']) && (() => {
           const now = new Date();
           const eligibleCoupons = couponPromotions.flatMap(promo => {
             if (promo.promotionType !== 'coupon_code' || !promo.isActive) return [];
@@ -2454,10 +2473,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               )}
             </div>
           );
-        })()}
+        })()}</div>
 
         {/* Hero Background Slider Dedicated Settings */}
-        {section.type === 'hero_slider' && hasAnySectionField(['sliderHeight', 'sliderAutoplay', 'sliderInterval', 'overlayOpacity']) && (
+        <div hidden={inspectorTab!=='design'} data-inspector-group={13}>{section.type === 'hero_slider' && hasAnySectionField(['sliderHeight', 'sliderAutoplay', 'sliderInterval', 'overlayOpacity']) && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Hero Slider Settings
@@ -2495,17 +2514,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             {hasAnySectionField(['sliderAutoplay', 'sliderInterval']) && (
             <div className="grid grid-cols-2 gap-2 pt-1">
               {hasSectionField('sliderAutoplay') && (
-              <div>
-                <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">Autoplay</span>
-                <select
-                  value={section.sliderAutoplay !== false ? 'true' : 'false'}
-                  onChange={e => updateField('sliderAutoplay', e.target.value === 'true')}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white"
-                >
-                  <option value="true">Enabled (Auto-rotate)</option>
-                  <option value="false">Disabled (Manual only)</option>
-                </select>
-              </div>
+              <InspectorToggle label="Autoplay" checked={section.sliderAutoplay !== false} onChange={checked => updateField('sliderAutoplay', checked)} />
               )}
 
               {hasSectionField('sliderInterval') && (
@@ -2545,17 +2554,25 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             </div>
             )}
           </div>
-        )}
+        )}</div>
+
+        <div hidden={inspectorTab!=='content'} data-inspector-group={14}><ChapterSettings mode="content" section={section} onChange={onChange}/></div>
+        <div hidden={inspectorTab!=='design'} data-inspector-group={15}><MediaTextSplitSettings showIntroduction={false} section={section} onChange={patch=>onChange({...section,...patch})} /></div>
+        <div hidden={inspectorTab!=='design'} data-inspector-group={16}>{isValuesList(section) && <ValuesListSettings section={section} onChange={patch=>onChange({...section,...patch})} />}</div>
+        <div hidden={inspectorTab!=='design'} data-inspector-group={17}>{section.type==='cta_strip' && <CtaStripSettings section={section} onChange={patch=>onChange({...section,...patch})} />}</div>
+        <div hidden={inspectorTab!=='design'} data-inspector-group={18}>{section.type==='rich_text' && <RichTextSettings section={section} onChange={patch=>onChange({...section,...patch})} />}</div>
+
+        <div hidden={inspectorTab!=='content'} data-inspector-group={19}><ImageTargetInspector mode="content" section={section} selected={selectedImage} onSelect={onSelectImage} onChange={onChange} assetControl={target=><MediaUploadField label="Image URL / File Upload" value={target.url} onChange={url=>onChange(updateImageTarget(section,target.id,{mediaUrl:url}))} onUpload={url=>onMediaUpload(pageId,section.id,latest=>updateImageTarget(latest,target.id,{mediaUrl:url}))} placeholder="https://images.unsplash.com/... or upload" />} /></div>
 
         {/* Section Main Media & Image Upload */}
-        {hasMedia && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={20}>{hasMedia && imageTargets(section).length===0 && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Section Main Media Asset
             </label>
 
             <MediaUploadField
-              label="Image or Video URL / File Upload"
+              label={isEditorialMediaTextSplit(section) ? 'Image URL / File Upload' : 'Image or Video URL / File Upload'}
               value={section.mediaUrl || ''}
               onChange={url => updateField('mediaUrl', url)}
               onUpload={url => updateUploadedField('mediaUrl', url)}
@@ -2580,10 +2597,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               </div>
             )}
           </div>
-        )}
+        )}</div>
 
         {/* Action Buttons */}
-        {hasButtons && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={21}>{hasButtons && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Call to Action Buttons
@@ -2593,7 +2610,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               {hasSectionField('buttonText') && (
               <div>
                 <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">Primary Button</span>
-                <input
+                <input data-inspector-field="buttonText"
                   type="text"
                   value={section.buttonText || ''}
                   onChange={e => updateField('buttonText', e.target.value)}
@@ -2605,7 +2622,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               {hasSectionField('buttonLink') && (
               <div>
                 <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">Primary Link</span>
-                <input
+                <input data-inspector-field="buttonLink"
                   type="text"
                   value={section.buttonLink || ''}
                   onChange={e => updateField('buttonLink', e.target.value)}
@@ -2643,14 +2660,15 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               )}
             </div>
           </div>
-        )}
+        )}</div>
 
         {/* Sub-Items List Editor (for Multi-card sections & Hero Slider) */}
-        {hasItems && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={22}>{isValuesList(section) && <ValuesListEditor section={section} onChange={patch=>onChange({...section,...patch})} />}</div>
+        <div hidden={inspectorTab!=='content'} data-inspector-group={23}>{hasItems && !isValuesList(section) && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                {section.type === 'hero_slider' ? 'Background Carousel Slides' : 'Item Cards'} ({section.items?.length || 0})
+                {editorialCollection?(section.type==='media_gallery'?'Photographs':'Text columns'):section.type === 'hero_slider' ? 'Background Carousel Slides' : 'Item Cards'} ({section.items?.length || 0})
               </label>
               <button
                 type="button"
@@ -2658,25 +2676,27 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold shadow-xs cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>{section.type === 'hero_slider' ? 'Add Slide' : 'Add Card'}</span>
+                <span>{editorialCollection?(section.type==='media_gallery'?'Add Photo':'Add Column'):section.type === 'hero_slider' ? 'Add Slide' : 'Add Card'}</span>
               </button>
             </div>
 
             <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
               {section.items?.map((item, idx) => (
                 <div
+                  data-inspector-item={item.id}
                   key={item.id || idx}
                   className="p-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/50 space-y-2.5"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                      {section.type === 'hero_slider' ? `Slide #${idx + 1}` : `Card #${idx + 1}`}
+                      {editorialCollection?`${section.type==='media_gallery'?'Photo':'Column'} ${idx+1}`:section.type === 'hero_slider' ? `Slide #${idx + 1}` : `Card #${idx + 1}`}
                     </span>
+                    {editorialCollection&&<div className="flex gap-2 ml-auto mr-3">{([-1,1] as const).map(offset=><button key={offset} type="button" aria-label={`Move item ${idx+1} ${offset===-1?'up':'down'}`} disabled={idx+offset<0||idx+offset>=(section.items?.length??0)} onClick={()=>{const items=[...(section.items??[])];[items[idx],items[idx+offset]]=[items[idx+offset],items[idx]];updateField('items',items);}} className="text-[10px] text-neutral-500 hover:text-indigo-500 disabled:opacity-30">{offset===-1?'Up':'Down'}</button>)}</div>}
                     <button
                       type="button"
                       onClick={() => handleDeleteItem(idx)}
                       className="text-neutral-400 hover:text-rose-500 cursor-pointer"
-                      title="Delete Slide"
+                      title={editorialCollection?'Delete item':'Delete Slide'}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -2686,7 +2706,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                   {section.type === 'hero_slider' ? (
                     <div className="space-y-2.5">
                       {/* Background Image upload for this slide */}
-                      {hasItemField(item, 'imageUrl') && (
+                      {hasItemField(item, 'imageUrl') && !imageTargets(section).some(target=>target.itemId===item.id && target.field==='imageUrl') && (
                       <MediaUploadField
                         label="Slide Background Image / Video"
                         value={item.imageUrl || ''}
@@ -2866,7 +2886,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                           </div>
 
                           {/* Reviewer Avatar Upload */}
-                          {hasItemField(item, 'authorAvatar') && (
+                          {hasItemField(item, 'authorAvatar') && !imageTargets(section).some(target=>target.itemId===item.id && target.field==='authorAvatar') && (
                           <MediaUploadField
                             label="User Avatar Photo"
                             value={item.authorAvatar || ''}
@@ -2875,24 +2895,6 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                             placeholder="https://... avatar URL"
                           />
                           )}
-                        </div>
-                      )}
-
-                      {/* Card Image / Photo Upload for Gallery, Instagram, Logo Cloud, Feature Cards, Store Locator */}
-                      {(section.type === 'media_gallery' || 
-                        section.type === 'instagram_feed' || 
-                        section.type === 'logo_cloud' || 
-                        section.type === 'feature_cards' || 
-                        section.type === 'timeline_story' ||
-                        section.type === 'store_locator') && hasItemField(item, 'imageUrl') && (
-                        <div className="pt-1">
-                          <MediaUploadField
-                            label={section.type === 'logo_cloud' ? 'Press / Brand Logo Image' : 'Card Photo / Image'}
-                            value={item.imageUrl || ''}
-                            onChange={url => handleUpdateItem(idx, { imageUrl: url })}
-                            onUpload={url => updateUploadedItemField(item.id, 'imageUrl', url)}
-                            placeholder="https://... or upload file"
-                          />
                         </div>
                       )}
 
@@ -2949,7 +2951,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                           </div>
                         )}
 
-                        {(section.type === 'feature_cards' || section.type === 'icon_list') && hasItemField(item, 'icon') && (
+                        {((section.type === 'feature_cards' && section.featureCardsPreset!=='editorial-columns') || section.type === 'icon_list') && hasItemField(item, 'icon') && (
                           <div>
                             <span className="text-[10px] text-neutral-400 block mb-0.5">Icon</span>
                             <select
@@ -2983,17 +2985,17 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               ))}
             </div>
           </div>
-        )}
+        )}</div>
 
         {/* 9. Layout, Columns & Styling */}
-        {hasAnySectionField(['textAlignment', 'paddingY', 'backgroundColor']) && (
+        <div hidden={inspectorTab!=='design'} data-inspector-group={24}><details><summary className="font-semibold cursor-pointer py-2">Layout & spacing</summary>{hasAnySectionField(['textAlignment', 'paddingY', 'backgroundColor']) && (
         <div className="space-y-3">
           <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
             Layout & Theme
           </label>
 
           {/* Alignment */}
-          {hasSectionField('textAlignment') && (
+          {hasSectionField('textAlignment') && !(editorialCollection&&section.showSectionHeading===false) && !(section.type==='cta_strip' && section.ctaPreset!=='default' && section.ctaPreset!==undefined) && !isEditorialMediaTextSplit(section) && !isManifesto(section) && !isValuesList(section) && (
           <div>
             <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">Text Alignment</span>
             <div className="grid grid-cols-3 gap-2">
@@ -3034,6 +3036,8 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
           </div>
           )}
 
+
+
           {/* Padding */}
           {hasSectionField('paddingY') && (
           <div>
@@ -3056,6 +3060,8 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             </div>
           </div>
           )}
+
+          <SectionBorderSettings section={section} onChange={patch=>onChange({...section,...patch})} />
 
           {/* Background Color Palette */}
           {hasSectionField('backgroundColor') && (
@@ -3083,15 +3089,15 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             />
           )}
         </div>
-        )}
+        )}</details></div>
 
         {/* 9. Entrance Motion & Stagger Presets */}
-        <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-3">
+        <div hidden={inspectorTab!=='design'} data-inspector-group={25}><details><summary className="font-semibold cursor-pointer py-2">Motion</summary><div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-indigo-500" />
               <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
-                Entrance Motion (进场动效)
+                Entrance Motion
               </label>
             </div>
             <div className="flex items-center gap-1.5">
@@ -3159,10 +3165,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               );
             })}
           </div>
-        </div>
+        </div></details></div>
 
         {/* 10. Brand Palette & Color Customization (Secondary Color Tuner) */}
-        {sectionColors !== null && (
+        <div hidden={inspectorTab!=='design'} data-inspector-group={26}><details><summary className="font-semibold cursor-pointer py-2">Palette defaults & colors</summary>{sectionColors !== null && (
         <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -3301,6 +3307,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             )}
 
             {/* 4. Primary Button Color (Bg + Text) */}
+            {isValuesList(section) && <ValuesListColors section={section} onChange={patch=>onChange({...section,...patch})} />}
             {(hasColorField('primaryBtnBg') || hasColorField('primaryBtnText')) && (
             <div className="pt-2 border-t border-neutral-200 dark:border-neutral-700/60 space-y-2">
               <div className="text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">
@@ -3395,7 +3402,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             )}
           </div>
         </div>
-        )}
+        )}</details></div>
       </div>
     </div>
   );

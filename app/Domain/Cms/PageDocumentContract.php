@@ -192,6 +192,10 @@ final class PageDocumentContract
             $this->addError($errors, $path, 'This value is not allowed by the page contract.');
         }
 
+        if (($schema['format'] ?? null) === 'hex_color' && is_string($value) && ! preg_match('/^#[0-9a-f]{6}$/i', $value)) {
+            $this->addError($errors, $path, 'Use a six-digit hexadecimal color.');
+        }
+
         if (($schema['format'] ?? null) === 'managed_or_external_url' && is_string($value)) {
             if (str_starts_with(strtolower($value), 'data:')) {
                 $this->addError($errors, $path, 'Data URLs are not allowed in page documents.');
@@ -261,6 +265,55 @@ final class PageDocumentContract
             'allowUnknownFields' => false,
             'fields' => $fields,
         ], $path, $errors);
+
+        $this->validateImageSlots($value, $path, $errors);
+    }
+
+    private function validateImageSlots(array $section, string $path, array &$errors): void
+    {
+        if (! isset($section['imageSlots']) || ! is_array($section['imageSlots'])) {
+            return;
+        }
+        $type = $section['type'];
+        $targets = [];
+        if ((($type === 'chapter_block' && ($section['chapterPreset'] ?? 'story') === 'story') || in_array($type, ['cta_strip', 'hero_banner', 'split_hero', 'media_text_split', 'featured_deal'], true))
+            && ($section['mediaType'] ?? 'image') !== 'video' && ! ($type === 'cta_strip' && ($section['ctaPreset'] ?? 'default') === 'editorial-band')) {
+            $targets['mediaUrl'] = in_array($type, ['hero_banner', 'cta_strip'], true);
+        } elseif ($type === 'before_after') {
+            $targets = ['beforeImageUrl' => true, 'afterImageUrl' => true];
+        } elseif (($type === 'chapter_block' && ($section['chapterPreset'] ?? 'story') === 'perspective') || in_array($type, ['hero_slider', 'media_gallery', 'instagram_feed', 'testimonials_slider', 'logo_cloud'], true)) {
+            $field = $type === 'testimonials_slider' ? 'authorAvatar' : 'imageUrl';
+            foreach ($section['items'] ?? [] as $item) {
+                $item = $item instanceof stdClass ? get_object_vars($item) : $item;
+                if (! is_array($item) || ! isset($item['id']) || ! is_string($item['id'])) {
+                    continue;
+                }
+                if ($type === 'hero_slider' && ! empty($item['videoUrl'])) {
+                    continue;
+                }
+                $targets['item:'.$item['id'].':'.$field] = in_array($type, ['hero_slider', 'testimonials_slider', 'logo_cloud'], true);
+            }
+        }
+        $seen = [];
+        foreach ($section['imageSlots'] as $index => $slot) {
+            $slot = $slot instanceof stdClass ? get_object_vars($slot) : $slot;
+            if (! is_array($slot) || ! isset($slot['target']) || ! is_string($slot['target'])) {
+                continue;
+            }
+            $slotPath = $path.'.imageSlots.'.$index;
+            if (! array_key_exists($slot['target'], $targets) || isset($seen[$slot['target']])) {
+                $this->addError($errors, $slotPath.'.target', 'Choose a unique image target belonging to this section.');
+                continue;
+            }
+            $seen[$slot['target']] = true;
+            if ($targets[$slot['target']]) {
+                foreach (['imageRatio' => 'default', 'imageWidth' => '100', 'imageShape' => 'default'] as $field => $default) {
+                    if (isset($slot[$field]) && $slot[$field] !== $default) {
+                        $this->addError($errors, $slotPath.'.'.$field, 'Image geometry is owned by this section layout.');
+                    }
+                }
+            }
+        }
     }
 
     /**

@@ -1,3 +1,4 @@
+import type {SectionTypography} from '../cms/inspectorCapabilities';
 import type {
   NotificationDispatchChannel,
   NotificationDispatchSource,
@@ -553,6 +554,8 @@ export type PageSectionType =
   | 'announcement_bar'
   | 'rich_text'
   | 'media_text_split'
+  | 'chapter_block'
+  | 'chapter_navigation'
   | 'timeline_story'
   | 'stats_counter'
   | 'product_grid'
@@ -565,6 +568,7 @@ export type PageSectionType =
   | 'before_after'
   | 'instagram_feed'
   | 'feature_cards'
+  | 'values_list'
   | 'icon_list'
   | 'comparison_matrix'
   | 'faq_accordion'
@@ -629,7 +633,11 @@ export interface InquiryCategory {
 
 export type SectionMotionPreset = 'subtle-lift' | 'fade-in' | 'smooth-zoom' | 'dynamic-pop' | 'none';
 
+export type SectionImageSlot = Pick<PageSection, 'mediaAlt' | 'imageRatio' | 'imagePosition' | 'imageFit' | 'imageWidth' | 'imageShape' | 'imageOverlay' | 'imageOverlayOpacity' | 'imageForeground' | 'imageForegroundColor' | 'imageForegroundOpacity'> & {target:string};
+
 export interface PageSection {
+  imageSlots?: SectionImageSlot[];
+  typography?: SectionTypography;
   motionPreset?: SectionMotionPreset;
   id: string;
   type: PageSectionType;
@@ -643,6 +651,36 @@ export interface PageSection {
   mediaUrl?: string; // Image or Video asset URL
   mediaType?: 'image' | 'video';
   mediaPosition?: 'left' | 'right';
+  imageRatio?: 'default' | 'auto' | '16:9' | '3:2' | '4:3' | '1:1' | '3:4';
+  imagePosition?: 'top-left' | 'top-center' | 'top-right' | 'center-left' | 'center' | 'center-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
+  imageFit?: 'cover' | 'contain';
+  imageWidth?: '100' | '75' | '50';
+  imageShape?: 'default' | 'rectangle' | 'rounded' | 'circle';
+  imageOverlay?: boolean;
+  imageOverlayOpacity?: 0 | 10 | 20 | 30 | 40 | 50 | 60 | 70 | 80 | 90 | 100;
+  imageForeground?: boolean;
+  imageForegroundColor?: string;
+  imageForegroundOpacity?: 0 | 10 | 20 | 30 | 40 | 50 | 60 | 70 | 80 | 90 | 100;
+  layoutPreset?: 'default' | 'editorial-hero' | 'editorial-story' | 'editorial-cover';
+  leadText?: string;
+  chapterPreset?: 'story' | 'perspective' | 'principles';
+  containerMode?: 'page' | 'full-bleed';
+  sectionBorder?: 'default' | 'none' | 'top' | 'bottom' | 'both';
+  sectionBorderColor?: string;
+  ctaPreset?: 'default' | 'image-banner' | 'editorial-band';
+  ctaBannerHeight?: 'compact' | 'normal' | 'spacious';
+  richTextPreset?: 'default' | 'manifesto';
+  featureCardsPreset?: 'default' | 'values-list' | 'editorial-columns';
+  galleryPreset?: 'default' | 'editorial-montage' | 'editorial-cards';
+  showSectionHeading?: boolean;
+  valuesShowHeading?: boolean;
+  valuesNumberColor?: string;
+  valuesDividerColor?: string;
+  valuesShowDividers?: boolean;
+  valuesRowSpacing?: 'compact' | 'normal' | 'spacious';
+  buttonStyle?: 'button' | 'text-link';
+  mediaAlt?: string;
+  mediaFocalPoint?: 'center' | 'top' | 'bottom' | 'left' | 'right';
   mediaAspectRatio?: '16:9' | '4:3' | '1:1' | 'auto';
   buttonText?: string;
   buttonLink?: string;
@@ -714,6 +752,7 @@ export interface CmsPage {
   description?: string;
   status: 'published' | 'draft' | 'archived';
   template: 'standard' | 'fullwidth' | 'landing';
+  containerWidth?: 'standard' | 'wide';
   heroImage?: string | null;
   seoTitle?: string;
   seoDescription?: string;
@@ -826,6 +865,7 @@ export type PageDocument = Pick<
   | 'slug'
   | 'description'
   | 'template'
+  | 'containerWidth'
   | 'heroImage'
   | 'seoTitle'
   | 'seoDescription'
