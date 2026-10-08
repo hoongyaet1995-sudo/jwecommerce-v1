@@ -55,3 +55,5 @@ Final PHP formatting rerun7/71 passed3.00s. route:list --compact is unsupported 
 - Evidence: evidence/support-improvement-center/home-light.png and published-dark.png.
 - Producer/service/MySQL/consumer/permissions/failure/tests/browser closure verified locally. Exact SHA deployment gates remain pending; no commit, push or Hostinger deployment made.
 - Token usage: unavailable. Unexpected issue roots each resolved at count 1; no escalation threshold reached. Historical unrelated counts unavailable.
+Navigation cleanup: hide overview exit on child pages, remove activation notice and Refresh. Initial focused test failed once due to edit quote escaping; corrected exact escaping before rerun. No backend changes.
+After escaping correction: focused 3 tests passed; Admin build passed (11.43s). Local authenticated browser verified Performance and Review have zero direct AI overview exits, no Refresh, and return to Center works. Screenshot evidence/support-improvement-center/navigation-cleanup.png. Local only; synchronization pending user approval.
