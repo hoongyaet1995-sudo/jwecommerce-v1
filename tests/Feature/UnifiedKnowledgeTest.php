@@ -7,6 +7,13 @@ use App\Services\Support\ProductKnowledgeService;
 use App\Services\Support\DiscountKnowledgeService;
 use App\Services\AI\AiConnectionService;
 class UnifiedKnowledgeTest extends TestCase {
+ public function test_blended_policy_plan_searches_each_question_without_losing_topics():void{
+ $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"tools":[{"name":"faq.search","query":"shipping returns damage"}],"questions":["Penang shipping?","Return deadline?","Damage process?"],"escalation":"none","clarification":"none","language":"en","conversation":"none","needs_business_answer":true}');
+ $search=$this->mock(FaqKnowledgeSearch::class);
+ foreach(['Penang shipping?','Return deadline?','Damage process?'] as $i=>$q)$search->shouldReceive('search')->once()->with($q,\Mockery::type('array'))->andReturn([['id'=>'policy'.$i,'question'=>$q,'answer'=>'Official policy']]);
+ $facts=app(UnifiedKnowledgeService::class)->retrieve('Shipping returns damage',$this->settings());
+ $this->assertEqualsCanonicalizing(['policy0','policy1','policy2'],array_column($facts,'id'));
+ }
  public function test_v1_follow_up_rejects_private_or_disabled_tools_before_execution():void{
  foreach(['order.lookup','product.search','delete.order'] as $name){
   try {app(UnifiedKnowledgeService::class)->followUp(['name'=>$name,'query'=>'test'],['faq'=>['isEnabled'=>false],'productCatalog'=>['isEnabled'=>false],'orderLookup'=>['isEnabled'=>true]]);$this->fail('Tool was accepted: '.$name);}

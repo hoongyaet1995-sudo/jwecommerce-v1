@@ -1120,6 +1120,7 @@ export type NavSection =
   | 'ai-personality'
   | 'ai-knowledge'
   | 'ai-guardrails'
+  | 'ai-improvement'
   | 'integration'
   | 'integration-ai-connect'
   | 'promotions'

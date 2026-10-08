@@ -100,6 +100,7 @@ export const AdminHeader: React.FC<{ onToggleMobileSidebar: () => void }> = ({
       case 'ai-personality': return {category:'Agent Studio',title:'AI Personality & Tone'};
       case 'ai-knowledge': return {category:'Agent Studio',title:'AI Knowledge Scope'};
       case 'ai-guardrails': return {category:'Agent Studio',title:'AI Safety Guardrails'};
+      case 'ai-improvement': return {category:'Agent Studio',title:'Support Improvement Center'};
       case 'support-overview': return { category: 'Customer Care & AI', title: 'Customer Support Overview' };
       case 'support-tiktok-prototype': return { category: 'Customer Care & AI', title: 'TikTok Review Prototype' };
       case 'support-tiktok': return { category: 'Customer Care & AI', title: 'TikTok Account Management' };

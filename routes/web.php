@@ -180,6 +180,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/api/social/facebook/{id}', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'destroy'])->middleware('throttle:10,1');
     Route::get('/api/support/alerts', [\App\Http\Controllers\Admin\SupportAlertController::class, 'index']);
     Route::patch('/api/support/alerts/{id}/read', [\App\Http\Controllers\Admin\SupportAlertController::class, 'read']);
+    Route::get('/api/support/improvement', [\App\Http\Controllers\Admin\SupportImprovementController::class,'index']);
+    Route::get('/api/support/improvement/drafts', [\App\Http\Controllers\Admin\SupportImprovementController::class,'drafts']);
+    Route::post('/api/support/improvement/drafts', [\App\Http\Controllers\Admin\SupportImprovementController::class,'store'])->middleware('throttle:10,1');
+    Route::patch('/api/support/improvement/drafts/{draft}', [\App\Http\Controllers\Admin\SupportImprovementController::class,'update'])->whereNumber('draft')->middleware('throttle:20,1');
+    Route::post('/api/support/improvement/drafts/{draft}/publish', [\App\Http\Controllers\Admin\SupportImprovementController::class,'publish'])->whereNumber('draft')->middleware('throttle:10,1');
+    Route::post('/api/support/improvement/drafts/{draft}/dismiss', [\App\Http\Controllers\Admin\SupportImprovementController::class,'dismiss'])->whereNumber('draft')->middleware('throttle:20,1');
     Route::get('/api/support/faq', [\App\Http\Controllers\SupportFaqController::class, 'index']);
     Route::put('/api/support/faq', [\App\Http\Controllers\SupportFaqController::class, 'save'])->middleware('throttle:20,1');
     Route::get('/api/integration/ai', [\App\Http\Controllers\Admin\AiConnectionController::class, 'index']);
@@ -569,7 +575,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/social/facebook', AdminAppController::class)->name('social.facebook');
     Route::get('/integration', AdminAppController::class)->name('integration');
     Route::get('/integration/ai-connect', AdminAppController::class)->name('integration.ai-connect');
-    Route::get('/ai-auto-reply/{section}', AdminAppController::class)->whereIn('section',['personality','knowledge','guardrails']);
+    Route::get('/ai-auto-reply/{section}', AdminAppController::class)->whereIn('section',['personality','knowledge','guardrails','improvement']);
     Route::get('/ai-auto-reply', AdminAppController::class)->name('ai-auto-reply');
     Route::get('/reports', AdminAppController::class)->name('reports');
     Route::get('/reports/sales', AdminAppController::class)->name('reports.sales');

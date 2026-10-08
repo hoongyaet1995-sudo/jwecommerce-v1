@@ -893,6 +893,16 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [aiAutoReplyConfig, setAiAutoReplyConfig] = useState<AIAutoReplyMasterConfig>(DEFAULT_AI_AUTO_REPLY_CONFIG);
   const faqServerVersion = useRef<number | null>(null);
   const faqSaving = useRef(false);
+  useEffect(()=>{
+    const onPublished=(event:Event)=>{
+      const data=(event as CustomEvent<{version:number;scope:AIAutoReplyMasterConfig['knowledgeScope']['faqKnowledge']}>).detail;
+      if(!data?.scope||typeof data.version!=='number')return;
+      faqServerVersion.current=data.version;
+      setAiAutoReplyConfig(prev=>({...prev,knowledgeScope:{...prev.knowledgeScope,faqKnowledge:data.scope}}));
+    };
+    window.addEventListener('support-faq-published',onPublished);
+    return()=>window.removeEventListener('support-faq-published',onPublished);
+  },[]);
   useEffect(() => {
     let active = true;
     void supportFaqRequest().then(data => {

@@ -20,9 +20,6 @@ class FaqAutoReplyService
         $settings = app(SupportFaqService::class)->read();
         if (!app(SupportAiPolicy::class)->enabled($settings, $conversation->channel)) return true;
         $explicitRequest = app(SupportEscalationPolicy::class)->requested($incoming['content'], $settings);
-        if (!$explicitRequest && ! ($settings['autoReplyEnabled'] ?? false)) {
-            return true;
-        }
         $lock = Cache::lock('support-ai:'.$conversation->id, 90);
         if (! $lock->get()) {
             return false;
@@ -68,7 +65,7 @@ class FaqAutoReplyService
             $actions = [];
             $cadenceBatch=$incoming['_cadence_batch']??null;
             $candidateSegments=[];
-            $trace=['version'=>1,'settingsVersion'=>(int)($settings['version']??0),'tools'=>[],'retrievedSourceIds'=>[],'citedSourceIds'=>[],'decision'=>'no_match','clarification'=>null,'escalation'=>null];
+            $trace=['version'=>1,'sourceMessageId'=>$source->id,'settingsVersion'=>(int)($settings['version']??0),'tools'=>[],'retrievedSourceIds'=>[],'citedSourceIds'=>[],'decision'=>'no_match','clarification'=>null,'escalation'=>null];
             $escalationReason = app(SupportEscalationPolicy::class)->requested($incoming['content'],$settings) ? 'explicit_request' : app(SupportEscalationPolicy::class)->reason($conversation, $incoming['content'], $settings);
             if ($escalationReason) {
                 $answer = ['en'=>'Our support team can help with this request. You can request assistance below.','ms'=>'Pasukan khidmat pelanggan boleh membantu. Anda boleh meminta bantuan di bawah.','zh'=>'这个问题可以请客服协助处理，你可以通过下方入口提出请求。'][$language];
@@ -179,6 +176,8 @@ class FaqAutoReplyService
                     }
                     $output = ($facts||$socialOnly) ? app(AiConnectionService::class)->generateText('support', $prompt, $limit, isset($settings['personality']['creativityTemperature']) ? (float) $settings['personality']['creativityTemperature'] : null) : '{"answer":"","faq_ids":[]}';
                     $result = json_decode($output, true);
+                    // Truncated/invalid generation is a service failure, not missing knowledge.
+                    if(json_last_error()!==JSON_ERROR_NONE||!is_array($result))throw new \RuntimeException('Invalid structured answer');
                     if($questions&&!$socialOnly&&!$orderReplies&&!$partialBlocked){
                         $checker=app(SupportAnswerCoverage::class);
                         $check=$checker->inspect(is_array($result)?$result:[],$questions,array_column($facts,'id'),app(UnifiedKnowledgeService::class)->tools($settings));
@@ -244,7 +243,7 @@ class FaqAutoReplyService
                         $answer=($answer!==$unknown[$language]?$answer."\n\n":'').$notice;
                         if($partialBlocked){$trace['decision']='query_unavailable';$trace['citedSourceIds']=[];}
                     }
-                    if($answer===$unknown[$language]&&!$clarification)$trace['decision']='no_match';
+                    if($answer===$unknown[$language]&&!$clarification&&$trace['decision']!=='coverage_incomplete')$trace['decision']='no_match';
                     if($clarificationAnswer&&$facts&&!$orderReplies)$answer=($answer!==$unknown[$language]?$answer."\n\n":'').$clarificationAnswer;
                     if($understanding['negotiation']??false){
                         $pricing=$settings['guardrails']['priceBargaining']??app(SupportFaqService::class)->defaultGuardrails()['priceBargaining'];
@@ -276,7 +275,7 @@ class FaqAutoReplyService
                 }
                 $current = app(SupportFaqService::class)->read();
                 if (!app(SupportAiPolicy::class)->enabled($current, $conversation->channel)) return;
-                if (($current['version'] ?? 0) !== ($settings['version'] ?? 0) || ($escalationReason === 'explicit_request' && !app(SupportEscalationPolicy::class)->rules($current)['onExplicitRequest']) || ($escalationReason !== 'explicit_request' && ! ($current['autoReplyEnabled'] ?? false))) {
+                if (($current['version'] ?? 0) !== ($settings['version'] ?? 0) || ($escalationReason === 'explicit_request' && !app(SupportEscalationPolicy::class)->rules($current)['onExplicitRequest'])) {
                     return;
                 }
                 $actions = array_merge($actions, app(SupportEscalationPolicy::class)->actions($locked, $answer === $unknownAnswer, $escalationReason, $settings));

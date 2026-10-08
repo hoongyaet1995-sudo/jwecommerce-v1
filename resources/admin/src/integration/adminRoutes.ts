@@ -34,6 +34,7 @@ export const ADMIN_PATH_BY_SECTION = {
   'ai-personality': '/admin/ai-auto-reply/personality',
   'ai-knowledge': '/admin/ai-auto-reply/knowledge',
   'ai-guardrails': '/admin/ai-auto-reply/guardrails',
+  'ai-improvement': '/admin/ai-auto-reply/improvement',
   integration: '/admin/integration',
   'integration-ai-connect': '/admin/integration/ai-connect',
   reports: '/admin/reports',

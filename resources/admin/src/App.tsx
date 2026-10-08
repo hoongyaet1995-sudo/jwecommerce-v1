@@ -1,4 +1,5 @@
 import {TikTokReviewPrototype} from './components/support/TikTokReviewPrototype';
+import {SupportImprovementCenter} from './components/ai-auto-reply/SupportImprovementCenter';
 import {TikTokAccountPage} from './components/support/TikTokAccountPage';
 import React, { useState } from 'react';
 import { AdminProvider, useAdmin } from './context/AdminContext';
@@ -82,6 +83,7 @@ const AdminLayoutContent: React.FC = () => {
       case 'ai-guardrails':
       case 'ai-auto-reply':
         return <AIAutoReplyStudioHub />;
+      case 'ai-improvement': return <SupportImprovementCenter />;
       case 'shipping-malaysia':
         return <ShippingDashboard />;
       case 'marketplace':

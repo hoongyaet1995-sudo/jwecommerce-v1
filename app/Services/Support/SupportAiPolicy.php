@@ -6,8 +6,13 @@ class SupportAiPolicy
  public function enabled(array $settings, ?string $channel): bool
  {
   $channel = match ($channel) { null, 'web_guest', 'web_customer' => 'storefront', default => $channel };
-  return ($settings['autoReplyEnabled'] ?? false) === true
-   && array_key_exists($channel, self::DEFAULTS)
-   && (($settings['aiChannels'][$channel] ?? self::DEFAULTS[$channel]) === true);
+  if (!array_key_exists($channel, self::DEFAULTS)) return false;
+  $channels = $this->channels($settings);
+  return $channels[$channel] === true;
+ }
+ public function channels(array $settings): array
+ {
+  $defaults = ($settings['autoReplyEnabled'] ?? false) === true ? self::DEFAULTS : array_fill_keys(array_keys(self::DEFAULTS), false);
+  return array_replace($defaults, $settings['aiChannels'] ?? []);
  }
 }

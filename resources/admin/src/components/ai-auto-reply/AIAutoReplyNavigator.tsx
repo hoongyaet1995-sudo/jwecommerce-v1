@@ -14,7 +14,8 @@ import {
 
 export const AIAutoReplyNavigator: React.FC = () => {
   const {setCurrentSection,aiAutoReplyConfig}=useAdmin();
-  const metrics={productCount:aiAutoReplyConfig.personality.isEnabled?'Active':'Paused',inStockActiveProductCount:'AI auto-reply',categoryCount:({auto_detect:'Auto detect',en:'English',ms:'Bahasa Melayu',zh:'Chinese'}[aiAutoReplyConfig.personality.primaryLanguage]),nestedCategoryCount:'Multilingual',collectionCount:3,dynamicCollectionCount:'Dedicated pages'};
+  const enabledChannels=Object.entries(aiAutoReplyConfig.aiChannels || {}).filter(([key,on])=>on && key!=='tiktok').length;
+  const metrics={productCount:enabledChannels?'Active':'Paused',inStockActiveProductCount:'Controlled by channel',categoryCount:({auto_detect:'Auto detect',en:'English',ms:'Bahasa Melayu',zh:'Chinese'}[aiAutoReplyConfig.personality.primaryLanguage]),nestedCategoryCount:'Multilingual',collectionCount:3,dynamicCollectionCount:'Dedicated pages'};
   const reviews=[1,2,3];const pendingReviewsCount=0;
   const cards=[
    {id:'ai-personality',title:'AI Personality & Tone',shortName:'Identity & Conversation',description:'Define your AI identity, language, tone of voice and human handoff behaviour.',icon:Sparkles,iconBg:'from-indigo-500 to-violet-600',badge:'Persona',badgeColor:'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/20',highlights:['Bot identity & role','Tone of voice & languages','Human handoff triggers'],actionLabel:'Manage Personality'},
@@ -25,7 +26,7 @@ export const AIAutoReplyNavigator: React.FC = () => {
     <div className="space-y-6">
       {/* Banner */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-neutral-900 via-teal-950 to-neutral-900 border border-neutral-800 p-6 sm:p-8 text-white shadow-lg">
-        <div className="relative z-10 flex justify-end mb-4"><AIChannelControls mode="master" /></div>
+        <div className="relative z-10 flex justify-end mb-4"><button onClick={()=>setCurrentSection('ai-improvement')} className="inline-flex items-center gap-2 text-xs font-semibold text-teal-300 bg-teal-500/10 rounded-xl border border-teal-500/30 px-4 py-2.5 hover:bg-teal-500/20"><BookOpen size={16}/>Support Improvement Center<ArrowRight size={16}/></button></div>
         <div className="relative z-10 space-y-2 max-w-2xl">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-500/20 text-teal-300 border border-teal-500/30">
@@ -61,7 +62,7 @@ export const AIAutoReplyNavigator: React.FC = () => {
           </div>
           <div className="p-3 rounded-xl bg-white/5 border border-white/5">
             <p className="text-[11px] font-medium text-neutral-400">AI Channels</p>
-            <p className="text-xl font-bold text-white mt-0.5">{aiAutoReplyConfig.personality.isEnabled ? Object.entries(aiAutoReplyConfig.aiChannels || {}).filter(([key,on])=>on && key!=='tiktok').length : 0}</p>
+            <p className="text-xl font-bold text-white mt-0.5">{enabledChannels}</p>
             <span className="text-[10px] text-cyan-400">Enabled for automatic replies</span>
           </div>
         </div>

@@ -63,7 +63,7 @@ class SupportReplyCadenceTest extends SupportChatApiTest
         $this->assertSame(1,SupportReplyBatch::where('status','collecting')->count());
     }
     public function test_each_control_boundary_blocks_remaining_segments():void {
-        foreach(['resolved','archive','staff_reply','master_pause','channel_pause','settings_change'] as $boundary){
+        foreach(['resolved','archive','staff_reply','channel_pause','settings_change'] as $boundary){
             StoreSetting::where('key','support_faq')->delete();$c=$this->cadenceConversation();$s=app(SupportReplyCadenceService::class);$source=$this->message($c,'Help');$s->enqueue($source);$batch=SupportReplyBatch::where('conversation_id',$c->id)->first();$batch->update(['status'=>'generating']);
             $settings=app(\App\Services\SupportFaqService::class)->read();$s->prepare($batch->id,$c,$source,"One\n\nTwo",[],['decision'=>'grounded','candidateSegments'=>['One','Two']],$settings);$s->publish($batch->id);
             if($boundary==='resolved')$c->update(['status'=>'resolved']);

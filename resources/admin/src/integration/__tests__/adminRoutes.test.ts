@@ -66,6 +66,7 @@ const ALL_ADMIN_SECTIONS = [
   'reports-shipping',
   'reports-tax',
   'ai-auto-reply',
+  'ai-improvement',
   'ai-personality',
   'ai-knowledge',
   'ai-guardrails',

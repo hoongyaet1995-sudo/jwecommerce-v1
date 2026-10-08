@@ -15,6 +15,19 @@ use Tests\TestCase;
 
 class SupportChatApiTest extends TestCase
 {
+    public function test_truncated_structured_answer_is_unavailable_not_missing_faq():void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $knowledge=$this->mock(\App\Services\Support\UnifiedKnowledgeService::class);
+        $knowledge->shouldReceive('retrieve')->once()->andReturn([['id'=>'policy','question'=>'Delivery','answer'=>'RM8']]);
+        $knowledge->shouldReceive('redact')->andReturnUsing(fn($q)=>$q);
+        $knowledge->shouldReceive('tools')->andReturn([]);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"answer":"RM8","faq_ids":["policy"],"coverage":[');
+        $this->postJson('/support/chat/messages',$this->payload('What are delivery and return conditions?'))->assertOk();
+        $reply=\App\Models\SupportMessage::where('sender_role','ai')->first();
+        $this->assertSame('generation_unavailable',$reply->ai_trace['decision']);
+        $this->assertStringNotContainsString('FAQ',$reply->content);
+    }
     public function test_preference_acknowledgement_does_not_require_faq_or_promise_persistence():void
     {
         StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);

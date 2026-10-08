@@ -29,6 +29,12 @@ class UnifiedKnowledgeService
         if(($plan['clarification']??'none')!=='none')$facts[]=['id'=>'support:clarification','question'=>'Missing context','answer'=>$plan['clarification']];
         if (($plan['escalation'] ?? 'none') !== 'none') $facts[]=['id'=>'support:intent','question'=>'Internal escalation classification','answer'=>$plan['escalation']];
         $steps=$plan['tools'];
+        // A single blended policy query can let one topic dominate the top hits.
+        // Expand only policy-only plans; never turn product/order questions into FAQ searches.
+        $questions=$plan['questions']??[];
+        if(count($steps)===1&&$steps[0]['name']==='faq.search'&&count($questions)>1){
+            $steps=array_map(fn($q)=>['name'=>'faq.search','query'=>$q],array_slice($questions,0,3));
+        }
         $selectedTools=array_column($steps,'name');
         if(($settings['productCatalog']['includeStorePolicies']??true)&&isset($tools['faq.search'])&&in_array('product.search',$selectedTools,true)&&!in_array('faq.search',$selectedTools,true)){
             $steps[]=['name'=>'faq.search','query'=>$question];
