@@ -19,6 +19,11 @@ final class ReturnsTemplatesTest extends TestCase
         $chapter['sections'][0]['typography']=['lead'=>['fontSize'=>20,'lineHeight'=>2,'letterSpacing'=>2]];
         $this->assertSame($chapter,app(PageDocumentContract::class)->validate($chapter));
     }
+    public function test_process_flow_round_trips_without_changing_items(): void
+    {
+        $document=['title'=>'Process','slug'=>'process','template'=>'standard','sections'=>[['id'=>'process','type'=>'policy_content','title'=>'Process','isVisible'=>true,'policyPreset'=>'process-flow','items'=>[['id'=>'one','title'=>'First','description'=>'Prepare'],['id'=>'two','title'=>'Second','description'=>'Complete']]]]];
+        $this->assertSame($document,app(PageDocumentContract::class)->validate($document));
+    }
     public function test_policy_presets_reject_unknown_values_and_wrong_section_owners(): void
     {
         foreach ([['rich_text','guidelines'],['policy_content','unknown']] as [$type,$preset]) {

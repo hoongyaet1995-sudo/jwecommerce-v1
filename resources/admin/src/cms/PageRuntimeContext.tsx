@@ -271,7 +271,7 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   sectionBorderColor: {kind: 'optional-string'},
   ctaPreset: {kind: 'optional-enum', values: ['default','image-banner','editorial-band','help-panel']},
   leadText: {kind:'optional-string'},
-  policyPreset:{kind:'optional-enum',values:['guidelines','choices','steps','timeline','tabs','columns']},
+  policyPreset:{kind:'optional-enum',values:['guidelines','choices','steps','process-flow','timeline','tabs','columns']},
   policyNote:{kind:'optional-string'},
   contactPreset:{kind:'optional-enum',values:['enquiry','location']},
   mapEmbedUrl:{kind:'optional-string'},

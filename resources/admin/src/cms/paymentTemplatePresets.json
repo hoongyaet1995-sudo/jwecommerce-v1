@@ -1,0 +1,705 @@
+{
+  "payment-essential": [
+    {
+      "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-intro",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "compact",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "rich_text",
+      "title": "Simple ways to pay.",
+      "subtitle": "PAYMENT",
+      "content": "Everything you need to know for your next checkout.",
+      "typography": {
+        "title": {
+          "fontSize": 48,
+          "fontWeight": 800
+        }
+      },
+      "richTextPreset": "default"
+    },
+    {
+      "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-highlights",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "compact",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "feature_cards",
+      "featureCardsPreset": "service-highlights",
+      "title": "A clear next step.",
+      "showSectionHeading": false,
+      "columnsCount": 3,
+      "items": [
+        {
+          "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-highlights-0",
+          "title": "Choose at checkout",
+          "description": "See the options available for your order.",
+          "icon": "CreditCard"
+        },
+        {
+          "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-highlights-1",
+          "title": "Keep your reference",
+          "description": "Save the details you need to check your order.",
+          "icon": "ReceiptText"
+        },
+        {
+          "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-highlights-2",
+          "title": "Here to help",
+          "description": "Contact our team if you need assistance.",
+          "icon": "Headphones"
+        }
+      ]
+    },
+    {
+      "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-methods",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "payment_methods",
+      "title": "Ways to pay.",
+      "subtitle": "PAYMENT OPTIONS",
+      "content": "Choose the available option that suits your order.",
+      "paymentLayout": "cards",
+      "paymentNote": "Final availability depends on your order, currency and delivery address. Confirm your payment method at checkout."
+    },
+    {
+      "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-steps",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "policy_content",
+      "policyPreset": "process-flow",
+      "title": "Three clear steps.",
+      "subtitle": "HOW IT WORKS",
+      "items": [
+        {
+          "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-steps-0",
+          "title": "Choose your method",
+          "description": "Review the methods and final amount available for your order."
+        },
+        {
+          "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-steps-1",
+          "title": "Complete payment",
+          "description": "Follow the instructions shown by your selected payment provider."
+        },
+        {
+          "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-steps-2",
+          "title": "Check your order",
+          "description": "Keep your reference and check the order status after payment."
+        }
+      ]
+    },
+    {
+      "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-help",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-neutral-900",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "policy_content",
+      "policyPreset": "columns",
+      "columnsCount": 2,
+      "title": "Your next step.",
+      "showSectionHeading": false,
+      "items": [
+        {
+          "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-help-0",
+          "title": "Keep your order reference",
+          "description": "Use your order reference when checking status or contacting our team.",
+          "icon": "ReceiptText",
+          "buttonText": "Check order status",
+          "linkUrl": "/order-tracking"
+        },
+        {
+          "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-help-1",
+          "title": "Need a hand with payment?",
+          "description": "If payment does not complete, check your order status before trying again. Our team can help you find the next step.",
+          "icon": "Headphones",
+          "buttonText": "Contact support",
+          "linkUrl": "#storefront-support-widget"
+        }
+      ]
+    },
+    {
+      "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-faq",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "faq_accordion",
+      "faqPreset": "minimal",
+      "faqInitiallyOpen": true,
+      "title": "Payment questions, answered.",
+      "subtitle": "FAQ",
+      "items": [
+        {
+          "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-faq-0",
+          "title": "Which payment methods can I use?",
+          "description": "Available methods are shown at checkout for your order. They may vary by currency, delivery address and provider requirements."
+        },
+        {
+          "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-faq-1",
+          "title": "What if my payment does not go through?",
+          "description": "Check your order status before retrying. If you are unsure whether payment completed, contact our team with your order reference."
+        },
+        {
+          "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-faq-2",
+          "title": "Can I pay in instalments?",
+          "description": "If an instalment option appears at checkout, review the provider’s eligibility requirements, repayment schedule and terms before continuing."
+        },
+        {
+          "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-faq-3",
+          "title": "How can I confirm my payment?",
+          "description": "Check your order status. If you need help reconciling a payment, contact our team with your order reference and the payment reference. Never share passwords or card security codes."
+        }
+      ]
+    },
+    {
+      "id": "sec-fa399469-8984-499b-83fb-f857de664ba7-support",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "cta_strip",
+      "ctaPreset": "help-panel",
+      "title": "Let’s make your next step simple.",
+      "content": "Questions about payment? Our team is here to help.",
+      "buttonText": "Contact support",
+      "buttonLink": "#storefront-support-widget"
+    }
+  ],
+  "payment-guided": [
+    {
+      "id": "sec-56e23952-af25-42bf-9daf-6713ae247ef0-intro",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "compact",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "rich_text",
+      "richTextPreset": "manifesto",
+      "title": "Find your way to pay.",
+      "subtitle": "PAYMENT",
+      "content": "Clear options. A helpful next step.\nReview the methods available at checkout and follow the guidance for your order."
+    },
+    {
+      "id": "sec-56e23952-af25-42bf-9daf-6713ae247ef0-methods",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "compact",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "payment_methods",
+      "title": "",
+      "subtitle": "",
+      "content": "",
+      "paymentLayout": "cards",
+      "paymentNote": "Final availability depends on your order, currency and delivery address. Confirm your payment method at checkout."
+    },
+    {
+      "id": "sec-56e23952-af25-42bf-9daf-6713ae247ef0-steps",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "media_text_split",
+      "layoutPreset": "story-with-steps",
+      "title": "A clear path\nthrough checkout.",
+      "subtitle": "HOW IT WORKS",
+      "content": "Take a moment to review your order and payment details.",
+      "mediaUrl": "/storage/cms/media/647c486d-67fd-49e2-835a-a1b46e75ea11.png",
+      "mediaAlt": "Hands preparing a parcel with folded clothing",
+      "mediaPosition": "right",
+      "mediaAspectRatio": "4:3",
+      "items": [
+        {
+          "id": "sec-56e23952-af25-42bf-9daf-6713ae247ef0-steps-0",
+          "title": "Choose your method",
+          "description": "Review the methods and final amount available for your order."
+        },
+        {
+          "id": "sec-56e23952-af25-42bf-9daf-6713ae247ef0-steps-1",
+          "title": "Complete payment",
+          "description": "Follow the instructions shown by your selected payment provider."
+        },
+        {
+          "id": "sec-56e23952-af25-42bf-9daf-6713ae247ef0-steps-2",
+          "title": "Check your order",
+          "description": "Keep your reference and check the order status after payment."
+        }
+      ]
+    },
+    {
+      "id": "sec-56e23952-af25-42bf-9daf-6713ae247ef0-help",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "policy_content",
+      "policyPreset": "columns",
+      "columnsCount": 2,
+      "title": "Your next step.",
+      "showSectionHeading": false,
+      "items": [
+        {
+          "id": "sec-56e23952-af25-42bf-9daf-6713ae247ef0-help-0",
+          "title": "Keep your order reference",
+          "description": "Use your order reference when checking status or contacting our team.",
+          "icon": "ReceiptText",
+          "buttonText": "Check order status",
+          "linkUrl": "/order-tracking"
+        },
+        {
+          "id": "sec-56e23952-af25-42bf-9daf-6713ae247ef0-help-1",
+          "title": "Need a hand with payment?",
+          "description": "If payment does not complete, check your order status before trying again. Our team can help you find the next step.",
+          "icon": "Headphones",
+          "buttonText": "Contact support",
+          "linkUrl": "#storefront-support-widget"
+        }
+      ]
+    },
+    {
+      "id": "sec-56e23952-af25-42bf-9daf-6713ae247ef0-faq",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "faq_accordion",
+      "faqPreset": "minimal",
+      "faqInitiallyOpen": true,
+      "title": "Payment questions, answered.",
+      "subtitle": "FAQ",
+      "items": [
+        {
+          "id": "sec-56e23952-af25-42bf-9daf-6713ae247ef0-faq-0",
+          "title": "Which payment methods can I use?",
+          "description": "Available methods are shown at checkout for your order. They may vary by currency, delivery address and provider requirements."
+        },
+        {
+          "id": "sec-56e23952-af25-42bf-9daf-6713ae247ef0-faq-1",
+          "title": "What if my payment does not go through?",
+          "description": "Check your order status before retrying. If you are unsure whether payment completed, contact our team with your order reference."
+        },
+        {
+          "id": "sec-56e23952-af25-42bf-9daf-6713ae247ef0-faq-2",
+          "title": "Can I pay in instalments?",
+          "description": "If an instalment option appears at checkout, review the provider’s eligibility requirements, repayment schedule and terms before continuing."
+        },
+        {
+          "id": "sec-56e23952-af25-42bf-9daf-6713ae247ef0-faq-3",
+          "title": "How can I confirm my payment?",
+          "description": "Check your order status. If you need help reconciling a payment, contact our team with your order reference and the payment reference. Never share passwords or card security codes."
+        }
+      ]
+    },
+    {
+      "id": "sec-56e23952-af25-42bf-9daf-6713ae247ef0-support",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-indigo-600",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#ffffff",
+        "primaryBtnBg": "#ffffff",
+        "primaryBtnText": "#4f46e5",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "cta_strip",
+      "ctaPreset": "editorial-band",
+      "title": "Let’s make your next step simple.",
+      "content": "Questions about payment? Our team is here to help.",
+      "buttonText": "Contact support",
+      "buttonLink": "#storefront-support-widget"
+    }
+  ],
+  "payment-editorial": [
+    {
+      "id": "sec-bb026b79-5175-4b18-a164-b10a2da7f5db-intro",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "media_text_split",
+      "layoutPreset": "editorial-hero",
+      "title": "A considered way\nto checkout.",
+      "subtitle": "PAYMENT",
+      "leadText": "Simple options for everyday things.",
+      "content": "Review your order, choose an available method and take the next step with clarity.",
+      "mediaUrl": "/storage/cms/media/45bd88e9-78b4-4f64-ae0c-78c48df7a415.png",
+      "mediaAlt": "A kraft parcel on a warm studio desk",
+      "mediaPosition": "right",
+      "mediaAspectRatio": "4:3",
+      "buttonText": "View payment options",
+      "buttonLink": "#section-sec-bb026b79-5175-4b18-a164-b10a2da7f5db-methods"
+    },
+    {
+      "id": "sec-bb026b79-5175-4b18-a164-b10a2da7f5db-methods",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "payment_methods",
+      "title": "Ways to pay.",
+      "subtitle": "PAYMENT OPTIONS",
+      "content": "Choose the available option that suits your order.",
+      "paymentLayout": "list",
+      "paymentNote": "Final availability depends on your order, currency and delivery address. Confirm your payment method at checkout."
+    },
+    {
+      "id": "sec-bb026b79-5175-4b18-a164-b10a2da7f5db-manifesto",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "rich_text",
+      "richTextPreset": "manifesto",
+      "title": "A little clarity goes a long way.",
+      "content": "Your final amount and payment options are shown at checkout. Take time to review them before confirming your order."
+    },
+    {
+      "id": "sec-bb026b79-5175-4b18-a164-b10a2da7f5db-help",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "policy_content",
+      "policyPreset": "columns",
+      "columnsCount": 2,
+      "title": "Your next step.",
+      "showSectionHeading": false,
+      "items": [
+        {
+          "id": "sec-bb026b79-5175-4b18-a164-b10a2da7f5db-help-0",
+          "title": "Keep your order reference",
+          "description": "Use your order reference when checking status or contacting our team.",
+          "icon": "ReceiptText",
+          "buttonText": "Check order status",
+          "linkUrl": "/order-tracking"
+        },
+        {
+          "id": "sec-bb026b79-5175-4b18-a164-b10a2da7f5db-help-1",
+          "title": "Need a hand with payment?",
+          "description": "If payment does not complete, check your order status before trying again. Our team can help you find the next step.",
+          "icon": "Headphones",
+          "buttonText": "Contact support",
+          "linkUrl": "#storefront-support-widget"
+        }
+      ]
+    },
+    {
+      "id": "sec-bb026b79-5175-4b18-a164-b10a2da7f5db-faq",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "faq_accordion",
+      "faqPreset": "minimal",
+      "faqInitiallyOpen": true,
+      "title": "Payment questions, answered.",
+      "subtitle": "FAQ",
+      "items": [
+        {
+          "id": "sec-bb026b79-5175-4b18-a164-b10a2da7f5db-faq-0",
+          "title": "Which payment methods can I use?",
+          "description": "Available methods are shown at checkout for your order. They may vary by currency, delivery address and provider requirements."
+        },
+        {
+          "id": "sec-bb026b79-5175-4b18-a164-b10a2da7f5db-faq-1",
+          "title": "What if my payment does not go through?",
+          "description": "Check your order status before retrying. If you are unsure whether payment completed, contact our team with your order reference."
+        },
+        {
+          "id": "sec-bb026b79-5175-4b18-a164-b10a2da7f5db-faq-2",
+          "title": "Can I pay in instalments?",
+          "description": "If an instalment option appears at checkout, review the provider’s eligibility requirements, repayment schedule and terms before continuing."
+        },
+        {
+          "id": "sec-bb026b79-5175-4b18-a164-b10a2da7f5db-faq-3",
+          "title": "How can I confirm my payment?",
+          "description": "Check your order status. If you need help reconciling a payment, contact our team with your order reference and the payment reference. Never share passwords or card security codes."
+        }
+      ]
+    },
+    {
+      "id": "sec-bb026b79-5175-4b18-a164-b10a2da7f5db-support",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#ffffff",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "cta_strip",
+      "ctaPreset": "image-banner",
+      "title": "A little help,\nwhen you need it.",
+      "content": "Questions about payment? Our team is here to help.",
+      "buttonText": "Contact support",
+      "buttonLink": "#storefront-support-widget",
+      "mediaUrl": "/storage/cms/media/45bd88e9-78b4-4f64-ae0c-78c48df7a415.png",
+      "imageSlots": [
+        {
+          "target": "mediaUrl",
+          "imageOverlay": true,
+          "imageOverlayOpacity": 50
+        }
+      ]
+    }
+  ]
+}

@@ -1141,6 +1141,7 @@
         "choices",
         "steps",
         "timeline",
+        "process-flow",
         "tabs",
         "columns"
       ]

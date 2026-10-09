@@ -782,7 +782,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       {section.content && (
         <MotionItem><div data-cms-text="content"
           style={{...(getContentStyle()),...typographyStyle(section,'content')}}
-          className="text-sm sm:text-base opacity-85 leading-relaxed space-y-4 max-w-3xl mx-auto"
+          className={`text-sm sm:text-base opacity-85 leading-relaxed space-y-4 max-w-3xl ${section.textAlignment === 'left' ? 'mr-auto' : section.textAlignment === 'right' ? 'ml-auto' : 'mx-auto'}`}
         >
           <p>{section.content}</p>
         </div></MotionItem>
