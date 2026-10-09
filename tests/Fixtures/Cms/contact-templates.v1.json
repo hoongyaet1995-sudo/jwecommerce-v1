@@ -1,0 +1,864 @@
+[
+  {
+    "title": "contact-editorial",
+    "slug": "contact-editorial",
+    "template": "standard",
+    "sections": [
+      {
+        "id": "contact-editorial-hero",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "media_text_split",
+        "layoutPreset": "editorial-hero",
+        "title": "A real person.\nA helpful answer.",
+        "subtitle": "CONTACT US",
+        "content": "Questions about an order or choosing your next everyday essential? We’re here to help.\n\nSample contact information — editable.",
+        "mediaUrl": "/storage/cms/media/84b5cead-b384-4d8f-b48b-af908ba06e0d.png",
+        "mediaAlt": "A warm studio desk with everyday objects",
+        "mediaPosition": "right",
+        "mediaAspectRatio": "4:3",
+        "buttonText": "Contact support",
+        "buttonLink": "#storefront-support-widget"
+      },
+      {
+        "id": "contact-editorial-contacts",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "policy_content",
+        "policyPreset": "columns",
+        "columnsCount": 3,
+        "title": "Talk to our team.",
+        "showSectionHeading": false,
+        "items": [
+          {
+            "id": "contact-editorial-contacts-0",
+            "title": "WhatsApp",
+            "description": "Add your WhatsApp number",
+            "icon": "MessageCircle"
+          },
+          {
+            "id": "contact-editorial-contacts-1",
+            "title": "Email",
+            "description": "Add your support email",
+            "icon": "Mail"
+          },
+          {
+            "id": "contact-editorial-contacts-2",
+            "title": "Support hours",
+            "description": "Add your support hours",
+            "icon": "Clock"
+          }
+        ],
+        "policyNote": "Sample contact details — replace with your store information."
+      },
+      {
+        "id": "contact-editorial-topics",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "policy_content",
+        "policyPreset": "guidelines",
+        "title": "What can we help with?",
+        "items": [
+          {
+            "id": "contact-editorial-topics-0",
+            "title": "Order & delivery",
+            "description": "Track your order or find delivery information.",
+            "icon": "Package",
+            "buttonText": "Delivery information",
+            "linkUrl": "/page/shipping"
+          },
+          {
+            "id": "contact-editorial-topics-1",
+            "title": "Returns & exchanges",
+            "description": "Check the guidance for your next step.",
+            "icon": "RotateCcw",
+            "buttonText": "Return guidance",
+            "linkUrl": "/page/return-exchange"
+          },
+          {
+            "id": "contact-editorial-topics-2",
+            "title": "Product advice",
+            "description": "Questions about sizing, materials or choosing an item?",
+            "icon": "Shirt",
+            "buttonText": "Ask our team",
+            "linkUrl": "#storefront-support-widget"
+          },
+          {
+            "id": "contact-editorial-topics-3",
+            "title": "Other enquiries",
+            "description": "Get in touch and we’ll point you in the right direction.",
+            "icon": "MessageCircle",
+            "buttonText": "Contact support",
+            "linkUrl": "#storefront-support-widget"
+          }
+        ]
+      },
+      {
+        "id": "contact-editorial-story",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "media_text_split",
+        "layoutPreset": "editorial-story",
+        "title": "Visit our studio.",
+        "content": "A considered space for everyday things.\n\nIllustrative studio photo — replace with your own location.",
+        "mediaUrl": "/storage/cms/media/e97c0b5f-5463-4314-a5c3-99ce6cd08a7f.png",
+        "mediaAlt": "Illustrative JW Studio retail interior",
+        "mediaPosition": "left",
+        "mediaAspectRatio": "4:3"
+      },
+      {
+        "id": "contact-editorial-visit",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "store_locator",
+        "contactPreset": "location",
+        "title": "Find us, when you need us.",
+        "subtitle": "VISIT OUR STUDIO",
+        "content": "Optional — for stores with a visitor or collection location.",
+        "contactAddress": "",
+        "mapEmbedUrl": "",
+        "mapVisible": true,
+        "items": [
+          {
+            "id": "contact-editorial-visit-0",
+            "title": "Store hours",
+            "description": "Add your opening hours",
+            "icon": "Clock"
+          },
+          {
+            "id": "contact-editorial-visit-1",
+            "title": "Appointments",
+            "description": "Add your visiting or collection requirements",
+            "icon": "Calendar"
+          }
+        ]
+      },
+      {
+        "id": "contact-editorial-faq",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "faq_accordion",
+        "faqPreset": "minimal",
+        "faqInitiallyOpen": false,
+        "title": "Common questions.",
+        "subtitle": "FAQ",
+        "items": [
+          {
+            "id": "contact-editorial-faq-0",
+            "title": "How do I check my order status?",
+            "description": "Use Order Tracking and complete the required verification."
+          },
+          {
+            "id": "contact-editorial-faq-1",
+            "title": "How long does a reply take?",
+            "description": "To edit: add your actual support hours and response guidance."
+          },
+          {
+            "id": "contact-editorial-faq-2",
+            "title": "Do I need an appointment?",
+            "description": "To edit: add your visiting, appointment or collection policy."
+          }
+        ]
+      },
+      {
+        "id": "contact-editorial-support",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-indigo-50",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "cta_strip",
+        "ctaPreset": "help-panel",
+        "title": "Let’s make your next step simple.",
+        "content": "Our team is here to help with your questions.",
+        "buttonText": "Contact support",
+        "buttonLink": "#storefront-support-widget"
+      }
+    ]
+  },
+  {
+    "title": "contact-guided",
+    "slug": "contact-guided",
+    "template": "standard",
+    "sections": [
+      {
+        "id": "contact-guided-hero",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "rich_text",
+        "richTextPreset": "manifesto",
+        "title": "How can we help?",
+        "subtitle": "CONTACT US",
+        "content": "Find the right place to start.\n\nSample contact information — editable."
+      },
+      {
+        "id": "contact-guided-topics",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "policy_content",
+        "policyPreset": "choices",
+        "columnsCount": 2,
+        "title": "Choose your enquiry.",
+        "showSectionHeading": false,
+        "items": [
+          {
+            "id": "contact-guided-topics-0",
+            "title": "Order & delivery",
+            "description": "Track your order or find delivery information.",
+            "icon": "Package",
+            "buttonText": "Delivery information",
+            "linkUrl": "/page/shipping"
+          },
+          {
+            "id": "contact-guided-topics-1",
+            "title": "Returns & exchanges",
+            "description": "Check the guidance for your next step.",
+            "icon": "RotateCcw",
+            "buttonText": "Return guidance",
+            "linkUrl": "/page/return-exchange"
+          },
+          {
+            "id": "contact-guided-topics-2",
+            "title": "Product advice",
+            "description": "Questions about sizing, materials or choosing an item?",
+            "icon": "Shirt",
+            "buttonText": "Ask our team",
+            "linkUrl": "#storefront-support-widget"
+          },
+          {
+            "id": "contact-guided-topics-3",
+            "title": "Other enquiries",
+            "description": "Get in touch and we’ll point you in the right direction.",
+            "icon": "MessageCircle",
+            "buttonText": "Contact support",
+            "linkUrl": "#storefront-support-widget"
+          }
+        ]
+      },
+      {
+        "id": "contact-guided-enquiry",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "contact_form",
+        "contactPreset": "enquiry",
+        "title": "Talk to our team.",
+        "content": "Our team is here to support you with questions about your order, our products or anything else.",
+        "formEmail": "",
+        "contactPhone": "",
+        "contactButtonText": "Send enquiry",
+        "categoryPlaceholder": "Please select",
+        "subjectPlaceholder": "e.g. #12345",
+        "messagePlaceholder": "Tell us how we can help.",
+        "inquiryCategories": [
+          {
+            "id": "order",
+            "label": "Order & delivery"
+          },
+          {
+            "id": "returns",
+            "label": "Returns & exchanges"
+          },
+          {
+            "id": "product",
+            "label": "Product advice"
+          },
+          {
+            "id": "other",
+            "label": "Other enquiries"
+          }
+        ],
+        "buttonText": "Contact support",
+        "buttonLink": "#storefront-support-widget"
+      },
+      {
+        "id": "contact-guided-contacts",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "policy_content",
+        "policyPreset": "columns",
+        "columnsCount": 3,
+        "title": "Talk to our team.",
+        "showSectionHeading": false,
+        "items": [
+          {
+            "id": "contact-guided-contacts-0",
+            "title": "WhatsApp",
+            "description": "Add your WhatsApp number",
+            "icon": "MessageCircle"
+          },
+          {
+            "id": "contact-guided-contacts-1",
+            "title": "Email",
+            "description": "Add your support email",
+            "icon": "Mail"
+          },
+          {
+            "id": "contact-guided-contacts-2",
+            "title": "Support hours",
+            "description": "Add your support hours",
+            "icon": "Clock"
+          }
+        ],
+        "policyNote": "Sample contact details — replace with your store information."
+      },
+      {
+        "id": "contact-guided-banner",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#818cf8",
+          "titleColor": "#ffffff",
+          "contentColor": "#ffffff",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "cta_strip",
+        "ctaPreset": "image-banner",
+        "title": "Helpful answers,\nthoughtfully given.",
+        "content": "Real support for everyday essentials.",
+        "mediaUrl": "/storage/cms/media/84b5cead-b384-4d8f-b48b-af908ba06e0d.png",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "imageOverlay": true,
+            "imageOverlayOpacity": 40
+          }
+        ]
+      },
+      {
+        "id": "contact-guided-faq",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "faq_accordion",
+        "faqPreset": "minimal",
+        "faqInitiallyOpen": false,
+        "title": "Common questions.",
+        "subtitle": "FAQ",
+        "items": [
+          {
+            "id": "contact-guided-faq-0",
+            "title": "How do I check my order status?",
+            "description": "Use Order Tracking and complete the required verification."
+          },
+          {
+            "id": "contact-guided-faq-1",
+            "title": "How long does a reply take?",
+            "description": "To edit: add your actual support hours and response guidance."
+          },
+          {
+            "id": "contact-guided-faq-2",
+            "title": "Do I need an appointment?",
+            "description": "To edit: add your visiting, appointment or collection policy."
+          }
+        ]
+      },
+      {
+        "id": "contact-guided-support",
+        "isVisible": true,
+        "containerMode": "full-bleed",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-indigo-600",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#818cf8",
+          "titleColor": "#ffffff",
+          "contentColor": "#ffffff",
+          "primaryBtnBg": "#ffffff",
+          "primaryBtnText": "#4f46e5",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "cta_strip",
+        "ctaPreset": "editorial-band",
+        "title": "Let’s make your next step simple.",
+        "content": "Our team is here to help with your questions.",
+        "buttonText": "Contact support",
+        "buttonLink": "#storefront-support-widget"
+      }
+    ]
+  },
+  {
+    "title": "contact-studio",
+    "slug": "contact-studio",
+    "template": "standard",
+    "sections": [
+      {
+        "id": "contact-studio-hero",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "media_text_split",
+        "layoutPreset": "editorial-cover",
+        "title": "Closer to\nthe everyday.",
+        "subtitle": "CONTACT US",
+        "leadText": "Talk to our team. Find your way to our studio.",
+        "content": "Sample contact and visitor information — editable.",
+        "mediaUrl": "/storage/cms/media/e97c0b5f-5463-4314-a5c3-99ce6cd08a7f.png",
+        "mediaAlt": "Illustrative JW Studio retail interior",
+        "mediaContainerMode": "full-bleed",
+        "mediaAspectRatio": "16:9"
+      },
+      {
+        "id": "contact-studio-navigation",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "chapter_navigation",
+        "title": "Contact navigation",
+        "items": [
+          {
+            "id": "contact-studio-navigation-0",
+            "title": "Contact",
+            "linkUrl": "#section-contact-studio-contacts"
+          },
+          {
+            "id": "contact-studio-navigation-1",
+            "title": "Visit",
+            "linkUrl": "#section-contact-studio-visit"
+          },
+          {
+            "id": "contact-studio-navigation-2",
+            "title": "Before you come",
+            "linkUrl": "#section-contact-studio-planning"
+          }
+        ]
+      },
+      {
+        "id": "contact-studio-visit",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "store_locator",
+        "contactPreset": "location",
+        "title": "Find us, when you need us.",
+        "subtitle": "VISIT OUR STUDIO",
+        "content": "Optional — for stores with a visitor or collection location.",
+        "contactAddress": "",
+        "mapEmbedUrl": "",
+        "mapVisible": true,
+        "items": [
+          {
+            "id": "contact-studio-visit-0",
+            "title": "Store hours",
+            "description": "Add your opening hours",
+            "icon": "Clock"
+          },
+          {
+            "id": "contact-studio-visit-1",
+            "title": "Appointments",
+            "description": "Add your visiting or collection requirements",
+            "icon": "Calendar"
+          }
+        ]
+      },
+      {
+        "id": "contact-studio-contacts",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "policy_content",
+        "policyPreset": "columns",
+        "columnsCount": 3,
+        "title": "Talk to our team.",
+        "showSectionHeading": false,
+        "items": [
+          {
+            "id": "contact-studio-contacts-0",
+            "title": "WhatsApp",
+            "description": "Add your WhatsApp number",
+            "icon": "MessageCircle"
+          },
+          {
+            "id": "contact-studio-contacts-1",
+            "title": "Email",
+            "description": "Add your support email",
+            "icon": "Mail"
+          },
+          {
+            "id": "contact-studio-contacts-2",
+            "title": "Support hours",
+            "description": "Add your support hours",
+            "icon": "Clock"
+          }
+        ],
+        "policyNote": "Sample contact details — replace with your store information."
+      },
+      {
+        "id": "contact-studio-planning",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "media_text_split",
+        "layoutPreset": "story-with-steps",
+        "title": "A little planning.\nA better visit.",
+        "mediaUrl": "/storage/cms/media/e97c0b5f-5463-4314-a5c3-99ce6cd08a7f.png",
+        "mediaAlt": "Illustrative warm studio interior",
+        "mediaPosition": "left",
+        "mediaAspectRatio": "4:3",
+        "items": [
+          {
+            "id": "contact-studio-planning-0",
+            "title": "Check opening hours",
+            "description": "Check your store’s latest visiting hours."
+          },
+          {
+            "id": "contact-studio-planning-1",
+            "title": "Confirm your appointment",
+            "description": "To edit: add your appointment requirements."
+          },
+          {
+            "id": "contact-studio-planning-2",
+            "title": "Bring your order details",
+            "description": "Have your order number ready for order questions."
+          }
+        ]
+      },
+      {
+        "id": "contact-studio-faq",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "faq_accordion",
+        "faqPreset": "minimal",
+        "faqInitiallyOpen": false,
+        "title": "Common questions.",
+        "subtitle": "FAQ",
+        "items": [
+          {
+            "id": "contact-studio-faq-0",
+            "title": "How do I check my order status?",
+            "description": "Use Order Tracking and complete the required verification."
+          },
+          {
+            "id": "contact-studio-faq-1",
+            "title": "How long does a reply take?",
+            "description": "To edit: add your actual support hours and response guidance."
+          },
+          {
+            "id": "contact-studio-faq-2",
+            "title": "Do I need an appointment?",
+            "description": "To edit: add your visiting, appointment or collection policy."
+          }
+        ]
+      },
+      {
+        "id": "contact-studio-support",
+        "isVisible": true,
+        "containerMode": "full-bleed",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-indigo-600",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#818cf8",
+          "titleColor": "#ffffff",
+          "contentColor": "#ffffff",
+          "primaryBtnBg": "#ffffff",
+          "primaryBtnText": "#4f46e5",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "cta_strip",
+        "ctaPreset": "editorial-band",
+        "title": "Prefer to talk online?",
+        "content": "Our team is here to help with your questions.",
+        "buttonText": "Contact support",
+        "buttonLink": "#storefront-support-widget"
+      }
+    ]
+  }
+]

@@ -1,4 +1,6 @@
 import {isTypography} from './inspectorCapabilities';
+import {isPaymentFacts, type PaymentFacts} from './paymentInformation';
+import {deliveryRows} from './deliveryInformation';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Category, CmsPage, Collection, PageDocument, PageSection, Product } from '../types';
 import { SectionRenderer } from '../components/pages/SectionRenderer';
@@ -26,6 +28,8 @@ export interface PageRuntimeSource {
 }
 
 export interface PageRuntimeSectionFacts {
+  payments?: PaymentFacts;
+  delivery?: {rows: import('./deliveryInformation').DeliveryRow[]; status?: 'ready'|'unavailable'};
   listing?: {sourceId: {valid: boolean}; source: PageRuntimeSource | null; products: PageRuntimeProduct[]};
   productIds?: {
     valid: boolean;
@@ -204,7 +208,7 @@ const runtimeSourceFields = ['id', 'type', 'slug', 'label', 'image'];
 
 const sectionTypes = new Set([
   'hero_banner', 'split_hero', 'hero_slider', 'announcement_bar', 'rich_text',
-  'media_text_split', 'chapter_block', 'chapter_navigation', 'timeline_story', 'stats_counter', 'product_grid', 'product_listing', 'collection_tabs',
+  'payment_methods', 'policy_content', 'delivery_table', 'media_text_split', 'chapter_block', 'chapter_navigation', 'timeline_story', 'stats_counter', 'product_grid', 'product_listing', 'collection_tabs',
   'featured_deal', 'pricing_table', 'media_gallery', 'video_embed', 'before_after',
   'instagram_feed', 'feature_cards', 'values_list', 'icon_list', 'comparison_matrix', 'faq_accordion',
   'contact_form', 'store_locator', 'testimonials_slider', 'logo_cloud', 'cta_strip',
@@ -212,7 +216,7 @@ const sectionTypes = new Set([
 ]);
 
 const sectionItemStringFields = [
-  'subtitle', 'description', 'icon', 'imageUrl', 'videoUrl', 'linkUrl', 'badge',
+  'deliveryEstimate', 'deliveryFee', 'subtitle', 'description', 'icon', 'imageUrl', 'videoUrl', 'linkUrl', 'badge',
   'author', 'authorRole', 'authorAvatar', 'date', 'category', 'value', 'handle',
   'metricLabel', 'buttonText', 'secondaryButtonText', 'secondaryButtonLink',
 ];
@@ -261,16 +265,32 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   imageForeground: {kind: 'optional-boolean'},
   imageForegroundColor: {kind: 'optional-string'},
   imageForegroundOpacity: {kind: 'optional-enum', values: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]},
-  layoutPreset: {kind: 'optional-enum', values: ['default', 'editorial-hero', 'editorial-story', 'editorial-cover']},
+  layoutPreset: {kind: 'optional-enum', values: ['default', 'editorial-hero', 'editorial-story', 'editorial-cover', 'story-with-steps']},
   containerMode: {kind: 'optional-enum', values: ['page','full-bleed']},
   sectionBorder: {kind: 'optional-enum', values: ['default','none','top','bottom','both']},
   sectionBorderColor: {kind: 'optional-string'},
-  ctaPreset: {kind: 'optional-enum', values: ['default','image-banner','editorial-band']},
+  ctaPreset: {kind: 'optional-enum', values: ['default','image-banner','editorial-band','help-panel']},
   leadText: {kind:'optional-string'},
-  chapterPreset: {kind:'optional-enum',values:['story','perspective','principles']},
+  policyPreset:{kind:'optional-enum',values:['guidelines','choices','steps','timeline','tabs','columns']},
+  policyNote:{kind:'optional-string'},
+  contactPreset:{kind:'optional-enum',values:['enquiry','location']},
+  mapEmbedUrl:{kind:'optional-string'},
+  mapVisible:{kind:'optional-boolean'},
+  contactAddressIcon:{kind:'optional-string'},
+  paymentLayout:{kind:'optional-enum',values:['cards','list']},
+  paymentNote:{kind:'optional-string'},
+  deliverySource:{kind:'optional-enum',values:['settings','manual']},
+  deliveryNote:{kind:'optional-string'},
+  deliveryDestinationLabel:{kind:'optional-string'},
+  deliveryEstimateLabel:{kind:'optional-string'},
+  deliveryFeeLabel:{kind:'optional-string'},
+  faqPreset:{kind:'optional-enum',values:['default','minimal']},
+  faqInitiallyOpen:{kind:'optional-boolean'},
+  chapterPreset: {kind:'optional-enum',values:['story','perspective','principles','process','delivery','actions','policy']},
+  mediaContainerMode: {kind:'optional-enum',values:['page','full-bleed']},
   ctaBannerHeight: {kind: 'optional-enum', values: ['compact','normal','spacious']},
   richTextPreset: {kind: 'optional-enum', values: ['default', 'manifesto']},
-  featureCardsPreset: {kind: 'optional-enum', values: ['default', 'values-list', 'editorial-columns']},
+  featureCardsPreset: {kind: 'optional-enum', values: ['default', 'values-list', 'editorial-columns','service-highlights']},
   galleryPreset: {kind: 'optional-enum', values: ['default', 'editorial-montage', 'editorial-cards']},
   showSectionHeading: {kind: 'optional-boolean'},
   valuesShowHeading: {kind: 'optional-boolean'},
@@ -388,8 +408,14 @@ const isRuntimeSource = (value: unknown, type: PageRuntimeSource['type']): value
 
 const isPageSection = (value: unknown): value is PageSection => {
   if (isRecord(value) && 'galleryPreset' in value && value.type !== 'media_gallery') return false;
-  if (isRecord(value) && 'showSectionHeading' in value && !['media_gallery','feature_cards'].includes(String(value.type))) return false;
+  if (isRecord(value) && 'showSectionHeading' in value && !['media_gallery','feature_cards','policy_content','chapter_block'].includes(String(value.type))) return false;
   if (isRecord(value) && ['ctaPreset','ctaBannerHeight'].some(field=>field in value) && value.type !== 'cta_strip') return false;
+  if(isRecord(value)&&'mediaContainerMode' in value&&!['media_text_split','media_gallery','chapter_block','policy_content'].includes(String(value.type)))return false;
+  if(isRecord(value)&&(['deliverySource','deliveryNote','deliveryDestinationLabel','deliveryEstimateLabel','deliveryFeeLabel'].some(key=>key in value)&&value.type!=='delivery_table'&&value.type!=='chapter_block'||['faqPreset','faqInitiallyOpen'].some(key=>key in value)&&value.type!=='faq_accordion'))return false;
+  if(isRecord(value)&&('contactPreset' in value)&&!['contact_form','store_locator'].includes(String(value.type)))return false;
+  if(isRecord(value)&&('mapEmbedUrl' in value||'mapVisible' in value||'contactAddressIcon' in value)&&value.type!=='store_locator')return false;
+  if(isRecord(value)&&('paymentLayout' in value||'paymentNote' in value)&&value.type!=='payment_methods')return false;
+  if(isRecord(value)&&('policyPreset' in value||'policyNote' in value)&&!['policy_content','chapter_block'].includes(String(value.type)))return false;
   if (isRecord(value) && 'chapterPreset' in value && value.type !== 'chapter_block') return false;
   if (isRecord(value) && 'leadText' in value && value.type !== 'media_text_split') return false;
   if (isRecord(value) && 'richTextPreset' in value && value.type !== 'rich_text') return false;
@@ -493,7 +519,9 @@ const isRuntimeTabFacts = (value: unknown): boolean => (
 );
 
 const isRuntimeSectionFacts = (value: unknown): value is PageRuntimeSectionFacts => {
-  if (!isRecord(value) || !hasOnlyKeys(value, ['productIds', 'tabs', 'newsletterCouponId', 'listing'])) return false;
+  if (!isRecord(value) || !hasOnlyKeys(value, ['productIds', 'tabs', 'newsletterCouponId', 'listing', 'delivery', 'payments'])) return false;
+  if('payments' in value&&!isPaymentFacts(value.payments))return false;
+  if('delivery' in value && (!isRecord(value.delivery)||!hasOnlyKeys(value.delivery,['rows','status'])||('status' in value.delivery&&!['ready','unavailable'].includes(String(value.delivery.status)))||!Array.isArray(value.delivery.rows)||!value.delivery.rows.every(row=>isRecord(row)&&hasOnlyKeys(row,['id','title','deliveryEstimate','deliveryFee'])&&['id','title','deliveryEstimate','deliveryFee'].every(key=>typeof row[key]==='string'))))return false;
   if ('listing' in value && !isRuntimeTabFact(value.listing)) return false;
 
   if ('productIds' in value) {
@@ -595,6 +623,7 @@ export const createAdminPageRuntimePayload = (
   page: CmsPage,
   catalog: AdminRuntimeCatalog,
   currency = 'USD',
+  shippingRates?: import('./deliveryInformation').DeliveryRate[],
 ): PageRuntimePayload => {
   const productsById = new Map(
     catalog.products.filter(product => product.status === 'active').map(product => [product.id, product]),
@@ -612,6 +641,7 @@ export const createAdminPageRuntimePayload = (
 
   page.sections.forEach((section, sectionIndex) => {
     if (!section.isVisible) return;
+    if(section.type==='delivery_table'||section.type==='chapter_block'&&section.chapterPreset==='delivery')runtimeSections[sectionIndex]={delivery:{rows:deliveryRows(shippingRates??[]),status:shippingRates===undefined?'unavailable':'ready'}};
 
     if (section.type === 'product_listing') {
       const type = section.sourceType ?? 'category';

@@ -5,7 +5,7 @@ const image=(name:keyof typeof assets)=>`/storage/cms/media/${assets[name]}.png`
 const colors={...createSectionColorDefaults(),titleColor:'#171717',contentColor:'#525252',eyebrowColor:'#4f46e5'};
 export function aboutStudioSections(brand:string,prefix:string):PageSection[] {
  const section=(key:string,data:Omit<PageSection,'id'|'isVisible'>):PageSection=>({
-  backgroundColor:'bg-white',textColor:'dark',paddingY:'normal',sectionBorder:'none',motionPreset:'none',
+  backgroundColor:'bg-white',textColor:'dark',paddingY:'normal',sectionBorder:'none',motionPreset:'subtle-lift',
   customColors:{...colors},isVisible:true,...data,id:`${prefix}-${key}`,
   ...(data.items?{items:data.items.map((item,index)=>({...item,id:`${prefix}-${key}-${index}`}))}:{}),
  });

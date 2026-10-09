@@ -1,0 +1,988 @@
+[
+  {
+    "title": "returns-editorial",
+    "slug": "returns-editorial",
+    "template": "standard",
+    "description": "",
+    "heroImage": null,
+    "seoTitle": "",
+    "seoDescription": "",
+    "sections": [
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "media_text_split",
+        "layoutPreset": "editorial-hero",
+        "title": "A thoughtful way\nto make it right.",
+        "subtitle": "RETURNS & EXCHANGES",
+        "leadText": "Clear guidance for returns, exchanges and next steps.",
+        "content": "Sample policy content — editable.",
+        "mediaUrl": "/storage/cms/media/45bd88e9-78b4-4f64-ae0c-78c48df7a415.png",
+        "mediaAlt": "A kraft parcel with everyday clothing",
+        "mediaPosition": "right",
+        "mediaAspectRatio": "4:3",
+        "buttonText": "View return guidelines",
+        "buttonLink": "#section-returns-editorial-guidelines",
+        "secondaryButtonText": "Contact support",
+        "secondaryButtonLink": "#storefront-support-widget",
+        "id": "returns-editorial-hero"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "policy_content",
+        "policyPreset": "guidelines",
+        "title": "Before you send it back.",
+        "items": [
+          {
+            "id": "returns-editorial-guidelines-0",
+            "title": "Item condition",
+            "description": "To edit: state the required item condition, tags and packaging."
+          },
+          {
+            "id": "returns-editorial-guidelines-1",
+            "title": "Request window",
+            "description": "To edit: add your approved return and exchange window."
+          },
+          {
+            "id": "returns-editorial-guidelines-2",
+            "title": "Exceptions",
+            "description": "To edit: list any excluded products or circumstances."
+          },
+          {
+            "id": "returns-editorial-guidelines-3",
+            "title": "Return shipping",
+            "description": "To edit: explain the agreed return method and who covers shipping."
+          }
+        ],
+        "subtitle": "ELIGIBILITY",
+        "content": "Check the return and exchange guidelines before contacting our team.",
+        "policyNote": "Replace sample conditions with your approved policy.",
+        "id": "returns-editorial-guidelines"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "media_text_split",
+        "layoutPreset": "story-with-steps",
+        "title": "Three clear steps.",
+        "subtitle": "HOW IT WORKS",
+        "content": "A simple process from your request to the next step.",
+        "mediaUrl": "/storage/cms/media/647c486d-67fd-49e2-835a-a1b46e75ea11.png",
+        "mediaAlt": "Clothing carefully protected in a parcel",
+        "mediaPosition": "left",
+        "mediaAspectRatio": "4:3",
+        "items": [
+          {
+            "id": "returns-editorial-steps-0",
+            "title": "Contact our team",
+            "description": "Have your order number and item details ready.",
+            "icon": "FileText"
+          },
+          {
+            "id": "returns-editorial-steps-1",
+            "title": "Confirm your request",
+            "description": "Our team will review the details and confirm the next steps.",
+            "icon": "ShieldCheck"
+          },
+          {
+            "id": "returns-editorial-steps-2",
+            "title": "Pack and send",
+            "description": "Follow the return instructions provided by our team.",
+            "icon": "Package"
+          }
+        ],
+        "id": "returns-editorial-steps"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-neutral-50",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "policy_content",
+        "policyPreset": "columns",
+        "title": "Returns or exchanges?",
+        "items": [
+          {
+            "id": "returns-editorial-options-0",
+            "title": "Refund requests",
+            "icon": "ArrowLeftRight",
+            "description": "To edit: explain your refund method and eligibility. Confirm the outcome before promising a refund."
+          },
+          {
+            "id": "returns-editorial-options-1",
+            "title": "Exchange requests",
+            "icon": "Package",
+            "description": "To edit: explain exchange conditions, availability and any price difference."
+          }
+        ],
+        "content": "Choose the option that fits your request.",
+        "id": "returns-editorial-options"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "policy_content",
+        "policyPreset": "timeline",
+        "title": "Refunds, clearly explained.",
+        "items": [
+          {
+            "id": "returns-editorial-refunds-0",
+            "title": "Request reviewed",
+            "description": "Our team reviews the item and request."
+          },
+          {
+            "id": "returns-editorial-refunds-1",
+            "title": "Outcome confirmed",
+            "description": "We let you know the decision and next steps."
+          },
+          {
+            "id": "returns-editorial-refunds-2",
+            "title": "Refund or exchange processed",
+            "description": "Processing follows your approved store policy and payment method."
+          }
+        ],
+        "subtitle": "REFUNDS",
+        "policyNote": "To edit: add your actual review and processing times.",
+        "id": "returns-editorial-refunds"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "cta_strip",
+        "ctaPreset": "help-panel",
+        "subtitle": "SOMETHING NOT RIGHT?",
+        "title": "Received a damaged or incorrect item?",
+        "content": "Keep the packaging and share your order number and photos with our support team.",
+        "buttonText": "Get help",
+        "buttonLink": "#storefront-support-widget",
+        "id": "returns-editorial-issue"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "faq_accordion",
+        "faqPreset": "minimal",
+        "faqInitiallyOpen": true,
+        "title": "Common questions.",
+        "subtitle": "FAQ",
+        "items": [
+          {
+            "id": "returns-editorial-faq-0",
+            "title": "How do I request a return?",
+            "description": "Contact our support team with your order number and item details. Please wait for guidance before sending an item back."
+          },
+          {
+            "id": "returns-editorial-faq-1",
+            "title": "Who pays return shipping?",
+            "description": "To edit: explain your approved shipping-cost policy for returns, exchanges and incorrect items."
+          },
+          {
+            "id": "returns-editorial-faq-2",
+            "title": "Can I exchange for another size?",
+            "description": "To edit: explain exchange eligibility and how availability is confirmed."
+          },
+          {
+            "id": "returns-editorial-faq-3",
+            "title": "When will my refund arrive?",
+            "description": "To edit: add your review and refund processing times. Payment-provider processing may take additional time."
+          }
+        ],
+        "id": "returns-editorial-faq"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "cta_strip",
+        "ctaPreset": "help-panel",
+        "title": "Need a hand with your order?",
+        "content": "Our team is here to help with returns, exchanges and order questions.",
+        "buttonText": "Contact support",
+        "buttonLink": "#storefront-support-widget",
+        "id": "returns-editorial-support"
+      }
+    ]
+  },
+  {
+    "title": "returns-guided",
+    "slug": "returns-guided",
+    "template": "standard",
+    "description": "",
+    "heroImage": null,
+    "seoTitle": "",
+    "seoDescription": "",
+    "sections": [
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "rich_text",
+        "richTextPreset": "manifesto",
+        "title": "Let’s find the right next step.",
+        "subtitle": "RETURNS & EXCHANGES",
+        "content": "A clear path for your return, exchange or order issue.\n\nSample policy content — editable.",
+        "id": "returns-guided-hero"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "compact",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "policy_content",
+        "policyPreset": "choices",
+        "title": "Choose your next step.",
+        "items": [
+          {
+            "id": "returns-guided-choices-0",
+            "title": "Return an item",
+            "description": "Check the conditions for sending an item back.",
+            "icon": "Package",
+            "buttonText": "Return guidelines",
+            "linkUrl": "#section-returns-guided-guidelines"
+          },
+          {
+            "id": "returns-guided-choices-1",
+            "title": "Request an exchange",
+            "description": "Ask about a different size, colour or item.",
+            "icon": "ArrowLeftRight",
+            "buttonText": "Request an exchange",
+            "linkUrl": "#storefront-support-widget"
+          },
+          {
+            "id": "returns-guided-choices-2",
+            "title": "Damaged or incorrect item",
+            "description": "Share the issue so our team can help.",
+            "icon": "ShieldCheck",
+            "buttonText": "Report an issue",
+            "linkUrl": "#storefront-support-widget"
+          }
+        ],
+        "showSectionHeading": false,
+        "id": "returns-guided-choices"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "full-bleed",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#ffffff",
+          "contentColor": "#ffffff",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "cta_strip",
+        "ctaPreset": "image-banner",
+        "title": "Thoughtful things go further.",
+        "content": "Careful guidance for every next step.",
+        "mediaUrl": "/storage/cms/media/647c486d-67fd-49e2-835a-a1b46e75ea11.png",
+        "ctaBannerHeight": "compact",
+        "imageSlots": [
+          {
+            "target": "mediaUrl",
+            "mediaAlt": "Clothing carefully protected in a parcel",
+            "imageOverlay": true,
+            "imageOverlayOpacity": 30
+          }
+        ],
+        "id": "returns-guided-banner"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "policy_content",
+        "policyPreset": "steps",
+        "title": "Start with your order.",
+        "items": [
+          {
+            "id": "returns-guided-steps-0",
+            "title": "Contact our team",
+            "description": "Have your order number and item details ready.",
+            "icon": "FileText"
+          },
+          {
+            "id": "returns-guided-steps-1",
+            "title": "Confirm your request",
+            "description": "Our team will review the details and confirm the next steps.",
+            "icon": "ShieldCheck"
+          },
+          {
+            "id": "returns-guided-steps-2",
+            "title": "Pack and send",
+            "description": "Follow the return instructions provided by our team.",
+            "icon": "Package"
+          }
+        ],
+        "subtitle": "GET STARTED",
+        "content": "Contact our team before sending an item back.",
+        "buttonText": "Contact support",
+        "buttonLink": "#storefront-support-widget",
+        "id": "returns-guided-steps"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "policy_content",
+        "policyPreset": "tabs",
+        "title": "Check the guidelines.",
+        "items": [
+          {
+            "id": "returns-guided-guidelines-0",
+            "title": "Item condition",
+            "description": "To edit: state the required item condition, tags and packaging.",
+            "category": "Returns"
+          },
+          {
+            "id": "returns-guided-guidelines-1",
+            "title": "Request window",
+            "description": "To edit: add your approved return and exchange window.",
+            "category": "Returns"
+          },
+          {
+            "id": "returns-guided-guidelines-2",
+            "title": "Exceptions",
+            "description": "To edit: list any excluded products or circumstances.",
+            "category": "Returns"
+          },
+          {
+            "id": "returns-guided-guidelines-3",
+            "title": "Return shipping",
+            "description": "To edit: explain the agreed return method and who covers shipping.",
+            "category": "Returns"
+          },
+          {
+            "id": "returns-guided-guidelines-4",
+            "title": "Refund requests",
+            "icon": "ArrowLeftRight",
+            "description": "To edit: explain your refund method and eligibility. Confirm the outcome before promising a refund.",
+            "category": "Exchanges"
+          },
+          {
+            "id": "returns-guided-guidelines-5",
+            "title": "Exchange requests",
+            "icon": "Package",
+            "description": "To edit: explain exchange conditions, availability and any price difference.",
+            "category": "Exchanges"
+          },
+          {
+            "id": "returns-guided-guidelines-6",
+            "category": "Order issues",
+            "title": "Damaged or incorrect item",
+            "description": "Keep the packaging and share your order number and photos.",
+            "buttonText": "Get help",
+            "linkUrl": "#storefront-support-widget"
+          }
+        ],
+        "subtitle": "OUR POLICY",
+        "policyNote": "Sample policy guidelines — confirm these details before publication.",
+        "id": "returns-guided-guidelines"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-neutral-50",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "policy_content",
+        "policyPreset": "timeline",
+        "title": "What happens after we receive it?",
+        "items": [
+          {
+            "id": "returns-guided-refunds-0",
+            "title": "Request reviewed",
+            "description": "Our team reviews the item and request."
+          },
+          {
+            "id": "returns-guided-refunds-1",
+            "title": "Outcome confirmed",
+            "description": "We let you know the decision and next steps."
+          },
+          {
+            "id": "returns-guided-refunds-2",
+            "title": "Refund or exchange processed",
+            "description": "Processing follows your approved store policy and payment method."
+          }
+        ],
+        "policyNote": "To edit: state your confirmed processing and payment-provider timelines.",
+        "id": "returns-guided-refunds"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "faq_accordion",
+        "faqPreset": "minimal",
+        "faqInitiallyOpen": true,
+        "title": "Common questions.",
+        "subtitle": "FAQ",
+        "items": [
+          {
+            "id": "returns-guided-faq-0",
+            "title": "How do I request a return?",
+            "description": "Contact our support team with your order number and item details. Please wait for guidance before sending an item back."
+          },
+          {
+            "id": "returns-guided-faq-1",
+            "title": "Who pays return shipping?",
+            "description": "To edit: explain your approved shipping-cost policy for returns, exchanges and incorrect items."
+          },
+          {
+            "id": "returns-guided-faq-2",
+            "title": "Can I exchange for another size?",
+            "description": "To edit: explain exchange eligibility and how availability is confirmed."
+          },
+          {
+            "id": "returns-guided-faq-3",
+            "title": "When will my refund arrive?",
+            "description": "To edit: add your review and refund processing times. Payment-provider processing may take additional time."
+          }
+        ],
+        "id": "returns-guided-faq"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#ffffff",
+          "contentColor": "#ffffff",
+          "primaryBtnBg": "#ffffff",
+          "primaryBtnText": "#4f46e5",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": "#4f46e5"
+        },
+        "type": "cta_strip",
+        "ctaPreset": "editorial-band",
+        "title": "We’re here to help make it right.",
+        "content": "Our team is here to help with returns, exchanges and order questions.",
+        "buttonText": "Contact support",
+        "buttonLink": "#storefront-support-widget",
+        "id": "returns-guided-support"
+      }
+    ]
+  },
+  {
+    "title": "returns-chapters",
+    "slug": "returns-chapters",
+    "template": "standard",
+    "description": "",
+    "heroImage": null,
+    "seoTitle": "",
+    "seoDescription": "",
+    "sections": [
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "media_text_split",
+        "layoutPreset": "editorial-cover",
+        "mediaContainerMode": "full-bleed",
+        "title": "Every order deserves\na good ending.",
+        "subtitle": "RETURNS & EXCHANGES",
+        "leadText": "Our guide to returns, exchanges and making things right.",
+        "content": "Sample policy content — editable.",
+        "mediaUrl": "/storage/cms/media/647c486d-67fd-49e2-835a-a1b46e75ea11.png",
+        "mediaAlt": "Clothing carefully protected in a parcel",
+        "id": "returns-chapters-cover"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "chapter_navigation",
+        "title": "Returns chapters",
+        "id": "returns-chapters-nav"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "chapter_block",
+        "chapterPreset": "policy",
+        "policyPreset": "guidelines",
+        "title": "Know where you stand.",
+        "subtitle": "Eligibility",
+        "content": "Check your item and request against the approved return guidelines.",
+        "items": [
+          {
+            "id": "returns-chapters-eligibility-0",
+            "title": "Item condition",
+            "description": "To edit: state the required item condition, tags and packaging."
+          },
+          {
+            "id": "returns-chapters-eligibility-1",
+            "title": "Request window",
+            "description": "To edit: add your approved return and exchange window."
+          },
+          {
+            "id": "returns-chapters-eligibility-2",
+            "title": "Exceptions",
+            "description": "To edit: list any excluded products or circumstances."
+          },
+          {
+            "id": "returns-chapters-eligibility-3",
+            "title": "Return shipping",
+            "description": "To edit: explain the agreed return method and who covers shipping."
+          }
+        ],
+        "policyNote": "Sample guidelines — replace with your approved policy.",
+        "id": "returns-chapters-eligibility"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "chapter_block",
+        "chapterPreset": "policy",
+        "policyPreset": "steps",
+        "title": "A few details. A clearer next step.",
+        "subtitle": "Your request",
+        "content": "Contact our team before sending your item back.",
+        "items": [
+          {
+            "id": "returns-chapters-request-0",
+            "title": "Contact our team",
+            "description": "Have your order number and item details ready.",
+            "icon": "FileText"
+          },
+          {
+            "id": "returns-chapters-request-1",
+            "title": "Confirm your request",
+            "description": "Our team will review the details and confirm the next steps.",
+            "icon": "ShieldCheck"
+          },
+          {
+            "id": "returns-chapters-request-2",
+            "title": "Pack and send",
+            "description": "Follow the return instructions provided by our team.",
+            "icon": "Package"
+          },
+          {
+            "id": "returns-chapters-request-3",
+            "title": "Clothing carefully protected in a parcel",
+            "imageUrl": "/storage/cms/media/647c486d-67fd-49e2-835a-a1b46e75ea11.png"
+          },
+          {
+            "id": "returns-chapters-request-4",
+            "title": "A kraft parcel with everyday clothing",
+            "imageUrl": "/storage/cms/media/45bd88e9-78b4-4f64-ae0c-78c48df7a415.png"
+          }
+        ],
+        "buttonText": "Contact support",
+        "buttonLink": "#storefront-support-widget",
+        "id": "returns-chapters-request"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "chapter_block",
+        "chapterPreset": "policy",
+        "policyPreset": "columns",
+        "title": "What happens next.",
+        "subtitle": "Refunds & exchanges",
+        "content": "Our team confirms the outcome and next steps after reviewing your request.",
+        "items": [
+          {
+            "id": "returns-chapters-outcome-0",
+            "title": "Refund requests",
+            "icon": "ArrowLeftRight",
+            "description": "To edit: explain your refund method and eligibility. Confirm the outcome before promising a refund."
+          },
+          {
+            "id": "returns-chapters-outcome-1",
+            "title": "Exchange requests",
+            "icon": "Package",
+            "description": "To edit: explain exchange conditions, availability and any price difference."
+          }
+        ],
+        "policyNote": "To edit: add your confirmed refund method, processing times and exchange conditions.",
+        "id": "returns-chapters-outcome"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "cta_strip",
+        "ctaPreset": "help-panel",
+        "subtitle": "SOMETHING NOT RIGHT?",
+        "title": "Received a damaged or incorrect item?",
+        "content": "Keep the packaging and share your order number and photos with our support team.",
+        "buttonText": "Get help",
+        "buttonLink": "#storefront-support-widget",
+        "id": "returns-chapters-issue"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "faq_accordion",
+        "faqPreset": "minimal",
+        "faqInitiallyOpen": true,
+        "title": "Before you ask.",
+        "subtitle": "FAQ",
+        "items": [
+          {
+            "id": "returns-chapters-faq-0",
+            "title": "How do I request a return?",
+            "description": "Contact our support team with your order number and item details. Please wait for guidance before sending an item back."
+          },
+          {
+            "id": "returns-chapters-faq-1",
+            "title": "Who pays return shipping?",
+            "description": "To edit: explain your approved shipping-cost policy for returns, exchanges and incorrect items."
+          },
+          {
+            "id": "returns-chapters-faq-2",
+            "title": "Can I exchange for another size?",
+            "description": "To edit: explain exchange eligibility and how availability is confirmed."
+          },
+          {
+            "id": "returns-chapters-faq-3",
+            "title": "When will my refund arrive?",
+            "description": "To edit: add your review and refund processing times. Payment-provider processing may take additional time."
+          }
+        ],
+        "id": "returns-chapters-faq"
+      },
+      {
+        "isVisible": true,
+        "backgroundColor": "custom",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#ffffff",
+          "contentColor": "#ffffff",
+          "primaryBtnBg": "#ffffff",
+          "primaryBtnText": "#4f46e5",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": "#4f46e5"
+        },
+        "type": "cta_strip",
+        "ctaPreset": "editorial-band",
+        "title": "Let’s make it right, together.",
+        "content": "Our team is here to help with returns, exchanges and order questions.",
+        "buttonText": "Contact support",
+        "buttonLink": "#storefront-support-widget",
+        "id": "returns-chapters-support"
+      }
+    ]
+  }
+]

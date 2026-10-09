@@ -4,7 +4,7 @@ import assets from '../../../cms/about-chapters-media.json';
 const image=(name:keyof typeof assets)=>`/storage/cms/media/${assets[name]}.png`;
 export function aboutChaptersSections(brand:string,prefix:string):PageSection[] {
  const colors={...createSectionColorDefaults(),titleColor:'#171717',contentColor:'#737373',eyebrowColor:'#4f46e5'};
- const section=(key:string,data:Omit<PageSection,'id'|'isVisible'>):PageSection=>({backgroundColor:'bg-white',textColor:'dark',paddingY:'normal',sectionBorder:'none',motionPreset:'none',customColors:{...colors},isVisible:true,...data,id:`${prefix}-${key}`,...(data.items?{items:data.items.map((item,i)=>({...item,id:`${prefix}-${key}-${i}`}))}:{})});
+ const section=(key:string,data:Omit<PageSection,'id'|'isVisible'>):PageSection=>({backgroundColor:'bg-white',textColor:'dark',paddingY:'normal',sectionBorder:'none',motionPreset:'subtle-lift',customColors:{...colors},isVisible:true,...data,id:`${prefix}-${key}`,...(data.items?{items:data.items.map((item,i)=>({...item,id:`${prefix}-${key}-${i}`}))}:{})});
  return [
   section('cover',{type:'media_text_split',layoutPreset:'editorial-cover',containerMode:'full-bleed',title:'Behind the everyday.',subtitle:'ABOUT US',leadText:`An introduction to ${brand}.`,content:'Sample brand story — editable content.',mediaUrl:image('hero-desk'),mediaAlt:'A sunlit desk with books, a black mug, branches and folded navy fabric'}),
   section('nav',{type:'chapter_navigation',title:'About chapters'}),

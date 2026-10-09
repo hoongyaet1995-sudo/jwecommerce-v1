@@ -23,7 +23,7 @@ describe('global media text split settings',()=>{
   });
   it('offers all presets without a page or template dependency and does not migrate old fields on render',()=>{
     const {node,onChange}=mount();
-    expect([...node.querySelector('select')!.options].map(o=>o.value)).toEqual(['default','editorial-hero','editorial-story','editorial-cover']);
+    expect([...node.querySelector('select')!.options].map(o=>o.value)).toEqual(['default','editorial-hero','editorial-story','story-with-steps','editorial-cover']);
     expect(onChange).not.toHaveBeenCalled();
   });
   it('initializes absent editable content/media/actions only when the operator selects Story',()=>{

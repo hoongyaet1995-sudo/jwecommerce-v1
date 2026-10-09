@@ -1,3 +1,4 @@
+import {repeatedItemFields} from '../../cms/repeatedItemContract';
 // @vitest-environment jsdom
 import React,{act} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
@@ -15,6 +16,8 @@ it('mounts every preset with all original control groups and three categories',(
   const html=renderToStaticMarkup(<SectionInspector {...props} section={{...template.defaultData,id:'sample',isVisible:true}}/>);
   expect(html.match(/data-inspector-group=/g),template.title).toHaveLength(27);
   expect(html.match(/role="tab"/g),template.title).toHaveLength(3);
+  expect(html,template.title).toContain('Section content width');
+  expect(html,template.title).toContain('Follow Page');
  }
 });
 it('keeps image assets in Content, geometry in Design and container exceptions in Advanced',async()=>{
@@ -32,6 +35,24 @@ it('keeps image assets in Content, geometry in Design and container exceptions i
  expect(assets).toHaveLength(1);expect(assets[0].closest('[hidden]')).not.toBeNull();
  const ratios=[...node.querySelectorAll('[aria-label="Image ratio"]')];expect(ratios).toHaveLength(1);
  act(()=>tabs[2].click());
- expect(node.querySelector('[aria-label="Container mode"]')?.closest('[hidden]')).toBeNull();
+ expect(node.querySelector('[data-inspector-container]')?.closest('[hidden]')).toBeNull();
  act(()=>root.unmount());node.remove();
+});
+it('location item controls do not depend on accidental saved fields',()=>{
+ const html=renderToStaticMarkup(<SectionInspector {...props} section={{id:'location',type:'store_locator',title:'Location',contactPreset:'location',items:[{id:'a',title:'Hours',description:'Open'},{id:'b',title:'Appointment',description:'Call',badge:'Legacy badge',icon:'Calendar'}]}}/>);
+ expect(html.match(/aria-label="Choose icon"/g)).toHaveLength(3);
+ expect(html).not.toContain('>Badge</span>');
+ expect(html).toContain('Address icon');
+});
+it('all textual Delete and Clear actions use accessible icon buttons',()=>{
+ for(const template of SECTION_TEMPLATES){
+  const html=renderToStaticMarkup(<SectionInspector {...props} section={{...template.defaultData,id:'sample'}}/>);
+  expect(html,template.title).not.toMatch(/>\s*(Delete(?: Image)?|Clear)\s*<\/button>/);
+ }
+});
+
+it('every registered repeated-item preset declares its editable capabilities',()=>{
+ for(const template of SECTION_TEMPLATES){
+  if(template.defaultData.items?.length)expect(repeatedItemFields({...template.defaultData,id:'sample'}),template.title).not.toHaveLength(0);
+ }
 });

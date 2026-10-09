@@ -95,6 +95,18 @@ class PaymentMethodAvailabilityService
         return is_array($data) ? $data : [];
     }
 
+    /** Project readiness for information pages without exposing credentials. */
+    public function informationGatewayStatus(array $gateway, string $currency): string
+    {
+        $supported = array_column($this->onlineGateways(), 'id');
+        if (! in_array($gateway['id'] ?? '', $supported, true)) return 'integration_pending';
+        $currencies = array_map('strtoupper', array_filter($gateway['supportedCurrencies'] ?? [], 'is_string'));
+        if ($currencies !== [] && ! in_array(strtoupper($currency), $currencies, true)) return 'unavailable';
+        if ($gateway['isSandbox'] ?? false) return 'sandbox';
+        $minimum = (int) round(max(0, (float) ($gateway['limits']['minAmount'] ?? 0)) * 100);
+        return $this->onlineGatewayIsEligible($gateway, strtoupper($currency), $minimum) ? 'available' : 'setup_required';
+    }
+
     /** @return list<array<string, mixed>> */
     private function onlineGateways(): array
     {

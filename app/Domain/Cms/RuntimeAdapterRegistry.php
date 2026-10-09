@@ -35,6 +35,7 @@ final class RuntimeAdapterRegistry
             $products->load(['variants' => fn ($query) => $query->orderBy('id')]);
         }
         $sectionFacts = [];
+        $deliveryRows = null;
 
         foreach ($document['sections'] ?? [] as $sectionIndex => $section) {
             if (! is_array($section) || ($section['isVisible'] ?? false) !== true) {
@@ -42,6 +43,9 @@ final class RuntimeAdapterRegistry
             }
 
             $facts = match ($section['type'] ?? null) {
+                'chapter_block' => ($section['chapterPreset'] ?? '') === 'delivery' ? ['delivery' => ['rows' => $deliveryRows ??= app(\App\Services\DeliveryInformationService::class)->rows()]] : [],
+                'payment_methods' => ['payments' => app(\App\Services\PaymentInformationService::class)->facts(app(\App\Support\StorefrontCurrencyContext::class)->current()['code'])],
+                'delivery_table' => ['delivery' => ['rows' => $deliveryRows ??= app(\App\Services\DeliveryInformationService::class)->rows()]],
                 'product_grid' => $this->productGridFacts($section, $products),
                 'product_listing' => $this->productListingFacts($section, $categories, $collections, $products),
                 'collection_tabs' => $this->collectionTabFacts($section, $categories, $collections, $products),

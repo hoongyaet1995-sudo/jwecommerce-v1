@@ -231,3 +231,10 @@ describe('parseDraftImport', () => {
     expectImportError(inquiries, 'sections.0.inquiryCategories.0.id');
   });
 });
+
+it('keeps numeric typography range validation consistent with saved drafts',()=>{
+ const document=minimalDocument();
+ const numericDocument={...document,sections:[{id:'cover',type:'media_text_split',title:'Cover',isVisible:true,typography:{lead:{fontSize:20,lineHeight:2,letterSpacing:2}}}]};
+ expect(()=>parseDraftImport(JSON.stringify(numericDocument), 'page-current')).not.toThrow();
+ expect(()=>parseDraftImport(JSON.stringify({...numericDocument,sections:[{...numericDocument.sections[0],typography:{lead:{lineHeight:3.1}}}]}), 'page-current')).toThrow();
+});

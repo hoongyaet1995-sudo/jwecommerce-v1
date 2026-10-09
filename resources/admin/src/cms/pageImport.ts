@@ -8,6 +8,8 @@ type ContractSchema = {
   types?: string[];
   required?: boolean;
   enum?: unknown[];
+  minimum?: number;
+  maximum?: number;
   format?: string;
   allowUnknownFields?: boolean;
   fields?: Record<string, ContractSchema>;
@@ -315,6 +317,12 @@ function validateValue(value: unknown, unresolvedSchema: ContractSchema, path: s
   const types = schema.types ?? (schema.type ? [schema.type] : []);
   if (!types.some(type => matchesType(value, type))) {
     fail(path, 'This value has an unsupported JSON type.');
+  }
+
+  if (typeof value === 'number' && (!Number.isFinite(value)
+    || schema.minimum !== undefined && value < schema.minimum
+    || schema.maximum !== undefined && value > schema.maximum)) {
+    fail(path, 'This number is outside the allowed page contract range.');
   }
 
   if (schema.enum && !schema.enum.some(option => Object.is(option, value))) {

@@ -248,6 +248,7 @@ export const CmsMotionWrapper: React.FC<CmsMotionWrapperProps> = ({
 interface MotionItemProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
   delay?: number;
+  independentReveal?: boolean;
   children: React.ReactNode;
 }
 
@@ -258,6 +259,7 @@ interface MotionItemProps extends React.HTMLAttributes<HTMLDivElement> {
 export const MotionItem: React.FC<MotionItemProps> = ({
   className = '',
   delay,
+  independentReveal = false,
   children,
   style,
   ...rest
@@ -276,6 +278,7 @@ export const MotionItem: React.FC<MotionItemProps> = ({
 
   return (
     <motion.div
+      {...(independentReveal ? { initial: 'hidden', animate: 'visible' } : {})}
       variants={itemVariants}
       transition={delay ? { delay } : undefined}
       className={className}

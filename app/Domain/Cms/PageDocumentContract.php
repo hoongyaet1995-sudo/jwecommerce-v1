@@ -188,6 +188,14 @@ final class PageDocumentContract
             return;
         }
 
+        if (is_int($value) || is_float($value)) {
+            if (! is_finite((float) $value)
+                || (isset($schema['minimum']) && $value < $schema['minimum'])
+                || (isset($schema['maximum']) && $value > $schema['maximum'])) {
+                $this->addError($errors, $path, 'This number is outside the allowed page contract range.');
+            }
+        }
+
         if (isset($schema['enum']) && ! in_array($value, $schema['enum'], true)) {
             $this->addError($errors, $path, 'This value is not allowed by the page contract.');
         }
@@ -281,7 +289,7 @@ final class PageDocumentContract
             $targets['mediaUrl'] = in_array($type, ['hero_banner', 'cta_strip'], true);
         } elseif ($type === 'before_after') {
             $targets = ['beforeImageUrl' => true, 'afterImageUrl' => true];
-        } elseif (($type === 'chapter_block' && ($section['chapterPreset'] ?? 'story') === 'perspective') || in_array($type, ['hero_slider', 'media_gallery', 'instagram_feed', 'testimonials_slider', 'logo_cloud'], true)) {
+        } elseif (($type === 'chapter_block' && in_array(($section['chapterPreset'] ?? 'story'), ['perspective', 'delivery', 'policy'], true)) || in_array($type, ['policy_content', 'hero_slider', 'media_gallery', 'instagram_feed', 'testimonials_slider', 'logo_cloud'], true)) {
             $field = $type === 'testimonials_slider' ? 'authorAvatar' : 'imageUrl';
             foreach ($section['items'] ?? [] as $item) {
                 $item = $item instanceof stdClass ? get_object_vars($item) : $item;
@@ -289,6 +297,9 @@ final class PageDocumentContract
                     continue;
                 }
                 if ($type === 'hero_slider' && ! empty($item['videoUrl'])) {
+                    continue;
+                }
+                if (($type === 'policy_content' || ($type === 'chapter_block' && in_array($section['chapterPreset'] ?? '', ['delivery', 'policy'], true))) && ! array_key_exists('imageUrl', $item)) {
                     continue;
                 }
                 $targets['item:'.$item['id'].':'.$field] = in_array($type, ['hero_slider', 'testimonials_slider', 'logo_cloud'], true);

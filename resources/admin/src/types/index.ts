@@ -556,6 +556,9 @@ export type PageSectionType =
   | 'media_text_split'
   | 'chapter_block'
   | 'chapter_navigation'
+  | 'policy_content'
+  | 'delivery_table'
+  | 'payment_methods'
   | 'timeline_story'
   | 'stats_counter'
   | 'product_grid'
@@ -580,6 +583,8 @@ export type PageSectionType =
   | 'newsletter_signup';
 
 export interface SectionItem {
+  deliveryEstimate?: string;
+  deliveryFee?: string;
   id: string;
   title: string;
   subtitle?: string;
@@ -661,16 +666,32 @@ export interface PageSection {
   imageForeground?: boolean;
   imageForegroundColor?: string;
   imageForegroundOpacity?: 0 | 10 | 20 | 30 | 40 | 50 | 60 | 70 | 80 | 90 | 100;
-  layoutPreset?: 'default' | 'editorial-hero' | 'editorial-story' | 'editorial-cover';
+  layoutPreset?: 'default' | 'editorial-hero' | 'editorial-story' | 'editorial-cover' | 'story-with-steps';
+  paymentLayout?: 'cards' | 'list';
+  paymentNote?: string;
+  deliverySource?: 'settings' | 'manual';
+  deliveryNote?: string;
+  deliveryDestinationLabel?: string;
+  deliveryEstimateLabel?: string;
+  deliveryFeeLabel?: string;
+  faqPreset?: 'default' | 'minimal';
+  faqInitiallyOpen?: boolean;
   leadText?: string;
-  chapterPreset?: 'story' | 'perspective' | 'principles';
+  policyPreset?: 'guidelines' | 'choices' | 'steps' | 'timeline' | 'tabs' | 'columns';
+  policyNote?: string;
+  contactPreset?: 'enquiry' | 'location';
+  mapEmbedUrl?: string;
+  mapVisible?: boolean;
+  contactAddressIcon?: string;
+  chapterPreset?: 'story' | 'perspective' | 'principles' | 'process' | 'delivery' | 'actions' | 'policy';
+  mediaContainerMode?: 'page' | 'full-bleed';
   containerMode?: 'page' | 'full-bleed';
   sectionBorder?: 'default' | 'none' | 'top' | 'bottom' | 'both';
   sectionBorderColor?: string;
-  ctaPreset?: 'default' | 'image-banner' | 'editorial-band';
+  ctaPreset?: 'default' | 'image-banner' | 'editorial-band' | 'help-panel';
   ctaBannerHeight?: 'compact' | 'normal' | 'spacious';
   richTextPreset?: 'default' | 'manifesto';
-  featureCardsPreset?: 'default' | 'values-list' | 'editorial-columns';
+  featureCardsPreset?: 'default' | 'values-list' | 'editorial-columns' | 'service-highlights';
   galleryPreset?: 'default' | 'editorial-montage' | 'editorial-cards';
   showSectionHeading?: boolean;
   valuesShowHeading?: boolean;

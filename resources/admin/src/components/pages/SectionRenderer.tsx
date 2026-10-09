@@ -1,3 +1,9 @@
+import {EnquiryForm,ContactLocation} from './ContactSections';
+import {SectionIcon} from './IconPicker';
+import {PolicyContent} from './PolicyContent';
+import {MediaWidthRegion} from './MediaWidthRegion';
+import {PaymentMethods} from './PaymentMethods';
+import {ServiceHighlights,DeliveryTable,MinimalFaq,HelpPanel} from './ShippingSections';
 import {typographyStyle} from '../../cms/inspectorCapabilities';
 import {PageSectionContainer} from './PageSectionContainer';
 import {sectionBorderStyle} from '../../cms/sectionBorders';
@@ -29,6 +35,7 @@ import {
   Heart,
   Truck,
   Package,
+  Headphones,
   Layers,
   Award,
   CheckCircle2,
@@ -310,23 +317,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
   };
 
-  const renderIcon = (iconName?: string) => {
-    switch (iconName) {
-      case 'Sparkles': return <Sparkles className="w-5 h-5" />;
-      case 'ShieldCheck': return <ShieldCheck className="w-5 h-5" />;
-      case 'Zap': return <Zap className="w-5 h-5" />;
-      case 'Globe': return <Globe className="w-5 h-5" />;
-      case 'Heart': return <Heart className="w-5 h-5" />;
-      case 'Truck': return <Truck className="w-5 h-5" />;
-      case 'Award': return <Award className="w-5 h-5" />;
-      case 'Volume2': return <Volume2 className="w-5 h-5" />;
-      case 'ShoppingBag': return <ShoppingBag className="w-5 h-5" />;
-      case 'Star': return <Star className="w-5 h-5 fill-amber-400 text-amber-400" />;
-      case 'Mail': return <Mail className="w-5 h-5" />;
-      case 'Clock': return <Clock className="w-5 h-5" />;
-      default: return <Sparkles className="w-5 h-5" />;
-    }
-  };
+  const renderIcon = (iconName?: string) => <SectionIcon name={iconName}/>;
 
   // 1. Hero Banner
   const renderHeroBanner = () => {
@@ -815,16 +806,16 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   // 5. Media + Text Split
   const renderMediaTextSplit = () => {
     if (section.layoutPreset === 'editorial-cover') return <EditorialCover section={section}/>;
-    if (section.layoutPreset === 'editorial-story') return <EditorialStory section={section} isEditingMode={isEditingMode} />;
+    if ((section.layoutPreset === 'editorial-story'||section.layoutPreset === 'story-with-steps')) return <EditorialStory section={section} isEditingMode={isEditingMode} />;
     if (section.layoutPreset === 'editorial-hero') {
       return <EditorialHero section={section} isEditingMode={isEditingMode} isPageHeading={runtime.page.document.sections.find(item=>item.isVisible !== false)?.id === section.id} />;
     }
     const isMediaRight = section.mediaPosition !== 'left';
     return (
       <div className={`w-full ${getPaddingClass()}`}>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+        <div className={`grid grid-cols-1 ${section.mediaContainerMode==='full-bleed'?'':'lg:grid-cols-12'} gap-8 lg:gap-12 items-center`}>
           {/* Text Column */}
-          <div className={`space-y-6 ${isMediaRight ? 'lg:col-span-6 lg:order-1' : 'lg:col-span-6 lg:order-2'}`}>
+          <div className={`space-y-6 ${section.mediaContainerMode==='full-bleed'?'order-1':isMediaRight ? 'lg:col-span-6 lg:order-1' : 'lg:col-span-6 lg:order-2'}`}>
             {section.subtitle && (
               <MotionItem><span data-cms-text="eyebrow"
                 style={{...(getEyebrowStyle()),...typographyStyle(section,'eyebrow')}}
@@ -883,7 +874,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
           </div>
 
           {/* Media Column */}
-          <div className={`relative ${isMediaRight ? 'lg:col-span-6 lg:order-2' : 'lg:col-span-6 lg:order-1'}`}>
+          <MediaWidthRegion section={section} className={`relative ${section.mediaContainerMode==='full-bleed'?'order-2':isMediaRight ? 'lg:col-span-6 lg:order-2' : 'lg:col-span-6 lg:order-1'}`}>
             <MotionMedia style={imageSlotFrameStyle(section,'mediaUrl')} className="aspect-4/3 rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-neutral-900">
               <ScopedImage section={section} targetId="mediaUrl"
                 src={section.mediaUrl || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1000&auto=format&fit=crop&q=80'}
@@ -892,7 +883,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                 referrerPolicy="no-referrer"
               />
             </MotionMedia>
-          </div>
+          </MediaWidthRegion>
         </div>
       </div>
     );
@@ -1698,7 +1689,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         )}
       </div>
 
-      <div className={`grid ${getGridColsClass(section.columnsCount || 3)} gap-6`}>
+      <MediaWidthRegion section={section}><div className={`grid ${getGridColsClass(section.columnsCount || 3)} gap-6`}>
         {section.items?.map((item, idx) => (
           <MotionCard
             key={item.id || idx}
@@ -1718,7 +1709,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
             </div>
           </MotionCard>
         ))}
-      </div>
+      </div></MediaWidthRegion>
     </div>
   );
 
@@ -2725,7 +2716,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       case 'rich_text': return section.richTextPreset==='manifesto'?<Manifesto section={section}/>:renderRichText();
       case 'media_text_split': return renderMediaTextSplit();
       case 'chapter_navigation': return <ChapterNavigation section={section} isEditingMode={isEditingMode}/>;
-      case 'chapter_block': return <ChapterBlock section={section}/>;
+      case 'chapter_block': return <ChapterBlock section={section} isEditingMode={isEditingMode}/>;
       case 'timeline_story': return renderTimelineStory();
       case 'stats_counter': return renderStatsCounter();
       case 'product_grid': return renderProductGrid();
@@ -2737,16 +2728,19 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       case 'video_embed': return renderVideoEmbed();
       case 'before_after': return renderBeforeAfter();
       case 'instagram_feed': return renderInstagramFeed();
-      case 'feature_cards': return section.featureCardsPreset==='editorial-columns'?<EditorialColumns section={section}/>:section.featureCardsPreset==='values-list'?<ValuesList section={section}/>:renderFeatureCards();
+      case 'policy_content': return <PolicyContent section={section} isEditingMode={isEditingMode}/>;
+      case 'payment_methods': return <PaymentMethods section={section}/>;
+      case 'delivery_table': return <DeliveryTable section={section}/>;
+      case 'feature_cards': return section.featureCardsPreset==='service-highlights'?<ServiceHighlights section={section} renderIcon={renderIcon}/>:section.featureCardsPreset==='editorial-columns'?<EditorialColumns section={section}/>:section.featureCardsPreset==='values-list'?<ValuesList section={section}/>:renderFeatureCards();
       case 'values_list': return <ValuesList section={section}/>;
       case 'icon_list': return renderIconList();
       case 'comparison_matrix': return renderComparisonMatrix();
-      case 'faq_accordion': return renderFaqAccordion();
-      case 'contact_form': return renderContactForm();
-      case 'store_locator': return renderStoreLocator();
+      case 'faq_accordion': return section.faqPreset==='minimal'?<MinimalFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>:renderFaqAccordion();
+      case 'contact_form': return section.contactPreset==='enquiry'?<EnquiryForm section={section} isEditingMode={isEditingMode}/>:renderContactForm();
+      case 'store_locator': return section.contactPreset==='location'?<ContactLocation section={section}/>:renderStoreLocator();
       case 'testimonials_slider': return renderTestimonials();
       case 'logo_cloud': return renderLogoCloud();
-      case 'cta_strip': return section.ctaPreset==='editorial-band'?<EditorialCtaBand section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='image-banner'?<ImageBanner section={section} isEditingMode={isEditingMode}/>:renderCtaStrip();
+      case 'cta_strip': return section.ctaPreset==='help-panel'?<HelpPanel section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='editorial-band'?<EditorialCtaBand section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='image-banner'?<ImageBanner section={section} isEditingMode={isEditingMode}/>:renderCtaStrip();
       case 'newsletter_signup': return renderNewsletterSignup();
       default: return renderRichText();
     }

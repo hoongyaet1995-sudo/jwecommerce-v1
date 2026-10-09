@@ -1,3 +1,8 @@
+import {paymentSections,paymentTemplateIds} from './paymentTemplates';
+import {contactSections,contactTemplateIds} from './contactTemplates';
+import {returnsSections,returnsTemplateIds} from './returnsTemplates';
+import {shippingChaptersSections} from './shippingChaptersTemplate';
+import {shippingEditorialSections} from './shippingEditorialTemplate';
 import type { PageSection } from '../types';
 import { createSectionColorDefaults } from './sectionColorDefaults';
 import aboutEditorialTemplate from './aboutEditorialTemplate.json';
@@ -17,6 +22,11 @@ export interface PageTemplateContext {
 // These are editable draft snapshots. Checkout remains the authority for live rates.
 // Photographs illustrate the starter layout; they do not depict the merchant's team.
 export function createPageTemplateSections(templateId: string, context: PageTemplateContext, prefix: string): PageSection[] {
+  if((paymentTemplateIds as readonly string[]).includes(templateId))return paymentSections(templateId,prefix);
+  if((contactTemplateIds as readonly string[]).includes(templateId))return contactSections(templateId,prefix);
+  if((returnsTemplateIds as readonly string[]).includes(templateId))return returnsSections(templateId,prefix);
+  if(templateId==='shipping-chapters')return shippingChaptersSections(prefix);
+  if(templateId==='shipping-editorial')return shippingEditorialSections(prefix);
   const brand = context.shopName?.trim() || 'Your store';
   if (templateId === 'about-chapters') return aboutChaptersSections(brand,prefix);
   if (templateId === 'about-studio') return aboutStudioSections(brand,prefix);
@@ -35,7 +45,7 @@ export function createPageTemplateSections(templateId: string, context: PageTemp
       const result = section(`editorial-${index}`, {
       ...data,
       title: index === 0 ? `A closer look\nat ${brand}.` : data.title,
-      sectionBorder: 'none', containerMode: 'page',
+      sectionBorder: 'none', containerMode: 'page', motionPreset: 'subtle-lift',
       });
       if (result.type === 'values_list') delete result.textAlignment;
       return result;

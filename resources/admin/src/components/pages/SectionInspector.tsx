@@ -1,3 +1,12 @@
+import {InspectorDeleteButton} from './InspectorDeleteButton';
+import {itemSupports,supportedNewItem,repeatedItemFields} from '../../cms/repeatedItemContract';
+import {PaymentSettings} from './PaymentSettings';
+import {ContactSettings} from './ContactSettings';
+import {IconPicker} from './IconPicker';
+import {PolicySettings} from './PolicySettings';
+import {WidthChoiceCards} from './WidthChoiceCards';
+import {supportsMediaWidth} from './MediaWidthRegion';
+import {ShippingContentSettings,ShippingDesignSettings} from './ShippingSettings';
 import {TypographySettings} from './TypographySettings';
 import {textRoles,textRoleLabels,roleFields,type TextRole,type InspectorTab} from '../../cms/inspectorCapabilities';
 import {SectionBorderSettings} from './SectionBorderSettings';
@@ -265,13 +274,11 @@ const MediaUploadField: React.FC<MediaUploadFieldProps> = ({
           {label}
         </span>
         {value && (
-          <button
+          <InspectorDeleteButton label="Clear image"
             type="button"
             onClick={() => onChange('')}
             className="text-[10px] text-rose-500 hover:underline cursor-pointer"
-          >
-            Clear
-          </button>
+           />
         )}
       </div>
 
@@ -1288,7 +1295,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
     sectionColors !== null && hasOwnContractField(sectionColors, key)
     && !((isValuesList(section)||['chapter_block','chapter_navigation'].includes(section.type)||section.layoutPreset==='editorial-cover') && ['primaryBtnBg','primaryBtnText','secondaryBtnBg','secondaryBtnText'].includes(key))
   );
-  const hasItemField = (item: SectionItem, key: string): boolean => hasOwnContractField(item, key);
+  const hasItemField = (_item: SectionItem, key: string): boolean => itemSupports(section,key);
   const hasAnyItemField = (item: SectionItem, keys: readonly string[]): boolean => keys.some(key => hasItemField(item, key));
 
   const updateField = <K extends keyof PageSection>(key: K, value: PageSection[K]) => {
@@ -1361,7 +1368,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
       price: 299,
       features: ['Precision Driver', 'Lossless Audio', '2-Year Guarantee']
     };
-    updateField('items', [...(section.items || []), newItem]);
+    updateField('items', [...(section.items || []), supportedNewItem(section,newItem)]);
   };
 
   const handleUpdateItem = (index: number, updatedItem: Partial<SectionItem>) => {
@@ -1515,22 +1522,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
   ];
 
   const editorialCollection=section.galleryPreset?.startsWith('editorial-')||section.featureCardsPreset==='editorial-columns';
-  const hasItems = hasSectionField('items') && [
-    'hero_slider',
-    'feature_cards',
-    'media_gallery',
-    'faq_accordion',
-    'timeline_story',
-    'stats_counter',
-    'pricing_table',
-    'instagram_feed',
-    'icon_list',
-    'comparison_matrix',
-    'store_locator',
-    'testimonials_slider',
-    'logo_cloud',
-    'announcement_bar'
-  ].includes(section.type);
+  const hasItems = repeatedItemFields(section).length>0 && !['policy_content','chapter_block','chapter_navigation','delivery_table','media_text_split'].includes(section.type);
 
   const hasMedia = section.ctaPreset!=='editorial-band' && hasSectionField('mediaUrl') && [
     'hero_banner',
@@ -1627,20 +1619,21 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
       {/* Form Controls */}
       <div ref={bodyRef} id={`inspector-panel-${section.id}`} role="tabpanel" className="flex-1 overflow-y-auto p-4 space-y-5 text-xs">
         {selectedElement&&<div className="p-3 rounded-lg bg-indigo-500/10 text-indigo-500 flex justify-between gap-2"><span>Selected: {selectedElement.target.startsWith('items:')?'List item':selectedElement.target==='image'?'Image':selectedElement.target==='button'?'Button':textRoleLabels[({subtitle:'eyebrow',title:'title',content:'content',leadText:'lead'} as Record<string,TextRole>)[selectedElement.target]]??'Section content'}</span>{(textRoles(section).length>0||selectedElement.target==='image')&&<button className="underline" onClick={()=>setInspectorTab(inspectorTab==='design'?'content':'design')}>{inspectorTab==='design'?'Edit content':'Style'}</button>}</div>}
-        <div hidden={inspectorTab!=='design'}><TypographySettings section={section} onChange={onChange} selectedRole={textRole} onSelectRole={setTextRole}/><ChapterSettings mode="design" section={section} onChange={onChange}/>{imageTargets(section).length>0&&<details data-inspector-image-design open={selectedElement?.target==='image'} className="pt-4"><summary className="font-semibold cursor-pointer">Image appearance</summary><ImageTargetInspector mode="design" section={section} selected={selectedImage} onSelect={onSelectImage} onChange={onChange} assetControl={()=>null}/></details>}</div>
-        <div hidden={inspectorTab!=='advanced'} className="text-neutral-500 leading-relaxed"><p>Page width stays in Page Settings. Typography defaults preserve the selected preset.</p>{(['hero_banner','hero_slider','cta_strip'].includes(section.type)||section.layoutPreset==='editorial-cover')&&<label className="block mt-4">Container mode<select aria-label="Container mode" value={section.containerMode??'page'} onChange={event=>updateField('containerMode',event.target.value as PageSection['containerMode'])} className="w-full mt-2 px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-900 text-white"><option value="page">Use page layout</option><option value="full-bleed">Full bleed</option></select></label>}</div>
+        <div hidden={inspectorTab!=='design'}>{supportsMediaWidth(section)&&<div className="pb-4"><WidthChoiceCards label="Media width" value={section.mediaContainerMode??(section.layoutPreset==='editorial-cover'&&section.containerMode==='full-bleed'?'full-bleed':'page')} onChange={value=>onChange({...section,mediaContainerMode:value})}/><p className="mt-2 text-xs text-neutral-500">Changes the media region only. Text stays aligned with the section container. Full-width split media stacks below the text.</p></div>}<PolicySettings mode="design" section={section} onChange={onChange}/><PaymentSettings mode="design" section={section} onChange={onChange}/><ContactSettings mode="design" section={section} onChange={onChange}/><TypographySettings section={section} onChange={onChange} selectedRole={textRole} onSelectRole={setTextRole}/><ChapterSettings mode="design" section={section} onChange={onChange}/>{imageTargets(section).length>0&&<details data-inspector-image-design open={selectedElement?.target==='image'} className="pt-4"><summary className="font-semibold cursor-pointer">Image appearance</summary><ImageTargetInspector mode="design" section={section} selected={selectedImage} onSelect={onSelectImage} onChange={onChange} assetControl={()=>null}/></details>}</div>
+        <div hidden={inspectorTab!=='advanced'} className="text-neutral-500 leading-relaxed"><p>Page width stays in Page Settings. Typography defaults preserve the selected preset.</p><details className="mt-4" data-inspector-container><summary className="font-semibold cursor-pointer">Section content width</summary><WidthChoiceCards label="Section content width" value={section.containerMode??'page'} onChange={value=>updateField('containerMode',value)}/><p className="mt-2 text-xs">Follow Page uses the width and side spacing in Page Settings. Full Width removes the outer content limit and side spacing at every screen size. Text and cards retain the selected layout's proportions.</p></details></div>
         <div hidden={inspectorTab!=='design'} data-inspector-group={0}>{(section.type==='media_gallery'||section.type==='feature_cards')&&<div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
           <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-500">Layout preset
             <select aria-label="Collection layout preset" value={section.type==='media_gallery'?section.galleryPreset??'default':section.featureCardsPreset??'default'} onChange={event=>onChange({...section,...(section.type==='media_gallery'?{galleryPreset:event.target.value as PageSection['galleryPreset']}:{featureCardsPreset:event.target.value as PageSection['featureCardsPreset']}),...(event.target.value==='default'?{showSectionHeading:true}:{})})} className="w-full mt-2 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white">
-              <option value="default">Default</option>{section.type==='media_gallery'?<><option value="editorial-montage">Editorial Montage — staggered photographs</option><option value="editorial-cards">Editorial Cards — photograph and caption</option></>:<>{section.featureCardsPreset==='values-list'&&<option value="values-list">Legacy Values List</option>}<option value="editorial-columns">Editorial Columns — simple text columns</option></>}
+              <option value="default">Default</option>{section.type==='media_gallery'?<><option value="editorial-montage">Editorial Montage — staggered photographs</option><option value="editorial-cards">Editorial Cards — photograph and caption</option></>:<>{section.featureCardsPreset==='values-list'&&<option value="values-list">Legacy Values List</option>}<option value="editorial-columns">Editorial Columns — simple text columns</option><option value="service-highlights">Service Highlights — icon and text row</option></>}
             </select>
           </label>
-          {(section.galleryPreset?.startsWith('editorial-')||section.featureCardsPreset==='editorial-columns')&&<>
+          {(section.galleryPreset?.startsWith('editorial-')||['editorial-columns','service-highlights'].includes(section.featureCardsPreset??''))&&<>
             <InspectorToggle label="Show section heading" checked={section.showSectionHeading!==false} onChange={checked=>updateField('showSectionHeading',checked)}/>
             <label className="block text-neutral-500">Columns<select aria-label="Editorial columns" value={section.columnsCount??3} onChange={event=>updateField('columnsCount',Number(event.target.value) as PageSection['columnsCount'])} className="w-full mt-1 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white"><option value={2}>Two</option><option value={3}>Three</option><option value={4}>Four</option></select></label>
             <p className="text-[11px] leading-relaxed text-neutral-500">Edit and reorder entries below. Image layouts use the shared image tools. Mobile stacks entries in their saved order.</p>
           </>}
         </div>}</div>
+<div hidden={inspectorTab!=='content'}><PolicySettings mode="content" section={section} onChange={onChange} onSelectImage={onSelectImage} assetControl={target=><MediaUploadField label="Image URL / File Upload" value={target.url} onChange={url=>onChange(updateImageTarget(section,target.id,{mediaUrl:url}))} onUpload={url=>onMediaUpload(pageId,section.id,latest=>updateImageTarget(latest,target.id,{mediaUrl:url}))} placeholder="Image URL or upload" />}/><PaymentSettings mode="content" section={section} onChange={onChange}/><ContactSettings mode="content" section={section} onChange={onChange}/><ShippingContentSettings section={section} onChange={patch=>onChange({...section,...patch})}/></div><div hidden={inspectorTab!=='design'}><ShippingDesignSettings section={section} onChange={patch=>onChange({...section,...patch})}/></div>
         {/* 1. Header & Text Content */}
         <div hidden={inspectorTab!=='content'} data-inspector-group={1}>{hasAnySectionField(['title', 'subtitle', 'content']) && section.showSectionHeading!==false && (
         <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
@@ -1686,7 +1679,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
           </div>
           )}
 
-          {section.layoutPreset==='editorial-cover'&&<label className="block text-neutral-500">Introduction<input data-inspector-field="leadText" aria-label="Cover introduction" value={section.leadText??''} onChange={e=>updateField('leadText',e.target.value)} className="w-full mt-2 px-3 py-2 rounded-xl border border-neutral-700 bg-neutral-900 text-white"/></label>}
+          {(section.layoutPreset==='editorial-cover'||section.layoutPreset==='editorial-hero')&&<label className="block text-neutral-500">Introduction<input data-inspector-field="leadText" aria-label="Cover introduction" value={section.leadText??''} onChange={e=>updateField('leadText',e.target.value)} className="w-full mt-2 px-3 py-2 rounded-xl border border-neutral-700 bg-neutral-900 text-white"/></label>}
 
           {!(section.type==='chapter_block'&&section.chapterPreset==='principles') && hasSectionField('content') && (!isValuesList(section) || section.valuesShowHeading) && (
           <div>
@@ -2255,7 +2248,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
         )}</div>
 
         {/* Contact Form Details */}
-        <div hidden={inspectorTab!=='content'} data-inspector-group={11}>{section.type === 'contact_form' && hasAnySectionField(['formEmail', 'contactPhone', 'contactAddress', 'contactButtonText', 'formSuccessMessage', 'subjectPlaceholder', 'categoryPlaceholder', 'messagePlaceholder', 'inquiryCategories']) && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={11}>{section.type === 'contact_form' && section.contactPreset!=='enquiry' && hasAnySectionField(['formEmail', 'contactPhone', 'contactAddress', 'contactButtonText', 'formSuccessMessage', 'subjectPlaceholder', 'categoryPlaceholder', 'messagePlaceholder', 'inquiryCategories']) && (
           <div className="space-y-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Contact & Atelier Details
@@ -2562,7 +2555,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
         <div hidden={inspectorTab!=='design'} data-inspector-group={17}>{section.type==='cta_strip' && <CtaStripSettings section={section} onChange={patch=>onChange({...section,...patch})} />}</div>
         <div hidden={inspectorTab!=='design'} data-inspector-group={18}>{section.type==='rich_text' && <RichTextSettings section={section} onChange={patch=>onChange({...section,...patch})} />}</div>
 
-        <div hidden={inspectorTab!=='content'} data-inspector-group={19}><ImageTargetInspector mode="content" section={section} selected={selectedImage} onSelect={onSelectImage} onChange={onChange} assetControl={target=><MediaUploadField label="Image URL / File Upload" value={target.url} onChange={url=>onChange(updateImageTarget(section,target.id,{mediaUrl:url}))} onUpload={url=>onMediaUpload(pageId,section.id,latest=>updateImageTarget(latest,target.id,{mediaUrl:url}))} placeholder="https://images.unsplash.com/... or upload" />} /></div>
+        <div hidden={inspectorTab!=='content'} data-inspector-group={19}>{!(section.type==='policy_content'||(section.type==='chapter_block'&&section.chapterPreset==='policy'))&&<ImageTargetInspector mode="content" section={section} selected={selectedImage} onSelect={onSelectImage} onChange={onChange} assetControl={target=><MediaUploadField label="Image URL / File Upload" value={target.url} onChange={url=>onChange(updateImageTarget(section,target.id,{mediaUrl:url}))} onUpload={url=>onMediaUpload(pageId,section.id,latest=>updateImageTarget(latest,target.id,{mediaUrl:url}))} placeholder="https://images.unsplash.com/... or upload" />} />}</div>
 
         {/* Section Main Media & Image Upload */}
         <div hidden={inspectorTab!=='content'} data-inspector-group={20}>{hasMedia && imageTargets(section).length===0 && (
@@ -2696,13 +2689,18 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                       type="button"
                       onClick={() => handleDeleteItem(idx)}
                       className="text-neutral-400 hover:text-rose-500 cursor-pointer"
-                      title={editorialCollection?'Delete item':'Delete Slide'}
+                      title={section.type==='hero_slider'?'Delete slide':'Delete item'}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
+                      {hasItemField(item,'author')&&<label className="block text-[10px] text-neutral-400">Reviewer name<input className="w-full px-2 py-1 rounded border border-neutral-700 bg-transparent" value={item.author??''} onChange={e=>handleUpdateItem(idx,{author:e.target.value})}/></label>}
+                      {hasItemField(item,'features')&&<label className="block text-[10px] text-neutral-400">Features (one per line)<textarea className="w-full px-2 py-1 rounded border border-neutral-700 bg-transparent" value={(item.features??[]).join('\n')} onChange={e=>handleUpdateItem(idx,{features:e.target.value.split('\n')})}/></label>}
+                      {hasItemField(item,'isHighlighted')&&<InspectorToggle label="Highlight this plan" checked={item.isHighlighted===true} onChange={checked=>handleUpdateItem(idx,{isHighlighted:checked})}/>}
                   {/* Hero Slider Dedicated Slide Fields */}
+                      {hasItemField(item,'subtitle')&&<label className="block text-[10px] text-neutral-400">Eyebrow<input className="w-full px-2 py-1 rounded border border-neutral-700 bg-transparent" value={item.subtitle??''} onChange={e=>handleUpdateItem(idx,{subtitle:e.target.value})}/></label>}
+                      {section.type!=='hero_slider'&&hasItemField(item,'linkUrl')&&<label className="block text-[10px] text-neutral-400">Destination<input className="w-full px-2 py-1 rounded border border-neutral-700 bg-transparent" value={item.linkUrl??''} onChange={e=>handleUpdateItem(idx,{linkUrl:e.target.value})}/></label>}
                   {section.type === 'hero_slider' ? (
                     <div className="space-y-2.5">
                       {/* Background Image upload for this slide */}
@@ -2951,18 +2949,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                           </div>
                         )}
 
-                        {((section.type === 'feature_cards' && section.featureCardsPreset!=='editorial-columns') || section.type === 'icon_list') && hasItemField(item, 'icon') && (
-                          <div>
+                        {hasItemField(item, 'icon') && (
+                          <div className="col-span-2 min-w-0">
                             <span className="text-[10px] text-neutral-400 block mb-0.5">Icon</span>
-                            <select
-                              value={item.icon || 'Sparkles'}
-                              onChange={e => handleUpdateItem(idx, { icon: e.target.value })}
-                              className="w-full px-2 py-1 rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white"
-                            >
-                              {iconOptions.map(ico => (
-                                <option key={ico} value={ico}>{ico}</option>
-                              ))}
-                            </select>
+                            <IconPicker value={item.icon || 'Sparkles'} onChange={icon => handleUpdateItem(idx, {icon})}/>
                           </div>
                         )}
 
@@ -3407,3 +3397,9 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
     </div>
   );
 };
+
+
+
+
+
+

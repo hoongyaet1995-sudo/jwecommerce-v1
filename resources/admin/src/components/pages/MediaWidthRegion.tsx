@@ -1,0 +1,15 @@
+import React,{useLayoutEffect,useRef,useState} from 'react';
+import type {PageSection} from '../../types';
+export function supportsMediaWidth(section:PageSection) {return section.type==='policy_content'&&!!section.items?.some(item=>item.imageUrl!==undefined)||section.type==='media_text_split'||section.type==='media_gallery'||section.type==='chapter_block'&&(['story','perspective','delivery'].includes(section.chapterPreset??'story')||section.chapterPreset==='policy'&&!!section.items?.some(item=>item.imageUrl!==undefined));}
+/** Measures the section canvas, never the browser viewport, so Builder and public agree. */
+export function MediaWidthRegion({section,children,className}:{section:PageSection;children:React.ReactNode;className?:string}) {
+ const ref=useRef<HTMLDivElement>(null);const [geometry,setGeometry]=useState<{width:number;offset:number}>();
+ const full=section.mediaContainerMode==='full-bleed';
+ useLayoutEffect(()=>{
+  if(!full){setGeometry(undefined);return;}
+  const node=ref.current;const canvas=node?.closest('section');if(!node||!canvas)return;
+  const measure=()=>{const c=canvas.getBoundingClientRect();const parent=node.parentElement!.getBoundingClientRect();const offset=c.left-parent.left;setGeometry(previous=>previous&&Math.abs(previous.width-c.width)<.5&&Math.abs(previous.offset-offset)<.5?previous:{width:c.width,offset});};
+  const observer=new ResizeObserver(measure);observer.observe(canvas);observer.observe(node.parentElement!);measure();return()=>observer.disconnect();
+ },[full]);
+ return <div ref={ref} className={className} data-media-width={full?'full-bleed':'page'} style={full&&geometry?{width:geometry.width,marginLeft:geometry.offset}:!full&&section.containerMode==='full-bleed'?{maxWidth:'var(--cms-page-width)',marginInline:'auto',paddingInline:'var(--cms-page-gutter, 24px)',boxSizing:'border-box'}:undefined}>{children}</div>;
+}

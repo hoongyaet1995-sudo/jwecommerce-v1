@@ -25,11 +25,12 @@ describe('CMS section color defaults', () => {
   });
 
   it('retains the original 27 palettes and adds a readable standalone Values List palette', () => {
-    expect(SECTION_TEMPLATES).toHaveLength(38);
+    expect(SECTION_TEMPLATES).toHaveLength(56);
 
-    for (const template of SECTION_TEMPLATES.filter(template => !template.defaultData.layoutPreset && !template.defaultData.ctaPreset && !template.defaultData.galleryPreset && !template.defaultData.featureCardsPreset && !template.defaultData.chapterPreset && template.type !== 'chapter_navigation')) {
+    for (const template of SECTION_TEMPLATES.filter(template => !template.defaultData.contactPreset && !template.defaultData.layoutPreset && !template.defaultData.ctaPreset && !template.defaultData.galleryPreset && !template.defaultData.featureCardsPreset && !template.defaultData.chapterPreset && !template.defaultData.faqPreset && template.type !== 'chapter_navigation' && template.type !== 'payment_methods' && template.type !== 'delivery_table')) {
       expect(template.defaultData.customColors).toEqual(template.type==='values_list'?{...expectedDefaultColors,eyebrowColor:'#4f46e5',titleColor:'#171717',contentColor:'#737373'}:expectedDefaultColors);
     }
+    for (const template of SECTION_TEMPLATES.filter(template => template.defaultData.contactPreset)) { expect(template.defaultData.customColors!.titleColor).toBe('#171717'); }
     for (const template of SECTION_TEMPLATES) {
       expect(Object.keys(template.defaultData.customColors!).sort()).toEqual(Object.keys(expectedDefaultColors).sort());
       expect(template.defaultData.customColors!.titleColor).toMatch(/^#[0-9a-f]{6}$/i);

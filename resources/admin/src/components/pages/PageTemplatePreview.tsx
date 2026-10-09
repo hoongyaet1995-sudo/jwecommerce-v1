@@ -23,7 +23,7 @@ export function PageTemplatePreview({templateId, context}: {templateId:string;co
     description:'',status:'draft',template:'standard',createdAt:'',updatedAt:'',
     sections:createPageTemplateSections(templateId,context,'template-preview'),
   }),[templateId,context]);
-  const payload = useMemo(() => createAdminPageRuntimePayload(page,{products:[],categories:[],collections:[]},context.currency),[page,context.currency]);
+  const payload = useMemo(() => createAdminPageRuntimePayload(page,{products:[],categories:[],collections:[]},context.currency,context.shippingRates),[page,context.currency,context.shippingRates]);
   return <div className="min-w-0">
     <div className="flex items-center justify-between gap-3 mb-3"><span className="text-xs text-neutral-500">Actual page sections · draft preview</span><div className="flex gap-2">
       {['Desktop','Mobile'].map(label=><button key={label} type="button" aria-pressed={mobile===(label==='Mobile')} onClick={()=>setMobile(label==='Mobile')} className={`px-3 py-1.5 text-xs rounded-lg border ${mobile===(label==='Mobile')?'border-indigo-500 text-indigo-500':'border-neutral-200 dark:border-neutral-700'}`}>{label}</button>)}

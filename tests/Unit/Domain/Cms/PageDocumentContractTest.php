@@ -9,6 +9,20 @@ use Tests\TestCase;
 
 final class PageDocumentContractTest extends TestCase
 {
+    public function test_typography_numeric_ranges_accept_integer_json_and_fractional_values(): void
+    {
+        $document=$this->fixture();
+        foreach ([[2,2],[1,0],[3,-5],[0.8,10],[1.25,0.25]] as [$height,$spacing]) {
+            $document['sections']=[['id'=>'cover','type'=>'media_text_split','title'=>'Cover','isVisible'=>true,'layoutPreset'=>'editorial-cover','typography'=>['lead'=>['fontSize'=>20,'lineHeight'=>$height,'letterSpacing'=>$spacing]]]];
+            $jsonDocument=json_decode(json_encode($document),true);
+            $this->assertSame($jsonDocument,app(PageDocumentContract::class)->validate($jsonDocument));
+        }
+        foreach ([['lineHeight',0.7],['lineHeight',3.1],['letterSpacing',-5.1],['letterSpacing',10.1],['lineHeight','2']] as [$field,$value]) {
+            $invalid=$document;$invalid['sections'][0]['typography']=['lead'=>[$field=>$value]];
+            $this->assertArrayHasKey('sections.0.typography.lead.'.$field,$this->validationException(fn()=>app(PageDocumentContract::class)->validate($invalid))->errors());
+        }
+    }
+
     public function test_shared_typography_round_trips_and_rejects_unsafe_or_unbounded_overrides(): void
     {
         $document=$this->fixture();

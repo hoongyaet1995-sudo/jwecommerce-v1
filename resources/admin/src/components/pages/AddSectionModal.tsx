@@ -1,3 +1,6 @@
+import {policyLayouts} from './PolicySettings';
+import {shippingChaptersSections} from '../../cms/shippingChaptersTemplate';
+import {shippingEditorialSections} from '../../cms/shippingEditorialTemplate';
 import React, { useState } from 'react';
 import { Category, Collection, PageSection, PageSectionType } from '../../types';
 import { createCollectionTabMappings } from '../../cms/collectionTabMappings';
@@ -859,6 +862,8 @@ const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
       ]
     }
   },
+  {type:'contact_form',title:'Enquiry Form',category:'Support & Contact',description:'Editable enquiry fields with submission disabled.',icon:Mail,defaultData:{type:'contact_form',contactPreset:'enquiry',customColors:{...createSectionColorDefaults(),titleColor:'#171717',contentColor:'#737373',eyebrowColor:'#4f46e5'},title:'Talk to our team.',content:'Our team is here to help.',contactButtonText:'Send enquiry',inquiryCategories:[{id:'order',label:'Order & delivery'},{id:'other',label:'Other enquiries'}],backgroundColor:'bg-white',textColor:'dark',paddingY:'normal',isVisible:true}},
+  {type:'store_locator',title:'Location & Map',category:'Support & Contact',description:'Visitor address, hours and optional Google Maps embed.',icon:MapPin,defaultData:{type:'store_locator',contactPreset:'location',customColors:{...createSectionColorDefaults(),titleColor:'#171717',contentColor:'#737373',eyebrowColor:'#4f46e5'},title:'Visit our studio.',contactAddress:'',mapEmbedUrl:'',mapVisible:true,items:[{id:'hours',title:'Opening hours',description:'Add your opening hours',icon:'Clock'}],backgroundColor:'bg-white',textColor:'dark',paddingY:'normal',isVisible:true}},
   {
     type: 'contact_form',
     title: 'Interactive Support & Inquiries Form',
@@ -1079,22 +1084,38 @@ const EDITORIAL_SECTION_TEMPLATES:SectionTemplateOption[]=[
   {type:'media_gallery',title:'Editorial Image Cards',category:'Media & Visuals',description:'Photographs with simple titles and captions beneath. No card borders or overlays.',icon:Grid,badge:'Editorial',defaultData:studioStarter(3)},
   {type:'feature_cards',title:'Editorial Text Columns',category:'Storytelling & Narrative',description:'Clean columns of headings and paragraphs for brand ideas, principles and values.',icon:Columns,badge:'Editorial',defaultData:studioStarter(2)},
 ];
+const shippingChapterStarter=(index:number):Omit<PageSection,'id'>=>{const {id,...data}=shippingChaptersSections('shipping-chapter-starter')[index];return data;};
 const chapterStarter=(index:number):Omit<PageSection,'id'>=>{const {id,...data}=aboutChaptersSections('Your store','chapter-starter')[index];return data;};
 const CHAPTER_SECTION_TEMPLATES:SectionTemplateOption[]=[
  {type:'media_text_split',title:'Editorial Cover',category:'Header & Intro',description:'A bold heading, introduction and panoramic photograph.',icon:Image,badge:'Editorial',defaultData:chapterStarter(0)},
  {type:'chapter_navigation',title:'Chapter Navigation',category:'Storytelling & Narrative',description:'Automatically links to visible Chapter Blocks, with matching numbers and labels.',icon:Layers,badge:'Editorial',defaultData:chapterStarter(1)},
+ {type:'chapter_block',title:'Chapter Process',category:'Storytelling & Narrative',description:'A numbered preparation chapter with service steps.',icon:Layers,badge:'Editorial',defaultData:shippingChapterStarter(2)},
+ {type:'chapter_block',title:'Chapter Delivery',category:'Storytelling & Narrative',description:'A numbered delivery chapter with live shipping options and photographs.',icon:Layers,badge:'Editorial',defaultData:shippingChapterStarter(3)},
+ {type:'chapter_block',title:'Chapter Actions',category:'Conversion & Leads',description:'A numbered tracking chapter with primary and secondary actions.',icon:Layers,badge:'Editorial',defaultData:shippingChapterStarter(4)},
  {type:'chapter_block',title:'Chapter Story',category:'Storytelling & Narrative',description:'A numbered chapter with narrative paragraphs and a wide photograph.',icon:FileText,badge:'Editorial',defaultData:chapterStarter(2)},
  {type:'chapter_block',title:'Chapter Perspective',category:'Storytelling & Narrative',description:'A numbered chapter with two photographs and a point of view.',icon:Columns,badge:'Editorial',defaultData:chapterStarter(3)},
  {type:'chapter_block',title:'Chapter Principles',category:'Storytelling & Narrative',description:'A numbered chapter with clear title and description rows.',icon:Layers,badge:'Editorial',defaultData:chapterStarter(4)},
  {type:'cta_strip',title:'Editorial CTA Band',category:'Conversion & Leads',description:'A lateral headline and action on a solid brand background.',icon:Megaphone,badge:'Editorial',defaultData:chapterStarter(5)},
 ];
-export const SECTION_TEMPLATES: SectionTemplateOption[] = [...SOURCE_SECTION_TEMPLATES,...EDITORIAL_SECTION_TEMPLATES,...CHAPTER_SECTION_TEMPLATES].map(template => ({
+const SHIPPING_SECTION_TEMPLATES:SectionTemplateOption[]=[
+ ...shippingEditorialSections('shipping-starter').slice(1).map((section,index)=>{const {id,...defaultData}=section;return {type:section.type,title:['Service Highlights','Delivery Table','Story with Steps','Minimal FAQ','Help Panel'][index],category:(['Benefits & Trust','Support & Contact','Storytelling & Narrative','Support & Contact','Conversion & Leads'] as const)[index],description:'Reusable delivery and customer service layout. Edit content and appearance in the Inspector.',icon:FileText,badge:'Editorial',defaultData};}),
+];
+const POLICY_SECTION_TEMPLATES:SectionTemplateOption[]=policyLayouts.map(([policyPreset,label])=>({type:'policy_content',title:`Policy ${label}`,category:'Support & Contact',description:'Reusable policy guidance with shared typography, links and image settings.',icon:FileText,badge:'Policy',defaultData:{type:'policy_content',title:'Policy guidance',subtitle:'GUIDELINES',content:'Explain the next steps for your customers.',isVisible:true,policyPreset,policyNote:'Replace sample copy with your approved store policy.',containerMode:'page',backgroundColor:'bg-white',textColor:'dark',sectionBorder:'none',motionPreset:'subtle-lift',items:[{id:'policy-entry',title:'Guideline',description:'To edit: add your approved policy.',...(policyPreset==='tabs'?{category:'Guidelines'}:{})}]}}));
+const PAYMENT_SECTION_TEMPLATES:SectionTemplateOption[]=(['cards','list'] as const).map(paymentLayout=>({type:'payment_methods',title:paymentLayout==='cards'?'Payment Cards':'Payment List',category:'Support & Contact',description:'Automatic payment methods from saved store settings.',icon:ShieldCheck,defaultData:{type:'payment_methods',title:'Ways to pay.',subtitle:'PAYMENT OPTIONS',content:'Choose the available method that suits your order.',paymentLayout,customColors:{...createSectionColorDefaults(),titleColor:'#171717',contentColor:'#737373',eyebrowColor:'#4f46e5'},paymentNote:'Final availability depends on your order, currency and delivery address. Confirm at checkout.',isVisible:true,backgroundColor:'bg-white',textColor:'dark',motionPreset:'subtle-lift',containerMode:'page',sectionBorder:'none'}}));
+export const SECTION_TEMPLATES: SectionTemplateOption[] = [...PAYMENT_SECTION_TEMPLATES,...SOURCE_SECTION_TEMPLATES,...EDITORIAL_SECTION_TEMPLATES,...CHAPTER_SECTION_TEMPLATES,...SHIPPING_SECTION_TEMPLATES,...POLICY_SECTION_TEMPLATES].map(template => ({
   ...template,
   defaultData: {
     ...template.defaultData,
     customColors: {...createSectionColorDefaults(),...template.defaultData.customColors},
   },
 }));
+
+const normalizeSectionSearch = (value: string) => value.toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+export function matchesSectionSearch(template: SectionTemplateOption, query: string): boolean {
+  const terms = normalizeSectionSearch(query).split(' ').filter(Boolean);
+  const searchable = normalizeSectionSearch([template.type, template.title, template.description, template.category].join(' '));
+  return terms.every(term => searchable.includes(term));
+}
 
 export const AddSectionModal: React.FC<AddSectionModalProps> = ({
   isOpen,
@@ -1122,11 +1143,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
 
   const filteredTemplates = SECTION_TEMPLATES.filter(tmpl => {
     const matchCategory = selectedCategory === 'All' || tmpl.category === selectedCategory;
-    const matchSearch =
-      searchQuery.trim() === '' ||
-      tmpl.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tmpl.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tmpl.category.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchSearch = matchesSectionSearch(tmpl, searchQuery);
     return matchCategory && matchSearch;
   });
 
@@ -1184,19 +1201,21 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
         </div>
 
         {/* Filter Toolbar: Search + Category Pills */}
-        <div className="px-6 py-3.5 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/90 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+        <div className="px-6 py-3.5 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/90 flex flex-col gap-3 min-w-0">
           {/* Search Input */}
-          <div className="relative flex-1 max-w-sm">
+          <div className="relative w-full min-w-0">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
             <input
               type="text"
+              aria-label="Filter sections"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search sections (e.g. Hero, Testimonials, Pricing, Deal)..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl text-xs border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+              placeholder="Search by section type or layout (e.g. Policy Content, Hero)..."
+              className="w-full pl-9 pr-9 py-2 rounded-xl text-xs border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             />
             {searchQuery && (
               <button
+                aria-label="Clear section search"
                 onClick={() => setSearchQuery('')}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
               >
@@ -1206,7 +1225,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
           </div>
 
           {/* Quick Category Selector */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          <div className="flex w-full min-w-0 items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none [&>button]:shrink-0">
             {templateCategories.map(cat => {
               const isActive = selectedCategory === cat;
               return (
@@ -1275,6 +1294,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
                     <h3 className="text-sm font-bold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 mb-1.5 transition-colors">
                       {tmpl.title}
                     </h3>
+                    <p className="text-[10px] uppercase tracking-wider text-indigo-500 mb-2">Section type: {tmpl.type.replace(/_/g, ' ')}</p>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed line-clamp-3">
                       {tmpl.description}
                     </p>

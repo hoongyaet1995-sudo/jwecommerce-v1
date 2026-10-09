@@ -76,6 +76,7 @@ type PageAutosaveTakeover = {
 
 export const PageAdmin: React.FC = () => {
   const [templateOpen,setTemplateOpen]=useState(false),[templateBusy,setTemplateBusy]=useState(false);
+  const [deliveryRates,setDeliveryRates]=useState<PageTemplateContext['shippingRates']>(undefined);
   const [templateContext,setTemplateContext]=useState<PageTemplateContext>({});
   const [templateSettingsState,setTemplateSettingsState]=useState<'loading'|'ready'|'error'>('loading');
   const templateLoadRequest=useRef(0);
@@ -164,11 +165,12 @@ export const PageAdmin: React.FC = () => {
     } catch (error) { reportSaveFailure(error); }
     finally { homepageSwitchPending.current = false; }
   };
+  useEffect(()=>{if(!currentPage?.sections.some(s=>(s.type==='delivery_table'||s.type==='chapter_block'&&s.chapterPreset==='delivery')))return;let active=true;const load=()=>fetchCommerceSettings(laravelBootstrap).then(settings=>{if(active)setDeliveryRates(settings.shippingRates);}).catch(()=>{if(active)setDeliveryRates(undefined);});void load();window.addEventListener('focus',load);return()=>{active=false;window.removeEventListener('focus',load);};},[currentPage?.id,Boolean(currentPage?.sections.some(s=>(s.type==='delivery_table'||s.type==='chapter_block'&&s.chapterPreset==='delivery')))]);
   const activeSection = currentPage?.sections.find(s => s.id === activeSectionId) || null;
   const adminRuntimePayload = useMemo(() => currentPage
-    ? createAdminPageRuntimePayload(currentPage, { products, categories, collections }, currencyCode)
+    ? createAdminPageRuntimePayload(currentPage, { products, categories, collections }, currencyCode,deliveryRates??templateContext.shippingRates)
     : null,
-  [currentPage, products, categories, collections, currencyCode]);
+  [currentPage, products, categories, collections, currencyCode,templateContext.shippingRates,deliveryRates]);
 
   const toPageDocument = (page: CmsPage): PageDocument => ({
     title: page.title,

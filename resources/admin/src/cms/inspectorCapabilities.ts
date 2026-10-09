@@ -28,10 +28,12 @@ export function textRoles(section:PageSection):TextRole[] {
  const hidden=section.showSectionHeading===false||section.type==='values_list'&&!section.valuesShowHeading||section.type==='chapter_block'&&section.chapterPreset==='principles';
  if('subtitle' in section && section.showSectionHeading!==false)roles.push('eyebrow');
  if(!hidden)roles.push('title');
- if(section.layoutPreset==='editorial-cover')roles.push('lead');
+ if(section.layoutPreset==='editorial-cover'||section.layoutPreset==='editorial-hero'&&'leadText' in section)roles.push('lead');
  if(!hidden&&'content' in section)roles.push('content');
+ if(section.type==='payment_methods')roles.push('itemTitle','itemContent');
  if(section.items?.some(item=>'title' in item))roles.push('itemTitle');
- if(section.items?.some(item=>'description' in item))roles.push('itemContent');
+ if((section.type==='delivery_table'||section.type==='chapter_block'&&section.chapterPreset==='delivery')&&section.deliverySource!=='manual')roles.push('itemTitle','itemContent');
+ if(section.items?.some(item=>'description' in item||'deliveryEstimate' in item))roles.push('itemContent');
  return roles.filter(role=>{
   if(['stats_counter','icon_list','logo_cloud'].includes(section.type)&&['title','content'].includes(role))return false;
   if(section.type==='logo_cloud'&&role==='itemContent')return false;
@@ -49,8 +51,8 @@ export function isTypography(value:unknown):value is SectionTypography {
   if(typeof v!=='number'||!Number.isFinite(v))return false;
   if(key==='fontSize')return Number.isInteger(v)&&v>=8&&v<=120;
   if(key==='fontWeight')return [400,500,600,700,800,900].includes(v);
-  if(key==='lineHeight')return v>=.8&&v<=3&&Math.abs(v*10-Math.round(v*10))<.0001;
-  if(key==='letterSpacing')return v>=-5&&v<=10&&Number.isInteger(v*2);
+  if(key==='lineHeight')return v>=.8&&v<=3;
+  if(key==='letterSpacing')return v>=-5&&v<=10;
   return false;
  }));
 }

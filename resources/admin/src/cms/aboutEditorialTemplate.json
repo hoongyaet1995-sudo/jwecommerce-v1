@@ -27,7 +27,7 @@
     "layoutPreset": "editorial-hero",
     "mediaAlt": "Illustrative sunlit desk with a notebook, books and a black mug",
     "mediaFocalPoint": "top",
-    "motionPreset": "none",
+    "motionPreset": "subtle-lift",
     "sectionBorder": "none"
   },
   {
@@ -60,7 +60,7 @@
     "buttonText": "",
     "buttonLink": "",
     "buttonStyle": "button",
-    "motionPreset": "none",
+    "motionPreset": "subtle-lift",
     "sectionBorder": "none"
   },
   {
@@ -89,7 +89,8 @@
     },
     "id": "sec-1791462265055-uxloc",
     "richTextPreset": "default",
-    "sectionBorder": "none"
+    "sectionBorder": "none",
+    "motionPreset": "subtle-lift"
   },
   {
     "type": "media_text_split",
@@ -123,7 +124,8 @@
     "mediaFocalPoint": "center",
     "buttonStyle": "text-link",
     "imageRatio": "16:9",
-    "sectionBorder": "none"
+    "sectionBorder": "none",
+    "motionPreset": "subtle-lift"
   },
   {
     "backgroundColor": "bg-white",
@@ -170,7 +172,8 @@
     "valuesRowSpacing": "compact",
     "valuesNumberColor": "#d4d4d4",
     "valuesDividerColor": "#e5e5e5",
-    "sectionBorder": "none"
+    "sectionBorder": "none",
+    "motionPreset": "subtle-lift"
   },
   {
     "textAlignment": "left",
@@ -210,6 +213,7 @@
     ],
     "sectionBorder": "none",
     "sectionBorderColor": "#e5e5e5",
-    "containerMode": "page"
+    "containerMode": "page",
+    "motionPreset": "subtle-lift"
   }
 ]

@@ -1,3 +1,4 @@
+import {MediaWidthRegion} from './MediaWidthRegion';
 import {typographyStyle} from '../../cms/inspectorCapabilities';
 import React from 'react';
 import type {PageSection} from '../../types';
@@ -18,7 +19,7 @@ export function EditorialGallery({section}:{section:PageSection}) {
  const montage=section.galleryPreset==='editorial-montage';
  return <div data-editorial-gallery={section.galleryPreset} className={`@container w-full ${spacing(section)}`}>
   <Heading section={section} hero={montage}/>
-  <div className={`grid grid-cols-1 gap-7 items-start ${montage&&(section.columnsCount??3)===3?'@min-[640px]:grid-cols-[minmax(0,1fr)_minmax(0,.82fr)_minmax(0,1fr)]':columns(section.columnsCount??3)}`}>
+  <MediaWidthRegion section={section}><div className={`grid grid-cols-1 gap-7 items-start ${montage&&(section.columnsCount??3)===3?'@min-[640px]:grid-cols-[minmax(0,1fr)_minmax(0,.82fr)_minmax(0,1fr)]':columns(section.columnsCount??3)}`}>
    {(section.items??[]).map((item,index)=>{
     const target=`item:${item.id}:imageUrl`;
     return <div key={item.id} className={`min-w-0 ${montage&&index%3===1?'@min-[640px]:pt-8':montage&&index%3===2?'@min-[640px]:pt-10':''}`}>
@@ -28,7 +29,7 @@ export function EditorialGallery({section}:{section:PageSection}) {
      {!montage&&<MotionItem><div className="mt-4"><h3 data-cms-text="itemTitle" data-cms-item={item.id} style={{...({color:section.customColors?.titleColor}),...typographyStyle(section,'itemTitle')}} className="text-base font-semibold leading-snug break-words">{item.title}</h3>{item.description&&<p data-cms-text="itemContent" data-cms-item={item.id} style={{...({color:section.customColors?.contentColor}),...typographyStyle(section,'itemContent')}} className="mt-1 text-sm leading-relaxed whitespace-pre-line break-words">{item.description}</p>}</div></MotionItem>}
     </div>;
    })}
-  </div>
+  </div></MediaWidthRegion>
  </div>;
 }
 export function EditorialColumns({section}:{section:PageSection}) {
