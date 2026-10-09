@@ -1,3 +1,5 @@
+import {termsSections,termsTemplateIds} from './termsTemplates';
+import {privacySections,privacyTemplateIds} from './privacyTemplates';
 import {paymentSections,paymentTemplateIds} from './paymentTemplates';
 import {contactSections,contactTemplateIds} from './contactTemplates';
 import {returnsSections,returnsTemplateIds} from './returnsTemplates';
@@ -22,6 +24,8 @@ export interface PageTemplateContext {
 // These are editable draft snapshots. Checkout remains the authority for live rates.
 // Photographs illustrate the starter layout; they do not depict the merchant's team.
 export function createPageTemplateSections(templateId: string, context: PageTemplateContext, prefix: string): PageSection[] {
+  if((termsTemplateIds as readonly string[]).includes(templateId))return termsSections(templateId,prefix);
+  if((privacyTemplateIds as readonly string[]).includes(templateId))return privacySections(templateId,prefix);
   if((paymentTemplateIds as readonly string[]).includes(templateId))return paymentSections(templateId,prefix);
   if((contactTemplateIds as readonly string[]).includes(templateId))return contactSections(templateId,prefix);
   if((returnsTemplateIds as readonly string[]).includes(templateId))return returnsSections(templateId,prefix);

@@ -1524,7 +1524,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
   const editorialCollection=section.galleryPreset?.startsWith('editorial-')||section.featureCardsPreset==='editorial-columns';
   const hasItems = repeatedItemFields(section).length>0 && !['policy_content','chapter_block','chapter_navigation','delivery_table','media_text_split'].includes(section.type);
 
-  const hasMedia = section.ctaPreset!=='editorial-band' && hasSectionField('mediaUrl') && [
+  const hasMedia = (section.type!=='cta_strip'||section.ctaPreset==='image-banner') && hasSectionField('mediaUrl') && [
     'hero_banner',
     'split_hero',
     'media_text_split',

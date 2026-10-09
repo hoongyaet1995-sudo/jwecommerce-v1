@@ -3,6 +3,12 @@ import {imageTargets,updateImageTarget,pruneImageSlots} from './imageTargets';
 import type {PageSection} from '../types';
 const gallery:PageSection={id:'gallery',type:'media_gallery',title:'QA',isVisible:true,items:[{id:'a',title:'One',imageUrl:'/one.png'},{id:'b',title:'Two',imageUrl:'/two.png'}]};
 describe('canonical image targets',()=>{
+  it('only exposes CTA images for the layout that renders them and keeps the stored asset',()=>{
+    const cta:PageSection={id:'cta',type:'cta_strip',title:'Help',isVisible:true,mediaUrl:'/uploaded.png'};
+    for(const ctaPreset of [undefined,'default','help-panel','editorial-band'] as const) expect(imageTargets({...cta,ctaPreset})).toEqual([]);
+    expect(imageTargets({...cta,ctaPreset:'image-banner'})[0].url).toBe('/uploaded.png');
+    expect(cta.mediaUrl).toBe('/uploaded.png');
+  });
   it('keeps independent overrides with stable item identities after reorder',()=>{
     const changed=updateImageTarget(gallery,'item:a:imageUrl',{imageShape:'rounded',imageRatio:'1:1'});
     const reordered={...changed,items:[changed.items![1],changed.items![0]]};

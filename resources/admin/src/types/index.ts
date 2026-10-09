@@ -677,7 +677,7 @@ export interface PageSection {
   faqPreset?: 'default' | 'minimal';
   faqInitiallyOpen?: boolean;
   leadText?: string;
-  policyPreset?: 'guidelines' | 'choices' | 'steps' | 'process-flow' | 'timeline' | 'tabs' | 'columns';
+  policyPreset?: 'guidelines' | 'choices' | 'steps' | 'document' | 'directory' | 'process-flow' | 'timeline' | 'tabs' | 'columns';
   policyNote?: string;
   contactPreset?: 'enquiry' | 'location';
   mapEmbedUrl?: string;

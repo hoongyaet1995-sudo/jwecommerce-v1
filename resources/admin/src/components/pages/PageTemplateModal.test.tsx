@@ -21,6 +21,6 @@ describe('template settings availability',()=>{
     const create=[...node.querySelectorAll('footer button')].find(b=>b.textContent==='Use Template →')!;
     expect(create.disabled).toBe(false);
     act(()=>create.click());expect(onCreate).toHaveBeenCalledWith('blank');
-    expect(node.textContent?.match(/Coming in the next template batch/g)).toHaveLength(3);
+    expect(node.textContent?.match(/Coming in the next template batch/g)).toHaveLength(1);
   });
 });

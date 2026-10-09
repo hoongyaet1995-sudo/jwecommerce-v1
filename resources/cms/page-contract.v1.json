@@ -1142,6 +1142,8 @@
         "steps",
         "timeline",
         "process-flow",
+        "document",
+        "directory",
         "tabs",
         "columns"
       ]

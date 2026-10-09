@@ -1,0 +1,485 @@
+[
+  {
+    "title": "privacy-essential",
+    "slug": "privacy-essential",
+    "template": "standard",
+    "sections": [
+      {
+        "id": "privacy-essential-intro",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "compact",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "rich_text",
+        "title": "Your privacy, made clear.",
+        "subtitle": "PRIVACY POLICY",
+        "content": "A simple guide to how your information is handled.\n\nLast updated: [Add date] · Sample content — editable.",
+        "typography": {
+          "title": {
+            "fontSize": 60,
+            "fontWeight": 800
+          }
+        }
+      },
+      {
+        "id": "privacy-essential-document",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "policy_content",
+        "policyPreset": "document",
+        "title": "Privacy at a glance.",
+        "content": "Find out what information is involved in shopping with us, how it is handled and where to ask questions.",
+        "policyNote": "Sample privacy policy — replace with your store’s approved content.",
+        "items": [
+          {
+            "id": "privacy-essential-term-0",
+            "title": "Information we collect",
+            "description": "Describe the information your store collects when someone shops, creates an account or contacts your team.\n\nAdd the actual details collected, such as order, delivery and customer support information."
+          },
+          {
+            "id": "privacy-essential-term-1",
+            "title": "How information is used",
+            "description": "Explain how information supports orders, delivery, account features and customer enquiries.\n\nList the purposes that apply to your store and distinguish optional communications."
+          },
+          {
+            "id": "privacy-essential-term-2",
+            "title": "Service providers & sharing",
+            "description": "Describe the services involved in running your store, including payment, delivery and support.\n\nAdd your actual providers and explain what information is shared with each, where relevant."
+          },
+          {
+            "id": "privacy-essential-term-3",
+            "title": "Cookies & preferences",
+            "description": "Explain which cookies and similar technologies your website uses and what each category does.\n\nAdd your actual cookie categories and describe the available preference controls."
+          },
+          {
+            "id": "privacy-essential-term-4",
+            "title": "Retention & protection",
+            "description": "Describe how your store handles information over time and the measures used to protect it.\n\nAdd your approved retention approach. Avoid promising a fixed period or absolute security without confirmation."
+          },
+          {
+            "id": "privacy-essential-term-5",
+            "title": "Your choices & requests",
+            "description": "Help customers understand how to ask questions about their information or make a privacy request.\n\nDescribe the request process, identity checks and available choices that apply to your store."
+          },
+          {
+            "id": "privacy-essential-term-6",
+            "title": "Updates & contact",
+            "description": "Explain how customers can find the current policy and reach the team responsible for privacy enquiries.\n\nAdd your approved business contact channel and update process."
+          }
+        ]
+      },
+      {
+        "id": "privacy-essential-support",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "cta_strip",
+        "ctaPreset": "help-panel",
+        "title": "Let’s talk about your privacy.",
+        "subtitle": "QUESTIONS ABOUT YOUR PRIVACY?",
+        "content": "Our team can help you find the right information.",
+        "buttonText": "Contact us",
+        "buttonLink": "#storefront-support-widget"
+      }
+    ],
+    "description": ""
+  },
+  {
+    "title": "privacy-guided",
+    "slug": "privacy-guided",
+    "template": "standard",
+    "sections": [
+      {
+        "id": "privacy-guided-intro",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "compact",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "rich_text",
+        "title": "Your information.\nA clearer picture.",
+        "subtitle": "PRIVACY POLICY",
+        "content": "Find the details that matter to you, all in one place.\n\nLast updated: [Add date] · Sample content — editable.",
+        "typography": {
+          "title": {
+            "fontSize": 60,
+            "fontWeight": 800
+          }
+        }
+      },
+      {
+        "id": "privacy-guided-document",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "policy_content",
+        "policyPreset": "directory",
+        "title": "Privacy at a glance.",
+        "content": "Find out what information is involved in shopping with us, how it is handled and where to ask questions.",
+        "policyNote": "Sample privacy policy — replace with your store’s approved content.",
+        "items": [
+          {
+            "id": "privacy-guided-term-0",
+            "title": "Information we collect",
+            "description": "Describe the information your store collects when someone shops, creates an account or contacts your team.\n\nAdd the actual details collected, such as order, delivery and customer support information."
+          },
+          {
+            "id": "privacy-guided-term-1",
+            "title": "How information is used",
+            "description": "Explain how information supports orders, delivery, account features and customer enquiries.\n\nList the purposes that apply to your store and distinguish optional communications."
+          },
+          {
+            "id": "privacy-guided-term-2",
+            "title": "Service providers & sharing",
+            "description": "Describe the services involved in running your store, including payment, delivery and support.\n\nAdd your actual providers and explain what information is shared with each, where relevant."
+          },
+          {
+            "id": "privacy-guided-term-3",
+            "title": "Cookies & preferences",
+            "description": "Explain which cookies and similar technologies your website uses and what each category does.\n\nAdd your actual cookie categories and describe the available preference controls."
+          },
+          {
+            "id": "privacy-guided-term-4",
+            "title": "Retention & protection",
+            "description": "Describe how your store handles information over time and the measures used to protect it.\n\nAdd your approved retention approach. Avoid promising a fixed period or absolute security without confirmation."
+          },
+          {
+            "id": "privacy-guided-term-5",
+            "title": "Your choices & requests",
+            "description": "Help customers understand how to ask questions about their information or make a privacy request.\n\nDescribe the request process, identity checks and available choices that apply to your store."
+          },
+          {
+            "id": "privacy-guided-term-6",
+            "title": "Updates & contact",
+            "description": "Explain how customers can find the current policy and reach the team responsible for privacy enquiries.\n\nAdd your approved business contact channel and update process."
+          }
+        ]
+      },
+      {
+        "id": "privacy-guided-support",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "cta_strip",
+        "ctaPreset": "help-panel",
+        "title": "Let’s talk about your privacy.",
+        "subtitle": "QUESTIONS ABOUT YOUR PRIVACY?",
+        "content": "Our team can help you find the right information.",
+        "buttonText": "Contact us",
+        "buttonLink": "#storefront-support-widget"
+      }
+    ],
+    "description": ""
+  },
+  {
+    "title": "privacy-chapters",
+    "slug": "privacy-chapters",
+    "template": "standard",
+    "sections": [
+      {
+        "id": "privacy-chapters-intro",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "compact",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "rich_text",
+        "title": "A thoughtful approach\nto your privacy.",
+        "subtitle": "PRIVACY POLICY",
+        "content": "What we collect. How we use it. The choices you have.\n\nLast updated: [Add date] · Sample content — editable.",
+        "typography": {
+          "title": {
+            "fontSize": 60,
+            "fontWeight": 800
+          }
+        }
+      },
+      {
+        "id": "privacy-chapters-navigation",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "chapter_navigation",
+        "title": "Privacy chapters",
+        "items": [
+          {
+            "id": "privacy-chapters-nav-shopping",
+            "title": "Your information",
+            "linkUrl": "#section-privacy-chapters-shopping"
+          },
+          {
+            "id": "privacy-chapters-nav-order",
+            "title": "How we handle it",
+            "linkUrl": "#section-privacy-chapters-order"
+          },
+          {
+            "id": "privacy-chapters-nav-connected",
+            "title": "Your choices",
+            "linkUrl": "#section-privacy-chapters-connected"
+          }
+        ]
+      },
+      {
+        "id": "privacy-chapters-shopping",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "chapter_block",
+        "chapterPreset": "policy",
+        "policyPreset": "document",
+        "subtitle": "Your information",
+        "title": "Understanding the information you share.",
+        "items": [
+          {
+            "id": "privacy-chapters-term-0",
+            "title": "Information we collect",
+            "description": "Describe the information your store collects when someone shops, creates an account or contacts your team.\n\nAdd the actual details collected, such as order, delivery and customer support information."
+          },
+          {
+            "id": "privacy-chapters-term-1",
+            "title": "How information is used",
+            "description": "Explain how information supports orders, delivery, account features and customer enquiries.\n\nList the purposes that apply to your store and distinguish optional communications."
+          },
+          {
+            "id": "privacy-chapters-term-2",
+            "title": "Service providers & sharing",
+            "description": "Describe the services involved in running your store, including payment, delivery and support.\n\nAdd your actual providers and explain what information is shared with each, where relevant."
+          }
+        ]
+      },
+      {
+        "id": "privacy-chapters-order",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "chapter_block",
+        "chapterPreset": "policy",
+        "policyPreset": "document",
+        "subtitle": "How we handle it",
+        "title": "Care through every stage.",
+        "items": [
+          {
+            "id": "privacy-chapters-term-3",
+            "title": "Cookies & preferences",
+            "description": "Explain which cookies and similar technologies your website uses and what each category does.\n\nAdd your actual cookie categories and describe the available preference controls."
+          },
+          {
+            "id": "privacy-chapters-term-4",
+            "title": "Retention & protection",
+            "description": "Describe how your store handles information over time and the measures used to protect it.\n\nAdd your approved retention approach. Avoid promising a fixed period or absolute security without confirmation."
+          }
+        ]
+      },
+      {
+        "id": "privacy-chapters-connected",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "chapter_block",
+        "chapterPreset": "policy",
+        "policyPreset": "document",
+        "subtitle": "Your choices",
+        "title": "A clear way to stay in control.",
+        "items": [
+          {
+            "id": "privacy-chapters-term-5",
+            "title": "Your choices & requests",
+            "description": "Help customers understand how to ask questions about their information or make a privacy request.\n\nDescribe the request process, identity checks and available choices that apply to your store."
+          },
+          {
+            "id": "privacy-chapters-term-6",
+            "title": "Updates & contact",
+            "description": "Explain how customers can find the current policy and reach the team responsible for privacy enquiries.\n\nAdd your approved business contact channel and update process."
+          }
+        ],
+        "policyNote": "Sample privacy policy — replace with your store’s approved content."
+      },
+      {
+        "id": "privacy-chapters-support",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-indigo-600",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#818cf8",
+          "titleColor": "#ffffff",
+          "contentColor": "#ffffff",
+          "primaryBtnBg": "#ffffff",
+          "primaryBtnText": "#4f46e5",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "cta_strip",
+        "ctaPreset": "editorial-band",
+        "title": "Your questions deserve a clear answer.",
+        "subtitle": "",
+        "content": "Our team can help you find the right information.",
+        "buttonText": "Contact us",
+        "buttonLink": "#storefront-support-widget"
+      }
+    ],
+    "description": ""
+  }
+]

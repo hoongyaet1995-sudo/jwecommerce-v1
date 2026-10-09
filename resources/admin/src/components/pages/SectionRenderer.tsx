@@ -775,7 +775,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       )}
       <MotionItem><h2 data-cms-text="title"
         style={{...(getTitleStyle()),...typographyStyle(section,'title')}}
-        className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-6"
+        className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-6 whitespace-pre-line"
       >
         {section.title}
       </h2></MotionItem>
@@ -784,7 +784,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
           style={{...(getContentStyle()),...typographyStyle(section,'content')}}
           className={`text-sm sm:text-base opacity-85 leading-relaxed space-y-4 max-w-3xl ${section.textAlignment === 'left' ? 'mr-auto' : section.textAlignment === 'right' ? 'ml-auto' : 'mx-auto'}`}
         >
-          <p>{section.content}</p>
+          <p className="whitespace-pre-line">{section.content}</p>
         </div></MotionItem>
       )}
       {section.quote && (

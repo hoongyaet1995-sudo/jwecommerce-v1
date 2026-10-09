@@ -3,7 +3,7 @@ export const imageControlKeys=['mediaAlt','imageRatio','imagePosition','imageFit
 export const imageSlotFamilies=['policy_content','chapter_block','cta_strip','hero_banner','hero_slider','split_hero','media_text_split','featured_deal','media_gallery','before_after','instagram_feed','testimonials_slider','logo_cloud'] as const;
 export interface ImageTarget {id:string;label:string;url:string;geometryLocked:boolean;itemId?:string;field:'mediaUrl'|'beforeImageUrl'|'afterImageUrl'|'imageUrl'|'authorAvatar'}
 export function imageTargets(section:PageSection):ImageTarget[] {
-  if(section.type==='chapter_block'&&['principles','process','actions'].includes(section.chapterPreset??'story')||section.type==='cta_strip'&&section.ctaPreset==='editorial-band') return [];
+  if(section.type==='chapter_block'&&['principles','process','actions'].includes(section.chapterPreset??'story')||section.type==='cta_strip'&&section.ctaPreset!=='image-banner') return [];
   const main=['cta_strip','hero_banner','split_hero','media_text_split','featured_deal'].includes(section.type)||(section.type==='chapter_block'&&(section.chapterPreset??'story')==='story');
   if(main && section.mediaType!=='video') return [{id:'mediaUrl',field:'mediaUrl',label:'Image',url:section.mediaUrl??'',geometryLocked:['hero_banner','cta_strip'].includes(section.type)}];
   if(section.type==='before_after') return (['beforeImageUrl','afterImageUrl'] as const).map((field,index)=>({id:field,field,label:index===0?'Before image':'After image',url:section[field]??'',geometryLocked:true}));

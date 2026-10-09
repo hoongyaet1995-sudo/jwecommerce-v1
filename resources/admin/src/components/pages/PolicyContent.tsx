@@ -1,3 +1,4 @@
+import {PolicyDocument} from './PolicyDocument';
 import {SectionIcon} from './IconPicker';
 import React,{useState} from 'react';
 import {Package,ArrowLeftRight,ShieldCheck,FileText,ArrowRight,ChevronRight} from 'lucide-react';
@@ -16,6 +17,7 @@ export function PolicyContent({section,isEditingMode=false,embedded=false}:{sect
  const color=(role:'eyebrow'|'title'|'content'|'itemTitle'|'itemContent')=>({color:role==='eyebrow'?section.customColors?.eyebrowColor:role==='title'||role==='itemTitle'?section.customColors?.titleColor:section.customColors?.contentColor,...typographyStyle(section,role)});
  const title=(item:SectionItem)=><h3 data-cms-text="itemTitle" data-cms-item={item.id} style={color('itemTitle')} className="font-bold text-lg break-words">{item.title}</h3>;
  const description=(item:SectionItem)=><p data-cms-text="itemContent" data-cms-item={item.id} style={color('itemContent')} className="mt-2 text-sm leading-relaxed whitespace-pre-line break-words">{item.description}</p>;
+ if(['document','directory'].includes(preset))return <PolicyDocument section={section} isEditingMode={isEditingMode} embedded={embedded}/>;
  return <div data-policy-content={preset} className={`@container min-w-0 ${embedded?'':section.paddingY==='compact'?'py-8':section.paddingY==='spacious'?'py-20':'py-12 @min-[1024px]:py-16'}`}>
   {section.showSectionHeading!==false&&<div className={`mb-8 ${section.textAlignment==='center'?'text-center':''}`}>
    {!embedded&&section.subtitle&&<p data-cms-text="eyebrow" style={color('eyebrow')} className="text-xs font-bold uppercase tracking-widest mb-4">{section.subtitle}</p>}

@@ -1,0 +1,482 @@
+[
+  {
+    "title": "terms-essential",
+    "slug": "terms-essential",
+    "template": "standard",
+    "sections": [
+      {
+        "id": "terms-essential-intro",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "compact",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "rich_text",
+        "title": "Terms, made clear.",
+        "subtitle": "TERMS & CONDITIONS",
+        "content": "The details behind your everyday shopping.\n\nLast updated: [Add date] · Sample content — editable.",
+        "typography": {
+          "title": {
+            "fontSize": 60,
+            "fontWeight": 800
+          }
+        }
+      },
+      {
+        "id": "terms-essential-document",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "policy_content",
+        "policyPreset": "document",
+        "title": "A clear place to start.",
+        "content": "These pages bring together the information that helps you shop with confidence. For specific questions, our team is here to help.",
+        "policyNote": "Sample terms — replace with your store’s approved content.",
+        "items": [
+          {
+            "id": "terms-essential-term-0",
+            "title": "Using our store",
+            "description": "Introduce who operates the store and explain the purpose of these terms. Describe how customers can access your current store information.\n\nAdd your business name, contact details and the terms that apply to using your website."
+          },
+          {
+            "id": "terms-essential-term-1",
+            "title": "Products & pricing",
+            "description": "Explain how product information, availability and prices are presented. Give customers a clear next step if they need clarification before placing an order.\n\nDescribe your approved approach to product information, pricing and availability."
+          },
+          {
+            "id": "terms-essential-term-2",
+            "title": "Orders & payment",
+            "description": "Explain the order journey and how customers can check their order status. Link to your payment information for the methods available at checkout.\n\nAdd your approved order acceptance process and payment guidance."
+          },
+          {
+            "id": "terms-essential-term-3",
+            "title": "Shipping & delivery",
+            "description": "Direct customers to your shipping page for delivery areas, processing information and estimated transit times.\n\nAdd a link to your store’s current delivery information and explain any relevant conditions."
+          },
+          {
+            "id": "terms-essential-term-4",
+            "title": "Returns & exchanges",
+            "description": "Help customers find your return and exchange policy and the appropriate contact channel for an order issue.\n\nAdd a link to your approved return policy. Keep the conditions consistent across your store pages."
+          },
+          {
+            "id": "terms-essential-term-5",
+            "title": "Privacy & communication",
+            "description": "Explain where customers can read your privacy policy and how they can contact the store about their information.\n\nAdd a link to your approved privacy policy and a suitable contact channel."
+          },
+          {
+            "id": "terms-essential-term-6",
+            "title": "Updates & contact",
+            "description": "Explain how customers can find the current version of your terms and contact your team with questions.\n\nAdd your approved update process and business contact information."
+          }
+        ]
+      },
+      {
+        "id": "terms-essential-support",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "cta_strip",
+        "ctaPreset": "help-panel",
+        "title": "Let’s make things clearer.",
+        "subtitle": "QUESTIONS ABOUT OUR TERMS?",
+        "content": "Speak to our team before taking your next step.",
+        "buttonText": "Contact us",
+        "buttonLink": "#storefront-support-widget"
+      }
+    ]
+  },
+  {
+    "title": "terms-guided",
+    "slug": "terms-guided",
+    "template": "standard",
+    "sections": [
+      {
+        "id": "terms-guided-intro",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "compact",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "rich_text",
+        "title": "A little clarity.\nEvery step of the way.",
+        "subtitle": "TERMS & CONDITIONS",
+        "content": "Find the information you need, all in one place.\n\nLast updated: [Add date] · Sample content — editable.",
+        "typography": {
+          "title": {
+            "fontSize": 60,
+            "fontWeight": 800
+          }
+        }
+      },
+      {
+        "id": "terms-guided-document",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "policy_content",
+        "policyPreset": "directory",
+        "title": "A clear place to start.",
+        "content": "These pages bring together the information that helps you shop with confidence. For specific questions, our team is here to help.",
+        "policyNote": "Sample terms — replace with your store’s approved content.",
+        "items": [
+          {
+            "id": "terms-guided-term-0",
+            "title": "Using our store",
+            "description": "Introduce who operates the store and explain the purpose of these terms. Describe how customers can access your current store information.\n\nAdd your business name, contact details and the terms that apply to using your website."
+          },
+          {
+            "id": "terms-guided-term-1",
+            "title": "Products & pricing",
+            "description": "Explain how product information, availability and prices are presented. Give customers a clear next step if they need clarification before placing an order.\n\nDescribe your approved approach to product information, pricing and availability."
+          },
+          {
+            "id": "terms-guided-term-2",
+            "title": "Orders & payment",
+            "description": "Explain the order journey and how customers can check their order status. Link to your payment information for the methods available at checkout.\n\nAdd your approved order acceptance process and payment guidance."
+          },
+          {
+            "id": "terms-guided-term-3",
+            "title": "Shipping & delivery",
+            "description": "Direct customers to your shipping page for delivery areas, processing information and estimated transit times.\n\nAdd a link to your store’s current delivery information and explain any relevant conditions."
+          },
+          {
+            "id": "terms-guided-term-4",
+            "title": "Returns & exchanges",
+            "description": "Help customers find your return and exchange policy and the appropriate contact channel for an order issue.\n\nAdd a link to your approved return policy. Keep the conditions consistent across your store pages."
+          },
+          {
+            "id": "terms-guided-term-5",
+            "title": "Privacy & communication",
+            "description": "Explain where customers can read your privacy policy and how they can contact the store about their information.\n\nAdd a link to your approved privacy policy and a suitable contact channel."
+          },
+          {
+            "id": "terms-guided-term-6",
+            "title": "Updates & contact",
+            "description": "Explain how customers can find the current version of your terms and contact your team with questions.\n\nAdd your approved update process and business contact information."
+          }
+        ]
+      },
+      {
+        "id": "terms-guided-support",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "cta_strip",
+        "ctaPreset": "help-panel",
+        "title": "Let’s make things clearer.",
+        "subtitle": "QUESTIONS ABOUT OUR TERMS?",
+        "content": "Speak to our team before taking your next step.",
+        "buttonText": "Contact us",
+        "buttonLink": "#storefront-support-widget"
+      }
+    ]
+  },
+  {
+    "title": "terms-chapters",
+    "slug": "terms-chapters",
+    "template": "standard",
+    "sections": [
+      {
+        "id": "terms-chapters-intro",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "compact",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "rich_text",
+        "title": "The details that matter.",
+        "subtitle": "TERMS & CONDITIONS",
+        "content": "Our terms, organised around your shopping journey.\n\nLast updated: [Add date] · Sample content — editable.",
+        "typography": {
+          "title": {
+            "fontSize": 60,
+            "fontWeight": 800
+          }
+        }
+      },
+      {
+        "id": "terms-chapters-navigation",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "chapter_navigation",
+        "title": "Terms chapters",
+        "items": [
+          {
+            "id": "terms-chapters-nav-shopping",
+            "title": "Shopping with us",
+            "linkUrl": "#section-terms-chapters-shopping"
+          },
+          {
+            "id": "terms-chapters-nav-order",
+            "title": "Your order",
+            "linkUrl": "#section-terms-chapters-order"
+          },
+          {
+            "id": "terms-chapters-nav-connected",
+            "title": "Staying connected",
+            "linkUrl": "#section-terms-chapters-connected"
+          }
+        ]
+      },
+      {
+        "id": "terms-chapters-shopping",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "chapter_block",
+        "chapterPreset": "policy",
+        "policyPreset": "document",
+        "subtitle": "Shopping with us",
+        "title": "A considered shopping experience.",
+        "items": [
+          {
+            "id": "terms-chapters-term-0",
+            "title": "Using our store",
+            "description": "Introduce who operates the store and explain the purpose of these terms. Describe how customers can access your current store information.\n\nAdd your business name, contact details and the terms that apply to using your website."
+          },
+          {
+            "id": "terms-chapters-term-1",
+            "title": "Products & pricing",
+            "description": "Explain how product information, availability and prices are presented. Give customers a clear next step if they need clarification before placing an order.\n\nDescribe your approved approach to product information, pricing and availability."
+          },
+          {
+            "id": "terms-chapters-term-2",
+            "title": "Orders & payment",
+            "description": "Explain the order journey and how customers can check their order status. Link to your payment information for the methods available at checkout.\n\nAdd your approved order acceptance process and payment guidance."
+          }
+        ]
+      },
+      {
+        "id": "terms-chapters-order",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "chapter_block",
+        "chapterPreset": "policy",
+        "policyPreset": "document",
+        "subtitle": "Your order",
+        "title": "From checkout to your everyday.",
+        "items": [
+          {
+            "id": "terms-chapters-term-3",
+            "title": "Shipping & delivery",
+            "description": "Direct customers to your shipping page for delivery areas, processing information and estimated transit times.\n\nAdd a link to your store’s current delivery information and explain any relevant conditions."
+          },
+          {
+            "id": "terms-chapters-term-4",
+            "title": "Returns & exchanges",
+            "description": "Help customers find your return and exchange policy and the appropriate contact channel for an order issue.\n\nAdd a link to your approved return policy. Keep the conditions consistent across your store pages."
+          }
+        ]
+      },
+      {
+        "id": "terms-chapters-connected",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-white",
+        "textColor": "dark",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#4f46e5",
+          "titleColor": "#171717",
+          "contentColor": "#737373",
+          "primaryBtnBg": "#4f46e5",
+          "primaryBtnText": "#ffffff",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "chapter_block",
+        "chapterPreset": "policy",
+        "policyPreset": "document",
+        "subtitle": "Staying connected",
+        "title": "Clear information. An open conversation.",
+        "items": [
+          {
+            "id": "terms-chapters-term-5",
+            "title": "Privacy & communication",
+            "description": "Explain where customers can read your privacy policy and how they can contact the store about their information.\n\nAdd a link to your approved privacy policy and a suitable contact channel."
+          },
+          {
+            "id": "terms-chapters-term-6",
+            "title": "Updates & contact",
+            "description": "Explain how customers can find the current version of your terms and contact your team with questions.\n\nAdd your approved update process and business contact information."
+          }
+        ],
+        "policyNote": "Sample terms — replace with your store’s approved content."
+      },
+      {
+        "id": "terms-chapters-support",
+        "isVisible": true,
+        "containerMode": "page",
+        "sectionBorder": "none",
+        "motionPreset": "subtle-lift",
+        "backgroundColor": "bg-indigo-600",
+        "textColor": "dark",
+        "textAlignment": "left",
+        "paddingY": "normal",
+        "customColors": {
+          "eyebrowColor": "#818cf8",
+          "titleColor": "#ffffff",
+          "contentColor": "#ffffff",
+          "primaryBtnBg": "#ffffff",
+          "primaryBtnText": "#4f46e5",
+          "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+          "secondaryBtnText": "#ffffff",
+          "customBgColor": ""
+        },
+        "type": "cta_strip",
+        "ctaPreset": "editorial-band",
+        "title": "Good questions deserve clear answers.",
+        "subtitle": "",
+        "content": "Speak to our team before taking your next step.",
+        "buttonText": "Contact us",
+        "buttonLink": "#storefront-support-widget"
+      }
+    ]
+  }
+]

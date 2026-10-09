@@ -34,7 +34,7 @@ it('tabbed guidelines switch actual content, and layout cards preserve entries',
  const tabs=element.querySelectorAll('[role=tab]');expect(tabs).toHaveLength(3);
  act(()=>{(tabs[1] as HTMLButtonElement).click()});expect(element.querySelector('[role=tabpanel]')?.textContent).toContain('Exchange requests');expect(element.querySelector('[role=tabpanel]')?.textContent).not.toContain('Request window');
  let changed=section;act(()=>root.render(<PolicySettings section={section} mode="design" onChange={s=>{changed=s}}/>));
- expect(element.querySelectorAll('select')).toHaveLength(0);expect(element.querySelectorAll('button[aria-pressed]')).toHaveLength(7);
+ expect(element.querySelectorAll('select')).toHaveLength(0);expect(element.querySelectorAll('button[aria-pressed]')).toHaveLength(9);
  act(()=>{(element.querySelectorAll('button')[4] as HTMLButtonElement).click()});expect(changed.policyPreset).toBe('timeline');expect(changed.items).toEqual(section.items);
  act(()=>root.unmount());element.remove();
 });
