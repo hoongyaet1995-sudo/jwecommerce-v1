@@ -72,6 +72,8 @@ final class PageDocumentContract
                 foreach ($section['productTabs'] ?? [] as $tabIndex => $tab) if (trim($tab['label'] ?? '') === '') $this->addError($errors,"{$sectionPath}.productTabs.{$tabIndex}.label",'Name this product tab.');
             }
             foreach ($sectionDefinition['publishRequired'] as $field) {
+                // Catalog readiness is reviewed by employees, not a publication gate.
+                if ($section['type'] === 'product_listing' && in_array($field, ['sourceType', 'sourceId', 'productIds'], true)) continue;
                 if (($section['listingPreset'] ?? null) === 'editorial-tabs' && $section['type'] === 'product_listing' && in_array($field,['sourceType','sourceId'],true)) continue;
                 if ($field === 'sourceId' && $section['type'] === 'product_listing' && ($section['sourceType'] ?? null) === 'manual') {
                     $field = 'productIds'; // Manual feeds require selections and validate every ID through runtime facts.
@@ -85,6 +87,13 @@ final class PageDocumentContract
         }
 
         $runtimeErrors = $this->runtimeErrors($document, $runtimeFacts);
+        // Preserve diagnostics while leaving catalog readiness to employees.
+        foreach (array_keys($runtimeErrors) as $path) {
+            if (preg_match('/^sections\.(\d+)\./', $path, $matches)
+                && in_array($document['sections'][(int) $matches[1]]['type'], ['product_listing', 'product_grid', 'collection_tabs'], true)) {
+                unset($runtimeErrors[$path]);
+            }
+        }
 
         foreach ($runtimeErrors as $path => $messages) {
             foreach ($messages as $message) {

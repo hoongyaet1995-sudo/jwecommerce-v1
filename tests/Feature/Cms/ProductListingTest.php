@@ -63,13 +63,14 @@ class ProductListingTest extends TestCase
         $this->get('/admin/pages/'.$page['id'].'/preview')->assertOk()->assertDontSee('data-quick-add-modal', false);
     }
 
-    public function test_listing_settings_round_trip_and_published_source_is_required(): void
+    public function test_listing_settings_round_trip_and_empty_source_can_publish(): void
     {
         $this->actingAs(User::factory()->create(['is_admin' => true]));
         $section = ['id' => 'listing', 'type' => 'product_listing', 'title' => 'Shop', 'isVisible' => true, 'sourceType' => 'category', 'sourceId' => '', 'productLimit' => 12, 'autoSlide' => false, 'autoSlideInterval' => 3.5, 'showNavArrows' => false, 'columnsCount' => 4];
         $page = $this->postJson('/admin/api/pages', ['title' => 'Listing', 'slug' => 'listing', 'template' => 'landing', 'sections' => [$section]])->assertCreated()->json('data');
         $this->getJson('/admin/api/pages/'.$page['id'].'/draft')->assertOk()->assertJsonPath('data.document.sections.0.autoSlide', false)->assertJsonPath('data.document.sections.0.productLimit', 12);
-        $this->postJson('/admin/api/pages/'.$page['id'].'/publish', ['lockVersion' => $page['lockVersion']])->assertUnprocessable();
+        $this->postJson('/admin/api/pages/'.$page['id'].'/publish', ['lockVersion' => $page['lockVersion']])->assertOk();
+        $this->get('/pages/listing')->assertOk();
         $section['autoSlideInterval'] = 0;
         $this->postJson('/admin/api/pages', ['title' => 'Invalid', 'slug' => 'invalid', 'template' => 'landing', 'sections' => [$section]])->assertUnprocessable();
     }
