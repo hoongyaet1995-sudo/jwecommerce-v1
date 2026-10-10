@@ -48,7 +48,7 @@ class CouponApiController extends Controller
             'discountType' => ['required', Rule::in(['percentage', 'fixed_amount', 'free_shipping'])],
             'value' => ['required', 'numeric', 'min:0'], 'minimumSpend' => ['nullable', 'numeric', 'min:0'],
             'usageLimit' => ['nullable', 'integer', 'min:1'], 'perCustomerLimit' => ['required', 'integer', 'min:1'],
-            'isActive' => ['required', 'boolean'], 'startsAt' => ['nullable', 'date'], 'endsAt' => ['nullable', 'date', 'after_or_equal:startsAt'],
+            'isActive' => ['required', 'boolean'], 'startsAt' => ['nullable', 'date'], 'endsAt' => ['nullable', 'date', ...($request->filled('startsAt') ? ['after_or_equal:startsAt'] : [])],
         ]);
         $fixed = $data['discountType'] === 'fixed_amount';
         return ['code' => strtoupper($data['code']), 'name' => $data['name'], 'description' => $data['description'] ?? null, 'discount_type' => $data['discountType'],

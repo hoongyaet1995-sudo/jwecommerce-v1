@@ -32,10 +32,11 @@ final class PageDocumentContract
 
         $this->validateValue($document, $this->manifest()['document'], '', $errors);
 
-        if ($errors !== []) {
-            throw ValidationException::withMessages($errors);
+        foreach ($document['sections'] ?? [] as $index => $section) {
+            $ids = array_column($section['productTabs'] ?? [],'id');
+            if (count($ids) !== count(array_unique($ids))) $this->addError($errors,"sections.{$index}.productTabs",'Use a unique ID for each tab.');
         }
-
+        if ($errors !== []) throw ValidationException::withMessages($errors);
         return $document;
     }
 
@@ -66,8 +67,17 @@ final class PageDocumentContract
                 $this->addError($errors, "{$sectionPath}.type", 'This visible section type cannot be rendered.');
             }
 
+            if (($section['type'] ?? null) === 'product_listing' && ($section['listingPreset'] ?? null) === 'editorial-tabs') {
+                if (empty($section['productTabs'])) $this->addError($errors,"{$sectionPath}.productTabs",'Add at least one product tab to publish.');
+                foreach ($section['productTabs'] ?? [] as $tabIndex => $tab) if (trim($tab['label'] ?? '') === '') $this->addError($errors,"{$sectionPath}.productTabs.{$tabIndex}.label",'Name this product tab.');
+            }
             foreach ($sectionDefinition['publishRequired'] as $field) {
-                if (! array_key_exists($field, $section) || ! $this->hasPublishValue($section[$field])) {
+                if (($section['listingPreset'] ?? null) === 'editorial-tabs' && $section['type'] === 'product_listing' && in_array($field,['sourceType','sourceId'],true)) continue;
+                if ($field === 'sourceId' && $section['type'] === 'product_listing' && ($section['sourceType'] ?? null) === 'manual') {
+                    $field = 'productIds'; // Manual feeds require selections and validate every ID through runtime facts.
+                }
+                if (! array_key_exists($field, $section) || ! $this->hasPublishValue($section[$field])
+                    || ($section['type'] === 'product_listing' && $field === 'productIds' && $section[$field] === [])) {
                     $this->addError($errors, "{$sectionPath}.{$field}", 'This visible section field is required to publish.');
                 }
             }
@@ -114,9 +124,15 @@ final class PageDocumentContract
                 continue;
             }
 
-            foreach ($sectionDefinition['runtimeRequirements'] ?? [] as $requirement) {
+            $requirements = ($section['type'] ?? null) === 'product_listing' && ($section['listingPreset'] ?? null) === 'editorial-tabs'
+                ? [['field'=>'productTabs.*.id','fact'=>'tabs.*.sourceId.valid']]
+                : ($sectionDefinition['runtimeRequirements'] ?? []);
+            foreach ($requirements as $requirement) {
                 $factPattern = is_array($requirement) ? ($requirement['fact'] ?? '') : $requirement;
                 $fieldPattern = is_array($requirement) ? ($requirement['field'] ?? 'type') : 'type';
+                if (($section['type'] ?? null) === 'product_listing' && ($section['sourceType'] ?? null) === 'manual' && $fieldPattern === 'sourceId' && $factPattern === 'listing.sourceId.valid') {
+                    $fieldPattern = 'productIds';
+                }
 
                 if (! is_string($factPattern) || $factPattern === '' || ! is_string($fieldPattern)) {
                     continue;
@@ -274,6 +290,9 @@ final class PageDocumentContract
             'fields' => $fields,
         ], $path, $errors);
 
+        if ($value['type'] === 'promotion_highlights' && is_array($value['items'] ?? null) && count($value['items']) > 6) {
+            $this->addError($errors, $path.'.items', 'Use up to six offer cards.');
+        }
         $this->validateImageSlots($value, $path, $errors);
     }
 
@@ -285,24 +304,31 @@ final class PageDocumentContract
         $type = $section['type'];
         $targets = [];
         if ((($type === 'chapter_block' && ($section['chapterPreset'] ?? 'story') === 'story') || in_array($type, ['cta_strip', 'hero_banner', 'split_hero', 'media_text_split', 'featured_deal'], true))
-            && ($section['mediaType'] ?? 'image') !== 'video' && ! ($type === 'cta_strip' && ($section['ctaPreset'] ?? 'default') === 'editorial-band')) {
+            && ($section['layoutPreset'] ?? '') !== 'editorial-story-cards' && ($section['mediaType'] ?? 'image') !== 'video' && ! ($type === 'cta_strip' && ($section['ctaPreset'] ?? 'default') === 'editorial-band')) {
             $targets['mediaUrl'] = in_array($type, ['hero_banner', 'cta_strip'], true);
         } elseif ($type === 'before_after') {
             $targets = ['beforeImageUrl' => true, 'afterImageUrl' => true];
-        } elseif (($type === 'chapter_block' && in_array(($section['chapterPreset'] ?? 'story'), ['perspective', 'delivery', 'policy'], true)) || in_array($type, ['policy_content', 'hero_slider', 'media_gallery', 'instagram_feed', 'testimonials_slider', 'logo_cloud'], true)) {
+        } elseif (($type === 'media_text_split' && ($section['layoutPreset'] ?? '') === 'editorial-story-cards') || ($type === 'chapter_block' && in_array(($section['chapterPreset'] ?? 'story'), ['perspective', 'delivery', 'policy'], true)) || in_array($type, ['promotion_highlights', 'shop_navigation', 'policy_content', 'hero_slider', 'media_gallery', 'instagram_feed', 'testimonials_slider', 'logo_cloud'], true)) {
             $field = $type === 'testimonials_slider' ? 'authorAvatar' : 'imageUrl';
             foreach ($section['items'] ?? [] as $item) {
                 $item = $item instanceof stdClass ? get_object_vars($item) : $item;
                 if (! is_array($item) || ! isset($item['id']) || ! is_string($item['id'])) {
                     continue;
                 }
-                if ($type === 'hero_slider' && ! empty($item['videoUrl'])) {
-                    continue;
-                }
                 if (($type === 'policy_content' || ($type === 'chapter_block' && in_array($section['chapterPreset'] ?? '', ['delivery', 'policy'], true))) && ! array_key_exists('imageUrl', $item)) {
                     continue;
                 }
-                $targets['item:'.$item['id'].':'.$field] = in_array($type, ['hero_slider', 'testimonials_slider', 'logo_cloud'], true);
+                $targets['item:'.$item['id'].':'.$field] = in_array($type, ['promotion_highlights', 'hero_slider', 'testimonials_slider', 'logo_cloud'], true);
+            }
+        }
+        // Layout switches retain owned image appearance for switching back.
+        if (in_array($type, ['media_text_split', 'chapter_block', 'cta_strip'], true)) {
+            $targets['mediaUrl'] = $type === 'cta_strip';
+            foreach ($section['items'] ?? [] as $item) {
+                $item = $item instanceof stdClass ? get_object_vars($item) : $item;
+                if (is_array($item) && isset($item['id']) && is_string($item['id']) && array_key_exists('imageUrl', $item)) {
+                    $targets['item:'.$item['id'].':imageUrl'] = false;
+                }
             }
         }
         $seen = [];

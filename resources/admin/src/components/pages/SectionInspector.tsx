@@ -1,3 +1,15 @@
+import {contentFieldKeys,sectionContentFields} from '../../cms/contentCapabilities';
+import {VisualChoiceSelect} from './VisualChoiceSelect';
+import {EditorialStoryCardSettings} from './EditorialStoryCardSettings';
+import {ContentDisclosure} from './ContentDisclosure';
+import {SectionLayoutGroup,hasSectionLayout} from './SectionLayoutGroup';
+import type {BrandPalette,PageStyle} from '../../cms/pageStyle';
+import {SectionStyleSettings} from './SectionStyleSettings';
+import {PromotionHighlightSettings} from './PromotionHighlightSettings';
+import type {PromotionOffer} from '../../cms/promotionHighlights';
+import {ProductListingSettings} from './ProductListingSettings';
+import {ShopNavigationSettings} from './ShopNavigationSettings';
+import {HeroSliderLayouts} from './HeroSliderLayouts';
 import {InspectorDeleteButton} from './InspectorDeleteButton';
 import {itemSupports,supportedNewItem,repeatedItemFields} from '../../cms/repeatedItemContract';
 import {PaymentSettings} from './PaymentSettings';
@@ -27,7 +39,6 @@ import {ValuesListColors} from './ValuesListColors';
 import {InspectorToggle,InspectorSwitch} from './InspectorToggle';
 import {isEditorialMediaTextSplit} from '../../cms/mediaTextSplitPresets';
 const isValuesList=(section:PageSection)=>section.type==='values_list';
-import {listingSources} from '../../cms/listingSources';
 import {
   PageSection,
   SectionItem,
@@ -859,7 +870,8 @@ const CustomBackgroundControls: React.FC<CustomBackgroundControlsProps> = ({ val
             <span className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400 block">
               Spotlight Origin Position
             </span>
-            <select
+            <VisualChoiceSelect
+              aria-label="Spotlight origin position"
               value={radialPos}
               onChange={e => handleApplyRadial(fromColor, toColor, e.target.value)}
               className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white font-medium cursor-pointer"
@@ -867,7 +879,7 @@ const CustomBackgroundControls: React.FC<CustomBackgroundControlsProps> = ({ val
               {RADIAL_POSITIONS.map(pos => (
                 <option key={pos.id} value={pos.id}>{pos.label}</option>
               ))}
-            </select>
+            </VisualChoiceSelect>
           </div>
         </div>
       )}
@@ -1210,6 +1222,9 @@ const TabDataMappingPanel: React.FC<TabDataMappingPanelProps> = ({ tabs, categor
 };
 
 interface SectionInspectorProps {
+  pagePalette?:BrandPalette;
+  pageTypography?:PageStyle['typography'];
+  promotionOffers?:PromotionOffer[];
   selectedElement?:{target:string;role?:string;revision:number};
   selectedImage?:string;
   onSelectImage?:(target:string)=>void;
@@ -1229,6 +1244,9 @@ interface SectionInspectorProps {
 }
 
 export const SectionInspector: React.FC<SectionInspectorProps> = ({
+  promotionOffers=[],
+  pagePalette,
+  pageTypography,
   pageId,
   section,
   selectedElement,
@@ -1245,11 +1263,15 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
   const [inspectorTab,setInspectorTab]=React.useState<InspectorTab>('content');
   const [textRole,setTextRole]=React.useState<TextRole>('title');
   const bodyRef=React.useRef<HTMLDivElement>(null);
-  React.useEffect(()=>{if(!selectedElement)return;setInspectorTab('content');const map:Record<string,TextRole>={subtitle:'eyebrow',title:'title',content:'content',leadText:'lead',itemTitle:'itemTitle',itemContent:'itemContent'};if(selectedElement.role)setTextRole(selectedElement.role as TextRole);else if(map[selectedElement.target])setTextRole(map[selectedElement.target]);},[selectedElement?.revision]);
-  React.useLayoutEffect(()=>{if(!selectedElement||inspectorTab==='advanced')return;const root=bodyRef.current;if(!root)return;const target=selectedElement.target;const itemId=target.startsWith('items:')?target.slice(6):undefined;const control=itemId?[...root.querySelectorAll<HTMLElement>('[data-inspector-item]')].find(e=>e.dataset.inspectorItem===itemId):[...root.querySelectorAll<HTMLElement>('[data-inspector-field]')].find(e=>e.dataset.inspectorField===target);const fallback=target==='source'?root.querySelector<HTMLElement>(`[data-inspector-group="${section.type==='product_listing'?6:section.type==='collection_tabs'?4:5}"]`):target==='form'?root.querySelector<HTMLElement>('[data-inspector-group="11"], [data-inspector-group="12"]'):target==='image'?root.querySelector<HTMLElement>('[data-image-target-inspector]'):target==='button'?root.querySelector<HTMLElement>('[data-inspector-group="21"]'):target.startsWith('item')?root.querySelector<HTMLElement>('[data-inspector-group="22"], [data-inspector-group="23"]'):null;const element=inspectorTab==='design'?root.querySelector<HTMLElement>(target==='image'?'[data-inspector-image-design]':'[data-inspector-typography]'):control??fallback;if(!element)return;let parent=element.parentElement;while(parent&&parent!==root){if(parent.tagName==='DETAILS')(parent as HTMLDetailsElement).open=true;parent=parent.parentElement;}element.scrollIntoView?.({block:'nearest',behavior:'smooth'});if(element.matches('input,textarea,select'))element.focus({preventScroll:true});element.animate?.([{boxShadow:'0 0 0 2px #7965ff'},{boxShadow:'0 0 0 2px #7965ff'},{boxShadow:'none'}],{duration:1000});},[selectedElement?.revision,inspectorTab]);
+  const viewedGroup=React.useRef<string|undefined>('Typography');
+  const previousSection=React.useRef(section?.id);
+  const switchingSection=previousSection.current!==section?.id;
+  React.useLayoutEffect(()=>{previousSection.current=section?.id;if(!switchingSection)return;const root=bodyRef.current;if(!root||!viewedGroup.current)return;const summary=[...root.querySelectorAll<HTMLElement>('summary')].find(e=>e.textContent?.trim()===viewedGroup.current&&e.closest('[hidden]')===null);if(summary){(summary.parentElement as HTMLDetailsElement).open=true;requestAnimationFrame(()=>summary.scrollIntoView?.({block:'start'}));}},[section?.id]);
+
+  React.useEffect(()=>{if(!selectedElement||inspectorTab!=='content')return;const map:Record<string,TextRole>={subtitle:'eyebrow',title:'title',content:'content',leadText:'lead',itemTitle:'itemTitle',itemContent:'itemContent'};if(selectedElement.role)setTextRole(selectedElement.role as TextRole);else if(map[selectedElement.target])setTextRole(map[selectedElement.target]);},[selectedElement?.revision]);
+  React.useLayoutEffect(()=>{if(!selectedElement||inspectorTab==='advanced'||(switchingSection&&inspectorTab==='design'))return;const root=bodyRef.current;if(!root)return;const target=selectedElement.target;const itemId=target.startsWith('items:')?target.slice(6):undefined;const control=itemId?[...root.querySelectorAll<HTMLElement>('[data-inspector-item]')].find(e=>e.dataset.inspectorItem===itemId):[...root.querySelectorAll<HTMLElement>('[data-inspector-field]')].find(e=>e.dataset.inspectorField===target);const fallback=target==='source'?root.querySelector<HTMLElement>(`[data-inspector-group="${section.type==='product_listing'?6:section.type==='collection_tabs'?4:5}"]`):target==='form'?root.querySelector<HTMLElement>('[data-inspector-group="11"], [data-inspector-group="12"]'):target==='image'?root.querySelector<HTMLElement>('[data-image-target-inspector]'):target==='button'?root.querySelector<HTMLElement>('[data-inspector-group="21"]'):target.startsWith('item')?root.querySelector<HTMLElement>('[data-inspector-group="22"], [data-inspector-group="23"]'):null;const element=inspectorTab==='design'?root.querySelector<HTMLElement>(target==='image'?'[data-inspector-image-design]':'[data-inspector-typography]'):control??fallback;if(!element)return;let parent=element.parentElement;while(parent&&parent!==root){if(parent.tagName==='DETAILS')(parent as HTMLDetailsElement).open=true;parent=parent.parentElement;}element.scrollIntoView?.({block:'nearest',behavior:'smooth'});if(element.matches('input,textarea,select'))element.focus({preventScroll:true});element.animate?.([{boxShadow:'0 0 0 2px #7965ff'},{boxShadow:'0 0 0 2px #7965ff'},{boxShadow:'none'}],{duration:1000});},[selectedElement?.revision,inspectorTab]);
   const { money, currencyCode } = useAdminCurrency();
   const { products, categories, collections, addToast } = useAdmin();
-  const listingCatalog = React.useMemo(() => listingSources(categories, collections, products), [categories, collections, products]);
   const [couponPromotions, setCouponPromotions] = React.useState<Promotion[]>([]);
 
   React.useEffect(() => {
@@ -1283,7 +1305,11 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
     );
   }
 
-  const hasSectionField = (key: string): boolean => hasOwnContractField(section, key);
+  const contentFields=sectionContentFields(section);
+  const hasSectionField = (key: string): boolean => {
+    if(contentFieldKeys.has(key))return contentFields.includes(key);
+    return hasOwnContractField(section,key)||(section.type==='shop_navigation'&&['textAlignment','paddingY'].includes(key));
+  };
   const hasAnySectionField = (keys: readonly string[]): boolean => keys.some(hasSectionField);
   const sectionColors = hasSectionField('customColors')
     && section.customColors !== null
@@ -1325,6 +1351,9 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
 
   // Sub-item manager
   const handleAddItem = () => {
+    if (section.type === 'hero_slider' && section.sliderPreset==='editorial-overlay') {
+      updateField('items',[...(section.items??[]),{id:crypto.randomUUID(),title:'New collection',subtitle:'COLLECTION',description:'Add your description.',imageUrl:'',buttonText:'Explore collection',linkUrl:'',caption:''}]);return;
+    }
     if (section.type === 'hero_slider') {
       const newSlide: SectionItem = {
         id: 'slide-' + Date.now(),
@@ -1353,7 +1382,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
       title: section.type === 'logo_cloud' ? 'TECHCRUNCH' : section.type === 'testimonials_slider' ? 'Søren Lindqvist' : 'New Feature / Card Title',
       description: section.type === 'logo_cloud' ? 'Best Audiophile Headphone 2026' : section.type === 'testimonials_slider' ? 'The most transparent midrange I have ever heard in thirty years of mastering.' : 'Add informative description or specifications here.',
       icon: defaultIcon,
-      imageUrl: section.type === 'media_gallery' 
+      imageUrl: section.type === 'media_gallery'
         ? 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=800&auto=format&fit=crop&q=80'
         : 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80',
       linkUrl: '#',
@@ -1522,15 +1551,15 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
   ];
 
   const editorialCollection=section.galleryPreset?.startsWith('editorial-')||section.featureCardsPreset==='editorial-columns';
-  const hasItems = repeatedItemFields(section).length>0 && !['policy_content','chapter_block','chapter_navigation','delivery_table','media_text_split'].includes(section.type);
+  const hasItems = repeatedItemFields(section).length>0 && ((section.type==='media_text_split'&&(!section.layoutPreset||section.layoutPreset==='default')) || !['promotion_highlights','shop_navigation','policy_content','chapter_block','chapter_navigation','delivery_table','media_text_split'].includes(section.type));
 
-  const hasMedia = (section.type!=='cta_strip'||section.ctaPreset==='image-banner') && hasSectionField('mediaUrl') && [
+  const hasMedia = section.layoutPreset!=='editorial-story-cards' && (section.type!=='cta_strip'||section.ctaPreset==='image-banner') && hasSectionField('mediaUrl') && [
     'hero_banner',
     'split_hero',
     'media_text_split',
     'featured_deal',
     'cta_strip',
-    'video_embed'
+    'chapter_block'
   ].includes(section.type);
 
   const hasButtons = section.layoutPreset!=='editorial-cover' && hasAnySectionField([
@@ -1545,7 +1574,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
     'media_text_split',
     'featured_deal',
     'cta_strip',
-    'newsletter_signup'
+    'newsletter_signup',
+    'shop_navigation',
+    'product_listing',
+    'contact_form',
   ].includes(section.type);
 
   // Preset time offsets for Deal Countdown
@@ -1617,25 +1649,107 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
 
       <div role="tablist" aria-label="Inspector categories" className="grid grid-cols-3 px-3 border-b border-neutral-200 dark:border-neutral-800">{(['content','design','advanced'] as InspectorTab[]).map(tab=><button key={tab} role="tab" aria-selected={inspectorTab===tab} aria-controls={`inspector-panel-${section.id}`} onClick={()=>setInspectorTab(tab)} className={`py-3 text-xs font-semibold capitalize border-b-2 ${inspectorTab===tab?'border-indigo-500 text-indigo-500':'border-transparent text-neutral-500'}`}>{tab}</button>)}</div>
       {/* Form Controls */}
-      <div ref={bodyRef} id={`inspector-panel-${section.id}`} role="tabpanel" className="flex-1 overflow-y-auto p-4 space-y-5 text-xs">
+      <div ref={bodyRef} id={`inspector-panel-${section.id}`} role="tabpanel" onClickCapture={event=>{const element=event.target as HTMLElement;const group=element.closest('details.cms-settings-group');const summary=group?.querySelector(':scope > summary');if(summary)viewedGroup.current=summary.textContent?.trim();}} onFocusCapture={event=>{const group=(event.target as HTMLElement).closest('details.cms-settings-group');const summary=group?.querySelector(':scope > summary');if(summary)viewedGroup.current=summary.textContent?.trim();}} className="flex-1 overflow-y-auto p-4 space-y-5 text-xs">
         {selectedElement&&<div className="p-3 rounded-lg bg-indigo-500/10 text-indigo-500 flex justify-between gap-2"><span>Selected: {selectedElement.target.startsWith('items:')?'List item':selectedElement.target==='image'?'Image':selectedElement.target==='button'?'Button':textRoleLabels[({subtitle:'eyebrow',title:'title',content:'content',leadText:'lead'} as Record<string,TextRole>)[selectedElement.target]]??'Section content'}</span>{(textRoles(section).length>0||selectedElement.target==='image')&&<button className="underline" onClick={()=>setInspectorTab(inspectorTab==='design'?'content':'design')}>{inspectorTab==='design'?'Edit content':'Style'}</button>}</div>}
-        <div hidden={inspectorTab!=='design'}>{supportsMediaWidth(section)&&<div className="pb-4"><WidthChoiceCards label="Media width" value={section.mediaContainerMode??(section.layoutPreset==='editorial-cover'&&section.containerMode==='full-bleed'?'full-bleed':'page')} onChange={value=>onChange({...section,mediaContainerMode:value})}/><p className="mt-2 text-xs text-neutral-500">Changes the media region only. Text stays aligned with the section container. Full-width split media stacks below the text.</p></div>}<PolicySettings mode="design" section={section} onChange={onChange}/><PaymentSettings mode="design" section={section} onChange={onChange}/><ContactSettings mode="design" section={section} onChange={onChange}/><TypographySettings section={section} onChange={onChange} selectedRole={textRole} onSelectRole={setTextRole}/><ChapterSettings mode="design" section={section} onChange={onChange}/>{imageTargets(section).length>0&&<details data-inspector-image-design open={selectedElement?.target==='image'} className="pt-4"><summary className="font-semibold cursor-pointer">Image appearance</summary><ImageTargetInspector mode="design" section={section} selected={selectedImage} onSelect={onSelectImage} onChange={onChange} assetControl={()=>null}/></details>}</div>
-        <div hidden={inspectorTab!=='advanced'} className="text-neutral-500 leading-relaxed"><p>Page width stays in Page Settings. Typography defaults preserve the selected preset.</p><details className="mt-4" data-inspector-container><summary className="font-semibold cursor-pointer">Section content width</summary><WidthChoiceCards label="Section content width" value={section.containerMode??'page'} onChange={value=>updateField('containerMode',value)}/><p className="mt-2 text-xs">Follow Page uses the width and side spacing in Page Settings. Full Width removes the outer content limit and side spacing at every screen size. Text and cards retain the selected layout's proportions.</p></details></div>
-        <div hidden={inspectorTab!=='design'} data-inspector-group={0}>{(section.type==='media_gallery'||section.type==='feature_cards')&&<div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
+        <div hidden={inspectorTab!=='design'}>{hasSectionLayout(section)&&<SectionLayoutGroup key={section.type} section={section}><PromotionHighlightSettings mode="design" section={section} onChange={onChange} offers={promotionOffers}/><ProductListingSettings mode="design" section={section} onChange={onChange} categories={categories} collections={collections} products={products}/><ShopNavigationSettings mode="design" section={section} onChange={onChange} categories={categories} collections={collections}/><PolicySettings mode="design" section={section} onChange={onChange}/><PaymentSettings mode="design" section={section} onChange={onChange}/><ContactSettings mode="design" section={section} onChange={onChange}/><ChapterSettings mode="design" section={section} onChange={onChange}/><ShippingDesignSettings section={section} onChange={patch=>onChange({...section,...patch})}/><div hidden={inspectorTab!=='design'} data-inspector-group={0}>{(section.type==='media_gallery'||section.type==='feature_cards')&&<div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
           <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-500">Layout preset
-            <select aria-label="Collection layout preset" value={section.type==='media_gallery'?section.galleryPreset??'default':section.featureCardsPreset??'default'} onChange={event=>onChange({...section,...(section.type==='media_gallery'?{galleryPreset:event.target.value as PageSection['galleryPreset']}:{featureCardsPreset:event.target.value as PageSection['featureCardsPreset']}),...(event.target.value==='default'?{showSectionHeading:true}:{})})} className="w-full mt-2 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white">
+            <VisualChoiceSelect aria-label="Collection layout preset" value={section.type==='media_gallery'?section.galleryPreset??'default':section.featureCardsPreset??'default'} onChange={event=>onChange({...section,...(section.type==='media_gallery'?{galleryPreset:event.target.value as PageSection['galleryPreset']}:{featureCardsPreset:event.target.value as PageSection['featureCardsPreset']}),...(event.target.value==='default'?{showSectionHeading:true}:{})})} className="w-full mt-2 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white">
               <option value="default">Default</option>{section.type==='media_gallery'?<><option value="editorial-montage">Editorial Montage — staggered photographs</option><option value="editorial-cards">Editorial Cards — photograph and caption</option></>:<>{section.featureCardsPreset==='values-list'&&<option value="values-list">Legacy Values List</option>}<option value="editorial-columns">Editorial Columns — simple text columns</option><option value="service-highlights">Service Highlights — icon and text row</option></>}
-            </select>
+            </VisualChoiceSelect>
           </label>
           {(section.galleryPreset?.startsWith('editorial-')||['editorial-columns','service-highlights'].includes(section.featureCardsPreset??''))&&<>
             <InspectorToggle label="Show section heading" checked={section.showSectionHeading!==false} onChange={checked=>updateField('showSectionHeading',checked)}/>
-            <label className="block text-neutral-500">Columns<select aria-label="Editorial columns" value={section.columnsCount??3} onChange={event=>updateField('columnsCount',Number(event.target.value) as PageSection['columnsCount'])} className="w-full mt-1 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white"><option value={2}>Two</option><option value={3}>Three</option><option value={4}>Four</option></select></label>
+            <label className="block text-neutral-500">Columns<VisualChoiceSelect aria-label="Editorial columns" value={section.columnsCount??3} onChange={event=>updateField('columnsCount',Number(event.target.value) as PageSection['columnsCount'])} className="w-full mt-1 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white"><option value={2}>Two</option><option value={3}>Three</option><option value={4}>Four</option></VisualChoiceSelect></label>
             <p className="text-[11px] leading-relaxed text-neutral-500">Edit and reorder entries below. Image layouts use the shared image tools. Mobile stacks entries in their saved order.</p>
           </>}
         </div>}</div>
-<div hidden={inspectorTab!=='content'}><PolicySettings mode="content" section={section} onChange={onChange} onSelectImage={onSelectImage} assetControl={target=><MediaUploadField label="Image URL / File Upload" value={target.url} onChange={url=>onChange(updateImageTarget(section,target.id,{mediaUrl:url}))} onUpload={url=>onMediaUpload(pageId,section.id,latest=>updateImageTarget(latest,target.id,{mediaUrl:url}))} placeholder="Image URL or upload" />}/><PaymentSettings mode="content" section={section} onChange={onChange}/><ContactSettings mode="content" section={section} onChange={onChange}/><ShippingContentSettings section={section} onChange={patch=>onChange({...section,...patch})}/></div><div hidden={inspectorTab!=='design'}><ShippingDesignSettings section={section} onChange={patch=>onChange({...section,...patch})}/></div>
+<div hidden={inspectorTab!=='design'} data-inspector-group={3}>{section.type === 'announcement_bar' && hasSectionField('tickerSpeed') && (
+          <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
+              Marquee Ticker Speed
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['slow', 'normal', 'fast'] as const).map(spd => (
+                <button
+                  key={spd}
+                  type="button"
+                  onClick={() => updateField('tickerSpeed', spd)}
+                  className={`py-1.5 capitalize text-center rounded-lg border transition-colors cursor-pointer ${
+                    section.tickerSpeed === spd || (spd === 'normal' && !section.tickerSpeed)
+                      ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
+                      : 'border-neutral-200 dark:border-neutral-700 text-neutral-500'
+                  }`}
+                >
+                  {spd}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}</div><div hidden={inspectorTab!=='design'} data-inspector-group={13}>{section.type === 'hero_slider' && hasAnySectionField(['sliderHeight', 'sliderAutoplay', 'sliderInterval', 'overlayOpacity']) && (
+          <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
+              Hero Slider Settings
+            </label>
+
+            <HeroSliderLayouts section={section} onChange={onChange}/>
+            {/* Slider Height Preset */}
+            {hasSectionField('sliderHeight') && (
+            <div>
+              <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">Banner Height</span>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[
+                  { value: 'panoramic', label: 'Panoramic' },
+                  { value: 'compact', label: 'Compact' },
+                  { value: 'normal', label: 'Medium' },
+                  { value: 'spacious', label: 'Tall' },
+                  { value: 'fullscreen', label: 'Full Screen' }
+                ].map(h => (
+                  <button
+                    key={h.value}
+                    type="button"
+                    onClick={() => updateField('sliderHeight', h.value as 'panoramic' | 'compact' | 'normal' | 'spacious' | 'fullscreen')}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer truncate ${
+                      (section.sliderHeight || 'spacious') === h.value
+                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
+                        : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800'
+                    }`}
+                  >
+                    {h.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            )}
+
+            {/* Autoplay & Rotation Interval */}
+            {hasAnySectionField(['sliderAutoplay', 'sliderInterval']) && (
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {hasSectionField('sliderAutoplay') && (
+              <InspectorToggle label="Autoplay" checked={section.sliderAutoplay !== false} onChange={checked => updateField('sliderAutoplay', checked)} />
+              )}
+
+              {hasSectionField('sliderInterval') && (
+              <div>
+                <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">Interval (seconds)</span>
+                <select
+                  value={section.sliderInterval ?? 5}
+                  onChange={e => updateField('sliderInterval', Number(e.target.value))}
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white"
+                >
+                  <option value={3}>3 seconds (Fast)</option>
+                  <option value={5}>5 seconds (Standard)</option>
+                  <option value={7}>7 seconds (Relaxed)</option>
+                  <option value={10}>10 seconds (Slow)</option>
+                </select>
+              </div>
+              )}
+            </div>
+            )}
+
+          </div>
+        )}</div><div hidden={inspectorTab!=='design'} data-inspector-group={15}><MediaTextSplitSettings showIntroduction={false} section={section} onChange={patch=>onChange({...section,...patch})} /></div><div hidden={inspectorTab!=='design'} data-inspector-group={16}>{isValuesList(section) && <ValuesListSettings section={section} onChange={patch=>onChange({...section,...patch})} />}</div><div hidden={inspectorTab!=='design'} data-inspector-group={17}>{section.type==='cta_strip' && <CtaStripSettings section={section} onChange={patch=>onChange({...section,...patch})} />}</div><div hidden={inspectorTab!=='design'} data-inspector-group={18}>{section.type==='rich_text' && <RichTextSettings mode="design" section={section} onChange={patch=>onChange({...section,...patch})} />}</div></SectionLayoutGroup>}</div><div hidden={inspectorTab!=='content'}>{['promotion_highlights','shop_navigation','policy_content','payment_methods','contact_form','store_locator','delivery_table'].includes(section.type)||(section.type==='chapter_block'&&section.chapterPreset==='policy')||(section.type==='media_text_split'&&['story-with-steps','editorial-story-cards'].includes(section.layoutPreset??''))?<ContentDisclosure title="Section content"><PromotionHighlightSettings mode="content" section={section} onChange={onChange} offers={promotionOffers} assetControl={target=><MediaUploadField label="Image URL / Upload" value={target.url} onChange={url=>onChange(updateImageTarget(section,target.id,{mediaUrl:url}))} onUpload={url=>onMediaUpload(pageId,section.id,latest=>updateImageTarget(latest,target.id,{mediaUrl:url}))} placeholder="Image URL or upload" />}/><ShopNavigationSettings mode="content" section={section} onChange={onChange} categories={categories} collections={collections} assetControl={target=><MediaUploadField label="Image override / Upload" value={target.url} onChange={url=>onChange(updateImageTarget(section,target.id,{mediaUrl:url}))} onUpload={url=>onMediaUpload(pageId,section.id,latest=>updateImageTarget(latest,target.id,{mediaUrl:url}))} placeholder="Use destination image, or upload" />}/><PolicySettings mode="content" section={section} onChange={onChange} onSelectImage={onSelectImage} assetControl={target=><MediaUploadField label="Image URL / File Upload" value={target.url} onChange={url=>onChange(updateImageTarget(section,target.id,{mediaUrl:url}))} onUpload={url=>onMediaUpload(pageId,section.id,latest=>updateImageTarget(latest,target.id,{mediaUrl:url}))} placeholder="Image URL or upload" />}/><PaymentSettings mode="content" section={section} onChange={onChange}/><ContactSettings mode="content" section={section} onChange={onChange}/><EditorialStoryCardSettings section={section} onChange={onChange} assetControl={target=><MediaUploadField label="Story image / Upload" value={target.url} onChange={url=>onChange(updateImageTarget(section,target.id,{mediaUrl:url}))} onUpload={url=>onMediaUpload(pageId,section.id,latest=>updateImageTarget(latest,target.id,{mediaUrl:url}))} placeholder="Image URL or upload"/>}/><ShippingContentSettings section={section} onChange={patch=>onChange({...section,...patch})}/></ContentDisclosure>:null}</div>
         {/* 1. Header & Text Content */}
-        <div hidden={inspectorTab!=='content'} data-inspector-group={1}>{hasAnySectionField(['title', 'subtitle', 'content']) && section.showSectionHeading!==false && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={1}><ContentDisclosure title="Text & headings">{hasAnySectionField(['title', 'subtitle', 'content']) && section.showSectionHeading!==false && !(section.type==='hero_slider'&&section.sliderPreset==='editorial-overlay') && (
         <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
           <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
             Text & Hierarchy
@@ -1662,9 +1776,9 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">
               Primary Headline Title <span className="text-rose-500">*</span>
             </span>
-            {section.type==='chapter_block' || isEditorialMediaTextSplit(section) || isManifesto(section) ? <textarea data-inspector-field="title"
+            {section.type==='promotion_highlights' || section.type==='chapter_block' || isEditorialMediaTextSplit(section) || isManifesto(section) ? <textarea data-inspector-field="title"
               rows={3}
-              aria-label={section.type==='chapter_block'?'Chapter headline':section.layoutPreset==='editorial-cover'?'Cover headline':isManifesto(section)?'Manifesto headline':section.layoutPreset==='editorial-story'?'Editorial story headline':'Editorial hero headline'}
+              aria-label={section.type==='promotion_highlights'?'Promotion headline':section.type==='chapter_block'?'Chapter headline':section.layoutPreset==='editorial-cover'?'Cover headline':isManifesto(section)?'Manifesto headline':section.layoutPreset==='editorial-story'?'Editorial story headline':'Editorial hero headline'}
               value={section.title}
               onChange={e => updateField('title', e.target.value)}
               placeholder="Section main heading"
@@ -1696,10 +1810,31 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
           </div>
           )}
         </div>
-        )}</div>
+        )}</ContentDisclosure></div>
+        <div hidden={inspectorTab!=='design'}>{supportsMediaWidth(section)&&<div className="pb-4"><WidthChoiceCards label="Media width" value={section.mediaContainerMode??(section.layoutPreset==='editorial-cover'&&section.containerMode==='full-bleed'?'full-bleed':'page')} onChange={value=>onChange({...section,mediaContainerMode:value})}/><p className="mt-2 text-xs text-neutral-500">Changes the media region only. Text stays aligned with the section container. Full-width split media stacks below the text.</p></div>}<TypographySettings inheritedTypography={pageTypography} section={section} onChange={onChange} selectedRole={textRole} onSelectRole={setTextRole}/>{imageTargets(section).length>0&&<details data-inspector-image-design open={selectedElement?.target==='image'} className="cms-settings-group"><summary>Image appearance</summary><div className="cms-settings-group-content">            {/* Dark Overlay Opacity */}
+            {hasSectionField('overlayOpacity') && (
+            <div>
+              <div className="flex items-center justify-between text-neutral-600 dark:text-neutral-400 mb-1">
+                <span>Dark Overlay Contrast</span>
+                <span className="font-bold">{section.overlayOpacity ?? 55}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="90"
+                step="5"
+                value={section.overlayOpacity ?? 55}
+                onChange={e => updateField('overlayOpacity', Number(e.target.value))}
+                className="w-full accent-indigo-600"
+              />
+            </div>
+            )}
+<ImageTargetInspector mode="design" section={section} selected={selectedImage} onSelect={onSelectImage} onChange={onChange} assetControl={()=>null}/></div></details>}</div>
+        <div hidden={inspectorTab!=='advanced'} className="text-neutral-500 leading-relaxed"><p>Page width stays in Page Settings. Typography defaults preserve the selected preset.</p><details open className="cms-settings-group" data-inspector-container><summary>Section content width</summary><div className="cms-settings-group-content"><WidthChoiceCards label="Section content width" value={section.containerMode??'page'} onChange={value=>updateField('containerMode',value)}/><p className="mt-2 text-xs">Follow Page uses the width and side spacing in Page Settings. Full Width removes the outer content limit and side spacing at every screen size. Text and cards retain the selected layout's proportions.</p></div></details></div>
+
 
         {/* Split Hero Card Overlay Controls */}
-        <div hidden={inspectorTab!=='content'} data-inspector-group={2}>{section.type === 'split_hero' && hasAnySectionField(['cardBadge', 'cardTitle', 'cardSubtitle', 'cardPrice', 'cardExtra']) && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={2}><ContentDisclosure title="Featured product">{section.type === 'split_hero' && hasAnySectionField(['cardBadge', 'cardTitle', 'cardSubtitle', 'cardPrice', 'cardExtra']) && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Floating Card Preview Data
@@ -1769,35 +1904,13 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               )}
             </div>
           </div>
-        )}</div>
+        )}</ContentDisclosure></div>
 
         {/* Announcement Ticker Speed Control */}
-        <div hidden={inspectorTab!=='design'} data-inspector-group={3}>{section.type === 'announcement_bar' && hasSectionField('tickerSpeed') && (
-          <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
-              Marquee Ticker Speed
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {(['slow', 'normal', 'fast'] as const).map(spd => (
-                <button
-                  key={spd}
-                  type="button"
-                  onClick={() => updateField('tickerSpeed', spd)}
-                  className={`py-1.5 capitalize text-center rounded-lg border transition-colors cursor-pointer ${
-                    section.tickerSpeed === spd || (spd === 'normal' && !section.tickerSpeed)
-                      ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
-                      : 'border-neutral-200 dark:border-neutral-700 text-neutral-500'
-                  }`}
-                >
-                  {spd}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}</div>
+
 
         {/* Collection Tabs - Tab Data Mapping Panel */}
-        <div hidden={inspectorTab!=='content'} data-inspector-group={4}>{section.type === 'collection_tabs' && hasSectionField('tabs') && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={4}><ContentDisclosure title="Collection tabs">{section.type === 'collection_tabs' && hasSectionField('tabs') && (
           <TabDataMappingPanel
             tabs={Array.isArray(section.tabs) ? section.tabs : []}
             categories={categories}
@@ -1811,10 +1924,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             }}
             addToast={addToast}
           />
-        )}</div>
+        )}</ContentDisclosure></div>
 
         {/* Product Grid - Product Selection */}
-        <div hidden={inspectorTab!=='content'} data-inspector-group={5}>{section.type === 'product_grid' && hasSectionField('productIds') && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={5}><ContentDisclosure title="Products">{section.type === 'product_grid' && hasSectionField('productIds') && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
@@ -1864,190 +1977,12 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               })}
             </div>
           </div>
-        )}</div>
+        )}</ContentDisclosure></div>
 
-        {/* Product Listing - Source Type, Catalog Selection, Product Limit & Slider Controls */}
-        <div hidden={inspectorTab!=='content'} data-inspector-group={6}>{section.type === 'product_listing' && (
-          <div className="space-y-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
-            <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
-                Catalog Source & Dynamic Mapping
-              </label>
-              <span className="text-[10px] text-neutral-400">
-                Configure dynamic product feed, maximum display limit, and auto-slider settings.
-              </span>
-            </div>
-
-            {/* 1. Source Type Selector (Category vs Collection) */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 block">
-                Source Type & Catalog Selection
-              </label>
-              <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700/60">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const firstCat = listingCatalog.categories[0]?.id || '';
-                    onChange({
-                      ...section,
-                      sourceType: 'category',
-                      sourceId: firstCat
-                    });
-                  }}
-                  className={`py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                    (section.sourceType || 'category') === 'category'
-                      ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-xs font-bold'
-                      : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Folder className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>Category</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    const firstCol = listingCatalog.collections[0]?.id || '';
-                    onChange({
-                      ...section,
-                      sourceType: 'collection',
-                      sourceId: firstCol
-                    });
-                  }}
-                  className={`py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                    section.sourceType === 'collection'
-                      ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-xs font-bold'
-                      : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
-                  }`}
-                >
-                  <FolderArchive className="w-3.5 h-3.5 text-purple-500" />
-                  <span>Collection</span>
-                </button>
-              </div>
-
-              {/* Searchable Source Selector */}
-              <SearchableSourcePicker
-                sourceType={section.sourceType || 'category'}
-                sourceId={section.sourceId || ''}
-                onChange={(sourceId) => {
-                  onChange({
-                    ...section,
-                    sourceId
-                  });
-                }}
-                categories={listingCatalog.categories}
-                collections={listingCatalog.collections}
-              />
-            </div>
-
-            {/* 2. Product Limit Selector */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 block">
-                  Product Limit
-                </label>
-                <span className="text-[10px] text-neutral-400 font-mono">
-                  Max {section.productLimit || 6} items
-                </span>
-              </div>
-              <div className="grid grid-cols-5 gap-1.5">
-                {([3, 4, 6, 8, 12] as const).map(limit => (
-                  <button
-                    key={limit}
-                    type="button"
-                    onClick={() => updateField('productLimit', limit)}
-                    className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      (section.productLimit || 6) === limit
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-                    }`}
-                  >
-                    {limit}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 3. Slider Settings */}
-            <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800/80 space-y-3">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
-                Carousel & Sliding Navigation
-              </label>
-
-              <div className="p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700/60">
-                <InspectorToggle label="Auto Sliding" description="Automatically advance products on interval (pauses on hover)" checked={section.autoSlide !== false} onChange={checked => updateField('autoSlide', checked)} />
-              </div>
-
-              {/* Auto Slide Interval */}
-              {section.autoSlide !== false && (
-                <div>
-                  <label className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 block mb-1">
-                    Auto Slide Interval
-                  </label>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {[
-                      { label: '3s', val: 3 },
-                      { label: '3.5s', val: 3.5 },
-                      { label: '5s', val: 5 },
-                      { label: '7s', val: 7 },
-                    ].map(speed => (
-                      <button
-                        key={speed.val}
-                        type="button"
-                        onClick={() => updateField('autoSlideInterval', speed.val)}
-                        className={`py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          (section.autoSlideInterval || 3.5) === speed.val
-                            ? 'bg-indigo-600 text-white shadow-xs'
-                            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-                        }`}
-                      >
-                        {speed.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700/60">
-                <InspectorToggle label="Side Preview & Next Buttons" description="Display circular interactive navigation arrows on left & right" checked={section.showNavArrows !== false} onChange={checked => updateField('showNavArrows', checked)} />
-              </div>
-
-              {/* Desktop Items Per View */}
-              <div>
-                <label className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 block mb-1">
-                  Desktop Visible Items
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => updateField('columnsCount', 3)}
-                    className={`py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      (section.columnsCount || 3) === 3
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-                    }`}
-                  >
-                    3 Products (Standard)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateField('columnsCount', 4)}
-                    className={`py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      section.columnsCount === 4
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-                    }`}
-                  >
-                    4 Products (Compact)
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}</div>
+        <div hidden={inspectorTab!=='content'} data-inspector-group={6}><ContentDisclosure title={section.listingPreset==='editorial-tabs'?'Product tabs':'Product source'}><ProductListingSettings mode="content" section={section} onChange={onChange} categories={categories} collections={collections} products={products}/></ContentDisclosure></div>
 
         {/* Featured Deal Countdown, Discount & Badge */}
-        <div hidden={inspectorTab!=='content'} data-inspector-group={7}>{section.type === 'featured_deal' && hasAnySectionField(['dealEndDate', 'dealBadge', 'discountPercent']) && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={7}><ContentDisclosure title="Deal details">{section.type === 'featured_deal' && hasAnySectionField(['dealEndDate', 'dealBadge', 'discountPercent']) && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Deal Countdown & Discounts
@@ -2128,10 +2063,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               )}
             </div>
           </div>
-        )}</div>
+        )}</ContentDisclosure></div>
 
         {/* Before / After Slider Media */}
-        <div hidden={inspectorTab!=='content'} data-inspector-group={8}>{section.type === 'before_after' && hasAnySectionField(['beforeImageUrl', 'beforeLabel', 'afterImageUrl', 'afterLabel']) && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={8}><ContentDisclosure title="Before & after">{section.type === 'before_after' && hasAnySectionField(['beforeImageUrl', 'beforeLabel', 'afterImageUrl', 'afterLabel']) && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Before / After Images & Labels
@@ -2179,10 +2114,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             </div>
             )}
           </div>
-        )}</div>
+        )}</ContentDisclosure></div>
 
         {/* Video Embed Player */}
-        <div hidden={inspectorTab!=='content'} data-inspector-group={9}>{section.type === 'video_embed' && hasSectionField('videoEmbedUrl') && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={9}><ContentDisclosure title="Video">{section.type === 'video_embed' && hasSectionField('videoEmbedUrl') && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Video Player Source
@@ -2198,10 +2133,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               helpText="Supports YouTube embeds, Vimeo links, or uploaded direct MP4 video files."
             />
           </div>
-        )}</div>
+        )}</ContentDisclosure></div>
 
         {/* Comparison Matrix Table Headers */}
-        <div hidden={inspectorTab!=='content'} data-inspector-group={10}>{section.type === 'comparison_matrix' && hasAnySectionField(['comparisonDimensionName', 'comparisonOurBrandName', 'comparisonCompetitorName']) && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={10}><ContentDisclosure title="Comparison">{section.type === 'comparison_matrix' && hasAnySectionField(['comparisonDimensionName', 'comparisonOurBrandName', 'comparisonCompetitorName']) && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Comparison Table Headers
@@ -2245,10 +2180,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               )}
             </div>
           </div>
-        )}</div>
+        )}</ContentDisclosure></div>
 
         {/* Contact Form Details */}
-        <div hidden={inspectorTab!=='content'} data-inspector-group={11}>{section.type === 'contact_form' && section.contactPreset!=='enquiry' && hasAnySectionField(['formEmail', 'contactPhone', 'contactAddress', 'contactButtonText', 'formSuccessMessage', 'subjectPlaceholder', 'categoryPlaceholder', 'messagePlaceholder', 'inquiryCategories']) && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={11}><ContentDisclosure title="Contact form">{section.type === 'contact_form' && section.contactPreset!=='enquiry' && hasAnySectionField(['formEmail', 'contactPhone', 'contactAddress', 'contactButtonText', 'formSuccessMessage', 'subjectPlaceholder', 'categoryPlaceholder', 'messagePlaceholder', 'inquiryCategories']) && (
           <div className="space-y-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Contact & Atelier Details
@@ -2406,10 +2341,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             </div>
             )}
           </div>
-        )}</div>
+        )}</ContentDisclosure></div>
 
         {/* Newsletter Signup Form Config */}
-        <div hidden={inspectorTab!=='content'} data-inspector-group={12}>{section.type === 'newsletter_signup' && hasAnySectionField(['formSuccessMessage', 'newsletterCouponId']) && (() => {
+        <div hidden={inspectorTab!=='content'} data-inspector-group={12}><ContentDisclosure title="Newsletter">{section.type === 'newsletter_signup' && hasAnySectionField(['formSuccessMessage', 'newsletterCouponId']) && (() => {
           const now = new Date();
           const eligibleCoupons = couponPromotions.flatMap(promo => {
             if (promo.promotionType !== 'coupon_code' || !promo.isActive) return [];
@@ -2466,99 +2401,21 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               )}
             </div>
           );
-        })()}</div>
+        })()}</ContentDisclosure></div>
 
         {/* Hero Background Slider Dedicated Settings */}
-        <div hidden={inspectorTab!=='design'} data-inspector-group={13}>{section.type === 'hero_slider' && hasAnySectionField(['sliderHeight', 'sliderAutoplay', 'sliderInterval', 'overlayOpacity']) && (
-          <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
-              Hero Slider Settings
-            </label>
 
-            {/* Slider Height Preset */}
-            {hasSectionField('sliderHeight') && (
-            <div>
-              <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">Banner Height</span>
-              <div className="grid grid-cols-4 gap-1.5">
-                {[
-                  { value: 'compact', label: 'Compact' },
-                  { value: 'normal', label: 'Medium' },
-                  { value: 'spacious', label: 'Tall' },
-                  { value: 'fullscreen', label: 'Full Screen' }
-                ].map(h => (
-                  <button
-                    key={h.value}
-                    type="button"
-                    onClick={() => updateField('sliderHeight', h.value as 'compact' | 'normal' | 'spacious' | 'fullscreen')}
-                    className={`py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer truncate ${
-                      (section.sliderHeight || 'spacious') === h.value
-                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
-                        : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800'
-                    }`}
-                  >
-                    {h.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            )}
 
-            {/* Autoplay & Rotation Interval */}
-            {hasAnySectionField(['sliderAutoplay', 'sliderInterval']) && (
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              {hasSectionField('sliderAutoplay') && (
-              <InspectorToggle label="Autoplay" checked={section.sliderAutoplay !== false} onChange={checked => updateField('sliderAutoplay', checked)} />
-              )}
+        <div hidden={inspectorTab!=='content'}>{section.type==='rich_text'&&<RichTextSettings mode="content" section={section} onChange={patch=>onChange({...section,...patch})}/>}</div><div hidden={inspectorTab!=='content'} data-inspector-group={14}><ContentDisclosure title="Chapter content"><ChapterSettings mode="content" section={section} onChange={onChange}/></ContentDisclosure></div>
 
-              {hasSectionField('sliderInterval') && (
-              <div>
-                <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1 block">Interval (seconds)</span>
-                <select
-                  value={section.sliderInterval ?? 5}
-                  onChange={e => updateField('sliderInterval', Number(e.target.value))}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white"
-                >
-                  <option value={3}>3 seconds (Fast)</option>
-                  <option value={5}>5 seconds (Standard)</option>
-                  <option value={7}>7 seconds (Relaxed)</option>
-                  <option value={10}>10 seconds (Slow)</option>
-                </select>
-              </div>
-              )}
-            </div>
-            )}
 
-            {/* Dark Overlay Opacity */}
-            {hasSectionField('overlayOpacity') && (
-            <div>
-              <div className="flex items-center justify-between text-neutral-600 dark:text-neutral-400 mb-1">
-                <span>Dark Overlay Contrast</span>
-                <span className="font-bold">{section.overlayOpacity ?? 55}%</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="90"
-                step="5"
-                value={section.overlayOpacity ?? 55}
-                onChange={e => updateField('overlayOpacity', Number(e.target.value))}
-                className="w-full accent-indigo-600"
-              />
-            </div>
-            )}
-          </div>
-        )}</div>
 
-        <div hidden={inspectorTab!=='content'} data-inspector-group={14}><ChapterSettings mode="content" section={section} onChange={onChange}/></div>
-        <div hidden={inspectorTab!=='design'} data-inspector-group={15}><MediaTextSplitSettings showIntroduction={false} section={section} onChange={patch=>onChange({...section,...patch})} /></div>
-        <div hidden={inspectorTab!=='design'} data-inspector-group={16}>{isValuesList(section) && <ValuesListSettings section={section} onChange={patch=>onChange({...section,...patch})} />}</div>
-        <div hidden={inspectorTab!=='design'} data-inspector-group={17}>{section.type==='cta_strip' && <CtaStripSettings section={section} onChange={patch=>onChange({...section,...patch})} />}</div>
-        <div hidden={inspectorTab!=='design'} data-inspector-group={18}>{section.type==='rich_text' && <RichTextSettings section={section} onChange={patch=>onChange({...section,...patch})} />}</div>
 
-        <div hidden={inspectorTab!=='content'} data-inspector-group={19}>{!(section.type==='policy_content'||(section.type==='chapter_block'&&section.chapterPreset==='policy'))&&<ImageTargetInspector mode="content" section={section} selected={selectedImage} onSelect={onSelectImage} onChange={onChange} assetControl={target=><MediaUploadField label="Image URL / File Upload" value={target.url} onChange={url=>onChange(updateImageTarget(section,target.id,{mediaUrl:url}))} onUpload={url=>onMediaUpload(pageId,section.id,latest=>updateImageTarget(latest,target.id,{mediaUrl:url}))} placeholder="https://images.unsplash.com/... or upload" />} />}</div>
+
+        <div hidden={inspectorTab!=='content'} data-inspector-group={19}><ContentDisclosure title="Images">{!(section.type==='policy_content'||(section.type==='chapter_block'&&section.chapterPreset==='policy'))&&<ImageTargetInspector mode="content" section={section} selected={selectedImage} onSelect={onSelectImage} onChange={onChange} assetControl={target=><MediaUploadField label="Image URL / File Upload" value={target.url} onChange={url=>onChange(updateImageTarget(section,target.id,{mediaUrl:url}))} onUpload={url=>onMediaUpload(pageId,section.id,latest=>updateImageTarget(latest,target.id,{mediaUrl:url}))} placeholder="https://images.unsplash.com/... or upload" />} />}</ContentDisclosure></div>
 
         {/* Section Main Media & Image Upload */}
-        <div hidden={inspectorTab!=='content'} data-inspector-group={20}>{hasMedia && imageTargets(section).length===0 && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={20}><ContentDisclosure title="Media">{hasMedia && imageTargets(section).length===0 && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Section Main Media Asset
@@ -2590,10 +2447,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               </div>
             )}
           </div>
-        )}</div>
+        )}</ContentDisclosure></div>
 
         {/* Action Buttons */}
-        <div hidden={inspectorTab!=='content'} data-inspector-group={21}>{hasButtons && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={21}><ContentDisclosure title="Buttons & links">{hasButtons && !(section.type==='hero_slider'&&section.sliderPreset==='editorial-overlay') && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
               Call to Action Buttons
@@ -2653,11 +2510,11 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               )}
             </div>
           </div>
-        )}</div>
+        )}</ContentDisclosure></div>
 
         {/* Sub-Items List Editor (for Multi-card sections & Hero Slider) */}
-        <div hidden={inspectorTab!=='content'} data-inspector-group={22}>{isValuesList(section) && <ValuesListEditor section={section} onChange={patch=>onChange({...section,...patch})} />}</div>
-        <div hidden={inspectorTab!=='content'} data-inspector-group={23}>{hasItems && !isValuesList(section) && (
+        <div hidden={inspectorTab!=='content'} data-inspector-group={22}><ContentDisclosure title="Values">{isValuesList(section) && <ValuesListEditor section={section} onChange={patch=>onChange({...section,...patch})} />}</ContentDisclosure></div>
+        <div hidden={inspectorTab!=='content'} data-inspector-group={23}><ContentDisclosure title="Item cards">{hasItems && !isValuesList(section) && (
           <div className="space-y-3 pb-4 border-b border-neutral-100 dark:border-neutral-800">
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
@@ -2684,7 +2541,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                     <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
                       {editorialCollection?`${section.type==='media_gallery'?'Photo':'Column'} ${idx+1}`:section.type === 'hero_slider' ? `Slide #${idx + 1}` : `Card #${idx + 1}`}
                     </span>
-                    {editorialCollection&&<div className="flex gap-2 ml-auto mr-3">{([-1,1] as const).map(offset=><button key={offset} type="button" aria-label={`Move item ${idx+1} ${offset===-1?'up':'down'}`} disabled={idx+offset<0||idx+offset>=(section.items?.length??0)} onClick={()=>{const items=[...(section.items??[])];[items[idx],items[idx+offset]]=[items[idx+offset],items[idx]];updateField('items',items);}} className="text-[10px] text-neutral-500 hover:text-indigo-500 disabled:opacity-30">{offset===-1?'Up':'Down'}</button>)}</div>}
+                    {<div className="flex gap-2 ml-auto mr-3">{([-1,1] as const).map(offset=><button key={offset} type="button" aria-label={`Move item ${idx+1} ${offset===-1?'up':'down'}`} disabled={idx+offset<0||idx+offset>=(section.items?.length??0)} onClick={()=>{const items=[...(section.items??[])];[items[idx],items[idx+offset]]=[items[idx+offset],items[idx]];updateField('items',items);}} className="text-[10px] text-neutral-500 hover:text-indigo-500 disabled:opacity-30">{offset===-1?'Up':'Down'}</button>)}</div>}
                     <button
                       type="button"
                       onClick={() => handleDeleteItem(idx)}
@@ -2714,6 +2571,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                       />
                       )}
 
+                      {hasItemField(item,'videoUrl')&&<MediaUploadField label="Slide video URL / File Upload" value={item.videoUrl??''} onChange={url=>handleUpdateItem(idx,{videoUrl:url})} onUpload={url=>updateUploadedItemField(item.id,'videoUrl',url)} accept="video/*" />}
                       {/* Eyebrow Badge */}
                       {hasItemField(item, 'badge') && (
                       <div>
@@ -2732,11 +2590,12 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                       {hasItemField(item, 'title') && (
                       <div>
                         <span className="text-[10px] text-neutral-400 block mb-0.5">Slide Headline</span>
-                        <input
-                          type="text"
+                        <textarea
+                          rows={2}
+                          aria-label="Slide headline"
                           value={item.title || ''}
                           onChange={e => handleUpdateItem(idx, { title: e.target.value })}
-                          placeholder="e.g. Experience Pure Acoustic Fidelity"
+                          placeholder="Add your headline"
                           className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white font-bold"
                         />
                       </div>
@@ -2756,6 +2615,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                       </div>
                       )}
 
+                      {hasItemField(item,'caption')&&<label className="block text-[10px] text-neutral-400">Caption (optional)<textarea rows={2} aria-label="Slide caption" value={item.caption??''} onChange={e=>handleUpdateItem(idx,{caption:e.target.value})} className="w-full mt-1 px-2 py-1 rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white text-xs"/></label>}
                       {/* Buttons for Slide */}
                       {hasAnyItemField(item, ['buttonText', 'linkUrl']) && (
                       <div className="grid grid-cols-2 gap-2 pt-1 border-t border-neutral-200/60 dark:border-neutral-800/60">
@@ -2975,10 +2835,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               ))}
             </div>
           </div>
-        )}</div>
+        )}</ContentDisclosure></div>
 
         {/* 9. Layout, Columns & Styling */}
-        <div hidden={inspectorTab!=='design'} data-inspector-group={24}><details><summary className="font-semibold cursor-pointer py-2">Layout & spacing</summary>{hasAnySectionField(['textAlignment', 'paddingY', 'backgroundColor']) && (
+        <div hidden={inspectorTab!=='design'} data-inspector-group={24}><details className="cms-settings-group"><summary>Layout & spacing</summary><div className="cms-settings-group-content">{hasAnySectionField(['textAlignment', 'paddingY', 'backgroundColor']) && (
         <div className="space-y-3">
           <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block">
             Layout & Theme
@@ -2993,7 +2853,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                 type="button"
                 onClick={() => updateField('textAlignment', 'left')}
                 className={`py-1.5 flex items-center justify-center rounded-lg border transition-colors cursor-pointer ${
-                  section.textAlignment === 'left'
+                  section.textAlignment === 'left' || (section.type === 'shop_navigation' && !section.textAlignment)
                     ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
                     : 'border-neutral-200 dark:border-neutral-700 text-neutral-500'
                 }`}
@@ -3004,7 +2864,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                 type="button"
                 onClick={() => updateField('textAlignment', 'center')}
                 className={`py-1.5 flex items-center justify-center rounded-lg border transition-colors cursor-pointer ${
-                  section.textAlignment === 'center' || !section.textAlignment
+                  section.textAlignment === 'center' || (section.type !== 'shop_navigation' && !section.textAlignment)
                     ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
                     : 'border-neutral-200 dark:border-neutral-700 text-neutral-500'
                 }`}
@@ -3038,13 +2898,13 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
                   key={pad}
                   type="button"
                   onClick={() => updateField('paddingY', pad)}
-                  className={`py-1.5 capitalize text-center rounded-lg border transition-colors cursor-pointer ${
+                  className={`p-2 capitalize text-center rounded-lg border transition-colors cursor-pointer ${
                     section.paddingY === pad || (pad === 'normal' && !section.paddingY)
                       ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
                       : 'border-neutral-200 dark:border-neutral-700 text-neutral-500'
                   }`}
                 >
-                  {pad}
+                  <span aria-hidden="true" className="flex h-14 bg-neutral-500/10 items-center justify-center mb-2"><span className="w-4/5 border-y border-dashed border-indigo-400/50 flex items-center justify-center" style={{height:pad==='compact'?24:pad==='normal'?38:52}}><span className="h-2 w-2/3 bg-indigo-400 rounded-sm"/></span></span>{pad}
                 </button>
               ))}
             </div>
@@ -3059,7 +2919,8 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             <span className="text-neutral-600 dark:text-neutral-400 font-medium mb-1.5 block">
               Background Canvas Style
             </span>
-            <select
+            <VisualChoiceSelect
+              aria-label="Background canvas style"
               value={section.backgroundColor || 'bg-neutral-900'}
               onChange={e => updateField('backgroundColor', e.target.value)}
               className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white"
@@ -3067,7 +2928,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               {bgOptions.map(bg => (
                 <option key={bg.value} value={bg.value}>{bg.label}</option>
               ))}
-            </select>
+            </VisualChoiceSelect>
           </div>
           )}
 
@@ -3079,10 +2940,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             />
           )}
         </div>
-        )}</details></div>
+        )}</div></details></div>
 
         {/* 9. Entrance Motion & Stagger Presets */}
-        <div hidden={inspectorTab!=='design'} data-inspector-group={25}><details><summary className="font-semibold cursor-pointer py-2">Motion</summary><div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-3">
+        <div hidden={inspectorTab!=='design'} data-inspector-group={25}><details className="cms-settings-group"><summary>Motion</summary><div className="cms-settings-group-content"><div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-indigo-500" />
@@ -3155,10 +3016,10 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
               );
             })}
           </div>
-        </div></details></div>
+        </div></div></details></div>
 
         {/* 10. Brand Palette & Color Customization (Secondary Color Tuner) */}
-        <div hidden={inspectorTab!=='design'} data-inspector-group={26}><details><summary className="font-semibold cursor-pointer py-2">Palette defaults & colors</summary>{sectionColors !== null && (
+        <div hidden={inspectorTab!=='design'} data-inspector-group={26}><details className="cms-settings-group"><summary>Palette defaults & colors</summary><div className="cms-settings-group-content"><SectionStyleSettings section={section} onChange={onChange} pagePalette={pagePalette}/>{sectionColors !== null && (
         <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -3392,14 +3253,8 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
             )}
           </div>
         </div>
-        )}</details></div>
+        )}</div></details></div>
       </div>
     </div>
   );
 };
-
-
-
-
-
-

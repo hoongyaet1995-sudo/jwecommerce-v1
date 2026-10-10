@@ -1,3 +1,5 @@
+import {isPalette,isPageStyle} from './pageStyle';
+import {isPromotionOffers,type PromotionOffer} from './promotionHighlights';
 import {isTypography} from './inspectorCapabilities';
 import {isPaymentFacts, type PaymentFacts} from './paymentInformation';
 import {deliveryRows} from './deliveryInformation';
@@ -28,6 +30,7 @@ export interface PageRuntimeSource {
 }
 
 export interface PageRuntimeSectionFacts {
+  promotions?: {offers:PromotionOffer[]};
   payments?: PaymentFacts;
   delivery?: {rows: import('./deliveryInformation').DeliveryRow[]; status?: 'ready'|'unavailable'};
   listing?: {sourceId: {valid: boolean}; source: PageRuntimeSource | null; products: PageRuntimeProduct[]};
@@ -92,6 +95,7 @@ export interface PageRuntimePayload {
   context: {
     mode: 'editing' | 'preview' | 'public';
     currency: string;
+    wishlist?: {authenticated:boolean;csrfToken:string;savedProductIds:string[];loginUrl:string};
   };
 }
 
@@ -213,12 +217,13 @@ const sectionTypes = new Set([
   'instagram_feed', 'feature_cards', 'values_list', 'icon_list', 'comparison_matrix', 'faq_accordion',
   'contact_form', 'store_locator', 'testimonials_slider', 'logo_cloud', 'cta_strip',
   'newsletter_signup',
+  'shop_navigation', 'promotion_highlights',
 ]);
 
 const sectionItemStringFields = [
   'deliveryEstimate', 'deliveryFee', 'subtitle', 'description', 'icon', 'imageUrl', 'videoUrl', 'linkUrl', 'badge',
   'author', 'authorRole', 'authorAvatar', 'date', 'category', 'value', 'handle',
-  'metricLabel', 'buttonText', 'secondaryButtonText', 'secondaryButtonLink',
+  'sourceId', 'sourceType', 'caption', 'metricLabel', 'buttonText', 'secondaryButtonText', 'secondaryButtonLink',
 ];
 const sectionItemNumberFields = ['price', 'compareAtPrice'];
 const sectionColorFields = [
@@ -240,7 +245,12 @@ type PageSectionFieldRule =
 // `satisfies Record<keyof PageSection, ...>` makes a PageSection type change fail compilation
 // until its browser-bootstrap rule is deliberately classified here.
 export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
+  surface:{kind:'optional-enum',values:['light','contrast']},
+  brandPalette:{kind:'nested'},
   imageSlots: {kind: 'nested'},
+  promotionSource:{kind:'optional-enum',values:['automatic','manual']},
+  promotionLayout:{kind:'optional-enum',values:['side','above']},
+  showOfferBadges:{kind:'optional-boolean'},
   typography: {kind:'nested'},
   motionPreset: {kind: 'optional-enum', values: ['subtle-lift', 'fade-in', 'smooth-zoom', 'dynamic-pop', 'none']},
   id: {kind: 'required-string'},
@@ -265,7 +275,10 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   imageForeground: {kind: 'optional-boolean'},
   imageForegroundColor: {kind: 'optional-string'},
   imageForegroundOpacity: {kind: 'optional-enum', values: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]},
-  layoutPreset: {kind: 'optional-enum', values: ['default', 'editorial-hero', 'editorial-story', 'editorial-cover', 'story-with-steps']},
+  shopNavigationPreset: {kind: 'optional-enum', values: ['cards','collection-banners']},
+  bannerProportions: {kind: 'optional-enum', values: ['50:50','60:40','40:60']},
+  bannerHeight: {kind: 'optional-enum', values: ['compact','comfortable','tall']},
+  layoutPreset: {kind: 'optional-enum', values: ['default', 'editorial-hero', 'editorial-story', 'editorial-cover', 'editorial-story-cards', 'story-with-steps']},
   containerMode: {kind: 'optional-enum', values: ['page','full-bleed']},
   sectionBorder: {kind: 'optional-enum', values: ['default','none','top','bottom','both']},
   sectionBorderColor: {kind: 'optional-string'},
@@ -316,7 +329,9 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   isVisible: {kind: 'required-boolean'},
   items: {kind: 'nested'},
   productIds: {kind: 'nested'},
-  sourceType: {kind: 'optional-enum', values: ['category', 'collection']},
+  productTabs: {kind: 'nested'},
+  sourceType: {kind: 'optional-enum', values: ['category', 'collection', 'manual']},
+  listingPreset: {kind: 'optional-enum', values: ['default', 'editorial-grid', 'editorial-tabs']},
   sourceId: {kind: 'optional-string'},
   productLimit: {kind: 'optional-number'},
   autoSlide: {kind: 'optional-boolean'},
@@ -355,12 +370,14 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   cardExtra: {kind: 'optional-string'},
   sliderInterval: {kind: 'optional-number'},
   sliderAutoplay: {kind: 'optional-boolean'},
-  sliderHeight: {kind: 'optional-enum', values: ['compact', 'normal', 'spacious', 'fullscreen']},
+  sliderPreset: {kind: 'optional-enum', values: ['default', 'editorial-overlay']},
+  sliderHeight: {kind: 'optional-enum', values: ['panoramic', 'compact', 'normal', 'spacious', 'fullscreen']},
 } as const satisfies Record<keyof PageSection, PageSectionFieldRule>;
 
 const isSectionItem = (value: unknown): boolean => {
   if (!isRecord(value) || typeof value.id !== 'string' || typeof value.title !== 'string') return false;
   if (!sectionItemStringFields.every(field => !(field in value) || typeof value[field] === 'string')) return false;
+  if ('sourceType' in value && !['category','collection','custom'].includes(String(value.sourceType))) return false;
   if (!sectionItemNumberFields.every(field => !(field in value) || isFiniteNumber(value[field]))) return false;
   if ('features' in value && !isStringArray(value.features)) return false;
   if ('isHighlighted' in value && typeof value.isHighlighted !== 'boolean') return false;
@@ -407,8 +424,12 @@ const isRuntimeSource = (value: unknown, type: PageRuntimeSource['type']): value
 );
 
 const isPageSection = (value: unknown): value is PageSection => {
+  if(isRecord(value)&&value.type==='promotion_highlights'&&Array.isArray(value.items)&&value.items.length>6)return false;
+  if(isRecord(value)&&['promotionSource','promotionLayout','showOfferBadges'].some(k=>k in value)&&value.type!=='promotion_highlights')return false;
+  if(isRecord(value)&&['shopNavigationPreset','bannerProportions','bannerHeight'].some(key=>key in value)&&value.type!=='shop_navigation')return false;
+  if (isRecord(value) && ('listingPreset' in value || 'productTabs' in value || value.sourceType === 'manual') && value.type !== 'product_listing') return false;
   if (isRecord(value) && 'galleryPreset' in value && value.type !== 'media_gallery') return false;
-  if (isRecord(value) && 'showSectionHeading' in value && !['media_gallery','feature_cards','policy_content','chapter_block'].includes(String(value.type))) return false;
+  if (isRecord(value) && 'showSectionHeading' in value && !['media_gallery','feature_cards','policy_content','chapter_block','shop_navigation'].includes(String(value.type))) return false;
   if (isRecord(value) && ['ctaPreset','ctaBannerHeight'].some(field=>field in value) && value.type !== 'cta_strip') return false;
   if(isRecord(value)&&'mediaContainerMode' in value&&!['media_text_split','media_gallery','chapter_block','policy_content'].includes(String(value.type)))return false;
   if(isRecord(value)&&(['deliverySource','deliveryNote','deliveryDestinationLabel','deliveryEstimateLabel','deliveryFeeLabel'].some(key=>key in value)&&value.type!=='delivery_table'&&value.type!=='chapter_block'||['faqPreset','faqInitiallyOpen'].some(key=>key in value)&&value.type!=='faq_accordion'))return false;
@@ -446,6 +467,14 @@ const isPageSection = (value: unknown): value is PageSection => {
   }
 
   if ('productIds' in value && !isStringArray(value.productIds)) return false;
+  if ('productTabs' in value && (!Array.isArray(value.productTabs) || !value.productTabs.every(tab => (
+    isRecord(tab) && hasOnlyKeys(tab,['id','label','sourceType','sourceId','productIds','productLimit'])
+    && typeof tab.id==='string' && typeof tab.label==='string'
+    && ['all','category','collection','manual'].includes(String(tab.sourceType))
+    && (tab.sourceId===undefined || typeof tab.sourceId==='string')
+    && (tab.productIds===undefined || isStringArray(tab.productIds))
+    && (tab.productLimit===undefined || [2,3,4,6,8,12].includes(Number(tab.productLimit)) && typeof tab.productLimit==='number')
+  )) || new Set(value.productTabs.map(tab=>tab.id)).size!==value.productTabs.length)) return false;
   if ('items' in value && (!Array.isArray(value.items) || !value.items.every(isSectionItem))) return false;
   if ('tabs' in value && (!Array.isArray(value.tabs) || !value.tabs.every(tab => (
     isRecord(tab)
@@ -465,6 +494,7 @@ const isPageSection = (value: unknown): value is PageSection => {
       && typeof item.label === 'string'
     )))) return false;
   if ('typography' in value && !isTypography(value.typography)) return false;
+  if ('brandPalette' in value && !isPalette(value.brandPalette)) return false;
   if ('imageSlots' in value) {
     if (!Array.isArray(value.imageSlots)) return false;
     const available = imageTargets(value as unknown as PageSection);
@@ -519,7 +549,8 @@ const isRuntimeTabFacts = (value: unknown): boolean => (
 );
 
 const isRuntimeSectionFacts = (value: unknown): value is PageRuntimeSectionFacts => {
-  if (!isRecord(value) || !hasOnlyKeys(value, ['productIds', 'tabs', 'newsletterCouponId', 'listing', 'delivery', 'payments'])) return false;
+  if (!isRecord(value) || !hasOnlyKeys(value, ['productIds', 'tabs', 'newsletterCouponId', 'listing', 'delivery', 'payments','promotions'])) return false;
+  if('promotions' in value&&(!isRecord(value.promotions)||!hasOnlyKeys(value.promotions,['offers'])||!isPromotionOffers(value.promotions.offers)))return false;
   if('payments' in value&&!isPaymentFacts(value.payments))return false;
   if('delivery' in value && (!isRecord(value.delivery)||!hasOnlyKeys(value.delivery,['rows','status'])||('status' in value.delivery&&!['ready','unavailable'].includes(String(value.delivery.status)))||!Array.isArray(value.delivery.rows)||!value.delivery.rows.every(row=>isRecord(row)&&hasOnlyKeys(row,['id','title','deliveryEstimate','deliveryFee'])&&['id','title','deliveryEstimate','deliveryFee'].every(key=>typeof row[key]==='string'))))return false;
   if ('listing' in value && !isRuntimeTabFact(value.listing)) return false;
@@ -569,6 +600,7 @@ const isRuntimePayload = (value: unknown): value is PageRuntimePayload => {
     || typeof value.page.document.slug !== 'string'
     || !['standard', 'fullwidth', 'landing'].includes(String(value.page.document.template))
     || ('containerWidth' in value.page.document && !['standard','wide'].includes(String(value.page.document.containerWidth)))
+    || ('style' in value.page.document && !isPageStyle(value.page.document.style))
     || !Array.isArray(value.page.document.sections)
     || !value.page.document.sections.every(isPageSection)
     || !isRecord(value.catalog)
@@ -588,7 +620,8 @@ const isRuntimePayload = (value: unknown): value is PageRuntimePayload => {
     || !Object.values(value.runtime.errors).every(isStringArray)
     || !isRecord(value.context)
     || !['preview', 'public'].includes(String(value.context.mode))
-    || typeof value.context.currency !== 'string') {
+    || typeof value.context.currency !== 'string'
+    || (value.context.wishlist !== undefined && (!isRecord(value.context.wishlist) || typeof value.context.wishlist.authenticated !== 'boolean' || typeof value.context.wishlist.csrfToken !== 'string' || !isStringArray(value.context.wishlist.savedProductIds) || value.context.wishlist.loginUrl !== '/account/login'))) {
     return false;
   }
 
@@ -624,6 +657,7 @@ export const createAdminPageRuntimePayload = (
   catalog: AdminRuntimeCatalog,
   currency = 'USD',
   shippingRates?: import('./deliveryInformation').DeliveryRate[],
+  promotionOffers:PromotionOffer[]=[],
 ): PageRuntimePayload => {
   const productsById = new Map(
     catalog.products.filter(product => product.status === 'active').map(product => [product.id, product]),
@@ -641,13 +675,22 @@ export const createAdminPageRuntimePayload = (
 
   page.sections.forEach((section, sectionIndex) => {
     if (!section.isVisible) return;
+    if(section.type==='promotion_highlights')runtimeSections[sectionIndex]={promotions:{offers:promotionOffers}};
     if(section.type==='delivery_table'||section.type==='chapter_block'&&section.chapterPreset==='delivery')runtimeSections[sectionIndex]={delivery:{rows:deliveryRows(shippingRates??[]),status:shippingRates===undefined?'unavailable':'ready'}};
 
+    if (section.type === 'shop_navigation') {
+      for (const item of section.items ?? []) {
+        if (item.sourceType === 'category' && categoriesById.has(item.sourceId ?? '')) resolvedCategoryIds.add(item.sourceId!);
+        if (item.sourceType === 'collection' && collectionsById.has(item.sourceId ?? '')) resolvedCollectionIds.add(item.sourceId!);
+      }
+    }
     if (section.type === 'product_listing') {
-      const type = section.sourceType ?? 'category';
-      const source = type === 'category' ? categoriesById.get(section.sourceId ?? '') : collectionsById.get(section.sourceId ?? '');
-      const items = source ? catalog.products.filter(product => product.status === 'active' && (type === 'category'
-        ? product.categoryId === source.id : product.collectionIds.includes(source.id))).sort((a,b) => Number(a.id)-Number(b.id)).slice(0,section.productLimit ?? 6) : [];
+      const resolveFeed=(feed: Omit<PageSection,'sourceType'> & {sourceType?:'all'|'category'|'collection'|'manual'}):{listing:NonNullable<PageRuntimeSectionFacts['listing']>} => {
+      const type = feed.sourceType ?? 'category';
+      const source = type === 'manual' || type === 'all' ? undefined : type === 'category' ? categoriesById.get(feed.sourceId ?? '') : collectionsById.get(feed.sourceId ?? '');
+      const manual = [...new Set(feed.productIds ?? [])].flatMap(id => {const product=productsById.get(id);return product ? [product] : [];});
+      const items = type === 'all' ? catalog.products.filter(p=>p.status==='active').sort((a,b)=>Number(a.id)-Number(b.id)).slice(0,feed.productLimit??4) : type === 'manual' ? manual.slice(0,feed.productLimit ?? 6) : source ? catalog.products.filter(product => product.status === 'active' && (type === 'category'
+        ? product.categoryId === source.id : product.collectionIds.includes(source.id))).sort((a,b) => Number(a.id)-Number(b.id)).slice(0,feed.productLimit ?? 6) : [];
       if (source) (type === 'category' ? resolvedCategoryIds : resolvedCollectionIds).add(source.id);
       const products = items.map(product => {
         resolvedProductIds.add(product.id);
@@ -657,10 +700,12 @@ export const createAdminPageRuntimePayload = (
           compareAtPrice: variant?.compareAtPrice ?? null, optionLabels: product.options?.[0]?.values ?? [], canChoose: Boolean(variant),
         }};
       });
-      runtimeSections[sectionIndex] = {listing:{sourceId:{valid:Boolean(source)}, source: source ? {
-        id:source.id, type, slug:source.slug, label:type === 'category' ? (source as Category).name : (source as Collection).title,
+      return {listing:{sourceId:{valid:type === 'all' ? true : type === 'manual' ? manual.length > 0 && manual.length === new Set(feed.productIds ?? []).size : Boolean(source)}, source: source ? {
+        id:source.id, type:type === 'category' ? 'category' : 'collection', slug:source.slug, label:type === 'category' ? (source as Category).name : (source as Collection).title,
         image:type === 'category' ? (source as Category).image ?? null : (source as Collection).coverImage ?? null,
       } : null, products}};
+      };
+      runtimeSections[sectionIndex]=section.listingPreset==='editorial-tabs'?{tabs:(section.productTabs??[]).map(tab=>resolveFeed({...section,...tab,productLimit:tab.productLimit??section.productLimit??4}).listing)}:resolveFeed(section);
     }
 
     if (section.type === 'product_grid') {
@@ -743,6 +788,7 @@ export const createAdminPageRuntimePayload = (
         slug: page.slug,
         template: page.template,
         ...(page.containerWidth?{containerWidth:page.containerWidth}:{}),
+    ...(page.style?{style:page.style}:{}),
         sections: page.sections,
         ...(Object.prototype.hasOwnProperty.call(page, 'description') ? {description: page.description} : {}),
         ...(Object.prototype.hasOwnProperty.call(page, 'heroImage') ? {heroImage: page.heroImage} : {}),

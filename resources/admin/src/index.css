@@ -142,3 +142,77 @@
 .animate-marquee-fast:hover {
   animation-play-state: paused;
 }
+
+/* Shared settings disclosure rhythm; native details retains keyboard behavior. */
+.cms-settings-group,
+[data-cms-page-settings] > details {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid var(--color-neutral-200);
+  font-size: 12px;
+}
+.dark .cms-settings-group,
+.dark [data-cms-page-settings] > details {
+  border-color: var(--color-neutral-800);
+}
+.cms-settings-group > summary,
+[data-cms-page-settings] > details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  margin: 0;
+  padding: 16px 0;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.cms-settings-group > summary::-webkit-details-marker,
+[data-cms-page-settings] > details > summary::-webkit-details-marker { display: none; }
+.cms-settings-group > summary::after,
+[data-cms-page-settings] > details > summary::after {
+  content: '+';
+  flex: 0 0 20px;
+  text-align: center;
+  color: var(--color-neutral-500);
+  font-size: 18px;
+  font-weight: 400;
+}
+.cms-settings-group[open] > summary::after,
+[data-cms-page-settings] > details[open] > summary::after { content: '−'; }
+.cms-settings-group > summary:focus-visible,
+[data-cms-page-settings] > details > summary:focus-visible {
+  outline: 2px solid var(--color-indigo-500);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.cms-settings-group-content {
+  padding: 0 0 24px;
+  font-size: 12px;
+  line-height: 18px;
+}
+[data-inspector-group="24"],
+[data-inspector-group="25"],
+[data-inspector-group="26"] {
+  margin-block: 0 !important;
+}
+[role="tabpanel"] > div:has(> .cms-settings-group) {
+  margin-bottom: 0 !important;
+}
+/* Remove old body separators; the disclosure header owns the boundary. */
+.cms-settings-group-content > .border-t {
+  border-top: 0;
+  padding-top: 0;
+}
+[data-cms-page-settings] > details[open] { padding-bottom: 24px; }
+[data-cms-page-settings] > details > .cms-settings-group {
+  border-top: 0;
+}
+.cms-section-layout .cms-settings-group-content > div,
+.cms-section-layout .cms-settings-group-content > div > div {
+  border-bottom: 0;
+}

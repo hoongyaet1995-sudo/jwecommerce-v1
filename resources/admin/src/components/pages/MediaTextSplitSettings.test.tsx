@@ -12,7 +12,7 @@ function mount(initial=original){
   const node=document.createElement('div');document.body.append(node);root=createRoot(node);const onChange=vi.fn();
   function Harness(){const [section,setSection]=useState(initial);return <MediaTextSplitSettings section={section} onChange={patch=>{onChange(patch);setSection(value=>({...value,...patch}));}}/>;}
   act(()=>root.render(<Harness/>));
-  const choose=(label:string,value:string)=>{const select=node.querySelector(`[aria-label="${label}"]`) as HTMLSelectElement;act(()=>{select.value=value;select.dispatchEvent(new Event('change',{bubbles:true}));});};
+  const choose=(label:string,value:string)=>{act(()=>(node.querySelector(`[aria-label="${label}"] [data-choice-value="${value}"]`) as HTMLButtonElement).click());};
   return {node,onChange,choose};
 }
 describe('global media text split settings',()=>{
@@ -23,7 +23,7 @@ describe('global media text split settings',()=>{
   });
   it('offers all presets without a page or template dependency and does not migrate old fields on render',()=>{
     const {node,onChange}=mount();
-    expect([...node.querySelector('select')!.options].map(o=>o.value)).toEqual(['default','editorial-hero','editorial-story','story-with-steps','editorial-cover']);
+    expect([...node.querySelectorAll('[aria-label="Layout preset"] [data-choice-value]')].map(o=>o.getAttribute('data-choice-value'))).toEqual(['default','editorial-hero','editorial-story','editorial-story-cards','story-with-steps','editorial-cover']);
     expect(onChange).not.toHaveBeenCalled();
   });
   it('initializes absent editable content/media/actions only when the operator selects Story',()=>{

@@ -1,0 +1,7 @@
+# Promotion optional scheduling repair — 2026-10-10
+Root cause: create form hidden hardcoded Aug20/Sep30 dates; list counted enabled rather than eligible. User approved repair and correction of two unintentionally scheduled records.
+Changes: empty optional date inputs, explicit Malaysia timezone, nullable Promotion dates with no invented 2099 expiry, shared frontend status helper for CMS and list/count/filter. API compares end/start only when start specified. Toggle remains enable/disable, separately displayed eligibility state.
+Local records 19 and21: exact guarded UTC-default match cleared dates only; two rows affected. Prior dates starts_at 2026-08-19 16:00:00, ends_at 2026-09-30 15:59:00 UTC. Usage and discount unchanged. CurrentlyValid confirms both names.
+Verification: 6 frontend tests passed (schedule fields, null dates, dated/usage statuses and CMS projection), 3 backend PromotionHighlights tests passed (11 assertions); PHP lint and optional date validator checks passed; final frontend build 11.01 seconds.
+Diagnostic accounting: first shell tinker parse failed before execution because PowerShell variable quoting; corrected command matched zero rows due to local versus UTC storage; verified UTC values then guarded update matched2. No test failures. Historical counts incomplete; tokens unavailable.
+Browser: promotions list both active; create modal Start/End textboxes empty. Screenshot output/promotion-dates/status.jpg. No campaign created, no publication or sync/deployment.

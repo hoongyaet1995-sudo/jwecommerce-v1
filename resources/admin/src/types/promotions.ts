@@ -70,8 +70,8 @@ export interface Promotion {
   isStackable: boolean;
   stackingGroup: StackingGroup;
   applyExclusively: boolean;
-  startsAt: string;
-  endsAt: string;
+  startsAt: string | null;
+  endsAt: string | null;
   isActive: boolean;
   totalUsageLimit: number | null;
   totalUsageCount: number;

@@ -1,12 +1,13 @@
 import {InspectorDeleteButton} from './InspectorDeleteButton';
 import {IconPicker} from './IconPicker';
-import {imageTargets,type ImageTarget} from '../../cms/imageTargets';
+import {imageTargets,pruneImageSlots,type ImageTarget} from '../../cms/imageTargets';
 import {InspectorToggle} from './InspectorToggle';
 import React from 'react';
 import type {PageSection,SectionItem} from '../../types';
 const input='w-full mt-2 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white text-sm';
 export const policyLayouts=[['guidelines','Guidelines'],['choices','Choice cards'],['steps','Numbered steps'],['process-flow','Process flow'],['timeline','Timeline'],['tabs','Tabbed guidelines'],['columns','Editorial columns'],['document','Document'],['directory','Directory']] as const;
-export function PolicySettings({section,onChange,mode,onSelectImage,assetControl}:{section:PageSection;onChange:(section:PageSection)=>void;onSelectImage?:(id:string)=>void;assetControl?:(target:ImageTarget)=>React.ReactNode;mode:'content'|'design'}) {
+export function PolicySettings({section,onChange:onSave,mode,onSelectImage,assetControl}:{section:PageSection;onChange:(section:PageSection)=>void;onSelectImage?:(id:string)=>void;assetControl?:(target:ImageTarget)=>React.ReactNode;mode:'content'|'design'}) {
+ const onChange=(value:PageSection)=>onSave(pruneImageSlots(value));
  if(section.type!=='policy_content'&&!(section.type==='chapter_block'&&section.chapterPreset==='policy'))return null;
  const preset=section.policyPreset??'guidelines';const all=section.items??[];const entries=all.filter(item=>item.imageUrl===undefined);const photos=all.filter(item=>item.imageUrl!==undefined);
  const save=(items:SectionItem[])=>onChange({...section,items:[...items,...photos]});
@@ -22,4 +23,3 @@ export function PolicySettings({section,onChange,mode,onSelectImage,assetControl
  <button type="button" className="text-xs text-indigo-500" onClick={()=>{const id=crypto.randomUUID();onChange({...section,items:[...all,{id,title:'Describe this image',imageUrl:''}]});onSelectImage?.('item:'+id+':imageUrl');}}>Add Image</button><p className="text-xs text-neutral-500">Upload an image above. Crop, ratio and overlay are in Design → Image appearance.</p>
  </div>;
 }
-

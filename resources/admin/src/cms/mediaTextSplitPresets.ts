@@ -4,6 +4,7 @@ export function isEditorialMediaTextSplit(section:PageSection) {
   return section.type==='media_text_split' && (section.layoutPreset==='editorial-cover' || section.layoutPreset==='editorial-hero' || section.layoutPreset==='editorial-story' || section.layoutPreset==='story-with-steps');
 }
 export function mediaTextSplitPresetPatch(section:PageSection,preset:NonNullable<PageSection['layoutPreset']>):Partial<PageSection> {
+  if(preset==='editorial-story-cards')return {layoutPreset:preset,items:section.items??[{id:crypto.randomUUID(),title:'Your story',description:'Introduce the article.',imageUrl:section.mediaUrl??'',buttonText:'Read the story',linkUrl:''}],buttonStyle:'text-link'};
   if(preset==='default') return {layoutPreset:'default'};
   let dark=section.backgroundColor!==undefined && !['bg-white','bg-neutral-50'].includes(section.backgroundColor);
   const customBackground=section.backgroundColor==='custom'?section.customColors?.customBgColor?.trim():undefined;

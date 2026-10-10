@@ -1,3 +1,5 @@
+import {promotionHighlightDefaults} from '../../cms/promotionHighlights';
+import {collectionBannerDefaults} from '../../cms/collectionBanners';
 import {policyLayouts} from './PolicySettings';
 import {shippingChaptersSections} from '../../cms/shippingChaptersTemplate';
 import {shippingEditorialSections} from '../../cms/shippingEditorialTemplate';
@@ -57,6 +59,17 @@ export interface SectionTemplateOption {
 }
 
 const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
+  {type:'promotion_highlights',title:'Promotion Highlights',category:'Commerce & Shop',description:'Live promotion offers in photographic cards. Automatic or selected active vouchers with shared content, image and design controls.',icon:Tag,badge:'Editorial',defaultData:promotionHighlightDefaults()},
+  {type:'shop_navigation',title:'Collection Banners',category:'Commerce & Shop',description:'Image-overlay collection banners with editable copy, links and visual proportions. One banner per row on mobile.',icon:Image,badge:'Editorial',defaultData:collectionBannerDefaults()},
+  {type:'shop_navigation',title:'Shop Navigation',category:'Commerce & Shop',description:'Linked photograph cards for categories, collections or custom destinations. Shared image and typography controls.',icon:Grid,badge:'Editorial',defaultData:{type:'shop_navigation',title:'Shop by room',subtitle:'',content:'',buttonText:'Explore all rooms',buttonLink:'/shop',isVisible:true,containerMode:'page',sectionBorder:'none',motionPreset:'subtle-lift',paddingY:'normal',columnsCount:5,textAlignment:'left',backgroundColor:'custom',textColor:'dark',customColors:{...createSectionColorDefaults(),customBgColor:'#f7f6f2',titleColor:'#292b24',contentColor:'#66685d',primaryBtnBg:'#454e37'},typography:{title:{fontFamily:'serif',fontSize:32,fontWeight:400},itemTitle:{fontFamily:'serif',fontSize:18,fontWeight:400}},items:[{"id": "shop-living", "title": "Living Room", "sourceType": "custom", "linkUrl": "/shop", "imageUrl": "/storage/cms/media/e6774f4c-4d03-4ff8-98b3-152174211cae.png"}, {"id": "shop-dining", "title": "Dining Room", "sourceType": "custom", "linkUrl": "/shop", "imageUrl": "/storage/cms/media/712c6f25-32db-459b-96cb-39e4a6fad163.png"}, {"id": "shop-lighting", "title": "Lighting", "sourceType": "custom", "linkUrl": "/shop", "imageUrl": "/storage/cms/media/28ab0cb3-b015-4596-bd2e-9f0028bf94e9.png"}, {"id": "shop-decor", "title": "Decor", "sourceType": "custom", "linkUrl": "/shop", "imageUrl": "/storage/cms/media/524de4a8-d5ae-4fd8-8502-f05e9d6ecfbc.png"}, {"id": "shop-bedroom", "title": "Bedroom", "sourceType": "custom", "linkUrl": "/shop", "imageUrl": "/storage/cms/media/cccfed70-efe4-4185-be48-8a0165212c71.png"}]}},
+  {
+    type:'hero_slider',title:'Editorial Overlay Slider',category:'Header & Intro',
+    description:'A photographic carousel with an editable light text panel, actions and optional captions.',icon:Sliders,badge:'Editorial',
+    defaultData:{type:'hero_slider',title:'The Considered Home',subtitle:'THE CONSIDERED HOME',content:'Considered pieces for everyday living.',isVisible:true,sliderPreset:'editorial-overlay',containerMode:'full-bleed',sectionBorder:'none',motionPreset:'subtle-lift',paddingY:'compact',backgroundColor:'bg-white',textColor:'dark',textAlignment:'left',sliderHeight:'normal',sliderAutoplay:true,sliderInterval:7,overlayOpacity:0,
+      customColors:{...createSectionColorDefaults(),eyebrowColor:'#626547',titleColor:'#292b24',contentColor:'#66685d',primaryBtnBg:'#454e37',primaryBtnText:'#ffffff',secondaryBtnBg:'#faf8f1',secondaryBtnText:'#454e37'},
+      items:[{id:'editorial-slide-1',title:'Make room\nfor everyday\nbeauty.',subtitle:'',description:'Thoughtful pieces for a more\nmeaningful home.',imageUrl:'/storage/cms/media/b773291f-3f89-42ec-b036-efb180c23494.png',buttonText:'Shop the edit',linkUrl:'/shop',caption:'Home\nfor a brighter\neveryday.'}]
+    }
+  },
   // --- 1. HEADER & INTRO ---
   {
     type: 'hero_banner',
@@ -364,6 +377,14 @@ const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
       paddingY: 'normal',
       isVisible: true
     }
+  },
+  {
+    type:'product_listing',title:'Editorial Product Tabs',category:'Commerce & Shop',description:'Switch between product groups in a clean editorial grid. Edit tab names and product sources in Content.',icon:Sliders,badge:'New',
+    defaultData:{type:'product_listing',title:'Made for the way you live',isVisible:true,listingPreset:'editorial-tabs',productTabs:[{id:'tab-all',label:'All products',sourceType:'all'}],productLimit:4,columnsCount:4,imageRatio:'4:3',buttonText:'Shop all',buttonLink:'/shop',containerMode:'page',sectionBorder:'none',motionPreset:'subtle-lift',backgroundColor:'bg-white',textColor:'dark',paddingY:'compact',textAlignment:'left',customColors:{titleColor:'#292b24',contentColor:'#6d7267',primaryBtnBg:'#292b24'}}
+  },
+  {
+    type:'product_listing',title:'Editorial Product Grid',category:'Commerce & Shop',description:'A clean product grid with live catalog prices, handpicked or taxonomy sources and wishlist links.',icon:Sliders,badge:'New',
+    defaultData:{type:'product_listing',title:'Objects worth coming home to',isVisible:true,listingPreset:'editorial-grid',sourceType:'manual',productIds:[],productLimit:4,columnsCount:4,imageRatio:'1:1',buttonText:'Shop all products',buttonLink:'/shop',containerMode:'page',sectionBorder:'none',motionPreset:'subtle-lift',backgroundColor:'bg-white',textColor:'dark',paddingY:'normal',textAlignment:'left',customColors:{titleColor:'#292b24',contentColor:'#56594f',primaryBtnBg:'#292b24'}}
   },
   {
     type: 'product_listing',
@@ -1086,6 +1107,7 @@ const EDITORIAL_SECTION_TEMPLATES:SectionTemplateOption[]=[
 ];
 const shippingChapterStarter=(index:number):Omit<PageSection,'id'>=>{const {id,...data}=shippingChaptersSections('shipping-chapter-starter')[index];return data;};
 const chapterStarter=(index:number):Omit<PageSection,'id'>=>{const {id,...data}=aboutChaptersSections('Your store','chapter-starter')[index];return data;};
+const MEDIA_PRESET_TEMPLATES:SectionTemplateOption[]=(['editorial-hero','editorial-story','editorial-story-cards'] as const).map(layoutPreset=>({type:'media_text_split',title:({'editorial-hero':'Editorial Hero','editorial-story':'Editorial Story','editorial-story-cards':'Editorial Story Cards'})[layoutPreset],category:layoutPreset==='editorial-hero'?'Header & Intro':'Storytelling & Narrative',description:'Reusable image and narrative layout with editable content, media and actions.',icon:Columns,badge:'Editorial',defaultData:{type:'media_text_split',layoutPreset,title:'Made for everyday.',subtitle:'YOUR STORY',content:'Introduce your store and what matters to you.',mediaUrl:'',mediaPosition:'left',buttonText:'Explore',buttonLink:'/shop',buttonStyle:layoutPreset==='editorial-story-cards'?'text-link':'button',isVisible:true,backgroundColor:'bg-white',textColor:'dark',containerMode:'page',sectionBorder:'none',motionPreset:'subtle-lift',...(layoutPreset==='editorial-story-cards'?{items:[{id:'story-starter',title:'Your story',description:'Introduce the article.',imageUrl:'',buttonText:'Read the story',linkUrl:'/shop'}]}:{})}}));
 const CHAPTER_SECTION_TEMPLATES:SectionTemplateOption[]=[
  {type:'media_text_split',title:'Editorial Cover',category:'Header & Intro',description:'A bold heading, introduction and panoramic photograph.',icon:Image,badge:'Editorial',defaultData:chapterStarter(0)},
  {type:'chapter_navigation',title:'Chapter Navigation',category:'Storytelling & Narrative',description:'Automatically links to visible Chapter Blocks, with matching numbers and labels.',icon:Layers,badge:'Editorial',defaultData:chapterStarter(1)},
@@ -1102,7 +1124,7 @@ const SHIPPING_SECTION_TEMPLATES:SectionTemplateOption[]=[
 ];
 const POLICY_SECTION_TEMPLATES:SectionTemplateOption[]=policyLayouts.map(([policyPreset,label])=>({type:'policy_content',title:`Policy ${label}`,category:'Support & Contact',description:'Reusable policy guidance with shared typography, links and image settings.',icon:FileText,badge:'Policy',defaultData:{type:'policy_content',title:'Policy guidance',subtitle:'GUIDELINES',content:'Explain the next steps for your customers.',isVisible:true,policyPreset,policyNote:'Replace sample copy with your approved store policy.',containerMode:'page',backgroundColor:'bg-white',textColor:'dark',sectionBorder:'none',motionPreset:'subtle-lift',items:[{id:'policy-entry',title:'Guideline',description:'To edit: add your approved policy.',...(policyPreset==='tabs'?{category:'Guidelines'}:{})}]}}));
 const PAYMENT_SECTION_TEMPLATES:SectionTemplateOption[]=(['cards','list'] as const).map(paymentLayout=>({type:'payment_methods',title:paymentLayout==='cards'?'Payment Cards':'Payment List',category:'Support & Contact',description:'Automatic payment methods from saved store settings.',icon:ShieldCheck,defaultData:{type:'payment_methods',title:'Ways to pay.',subtitle:'PAYMENT OPTIONS',content:'Choose the available method that suits your order.',paymentLayout,customColors:{...createSectionColorDefaults(),titleColor:'#171717',contentColor:'#737373',eyebrowColor:'#4f46e5'},paymentNote:'Final availability depends on your order, currency and delivery address. Confirm at checkout.',isVisible:true,backgroundColor:'bg-white',textColor:'dark',motionPreset:'subtle-lift',containerMode:'page',sectionBorder:'none'}}));
-export const SECTION_TEMPLATES: SectionTemplateOption[] = [...PAYMENT_SECTION_TEMPLATES,...SOURCE_SECTION_TEMPLATES,...EDITORIAL_SECTION_TEMPLATES,...CHAPTER_SECTION_TEMPLATES,...SHIPPING_SECTION_TEMPLATES,...POLICY_SECTION_TEMPLATES].map(template => ({
+export const SECTION_TEMPLATES: SectionTemplateOption[] = [...MEDIA_PRESET_TEMPLATES,...PAYMENT_SECTION_TEMPLATES,...SOURCE_SECTION_TEMPLATES,...EDITORIAL_SECTION_TEMPLATES,...CHAPTER_SECTION_TEMPLATES,...SHIPPING_SECTION_TEMPLATES,...POLICY_SECTION_TEMPLATES].map(template => ({
   ...template,
   defaultData: {
     ...template.defaultData,
@@ -1159,9 +1181,10 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
       } : {}),
       id: 'sec-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7)
     };
-    if (newSection.type==='chapter_block'||newSection.galleryPreset?.startsWith('editorial-')||newSection.featureCardsPreset==='editorial-columns') {
+    if (newSection.type==='promotion_highlights'||newSection.type==='chapter_block'||newSection.galleryPreset?.startsWith('editorial-')||newSection.featureCardsPreset==='editorial-columns') {
       newSection.items=newSection.items?.map((item,index)=>({...item,id:`${newSection.id}-item-${index}`}));
     }
+    newSection.productTabs=newSection.productTabs?.map((tab,index)=>({...tab,id:`${newSection.id}-tab-${index}`}));
     onAdd(newSection);
     onClose();
   };

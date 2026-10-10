@@ -1,3 +1,6 @@
+import {PageStyleSettings} from './PageStyleSettings';
+import {createPortal} from 'react-dom';
+import {duplicateSection} from '../../cms/duplicateSection';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { SectionMotionPreset, CmsPage, PageDocument, PageDraftPayload, PageSection } from '../../types';
 import { useAdmin } from '../../context/AdminContext';
@@ -21,8 +24,10 @@ import { SectionRenderer } from './SectionRenderer';
 import { SectionInspector } from './SectionInspector';
 import { AddSectionModal } from './AddSectionModal';
 import { PageTemplateModal, pageTemplates } from './PageTemplateModal';
-import { createPageTemplateSections, type PageTemplateContext } from '../../cms/pageTemplates';
+import { createPageTemplateStyle, createPageTemplateSections, type PageTemplateContext } from '../../cms/pageTemplates';
 import { loadShopBranding } from '../../integration/shopBrandingData';
+import {fetchHighlightCoupons} from '../../integration/couponData';
+import {couponHighlight,type PromotionOffer} from '../../cms/promotionHighlights';
 import { fetchCommerceSettings } from '../../integration/commerceSettingsData';
 import { currencyFor } from '../../integration/adminMoney';
 import { PagePreviewModal } from './PagePreviewModal';
@@ -117,6 +122,7 @@ export const PageAdmin: React.FC = () => {
   const [editingPageId, setEditingPageId] = useState<string | null>(selectedPageId || null);
   const [selectedElement,setSelectedElement]=useState<{sectionId:string;target:string;role?:string;revision:number}|null>(null);
   const selectElement=(sectionId:string,target:string,role?:string)=>{setActiveSectionId(sectionId);setIsInspectorCollapsed(false);setSelectedElement(previous=>({sectionId,target,role,revision:(previous?.revision??0)+1}));};
+  const [promotionOffers,setPromotionOffers]=useState<PromotionOffer[]>([]);
   const [selectedImage, setSelectedImage] = useState<{sectionId:string;target:string}|null>(null);
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
@@ -166,17 +172,23 @@ export const PageAdmin: React.FC = () => {
     finally { homepageSwitchPending.current = false; }
   };
   useEffect(()=>{if(!currentPage?.sections.some(s=>(s.type==='delivery_table'||s.type==='chapter_block'&&s.chapterPreset==='delivery')))return;let active=true;const load=()=>fetchCommerceSettings(laravelBootstrap).then(settings=>{if(active)setDeliveryRates(settings.shippingRates);}).catch(()=>{if(active)setDeliveryRates(undefined);});void load();window.addEventListener('focus',load);return()=>{active=false;window.removeEventListener('focus',load);};},[currentPage?.id,Boolean(currentPage?.sections.some(s=>(s.type==='delivery_table'||s.type==='chapter_block'&&s.chapterPreset==='delivery')))]);
+  useEffect(()=>{if(!currentPage?.sections.some(s=>s.type==='promotion_highlights'))return;let active=true;
+   const load=()=>fetchHighlightCoupons(laravelBootstrap).then(data=>{if(active)setPromotionOffers(data.map(c=>couponHighlight(c)));}).catch(()=>{if(active)setPromotionOffers([]);});
+   void load();window.addEventListener('focus',load);const timer=window.setInterval(load,60000);
+   return()=>{active=false;window.removeEventListener('focus',load);window.clearInterval(timer);};
+  },[currentPage?.id,Boolean(currentPage?.sections.some(s=>s.type==='promotion_highlights'))]);
   const activeSection = currentPage?.sections.find(s => s.id === activeSectionId) || null;
   const adminRuntimePayload = useMemo(() => currentPage
-    ? createAdminPageRuntimePayload(currentPage, { products, categories, collections }, currencyCode,deliveryRates??templateContext.shippingRates)
+    ? createAdminPageRuntimePayload(currentPage, { products, categories, collections }, currencyCode,deliveryRates??templateContext.shippingRates,promotionOffers)
     : null,
-  [currentPage, products, categories, collections, currencyCode,templateContext.shippingRates,deliveryRates]);
+  [currentPage, products, categories, collections, currencyCode,templateContext.shippingRates,deliveryRates,promotionOffers]);
 
   const toPageDocument = (page: CmsPage): PageDocument => ({
     title: page.title,
     slug: page.slug,
     template: page.template,
     ...(page.containerWidth?{containerWidth:page.containerWidth}:{}),
+    ...(page.style?{style:page.style}:{}),
     sections: page.sections,
     ...(hasOwnContractField(page, 'description') ? { description: page.description } : {}),
     ...(hasOwnContractField(page, 'heroImage') ? { heroImage: page.heroImage } : {}),
@@ -195,6 +207,7 @@ export const PageAdmin: React.FC = () => {
       description: _description,
       template: _template,
       containerWidth: _containerWidth,
+      style: _style,
       heroImage: _heroImage,
       seoTitle: _seoTitle,
       seoDescription: _seoDescription,
@@ -523,7 +536,8 @@ export const PageAdmin: React.FC = () => {
         slug: template.id + '-' + stamp.slice(0,8), description: template.description,
         status:'draft', template:'standard', createdAt:new Date().toISOString().split('T')[0], updatedAt:new Date().toISOString().split('T')[0],
         ...(['about-editorial','about-studio','about-chapters'].includes(templateId) ? {containerWidth:'standard' as const} : {}),
-        sections:createPageTemplateSections(template.id, templateContext, 'sec-'+stamp)
+        style:createPageTemplateStyle(templateId),
+        sections:createPageTemplateSections(template.id, {...templateContext,products,categories,collections,promotionOffers}, 'sec-'+stamp)
       };
       const saved = await savePage(newPage);
       if (saved) { templateLoadRequest.current++; setTemplateOpen(false); await hydrateEditor(saved); }
@@ -595,15 +609,7 @@ export const PageAdmin: React.FC = () => {
     const targetIdx = currentPage.sections.findIndex(s => s.id === sectionId);
     if (targetIdx === -1) return;
     const target = currentPage.sections[targetIdx];
-    const duplicated: PageSection = {
-      ...target,
-      id: 'sec-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
-      title: `${target.title} (Copy)`,
-      items: target.items?.map(it => ({
-        ...it,
-        id: 'item-' + Math.random().toString(36).substring(2, 6)
-      }))
-    };
+    const duplicated = duplicateSection(target);
     const updatedPage = updatePageLocal(currentPage.id, latest => {
       const latestTargetIndex = latest.sections.findIndex(section => section.id === sectionId);
       if (latestTargetIndex === -1) return latest;
@@ -756,7 +762,7 @@ export const PageAdmin: React.FC = () => {
   if (!editingPageId || !currentPage) {
     return (
       <div id="page-admin-directory" className="space-y-6 animate-in fade-in">
-        {templateOpen && <PageTemplateModal context={templateContext} settingsState={templateSettingsState} busy={templateBusy} onClose={handleCloseTemplates} onCreate={handleCreateNewPage}/>}
+        {templateOpen && <PageTemplateModal context={{...templateContext,products,categories,collections,promotionOffers}} settingsState={templateSettingsState} busy={templateBusy} onClose={handleCloseTemplates} onCreate={handleCreateNewPage}/>}
         {/* Header Title & Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -1184,12 +1190,7 @@ export const PageAdmin: React.FC = () => {
 
         <div className="relative shrink-0">
           <button type="button" aria-label="Page Settings" aria-expanded={pageSettingsOpen} onClick={()=>setPageSettingsOpen(!pageSettingsOpen)} className="px-3 py-2 rounded-xl text-xs font-semibold border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800">Page Settings</button>
-          {pageSettingsOpen && <div role="dialog" aria-label="Page Settings" className="absolute top-full left-0 mt-2 w-72 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl z-50">
-            <div className="flex items-center justify-between mb-3"><h3 className="text-sm font-bold text-neutral-900 dark:text-white">Page Settings</h3><button type="button" aria-label="Close Page Settings" onClick={()=>setPageSettingsOpen(false)} className="text-neutral-500">×</button></div>
-            <h4 className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-2">Layout</h4>
-            <label className="text-xs text-neutral-600 dark:text-neutral-400">Page width<select aria-label="Page width" value={currentPage.containerWidth??'standard'} onChange={event=>{const width=event.target.value as 'standard'|'wide';const updated=updatePageLocal(currentPage.id,latest=>({...latest,containerWidth:width}));if(updated)schedulePage(updated);}} className="block w-full mt-1 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-white"><option value="standard">Standard</option><option value="wide">Wide</option></select></label>
-            <p className="text-[11px] text-neutral-500 mt-3">All sections inherit this page layout. Text reading widths and image proportions follow each layout preset.</p>
-          </div>}
+          {pageSettingsOpen && createPortal(<PageStyleSettings page={currentPage} onClose={()=>setPageSettingsOpen(false)} onChange={patch=>{const updated=updatePageLocal(currentPage.id,latest=>({...latest,...patch}));if(updated)schedulePage(updated);}}/>, document.body)}
         </div>
 
         {/* Center: Viewport Switchers & Zen Canvas Switch */}
@@ -1558,9 +1559,9 @@ export const PageAdmin: React.FC = () => {
         {/* Right Panel: Section Inspector (Collapsible) */}
         {!isInspectorCollapsed ? (
           <div className="w-84 lg:w-96 flex-shrink-0 flex flex-col transition-all duration-300">
-            <SectionInspector
+            <SectionInspector pageTypography={currentPage.style?.typography} pagePalette={currentPage.style?.palette} promotionOffers={promotionOffers}
                 selectedElement={selectedElement?.sectionId===activeSection?.id?selectedElement:undefined}
-              key={`${currentPage.id}:${activeSection?.id ?? 'none'}`}
+              key={currentPage.id}
               pageId={currentPage.id}
               section={activeSection}
                 selectedImage={selectedImage?.sectionId===activeSection?.id?selectedImage?.target:undefined}
@@ -1702,7 +1703,7 @@ export const PageAdmin: React.FC = () => {
           </div>
         </div>
       )}
-      {templateOpen && <PageTemplateModal context={templateContext} settingsState={templateSettingsState} busy={templateBusy} onClose={handleCloseTemplates} onCreate={handleCreateNewPage}/>}
+      {templateOpen && <PageTemplateModal context={{...templateContext,products,categories,collections,promotionOffers}} settingsState={templateSettingsState} busy={templateBusy} onClose={handleCloseTemplates} onCreate={handleCreateNewPage}/>}
     </div>
   );
 };

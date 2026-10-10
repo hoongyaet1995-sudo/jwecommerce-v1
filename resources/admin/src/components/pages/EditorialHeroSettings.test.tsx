@@ -15,29 +15,29 @@ function mount(value:PageSection){
 describe('Editorial Hero settings',()=>{
   it('seeds readable missing colors for a preserved dark canvas',()=>{
     const {node,onChange}=mount({...section,backgroundColor:'bg-neutral-900'});
-    const select=node.querySelector('select')!;
-    act(()=>{select.value='editorial-hero';select.dispatchEvent(new Event('change',{bubbles:true}));});
+    const select=node.querySelector('[data-choice-value="editorial-hero"]') as HTMLButtonElement;
+    act(()=>{select.click();});
     expect(onChange.mock.calls[0][0]).toMatchObject({backgroundColor:'bg-neutral-900',customColors:{titleColor:'#ffffff',contentColor:'#d4d4d8'}});
   });
   it('preserves authored colors and background when a merchant switches layouts',()=>{
     const {node,onChange}=mount({...section,backgroundColor:'bg-neutral-900',textColor:'light',customColors:{titleColor:'#d4b46a',contentColor:'#aaaaaa',primaryBtnBg:'#335577'}});
-    const select=node.querySelector('select')!;
-    act(()=>{select.value='editorial-hero';select.dispatchEvent(new Event('change',{bubbles:true}));});
+    const select=node.querySelector('[data-choice-value="editorial-hero"]') as HTMLButtonElement;
+    act(()=>{select.click();});
     expect(onChange.mock.calls[0][0]).toMatchObject({backgroundColor:'bg-neutral-900',textColor:'light',customColors:{titleColor:'#d4b46a',contentColor:'#aaaaaa',primaryBtnBg:'#335577'}});
   });
   it('lets an old section opt in without overwriting its existing image description or crop',()=>{
     const {node,onChange}=mount(section);
-    const select=node.querySelector('select')!;
-    expect(select.value).toBe('default');
-    act(()=>{select.value='editorial-hero';select.dispatchEvent(new Event('change',{bubbles:true}));});
+    const select=node.querySelector('[data-choice-value="editorial-hero"]') as HTMLButtonElement;
+    expect(node.querySelector('[data-choice-value="default"]')!.getAttribute('aria-pressed')).toBe('true');
+    act(()=>{select.click();});
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({layoutPreset:'editorial-hero',mediaAlt:'Saved alt',mediaFocalPoint:'bottom',backgroundColor:'bg-white'}));
     expect(onChange.mock.calls[0][0]).not.toHaveProperty('title');
   });
   it('keeps desktop layout separate from the shared Image crop controls',()=>{
     const {node,onChange}=mount({...section,layoutPreset:'editorial-hero'});
     expect(node.querySelector('[aria-label="Image focal point"]')).toBeNull();
-    const position=node.querySelector('[aria-label="Desktop image position"]') as HTMLSelectElement;
-    act(()=>{position.value='left';position.dispatchEvent(new Event('change',{bubbles:true}));});
+    const position=node.querySelector('[aria-label="Desktop image position"] [data-choice-value="left"]') as HTMLButtonElement;
+    act(()=>{position.click();});
     expect(onChange).toHaveBeenLastCalledWith({mediaPosition:'left'});
   });
   it('hides editorial controls for other section types and for the classic layout',()=>{

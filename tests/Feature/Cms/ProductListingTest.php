@@ -14,6 +14,18 @@ class ProductListingTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_editorial_manual_feed_publishes_live_catalog_and_does_not_mount_unused_purchase_ui(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin'=>true]));
+        $product=Product::create(['title'=>'Editorial chair','handle'=>'editorial-chair','status'=>'active','base_price'=>1200]);
+        $product->variants()->create(['sku'=>'EDITORIAL','title'=>'Natural','price'=>1200,'stock'=>3,'enabled'=>true]);
+        $section=['id'=>'editorial','type'=>'product_listing','title'=>'Objects','isVisible'=>true,'listingPreset'=>'editorial-grid','sourceType'=>'manual','productIds'=>[(string)$product->id],'productLimit'=>4,'columnsCount'=>4,'imageRatio'=>'1:1','buttonText'=>'Shop all products','buttonLink'=>'/shop'];
+        $page=$this->postJson('/admin/api/pages',['title'=>'Editorial','slug'=>'editorial-check','template'=>'landing','sections'=>[$section]])->assertCreated()->json('data');
+        $this->postJson('/admin/api/pages/'.$page['id'].'/publish',['lockVersion'=>$page['lockVersion']])->assertOk();
+        $response=$this->get('/pages/editorial-check')->assertOk()->assertSee('editorial-grid')->assertSee('Editorial chair')->assertDontSee('data-quick-add-modal',false);
+        $this->assertStringContainsString('"loginUrl":"/account/login"',$response->getContent());
+    }
+
     public function test_collection_limit_empty_source_and_hidden_sections_have_no_catalog_fallback(): void
     {
         $collection = Collection::create(['title' => 'Selected', 'slug' => 'selected', 'is_active' => true, 'status' => 'active']);

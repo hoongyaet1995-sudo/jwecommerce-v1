@@ -1,3 +1,4 @@
+import type {PageStyle,BrandPalette} from '../cms/pageStyle';
 import type {SectionTypography} from '../cms/inspectorCapabilities';
 import type {
   NotificationDispatchChannel,
@@ -566,6 +567,8 @@ export type PageSectionType =
   | 'collection_tabs'
   | 'featured_deal'
   | 'pricing_table'
+  | 'shop_navigation'
+  | 'promotion_highlights'
   | 'media_gallery'
   | 'video_embed'
   | 'before_after'
@@ -583,12 +586,15 @@ export type PageSectionType =
   | 'newsletter_signup';
 
 export interface SectionItem {
+  sourceType?: 'category' | 'collection' | 'custom';
+  sourceId?: string;
   deliveryEstimate?: string;
   deliveryFee?: string;
   id: string;
   title: string;
   subtitle?: string;
   description?: string;
+  caption?: string;
   icon?: string;
   imageUrl?: string;
   videoUrl?: string;
@@ -623,6 +629,15 @@ export interface SectionColorConfig {
   customBgColor?: string;
 }
 
+export interface PageProductTab {
+  id: string;
+  label: string;
+  sourceType: 'all' | 'category' | 'collection' | 'manual';
+  sourceId?: string;
+  productIds?: string[];
+  productLimit?: number;
+}
+
 export interface PageCollectionTab {
   id: string;
   label: string;
@@ -641,8 +656,13 @@ export type SectionMotionPreset = 'subtle-lift' | 'fade-in' | 'smooth-zoom' | 'd
 export type SectionImageSlot = Pick<PageSection, 'mediaAlt' | 'imageRatio' | 'imagePosition' | 'imageFit' | 'imageWidth' | 'imageShape' | 'imageOverlay' | 'imageOverlayOpacity' | 'imageForeground' | 'imageForegroundColor' | 'imageForegroundOpacity'> & {target:string};
 
 export interface PageSection {
+  promotionSource?: 'automatic'|'manual';
+  promotionLayout?: 'side'|'above';
+  showOfferBadges?: boolean;
   imageSlots?: SectionImageSlot[];
   typography?: SectionTypography;
+  surface?: 'light' | 'contrast';
+  brandPalette?: BrandPalette;
   motionPreset?: SectionMotionPreset;
   id: string;
   type: PageSectionType;
@@ -666,7 +686,7 @@ export interface PageSection {
   imageForeground?: boolean;
   imageForegroundColor?: string;
   imageForegroundOpacity?: 0 | 10 | 20 | 30 | 40 | 50 | 60 | 70 | 80 | 90 | 100;
-  layoutPreset?: 'default' | 'editorial-hero' | 'editorial-story' | 'editorial-cover' | 'story-with-steps';
+  layoutPreset?: 'default' | 'editorial-hero' | 'editorial-story' | 'editorial-cover' | 'editorial-story-cards' | 'story-with-steps';
   paymentLayout?: 'cards' | 'list';
   paymentNote?: string;
   deliverySource?: 'settings' | 'manual';
@@ -717,12 +737,17 @@ export interface PageSection {
   isVisible: boolean;
   items?: SectionItem[];
   productIds?: string[];
-  sourceType?: 'category' | 'collection';
+  sourceType?: 'category' | 'collection' | 'manual';
+  listingPreset?: 'default' | 'editorial-grid' | 'editorial-tabs';
+  productTabs?: PageProductTab[];
   sourceId?: string;
   productLimit?: number;
   autoSlide?: boolean;
   autoSlideInterval?: number;
   showNavArrows?: boolean;
+  shopNavigationPreset?: 'cards' | 'collection-banners';
+  bannerProportions?: '50:50' | '60:40' | '40:60';
+  bannerHeight?: 'compact' | 'comfortable' | 'tall';
   columnsCount?: 2 | 3 | 4 | 5 | 6;
   customCssClass?: string;
 
@@ -762,7 +787,8 @@ export interface PageSection {
   // Hero Slider props
   sliderInterval?: number; // seconds e.g. 5
   sliderAutoplay?: boolean;
-  sliderHeight?: 'compact' | 'normal' | 'spacious' | 'fullscreen';
+  sliderPreset?: 'default' | 'editorial-overlay';
+  sliderHeight?: 'panoramic' | 'compact' | 'normal' | 'spacious' | 'fullscreen';
 }
 
 export interface CmsPage {
@@ -774,6 +800,7 @@ export interface CmsPage {
   status: 'published' | 'draft' | 'archived';
   template: 'standard' | 'fullwidth' | 'landing';
   containerWidth?: 'standard' | 'wide';
+  style?: PageStyle;
   heroImage?: string | null;
   seoTitle?: string;
   seoDescription?: string;
@@ -887,6 +914,7 @@ export type PageDocument = Pick<
   | 'description'
   | 'template'
   | 'containerWidth'
+  | 'style'
   | 'heroImage'
   | 'seoTitle'
   | 'seoDescription'
@@ -1195,4 +1223,3 @@ export * from './reports';
 export * from './aiAutoReply';
 export * from './promotions';
 export * from './notifications';
-

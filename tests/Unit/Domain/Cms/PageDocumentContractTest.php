@@ -9,6 +9,81 @@ use Tests\TestCase;
 
 final class PageDocumentContractTest extends TestCase
 {
+    public function test_home_deco_factory_snapshot_preserves_json_object_fields(): void
+    {
+        $codec = app(\App\Domain\Cms\PageDocumentJsonCodec::class);
+        $document = $codec->decodeDocument(file_get_contents(resource_path('admin/src/cms/homeDecoTemplate.json')));
+        $validated = app(PageDocumentContract::class)->validate($document);
+        $this->assertCount(9, $validated['sections']);
+    }
+    public function test_media_layout_switch_retains_owned_image_slots(): void
+    {
+        $document = $this->fixture();
+        $document['sections'] = [['id'=>'story','type'=>'media_text_split','title'=>'Keep','isVisible'=>true,'layoutPreset'=>'default','items'=>[['id'=>'entry','title'=>'Keep entry','imageUrl'=>'https://images.unsplash.com/photo-story']],'imageSlots'=>[['target'=>'item:entry:imageUrl','imageFit'=>'contain']]]];
+        $contract = app(PageDocumentContract::class);
+        $this->assertSame($document, $contract->validate($document));
+        $document['sections'][0]['layoutPreset']='editorial-story-cards';
+        $this->assertSame($document, $contract->validate($document));
+        $document['sections'][0]['imageSlots'][0]['target']='item:foreign:imageUrl';
+        $this->assertArrayHasKey('sections.0.imageSlots.0.target', $this->validationException(fn()=>$contract->validate($document))->errors());
+    }
+
+    public function test_owned_dormant_cta_and_slider_poster_slots_survive_switches(): void
+    {
+        $document=$this->fixture();
+        $document['sections']=[
+            ['id'=>'cta','type'=>'cta_strip','title'=>'CTA','isVisible'=>true,'ctaPreset'=>'editorial-band','mediaUrl'=>'https://images.unsplash.com/photo-cta','imageSlots'=>[['target'=>'mediaUrl','imageFit'=>'cover']]],
+            ['id'=>'slider','type'=>'hero_slider','title'=>'Video','isVisible'=>true,'items'=>[['id'=>'slide','title'=>'Slide','imageUrl'=>'https://images.unsplash.com/photo-poster','videoUrl'=>'https://images.unsplash.com/video.mp4']],'imageSlots'=>[['target'=>'item:slide:imageUrl','imageFit'=>'cover']]],
+        ];
+        $this->assertSame($document,app(PageDocumentContract::class)->validate($document));
+        $document['sections'][1]['imageSlots'][0]['target']='item:foreign:imageUrl';
+        $this->assertArrayHasKey('sections.1.imageSlots.0.target',$this->validationException(fn()=>app(PageDocumentContract::class)->validate($document))->errors());
+    }
+
+    public function test_editorial_product_grid_manual_selection_round_trip(): void
+    {
+        $document = $this->fixture();
+        $document['sections'] = [['id'=>'products','type'=>'product_listing','title'=>'Objects','isVisible'=>true,'listingPreset'=>'editorial-grid','sourceType'=>'manual','productIds'=>['52','51'],'productLimit'=>4,'columnsCount'=>4,'imageRatio'=>'1:1','buttonText'=>'Shop all products','buttonLink'=>'/shop']];
+        $this->assertSame($document, app(PageDocumentContract::class)->validate($document));
+        app(PageDocumentContract::class)->assertPublishable($document, ['sections'=>[0=>['listing'=>['sourceId'=>['valid'=>true]]]]]);
+        $this->assertArrayHasKey('sections.0.productIds', app(PageDocumentContract::class)->runtimeErrors($document, ['sections'=>[0=>['listing'=>['sourceId'=>['valid'=>false]]]]]));
+        $empty = $document;
+        $empty['sections'][0]['productIds'] = [];
+        $this->assertArrayHasKey('sections.0.productIds', $this->validationException(fn()=>app(PageDocumentContract::class)->assertPublishable($empty, ['sections'=>[0=>['listing'=>['sourceId'=>['valid'=>true]]]]]))->errors());
+        $document['sections'][0]['listingPreset']='invented';
+        $this->assertArrayHasKey('sections.0.listingPreset', $this->validationException(fn()=>app(PageDocumentContract::class)->validate($document))->errors());
+    }
+
+    public function test_collection_banners_canonical_round_trip_and_wrong_owner_rejection(): void
+    {
+        $document=$this->fixture();
+        $document['sections']=[['id'=>'banners','type'=>'shop_navigation','title'=>'Collections','isVisible'=>true,'shopNavigationPreset'=>'collection-banners','bannerProportions'=>'60:40','bannerHeight'=>'comfortable','showSectionHeading'=>false,'items'=>[['id'=>'a','title'=>'Living','description'=>'Calm rooms','buttonText'=>'Browse','sourceType'=>'custom','linkUrl'=>'/shop','imageUrl'=>'/storage/cms/media/e6774f4c-4d03-4ff8-98b3-152174211cae.png']]]];
+        $this->assertSame($document,app(PageDocumentContract::class)->validate($document));
+        $document['sections'][0]['bannerProportions']='90:10';
+        $this->assertArrayHasKey('sections.0.bannerProportions',$this->validationException(fn()=>app(PageDocumentContract::class)->validate($document))->errors());
+        $document['sections'][0]['bannerProportions']='60:40';
+        $document['sections'][0]['type']='rich_text';
+        $this->assertArrayHasKey('sections.0.shopNavigationPreset',$this->validationException(fn()=>app(PageDocumentContract::class)->validate($document))->errors());
+    }
+
+    public function test_shop_navigation_source_and_image_slot_round_trip(): void
+    {
+        $document=$this->fixture();
+        $document['sections']=[['id'=>'rooms','type'=>'shop_navigation','title'=>'Shop by room','isVisible'=>true,'columnsCount'=>5,'containerMode'=>'page','items'=>[['id'=>'room','title'=>'','sourceType'=>'category','sourceId'=>'51','imageUrl'=>'']], 'imageSlots'=>[['target'=>'item:room:imageUrl','imageRatio'=>'1:1']]]];
+        $this->assertSame($document,app(PageDocumentContract::class)->validate($document));
+        $document['sections'][0]['items'][0]['sourceType']='product';
+        $this->assertArrayHasKey('sections.0.items.0.sourceType',$this->validationException(fn()=>app(PageDocumentContract::class)->validate($document))->errors());
+    }
+
+    public function test_editorial_slider_and_caption_round_trip_without_loosening_preset_validation(): void
+    {
+        $document=$this->fixture();
+        $document['sections']=[['id'=>'hero','type'=>'hero_slider','title'=>'Home','isVisible'=>true,'sliderPreset'=>'editorial-overlay','containerMode'=>'full-bleed','overlayOpacity'=>0,'items'=>[['id'=>'slide','title'=>"Make room\nfor living.",'caption'=>'Living collection','imageUrl'=>'/storage/cms/media/b773291f-3f89-42ec-b036-efb180c23494.png']]]];
+        $this->assertSame($document,app(PageDocumentContract::class)->validate($document));
+        $document['sections'][0]['sliderPreset']='invented';
+        $this->assertArrayHasKey('sections.0.sliderPreset',$this->validationException(fn()=>app(PageDocumentContract::class)->validate($document))->errors());
+    }
+
     public function test_typography_numeric_ranges_accept_integer_json_and_fractional_values(): void
     {
         $document=$this->fixture();
@@ -50,7 +125,9 @@ final class PageDocumentContractTest extends TestCase
         $this->assertSame($document,app(PageDocumentContract::class)->validate($document));
         $invalid=$document;$invalid['sections'][2]['chapterPreset']='invented';
         $this->assertArrayHasKey('sections.2.chapterPreset',$this->validationException(fn()=>app(PageDocumentContract::class)->validate($invalid))->errors());
-        $invalid=$document;$invalid['sections'][2]['chapterPreset']='principles';
+        $retained=$document;$retained['sections'][2]['chapterPreset']='principles';
+        $this->assertSame($retained,app(PageDocumentContract::class)->validate($retained));
+        $invalid=$retained;$invalid['sections'][2]['imageSlots'][0]['target']='item:foreign:imageUrl';
         $this->assertArrayHasKey('sections.2.imageSlots.0.target',$this->validationException(fn()=>app(PageDocumentContract::class)->validate($invalid))->errors());
     }
 

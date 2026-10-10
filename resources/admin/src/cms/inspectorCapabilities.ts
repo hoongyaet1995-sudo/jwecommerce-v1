@@ -1,8 +1,11 @@
+import {sectionContentFields} from './contentCapabilities';
+import {repeatedItemFields} from './repeatedItemContract';
+import {fontFamilies,type FontFamily} from './fontCatalog';
 import type {CSSProperties} from 'react';
 import type {PageSection} from '../types';
 export type InspectorTab='content'|'design'|'advanced';
 export type TextRole='eyebrow'|'title'|'lead'|'content'|'itemTitle'|'itemContent';
-export interface TextStyle {fontFamily?:'site'|'sans'|'serif'|'mono';fontSize?:number;fontWeight?:number;lineHeight?:number;letterSpacing?:number;color?:string}
+export interface TextStyle {fontFamily?:FontFamily;fontSize?:number;fontWeight?:number;lineHeight?:number;letterSpacing?:number;color?:string}
 export type SectionTypography=Partial<Record<TextRole,TextStyle>>;
 export const textRoleLabels:Record<TextRole,string>={eyebrow:'Eyebrow',title:'Heading',lead:'Introduction',content:'Description',itemTitle:'Item headings',itemContent:'Item descriptions'};
 export const roleFields:Record<TextRole,string>={eyebrow:'subtitle',title:'title',lead:'leadText',content:'content',itemTitle:'items',itemContent:'items'};
@@ -22,21 +25,23 @@ export const inspectorGroups:Array<{name:string;tab:InspectorTab}>=[
  {name:'Layout & theme',tab:'design'},{name:'Motion',tab:'design'},{name:'Palette & colors',tab:'design'},
 ];
 export function textRoles(section:PageSection):TextRole[] {
- if(section.type==='chapter_navigation')return [];
+ if(section.type==='hero_slider'&&section.sliderPreset==='editorial-overlay')return ['eyebrow','title','content'];
+ if(section.type==='chapter_navigation')return ['eyebrow'];
  if(section.type==='announcement_bar')return ['itemTitle'];
  const roles:TextRole[]=[];
+ const contentFields=sectionContentFields(section),itemFields=repeatedItemFields(section);
  const hidden=section.showSectionHeading===false||section.type==='values_list'&&!section.valuesShowHeading||section.type==='chapter_block'&&section.chapterPreset==='principles';
- if('subtitle' in section && section.showSectionHeading!==false)roles.push('eyebrow');
- if(!hidden)roles.push('title');
- if(section.layoutPreset==='editorial-cover'||section.layoutPreset==='editorial-hero'&&'leadText' in section)roles.push('lead');
- if(!hidden&&'content' in section)roles.push('content');
- if(section.type==='payment_methods')roles.push('itemTitle','itemContent');
- if(section.items?.some(item=>'title' in item))roles.push('itemTitle');
+ if(contentFields.includes('subtitle') && section.showSectionHeading!==false)roles.push('eyebrow');
+ if(!hidden&&contentFields.includes('title'))roles.push('title');
+ if(contentFields.includes('leadText'))roles.push('lead');
+ if(!hidden&&contentFields.includes('content'))roles.push('content');
+ if(section.type==='product_listing'&&['editorial-grid','editorial-tabs'].includes(section.listingPreset??''))roles.push('itemTitle');
+ if(['payment_methods','promotion_highlights'].includes(section.type))roles.push('itemTitle','itemContent');
+ if(itemFields.includes('title'))roles.push('itemTitle');
  if((section.type==='delivery_table'||section.type==='chapter_block'&&section.chapterPreset==='delivery')&&section.deliverySource!=='manual')roles.push('itemTitle','itemContent');
- if(section.items?.some(item=>'description' in item||'deliveryEstimate' in item))roles.push('itemContent');
- return roles.filter(role=>{
-  if(['stats_counter','icon_list','logo_cloud'].includes(section.type)&&['title','content'].includes(role))return false;
-  if(section.type==='logo_cloud'&&role==='itemContent')return false;
+ if(itemFields.includes('description')||itemFields.includes('deliveryEstimate'))roles.push('itemContent');
+ return [...new Set(roles)].filter(role=>{
+  if(['stats_counter','icon_list'].includes(section.type)&&['title','content'].includes(role))return false;
   if(section.type==='hero_slider'&&role.startsWith('item'))return false;
   if(section.type==='instagram_feed'&&role==='itemTitle')return false;
   if((section.galleryPreset==='editorial-montage'||section.type==='chapter_block'&&section.chapterPreset==='perspective')&&role.startsWith('item'))return false;
@@ -46,7 +51,7 @@ export function textRoles(section:PageSection):TextRole[] {
 export function isTypography(value:unknown):value is SectionTypography {
  if(!value||typeof value!=='object'||Array.isArray(value))return false;
  return Object.entries(value).every(([role,style])=>Object.prototype.hasOwnProperty.call(textRoleLabels,role)&&style&&typeof style==='object'&&!Array.isArray(style)&&Object.entries(style).every(([key,v])=>{
-  if(key==='fontFamily')return typeof v==='string'&&['site','sans','serif','mono'].includes(String(v));
+  if(key==='fontFamily')return typeof v==='string'&&Object.prototype.hasOwnProperty.call(fontFamilies,v);
   if(key==='color')return typeof v==='string'&&/^#[\da-f]{6}$/i.test(v);
   if(typeof v!=='number'||!Number.isFinite(v))return false;
   if(key==='fontSize')return Number.isInteger(v)&&v>=8&&v<=120;
@@ -58,7 +63,7 @@ export function isTypography(value:unknown):value is SectionTypography {
 }
 export function typographyStyle(section:PageSection,role:TextRole):CSSProperties {
  const value=section.typography?.[role];if(!value)return {};
- return {...(value.fontFamily?{fontFamily:{site:'inherit',sans:'Arial, sans-serif',serif:'Georgia, serif',mono:'monospace'}[value.fontFamily]}:{}),
+ return {...(value.fontFamily?{fontFamily:fontFamilies[value.fontFamily]}:{}),
   ...(value.fontSize?{fontSize:`clamp(${Math.max(8,Math.round(value.fontSize*.7))}px, ${value.fontSize/7.68}cqi, ${value.fontSize}px)`}:{}),
   ...(value.fontWeight?{fontWeight:value.fontWeight}:{}),...(value.lineHeight?{lineHeight:value.lineHeight}:{}),...(value.letterSpacing!==undefined?{letterSpacing:`${value.letterSpacing}px`}:{}),...(value.color?{color:value.color}:{}),
  };

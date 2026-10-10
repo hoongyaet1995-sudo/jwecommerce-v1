@@ -28,3 +28,11 @@ describe('canonical image targets',()=>{
     expect(imageTargets({...gallery,type:'before_after',beforeImageUrl:'/before.png',afterImageUrl:'/after.png'}).map(t=>t.id)).toEqual(['beforeImageUrl','afterImageUrl']);
   });
 });
+
+it('retains owned dormant assets across layout switches and prunes only deleted item identities',()=>{
+ const section:PageSection={id:'chapter',type:'chapter_block',title:'Chapter',isVisible:true,chapterPreset:'principles',items:[{id:'photo',title:'Photo',imageUrl:''}],imageSlots:[{target:'mediaUrl',imageFit:'contain'},{target:'item:photo:imageUrl',imagePosition:'top-center'}]};
+ expect(imageTargets(section)).toHaveLength(0);expect(pruneImageSlots(section).imageSlots).toEqual(section.imageSlots);
+ expect(pruneImageSlots({...section,items:[]}).imageSlots).toEqual([{target:'mediaUrl',imageFit:'contain'}]);
+ const video:PageSection={id:'slider',type:'hero_slider',title:'Video',isVisible:true,items:[{id:'slide',title:'Video',imageUrl:'',videoUrl:'https://images.unsplash.com/video.mp4'}],imageSlots:[{target:'item:slide:imageUrl',imageFit:'cover'}]};
+ expect(pruneImageSlots(video).imageSlots).toEqual(video.imageSlots);
+});

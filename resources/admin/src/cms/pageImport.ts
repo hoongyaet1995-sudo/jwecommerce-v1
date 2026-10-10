@@ -293,6 +293,7 @@ const validateObject = (value: JsonObject, schema: ContractSchema, path: string)
 const validateSection = (value: unknown, path: string): void => {
   if (!isObject(value)) return fail(path, 'This value must be a JSON object.');
   const sectionType = value.type;
+  if(sectionType==='promotion_highlights'&&Array.isArray(value.items)&&value.items.length>6)fail(pathFor(path,'items'),'Use up to six offer cards.');
   if (!own(value, 'type') || typeof sectionType !== 'string') {
     return fail(pathFor(path, 'type'), 'A supported section type is required.');
   }

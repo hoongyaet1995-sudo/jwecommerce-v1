@@ -227,7 +227,8 @@ export const CmsMotionWrapper: React.FC<CmsMotionWrapperProps> = ({
         <motion.div
           key={replayKey}
           initial="hidden"
-          whileInView="visible"
+          animate={isEditingMode ? 'visible' : undefined}
+          whileInView={isEditingMode ? undefined : 'visible'}
           viewport={{ once: true, amount: 0.05 }}
           variants={containerVariants}
           className={className}

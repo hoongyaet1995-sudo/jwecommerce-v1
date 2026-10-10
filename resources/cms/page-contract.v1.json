@@ -38,6 +38,9 @@
         "items": {
           "$ref": "section"
         }
+      },
+      "style": {
+        "$ref": "pageStyle"
       }
     }
   },
@@ -113,7 +116,9 @@
         "chapter_navigation",
         "delivery_table",
         "policy_content",
-        "payment_methods"
+        "payment_methods",
+        "shop_navigation",
+        "promotion_highlights"
       ]
     },
     "isVisible": {
@@ -169,7 +174,12 @@
             "site",
             "sans",
             "serif",
-            "mono"
+            "mono",
+            "lora",
+            "inter",
+            "playfair",
+            "dmsans",
+            "notosc"
           ]
         },
         "fontSize": {
@@ -394,6 +404,7 @@
     "sliderHeight": {
       "type": "string",
       "enum": [
+        "panoramic",
         "compact",
         "normal",
         "spacious",
@@ -633,6 +644,7 @@
         "editorial-hero",
         "editorial-story",
         "editorial-cover",
+        "editorial-story-cards",
         "story-with-steps"
       ]
     },
@@ -691,7 +703,8 @@
       "type": "string",
       "enum": [
         "category",
-        "collection"
+        "collection",
+        "manual"
       ]
     },
     "sourceId": {
@@ -1045,6 +1058,20 @@
         },
         "deliveryFee": {
           "type": "string"
+        },
+        "caption": {
+          "type": "string"
+        },
+        "sourceType": {
+          "type": "string",
+          "enum": [
+            "category",
+            "collection",
+            "custom"
+          ]
+        },
+        "sourceId": {
+          "type": "string"
         }
       }
     },
@@ -1176,6 +1203,201 @@
     },
     "paymentNote": {
       "type": "string"
+    },
+    "sliderPreset": {
+      "type": "string",
+      "enum": [
+        "default",
+        "editorial-overlay"
+      ]
+    },
+    "listingPreset": {
+      "type": "string",
+      "enum": [
+        "default",
+        "editorial-grid",
+        "editorial-tabs"
+      ]
+    },
+    "shopNavigationPreset": {
+      "type": "string",
+      "enum": [
+        "cards",
+        "collection-banners"
+      ]
+    },
+    "bannerProportions": {
+      "type": "string",
+      "enum": [
+        "50:50",
+        "60:40",
+        "40:60"
+      ]
+    },
+    "bannerHeight": {
+      "type": "string",
+      "enum": [
+        "compact",
+        "comfortable",
+        "tall"
+      ]
+    },
+    "promotionSource": {
+      "type": "string",
+      "enum": [
+        "automatic",
+        "manual"
+      ]
+    },
+    "promotionLayout": {
+      "type": "string",
+      "enum": [
+        "side",
+        "above"
+      ]
+    },
+    "showOfferBadges": {
+      "type": "boolean"
+    },
+    "brandPalette": {
+      "type": "object",
+      "allowUnknownFields": false,
+      "fields": {
+        "paper": {
+          "type": "string",
+          "required": true,
+          "format": "hex_color"
+        },
+        "ink": {
+          "type": "string",
+          "required": true,
+          "format": "hex_color"
+        },
+        "muted": {
+          "type": "string",
+          "required": true,
+          "format": "hex_color"
+        },
+        "accent": {
+          "type": "string",
+          "required": true,
+          "format": "hex_color"
+        },
+        "light": {
+          "type": "string",
+          "required": true,
+          "format": "hex_color"
+        },
+        "secondary": {
+          "type": "string",
+          "required": true,
+          "format": "hex_color"
+        },
+        "secondaryInk": {
+          "type": "string",
+          "required": true,
+          "format": "hex_color"
+        },
+        "hover": {
+          "type": "string",
+          "required": true,
+          "format": "hex_color"
+        }
+      }
+    },
+    "pageStyle": {
+      "type": "object",
+      "allowUnknownFields": false,
+      "fields": {
+        "palette": {
+          "$ref": "brandPalette",
+          "required": true
+        },
+        "typography": {
+          "$ref": "typography"
+        },
+        "spacing": {
+          "type": "string",
+          "enum": [
+            "compact",
+            "normal",
+            "spacious"
+          ]
+        },
+        "buttonRadius": {
+          "type": "integer",
+          "enum": [
+            0,
+            6,
+            999
+          ]
+        },
+        "buttonSize": {
+          "type": "string",
+          "enum": [
+            "compact",
+            "normal",
+            "large"
+          ]
+        }
+      }
+    },
+    "surface": {
+      "type": "string",
+      "enum": [
+        "light",
+        "contrast"
+      ]
+    },
+    "productTabs": {
+      "type": "array",
+      "items": {
+        "$ref": "productListingTab"
+      }
+    },
+    "productListingTab": {
+      "type": "object",
+      "fields": {
+        "sourceId": {
+          "type": "string"
+        },
+        "productIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "id": {
+          "type": "string",
+          "required": true
+        },
+        "productLimit": {
+          "type": "integer",
+          "enum": [
+            2,
+            3,
+            4,
+            6,
+            8,
+            12
+          ]
+        },
+        "sourceType": {
+          "type": "string",
+          "required": true,
+          "enum": [
+            "all",
+            "category",
+            "collection",
+            "manual"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "allowUnknownFields": false
     }
   },
   "section": {
@@ -1197,7 +1419,9 @@
           "textColor",
           "paddingY",
           "customColors",
-          "items"
+          "items",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1237,7 +1461,9 @@
           "secondaryButtonLink",
           "policyPreset",
           "policyNote",
-          "showSectionHeading"
+          "showSectionHeading",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1269,7 +1495,9 @@
           "paddingY",
           "overlayOpacity",
           "customColors",
-          "items"
+          "items",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1302,7 +1530,10 @@
           "sliderAutoplay",
           "sliderHeight",
           "items",
-          "customColors"
+          "customColors",
+          "sliderPreset",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1338,7 +1569,9 @@
           "cardSubtitle",
           "cardPrice",
           "cardExtra",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1362,7 +1595,9 @@
           "textColor",
           "paddingY",
           "items",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1411,7 +1646,9 @@
           "secondaryButtonText",
           "secondaryButtonLink",
           "items",
-          "mediaContainerMode"
+          "mediaContainerMode",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1439,7 +1676,9 @@
           "backgroundColor",
           "textColor",
           "paddingY",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1463,7 +1702,9 @@
           "textColor",
           "paddingY",
           "items",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1488,7 +1729,9 @@
           "textColor",
           "paddingY",
           "items",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1513,7 +1756,9 @@
           "backgroundColor",
           "textColor",
           "paddingY",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1548,7 +1793,15 @@
           "backgroundColor",
           "textColor",
           "paddingY",
-          "customColors"
+          "customColors",
+          "listingPreset",
+          "productIds",
+          "imageRatio",
+          "buttonText",
+          "buttonLink",
+          "surface",
+          "brandPalette",
+          "productTabs"
         ],
         "publishRequired": [
           "title",
@@ -1580,7 +1833,9 @@
           "backgroundColor",
           "textColor",
           "paddingY",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1618,7 +1873,9 @@
           "backgroundColor",
           "textColor",
           "paddingY",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1643,7 +1900,9 @@
           "textColor",
           "paddingY",
           "items",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1672,7 +1931,9 @@
           "paddingY",
           "items",
           "customColors",
-          "mediaContainerMode"
+          "mediaContainerMode",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1696,7 +1957,9 @@
           "backgroundColor",
           "textColor",
           "paddingY",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1724,7 +1987,9 @@
           "backgroundColor",
           "textColor",
           "paddingY",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1750,7 +2015,9 @@
           "textColor",
           "paddingY",
           "items",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1778,7 +2045,9 @@
           "textColor",
           "paddingY",
           "items",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1806,7 +2075,9 @@
           "textColor",
           "paddingY",
           "items",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1831,7 +2102,9 @@
           "textColor",
           "paddingY",
           "items",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1858,7 +2131,9 @@
           "textColor",
           "paddingY",
           "items",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1884,7 +2159,9 @@
           "items",
           "customColors",
           "faqPreset",
-          "faqInitiallyOpen"
+          "faqInitiallyOpen",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1921,7 +2198,9 @@
           "buttonText",
           "buttonLink",
           "secondaryButtonText",
-          "secondaryButtonLink"
+          "secondaryButtonLink",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1951,7 +2230,9 @@
           "contactAddress",
           "mapEmbedUrl",
           "mapVisible",
-          "contactAddressIcon"
+          "contactAddressIcon",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -1977,7 +2258,9 @@
           "textColor",
           "paddingY",
           "items",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -2003,7 +2286,9 @@
           "textColor",
           "paddingY",
           "items",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -2034,7 +2319,9 @@
           "backgroundColor",
           "textColor",
           "paddingY",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -2060,7 +2347,9 @@
           "backgroundColor",
           "textColor",
           "paddingY",
-          "customColors"
+          "customColors",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -2093,7 +2382,9 @@
           "deliveryDestinationLabel",
           "deliveryEstimateLabel",
           "deliveryFeeLabel",
-          "items"
+          "items",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -2126,7 +2417,9 @@
           "buttonText",
           "buttonLink",
           "buttonStyle",
-          "columnsCount"
+          "columnsCount",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"
@@ -2151,7 +2444,73 @@
           "customColors",
           "paymentLayout",
           "paymentNote",
-          "textAlignment"
+          "textAlignment",
+          "surface",
+          "brandPalette"
+        ],
+        "publishRequired": [
+          "title"
+        ],
+        "renderer": {
+          "capable": true
+        },
+        "runtimeRequirements": []
+      },
+      "shop_navigation": {
+        "fields": [
+          "typography",
+          "containerMode",
+          "sectionBorder",
+          "sectionBorderColor",
+          "imageSlots",
+          "motionPreset",
+          "subtitle",
+          "content",
+          "columnsCount",
+          "textAlignment",
+          "backgroundColor",
+          "textColor",
+          "paddingY",
+          "items",
+          "customColors",
+          "buttonText",
+          "buttonLink",
+          "shopNavigationPreset",
+          "bannerProportions",
+          "bannerHeight",
+          "showSectionHeading",
+          "surface",
+          "brandPalette"
+        ],
+        "publishRequired": [
+          "title"
+        ],
+        "renderer": {
+          "capable": true
+        },
+        "runtimeRequirements": []
+      },
+      "promotion_highlights": {
+        "fields": [
+          "typography",
+          "containerMode",
+          "sectionBorder",
+          "sectionBorderColor",
+          "imageSlots",
+          "motionPreset",
+          "subtitle",
+          "content",
+          "textAlignment",
+          "backgroundColor",
+          "textColor",
+          "paddingY",
+          "items",
+          "customColors",
+          "promotionSource",
+          "promotionLayout",
+          "showOfferBadges",
+          "surface",
+          "brandPalette"
         ],
         "publishRequired": [
           "title"

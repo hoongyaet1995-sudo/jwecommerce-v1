@@ -25,10 +25,18 @@ final class RuntimeAdapterRegistry
         $references = $this->collectReferences($document);
         $categories = $this->activeCategories($references['categoryIds']);
         $collections = $this->activeCollections($references['collectionIds']);
+        // Navigation references need taxonomy only, never its entire product catalog.
+        $commerceReferences = $this->collectReferences(['sections' => array_values(array_filter($document['sections'] ?? [], fn ($s) => ($s['type'] ?? null) !== 'shop_navigation'))]);
+        $allLimit = 0;
+        foreach ($document['sections'] ?? [] as $section) {
+            if (($section['type'] ?? null) !== 'product_listing' || ($section['listingPreset'] ?? null) !== 'editorial-tabs' || !($section['isVisible'] ?? false)) continue;
+            foreach ($section['productTabs'] ?? [] as $tab) if (($tab['sourceType'] ?? null) === 'all') $allLimit = max($allLimit, min(12, $tab['productLimit'] ?? $section['productLimit'] ?? 4));
+        }
+        if ($allLimit > 0) $commerceReferences['productIds'] = array_values(array_unique(array_merge($commerceReferences['productIds'], Product::query()->where('status','active')->orderBy('id')->limit($allLimit)->pluck('id')->all())));
         $products = $this->activeProducts(
-            $references['productIds'],
-            $categories->keys()->all(),
-            $collections->keys()->all(),
+            $commerceReferences['productIds'],
+            array_values(array_intersect($categories->keys()->all(), $commerceReferences['categoryIds'])),
+            array_values(array_intersect($collections->keys()->all(), $commerceReferences['collectionIds'])),
         );
         $coupons = $this->validCoupons($references['couponIds']);
         if ($products->isNotEmpty() && collect($document['sections'] ?? [])->contains(fn ($s) => ($s['type'] ?? null) === 'product_listing' && ($s['isVisible'] ?? false))) {
@@ -44,6 +52,7 @@ final class RuntimeAdapterRegistry
 
             $facts = match ($section['type'] ?? null) {
                 'chapter_block' => ($section['chapterPreset'] ?? '') === 'delivery' ? ['delivery' => ['rows' => $deliveryRows ??= app(\App\Services\DeliveryInformationService::class)->rows()]] : [],
+                'promotion_highlights' => ['promotions' => ['offers' => app(\App\Services\PromotionHighlightsService::class)->offers($section)]],
                 'payment_methods' => ['payments' => app(\App\Services\PaymentInformationService::class)->facts(app(\App\Support\StorefrontCurrencyContext::class)->current()['code'])],
                 'delivery_table' => ['delivery' => ['rows' => $deliveryRows ??= app(\App\Services\DeliveryInformationService::class)->rows()]],
                 'product_grid' => $this->productGridFacts($section, $products),
@@ -86,7 +95,16 @@ final class RuntimeAdapterRegistry
                 continue;
             }
 
-            if (($section['type'] ?? null) === 'product_grid') {
+            if (($section['type'] ?? null) === 'shop_navigation') {
+                foreach ($section['items'] ?? [] as $item) {
+                    $id = $this->canonicalReferenceId($item['sourceId'] ?? null);
+                    if ($id !== null && in_array($item['sourceType'] ?? null, ['category', 'collection'], true)) {
+                        $references[$item['sourceType'] === 'category' ? 'categoryIds' : 'collectionIds'][] = $id;
+                    }
+                }
+            }
+
+            if (($section['type'] ?? null) === 'product_grid' || (($section['type'] ?? null) === 'product_listing' && ($section['sourceType'] ?? null) === 'manual')) {
                 foreach ($section['productIds'] ?? [] as $productId) {
                     $id = $this->canonicalReferenceId($productId);
 
@@ -97,11 +115,15 @@ final class RuntimeAdapterRegistry
             }
 
             if (in_array($section['type'] ?? null, ['collection_tabs', 'product_listing'], true)) {
-                foreach (($section['type'] === 'product_listing' ? [$section] : ($section['tabs'] ?? [])) as $tab) {
+                foreach (($section['type'] === 'product_listing' ? (($section['listingPreset'] ?? null) === 'editorial-tabs' ? ($section['productTabs'] ?? []) : [$section]) : ($section['tabs'] ?? [])) as $tab) {
                     if (! is_array($tab)) {
                         continue;
                     }
 
+                    if (($tab['sourceType'] ?? null) === 'manual') foreach ($tab['productIds'] ?? [] as $productId) {
+                        $productId = $this->canonicalReferenceId($productId);
+                        if ($productId !== null) $references['productIds'][] = $productId;
+                    }
                     $id = $this->canonicalReferenceId($tab['sourceId'] ?? null);
 
                     if ($id === null) {
@@ -350,8 +372,25 @@ final class RuntimeAdapterRegistry
      */
     private function productListingFacts(array $section, SupportCollection $categories, SupportCollection $collections, SupportCollection $products): array
     {
+        if (($section['listingPreset'] ?? null) === 'editorial-tabs') {
+            $tabs = [];
+            foreach ($section['productTabs'] ?? [] as $tab) {
+                $feed = array_merge($section,$tab,['listingPreset'=>'editorial-grid','productLimit'=>$tab['productLimit'] ?? $section['productLimit'] ?? 4]);
+                $tabs[] = $this->productListingFacts($feed,$categories,$collections,$products)['listing'];
+            }
+            return ['tabs'=>$tabs];
+        }
         $section['productLimit'] ??= 6;
-        $facts = $this->collectionTabFacts(['tabs' => [$section]], $categories, $collections, $products)['tabs'][0];
+        if (($section['sourceType'] ?? null) === 'all') {
+            $facts = ['sourceId'=>['valid'=>true], 'source'=>null, 'products'=>$products->sortBy('id')->take($section['productLimit'])->map($this->projectProduct(...))->values()->all()];
+        } elseif (($section['sourceType'] ?? null) === 'manual') {
+            $requested = array_values(array_unique($section['productIds'] ?? []));
+            $selected = collect($requested)->map(fn ($id) => $this->canonicalReferenceId($id))->map(fn ($id) => $id === null ? null : $products->get($id));
+            $facts = ['sourceId'=>['valid'=>$requested !== [] && $selected->filter()->count() === count($requested)], 'source'=>null,
+                'products'=>$selected->filter()->take($section['productLimit'])->map(fn ($product) => $this->projectProduct($product))->values()->all()];
+        } else {
+            $facts = $this->collectionTabFacts(['tabs' => [$section]], $categories, $collections, $products)['tabs'][0];
+        }
         $facts['products'] = array_map(function (array $item) use ($products): array {
             $product = $products->get((int) $item['id']);
             $variant = $product->variants->first();

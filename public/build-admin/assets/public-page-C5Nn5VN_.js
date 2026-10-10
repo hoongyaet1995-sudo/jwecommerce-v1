@@ -1,1 +1,0 @@
-import{ae as o,ad as s,j as t,r,a4 as n,af as c,ag as i}from"./index-DOKZPvrw.js";const a=document.getElementById("cms-page-root");if(a){const e=o();s.createRoot(a).render(t.jsx(r.StrictMode,{children:e?t.jsx(n,{payload:e,children:t.jsx(c,{sections:e.page.document.sections,mode:e.context.mode})}):t.jsx(i,{})}))}

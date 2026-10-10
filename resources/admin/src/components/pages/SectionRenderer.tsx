@@ -1,3 +1,12 @@
+import {EditorialProductTabs} from './EditorialProductTabs';
+import {EditorialStoryCards} from './EditorialStoryCards';
+import {resolveStyledSection} from '../../cms/pageStyle';
+import {loadCmsFonts} from '../../cms/fontCatalog';
+import {PromotionHighlights} from './PromotionHighlights';
+import {resolvePromotionCards} from '../../cms/promotionHighlights';
+import {EditorialProductGrid} from './EditorialProductGrid';
+import {ShopNavigation} from './ShopNavigation';
+import {EditorialOverlaySlider} from './EditorialOverlaySlider';
 import {EnquiryForm,ContactLocation} from './ContactSections';
 import {SectionIcon} from './IconPicker';
 import {PolicyContent} from './PolicyContent';
@@ -69,7 +78,7 @@ interface SectionRendererProps {
 }
 
 export const SectionRenderer: React.FC<SectionRendererProps> = ({
-  section,
+  section: rawSection,
   isEditingMode = false,
   isSelected = false,
   onSelect,
@@ -79,6 +88,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   viewport = 'desktop'
 }) => {
   const runtime = usePageRuntime();
+  const section=resolveStyledSection(rawSection,runtime.page.document.style);
+  useEffect(()=>loadCmsFonts(),[]);
   const runtimeSection = usePageSectionRuntime(section.id);
   const [productListingIdx, setProductListingIdx] = useState(0);
   const [listingVariantIds, setListingVariantIds] = useState<Record<string,string>>({});
@@ -93,13 +104,13 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   };
   useEffect(() => { setProductListingIdx(0); }, [section.sourceType, section.sourceId, section.productLimit, viewport, section.columnsCount]);
   useEffect(() => {
-    if (section.type !== 'product_listing' || section.autoSlide === false || isListingHovered || listingMaxIdx <= 0) return;
+    if (section.type !== 'product_listing' || section.listingPreset === 'editorial-grid' || section.listingPreset === 'editorial-tabs' || section.autoSlide === false || isListingHovered || listingMaxIdx <= 0) return;
     const timer = setInterval(() => {
       if (document.querySelector('[data-quick-add-modal][aria-hidden="false"]')) return;
       setProductListingIdx(prev => prev >= listingMaxIdx ? 0 : prev + 1);
     }, (section.autoSlideInterval || 3.5) * 1000);
     return () => clearInterval(timer);
-  }, [section.type, section.autoSlide, section.autoSlideInterval, isListingHovered, listingMaxIdx]);
+  }, [section.type, section.listingPreset, section.autoSlide, section.autoSlideInterval, isListingHovered, listingMaxIdx]);
   const [openFaqIds, setOpenFaqIds] = useState<Record<string, boolean>>({
     [section.items?.[0]?.id || 'faq-1']: true
   });
@@ -243,7 +254,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
   const getBgStyle = () => {
     if (section.backgroundColor === 'custom' && section.customColors?.customBgColor) {
-      return 'text-white';
+      return runtime.page.document.style||rawSection.surface||rawSection.brandPalette?(section.textColor==='light'?'text-white':'text-neutral-900'):'text-white';
     }
     switch (section.backgroundColor) {
       case 'bg-neutral-950': return 'bg-neutral-950 text-white';
@@ -261,6 +272,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   // Compute CSS Variables & Section-level Inline Styles for customizable branding
   const customColors = section.customColors;
   const sectionRootStyle: React.CSSProperties = {
+    ...(runtime.page.document.style||rawSection.surface||rawSection.brandPalette?{color:customColors?.titleColor}:{}),
     ...(customColors?.eyebrowColor ? { '--sec-eyebrow': customColors.eyebrowColor } : {}),
     ...(customColors?.titleColor ? { '--sec-title': customColors.titleColor } : {}),
     ...(customColors?.contentColor ? { '--sec-desc': customColors.contentColor } : {}),
@@ -531,6 +543,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   // Auto-play timer for Hero Slider
   useEffect(() => {
     if (section.type !== 'hero_slider') return;
+    if (section.sliderPreset==='editorial-overlay' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     if (section.sliderAutoplay === false || isEditingMode) return;
     if (isHeroHovered) return;
     if (heroSlides.length <= 1) return;
@@ -541,7 +554,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     }, intervalSec * 1000);
 
     return () => clearInterval(timer);
-  }, [section.type, section.sliderAutoplay, section.sliderInterval, isHeroHovered, heroSlides.length, isEditingMode]);
+  }, [section.type, section.sliderPreset, section.sliderAutoplay, section.sliderInterval, isHeroHovered, heroSlides.length, isEditingMode]);
 
   useEffect(()=>{
     if(section.type==='hero_slider' && selectedImage) {
@@ -551,9 +564,12 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   },[section.type,section.items,selectedImage]);
 
   const renderHeroSlider = () => {
+    if(section.sliderPreset==='editorial-overlay')return <EditorialOverlaySlider section={section} index={heroSlideIdx} onSelect={setHeroSlideIdx} onPause={setIsHeroHovered} isEditingMode={isEditingMode}/>;
     const currentSlide = heroSlides[heroSlideIdx % heroSlides.length] || heroSlides[0];
     const overlay = section.overlayOpacity ?? 55;
-    const heightClass = section.sliderHeight === 'fullscreen'
+    const heightClass = section.sliderHeight === 'panoramic'
+      ? 'min-h-[320px] lg:min-h-[280px]'
+      : section.sliderHeight === 'fullscreen'
       ? 'min-h-[85vh] lg:min-h-[92vh]'
       : section.sliderHeight === 'compact'
       ? 'min-h-[460px]'
@@ -589,12 +605,12 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
               }`}
               style={{ transitionProperty: 'opacity, transform' }}
             >
-              <ScopedImage section={section} targetId={`item:${slide.id}:imageUrl`}
+              {slide.videoUrl?<video src={slide.videoUrl} autoPlay={isActive} muted loop playsInline className="w-full h-full object-cover" />:<ScopedImage section={section} targetId={`item:${slide.id}:imageUrl`}
                 src={bgImg}
                 alt={slide.title || 'Hero background'}
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
-              />
+              />}
             </div>
           );
         })}
@@ -805,6 +821,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
   // 5. Media + Text Split
   const renderMediaTextSplit = () => {
+    if(section.layoutPreset==='editorial-story-cards')return <EditorialStoryCards section={section} editing={isEditingMode}/>;
     if (section.layoutPreset === 'editorial-cover') return <EditorialCover section={section}/>;
     if ((section.layoutPreset === 'editorial-story'||section.layoutPreset === 'story-with-steps')) return <EditorialStory section={section} isEditingMode={isEditingMode} />;
     if (section.layoutPreset === 'editorial-hero') {
@@ -850,8 +867,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                       <CheckCircle2 className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 data-cms-text="itemTitle" style={{...(getTitleStyle()),...typographyStyle(section,'itemTitle')}} className="text-xs sm:text-sm font-bold text-white">{it.title}</h4>
-                      <p data-cms-text="content" style={{...(getContentStyle()),...typographyStyle(section,'content')}} className="text-xs text-neutral-400">{it.description}</p>
+                      <h4 data-cms-text="itemTitle" data-cms-item={it.id} style={{...(getTitleStyle()),...typographyStyle(section,'itemTitle')}} className="text-xs sm:text-sm font-bold text-white">{it.title}</h4>
+                      <p data-cms-text="itemContent" data-cms-item={it.id} style={{...(getContentStyle()),...typographyStyle(section,'itemContent')}} className="text-xs text-neutral-400">{it.description}</p>
                     </div>
                   </MotionItem>
                 ))}
@@ -2500,7 +2517,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
             {section.subtitle}
           </span></MotionItem>
         )}
-        <MotionItem><h3 data-cms-text="itemTitle" style={{...(getTitleStyle()),...typographyStyle(section,'itemTitle')}} className="text-sm sm:text-base font-bold text-neutral-300">{section.title}</h3></MotionItem>
+        <MotionItem><h3 data-cms-text="title" style={{...(getTitleStyle()),...typographyStyle(section,'title')}} className="text-sm sm:text-base font-bold text-neutral-300">{section.title}</h3></MotionItem>
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14">
@@ -2515,12 +2532,12 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <span className="text-base sm:text-xl font-black tracking-wider text-white group-hover:text-indigo-400 transition-colors">
+                <span data-cms-text="itemTitle" data-cms-item={item.id} style={typographyStyle(section,'itemTitle')} className="text-base sm:text-xl font-black tracking-wider text-white group-hover:text-indigo-400 transition-colors">
                   {item.title}
                 </span>
               )}
               {item.description && (
-                <span className="block text-[10px] text-neutral-400 font-medium mt-1 group-hover:text-neutral-300">
+                <span data-cms-text="itemContent" data-cms-item={item.id} style={typographyStyle(section,'itemContent')} className="block text-[10px] text-neutral-400 font-medium mt-1 group-hover:text-neutral-300">
                   {item.description}
                 </span>
               )}
@@ -2720,10 +2737,12 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       case 'timeline_story': return renderTimelineStory();
       case 'stats_counter': return renderStatsCounter();
       case 'product_grid': return renderProductGrid();
-      case 'product_listing': return renderProductListing();
+      case 'product_listing': return section.listingPreset==='editorial-tabs'?<EditorialProductTabs section={section} facts={runtimeSection} context={runtime.context} editing={isEditingMode}/>:section.listingPreset==='editorial-grid'?<EditorialProductGrid section={section} products={listingItems} context={runtime.context} editing={isEditingMode}/>:renderProductListing();
       case 'collection_tabs': return renderCollectionTabs();
       case 'featured_deal': return renderFeaturedDeal();
       case 'pricing_table': return renderPricingTable();
+      case 'promotion_highlights': return <PromotionHighlights section={section} offers={runtimeSection.promotions?.offers??[]} editing={isEditingMode}/>;
+      case 'shop_navigation': return <ShopNavigation section={section} catalog={runtime.catalog} editing={isEditingMode}/>;
       case 'media_gallery': return section.galleryPreset==='editorial-montage'||section.galleryPreset==='editorial-cards'?<EditorialGallery section={section}/>:renderMediaGallery();
       case 'video_embed': return renderVideoEmbed();
       case 'before_after': return renderBeforeAfter();
@@ -2746,10 +2765,11 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
     }
   };
 
+  if(section.type==='promotion_highlights'&&!isEditingMode&&!resolvePromotionCards(section,runtimeSection.promotions?.offers??[]).length)return null;
   return (
-    <section data-cms-editor={isEditingMode?'':undefined}
+    <section data-cms-shared-style={runtime.page.document.style?'':undefined} data-cms-surface={rawSection.surface} data-cms-editor={isEditingMode?'':undefined}
       id={`section-${section.id}`}
-      style={{...sectionRootStyle,...(section.type==='chapter_block'?{scrollMarginTop:144}:{}),...sectionBorderStyle(section),'--cms-page-width':runtime.page.document.containerWidth==='wide'?'1440px':'1280px'} as React.CSSProperties}
+      style={{...sectionRootStyle,...(section.type==='chapter_block'?{scrollMarginTop:144}:{}),...sectionBorderStyle(section),'--cms-page-width':runtime.page.document.containerWidth==='wide'?'1440px':'1280px',...(runtime.page.document.style?{'--cms-button-radius':`${runtime.page.document.style.buttonRadius??0}px`,'--cms-button-height':`${{compact:36,normal:44,large:52}[runtime.page.document.style.buttonSize??'normal']}px`}: {})} as React.CSSProperties}
       onClickCapture={isEditingMode?event=>{
         const element=event.target as HTMLElement;
         const target=element.closest<HTMLElement>('[data-image-slot]')?.dataset.imageSlot;
@@ -2757,7 +2777,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         if(element.closest('[data-cms-source]')){event.preventDefault();onSelectElement?.('source');return;}
         const text=element.closest<HTMLElement>('[data-cms-text]');
         if(text){const role=text.dataset.cmsText!;const item=text.dataset.cmsItem;onSelectElement?.(item?`items:${item}`:({eyebrow:'subtitle',title:'title',lead:'leadText',content:'content',itemTitle:'itemTitle',itemContent:'itemContent'} as Record<string,string>)[role],role);return;}
-        if(element.closest('[data-cms-action],[data-editorial-action]')){event.preventDefault();onSelectElement?.('button');return;}
+        const action=element.closest<HTMLElement>('[data-cms-action],[data-editorial-action]');
+        if(action){event.preventDefault();onSelectElement?.(action.dataset.cmsItem?`items:${action.dataset.cmsItem}`:'button');return;}
         if(element.closest('form'))onSelectElement?.('form');
       }:undefined}
       onClick={isEditingMode ? onSelect : undefined}
@@ -2769,6 +2790,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
           : ''
       }`}
     >
+      {runtime.page.document.style&&<style>{`[data-cms-shared-style] [data-cms-action="button"],[data-cms-shared-style] [data-editorial-action="button"]{border-radius:var(--cms-button-radius);min-height:var(--cms-button-height)}`}</style>}
       {isEditingMode&&<style>{`[data-cms-editor] [data-cms-text]:hover{outline:1px dashed #7965ff;outline-offset:3px}`}</style>}
       {/* Editor Active Badge */}
       {isEditingMode && isSelected && (

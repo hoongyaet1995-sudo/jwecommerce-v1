@@ -1,3 +1,4 @@
+import {promotionStatus} from '../../integration/promotionStatus';
 import React, { useState } from 'react';
 import { 
   Plus, 
@@ -57,19 +58,19 @@ export const PromotionsListTab: React.FC<Props> = ({
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
+  const statusOf = (p: Promotion) => promotionStatus({...p,usageLimit:p.totalUsageLimit,usageCount:p.totalUsageCount});
   const filteredPromotions = promotions.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.coupons && p.coupons.some(c => c.code.toLowerCase().includes(searchQuery.toLowerCase())));
     const matchesType = selectedType === 'all' || p.promotionType === selectedType;
     const matchesStatus = selectedStatus === 'all' || 
-      (selectedStatus === 'active' && p.isActive) ||
-      (selectedStatus === 'inactive' && !p.isActive);
+      selectedStatus === statusOf(p);
     return matchesSearch && matchesType && matchesStatus;
   });
 
   // KPI Calculations
-  const activeCount = promotions.filter(p => p.isActive).length;
+  const activeCount = promotions.filter(p => statusOf(p)==='active').length;
   const totalBudget = promotions.reduce((acc, p) => acc + (p.budgetLimitMyr || 0), 0);
   const totalSpent = promotions.reduce((acc, p) => acc + p.currentSpentMyr, 0);
   const totalRedemptions = promotions.reduce((acc, p) => acc + p.totalUsageCount, 0);
@@ -190,7 +191,7 @@ export const PromotionsListTab: React.FC<Props> = ({
           >
             <option value="all">All Status</option>
             <option value="active">Active Only</option>
-            <option value="inactive">Paused / Inactive</option>
+            <option value="inactive">Paused / Inactive</option><option value="scheduled">Scheduled</option><option value="expired">Expired</option><option value="exhausted">Usage limit reached</option>
           </select>
         </div>
 
@@ -233,7 +234,7 @@ export const PromotionsListTab: React.FC<Props> = ({
                   </span>
 
                   <div className="flex items-center gap-2">
-                    {/* Active Toggle */}
+                    <span className="text-xs capitalize text-neutral-500">{statusOf(promo)}</span>{/* Active Toggle */}
                     <button
                       onClick={() => onUpdatePromotion(promo.id, { isActive: !promo.isActive })}
                       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${

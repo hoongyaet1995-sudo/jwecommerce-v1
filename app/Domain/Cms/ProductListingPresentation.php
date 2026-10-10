@@ -12,7 +12,8 @@ final class ProductListingPresentation
     public function prepare(array &$payload): Collection
     {
         $ids = [];
-        foreach ($payload['runtime']['sections'] as &$facts) {
+        $quickAddIds = [];
+        foreach ($payload['runtime']['sections'] as $sectionIndex => &$facts) {
             if (! isset($facts['listing']['products'])) {
                 continue;
             }
@@ -26,15 +27,26 @@ final class ProductListingPresentation
                     $commerce['variants'][$index]['compareAtLabel'] = $variant['compareAtPrice'] === null ? '' : $money->format($variant['compareAtPrice'] * 100);
                 }
                 $ids[] = $product['id'];
+                if (data_get($payload, 'page.document.sections.'.$sectionIndex.'.listingPreset') !== 'editorial-grid') {
+                    $quickAddIds[] = $product['id'];
+                }
             }
             unset($product, $commerce);
         }
         unset($facts);
-        if (($payload['context']['mode'] ?? null) !== 'public' || $ids === []) {
+        $public = ($payload['context']['mode'] ?? null) === 'public';
+        $customer = $public ? auth('customer')->user()?->customer : null;
+        $payload['context']['wishlist'] = [
+            'authenticated' => $customer !== null,
+            'csrfToken' => $public ? csrf_token() : '',
+            'savedProductIds' => $customer ? $customer->wishlistItems()->whereIn('product_id', array_unique($ids))->pluck('product_id')->map(fn ($id) => (string) $id)->all() : [],
+            'loginUrl' => route('customer.login', absolute: false),
+        ];
+        if (($payload['context']['mode'] ?? null) !== 'public' || $quickAddIds === []) {
             return collect();
         }
 
-        return Product::query()->whereKey(array_unique($ids))->where('status', 'active')->whereHas('variants')
+        return Product::query()->whereKey(array_unique($quickAddIds))->where('status', 'active')->whereHas('variants')
             ->with(['variants' => fn ($query) => $query->orderBy('id'), 'images' => fn ($query) => $query->orderBy('position')->orderBy('id')])->get();
     }
 }

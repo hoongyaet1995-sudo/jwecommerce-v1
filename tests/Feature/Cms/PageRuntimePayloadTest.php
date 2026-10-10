@@ -37,6 +37,81 @@ final class PageRuntimePayloadTest extends TestCase
         '999999999999999999999999999999',
     ];
 
+    public function test_editorial_product_tabs_resolve_all_manual_and_taxonomy_sources_and_enforce_publish_guards(): void
+    {
+        $category=Category::create(['name'=>'Lighting','slug'=>'tabs-lighting','is_active'=>true]);
+        $collection=Collection::create(['title'=>'Selected','slug'=>'tabs-selected','is_active'=>true,'status'=>'active']);
+        $a=$this->product('tabs-a',status:'active',attributes:['category_id'=>$category->id,'base_price'=>15900]);
+        $b=$this->product('tabs-b',status:'active');
+        $hidden=$this->product('tabs-hidden',status:'draft');
+        $b->collections()->attach($collection);
+        $section=['id'=>'tabs','type'=>'product_listing','title'=>'Tabs','isVisible'=>true,'listingPreset'=>'editorial-tabs','productLimit'=>4,'productTabs'=>[
+            ['id'=>'all','label'=>'All','sourceType'=>'all'],
+            ['id'=>'manual','label'=>'Picked','sourceType'=>'manual','productIds'=>[(string)$b->id,(string)$a->id],'productLimit'=>2],
+            ['id'=>'category','label'=>'Lighting','sourceType'=>'category','sourceId'=>(string)$category->id],
+            ['id'=>'collection','label'=>'Selected','sourceType'=>'collection','sourceId'=>(string)$collection->id],
+        ]];
+        $document=$this->document([$section]);$contract=app(PageDocumentContract::class);
+        $this->assertSame($document,$contract->validate($document));
+        $facts=app(RuntimeAdapterRegistry::class)->factsFor($document);
+        $contract->assertPublishable($document,$facts);
+        $this->assertSame([(string)$a->id,(string)$b->id],array_column($facts['sections'][0]['tabs'][0]['products'],'id'));
+        $this->assertSame([(string)$b->id,(string)$a->id],array_column($facts['sections'][0]['tabs'][1]['products'],'id'));
+        $this->assertSame(159,$facts['sections'][0]['tabs'][1]['products'][1]['commerce']['price']);
+        $this->assertCount(1,$facts['sections'][0]['tabs'][2]['products']);$this->assertCount(1,$facts['sections'][0]['tabs'][3]['products']);
+        $document['sections'][0]['productTabs'][1]['productIds'][]=(string)$hidden->id;
+        $facts=app(RuntimeAdapterRegistry::class)->factsFor($document);
+        $this->assertFalse($facts['sections'][0]['tabs'][1]['sourceId']['valid']);
+        $this->assertArrayHasKey('sections.0.productTabs.1.id',$contract->runtimeErrors($document,$facts));
+        $category->update(['is_active'=>false]);
+        $facts=app(RuntimeAdapterRegistry::class)->factsFor($document);
+        $this->assertFalse($facts['sections'][0]['tabs'][2]['sourceId']['valid']);
+        $document['sections'][0]['listingPreset']='editorial-grid';
+        $this->assertSame($document,$contract->validate($document));
+        $document['sections'][0]['productTabs'][1]['id']='all';
+        try{$contract->validate($document);$this->fail('Duplicate tab IDs accepted');}catch(\Illuminate\Validation\ValidationException $e){$this->assertArrayHasKey('sections.0.productTabs',$e->errors());}
+        $document['sections'][0]['productTabs']=[];$document['sections'][0]['listingPreset']='editorial-tabs';
+        try{$contract->assertPublishable($document,['sections'=>[]]);$this->fail('Empty tabs accepted');}catch(\Illuminate\Validation\ValidationException $e){$this->assertArrayHasKey('sections.0.productTabs',$e->errors());}
+    }
+    public function test_manual_listing_preserves_order_and_rejects_inactive_or_malformed_references(): void
+    {
+        $a=$this->product('editorial-a', status:'active', attributes:['base_price'=>15900]);
+        $b=$this->product('editorial-b', status:'active');
+        $hidden=$this->product('editorial-hidden', status:'draft');
+        $section=['id'=>'products','type'=>'product_listing','title'=>'Objects','isVisible'=>true,'listingPreset'=>'editorial-grid','sourceType'=>'manual','productIds'=>[(string)$b->id,(string)$a->id],'productLimit'=>4];
+        $facts=app(RuntimeAdapterRegistry::class)->factsFor($this->document([$section]));
+        $this->assertTrue($facts['sections'][0]['listing']['sourceId']['valid']);
+        $this->assertSame([(string)$b->id,(string)$a->id],array_column($facts['sections'][0]['listing']['products'],'id'));
+        $this->assertSame(159, $facts['sections'][0]['listing']['products'][1]['commerce']['price']);
+        foreach ([(string)$hidden->id, (string)$a->id.'junk'] as $invalid) {
+            $section['productIds']=[(string)$a->id,$invalid];
+            $facts=app(RuntimeAdapterRegistry::class)->factsFor($this->document([$section]));
+            $this->assertFalse($facts['sections'][0]['listing']['sourceId']['valid']);
+            $this->assertCount(1,$facts['sections'][0]['listing']['products']);
+        }
+        $section['productIds']=[];
+        $facts=app(RuntimeAdapterRegistry::class)->factsFor($this->document([$section]));
+        $this->assertFalse($facts['sections'][0]['listing']['sourceId']['valid']);
+    }
+
+    public function test_shop_navigation_projects_active_taxonomy_without_loading_its_products(): void
+    {
+        $category=Category::create(['name'=>'Rooms','slug'=>'rooms','is_active'=>true,'image_url'=>'/images/rooms.jpg']);
+        $hidden=Category::create(['name'=>'Hidden','slug'=>'hidden','is_active'=>false]);
+        $collection=Collection::create(['title'=>'Living','slug'=>'living','is_active'=>true,'status'=>'active']);
+        $document=$this->document([['id'=>'nav','type'=>'shop_navigation','title'=>'Rooms','isVisible'=>true,'items'=>[
+            ['id'=>'a','title'=>'Override','sourceType'=>'category','sourceId'=>(string)$category->id],
+            ['id'=>'b','title'=>'','sourceType'=>'category','sourceId'=>(string)$hidden->id],
+            ['id'=>'c','title'=>'','sourceType'=>'collection','sourceId'=>(string)$collection->id],
+        ]]]);
+        $original=$document;
+        $facts=app(RuntimeAdapterRegistry::class)->factsFor($document);
+        $this->assertSame($original,$document);
+        $this->assertSame([(string)$category->id],array_column($facts['catalog']['categories'],'id'));
+        $this->assertSame([(string)$collection->id],array_column($facts['catalog']['collections'],'id'));
+        $this->assertSame([],$facts['catalog']['products']);
+    }
+
     public function test_product_grid_projects_only_requested_active_products_in_section_order(): void
     {
         $first = $this->product('first-product', status: 'active', attributes: [

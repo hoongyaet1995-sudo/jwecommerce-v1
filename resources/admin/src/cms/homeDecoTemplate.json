@@ -1,0 +1,582 @@
+{
+    "title": "Home & Deco — Considered Home",
+    "slug": "blank-e3de786d-copy",
+    "template": "standard",
+    "containerWidth": "standard",
+    "style": {
+        "palette": {
+            "paper": "#f7f6f2",
+            "ink": "#292b24",
+            "muted": "#6d7267",
+            "accent": "#454e37",
+            "light": "#f7f6f2",
+            "secondary": "#dad7c7",
+            "secondaryInk": "#292b24",
+            "hover": "#343c29"
+        },
+        "typography": {
+            "eyebrow": {
+                "fontFamily": "sans",
+                "fontSize": 10,
+                "fontWeight": 600
+            },
+            "title": {
+                "fontFamily": "serif",
+                "fontSize": 30,
+                "fontWeight": 400,
+                "lineHeight": 1.12
+            },
+            "content": {
+                "fontFamily": "sans",
+                "fontSize": 14,
+                "fontWeight": 400,
+                "lineHeight": 1.5
+            },
+            "itemTitle": {
+                "fontFamily": "serif",
+                "fontSize": 19,
+                "fontWeight": 400,
+                "lineHeight": 1.2
+            },
+            "itemContent": {
+                "fontFamily": "sans",
+                "fontSize": 14,
+                "fontWeight": 400,
+                "lineHeight": 1.5
+            }
+        },
+        "spacing": "compact",
+        "buttonRadius": 0,
+        "buttonSize": "compact"
+    },
+    "sections": [
+        {
+            "type": "hero_slider",
+            "title": "The Considered Home",
+            "subtitle": "THE CONSIDERED HOME",
+            "content": "Considered pieces for everyday living.",
+            "isVisible": true,
+            "sliderPreset": "editorial-overlay",
+            "containerMode": "full-bleed",
+            "sectionBorder": "none",
+            "motionPreset": "subtle-lift",
+            "paddingY": "compact",
+            "backgroundColor": "custom",
+            "textColor": "dark",
+            "textAlignment": "left",
+            "sliderHeight": "compact",
+            "sliderAutoplay": true,
+            "sliderInterval": 3,
+            "overlayOpacity": 0,
+            "customColors": {
+                "titleColor": "#292b24",
+                "contentColor": "#6d7267",
+                "primaryBtnBg": "#454e37",
+                "primaryBtnText": "#f7f6f2"
+            },
+            "items": [
+                {
+                    "id": "editorial-slide-1",
+                    "title": "Make room\nfor everyday\nbeauty.",
+                    "subtitle": "",
+                    "description": "Thoughtful pieces for a more\nmeaningful home.",
+                    "imageUrl": "/storage/cms/media/b773291f-3f89-42ec-b036-efb180c23494.png",
+                    "buttonText": "Shop the edit",
+                    "linkUrl": "/shop",
+                    "caption": "Home\nfor a brighter\neveryday."
+                }
+            ],
+            "id": "860b7ac7-4b35-586a-9d55-b60907d5d073",
+            "imageSlots": [],
+            "typography": {
+                "title": {
+                    "fontFamily": "serif",
+                    "fontSize": 56,
+                    "fontWeight": 400,
+                    "lineHeight": 1.03,
+                    "letterSpacing": -1.4
+                },
+                "content": {
+                    "fontSize": 14,
+                    "lineHeight": 1.5
+                }
+            },
+            "surface": "light"
+        },
+        {
+            "type": "shop_navigation",
+            "title": "Shop by room",
+            "subtitle": "",
+            "content": "",
+            "buttonText": "Explore all rooms",
+            "buttonLink": "/shop",
+            "isVisible": true,
+            "containerMode": "page",
+            "sectionBorder": "none",
+            "motionPreset": "subtle-lift",
+            "paddingY": "compact",
+            "columnsCount": 5,
+            "textAlignment": "left",
+            "backgroundColor": "custom",
+            "textColor": "dark",
+            "typography": {},
+            "items": [
+                {
+                    "id": "shop-living",
+                    "title": "Living Room",
+                    "sourceType": "category",
+                    "linkUrl": "/shop",
+                    "imageUrl": "/storage/cms/media/e6774f4c-4d03-4ff8-98b3-152174211cae.png",
+                    "sourceId": "51"
+                },
+                {
+                    "id": "shop-dining",
+                    "title": "Dining Room",
+                    "sourceType": "category",
+                    "linkUrl": "/shop",
+                    "imageUrl": "/storage/cms/media/712c6f25-32db-459b-96cb-39e4a6fad163.png",
+                    "sourceId": "51"
+                },
+                {
+                    "id": "shop-lighting",
+                    "title": "",
+                    "sourceType": "category",
+                    "linkUrl": "/shop",
+                    "imageUrl": "/storage/cms/media/28ab0cb3-b015-4596-bd2e-9f0028bf94e9.png",
+                    "sourceId": "53"
+                },
+                {
+                    "id": "shop-decor",
+                    "title": "Decor",
+                    "sourceType": "custom",
+                    "linkUrl": "/shop",
+                    "imageUrl": "/storage/cms/media/524de4a8-d5ae-4fd8-8502-f05e9d6ecfbc.png"
+                },
+                {
+                    "id": "shop-bedroom",
+                    "title": "Bedroom",
+                    "sourceType": "custom",
+                    "linkUrl": "/shop",
+                    "imageUrl": "/storage/cms/media/cccfed70-efe4-4185-be48-8a0165212c71.png"
+                }
+            ],
+            "id": "89b6e04b-7733-5b98-b953-b885cf1853b8",
+            "surface": "light",
+            "customColors": {}
+        },
+        {
+            "type": "product_listing",
+            "title": "Objects worth coming home to",
+            "isVisible": true,
+            "listingPreset": "editorial-grid",
+            "sourceType": "manual",
+            "productIds": [
+                "81",
+                "82",
+                "90",
+                "89",
+                "83",
+                "84"
+            ],
+            "productLimit": 4,
+            "columnsCount": 4,
+            "imageRatio": "1:1",
+            "buttonText": "Shop all products",
+            "buttonLink": "/shop",
+            "containerMode": "page",
+            "sectionBorder": "none",
+            "motionPreset": "subtle-lift",
+            "backgroundColor": "custom",
+            "textColor": "dark",
+            "paddingY": "compact",
+            "textAlignment": "left",
+            "id": "6697fc89-1aa4-520b-93b9-6dfb48051a05",
+            "sourceId": "",
+            "typography": {
+                "itemTitle": {
+                    "fontFamily": "sans",
+                    "fontSize": 13,
+                    "fontWeight": 400,
+                    "lineHeight": 1.35
+                }
+            },
+            "surface": "light",
+            "customColors": {}
+        },
+        {
+            "type": "shop_navigation",
+            "title": "Explore a collection",
+            "isVisible": true,
+            "shopNavigationPreset": "collection-banners",
+            "bannerProportions": "60:40",
+            "bannerHeight": "comfortable",
+            "showSectionHeading": false,
+            "containerMode": "full-bleed",
+            "sectionBorder": "none",
+            "motionPreset": "subtle-lift",
+            "backgroundColor": "custom",
+            "customColors": {
+                "primaryBtnBg": "#454e37",
+                "primaryBtnText": "#f7f6f2",
+                "secondaryBtnBg": "#f7f6f2",
+                "secondaryBtnText": "#292b24"
+            },
+            "typography": {
+                "itemTitle": {
+                    "fontFamily": "serif",
+                    "fontSize": 38,
+                    "lineHeight": 1.05,
+                    "color": "#ffffff"
+                },
+                "itemContent": {
+                    "fontFamily": "sans",
+                    "fontSize": 14,
+                    "color": "#ffffff"
+                }
+            },
+            "items": [
+                {
+                    "id": "collection-living",
+                    "title": "The warm\nminimal edit.",
+                    "description": "Natural textures. Calmer spaces.\nA more considered home.",
+                    "buttonText": "Shop the collection",
+                    "sourceType": "custom",
+                    "linkUrl": "/shop",
+                    "imageUrl": "/storage/cms/media/e6774f4c-4d03-4ff8-98b3-152174211cae.png",
+                    "sourceId": ""
+                },
+                {
+                    "id": "collection-dining",
+                    "title": "Gather\naround.",
+                    "description": "Pieces for shared meals\nand good company.",
+                    "buttonText": "Shop dining",
+                    "sourceType": "custom",
+                    "linkUrl": "/shop",
+                    "imageUrl": "/storage/cms/media/712c6f25-32db-459b-96cb-39e4a6fad163.png"
+                }
+            ],
+            "imageSlots": [
+                {
+                    "target": "item:collection-living:imageUrl",
+                    "imageOverlay": true,
+                    "imageOverlayOpacity": 30
+                },
+                {
+                    "target": "item:collection-dining:imageUrl",
+                    "imageOverlay": true,
+                    "imageOverlayOpacity": 30
+                }
+            ],
+            "id": "c76cb980-7e05-5ccb-8a33-fa765fbd5b8c",
+            "columnsCount": 6,
+            "textAlignment": "left",
+            "paddingY": "compact",
+            "surface": "light",
+            "textColor": "dark"
+        },
+        {
+            "type": "promotion_highlights",
+            "title": "A little more,\nfor less.",
+            "subtitle": "",
+            "content": "Considered pieces. Brighter days.",
+            "isVisible": true,
+            "promotionSource": "manual",
+            "promotionLayout": "side",
+            "showOfferBadges": true,
+            "containerMode": "full-bleed",
+            "sectionBorder": "none",
+            "motionPreset": "subtle-lift",
+            "paddingY": "compact",
+            "backgroundColor": "custom",
+            "textColor": "light",
+            "textAlignment": "left",
+            "customColors": {},
+            "items": [
+                {
+                    "id": "sec-1791560341659-3t78j-item-0",
+                    "title": "",
+                    "description": "",
+                    "sourceId": "21",
+                    "imageUrl": "/storage/cms/media/28ab0cb3-b015-4596-bd2e-9f0028bf94e9.png",
+                    "buttonText": "Explore offer",
+                    "linkUrl": "/shop"
+                },
+                {
+                    "id": "sec-1791560341659-3t78j-item-1",
+                    "title": "",
+                    "description": "",
+                    "sourceId": "19",
+                    "imageUrl": "/storage/cms/media/524de4a8-d5ae-4fd8-8502-f05e9d6ecfbc.png",
+                    "buttonText": "Explore offer",
+                    "linkUrl": "/shop"
+                }
+            ],
+            "id": "eddeaf02-2475-578d-8f35-66cce9472c37",
+            "typography": {
+                "title": {
+                    "fontSize": 38
+                },
+                "itemTitle": {
+                    "fontSize": 25
+                }
+            },
+            "surface": "contrast"
+        },
+        {
+            "type": "product_listing",
+            "title": "Made for the way you live",
+            "subtitle": "",
+            "content": "",
+            "sourceType": "manual",
+            "sourceId": "",
+            "productLimit": 4,
+            "autoSlide": true,
+            "autoSlideInterval": 3.5,
+            "showNavArrows": true,
+            "columnsCount": 4,
+            "textAlignment": "left",
+            "backgroundColor": "custom",
+            "textColor": "dark",
+            "paddingY": "compact",
+            "isVisible": true,
+            "id": "e8f6287c-3ce0-5c7e-8d7b-c97b7829c613",
+            "productIds": [
+                "81",
+                "84",
+                "83",
+                "86",
+                "82",
+                "90"
+            ],
+            "sectionBorder": "none",
+            "typography": {
+                "itemTitle": {
+                    "fontFamily": "sans",
+                    "fontSize": 13,
+                    "fontWeight": 400,
+                    "lineHeight": 1.35
+                }
+            },
+            "surface": "light",
+            "customColors": {},
+            "listingPreset": "editorial-tabs",
+            "imageRatio": "1:1",
+            "buttonText": "Shop all",
+            "buttonLink": "/shop",
+            "productTabs": [
+                {
+                    "id": "home-tab-best",
+                    "label": "Best Sellers",
+                    "sourceType": "manual",
+                    "sourceId": "",
+                    "productIds": [
+                        "81",
+                        "84",
+                        "83",
+                        "86",
+                        "82",
+                        "90"
+                    ]
+                },
+                {
+                    "id": "home-tab-lighting",
+                    "label": "Lighting",
+                    "sourceType": "category",
+                    "sourceId": "53"
+                },
+                {
+                    "id": "home-tab-decor",
+                    "label": "Decor",
+                    "sourceType": "manual",
+                    "productIds": [
+                        "89"
+                    ]
+                },
+                {
+                    "id": "home-tab-new",
+                    "label": "New In",
+                    "sourceType": "manual",
+                    "productIds": [
+                        "90",
+                        "89",
+                        "88",
+                        "87"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "sec-b7db96cd-c97a-44a5-ac03-ae9ae1f3b36d",
+            "type": "hero_slider",
+            "title": "A more peaceful home is possible.",
+            "subtitle": "",
+            "content": "Timeless pieces for a calmer everyday.",
+            "isVisible": true,
+            "sliderPreset": "editorial-overlay",
+            "containerMode": "full-bleed",
+            "sectionBorder": "none",
+            "motionPreset": "subtle-lift",
+            "paddingY": "compact",
+            "backgroundColor": "custom",
+            "textColor": "dark",
+            "textAlignment": "right",
+            "sliderHeight": "panoramic",
+            "sliderAutoplay": false,
+            "sliderInterval": 5,
+            "overlayOpacity": 0,
+            "surface": "light",
+            "customColors": {},
+            "typography": {
+                "title": {
+                    "fontFamily": "serif",
+                    "fontSize": 34,
+                    "fontWeight": 400,
+                    "lineHeight": 1.05,
+                    "letterSpacing": -0.8
+                },
+                "content": {
+                    "fontFamily": "sans",
+                    "fontSize": 14,
+                    "fontWeight": 400,
+                    "lineHeight": 1.5
+                }
+            },
+            "imageSlots": [],
+            "items": [
+                {
+                    "id": "item-8f7cd0f4-b015-4d43-9878-913b78638ffc",
+                    "title": "A more peaceful\nhome is possible.",
+                    "subtitle": "",
+                    "description": "Timeless pieces for a calmer everyday.",
+                    "imageUrl": "/storage/cms/media/7f4313f2-7a4b-443d-8ba9-a42e3a468aaa.png",
+                    "buttonText": "Shop the collection",
+                    "linkUrl": "/shop",
+                    "caption": ""
+                }
+            ]
+        },
+        {
+            "id": "sec-cf934c45-28db-4ab9-aed7-fc62acc1fd84",
+            "type": "media_text_split",
+            "layoutPreset": "editorial-story-cards",
+            "title": "Ideas for a more considered home",
+            "subtitle": "",
+            "content": "",
+            "buttonText": "Read all stories",
+            "buttonLink": "/page-template-sample/editorial-story-cards.html",
+            "isVisible": true,
+            "containerMode": "page",
+            "sectionBorder": "none",
+            "motionPreset": "subtle-lift",
+            "paddingY": "compact",
+            "backgroundColor": "custom",
+            "textColor": "dark",
+            "textAlignment": "left",
+            "surface": "light",
+            "customColors": {
+                "secondaryBtnBg": "#f0efe9"
+            },
+            "typography": {
+                "title": {
+                    "fontSize": 30,
+                    "fontFamily": "serif",
+                    "fontWeight": 400,
+                    "lineHeight": 1.15
+                },
+                "itemTitle": {
+                    "fontSize": 23,
+                    "fontFamily": "serif",
+                    "fontWeight": 400,
+                    "lineHeight": 1.13
+                },
+                "itemContent": {
+                    "fontSize": 13,
+                    "fontFamily": "sans",
+                    "fontWeight": 400,
+                    "lineHeight": 1.55
+                }
+            },
+            "items": [
+                {
+                    "id": "story-390da8a3-037f-48cc-84b0-bebe1faa53d5",
+                    "title": "Styling shelves\nwith intention",
+                    "description": "Simple ideas to create beautiful, personal spaces.",
+                    "imageUrl": "/storage/cms/media/524de4a8-d5ae-4fd8-8502-f05e9d6ecfbc.png",
+                    "buttonText": "Read the guide",
+                    "linkUrl": "/page-template-sample/editorial-story-cards.html#shelf-guide"
+                },
+                {
+                    "id": "story-3dc171b5-00ea-4440-af19-68aeea56010a",
+                    "title": "The art of\neveryday dining",
+                    "description": "How to create a table that brings people together.",
+                    "imageUrl": "/storage/cms/media/712c6f25-32db-459b-96cb-39e4a6fad163.png",
+                    "buttonText": "Read the article",
+                    "linkUrl": "/page-template-sample/editorial-story-cards.html#dining-article"
+                }
+            ],
+            "imageSlots": []
+        },
+        {
+            "columnsCount": 4,
+            "sectionBorder": "none",
+            "featureCardsPreset": "service-highlights",
+            "surface": "light",
+            "motionPreset": "subtle-lift",
+            "items": [
+                {
+                    "title": "Free delivery",
+                    "id": "home-service-delivery",
+                    "icon": "Truck",
+                    "description": "on orders over RM300"
+                },
+                {
+                    "title": "Hassle-free returns",
+                    "id": "home-service-returns",
+                    "icon": "Package",
+                    "description": "30-day returns"
+                },
+                {
+                    "title": "Thoughtfully sourced",
+                    "id": "home-service-sourcing",
+                    "icon": "Leaf",
+                    "description": "for a brighter home"
+                },
+                {
+                    "title": "We’re here to help",
+                    "id": "home-service-help",
+                    "icon": "Headphones",
+                    "description": "Mon – Sun, 9am – 6pm"
+                }
+            ],
+            "customColors": {
+                "titleColor": "#292b24",
+                "customBgColor": "#f0efe9",
+                "contentColor": "#6d7267"
+            },
+            "type": "feature_cards",
+            "containerMode": "page",
+            "isVisible": true,
+            "paddingY": "compact",
+            "id": "home-deco-service-strip",
+            "textColor": "dark",
+            "showSectionHeading": false,
+            "title": "Shopping services",
+            "typography": {
+                "itemContent": {
+                    "fontSize": 11,
+                    "fontFamily": "sans",
+                    "fontWeight": 400,
+                    "lineHeight": 1.5
+                },
+                "itemTitle": {
+                    "fontSize": 13,
+                    "fontFamily": "sans",
+                    "fontWeight": 400,
+                    "lineHeight": 1.4
+                }
+            },
+            "backgroundColor": "custom"
+        }
+    ],
+    "description": "Start with an empty canvas and add your own sections."
+}

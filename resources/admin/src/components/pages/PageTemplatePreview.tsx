@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { CmsPage } from '../../types';
-import { createPageTemplateSections, type PageTemplateContext } from '../../cms/pageTemplates';
+import { createPageTemplateStyle, createPageTemplateSections, type PageTemplateContext } from '../../cms/pageTemplates';
 import { createAdminPageRuntimePayload, PageRuntimeProvider } from '../../cms/PageRuntimeContext';
 import { SectionRenderer } from './SectionRenderer';
 
@@ -21,9 +21,10 @@ export function PageTemplatePreview({templateId, context}: {templateId:string;co
   const scale=Math.min(1,availableWidth/frameWidth);
   const page = useMemo<CmsPage>(() => ({id:'template-preview',title:'Template preview',slug:'template-preview',
     description:'',status:'draft',template:'standard',createdAt:'',updatedAt:'',
-    sections:createPageTemplateSections(templateId,context,'template-preview'),
+    style:createPageTemplateStyle(templateId),
+        sections:createPageTemplateSections(templateId,context,'template-preview'),
   }),[templateId,context]);
-  const payload = useMemo(() => createAdminPageRuntimePayload(page,{products:[],categories:[],collections:[]},context.currency,context.shippingRates),[page,context.currency,context.shippingRates]);
+  const payload = useMemo(() => createAdminPageRuntimePayload(page,{products:context.products??[],categories:context.categories??[],collections:context.collections??[]},context.currency,context.shippingRates,context.promotionOffers),[page,context]);
   return <div className="min-w-0">
     <div className="flex items-center justify-between gap-3 mb-3"><span className="text-xs text-neutral-500">Actual page sections · draft preview</span><div className="flex gap-2">
       {['Desktop','Mobile'].map(label=><button key={label} type="button" aria-pressed={mobile===(label==='Mobile')} onClick={()=>setMobile(label==='Mobile')} className={`px-3 py-1.5 text-xs rounded-lg border ${mobile===(label==='Mobile')?'border-indigo-500 text-indigo-500':'border-neutral-200 dark:border-neutral-700'}`}>{label}</button>)}

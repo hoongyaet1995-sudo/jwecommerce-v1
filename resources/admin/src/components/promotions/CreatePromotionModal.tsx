@@ -32,8 +32,8 @@ export const CreatePromotionModal: React.FC<Props> = ({ isOpen, onClose, onSave 
   const [totalUsageLimit, setTotalUsageLimit] = useState<string>('500');
   const [budgetLimitMyr, setBudgetLimitMyr] = useState<string>('10000');
   const [perUserLimit, setPerUserLimit] = useState<number>(1);
-  const [startsAt, setStartsAt] = useState('2026-08-20T00:00');
-  const [endsAt, setEndsAt] = useState('2026-09-30T23:59');
+  const [startsAt, setStartsAt] = useState('');
+  const [endsAt, setEndsAt] = useState('');
 
   // Action specifics
   const [fixedDiscount, setFixedDiscount] = useState<number>(20);
@@ -168,8 +168,8 @@ export const CreatePromotionModal: React.FC<Props> = ({ isOpen, onClose, onSave 
       isStackable: isStackable,
       stackingGroup: stackingGroup,
       applyExclusively: false,
-      startsAt: new Date(startsAt).toISOString(),
-      endsAt: new Date(endsAt).toISOString(),
+      startsAt: startsAt ? new Date(`${startsAt}+08:00`).toISOString() : null,
+      endsAt: endsAt ? new Date(`${endsAt}+08:00`).toISOString() : null,
       isActive: true,
       totalUsageLimit: totalUsageLimit ? Number(totalUsageLimit) : null,
       totalUsageCount: 0,
@@ -467,7 +467,11 @@ export const CreatePromotionModal: React.FC<Props> = ({ isOpen, onClose, onSave 
             </div>
           </div>
 
-          {/* Quota and Financial Cap */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+ <label className="block text-xs text-neutral-500">Start date (optional · Malaysia time)<input aria-label="Start date" type="datetime-local" value={startsAt} onChange={e=>setStartsAt(e.target.value)} className="w-full px-3 py-2 rounded-xl bg-neutral-50 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700"/><span>Leave empty to start immediately.</span></label>
+ <label className="block text-xs text-neutral-500">End date (optional · Malaysia time)<input aria-label="End date" type="datetime-local" min={startsAt||undefined} value={endsAt} onChange={e=>setEndsAt(e.target.value)} className="w-full px-3 py-2 rounded-xl bg-neutral-50 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700"/><span>Leave empty for no expiry.</span></label>
+</div>
+{/* Quota and Financial Cap */}
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-[11px] font-medium text-neutral-500 mb-1">Total Usage Cap</label>

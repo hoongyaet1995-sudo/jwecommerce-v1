@@ -16,7 +16,7 @@ it('edits standalone values and styling while preserving stable identity and une
   click('Delete value 3');expect(saved.items).toHaveLength(2);
   click('Show section heading');expect(saved.valuesShowHeading).toBe(true);
   click('Show dividers');expect(saved.valuesShowDividers).toBe(false);expect(node.querySelector('[aria-label="Divider color"]')).toBeNull();
-  act(()=>{const select=node.querySelector('select')!;select.value='spacious';select.dispatchEvent(new Event('change',{bubbles:true}));});
+  act(()=>(node.querySelector('[data-choice-value="spacious"]') as HTMLButtonElement).click());
   expect(saved.valuesRowSpacing).toBe('spacious');expect(saved.type).toBe('values_list');expect(saved.title).toBe('Stored heading');
   expect(saved.items?.[1]).toEqual({id:'one',title:'First',icon:'Sparkles',badge:'Retained legacy'});
   act(()=>root.unmount());node.remove();

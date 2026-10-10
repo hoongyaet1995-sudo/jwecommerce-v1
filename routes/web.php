@@ -219,6 +219,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/api/customers/{customer}', [CustomerDirectoryDataController::class, 'update']);
     Route::delete('/api/customers/{customer}', [CustomerDirectoryDataController::class, 'destroy']);
     Route::get('/api/cms/payment-methods', \App\Http\Controllers\Admin\CmsPaymentInformationController::class);
+    Route::get('/api/cms/palettes', [\App\Http\Controllers\Admin\CmsPaletteLibraryController::class, 'index']);
+    Route::post('/api/cms/palettes', [\App\Http\Controllers\Admin\CmsPaletteLibraryController::class, 'save'])->middleware('throttle:30,1');
     Route::get('/api/pages', [PageApiController::class, 'index'])->name('api.pages.index');
     Route::post('/api/media-assets', [CmsMediaAssetController::class, 'store'])->name('api.media-assets.store');
     Route::post('/api/pages', [PageApiController::class, 'store'])->name('api.pages.store');

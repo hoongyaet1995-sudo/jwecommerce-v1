@@ -12,8 +12,8 @@ describe('shared Image inspector',()=>{
     act(()=>root.render(<Harness/>));
     expect(node.querySelector('details')!.open).toBe(false);expect(node.querySelectorAll('[aria-label^="Image position "]')).toHaveLength(9);
     expect(node.querySelector('[aria-label="Image position bottom-center"]')!.getAttribute('aria-pressed')).toBe('true');
-    const ratio=node.querySelector('[aria-label="Image ratio"]') as HTMLSelectElement;
-    act(()=>{ratio.value='3:4';ratio.dispatchEvent(new Event('change',{bubbles:true}));(node.querySelector('[aria-label="Image position top-right"]') as HTMLButtonElement).click();(node.querySelector('[aria-label="Image foreground"]') as HTMLInputElement).click();});
+    const ratio=node.querySelector('[aria-label="Image ratio"] [data-choice-value="3:4"]') as HTMLButtonElement;
+    act(()=>{ratio.click();(node.querySelector('[aria-label="Image position top-right"]') as HTMLButtonElement).click();(node.querySelector('[aria-label="Image foreground"]') as HTMLInputElement).click();});
     expect(saved).toMatchObject({title:'Keep title',imageRatio:'3:4',imagePosition:'top-right',imageForeground:true,mediaFocalPoint:'bottom'});
     expect(node.querySelector('[aria-label="Image foreground opacity"]')).not.toBeNull();
     expect(node.querySelector('[aria-label="Image focal point"]')).toBeNull();act(()=>root.unmount());node.remove();

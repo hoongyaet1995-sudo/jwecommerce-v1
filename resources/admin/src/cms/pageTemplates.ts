@@ -1,3 +1,5 @@
+import homeDecoTemplate from './homeDecoTemplate.json';
+import type {PageStyle} from './pageStyle';
 import {termsSections,termsTemplateIds} from './termsTemplates';
 import {privacySections,privacyTemplateIds} from './privacyTemplates';
 import {paymentSections,paymentTemplateIds} from './paymentTemplates';
@@ -5,13 +7,18 @@ import {contactSections,contactTemplateIds} from './contactTemplates';
 import {returnsSections,returnsTemplateIds} from './returnsTemplates';
 import {shippingChaptersSections} from './shippingChaptersTemplate';
 import {shippingEditorialSections} from './shippingEditorialTemplate';
-import type { PageSection } from '../types';
+import type { PageSection, Product, Category, Collection } from '../types';
+import type {PromotionOffer} from './promotionHighlights';
 import { createSectionColorDefaults } from './sectionColorDefaults';
 import aboutEditorialTemplate from './aboutEditorialTemplate.json';
 import {aboutChaptersSections} from './aboutChaptersTemplate';
 import {aboutStudioSections} from './aboutStudioTemplate';
 
 export interface PageTemplateContext {
+  products?: Product[];
+  categories?: Category[];
+  collections?: Collection[];
+  promotionOffers?: PromotionOffer[];
   shopName?: string;
   tagline?: string;
   currency?: string;
@@ -21,9 +28,34 @@ export interface PageTemplateContext {
   }>;
 }
 
+export function createPageTemplateStyle(id:string):PageStyle|undefined {return id==='home-deco'?structuredClone(homeDecoTemplate.style) as PageStyle:undefined;}
+
 // These are editable draft snapshots. Checkout remains the authority for live rates.
 // Photographs illustrate the starter layout; they do not depict the merchant's team.
 export function createPageTemplateSections(templateId: string, context: PageTemplateContext, prefix: string): PageSection[] {
+  if(templateId==='home-deco')return (structuredClone(homeDecoTemplate.sections) as PageSection[]).map((section,index)=>{
+    const ids=new Map<string,string>();section.id=`${prefix}-home-${index}`;
+    section.items=section.items?.map((item,i)=>{const id=`${section.id}-item-${i}`;ids.set(item.id,id);return {...item,id};});
+    section.productTabs=section.productTabs?.map((tab,i)=>({...tab,id:`${section.id}-tab-${i}`}));
+    section.imageSlots=section.imageSlots?.map(slot=>{for(const [old,id] of ids)if(slot.target.startsWith(`item:${old}:`))return {...slot,target:slot.target.replace(`item:${old}:`,`item:${id}:`)};return slot;});
+    // A reusable starter must never carry another database's catalog identities.
+    const products=(context.products??[]).filter(product=>product.status==='active');
+    const categories=(context.categories??[]).filter(category=>category.status==='active');
+    const group=(pattern:RegExp)=>categories.find(category=>pattern.test(category.slug+' '+category.name));
+    if(section.type==='product_listing') {
+      section.sourceType='manual';section.sourceId='';section.productIds=products.slice(0,4).map(product=>product.id);
+      section.productTabs=section.productTabs?.map((tab,i)=>{
+        const category=i===1?group(/lighting/i):i===2?group(/decor|storage/i):undefined;
+        return {...tab,sourceType:category?'category':products.length?'manual':'all',sourceId:category?.id??'',productIds:category?[]:(i===3?[...products].reverse():products).slice(0,4).map(product=>product.id)};
+      });
+    }
+    if(section.type==='shop_navigation')section.items=section.items?.map((item,i)=>{
+      const category=section.shopNavigationPreset==='collection-banners'?undefined:group([/living|tables/i,/dining|tables/i,/lighting/i,/decor|storage/i,/bedroom/i][i]??/$^/);
+      return {...item,sourceType:category?'category':'custom',sourceId:category?.id??'',linkUrl:category?item.linkUrl:'/shop'};
+    });
+    if(section.type==='promotion_highlights')section.items=section.items?.map((item,i)=>({...item,sourceId:context.promotionOffers?.filter(offer=>offer.status==='active')[i]?.id??''}));
+    return section;
+  });
   if((termsTemplateIds as readonly string[]).includes(templateId))return termsSections(templateId,prefix);
   if((privacyTemplateIds as readonly string[]).includes(templateId))return privacySections(templateId,prefix);
   if((paymentTemplateIds as readonly string[]).includes(templateId))return paymentSections(templateId,prefix);

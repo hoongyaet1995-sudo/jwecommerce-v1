@@ -1,0 +1,3271 @@
+{
+  "title": "Style QA",
+  "slug": "style-qa",
+  "template": "standard",
+  "style": {
+    "palette": {
+      "paper": "#f7f6f2",
+      "ink": "#292b24",
+      "muted": "#6d7267",
+      "accent": "#454e37",
+      "light": "#f7f6f2",
+      "secondary": "#dad7c7",
+      "secondaryInk": "#292b24",
+      "hover": "#343c29"
+    },
+    "typography": {
+      "eyebrow": {
+        "fontFamily": "sans",
+        "fontSize": 10,
+        "fontWeight": 600
+      },
+      "title": {
+        "fontFamily": "serif",
+        "fontSize": 38,
+        "fontWeight": 400
+      },
+      "lead": {
+        "fontFamily": "sans",
+        "fontSize": 18
+      },
+      "content": {
+        "fontFamily": "sans",
+        "fontSize": 14
+      },
+      "itemTitle": {
+        "fontFamily": "serif",
+        "fontSize": 21
+      },
+      "itemContent": {
+        "fontFamily": "sans",
+        "fontSize": 12
+      }
+    },
+    "spacing": "normal",
+    "buttonRadius": 0,
+    "buttonSize": "normal"
+  },
+  "sections": [
+    {
+      "type": "payment_methods",
+      "title": "Ways to pay.",
+      "subtitle": "PAYMENT OPTIONS",
+      "content": "Choose the available method that suits your order.",
+      "paymentLayout": "cards",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "paymentNote": "Final availability depends on your order, currency and delivery address. Confirm at checkout.",
+      "isVisible": true,
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "motionPreset": "subtle-lift",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "id": "style-0",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "payment_methods",
+      "title": "Ways to pay.",
+      "subtitle": "PAYMENT OPTIONS",
+      "content": "Choose the available method that suits your order.",
+      "paymentLayout": "list",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "paymentNote": "Final availability depends on your order, currency and delivery address. Confirm at checkout.",
+      "isVisible": true,
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "motionPreset": "subtle-lift",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "id": "style-1",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "promotion_highlights",
+      "title": "A little more,\nfor less.",
+      "subtitle": "",
+      "content": "Considered pieces. Brighter days.",
+      "isVisible": true,
+      "promotionSource": "automatic",
+      "promotionLayout": "side",
+      "showOfferBadges": true,
+      "containerMode": "full-bleed",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textColor": "light",
+      "textAlignment": "left",
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#f7f6ef",
+        "contentColor": "#f7f6ef",
+        "primaryBtnBg": "#595e43",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#292b24",
+        "customBgColor": "#595e43"
+      },
+      "items": [
+        {
+          "id": "offer-lighting",
+          "title": "",
+          "description": "",
+          "sourceId": "",
+          "imageUrl": "/storage/cms/media/28ab0cb3-b015-4596-bd2e-9f0028bf94e9.png",
+          "buttonText": "Explore offer",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "offer-decor",
+          "title": "",
+          "description": "",
+          "sourceId": "",
+          "imageUrl": "/storage/cms/media/524de4a8-d5ae-4fd8-8502-f05e9d6ecfbc.png",
+          "buttonText": "Explore offer",
+          "linkUrl": "/shop"
+        }
+      ],
+      "id": "style-2",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "shop_navigation",
+      "title": "Explore a collection",
+      "isVisible": true,
+      "shopNavigationPreset": "collection-banners",
+      "bannerProportions": "60:40",
+      "bannerHeight": "comfortable",
+      "paddingY": "compact",
+      "showSectionHeading": false,
+      "containerMode": "full-bleed",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "custom",
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#454e37",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f7f6f2",
+        "secondaryBtnText": "#292b24",
+        "customBgColor": "#f7f6f2"
+      },
+      "typography": {
+        "itemTitle": {
+          "fontFamily": "serif",
+          "fontSize": 40,
+          "fontWeight": 400,
+          "color": "#ffffff",
+          "lineHeight": 1
+        },
+        "itemContent": {
+          "fontSize": 14,
+          "color": "#ffffff",
+          "lineHeight": 1.5
+        }
+      },
+      "items": [
+        {
+          "id": "collection-living",
+          "title": "The warm\nminimal edit.",
+          "description": "Natural textures. Calmer spaces.\nA more considered home.",
+          "buttonText": "Shop the collection",
+          "sourceType": "custom",
+          "linkUrl": "/shop",
+          "imageUrl": "/storage/cms/media/e6774f4c-4d03-4ff8-98b3-152174211cae.png"
+        },
+        {
+          "id": "collection-dining",
+          "title": "Gather\naround.",
+          "description": "Pieces for shared meals\nand good company.",
+          "buttonText": "Shop dining",
+          "sourceType": "custom",
+          "linkUrl": "/shop",
+          "imageUrl": "/storage/cms/media/712c6f25-32db-459b-96cb-39e4a6fad163.png"
+        }
+      ],
+      "imageSlots": [
+        {
+          "target": "item:collection-living:imageUrl",
+          "imageOverlay": true,
+          "imageOverlayOpacity": 30
+        },
+        {
+          "target": "item:collection-dining:imageUrl",
+          "imageOverlay": true,
+          "imageOverlayOpacity": 30
+        }
+      ],
+      "id": "style-3",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "shop_navigation",
+      "title": "Shop by room",
+      "subtitle": "",
+      "content": "",
+      "buttonText": "Explore all rooms",
+      "buttonLink": "/shop",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "normal",
+      "columnsCount": 5,
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#292b24",
+        "contentColor": "#66685d",
+        "primaryBtnBg": "#454e37",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": "#f7f6f2"
+      },
+      "typography": {
+        "title": {
+          "fontFamily": "serif",
+          "fontSize": 32,
+          "fontWeight": 400
+        },
+        "itemTitle": {
+          "fontFamily": "serif",
+          "fontSize": 18,
+          "fontWeight": 400
+        }
+      },
+      "items": [
+        {
+          "id": "shop-living",
+          "title": "Living Room",
+          "sourceType": "custom",
+          "linkUrl": "/shop",
+          "imageUrl": "/storage/cms/media/e6774f4c-4d03-4ff8-98b3-152174211cae.png"
+        },
+        {
+          "id": "shop-dining",
+          "title": "Dining Room",
+          "sourceType": "custom",
+          "linkUrl": "/shop",
+          "imageUrl": "/storage/cms/media/712c6f25-32db-459b-96cb-39e4a6fad163.png"
+        },
+        {
+          "id": "shop-lighting",
+          "title": "Lighting",
+          "sourceType": "custom",
+          "linkUrl": "/shop",
+          "imageUrl": "/storage/cms/media/28ab0cb3-b015-4596-bd2e-9f0028bf94e9.png"
+        },
+        {
+          "id": "shop-decor",
+          "title": "Decor",
+          "sourceType": "custom",
+          "linkUrl": "/shop",
+          "imageUrl": "/storage/cms/media/524de4a8-d5ae-4fd8-8502-f05e9d6ecfbc.png"
+        },
+        {
+          "id": "shop-bedroom",
+          "title": "Bedroom",
+          "sourceType": "custom",
+          "linkUrl": "/shop",
+          "imageUrl": "/storage/cms/media/cccfed70-efe4-4185-be48-8a0165212c71.png"
+        }
+      ],
+      "id": "style-4",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "hero_slider",
+      "title": "The Considered Home",
+      "subtitle": "THE CONSIDERED HOME",
+      "content": "Considered pieces for everyday living.",
+      "isVisible": true,
+      "sliderPreset": "editorial-overlay",
+      "containerMode": "full-bleed",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "compact",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "sliderHeight": "normal",
+      "sliderAutoplay": true,
+      "sliderInterval": 7,
+      "overlayOpacity": 0,
+      "customColors": {
+        "eyebrowColor": "#626547",
+        "titleColor": "#292b24",
+        "contentColor": "#66685d",
+        "primaryBtnBg": "#454e37",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#faf8f1",
+        "secondaryBtnText": "#454e37",
+        "customBgColor": ""
+      },
+      "items": [
+        {
+          "id": "editorial-slide-1",
+          "title": "Make room\nfor everyday\nbeauty.",
+          "subtitle": "",
+          "description": "Thoughtful pieces for a more\nmeaningful home.",
+          "imageUrl": "/storage/cms/media/b773291f-3f89-42ec-b036-efb180c23494.png",
+          "buttonText": "Shop the edit",
+          "linkUrl": "/shop",
+          "caption": "Home\nfor a brighter\neveryday."
+        }
+      ],
+      "id": "style-5",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "hero_banner",
+      "title": "New Season Collection 2026",
+      "subtitle": "EXCLUSIVE RELEASE",
+      "content": "Discover acoustic perfection through precision engineering and timeless Scandinavian craftsmanship.",
+      "mediaUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1600&auto=format&fit=crop&q=80",
+      "mediaType": "image",
+      "buttonText": "Shop New Arrivals",
+      "buttonLink": "/collections/new-arrivals",
+      "secondaryButtonText": "Explore Lookbook",
+      "secondaryButtonLink": "/pages/lookbook",
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-950",
+      "textColor": "light",
+      "paddingY": "spacious",
+      "overlayOpacity": 50,
+      "isVisible": true,
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-6",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "hero_slider",
+      "title": "Experience Pure Acoustic Fidelity",
+      "subtitle": "NEW TITANIUM FLAGSHIP SERIES",
+      "content": "Custom 50mm beryllium transducers engineered with active damping for zero-distortion listening.",
+      "buttonText": "Explore Collection",
+      "buttonLink": "/collections/all",
+      "secondaryButtonText": "Watch Atelier Film",
+      "secondaryButtonLink": "#film",
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-950",
+      "textColor": "light",
+      "paddingY": "spacious",
+      "overlayOpacity": 55,
+      "sliderInterval": 5,
+      "sliderAutoplay": true,
+      "sliderHeight": "spacious",
+      "isVisible": true,
+      "items": [
+        {
+          "id": "slide-1",
+          "title": "Experience Pure Acoustic Fidelity",
+          "subtitle": "FLAGSHIP SERIES 2026",
+          "description": "Custom 50mm beryllium transducers engineered with active damping for zero-distortion listening.",
+          "imageUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1600&auto=format&fit=crop&q=80",
+          "badge": "Exclusive Launch",
+          "linkUrl": "/products/aurora-flagship",
+          "buttonText": "Shop Flagship — $499",
+          "secondaryButtonText": "View Tech Specs"
+        },
+        {
+          "id": "slide-2",
+          "title": "Hybrid Active Noise Cancellation 4.0",
+          "subtitle": "STUDIO-GRADE ISOLATION",
+          "description": "Adaptive algorithmic cancellation eliminating 99.6% of ambient frequency interference for uninterrupted immersion.",
+          "imageUrl": "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=1600&auto=format&fit=crop&q=80",
+          "badge": "Adaptive ANC",
+          "linkUrl": "/products/aurora-anc",
+          "buttonText": "Discover ANC Series",
+          "secondaryButtonText": "Compare Models"
+        },
+        {
+          "id": "slide-3",
+          "title": "Handcrafted Scandinavian Craftsmanship",
+          "subtitle": "ATELIER LEATHER & TITANIUM",
+          "description": "Aerospace-grade structural chassis paired with supple top-grain leather earcups for fatigue-free luxury.",
+          "imageUrl": "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=1600&auto=format&fit=crop&q=80",
+          "badge": "Artisan Heritage",
+          "linkUrl": "/pages/craftsmanship",
+          "buttonText": "Explore the Atelier",
+          "secondaryButtonText": "Find Nearest Lounge"
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-7",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "split_hero",
+      "title": "Next-Gen Wireless Audiophile Acoustics",
+      "subtitle": "TITANIUM SIGNATURE SERIES",
+      "content": "Engineered with 50mm custom beryllium drivers, active magnetic damping, and 60-hour lossless wireless runtime.",
+      "mediaUrl": "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=1000&auto=format&fit=crop&q=80",
+      "mediaType": "image",
+      "buttonText": "Order Now — $499",
+      "buttonLink": "/products/aurora-flagship",
+      "secondaryButtonText": "Read Tech Specs",
+      "secondaryButtonLink": "#specs",
+      "textAlignment": "left",
+      "backgroundColor": "bg-neutral-950",
+      "textColor": "light",
+      "paddingY": "normal",
+      "dealBadge": "In Stock • Ships in 24h",
+      "cardBadge": "Flagship Model",
+      "cardTitle": "Aurora Titanium Series X",
+      "cardSubtitle": "50mm Beryllium • LDAC 24/96",
+      "cardPrice": 499,
+      "cardExtra": "Free Express DHL",
+      "isVisible": true,
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-8",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "announcement_bar",
+      "title": "Global Express Dispatch Available • 30-Day In-Home Trial • 5-Year Acoustic Hardware Guarantee",
+      "subtitle": "LIMITED TIME NOTICE",
+      "content": "",
+      "tickerSpeed": "normal",
+      "backgroundColor": "bg-gradient-indigo",
+      "textColor": "light",
+      "paddingY": "compact",
+      "isVisible": true,
+      "items": [
+        {
+          "id": "ann-1",
+          "title": "Global Express Dispatch Available",
+          "icon": "Truck",
+          "badge": "Fast Delivery"
+        },
+        {
+          "id": "ann-2",
+          "title": "30-Day In-Home Acoustic Trial",
+          "icon": "Sparkles",
+          "badge": "Risk-Free"
+        },
+        {
+          "id": "ann-3",
+          "title": "5-Year Atelier Acoustic Guarantee",
+          "icon": "ShieldCheck",
+          "badge": "Warranty"
+        },
+        {
+          "id": "ann-4",
+          "title": "Complimentary Bespoke Monogramming",
+          "icon": "Award",
+          "badge": "Limited"
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-9",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "media_text_split",
+      "title": "Monolithic Titanium CNC Milling",
+      "subtitle": "CRAFTSMANSHIP & INNOVATION",
+      "content": "Each chassis is machined over 4.5 hours from an aerospace-grade titanium ingot. Zero resonance, ultra-durable, and featherlight.",
+      "mediaUrl": "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=1000&auto=format&fit=crop&q=80",
+      "mediaType": "image",
+      "mediaPosition": "right",
+      "mediaAspectRatio": "4:3",
+      "buttonText": "Learn About Materials",
+      "buttonLink": "/pages/materials",
+      "textAlignment": "left",
+      "backgroundColor": "bg-neutral-900",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-10",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "rich_text",
+      "title": "The Manifesto of Pure Sound",
+      "subtitle": "OUR PHILOSOPHY",
+      "content": "Music is not just background vibrations; it is an intimate emotional connection between artist and listener.",
+      "quote": "“We refuse to compromise on acoustic fidelity. If a component does not elevate the music, it has no place in our design.”",
+      "authorName": "Henrik Vang",
+      "authorRole": "Chief Acoustic Architect",
+      "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-900",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-11",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "timeline_story",
+      "title": "A Decade of Acoustic Mastery",
+      "subtitle": "OUR HERITAGE (2016 – 2026)",
+      "content": "Trace the milestones that established Aurora as the premier Scandinavian boutique audio maker.",
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-950",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "items": [
+        {
+          "id": "time-1",
+          "date": "2016",
+          "title": "Stockholm Atelier Founded",
+          "description": "A small group of ex-aerospace acoustic engineers built the first zero-resonance headphone prototype.",
+          "badge": "Origins"
+        },
+        {
+          "id": "time-2",
+          "date": "2019",
+          "title": "Beryllium Transducer Patent",
+          "description": "Patented our micro-vapor deposition diaphragm technique, achieving ultra-linear frequency response.",
+          "badge": "Breakthrough"
+        },
+        {
+          "id": "time-3",
+          "date": "2023",
+          "title": "Global Studio Adoption",
+          "description": "Over 800 certified mastering and mixing studios worldwide deployed Aurora monitoring headsets.",
+          "badge": "Industry Standard"
+        },
+        {
+          "id": "time-4",
+          "date": "2026",
+          "title": "Universal Wireless Architecture",
+          "description": "Pioneering zero-compression 24-bit/96kHz lossless wireless transmission for reference fidelity on the go.",
+          "badge": "Latest Release"
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-12",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "stats_counter",
+      "title": "Trusted by Producers & Audiophiles Worldwide",
+      "subtitle": "PROVEN EXCELLENCE",
+      "content": "Quantifying our decade-long commitment to uncompromising acoustic purity.",
+      "columnsCount": 4,
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-900",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "items": [
+        {
+          "id": "stat-1",
+          "value": "99.4%",
+          "title": "Acoustic Clarity Rating",
+          "description": "Laboratory tested harmonic distortion under 0.05% THD"
+        },
+        {
+          "id": "stat-2",
+          "value": "48+",
+          "title": "International Design Awards",
+          "description": "Recognized by RedDot, iF Gold, and Good Design Tokyo"
+        },
+        {
+          "id": "stat-3",
+          "value": "120k+",
+          "title": "Headphones Hand-Calibrated",
+          "description": "Individually measured in Stockholm anechoic chamber"
+        },
+        {
+          "id": "stat-4",
+          "value": "5-Year",
+          "title": "Hardware Guarantee",
+          "description": "Comprehensive warranty with complimentary repair logistics"
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-13",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "product_grid",
+      "title": "Featured Acoustic Essentials",
+      "subtitle": "CURATED PICKS",
+      "content": "Hand-selected instruments and accessories for discerning audiophiles.",
+      "columnsCount": 3,
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-950",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-14",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "product_listing",
+      "title": "Objects worth coming home to",
+      "isVisible": true,
+      "listingPreset": "editorial-grid",
+      "sourceType": "manual",
+      "productIds": [],
+      "productLimit": 4,
+      "columnsCount": 4,
+      "imageRatio": "1:1",
+      "buttonText": "Shop all products",
+      "buttonLink": "/shop",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "textAlignment": "left",
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#292b24",
+        "contentColor": "#56594f",
+        "primaryBtnBg": "#292b24",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-15",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "product_listing",
+      "title": "Trending Hardware & Lifestyle Tech",
+      "subtitle": "FEATURED DISCOUNTS",
+      "content": "Explore limited-time promotional deals with instant dispatch and premium warranty.",
+      "sourceType": "category",
+      "sourceId": "",
+      "productLimit": 6,
+      "autoSlide": true,
+      "autoSlideInterval": 3.5,
+      "showNavArrows": true,
+      "columnsCount": 3,
+      "textAlignment": "left",
+      "backgroundColor": "bg-neutral-950",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-16",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "collection_tabs",
+      "title": "Explore Aurora Audio Ecosystem",
+      "subtitle": "BROWSE BY CATEGORY",
+      "content": "Discover engineered precision for every listening environment.",
+      "tabCategories": [
+        "Electronics & Gadgets",
+        "Premium Audio",
+        "Best Sellers 2026",
+        "Studio Essentials"
+      ],
+      "tabs": [
+        {
+          "id": "tab-1",
+          "label": "Electronics & Gadgets",
+          "sourceType": "category",
+          "sourceId": "cat-electronics",
+          "productLimit": 4
+        },
+        {
+          "id": "tab-2",
+          "label": "Premium Audio",
+          "sourceType": "category",
+          "sourceId": "cat-audio",
+          "productLimit": 4
+        },
+        {
+          "id": "tab-3",
+          "label": "Best Sellers 2026",
+          "sourceType": "collection",
+          "sourceId": "col-best-sellers",
+          "productLimit": 4
+        },
+        {
+          "id": "tab-4",
+          "label": "Studio Essentials",
+          "sourceType": "collection",
+          "sourceId": "col-studio-essentials",
+          "productLimit": 4
+        }
+      ],
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-900",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-17",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "featured_deal",
+      "title": "Limited Edition: Midnight Matte Titanium",
+      "subtitle": "EXCLUSIVE FLASH OFFER",
+      "content": "Only 150 serialized units produced. Includes bespoke Italian leather flight case and balanced silver cable.",
+      "mediaUrl": "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=1000&auto=format&fit=crop&q=80",
+      "mediaType": "image",
+      "discountPercent": 25,
+      "dealBadge": "Save $120 • 48 Hours Only",
+      "buttonText": "Claim Special Edition ($379)",
+      "buttonLink": "/products/aurora-flagship",
+      "secondaryButtonText": "View Serial Registry",
+      "secondaryButtonLink": "/pages/authenticity",
+      "textAlignment": "left",
+      "backgroundColor": "bg-gradient-indigo",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-18",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "pricing_table",
+      "title": "Choose Your Sound Tier",
+      "subtitle": "TRANSPARENT EDITIONS",
+      "content": "Whether for daily commute or critical studio mastering, find the exact configuration for your ears.",
+      "columnsCount": 3,
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-950",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "items": [
+        {
+          "id": "price-1",
+          "title": "Essential Edition",
+          "price": 299,
+          "badge": "Commuter",
+          "description": "Precision dynamic drivers for everyday high-resolution listening.",
+          "features": [
+            "40mm Beryllium-coated drivers",
+            "Bluetooth 5.3 with AAC/aptX",
+            "35h Battery life with ANC",
+            "Durable aluminum frame",
+            "2-Year warranty"
+          ],
+          "linkUrl": "/products/aurora-essential"
+        },
+        {
+          "id": "price-2",
+          "title": "Reference Master",
+          "price": 499,
+          "badge": "Most Popular",
+          "isHighlighted": true,
+          "description": "Open-back planar magnetic transducers calibrated for mastering engineers.",
+          "features": [
+            "50mm Custom Planar Magnetic",
+            "Lossless LDAC & 24/96 stream",
+            "Handmade lambskin ear cushions",
+            "Acoustically matched pairs (±0.5dB)",
+            "5-Year comprehensive warranty",
+            "Complimentary Hard Shell Case"
+          ],
+          "linkUrl": "/products/aurora-flagship"
+        },
+        {
+          "id": "price-3",
+          "title": "Bespoke Atelier",
+          "price": 899,
+          "badge": "Custom Engraved",
+          "description": "Machined from Grade-5 titanium ingot with pure silver balanced cabling.",
+          "features": [
+            "Hand-selected driver matching",
+            "Bespoke laser-etched serial & name",
+            "Pure 99.999% OCC Silver Litz Cable",
+            "Walnut wooden display stand",
+            "Lifetime Atelier Concierge Care"
+          ],
+          "linkUrl": "/products/aurora-custom"
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-19",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "media_gallery",
+      "title": "In the Wild: Everyday Sound",
+      "subtitle": "COMMUNITY & EDITORIAL",
+      "content": "Explore how creators and artists integrate Aurora gear into their daily creative workflows.",
+      "columnsCount": 3,
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-900",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "items": [
+        {
+          "id": "gal-1",
+          "title": "Nordic Studio Setup",
+          "description": "Reykjavik Recording Session",
+          "imageUrl": "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800&auto=format&fit=crop&q=80",
+          "linkUrl": "/pages/studios"
+        },
+        {
+          "id": "gal-2",
+          "title": "Commuter Series",
+          "description": "Subway Isolation in Tokyo",
+          "imageUrl": "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=800&auto=format&fit=crop&q=80",
+          "linkUrl": "/pages/commute"
+        },
+        {
+          "id": "gal-3",
+          "title": "Acoustic Chamber",
+          "description": "Anechoic Frequency Verification",
+          "imageUrl": "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&auto=format&fit=crop&q=80",
+          "linkUrl": "/pages/labs"
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-20",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "video_embed",
+      "title": "Behind the Design: The Titanium Journey",
+      "subtitle": "DOCUMENTARY SHORT FILM",
+      "content": "Watch how our industrial engineers craft the monolithic headband gimbals in our Stockholm atelier.",
+      "videoEmbedUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-950",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-21",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "before_after",
+      "title": "Active Isolation vs Raw Environment",
+      "subtitle": "NOISE REDUCTION VISUALIZER",
+      "content": "Drag the slider to experience the dramatic 38dB broadband acoustic attenuation of Aurora Hybrid ANC.",
+      "beforeImageUrl": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200&auto=format&fit=crop&q=80",
+      "afterImageUrl": "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1200&auto=format&fit=crop&q=80",
+      "beforeLabel": "Standard Ambience (Crowded)",
+      "afterLabel": "Aurora Pure Silence (38dB Attenuated)",
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-950",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-22",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "instagram_feed",
+      "title": "Seen on Creators Worldwide",
+      "subtitle": "TAG @AURORA.AUDIO TO BE FEATURED",
+      "content": "Join over 100,000 audiophiles sharing their listening setups across the globe.",
+      "columnsCount": 4,
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-900",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "items": [
+        {
+          "id": "ig-1",
+          "title": "Late night master session",
+          "handle": "@audio.marcus",
+          "imageUrl": "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600&auto=format&fit=crop&q=80",
+          "linkUrl": "https://instagram.com"
+        },
+        {
+          "id": "ig-2",
+          "title": "Stockholm commute companion",
+          "handle": "@elena_nordic",
+          "imageUrl": "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80",
+          "linkUrl": "https://instagram.com"
+        },
+        {
+          "id": "ig-3",
+          "title": "Unboxing the Titanium edition",
+          "handle": "@techunfiltered",
+          "imageUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80",
+          "linkUrl": "https://instagram.com"
+        },
+        {
+          "id": "ig-4",
+          "title": "Vinyl & Aurora matching pair",
+          "handle": "@vinyl_soul",
+          "imageUrl": "https://images.unsplash.com/photo-1539185441755-769473a23570?w=600&auto=format&fit=crop&q=80",
+          "linkUrl": "https://instagram.com"
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-23",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "values_list",
+      "title": "Our values",
+      "subtitle": "OUR VALUES",
+      "content": "",
+      "isVisible": true,
+      "valuesShowHeading": false,
+      "valuesShowDividers": true,
+      "valuesRowSpacing": "normal",
+      "valuesNumberColor": "#d4d4d4",
+      "valuesDividerColor": "#e5e5e5",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "items": [
+        {
+          "id": "value-1",
+          "title": "Thoughtful choices",
+          "description": "We prioritise materials, design and function that make sense — for you and for the world around us."
+        },
+        {
+          "id": "value-2",
+          "title": "Clear information",
+          "description": "We keep things straightforward, from product details to how we work, so you can shop with confidence."
+        },
+        {
+          "id": "value-3",
+          "title": "Everyday usefulness",
+          "description": "We design for real life — pieces that are versatile, durable and made to be used, not just kept."
+        }
+      ],
+      "id": "style-24",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "feature_cards",
+      "title": "Engineered Without Compromise",
+      "subtitle": "THE AURORA ADVANTAGE",
+      "content": "Every product is built upon our foundational acoustic standards.",
+      "columnsCount": 4,
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-900",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "items": [
+        {
+          "id": "f-1",
+          "title": "Lossless Wireless",
+          "description": "Ultra-low latency 24-bit/96kHz high-resolution audio streaming.",
+          "icon": "Sparkles",
+          "badge": "LDAC & aptX"
+        },
+        {
+          "id": "f-2",
+          "title": "Handcrafted Cushions",
+          "description": "Supple full-grain leather filled with slow-rebound acoustic foam.",
+          "icon": "Heart",
+          "badge": "Ergonomic"
+        },
+        {
+          "id": "f-3",
+          "title": "Modular Architecture",
+          "description": "Easily replaceable headbands, batteries, and magnetic earcups.",
+          "icon": "ShieldCheck",
+          "badge": "10-Year Life"
+        },
+        {
+          "id": "f-4",
+          "title": "Carbon Neutral Delivery",
+          "description": "100% offset international express shipping on every order.",
+          "icon": "Globe",
+          "badge": "Eco Pledge"
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-25",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "icon_list",
+      "title": "The Aurora Guarantee",
+      "subtitle": "RISK-FREE BUYING EXPERIENCE",
+      "content": "",
+      "columnsCount": 4,
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-950",
+      "textColor": "light",
+      "paddingY": "compact",
+      "isVisible": true,
+      "items": [
+        {
+          "id": "trust-1",
+          "title": "Complimentary Express Shipping",
+          "description": "Delivered in 2-4 business days via DHL Express",
+          "icon": "Truck"
+        },
+        {
+          "id": "trust-2",
+          "title": "30-Day In-Home Trial",
+          "description": "Test in your home listening setup with zero return fees",
+          "icon": "Heart"
+        },
+        {
+          "id": "trust-3",
+          "title": "5-Year Hardware Guarantee",
+          "description": "Comprehensive acoustic coverage and free part replacement",
+          "icon": "ShieldCheck"
+        },
+        {
+          "id": "trust-4",
+          "title": "Stockholm Atelier Support",
+          "description": "Direct audio engineering support for pairing & DAC advice",
+          "icon": "Sparkles"
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-26",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "comparison_matrix",
+      "title": "How Aurora Compares to Mainstream Audio",
+      "subtitle": "TRANSPARENT BENCHMARK",
+      "content": "We engineer for lifespans measured in decades, not disposable annual product cycles.",
+      "comparisonOurBrandName": "Aurora Flagship",
+      "comparisonCompetitorName": "Mainstream Plastic Brands",
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-900",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "items": [
+        {
+          "id": "comp-1",
+          "title": "Chassis Material",
+          "description": "Aviation-grade Monolithic Titanium vs Molded Injection Polycarbonate",
+          "badge": "Aurora Wins"
+        },
+        {
+          "id": "comp-2",
+          "title": "Driver Diaphragm",
+          "description": "50mm Pure Vapor-Deposited Beryllium vs Standard Mylar film",
+          "badge": "Zero Resonance"
+        },
+        {
+          "id": "comp-3",
+          "title": "Wireless Audio Resolution",
+          "description": "Uncompressed 24-Bit / 96kHz Lossless LDAC vs Compressed 16-Bit SBC",
+          "badge": "Studio Pure"
+        },
+        {
+          "id": "comp-4",
+          "title": "Repairability & Lifespan",
+          "description": "100% User Modular (Magnetic Pads, Swappable Battery) vs Glued Shut Obsolescence",
+          "badge": "10+ Year Life"
+        },
+        {
+          "id": "comp-5",
+          "title": "Warranty Coverage",
+          "description": "5-Year Global Direct Atelier vs 1-Year Limited Retailer",
+          "badge": "5x Longer"
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-27",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "faq_accordion",
+      "title": "Frequently Asked Questions",
+      "subtitle": "HELP & POLICIES",
+      "content": "Quick answers about compatibility, warranty, and worldwide logistics.",
+      "textAlignment": "left",
+      "backgroundColor": "bg-neutral-900",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "items": [
+        {
+          "id": "faq-new-1",
+          "title": "Is there a trial period for home listening?",
+          "description": "Yes, we offer a 30-day risk-free home listening trial with complimentary return shipping."
+        },
+        {
+          "id": "faq-new-2",
+          "title": "What DAC/Amps do you recommend with Aurora Flagship?",
+          "description": "Aurora headphones are easily driven by portable devices, but scale extraordinarily with dedicated balanced R2R DACs."
+        },
+        {
+          "id": "faq-new-3",
+          "title": "How do I clean and condition the lambskin leather pads?",
+          "description": "Gently wipe with a dry microfiber cloth. We recommend applying organic leather balm once every 6 months."
+        },
+        {
+          "id": "faq-new-4",
+          "title": "Do you offer international customs-cleared shipping?",
+          "description": "All orders to North America, Europe, and Asia include DDP (Delivered Duty Paid)—no surprise import fees upon arrival."
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-28",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "contact_form",
+      "contactPreset": "enquiry",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "title": "Talk to our team.",
+      "content": "Our team is here to help.",
+      "contactButtonText": "Send enquiry",
+      "inquiryCategories": [
+        {
+          "id": "order",
+          "label": "Order & delivery"
+        },
+        {
+          "id": "other",
+          "label": "Other enquiries"
+        }
+      ],
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "isVisible": true,
+      "id": "style-29",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "store_locator",
+      "contactPreset": "location",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "title": "Visit our studio.",
+      "contactAddress": "",
+      "mapEmbedUrl": "",
+      "mapVisible": true,
+      "items": [
+        {
+          "id": "hours",
+          "title": "Opening hours",
+          "description": "Add your opening hours",
+          "icon": "Clock"
+        }
+      ],
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "isVisible": true,
+      "id": "style-30",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "contact_form",
+      "title": "Connect with Our Acoustic Atelier",
+      "subtitle": "DEDICATED CONCIERGE",
+      "content": "Have questions about pairing with your DAC setup, or looking for custom engraving? Our engineers respond within 24 hours.",
+      "formEmail": "concierge@aurora-audio.se",
+      "contactPhone": "+46 8 123 4567 (Mon–Fri 09:00–18:00 CET)",
+      "contactAddress": "Acoustic Atelier, Stockholm, Sweden",
+      "contactButtonText": "Send Inquiries to Atelier",
+      "formSuccessMessage": "Thank you! Your message has been routed to our Stockholm acoustic engineers.",
+      "subjectPlaceholder": "e.g. Custom Engraving / Setup Inquiry",
+      "categoryPlaceholder": "Select an inquiry category...",
+      "messagePlaceholder": "Tell us about your audio setup or custom acoustic requirements...",
+      "inquiryCategories": [
+        {
+          "id": "cat-1",
+          "label": "Product Enquiry"
+        },
+        {
+          "id": "cat-2",
+          "label": "Order Support"
+        },
+        {
+          "id": "cat-3",
+          "label": "Wholesale & Partnership"
+        },
+        {
+          "id": "cat-4",
+          "label": "Press & Collaboration"
+        },
+        {
+          "id": "cat-5",
+          "label": "Other"
+        }
+      ],
+      "textAlignment": "left",
+      "backgroundColor": "bg-neutral-950",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-31",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "store_locator",
+      "title": "Experience Aurora in Person",
+      "subtitle": "FLAGSHIP LISTENING LOUNGES",
+      "content": "Step inside our acoustically treated listening rooms in Stockholm, Tokyo, and New York for an unhurried session.",
+      "columnsCount": 3,
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-900",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "items": [
+        {
+          "id": "store-1",
+          "title": "Stockholm Atelier & Lab",
+          "subtitle": "FLAGSHIP & FACTORY",
+          "description": "Birger Jarlsgatan 14, 114 34 Stockholm, Sweden\nMon–Sat: 10:00 – 19:00",
+          "badge": "Listening Bar Open",
+          "linkUrl": "tel:+4681234567"
+        },
+        {
+          "id": "store-2",
+          "title": "Tokyo Ginza Lounge",
+          "subtitle": "RETAIL & AUDIOPHILE BAR",
+          "description": "6-10-1 Ginza, Chuo City, Tokyo 104-0061, Japan\nDaily: 11:00 – 20:00",
+          "badge": "Private Booths",
+          "linkUrl": "tel:+81312345678"
+        },
+        {
+          "id": "store-3",
+          "title": "New York SoHo Studio",
+          "subtitle": "MASTERING SUITE",
+          "description": "450 Broome Street, New York, NY 10013, USA\nTue–Sun: 11:00 – 18:00",
+          "badge": "By Appointment",
+          "linkUrl": "tel:+12125550199"
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-32",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "testimonials_slider",
+      "title": "What Audiophiles & Producers Say",
+      "subtitle": "4.95 / 5 AVERAGE ACROSS 1,800+ REVIEWS",
+      "content": "Read verified listening impressions from Grammy-nominated producers and audio enthusiasts.",
+      "columnsCount": 3,
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-950",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "items": [
+        {
+          "id": "rev-1",
+          "title": "The most transparent midrange I have ever heard",
+          "description": "“The separation between vocal harmonics and acoustic guitar reverb tails is nothing short of breathtaking. I mix my entire new album with these.”",
+          "author": "Søren Lindqvist",
+          "authorRole": "Grammy-Nominated Producer (Stockholm)",
+          "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
+          "rating": 5,
+          "badge": "Verified Master Engineer"
+        },
+        {
+          "id": "rev-2",
+          "title": "Worth every single penny for comfort and sound",
+          "description": "“I wear headphones 8 hours a day for mastering work. The lambskin memory foam earcups distribute pressure evenly with zero fatigue.”",
+          "author": "Maya Chen",
+          "authorRole": "Senior Audio Director (Tokyo)",
+          "authorAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
+          "rating": 5,
+          "badge": "Verified Buyer"
+        },
+        {
+          "id": "rev-3",
+          "title": "Titanium craftsmanship is in a league of its own",
+          "description": "“In a world of creaking plastic audio gear, holding the Aurora Titanium chassis feels like an heirloom timepiece. Spectacular build.”",
+          "author": "David Vance",
+          "authorRole": "Sound Designer (London)",
+          "authorAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80",
+          "rating": 5,
+          "badge": "Verified Buyer"
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-33",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "logo_cloud",
+      "title": "Featured in Global Publications & Studios",
+      "subtitle": "CRITICALLY ACCLAIMED",
+      "content": "",
+      "columnsCount": 5,
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-900",
+      "textColor": "light",
+      "paddingY": "compact",
+      "isVisible": true,
+      "items": [
+        {
+          "id": "logo-1",
+          "title": "WIRED",
+          "description": "“Headphone of the Year”"
+        },
+        {
+          "id": "logo-2",
+          "title": "SOUND ON SOUND",
+          "description": "“Reference Class”"
+        },
+        {
+          "id": "logo-3",
+          "title": "THE VERGE",
+          "description": "9.5 / 10 Score"
+        },
+        {
+          "id": "logo-4",
+          "title": "AUDIOPHILE ON",
+          "description": "Editor’s Choice"
+        },
+        {
+          "id": "logo-5",
+          "title": "ROLLING STONE",
+          "description": "Top Tier Audio"
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-34",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "cta_strip",
+      "ctaPreset": "image-banner",
+      "ctaBannerHeight": "normal",
+      "content": "",
+      "mediaUrl": "",
+      "secondaryButtonText": "",
+      "secondaryButtonLink": "",
+      "title": "Simple things,\nconsidered.",
+      "subtitle": "EXPLORE",
+      "buttonText": "Explore the collection",
+      "buttonLink": "/shop",
+      "isVisible": true,
+      "backgroundColor": "bg-white",
+      "textColor": "light",
+      "paddingY": "compact",
+      "imageSlots": [
+        {
+          "target": "mediaUrl",
+          "imageOverlay": true,
+          "imageOverlayOpacity": 30
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#ffffff",
+        "titleColor": "#ffffff",
+        "contentColor": "#ffffff",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-35",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "cta_strip",
+      "title": "Ready to Transform How You Hear Music?",
+      "subtitle": "JOIN THE AUDIOPHILE CIRCLE",
+      "content": "Enjoy complimentary express worldwide delivery and our 5-year acoustic hardware warranty.",
+      "buttonText": "Shop All Headphones",
+      "buttonLink": "/categories/audio",
+      "secondaryButtonText": "Contact Concierge",
+      "secondaryButtonLink": "/contact",
+      "textAlignment": "center",
+      "backgroundColor": "bg-gradient-indigo",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-36",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "newsletter_signup",
+      "title": "Receive $30 Off Your First Order",
+      "subtitle": "JOIN THE AURORA INSIDER CIRCLE",
+      "content": "Be the first to access limited-batch atelier releases, studio master recordings, and private events.",
+      "buttonText": "Claim $30 Voucher",
+      "formSuccessMessage": "Your subscriber voucher has been sent to your email!",
+      "newsletterCouponId": "",
+      "textAlignment": "center",
+      "backgroundColor": "bg-neutral-950",
+      "textColor": "light",
+      "paddingY": "normal",
+      "isVisible": true,
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-37",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#525252",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "isVisible": true,
+      "type": "media_gallery",
+      "galleryPreset": "editorial-montage",
+      "title": "The world of Your store.",
+      "textAlignment": "center",
+      "showSectionHeading": true,
+      "columnsCount": 3,
+      "content": "Sample brand story — editable content.\n\nEveryday things, made more considered. Your store is a space for objects, clothing and ideas that belong in real life.",
+      "items": [
+        {
+          "id": "studio-starter-world-0",
+          "title": "A sunlit studio desk with plants, books and a black mug",
+          "imageUrl": "/storage/cms/media/84b5cead-b384-4d8f-b48b-af908ba06e0d.png"
+        },
+        {
+          "id": "studio-starter-world-1",
+          "title": "Neutral cotton clothing on wooden hangers",
+          "imageUrl": "/storage/cms/media/7ea77aed-969f-4fb9-ab6f-883bd825c6fd.png"
+        },
+        {
+          "id": "studio-starter-world-2",
+          "title": "A studio cap, camera and books on a metal shelf",
+          "imageUrl": "/storage/cms/media/37da8c07-528c-417c-ac10-1200f871e31a.png"
+        }
+      ],
+      "id": "style-38",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "paddingY": "compact",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#525252",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "isVisible": true,
+      "type": "media_gallery",
+      "galleryPreset": "editorial-cards",
+      "title": "The everyday details",
+      "showSectionHeading": false,
+      "columnsCount": 3,
+      "items": [
+        {
+          "id": "studio-starter-details-0",
+          "title": "Objects",
+          "description": "Everyday essentials, a little more considered.",
+          "imageUrl": "/storage/cms/media/de29ebff-2e3e-45a0-a0a6-b5a199200357.png"
+        },
+        {
+          "id": "studio-starter-details-1",
+          "title": "Materials",
+          "description": "Textures, finishes and details that last.",
+          "imageUrl": "/storage/cms/media/e419e9c1-792c-4985-a96d-dd4f0b92b3b4.png"
+        },
+        {
+          "id": "studio-starter-details-2",
+          "title": "Everyday moments",
+          "description": "For the routines, the detours and everything in between.",
+          "imageUrl": "/storage/cms/media/3b3f5fa7-c3f7-4521-a276-c8dccc817ad7.png"
+        }
+      ],
+      "id": "style-39",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "backgroundColor": "bg-neutral-100",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#525252",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "isVisible": true,
+      "type": "feature_cards",
+      "featureCardsPreset": "editorial-columns",
+      "title": "Our perspective",
+      "showSectionHeading": false,
+      "columnsCount": 2,
+      "items": [
+        {
+          "id": "studio-starter-ideas-0",
+          "title": "What inspires us",
+          "description": "We’re inspired by the everyday: the objects we live with, the places we go, the details we notice. Good design, useful things and a slower, more intentional way of living shape what we do."
+        },
+        {
+          "id": "studio-starter-ideas-1",
+          "title": "How we choose",
+          "description": "We look for pieces with purpose — quality materials, thoughtful design and a sense of longevity. Our collections bring together independent makers and trusted brands we genuinely like, chosen for how they fit into real life."
+        }
+      ],
+      "id": "style-40",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "isVisible": true,
+      "type": "media_text_split",
+      "layoutPreset": "editorial-cover",
+      "containerMode": "full-bleed",
+      "title": "Behind the everyday.",
+      "subtitle": "ABOUT US",
+      "leadText": "An introduction to Your store.",
+      "content": "Sample brand story — editable content.",
+      "mediaUrl": "/storage/cms/media/9b0a8a99-56b1-4302-bca9-ca87cf3d75bd.png",
+      "mediaAlt": "A sunlit desk with books, a black mug, branches and folded navy fabric",
+      "id": "style-41",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "isVisible": true,
+      "type": "chapter_navigation",
+      "title": "About chapters",
+      "id": "style-42",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "isVisible": true,
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "chapter_block",
+      "chapterPreset": "process",
+      "subtitle": "Preparation",
+      "title": "Thoughtfully prepared.",
+      "content": "We carefully check every item before it is packed. Each order is securely wrapped with care, so it arrives ready to be enjoyed.\n\nFrom our studio to your doorstep, we take time to get the details right.",
+      "items": [
+        {
+          "id": "shipping-chapter-starter-preparation-0",
+          "icon": "FileText",
+          "title": "Order confirmed",
+          "description": "Your order has been received and is being prepared."
+        },
+        {
+          "id": "shipping-chapter-starter-preparation-1",
+          "icon": "Package",
+          "title": "Checked & packed",
+          "description": "Your item is carefully checked and securely packed."
+        },
+        {
+          "id": "shipping-chapter-starter-preparation-2",
+          "icon": "Truck",
+          "title": "Ready for dispatch",
+          "description": "Your order is ready for the next stage of its journey."
+        }
+      ],
+      "id": "style-43",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "isVisible": true,
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "chapter_block",
+      "chapterPreset": "delivery",
+      "subtitle": "Delivery",
+      "title": "Choose your destination.",
+      "content": "Available delivery options are listed below. Your address and final shipping charge are confirmed at checkout.",
+      "deliverySource": "settings",
+      "deliveryNote": "Processing time is separate from courier transit time. Estimates may vary by destination.",
+      "items": [
+        {
+          "id": "shipping-chapter-starter-delivery-0",
+          "title": "Clothing protected inside a kraft parcel",
+          "imageUrl": "/storage/cms/media/647c486d-67fd-49e2-835a-a1b46e75ea11.png"
+        },
+        {
+          "id": "shipping-chapter-starter-delivery-1",
+          "title": "A parcel ready for its journey",
+          "imageUrl": "/storage/cms/media/45bd88e9-78b4-4f64-ae0c-78c48df7a415.png"
+        }
+      ],
+      "id": "style-44",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "isVisible": true,
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "chapter_block",
+      "chapterPreset": "actions",
+      "subtitle": "Tracking",
+      "title": "Follow the journey.",
+      "content": "Once your order has been dispatched, use Order Tracking to view the delivery information available for your order.",
+      "buttonText": "Track your order",
+      "buttonLink": "/order-tracking",
+      "secondaryButtonText": "Contact us",
+      "secondaryButtonLink": "#storefront-support-widget",
+      "id": "style-45",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "sectionBorder": "bottom",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "isVisible": true,
+      "type": "chapter_block",
+      "chapterPreset": "story",
+      "title": "Start with what matters.",
+      "subtitle": "Our story",
+      "content": "Your store is a space for considered choices — a collection of everyday things for a more intentional wardrobe and lifestyle.\n\nWe focus on pieces that fit naturally into real life. Versatile, well-made and easy to wear, our collection is designed to be part of your everyday, not apart from it.",
+      "mediaUrl": "/storage/cms/media/4a6cb7ab-5686-4803-9cb1-109c863e1141.png",
+      "mediaAlt": "Fabric swatches, clothing sketches and tools on a wooden worktable",
+      "sectionBorderColor": "#e5e5e5",
+      "id": "style-46",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "sectionBorder": "bottom",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "isVisible": true,
+      "type": "chapter_block",
+      "chapterPreset": "perspective",
+      "title": "A collection\nwith a point of view.",
+      "subtitle": "Our perspective",
+      "content": "We believe everyday items can be both considered and uncomplicated — objects that look good, feel right and make sense in your routine.\n\nOur perspective is simple: fewer, better choices. Pieces with character, designed to be worn, used and lived with, season after season.",
+      "items": [
+        {
+          "id": "chapter-starter-view-0",
+          "title": "A navy jacket on a walnut chair in sunlight",
+          "imageUrl": "/storage/cms/media/7ae3b83e-e3c6-4314-a9ce-c9fe4b9ff168.png"
+        },
+        {
+          "id": "chapter-starter-view-1",
+          "title": "Navy and cream knit fabrics with a J label",
+          "imageUrl": "/storage/cms/media/bc49afaa-ac5d-436e-855a-f9ed11460f8c.png"
+        }
+      ],
+      "sectionBorderColor": "#e5e5e5",
+      "id": "style-47",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "isVisible": true,
+      "type": "chapter_block",
+      "chapterPreset": "principles",
+      "title": "Our principles",
+      "subtitle": "Our principles",
+      "items": [
+        {
+          "id": "chapter-starter-values-0",
+          "title": "Thoughtful selection",
+          "description": "We curate with intention, focusing on pieces that are versatile, well-made and relevant to everyday life."
+        },
+        {
+          "id": "chapter-starter-values-1",
+          "title": "Useful details",
+          "description": "Small details make a difference. From materials to finishes, we look at what you’ll actually notice and appreciate over time."
+        },
+        {
+          "id": "chapter-starter-values-2",
+          "title": "Clear communication",
+          "description": "We keep things straightforward — honest descriptions, helpful information and a smooth shopping experience."
+        }
+      ],
+      "id": "style-48",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "backgroundColor": "custom",
+      "textColor": "light",
+      "paddingY": "normal",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#ffffff",
+        "contentColor": "#ffffff",
+        "primaryBtnBg": "#ffffff",
+        "primaryBtnText": "#4f46e5",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": "#4f46e5"
+      },
+      "isVisible": true,
+      "type": "cta_strip",
+      "ctaPreset": "editorial-band",
+      "title": "Explore the next chapter.",
+      "content": "Discover the collection and find pieces for your everyday.",
+      "buttonText": "Explore the collection",
+      "buttonLink": "/shop",
+      "id": "style-49",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "isVisible": true,
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "feature_cards",
+      "featureCardsPreset": "service-highlights",
+      "title": "Delivery with care",
+      "showSectionHeading": false,
+      "subtitle": "",
+      "content": "",
+      "columnsCount": 3,
+      "items": [
+        {
+          "id": "shipping-starter-highlights-0",
+          "icon": "Package",
+          "title": "Carefully packed",
+          "description": "We prepare each order with care, using protective packaging for the journey."
+        },
+        {
+          "id": "shipping-starter-highlights-1",
+          "icon": "Truck",
+          "title": "Tracked delivery",
+          "description": "Check the available tracking information through our Order Tracking page."
+        },
+        {
+          "id": "shipping-starter-highlights-2",
+          "icon": "Headphones",
+          "title": "Here to help",
+          "description": "Questions about your delivery? Contact our team for assistance."
+        }
+      ],
+      "id": "style-50",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "isVisible": true,
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "paddingY": "normal",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "delivery_table",
+      "title": "Where we deliver.",
+      "subtitle": "DELIVERY INFORMATION",
+      "content": "Review the available delivery options below. Your address and final charge are confirmed at checkout.",
+      "deliverySource": "settings",
+      "deliveryNote": "Transit estimates exclude order processing and may vary by destination.",
+      "items": [],
+      "deliveryDestinationLabel": "Destination",
+      "deliveryEstimateLabel": "Delivery estimate",
+      "deliveryFeeLabel": "Shipping fee",
+      "id": "style-51",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "isVisible": true,
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "media_text_split",
+      "layoutPreset": "story-with-steps",
+      "title": "Packed with care.\nSent with purpose.",
+      "subtitle": "OUR PROCESS",
+      "content": "We take time to prepare your order, checking each item before it is packed in protective materials. Our goal is to make sure it arrives with you in the same thoughtful condition it leaves us.",
+      "mediaUrl": "/storage/cms/media/647c486d-67fd-49e2-835a-a1b46e75ea11.png",
+      "mediaAlt": "Hands wrapping clothing in tissue inside a kraft parcel",
+      "mediaPosition": "left",
+      "imageRatio": "1:1",
+      "buttonText": "",
+      "buttonLink": "",
+      "items": [
+        {
+          "id": "shipping-starter-process-0",
+          "title": "Order\nconfirmed",
+          "description": ""
+        },
+        {
+          "id": "shipping-starter-process-1",
+          "title": "Prepared\n& packed",
+          "description": ""
+        },
+        {
+          "id": "shipping-starter-process-2",
+          "title": "Handed to\ncourier",
+          "description": ""
+        }
+      ],
+      "id": "style-52",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "isVisible": true,
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "type": "faq_accordion",
+      "faqPreset": "minimal",
+      "faqInitiallyOpen": true,
+      "title": "A few helpful answers.",
+      "subtitle": "FAQ",
+      "content": "",
+      "items": [
+        {
+          "id": "shipping-starter-faq-0",
+          "title": "How do I track my order?",
+          "description": "Open Order Tracking and complete the required verification to view the delivery information available for your order."
+        },
+        {
+          "id": "shipping-starter-faq-1",
+          "title": "What if my order is delayed?",
+          "description": "Check your tracking information and contact our team with your order reference if you need assistance."
+        },
+        {
+          "id": "shipping-starter-faq-2",
+          "title": "Can I change my delivery address?",
+          "description": "Contact our team as soon as possible. Address changes depend on whether the order has already been dispatched."
+        },
+        {
+          "id": "shipping-starter-faq-3",
+          "title": "Do you ship on weekends?",
+          "description": "To edit: confirm your processing schedule, weekend dispatch availability and public holiday exceptions before publishing."
+        }
+      ],
+      "id": "style-53",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "isVisible": true,
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "textAlignment": "left",
+      "paddingY": "normal",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "eyebrowColor": "#4f46e5",
+        "titleColor": "#171717",
+        "contentColor": "#737373",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": "#f5f3ff"
+      },
+      "type": "cta_strip",
+      "ctaPreset": "help-panel",
+      "title": "Need a hand with delivery?",
+      "subtitle": "STILL NEED HELP?",
+      "content": "Our team is happy to help with your delivery questions.",
+      "buttonText": "Contact us",
+      "buttonLink": "#storefront-support-widget",
+      "id": "style-54",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "policy_content",
+      "title": "Policy guidance",
+      "subtitle": "GUIDELINES",
+      "content": "Explain the next steps for your customers.",
+      "isVisible": true,
+      "policyPreset": "guidelines",
+      "policyNote": "Replace sample copy with your approved store policy.",
+      "containerMode": "page",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "items": [
+        {
+          "id": "policy-entry",
+          "title": "Guideline",
+          "description": "To edit: add your approved policy."
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-55",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "policy_content",
+      "title": "Policy guidance",
+      "subtitle": "GUIDELINES",
+      "content": "Explain the next steps for your customers.",
+      "isVisible": true,
+      "policyPreset": "choices",
+      "policyNote": "Replace sample copy with your approved store policy.",
+      "containerMode": "page",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "items": [
+        {
+          "id": "policy-entry",
+          "title": "Guideline",
+          "description": "To edit: add your approved policy."
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-56",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "policy_content",
+      "title": "Policy guidance",
+      "subtitle": "GUIDELINES",
+      "content": "Explain the next steps for your customers.",
+      "isVisible": true,
+      "policyPreset": "steps",
+      "policyNote": "Replace sample copy with your approved store policy.",
+      "containerMode": "page",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "items": [
+        {
+          "id": "policy-entry",
+          "title": "Guideline",
+          "description": "To edit: add your approved policy."
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-57",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "policy_content",
+      "title": "Policy guidance",
+      "subtitle": "GUIDELINES",
+      "content": "Explain the next steps for your customers.",
+      "isVisible": true,
+      "policyPreset": "process-flow",
+      "policyNote": "Replace sample copy with your approved store policy.",
+      "containerMode": "page",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "items": [
+        {
+          "id": "policy-entry",
+          "title": "Guideline",
+          "description": "To edit: add your approved policy."
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-58",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "policy_content",
+      "title": "Policy guidance",
+      "subtitle": "GUIDELINES",
+      "content": "Explain the next steps for your customers.",
+      "isVisible": true,
+      "policyPreset": "timeline",
+      "policyNote": "Replace sample copy with your approved store policy.",
+      "containerMode": "page",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "items": [
+        {
+          "id": "policy-entry",
+          "title": "Guideline",
+          "description": "To edit: add your approved policy."
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-59",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "policy_content",
+      "title": "Policy guidance",
+      "subtitle": "GUIDELINES",
+      "content": "Explain the next steps for your customers.",
+      "isVisible": true,
+      "policyPreset": "tabs",
+      "policyNote": "Replace sample copy with your approved store policy.",
+      "containerMode": "page",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "items": [
+        {
+          "id": "policy-entry",
+          "title": "Guideline",
+          "description": "To edit: add your approved policy.",
+          "category": "Guidelines"
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-60",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "policy_content",
+      "title": "Policy guidance",
+      "subtitle": "GUIDELINES",
+      "content": "Explain the next steps for your customers.",
+      "isVisible": true,
+      "policyPreset": "columns",
+      "policyNote": "Replace sample copy with your approved store policy.",
+      "containerMode": "page",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "items": [
+        {
+          "id": "policy-entry",
+          "title": "Guideline",
+          "description": "To edit: add your approved policy."
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-61",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "policy_content",
+      "title": "Policy guidance",
+      "subtitle": "GUIDELINES",
+      "content": "Explain the next steps for your customers.",
+      "isVisible": true,
+      "policyPreset": "document",
+      "policyNote": "Replace sample copy with your approved store policy.",
+      "containerMode": "page",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "items": [
+        {
+          "id": "policy-entry",
+          "title": "Guideline",
+          "description": "To edit: add your approved policy."
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-62",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    },
+    {
+      "type": "policy_content",
+      "title": "Policy guidance",
+      "subtitle": "GUIDELINES",
+      "content": "Explain the next steps for your customers.",
+      "isVisible": true,
+      "policyPreset": "directory",
+      "policyNote": "Replace sample copy with your approved store policy.",
+      "containerMode": "page",
+      "backgroundColor": "bg-white",
+      "textColor": "dark",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "items": [
+        {
+          "id": "policy-entry",
+          "title": "Guideline",
+          "description": "To edit: add your approved policy."
+        }
+      ],
+      "customColors": {
+        "eyebrowColor": "#818cf8",
+        "titleColor": "#ffffff",
+        "contentColor": "#d4d4d8",
+        "primaryBtnBg": "#4f46e5",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "rgba(255, 255, 255, 0.1)",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": ""
+      },
+      "id": "style-63",
+      "surface": "contrast",
+      "brandPalette": {
+        "paper": "#f6f8f9",
+        "ink": "#060c0f",
+        "muted": "#616668",
+        "accent": "#254e5e",
+        "light": "#ffffff",
+        "secondary": "#c2cdd2",
+        "secondaryInk": "#151515",
+        "hover": "#214553"
+      }
+    }
+  ]
+}

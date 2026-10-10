@@ -1,0 +1,38 @@
+[
+  {
+    "id": "e6774f4c-4d03-4ff8-98b3-152174211cae",
+    "file": "home-shop-living.png",
+    "key": "living",
+    "title": "Living Room"
+  },
+  {
+    "id": "712c6f25-32db-459b-96cb-39e4a6fad163",
+    "file": "home-shop-dining.png",
+    "key": "dining",
+    "title": "Dining Room"
+  },
+  {
+    "id": "28ab0cb3-b015-4596-bd2e-9f0028bf94e9",
+    "file": "home-shop-lighting.png",
+    "key": "lighting",
+    "title": "Lighting"
+  },
+  {
+    "id": "524de4a8-d5ae-4fd8-8502-f05e9d6ecfbc",
+    "file": "home-shop-decor.png",
+    "key": "decor",
+    "title": "Decor"
+  },
+  {
+    "id": "cccfed70-efe4-4185-be48-8a0165212c71",
+    "file": "home-shop-bedroom.png",
+    "key": "bedroom",
+    "title": "Bedroom"
+  },
+  {
+    "id": "7f4313f2-7a4b-443d-8ba9-a42e3a468aaa",
+    "file": "home-bedroom-panoramic.png",
+    "key": "bedroom-banner",
+    "title": "Panoramic Bedroom Banner"
+  }
+]

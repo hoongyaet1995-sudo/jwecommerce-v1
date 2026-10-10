@@ -1,4 +1,5 @@
 import React from 'react';
+import {collectionBannerDefaults} from '../collectionBanners';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { SECTION_TEMPLATES } from '../../components/pages/AddSectionModal';
@@ -94,6 +95,18 @@ const readBootstrapText = (textContent: string) => readPageRuntimeBootstrap({
   getElementById: () => ({ textContent }),
 } as unknown as Document);
 
+describe('editorial product bootstrap',()=>{
+ it('accepts owned manual listing and bounded wishlist context, rejects cross-section preset and unsafe login',()=>{
+  const value=payload();
+  value.page.document.sections=[{id:'listing',type:'product_listing',title:'Objects',isVisible:true,listingPreset:'editorial-grid',sourceType:'manual',productIds:['2'],imageRatio:'1:1',buttonText:'Shop all',buttonLink:'/shop'}];
+  value.context.wishlist={authenticated:false,csrfToken:'',savedProductIds:[],loginUrl:'/account/login'};
+  expect(readBootstrapValue(value)).not.toBeNull();
+  value.context.wishlist.loginUrl='javascript:alert(1)';expect(readBootstrapValue(value)).toBeNull();
+  value.context.wishlist.loginUrl='/account/login';
+  value.page.document.sections[0].type='hero_banner';expect(readBootstrapValue(value)).toBeNull();
+ });
+});
+
 describe('editorial hero public bootstrap',()=>{
   it('accepts Story and its CTA style on a saved generic page and rejects unsupported styles',()=>{
     const value=payload();
@@ -118,8 +131,14 @@ const renderRuntimeOrFallback = (parsed: PageRuntimePayload | null) => renderToS
 ) : <PageRuntimeUnavailable />);
 
 describe('PageRuntimeContext', () => {
+  it('loads full collection banner defaults and rejects invented proportions',()=>{
+    const value=payload();value.page.document.sections=[{id:'banners',...collectionBannerDefaults()}];
+    expect(renderRuntimeOrFallback(readBootstrapValue(value))).toContain('data-collection-banners');
+    (value.page.document.sections[0] as any).bannerProportions='90:10';expect(readBootstrapValue(value)).toBeNull();
+  });
   it('shares saved page width with every renderer and rejects invalid widths',()=>{
     const value=payload();value.page.document.containerWidth='wide';value.page.document.sections=SECTION_TEMPLATES.map((template,index)=>({...template.defaultData,id:'container-'+index,isVisible:true}));
+    value.page.document.sections.forEach((section,index)=>{if(section.type==='promotion_highlights')value.runtime.sections[index]={promotions:{offers:[{id:'1',name:'Offer',description:'',code:'SAVE',benefit:'20% off',minimumSpend:null,endsAt:null,status:'active'}]}};});
     const parsed=readBootstrapValue(value);expect(parsed).not.toBeNull();const html=renderRuntimeOrFallback(parsed);expect((html.match(/data-page-container=/g)??[]).length).toBe(SECTION_TEMPLATES.length);expect((html.match(/max-width:1440px/g)??[]).length).toBe(SECTION_TEMPLATES.filter(template=>template.defaultData.containerMode!=='full-bleed').length);
     (value.page.document as unknown as Record<string,unknown>).containerWidth='invented';expect(readBootstrapValue(value)).toBeNull();
   });
