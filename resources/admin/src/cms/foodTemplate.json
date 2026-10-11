@@ -1,0 +1,457 @@
+{
+  "style": {
+    "palette": {
+      "paper": "#f8f5ee",
+      "ink": "#313722",
+      "muted": "#756f61",
+      "accent": "#a91f1a",
+      "light": "#fffdf6",
+      "secondary": "#424b28",
+      "secondaryInk": "#f8f5ee",
+      "hover": "#841a16"
+    },
+    "typography": {
+      "title": {
+        "fontFamily": "serif",
+        "fontSize": 32,
+        "fontWeight": 400,
+        "lineHeight": 1.1
+      },
+      "eyebrow": {
+        "fontFamily": "sans",
+        "fontSize": 10,
+        "fontWeight": 600,
+        "letterSpacing": 1.2
+      },
+      "content": {
+        "fontFamily": "sans",
+        "fontSize": 14,
+        "fontWeight": 400,
+        "lineHeight": 1.5
+      },
+      "itemTitle": {
+        "fontFamily": "sans",
+        "fontSize": 14,
+        "fontWeight": 600
+      },
+      "itemContent": {
+        "fontFamily": "sans",
+        "fontSize": 11,
+        "fontWeight": 400
+      }
+    },
+    "spacing": "compact",
+    "buttonRadius": 0,
+    "buttonSize": "compact"
+  },
+  "sections": [
+    {
+      "id": "food-0",
+      "type": "hero_slider",
+      "title": "Good things.\nShared daily.",
+      "isVisible": true,
+      "containerMode": "full-bleed",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "sliderPreset": "fashion-editorial",
+      "sliderHeight": "normal",
+      "typography": {
+        "title": {
+          "fontFamily": "serif",
+          "fontSize": 56,
+          "fontWeight": 400,
+          "lineHeight": 1.05
+        }
+      },
+      "items": [
+        {
+          "id": "hero",
+          "title": "Good things.\nShared daily.",
+          "description": "Artisan food. Brighter mornings. A kinder everyday.",
+          "imageUrl": "/storage/cms/media/e9cc40eb-9d5f-4636-9b91-109dbb3e1e5f.png",
+          "buttonText": "Shop the pantry",
+          "linkUrl": "/shop"
+        }
+      ],
+      "sliderAutoplay": false
+    },
+    {
+      "id": "food-1",
+      "type": "shop_navigation",
+      "title": "Shop by Category",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "shopNavigationPreset": "catalog-captions",
+      "columnsCount": 6,
+      "buttonText": "Explore all categories",
+      "buttonLink": "/shop",
+      "items": [
+        {
+          "id": "food-item-coffee",
+          "title": "Coffee",
+          "description": "Better brews, brighter days.",
+          "imageUrl": "/storage/cms/media/6398c931-e3d0-458a-b07d-38ec22869690.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "food-item-bakery",
+          "title": "Bakery",
+          "description": "Freshly baked happiness.",
+          "imageUrl": "/storage/cms/media/acea2014-e9dc-4b8a-897f-b255c9716512.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "food-item-pantry",
+          "title": "Pantry",
+          "description": "Everyday essentials.",
+          "imageUrl": "/storage/cms/media/3d166ac3-11d4-4175-ae59-3e6854d24eab.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "food-item-snacks",
+          "title": "Snacks",
+          "description": "Small bites, big joy.",
+          "imageUrl": "/storage/cms/media/d3d38c55-9acb-412b-8ae4-254b74391991.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "food-item-beverages",
+          "title": "Beverages",
+          "description": "Thoughtful sips.",
+          "imageUrl": "/storage/cms/media/8aa53775-68fb-4244-aaa5-eb5aff7c3393.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "food-item-gifts",
+          "title": "Gifts",
+          "description": "For the people you love.",
+          "imageUrl": "/storage/cms/media/9732c25e-9aee-4299-9122-0a667481aba4.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        }
+      ]
+    },
+    {
+      "id": "food-2",
+      "type": "product_listing",
+      "title": "Bestsellers",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "listingPreset": "pantry-grid",
+      "sourceType": "manual",
+      "productIds": [],
+      "productLimit": 4,
+      "columnsCount": 4,
+      "imageRatio": "1:1",
+      "buttonText": "See all bestsellers",
+      "buttonLink": "/shop"
+    },
+    {
+      "id": "food-3",
+      "type": "shop_navigation",
+      "title": "Bakery & Coffee",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "shopNavigationPreset": "collection-banners",
+      "showSectionHeading": false,
+      "bannerProportions": "50:50",
+      "bannerHeight": "comfortable",
+      "items": [
+        {
+          "id": "food-item-the-baker’s\ntable",
+          "title": "The Baker’s\nTable",
+          "description": "Simple ingredients.\nExtraordinary days.",
+          "imageUrl": "/storage/cms/media/acea2014-e9dc-4b8a-897f-b255c9716512.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop",
+          "buttonText": "Explore bakery"
+        },
+        {
+          "id": "food-item-more-than\ncoffee",
+          "title": "More Than\nCoffee",
+          "description": "Find your daily brew.\nMake mornings yours.",
+          "imageUrl": "/storage/cms/media/6398c931-e3d0-458a-b07d-38ec22869690.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop",
+          "buttonText": "Explore coffee"
+        }
+      ],
+      "typography": {
+        "itemTitle": {
+          "fontFamily": "serif",
+          "fontSize": 40,
+          "fontWeight": 400,
+          "color": "#fffdf6"
+        },
+        "itemContent": {
+          "fontFamily": "sans",
+          "fontSize": 14,
+          "color": "#fffdf6"
+        }
+      },
+      "customColors": {
+        "titleColor": "#fffdf6",
+        "contentColor": "#fffdf6",
+        "primaryBtnBg": "#fffdf6",
+        "primaryBtnText": "#313722"
+      }
+    },
+    {
+      "id": "food-4",
+      "type": "media_text_split",
+      "title": "Our Ingredients\nTell a Kinder Story",
+      "isVisible": true,
+      "containerMode": "full-bleed",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "layoutPreset": "producer-story",
+      "mediaPosition": "left",
+      "mediaUrl": "/storage/cms/media/7b5847a5-14dc-408f-aaeb-9bd3b305c90e.png",
+      "mediaAlt": "Illustrative sunlit olive grove",
+      "content": "Introduce the people, places and ingredients behind your pantry. Share the sourcing story and product information your customers should know.",
+      "buttonText": "Our producers",
+      "buttonLink": "/page/about-us",
+      "customColors": {
+        "primaryBtnBg": "#424b28",
+        "primaryBtnText": "#fffdf6"
+      },
+      "typography": {
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 11,
+          "fontWeight": 400
+        }
+      },
+      "items": [
+        {
+          "id": "ingredients",
+          "title": "Ingredient guides",
+          "description": "",
+          "icon": "Leaf"
+        },
+        {
+          "id": "producers",
+          "title": "Meet our producers",
+          "description": "",
+          "icon": "Users"
+        },
+        {
+          "id": "everyday",
+          "title": "Everyday inspiration",
+          "description": "",
+          "icon": "Heart"
+        }
+      ]
+    },
+    {
+      "id": "food-5",
+      "type": "product_listing",
+      "title": "Shop by Occasion",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "listingPreset": "pantry-tabs",
+      "productLimit": 4,
+      "columnsCount": 4,
+      "imageRatio": "1:1",
+      "productTabs": [
+        {
+          "id": "occasion-0",
+          "label": "Everyday",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        },
+        {
+          "id": "occasion-1",
+          "label": "Birthday",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        },
+        {
+          "id": "occasion-2",
+          "label": "Thank You",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        },
+        {
+          "id": "occasion-3",
+          "label": "Housewarming",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        },
+        {
+          "id": "occasion-4",
+          "label": "Festive",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        }
+      ]
+    },
+    {
+      "id": "food-6",
+      "type": "hero_slider",
+      "title": "Thoughtful Gifts for\nBrighter Days",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "sliderPreset": "fashion-editorial",
+      "sliderHeight": "compact",
+      "typography": {
+        "title": {
+          "fontFamily": "serif",
+          "fontSize": 42,
+          "fontWeight": 400,
+          "lineHeight": 1.05,
+          "color": "#fffdf6"
+        },
+        "content": {
+          "fontFamily": "sans",
+          "fontSize": 14,
+          "color": "#fffdf6"
+        }
+      },
+      "customColors": {
+        "titleColor": "#fffdf6",
+        "contentColor": "#fffdf6",
+        "primaryBtnBg": "#fffdf6",
+        "primaryBtnText": "#313722"
+      },
+      "items": [
+        {
+          "id": "gifts",
+          "title": "Thoughtful Gifts for\nBrighter Days",
+          "description": "Beautifully curated. Meaningfully shared.",
+          "imageUrl": "/storage/cms/media/9732c25e-9aee-4299-9122-0a667481aba4.png",
+          "buttonText": "Explore gift boxes",
+          "linkUrl": "/shop"
+        }
+      ],
+      "sliderAutoplay": false
+    },
+    {
+      "id": "food-7",
+      "type": "shop_navigation",
+      "title": "From Our Kitchen",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "shopNavigationPreset": "recipe-cards",
+      "columnsCount": 3,
+      "buttonText": "See all recipes",
+      "buttonLink": "/page/about-us",
+      "items": [
+        {
+          "id": "food-item-sourdough-avocado-toast",
+          "title": "Sourdough Avocado Toast",
+          "description": "A brighter start to your morning.",
+          "imageUrl": "/storage/cms/media/383ce6d9-464f-4d0c-b297-106599c64b71.png",
+          "sourceType": "custom",
+          "linkUrl": "/page/about-us",
+          "badge": "Breakfast"
+        },
+        {
+          "id": "food-item-roasted-tomato-pasta",
+          "title": "Roasted Tomato Pasta",
+          "description": "Simple comfort from our kitchen.",
+          "imageUrl": "/storage/cms/media/68bb61c6-acb8-47be-988d-520d3207c7ac.png",
+          "sourceType": "custom",
+          "linkUrl": "/page/about-us",
+          "badge": "Mains"
+        },
+        {
+          "id": "food-item-chocolate-chip-cookies",
+          "title": "Chocolate Chip Cookies",
+          "description": "Something sweet to share.",
+          "imageUrl": "/storage/cms/media/2581e92f-839c-4fcd-ac8a-e0c43f453a14.png",
+          "sourceType": "custom",
+          "linkUrl": "/page/about-us",
+          "badge": "Baking"
+        }
+      ]
+    },
+    {
+      "id": "food-8",
+      "type": "feature_cards",
+      "title": "Delivered with Care",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "featureCardsPreset": "service-highlights",
+      "showSectionHeading": false,
+      "backgroundColor": "custom",
+      "customColors": {
+        "customBgColor": "#eeeade"
+      },
+      "items": [
+        {
+          "id": "delivery",
+          "title": "Delivery information",
+          "description": "Explore available delivery options.",
+          "icon": "Truck"
+        },
+        {
+          "id": "packaging",
+          "title": "Packaging & care",
+          "description": "Get to know your order.",
+          "icon": "Leaf"
+        },
+        {
+          "id": "payments",
+          "title": "Payment options",
+          "description": "Review payment methods at checkout.",
+          "icon": "ShieldCheck"
+        },
+        {
+          "id": "gifting",
+          "title": "Gifting ideas",
+          "description": "Good food, thoughtfully shared.",
+          "icon": "Gift"
+        }
+      ],
+      "columnsCount": 4
+    },
+    {
+      "id": "food-9",
+      "type": "newsletter_signup",
+      "title": "Join Our Table",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "content": "Get the latest updates, seasonal offers and recipe inspiration.",
+      "buttonText": "Subscribe",
+      "formSuccessMessage": "Thank you for joining our table.",
+      "newsletterPreset": "inline-signup"
+    }
+  ]
+}

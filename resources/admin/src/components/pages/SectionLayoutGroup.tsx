@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import type {PageSection} from '../../types';
 
-const layoutTypes = new Set(['hero_slider','announcement_bar','media_text_split','rich_text','product_listing','media_gallery','feature_cards','values_list','chapter_block','faq_accordion','cta_strip','policy_content','payment_methods','shop_navigation','promotion_highlights']);
+const layoutTypes = new Set(['comparison_matrix','newsletter_signup','hero_slider','announcement_bar','media_text_split','rich_text','product_listing','media_gallery','feature_cards','values_list','chapter_block','faq_accordion','cta_strip','policy_content','payment_methods','shop_navigation','promotion_highlights']);
 export function hasSectionLayout(section:PageSection) {
   return layoutTypes.has(section.type)||(section.type==='store_locator'&&section.contactPreset==='location');
 }

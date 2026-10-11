@@ -1,3 +1,5 @@
+import {isShellDesign} from './shellDesign';
+import {isHeaderPresentation} from './headerPresentation';
 import {isPalette,isPageStyle} from './pageStyle';
 import {isPromotionOffers,type PromotionOffer} from './promotionHighlights';
 import {isTypography} from './inspectorCapabilities';
@@ -18,7 +20,7 @@ export interface PageRuntimeProduct {
   tags: string[];
   basePrice: number;
   baseCompareAtPrice: number | null;
-  commerce?: { variantId: string | null; sku: string; price: number; compareAtPrice: number | null; optionLabels: string[]; canChoose: boolean; priceLabel?: string; compareAtLabel?: string; variants?: Array<{id:string;label:string;sku:string;price:number;compareAtPrice:number|null;stock:number;enabled:boolean;image:string|null;priceLabel?:string;compareAtLabel?:string}> };
+  commerce?: { variantId: string | null; sku: string; price: number; compareAtPrice: number | null; optionLabels: string[]; canChoose: boolean; priceLabel?: string; compareAtLabel?: string; variants?: Array<{id:string;label:string;sku:string;price:number;compareAtPrice:number|null;stock:number;enabled:boolean;image:string|null;color?:string|null;priceLabel?:string;compareAtLabel?:string}> };
 }
 
 export interface PageRuntimeSource {
@@ -223,7 +225,7 @@ const sectionTypes = new Set([
 const sectionItemStringFields = [
   'deliveryEstimate', 'deliveryFee', 'subtitle', 'description', 'icon', 'imageUrl', 'videoUrl', 'linkUrl', 'badge',
   'author', 'authorRole', 'authorAvatar', 'date', 'category', 'value', 'handle',
-  'sourceId', 'sourceType', 'caption', 'metricLabel', 'buttonText', 'secondaryButtonText', 'secondaryButtonLink',
+  'sourceId', 'sourceType', 'caption', 'thirdButtonText', 'thirdButtonLink', 'metricLabel', 'buttonText', 'secondaryButtonText', 'secondaryButtonLink',
 ];
 const sectionItemNumberFields = ['price', 'compareAtPrice'];
 const sectionColorFields = [
@@ -245,6 +247,7 @@ type PageSectionFieldRule =
 // `satisfies Record<keyof PageSection, ...>` makes a PageSection type change fail compilation
 // until its browser-bootstrap rule is deliberately classified here.
 export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
+  newsletterPreset:{kind:'optional-enum',values:['default','inline-signup']},
   surface:{kind:'optional-enum',values:['light','contrast']},
   brandPalette:{kind:'nested'},
   imageSlots: {kind: 'nested'},
@@ -275,10 +278,10 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   imageForeground: {kind: 'optional-boolean'},
   imageForegroundColor: {kind: 'optional-string'},
   imageForegroundOpacity: {kind: 'optional-enum', values: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]},
-  shopNavigationPreset: {kind: 'optional-enum', values: ['cards','collection-banners']},
+  shopNavigationPreset: {kind: 'optional-enum', values: ['cards','collection-banners','kids-banners','fashion-banners','market-hero','market-offers','image-overlay','image-caption','catalog-captions','recipe-cards','age-cards']},
   bannerProportions: {kind: 'optional-enum', values: ['50:50','60:40','40:60']},
   bannerHeight: {kind: 'optional-enum', values: ['compact','comfortable','tall']},
-  layoutPreset: {kind: 'optional-enum', values: ['default', 'editorial-hero', 'editorial-story', 'editorial-cover', 'editorial-story-cards', 'story-with-steps']},
+  layoutPreset: {kind: 'optional-enum', values: ['default', 'editorial-hero', 'editorial-story', 'editorial-cover', 'editorial-story-cards','editorial-journal-rows', 'story-with-steps','flush-split','producer-story','tech-feature','kids-discovery', 'artisan-story']},
   containerMode: {kind: 'optional-enum', values: ['page','full-bleed']},
   sectionBorder: {kind: 'optional-enum', values: ['default','none','top','bottom','both']},
   sectionBorderColor: {kind: 'optional-string'},
@@ -303,8 +306,8 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   mediaContainerMode: {kind:'optional-enum',values:['page','full-bleed']},
   ctaBannerHeight: {kind: 'optional-enum', values: ['compact','normal','spacious']},
   richTextPreset: {kind: 'optional-enum', values: ['default', 'manifesto']},
-  featureCardsPreset: {kind: 'optional-enum', values: ['default', 'values-list', 'editorial-columns','service-highlights']},
-  galleryPreset: {kind: 'optional-enum', values: ['default', 'editorial-montage', 'editorial-cards']},
+  featureCardsPreset: {kind: 'optional-enum', values: ['default', 'values-list', 'editorial-columns','numbered-process','service-highlights']},
+  galleryPreset: {kind: 'optional-enum', values: ['default', 'editorial-montage', 'editorial-cards','editorial-triptych','portfolio-cards','routine-steps']},
   showSectionHeading: {kind: 'optional-boolean'},
   valuesShowHeading: {kind: 'optional-boolean'},
   valuesNumberColor: {kind: 'optional-string'},
@@ -331,7 +334,7 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   productIds: {kind: 'nested'},
   productTabs: {kind: 'nested'},
   sourceType: {kind: 'optional-enum', values: ['category', 'collection', 'manual']},
-  listingPreset: {kind: 'optional-enum', values: ['default', 'editorial-grid', 'editorial-tabs']},
+  listingPreset: {kind: 'optional-enum', values: ['default', 'editorial-grid', 'editorial-tabs','fashion-lookbook','beauty-grid','pantry-grid','pantry-tabs','tech-grid','tech-tabs','kids-grid','kids-tabs']},
   sourceId: {kind: 'optional-string'},
   productLimit: {kind: 'optional-number'},
   autoSlide: {kind: 'optional-boolean'},
@@ -362,6 +365,7 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   inquiryCategories: {kind: 'nested'},
   comparisonDimensionName: {kind: 'optional-string'},
   comparisonCompetitorName: {kind: 'optional-string'},
+  comparisonPreset:{kind:'optional-enum',values:['default','device-table']},
   comparisonOurBrandName: {kind: 'optional-string'},
   cardBadge: {kind: 'optional-string'},
   cardTitle: {kind: 'optional-string'},
@@ -370,7 +374,7 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   cardExtra: {kind: 'optional-string'},
   sliderInterval: {kind: 'optional-number'},
   sliderAutoplay: {kind: 'optional-boolean'},
-  sliderPreset: {kind: 'optional-enum', values: ['default', 'editorial-overlay']},
+  sliderPreset: {kind: 'optional-enum', values: ['default', 'editorial-overlay','fashion-editorial']},
   sliderHeight: {kind: 'optional-enum', values: ['panoramic', 'compact', 'normal', 'spacious', 'fullscreen']},
 } as const satisfies Record<keyof PageSection, PageSectionFieldRule>;
 
@@ -379,6 +383,7 @@ const isSectionItem = (value: unknown): boolean => {
   if (!sectionItemStringFields.every(field => !(field in value) || typeof value[field] === 'string')) return false;
   if ('sourceType' in value && !['category','collection','custom'].includes(String(value.sourceType))) return false;
   if (!sectionItemNumberFields.every(field => !(field in value) || isFiniteNumber(value[field]))) return false;
+  if ('comparisonCells' in value && (!Array.isArray(value.comparisonCells) || !value.comparisonCells.every(cell=>isRecord(cell)&&typeof cell.deviceId==='string'&&typeof cell.value==='string'))) return false;
   if ('features' in value && !isStringArray(value.features)) return false;
   if ('isHighlighted' in value && typeof value.isHighlighted !== 'boolean') return false;
   if ('rating' in value && (!Number.isInteger(value.rating) || Number(value.rating) < 1 || Number(value.rating) > 5)) {
@@ -402,10 +407,11 @@ const isRuntimeProduct = (value: unknown): value is PageRuntimeProduct => isReco
   && (!('commerce' in value) || (isRecord(value.commerce)
     && hasOnlyKeys(value.commerce, ['variantId','sku','price','compareAtPrice','optionLabels','canChoose','priceLabel','compareAtLabel','variants'])
     && (!('variants' in value.commerce) || (Array.isArray(value.commerce.variants) && value.commerce.variants.every(v => isRecord(v)
-      && hasOnlyKeys(v,['id','label','sku','price','compareAtPrice','stock','enabled','image','priceLabel','compareAtLabel'])
+      && hasOnlyKeys(v,['id','label','sku','price','compareAtPrice','stock','enabled','image','color','priceLabel','compareAtLabel'])
       && typeof v.id === 'string' && typeof v.label === 'string' && typeof v.sku === 'string'
       && isFiniteNumber(v.price) && (v.compareAtPrice === null || isFiniteNumber(v.compareAtPrice))
       && isFiniteNumber(v.stock) && typeof v.enabled === 'boolean' && isNullableString(v.image)
+      && (!('color' in v) || v.color===null || typeof v.color==='string' && /^#[a-f\d]{6}$/i.test(v.color))
       && (!('priceLabel' in v) || typeof v.priceLabel === 'string') && (!('compareAtLabel' in v) || typeof v.compareAtLabel === 'string'))))
     && isNullableString(value.commerce.variantId) && typeof value.commerce.sku === 'string'
     && isFiniteNumber(value.commerce.price) && (value.commerce.compareAtPrice === null || isFiniteNumber(value.commerce.compareAtPrice))
@@ -600,6 +606,8 @@ const isRuntimePayload = (value: unknown): value is PageRuntimePayload => {
     || typeof value.page.document.slug !== 'string'
     || !['standard', 'fullwidth', 'landing'].includes(String(value.page.document.template))
     || ('containerWidth' in value.page.document && !['standard','wide'].includes(String(value.page.document.containerWidth)))
+    || ('shellDesign' in value.page.document && !isShellDesign(value.page.document.shellDesign))
+    || ('headerPresentation' in value.page.document && !isHeaderPresentation(value.page.document.headerPresentation))
     || ('style' in value.page.document && !isPageStyle(value.page.document.style))
     || !Array.isArray(value.page.document.sections)
     || !value.page.document.sections.every(isPageSection)
@@ -705,7 +713,7 @@ export const createAdminPageRuntimePayload = (
         image:type === 'category' ? (source as Category).image ?? null : (source as Collection).coverImage ?? null,
       } : null, products}};
       };
-      runtimeSections[sectionIndex]=section.listingPreset==='editorial-tabs'?{tabs:(section.productTabs??[]).map(tab=>resolveFeed({...section,...tab,productLimit:tab.productLimit??section.productLimit??4}).listing)}:resolveFeed(section);
+      runtimeSections[sectionIndex]=['editorial-tabs','pantry-tabs','tech-tabs','kids-tabs'].includes(section.listingPreset??'')?{tabs:(section.productTabs??[]).map(tab=>resolveFeed({...section,...tab,productLimit:tab.productLimit??section.productLimit??4}).listing)}:resolveFeed(section);
     }
 
     if (section.type === 'product_grid') {
@@ -787,6 +795,8 @@ export const createAdminPageRuntimePayload = (
         title: page.title,
         slug: page.slug,
         template: page.template,
+        ...(page.shellDesign?{shellDesign:page.shellDesign}:{}),
+        ...(page.headerPresentation?{headerPresentation:page.headerPresentation}:{}),
         ...(page.containerWidth?{containerWidth:page.containerWidth}:{}),
     ...(page.style?{style:page.style}:{}),
         sections: page.sections,

@@ -595,6 +595,8 @@ export interface SectionItem {
   subtitle?: string;
   description?: string;
   caption?: string;
+  thirdButtonText?: string;
+  thirdButtonLink?: string;
   icon?: string;
   imageUrl?: string;
   videoUrl?: string;
@@ -609,6 +611,7 @@ export interface SectionItem {
   date?: string;
   category?: string;
   value?: string; // for stats e.g. "99.8%", "150k+"
+  comparisonCells?: {deviceId:string;value:string}[];
   features?: string[]; // for pricing or matrix
   isHighlighted?: boolean;
   handle?: string; // for instagram/social
@@ -686,7 +689,7 @@ export interface PageSection {
   imageForeground?: boolean;
   imageForegroundColor?: string;
   imageForegroundOpacity?: 0 | 10 | 20 | 30 | 40 | 50 | 60 | 70 | 80 | 90 | 100;
-  layoutPreset?: 'default' | 'editorial-hero' | 'editorial-story' | 'editorial-cover' | 'editorial-story-cards' | 'story-with-steps';
+  layoutPreset?: 'default' | 'editorial-hero' | 'editorial-story' | 'editorial-cover' | 'editorial-story-cards' | 'editorial-journal-rows' | 'story-with-steps' | 'flush-split' | 'producer-story' | 'tech-feature' | 'kids-discovery' | 'artisan-story';
   paymentLayout?: 'cards' | 'list';
   paymentNote?: string;
   deliverySource?: 'settings' | 'manual';
@@ -711,8 +714,8 @@ export interface PageSection {
   ctaPreset?: 'default' | 'image-banner' | 'editorial-band' | 'help-panel';
   ctaBannerHeight?: 'compact' | 'normal' | 'spacious';
   richTextPreset?: 'default' | 'manifesto';
-  featureCardsPreset?: 'default' | 'values-list' | 'editorial-columns' | 'service-highlights';
-  galleryPreset?: 'default' | 'editorial-montage' | 'editorial-cards';
+  featureCardsPreset?: 'default' | 'values-list' | 'editorial-columns' | 'numbered-process' | 'service-highlights';
+  galleryPreset?: 'default' | 'editorial-montage' | 'editorial-cards' | 'editorial-triptych' | 'portfolio-cards' | 'routine-steps';
   showSectionHeading?: boolean;
   valuesShowHeading?: boolean;
   valuesNumberColor?: string;
@@ -738,14 +741,14 @@ export interface PageSection {
   items?: SectionItem[];
   productIds?: string[];
   sourceType?: 'category' | 'collection' | 'manual';
-  listingPreset?: 'default' | 'editorial-grid' | 'editorial-tabs';
+  listingPreset?: 'default' | 'editorial-grid' | 'editorial-tabs' | 'fashion-lookbook' | 'beauty-grid' | 'pantry-grid' | 'pantry-tabs' | 'tech-grid' | 'tech-tabs' | 'kids-grid' | 'kids-tabs';
   productTabs?: PageProductTab[];
   sourceId?: string;
   productLimit?: number;
   autoSlide?: boolean;
   autoSlideInterval?: number;
   showNavArrows?: boolean;
-  shopNavigationPreset?: 'cards' | 'collection-banners';
+  shopNavigationPreset?: 'cards' | 'kids-banners' | 'collection-banners' | 'fashion-banners' | 'market-hero' | 'market-offers' | 'image-overlay' | 'image-caption' | 'catalog-captions' | 'recipe-cards' | 'age-cards';
   bannerProportions?: '50:50' | '60:40' | '40:60';
   bannerHeight?: 'compact' | 'comfortable' | 'tall';
   columnsCount?: 2 | 3 | 4 | 5 | 6;
@@ -768,11 +771,13 @@ export interface PageSection {
   tickerSpeed?: 'slow' | 'normal' | 'fast';
   tabCategories?: string[];
   tabs?: PageCollectionTab[];
+  newsletterPreset?: 'default' | 'inline-signup';
   newsletterCouponId?: string;
   subjectPlaceholder?: string;
   categoryPlaceholder?: string;
   messagePlaceholder?: string;
   inquiryCategories?: InquiryCategory[];
+  comparisonPreset?: 'default' | 'device-table';
   comparisonDimensionName?: string;
   comparisonCompetitorName?: string;
   comparisonOurBrandName?: string;
@@ -787,7 +792,7 @@ export interface PageSection {
   // Hero Slider props
   sliderInterval?: number; // seconds e.g. 5
   sliderAutoplay?: boolean;
-  sliderPreset?: 'default' | 'editorial-overlay';
+  sliderPreset?: 'default' | 'editorial-overlay' | 'fashion-editorial';
   sliderHeight?: 'panoramic' | 'compact' | 'normal' | 'spacious' | 'fullscreen';
 }
 
@@ -799,6 +804,8 @@ export interface CmsPage {
   description?: string;
   status: 'published' | 'draft' | 'archived';
   template: 'standard' | 'fullwidth' | 'landing';
+  shellDesign?: import('../cms/shellDesign').ShellDesign;
+  headerPresentation?: import('../cms/headerPresentation').HeaderPresentation;
   containerWidth?: 'standard' | 'wide';
   style?: PageStyle;
   heroImage?: string | null;
@@ -861,6 +868,9 @@ export interface StorefrontShellRightZone {
 }
 
 export interface StorefrontShellSettings {
+  overlayLogos?: {light:string|null;dark:string|null};
+  shellDesign?: import('../cms/shellDesign').ShellDesign;
+  headerPresentation?: import('../cms/headerPresentation').HeaderPresentation;
   enabled: boolean;
   layout: StorefrontShellLayout;
   theme: StorefrontShellTheme;
@@ -913,6 +923,8 @@ export type PageDocument = Pick<
   | 'slug'
   | 'description'
   | 'template'
+  | 'headerPresentation'
+  | 'shellDesign'
   | 'containerWidth'
   | 'style'
   | 'heroImage'

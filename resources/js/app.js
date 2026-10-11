@@ -390,7 +390,8 @@ const installAtelierTheme = () => {
     };
 
     const savedTheme = window.localStorage.getItem('atelier_theme');
-    applyTheme(savedTheme === 'light' ? 'light' : 'dark');
+    const initialTheme = root.dataset.shellAppearance;
+    applyTheme(initialTheme ? (root.dataset.shellThemeSwitch === 'true' && ['light','dark'].includes(savedTheme) ? savedTheme : initialTheme) : (savedTheme === 'light' ? 'light' : 'dark'));
     document.querySelectorAll('[data-atelier-theme-toggle]').forEach((toggle) => {
         toggle.addEventListener('click', () => applyTheme(root.dataset.atelierTheme === 'dark' ? 'light' : 'dark'));
     });

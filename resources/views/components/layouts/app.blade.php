@@ -1,9 +1,10 @@
-@props(['title' => null, 'description' => null])
+@props(['title' => null, 'description' => null, 'shellDesign' => null])
 <!doctype html>
-@php($isCmsStorefrontPreview = request()->routeIs('admin.pages.preview', 'admin.cms-canary.pages.show'))
+@php($isCmsStorefrontPreview = request()->routeIs('admin.pages.preview', 'admin.cms-canary.pages.show', 'admin.shell-design.preview'))
 @php($isStorefront = request()->routeIs('storefront.*', 'cart.*', 'checkout.*', 'customer.*', 'order-tracking.*') || $isCmsStorefrontPreview)
 @php($isAdmin = request()->routeIs('admin.*') && ! $isCmsStorefrontPreview)
-<html lang="en" @if($isStorefront) class="dark" data-atelier-theme-root data-atelier-theme="dark" @elseif($isAdmin) data-admin-root @endif>
+@php($shellDesign = $isStorefront ? ($shellDesign ?? \App\Domain\Cms\ShellDesign::resolve(app(\App\Services\StorefrontShellSettingsService::class)->live())) : null)
+<html lang="en" @if($isStorefront) class="{{ ($shellDesign['appearance'] ?? 'dark') === 'dark' ? 'dark' : '' }}" data-atelier-theme-root data-atelier-theme="{{ $shellDesign['appearance'] ?? 'dark' }}" @if($shellDesign) data-shell-appearance="{{ $shellDesign['appearance'] }}" data-shell-theme-switch="{{ $shellDesign['showThemeSwitch'] ? 'true' : 'false' }}" @endif @elseif($isAdmin) data-admin-root @endif>
 <head>
     <x-brand-favicon />
     <meta charset="utf-8">

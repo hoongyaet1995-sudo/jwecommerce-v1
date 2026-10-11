@@ -29,7 +29,7 @@ final class RuntimeAdapterRegistry
         $commerceReferences = $this->collectReferences(['sections' => array_values(array_filter($document['sections'] ?? [], fn ($s) => ($s['type'] ?? null) !== 'shop_navigation'))]);
         $allLimit = 0;
         foreach ($document['sections'] ?? [] as $section) {
-            if (($section['type'] ?? null) !== 'product_listing' || ($section['listingPreset'] ?? null) !== 'editorial-tabs' || !($section['isVisible'] ?? false)) continue;
+            if (($section['type'] ?? null) !== 'product_listing' || !in_array($section['listingPreset'] ?? null, ['editorial-tabs','pantry-tabs','tech-tabs','kids-tabs'], true) || !($section['isVisible'] ?? false)) continue;
             foreach ($section['productTabs'] ?? [] as $tab) if (($tab['sourceType'] ?? null) === 'all') $allLimit = max($allLimit, min(12, $tab['productLimit'] ?? $section['productLimit'] ?? 4));
         }
         if ($allLimit > 0) $commerceReferences['productIds'] = array_values(array_unique(array_merge($commerceReferences['productIds'], Product::query()->where('status','active')->orderBy('id')->limit($allLimit)->pluck('id')->all())));
@@ -115,7 +115,7 @@ final class RuntimeAdapterRegistry
             }
 
             if (in_array($section['type'] ?? null, ['collection_tabs', 'product_listing'], true)) {
-                foreach (($section['type'] === 'product_listing' ? (($section['listingPreset'] ?? null) === 'editorial-tabs' ? ($section['productTabs'] ?? []) : [$section]) : ($section['tabs'] ?? [])) as $tab) {
+                foreach (($section['type'] === 'product_listing' ? (in_array($section['listingPreset'] ?? null, ['editorial-tabs','pantry-tabs','tech-tabs','kids-tabs'], true) ? ($section['productTabs'] ?? []) : [$section]) : ($section['tabs'] ?? [])) as $tab) {
                     if (! is_array($tab)) {
                         continue;
                     }
@@ -372,7 +372,7 @@ final class RuntimeAdapterRegistry
      */
     private function productListingFacts(array $section, SupportCollection $categories, SupportCollection $collections, SupportCollection $products): array
     {
-        if (($section['listingPreset'] ?? null) === 'editorial-tabs') {
+        if (in_array($section['listingPreset'] ?? null, ['editorial-tabs','pantry-tabs','tech-tabs','kids-tabs'], true)) {
             $tabs = [];
             foreach ($section['productTabs'] ?? [] as $tab) {
                 $feed = array_merge($section,$tab,['listingPreset'=>'editorial-grid','productLimit'=>$tab['productLimit'] ?? $section['productLimit'] ?? 4]);
@@ -404,6 +404,7 @@ final class RuntimeAdapterRegistry
                 'variants' => $product->variants->map(fn ($v) => [
                     'id' => (string) $v->id,
                     'label' => (string) ($v->color_name ?: $v->title),
+                    'color' => preg_match('/^#[0-9a-f]{6}$/i',(string)($v->color_code ?: $v->color_hex)) ? ($v->color_code ?: $v->color_hex) : null,
                     'sku' => (string) $v->sku,
                     'price' => $v->price / 100,
                     'compareAtPrice' => $v->compare_at_price === null ? null : $v->compare_at_price / 100,

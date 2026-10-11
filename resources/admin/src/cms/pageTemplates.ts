@@ -1,3 +1,19 @@
+import {weddingSections} from './weddingTemplates';
+import weddingTemplate from './weddingTemplate.json';
+import {jewelrySections} from './jewelryTemplates';
+import jewelryTemplate from './jewelryTemplate.json';
+import {kidsSections} from './kidsTemplates';
+import kidsTemplate from './kidsTemplate.json';
+import {techSections} from './techTemplates';
+import techTemplate from './techTemplate.json';
+import {foodSections} from './foodTemplates';
+import foodTemplate from './foodTemplate.json';
+import {beautySections} from './beautyTemplates';
+import beautyTemplate from './beautyTemplate.json';
+import {marketSections} from './marketTemplates';
+import marketTemplate from './marketTemplate.json';
+import {fashionSections} from './fashionTemplates';
+import fashionTemplate from './fashionTemplate.json';
 import homeDecoTemplate from './homeDecoTemplate.json';
 import type {PageStyle} from './pageStyle';
 import {termsSections,termsTemplateIds} from './termsTemplates';
@@ -28,11 +44,19 @@ export interface PageTemplateContext {
   }>;
 }
 
-export function createPageTemplateStyle(id:string):PageStyle|undefined {return id==='home-deco'?structuredClone(homeDecoTemplate.style) as PageStyle:undefined;}
+export function createPageTemplateStyle(id:string):PageStyle|undefined {return id==='wedding-photography'?structuredClone(weddingTemplate.style) as PageStyle:id==='jewelry-gifts'?structuredClone(jewelryTemplate.style) as PageStyle:id==='baby-kids'?structuredClone(kidsTemplate.style) as PageStyle:id==='tech-electronics'?structuredClone(techTemplate.style) as PageStyle:id==='food-beverage'?structuredClone(foodTemplate.style) as PageStyle:id==='beauty-skincare'?structuredClone(beautyTemplate.style) as PageStyle:id==='everyday-market'?structuredClone(marketTemplate.style) as PageStyle:id==='fashion-design'?structuredClone(fashionTemplate.style) as PageStyle:id==='home-deco'?structuredClone(homeDecoTemplate.style) as PageStyle:undefined;}
 
 // These are editable draft snapshots. Checkout remains the authority for live rates.
 // Photographs illustrate the starter layout; they do not depict the merchant's team.
 export function createPageTemplateSections(templateId: string, context: PageTemplateContext, prefix: string): PageSection[] {
+  if(templateId==='wedding-photography')return weddingSections(prefix);
+  if(templateId==='jewelry-gifts')return jewelrySections(context,prefix);
+  if(templateId==='baby-kids')return kidsSections(context,prefix);
+  if(templateId==='tech-electronics')return techSections(context,prefix);
+  if(templateId==='food-beverage')return foodSections(context,prefix);
+  if(templateId==='beauty-skincare')return beautySections(context,prefix);
+  if(templateId==='everyday-market')return marketSections(context,prefix);
+  if(templateId==='fashion-design')return fashionSections(context,prefix);
   if(templateId==='home-deco')return (structuredClone(homeDecoTemplate.sections) as PageSection[]).map((section,index)=>{
     const ids=new Map<string,string>();section.id=`${prefix}-home-${index}`;
     section.items=section.items?.map((item,i)=>{const id=`${section.id}-item-${i}`;ids.set(item.id,id);return {...item,id};});

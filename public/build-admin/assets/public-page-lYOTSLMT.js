@@ -1,1 +1,0 @@
-import{ay as o,ax as s,j as t,r as n,an as r,az as c,aA as i}from"./index-DayYJr54.js";const a=document.getElementById("cms-page-root");if(a){const e=o();s.createRoot(a).render(t.jsx(n.StrictMode,{children:e?t.jsx(r,{payload:e,children:t.jsx(c,{sections:e.page.document.sections,mode:e.context.mode})}):t.jsx(i,{})}))}

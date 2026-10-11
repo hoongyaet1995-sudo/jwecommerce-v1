@@ -1,0 +1,548 @@
+{
+  "style": {
+    "palette": {
+      "paper": "#fbfaf6",
+      "ink": "#35494a",
+      "muted": "#6c7871",
+      "accent": "#7d947f",
+      "light": "#ffffff",
+      "secondary": "#e9eee5",
+      "secondaryInk": "#35494a",
+      "hover": "#627b65"
+    },
+    "typography": {
+      "title": {
+        "fontFamily": "sans",
+        "fontSize": 30,
+        "fontWeight": 600,
+        "lineHeight": 1.15
+      },
+      "eyebrow": {
+        "fontFamily": "sans",
+        "fontSize": 12,
+        "fontWeight": 600,
+        "letterSpacing": 1.2
+      },
+      "content": {
+        "fontFamily": "sans",
+        "fontSize": 14,
+        "fontWeight": 400,
+        "lineHeight": 1.5
+      },
+      "itemTitle": {
+        "fontFamily": "sans",
+        "fontSize": 14,
+        "fontWeight": 600
+      },
+      "itemContent": {
+        "fontFamily": "sans",
+        "fontSize": 12,
+        "fontWeight": 400
+      }
+    },
+    "spacing": "compact",
+    "buttonRadius": 999,
+    "buttonSize": "compact"
+  },
+  "sections": [
+    {
+      "id": "kids-0",
+      "type": "hero_slider",
+      "title": "Little moments.\nBig discoveries.",
+      "isVisible": true,
+      "containerMode": "full-bleed",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#35494a",
+        "contentColor": "#6c7871",
+        "eyebrowColor": "#7d947f",
+        "primaryBtnBg": "#7d947f",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#35494a",
+        "customBgColor": "#fbfaf6"
+      },
+      "sliderPreset": "fashion-editorial",
+      "sliderHeight": "normal",
+      "textAlignment": "left",
+      "items": [
+        {
+          "id": "kids-0-item-0",
+          "title": "Little moments.\nBig discoveries.",
+          "description": "Thoughtful toys, clothing and essentials\nfor a brighter, kinder childhood.",
+          "imageUrl": "/storage/cms/media/7ebe4775-878f-4179-8d01-8b9367d917a5.png",
+          "buttonText": "Shop the collection",
+          "linkUrl": "/shop"
+        }
+      ],
+      "typography": {
+        "title": {
+          "fontFamily": "sans",
+          "fontSize": 52,
+          "fontWeight": 600,
+          "lineHeight": 1.1
+        }
+      }
+    },
+    {
+      "id": "kids-1",
+      "type": "shop_navigation",
+      "title": "Shop by Age",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#35494a",
+        "contentColor": "#6c7871",
+        "eyebrowColor": "#7d947f",
+        "primaryBtnBg": "#7d947f",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#35494a",
+        "customBgColor": "#fbfaf6"
+      },
+      "shopNavigationPreset": "age-cards",
+      "columnsCount": 4,
+      "textAlignment": "center",
+      "content": "Every stage is a new adventure.",
+      "items": [
+        {
+          "id": "kids-1-item-0",
+          "title": "0–12 Months",
+          "description": "Gentle beginnings",
+          "imageUrl": "/storage/cms/media/bd8b16f5-9133-461d-8e91-fcb7bc2e3927.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "kids-1-item-1",
+          "title": "1–3 Years",
+          "description": "Curious and growing",
+          "imageUrl": "/storage/cms/media/9b2de371-2173-4425-a692-d9a215d55192.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "kids-1-item-2",
+          "title": "3–5 Years",
+          "description": "Imaginative explorers",
+          "imageUrl": "/storage/cms/media/12a18525-4fb5-4866-b299-7fb63153afb1.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "kids-1-item-3",
+          "title": "5+ Years",
+          "description": "Bigger adventures",
+          "imageUrl": "/storage/cms/media/ab8711ba-5f87-45d2-9df7-8a3f7d4f18dc.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        }
+      ]
+    },
+    {
+      "id": "kids-2",
+      "type": "product_listing",
+      "title": "Little Essentials",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#35494a",
+        "contentColor": "#6c7871",
+        "eyebrowColor": "#7d947f",
+        "primaryBtnBg": "#7d947f",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#35494a",
+        "customBgColor": "#fbfaf6"
+      },
+      "listingPreset": "kids-grid",
+      "columnsCount": 4,
+      "textAlignment": "center",
+      "content": "Everyday favourites for little ones.",
+      "sourceType": "manual",
+      "productIds": [],
+      "productLimit": 4,
+      "imageRatio": "1:1",
+      "buttonText": "View all",
+      "buttonLink": "/shop"
+    },
+    {
+      "id": "kids-3",
+      "type": "shop_navigation",
+      "title": "Nursery & Playtime",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#35494a",
+        "contentColor": "#6c7871",
+        "eyebrowColor": "#7d947f",
+        "primaryBtnBg": "#7d947f",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#35494a",
+        "customBgColor": "#fbfaf6"
+      },
+      "shopNavigationPreset": "kids-banners",
+      "bannerProportions": "50:50",
+      "bannerHeight": "comfortable",
+      "showSectionHeading": false,
+      "items": [
+        {
+          "id": "kids-3-item-0",
+          "title": "A calmer nursery,\nbrighter tomorrows.",
+          "description": "Beautiful essentials for peaceful days\nand sweeter nights.",
+          "imageUrl": "/storage/cms/media/7d9e15a5-e4fd-40c7-8970-0e3ed725f509.png",
+          "sourceType": "custom",
+          "buttonText": "Shop Nursery",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "kids-3-item-1",
+          "title": "Playtime\nbuilds brighter\nminds.",
+          "description": "Toys for curious hands\nand big imaginations.",
+          "imageUrl": "/storage/cms/media/c144f765-7e3d-487f-a472-056949ba2be9.png",
+          "sourceType": "custom",
+          "buttonText": "Shop Playtime",
+          "linkUrl": "/shop"
+        }
+      ],
+      "typography": {
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 28,
+          "fontWeight": 600,
+          "color": "#69533f"
+        },
+        "itemContent": {
+          "color": "#35494a",
+          "fontSize": 13
+        }
+      }
+    },
+    {
+      "id": "kids-4",
+      "type": "media_text_split",
+      "title": "Little Milestones\nBig Possibilities",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#35494a",
+        "contentColor": "#6c7871",
+        "eyebrowColor": "#7d947f",
+        "primaryBtnBg": "#7d947f",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#35494a",
+        "customBgColor": "#fbfaf6"
+      },
+      "layoutPreset": "kids-discovery",
+      "subtitle": "Thoughtfully made\nfor their tomorrows.",
+      "content": "Discover textures, materials and care details for everyday essentials. Review each product’s information to find what suits your family.",
+      "leadText": "For every little adventure, at their own pace.",
+      "mediaUrl": "/storage/cms/media/bf5a2a56-7532-4583-8fca-7e2f0c22285e.png",
+      "mediaAlt": "Folded blankets and cotton in warm natural tones",
+      "typography": {
+        "eyebrow": {
+          "fontFamily": "sans",
+          "fontSize": 25,
+          "fontWeight": 600,
+          "color": "#35494a"
+        },
+        "title": {
+          "fontSize": 28,
+          "fontWeight": 600
+        },
+        "itemTitle": {
+          "fontSize": 12
+        },
+        "itemContent": {
+          "fontSize": 11
+        }
+      },
+      "items": [
+        {
+          "id": "kids-4-item-0",
+          "title": "Materials",
+          "description": "Check product details",
+          "icon": "Leaf",
+          "badge": "care"
+        },
+        {
+          "id": "kids-4-item-1",
+          "title": "Care",
+          "description": "Read care instructions",
+          "icon": "Shirt",
+          "badge": "care"
+        },
+        {
+          "id": "kids-4-item-2",
+          "title": "Comfort",
+          "description": "Find your favourites",
+          "icon": "Heart",
+          "badge": "care"
+        },
+        {
+          "id": "kids-4-item-3",
+          "title": "Tomorrow",
+          "description": "Explore our story",
+          "icon": "Sprout",
+          "badge": "care"
+        },
+        {
+          "id": "kids-4-item-4",
+          "title": "First Smile",
+          "description": "Little joyful moments",
+          "icon": "Sun",
+          "badge": "milestone"
+        },
+        {
+          "id": "kids-4-item-5",
+          "title": "Sitting Up",
+          "description": "New perspectives",
+          "icon": "Rainbow",
+          "badge": "milestone"
+        },
+        {
+          "id": "kids-4-item-6",
+          "title": "First Steps",
+          "description": "Every small adventure",
+          "icon": "Footprints",
+          "badge": "milestone"
+        },
+        {
+          "id": "kids-4-item-7",
+          "title": "First Words",
+          "description": "Stories begin here",
+          "icon": "Heart",
+          "badge": "milestone"
+        },
+        {
+          "id": "kids-4-item-8",
+          "title": "Big Imagination",
+          "description": "Play and discover",
+          "icon": "Star",
+          "badge": "milestone"
+        },
+        {
+          "id": "kids-4-item-9",
+          "title": "Brighter Futures",
+          "description": "Growing together",
+          "icon": "Mountain",
+          "badge": "milestone"
+        }
+      ]
+    },
+    {
+      "id": "kids-5",
+      "type": "product_listing",
+      "title": "Shop by Category",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#35494a",
+        "contentColor": "#6c7871",
+        "eyebrowColor": "#7d947f",
+        "primaryBtnBg": "#7d947f",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#35494a",
+        "customBgColor": "#fbfaf6"
+      },
+      "listingPreset": "kids-tabs",
+      "columnsCount": 4,
+      "textAlignment": "center",
+      "content": "Essentials for play, rest and every little adventure.",
+      "sourceType": "manual",
+      "productIds": [],
+      "productLimit": 4,
+      "imageRatio": "1:1",
+      "productTabs": [
+        {
+          "id": "Play",
+          "label": "Play",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        },
+        {
+          "id": "Rest",
+          "label": "Rest",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        },
+        {
+          "id": "Outdoors",
+          "label": "Outdoors",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        }
+      ]
+    },
+    {
+      "id": "kids-6",
+      "type": "hero_slider",
+      "title": "A Brighter Tomorrow,\nWrapped with Love.",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#35494a",
+        "contentColor": "#6c7871",
+        "eyebrowColor": "#7d947f",
+        "primaryBtnBg": "#7d947f",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#35494a",
+        "customBgColor": "#fbfaf6"
+      },
+      "sliderPreset": "editorial-overlay",
+      "sliderHeight": "compact",
+      "textAlignment": "right",
+      "items": [
+        {
+          "id": "kids-6-item-0",
+          "title": "A Brighter Tomorrow,\nWrapped with Love.",
+          "description": "Thoughtful gift bundles for life's special little moments.",
+          "imageUrl": "/storage/cms/media/fc26abe1-d6e2-4c1c-8eee-ddac1f80d0f7.png",
+          "buttonText": "Shop Gift Bundles",
+          "linkUrl": "/shop"
+        }
+      ],
+      "typography": {
+        "title": {
+          "fontFamily": "sans",
+          "fontSize": 32,
+          "fontWeight": 600
+        }
+      }
+    },
+    {
+      "id": "kids-7",
+      "type": "media_text_split",
+      "title": "The Parent Journal",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#35494a",
+        "contentColor": "#6c7871",
+        "eyebrowColor": "#7d947f",
+        "primaryBtnBg": "#7d947f",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#35494a",
+        "customBgColor": "#fbfaf6"
+      },
+      "layoutPreset": "editorial-story-cards",
+      "content": "Stories and ideas for your family’s everyday adventures.",
+      "buttonText": "View all articles",
+      "buttonLink": "/page/about-us",
+      "items": [
+        {
+          "id": "kids-7-item-0",
+          "title": "Building Confidence\nin Everyday Moments",
+          "description": "Small ideas for meaningful time together.",
+          "imageUrl": "/storage/cms/media/cad8e0c8-ea1c-4b51-95af-83239d9a4612.png",
+          "buttonText": "Read more",
+          "linkUrl": "/page/about-us"
+        },
+        {
+          "id": "kids-7-item-1",
+          "title": "The Benefits of Outdoor Play",
+          "description": "Explore fresh air, imagination and shared adventures.",
+          "imageUrl": "/storage/cms/media/2947aa82-3023-4c38-9a7b-8ce1e873bd72.png",
+          "buttonText": "Read more",
+          "linkUrl": "/page/about-us"
+        }
+      ],
+      "typography": {
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 20,
+          "fontWeight": 600
+        }
+      }
+    },
+    {
+      "id": "kids-8",
+      "type": "feature_cards",
+      "title": "Here for your family",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#35494a",
+        "contentColor": "#6c7871",
+        "eyebrowColor": "#7d947f",
+        "primaryBtnBg": "#7d947f",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#35494a",
+        "customBgColor": "#e9eee5"
+      },
+      "featureCardsPreset": "service-highlights",
+      "showSectionHeading": false,
+      "columnsCount": 4,
+      "items": [
+        {
+          "id": "kids-8-item-0",
+          "title": "Delivery information",
+          "description": "Review delivery at checkout.",
+          "icon": "Truck"
+        },
+        {
+          "id": "kids-8-item-1",
+          "title": "Returns & exchanges",
+          "description": "Read the store returns policy.",
+          "icon": "RotateCcw"
+        },
+        {
+          "id": "kids-8-item-2",
+          "title": "Secure payments",
+          "description": "Payment methods at checkout.",
+          "icon": "Heart"
+        },
+        {
+          "id": "kids-8-item-3",
+          "title": "Our story",
+          "description": "Discover what matters to us.",
+          "icon": "Sprout"
+        }
+      ]
+    }
+  ]
+}

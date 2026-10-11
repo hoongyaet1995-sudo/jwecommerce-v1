@@ -1,6 +1,8 @@
 import {MediaWidthRegion} from './MediaWidthRegion';
 import {typographyStyle} from '../../cms/inspectorCapabilities';
 import React from 'react';
+import {ArrowRight} from 'lucide-react';
+import {shopNavigationHref} from '../../cms/shopNavigation';
 import type {PageSection} from '../../types';
 import {ScopedImage,imageSlotFrameStyle} from './ScopedImage';
 import {MotionItem,MotionMedia} from './motion/CmsMotionWrapper';
@@ -15,18 +17,21 @@ function Heading({section,hero=false}:{section:PageSection;hero?:boolean}) {
   {section.content&&<MotionItem><div data-cms-text="content" style={{...({color:section.customColors?.contentColor}),...typographyStyle(section,'content')}} className={`mt-4 text-base @min-[640px]:text-lg leading-relaxed ${section.textAlignment==='left'?'':'mx-auto'} max-w-2xl space-y-2`}>{section.content.split(/\r?\n[ \t]*\r?\n+/).map((p,i)=><p key={i} className="whitespace-pre-line break-words">{p}</p>)}</div></MotionItem>}
  </div>;
 }
-export function EditorialGallery({section}:{section:PageSection}) {
+export function EditorialGallery({section,editing=false}:{section:PageSection;editing?:boolean}) {
+ const triptych=section.galleryPreset==='editorial-triptych';
+ const portfolio=section.galleryPreset==='portfolio-cards';
  const montage=section.galleryPreset==='editorial-montage';
  return <div data-editorial-gallery={section.galleryPreset} className={`@container w-full ${spacing(section)}`}>
   <Heading section={section} hero={montage}/>
+  {portfolio&&section.buttonText&&shopNavigationHref(section.buttonLink??'')&&<a data-cms-action="button" className="block mb-5 text-right text-xs" href={shopNavigationHref(section.buttonLink??'')} onClick={e=>editing&&e.preventDefault()}>{section.buttonText} →</a>}
   <MediaWidthRegion section={section}><div className={`grid grid-cols-1 gap-7 items-start ${montage&&(section.columnsCount??3)===3?'@min-[640px]:grid-cols-[minmax(0,1fr)_minmax(0,.82fr)_minmax(0,1fr)]':columns(section.columnsCount??3)}`}>
    {(section.items??[]).map((item,index)=>{
     const target=`item:${item.id}:imageUrl`;
     return <div key={item.id} className={`min-w-0 ${montage&&index%3===1?'@min-[640px]:pt-8':montage&&index%3===2?'@min-[640px]:pt-10':''}`}>
-     <MotionMedia className={`overflow-hidden ${montage?(index%3===2?'aspect-[3/4]':index%3===1?'aspect-[6/11]':'aspect-[2/3]'):'aspect-[4/3]'}`} style={imageSlotFrameStyle(section,target)}>
+     <MotionMedia className={`overflow-hidden ${montage?(index%3===2?'aspect-[3/4]':index%3===1?'aspect-[6/11]':'aspect-[2/3]'):triptych?'aspect-[4/3]':portfolio?'aspect-[16/9]':'aspect-[4/3]'}`} style={imageSlotFrameStyle(section,target)}>
       {item.imageUrl&&<ScopedImage section={section} targetId={target} src={item.imageUrl} alt={item.title} className="w-full h-full object-cover"/>}
      </MotionMedia>
-     {!montage&&<MotionItem><div className="mt-4"><h3 data-cms-text="itemTitle" data-cms-item={item.id} style={{...({color:section.customColors?.titleColor}),...typographyStyle(section,'itemTitle')}} className="text-base font-semibold leading-snug break-words">{item.title}</h3>{item.description&&<p data-cms-text="itemContent" data-cms-item={item.id} style={{...({color:section.customColors?.contentColor}),...typographyStyle(section,'itemContent')}} className="mt-1 text-sm leading-relaxed whitespace-pre-line break-words">{item.description}</p>}</div></MotionItem>}
+     {!montage&&!triptych&&<MotionItem><div className="mt-4"><h3 data-cms-text="itemTitle" data-cms-item={item.id} style={{...({color:section.customColors?.titleColor}),...typographyStyle(section,'itemTitle')}} className="text-base font-semibold leading-snug break-words">{item.title}</h3>{item.description&&<p data-cms-text="itemContent" data-cms-item={item.id} style={{...({color:section.customColors?.contentColor}),...typographyStyle(section,'itemContent')}} className="mt-1 text-sm leading-relaxed whitespace-pre-line break-words">{item.description}</p>}{portfolio&&item.buttonText&&shopNavigationHref(item.linkUrl??'')&&<a data-cms-action="button" data-cms-item={item.id} className="inline-flex items-center gap-2 mt-3 text-xs" href={shopNavigationHref(item.linkUrl??'')} onClick={e=>editing&&e.preventDefault()}>{item.buttonText}<ArrowRight size={13}/></a>}</div></MotionItem>}
     </div>;
    })}
   </div></MediaWidthRegion>
@@ -34,10 +39,11 @@ export function EditorialGallery({section}:{section:PageSection}) {
 }
 export function EditorialColumns({section}:{section:PageSection}) {
  const count=section.columnsCount??3;
+ const numbered=section.featureCardsPreset==='numbered-process';
  return <div data-editorial-columns className={`@container w-full ${spacing(section)}`}>
   <Heading section={section}/>
   <div className={`grid grid-cols-1 ${columns(count)} gap-8 @min-[1024px]:gap-20`}>
-   {(section.items??[]).map(item=><MotionItem key={item.id}><div className="min-w-0"><h3 data-cms-text="itemTitle" data-cms-item={item.id} style={{...({color:section.customColors?.titleColor}),...typographyStyle(section,'itemTitle')}} className="text-2xl @min-[1024px]:text-3xl font-semibold leading-tight tracking-tight whitespace-pre-line break-words">{item.title}</h3><div data-cms-text="itemContent" data-cms-item={item.id} style={{...({color:section.customColors?.contentColor}),...typographyStyle(section,'itemContent')}} className={`mt-5 ${count===2?'text-base @min-[1024px]:text-lg':'text-base'} leading-relaxed space-y-4`}>{(item.description??'').split(/\r?\n[ \t]*\r?\n+/).map((p,index)=><p key={index} className="whitespace-pre-line break-words">{p}</p>)}</div></div></MotionItem>)}
+   {(section.items??[]).map((item,index)=><MotionItem key={item.id}><div className={`min-w-0 ${numbered?'border-t border-stone-300 pt-4':''}`}>{numbered&&<span className="block mb-3 font-serif text-xl">{String(index+1).padStart(2,'0')}</span>}<h3 data-cms-text="itemTitle" data-cms-item={item.id} style={{...({color:section.customColors?.titleColor}),...typographyStyle(section,'itemTitle')}} className="text-2xl @min-[1024px]:text-3xl font-semibold leading-tight tracking-tight whitespace-pre-line break-words">{item.title}</h3><div data-cms-text="itemContent" data-cms-item={item.id} style={{...({color:section.customColors?.contentColor}),...typographyStyle(section,'itemContent')}} className={`mt-5 ${count===2?'text-base @min-[1024px]:text-lg':'text-base'} leading-relaxed space-y-4`}>{(item.description??'').split(/\r?\n[ \t]*\r?\n+/).map((p,index)=><p key={index} className="whitespace-pre-line break-words">{p}</p>)}</div></div></MotionItem>)}
   </div>
  </div>;
 }

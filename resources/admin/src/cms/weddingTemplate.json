@@ -1,0 +1,432 @@
+{
+  "style": {
+    "palette": {
+      "paper": "#f7f3ed",
+      "ink": "#292724",
+      "muted": "#69645d",
+      "accent": "#b8a48b",
+      "light": "#ffffff",
+      "secondary": "#e5d6c2",
+      "secondaryInk": "#292724",
+      "hover": "#51473c"
+    },
+    "typography": {
+      "title": {
+        "fontFamily": "serif",
+        "fontSize": 26,
+        "fontWeight": 400,
+        "lineHeight": 1.15
+      },
+      "eyebrow": {
+        "fontFamily": "sans",
+        "fontSize": 12,
+        "fontWeight": 400,
+        "letterSpacing": 1.2
+      },
+      "content": {
+        "fontFamily": "sans",
+        "fontSize": 14,
+        "fontWeight": 400,
+        "lineHeight": 1.5
+      },
+      "itemTitle": {
+        "fontFamily": "serif",
+        "fontSize": 16,
+        "fontWeight": 400
+      },
+      "itemContent": {
+        "fontFamily": "sans",
+        "fontSize": 12,
+        "fontWeight": 400
+      }
+    },
+    "spacing": "compact",
+    "buttonRadius": 0,
+    "buttonSize": "compact"
+  },
+  "sections": [
+    {
+      "id": "wedding-0",
+      "type": "hero_slider",
+      "title": "For the moments\nyou never want\nto forget.",
+      "isVisible": true,
+      "containerMode": "full-bleed",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#ffffff",
+        "contentColor": "#ffffff",
+        "eyebrowColor": "#69645d",
+        "primaryBtnBg": "#292724",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f7f3ed",
+        "secondaryBtnText": "#292724",
+        "customBgColor": "#f7f3ed"
+      },
+      "sliderPreset": "fashion-editorial",
+      "sliderHeight": "normal",
+      "textAlignment": "left",
+      "sliderAutoplay": false,
+      "overlayOpacity": 0,
+      "items": [
+        {
+          "id": "wedding-0-item-0",
+          "title": "For the moments\nyou never want\nto forget.",
+          "description": "Honest stories. Beautifully remembered.",
+          "imageUrl": "/storage/cms/media/59916b23-a6e9-4e4c-b244-0967b22fbea9.png",
+          "buttonText": "Explore our weddings",
+          "linkUrl": "#section-wedding-stories",
+          "caption": "A love story, in every frame."
+        }
+      ],
+      "typography": {
+        "title": {
+          "fontFamily": "serif",
+          "fontWeight": 400,
+          "fontSize": 48,
+          "lineHeight": 1.08
+        }
+      }
+    },
+    {
+      "id": "wedding-1",
+      "type": "media_gallery",
+      "title": "Your day. Your people. Your story.",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#292724",
+        "contentColor": "#69645d",
+        "eyebrowColor": "#69645d",
+        "primaryBtnBg": "#292724",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f7f3ed",
+        "secondaryBtnText": "#292724",
+        "customBgColor": "#f7f3ed"
+      },
+      "galleryPreset": "editorial-triptych",
+      "columnsCount": 3,
+      "textAlignment": "center",
+      "content": "Natural, documentary photography for real moments and genuine connections.\nA love of people, places and the in-between.",
+      "items": [
+        {
+          "id": "wedding-1-item-0",
+          "title": "Illustrative bridal portrait",
+          "description": "",
+          "imageUrl": "/storage/cms/media/e3e4b465-75a7-4eb3-a8d1-d1bb67e39a51.png"
+        },
+        {
+          "id": "wedding-1-item-1",
+          "title": "Illustrative city wedding",
+          "description": "",
+          "imageUrl": "/storage/cms/media/bd1acbe5-2c36-43f6-9ff8-c726f7319021.png"
+        },
+        {
+          "id": "wedding-1-item-2",
+          "title": "Illustrative first dance",
+          "description": "",
+          "imageUrl": "/storage/cms/media/eeee99bc-015a-44b1-bcee-b5c5b9206d9b.png"
+        }
+      ]
+    },
+    {
+      "id": "wedding-2",
+      "type": "media_gallery",
+      "title": "Stories worth remembering",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#292724",
+        "contentColor": "#69645d",
+        "eyebrowColor": "#69645d",
+        "primaryBtnBg": "#292724",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f7f3ed",
+        "secondaryBtnText": "#292724",
+        "customBgColor": "#f7f3ed"
+      },
+      "galleryPreset": "portfolio-cards",
+      "columnsCount": 3,
+      "textAlignment": "left",
+      "buttonText": "View all weddings",
+      "buttonLink": "#section-wedding-services",
+      "items": [
+        {
+          "id": "wedding-2-item-0",
+          "title": "Amelia & Daniel",
+          "description": "Garden celebration",
+          "imageUrl": "/storage/cms/media/59916b23-a6e9-4e4c-b244-0967b22fbea9.png"
+        },
+        {
+          "id": "wedding-2-item-1",
+          "title": "Maya & Adam",
+          "description": "City wedding",
+          "imageUrl": "/storage/cms/media/bd1acbe5-2c36-43f6-9ff8-c726f7319021.png"
+        },
+        {
+          "id": "wedding-2-item-2",
+          "title": "Grace & Ethan",
+          "description": "By the sea",
+          "imageUrl": "/storage/cms/media/6b696f3b-3de1-45bf-b313-8696997c3c68.png"
+        }
+      ]
+    },
+    {
+      "id": "wedding-3",
+      "type": "media_text_split",
+      "title": "A quiet presence.\nAn honest perspective.",
+      "isVisible": true,
+      "containerMode": "full-bleed",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#292724",
+        "contentColor": "#69645d",
+        "eyebrowColor": "#69645d",
+        "primaryBtnBg": "#292724",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f7f3ed",
+        "secondaryBtnText": "#292724",
+        "customBgColor": "#f7f3ed"
+      },
+      "layoutPreset": "flush-split",
+      "mediaPosition": "left",
+      "mediaUrl": "/storage/cms/media/7ff6ba6b-b74b-4128-aec4-516e54a609e3.png",
+      "mediaAlt": "Illustrative wedding photographer",
+      "content": "Introduce the photographer behind your studio. Share your approach to real people and real moments \u2014 the laughter, the quiet glances and everything in between.",
+      "buttonText": "Meet the photographer",
+      "buttonLink": "#section-wedding-enquiry",
+      "buttonStyle": "text-link"
+    },
+    {
+      "id": "wedding-4",
+      "type": "hero_slider",
+      "title": "The small moments\nbecome the big memories.",
+      "isVisible": true,
+      "containerMode": "full-bleed",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#ffffff",
+        "contentColor": "#ffffff",
+        "eyebrowColor": "#69645d",
+        "primaryBtnBg": "#292724",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f7f3ed",
+        "secondaryBtnText": "#292724",
+        "customBgColor": "#f7f3ed"
+      },
+      "sliderPreset": "fashion-editorial",
+      "sliderHeight": "panoramic",
+      "textAlignment": "right",
+      "sliderAutoplay": false,
+      "overlayOpacity": 0,
+      "items": [
+        {
+          "id": "wedding-4-item-0",
+          "title": "The small moments\nbecome the big memories.",
+          "description": "",
+          "imageUrl": "/storage/cms/media/eeee99bc-015a-44b1-bcee-b5c5b9206d9b.png"
+        }
+      ],
+      "typography": {
+        "title": {
+          "fontFamily": "serif",
+          "fontWeight": 400,
+          "fontSize": 30,
+          "lineHeight": 1.08
+        }
+      }
+    },
+    {
+      "id": "wedding-5",
+      "type": "media_gallery",
+      "title": "A story for every chapter",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#292724",
+        "contentColor": "#69645d",
+        "eyebrowColor": "#69645d",
+        "primaryBtnBg": "#292724",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f7f3ed",
+        "secondaryBtnText": "#292724",
+        "customBgColor": "#f7f3ed"
+      },
+      "galleryPreset": "portfolio-cards",
+      "columnsCount": 3,
+      "textAlignment": "left",
+      "items": [
+        {
+          "id": "wedding-5-item-0",
+          "title": "Wedding Day",
+          "description": "From morning preparations to the final dance, tell the story as it naturally unfolds.",
+          "imageUrl": "/storage/cms/media/e3e4b465-75a7-4eb3-a8d1-d1bb67e39a51.png",
+          "buttonText": "Explore",
+          "linkUrl": "#section-wedding-enquiry"
+        },
+        {
+          "id": "wedding-5-item-1",
+          "title": "Couple Sessions",
+          "description": "A chance to slow down, be yourselves and create photographs wherever feels meaningful to you.",
+          "imageUrl": "/storage/cms/media/6b696f3b-3de1-45bf-b313-8696997c3c68.png",
+          "buttonText": "Explore",
+          "linkUrl": "#section-wedding-enquiry"
+        },
+        {
+          "id": "wedding-5-item-2",
+          "title": "Intimate Celebrations",
+          "description": "Smaller gatherings, same meaningful moments. Document your celebration your way.",
+          "imageUrl": "/storage/cms/media/eeee99bc-015a-44b1-bcee-b5c5b9206d9b.png",
+          "buttonText": "Explore",
+          "linkUrl": "#section-wedding-enquiry"
+        }
+      ]
+    },
+    {
+      "id": "wedding-6",
+      "type": "feature_cards",
+      "title": "From the first hello to your favourite photographs",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#292724",
+        "contentColor": "#69645d",
+        "eyebrowColor": "#69645d",
+        "primaryBtnBg": "#292724",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f7f3ed",
+        "secondaryBtnText": "#292724",
+        "customBgColor": "#f7f3ed"
+      },
+      "featureCardsPreset": "numbered-process",
+      "columnsCount": 3,
+      "textAlignment": "left",
+      "items": [
+        {
+          "id": "wedding-6-item-0",
+          "title": "Let\u2019s connect",
+          "description": "Tell us about your plans, your people and what matters most to you."
+        },
+        {
+          "id": "wedding-6-item-1",
+          "title": "Make it yours",
+          "description": "Share the details and shape your day around what matters to you."
+        },
+        {
+          "id": "wedding-6-item-2",
+          "title": "Remember it all",
+          "description": "Relive the photographs and moments you love."
+        }
+      ]
+    },
+    {
+      "id": "wedding-7",
+      "type": "media_text_split",
+      "title": "Notes from the journal",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#292724",
+        "contentColor": "#69645d",
+        "eyebrowColor": "#69645d",
+        "primaryBtnBg": "#292724",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f7f3ed",
+        "secondaryBtnText": "#292724",
+        "customBgColor": "#f7f3ed"
+      },
+      "layoutPreset": "editorial-journal-rows",
+      "textAlignment": "left",
+      "items": [
+        {
+          "id": "wedding-7-item-0",
+          "title": "A wedding day that feels like you",
+          "description": "Thoughts on creating a day that is true to you \u2014 from meaningful details to being present in the moment.",
+          "imageUrl": "/storage/cms/media/59916b23-a6e9-4e4c-b244-0967b22fbea9.png",
+          "buttonText": "Read the story",
+          "linkUrl": "#section-wedding-enquiry"
+        },
+        {
+          "id": "wedding-7-item-1",
+          "title": "Finding beauty in the in-between",
+          "description": "It is often the quiet, unplanned moments that mean the most.",
+          "imageUrl": "/storage/cms/media/eeee99bc-015a-44b1-bcee-b5c5b9206d9b.png",
+          "buttonText": "Read the story",
+          "linkUrl": "#section-wedding-enquiry"
+        }
+      ]
+    },
+    {
+      "id": "wedding-8",
+      "type": "hero_slider",
+      "title": "Tell us about your day.",
+      "isVisible": true,
+      "containerMode": "full-bleed",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#292724",
+        "contentColor": "#292724",
+        "eyebrowColor": "#69645d",
+        "primaryBtnBg": "#292724",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#f7f3ed",
+        "secondaryBtnText": "#292724",
+        "customBgColor": "#f7f3ed"
+      },
+      "sliderPreset": "fashion-editorial",
+      "sliderHeight": "panoramic",
+      "textAlignment": "left",
+      "sliderAutoplay": false,
+      "overlayOpacity": 0,
+      "items": [
+        {
+          "id": "wedding-8-item-0",
+          "title": "Tell us about your day.",
+          "description": "Share what you are planning and how you would like your story to be remembered.",
+          "imageUrl": "/storage/cms/media/e21811b5-68a5-4474-9618-e7dccb01380b.png",
+          "buttonText": "Enquire about your date",
+          "linkUrl": "/page/contact-us"
+        }
+      ],
+      "typography": {
+        "title": {
+          "fontFamily": "serif",
+          "fontWeight": 400,
+          "fontSize": 30,
+          "lineHeight": 1.08
+        }
+      }
+    }
+  ]
+}

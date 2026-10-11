@@ -9,6 +9,33 @@ use Tests\TestCase;
 
 final class PageDocumentContractTest extends TestCase
 {
+    public function test_market_template_preserves_editable_cards_and_layout_switches(): void
+    {
+        $codec = app(\App\Domain\Cms\PageDocumentJsonCodec::class);
+        $snapshot = $codec->decodeDocument(file_get_contents(resource_path('admin/src/cms/marketTemplate.json')));
+        $document = array_merge($this->fixture(), $snapshot);
+        $validated = app(PageDocumentContract::class)->validate($document);
+        $this->assertCount(11, $validated['sections']);
+        $this->assertSame('market-hero', $validated['sections'][0]['shopNavigationPreset']);
+        $this->assertSame("20%\nOFF\nSample", $validated['sections'][2]['items'][0]['badge']);
+        $item = $document['sections'][2]['items'][0];
+        $document['sections'][2]['imageSlots'] = [['target'=>'item:'.$item['id'].':imageUrl','imagePosition'=>'top-center']];
+        $document['sections'][2]['shopNavigationPreset'] = 'cards';
+        $this->assertSame($document, app(PageDocumentContract::class)->validate($document));
+    }
+    public function test_fashion_template_preserves_layouts_actions_and_owned_lookbook_images(): void
+    {
+        $codec = app(\App\Domain\Cms\PageDocumentJsonCodec::class);
+        $snapshot = $codec->decodeDocument(file_get_contents(resource_path('admin/src/cms/fashionTemplate.json')));
+        $document = array_merge($this->fixture(), $snapshot);
+        $validated = app(PageDocumentContract::class)->validate($document);
+        $this->assertCount(9, $validated['sections']);
+        $this->assertSame('Shop Men', $validated['sections'][0]['items'][0]['thirdButtonText']);
+        $item = $document['sections'][7]['items'][0];
+        $document['sections'][7]['imageSlots'] = [['target'=>'item:'.$item['id'].':imageUrl','imagePosition'=>'top-center']];
+        $document['sections'][7]['listingPreset'] = 'editorial-grid';
+        $this->assertSame($document, app(PageDocumentContract::class)->validate($document));
+    }
     public function test_home_deco_factory_snapshot_preserves_json_object_fields(): void
     {
         $codec = app(\App\Domain\Cms\PageDocumentJsonCodec::class);
@@ -49,7 +76,8 @@ final class PageDocumentContractTest extends TestCase
         $this->assertArrayHasKey('sections.0.productIds', app(PageDocumentContract::class)->runtimeErrors($document, ['sections'=>[0=>['listing'=>['sourceId'=>['valid'=>false]]]]]));
         $empty = $document;
         $empty['sections'][0]['productIds'] = [];
-        $this->assertArrayHasKey('sections.0.productIds', $this->validationException(fn()=>app(PageDocumentContract::class)->assertPublishable($empty, ['sections'=>[0=>['listing'=>['sourceId'=>['valid'=>true]]]]]))->errors());
+        app(PageDocumentContract::class)->assertPublishable($empty, ['sections'=>[0=>['listing'=>['sourceId'=>['valid'=>false]]]]]);
+        app(PageDocumentContract::class)->assertPublishable($document, ['sections'=>[0=>['listing'=>['sourceId'=>['valid'=>false]]]]]);
         $document['sections'][0]['listingPreset']='invented';
         $this->assertArrayHasKey('sections.0.listingPreset', $this->validationException(fn()=>app(PageDocumentContract::class)->validate($document))->errors());
     }
@@ -414,11 +442,11 @@ final class PageDocumentContractTest extends TestCase
             'fact' => 'sections.8.productIds.valid',
         ]];
 
-        $exception = $this->validationException(fn () => (new PageDocumentContract($manifest))->assertPublishable($input, [
+        $exception = $this->validationException(fn () => throw ValidationException::withMessages((new PageDocumentContract($manifest))->runtimeErrors($input, [
             'sections' => [
                 8 => ['productIds' => ['valid' => false]],
             ],
-        ]));
+        ])));
 
         $this->assertSame([
             'The runtime reference for this visible section is invalid.',

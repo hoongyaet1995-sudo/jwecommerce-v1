@@ -1,0 +1,535 @@
+{
+  "style": {
+    "palette": {
+      "paper": "#f8f5ef",
+      "ink": "#22221e",
+      "muted": "#6e6a61",
+      "accent": "#a78d60",
+      "light": "#ffffff",
+      "secondary": "#eee8de",
+      "secondaryInk": "#22221e",
+      "hover": "#7d6745"
+    },
+    "typography": {
+      "title": {
+        "fontFamily": "serif",
+        "fontSize": 26,
+        "fontWeight": 400,
+        "lineHeight": 1.15
+      },
+      "eyebrow": {
+        "fontFamily": "serif",
+        "fontSize": 12,
+        "fontWeight": 400,
+        "letterSpacing": 1.2
+      },
+      "content": {
+        "fontFamily": "serif",
+        "fontSize": 14,
+        "fontWeight": 400,
+        "lineHeight": 1.5
+      },
+      "itemTitle": {
+        "fontFamily": "serif",
+        "fontSize": 16,
+        "fontWeight": 400
+      },
+      "itemContent": {
+        "fontFamily": "serif",
+        "fontSize": 12,
+        "fontWeight": 400
+      }
+    },
+    "spacing": "compact",
+    "buttonRadius": 0,
+    "buttonSize": "compact"
+  },
+  "sections": [
+    {
+      "id": "jewelry-0",
+      "type": "hero_slider",
+      "title": "For the moments\nthat matter.",
+      "isVisible": true,
+      "containerMode": "full-bleed",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#22221e",
+        "contentColor": "#6e6a61",
+        "eyebrowColor": "#a78d60",
+        "primaryBtnBg": "#22221e",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#22221e",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": "#f8f5ef"
+      },
+      "sliderPreset": "fashion-editorial",
+      "sliderHeight": "normal",
+      "textAlignment": "left",
+      "items": [
+        {
+          "id": "jewelry-0-item-0",
+          "title": "For the moments\nthat matter.",
+          "description": "Timeless pieces for a more meaningful tomorrow.",
+          "imageUrl": "/storage/cms/media/0566fbdd-ff53-449b-8c10-3927cf0fd659.png",
+          "subtitle": "JEWELRY & GIFTS",
+          "buttonText": "Shop the collection",
+          "linkUrl": "/shop"
+        }
+      ],
+      "typography": {
+        "title": {
+          "fontFamily": "serif",
+          "fontSize": 48,
+          "fontWeight": 400,
+          "lineHeight": 1.1
+        }
+      }
+    },
+    {
+      "id": "jewelry-1",
+      "type": "shop_navigation",
+      "title": "EXPLORE OUR COLLECTIONS",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#22221e",
+        "contentColor": "#6e6a61",
+        "eyebrowColor": "#a78d60",
+        "primaryBtnBg": "#22221e",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#22221e",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": "#f8f5ef"
+      },
+      "shopNavigationPreset": "catalog-captions",
+      "columnsCount": 4,
+      "textAlignment": "center",
+      "content": "Meaningful pieces for every story.",
+      "items": [
+        {
+          "id": "jewelry-1-item-0",
+          "title": "NECKLACES",
+          "description": "",
+          "imageUrl": "/storage/cms/media/d331983b-6137-4b1e-b0c1-caefdc9edc2e.png",
+          "buttonText": "Discover",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "jewelry-1-item-1",
+          "title": "RINGS",
+          "description": "",
+          "imageUrl": "/storage/cms/media/4618c7a4-2972-4c4c-9b52-4366813fa5c2.png",
+          "buttonText": "Discover",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "jewelry-1-item-2",
+          "title": "EARRINGS",
+          "description": "",
+          "imageUrl": "/storage/cms/media/9f875264-9b6e-4f25-8477-4ae795f8d162.png",
+          "buttonText": "Discover",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "jewelry-1-item-3",
+          "title": "BRACELETS",
+          "description": "",
+          "imageUrl": "/storage/cms/media/2b95432b-81eb-4563-90e4-3cbafaed8290.png",
+          "buttonText": "Discover",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        }
+      ]
+    },
+    {
+      "id": "jewelry-2",
+      "type": "product_listing",
+      "title": "BESTSELLERS",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#22221e",
+        "contentColor": "#6e6a61",
+        "eyebrowColor": "#a78d60",
+        "primaryBtnBg": "#22221e",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#22221e",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": "#f8f5ef"
+      },
+      "listingPreset": "editorial-grid",
+      "columnsCount": 4,
+      "textAlignment": "center",
+      "content": "Loved pieces, for everyday and always.",
+      "sourceType": "manual",
+      "productIds": [],
+      "productLimit": 4,
+      "imageRatio": "1:1"
+    },
+    {
+      "id": "jewelry-3",
+      "type": "shop_navigation",
+      "title": "Gold & Gifts",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#22221e",
+        "contentColor": "#6e6a61",
+        "eyebrowColor": "#a78d60",
+        "primaryBtnBg": "#22221e",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#22221e",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": "#f8f5ef"
+      },
+      "shopNavigationPreset": "fashion-banners",
+      "bannerProportions": "50:50",
+      "bannerHeight": "comfortable",
+      "showSectionHeading": false,
+      "items": [
+        {
+          "id": "jewelry-3-item-0",
+          "title": "GOLD\nESSENTIALS",
+          "description": "Modern classics for\neveryday elegance.",
+          "imageUrl": "/storage/cms/media/9ffd3191-3750-4e51-953a-d8b4816df777.png",
+          "buttonText": "Shop now",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "jewelry-3-item-1",
+          "title": "OCCASION\nGIFTS",
+          "description": "Thoughtful pieces\nfor life's special moments.",
+          "imageUrl": "/storage/cms/media/a0403aad-18d9-4ddf-bd32-c38ff2966087.png",
+          "buttonText": "Shop gifts",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        }
+      ],
+      "typography": {
+        "itemTitle": {
+          "fontSize": 32,
+          "fontFamily": "serif",
+          "fontWeight": 400
+        },
+        "itemContent": {
+          "fontSize": 14
+        }
+      }
+    },
+    {
+      "id": "jewelry-4",
+      "type": "media_text_split",
+      "title": "A MORE\nHUMAN TOUCH",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#22221e",
+        "contentColor": "#6e6a61",
+        "eyebrowColor": "#a78d60",
+        "primaryBtnBg": "#22221e",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#22221e",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": "#f8f5ef"
+      },
+      "layoutPreset": "artisan-story",
+      "textAlignment": "center",
+      "content": "Introduce the people, inspiration and techniques behind your collection. Share your own craft story and verified material details here.",
+      "buttonText": "Our story",
+      "buttonLink": "/page/about-us",
+      "items": [
+        {
+          "id": "jewelry-4-item-0",
+          "title": "Illustrative jeweler at a workbench",
+          "imageUrl": "/storage/cms/media/31ce9f4c-17ed-47b4-abec-1f2555adbd41.png"
+        },
+        {
+          "id": "jewelry-4-item-1",
+          "title": "Illustrative jewelry crafting detail",
+          "imageUrl": "/storage/cms/media/9a382ed6-3528-4f01-aaac-3045972bbeb9.png"
+        }
+      ]
+    },
+    {
+      "id": "jewelry-5",
+      "type": "product_listing",
+      "title": "CURATED FOR GIFTING",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#22221e",
+        "contentColor": "#6e6a61",
+        "eyebrowColor": "#a78d60",
+        "primaryBtnBg": "#22221e",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#22221e",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": "#f8f5ef"
+      },
+      "listingPreset": "editorial-tabs",
+      "columnsCount": 4,
+      "textAlignment": "center",
+      "content": "Thoughtful picks for every kind of celebration.",
+      "sourceType": "manual",
+      "productIds": [],
+      "productLimit": 4,
+      "imageRatio": "1:1",
+      "productTabs": [
+        {
+          "id": "For Her",
+          "label": "For Her",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        },
+        {
+          "id": "For Him",
+          "label": "For Him",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        },
+        {
+          "id": "Birthdays",
+          "label": "Birthdays",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        },
+        {
+          "id": "Anniversaries",
+          "label": "Anniversaries",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        },
+        {
+          "id": "Just Because",
+          "label": "Just Because",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        }
+      ]
+    },
+    {
+      "id": "jewelry-6",
+      "type": "hero_slider",
+      "title": "MAKE IT\nMORE MEANINGFUL",
+      "isVisible": true,
+      "containerMode": "full-bleed",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#22221e",
+        "contentColor": "#6e6a61",
+        "eyebrowColor": "#a78d60",
+        "primaryBtnBg": "#22221e",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#22221e",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": "#f8f5ef"
+      },
+      "sliderPreset": "fashion-editorial",
+      "sliderHeight": "compact",
+      "textAlignment": "left",
+      "items": [
+        {
+          "id": "jewelry-6-item-0",
+          "title": "MAKE IT\nMORE MEANINGFUL",
+          "description": "Discover gifting inspiration\nfor life's special moments.",
+          "imageUrl": "/storage/cms/media/d1b3a054-e45a-49b1-b27b-7a816c22f79c.png",
+          "buttonText": "Explore gifts",
+          "linkUrl": "/shop"
+        }
+      ],
+      "typography": {
+        "title": {
+          "fontFamily": "serif",
+          "fontSize": 36,
+          "fontWeight": 400
+        }
+      }
+    },
+    {
+      "id": "jewelry-7",
+      "type": "shop_navigation",
+      "title": "THE DETAILS MAKE A DIFFERENCE",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#22221e",
+        "contentColor": "#6e6a61",
+        "eyebrowColor": "#a78d60",
+        "primaryBtnBg": "#22221e",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#22221e",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": "#f8f5ef"
+      },
+      "shopNavigationPreset": "catalog-captions",
+      "columnsCount": 3,
+      "textAlignment": "center",
+      "items": [
+        {
+          "id": "jewelry-7-item-0",
+          "title": "PRECIOUS MATERIALS",
+          "description": "Add verified materials and care details for your collection.",
+          "imageUrl": "/storage/cms/media/d1b3a054-e45a-49b1-b27b-7a816c22f79c.png",
+          "sourceType": "custom",
+          "linkUrl": "/page/about-us"
+        },
+        {
+          "id": "jewelry-7-item-1",
+          "title": "CRAFTED WITH CARE",
+          "description": "Introduce the techniques and finishing details of your pieces.",
+          "imageUrl": "/storage/cms/media/9a382ed6-3528-4f01-aaac-3045972bbeb9.png",
+          "sourceType": "custom",
+          "linkUrl": "/page/about-us"
+        },
+        {
+          "id": "jewelry-7-item-2",
+          "title": "TIMELESS BY DESIGN",
+          "description": "Thoughtful pieces to become part of your story.",
+          "imageUrl": "/storage/cms/media/d331983b-6137-4b1e-b0c1-caefdc9edc2e.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        }
+      ],
+      "typography": {
+        "itemTitle": {
+          "fontSize": 15
+        },
+        "itemContent": {
+          "fontSize": 13
+        }
+      }
+    },
+    {
+      "id": "jewelry-8",
+      "type": "media_text_split",
+      "title": "THE JOURNAL",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#22221e",
+        "contentColor": "#6e6a61",
+        "eyebrowColor": "#a78d60",
+        "primaryBtnBg": "#22221e",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#eee8de",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": "#f8f5ef"
+      },
+      "layoutPreset": "editorial-story-cards",
+      "textAlignment": "center",
+      "content": "Stories, inspiration and a more meaningful way to live.",
+      "items": [
+        {
+          "id": "jewelry-8-item-0",
+          "title": "The Meaning\nof a Gift",
+          "description": "Thoughtful gestures for\na brighter tomorrow.",
+          "imageUrl": "/storage/cms/media/762bd4e3-bd7b-424d-a5e4-9c07f3922b46.png",
+          "buttonText": "Read more",
+          "linkUrl": "/page/about-us"
+        },
+        {
+          "id": "jewelry-8-item-1",
+          "title": "Everyday\nRituals",
+          "description": "Small moments. A more\nbeautiful everyday.",
+          "imageUrl": "/storage/cms/media/e8c69ef6-e33f-4835-8031-c17e4455da5f.png",
+          "buttonText": "Read more",
+          "linkUrl": "/page/about-us"
+        }
+      ],
+      "typography": {
+        "itemTitle": {
+          "fontFamily": "serif",
+          "fontSize": 23,
+          "fontWeight": 400
+        }
+      }
+    },
+    {
+      "id": "jewelry-9",
+      "type": "feature_cards",
+      "title": "Here for your meaningful moments",
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "backgroundColor": "custom",
+      "customColors": {
+        "titleColor": "#22221e",
+        "contentColor": "#6e6a61",
+        "eyebrowColor": "#a78d60",
+        "primaryBtnBg": "#22221e",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#22221e",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": "#eee8de"
+      },
+      "featureCardsPreset": "service-highlights",
+      "showSectionHeading": false,
+      "columnsCount": 3,
+      "items": [
+        {
+          "id": "jewelry-9-item-0",
+          "title": "CARE & PACKAGING",
+          "description": "Read product care and packaging details.",
+          "icon": "Gift"
+        },
+        {
+          "id": "jewelry-9-item-1",
+          "title": "DELIVERY INFORMATION",
+          "description": "Review delivery options at checkout.",
+          "icon": "Truck"
+        },
+        {
+          "id": "jewelry-9-item-2",
+          "title": "A MORE THOUGHTFUL TOMORROW",
+          "description": "Discover our story and collection.",
+          "icon": "Heart"
+        }
+      ]
+    }
+  ]
+}

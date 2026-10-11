@@ -78,6 +78,8 @@ const itemControlInventory = [
   'linkUrl',
   'secondaryButtonText',
   'secondaryButtonLink',
+  'thirdButtonText',
+  'thirdButtonLink',
   'authorRole',
   'rating',
   'authorAvatar',

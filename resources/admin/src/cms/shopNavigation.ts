@@ -8,7 +8,7 @@ export function shopNavigationHref(value:string):string {
 
 /** Banner frames own geometry; retain content, destinations and non-geometric image overrides. */
 export function changeShopNavigationLayout(section:PageSection,preset:NonNullable<PageSection['shopNavigationPreset']>):PageSection {
- return {...section,shopNavigationPreset:preset,...(preset==='collection-banners'&&section.imageSlots?{imageSlots:section.imageSlots.map(({imageRatio,imageWidth,imageShape,...slot})=>slot)}:{})};
+ return {...section,shopNavigationPreset:preset,...(['collection-banners','kids-banners','fashion-banners','market-hero','market-offers'].includes(preset)&&section.imageSlots?{imageSlots:section.imageSlots.map(({imageRatio,imageWidth,imageShape,...slot})=>slot)}:{})};
 }
 
 /** Taxonomy owns destinations; optional authored labels/photos affect presentation only. */

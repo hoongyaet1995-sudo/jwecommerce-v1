@@ -1,3 +1,6 @@
+import {BuilderShellHeader} from '../menus/BuilderShellHeader';
+import {ShellDesignPreview} from '../menus/ShellDesignEditor';
+import {resolveHeaderPresentation} from '../../cms/headerPresentation';
 import {PageStyleSettings} from './PageStyleSettings';
 import {createPortal} from 'react-dom';
 import {duplicateSection} from '../../cms/duplicateSection';
@@ -16,7 +19,6 @@ import {
 } from '../../integration/pageData';
 import { PageDraftAutosave, PageDraftAutosaveState } from '../../cms/pageDraftAutosave';
 import { hasOwnContractField } from '../../cms/pageContract';
-import { parseDraftImport } from '../../cms/pageImport';
 import { repairLegacyCollectionTabs } from '../../cms/collectionTabMappings';
 import { createAdminPageRuntimePayload, PageRuntimeProvider } from '../../cms/PageRuntimeContext';
 import {pruneImageSlots} from '../../cms/imageTargets';
@@ -51,7 +53,6 @@ import {
   Layers,
   Save,
   CheckCircle2,
-  FileCode2,
   Sliders,
   Sparkles,
   Zap,
@@ -100,6 +101,8 @@ export const PageAdmin: React.FC = () => {
     categories,
     collections,
     shopSettings,
+    storefrontShellSettings,
+    headerMenus,
     selectedPageId,
     setSelectedPageId,
     addToast
@@ -132,9 +135,28 @@ export const PageAdmin: React.FC = () => {
   const [viewport, setViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'archived'>('all');
+  const canvasScrollRef=useRef<HTMLDivElement>(null);
+  const outlineScrollRequest=useRef(0);
+  const selectOutlineSection=(sectionId:string)=>{
+    setActiveSectionId(sectionId);
+    setIsInspectorCollapsed(false);
+    setPageSettingsOpen(false);
+    const request=++outlineScrollRequest.current;
+    requestAnimationFrame(async()=>{
+      const canvas=canvasScrollRef.current;
+      const target=document.getElementById(`section-${sectionId}`);
+      if(!canvas||!target||!canvas.contains(target))return;
+      const resizing=canvas.firstElementChild?.getAnimations().map(animation=>animation.finished.catch(()=>undefined))??[];
+      if(resizing.length)await Promise.all(resizing);
+      if(request!==outlineScrollRequest.current||!canvas.isConnected||!target.isConnected)return;
+      const header=canvas.querySelector<HTMLElement>('[data-builder-shell]');
+      const stickyOffset=header?header.getBoundingClientRect().height:0;
+      const top=canvas.scrollTop+target.getBoundingClientRect().top-canvas.getBoundingClientRect().top-stickyOffset-12;
+      canvas.scrollTo({top:Math.max(0,top),behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+    });
+  };
+  const [toolbarMoreOpen,setToolbarMoreOpen] = useState(false);
   const [pageSettingsOpen,setPageSettingsOpen]=useState(false);
-  const [isJsonModalOpen, setIsJsonModalOpen] = useState(false);
-  const [jsonText, setJsonText] = useState('');
   const [pageToDelete, setPageToDelete] = useState<CmsPage | null>(null);
   const [sectionToDelete, setSectionToDelete] = useState<{ id: string; title: string; type: string } | null>(null);
   const autosaveRef = useRef<PageDraftAutosave<PageDocument> | null>(null);
@@ -187,6 +209,8 @@ export const PageAdmin: React.FC = () => {
     title: page.title,
     slug: page.slug,
     template: page.template,
+    ...(page.shellDesign?{shellDesign:page.shellDesign}:{}),
+    ...(page.headerPresentation?{headerPresentation:page.headerPresentation}:{}),
     ...(page.containerWidth?{containerWidth:page.containerWidth}:{}),
     ...(page.style?{style:page.style}:{}),
     sections: page.sections,
@@ -206,6 +230,8 @@ export const PageAdmin: React.FC = () => {
       slug: _slug,
       description: _description,
       template: _template,
+      shellDesign: _shellDesign,
+      headerPresentation: _headerPresentation,
       containerWidth: _containerWidth,
       style: _style,
       heroImage: _heroImage,
@@ -537,6 +563,9 @@ export const PageAdmin: React.FC = () => {
         status:'draft', template:'standard', createdAt:new Date().toISOString().split('T')[0], updatedAt:new Date().toISOString().split('T')[0],
         ...(['about-editorial','about-studio','about-chapters'].includes(templateId) ? {containerWidth:'standard' as const} : {}),
         style:createPageTemplateStyle(templateId),
+        ...(templateId==='wedding-photography'?{shellDesign:{business:'service' as const,style:'editorial' as const,appearance:'light' as const,showAnnouncement:false,showAccount:false,showCurrency:false,showThemeSwitch:false,ctaLabel:'',ctaUrl:'',tagline:'',contactEmail:''}}:{}),
+        ...(templateId==='beauty-skincare'?{headerPresentation:{mode:'translucent' as const,tone:'dark' as const}}:{}),
+        ...(templateId==='everyday-market'?{containerWidth:'wide' as const}:{}),
         sections:createPageTemplateSections(template.id, {...templateContext,products,categories,collections,promotionOffers}, 'sec-'+stamp)
       };
       const saved = await savePage(newPage);
@@ -624,32 +653,6 @@ export const PageAdmin: React.FC = () => {
     if (!updatedPage) return;
     schedulePage(updatedPage);
     setActiveSectionId(duplicated.id);
-  };
-
-  // Open JSON Exporter
-  const handleOpenJson = () => {
-    if (!currentPage) return;
-    setJsonText(JSON.stringify(toPageDocument(currentPage), null, 2));
-    setIsJsonModalOpen(true);
-  };
-
-  const handleImportJson = async () => {
-    if (!currentPage) return;
-
-    try {
-      const parsed = parseDraftImport(jsonText, currentPage.id);
-      if (!await flushCurrentPage()) return;
-      const updated = updatePageLocal(currentPage.id, latest => pageWithDocument(latest, parsed, {
-        updatedAt: new Date().toISOString().split('T')[0],
-      }));
-      if (!updated) return;
-      schedulePage(updated);
-      if (!await flushCurrentPage()) return;
-      setIsJsonModalOpen(false);
-      addToast({ type: 'success', title: 'Layout Imported', message: 'Page template loaded successfully.' });
-    } catch (e: any) {
-      addToast({ type: 'error', title: 'Import Failed', message: e.message || 'Malformed JSON format.' });
-    }
   };
 
   const handleBackToDirectory = async (): Promise<void> => {
@@ -1152,150 +1155,33 @@ export const PageAdmin: React.FC = () => {
 
   return (
     <div id="page-visual-builder" className={'w-full h-full flex flex-col bg-neutral-100 dark:bg-neutral-950 overflow-hidden animate-in fade-in'}>
-      {/* 1. Top Builder Toolbar */}
-      <div className={'h-14 sm:h-16 px-4 sm:px-6 border-b border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md flex items-center justify-between z-20 shrink-0 shadow-2xs'}>
-        {/* Left: Back & Title Slug */}
-        <div className="flex items-center gap-3 min-w-0">
-          <button
-            onClick={() => { void handleBackToDirectory(); }}
-            className={'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors cursor-pointer shadow-2xs group'}
-            title="Exit layout editor and return to Storefront Pages directory"
-          >
-            <ChevronLeft className={'w-4 h-4 group-hover:-translate-x-0.5 transition-transform'} />
-            <span className={'font-semibold'}>{'Exit to Pages'}</span>
-          </button>
-
-          <div className={'h-6 w-px bg-neutral-200 dark:bg-neutral-800'} />
-
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="hidden xl:inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/80">Studio</span>
-            <input
-              type="text"
-              value={currentPage.title}
-              onChange={e => handleTitleChange(e.target.value)}
-              className="font-bold text-sm sm:text-base text-neutral-900 dark:text-white bg-transparent border-b border-transparent hover:border-neutral-300 dark:hover:border-neutral-700 focus:border-indigo-500 focus:outline-hidden px-1 py-0.5 truncate"
-            />
-            {currentPage.isHomepage ? (
-              <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/70 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
-                <Home className="w-3 h-3" />
-                / (index.php)
-              </span>
-            ) : (
-              <span className="hidden md:inline-block text-[11px] font-mono text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-md">
-                /pages/{currentPage.slug}
-              </span>
-            )}
-          </div>
+      {/* Builder toolbar: page, canvas and publishing actions */}
+      <div data-cms-builder-toolbar className="min-h-16 px-4 py-2 border-b border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md flex flex-wrap items-center gap-3 z-20 shrink-0 shadow-2xs">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <button type="button" aria-label="Exit to Pages" title="Back to Pages" onClick={()=>{void handleBackToDirectory();}} className="w-9 h-9 shrink-0 grid place-items-center rounded-xl text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"><ChevronLeft className="w-5 h-5"/></button>
+          <input aria-label="Page title" value={currentPage.title} onChange={e=>handleTitleChange(e.target.value)} className="min-w-0 w-full max-w-64 font-bold text-sm text-neutral-900 dark:text-white bg-transparent border-b border-transparent focus:border-indigo-500 focus:outline-hidden py-1 truncate"/>
+          {currentPage.isHomepage&&<Home aria-label="Active Home" className="w-4 h-4 shrink-0 text-indigo-500"/>}
+          <button type="button" aria-label="Page Settings" title="Page Settings" aria-expanded={pageSettingsOpen} onClick={()=>setPageSettingsOpen(!pageSettingsOpen)} className="w-9 h-9 shrink-0 grid place-items-center rounded-xl text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"><SlidersHorizontal className="w-4 h-4"/></button>
+          {pageSettingsOpen&&createPortal(<PageStyleSettings page={currentPage} onClose={()=>setPageSettingsOpen(false)} onChange={patch=>{const updated=updatePageLocal(currentPage.id,latest=>({...latest,...patch}));if(updated)schedulePage(updated);}}/>,document.body)}
         </div>
-
-        <div className="relative shrink-0">
-          <button type="button" aria-label="Page Settings" aria-expanded={pageSettingsOpen} onClick={()=>setPageSettingsOpen(!pageSettingsOpen)} className="px-3 py-2 rounded-xl text-xs font-semibold border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800">Page Settings</button>
-          {pageSettingsOpen && createPortal(<PageStyleSettings page={currentPage} onClose={()=>setPageSettingsOpen(false)} onChange={patch=>{const updated=updatePageLocal(currentPage.id,latest=>({...latest,...patch}));if(updated)schedulePage(updated);}}/>, document.body)}
+        <div role="group" aria-label="Canvas view" className="flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shrink-0">
+          {([{id:'desktop',label:'Desktop',hint:'Desktop 1280px',Icon:Monitor},{id:'tablet',label:'Tablet',hint:'Tablet 768px',Icon:Tablet},{id:'mobile',label:'Mobile',hint:'Mobile 390px',Icon:Smartphone}] as const).map(({id,label,hint,Icon})=><button type="button" key={id} aria-label={label} title={hint} aria-pressed={viewport===id} onClick={()=>setViewport(id)} className={`w-8 h-8 grid place-items-center rounded-lg transition-colors ${viewport===id?'bg-white dark:bg-neutral-900 text-indigo-600 dark:text-indigo-400 shadow-xs':'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'}`}><Icon className="w-4 h-4"/></button>)}
+          <span className="w-px h-4 bg-neutral-200 dark:bg-neutral-700 mx-1"/>
+          <button type="button" aria-label="Full Canvas" title={isOutlineCollapsed&&isInspectorCollapsed?'Restore panels':'Full Canvas'} aria-pressed={isOutlineCollapsed&&isInspectorCollapsed} onClick={()=>{const collapse=!(isOutlineCollapsed&&isInspectorCollapsed);setIsOutlineCollapsed(collapse);setIsInspectorCollapsed(collapse);}} className={`w-8 h-8 grid place-items-center rounded-lg ${isOutlineCollapsed&&isInspectorCollapsed?'bg-indigo-600 text-white':'text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-700'}`}>{isOutlineCollapsed&&isInspectorCollapsed?<Minimize2 className="w-4 h-4"/>:<Maximize2 className="w-4 h-4"/>}</button>
         </div>
-
-        {/* Center: Viewport Switchers & Zen Canvas Switch */}
-        <div className="hidden md:flex items-center gap-1.5 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700">
-          <button
-            onClick={() => setViewport('desktop')}
-            className={`p-1.5 px-2.5 rounded-lg text-xs flex items-center gap-1 font-semibold transition-all ${
-              viewport === 'desktop'
-                ? 'bg-white dark:bg-neutral-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
-            }`}
-            title={'Desktop 1280px'}
-          >
-            <Monitor className="w-3.5 h-3.5" />
-            <span>Desktop</span>
-          </button>
-          <button
-            onClick={() => setViewport('tablet')}
-            className={`p-1.5 px-2.5 rounded-lg text-xs flex items-center gap-1 font-semibold transition-all ${
-              viewport === 'tablet'
-                ? 'bg-white dark:bg-neutral-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
-            }`}
-            title="Tablet 768px"
-          >
-            <Tablet className="w-3.5 h-3.5" />
-            <span>Tablet</span>
-          </button>
-          <button
-            onClick={() => setViewport('mobile')}
-            className={`p-1.5 px-2.5 rounded-lg text-xs flex items-center gap-1 font-semibold transition-all ${
-              viewport === 'mobile'
-                ? 'bg-white dark:bg-neutral-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
-            }`}
-            title="Mobile 390px"
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            <span>Mobile</span>
-          </button>
-
-          <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-700 mx-0.5" />
-
-          {/* Quick Zen / Full Desktop Canvas Mode Button */}
-          <button
-            onClick={() => {
-              const shouldCollapse = !(isOutlineCollapsed && isInspectorCollapsed);
-              setIsOutlineCollapsed(shouldCollapse);
-              setIsInspectorCollapsed(shouldCollapse);
-            }}
-            className={`p-1.5 px-2.5 rounded-lg text-xs flex items-center gap-1.5 font-semibold transition-all ${
-              isOutlineCollapsed && isInspectorCollapsed
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/60 dark:hover:bg-neutral-700/60'
-            }`}
-            title={
-              isOutlineCollapsed && isInspectorCollapsed
-                ? 'Restore Sidebar Panels'
-                : 'Full Canvas View (Collapse Both Outline and Inspector)'
-            }
-          >
-            {isOutlineCollapsed && isInspectorCollapsed ? (
-              <>
-                <Minimize2 className="w-3.5 h-3.5" />
-                <span className="hidden xl:inline">Restore</span>
-              </>
-            ) : (
-              <>
-                <Maximize2 className="w-3.5 h-3.5" />
-                <span className="hidden xl:inline">Full Canvas</span>
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* Right: Actions */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-xl text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-neutral-600" />}
-          </button>
-          {currentPage.isHomepage ? (
-            <span
-              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-xs border border-indigo-400/30"
-              title="This layout is currently serving as the Storefront Home Page (index.php)"
-            >
-              <Home className="w-3.5 h-3.5" />
-              <span>Active Home (index.php)</span>
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setPageAsHomepage(currentPage.id)}
-              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-neutral-600 dark:text-neutral-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-neutral-100 dark:bg-neutral-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition-colors border border-neutral-200 dark:border-neutral-700 cursor-pointer"
-              title="Set this layout as the primary Storefront Home Page (index.php)"
-            >
-              <Home className="w-3.5 h-3.5 text-neutral-400" />
-              <span>Set as Home</span>
-            </button>
-          )}
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
+          <details open={toolbarMoreOpen} className="relative" onKeyDown={e=>{if(e.key==='Escape')setToolbarMoreOpen(false);}}>
+            <summary aria-label="More actions" aria-expanded={toolbarMoreOpen} onClick={e=>{e.preventDefault();setToolbarMoreOpen(open=>!open);}} title="More actions" className="list-none w-9 h-9 grid place-items-center rounded-xl cursor-pointer text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 [&::-webkit-details-marker]:hidden"><MoreVertical className="w-4 h-4"/></summary>
+            <div className="absolute right-0 top-full mt-2 w-52 p-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl text-neutral-700 dark:text-neutral-200" onClick={e=>{if((e.target as HTMLElement).closest('button'))setToolbarMoreOpen(false);}}>
+              <button type="button" onClick={handleReplayMotion} className="w-full flex items-center gap-2 p-2.5 rounded-lg text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800"><Play className="w-4 h-4"/>Replay Motion</button>
+              <button type="button" onClick={toggleTheme} className="w-full flex items-center gap-2 p-2.5 rounded-lg text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800">{theme==='dark'?<Sun className="w-4 h-4"/>:<Moon className="w-4 h-4"/>}{theme==='dark'?'Switch to Light Mode':'Switch to Dark Mode'}</button>
+              <button type="button" disabled={currentPage.isHomepage} onClick={()=>setPageAsHomepage(currentPage.id)} className="w-full flex items-center gap-2 p-2.5 rounded-lg text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50"><Home className="w-4 h-4"/>{currentPage.isHomepage?'Active Home':'Set as Home'}</button>
+            </div>
+          </details>
+          <button type="button" aria-label="Preview" onClick={()=>{void handlePreview();}} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"><Eye className="w-4 h-4"/><span className="hidden sm:inline">Preview</span></button>
           {/* Status selector */}
           <select
+            aria-label="Page status"
             value={currentPage.status}
             onChange={e => { void handleStatusChange(e.target.value as CmsPage['status']); }}
             className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-xl border ${
@@ -1320,41 +1206,13 @@ export const PageAdmin: React.FC = () => {
             </button>
           )}
 
-          {/* JSON schema */}
-          <button
-            onClick={handleOpenJson}
-            className="p-2 rounded-xl text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            title="Export / Import JSON Layout"
-          >
-            <FileCode2 className="w-4 h-4" />
-          </button>
 
-          {/* Replay Motion Trigger */}
-          <button onClick={handleReplayMotion} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-200 dark:border-indigo-800 transition-colors" title="Replay Entrance Motion across all sections">
-            <Play className="w-3.5 h-3.5 fill-indigo-500" /><span className="hidden sm:inline">Replay Motion</span>
-          </button>
-          {/* Live Preview Button */}
-          <button
-            onClick={() => { void handlePreview(); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Preview</span>
-          </button>
-
-          {/* Add Section Trigger */}
-          <button
-            onClick={() => setIsAddSectionOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs bg-indigo-600 text-white hover:bg-indigo-500 shadow-md transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Section</span>
-          </button>
+          <button type="button" onClick={()=>setIsAddSectionOpen(true)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs bg-indigo-600 text-white hover:bg-indigo-500 shadow-xs whitespace-nowrap"><Plus className="w-4 h-4"/><span>Add Section</span></button>
         </div>
       </div>
 
       {/* 2. Main 3-Column Studio Workspace */}
-      <div className="flex-1 flex min-h-0 overflow-hidden">
+      <div className="relative isolate flex-1 flex min-h-0 overflow-hidden">
         {/* Left Panel: Section Outline Tree (Collapsible) */}
         {!isOutlineCollapsed ? (
           <div className="w-72 flex-shrink-0 flex flex-col border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 transition-all duration-300">
@@ -1389,7 +1247,11 @@ export const PageAdmin: React.FC = () => {
                 return (
                   <div
                     key={section.id}
-                    onClick={() => setActiveSectionId(section.id)}
+                    onClick={() => selectOutlineSection(section.id)}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Go to section ${idx+1}: ${section.title||'Untitled Section'}`}
+                    onKeyDown={e=>{if(e.target===e.currentTarget&&(e.key==='Enter'||e.key===' ')){e.preventDefault();selectOutlineSection(section.id);}}}
                     className={`group p-3 rounded-2xl border transition-all duration-200 cursor-pointer ${
                       isActive
                         ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-500 ring-1 ring-indigo-500 shadow-xs'
@@ -1507,10 +1369,10 @@ export const PageAdmin: React.FC = () => {
         )}
 
         {/* Center Stage: Interactive Live Storefront Canvas */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 flex justify-center bg-neutral-200/60 dark:bg-neutral-950/80 scrollbar-thin">
+        <div ref={canvasScrollRef} data-cms-canvas-scroll className="flex-1 overflow-y-auto p-4 sm:p-8 flex justify-center bg-neutral-200/60 dark:bg-neutral-950/80 scrollbar-thin">
           <div className={`w-full ${getCanvasWidthClass()} flex flex-col bg-neutral-900 border border-neutral-800 rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 self-start`}>
             {/* Simulated Storefront Navbar */}
-            <div className="h-14 px-6 bg-neutral-950 border-b border-neutral-800 flex items-center justify-between text-neutral-300 text-xs">
+            {(currentPage.shellDesign??storefrontShellSettings.shellDesign) ? <BuilderShellHeader value={(currentPage.shellDesign??storefrontShellSettings.shellDesign)!} brand={shopSettings.shopName||'JW Studio'} logo={shopSettings.shopLogo} announcement={storefrontShellSettings.enabled?(storefrontShellSettings.zones.center.enabled?storefrontShellSettings.zones.center.text:storefrontShellSettings.zones.left.enabled?storefrontShellSettings.zones.left.text:undefined):undefined} menus={headerMenus} mobile={viewport!=='desktop'} presentation={resolveHeaderPresentation(currentPage.headerPresentation,storefrontShellSettings.headerPresentation,currentPage.sections)}/> : <>            <link rel="stylesheet" href="/css/cms-header-overlay.css"/><div data-builder-header data-mode={resolveHeaderPresentation(currentPage.headerPresentation,storefrontShellSettings.headerPresentation,currentPage.sections).mode} style={viewport==='desktop'&&resolveHeaderPresentation(currentPage.headerPresentation,storefrontShellSettings.headerPresentation,currentPage.sections).mode!=='normal'?{marginBottom:-56,zIndex:40,background:resolveHeaderPresentation(currentPage.headerPresentation,storefrontShellSettings.headerPresentation,currentPage.sections).mode==='translucent'?'rgba(255,255,255,.7)':'transparent',color:resolveHeaderPresentation(currentPage.headerPresentation,storefrontShellSettings.headerPresentation,currentPage.sections).tone==='light'?'#ffffff':'#18181b'}:undefined} className="h-14 px-6 bg-neutral-950 border-b border-neutral-800 flex items-center justify-between text-neutral-300 text-xs">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1.5 text-white font-black">
                   <Zap className="w-4 h-4 text-indigo-500" />
@@ -1527,8 +1389,9 @@ export const PageAdmin: React.FC = () => {
               </span>
             </div>
 
+            </>}
             {/* Sections Canvas */}
-            <div className="w-full">
+            <div data-cms-page-header-overlay={viewport==='desktop'&&resolveHeaderPresentation(currentPage.headerPresentation,storefrontShellSettings.headerPresentation,currentPage.sections).mode!=='normal'?'true':undefined} className="w-full">
               {adminRuntimePayload && (
                 <PageRuntimeProvider payload={adminRuntimePayload}>
                   {currentPage.sections.map(section => (
@@ -1549,10 +1412,10 @@ export const PageAdmin: React.FC = () => {
             </div>
 
             {/* Simulated Storefront Footer */}
-            <div className="p-8 bg-black border-t border-neutral-800 text-neutral-500 text-xs text-center">
+            {(currentPage.shellDesign??storefrontShellSettings.shellDesign) ? <ShellDesignPreview value={(currentPage.shellDesign??storefrontShellSettings.shellDesign)!} brand={shopSettings.shopName||'JW Studio'} footer footerOnly/> : <>            <div className="p-8 bg-black border-t border-neutral-800 text-neutral-500 text-xs text-center">
               <p className="font-semibold text-neutral-400 mb-1">AURORA UNIVERSAL ECOMMERCE</p>
               <p className="text-[11px]">All changes sync live to customer storefront routes.</p>
-            </div>
+            </div></>}
           </div>
         </div>
 
@@ -1670,39 +1533,6 @@ export const PageAdmin: React.FC = () => {
         onSetHomepage={setPageAsHomepage}
       />
 
-      {/* JSON Schema Exporter/Importer Modal */}
-      {isJsonModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-2xl rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl p-6 flex flex-col">
-            <h3 className="text-base font-bold text-neutral-900 dark:text-white mb-2">
-              Page Layout JSON Schema
-            </h3>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
-              Export this JSON template to backup or paste a customized JSON schema to import.
-            </p>
-            <textarea
-              rows={14}
-              value={jsonText}
-              onChange={e => setJsonText(e.target.value)}
-              className="w-full p-4 rounded-xl font-mono text-xs border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-200 leading-relaxed mb-4 focus:ring-2 focus:ring-indigo-500"
-            />
-            <div className="flex items-center justify-end gap-2">
-              <button
-                onClick={() => setIsJsonModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold rounded-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleImportJson}
-                className="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white hover:bg-indigo-500"
-              >
-                Apply / Import Layout
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       {templateOpen && <PageTemplateModal context={{...templateContext,products,categories,collections,promotionOffers}} settingsState={templateSettingsState} busy={templateBusy} onClose={handleCloseTemplates} onCreate={handleCreateNewPage}/>}
     </div>
   );

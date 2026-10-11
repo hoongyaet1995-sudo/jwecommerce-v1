@@ -6,6 +6,12 @@ use App\Models\StoreSetting;
 
 class ShopBrand
 {
+    public function configuredLogo(): ?string
+    {
+        $logo=trim((string)data_get(StoreSetting::where('key','shop_profile')->value('value'),'data.shopLogo',''));
+        return $logo !== '' ? $logo : null;
+    }
+
     public function logo(): string
     {
         return data_get(StoreSetting::where('key', 'shop_profile')->value('value'), 'data.shopLogo') ?: asset('images/source/jwstudio_logo_1786766390670.jpg');

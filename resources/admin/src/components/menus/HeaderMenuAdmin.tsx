@@ -1,3 +1,4 @@
+import {ShellDesignEditor} from './ShellDesignEditor';
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { HeaderMenuL1, HeaderMenuL2, HeaderMenuL3, MenuLinkType } from '../../types';
@@ -57,7 +58,7 @@ export const HeaderMenuAdmin: React.FC = () => {
 
   // Live Storefront Simulator Hover State
   const [previewActiveL1, setPreviewActiveL1] = useState<string | null>('l1-tech');
-  const [showLiveSimulator, setShowLiveSimulator] = useState(true);
+  const [showLiveSimulator, setShowLiveSimulator] = useState(false);
 
   const toggleL1 = (id: string) => setExpandedL1(prev => ({ ...prev, [id]: !prev[id] }));
   const toggleL2 = (id: string) => setExpandedL2(prev => ({ ...prev, [id]: !prev[id] }));
@@ -109,6 +110,7 @@ export const HeaderMenuAdmin: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12">
+      <ShellDesignEditor/>
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
         <div>
@@ -119,7 +121,7 @@ export const HeaderMenuAdmin: React.FC = () => {
             <span className="text-xs text-neutral-500">3-Tier Hierarchy Model</span>
           </div>
           <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white tracking-tight mt-1">
-            Header Mega Menu Administration
+            Header navigation
           </h2>
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
             Design multi-column Mega Menus and standard dropdowns: Level 1 (Main Tab) → Level 2 (Sub Category / Column) → Level 3 (Leaf Link).

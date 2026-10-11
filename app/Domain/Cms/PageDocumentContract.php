@@ -67,14 +67,14 @@ final class PageDocumentContract
                 $this->addError($errors, "{$sectionPath}.type", 'This visible section type cannot be rendered.');
             }
 
-            if (($section['type'] ?? null) === 'product_listing' && ($section['listingPreset'] ?? null) === 'editorial-tabs') {
+            if (($section['type'] ?? null) === 'product_listing' && in_array($section['listingPreset'] ?? null, ['editorial-tabs','pantry-tabs','tech-tabs','kids-tabs'], true)) {
                 if (empty($section['productTabs'])) $this->addError($errors,"{$sectionPath}.productTabs",'Add at least one product tab to publish.');
                 foreach ($section['productTabs'] ?? [] as $tabIndex => $tab) if (trim($tab['label'] ?? '') === '') $this->addError($errors,"{$sectionPath}.productTabs.{$tabIndex}.label",'Name this product tab.');
             }
             foreach ($sectionDefinition['publishRequired'] as $field) {
                 // Catalog readiness is reviewed by employees, not a publication gate.
                 if ($section['type'] === 'product_listing' && in_array($field, ['sourceType', 'sourceId', 'productIds'], true)) continue;
-                if (($section['listingPreset'] ?? null) === 'editorial-tabs' && $section['type'] === 'product_listing' && in_array($field,['sourceType','sourceId'],true)) continue;
+                if (in_array($section['listingPreset'] ?? null, ['editorial-tabs','pantry-tabs','tech-tabs','kids-tabs'], true) && $section['type'] === 'product_listing' && in_array($field,['sourceType','sourceId'],true)) continue;
                 if ($field === 'sourceId' && $section['type'] === 'product_listing' && ($section['sourceType'] ?? null) === 'manual') {
                     $field = 'productIds'; // Manual feeds require selections and validate every ID through runtime facts.
                 }
@@ -87,7 +87,8 @@ final class PageDocumentContract
         }
 
         $runtimeErrors = $this->runtimeErrors($document, $runtimeFacts);
-        // Preserve diagnostics while leaving catalog readiness to employees.
+        // Keep runtime diagnostics and resolution intact; unresolved catalog feeds
+        // may publish without supplying fabricated products to the renderer.
         foreach (array_keys($runtimeErrors) as $path) {
             if (preg_match('/^sections\.(\d+)\./', $path, $matches)
                 && in_array($document['sections'][(int) $matches[1]]['type'], ['product_listing', 'product_grid', 'collection_tabs'], true)) {
@@ -133,7 +134,7 @@ final class PageDocumentContract
                 continue;
             }
 
-            $requirements = ($section['type'] ?? null) === 'product_listing' && ($section['listingPreset'] ?? null) === 'editorial-tabs'
+            $requirements = ($section['type'] ?? null) === 'product_listing' && in_array($section['listingPreset'] ?? null, ['editorial-tabs','pantry-tabs','tech-tabs','kids-tabs'], true)
                 ? [['field'=>'productTabs.*.id','fact'=>'tabs.*.sourceId.valid']]
                 : ($sectionDefinition['runtimeRequirements'] ?? []);
             foreach ($requirements as $requirement) {
@@ -225,6 +226,10 @@ final class PageDocumentContract
             $this->addError($errors, $path, 'This value is not allowed by the page contract.');
         }
 
+        if (($schema['format'] ?? null) === 'safeLink' && is_string($value) && ! ShellDesign::safeAction($value)) {
+            $this->addError($errors, $path, 'Use a same-site, anchor or public HTTPS destination.');
+        }
+
         if (($schema['format'] ?? null) === 'hex_color' && is_string($value) && ! preg_match('/^#[0-9a-f]{6}$/i', $value)) {
             $this->addError($errors, $path, 'Use a six-digit hexadecimal color.');
         }
@@ -313,11 +318,11 @@ final class PageDocumentContract
         $type = $section['type'];
         $targets = [];
         if ((($type === 'chapter_block' && ($section['chapterPreset'] ?? 'story') === 'story') || in_array($type, ['cta_strip', 'hero_banner', 'split_hero', 'media_text_split', 'featured_deal'], true))
-            && ($section['layoutPreset'] ?? '') !== 'editorial-story-cards' && ($section['mediaType'] ?? 'image') !== 'video' && ! ($type === 'cta_strip' && ($section['ctaPreset'] ?? 'default') === 'editorial-band')) {
+            && ! in_array(($section['layoutPreset'] ?? ''), ['editorial-story-cards','editorial-journal-rows','artisan-story'], true) && ($section['mediaType'] ?? 'image') !== 'video' && ! ($type === 'cta_strip' && ($section['ctaPreset'] ?? 'default') === 'editorial-band')) {
             $targets['mediaUrl'] = in_array($type, ['hero_banner', 'cta_strip'], true);
         } elseif ($type === 'before_after') {
             $targets = ['beforeImageUrl' => true, 'afterImageUrl' => true];
-        } elseif (($type === 'media_text_split' && ($section['layoutPreset'] ?? '') === 'editorial-story-cards') || ($type === 'chapter_block' && in_array(($section['chapterPreset'] ?? 'story'), ['perspective', 'delivery', 'policy'], true)) || in_array($type, ['promotion_highlights', 'shop_navigation', 'policy_content', 'hero_slider', 'media_gallery', 'instagram_feed', 'testimonials_slider', 'logo_cloud'], true)) {
+        } elseif (($type === 'media_text_split' && in_array(($section['layoutPreset'] ?? ''), ['editorial-story-cards','editorial-journal-rows','artisan-story'], true)) || ($type === 'chapter_block' && in_array(($section['chapterPreset'] ?? 'story'), ['perspective', 'delivery', 'policy'], true)) || in_array($type, ['product_listing', 'promotion_highlights', 'shop_navigation', 'policy_content', 'hero_slider', 'media_gallery', 'instagram_feed', 'testimonials_slider', 'logo_cloud'], true)) {
             $field = $type === 'testimonials_slider' ? 'authorAvatar' : 'imageUrl';
             foreach ($section['items'] ?? [] as $item) {
                 $item = $item instanceof stdClass ? get_object_vars($item) : $item;

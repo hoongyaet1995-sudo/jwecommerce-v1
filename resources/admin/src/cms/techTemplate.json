@@ -1,0 +1,480 @@
+{
+  "style": {
+    "palette": {
+      "paper": "#ffffff",
+      "ink": "#111820",
+      "muted": "#6a7077",
+      "accent": "#0066ff",
+      "light": "#ffffff",
+      "secondary": "#111820",
+      "secondaryInk": "#ffffff",
+      "hover": "#0050c9"
+    },
+    "typography": {
+      "title": {
+        "fontFamily": "sans",
+        "fontSize": 30,
+        "fontWeight": 700,
+        "lineHeight": 1.15
+      },
+      "eyebrow": {
+        "fontFamily": "sans",
+        "fontSize": 10,
+        "fontWeight": 600,
+        "letterSpacing": 1.2
+      },
+      "content": {
+        "fontFamily": "sans",
+        "fontSize": 14,
+        "fontWeight": 400,
+        "lineHeight": 1.5
+      },
+      "itemTitle": {
+        "fontFamily": "sans",
+        "fontSize": 14,
+        "fontWeight": 600
+      },
+      "itemContent": {
+        "fontFamily": "sans",
+        "fontSize": 11,
+        "fontWeight": 400
+      }
+    },
+    "spacing": "compact",
+    "buttonRadius": 6,
+    "buttonSize": "compact"
+  },
+  "sections": [
+    {
+      "id": "tech-hero",
+      "type": "hero_slider",
+      "title": "Designed for your everyday.",
+      "isVisible": true,
+      "containerMode": "full-bleed",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "sliderPreset": "fashion-editorial",
+      "sliderHeight": "normal",
+      "typography": {
+        "title": {
+          "fontFamily": "sans",
+          "fontSize": 56,
+          "fontWeight": 700,
+          "lineHeight": 1.05
+        }
+      },
+      "items": [
+        {
+          "id": "a75aa157-2561-4f0f-95a7-7a45bb200c1c",
+          "title": "Designed for\nyour everyday.",
+          "imageUrl": "/storage/cms/media/f242e486-f9ab-44df-a0ef-abe45e6a7923.png",
+          "subtitle": "TECH FOR A BRIGHTER TOMORROW",
+          "description": "Discover devices that keep you connected, productive and inspired.",
+          "buttonText": "Shop now",
+          "linkUrl": "/shop"
+        }
+      ],
+      "sliderAutoplay": false,
+      "customColors": {
+        "titleColor": "#ffffff",
+        "contentColor": "#ffffff",
+        "primaryBtnBg": "#0066ff",
+        "primaryBtnText": "#ffffff"
+      }
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "id": "04f1122d-b127-4240-b067-bab59e7697b8",
+      "type": "shop_navigation",
+      "title": "Shop by Category",
+      "subtitle": "EXPLORE",
+      "content": "Everything you need for a smarter day.",
+      "shopNavigationPreset": "catalog-captions",
+      "columnsCount": 6,
+      "buttonText": "View all categories",
+      "buttonLink": "/shop",
+      "items": [
+        {
+          "id": "0eeadef8-7dfd-4239-9779-f42efee9ef3f",
+          "title": "Laptops",
+          "imageUrl": "/storage/cms/media/ba8c31c1-959c-4893-8b42-eb91ab3d643f.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "f8365740-d304-4d82-a87e-ae866c36d9e8",
+          "title": "Smartphones",
+          "imageUrl": "/storage/cms/media/231d5b56-e5ed-4b6f-a85c-2c22e8db3dfc.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "69a8d4b3-54b7-46a1-8eab-2b09182737c6",
+          "title": "Audio",
+          "imageUrl": "/storage/cms/media/1435a7ca-ee25-43ee-b0d0-1ef4894ac633.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "a8c22429-ee4b-4e46-a4dc-5b7214704916",
+          "title": "Smartwatches",
+          "imageUrl": "/storage/cms/media/97cc8fec-2e58-40e8-a408-7c58b2f1e0a3.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "a4995924-39af-499f-8494-47c7bcc4cefa",
+          "title": "PC & Gaming",
+          "imageUrl": "/storage/cms/media/05553760-5df4-4fb7-ba57-5d6fe06c4359.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "56a4eccd-aa81-4d4d-9e8d-af525f118455",
+          "title": "Accessories",
+          "imageUrl": "/storage/cms/media/0edc7230-b25a-4112-abaa-e645052f70e0.png",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        }
+      ]
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "id": "c648047c-355e-4778-bb6a-694c6ad367c4",
+      "type": "product_listing",
+      "title": "Bestselling Devices",
+      "subtitle": "CUSTOMER FAVOURITES",
+      "content": "Find your next everyday device.",
+      "listingPreset": "tech-grid",
+      "columnsCount": 4,
+      "sourceType": "manual",
+      "productIds": [],
+      "productLimit": 4,
+      "buttonText": "View all products",
+      "buttonLink": "/shop"
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "id": "dde73f85-ebd6-41b8-87ea-dc1b1a205137",
+      "type": "shop_navigation",
+      "title": "Work & Sound",
+      "shopNavigationPreset": "collection-banners",
+      "bannerProportions": "50:50",
+      "bannerHeight": "comfortable",
+      "showSectionHeading": false,
+      "typography": {
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 40,
+          "fontWeight": 700
+        }
+      },
+      "customColors": {
+        "titleColor": "#ffffff",
+        "contentColor": "#ffffff",
+        "primaryBtnBg": "#ffffff",
+        "primaryBtnText": "#111820"
+      },
+      "items": [
+        {
+          "id": "a738d701-8bdc-4d8c-941f-6ab9d1d8b9b9",
+          "title": "BUILT FOR\nYOUR WORK",
+          "imageUrl": "/storage/cms/media/418fb917-1001-47c2-a153-c4dadb54044d.png",
+          "description": "Discover tools for your daily projects.",
+          "buttonText": "Shop laptops",
+          "linkUrl": "/shop",
+          "sourceType": "custom"
+        },
+        {
+          "id": "5a860baa-4fb5-467b-9ef3-69bb5793f992",
+          "title": "FEEL\nTHE SOUND",
+          "imageUrl": "/storage/cms/media/e766390e-f9f2-46d3-b182-6fad72199c3b.png",
+          "description": "Music that moves with you.",
+          "buttonText": "Shop audio",
+          "linkUrl": "/shop",
+          "sourceType": "custom"
+        }
+      ]
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "id": "42711484-6556-491c-9799-19fb113ac218",
+      "type": "media_text_split",
+      "title": "Discover your next listening companion",
+      "subtitle": "FEATURED DEVICE",
+      "layoutPreset": "tech-feature",
+      "mediaUrl": "/storage/cms/media/1435a7ca-ee25-43ee-b0d0-1ef4894ac633.png",
+      "mediaAlt": "Illustrative wireless headphones",
+      "content": "Discover a listening experience that fits your day. Explore our audio collection and compare the features that matter to you.",
+      "buttonText": "Shop audio",
+      "buttonLink": "/shop",
+      "secondaryButtonText": "Learn more",
+      "secondaryButtonLink": "/shop",
+      "items": [
+        {
+          "id": "a1aa2953-9b8c-45d1-b9cb-57552ec55544",
+          "title": "Sound & focus",
+          "description": "Explore the listening experience and sound options.",
+          "icon": "AudioLines"
+        },
+        {
+          "id": "07c8af7f-5df9-4993-97f6-c79fade95b7c",
+          "title": "Battery & charging",
+          "description": "Compare battery and charging information.",
+          "icon": "Battery"
+        },
+        {
+          "id": "0df41e3c-fd42-4252-bae0-f3e70a74a4cf",
+          "title": "Everyday comfort",
+          "description": "Find the fit and materials that suit your everyday.",
+          "icon": "Leaf"
+        }
+      ]
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "id": "d56756ef-5b10-48cb-9e9b-0c1f148f7837",
+      "type": "comparison_matrix",
+      "title": "Find the Right Device",
+      "subtitle": "COMPARE",
+      "content": "Compare verified specifications for the products you offer.",
+      "comparisonPreset": "device-table",
+      "comparisonDimensionName": "Specifications",
+      "buttonText": "View full comparison",
+      "buttonLink": "/shop",
+      "items": [
+        {
+          "id": "f5c2d869-8a8a-4d17-b9a5-1fedce441d0c",
+          "title": "Laptop",
+          "imageUrl": "/storage/cms/media/ba8c31c1-959c-4893-8b42-eb91ab3d643f.png",
+          "subtitle": "device"
+        },
+        {
+          "id": "bbeffd17-f519-49ae-b34e-49506de66bf6",
+          "title": "Smartphone",
+          "imageUrl": "/storage/cms/media/231d5b56-e5ed-4b6f-a85c-2c22e8db3dfc.png",
+          "subtitle": "device"
+        },
+        {
+          "id": "9464f5ac-518f-4aa1-a78e-aa4a3f70c180",
+          "title": "Headphones",
+          "imageUrl": "/storage/cms/media/1435a7ca-ee25-43ee-b0d0-1ef4894ac633.png",
+          "subtitle": "device"
+        },
+        {
+          "id": "164a3f85-496b-45e5-b25c-59c618b12d84",
+          "title": "Display",
+          "badge": "To confirm",
+          "description": "To confirm",
+          "value": "To confirm"
+        },
+        {
+          "id": "a238ebc7-72ba-4d9d-8433-5e4af7a21e17",
+          "title": "Processor",
+          "badge": "To confirm",
+          "description": "To confirm",
+          "value": "To confirm"
+        },
+        {
+          "id": "59795de1-fd2f-41a5-aa85-e96951edf67b",
+          "title": "Storage",
+          "badge": "To confirm",
+          "description": "To confirm",
+          "value": "To confirm"
+        },
+        {
+          "id": "83a5d76c-a47c-462c-8b93-3eddeb490423",
+          "title": "Battery life",
+          "badge": "To confirm",
+          "description": "To confirm",
+          "value": "To confirm"
+        },
+        {
+          "id": "b75be16c-45f2-483b-a33e-c393c82fc285",
+          "title": "Weight",
+          "badge": "To confirm",
+          "description": "To confirm",
+          "value": "To confirm"
+        }
+      ]
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "id": "4ac8ee06-c4c8-4dbf-aeb6-8c9b02ff3d82",
+      "type": "product_listing",
+      "title": "Shop by Interest",
+      "subtitle": "SHOP BY LIFESTYLE",
+      "content": "Tech for every passion.",
+      "listingPreset": "tech-tabs",
+      "sourceType": "manual",
+      "productIds": [],
+      "columnsCount": 4,
+      "productLimit": 4,
+      "productTabs": [
+        {
+          "id": "57f4341d-1605-421a-95ae-a0944d023bfe",
+          "label": "All",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        },
+        {
+          "id": "b19f7a6a-ccb6-493c-9306-99db18d5f5c3",
+          "label": "Work",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        },
+        {
+          "id": "e8a8ccae-6f28-4625-b49e-2e3f40d8e37b",
+          "label": "Travel",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        },
+        {
+          "id": "cdb69601-8b87-4c79-a0d3-92f346fdb31a",
+          "label": "Fitness",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        },
+        {
+          "id": "b2502726-9f1a-4128-bd42-5fa3174a81ac",
+          "label": "Gaming",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        },
+        {
+          "id": "7947df8b-78ab-4f08-80a0-a8783c2c8afa",
+          "label": "Creativity",
+          "sourceType": "manual",
+          "productIds": [],
+          "productLimit": 4
+        }
+      ]
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "id": "d471379b-04b4-4b45-852c-c5423bcde790",
+      "type": "shop_navigation",
+      "title": "Setup Guides & Tips",
+      "subtitle": "GET STARTED",
+      "content": "Helpful resources for a better experience.",
+      "shopNavigationPreset": "recipe-cards",
+      "columnsCount": 3,
+      "buttonText": "View all guides",
+      "buttonLink": "/page/about-us",
+      "items": [
+        {
+          "id": "5bc64c0c-4974-40bb-956c-8ceb32cb6859",
+          "title": "Set up your new laptop",
+          "imageUrl": "/storage/cms/media/418fb917-1001-47c2-a153-c4dadb54044d.png",
+          "description": "Getting started with your workspace.",
+          "buttonText": "Read the guide",
+          "sourceType": "custom",
+          "linkUrl": "/page/about-us"
+        },
+        {
+          "id": "b41ff748-9b92-4da4-987b-8301ee52616c",
+          "title": "Everyday smartphone tips",
+          "imageUrl": "/storage/cms/media/231d5b56-e5ed-4b6f-a85c-2c22e8db3dfc.png",
+          "description": "Make the most of your everyday device.",
+          "buttonText": "Read the guide",
+          "sourceType": "custom",
+          "linkUrl": "/page/about-us"
+        },
+        {
+          "id": "da18f943-be70-4b51-ac15-d5e08b56b40a",
+          "title": "Get the best from your headphones",
+          "imageUrl": "/storage/cms/media/e766390e-f9f2-46d3-b182-6fad72199c3b.png",
+          "description": "Explore listening, fit and care.",
+          "buttonText": "Read the guide",
+          "sourceType": "custom",
+          "linkUrl": "/page/about-us"
+        }
+      ]
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "id": "608757a8-a4c0-401d-9ec5-2009fa522285",
+      "type": "feature_cards",
+      "title": "Shop with confidence",
+      "featureCardsPreset": "service-highlights",
+      "columnsCount": 4,
+      "showSectionHeading": false,
+      "backgroundColor": "custom",
+      "customColors": {
+        "customBgColor": "#f5f7fa"
+      },
+      "items": [
+        {
+          "id": "99ed4171-d090-4ffe-87c7-cea8eae4b87d",
+          "title": "Warranty information",
+          "description": "Review the coverage offered for your product.",
+          "icon": "ShieldCheck"
+        },
+        {
+          "id": "f59a8242-a27a-4734-8aab-6cbd957eb696",
+          "title": "Expert support",
+          "description": "Contact our team for product assistance.",
+          "icon": "Headphones"
+        },
+        {
+          "id": "cb55d0d1-d5d5-4c3c-88e5-0ed2c0dd4021",
+          "title": "Returns & exchanges",
+          "description": "Review the store returns policy.",
+          "icon": "Package"
+        },
+        {
+          "id": "b1e10e17-7a0c-4fab-82bf-e472ce9c2110",
+          "title": "Secure payments",
+          "description": "Payment methods available at checkout.",
+          "icon": "CreditCard"
+        }
+      ]
+    }
+  ]
+}

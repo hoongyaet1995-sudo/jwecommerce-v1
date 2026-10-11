@@ -1,3 +1,9 @@
+import {ArtisanStory} from './ArtisanStory';
+import {KidsDiscovery} from './KidsLayouts';
+import {TechFeature,DeviceComparison} from './TechLayouts';
+import {InlineNewsletter} from './InlineNewsletter';
+import {RoutineSteps} from './BeautyLayouts';
+import {FlushSplit} from './FlushSplit';
 import {EditorialProductTabs} from './EditorialProductTabs';
 import {EditorialStoryCards} from './EditorialStoryCards';
 import {resolveStyledSection} from '../../cms/pageStyle';
@@ -6,6 +12,7 @@ import {PromotionHighlights} from './PromotionHighlights';
 import {resolvePromotionCards} from '../../cms/promotionHighlights';
 import {EditorialProductGrid} from './EditorialProductGrid';
 import {ShopNavigation} from './ShopNavigation';
+import {ProductLookbook} from './ProductLookbook';
 import {EditorialOverlaySlider} from './EditorialOverlaySlider';
 import {EnquiryForm,ContactLocation} from './ContactSections';
 import {SectionIcon} from './IconPicker';
@@ -104,7 +111,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   };
   useEffect(() => { setProductListingIdx(0); }, [section.sourceType, section.sourceId, section.productLimit, viewport, section.columnsCount]);
   useEffect(() => {
-    if (section.type !== 'product_listing' || section.listingPreset === 'editorial-grid' || section.listingPreset === 'editorial-tabs' || section.autoSlide === false || isListingHovered || listingMaxIdx <= 0) return;
+    if (section.type !== 'product_listing' || section.listingPreset === 'editorial-grid' || section.listingPreset === 'editorial-tabs' || section.listingPreset === 'fashion-lookbook' || ['beauty-grid','pantry-grid','pantry-tabs','tech-grid','tech-tabs','kids-grid','kids-tabs'].includes(section.listingPreset??'') || section.autoSlide === false || isListingHovered || listingMaxIdx <= 0) return;
     const timer = setInterval(() => {
       if (document.querySelector('[data-quick-add-modal][aria-hidden="false"]')) return;
       setProductListingIdx(prev => prev >= listingMaxIdx ? 0 : prev + 1);
@@ -352,7 +359,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         />
 
         {/* Content */}
-        <div className={`relative z-10 w-full py-20 ${section.containerMode==='full-bleed'?'max-w-[var(--cms-page-width)] mx-auto px-6 @min-[640px]:px-10 @min-[1024px]:px-16':''} ${
+        <div data-cms-hero-safe className={`relative z-10 w-full py-20 ${section.containerMode==='full-bleed'?'max-w-[var(--cms-page-width)] mx-auto px-6 @min-[640px]:px-10 @min-[1024px]:px-16':''} ${
           section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
         }`}>
           {section.subtitle && (
@@ -543,7 +550,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   // Auto-play timer for Hero Slider
   useEffect(() => {
     if (section.type !== 'hero_slider') return;
-    if (section.sliderPreset==='editorial-overlay' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    if (['editorial-overlay','fashion-editorial'].includes(section.sliderPreset??'') && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     if (section.sliderAutoplay === false || isEditingMode) return;
     if (isHeroHovered) return;
     if (heroSlides.length <= 1) return;
@@ -564,7 +571,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   },[section.type,section.items,selectedImage]);
 
   const renderHeroSlider = () => {
-    if(section.sliderPreset==='editorial-overlay')return <EditorialOverlaySlider section={section} index={heroSlideIdx} onSelect={setHeroSlideIdx} onPause={setIsHeroHovered} isEditingMode={isEditingMode}/>;
+    if(['editorial-overlay','fashion-editorial'].includes(section.sliderPreset??''))return <EditorialOverlaySlider section={section} index={heroSlideIdx} onSelect={setHeroSlideIdx} onPause={setIsHeroHovered} isEditingMode={isEditingMode}/>;
     const currentSlide = heroSlides[heroSlideIdx % heroSlides.length] || heroSlides[0];
     const overlay = section.overlayOpacity ?? 55;
     const heightClass = section.sliderHeight === 'panoramic'
@@ -622,7 +629,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
         />
 
         {/* Slide Content Layer */}
-        <div className={`relative z-10 w-full py-20 ${section.containerMode==='full-bleed'?'max-w-[var(--cms-page-width)] mx-auto px-6 @min-[640px]:px-10 @min-[1024px]:px-16':''} w-full transition-all duration-500 ${
+        <div data-cms-hero-safe className={`relative z-10 w-full py-20 ${section.containerMode==='full-bleed'?'max-w-[var(--cms-page-width)] mx-auto px-6 @min-[640px]:px-10 @min-[1024px]:px-16':''} w-full transition-all duration-500 ${
           section.textAlignment === 'left' ? 'text-left' : section.textAlignment === 'right' ? 'text-right' : 'text-center'
         }`}>
           {/* Eyebrow Tag / Badge */}
@@ -821,7 +828,11 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
   // 5. Media + Text Split
   const renderMediaTextSplit = () => {
-    if(section.layoutPreset==='editorial-story-cards')return <EditorialStoryCards section={section} editing={isEditingMode}/>;
+    if(section.layoutPreset==='tech-feature')return <TechFeature section={section} editing={isEditingMode}/>;
+    if(section.layoutPreset==='artisan-story')return <ArtisanStory section={section} editing={isEditingMode}/>;
+    if(section.layoutPreset==='kids-discovery')return <KidsDiscovery section={section}/>;
+    if(['flush-split','producer-story'].includes(section.layoutPreset??''))return <FlushSplit section={section} editing={isEditingMode}/>;
+    if(['editorial-story-cards','editorial-journal-rows'].includes(section.layoutPreset??''))return <EditorialStoryCards section={section} editing={isEditingMode}/>;
     if (section.layoutPreset === 'editorial-cover') return <EditorialCover section={section}/>;
     if ((section.layoutPreset === 'editorial-story'||section.layoutPreset === 'story-with-steps')) return <EditorialStory section={section} isEditingMode={isEditingMode} />;
     if (section.layoutPreset === 'editorial-hero') {
@@ -2654,6 +2665,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       }
     };
 
+    if(section.newsletterPreset==='inline-signup')return <InlineNewsletter section={section} email={emailInput} onEmail={value=>{setEmailInput(value);setNewsletterError('');}} onSubmit={handleNewsletterSubmit} success={isSubmitted} error={newsletterError} couponCode={newsletterCouponCode} disabled={isEditingMode||!hasResolvedCoupon}/>;
     return (
       <div className={`w-full ${getPaddingClass()} text-center`}>
       {section.subtitle && (
@@ -2737,23 +2749,23 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       case 'timeline_story': return renderTimelineStory();
       case 'stats_counter': return renderStatsCounter();
       case 'product_grid': return renderProductGrid();
-      case 'product_listing': return section.listingPreset==='editorial-tabs'?<EditorialProductTabs section={section} facts={runtimeSection} context={runtime.context} editing={isEditingMode}/>:section.listingPreset==='editorial-grid'?<EditorialProductGrid section={section} products={listingItems} context={runtime.context} editing={isEditingMode}/>:renderProductListing();
+      case 'product_listing': return section.listingPreset==='fashion-lookbook'?<ProductLookbook section={section} products={listingItems} context={runtime.context} editing={isEditingMode}/>:['editorial-tabs','pantry-tabs','tech-tabs','kids-tabs'].includes(section.listingPreset??'')?<EditorialProductTabs section={section} facts={runtimeSection} context={runtime.context} editing={isEditingMode}/>:['editorial-grid','beauty-grid','pantry-grid','tech-grid','kids-grid'].includes(section.listingPreset??'')?<EditorialProductGrid section={section} products={listingItems} context={runtime.context} editing={isEditingMode}/>:renderProductListing();
       case 'collection_tabs': return renderCollectionTabs();
       case 'featured_deal': return renderFeaturedDeal();
       case 'pricing_table': return renderPricingTable();
       case 'promotion_highlights': return <PromotionHighlights section={section} offers={runtimeSection.promotions?.offers??[]} editing={isEditingMode}/>;
       case 'shop_navigation': return <ShopNavigation section={section} catalog={runtime.catalog} editing={isEditingMode}/>;
-      case 'media_gallery': return section.galleryPreset==='editorial-montage'||section.galleryPreset==='editorial-cards'?<EditorialGallery section={section}/>:renderMediaGallery();
+      case 'media_gallery': return section.galleryPreset==='routine-steps'?<RoutineSteps section={section}/>:['editorial-montage','editorial-cards','editorial-triptych','portfolio-cards'].includes(section.galleryPreset??'')?<EditorialGallery section={section} editing={isEditingMode}/>:renderMediaGallery();
       case 'video_embed': return renderVideoEmbed();
       case 'before_after': return renderBeforeAfter();
       case 'instagram_feed': return renderInstagramFeed();
       case 'policy_content': return <PolicyContent section={section} isEditingMode={isEditingMode}/>;
       case 'payment_methods': return <PaymentMethods section={section}/>;
       case 'delivery_table': return <DeliveryTable section={section}/>;
-      case 'feature_cards': return section.featureCardsPreset==='service-highlights'?<ServiceHighlights section={section} renderIcon={renderIcon}/>:section.featureCardsPreset==='editorial-columns'?<EditorialColumns section={section}/>:section.featureCardsPreset==='values-list'?<ValuesList section={section}/>:renderFeatureCards();
+      case 'feature_cards': return section.featureCardsPreset==='service-highlights'?<ServiceHighlights section={section} renderIcon={renderIcon}/>:['editorial-columns','numbered-process'].includes(section.featureCardsPreset??'')?<EditorialColumns section={section}/>:section.featureCardsPreset==='values-list'?<ValuesList section={section}/>:renderFeatureCards();
       case 'values_list': return <ValuesList section={section}/>;
       case 'icon_list': return renderIconList();
-      case 'comparison_matrix': return renderComparisonMatrix();
+      case 'comparison_matrix': return section.comparisonPreset==='device-table'?<DeviceComparison section={section} editing={isEditingMode}/>:renderComparisonMatrix();
       case 'faq_accordion': return section.faqPreset==='minimal'?<MinimalFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>:renderFaqAccordion();
       case 'contact_form': return section.contactPreset==='enquiry'?<EnquiryForm section={section} isEditingMode={isEditingMode}/>:renderContactForm();
       case 'store_locator': return section.contactPreset==='location'?<ContactLocation section={section}/>:renderStoreLocator();

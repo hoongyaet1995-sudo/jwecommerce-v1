@@ -1,0 +1,762 @@
+{
+  "style": {
+    "palette": {
+      "paper": "#ffffff",
+      "ink": "#10253a",
+      "muted": "#536173",
+      "accent": "#ff6749",
+      "light": "#ffffff",
+      "secondary": "#eaeaea",
+      "secondaryInk": "#151515",
+      "hover": "#e9573c"
+    },
+    "typography": {
+      "title": {
+        "fontFamily": "sans",
+        "fontSize": 26,
+        "fontWeight": 700,
+        "lineHeight": 1.2
+      },
+      "eyebrow": {
+        "fontFamily": "sans",
+        "fontSize": 10,
+        "fontWeight": 600,
+        "lineHeight": 1.5
+      },
+      "content": {
+        "fontFamily": "sans",
+        "fontSize": 14,
+        "fontWeight": 400,
+        "lineHeight": 1.5
+      },
+      "lead": {
+        "fontFamily": "sans",
+        "fontSize": 28,
+        "fontWeight": 700,
+        "lineHeight": 1.2
+      },
+      "itemTitle": {
+        "fontFamily": "sans",
+        "fontSize": 12,
+        "fontWeight": 600,
+        "lineHeight": 1.5
+      },
+      "itemContent": {
+        "fontFamily": "sans",
+        "fontSize": 13,
+        "fontWeight": 400,
+        "lineHeight": 1.5
+      }
+    },
+    "spacing": "compact",
+    "buttonRadius": 6,
+    "buttonSize": "compact"
+  },
+  "sections": [
+    {
+      "type": "shop_navigation",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "full-bleed",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "customBgColor": "#ffffff",
+        "titleColor": "#10253a",
+        "contentColor": "#23364a",
+        "eyebrowColor": "#23364a",
+        "primaryBtnBg": "#ff6749",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#10253a"
+      },
+      "title": "Good finds. Everyday.",
+      "items": [
+        {
+          "id": "54f0401a-5911-4581-be50-ca0497839933",
+          "title": "Good finds.\nEveryday.",
+          "imageUrl": "/storage/cms/media/524de4a8-d5ae-4fd8-8502-f05e9d6ecfbc.png",
+          "description": "Thoughtful things for a more\ncomfortable, inspired home.",
+          "buttonText": "Shop the edit",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "",
+          "subtitle": "A BRIGHTER EVERYDAY"
+        },
+        {
+          "id": "002fb079-7eac-4a3f-ad6e-994ee91a6ada",
+          "title": "Fresh home ideas",
+          "imageUrl": "/storage/cms/media/e6774f4c-4d03-4ff8-98b3-152174211cae.png",
+          "description": "Simple touches,\nbigger moments.",
+          "buttonText": "Explore home",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "",
+          "subtitle": ""
+        },
+        {
+          "id": "2c9ad424-fdd7-4cb9-9ea7-402bf2c872a4",
+          "title": "The beauty shelf",
+          "imageUrl": "/storage/cms/media/e2a5b70b-c48b-4c5d-a877-5c40b5ad4b2e.png",
+          "description": "Everyday essentials\nfor your natural glow.",
+          "buttonText": "Shop beauty",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "",
+          "subtitle": ""
+        }
+      ],
+      "imageSlots": [],
+      "id": "ae4f37aa-e210-4bc9-9fcd-f7d5c3a0393a",
+      "shopNavigationPreset": "market-hero",
+      "showSectionHeading": false,
+      "bannerHeight": "compact",
+      "buttonText": "See all categories",
+      "buttonLink": "/shop",
+      "typography": {
+        "lead": {
+          "fontFamily": "sans",
+          "fontSize": 52,
+          "fontWeight": 800,
+          "lineHeight": 1.05
+        },
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 22,
+          "fontWeight": 700,
+          "lineHeight": 1.2
+        },
+        "itemContent": {
+          "fontFamily": "sans",
+          "fontSize": 15,
+          "fontWeight": 400,
+          "lineHeight": 1.4
+        }
+      }
+    },
+    {
+      "type": "shop_navigation",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "customBgColor": "#ffffff",
+        "titleColor": "#10253a",
+        "contentColor": "#23364a",
+        "eyebrowColor": "#23364a",
+        "primaryBtnBg": "#ff6749",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#10253a"
+      },
+      "title": "Shop by category",
+      "items": [
+        {
+          "id": "ec17f158-53ff-4a70-8c66-12fc790480d3",
+          "title": "Home",
+          "imageUrl": "/storage/cms/media/e6774f4c-4d03-4ff8-98b3-152174211cae.png",
+          "description": "",
+          "buttonText": "",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "",
+          "subtitle": ""
+        },
+        {
+          "id": "024ead77-b553-4e10-83d4-b5e3740e7df2",
+          "title": "Fashion",
+          "imageUrl": "/storage/cms/media/af8b7b81-5c08-4b38-97c9-5a8485fbc1a0.png",
+          "description": "",
+          "buttonText": "",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "",
+          "subtitle": ""
+        },
+        {
+          "id": "9e15f24c-ae47-41a6-afff-d2376e33e3d1",
+          "title": "Beauty",
+          "imageUrl": "/storage/cms/media/e2a5b70b-c48b-4c5d-a877-5c40b5ad4b2e.png",
+          "description": "",
+          "buttonText": "",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "",
+          "subtitle": ""
+        },
+        {
+          "id": "36c7abe2-9146-49ab-9e59-f904461a0a6a",
+          "title": "Toys",
+          "imageUrl": "/storage/cms/media/c9d88adc-afd7-4b6c-89e3-2b37ef39130c.png",
+          "description": "",
+          "buttonText": "",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "",
+          "subtitle": ""
+        },
+        {
+          "id": "0d5ddf80-f5e1-428b-9b7d-52aaaa922c9d",
+          "title": "Baby",
+          "imageUrl": "/storage/cms/media/549561a4-7562-4bc4-a0e2-1a17a2ed167f.png",
+          "description": "",
+          "buttonText": "",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "",
+          "subtitle": ""
+        },
+        {
+          "id": "b83243d7-5527-44f0-acb4-53ae3cc8de99",
+          "title": "Tech",
+          "imageUrl": "/storage/cms/media/46b82161-edc1-43d3-961a-1df584313809.png",
+          "description": "",
+          "buttonText": "",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "",
+          "subtitle": ""
+        }
+      ],
+      "imageSlots": [],
+      "id": "e2c0853a-6b6c-458a-8d26-d8d1a3ce1bae",
+      "shopNavigationPreset": "cards",
+      "showSectionHeading": true,
+      "bannerHeight": "compact",
+      "buttonText": "See all categories",
+      "buttonLink": "/shop",
+      "columnsCount": 6,
+      "typography": {
+        "title": {
+          "fontFamily": "sans",
+          "fontSize": 24,
+          "fontWeight": 700
+        },
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 12,
+          "fontWeight": 600
+        }
+      }
+    },
+    {
+      "type": "shop_navigation",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "customBgColor": "#ffffff",
+        "titleColor": "#10253a",
+        "contentColor": "#23364a",
+        "eyebrowColor": "#23364a",
+        "primaryBtnBg": "#ff6749",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#10253a"
+      },
+      "title": "Offers worth a look",
+      "items": [
+        {
+          "id": "e6c8cc99-b6b2-4c04-9d4a-17d56f235791",
+          "title": "Selected home\nessentials",
+          "imageUrl": "/storage/cms/media/524de4a8-d5ae-4fd8-8502-f05e9d6ecfbc.png",
+          "description": "Considered picks for everyday living.",
+          "buttonText": "Shop now",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "20%\nOFF\nSample",
+          "subtitle": "Sample offer"
+        },
+        {
+          "id": "ab897327-d7c9-40fa-8243-9d12e1d72f0b",
+          "title": "Fresh looks\nfor everyday",
+          "imageUrl": "/storage/cms/media/af8b7b81-5c08-4b38-97c9-5a8485fbc1a0.png",
+          "description": "",
+          "buttonText": "Shop fashion",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "20%\nOFF\nSample",
+          "subtitle": "Sample offer"
+        },
+        {
+          "id": "41df572a-5cfe-4310-9e1f-54ba09e3b44d",
+          "title": "Glow a little\nbrighter",
+          "imageUrl": "/storage/cms/media/e2a5b70b-c48b-4c5d-a877-5c40b5ad4b2e.png",
+          "description": "",
+          "buttonText": "Shop beauty",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "20%\nOFF\nSample",
+          "subtitle": "Sample offer"
+        }
+      ],
+      "imageSlots": [],
+      "id": "40a01f5b-cb98-41f7-828c-1f003b3d99bc",
+      "shopNavigationPreset": "market-offers",
+      "showSectionHeading": true,
+      "bannerHeight": "compact",
+      "buttonText": "See all offers",
+      "buttonLink": "/shop",
+      "typography": {
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 22,
+          "fontWeight": 700,
+          "lineHeight": 1.2
+        },
+        "itemContent": {
+          "fontFamily": "sans",
+          "fontSize": 14,
+          "fontWeight": 400,
+          "lineHeight": 1.4
+        }
+      }
+    },
+    {
+      "id": "c765004a-e057-4513-b91d-15a562fff046",
+      "type": "product_listing",
+      "title": "Trending finds",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "customBgColor": "#ffffff",
+        "titleColor": "#10253a",
+        "contentColor": "#23364a",
+        "eyebrowColor": "#23364a",
+        "primaryBtnBg": "#ff6749",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#10253a"
+      },
+      "typography": {},
+      "listingPreset": "editorial-grid",
+      "columnsCount": 4,
+      "imageRatio": "1:1",
+      "sourceType": "manual",
+      "sourceId": "",
+      "productIds": [],
+      "productLimit": 4,
+      "buttonText": "See all products",
+      "buttonLink": "/shop",
+      "items": [],
+      "imageSlots": []
+    },
+    {
+      "id": "842a5dbf-4752-475b-96c5-b0a56b31e50f",
+      "type": "hero_slider",
+      "title": "Small upgrades. Better days.",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "full-bleed",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "customBgColor": "#ffffff",
+        "titleColor": "#10253a",
+        "contentColor": "#23364a",
+        "eyebrowColor": "#23364a",
+        "primaryBtnBg": "#ff6749",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#10253a"
+      },
+      "typography": {
+        "title": {
+          "fontFamily": "sans",
+          "fontSize": 36,
+          "fontWeight": 800,
+          "lineHeight": 1.1
+        },
+        "content": {
+          "fontFamily": "sans",
+          "fontSize": 15,
+          "fontWeight": 400
+        }
+      },
+      "sliderPreset": "fashion-editorial",
+      "sliderHeight": "panoramic",
+      "sliderAutoplay": false,
+      "overlayOpacity": 0,
+      "items": [
+        {
+          "id": "e9d88e4a-6747-4e66-b77c-f7791ad6eb6f",
+          "title": "Small upgrades.\nBetter days.",
+          "description": "Create a space that works for you.",
+          "imageUrl": "/storage/cms/media/b773291f-3f89-42ec-b036-efb180c23494.png",
+          "buttonText": "Explore the collection",
+          "linkUrl": "/shop"
+        }
+      ],
+      "imageSlots": []
+    },
+    {
+      "id": "705d76a8-0fed-4f1a-b1d0-26cc16165ce3",
+      "type": "product_listing",
+      "title": "Shop your interests",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "customBgColor": "#ffffff",
+        "titleColor": "#10253a",
+        "contentColor": "#23364a",
+        "eyebrowColor": "#23364a",
+        "primaryBtnBg": "#ff6749",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#10253a"
+      },
+      "typography": {},
+      "listingPreset": "editorial-tabs",
+      "columnsCount": 4,
+      "imageRatio": "1:1",
+      "sourceType": "manual",
+      "sourceId": "",
+      "productIds": [],
+      "productLimit": 4,
+      "buttonText": "See all products",
+      "buttonLink": "/shop",
+      "productTabs": [
+        {
+          "id": "bc496840-d31d-4850-9bed-e446f8d04585",
+          "label": "Home",
+          "sourceType": "all",
+          "sourceId": "",
+          "productIds": []
+        },
+        {
+          "id": "fc5aa614-9935-4078-88d5-71d832b1635f",
+          "label": "Beauty",
+          "sourceType": "all",
+          "sourceId": "",
+          "productIds": []
+        },
+        {
+          "id": "0b81cae5-da6e-4980-a70b-962b569e4714",
+          "label": "Tech",
+          "sourceType": "all",
+          "sourceId": "",
+          "productIds": []
+        },
+        {
+          "id": "755e4206-3677-4a9d-b593-465726ef21fa",
+          "label": "Kids",
+          "sourceType": "all",
+          "sourceId": "",
+          "productIds": []
+        }
+      ],
+      "items": [],
+      "imageSlots": []
+    },
+    {
+      "type": "shop_navigation",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "customBgColor": "#ffffff",
+        "titleColor": "#10253a",
+        "contentColor": "#23364a",
+        "eyebrowColor": "#23364a",
+        "primaryBtnBg": "#ff6749",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#10253a"
+      },
+      "title": "Everyday care",
+      "items": [
+        {
+          "id": "4448cf2e-9197-4ea4-b4c4-febb28dfe9e5",
+          "title": "Everyday care",
+          "imageUrl": "/storage/cms/media/e2a5b70b-c48b-4c5d-a877-5c40b5ad4b2e.png",
+          "description": "Feel good routines\nfor brighter days.",
+          "buttonText": "Shop beauty",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "",
+          "subtitle": ""
+        },
+        {
+          "id": "00478d61-f9b4-4b6a-b412-cbff563f7775",
+          "title": "Playful discoveries",
+          "imageUrl": "/storage/cms/media/c9d88adc-afd7-4b6c-89e3-2b37ef39130c.png",
+          "description": "Toys for curious minds\nand bigger tomorrows.",
+          "buttonText": "Explore toys",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "",
+          "subtitle": ""
+        }
+      ],
+      "imageSlots": [],
+      "id": "7d5c56c5-bcea-4b65-bb0b-fea8a7c74f00",
+      "shopNavigationPreset": "collection-banners",
+      "showSectionHeading": false,
+      "bannerHeight": "compact",
+      "buttonText": "See all categories",
+      "buttonLink": "/shop",
+      "bannerProportions": "50:50",
+      "typography": {
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 28,
+          "fontWeight": 700,
+          "color": "#10253a"
+        },
+        "itemContent": {
+          "fontFamily": "sans",
+          "fontSize": 14,
+          "fontWeight": 400,
+          "color": "#10253a"
+        }
+      }
+    },
+    {
+      "id": "83ef86b0-956c-4fba-9a2d-3d53d3bafaaf",
+      "type": "product_listing",
+      "title": "New to the shelves",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "customBgColor": "#ffffff",
+        "titleColor": "#10253a",
+        "contentColor": "#23364a",
+        "eyebrowColor": "#23364a",
+        "primaryBtnBg": "#ff6749",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#10253a"
+      },
+      "typography": {},
+      "listingPreset": "editorial-grid",
+      "columnsCount": 4,
+      "imageRatio": "1:1",
+      "sourceType": "manual",
+      "sourceId": "",
+      "productIds": [],
+      "productLimit": 4,
+      "buttonText": "See all products",
+      "buttonLink": "/shop",
+      "items": [],
+      "imageSlots": []
+    },
+    {
+      "id": "1958de77-483a-4a74-903a-14dce3b1c1fd",
+      "type": "cta_strip",
+      "title": "Find your next favourite.",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "customBgColor": "#ff6749",
+        "titleColor": "#ffffff",
+        "contentColor": "#ffffff",
+        "eyebrowColor": "#23364a",
+        "primaryBtnBg": "#ffffff",
+        "primaryBtnText": "#ff6749",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#10253a"
+      },
+      "typography": {},
+      "ctaPreset": "editorial-band",
+      "content": "Everyday essentials, inspiring finds and more.",
+      "buttonText": "Explore collections",
+      "buttonLink": "/shop"
+    },
+    {
+      "type": "shop_navigation",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "customColors": {
+        "customBgColor": "#ffffff",
+        "titleColor": "#10253a",
+        "contentColor": "#23364a",
+        "eyebrowColor": "#23364a",
+        "primaryBtnBg": "#ff6749",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#10253a"
+      },
+      "title": "Thoughtful picks for every moment",
+      "items": [
+        {
+          "id": "527374d6-b374-4236-8295-f66784b8d238",
+          "title": "For the home",
+          "imageUrl": "/storage/cms/media/524de4a8-d5ae-4fd8-8502-f05e9d6ecfbc.png",
+          "description": "Beautiful living\nstarts with the details.",
+          "buttonText": "Shop home gifts",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "",
+          "subtitle": ""
+        },
+        {
+          "id": "6069d4ff-6ddf-4f04-98e0-23a4a7d4c683",
+          "title": "For little ones",
+          "imageUrl": "/storage/cms/media/549561a4-7562-4bc4-a0e2-1a17a2ed167f.png",
+          "description": "Small joys\nfor growing days.",
+          "buttonText": "Shop kids gifts",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "",
+          "subtitle": ""
+        },
+        {
+          "id": "0333eee1-7a61-4af4-a659-92d8cebba05d",
+          "title": "Gifts under RM100",
+          "imageUrl": "/storage/cms/media/e1f3660a-0142-447f-9ccc-730856af4eb5.png",
+          "description": "Great finds,\nmore good days.",
+          "buttonText": "Shop now",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "sourceId": "",
+          "badge": "From\nRM100\nSample",
+          "subtitle": ""
+        }
+      ],
+      "imageSlots": [],
+      "id": "46ac0e05-335f-439e-b350-23c144ceacf9",
+      "shopNavigationPreset": "market-offers",
+      "showSectionHeading": true,
+      "bannerHeight": "compact",
+      "buttonText": "See all gifts",
+      "buttonLink": "/shop",
+      "typography": {
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 18,
+          "fontWeight": 700,
+          "lineHeight": 1.2
+        },
+        "itemContent": {
+          "fontFamily": "sans",
+          "fontSize": 14,
+          "fontWeight": 400,
+          "lineHeight": 1.4
+        }
+      }
+    },
+    {
+      "columnsCount": 4,
+      "sectionBorder": "none",
+      "featureCardsPreset": "service-highlights",
+      "surface": "light",
+      "motionPreset": "subtle-lift",
+      "items": [
+        {
+          "id": "e5fa1fa7-3e9a-4396-84a7-57ebda3fd876",
+          "title": "Payment options",
+          "description": "Review available methods at checkout.",
+          "icon": "CreditCard"
+        },
+        {
+          "id": "ec78b12c-3840-409c-a25f-f564ca4b7d68",
+          "title": "Delivery information",
+          "description": "See delivery options for your address.",
+          "icon": "Truck"
+        },
+        {
+          "id": "b540210e-a536-49cb-8320-8e9503b17162",
+          "title": "Returns & exchanges",
+          "description": "View our returns policy for more information.",
+          "icon": "Package"
+        },
+        {
+          "id": "b7929e6b-0e46-4311-823a-7f87a5417b0a",
+          "title": "Contact us",
+          "description": "Get in touch with our team.",
+          "icon": "MessageCircle"
+        }
+      ],
+      "customColors": {
+        "customBgColor": "#ffffff",
+        "titleColor": "#10253a",
+        "contentColor": "#23364a",
+        "eyebrowColor": "#23364a",
+        "primaryBtnBg": "#ff6749",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ffffff",
+        "secondaryBtnText": "#10253a"
+      },
+      "type": "feature_cards",
+      "containerMode": "page",
+      "isVisible": true,
+      "paddingY": "compact",
+      "id": "a293b9db-03b5-44e4-827e-c60cc6d268ca",
+      "textColor": "dark",
+      "showSectionHeading": false,
+      "title": "Shopping services",
+      "typography": {
+        "itemContent": {
+          "fontSize": 11,
+          "fontFamily": "sans",
+          "fontWeight": 400,
+          "lineHeight": 1.5
+        },
+        "itemTitle": {
+          "fontSize": 13,
+          "fontFamily": "sans",
+          "fontWeight": 400,
+          "lineHeight": 1.4
+        }
+      },
+      "backgroundColor": "custom"
+    }
+  ]
+}

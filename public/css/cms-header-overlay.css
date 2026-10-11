@@ -1,0 +1,25 @@
+@media(min-width:1024px){
+ [data-mega-nav][data-header-mode="transparent"],[data-mega-nav][data-header-mode="translucent"]{margin-bottom:calc(-1 * var(--cms-header-height,64px));background:transparent!important;border-bottom-color:transparent;backdrop-filter:none}
+ [data-header-mode="translucent"][data-header-solid="false"]{background:rgba(255,255,255,.72)!important;backdrop-filter:blur(12px)}
+ [data-header-mode="translucent"][data-header-tone="light"][data-header-solid="false"]{background:rgba(24,24,27,.55)!important}
+ [data-header-mode="transparent"][data-header-solid="false"] [data-header-main]{background:transparent}
+ [data-header-mode]:not([data-header-mode="normal"])[data-header-solid="true"] [data-header-main]{background:#fff;color:#18181b}
+ .dark [data-header-mode]:not([data-header-mode="normal"])[data-header-solid="true"] [data-header-main]{background:#09090b;color:#fafafa}
+ [data-header-mode]:not([data-header-mode="normal"])[data-header-solid="false"] [data-header-main]>div>nav>div>a,
+ [data-header-mode]:not([data-header-mode="normal"])[data-header-solid="false"] [data-header-main]>div>div>a span,
+ [data-header-mode]:not([data-header-mode="normal"])[data-header-solid="false"] [data-header-main] [aria-label="Search Catalog"],
+ [data-header-mode]:not([data-header-mode="normal"])[data-header-solid="false"] [data-header-main] [data-atelier-currency]{color:var(--cms-header-ink)!important}
+ [data-header-tone="light"]{--cms-header-ink:#fff}[data-header-tone="dark"]{--cms-header-ink:#18181b}
+ [data-cms-page-header-overlay="true"] section:first-of-type [data-cms-hero-safe]{padding-top:calc(var(--cms-header-height,64px) + 24px)}
+ [data-header-mode]:not([data-header-mode="normal"])[data-header-solid="true"]{background:#fff!important}
+ .dark [data-header-mode]:not([data-header-mode="normal"])[data-header-solid="true"]{background:#09090b!important}
+}
+
+[data-builder-header][data-mode]:not([data-mode="normal"])>div>div{color:inherit}
+/* Designed shell owns the full-width solid palette; legacy nav keeps its defaults. */
+@media(min-width:1024px){
+ [data-shell-header][data-header-mode][data-header-solid="true"],
+ .dark [data-shell-header][data-header-mode][data-header-solid="true"]{background:var(--shell-paper)!important}
+ [data-shell-header][data-header-mode][data-header-solid="true"] [data-header-main],
+ .dark [data-shell-header][data-header-mode][data-header-solid="true"] [data-header-main]{background:transparent!important;color:var(--shell-ink)!important}
+}

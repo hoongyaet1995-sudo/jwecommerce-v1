@@ -25,7 +25,8 @@ export const inspectorGroups:Array<{name:string;tab:InspectorTab}>=[
  {name:'Layout & theme',tab:'design'},{name:'Motion',tab:'design'},{name:'Palette & colors',tab:'design'},
 ];
 export function textRoles(section:PageSection):TextRole[] {
- if(section.type==='hero_slider'&&section.sliderPreset==='editorial-overlay')return ['eyebrow','title','content'];
+ if(section.type==='hero_slider'&&['editorial-overlay','fashion-editorial'].includes(section.sliderPreset??''))return ['eyebrow','title','content'];
+ if(section.type==='shop_navigation'&&['market-hero','market-offers'].includes(section.shopNavigationPreset??''))return [...(section.showSectionHeading===false?[]:['title','content'] as TextRole[]),'eyebrow',...(section.shopNavigationPreset==='market-hero'?['lead'] as TextRole[]:[]),'itemTitle','itemContent'];
  if(section.type==='chapter_navigation')return ['eyebrow'];
  if(section.type==='announcement_bar')return ['itemTitle'];
  const roles:TextRole[]=[];
@@ -35,7 +36,8 @@ export function textRoles(section:PageSection):TextRole[] {
  if(!hidden&&contentFields.includes('title'))roles.push('title');
  if(contentFields.includes('leadText'))roles.push('lead');
  if(!hidden&&contentFields.includes('content'))roles.push('content');
- if(section.type==='product_listing'&&['editorial-grid','editorial-tabs'].includes(section.listingPreset??''))roles.push('itemTitle');
+ if(section.type==='product_listing'&&['editorial-grid','editorial-tabs','fashion-lookbook','beauty-grid','pantry-grid','pantry-tabs','tech-grid','tech-tabs','kids-grid','kids-tabs'].includes(section.listingPreset??''))roles.push('itemTitle');
+ if(section.type==='product_listing'&&section.listingPreset==='fashion-lookbook')roles.push('itemContent','lead');
  if(['payment_methods','promotion_highlights'].includes(section.type))roles.push('itemTitle','itemContent');
  if(itemFields.includes('title'))roles.push('itemTitle');
  if((section.type==='delivery_table'||section.type==='chapter_block'&&section.chapterPreset==='delivery')&&section.deliverySource!=='manual')roles.push('itemTitle','itemContent');
@@ -44,7 +46,8 @@ export function textRoles(section:PageSection):TextRole[] {
   if(['stats_counter','icon_list'].includes(section.type)&&['title','content'].includes(role))return false;
   if(section.type==='hero_slider'&&role.startsWith('item'))return false;
   if(section.type==='instagram_feed'&&role==='itemTitle')return false;
-  if((section.galleryPreset==='editorial-montage'||section.type==='chapter_block'&&section.chapterPreset==='perspective')&&role.startsWith('item'))return false;
+  if((['editorial-montage','editorial-triptych'].includes(section.galleryPreset??'')||section.type==='chapter_block'&&section.chapterPreset==='perspective')&&role.startsWith('item'))return false;
+  if(section.layoutPreset==='artisan-story'&&role.startsWith('item'))return false;
   return true;
  });
 }

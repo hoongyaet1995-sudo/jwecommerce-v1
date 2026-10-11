@@ -1,0 +1,6 @@
+<footer data-shell-footer data-shell-style="{{ $design['style'] }}" class="jw-shell-footer">
+    <div class="jw-shell-footer-grid"><section><a href="{{ route('storefront.home') }}" class="jw-shell-brand"><x-storefront.shell-brand :design="$design" /></a>@if(filled($design['tagline']))<p>{{ $design['tagline'] }}</p>@endif</section>
+        @foreach($footerSections as $section)<nav aria-label="{{ $section->label }}"><h2>{{ $section->label }}</h2>@foreach($section->children->where('is_active',true) as $link)<a href="{{ $link->url }}" @if($link->is_external) target="_blank" rel="noopener" @endif>{{ $link->label }}</a>@endforeach</nav>@endforeach
+        @if(filled($design['contactEmail']) || (filled($design['ctaLabel']) && filled($design['ctaUrl'])))<section><h2>Get in touch</h2>@if(filled($design['contactEmail']))<a href="mailto:{{ $design['contactEmail'] }}">{{ $design['contactEmail'] }}</a>@endif @if(filled($design['ctaLabel']) && filled($design['ctaUrl']))<a class="jw-shell-cta" href="{{ $design['ctaUrl'] }}">{{ $design['ctaLabel'] }} <i data-lucide="arrow-up-right"></i></a>@endif</section>@endif
+    </div><div class="jw-shell-legal">© {{ date('Y') }} {{ $shopBrandName }}. All rights reserved.</div>
+</footer>

@@ -250,6 +250,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/api/catalog/products/{product}', [CatalogApiController::class, 'destroyProduct']);
     Route::get('/api/menus', [MenuApiController::class, 'index'])->name('api.menus.index');
     Route::put('/api/menus/{key}', [MenuApiController::class, 'update'])->whereIn('key', ['header', 'footer']);
+    Route::post('/api/storefront-shell-preview', \App\Http\Controllers\Admin\ShellDesignPreviewController::class)->name('shell-design.preview');
     Route::get('/api/storefront-shell-settings', [StorefrontShellSettingsApiController::class, 'show'])->name('api.storefront-shell-settings.show');
     Route::put('/api/storefront-shell-settings', [StorefrontShellSettingsApiController::class, 'update'])->name('api.storefront-shell-settings.update');
     Route::get('/api/orders', [OrderApiController::class, 'index'])->name('api.orders.index');

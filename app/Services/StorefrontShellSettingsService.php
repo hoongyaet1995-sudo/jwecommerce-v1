@@ -27,7 +27,14 @@ class StorefrontShellSettingsService
     public function save(array $input): StorefrontShellSetting
     {
         $validator = validator($input, [
+            ...\App\Domain\Cms\ShellDesign::rules(),
             'enabled' => ['required', 'boolean'],
+            'overlayLogos' => ['sometimes','array:light,dark'],
+            'overlayLogos.light' => ['nullable','string','max:2048'],
+            'overlayLogos.dark' => ['nullable','string','max:2048'],
+            'headerPresentation' => ['sometimes', 'array:mode,tone'],
+            'headerPresentation.mode' => ['required_with:headerPresentation', Rule::in(['normal','transparent','translucent'])],
+            'headerPresentation.tone' => ['required_with:headerPresentation', Rule::in(['dark','light'])],
             'layout' => ['required', Rule::in(['atelier'])],
             'theme' => ['required', 'string', 'max:100'],
             'customPalette' => ['nullable', 'array'],
@@ -57,6 +64,11 @@ class StorefrontShellSettingsService
         ]);
 
         $validator->after(function ($validator) use ($input): void {
+            if (! \App\Domain\Cms\ShellDesign::safeAction((string) Arr::get($input, 'shellDesign.ctaUrl', ''))) $validator->errors()->add('shellDesign.ctaUrl', 'Use a same-site, anchor or public HTTPS destination.');
+            foreach (['light','dark'] as $tone) {
+                $logo=Arr::get($input,'overlayLogos.'.$tone);
+                if (filled($logo) && ! MediaUrlPolicy::isSafe($logo)) $validator->errors()->add('overlayLogos.'.$tone,'Use a safe image URL.');
+            }
             $this->validateLink(Arr::get($input, 'zones.left.linkUrl'), 'zones.left.linkUrl', $validator);
             $this->validateLink(Arr::get($input, 'zones.center.linkUrl'), 'zones.center.linkUrl', $validator);
             $this->validateLink(Arr::get($input, 'zones.right.trackingUrl'), 'zones.right.trackingUrl', $validator);
@@ -88,7 +100,10 @@ class StorefrontShellSettingsService
     private function normalize(array $input): array
     {
         return [
+            ...(isset($input['shellDesign']) ? ['shellDesign' => \App\Domain\Cms\ShellDesign::resolve($input)] : []),
             'enabled' => (bool) ($input['enabled'] ?? false),
+            ...(isset($input['overlayLogos']) ? ['overlayLogos'=>['light'=>$this->nullableString(Arr::get($input,'overlayLogos.light')),'dark'=>$this->nullableString(Arr::get($input,'overlayLogos.dark'))]] : []),
+            ...(isset($input['headerPresentation']) ? ['headerPresentation' => ['mode' => Arr::get($input,'headerPresentation.mode','normal'), 'tone' => Arr::get($input,'headerPresentation.tone','dark')]] : []),
             'layout' => 'atelier',
             'theme' => $this->string($input['theme'] ?? 'midnight-obsidian'),
             'customPalette' => [

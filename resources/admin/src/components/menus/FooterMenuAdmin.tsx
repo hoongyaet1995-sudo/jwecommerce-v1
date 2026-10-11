@@ -1,3 +1,4 @@
+import {ShellDesignEditor} from './ShellDesignEditor';
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { FooterMenuL1, FooterMenuL2, MenuLinkType } from '../../types';
@@ -31,7 +32,7 @@ export const FooterMenuAdmin: React.FC = () => {
     pages
   } = useAdmin();
 
-  const [showFooterSimulator, setShowFooterSimulator] = useState(true);
+  const [showFooterSimulator, setShowFooterSimulator] = useState(false);
 
   // Modals state
   const [editingL1, setEditingL1] = useState<FooterMenuL1 | null>(null);
@@ -69,6 +70,7 @@ export const FooterMenuAdmin: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12">
+      <ShellDesignEditor/>
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm">
         <div>

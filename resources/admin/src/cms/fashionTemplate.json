@@ -1,0 +1,560 @@
+{
+  "style": {
+    "palette": {
+      "paper": "#ffffff",
+      "ink": "#151515",
+      "muted": "#404040",
+      "accent": "#0646ff",
+      "light": "#ffffff",
+      "secondary": "#eaeaea",
+      "secondaryInk": "#151515",
+      "hover": "#0034cc"
+    },
+    "typography": {
+      "title": {
+        "fontFamily": "sans",
+        "fontSize": 26,
+        "fontWeight": 700,
+        "lineHeight": 1.2
+      },
+      "eyebrow": {
+        "fontFamily": "sans",
+        "fontSize": 10,
+        "fontWeight": 600,
+        "lineHeight": 1.5
+      },
+      "content": {
+        "fontFamily": "sans",
+        "fontSize": 14,
+        "fontWeight": 400,
+        "lineHeight": 1.5
+      },
+      "lead": {
+        "fontFamily": "sans",
+        "fontSize": 28,
+        "fontWeight": 700,
+        "lineHeight": 1.2
+      },
+      "itemTitle": {
+        "fontFamily": "sans",
+        "fontSize": 12,
+        "fontWeight": 600,
+        "lineHeight": 1.5
+      },
+      "itemContent": {
+        "fontFamily": "sans",
+        "fontSize": 13,
+        "fontWeight": 400,
+        "lineHeight": 1.5
+      }
+    },
+    "spacing": "compact",
+    "buttonRadius": 0,
+    "buttonSize": "compact"
+  },
+  "sections": [
+    {
+      "id": "83bb8cf2-4220-415e-8e89-35870bd295e5",
+      "type": "hero_slider",
+      "title": "Everyday, redefined.",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "full-bleed",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "customColors": {
+        "eyebrowColor": "#151515",
+        "titleColor": "#ffffff",
+        "contentColor": "#ffffff",
+        "customBgColor": "#ffffff",
+        "primaryBtnBg": "#0646ff",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "transparent",
+        "secondaryBtnText": "#ffffff"
+      },
+      "typography": {
+        "title": {
+          "fontSize": 64,
+          "fontFamily": "sans",
+          "fontWeight": 700,
+          "color": "#ffffff",
+          "lineHeight": 1.02
+        }
+      },
+      "sliderPreset": "fashion-editorial",
+      "sliderHeight": "normal",
+      "sliderAutoplay": false,
+      "overlayOpacity": 0,
+      "items": [
+        {
+          "id": "2f2eb87b-9e01-4f6e-8d29-3cc02a8959b3",
+          "title": "Everyday,\nredefined.",
+          "imageUrl": "/storage/cms/media/62d0e732-db9f-4fd0-b434-da4ff589f75c.png",
+          "description": "A fresh perspective on what you wear.",
+          "buttonText": "Shop New In",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "caption": "SAME\nPEOPLE\nA BRIGHTER\nTOMORROW",
+          "secondaryButtonText": "Shop Women",
+          "secondaryButtonLink": "/shop",
+          "thirdButtonText": "Shop Men",
+          "thirdButtonLink": "/shop"
+        }
+      ]
+    },
+    {
+      "id": "44e4f526-8fcf-447a-95ab-80ea28426739",
+      "type": "shop_navigation",
+      "title": "Shop by category",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "center",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "customColors": {
+        "eyebrowColor": "#151515",
+        "titleColor": "#151515",
+        "contentColor": "#404040",
+        "customBgColor": "#ffffff",
+        "primaryBtnBg": "#0646ff",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "transparent",
+        "secondaryBtnText": "#ffffff"
+      },
+      "typography": {},
+      "shopNavigationPreset": "cards",
+      "columnsCount": 6,
+      "showSectionHeading": false,
+      "items": [
+        {
+          "id": "87883593-8cb5-4cb7-b724-30a5ccc6292b",
+          "title": "T-shirts",
+          "imageUrl": "/storage/cms/media/2e8ccaed-ab3d-40d4-bd6e-9f788dd3864c.png",
+          "description": "",
+          "buttonText": "",
+          "linkUrl": "/shop",
+          "sourceType": "custom"
+        },
+        {
+          "id": "14c1bfa6-13ae-4383-9313-0a838e490b9a",
+          "title": "Shirts",
+          "imageUrl": "/storage/cms/media/af8b7b81-5c08-4b38-97c9-5a8485fbc1a0.png",
+          "description": "",
+          "buttonText": "",
+          "linkUrl": "/shop",
+          "sourceType": "custom"
+        },
+        {
+          "id": "2fcaaec6-98e5-4b52-b53c-42fabe944b7d",
+          "title": "Trousers",
+          "imageUrl": "/storage/cms/media/b1acdc1d-1751-44ad-aff9-9ddde81e6ac3.png",
+          "description": "",
+          "buttonText": "",
+          "linkUrl": "/shop",
+          "sourceType": "custom"
+        },
+        {
+          "id": "81437152-7cbd-4ecb-8bbc-c02f8865d89c",
+          "title": "Dresses",
+          "imageUrl": "/storage/cms/media/9a3cd4d3-5016-4af3-9bc1-7dbf27d029cc.png",
+          "description": "",
+          "buttonText": "",
+          "linkUrl": "/shop",
+          "sourceType": "custom"
+        },
+        {
+          "id": "d6d8f5dd-0e70-4bdb-b63b-78aa1ffa1436",
+          "title": "Layers",
+          "imageUrl": "/storage/cms/media/9f4940f3-dd0e-4a12-bafb-822d2e77c1aa.png",
+          "description": "",
+          "buttonText": "",
+          "linkUrl": "/shop",
+          "sourceType": "custom"
+        },
+        {
+          "id": "601fa777-d088-4888-8179-77d3bb5c4e37",
+          "title": "Accessories",
+          "imageUrl": "/storage/cms/media/cf2c4adb-9b18-4470-9b3a-b83f6612996e.png",
+          "description": "",
+          "buttonText": "",
+          "linkUrl": "/shop",
+          "sourceType": "custom"
+        }
+      ],
+      "imageSlots": [
+        {
+          "target": "item:87883593-8cb5-4cb7-b724-30a5ccc6292b:imageUrl",
+          "imageRatio": "1:1"
+        },
+        {
+          "target": "item:14c1bfa6-13ae-4383-9313-0a838e490b9a:imageUrl",
+          "imageRatio": "1:1"
+        },
+        {
+          "target": "item:2fcaaec6-98e5-4b52-b53c-42fabe944b7d:imageUrl",
+          "imageRatio": "1:1"
+        },
+        {
+          "target": "item:81437152-7cbd-4ecb-8bbc-c02f8865d89c:imageUrl",
+          "imageRatio": "1:1"
+        },
+        {
+          "target": "item:d6d8f5dd-0e70-4bdb-b63b-78aa1ffa1436:imageUrl",
+          "imageRatio": "1:1",
+          "imagePosition": "center-right"
+        },
+        {
+          "target": "item:601fa777-d088-4888-8179-77d3bb5c4e37:imageUrl",
+          "imageRatio": "1:1"
+        }
+      ]
+    },
+    {
+      "id": "70afcfcb-e12b-4503-a7bc-20a75e3a5aa6",
+      "type": "product_listing",
+      "title": "The new essentials",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "customColors": {
+        "eyebrowColor": "#151515",
+        "titleColor": "#151515",
+        "contentColor": "#404040",
+        "customBgColor": "#ffffff",
+        "primaryBtnBg": "#151515",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "transparent",
+        "secondaryBtnText": "#ffffff"
+      },
+      "typography": {},
+      "listingPreset": "editorial-grid",
+      "columnsCount": 4,
+      "imageRatio": "1:1",
+      "sourceType": "manual",
+      "sourceId": "",
+      "productIds": [],
+      "productLimit": 4,
+      "buttonText": "View all",
+      "buttonLink": "/shop"
+    },
+    {
+      "id": "e4825ef9-37ad-4da7-b55c-bd68ce4d434e",
+      "type": "shop_navigation",
+      "title": "Collection edits",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "full-bleed",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "customColors": {
+        "eyebrowColor": "#151515",
+        "titleColor": "#151515",
+        "contentColor": "#404040",
+        "customBgColor": "#ffffff",
+        "primaryBtnBg": "#0646ff",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "transparent",
+        "secondaryBtnText": "#151515"
+      },
+      "typography": {
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 36,
+          "fontWeight": 700,
+          "lineHeight": 1.05
+        }
+      },
+      "shopNavigationPreset": "fashion-banners",
+      "bannerProportions": "50:50",
+      "bannerHeight": "compact",
+      "showSectionHeading": false,
+      "items": [
+        {
+          "id": "329e8750-3bcb-4b75-affb-a768cd1e684f",
+          "title": "The city edit.",
+          "imageUrl": "/storage/cms/media/e1996b8a-d890-420e-9acf-f82b95f9d890.png",
+          "description": "Modern pieces for\na brighter tomorrow.",
+          "buttonText": "Shop the collection",
+          "linkUrl": "/shop",
+          "sourceType": "custom"
+        },
+        {
+          "id": "5969ac69-fc0a-4384-a65d-2db10b5f0829",
+          "title": "Soft\nstructure.",
+          "imageUrl": "/storage/cms/media/af8b7b81-5c08-4b38-97c9-5a8485fbc1a0.png",
+          "description": "Refined layers for\neveryday living.",
+          "buttonText": "Shop the collection",
+          "linkUrl": "/shop",
+          "sourceType": "custom"
+        }
+      ],
+      "imageSlots": [
+        {
+          "target": "item:329e8750-3bcb-4b75-affb-a768cd1e684f:imageUrl",
+          "imagePosition": "top-center"
+        },
+        {
+          "target": "item:5969ac69-fc0a-4384-a65d-2db10b5f0829:imageUrl",
+          "imagePosition": "top-center"
+        }
+      ]
+    },
+    {
+      "id": "959354c2-fb4a-4215-8557-ddbbab82f625",
+      "type": "cta_strip",
+      "title": "Your next wardrobe starts here.",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "center",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "customColors": {
+        "eyebrowColor": "#151515",
+        "titleColor": "#ffffff",
+        "contentColor": "#ffffff",
+        "customBgColor": "#0646ff",
+        "primaryBtnBg": "#ffffff",
+        "primaryBtnText": "#151515",
+        "secondaryBtnBg": "transparent",
+        "secondaryBtnText": "#ffffff"
+      },
+      "typography": {},
+      "ctaPreset": "editorial-band",
+      "content": "Sample campaign",
+      "buttonText": "Explore offers",
+      "buttonLink": "/shop"
+    },
+    {
+      "id": "f1123c7c-a18c-404a-b268-e7745743d3bc",
+      "type": "product_listing",
+      "title": "Find your everyday",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "customColors": {
+        "eyebrowColor": "#151515",
+        "titleColor": "#151515",
+        "contentColor": "#404040",
+        "customBgColor": "#ffffff",
+        "primaryBtnBg": "#151515",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "transparent",
+        "secondaryBtnText": "#ffffff"
+      },
+      "typography": {},
+      "listingPreset": "editorial-tabs",
+      "columnsCount": 4,
+      "imageRatio": "1:1",
+      "sourceType": "manual",
+      "sourceId": "",
+      "productIds": [],
+      "productLimit": 4,
+      "buttonText": "",
+      "buttonLink": "/shop",
+      "productTabs": [
+        {
+          "id": "6ef3b6f8-bfb9-489f-91a8-acaf971ab3ca",
+          "label": "All",
+          "sourceType": "all",
+          "sourceId": "",
+          "productLimit": 4,
+          "productIds": []
+        },
+        {
+          "id": "e3555cde-3d87-481e-a2e2-b0bcf14ab51e",
+          "label": "Women",
+          "sourceType": "all",
+          "sourceId": "",
+          "productLimit": 4,
+          "productIds": []
+        },
+        {
+          "id": "f4cd43a7-1a0a-4ae6-b9e9-df83f7f8f2c5",
+          "label": "Men",
+          "sourceType": "all",
+          "sourceId": "",
+          "productLimit": 4,
+          "productIds": []
+        },
+        {
+          "id": "275f0bd9-3fe4-4e8d-9a57-6331f0cc0afc",
+          "label": "Accessories",
+          "sourceType": "all",
+          "sourceId": "",
+          "productLimit": 4,
+          "productIds": []
+        }
+      ]
+    },
+    {
+      "id": "3acedc42-af3c-45e8-b893-b3f91dacf5df",
+      "type": "hero_slider",
+      "title": "Less noise. More you.",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "full-bleed",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "customColors": {
+        "eyebrowColor": "#151515",
+        "titleColor": "#ffffff",
+        "contentColor": "#ffffff",
+        "customBgColor": "#ffffff",
+        "primaryBtnBg": "#ffffff",
+        "primaryBtnText": "#151515",
+        "secondaryBtnBg": "transparent",
+        "secondaryBtnText": "#ffffff"
+      },
+      "typography": {
+        "title": {
+          "fontSize": 36,
+          "fontFamily": "sans",
+          "fontWeight": 700,
+          "color": "#ffffff",
+          "lineHeight": 1.02
+        }
+      },
+      "sliderPreset": "fashion-editorial",
+      "sliderHeight": "panoramic",
+      "sliderAutoplay": false,
+      "overlayOpacity": 0,
+      "items": [
+        {
+          "id": "b639558f-26b6-4f40-863d-3247e5783af4",
+          "title": "Less noise.\nMore you.",
+          "imageUrl": "/storage/cms/media/6e66ab17-7413-4d6e-8ee2-d1e8a3ea7280.png",
+          "description": "Thoughtful fabrics. Timeless pieces.\nA wardrobe that works harder for you.",
+          "buttonText": "Shop collection",
+          "linkUrl": "/shop",
+          "sourceType": "custom",
+          "caption": "GOOD\nCLOTHES\nBRIGHTER\nDAYS"
+        }
+      ]
+    },
+    {
+      "id": "63af37f2-39e6-4af8-8c33-1c979fadf643",
+      "type": "product_listing",
+      "title": "Complete the look",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "customColors": {
+        "eyebrowColor": "#151515",
+        "titleColor": "#151515",
+        "contentColor": "#404040",
+        "customBgColor": "#ffffff",
+        "primaryBtnBg": "#151515",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "transparent",
+        "secondaryBtnText": "#ffffff"
+      },
+      "typography": {},
+      "listingPreset": "fashion-lookbook",
+      "columnsCount": 3,
+      "imageRatio": "1:1",
+      "sourceType": "manual",
+      "sourceId": "",
+      "productIds": [],
+      "productLimit": 3,
+      "buttonText": "",
+      "buttonLink": "/shop",
+      "items": [
+        {
+          "id": "1a6ec2dc-641f-46d5-b610-d5373be7e794",
+          "title": "Simple\npieces.\nStronger\noutfits.",
+          "imageUrl": "/storage/cms/media/9f4940f3-dd0e-4a12-bafb-822d2e77c1aa.png",
+          "description": "",
+          "buttonText": "",
+          "linkUrl": "/shop",
+          "sourceType": "custom"
+        }
+      ]
+    },
+    {
+      "id": "58dc5d78-f53f-42fd-8096-6a1a095d7182",
+      "type": "shop_navigation",
+      "title": "Journal & styling",
+      "isVisible": true,
+      "paddingY": "compact",
+      "backgroundColor": "custom",
+      "textAlignment": "left",
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "none",
+      "customColors": {
+        "eyebrowColor": "#151515",
+        "titleColor": "#151515",
+        "contentColor": "#404040",
+        "customBgColor": "#ffffff",
+        "primaryBtnBg": "#0646ff",
+        "primaryBtnText": "#151515",
+        "secondaryBtnBg": "transparent",
+        "secondaryBtnText": "#151515"
+      },
+      "typography": {
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 23,
+          "fontWeight": 700,
+          "lineHeight": 1.05
+        }
+      },
+      "shopNavigationPreset": "fashion-banners",
+      "bannerProportions": "50:50",
+      "bannerHeight": "compact",
+      "showSectionHeading": true,
+      "items": [
+        {
+          "id": "a539315a-95cf-498c-a9ba-61828aa8df33",
+          "title": "One shirt.\nThree ways.",
+          "imageUrl": "/storage/cms/media/af8b7b81-5c08-4b38-97c9-5a8485fbc1a0.png",
+          "description": "From work to weekend,\na modern classic.",
+          "buttonText": "Read the story",
+          "linkUrl": "/shop",
+          "sourceType": "custom"
+        },
+        {
+          "id": "1a0d61df-f252-481f-b602-e6f81cd93dc8",
+          "title": "Inside the\ncollection.",
+          "imageUrl": "/storage/cms/media/2f1da4ed-a99d-4212-9c58-0ae54c9b6e58.png",
+          "description": "Materials, moods and\nthe story behind the season.",
+          "buttonText": "Explore now",
+          "linkUrl": "/shop",
+          "sourceType": "custom"
+        }
+      ],
+      "imageSlots": [
+        {
+          "target": "item:a539315a-95cf-498c-a9ba-61828aa8df33:imageUrl",
+          "imagePosition": "top-center"
+        },
+        {
+          "target": "item:1a0d61df-f252-481f-b602-e6f81cd93dc8:imageUrl",
+          "imagePosition": "top-center"
+        }
+      ]
+    }
+  ]
+}

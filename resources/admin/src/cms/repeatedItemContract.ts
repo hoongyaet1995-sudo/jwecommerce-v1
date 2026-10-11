@@ -16,13 +16,24 @@ const fields:Partial<Record<PageSection['type'],readonly string[]>>={
  delivery_table:['title','deliveryEstimate','deliveryFee'],chapter_navigation:['title','linkUrl'],
 };
 export function repeatedItemFields(section:PageSection):readonly string[]{
- if(section.type==='shop_navigation'&&section.shopNavigationPreset==='collection-banners')return ['title','description','buttonText','imageUrl','linkUrl','sourceType','sourceId'];
- if(section.type==='hero_slider'&&section.sliderPreset==='editorial-overlay')return ['title','subtitle','description','imageUrl','videoUrl','linkUrl','buttonText','secondaryButtonText','secondaryButtonLink','caption'];
+ if(section.type==='shop_navigation'&&['catalog-captions','recipe-cards'].includes(section.shopNavigationPreset??''))return ['title','description','imageUrl','buttonText','linkUrl','sourceType','sourceId',...(section.shopNavigationPreset==='recipe-cards'?['badge']:[])];
+ if(section.type==='shop_navigation'&&section.shopNavigationPreset==='age-cards')return ['title','description','imageUrl','linkUrl','sourceType','sourceId'];
+ if(section.type==='media_text_split'&&section.layoutPreset==='artisan-story')return ['title','imageUrl'];
+ if(section.type==='media_text_split'&&section.layoutPreset==='kids-discovery')return ['title','description','icon','badge'];
+ if(section.type==='comparison_matrix'&&section.comparisonPreset==='device-table')return ['title','imageUrl','badge','description','value'];
+ if(section.type==='media_text_split'&&['producer-story','tech-feature'].includes(section.layoutPreset??''))return ['title','description','icon'];
+ if(section.type==='shop_navigation'&&['image-overlay','image-caption'].includes(section.shopNavigationPreset??''))return ['title','description','imageUrl','buttonText','linkUrl','sourceType','sourceId'];
+ if(section.type==='shop_navigation'&&['market-hero','market-offers'].includes(section.shopNavigationPreset??''))return ['title','subtitle','description','buttonText','imageUrl','linkUrl','sourceType','sourceId',...(section.shopNavigationPreset==='market-offers'?['badge']:[])];
+ if(section.type==='shop_navigation'&&['collection-banners','kids-banners','fashion-banners'].includes(section.shopNavigationPreset??''))return ['title','description','buttonText','imageUrl','linkUrl','sourceType','sourceId'];
+ if(section.type==='product_listing'&&section.listingPreset==='fashion-lookbook')return ['title','description','imageUrl','buttonText','linkUrl'];
+ if(section.type==='hero_slider'&&['editorial-overlay','fashion-editorial'].includes(section.sliderPreset??''))return ['title','subtitle','description','imageUrl','videoUrl','linkUrl','buttonText','secondaryButtonText','secondaryButtonLink','caption',...(section.sliderPreset==='fashion-editorial'?['thirdButtonText','thirdButtonLink']:[])];
  if(section.type==='store_locator'&&section.contactPreset==='location')return ['title','description','icon'];
  if(section.type==='feature_cards'&&section.featureCardsPreset==='service-highlights')return ['title','description','icon'];
  if(section.type==='feature_cards'&&section.featureCardsPreset==='editorial-columns')return ['title','description'];
- if(section.type==='media_gallery'&&section.galleryPreset==='editorial-montage')return ['title','imageUrl'];
- if(section.type==='media_text_split'&&section.layoutPreset==='editorial-story-cards')return ['title','description','imageUrl','buttonText','linkUrl'];
+ if(section.type==='media_gallery'&&section.galleryPreset==='portfolio-cards')return ['title','description','imageUrl','buttonText','linkUrl'];
+ if(section.type==='feature_cards'&&section.featureCardsPreset==='numbered-process')return ['title','description'];
+ if(section.type==='media_gallery'&&['editorial-montage','editorial-triptych'].includes(section.galleryPreset??''))return ['title','imageUrl'];
+ if(section.type==='media_text_split'&&['editorial-story-cards','editorial-journal-rows'].includes(section.layoutPreset??''))return ['title','description','imageUrl','buttonText','linkUrl'];
  if(section.type==='media_text_split')return !section.layoutPreset||['default','story-with-steps'].includes(section.layoutPreset)?['title','description']:[];
  if(section.type==='chapter_block'){
   if(section.chapterPreset==='policy')return repeatedItemFields({...section,type:'policy_content'});

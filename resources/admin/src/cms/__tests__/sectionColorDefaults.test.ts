@@ -25,7 +25,7 @@ describe('CMS section color defaults', () => {
   });
 
   it('retains the original 27 palettes and adds a readable standalone Values List palette', () => {
-    expect(SECTION_TEMPLATES).toHaveLength(68);
+    expect(SECTION_TEMPLATES).toHaveLength(73);
 
     for (const template of SECTION_TEMPLATES.filter(template => !template.defaultData.contactPreset && !template.defaultData.layoutPreset && !template.defaultData.ctaPreset && !template.defaultData.galleryPreset && !template.defaultData.featureCardsPreset && !template.defaultData.chapterPreset && !template.defaultData.faqPreset && template.type !== 'chapter_navigation' && template.type !== 'payment_methods' && template.type !== 'delivery_table' && template.type !== 'promotion_highlights' && template.type !== 'shop_navigation' && !template.defaultData.sliderPreset && !template.defaultData.policyPreset && !template.defaultData.listingPreset)) {
       expect(template.defaultData.customColors).toEqual(template.type==='values_list'?{...expectedDefaultColors,eyebrowColor:'#4f46e5',titleColor:'#171717',contentColor:'#737373'}:expectedDefaultColors);

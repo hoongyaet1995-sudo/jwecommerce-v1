@@ -22,6 +22,7 @@ export function PageTemplatePreview({templateId, context}: {templateId:string;co
   const page = useMemo<CmsPage>(() => ({id:'template-preview',title:'Template preview',slug:'template-preview',
     description:'',status:'draft',template:'standard',createdAt:'',updatedAt:'',
     style:createPageTemplateStyle(templateId),
+    ...(templateId==='everyday-market'?{containerWidth:'wide' as const}:{}),
         sections:createPageTemplateSections(templateId,context,'template-preview'),
   }),[templateId,context]);
   const payload = useMemo(() => createAdminPageRuntimePayload(page,{products:context.products??[],categories:context.categories??[],collections:context.collections??[]},context.currency,context.shippingRates,context.promotionOffers),[page,context]);

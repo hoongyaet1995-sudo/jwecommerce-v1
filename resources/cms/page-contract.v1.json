@@ -41,6 +41,90 @@
       },
       "style": {
         "$ref": "pageStyle"
+      },
+      "headerPresentation": {
+        "type": "object",
+        "allowUnknownFields": false,
+        "fields": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "inherit",
+              "normal",
+              "transparent",
+              "translucent"
+            ],
+            "required": true
+          },
+          "tone": {
+            "type": "string",
+            "enum": [
+              "dark",
+              "light"
+            ],
+            "required": true
+          }
+        }
+      },
+      "shellDesign": {
+        "type": "object",
+        "allowUnknownFields": false,
+        "fields": {
+          "business": {
+            "type": "string",
+            "enum": [
+              "commerce",
+              "service"
+            ],
+            "required": true
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "editorial",
+              "soft",
+              "modern"
+            ],
+            "required": true
+          },
+          "appearance": {
+            "type": "string",
+            "enum": [
+              "light",
+              "dark"
+            ],
+            "required": true
+          },
+          "showAnnouncement": {
+            "type": "boolean",
+            "required": true
+          },
+          "showAccount": {
+            "type": "boolean",
+            "required": true
+          },
+          "showCurrency": {
+            "type": "boolean",
+            "required": true
+          },
+          "showThemeSwitch": {
+            "type": "boolean",
+            "required": true
+          },
+          "ctaLabel": {
+            "type": "string"
+          },
+          "ctaUrl": {
+            "type": "string",
+            "format": "safeLink"
+          },
+          "tagline": {
+            "type": "string"
+          },
+          "contactEmail": {
+            "type": "string"
+          }
+        }
       }
     }
   },
@@ -543,7 +627,10 @@
       "enum": [
         "default",
         "editorial-montage",
-        "editorial-cards"
+        "editorial-cards",
+        "routine-steps",
+        "editorial-triptych",
+        "portfolio-cards"
       ]
     },
     "showSectionHeading": {
@@ -555,7 +642,8 @@
         "default",
         "values-list",
         "editorial-columns",
-        "service-highlights"
+        "service-highlights",
+        "numbered-process"
       ]
     },
     "valuesShowHeading": {
@@ -645,7 +733,13 @@
         "editorial-story",
         "editorial-cover",
         "editorial-story-cards",
-        "story-with-steps"
+        "story-with-steps",
+        "flush-split",
+        "producer-story",
+        "tech-feature",
+        "kids-discovery",
+        "artisan-story",
+        "editorial-journal-rows"
       ]
     },
     "mediaAlt": {
@@ -1029,6 +1123,23 @@
         "value": {
           "type": "string"
         },
+        "comparisonCells": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "allowUnknownFields": false,
+            "fields": {
+              "deviceId": {
+                "type": "string",
+                "required": true
+              },
+              "value": {
+                "type": "string",
+                "required": true
+              }
+            }
+          }
+        },
         "features": {
           "type": "array",
           "items": {
@@ -1071,6 +1182,12 @@
           ]
         },
         "sourceId": {
+          "type": "string"
+        },
+        "thirdButtonText": {
+          "type": "string"
+        },
+        "thirdButtonLink": {
           "type": "string"
         }
       }
@@ -1208,7 +1325,8 @@
       "type": "string",
       "enum": [
         "default",
-        "editorial-overlay"
+        "editorial-overlay",
+        "fashion-editorial"
       ]
     },
     "listingPreset": {
@@ -1216,14 +1334,31 @@
       "enum": [
         "default",
         "editorial-grid",
-        "editorial-tabs"
+        "editorial-tabs",
+        "fashion-lookbook",
+        "beauty-grid",
+        "pantry-grid",
+        "pantry-tabs",
+        "tech-grid",
+        "tech-tabs",
+        "kids-grid",
+        "kids-tabs"
       ]
     },
     "shopNavigationPreset": {
       "type": "string",
       "enum": [
         "cards",
-        "collection-banners"
+        "collection-banners",
+        "fashion-banners",
+        "market-hero",
+        "market-offers",
+        "image-overlay",
+        "image-caption",
+        "catalog-captions",
+        "recipe-cards",
+        "age-cards",
+        "kids-banners"
       ]
     },
     "bannerProportions": {
@@ -1398,6 +1533,20 @@
         }
       },
       "allowUnknownFields": false
+    },
+    "newsletterPreset": {
+      "type": "string",
+      "enum": [
+        "default",
+        "inline-signup"
+      ]
+    },
+    "comparisonPreset": {
+      "type": "string",
+      "enum": [
+        "default",
+        "device-table"
+      ]
     }
   },
   "section": {
@@ -1801,7 +1950,9 @@
           "buttonLink",
           "surface",
           "brandPalette",
-          "productTabs"
+          "productTabs",
+          "items",
+          "imageSlots"
         ],
         "publishRequired": [
           "title",
@@ -1933,7 +2084,9 @@
           "customColors",
           "mediaContainerMode",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "buttonText",
+          "buttonLink"
         ],
         "publishRequired": [
           "title"
@@ -2133,7 +2286,11 @@
           "items",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "comparisonPreset",
+          "imageSlots",
+          "buttonText",
+          "buttonLink"
         ],
         "publishRequired": [
           "title"
@@ -2349,7 +2506,8 @@
           "paddingY",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "newsletterPreset"
         ],
         "publishRequired": [
           "title"

@@ -1,6 +1,6 @@
 import React,{useLayoutEffect,useRef,useState} from 'react';
 import type {PageSection} from '../../types';
-export function supportsMediaWidth(section:PageSection) {return section.type==='policy_content'&&!!section.items?.some(item=>item.imageUrl!==undefined)||section.type==='media_text_split'&&section.layoutPreset!=='editorial-story-cards'||section.type==='media_gallery'||section.type==='chapter_block'&&(['story','perspective','delivery'].includes(section.chapterPreset??'story')||section.chapterPreset==='policy'&&!!section.items?.some(item=>item.imageUrl!==undefined));}
+export function supportsMediaWidth(section:PageSection) {return section.type==='policy_content'&&!!section.items?.some(item=>item.imageUrl!==undefined)||section.type==='media_text_split'&&!['editorial-story-cards','editorial-journal-rows','flush-split','producer-story','tech-feature','kids-discovery','artisan-story'].includes(section.layoutPreset??'default')||section.type==='media_gallery'&&section.galleryPreset!=='routine-steps'||section.type==='chapter_block'&&(['story','perspective','delivery'].includes(section.chapterPreset??'story')||section.chapterPreset==='policy'&&!!section.items?.some(item=>item.imageUrl!==undefined));}
 /** Measures the section canvas, never the browser viewport, so Builder and public agree. */
 export function MediaWidthRegion({section,children,className}:{section:PageSection;children:React.ReactNode;className?:string}) {
  const ref=useRef<HTMLDivElement>(null);const [geometry,setGeometry]=useState<{width:number;offset:number}>();

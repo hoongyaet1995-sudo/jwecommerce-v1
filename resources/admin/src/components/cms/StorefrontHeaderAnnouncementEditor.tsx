@@ -1,3 +1,5 @@
+import {HeaderPresentationSettings} from '../pages/HeaderPresentationSettings';
+import type {HeaderPresentation} from '../../cms/headerPresentation';
 import React, { useEffect, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import {
@@ -120,7 +122,7 @@ const whatsAppUrl = (number: string | undefined, current: string | null): string
 };
 
 export const announcementDraftFromSettings = (settings: StorefrontShellSettings): AnnouncementBarConfig => ({
-  enabled: settings.enabled,
+  enabled: settings.shellDesign?.showAnnouncement??settings.enabled,
   leftEnabled: settings.zones.left.enabled,
   leftText: settings.zones.left.text,
   leftBadge: settings.zones.left.badge,
@@ -147,6 +149,9 @@ export const storefrontShellSettingsFromDraft = (
   formData: AnnouncementBarConfig,
   layout: StorefrontShellLayout,
 ): StorefrontShellSettings => ({
+  shellDesign: persisted.shellDesign?{...persisted.shellDesign,showAnnouncement:formData.enabled}:undefined,
+  overlayLogos: persisted.overlayLogos,
+  headerPresentation: persisted.headerPresentation,
   enabled: formData.enabled,
   layout,
   theme: LEGACY_THEME_TO_SHELL[formData.theme],
@@ -317,6 +322,9 @@ export const StorefrontHeaderAnnouncementEditor: React.FC<StorefrontHeaderAnnoun
     headerMenus = []
   } = useAdmin();
 
+  const [overlayLogos,setOverlayLogos]=useState(storefrontShellSettings.overlayLogos??{light:null,dark:null});
+  const [headerPresentation,setHeaderPresentation]=useState<HeaderPresentation>(storefrontShellSettings.headerPresentation??{mode:'normal',tone:'dark'});
+
   // Local draft state for smooth editing and batch save
   const [formData, setFormData] = useState<AnnouncementBarConfig>(() => announcementDraftFromSettings(storefrontShellSettings));
 
@@ -348,6 +356,8 @@ export const StorefrontHeaderAnnouncementEditor: React.FC<StorefrontHeaderAnnoun
   const [previewViewport, setPreviewViewport] = useState<'desktop' | 'mobile'>(initialPreviewViewport);
 
   useEffect(() => {
+    setHeaderPresentation(storefrontShellSettings.headerPresentation??{mode:'normal',tone:'dark'});
+    setOverlayLogos(storefrontShellSettings.overlayLogos??{light:null,dark:null});
     setFormData(announcementDraftFromSettings(storefrontShellSettings));
     setHeaderSettings(prev => ({
       ...prev,
@@ -357,7 +367,7 @@ export const StorefrontHeaderAnnouncementEditor: React.FC<StorefrontHeaderAnnoun
 
   const selectedLayout = LEGACY_LAYOUT_TO_SHELL[headerSettings.template];
   const canSaveLive = canSaveStorefrontShellLayout(selectedLayout);
-  const draftSettings = storefrontShellSettingsFromDraft(storefrontShellSettings, formData, selectedLayout);
+  const draftSettings = storefrontShellSettingsFromDraft({...storefrontShellSettings,headerPresentation,overlayLogos}, formData, selectedLayout);
   // Quick Preset Handlers
   const applyPromoTemplate = (type: 'freeship' | 'authenticity' | 'flash_sale' | 'support_hotline') => {
     if (type === 'freeship') {
@@ -1040,7 +1050,7 @@ export const StorefrontHeaderAnnouncementEditor: React.FC<StorefrontHeaderAnnoun
       {/* ========================================================================= */}
       {activeTab === 'header_layout' && (
         <div className="space-y-6">
-          {/* Header Layout Templates */}
+          <HeaderPresentationSettings value={headerPresentation} onChange={setHeaderPresentation}/><details><summary className="font-semibold cursor-pointer">Overlay logo variants</summary><p className="text-xs text-neutral-500 my-3">Optional image URLs. Leave empty to use your existing store logo.</p>{(['light','dark'] as const).map(tone=><label key={tone} className="block text-xs mb-3">{tone==='light'?'Logo for light text':'Logo for dark text'}<input aria-label={'Overlay logo '+tone} value={overlayLogos[tone]??''} onChange={e=>setOverlayLogos({...overlayLogos,[tone]:e.target.value||null})} className="block w-full border rounded-lg p-2 mt-2 bg-transparent" placeholder="/storage/cms/media/..."/></label>)}</details>{/* Header Layout Templates */}
           <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
               <div>

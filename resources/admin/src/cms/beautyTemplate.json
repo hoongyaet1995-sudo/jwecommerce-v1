@@ -1,0 +1,381 @@
+{
+  "style": {
+    "palette": {
+      "paper": "#faf7f3",
+      "ink": "#382633",
+      "muted": "#6d6368",
+      "accent": "#49273f",
+      "light": "#fffaf6",
+      "secondary": "#ecd9d6",
+      "secondaryInk": "#382633",
+      "hover": "#352033"
+    },
+    "typography": {
+      "title": {
+        "fontFamily": "serif",
+        "fontSize": 34,
+        "fontWeight": 400,
+        "lineHeight": 1.1
+      },
+      "eyebrow": {
+        "fontFamily": "sans",
+        "fontSize": 10,
+        "fontWeight": 600,
+        "letterSpacing": 1.2
+      },
+      "content": {
+        "fontFamily": "sans",
+        "fontSize": 14,
+        "fontWeight": 400,
+        "lineHeight": 1.5
+      },
+      "itemTitle": {
+        "fontFamily": "serif",
+        "fontSize": 20,
+        "fontWeight": 400
+      },
+      "itemContent": {
+        "fontFamily": "sans",
+        "fontSize": 12,
+        "lineHeight": 1.4
+      }
+    },
+    "spacing": "compact",
+    "buttonRadius": 0,
+    "buttonSize": "compact"
+  },
+  "sections": [
+    {
+      "id": "beauty-0",
+      "type": "hero_slider",
+      "title": "A little care. Every day.",
+      "isVisible": true,
+      "containerMode": "full-bleed",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "compact",
+      "textAlignment": "left",
+      "textColor": "dark",
+      "sliderPreset": "fashion-editorial",
+      "sliderHeight": "normal",
+      "sliderAutoplay": false,
+      "overlayOpacity": 0,
+      "typography": {
+        "title": {
+          "fontFamily": "serif",
+          "fontSize": 56,
+          "fontWeight": 400,
+          "lineHeight": 1.05
+        }
+      },
+      "items": [
+        {
+          "id": "hero",
+          "title": "A little care.\nEvery day.",
+          "imageUrl": "/storage/cms/media/7885001b-8468-41d2-a6a3-c0ca54402a66.png",
+          "description": "Effective skincare for real life.\nSimple rituals. Lasting radiance.",
+          "buttonText": "Shop the collection",
+          "linkUrl": "/shop"
+        }
+      ]
+    },
+    {
+      "id": "beauty-1",
+      "type": "shop_navigation",
+      "title": "Shop by skin need",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "compact",
+      "textAlignment": "left",
+      "textColor": "dark",
+      "subtitle": "REAL SOLUTIONS. A BRIGHTER YOU.",
+      "shopNavigationPreset": "image-overlay",
+      "columnsCount": 4,
+      "buttonText": "View all",
+      "buttonLink": "/shop",
+      "typography": {
+        "itemTitle": {
+          "fontFamily": "serif",
+          "fontSize": 21,
+          "color": "#ffffff"
+        },
+        "itemContent": {
+          "fontSize": 11,
+          "color": "#ffffff"
+        }
+      },
+      "items": [
+        {
+          "id": "hydration",
+          "title": "Hydration",
+          "imageUrl": "/storage/cms/media/4f2e0150-f636-4fdc-8f37-f126c6dd1918.png",
+          "description": "Explore your hydration routine.",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "brightening",
+          "title": "Brightening",
+          "imageUrl": "/storage/cms/media/c9dff319-cead-44dd-a8ae-5345112b066b.png",
+          "description": "Find your everyday glow.",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "firming",
+          "title": "Firming",
+          "imageUrl": "/storage/cms/media/d1dd87dd-718b-44ef-84f8-3a61bfca16b1.png",
+          "description": "Care for your skin, every day.",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "calming",
+          "title": "Calming",
+          "imageUrl": "/storage/cms/media/4f2e0150-f636-4fdc-8f37-f126c6dd1918.png",
+          "description": "A little gentleness for your skin.",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        }
+      ]
+    },
+    {
+      "id": "beauty-2",
+      "type": "product_listing",
+      "title": "Daily essentials",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "compact",
+      "textAlignment": "left",
+      "textColor": "dark",
+      "subtitle": "BEAUTY RITUALS FOR BRIGHTER TOMORROWS.",
+      "listingPreset": "beauty-grid",
+      "sourceType": "manual",
+      "productIds": [],
+      "productLimit": 4,
+      "columnsCount": 4,
+      "imageRatio": "1:1",
+      "buttonText": "View all",
+      "buttonLink": "/shop",
+      "typography": {
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 14
+        }
+      }
+    },
+    {
+      "id": "beauty-3",
+      "type": "media_text_split",
+      "title": "More than skincare.\nA kinder tomorrow.",
+      "isVisible": true,
+      "containerMode": "full-bleed",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "compact",
+      "textAlignment": "left",
+      "textColor": "dark",
+      "layoutPreset": "flush-split",
+      "mediaPosition": "right",
+      "mediaUrl": "/storage/cms/media/d1dd87dd-718b-44ef-84f8-3a61bfca16b1.png",
+      "mediaAlt": "A quiet skincare moment in natural sunlight",
+      "content": "Tell your brand story here.\nShare your approach to everyday skincare,\nyour formulas and the people behind them.",
+      "buttonText": "Our story",
+      "buttonLink": "/page/about-us",
+      "customColors": {
+        "customBgColor": "#f4e9e4"
+      }
+    },
+    {
+      "id": "beauty-4",
+      "type": "shop_navigation",
+      "title": "Thoughtful ingredients",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "compact",
+      "textAlignment": "left",
+      "textColor": "dark",
+      "subtitle": "GET TO KNOW YOUR DAILY ESSENTIALS.",
+      "shopNavigationPreset": "image-caption",
+      "columnsCount": 3,
+      "items": [
+        {
+          "id": "centella",
+          "title": "Centella Asiatica",
+          "imageUrl": "/storage/cms/media/e02e2164-bc8b-448a-96c1-28106e3b4d7b.png",
+          "description": "Discover the ingredients in your routine.",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "hyaluronic",
+          "title": "Hyaluronic Acid",
+          "imageUrl": "/storage/cms/media/be398875-8e5f-4378-bf5b-38e9c1319c9c.png",
+          "description": "Explore the product ingredient guide.",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "niacinamide",
+          "title": "Niacinamide",
+          "imageUrl": "/storage/cms/media/fcb89cbf-f828-42dd-b4c3-1680413c665a.png",
+          "description": "Read the label. Get to know your skincare.",
+          "sourceType": "custom",
+          "linkUrl": "/shop"
+        }
+      ]
+    },
+    {
+      "id": "beauty-5",
+      "type": "media_gallery",
+      "title": "Your daily routine",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "compact",
+      "textAlignment": "left",
+      "textColor": "dark",
+      "subtitle": "THREE SIMPLE STEPS. YOUR DAILY RITUAL.",
+      "galleryPreset": "routine-steps",
+      "columnsCount": 3,
+      "customColors": {
+        "eyebrowColor": "#c9a1a5"
+      },
+      "typography": {
+        "itemTitle": {
+          "fontFamily": "sans",
+          "fontSize": 15,
+          "fontWeight": 600
+        }
+      },
+      "items": [
+        {
+          "id": "cleanse",
+          "title": "Cleanse",
+          "imageUrl": "/storage/cms/media/c9dff319-cead-44dd-a8ae-5345112b066b.png",
+          "description": "Begin with your cleanser."
+        },
+        {
+          "id": "treat",
+          "title": "Treat",
+          "imageUrl": "/storage/cms/media/d1dd87dd-718b-44ef-84f8-3a61bfca16b1.png",
+          "description": "Choose what fits your skin and routine."
+        },
+        {
+          "id": "moisturise",
+          "title": "Moisturise",
+          "imageUrl": "/storage/cms/media/4f2e0150-f636-4fdc-8f37-f126c6dd1918.png",
+          "description": "Finish with your moisturiser. Follow the product directions."
+        }
+      ]
+    },
+    {
+      "id": "beauty-6",
+      "type": "media_text_split",
+      "title": "The Daily Ritual Bundle",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "compact",
+      "textAlignment": "left",
+      "textColor": "dark",
+      "layoutPreset": "flush-split",
+      "mediaPosition": "left",
+      "mediaUrl": "/storage/cms/media/36dfba4f-9ee9-44c6-9a74-3823fe58419c.png",
+      "mediaAlt": "Illustrative collection of pink skincare containers",
+      "content": "Everyday essentials, thoughtfully brought together.\nExplore the sets available in our shop.",
+      "buttonText": "Explore routine sets",
+      "buttonLink": "/shop",
+      "customColors": {
+        "customBgColor": "#f0dfdc"
+      }
+    },
+    {
+      "id": "beauty-7",
+      "type": "media_text_split",
+      "title": "From our journal",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "compact",
+      "textAlignment": "left",
+      "textColor": "dark",
+      "subtitle": "SKINCARE TIPS. EVERYDAY RITUALS. A BRIGHTER YOU.",
+      "layoutPreset": "editorial-story-cards",
+      "buttonText": "View all",
+      "buttonLink": "/shop",
+      "buttonStyle": "text-link",
+      "items": [
+        {
+          "id": "journal-routine",
+          "title": "Finding a routine\nthat feels like you.",
+          "imageUrl": "/storage/cms/media/c9dff319-cead-44dd-a8ae-5345112b066b.png",
+          "description": "Start simple. Find your own rhythm.",
+          "buttonText": "Read more",
+          "linkUrl": "/page/about-us"
+        },
+        {
+          "id": "journal-ingredients",
+          "title": "A closer look at\nyour daily essentials.",
+          "imageUrl": "/storage/cms/media/36dfba4f-9ee9-44c6-9a74-3823fe58419c.png",
+          "description": "Learn what is inside your skincare.",
+          "buttonText": "Read more",
+          "linkUrl": "/page/about-us"
+        }
+      ]
+    },
+    {
+      "id": "beauty-8",
+      "type": "feature_cards",
+      "title": "Shopping services",
+      "isVisible": true,
+      "containerMode": "page",
+      "sectionBorder": "none",
+      "motionPreset": "subtle-lift",
+      "paddingY": "compact",
+      "textAlignment": "left",
+      "textColor": "dark",
+      "featureCardsPreset": "service-highlights",
+      "showSectionHeading": false,
+      "columnsCount": 4,
+      "items": [
+        {
+          "id": "shipping",
+          "title": "Shipping information",
+          "description": "Explore available delivery options.",
+          "icon": "Truck"
+        },
+        {
+          "id": "ingredients",
+          "title": "Thoughtful skincare",
+          "description": "Get to know your daily essentials.",
+          "icon": "Leaf"
+        },
+        {
+          "id": "payment",
+          "title": "Payment options",
+          "description": "Review payment methods at checkout.",
+          "icon": "Heart"
+        },
+        {
+          "id": "help",
+          "title": "Dedicated support",
+          "description": "Get in touch with our team.",
+          "icon": "Headphones"
+        }
+      ],
+      "customColors": {
+        "customBgColor": "#f4e9e4"
+      }
+    }
+  ]
+}

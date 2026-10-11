@@ -330,6 +330,8 @@ function validateValue(value: unknown, unresolvedSchema: ContractSchema, path: s
     fail(path, 'This value is not allowed by the page contract.');
   }
 
+  if (schema.format === 'safeLink' && typeof value === 'string' && value !== '' && !(/^#[a-zA-Z0-9_-]+$/.test(value) || (value.startsWith('/') && !value.startsWith('//') && !/[\\\u0000-\u0020]/.test(value)) || (value.startsWith('https://') && isSafeMediaUrl(value)))) fail(path, 'Use a same-site, anchor or public HTTPS destination.');
+
   if (schema.format === 'managed_or_external_url' && typeof value === 'string' && !isSafeMediaUrl(value)) {
     if (value.toLowerCase().startsWith('data:')) fail(path, 'Data URLs are not allowed in page documents.');
     fail(path, 'Media must use a managed asset URL or a safe public HTTPS URL.');

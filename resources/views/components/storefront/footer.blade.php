@@ -1,4 +1,6 @@
+@props(['design' => null])
 @php
+    $design = $design ?? \App\Domain\Cms\ShellDesign::resolve(app(\App\Services\StorefrontShellSettingsService::class)->live());
     $footerCategories = \App\Models\Category::query()->where('is_active', true)->orderBy('name')->limit(5)->get();
     $footerProduct = \App\Models\Product::query()->where('status', 'active')->orderBy('id')->first();
     $footerMenu = \App\Models\Menu::query()->where('key', 'footer')->with([
@@ -10,6 +12,9 @@
     $badgeStyle = fn (?string $color) => \App\Support\MenuBadgePalette::inlineStyle($color);
 @endphp
 
+@if($design)
+@include('components.storefront.designed-footer')
+@else
 <footer class="border-t border-zinc-200 bg-zinc-100 font-sans text-zinc-600 transition-colors duration-200 dark:border-zinc-900 dark:bg-zinc-950 dark:text-zinc-400">
     <div class="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 py-12 sm:px-6 md:grid-cols-5 lg:px-8">
         <section class="space-y-4 md:col-span-2">
@@ -31,3 +36,5 @@
     </div>
     <div class="mx-auto flex max-w-7xl flex-col gap-4 border-t border-zinc-200 px-4 py-6 text-xs sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8 dark:border-zinc-900"><span>© 2026 {{ $shopBrandName }}. All rights reserved.</span><span class="font-mono">Privacy Policy&nbsp;&nbsp;•&nbsp;&nbsp;Terms of Service&nbsp;&nbsp;•&nbsp;&nbsp;Global Compliance</span></div>
 </footer>
+
+@endif
