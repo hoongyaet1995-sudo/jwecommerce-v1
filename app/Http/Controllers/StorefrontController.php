@@ -53,12 +53,21 @@ class StorefrontController extends Controller
 
     public function index(Request $request): View
     {
-        return view('storefront.index', $this->listingData($request, Product::query()->where('status', 'active')) + [
+        return $this->listingView($request, $this->listingData($request, Product::query()->where('status', 'active')) + [
             'categories' => Category::query()->where('is_active', true)->get(),
             'collection' => null,
             'listingRouteName' => 'storefront.index',
             'listingRouteParameters' => [],
         ]);
+    }
+
+    private function listingView(Request $request, array $data): View
+    {
+        $category = !empty($data['category']) ? Category::where('slug', $data['category'])->first() : null;
+        $collection = $data['collection'] ?? null;
+        $scope = $collection ? 'collection:'.$collection->id : ($category ? 'category:'.$category->id : null);
+        $theme = $request->attributes->get('websiteDesignPreview') ?? app(\App\Services\WebsiteDesignService::class)->resolve($scope);
+        return view($theme === 'home_deco' ? 'storefront.themes.home-deco-listing' : 'storefront.index', $data + ['websiteDesignTheme'=>$theme, 'listingCategory'=>$category]);
     }
 
     private function listingData(Request $request, $query, ?string $forcedCategory = null): array
@@ -90,16 +99,14 @@ class StorefrontController extends Controller
             'pdpRelatedProducts.relatedProduct.images',
             'pdpRelatedProducts.relatedProduct.variants',
         ]);
-        $selectedVariant = $product->variants->firstWhere('id', $request->integer('variant'))
-            ?? $product->variants->firstWhere('stock', '>', 0)
-            ?? $product->variants->first();
+        $selectedVariant = app(\App\Services\StorefrontVariantData::class)->select($product->variants, $request->integer('variant'));
         $images = $product->images->sortBy('position')->values();
         $selectedImage = $images->get($request->integer('image'))
             ?? $images->firstWhere('product_variant_id', $selectedVariant?->id)
             ?? $images->first();
         $shopName = trim((string) data_get(StoreSetting::query()->where('key', 'shop_name')->value('value'), 'data'));
 
-        return view('storefront.show', [
+        return view(app(\App\Services\WebsiteDesignService::class)->surface($product->category_id ? 'category:'.$product->category_id : null) === 'home_deco' ? 'storefront.themes.home-deco-pdp' : 'storefront.show', [
             'product' => $product,
             'selectedVariant' => $selectedVariant,
             'selectedImage' => $selectedImage,
@@ -117,7 +124,7 @@ class StorefrontController extends Controller
     {
         abort_unless($collection->is_active, 404);
 
-        return view('storefront.index', $this->listingData($request, $collection->products()->where('status', 'active')) + [
+        return $this->listingView($request, $this->listingData($request, $collection->products()->where('status', 'active')) + [
             'collection' => $collection,
             'categories' => Category::query()->where('is_active', true)->get(),
             'listingRouteName' => 'storefront.collections.show',
@@ -129,7 +136,7 @@ class StorefrontController extends Controller
     {
         abort_unless($category->is_active, 404);
 
-        return view('storefront.index', $this->listingData(
+        return $this->listingView($request, $this->listingData(
             $request,
             $category->products()->where('status', 'active'),
             $category->slug,

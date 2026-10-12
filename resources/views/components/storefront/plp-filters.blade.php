@@ -3,7 +3,7 @@
     $bounds = $facets['priceBounds'];
     $range = max(1, $bounds['max'] - $bounds['min']);
     $currency = app(\App\Support\StorefrontCurrencyContext::class)->current();
-    $lockedCategory = array_key_exists('category', $routeParameters);
+    $lockedCategory = array_key_exists('category', $routeParameters) || str_starts_with((string) ($routeParameters['scope'] ?? ''), 'category:');
     $hasActiveFilters = $category || $filters['priceRequested'] || $filters['inStock'] || $filters['colors'] !== [] || $filters['materials'] !== [] || $filters['minRating'] > 0 || $search !== '';
     $resetUrl = route($routeName, array_merge($routeParameters, array_filter(['layout' => $layout, 'sort' => $sort])));
 @endphp

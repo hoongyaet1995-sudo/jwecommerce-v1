@@ -23,7 +23,7 @@ export const StorefrontHub: React.FC = () => {
   const footerL1Count = footerMenus.length;
   const announcementEnabled = storefrontShellSettings.enabled;
 
-  const cards = [
+  const cards = [{id:'website-design' as const,title:'Website Theme',shortName:'Store Theme & Product Listings',description:'Choose the store theme and category or collection overrides with a real catalog preview.',icon:LayoutTemplate,iconBg:'from-indigo-500 to-violet-600',badge:'Design Studio',badgeColor:'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/20',highlights:['Store-wide theme','Category & collection overrides','Real catalog preview'],actionLabel:'Open Website Theme'},
     {
       id: 'storefront-header-announcement' as const,
       title: 'Header & Announcement Bar',

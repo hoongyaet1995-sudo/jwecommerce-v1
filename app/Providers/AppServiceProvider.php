@@ -35,6 +35,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        \Illuminate\Auth\Notifications\ResetPassword::createUrlUsing(fn ($user, $token) => route('customer.password.reset', ['token'=>$token,'email'=>$user->email]));
         RateLimiter::for('ai-provider-save', fn (Request $request): Limit => Limit::perMinute(20)
             ->by('ai-save:'.$request->user()?->id.':'.$request->route('provider')));
         RateLimiter::for('ai-provider-check', fn (Request $request): Limit => Limit::perMinute(6)

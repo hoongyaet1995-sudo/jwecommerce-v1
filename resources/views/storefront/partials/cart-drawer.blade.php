@@ -1,3 +1,6 @@
+@if(app(\App\Services\WebsiteDesignService::class)->surface() === 'home_deco')
+@include('storefront.themes.home-deco-cart-drawer')
+@else
 @php
     $itemCount = $items->sum('quantity');
     $shippingThreshold = (int) ($shippingProgressThreshold ?? 0);
@@ -118,3 +121,5 @@
         </footer>
     @endif
 </section>
+
+@endif

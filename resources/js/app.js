@@ -139,7 +139,7 @@ const renderIcons = () => {
 };
 
 const refreshCartDrawer = async (drawer) => {
-    const response = await fetch('/cart/drawer', {
+    const response = await fetch(drawer.dataset.cartDrawerUrl || '/cart/drawer', {
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
         credentials: 'same-origin',
     });
@@ -289,7 +289,7 @@ const installStorefrontCartAdds = () => {
     document.addEventListener('submit', async (event) => {
         const form = event.target.closest('form[action$="/cart/items"]');
 
-        if (!form || form.matches('[data-cart-drawer-form], [data-quick-add-form]') || form.querySelector('input[name="checkout"]') || window.location.pathname === '/cart') {
+        if (!form || form.matches('[data-cart-drawer-form], [data-quick-add-form]') || form.querySelector('input[name="checkout"]') || event.submitter?.name === 'checkout' || window.location.pathname === '/cart') {
             return;
         }
 
@@ -1197,8 +1197,15 @@ const installStorefrontVariantSelectors = () => {
 
             document.querySelectorAll('[data-pdp-add-to-cart], [data-pdp-instant-buy], [data-pdp-sticky-add]').forEach((button) => {
                 button.disabled = outOfStock || !enabled;
-                if (button.matches('[data-pdp-add-to-cart]')) button.textContent = outOfStock || !enabled ? 'Sold out' : `Add to Cart · ${storefrontMoney(variant.price)}`;
+                if (button.matches('[data-pdp-add-to-cart]')) button.textContent = outOfStock || !enabled ? (variant.stock === null ? 'Awaiting stock verification' : 'Sold out') : (button.closest('[data-home-deco-pdp]') ? 'Add to bag' : `Add to Cart · ${storefrontMoney(variant.price)}`);
             });
+
+            const purchaseQuantity = selector.closest('form')?.querySelector('input[name="quantity"]');
+            if (purchaseQuantity) {
+                const max = Math.max(1, Number(variant.stock || 0));
+                purchaseQuantity.max = String(max);
+                purchaseQuantity.value = String(Math.min(max, Math.max(1, Number(purchaseQuantity.value || 1))));
+            }
 
             selector.querySelectorAll('[data-pdp-option-value]').forEach((button) => {
                 const selected = String(button.dataset.pdpOptionValue) === String(selectedValues[button.dataset.pdpOptionName]);

@@ -11,6 +11,7 @@ import { ToastContainer } from './components/common/ToastContainer';
 
 // Pages / Sub-components
 import { DashboardOverview } from './components/dashboard/DashboardOverview';
+import { WebsiteDesignAdmin } from './components/cms/WebsiteDesignAdmin';
 import { HeaderMenuAdmin } from './components/menus/HeaderMenuAdmin';
 import { FooterMenuAdmin } from './components/menus/FooterMenuAdmin';
 import { ProductAdmin } from './components/catalog/ProductAdmin';
@@ -104,6 +105,7 @@ const AdminLayoutContent: React.FC = () => {
         return <StorefrontHeaderAnnouncementEditor />;
       case 'pages-builder':
         return <PageAdmin />;
+      case 'website-design': return <WebsiteDesignAdmin />;
       case 'menu-header':
         return <HeaderMenuAdmin />;
       case 'menu-footer':

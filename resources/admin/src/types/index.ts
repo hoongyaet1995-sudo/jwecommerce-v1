@@ -1181,6 +1181,7 @@ export type NavSection =
   | 'marketplace-sync'
   | 'storefront'
   | 'storefront-header-announcement'
+  | 'website-design'
   | 'menu-header'
   | 'menu-footer'
   | 'pages-builder'

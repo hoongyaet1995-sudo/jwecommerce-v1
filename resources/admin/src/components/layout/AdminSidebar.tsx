@@ -116,6 +116,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
     currentSection === 'storefront' ||
     currentSection === 'storefront-header-announcement' ||
     currentSection === 'pages-builder' ||
+    currentSection === 'website-design' ||
     currentSection === 'menu-header' ||
     currentSection === 'menu-footer';
 
@@ -228,6 +229,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
         { id: 'storefront' as NavSection, label: 'Overview Hub' },
         { id: 'storefront-header-announcement' as NavSection, label: 'Header & Announcement' },
         { id: 'pages-builder' as NavSection, label: 'Page Builder' },
+        { id: 'website-design' as NavSection, label: 'Website Theme' },
         { id: 'menu-header' as NavSection, label: 'Header Mega Menu' },
         { id: 'menu-footer' as NavSection, label: 'Footer Menu' },
       ],

@@ -83,6 +83,19 @@ Route::get('/support/chat', [\App\Http\Controllers\Storefront\SupportChatControl
 Route::get('/support/faq', [\App\Http\Controllers\SupportFaqController::class, 'show'])->middleware('throttle:60,1');
 Route::post('/support/chat/messages', [\App\Http\Controllers\Storefront\SupportChatController::class, 'send'])->middleware('throttle:20,1');
 Route::post('/support/chat/resolved', [\App\Http\Controllers\Storefront\SupportChatController::class, 'resolved'])->middleware('throttle:20,1');
+Route::get('/page-template-sample/home-deco-catalog-preview', function () {
+    abort_unless(app()->environment('local'), 404);
+    $products = \App\Models\Category::where('slug', 'tables')->firstOrFail()->products()->where('status', 'active')->with(['variants', 'images'])->get();
+    return view('storefront.samples.home-deco-catalog', compact('products'));
+});
+
+Route::get('/page-template-sample/home-deco-pdp/{handle}', function (\Illuminate\Http\Request $request, string $handle) {
+    abort_unless(app()->environment('local'), 404);
+    $view = app(StorefrontController::class)->show($request, $handle);
+    if ($view instanceof \Illuminate\Http\RedirectResponse) return $view;
+    return view('storefront.samples.home-deco-pdp', $view->getData());
+});
+
 Route::get('/shop', [StorefrontController::class, 'index'])->name('storefront.index');
 Route::get('/categories/{category:slug}', [StorefrontController::class, 'category'])->name('storefront.categories.show');
 Route::get('/collections/{collection:slug}', [StorefrontController::class, 'collection'])->name('storefront.collections.show');
@@ -139,13 +152,16 @@ Route::middleware('guest:customer')->prefix('account')->name('customer.')->group
     Route::get('/register', [CustomerAuthController::class, 'registerForm'])->name('register');
     Route::post('/register', [CustomerAuthController::class, 'register'])->name('register.store');
     Route::get('/forgot-password', [CustomerAuthController::class, 'forgotPasswordForm'])->name('password.request');
-    Route::post('/forgot-password', [CustomerAuthController::class, 'sendPasswordResetLink'])->name('password.email');
+    Route::post('/forgot-password', [CustomerAuthController::class, 'sendPasswordResetLink'])->middleware('throttle:5,1')->name('password.email');
+    Route::get('/reset-password/{token}', [CustomerAuthController::class, 'resetPasswordForm'])->name('password.reset');
+    Route::post('/reset-password', [CustomerAuthController::class, 'resetPassword'])->middleware('throttle:5,1')->name('password.update');
 });
 Route::middleware(['auth:customer', 'customer'])->prefix('account')->name('customer.')->group(function (): void {
     Route::get('/', [CustomerAccountController::class, 'show'])->name('account');
     Route::post('/coupons/apply', [CustomerCouponController::class, 'apply'])->name('coupons.apply');
     Route::patch('/profile', [CustomerAccountController::class, 'updateProfile'])->name('profile.update');
     Route::post('/addresses', [CustomerAccountController::class, 'storeAddress'])->name('addresses.store');
+    Route::patch('/addresses/{address}', [CustomerAccountController::class, 'updateAddress'])->whereNumber('address')->name('addresses.update');
     Route::post('/wishlist/{product}', [CustomerAccountController::class, 'storeWishlist'])->name('wishlist.store');
     Route::delete('/wishlist/{product}', [CustomerAccountController::class, 'destroyWishlist'])->name('wishlist.destroy');
     Route::get('/reviews/media/{media}', [ProductReviewMediaController::class, 'showForCustomer'])->name('reviews.media.show');
@@ -237,6 +253,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/pages/{page}/preview', PagePreviewController::class)->name('pages.preview');
     Route::get('/cms-canary/pages/{page}', [StorefrontPageController::class, 'forPublished'])->name('cms-canary.pages.show');
     Route::get('/api/catalog', [CatalogApiController::class, 'index'])->name('api.catalog.index');
+    Route::get('/website-design', AdminAppController::class)->name('website-design');
+    Route::get('/api/website-design', [\App\Http\Controllers\Admin\WebsiteDesignController::class, 'show']);
+    Route::put('/api/website-design', [\App\Http\Controllers\Admin\WebsiteDesignController::class, 'update']);
+    Route::get('/website-design/cart-drawer', [\App\Http\Controllers\Admin\WebsiteDesignController::class, 'drawer'])->name('website-design.cart-drawer');
+    Route::get('/website-design/preview', [\App\Http\Controllers\Admin\WebsiteDesignController::class, 'preview'])->name('website-design.preview');
     Route::get('/api/catalog-listing-settings', [CatalogListingSettingsApiController::class, 'show'])->name('api.catalog-listing-settings.show');
     Route::put('/api/catalog-listing-settings', [CatalogListingSettingsApiController::class, 'update'])->name('api.catalog-listing-settings.update');
     Route::post('/api/catalog/categories', [CatalogApiController::class, 'storeCategory']);

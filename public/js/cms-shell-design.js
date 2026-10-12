@@ -2,7 +2,13 @@
 (()=>{
  const header=document.querySelector('[data-shell-header]');if(!header)return;
  const menus=[...header.querySelectorAll('.jw-shell-desktop .jw-shell-dropdown')];
- const scrollState=()=>{header.dataset.headerScrolled=String(window.scrollY>16)};
+ // A compact header changes document height. Separate thresholds prevent
+ // browser scroll anchoring from repeatedly crossing one shared boundary.
+ const scrollState=()=>{
+  const compact=header.dataset.headerScrolled==='true';
+  const next=compact?window.scrollY>8:window.scrollY>64;
+  if(header.dataset.headerScrolled!==String(next))header.dataset.headerScrolled=String(next);
+ };
  const place=()=>menus.filter(d=>d.open).forEach(d=>{const p=d.querySelector('.jw-shell-submenu');p.style.translate='';const r=p.getBoundingClientRect();const shift=r.left<16?16-r.left:r.right>window.innerWidth-16?window.innerWidth-16-r.right:0;if(shift)p.style.translate=shift+'px 0'});
  menus.forEach(d=>d.addEventListener('toggle',()=>{if(d.open){menus.forEach(other=>{if(other!==d)other.open=false});place()}}));
  document.addEventListener('click',e=>{if(!e.target.closest('.jw-shell-dropdown'))menus.forEach(d=>d.open=false)});

@@ -13,6 +13,26 @@ class CustomerAccountOperationsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_cms_wishlist_context_is_scoped_to_public_customer_and_rendered_products(): void
+    {
+        $user=User::factory()->create(['is_admin'=>false]);
+        $customer=Customer::create(['user_id'=>$user->id,'email'=>$user->email,'first_name'=>'Alex']);
+        $category=Category::create(['name'=>'Home','slug'=>'wishlist-home','status'=>'active']);
+        $product=Product::create(['category_id'=>$category->id,'title'=>'Chair','handle'=>'cms-wishlist-chair','brand'=>'JW','description'=>'Test','base_price'=>10000,'status'=>'active']);
+        $customer->wishlistItems()->create(['product_id'=>$product->id]);
+        $this->actingAs($user,'customer');
+        $payload=['context'=>['mode'=>'public'],'runtime'=>['sections'=>[0=>['listing'=>['products'=>[['id'=>(string)$product->id,'commerce'=>['price'=>100,'compareAtPrice'=>null]]]]]]]];
+        app(\App\Domain\Cms\ProductListingPresentation::class)->prepare($payload);
+        $this->assertTrue($payload['context']['wishlist']['authenticated']);
+        $this->assertSame([(string)$product->id],$payload['context']['wishlist']['savedProductIds']);
+        $this->assertSame('/account/login',$payload['context']['wishlist']['loginUrl']);
+        $payload['context']['mode']='preview';
+        app(\App\Domain\Cms\ProductListingPresentation::class)->prepare($payload);
+        $this->assertFalse($payload['context']['wishlist']['authenticated']);
+        $this->assertSame([],$payload['context']['wishlist']['savedProductIds']);
+        $this->assertSame('',$payload['context']['wishlist']['csrfToken']);
+    }
+
     public function test_customer_profile_address_and_wishlist_persist_to_mysql(): void
     {
         $user = User::factory()->create(['is_admin'=>false]);

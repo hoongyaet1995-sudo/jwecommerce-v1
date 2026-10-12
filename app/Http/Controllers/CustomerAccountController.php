@@ -16,7 +16,7 @@ class CustomerAccountController extends Controller
         $customer = $request->user('customer')->customer;
         abort_unless($customer !== null, 403);
 
-        return view('storefront.account', [
+        return view(app(\App\Services\WebsiteDesignService::class)->surface() === 'home_deco' ? 'storefront.themes.home-deco-account' : 'storefront.account', [
             'customer' => $customer,
             'accountPayload' => $factory->for($customer),
         ]);
@@ -41,7 +41,35 @@ class CustomerAccountController extends Controller
 
     public function storeAddress(Request $request): RedirectResponse
     {
-        $data = $request->validate([
+        $data = $this->addressData($request);
+        $customer = $request->user('customer')->customer;
+
+        DB::transaction(function () use ($customer, $data): void {
+            if (($data['is_default'] ?? false) || ! $customer->addresses()->exists()) {
+                $customer->addresses()->update(['is_default' => false]);
+                $data['is_default'] = true;
+            }
+            $customer->addresses()->create($data);
+        });
+
+        return redirect()->route('customer.account')->with('status', 'Address saved.');
+    }
+
+    public function updateAddress(Request $request, int $address): RedirectResponse
+    {
+        $customer=$request->user('customer')->customer;
+        $owned=$customer->addresses()->whereKey($address)->firstOrFail();
+        $data=$this->addressData($request);
+        DB::transaction(function () use ($customer,$owned,$data) {
+            if ($data['is_default'] ?? false) $customer->addresses()->whereKeyNot($owned->id)->update(['is_default'=>false]);
+            $owned->update($data);
+        });
+        return redirect()->route('customer.account')->with('status','Address updated.');
+    }
+
+    private function addressData(Request $request): array
+    {
+        return $request->validate([
             'label' => ['nullable', 'string', 'max:100'],
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
@@ -54,17 +82,6 @@ class CustomerAccountController extends Controller
             'country' => ['required', 'string', 'max:255'],
             'is_default' => ['nullable', 'boolean'],
         ]);
-        $customer = $request->user('customer')->customer;
-
-        DB::transaction(function () use ($customer, $data): void {
-            if (($data['is_default'] ?? false) || ! $customer->addresses()->exists()) {
-                $customer->addresses()->update(['is_default' => false]);
-                $data['is_default'] = true;
-            }
-            $customer->addresses()->create($data);
-        });
-
-        return redirect()->route('customer.account')->with('status', 'Address saved.');
     }
 
     public function storeWishlist(Request $request, Product $product): RedirectResponse

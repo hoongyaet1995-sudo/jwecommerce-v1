@@ -2,24 +2,7 @@
 
 @php
     $selectedAvailable = $selectedVariant ? app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($selectedVariant) : null;
-    $payload = $variants->values()->map(function ($variant) use ($images) {
-        $linkedImage = $images->firstWhere('product_variant_id', $variant->id);
-
-        return [
-            'id' => (string) $variant->id,
-            'sku' => $variant->sku,
-            'title' => $variant->title,
-            'price' => (int) $variant->price,
-            'compareAt' => $variant->compare_at_price ? (int) $variant->compare_at_price : null,
-            'stock' => app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($variant),
-            'enabled' => $variant->enabled !== false,
-            'options' => is_array($variant->options) ? $variant->options : [],
-            'image' => $variant->image_url ?: $linkedImage?->path,
-            'visualType' => $variant->visual_type,
-            'colorCode' => $variant->color_code ?: $variant->color_hex,
-            'optionImage' => $variant->option_image,
-        ];
-    });
+    $payload = app(\App\Services\StorefrontVariantData::class)->payload($variants, $images);
 
     $configuredOptions = collect($product->options ?? [])
         ->filter(fn ($option) => is_array($option) && filled($option['name'] ?? null) && is_array($option['values'] ?? null) && count($option['values']))

@@ -1,7 +1,7 @@
 <x-layouts.app title="{{ $product->title }}{{ filled($pdpBrand) ? ' | '.$pdpBrand : '' }}">
     @php
         $selectedAvailable = $selectedVariant ? app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($selectedVariant) : null;
-        $cartEnabled = $selectedVariant && $selectedAvailable > 0;
+        $cartEnabled = app(\App\Services\StorefrontVariantData::class)->canAdd($selectedVariant);
         $productUrl = route('storefront.products.show', ['handle' => $product->handle]);
         $fallbackImage = asset('images/image-not-found.png');
         $price = $selectedVariant?->price ?? $product->base_price;

@@ -1,0 +1,51 @@
+/* Isolated Home & Deco sample skin. Existing quick-add hooks and commerce handlers stay intact. */
+.home-deco-theme [data-quick-add-modal]{background:rgb(32 38 26 / 48%);backdrop-filter:blur(5px);color:#30382b;font-family:Arial,sans-serif;padding:24px}
+.home-deco-theme [data-quick-add-modal]>.relative{background:#faf8f3;border:1px solid #e0e1d5;border-radius:5px;max-width:920px;box-shadow:0 20px 70px #20261a30}
+.home-deco-theme [data-quick-add-modal]>.relative>div:first-of-type{background:#f0efe8;border:0;padding:30px;width:44%;gap:20px;justify-content:flex-start}
+.home-deco-theme [data-quick-add-modal]>.relative>div:last-of-type{background:#faf8f3;padding:42px 35px 32px;width:56%;gap:24px;max-height:90dvh}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-close]{background:#faf8f3;border:none;border-radius:0;box-shadow:none;color:#69715b;right:12px;top:12px}
+.home-deco-theme [data-quick-add-modal]>.relative>div:first-of-type>div:first-child>span:first-child{padding:0;border:none;background:none;color:#7f8970;font:10px Arial,sans-serif;letter-spacing:1.5px;font-weight:400;border-radius:0}
+.home-deco-theme [data-quick-add-modal]>.relative>div:first-of-type>.group{border:0;background:#f0efe8;border-radius:0;box-shadow:none;overflow:visible}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-hero]{object-fit:contain;mix-blend-mode:multiply;transform:none}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-sold-out-overlay]{top:auto;bottom:36px;left:0;right:0;background:none;backdrop-filter:none;padding:0;pointer-events:none}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-sold-out-overlay]>div{background:#faf8f3ed;border:1px solid #e0e1d5;box-shadow:none;border-radius:2px;padding:10px 13px}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-sold-out-overlay] span:first-child{color:#6b735e;font:11px Arial,sans-serif;text-transform:none;letter-spacing:0;font-weight:400}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-sold-out-overlay] span+span{color:#8a917d;font-size:10px;margin-top:5px}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-sku]{color:#89917b}
+.home-deco-theme [data-quick-add-modal] .group>div:last-child:not([data-quick-add-sold-out-overlay]){background:none;border:0;box-shadow:none;backdrop-filter:none;color:#89917b;font:9px Arial,sans-serif;left:0;bottom:0;padding:0;border-radius:0}
+.home-deco-theme [data-quick-add-modal] .group>div:last-child>span:first-child{display:none}
+.home-deco-theme [data-quick-add-modal] h2{font:30px/1.25 Georgia,serif;color:#30382b;letter-spacing:-.5px;padding-right:12px;font-weight:400}
+.home-deco-theme [data-quick-add-modal] h2+p{font-size:12px;line-height:1.7;color:#929784;margin-top:10px}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-price]{font:19px Arial,sans-serif;color:#424d34;font-weight:400}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-selector]{border-color:#dedfd2;padding:19px 0}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-selector]>div:first-child{align-items:flex-start;gap:13px;flex-direction:column}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-selected-label]{font-size:12px;color:#55623f;font-weight:400}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-selector] .font-mono{font-family:Arial,sans-serif;text-transform:none;letter-spacing:0;font-weight:400;color:#7d856e}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-availability]{font-size:11px;color:#8b795d!important;font-family:Arial,sans-serif}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-availability-dot]{background:#a39475!important}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-option-value]{box-shadow:none;border-color:#d1d6c4;border-radius:3px;font-weight:400}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-option-value][aria-checked=true]{border-color:#69794d!important;background:#edf0e4;color:#52603d;box-shadow:0 0 0 1px #69794d!important}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-option-value]:disabled{opacity:.65}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-option-check]{color:#69794d}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-option-dropdown]{background:#faf8f3;border-radius:3px;border-color:#ccd3bf;color:#4d5940;box-shadow:none}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-form]>div>div{background:none;border-color:#ccd2bf;border-radius:3px;box-shadow:none}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-quantity]{font:13px Arial,sans-serif;color:#4d5940}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-confirm]{background:#53623d;color:white;border-radius:3px;box-shadow:none;font:12px Arial,sans-serif;min-height:46px}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-confirm]:disabled{background:#e5e8dc;color:#8d957f;opacity:1;border:1px solid #d8ddcc}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-confirm-sold-out] svg{color:#929c82}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-product-link]{font:11px Arial,sans-serif;color:#59694a;font-weight:400}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-stock-note]{font:10px Arial,sans-serif;color:#8e957f;text-align:right}
+.home-deco-theme [data-quick-add-modal] [data-quick-add-thumbnail]{border-radius:2px;box-shadow:none}
+@media(max-width:767px){
+ .home-deco-theme [data-quick-add-modal]{padding:12px;align-items:flex-start}
+ .home-deco-theme [data-quick-add-modal]>.relative{max-width:430px;max-height:94dvh;overflow-y:auto;display:block;margin:auto}
+ .home-deco-theme [data-quick-add-modal]>.relative>div:first-of-type{width:100%;padding:18px 25px 12px;gap:6px}
+ .home-deco-theme [data-quick-add-modal]>.relative>div:first-of-type>.group{aspect-ratio:auto;height:175px;max-width:240px;margin:0 auto}
+ .home-deco-theme [data-quick-add-modal]>.relative>div:last-of-type{width:100%;padding:23px 25px;overflow:visible;max-height:none;gap:18px}
+ .home-deco-theme [data-quick-add-modal] h2{font-size:23px;line-height:1.3;padding-right:0}
+ .home-deco-theme [data-quick-add-modal] h2+p{font-size:11px;margin-top:6px}
+ .home-deco-theme [data-quick-add-modal] [data-quick-add-sold-out-overlay]{bottom:20px}
+ .home-deco-theme [data-quick-add-modal] [data-quick-add-sold-out-overlay] span+span{display:none}
+ .home-deco-theme [data-quick-add-modal] [data-quick-add-selector]{padding:13px 0}
+}
+.home-deco-theme [data-quick-add-modal]{z-index:56}

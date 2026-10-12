@@ -90,6 +90,7 @@ export const AdminHeader: React.FC<{ onToggleMobileSidebar: () => void }> = ({
       case 'marketplace-sync': return { category: 'Marketplace Ecosystem', title: 'Webhooks & Sync Stream' };
       case 'storefront': return { category: 'Storefront CMS', title: 'Storefront Overview Hub' };
       case 'pages-builder': return { category: 'Storefront CMS', title: 'Design Layout Pages (CMS)' };
+      case 'website-design': return { category: 'Storefront CMS', title: 'Website Theme' };
       case 'menu-header': return { category: 'Storefront CMS', title: '3-Level Header Menu Builder' };
       case 'menu-footer': return { category: 'Storefront CMS', title: '2-Level Footer Menu Builder' };
       case 'catalog': return { category: 'Catalog Management', title: 'Catalog Overview Hub' };

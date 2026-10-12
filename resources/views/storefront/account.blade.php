@@ -296,8 +296,9 @@
     }"
 >
     <x-storefront.nav active="account" />
+@if($websiteDesignPreview ?? false)<div class="p-4 text-sm">Design preview. Sample account actions disabled.</div>@endif
 
-    <main class="flex-1">
+    <main @if($websiteDesignPreview ?? false) inert @endif class="flex-1">
         <div class="min-h-screen py-8 sm:py-12 px-4 sm:px-6 lg:px-8 font-sans bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-200">
             <div class="max-w-7xl mx-auto">
                 <div class="flex flex-col lg:flex-row items-start gap-8">

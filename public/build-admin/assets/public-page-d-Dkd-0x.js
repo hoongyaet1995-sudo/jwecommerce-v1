@@ -1,0 +1,1 @@
+import{aH as o,aG as s,j as t,r,av as n,aI as c,aJ as i}from"./index-CtSgU-7y.js";const a=document.getElementById("cms-page-root");if(a){const e=o();s.createRoot(a).render(t.jsx(r.StrictMode,{children:e?t.jsx(n,{payload:e,children:t.jsx(c,{sections:e.page.document.sections,mode:e.context.mode})}):t.jsx(i,{})}))}

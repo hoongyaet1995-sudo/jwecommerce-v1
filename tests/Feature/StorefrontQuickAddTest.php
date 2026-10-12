@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class StorefrontQuickAddTest extends TestCase
@@ -82,6 +83,17 @@ class StorefrontQuickAddTest extends TestCase
         $this->getJson('/csrf-token')
             ->assertOk()
             ->assertJsonStructure(['token']);
+    }
+    public function test_home_deco_preserves_variation_and_cart_contract_with_authoritative_stock(): void
+    {
+        $product = $this->multiSkuProduct();
+        app(\App\Services\WebsiteDesignService::class)->save(['theme'=>'home_deco','overrides'=>[]]);
+        $variant = $product->variants()->where('sku', 'QUICK-IN-STOCK')->firstOrFail();
+        $this->get('/shop')->assertOk()->assertSee('data-website-theme="home_deco"', false)
+            ->assertSee('Buy Now')->assertSee('data-quick-add-modal', false)->assertSee('Product details');
+        $this->postJson('/cart/items', ['variant_id'=>$variant->id,'quantity'=>1])->assertRedirect(route('cart.show'));
+        $this->assertSame(1,session('cart')[$variant->id]);
+        $this->get('/cart/drawer')->assertOk()->assertSee('data-home-deco-cart', false)->assertSee('data-cart-drawer-form', false)->assertSee('Checkout');
     }
 
     public function test_cart_store_rejects_an_out_of_stock_sku_without_creating_a_cart_line(): void
@@ -170,6 +182,13 @@ class StorefrontQuickAddTest extends TestCase
             'option_image' => '/images/catalog/white.jpg',
         ]);
 
+        config(['inventory.current_stock_only' => true]);
+        DB::table('inventory_configuration')->where('id', 1)->update(['operating_mode' => 'shared_pool']);
+        DB::table('inventory_pools')->updateOrInsert(['pool_key' => 'shared'], ['kind' => 'shared', 'created_at' => now(), 'updated_at' => now()]);
+        $poolId = DB::table('inventory_pools')->where('pool_key', 'shared')->value('id');
+        foreach ($product->variants as $variant) {
+            DB::table('inventory_balances')->insert(['inventory_pool_id' => $poolId, 'product_variant_id' => $variant->id, 'current_stock' => $variant->stock, 'created_at' => now(), 'updated_at' => now()]);
+        }
         return $product->fresh('variants');
     }
 

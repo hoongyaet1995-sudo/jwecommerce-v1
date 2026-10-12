@@ -27,6 +27,7 @@ export const ADMIN_PATH_BY_SECTION = {
   storefront: '/admin/storefront',
   'storefront-header-announcement': '/admin/storefront/header-announcement',
   'pages-builder': '/admin/pages',
+  'website-design': '/admin/website-design',
   'menu-header': '/admin/menus/header',
   'menu-footer': '/admin/menus/footer',
   support: '/admin/support',

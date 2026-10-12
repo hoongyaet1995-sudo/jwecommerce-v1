@@ -17,17 +17,17 @@ class CustomerAuthController extends Controller
 {
     public function create(): View
     {
-        return view('storefront.auth', ['mode' => 'login']);
+        return view(app(\App\Services\WebsiteDesignService::class)->surface() === 'home_deco' ? 'storefront.themes.home-deco-auth' : 'storefront.auth', ['mode' => 'login']);
     }
 
     public function registerForm(): View
     {
-        return view('storefront.auth', ['mode' => 'register']);
+        return view(app(\App\Services\WebsiteDesignService::class)->surface() === 'home_deco' ? 'storefront.themes.home-deco-auth' : 'storefront.auth', ['mode' => 'register']);
     }
 
     public function forgotPasswordForm(): View
     {
-        return view('storefront.auth', ['mode' => 'forgot']);
+        return view(app(\App\Services\WebsiteDesignService::class)->surface() === 'home_deco' ? 'storefront.themes.home-deco-auth' : 'storefront.auth', ['mode' => 'forgot']);
     }
 
     public function sendPasswordResetLink(Request $request): RedirectResponse
@@ -40,6 +40,25 @@ class CustomerAuthController extends Controller
         }
 
         return back()->with('status', 'If this member email is registered, a reset link has been sent.');
+    }
+
+    public function resetPasswordForm(Request $request, string $token): View
+    {
+        return view(app(\App\Services\WebsiteDesignService::class)->surface() === 'home_deco' ? 'storefront.themes.home-deco-auth' : 'storefront.password-reset', ['mode'=>'reset','token'=>$token,'email'=>$request->query('email','')]);
+    }
+
+    public function resetPassword(Request $request): RedirectResponse
+    {
+        $data=$request->validate(['email'=>['required','email'],'token'=>['required','string'],'password'=>['required','string','min:8','confirmed']]);
+        $eligible=User::where('email',$data['email'])->where('is_admin',false)->whereHas('customer')->exists();
+        if (!$eligible) return back()->withErrors(['email'=>'This reset link is invalid or has expired.']);
+        $status=Password::reset($data,function (User $user,string $password) {
+            $user->forceFill(['password'=>Hash::make($password),'remember_token'=>\Illuminate\Support\Str::random(60)])->save();
+            event(new \Illuminate\Auth\Events\PasswordReset($user));
+        });
+        return $status===Password::PASSWORD_RESET
+            ? redirect()->route('customer.login')->with('status','Password reset. Please sign in.')
+            : back()->withErrors(['email'=>'This reset link is invalid or has expired.']);
     }
 
     public function store(Request $request): RedirectResponse
