@@ -146,7 +146,7 @@ class CheckoutController extends Controller
             'address' => [],
         ]);
 
-        return view(app(\App\Services\WebsiteDesignService::class)->surface()==='food' ? 'storefront.themes.food-checkout' : 'storefront.checkout', [
+        return view(match(app(\App\Services\WebsiteDesignService::class)->surface()) { 'food'=>'storefront.themes.food-checkout', 'home_deco'=>'storefront.themes.home-deco-checkout', 'beauty'=>'storefront.themes.beauty-checkout', default=>'storefront.checkout' }, [
             'items' => $items,
             'coupon' => $coupon,
             'summary' => $summary,
@@ -251,7 +251,7 @@ class CheckoutController extends Controller
             return redirect()->route('storefront.index');
         }
 
-        return view(app(\App\Services\WebsiteDesignService::class)->surface()==='food' ? 'storefront.themes.food-success' : 'storefront.success', [
+        return view(match(app(\App\Services\WebsiteDesignService::class)->surface()) { 'food'=>'storefront.themes.food-success', 'home_deco'=>'storefront.themes.home-deco-success', 'beauty'=>'storefront.themes.beauty-success', default=>'storefront.success' }, [
             'order' => $order,
             'paymentProof' => $proofViewModels->for($order, $order->payments->where('gateway', 'bank_transfer')->sortByDesc('id')->first()),
             'taxLine' => $order->taxLines->sortBy('id')->first(),

@@ -557,7 +557,7 @@ const installDeliveryMatrix = () => {
             if (taxDefinition) taxDefinition.textContent = money(tax);
             if (totalDefinition) totalDefinition.textContent = money(total);
             const checkoutSubmitLabel = form?.querySelector('[data-checkout-submit-label]');
-            if (checkoutSubmitLabel) checkoutSubmitLabel.textContent = `Authorize & Place Order (${money(total)})`;
+            if (checkoutSubmitLabel) checkoutSubmitLabel.textContent = form.closest('[data-home-deco-checkout],[data-beauty-checkout]') ? `Place order · ${money(total)}` : `Authorize & Place Order (${money(total)})`;
             matrix.querySelectorAll('[data-delivery-option]').forEach((element) => {
                 element.classList.toggle('border-amber-400', element === option);
                 element.classList.toggle('bg-amber-400/10', element === option);
@@ -1445,6 +1445,9 @@ const installQuickAddVariantModals = () => {
             const confirmText = modal.querySelector('[data-quick-add-confirm-text]');
             setConfirmState(isOutOfStock(variant) ? 'soldOut' : 'default');
             if (confirmText) confirmText.textContent = isOutOfStock(variant) ? 'Sold Out • Join Restock List' : `Add ${quantity > 1 ? `${quantity} Items` : 'to Cart'} • ${storefrontMoney(Number(variant.price) * quantity)}`;
+            if ((modal.hasAttribute('data-home-deco-quick-buy') || modal.hasAttribute('data-beauty-quick-buy')) && confirmText && !isOutOfStock(variant)) confirmText.textContent = 'Add to bag →';
+            const homeCheckout = modal.querySelector('[data-home-quick-checkout],[data-beauty-quick-checkout]');
+            if (homeCheckout) homeCheckout.disabled = isOutOfStock(variant);
             modal.querySelectorAll('[data-quick-add-option-value]').forEach((button) => {
                 const optionName = button.dataset.quickAddOptionName;
                 const value = button.dataset.quickAddOptionValue;
@@ -1463,7 +1466,7 @@ const installQuickAddVariantModals = () => {
             modal.querySelectorAll('[data-quick-add-option-dropdown]').forEach((select) => { select.value = selectedValues[select.dataset.quickAddOptionName] || ''; });
             updateQuantity();
             const refreshedText = modal.querySelector('[data-quick-add-confirm-text]');
-            if (refreshedText && !isOutOfStock(variant)) refreshedText.textContent = `Add ${quantity > 1 ? `${quantity} Items` : 'to Cart'} • ${storefrontMoney(Number(variant.price) * quantity)}`;
+            if (refreshedText && !isOutOfStock(variant)) refreshedText.textContent = (modal.hasAttribute('data-home-deco-quick-buy') || modal.hasAttribute('data-beauty-quick-buy')) ? 'Add to bag →' : `Add ${quantity > 1 ? `${quantity} Items` : 'to Cart'} • ${storefrontMoney(Number(variant.price) * quantity)}`;
             renderIcons();
         };
         const choose = (name, value) => {
@@ -1506,6 +1509,7 @@ const installQuickAddVariantModals = () => {
         modal.querySelector('[data-quick-add-decrease]')?.addEventListener('click', () => { if (quantity > 1) { quantity -= 1; update(selected); } });
         modal.querySelector('[data-quick-add-increase]')?.addEventListener('click', () => { if (quantity < Number(selected.stock || 0)) { quantity += 1; update(selected); } });
         form?.addEventListener('submit', async (event) => {
+            if (event.submitter?.name === 'checkout' && !isOutOfStock(selected)) return;
             event.preventDefault();
             if (isOutOfStock(selected)) return;
             const submitter = modal.querySelector('[data-quick-add-confirm]');
@@ -1783,3 +1787,20 @@ document.addEventListener('DOMContentLoaded', () => {
     installBankPaymentProofPanels();
     installOrderTracking();
 });
+
+const initHomeCountryChoices = () => {
+    if (!Intl.DisplayNames) return;
+    const names = new Intl.DisplayNames(['en'], {type:'region'});
+    const regions = [];
+    for (let a=65;a<=90;a++) for (let b=65;b<=90;b++) {
+        const code = String.fromCharCode(a,b); const name = names.of(code);
+        if (name && name !== code && !['ZZ','EU','UN','EZ'].includes(code)) regions.push({code,name});
+    }
+    regions.sort((a,b)=>a.name.localeCompare(b.name));
+    document.querySelectorAll('select[data-home-country],select[data-storefront-country]').forEach(select => {
+        const current = select.value;
+        regions.forEach(({code,name}) => { if (![...select.options].some(option=>option.value===code)) select.add(new Option(name,code)); });
+        select.value = current;
+    });
+};
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded',initHomeCountryChoices); else initHomeCountryChoices();

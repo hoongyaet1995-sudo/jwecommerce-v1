@@ -18,6 +18,15 @@ class WebsiteThemeDemoTest extends TestCase
         $this->assertSame(0,Product::count());
         $this->assertSame(0,Order::count());
     }
+    public function test_all_home_scenarios_use_industry_data_and_do_not_write_records(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin'=>true]));
+        foreach(array_merge(WebsiteThemeDemoData::SCENARIOS,['order-tracking-verify-code']) as $scenario) {
+            $this->get('/admin/website-design/acceptance/sample/'.$scenario.'?theme=home_deco')->assertOk()->assertHeader('X-Theme-Data','dummy')->assertDontSee('PANTRY10')->assertDontSee('Tuscan Extra Virgin Olive Oil');
+        }
+        $this->get('/admin/website-design/acceptance?theme=home_deco')->assertOk()->assertSee('Home &amp; Deco',false);
+        $this->assertSame(0,Product::count());$this->assertSame(0,Order::count());
+    }
     public function test_demo_catalog_does_not_read_real_catalog_and_stock_override_requires_object_identity(): void
     {
         $this->actingAs(User::factory()->create(['is_admin'=>true]));

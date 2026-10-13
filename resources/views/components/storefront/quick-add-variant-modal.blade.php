@@ -48,7 +48,11 @@
     $initialSavings = max(0, (int) ($initial['compareAt'] ?? 0) - (int) ($initial['price'] ?? 0));
 @endphp
 
+@if($theme==='beauty')
+@include('storefront.themes.beauty-quick-buy')
+@else
 <div
+    @if($theme === 'home_deco') data-home-deco-quick-buy @endif
     @if($theme === 'beauty') data-beauty-quick-buy @endif
     @if($theme === 'food') data-food-quick-buy @endif
     data-quick-add-modal
@@ -140,10 +144,13 @@
                         <div class="flex shrink-0 items-center rounded-xl border border-zinc-300 bg-zinc-50 p-1 shadow-sm dark:border-zinc-700 dark:bg-zinc-900"><button data-quick-add-decrease type="button" aria-label="Decrease quantity" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-30 dark:text-zinc-300 dark:hover:bg-zinc-800"><i data-lucide="minus" class="h-3.5 w-3.5"></i></button><span data-quick-add-quantity class="w-10 text-center font-mono text-sm font-bold text-zinc-900 dark:text-zinc-100">1</span><button data-quick-add-increase type="button" aria-label="Increase quantity" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-30 dark:text-zinc-300 dark:hover:bg-zinc-800"><i data-lucide="plus" class="h-3.5 w-3.5"></i></button></div>
                         <button data-quick-add-confirm type="submit" class="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-zinc-900 px-6 py-3.5 text-sm font-bold text-white shadow-lg transition-all hover:bg-amber-500 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-amber-400"><span data-quick-add-confirm-default class="flex items-center gap-2"><i data-lucide="shopping-bag" class="h-4 w-4 shrink-0"></i><span data-quick-add-confirm-text>Add to Cart</span></span><span data-quick-add-confirm-loading class="hidden items-center gap-2"><span class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span><span>Updating Cart...</span></span><span data-quick-add-confirm-success class="hidden items-center gap-2"><i data-lucide="circle-check" class="h-4 w-4 animate-bounce text-white"></i><span>Added to Cart Successfully!</span></span><span data-quick-add-confirm-sold-out class="hidden items-center gap-2"><i data-lucide="circle-alert" class="h-4 w-4 text-rose-500"></i><span>Sold Out</span></span></button>
                     </div>
+                    @if($theme==='home_deco')<button name="checkout" value="1" type="submit" data-home-quick-checkout class="hd-outline">Buy now</button>@elseif($theme==='beauty')<button name="checkout" value="1" type="submit" data-beauty-quick-checkout class="bs-outline">Buy now</button>@endif
                 </form>
                 <p data-quick-add-error role="alert" class="hidden rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-300"></p>
-                <div class="flex items-center justify-between pt-1"><a href="{{ route('storefront.products.show', ['handle' => $product->handle]) }}" data-quick-add-product-link class="group flex items-center gap-1.5 font-mono text-xs font-semibold text-zinc-600 transition-colors hover:text-amber-600 dark:text-zinc-400 dark:hover:text-amber-400"><span>{{ in_array($theme,['home_deco','beauty','food'],true) ? 'Product details' : 'View Full Product Specifications & Lab Tests' }}</span><i data-lucide="arrow-right" class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"></i></a><span data-quick-add-stock-note class="font-mono text-[11px] text-zinc-400 dark:text-zinc-500"></span></div>
+                <div class="flex items-center justify-between pt-1"><a href="{{ route('storefront.products.show', ['handle' => $product->handle]) }}" data-quick-add-product-link class="group flex items-center gap-1.5 font-mono text-xs font-semibold text-zinc-600 transition-colors hover:text-amber-600 dark:text-zinc-400 dark:hover:text-amber-400"><span>{{ $theme==='home_deco' ? 'View full details' : (in_array($theme,['beauty','food'],true) ? 'Product details' : 'View Full Product Specifications & Lab Tests') }}</span><i data-lucide="arrow-right" class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"></i></a><span data-quick-add-stock-note class="font-mono text-[11px] text-zinc-400 dark:text-zinc-500"></span></div>
             </div>
         </div>
     </div>
 </div>
+
+@endif

@@ -111,12 +111,14 @@
 <x-layouts.app :title="'My account | '.$shopBrandName"><div
     data-home-deco-account
     class="hd-theme"
+    @hashchange.window="activeTab=['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(location.hash.slice(1))?location.hash.slice(1):'dashboard'"
     x-data="{
-        activeTab: ['dashboard','profile','security','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
+        activeTab: ['dashboard','profile','addresses','latest_purchase','purchase_history','vouchers','wishlist'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'dashboard',
         profileFirstName: @js($user['firstName'] ?: str($user['name'])->before(' ')->toString()),
         profileLastName: @js($user['lastName'] ?: str($user['name'])->after(' ')->toString()),
         profilePhone: @js($user['phone'] ?? ''),
         profileSaved: false,
+        couponInput: '',
         addressToast: null,
         accountRefreshUrl: @js($accountRefreshUrl),
         couponApplyUrl: @js($couponApplyUrl),
@@ -217,6 +219,7 @@
             setTimeout(() => this.sessionToast = null, 3000);
         },
         async applyVoucher(code) {
+            if(window.__JW_THEME_DEMO__){this.appliedToast='Demo only. No store changes were made.';return;}
             const response = await fetch(this.couponApplyUrl, { method: 'POST', headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': this.csrfToken}, credentials: 'same-origin', body: JSON.stringify({code}) });
             if (response.redirected) { window.location.assign(response.url); return; }
             this.appliedToast = 'Coupon application could not be completed.';
@@ -248,6 +251,7 @@
             this.reviewPhotos.splice(index, 1);
         },
         async submitReview(form) {
+            if(window.__JW_THEME_DEMO__){this.reviewErrors.photos='Demo only. No review was submitted.';return;}
             this.reviewErrors = {};
             if (!this.reviewRating) this.reviewErrors.rating = 'Please select a star rating.';
             if (!this.reviewTitle.trim()) this.reviewErrors.title = 'Please enter a review title.';
@@ -292,15 +296,14 @@
     }"
 >
 
-<x-storefront.nav active="account"/><main class="hd-account-main">
-@php($accountMedia=app(\App\Services\WebsiteThemeCustomization::class)->media('home_deco','account',''))
-@if($accountMedia['desktop']&&!$accountMedia['hidden'])<div class="theme-account-media">@include('storefront.partials.theme-media',['media'=>$accountMedia])</div>@endif
-@if($preview)<p class="hd-notice">Design preview / sample empty account / actions disabled</p>@endif @if(session('status'))<p role="status">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert" class="hd-error">{{ $errors->first() }}</p>@endif
-<div class="hd-account-layout"><nav class="hd-account-nav" aria-label="Account navigation">@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','addresses'=>'Addresses','wishlist'=>'Saved pieces','profile'=>'Profile','vouchers'=>'Vouchers'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null">{{ $label }}</button>@endforeach @if(!$preview)<form method="POST" action="{{ route('customer.logout') }}">@csrf<button>Sign out</button></form>@endif</nav>
-<div class="hd-account-content"><section x-show="activeTab==='dashboard'"><h1>My account</h1><p class="hd-account-welcome">Welcome back, {{ $user['firstName'] ?: $user['name'] }}.</p><p class="hd-muted">Manage your orders, addresses and saved pieces in one place.</p><div class="hd-account-latest"><div class="hd-section-title"><h2>Your latest order</h2>@if($latestOrder)<button type="button" class="hd-small-outline" @click="activeTab='latest_purchase'">View order &rarr;</button>@endif</div>@if($latestOrder)<p class="hd-fine">{{ $latestOrder['number'] }} / {{ $latestOrder['status'] }}</p>@foreach($latestOrder['items'] as $item)<article class="hd-order-row"><img src="{{ $item['imageUrl'] ?: asset('images/image-not-found.png') }}" alt="{{ $item['title'] }}"><div><h3>{{ $item['title'] }}</h3><p>{{ $item['variantTitle'] }}</p><p>Quantity: {{ $item['quantity'] }}</p></div><strong>{{ $formatAccountMoney($item['lineTotal'] ?? $item['unitPrice'] * $item['quantity'],$latestOrder) }}</strong></article>@endforeach<p class="hd-order-total">Order total <strong>{{ $formatAccountMoney($latestOrder['total'],$latestOrder) }}</strong></p>@else<p class="hd-empty">No orders yet. <a href="{{ route('storefront.index') }}">Explore the collection &rarr;</a></p>@endif</div>
-<div class="hd-account-columns"><section><h2>Default address</h2>@php($address=collect($addresses)->firstWhere('isDefault',true) ?? ($addresses[0] ?? null))@if($address)<p>{{ $address['firstName'] }} {{ $address['lastName'] }}<br>{{ $address['line1'] }}<br>{{ $address['city'] }} {{ $address['postalCode'] }}<br>{{ $address['country'] }}</p>@else<p class="hd-muted">No saved address.</p>@endif<button type="button" class="hd-small-outline" @click="activeTab='addresses'">Manage addresses</button></section><section><h2>Your details</h2><p>{{ $user['name'] }}<br>{{ $user['email'] }}</p><button type="button" class="hd-small-outline" @click="activeTab='profile'">Edit profile</button></section></div></section>
-<section x-show="activeTab==='profile'" x-cloak><h1>Your details</h1><form class="hd-account-form" method="POST" action="{{ route('customer.profile.update') }}">@csrf @method('PATCH')<fieldset @disabled($preview)><label>Full name<input name="name" value="{{ old('name',$user['name']) }}" required autocomplete="name"></label><label>Email address<input value="{{ $user['email'] }}" readonly></label><label>Phone<input name="phone" type="tel" value="{{ old('phone',$user['phone']) }}"></label><button class="hd-primary">Save profile</button></fieldset></form></section>
-<section x-show="activeTab==='addresses'" x-cloak><h1>Addresses</h1><div class="hd-address-list">@forelse($addresses as $address)<article><h2>{{ $address['label'] ?: 'Address' }} @if($address['isDefault'])<small>Default</small>@endif</h2><p>{{ $address['firstName'] }} {{ $address['lastName'] }}<br>{{ $address['line1'] }} {{ $address['line2'] }}<br>{{ $address['city'] }} {{ $address['state'] }} {{ $address['postalCode'] }}<br>{{ $address['country'] }}</p>@include('storefront.themes.home-deco-address-edit')</article>@empty<p class="hd-empty">No saved addresses.</p>@endforelse</div><details class="hd-detail"><summary>Add an address</summary><form class="hd-account-form" method="POST" action="{{ route('customer.addresses.store') }}">@csrf<fieldset @disabled($preview)>@foreach(['label'=>'Address label','first_name'=>'First name','last_name'=>'Last name','phone'=>'Phone','line_1'=>'Address line 1','line_2'=>'Address line 2','city'=>'City','state'=>'State','postal_code'=>'Postal code','country'=>'Country'] as $field=>$label)<label>{{ $label }}<input name="{{ $field }}" value="{{ old($field) }}" @required(in_array($field,['first_name','last_name','line_1','city','postal_code','country']))></label>@endforeach<label class="hd-check"><input type="checkbox" name="is_default" value="1">Make default address</label><button class="hd-primary">Save address</button></fieldset></form></details></section>
-<section x-show="activeTab==='wishlist'" x-cloak><h1>Saved for your home</h1><div class="hd-saved-grid">@forelse($accountPayload['wishlist'] as $saved)@php($item=$saved['product'])<article><a href="{{ route('storefront.products.show',$item['handle']) }}"><img src="{{ $item['images'][0]['path'] ?? asset('images/image-not-found.png') }}" alt="{{ $item['title'] }}"><h3>{{ $item['title'] }}</h3></a><p>@storefrontMoney($item['variants'][0]['price'] ?? $item['basePrice'])</p>@if(!$preview)<form method="POST" action="{{ route('customer.wishlist.destroy',$item['id']) }}">@csrf @method('DELETE')<button class="hd-link">Remove</button></form>@endif</article>@empty<p class="hd-empty">No saved pieces yet.</p>@endforelse</div></section>
-<div class="hd-order-tools" @if($preview) inert @endif>@include('storefront.themes.home-deco-account-orders')</div>
-</div></div></main><x-storefront.footer/></div></x-layouts.app>
+<x-storefront.nav active="account"/><main class="hd-account-main hd-shell"><header class="hd-account-heading"><p class="eyebrow">MY ACCOUNT</p><h1>Your home, collected.</h1></header>
+<nav class="hd-account-tabs" aria-label="Account navigation">@foreach(['dashboard'=>'Overview','purchase_history'=>'Orders','addresses'=>'Addresses','wishlist'=>'Saved pieces','profile'=>'Profile','vouchers'=>'Vouchers'] as $key=>$label)<button type="button" @click="activeTab='{{ $key }}';location.hash='{{ $key }}'" :aria-current="activeTab==='{{ $key }}' ? 'page' : null">{{ $label }}</button>@endforeach <form method="POST" action="{{ route('customer.logout') }}">@csrf<button @disabled($preview)>Sign out</button></form></nav>
+@if(session('status'))<p role="status" class="hd-notice">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert" class="hd-error">{{ $errors->first() }}</p>@endif
+<div class="hd-account-content">
+@include('storefront.themes.home-deco-account-overview')
+<section x-show="activeTab==='profile'" x-cloak><h2>Your profile</h2><form class="hd-profile-editor" method="POST" action="{{ route('customer.profile.update') }}">@csrf @method('PATCH')<fieldset @disabled($preview)><input type="hidden" name="name" :value="[profileFirstName,profileLastName].filter(Boolean).join(' ')"><div class="hd-form-pair"><label>First name<input x-model="profileFirstName" required autocomplete="given-name"></label><label>Last name<input x-model="profileLastName" autocomplete="family-name"></label></div><label>Phone<input name="phone" x-model="profilePhone" type="tel" autocomplete="tel"></label><label>Email address<input value="{{ $user['email'] }}" readonly autocomplete="email"></label><small>Email address cannot be changed here.</small><button class="hd-primary">Save changes</button></fieldset></form></section>
+@include('storefront.themes.home-deco-account-addresses')
+@include('storefront.themes.home-deco-account-saved')
+@include('storefront.themes.home-deco-account-orders')
+@include('storefront.themes.home-deco-account-vouchers')
+</div></main>@include('storefront.themes.home-deco-account-dialogs')<x-storefront.footer/></div></x-layouts.app>

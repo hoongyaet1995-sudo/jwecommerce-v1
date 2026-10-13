@@ -4,9 +4,10 @@
     $style=$customizer->style($theme);
     $font=$style['font']??'default';
     $pairs=['editorial'=>['"Lora", Georgia, serif','"Inter", Arial, sans-serif'],'modern'=>['"DM Sans", Arial, sans-serif','"Inter", Arial, sans-serif'],'classic'=>['Georgia, serif','Arial, sans-serif']];
+    if ($theme==='beauty') $pairs['editorial']=['BeautyLora, Georgia, serif','BeautyInter, Arial, sans-serif'];
     $main=($style['colorMode']??'theme')!=='theme'?($style['main']??null):null;
     $sub=($style['colorMode']??'theme')!=='theme'?($style['sub']??null):null;
-    $roots='.fd-theme main,.fd-cart,.food-theme main,.food-theme .drawer,[data-food-quick-buy],.hd-theme main,.hd-cart,.bs-theme main,.bs-cart,.home-deco-theme main,.beauty-theme main,.home-deco-theme .drawer,.beauty-theme .drawer,[data-home-deco-quick-buy],[data-beauty-quick-buy],.website-theme-content';
+    $roots='.fd-theme main,.fd-cart,.food-theme main,.food-theme .drawer,[data-food-quick-buy],.hd-theme main,.hd-dialog,.hd-cart,.bs-theme main,.bs-dialog,.bs-cart,.home-deco-theme main,.beauty-theme main,.home-deco-theme .drawer,.beauty-theme .drawer,[data-home-deco-quick-buy],[data-beauty-quick-buy],.website-theme-content';
 @endphp
 @if($style && $theme==='default')
 <script>document.querySelectorAll('main').forEach(n=>n.classList.add('website-theme-content'));</script>
@@ -43,7 +44,7 @@ function apply(){
  originals.forEach((value,node)=>{if(node.isConnected)node.style.fontSize=value;else originals.delete(node)});
  const nodes=[...document.querySelectorAll(roots)].flatMap(root=>[root,...root.querySelectorAll('h1,h2,h3,h4,p,a,button,label,input,select,textarea,small,span,li,td,th')]).filter(n=>!n.closest('[data-header-mode],footer')&&n.textContent.trim());
  const sizes=nodes.map(n=>[n,parseFloat(getComputedStyle(n).fontSize)]);
- sizes.forEach(([n,size])=>{if(!originals.has(n))originals.set(n,n.style.fontSize);n.style.fontSize=`${Math.max(11,size*factor)}px`});
+ sizes.forEach(([n,size])=>{if(!originals.has(n))originals.set(n,n.style.fontSize);n.style.setProperty('font-size',`${Math.max(11,size*factor)}px`,@js($theme==='beauty'?'important':''))});
 }
 let timer;const schedule=()=>{clearTimeout(timer);timer=setTimeout(apply,80)};
 apply();window.addEventListener('resize',schedule);new MutationObserver(schedule).observe(document.getElementById('cart-drawer')||document.body,{childList:true,subtree:true});

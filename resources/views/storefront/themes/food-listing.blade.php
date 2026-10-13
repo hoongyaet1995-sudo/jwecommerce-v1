@@ -2,16 +2,20 @@
     $listingTitle=$collection?->title ?? $listingCategory?->name ?? ($catalogListingSettings['title'] ?: 'All products');
     $description=$collection?->subtitle ?: ($listingCategory?->description ?: ($listingCategory ? '' : $catalogListingSettings['description']));
     $heroImage=$collection?->cover_image ?: $listingCategory?->image_url;
+    $isAllProducts=!$collection&&!$listingCategory;
+    $allProductsMedia=$isAllProducts?app(\App\Services\WebsiteThemeCustomization::class)->media('food','allProducts',''):null;
+    if($isAllProducts)$heroImage=$allProductsMedia['hidden']?'':$allProductsMedia['desktop'];
     $resetUrl=route($listingRouteName,$listingRouteParameters);
     $activeCount=($filters['priceRequested']?1:0)+count($filters['colors'])+count($filters['materials'])+($filters['inStock']?1:0)+($filters['minRating']>0?1:0);
 @endphp
 <x-layouts.app :title="$listingTitle.' | '.$shopBrandName">
+    <style>.all-products--compact{min-height:0!important;height:auto!important;display:block!important;padding:28px 0!important;margin-bottom:0!important}.all-products--compact .heroCopy,.all-products--compact .food-hero-copy{width:100%!important;max-width:none!important;padding:0!important;position:static!important}.all-products--compact h1{font-size:clamp(32px,4vw,52px)!important;max-width:none!important;width:100%!important}.home-deco-theme .all-products-picture{min-width:0}.home-deco-theme .all-products-picture img{width:100%;height:320px;object-fit:cover}.beauty-theme .all-products-picture,.food-theme .all-products-picture{position:absolute;inset:0;overflow:hidden}.beauty-theme .all-products-picture img,.food-theme .all-products-picture img{width:100%;height:100%;object-fit:cover}@media(max-width:760px){.home-deco-theme .all-products-picture img{height:240px}.all-products--compact{padding:20px 0!important}}</style>
     <link rel="stylesheet" href="{{ asset('css/food-catalog.css') }}?v={{ filemtime(public_path('css/food-catalog.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/food-quick-buy.css') }}?v={{ filemtime(public_path('css/food-quick-buy.css')) }}">
     <div class="food-theme" data-website-theme="food" data-commerce-collection-anatomy x-data="{filtersOpen:false}" @keydown.escape.window="filtersOpen=false">
         <x-storefront.nav active="plp" />
-        <section @class(['food-hero'=>true,'food-hero--image'=>filled($heroImage)])>
-            @if(filled($heroImage))<img src="{{ $heroImage }}" alt="">@endif
+        <section data-all-products-hero @class(['food-hero'=>true,'food-hero--image'=>filled($heroImage),'all-products--compact'=>$isAllProducts&&!filled($heroImage)])>
+            @if(filled($heroImage))@if($isAllProducts)<div class="all-products-picture" data-all-products-media>@include('storefront.partials.theme-media',['media'=>$allProductsMedia,'imageClass'=>''])</div>@include('storefront.partials.banner-readability',['media'=>$allProductsMedia])@else<img src="{{ $heroImage }}" alt="">@endif@endif
             <div class="food-hero-copy"><h1>{{ $listingTitle }}</h1>@if(filled($description))<p>{{ strip_tags($description) }}</p>@endif</div>
         </section>
         <div class="frame"><main class="container">

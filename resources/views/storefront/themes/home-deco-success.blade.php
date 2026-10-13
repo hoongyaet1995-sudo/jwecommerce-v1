@@ -1,0 +1,20 @@
+@php
+ $latestPayment=$order->payments->sortByDesc('id')->first();
+ $settled=in_array($latestPayment?->status,['paid','captured','succeeded','settled','completed'],true);
+ $shippingAddress=$order->addresses->firstWhere('type','shipping');
+ $money=fn($n)=>app(\App\Support\StorefrontCurrencyContext::class)->formatSnapshot($n,$order->currency,$order->currency_exchange_rate);
+ $media=app(\App\Services\WebsiteThemeCustomization::class)->media('home_deco','checkoutSuccess',asset('images/cms-samples/home-editorial-hero.png'));
+@endphp
+<x-layouts.app :title="'Order confirmation | '.$shopBrandName"><div class="hd-theme" data-home-deco-success><x-storefront.nav active="checkout"/>
+<main class="hd-confirmation hd-shell"><header class="hd-confirmation-heading"><span class="hd-confirmation-icon" aria-hidden="true">{{ $settled?'✓':'◷' }}</span>
+<h1>{{ $settled?'Considered pieces.':'Your order is awaiting payment.' }}@if($settled)<br>A home to make your own.@endif</h1><p>{{ $settled?'Payment received':'Payment pending' }} · Order {{ $order->number }}</p><p>{{ $settled?'Thank you for your order.':'Your order has been created. Payment confirmation is still pending.' }}</p>
+@if(session('status'))<p role="status">{{ session('status') }}</p>@endif @if($errors->any())<p role="alert">{{ $errors->first() }}</p>@endif
+@if($paymentProof)<section class="hd-proof"><h2>Payment proof</h2><p>{{ ucfirst($paymentProof['proofStatus']) }}</p>@if($paymentProof['originalFileName'])<p>{{ $paymentProof['originalFileName'] }}</p>@endif @if($paymentProof['rejectionReason'])<p role="alert">{{ $paymentProof['rejectionReason'] }}</p>@endif
+@if($paymentProof['canUpload'])<form method="POST" action="{{ route('customer.payment-proofs.store',[$paymentProof['orderId'],$paymentProof['paymentId']]) }}" enctype="multipart/form-data">@csrf<label>Upload payment proof<input type="file" name="payment_proof" accept="image/jpeg,image/png,application/pdf" required></label><small>JPG, PNG or PDF · Maximum 10 MB</small><button class="hd-primary" @disabled($websiteDesignPreview??false)>Upload payment proof</button></form>@endif</section>@endif
+<div class="hd-confirmation-actions"><a class="hd-primary" href="{{ route('order-tracking.show') }}">Track your order →</a><a class="hd-outline" href="{{ route('storefront.index') }}">Continue shopping</a></div></header>
+<section class="hd-selected"><h2>Your selected pieces</h2><div class="hd-object-grid">@foreach($order->items as $item)<article class="hd-object-card">@if($item->image_url)<img src="{{ $item->image_url }}" alt="{{ $item->title }}">@endif<div><h3>{{ $item->title }}</h3><p>{{ $item->variant_title }}</p><p>Qty {{ $item->quantity }}</p><strong>{{ $money($item->line_total) }}</strong></div></article>@endforeach</div></section>
+<div class="hd-information-grid"><section><h2>Order details</h2><dl><div><dt>Payment status</dt><dd>{{ $settled?'Paid':str($latestPayment?->status??'pending')->replace('_',' ')->title() }}</dd></div><div><dt>Order status</dt><dd>{{ str($order->status)->replace('_',' ')->title() }}</dd></div><div><dt>Payment method</dt><dd>{{ str($latestPayment?->gateway??'')->replace('_',' ')->title() }}</dd></div></dl></section>
+<section><h2>Delivery address</h2>@if($shippingAddress)<address>{{ $shippingAddress->first_name }} {{ $shippingAddress->last_name }}<br>{{ $shippingAddress->line_1 }}@if($shippingAddress->line_2)<br>{{ $shippingAddress->line_2 }}@endif<br>{{ $shippingAddress->city }} {{ $shippingAddress->postal_code }}<br>{{ $shippingAddress->country }}</address>@endif</section>
+<section><h2>Order total</h2><dl>@foreach(['subtotal'=>'Subtotal','discount_amount'=>'Discount','shipping_amount'=>'Shipping','payment_surcharge_amount'=>'Payment fee','tax_amount'=>'Tax','total'=>'Total'] as $key=>$label)@if(in_array($key,['subtotal','shipping_amount','total'])||$order->$key)<div><dt>{{ $label }}</dt><dd>{{ $money($order->$key) }}</dd></div>@endif@endforeach</dl></section></div>
+@if(!$media['hidden'])<section class="hd-panorama" data-checkout-success-media>@include('storefront.partials.theme-media')</section>@endif
+</main><x-storefront.footer/></div></x-layouts.app>

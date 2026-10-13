@@ -7,14 +7,14 @@ use Illuminate\Validation\ValidationException;
 /** Presentation only. Catalog media, shell and commerce producers retain ownership. */
 final class WebsiteThemeCustomization
 {
-    public const SURFACES=['plp','pdp','login','register','forgot','reset','account','tracking'];
+    public const SURFACES=['allProducts','plp','pdp','login','register','forgot','reset','account','tracking','checkout','checkoutSuccess'];
     public const FONTS=['default','editorial','modern','classic'];
 
     /** Only declare slots backed by an approved renderer. Unknown themes expose nothing. */
     public function mediaContracts(): array
     {
         $account=['account'=>['account'],'login'=>['account','login'],'register'=>['account','register'],'forgot'=>['account','forgot'],'reset'=>['account','reset']];
-        return ['default'=>$account,'home_deco'=>$account,'beauty'=>$account,'food'=>array_replace($account,['account'=>['accountHero','accountOrders','accountVouchers','accountAddresses','accountProfile'],'accountOverview'=>['accountHero'],'accountOrders'=>['accountHero','accountOrders'],'accountVouchers'=>['accountHero','accountVouchers'],'accountAddresses'=>['accountHero','accountAddresses'],'accountProfile'=>['accountHero','accountProfile'],'tracking'=>['tracking']])];
+        return ['default'=>$account,'home_deco'=>array_replace($account,['allProducts'=>['allProducts'],'account'=>[],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'beauty'=>array_replace($account,['allProducts'=>['allProducts'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'food'=>array_replace($account,['allProducts'=>['allProducts'],'account'=>['accountHero','accountOrders','accountVouchers','accountAddresses','accountProfile'],'accountOverview'=>['accountHero'],'accountOrders'=>['accountHero','accountOrders'],'accountVouchers'=>['accountHero','accountVouchers'],'accountAddresses'=>['accountHero','accountAddresses'],'accountProfile'=>['accountHero','accountProfile'],'tracking'=>['tracking'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess']])];
     }
 
     public function validate(mixed $input): array
@@ -34,9 +34,16 @@ final class WebsiteThemeCustomization
                 $rules[$path.'.paletteId']=['nullable','uuid'];
                 foreach (['main','sub'] as $color) $rules[$path.'.'.$color]=['sometimes','regex:/^#[a-fA-F0-9]{6}$/D'];
             }
-            foreach (['account','accountHero','accountOrders','accountVouchers','accountAddresses','accountProfile','tracking','login','register','forgot','reset'] as $page) {
+            foreach (['allProducts','account','accountHero','accountOrders','accountVouchers','accountAddresses','accountProfile','tracking','checkout','checkoutSuccess','login','register','forgot','reset'] as $page) {
                 $path=$base.'.media.'.$page;
-                $rules[$path]=['sometimes','array:desktop,mobile,alt,focus,focusY,hidden'];
+                $readability=$page==='allProducts'&&in_array($theme,['beauty','food'],true);
+                $rules[$path]=['sometimes','array:desktop,mobile,alt,focus,focusY,hidden'.($readability?',textMode,textColor,overlay,overlayStrength':'')];
+                if($readability){
+                    $rules[$path.'.textMode']=['sometimes',Rule::in(['default','light','dark','custom'])];
+                    $rules[$path.'.textColor']=['sometimes','regex:/^#[a-fA-F0-9]{6}$/D'];
+                    $rules[$path.'.overlay']=['sometimes',Rule::in(['none','light','dark'])];
+                    $rules[$path.'.overlayStrength']=['sometimes','integer','between:0,80'];
+                }
                 foreach (['desktop','mobile'] as $device) $rules[$path.'.'.$device]=['nullable','string','max:1000',function($attribute,$value,$fail){
                     if ($value!=='' && !preg_match('~^(?:/(?!/)[^<>"\x00-\x20]*|https://[^<>"\x00-\x20]+)$~D',$value)) $fail('Use a library image or an HTTPS image URL.');
                 }];
@@ -61,6 +68,7 @@ final class WebsiteThemeCustomization
 
     public function page(): string
     {
+        if (request()->attributes->has('websiteThemeSurface')) return request()->attributes->get('websiteThemeSurface');
         if (request()->routeIs('admin.website-design.preview')) return request('surface','plp');
         if (request()->routeIs('customer.*')) {
             $name=request()->route()?->getName()??'';
@@ -70,7 +78,10 @@ final class WebsiteThemeCustomization
             if (str_contains($name,'password')) return 'forgot';
             return 'account';
         }
+        if (request()->routeIs('checkout.create')) return 'checkout';
+        if (request()->routeIs('checkout.success')) return 'checkoutSuccess';
         if (request()->routeIs('order-tracking.*')) return 'tracking';
+        if (request()->routeIs('storefront.index') && !request()->filled('category') && !request()->filled('collection')) return 'allProducts';
         return request()->routeIs('storefront.products.show')?'pdp':'plp';
     }
 

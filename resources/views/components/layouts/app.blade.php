@@ -22,6 +22,7 @@
     @endif
     @if($isStorefront && app(\App\Services\WebsiteDesignService::class)->surface() === 'home_deco')<link rel="stylesheet" href="{{ asset('css/home-deco-theme.css') }}?v={{ filemtime(public_path('css/home-deco-theme.css')) }}">@endif
     @if($isStorefront && app(\App\Services\WebsiteDesignService::class)->surface() === 'beauty')<link rel="stylesheet" href="{{ asset('css/beauty-theme.css') }}?v={{ filemtime(public_path('css/beauty-theme.css')) }}">@endif
+    @if($isStorefront && app(\App\Services\WebsiteDesignService::class)->surface() === 'beauty')<link rel="stylesheet" href="{{ asset('css/beauty-complete.css') }}?v={{ filemtime(public_path('css/beauty-complete.css')) }}">@endif
     @if($isStorefront && app(\App\Services\WebsiteDesignService::class)->surface()==='food')<link rel="stylesheet" href="{{ asset('css/food-theme.css') }}?v={{ filemtime(public_path('css/food-theme.css')) }}">@endif
     {{ $head ?? '' }}
 </head>

@@ -20,7 +20,7 @@
 
 @php($themeMedia=app(\App\Services\WebsiteThemeCustomization::class)->media('home_deco',$mode,asset('images/themes/home-deco/account-room.png')))
 @if(!$themeMedia['hidden'])
-<aside class="hd-auth-scene">@include('storefront.partials.theme-media',['media'=>$themeMedia])<h2>{{ $register ? 'Make yourself at home.' : ($forgot || $reset ? 'A quieter moment.' : 'A place to come home to.') }}</h2></aside>
+<aside class="hd-auth-scene">@include('storefront.partials.theme-media',['media'=>$themeMedia])</aside>
 @endif
 
 <section class="hd-auth-panel">

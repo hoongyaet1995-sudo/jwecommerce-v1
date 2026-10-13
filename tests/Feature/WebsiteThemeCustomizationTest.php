@@ -12,7 +12,7 @@ class WebsiteThemeCustomizationTest extends TestCase
     {
         $service=app(WebsiteThemeCustomization::class);
         foreach (['default','home_deco','beauty'] as $theme) {
-            $this->assertSame(['account'],$service->mediaContracts()[$theme]['account']);
+            $this->assertSame($theme==='home_deco'?[]:['account'],$service->mediaContracts()[$theme]['account']);
             $this->assertSame(['account','login'],$service->mediaContracts()[$theme]['login']);
             $this->assertArrayNotHasKey('plp',$service->mediaContracts()[$theme]);
             $this->assertArrayNotHasKey('pdp',$service->mediaContracts()[$theme]);
@@ -21,6 +21,27 @@ class WebsiteThemeCustomizationTest extends TestCase
         $this->getJson('/admin/api/website-design')->assertOk()->assertJsonPath('mediaContracts.beauty.register',['account','register']);
         $this->putJson('/admin/api/website-design',['theme'=>'beauty','overrides'=>[],'customization'=>['beauty'=>['media'=>['plp'=>['desktop'=>'/test.png']]]]])->assertUnprocessable();
         $this->assertSame('fallback',$service->media('unsupported','login','fallback')['desktop']);
+    }
+    public function test_food_checkout_media_is_saved_rendered_hidden_and_demo_only(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin'=>true]));
+        $profile=['food'=>['media'=>['checkout'=>['desktop'=>'/images/themes/food/coffee.png','mobile'=>'/images/themes/food/tea.png','focus'=>'right','focusY'=>'top','hidden'=>false]]]];
+        $this->putJson('/admin/api/website-design',['theme'=>'food','overrides'=>[],'customization'=>$profile])->assertOk()->assertJsonPath('mediaContracts.food.checkout',['checkout']);
+        $this->get('/admin/website-design/preview?theme=food&surface=checkout')->assertOk()->assertSee('data-checkout-page-media',false)->assertSee('/images/themes/food/coffee.png',false)->assertSee('/images/themes/food/tea.png',false)->assertSee('fd-checkout-emblem',false);
+        $profile['food']['media']['checkout']['hidden']=true;
+        $this->get('/admin/website-design/preview?'.http_build_query(['theme'=>'food','surface'=>'checkout','customization'=>json_encode($profile)]))->assertOk()->assertDontSee('data-checkout-page-media',false);
+        $this->assertFalse(app(WebsiteDesignService::class)->live()['customization']['food']['media']['checkout']['hidden']);
+        $this->putJson('/admin/api/website-design',['theme'=>'beauty','overrides'=>[],'customization'=>['beauty'=>['media'=>['checkout'=>['desktop'=>'/test.png']]]]])->assertOk()->assertJsonPath('mediaContracts.beauty.checkout',['checkout']);
+    }
+    public function test_checkout_success_media_contract_and_hidden_preview(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin'=>true]));
+        $profile=['food'=>['media'=>['checkoutSuccess'=>['desktop'=>'/images/themes/food/coffee.png','mobile'=>'/images/themes/food/tea.png','focus'=>'left','focusY'=>'bottom']]]];
+        $this->putJson('/admin/api/website-design',['theme'=>'food','overrides'=>[],'customization'=>$profile])->assertOk()->assertJsonPath('mediaContracts.food.checkoutSuccess',['checkoutSuccess']);
+        $this->get('/admin/website-design/preview?theme=food&surface=checkoutSuccess')->assertOk()->assertSee('data-checkout-success-media',false)->assertSee('/images/themes/food/coffee.png',false)->assertSee('/images/themes/food/tea.png',false);
+        $profile['food']['media']['checkoutSuccess']['hidden']=true;
+        $this->get('/admin/website-design/preview?'.http_build_query(['theme'=>'food','surface'=>'checkoutSuccess','customization'=>json_encode($profile)]))->assertOk()->assertDontSee('data-checkout-success-media',false);
+        $this->assertSame(['checkoutSuccess'],app(WebsiteThemeCustomization::class)->mediaContracts()['beauty']['checkoutSuccess']);
     }
     public function test_saved_theme_profiles_and_page_inheritance_survive_theme_switch(): void
     {

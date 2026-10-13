@@ -2,17 +2,21 @@
     $listingTitle=$collection?->title ?? $listingCategory?->name ?? ($catalogListingSettings['title'] ?: 'All products');
     $description=$collection?->subtitle ?: ($listingCategory?->description ?: ($listingCategory ? '' : $catalogListingSettings['description']));
     $heroImage=$collection?->cover_image ?: $listingCategory?->image_url;
+    $isAllProducts=!$collection&&!$listingCategory;
+    $allProductsMedia=$isAllProducts?app(\App\Services\WebsiteThemeCustomization::class)->media('home_deco','allProducts',''):null;
+    if($isAllProducts)$heroImage=$allProductsMedia['hidden']?'':$allProductsMedia['desktop'];
     $resetUrl=route($listingRouteName,$listingRouteParameters);
     $activeCount=($filters['priceRequested']?1:0)+count($filters['colors'])+count($filters['materials'])+($filters['inStock']?1:0)+($filters['minRating']>0?1:0);
 @endphp
 <x-layouts.app :title="$listingTitle.' | '.$shopBrandName">
+    <style>.all-products--compact{min-height:0!important;height:auto!important;display:block!important;padding:28px 0!important;margin-bottom:0!important}.all-products--compact .heroCopy,.all-products--compact .food-hero-copy{width:100%!important;max-width:none!important;padding:0!important;position:static!important}.all-products--compact h1{font-size:clamp(32px,4vw,52px)!important;max-width:none!important;width:100%!important}.home-deco-theme .all-products-picture{min-width:0}.home-deco-theme .all-products-picture img{width:100%;height:320px;object-fit:cover}.beauty-theme .all-products-picture,.food-theme .all-products-picture{position:absolute;inset:0;overflow:hidden}.beauty-theme .all-products-picture img,.food-theme .all-products-picture img{width:100%;height:100%;object-fit:cover}@media(max-width:760px){.home-deco-theme .all-products-picture img{height:240px}.all-products--compact{padding:20px 0!important}}</style>
     <link rel="stylesheet" href="{{ asset('css/home-deco-catalog.css') }}?v={{ filemtime(public_path('css/home-deco-catalog.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/home-deco-quick-buy.css') }}?v={{ filemtime(public_path('css/home-deco-quick-buy.css')) }}">
     <div class="home-deco-theme" data-website-theme="home_deco" data-commerce-collection-anatomy x-data="{filtersOpen:false}" @keydown.escape.window="filtersOpen=false">
         <x-storefront.nav active="plp" />
         <div class="frame"><main class="container">
             <div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="{{ route('storefront.index') }}">Shop</a>@if($collection || $listingCategory)<span>/</span><span>{{ $listingTitle }}</span>@endif</div>
-            <section class="hero"><div><h1>{{ $listingTitle }}</h1>@if(filled($description))<p>{{ strip_tags($description) }}</p>@endif</div>@if(filled($heroImage))<img class="heroPhoto" src="{{ $heroImage }}" alt="{{ $listingTitle }}">@endif</section>
+            <section @class(['hero'=>true,'all-products--compact'=>$isAllProducts&&!filled($heroImage)])><div><h1>{{ $listingTitle }}</h1>@if(filled($description))<p>{{ strip_tags($description) }}</p>@endif</div>@if(filled($heroImage))@if($isAllProducts)<div class="all-products-picture" data-all-products-media>@include('storefront.partials.theme-media',['media'=>$allProductsMedia,'imageClass'=>'heroPhoto'])</div>@else<img class="heroPhoto" src="{{ $heroImage }}" alt="{{ $listingTitle }}">@endif@endif</section>
             <div class="catalogbar"><span>{{ $products->total() }} {{ $products->total()===1?'product':'products' }}</span><div class="barActions"><button type="button" @click="filtersOpen=true" aria-label="Open filters"><i data-lucide="sliders-horizontal" class="icon"></i>Filters @if($activeCount)({{ $activeCount }})@endif</button><form method="GET" action="{{ $resetUrl }}">
                 @foreach(array_intersect_key($listingRouteParameters,array_flip(['theme','scope','customization'])) as $key=>$value)<input type="hidden" name="{{ $key }}" value="{{ $value }}">@endforeach
                 @foreach(request()->except(['sort','page','theme','scope']) as $key=>$value)

@@ -1,3 +1,6 @@
+@php
+ $demoDialogItem=match($demoTheme??'food'){'home_deco'=>['id'=>-1,'title'=>'Oak Ridge Coffee Table','variantTitle'=>'Natural oak / 90 cm','imageUrl'=>'/images/themes/home-deco/table.png'],'beauty'=>['id'=>-1,'title'=>'Daily Serum','variantTitle'=>'30ml','imageUrl'=>'/images/themes/beauty/serum-front.png'],default=>['id'=>-1,'title'=>'Extra Virgin Olive Oil','variantTitle'=>'500 ml','imageUrl'=>'/images/themes/food/olive-oil-lifestyle.png']};
+@endphp
 <script>
 (()=>{
 // This guard is emitted only by authenticated Admin demo routes.
@@ -24,9 +27,9 @@ document.addEventListener('alpine:initialized',()=>{
  const filter=document.querySelector('[aria-label="Open filters"]');
  if(demoScenario==='filter')filter?.click();
 
- const root=document.querySelector('[data-food-account]');
+ const root=document.querySelector('[data-food-account],[data-home-deco-account],[data-beauty-account]');
  if(root&&['review-dialog','return-dialog'].includes(demoScenario)){
-  const state=Alpine.$data(root),item={id:-1,title:'Extra Virgin Olive Oil',variantTitle:'500 ml',imageUrl:'/images/themes/food/olive-oil-lifestyle.png'};
+  const state=Alpine.$data(root),item=@js($demoDialogItem);
   if(demoScenario==='review-dialog')state.openReview({number:'DEMO-JW100328'},item);
   else state.returnTarget={itemId:-1,orderNumber:'DEMO-JW100328',...item,sku:'DEMO-OIL',quantity:1,amount:'68.00 MYR'};
  }

@@ -95,7 +95,11 @@
 
 </section></div>
 
+@if(collect(['heading','description','image'])->contains(fn($key)=>filled($content?->story[$key]??null)))
+@include('storefront.partials.product-story')
+@else
 @if(filled($description))<section class="hd-product-story" data-commerce-product-zone="details"><div><h2>{{ $product->title }}</h2><div class="hd-description">{!! $description !!}</div></div>@if($images->count()>1)<img src="{{ $images->get(1)->path }}" alt="{{ $images->get(1)->alt ?: $product->title }}" loading="lazy">@endif @if($specs->isNotEmpty())<div><h2>Specifications</h2><dl>@foreach($specs as $spec)<div><dt>{{ $spec['label'] ?? $spec['name'] ?? '' }}</dt><dd>{{ $spec['value'] }}</dd></div>@endforeach</dl></div>@endif</section>@endif
+@endif
 
 @if($companions->isNotEmpty())<section class="hd-related" data-commerce-product-zone="related"><h2>Pairs beautifully with</h2><div>@foreach($companions as $item)<a href="{{ route('storefront.products.show',$item->handle) }}"><img src="{{ $item->images->first()?->path ?: asset('images/image-not-found.png') }}" alt="{{ $item->title }}" loading="lazy"><h3>{{ $item->title }}</h3><p>@storefrontMoney($item->variants->first()?->price ?? $item->base_price)</p></a>@endforeach</div></section>@endif
 

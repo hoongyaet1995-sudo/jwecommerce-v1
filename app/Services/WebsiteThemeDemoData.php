@@ -8,20 +8,23 @@ use Illuminate\Pagination\LengthAwarePaginator;
 /** Unsaved presentation models. No catalogue, stock or customer records are created. */
 final class WebsiteThemeDemoData
 {
-    public const SCENARIOS = ['plp','filter','quick-buy','pdp','cart-drawer','login','register','forgot-password','reset-password','my-account','account-orders','account-vouchers','account-addresses','account-profile','account-saved-items','shopping-cart','checkout','checkout-success','payment-pending','order-tracking','order-tracking-verified','review-dialog','return-dialog'];
+    public const SCENARIOS = ['all-products','plp','filter','quick-buy','pdp','cart-drawer','login','register','forgot-password','reset-password','my-account','account-orders','account-vouchers','account-addresses','account-profile','account-saved-items','shopping-cart','checkout','checkout-success','payment-pending','order-tracking','order-tracking-verified','review-dialog','return-dialog'];
 
     public function cart(array $catalog): array
     {
         $items=$catalog['demoProducts']->take(2)->map(fn($p)=>['variant'=>$p->variants->first(),'quantity'=>1,'available'=>25]);
-        return ['items'=>$items,'coupon'=>null,'summary'=>['subtotal'=>8600,'discount'=>0,'shipping'=>800,'tax'=>0,'total'=>9400,'tax_quote'=>['status'=>'not_configured']], 'shippingEstimateAvailable'=>true,'shippingOption'=>null,'shippingProgressThreshold'=>null,'addons'=>collect()];
+        $subtotal=$items->sum(fn($i)=>$i['variant']->price*$i['quantity']);
+        return ['items'=>$items,'coupon'=>null,'summary'=>['subtotal'=>$subtotal,'discount'=>0,'shipping'=>800,'tax'=>0,'total'=>$subtotal+800,'tax_quote'=>['status'=>'not_configured']], 'shippingEstimateAvailable'=>true,'shippingOption'=>null,'shippingProgressThreshold'=>null,'addons'=>collect()];
     }
 
     public function order(array $catalog, bool $paid): array
     {
-        $order=new \App\Models\Order(['number'=>'DEMO-JW100328','currency'=>'MYR','currency_exchange_rate'=>1,'status'=>$paid?'processing':'pending_payment','subtotal'=>8600,'discount_amount'=>0,'shipping_amount'=>800,'payment_surcharge_amount'=>0,'tax_amount'=>0,'total'=>9400]);
-        $items=$catalog['demoProducts']->take(2)->map(fn($p)=>new \App\Models\OrderItem(['title'=>$p->title,'variant_title'=>'250 ml','quantity'=>1,'unit_price'=>$p->base_price,'line_total'=>$p->base_price,'image_url'=>$p->images->first()->path]));
-        $order->setRelation('items',$items)->setRelation('payments',collect([new \App\Models\OrderPayment(['gateway'=>'bank_transfer','status'=>$paid?'paid':'pending'])]))->setRelation('addresses',collect([new \App\Models\OrderAddress(['type'=>'shipping','first_name'=>'Sample','last_name'=>'Customer','line_1'=>'12 Sample Street','city'=>'Kuala Lumpur','postal_code'=>'50000','country'=>'MY'])]));
-        return ['order'=>$order,'paymentProof'=>null,'taxLine'=>null,'recommendations'=>$catalog['demoProducts']->take(3)];
+        $home=in_array($catalog['demoTheme']??'food',['home_deco','beauty'],true);
+        $subtotal=$catalog['demoProducts']->take(2)->sum('base_price');
+        $order=new \App\Models\Order(['number'=>'DEMO-JW100328','currency'=>'MYR','currency_exchange_rate'=>1,'status'=>$paid?'processing':'pending_payment','subtotal'=>$subtotal,'discount_amount'=>0,'shipping_amount'=>800,'payment_surcharge_amount'=>0,'tax_amount'=>0,'total'=>$subtotal+800]);
+        $items=$catalog['demoProducts']->take(2)->map(fn($p)=>new \App\Models\OrderItem(['title'=>$p->title,'variant_title'=>$p->variants->first()->title,'quantity'=>1,'unit_price'=>$p->base_price,'line_total'=>$p->base_price,'image_url'=>$p->images->first()->path]));
+        $order->setRelation('items',$items)->setRelation('payments',collect([new \App\Models\OrderPayment(['gateway'=>'bank_transfer','status'=>$paid?'paid':'pending'])]))->setRelation('addresses',collect([new \App\Models\OrderAddress(['type'=>'shipping','first_name'=>$home?'Alex':'Sample','last_name'=>$home?'Tan':'Customer','line_1'=>$home?'12 Jalan Harmoni':'12 Sample Street','city'=>'Kuala Lumpur','postal_code'=>'50000','country'=>'MY'])]));
+        return ['order'=>$order,'paymentProof'=>$home&&!$paid?['proofStatus'=>'missing','originalFileName'=>null,'rejectionReason'=>null,'canUpload'=>true,'orderId'=>-1,'paymentId'=>-1]:null,'taxLine'=>null,'recommendations'=>$catalog['demoProducts']->take(3)];
     }
 
     public function account(array $catalog): array
@@ -37,10 +40,14 @@ final class WebsiteThemeDemoData
             ['id'=>-1,'code'=>'PANTRY10','description'=>'10% off selected pantry essentials.','minSpendDisplay'=>'Minimum spend RM 30.00','status'=>'eligible','statusLabel'=>'Available','discountType'=>'percentage','title'=>'Pantry essentials','value'=>10,'discountDisplay'=>'10%','minSpend'=>3000,'categoryRestriction'=>null],
             ['id'=>-2,'code'=>'DELIVERY','description'=>'Free standard delivery on qualifying orders.','minSpendDisplay'=>'Minimum spend RM 50.00','status'=>'eligible','statusLabel'=>'Available','discountType'=>'free_shipping','title'=>'Standard delivery','value'=>0,'discountDisplay'=>'Free shipping','minSpend'=>5000,'categoryRestriction'=>null],
         ],'used'=>[],'expired'=>[],'counts'=>['eligible'=>2,'used'=>0,'expired'=>0]];
+        if (($catalog['demoTheme']??'food')==='home_deco') $data=app(HomeThemeDemoData::class)->account($catalog,$data);
+        if (($catalog['demoTheme']??'food')==='beauty') $data=app(BeautyThemeDemoData::class)->account($catalog,$data);
         return $data;
     }
     public function catalog(Request $request): array
     {
+        if ($request->input('theme')==='home_deco') return app(HomeThemeDemoData::class)->catalog($request);
+        if ($request->input('theme')==='beauty') return app(BeautyThemeDemoData::class)->catalog($request);
         $category = new Category(['name'=>'Good things for your everyday table.','slug'=>'demo-pantry','description'=>'Thoughtfully selected pantry staples for simpler, happier meals at home.','image_url'=>asset('images/themes/food/hero.png')]);
         $category->id = -1;
         $products = collect([
