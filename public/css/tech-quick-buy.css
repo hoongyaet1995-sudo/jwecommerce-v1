@@ -1,0 +1,51 @@
+/* Isolated Home & Deco sample skin. Existing quick-add hooks and commerce handlers stay intact. */
+.tech-theme [data-quick-add-modal]{background:rgb(50 25 39 / 40%);backdrop-filter:blur(5px);color:#502b40;font-family:Arial,sans-serif;padding:24px}
+.tech-theme [data-quick-add-modal]>.relative{background:#fcf8f5;border:1px solid #f3e4e7;border-radius:5px;max-width:920px;box-shadow:0 20px 70px #20261a30}
+.tech-theme [data-quick-add-modal]>.relative>div:first-of-type{background:#f3e4e7;border:0;padding:30px;width:44%;gap:20px;justify-content:flex-start}
+.tech-theme [data-quick-add-modal]>.relative>div:last-of-type{background:#fcf8f5;padding:42px 35px 32px;width:56%;gap:24px;max-height:90dvh}
+.tech-theme [data-quick-add-modal] [data-quick-add-close]{background:#fcf8f5;border:none;border-radius:0;box-shadow:none;color:#86737c;right:12px;top:12px}
+.tech-theme [data-quick-add-modal]>.relative>div:first-of-type>div:first-child>span:first-child{padding:0;border:none;background:none;color:#86737c;font:10px Arial,sans-serif;letter-spacing:1.5px;font-weight:400;border-radius:0}
+.tech-theme [data-quick-add-modal]>.relative>div:first-of-type>.group{border:0;background:#f3e4e7;border-radius:0;box-shadow:none;overflow:visible}
+.tech-theme [data-quick-add-modal] [data-quick-add-hero]{object-fit:contain;mix-blend-mode:multiply;transform:none}
+.tech-theme [data-quick-add-modal] [data-quick-add-sold-out-overlay]{top:auto;bottom:36px;left:0;right:0;background:none;backdrop-filter:none;padding:0;pointer-events:none}
+.tech-theme [data-quick-add-modal] [data-quick-add-sold-out-overlay]>div{background:#fcf8f5ed;border:1px solid #f3e4e7;box-shadow:none;border-radius:2px;padding:10px 13px}
+.tech-theme [data-quick-add-modal] [data-quick-add-sold-out-overlay] span:first-child{color:#86737c;font:11px Arial,sans-serif;text-transform:none;letter-spacing:0;font-weight:400}
+.tech-theme [data-quick-add-modal] [data-quick-add-sold-out-overlay] span+span{color:#86737c;font-size:10px;margin-top:5px}
+.tech-theme [data-quick-add-modal] [data-quick-add-sku]{color:#86737c}
+.tech-theme [data-quick-add-modal] .group>div:last-child:not([data-quick-add-sold-out-overlay]){background:none;border:0;box-shadow:none;backdrop-filter:none;color:#86737c;font:9px Arial,sans-serif;left:0;bottom:0;padding:0;border-radius:0}
+.tech-theme [data-quick-add-modal] .group>div:last-child>span:first-child{display:none}
+.tech-theme [data-quick-add-modal] h2{font:30px/1.25 Georgia,serif;color:#502b40;letter-spacing:-.5px;padding-right:12px;font-weight:400}
+.tech-theme [data-quick-add-modal] h2+p{font-size:12px;line-height:1.7;color:#86737c;margin-top:10px}
+.tech-theme [data-quick-add-modal] [data-quick-add-price]{font:19px Arial,sans-serif;color:#502b40;font-weight:400}
+.tech-theme [data-quick-add-modal] [data-quick-add-selector]{border-color:#f3e4e7;padding:19px 0}
+.tech-theme [data-quick-add-modal] [data-quick-add-selector]>div:first-child{align-items:flex-start;gap:13px;flex-direction:column}
+.tech-theme [data-quick-add-modal] [data-quick-add-selected-label]{font-size:12px;color:#502b40;font-weight:400}
+.tech-theme [data-quick-add-modal] [data-quick-add-selector] .font-mono{font-family:Arial,sans-serif;text-transform:none;letter-spacing:0;font-weight:400;color:#86737c}
+.tech-theme [data-quick-add-modal] [data-quick-add-availability]{font-size:11px;color:#86737c!important;font-family:Arial,sans-serif}
+.tech-theme [data-quick-add-modal] [data-quick-add-availability-dot]{background:#86737c!important}
+.tech-theme [data-quick-add-modal] [data-quick-add-option-value]{box-shadow:none;border-color:#f3e4e7;border-radius:3px;font-weight:400}
+.tech-theme [data-quick-add-modal] [data-quick-add-option-value][aria-checked=true]{border-color:#502b40!important;background:#f3e4e7;color:#502b40;box-shadow:0 0 0 1px #502b40!important}
+.tech-theme [data-quick-add-modal] [data-quick-add-option-value]:disabled{opacity:.65}
+.tech-theme [data-quick-add-modal] [data-quick-add-option-check]{color:#502b40}
+.tech-theme [data-quick-add-modal] [data-quick-add-option-dropdown]{background:#fcf8f5;border-radius:3px;border-color:#f3e4e7;color:#502b40;box-shadow:none}
+.tech-theme [data-quick-add-modal] [data-quick-add-form]>div>div{background:none;border-color:#f3e4e7;border-radius:3px;box-shadow:none}
+.tech-theme [data-quick-add-modal] [data-quick-add-quantity]{font:13px Arial,sans-serif;color:#502b40}
+.tech-theme [data-quick-add-modal] [data-quick-add-confirm]{background:#502b40;color:white;border-radius:3px;box-shadow:none;font:12px Arial,sans-serif;min-height:46px}
+.tech-theme [data-quick-add-modal] [data-quick-add-confirm]:disabled{background:#f3e4e7;color:#86737c;opacity:1;border:1px solid #f3e4e7}
+.tech-theme [data-quick-add-modal] [data-quick-add-confirm-sold-out] svg{color:#86737c}
+.tech-theme [data-quick-add-modal] [data-quick-add-product-link]{font:11px Arial,sans-serif;color:#502b40;font-weight:400}
+.tech-theme [data-quick-add-modal] [data-quick-add-stock-note]{font:10px Arial,sans-serif;color:#86737c;text-align:right}
+.tech-theme [data-quick-add-modal] [data-quick-add-thumbnail]{border-radius:2px;box-shadow:none}
+@media(max-width:767px){
+ .tech-theme [data-quick-add-modal]{padding:12px;align-items:flex-start}
+ .tech-theme [data-quick-add-modal]>.relative{max-width:430px;max-height:94dvh;overflow-y:auto;display:block;margin:auto}
+ .tech-theme [data-quick-add-modal]>.relative>div:first-of-type{width:100%;padding:18px 25px 12px;gap:6px}
+ .tech-theme [data-quick-add-modal]>.relative>div:first-of-type>.group{aspect-ratio:auto;height:175px;max-width:240px;margin:0 auto}
+ .tech-theme [data-quick-add-modal]>.relative>div:last-of-type{width:100%;padding:23px 25px;overflow:visible;max-height:none;gap:18px}
+ .tech-theme [data-quick-add-modal] h2{font-size:23px;line-height:1.3;padding-right:0}
+ .tech-theme [data-quick-add-modal] h2+p{font-size:11px;margin-top:6px}
+ .tech-theme [data-quick-add-modal] [data-quick-add-sold-out-overlay]{bottom:20px}
+ .tech-theme [data-quick-add-modal] [data-quick-add-sold-out-overlay] span+span{display:none}
+ .tech-theme [data-quick-add-modal] [data-quick-add-selector]{padding:13px 0}
+}
+.tech-theme [data-quick-add-modal]{z-index:56}

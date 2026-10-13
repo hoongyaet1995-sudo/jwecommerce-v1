@@ -79,7 +79,7 @@
                         <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-300">Signature Craftsmanship Highlights</h2>
                         <ul class="grid gap-2 text-xs text-zinc-700 dark:text-zinc-300 sm:grid-cols-2">
                             @foreach($pdpHighlights->take(6) as $highlight)
-                                <li class="flex items-start gap-2"><i data-lucide="check" class="mt-0.5 h-4 w-4 shrink-0 text-emerald-500 dark:text-emerald-400"></i><span>{{ is_array($highlight) ? $highlight['text'] : $highlight }}</span></li>
+                                <li class="flex items-start gap-2"><i data-lucide="{{ \App\Services\ProductHighlightIcons::resolve(is_array($highlight) ? ($highlight['icon'] ?? null) : null) }}" class="mt-0.5 h-4 w-4 shrink-0 text-emerald-500 dark:text-emerald-400"></i><span>{{ is_array($highlight) ? $highlight['text'] : $highlight }}</span></li>
                             @endforeach
                         </ul>
                     </section>

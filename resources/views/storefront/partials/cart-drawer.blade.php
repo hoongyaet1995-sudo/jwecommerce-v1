@@ -1,3 +1,6 @@
+@if(app(\App\Services\WebsiteDesignService::class)->surface()==='tech')
+@include('storefront.themes.tech-cart-drawer')
+@else
 @if(app(\App\Services\WebsiteDesignService::class)->surface()==='food')
 @include('storefront.themes.food-cart-drawer')
 @else
@@ -127,6 +130,8 @@
         </footer>
     @endif
 </section>
+
+@endif
 
 @endif
 

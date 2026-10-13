@@ -7,19 +7,19 @@ use Illuminate\Validation\ValidationException;
 /** Presentation only. Catalog media, shell and commerce producers retain ownership. */
 final class WebsiteThemeCustomization
 {
-    public const SURFACES=['allProducts','plp','pdp','login','register','forgot','reset','account','tracking','checkout','checkoutSuccess'];
+    public const SURFACES=['allProducts','plp','pdp','login','register','forgot','reset','account','tracking','checkout','checkoutSuccess','cart'];
     public const FONTS=['default','editorial','modern','classic'];
 
     /** Only declare slots backed by an approved renderer. Unknown themes expose nothing. */
     public function mediaContracts(): array
     {
         $account=['account'=>['account'],'login'=>['account','login'],'register'=>['account','register'],'forgot'=>['account','forgot'],'reset'=>['account','reset']];
-        return ['default'=>$account,'home_deco'=>array_replace($account,['allProducts'=>['allProducts'],'account'=>[],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'beauty'=>array_replace($account,['allProducts'=>['allProducts'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'food'=>array_replace($account,['allProducts'=>['allProducts'],'account'=>['accountHero','accountOrders','accountVouchers','accountAddresses','accountProfile'],'accountOverview'=>['accountHero'],'accountOrders'=>['accountHero','accountOrders'],'accountVouchers'=>['accountHero','accountVouchers'],'accountAddresses'=>['accountHero','accountAddresses'],'accountProfile'=>['accountHero','accountProfile'],'tracking'=>['tracking'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess']])];
+        return ['tech'=>array_replace($account,['allProducts'=>['allProducts'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking'],'cart'=>['cart']]),'default'=>$account,'home_deco'=>array_replace($account,['allProducts'=>['allProducts'],'account'=>[],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'beauty'=>array_replace($account,['allProducts'=>['allProducts'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'food'=>array_replace($account,['allProducts'=>['allProducts'],'account'=>['accountHero','accountOrders','accountVouchers','accountAddresses','accountProfile'],'accountOverview'=>['accountHero'],'accountOrders'=>['accountHero','accountOrders'],'accountVouchers'=>['accountHero','accountVouchers'],'accountAddresses'=>['accountHero','accountAddresses'],'accountProfile'=>['accountHero','accountProfile'],'tracking'=>['tracking'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess']])];
     }
 
     public function validate(mixed $input): array
     {
-        $rules=['profiles'=>['array:default,home_deco,beauty,food']];
+        $rules=['profiles'=>['array:default,home_deco,beauty,food,tech']];
         foreach (WebsiteDesignService::THEMES as $theme) {
             $base='profiles.'.$theme;
             $rules[$base]=['sometimes','array:style,pages,media'];
@@ -34,7 +34,7 @@ final class WebsiteThemeCustomization
                 $rules[$path.'.paletteId']=['nullable','uuid'];
                 foreach (['main','sub'] as $color) $rules[$path.'.'.$color]=['sometimes','regex:/^#[a-fA-F0-9]{6}$/D'];
             }
-            foreach (['allProducts','account','accountHero','accountOrders','accountVouchers','accountAddresses','accountProfile','tracking','checkout','checkoutSuccess','login','register','forgot','reset'] as $page) {
+            foreach (['allProducts','account','accountHero','accountOrders','accountVouchers','accountAddresses','accountProfile','tracking','cart','checkout','checkoutSuccess','login','register','forgot','reset'] as $page) {
                 $path=$base.'.media.'.$page;
                 $readability=$page==='allProducts'&&in_array($theme,['beauty','food'],true);
                 $rules[$path]=['sometimes','array:desktop,mobile,alt,focus,focusY,hidden'.($readability?',textMode,textColor,overlay,overlayStrength':'')];
@@ -78,6 +78,7 @@ final class WebsiteThemeCustomization
             if (str_contains($name,'password')) return 'forgot';
             return 'account';
         }
+        if (request()->routeIs('cart.show')) return 'cart';
         if (request()->routeIs('checkout.create')) return 'checkout';
         if (request()->routeIs('checkout.success')) return 'checkoutSuccess';
         if (request()->routeIs('order-tracking.*')) return 'tracking';

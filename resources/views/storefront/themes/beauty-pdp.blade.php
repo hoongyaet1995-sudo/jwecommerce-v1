@@ -81,7 +81,7 @@
 
 <p class="bs-fine">SKU <span data-pdp-sku>{{ $selectedVariant?->sku }}</span></p>
 
-@if($highlights->isNotEmpty())<ul class="bs-highlights">@foreach($highlights as $item)<li>{{ is_array($item)?$item['text']:$item }}</li>@endforeach</ul>@endif
+@if($highlights->isNotEmpty())<ul class="bs-highlights">@foreach($highlights as $item)<li>@if(is_array($item) && filled($item['icon'] ?? null))<i data-lucide="{{ \App\Services\ProductHighlightIcons::resolve($item['icon']) }}" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:8px" aria-hidden="true"></i>@endif{{ is_array($item)?$item['text']:$item }}</li>@endforeach</ul>@endif
 
 @if(filled($description))<details class="bs-detail"><summary>Details</summary><div class="bs-description">{!! $description !!}</div></details>@endif
 

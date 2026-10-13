@@ -1,0 +1,1 @@
+import{aK as o,aJ as s,j as t,r,az as n,aL as c,aM as i}from"./index-_CccNOrT.js";const a=document.getElementById("cms-page-root");if(a){const e=o();s.createRoot(a).render(t.jsx(r.StrictMode,{children:e?t.jsx(n,{payload:e,children:t.jsx(c,{sections:e.page.document.sections,mode:e.context.mode})}):t.jsx(i,{})}))}

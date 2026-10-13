@@ -1,4 +1,4 @@
-@props(['summary', 'options', 'selected' => null, 'quoteUrl' => null, 'step' => 2, 'heading' => 'Delivery Method & Logistics Matrix'])
+@props(['summary', 'options', 'selected' => null, 'quoteUrl' => null, 'step' => 2, 'heading' => 'Delivery Method'])
 
 @php
     $selected = old('delivery', $selected ?? array_key_first($options) ?? '');

@@ -65,12 +65,14 @@ import {
     UploadCloud,
     Loader2,
     RefreshCw,
+    AudioLines, Battery, Usb, Bluetooth, Wifi, Cpu, Monitor, Leaf, Droplets,
     createIcons,
 } from 'lucide';
 
 const renderIcons = () => {
     createIcons({
         icons: {
+            AudioLines, Battery, Usb, Bluetooth, Wifi, Cpu, Monitor, Leaf, Droplets,
             House, Ticket, TicketPercent,
             ArrowLeft,
             ArrowRight,
@@ -557,7 +559,7 @@ const installDeliveryMatrix = () => {
             if (taxDefinition) taxDefinition.textContent = money(tax);
             if (totalDefinition) totalDefinition.textContent = money(total);
             const checkoutSubmitLabel = form?.querySelector('[data-checkout-submit-label]');
-            if (checkoutSubmitLabel) checkoutSubmitLabel.textContent = form.closest('[data-home-deco-checkout],[data-beauty-checkout]') ? `Place order · ${money(total)}` : `Authorize & Place Order (${money(total)})`;
+            if (checkoutSubmitLabel) checkoutSubmitLabel.textContent = form.closest('[data-home-deco-checkout],[data-beauty-checkout],[data-tech-checkout]') ? `Place order · ${money(total)}` : `Authorize & Place Order (${money(total)})`;
             matrix.querySelectorAll('[data-delivery-option]').forEach((element) => {
                 element.classList.toggle('border-amber-400', element === option);
                 element.classList.toggle('bg-amber-400/10', element === option);
@@ -1201,7 +1203,7 @@ const installStorefrontVariantSelectors = () => {
 
             document.querySelectorAll('[data-pdp-add-to-cart], [data-pdp-instant-buy], [data-pdp-sticky-add]').forEach((button) => {
                 button.disabled = outOfStock || !enabled;
-                if (button.matches('[data-pdp-add-to-cart]')) button.textContent = outOfStock || !enabled ? (variant.stock === null ? 'Awaiting stock verification' : 'Sold out') : (button.closest('[data-home-deco-pdp], [data-beauty-pdp], [data-food-pdp]') ? 'Add to bag' : `Add to Cart · ${storefrontMoney(variant.price)}`);
+                if (button.matches('[data-pdp-add-to-cart]')) button.textContent = outOfStock || !enabled ? (variant.stock === null ? 'Awaiting stock verification' : 'Sold out') : (button.closest('[data-tech-pdp]') ? 'Add to cart' : button.closest('[data-home-deco-pdp], [data-beauty-pdp], [data-food-pdp]') ? 'Add to bag' : `Add to Cart · ${storefrontMoney(variant.price)}`);
             });
 
             const purchaseQuantity = selector.closest('form')?.querySelector('input[name="quantity"]');
@@ -1445,8 +1447,9 @@ const installQuickAddVariantModals = () => {
             const confirmText = modal.querySelector('[data-quick-add-confirm-text]');
             setConfirmState(isOutOfStock(variant) ? 'soldOut' : 'default');
             if (confirmText) confirmText.textContent = isOutOfStock(variant) ? 'Sold Out • Join Restock List' : `Add ${quantity > 1 ? `${quantity} Items` : 'to Cart'} • ${storefrontMoney(Number(variant.price) * quantity)}`;
+            if (modal.hasAttribute('data-tech-quick-buy') && confirmText && !isOutOfStock(variant)) confirmText.textContent = 'Add to cart';
             if ((modal.hasAttribute('data-home-deco-quick-buy') || modal.hasAttribute('data-beauty-quick-buy')) && confirmText && !isOutOfStock(variant)) confirmText.textContent = 'Add to bag →';
-            const homeCheckout = modal.querySelector('[data-home-quick-checkout],[data-beauty-quick-checkout]');
+            const homeCheckout = modal.querySelector('[data-home-quick-checkout],[data-beauty-quick-checkout], [data-tech-quick-checkout]');
             if (homeCheckout) homeCheckout.disabled = isOutOfStock(variant);
             modal.querySelectorAll('[data-quick-add-option-value]').forEach((button) => {
                 const optionName = button.dataset.quickAddOptionName;
@@ -1466,7 +1469,7 @@ const installQuickAddVariantModals = () => {
             modal.querySelectorAll('[data-quick-add-option-dropdown]').forEach((select) => { select.value = selectedValues[select.dataset.quickAddOptionName] || ''; });
             updateQuantity();
             const refreshedText = modal.querySelector('[data-quick-add-confirm-text]');
-            if (refreshedText && !isOutOfStock(variant)) refreshedText.textContent = (modal.hasAttribute('data-home-deco-quick-buy') || modal.hasAttribute('data-beauty-quick-buy')) ? 'Add to bag →' : `Add ${quantity > 1 ? `${quantity} Items` : 'to Cart'} • ${storefrontMoney(Number(variant.price) * quantity)}`;
+            if (refreshedText && !isOutOfStock(variant)) refreshedText.textContent = modal.hasAttribute('data-tech-quick-buy') ? 'Add to cart' : (modal.hasAttribute('data-home-deco-quick-buy') || modal.hasAttribute('data-beauty-quick-buy')) ? 'Add to bag →' : `Add ${quantity > 1 ? `${quantity} Items` : 'to Cart'} • ${storefrontMoney(Number(variant.price) * quantity)}`;
             renderIcons();
         };
         const choose = (name, value) => {

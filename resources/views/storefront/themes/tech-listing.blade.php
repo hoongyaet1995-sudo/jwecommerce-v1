@@ -1,0 +1,50 @@
+@php
+    $listingTitle=$collection?->title ?? $listingCategory?->name ?? ($catalogListingSettings['title'] ?: 'All products');
+    $description=$collection?->subtitle ?: ($listingCategory?->description ?: ($listingCategory ? '' : $catalogListingSettings['description']));
+    $heroImage=$collection?->cover_image ?: $listingCategory?->image_url;
+    $isAllProducts=!$collection&&!$listingCategory;
+    $allProductsMedia=$isAllProducts?app(\App\Services\WebsiteThemeCustomization::class)->media('tech','allProducts',''):null;
+    if($isAllProducts)$heroImage=$allProductsMedia['hidden']?'':$allProductsMedia['desktop'];
+    $resetUrl=route($listingRouteName,$listingRouteParameters);
+    $activeCount=($filters['priceRequested']?1:0)+count($filters['colors'])+count($filters['materials'])+($filters['inStock']?1:0)+($filters['minRating']>0?1:0);
+@endphp
+<x-layouts.app :title="$listingTitle.' | '.$shopBrandName">
+    <style>.all-products--compact{min-height:0!important;height:auto!important;display:block!important;padding:28px 0!important;margin-bottom:0!important}.all-products--compact .heroCopy,.all-products--compact .food-hero-copy{width:100%!important;max-width:none!important;padding:0!important;position:static!important}.all-products--compact h1{font-size:clamp(32px,4vw,52px)!important;max-width:none!important;width:100%!important}.home-deco-theme .all-products-picture{min-width:0}.home-deco-theme .all-products-picture img{width:100%;height:320px;object-fit:cover}.tech-theme .all-products-picture,.food-theme .all-products-picture{position:absolute;inset:0;overflow:hidden}.tech-theme .all-products-picture img,.food-theme .all-products-picture img{width:100%;height:100%;object-fit:cover}@media(max-width:760px){.home-deco-theme .all-products-picture img{height:240px}.all-products--compact{padding:20px 0!important}}</style>
+    <link rel="stylesheet" href="{{ asset('css/tech-catalog.css') }}?v={{ filemtime(public_path('css/tech-catalog.css')) }}">
+    <div class="tech-theme te-theme" data-website-theme="tech" data-commerce-collection-anatomy x-data="{filtersOpen:false}" @keydown.escape.window="filtersOpen=false">
+        <x-storefront.nav active="plp" />
+            @if(filled($heroImage))
+            <section class="te-listing-hero">@if($isAllProducts)<div data-all-products-media>@include('storefront.partials.theme-media',['media'=>$allProductsMedia])</div>@else<img src="{{ $heroImage }}" alt="{{ $listingTitle }}">@endif</section>
+            @endif
+
+        <div class="frame"><main class="container">
+            <div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="{{ route('storefront.index') }}">Shop</a>@if($collection || $listingCategory)<span>/</span><span>{{ $listingTitle }}</span>@endif</div>
+            <header class="te-listing-heading"><h1>{{ $listingTitle }}</h1>@if(filled($description))<p>{{ strip_tags($description) }}</p>@endif</header>
+            <div class="catalogbar"><span>{{ $products->total() }} {{ $products->total()===1?'product':'products' }}</span><div class="barActions"><button type="button" @click="filtersOpen=true" aria-label="Open filters"><i data-lucide="sliders-horizontal" class="icon"></i>Filters @if($activeCount)({{ $activeCount }})@endif</button><form method="GET" action="{{ $resetUrl }}">
+                @foreach(array_intersect_key($listingRouteParameters,array_flip(['theme','scope','customization'])) as $key=>$value)<input type="hidden" name="{{ $key }}" value="{{ $value }}">@endforeach
+                @foreach(request()->except(['sort','page','theme','scope']) as $key=>$value)
+                    @if(is_array($value))@foreach($value as $entry)<input type="hidden" name="{{ $key }}[]" value="{{ $entry }}">@endforeach
+                    @elseif(filled($value))<input type="hidden" name="{{ $key }}" value="{{ $value }}">@endif
+                @endforeach
+                <select name="sort" aria-label="Sort products" onchange="this.form.submit()"><option value="">Featured</option><option value="price_asc" @selected($sort==='price_asc')>Price: low to high</option><option value="price_desc" @selected($sort==='price_desc')>Price: high to low</option><option value="newest" @selected($sort==='newest')>Newest</option>@if($facets['hasRatings'])<option value="rating" @selected($sort==='rating')>Customer rating</option>@endif</select>
+            </form></div></div>
+            <div class="products" data-commerce-product-grid-layout="tech-studio-grid">
+            @forelse($products as $product)
+                @php($variant=$product->variants->first())
+                <article class="product" data-storefront-product-card>@if(auth('customer')->check())<form class="te-card-save" method="POST" action="{{ route('customer.wishlist.store',$product) }}">@csrf<button aria-label="Save {{ $product->title }}"><i data-lucide="heart"></i></button></form>@else<a class="te-card-save" href="{{ route('customer.login') }}" aria-label="Sign in to save {{ $product->title }}"><i data-lucide="heart"></i></a>@endif
+                    <a class="photo" href="{{ route('storefront.products.show',$product->handle) }}"><img src="{{ $product->images->first()?->path ?: asset('images/image-not-found.png') }}" alt="{{ $product->images->first()?->alt ?: $product->title }}" loading="lazy"></a>
+                    <h2><a href="{{ route('storefront.products.show',$product->handle) }}">{{ $product->title }}</a></h2>
+                    @if(filled($product->subtitle))<p class="te-card-subtitle">{{ $product->subtitle }}</p>@endif<div class="productbottom"><span class="price">@storefrontMoney($variant?->price ?? $product->base_price)</span>@if($variant)<button type="button" class="details" data-quick-add-trigger data-quick-add-product-id="{{ $product->id }}" data-quick-add-variant-id="{{ $variant->id }}">Quick buy</button>@endif</div>
+                </article>
+            @empty
+                <div class="empty">No products match your selection. <a href="{{ $resetUrl }}">Reset filters</a></div>
+            @endforelse
+            </div>
+            @if($products->hasPages())<div class="pagination">{{ $products->links() }}</div>@else<div class="end">@if($products->total())You’ve viewed all {{ $products->total() }} {{ $products->total()===1?'product':'products' }}@endif</div>@endif
+        </main></div>
+        <div class="drawerBackdrop" x-cloak x-show="filtersOpen" @click="filtersOpen=false"></div>
+        <aside class="drawer" x-cloak x-show="filtersOpen" x-trap.inert.noscroll="filtersOpen" role="dialog" aria-modal="true" aria-labelledby="tech-filter-title"><header><h2 id="tech-filter-title">Filters</h2><button type="button" class="close" @click="filtersOpen=false" aria-label="Close filters">×</button></header><div class="te-filter-body"><x-storefront.tech-filters :mobile="true" :locked="(bool)($collection||$listingCategory)" :categories="$categories" :search="$search" :category="$category" :sort="$sort" :layout="$layout" :filters="$filters" :facets="$facets" :route-name="$listingRouteName" :route-parameters="$listingRouteParameters" /></div><div class="drawerBottom"><a href="{{ $resetUrl }}">Reset filters</a><button type="submit" form="tech-filter-form" class="apply">Show results</button></div></aside>
+        @foreach($products as $product)@if($product->variants->isNotEmpty())<x-storefront.quick-add-variant-modal :product="$product" :variants="$product->variants" :images="$product->images" theme="tech" />@endif@endforeach
+        <x-storefront.footer />
+    </div>
+</x-layouts.app>

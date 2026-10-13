@@ -1,6 +1,7 @@
 import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React, { useState } from 'react';
 import { CatalogImageUploadField } from './CatalogImageUploadField';
+import { HighlightIconPicker } from './HighlightIconPicker';
 import { ThemeImageFocus } from '../cms/ThemeImageFocus';
 import { useAdmin } from '../../context/AdminContext';
 import {
@@ -118,7 +119,7 @@ export const ProductExtraInfoEditor: React.FC<ProductExtraInfoEditorProps> = ({
       id: 'hl-' + Date.now(),
       text: newHighlightText.trim(),
       badge: newHighlightBadge.trim() || undefined,
-      icon: 'CheckCircle2'
+      icon: 'check'
     };
     persistChange({
       ...editorData,
@@ -462,6 +463,7 @@ export const ProductExtraInfoEditor: React.FC<ProductExtraInfoEditorProps> = ({
                 </div>
 
                 <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2">
+                  <HighlightIconPicker value={hl.icon} onChange={icon => persistChange({ ...editorData, highlights: highlights.map(item => item.id === hl.id ? { ...item, icon } : item) })} />
                   <input
                     type="text"
                     value={hl.text}

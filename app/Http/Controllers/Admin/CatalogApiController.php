@@ -237,6 +237,7 @@ class CatalogApiController extends Controller
             'pdpContent' => ['nullable', 'array'],
             'pdpContent.highlights' => ['nullable', 'array', 'max:20'], 'pdpContent.highlights.*.id' => ['required', 'string', 'max:100'],
             'pdpContent.highlights.*.text' => ['required', 'string', 'max:1000'], 'pdpContent.highlights.*.badge' => ['nullable', 'string', 'max:100'],
+            'pdpContent.highlights.*.icon' => ['nullable', \Illuminate\Validation\Rule::in(\App\Services\ProductHighlightIcons::NAMES)],
             'pdpContent.specifications' => ['nullable', 'array', 'max:100'], 'pdpContent.specifications.*.id' => ['required', 'string', 'max:100'],
             'pdpContent.specifications.*.group' => ['nullable', 'string', 'max:100'], 'pdpContent.specifications.*.label' => ['required', 'string', 'max:255'],
             'pdpContent.specifications.*.value' => ['required', 'string', 'max:2000'],
