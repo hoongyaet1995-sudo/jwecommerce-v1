@@ -75,7 +75,8 @@ class StorefrontVariantVisualTest extends TestCase
             ->assertSee('data-pdp-option-name="Finish"', false)
             ->assertSee('data-pdp-option-visual="color"', false)
             ->assertSee('data-pdp-option-visual="image"', false)
-            ->assertSee('aria-label="Studio White - Out of Stock"', false)
+            ->assertSee('aria-label="Studio White"', false)
+            ->assertDontSee('aria-label="Studio White - Out of Stock"', false)
             ->assertSee('data-pdp-sticky-purchase', false)
             ->assertDontSee('Configuration')
             ->assertDontSee('Standard atelier specification');

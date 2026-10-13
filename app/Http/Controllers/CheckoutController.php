@@ -146,7 +146,7 @@ class CheckoutController extends Controller
             'address' => [],
         ]);
 
-        return view('storefront.checkout', [
+        return view(app(\App\Services\WebsiteDesignService::class)->surface()==='food' ? 'storefront.themes.food-checkout' : 'storefront.checkout', [
             'items' => $items,
             'coupon' => $coupon,
             'summary' => $summary,
@@ -251,7 +251,7 @@ class CheckoutController extends Controller
             return redirect()->route('storefront.index');
         }
 
-        return view('storefront.success', [
+        return view(app(\App\Services\WebsiteDesignService::class)->surface()==='food' ? 'storefront.themes.food-success' : 'storefront.success', [
             'order' => $order,
             'paymentProof' => $proofViewModels->for($order, $order->payments->where('gateway', 'bank_transfer')->sortByDesc('id')->first()),
             'taxLine' => $order->taxLines->sortBy('id')->first(),

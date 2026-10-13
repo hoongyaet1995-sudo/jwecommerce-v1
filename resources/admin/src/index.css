@@ -216,3 +216,9 @@
 .cms-section-layout .cms-settings-group-content > div > div {
   border-bottom: 0;
 }
+
+/* Native Website Theme menus must have matching text and popup surfaces. */
+[data-website-theme-admin] select{color-scheme:light;color:#171717;background-color:#ffffff}
+[data-website-theme-admin] select option{color:#171717;background-color:#ffffff}
+html.dark [data-website-theme-admin] select{color-scheme:dark;color:#f5f5f5;background-color:#171717}
+html.dark [data-website-theme-admin] select option{color:#f5f5f5;background-color:#171717}

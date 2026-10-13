@@ -13,6 +13,7 @@ use Tests\TestCase;
 class HostedPaymentCheckoutTest extends TestCase
 {
     use RefreshDatabase;
+    use \Tests\Concerns\CreatesCountedWebsiteStock;
 
     public function test_checkout_redirects_to_a_stripe_hosted_session_and_records_its_reference(): void
     {
@@ -102,6 +103,6 @@ class HostedPaymentCheckoutTest extends TestCase
         $category = Category::query()->create(['name' => 'Audio', 'slug' => 'audio', 'status' => 'active']);
         $product = Product::query()->create(['category_id' => $category->id, 'title' => 'Studio Headphones', 'handle' => 'studio-headphones', 'brand' => 'JW Studio', 'description' => 'Test', 'base_price' => 10000, 'status' => 'active']);
 
-        return $product->variants()->create(['sku' => 'STUDIO-1', 'title' => 'Default', 'price' => 10000, 'stock' => 10, 'enabled' => true]);
+        return $this->countedWebsiteVariant($product->variants()->create(['sku' => 'STUDIO-1', 'title' => 'Default', 'price' => 10000, 'stock' => 10, 'enabled' => true]), 10);
     }
 }

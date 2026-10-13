@@ -258,6 +258,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/api/website-design', [\App\Http\Controllers\Admin\WebsiteDesignController::class, 'update']);
     Route::get('/website-design/cart-drawer', [\App\Http\Controllers\Admin\WebsiteDesignController::class, 'drawer'])->name('website-design.cart-drawer');
     Route::get('/website-design/preview', [\App\Http\Controllers\Admin\WebsiteDesignController::class, 'preview'])->name('website-design.preview');
+    Route::get('/website-design/acceptance', [\App\Http\Controllers\Admin\WebsiteThemeAcceptanceController::class, 'index']);
+    Route::get('/website-design/acceptance/sample/{scenario}', [\App\Http\Controllers\Admin\WebsiteThemeAcceptanceController::class, 'sample'])->name('website-design.acceptance.sample');
+    Route::get('/website-design/acceptance/reference/{scenario}', [\App\Http\Controllers\Admin\WebsiteThemeAcceptanceController::class, 'reference']);
     Route::get('/api/catalog-listing-settings', [CatalogListingSettingsApiController::class, 'show'])->name('api.catalog-listing-settings.show');
     Route::put('/api/catalog-listing-settings', [CatalogListingSettingsApiController::class, 'update'])->name('api.catalog-listing-settings.update');
     Route::post('/api/catalog/categories', [CatalogApiController::class, 'storeCategory']);

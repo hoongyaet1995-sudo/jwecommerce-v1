@@ -15,6 +15,7 @@ use Tests\TestCase;
 class CheckoutSavedAddressTest extends TestCase
 {
     use RefreshDatabase;
+    use \Tests\Concerns\CreatesCountedWebsiteStock;
 
     public function test_customer_checkout_prefills_the_default_saved_delivery_address(): void
     {
@@ -209,12 +210,12 @@ class CheckoutSavedAddressTest extends TestCase
             'status' => 'active',
         ]);
 
-        return $product->variants()->create([
+        return $this->countedWebsiteVariant($product->variants()->create([
             'sku' => 'CHECKOUT-ADDRESS-1',
             'title' => 'Default',
             'price' => 10000,
             'stock' => 10,
             'enabled' => true,
-        ]);
+        ]), 10);
     }
 }

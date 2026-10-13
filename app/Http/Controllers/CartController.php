@@ -15,7 +15,7 @@ class CartController extends Controller
 {
     public function show(Request $request, CartViewData $cartViewData): View
     {
-        return view('storefront.cart', $cartViewData->for($request));
+        return view(app(\App\Services\WebsiteDesignService::class)->surface()==='food' ? 'storefront.themes.food-cart' : 'storefront.cart', $cartViewData->for($request));
     }
 
     public function drawer(Request $request, CartViewData $cartViewData): View

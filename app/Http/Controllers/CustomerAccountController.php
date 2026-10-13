@@ -16,7 +16,7 @@ class CustomerAccountController extends Controller
         $customer = $request->user('customer')->customer;
         abort_unless($customer !== null, 403);
 
-        return view(app(\App\Services\WebsiteDesignService::class)->surface() === 'home_deco' ? 'storefront.themes.home-deco-account' : 'storefront.account', [
+        return view(app(\App\Services\WebsiteDesignService::class)->view('account'), [
             'customer' => $customer,
             'accountPayload' => $factory->for($customer),
         ]);

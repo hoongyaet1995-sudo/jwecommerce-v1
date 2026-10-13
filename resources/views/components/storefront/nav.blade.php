@@ -99,6 +99,11 @@
 
         return sprintf('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right %s" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>', e($class));
     };
+    if (request()->attributes->has('websiteThemeDemoVariants')) {
+        $design=array_replace(\App\Domain\Cms\ShellDesign::defaults(),['showAccount'=>true,'tagline'=>'Good food. Brighter days.']);
+        $announcementVisible=false; $cartCount=2; $memberUser=null;
+        $menuItems=collect(['Shop','Collections'])->map(fn($label)=>['id'=>'demo-'.$label,'label'=>$label,'url'=>'#','direct'=>true,'columns'=>collect(),'promo'=>null]);
+    }
 @endphp
 
 @if($design)

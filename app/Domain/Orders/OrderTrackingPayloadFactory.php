@@ -30,6 +30,7 @@ class OrderTrackingPayloadFactory
             'statusLabel' => $this->statusTitle($order->status),
             'createdAt' => $order->created_at?->toIso8601String(),
             'currency' => $order->currency,
+            'currencyExchangeRate' => (float) ($order->currency_exchange_rate ?? 1),
             'shippingLabel' => $order->shipping_label,
             'items' => $order->items->map(fn ($item): array => [
                 'title' => $item->title,

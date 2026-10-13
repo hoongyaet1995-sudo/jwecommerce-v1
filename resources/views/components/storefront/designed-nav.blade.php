@@ -31,6 +31,7 @@
             @endforeach
         </nav>
         <div class="jw-shell-tools">
+            @if(app(\App\Services\WebsiteDesignService::class)->surface()==='food')<form class="fd-shell-search" method="GET" action="{{ route('storefront.index') }}"><i data-lucide="search"></i><input name="search" aria-label="Search pantry favourites" placeholder="Search for pantry favourites…"></form>@endif
             @if($design['business']==='commerce')
                 <button type="button" class="jw-shell-icon" aria-label="Search products" data-shell-search-toggle aria-expanded="false"><i data-lucide="search"></i></button>
                 <a href="{{ route('cart.show') }}" data-cart-drawer-open data-cart-drawer-trigger class="jw-shell-icon" aria-label="Shopping bag"><i data-lucide="shopping-bag"></i><span data-cart-count-badge data-cart-count class="jw-shell-count">{{ $cartCount }}</span></a>

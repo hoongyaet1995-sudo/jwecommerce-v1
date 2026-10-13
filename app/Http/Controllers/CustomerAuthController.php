@@ -17,17 +17,17 @@ class CustomerAuthController extends Controller
 {
     public function create(): View
     {
-        return view(app(\App\Services\WebsiteDesignService::class)->surface() === 'home_deco' ? 'storefront.themes.home-deco-auth' : 'storefront.auth', ['mode' => 'login']);
+        return view(app(\App\Services\WebsiteDesignService::class)->view('auth'), ['mode' => 'login']);
     }
 
     public function registerForm(): View
     {
-        return view(app(\App\Services\WebsiteDesignService::class)->surface() === 'home_deco' ? 'storefront.themes.home-deco-auth' : 'storefront.auth', ['mode' => 'register']);
+        return view(app(\App\Services\WebsiteDesignService::class)->view('auth'), ['mode' => 'register']);
     }
 
     public function forgotPasswordForm(): View
     {
-        return view(app(\App\Services\WebsiteDesignService::class)->surface() === 'home_deco' ? 'storefront.themes.home-deco-auth' : 'storefront.auth', ['mode' => 'forgot']);
+        return view(app(\App\Services\WebsiteDesignService::class)->view('auth'), ['mode' => 'forgot']);
     }
 
     public function sendPasswordResetLink(Request $request): RedirectResponse
@@ -44,7 +44,7 @@ class CustomerAuthController extends Controller
 
     public function resetPasswordForm(Request $request, string $token): View
     {
-        return view(app(\App\Services\WebsiteDesignService::class)->surface() === 'home_deco' ? 'storefront.themes.home-deco-auth' : 'storefront.password-reset', ['mode'=>'reset','token'=>$token,'email'=>$request->query('email','')]);
+        return view(app(\App\Services\WebsiteDesignService::class)->view('reset'), ['mode'=>'reset','token'=>$token,'email'=>$request->query('email','')]);
     }
 
     public function resetPassword(Request $request): RedirectResponse

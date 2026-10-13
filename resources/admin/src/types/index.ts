@@ -379,6 +379,7 @@ export interface Product {
     ratingScore?: number | null;
     reviewCount: number;
     configuratorLabel?: string | null;
+    story?: { label?: string; heading?: string; description?: string; image?: string; alt?: string; focus?: 'left'|'center'|'right'; focusY?: 'top'|'middle'|'bottom' } | null;
   };
   crossSellProductIds?: string[];
   reviews?: ProductSeedReview[];
@@ -868,6 +869,7 @@ export interface StorefrontShellRightZone {
 }
 
 export interface StorefrontShellSettings {
+  contentWidth?: 'standard' | 'wide' | 'full';
   overlayLogos?: {light:string|null;dark:string|null};
   shellDesign?: import('../cms/shellDesign').ShellDesign;
   headerPresentation?: import('../cms/headerPresentation').HeaderPresentation;

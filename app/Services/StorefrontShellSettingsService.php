@@ -28,6 +28,7 @@ class StorefrontShellSettingsService
     {
         $validator = validator($input, [
             ...\App\Domain\Cms\ShellDesign::rules(),
+            'contentWidth' => ['sometimes', Rule::in(['standard','wide','full'])],
             'enabled' => ['required', 'boolean'],
             'overlayLogos' => ['sometimes','array:light,dark'],
             'overlayLogos.light' => ['nullable','string','max:2048'],
@@ -101,6 +102,7 @@ class StorefrontShellSettingsService
     {
         return [
             ...(isset($input['shellDesign']) ? ['shellDesign' => \App\Domain\Cms\ShellDesign::resolve($input)] : []),
+            ...(isset($input['contentWidth']) ? ['contentWidth' => in_array($input['contentWidth'], ['standard','wide','full'], true) ? $input['contentWidth'] : 'wide'] : []),
             'enabled' => (bool) ($input['enabled'] ?? false),
             ...(isset($input['overlayLogos']) ? ['overlayLogos'=>['light'=>$this->nullableString(Arr::get($input,'overlayLogos.light')),'dark'=>$this->nullableString(Arr::get($input,'overlayLogos.dark'))]] : []),
             ...(isset($input['headerPresentation']) ? ['headerPresentation' => ['mode' => Arr::get($input,'headerPresentation.mode','normal'), 'tone' => Arr::get($input,'headerPresentation.tone','dark')]] : []),

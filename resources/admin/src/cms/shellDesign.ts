@@ -4,7 +4,7 @@ export interface ShellDesign {
  ctaLabel:string;ctaUrl:string;tagline:string;contactEmail:string;
 }
 export const shellDesignDefaults=(business:ShellDesign['business']='commerce'):ShellDesign=>({business,style:'editorial',appearance:'light',showAnnouncement:false,showAccount:false,showCurrency:false,showThemeSwitch:false,ctaLabel:'',ctaUrl:'',tagline:'',contactEmail:''});
-export const resolveShellDesign=(global:ShellDesign|undefined,page?:ShellDesign)=>page??global;
+export const resolveShellDesign=(global:ShellDesign|undefined,page?:ShellDesign)=>global??page;
 export const shellStyleChoices=[{id:'editorial',name:'Editorial',description:'Photography · Creative studios',paper:'#f7f4ee',ink:'#292724'},{id:'soft',name:'Soft & refined',description:'Beauty · Jewellery',paper:'#faf2ee',ink:'#503b41'},{id:'modern',name:'Clean & modern',description:'Tech · Everyday retail',paper:'#ffffff',ink:'#141820'}] as const;
 export function isShellDesign(value:unknown):value is ShellDesign {
  if(!value||typeof value!=='object'||Array.isArray(value))return false;

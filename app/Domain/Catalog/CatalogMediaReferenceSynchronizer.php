@@ -31,6 +31,17 @@ final class CatalogMediaReferenceSynchronizer
         ]);
     }
 
+    public function syncWebsiteTheme(\App\Models\StoreSetting $setting): void
+    {
+        $fields=[];
+        foreach (data_get($setting->value,'data.customization',[]) as $theme=>$profile) {
+            foreach ($profile['media']??[] as $page=>$media) {
+                foreach (['desktop','mobile'] as $device) $fields["customization.$theme.media.$page.$device"]=$media[$device]??null;
+            }
+        }
+        $this->sync('website_theme',$setting->getKey(),$fields);
+    }
+
     public function syncCollection(Collection $collection): void
     {
         $this->sync(self::COLLECTION, $collection->getKey(), [
@@ -51,6 +62,7 @@ final class CatalogMediaReferenceSynchronizer
             $desired["variants.{$variant->id}.image"]=$variant->image_url;
             $desired["variants.{$variant->id}.optionImage"]=$variant->option_image;
         }
+        $desired['story.image'] = $product->pdpContent()->first()?->story['image'] ?? null;
         $this->sync(self::PRODUCT, $product->getKey(), $desired);
     }
 

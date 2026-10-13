@@ -2,7 +2,10 @@
     <div class="min-h-screen bg-zinc-50 font-sans text-zinc-900 transition-colors duration-200 dark:bg-zinc-950 dark:text-zinc-100">
         <x-storefront.nav active="account" />
 @if($websiteDesignPreview ?? false)<div class="p-4 text-sm">Design preview. Sample account actions disabled.</div>@endif
-        <main @if($websiteDesignPreview ?? false) inert @endif class="flex min-h-[85vh] items-center justify-center px-4 py-12 sm:px-6 sm:py-20 lg:px-8">
+
+@php($accountMedia=app(\App\Services\WebsiteThemeCustomization::class)->media('default',$mode,''))
+@if($accountMedia['desktop']&&!$accountMedia['hidden'])<div class="theme-account-media">@include('storefront.partials.theme-media',['media'=>$accountMedia])</div>@endif
+<main @if($websiteDesignPreview ?? false) inert @endif class="flex min-h-[85vh] items-center justify-center px-4 py-12 sm:px-6 sm:py-20 lg:px-8">
             <div class="w-full max-w-md">
                 <div class="mb-6 flex items-center justify-between"><a href="{{ route('storefront.home') }}" class="flex items-center gap-1.5 text-xs text-zinc-500 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"><i data-lucide="arrow-left" class="h-3.5 w-3.5"></i>Return to Studio Store</a><span class="flex items-center gap-1 font-mono text-[11px] text-zinc-500"><i data-lucide="shield-check" class="h-3.5 w-3.5 text-emerald-500"></i>256-bit SSL Secure</span></div>
                 <section class="relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl sm:p-8 dark:border-zinc-800/90 dark:bg-zinc-900"><div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-purple-500 to-cyan-500"></div>

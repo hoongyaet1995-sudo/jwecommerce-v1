@@ -4,9 +4,9 @@ import type {PageSection} from '../types';
 const hero={type:'hero_slider',isVisible:true} as PageSection;
 describe('header presentation',()=>{
  it('preserves normal behavior for old documents',()=>expect(resolveHeaderPresentation(undefined,undefined,[hero]).mode).toBe('normal'));
- it('inherits store defaults and honors page overrides',()=>{
+ it('uses store settings ahead of retained legacy page overrides',()=>{
   expect(resolveHeaderPresentation({mode:'inherit',tone:'dark'},{mode:'transparent',tone:'light'},[hero])).toEqual({mode:'transparent',tone:'light'});
-  expect(resolveHeaderPresentation({mode:'normal',tone:'dark'},{mode:'transparent',tone:'light'},[hero]).mode).toBe('normal');
+  expect(resolveHeaderPresentation({mode:'normal',tone:'dark'},{mode:'transparent',tone:'light'},[hero]).mode).toBe('transparent');
  });
  it('falls back when the first visible section is not a hero',()=>{
   expect(resolveHeaderPresentation({mode:'translucent',tone:'light'},undefined,[{...hero,isVisible:false},{type:'product_listing',isVisible:true} as PageSection]).mode).toBe('normal');

@@ -30,7 +30,7 @@ class OrderTrackingController extends Controller
             }
         }
 
-        return view('storefront.order-tracking', [
+        return view(app(\App\Services\WebsiteDesignService::class)->surface()==='food' ? 'storefront.themes.food-tracking' : 'storefront.order-tracking', [
             'step' => $step,
             'submittedEmail' => $request->session()->get('order_tracking.email'),
             'trackingPayload' => $trackingPayload,

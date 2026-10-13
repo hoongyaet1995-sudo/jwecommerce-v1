@@ -1,3 +1,9 @@
+@if(app(\App\Services\WebsiteDesignService::class)->surface()==='food')
+@include('storefront.themes.food-cart-drawer')
+@else
+@if(app(\App\Services\WebsiteDesignService::class)->surface()==='beauty')
+@include('storefront.themes.beauty-cart-drawer')
+@else
 @if(app(\App\Services\WebsiteDesignService::class)->surface() === 'home_deco')
 @include('storefront.themes.home-deco-cart-drawer')
 @else
@@ -121,5 +127,9 @@
         </footer>
     @endif
 </section>
+
+@endif
+
+@endif
 
 @endif

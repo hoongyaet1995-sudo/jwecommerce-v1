@@ -67,7 +67,7 @@ class StorefrontController extends Controller
         $collection = $data['collection'] ?? null;
         $scope = $collection ? 'collection:'.$collection->id : ($category ? 'category:'.$category->id : null);
         $theme = $request->attributes->get('websiteDesignPreview') ?? app(\App\Services\WebsiteDesignService::class)->resolve($scope);
-        return view($theme === 'home_deco' ? 'storefront.themes.home-deco-listing' : 'storefront.index', $data + ['websiteDesignTheme'=>$theme, 'listingCategory'=>$category]);
+        return view(app(\App\Services\WebsiteDesignService::class)->view('listing',null,$theme), $data + ['websiteDesignTheme'=>$theme, 'listingCategory'=>$category]);
     }
 
     private function listingData(Request $request, $query, ?string $forcedCategory = null): array
@@ -106,7 +106,7 @@ class StorefrontController extends Controller
             ?? $images->first();
         $shopName = trim((string) data_get(StoreSetting::query()->where('key', 'shop_name')->value('value'), 'data'));
 
-        return view(app(\App\Services\WebsiteDesignService::class)->surface($product->category_id ? 'category:'.$product->category_id : null) === 'home_deco' ? 'storefront.themes.home-deco-pdp' : 'storefront.show', [
+        return view(app(\App\Services\WebsiteDesignService::class)->view('pdp',$product->category_id ? 'category:'.$product->category_id : null), [
             'product' => $product,
             'selectedVariant' => $selectedVariant,
             'selectedImage' => $selectedImage,

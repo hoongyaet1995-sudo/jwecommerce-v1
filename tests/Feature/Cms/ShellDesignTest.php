@@ -35,7 +35,7 @@ final class ShellDesignTest extends TestCase
  }
  public function test_page_override_survives_contract_and_does_not_change_global_design():void {
   $settings=['shellDesign'=>ShellDesign::defaults()];$page=ShellDesign::defaults('service');
-  $this->assertSame('service',ShellDesign::resolve($settings,$page)['business']);
+  $this->assertSame('commerce',ShellDesign::resolve($settings,$page)['business']);
   $this->assertSame('commerce',ShellDesign::resolve($settings)['business']);
   $d=json_decode(file_get_contents(base_path('tests/Fixtures/Cms/page-document-all-sections.v1.json')),true);
   $d['shellDesign']=$page;

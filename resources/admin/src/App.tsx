@@ -29,7 +29,7 @@ import { MarketplaceOMSPage } from './components/marketplace/MarketplaceOMSPage'
 import { MarketplaceInventoryPage } from './components/marketplace/MarketplaceInventoryPage';
 import { MarketplaceSyncPage } from './components/marketplace/MarketplaceSyncPage';
 import { StorefrontHub } from './components/cms/StorefrontHub';
-import { StorefrontHeaderAnnouncementEditor } from './components/cms/StorefrontHeaderAnnouncementEditor';
+import { HeaderFooterAdmin } from './components/cms/HeaderFooterAdmin';
 import { CatalogHub } from './components/catalog/CatalogHub';
 import { ProductReviewsAdmin } from './components/catalog/ProductReviewsAdmin';
 import { CommerceHub } from './components/orders/CommerceHub';
@@ -102,7 +102,7 @@ const AdminLayoutContent: React.FC = () => {
       case 'storefront':
         return <StorefrontHub />;
       case 'storefront-header-announcement':
-        return <StorefrontHeaderAnnouncementEditor />;
+        return <HeaderFooterAdmin />;
       case 'pages-builder':
         return <PageAdmin />;
       case 'website-design': return <WebsiteDesignAdmin />;

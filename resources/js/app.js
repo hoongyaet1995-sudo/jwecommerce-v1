@@ -42,6 +42,9 @@ import {
     Send,
     Headphones,
     Heart,
+    House,
+    Ticket,
+    TicketPercent,
     ShoppingBag,
     SlidersHorizontal,
     Sparkles,
@@ -68,6 +71,7 @@ import {
 const renderIcons = () => {
     createIcons({
         icons: {
+            House, Ticket, TicketPercent,
             ArrowLeft,
             ArrowRight,
             Award,
@@ -1197,7 +1201,7 @@ const installStorefrontVariantSelectors = () => {
 
             document.querySelectorAll('[data-pdp-add-to-cart], [data-pdp-instant-buy], [data-pdp-sticky-add]').forEach((button) => {
                 button.disabled = outOfStock || !enabled;
-                if (button.matches('[data-pdp-add-to-cart]')) button.textContent = outOfStock || !enabled ? (variant.stock === null ? 'Awaiting stock verification' : 'Sold out') : (button.closest('[data-home-deco-pdp]') ? 'Add to bag' : `Add to Cart · ${storefrontMoney(variant.price)}`);
+                if (button.matches('[data-pdp-add-to-cart]')) button.textContent = outOfStock || !enabled ? (variant.stock === null ? 'Awaiting stock verification' : 'Sold out') : (button.closest('[data-home-deco-pdp], [data-beauty-pdp], [data-food-pdp]') ? 'Add to bag' : `Add to Cart · ${storefrontMoney(variant.price)}`);
             });
 
             const purchaseQuantity = selector.closest('form')?.querySelector('input[name="quantity"]');
@@ -1215,11 +1219,11 @@ const installStorefrontVariantSelectors = () => {
                 // customer on the initially selected diagonal combination.
                 const matches = variants.filter((candidate) => String(candidate.options?.[button.dataset.pdpOptionName] || '') === String(button.dataset.pdpOptionValue));
                 const unavailable = !matches.length || matches.every((candidate) => candidate.enabled === false);
-                const outOfStockValue = matches.length > 0 && matches.every((candidate) => Number(candidate.stock) < 1 || candidate.enabled === false);
+                const outOfStockValue = matches.length > 0 && matches.every((candidate) => (candidate.stock != null && Number(candidate.stock) < 1) || candidate.enabled === false);
 
                 button.disabled = unavailable;
                 button.setAttribute('aria-checked', String(selected));
-                button.setAttribute('aria-disabled', String(unavailable || outOfStockValue));
+                button.setAttribute('aria-disabled', String(unavailable));
                 const visual = button.dataset.pdpOptionVisual || 'pill';
                 const activeClasses = {
                     color: ['ring-2', 'ring-amber-500', 'dark:ring-amber-400', 'ring-offset-2', 'ring-offset-zinc-50', 'dark:ring-offset-zinc-950', 'border-2', 'border-zinc-900', 'dark:border-white', 'shadow-lg', 'scale-105'],
@@ -1436,6 +1440,8 @@ const installQuickAddVariantModals = () => {
             setText(modal, '[data-quick-add-stock-note]', variant.stock == null ? 'Awaiting stock verification' : Number(variant.stock) > 0 ? `${variant.stock} units ready` : 'Zero stock');
             setHeroImage(variant.optionImage || variant.image);
             modal.querySelector('[data-quick-add-sold-out-overlay]')?.classList.toggle('hidden', !isOutOfStock(variant));
+            const soldOutText = modal.querySelector('[data-quick-add-confirm-sold-out] span');
+            if (soldOutText) soldOutText.textContent = variant.stock == null ? 'Awaiting stock verification' : 'Sold Out';
             const confirmText = modal.querySelector('[data-quick-add-confirm-text]');
             setConfirmState(isOutOfStock(variant) ? 'soldOut' : 'default');
             if (confirmText) confirmText.textContent = isOutOfStock(variant) ? 'Sold Out • Join Restock List' : `Add ${quantity > 1 ? `${quantity} Items` : 'to Cart'} • ${storefrontMoney(Number(variant.price) * quantity)}`;
@@ -1446,7 +1452,7 @@ const installQuickAddVariantModals = () => {
                 const candidates = variants.filter((candidate) => String(candidate.options?.[optionName] || '') === String(value || ''));
                 const out = candidates.length > 0 && candidates.every(isOutOfStock);
                 button.setAttribute('aria-checked', String(selectedButton));
-                button.setAttribute('aria-disabled', String(out || !candidates.length));
+                button.setAttribute('aria-disabled', String(!candidates.length || candidates.every(candidate => candidate.enabled === false)));
                 button.classList.toggle('ring-2', selectedButton);
                 button.classList.toggle('ring-amber-500', selectedButton);
                 button.classList.toggle('scale-105', selectedButton);

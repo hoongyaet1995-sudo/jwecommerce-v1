@@ -153,3 +153,39 @@ Customer reset now has GET token form and throttled POST handler. Laravel broker
 Automated gate: 35 tests / 213 assertions; browser: real PDP/auth pages, empty drawer and non-sensitive account preview checked on desktop and390px mobile. Populated cart, owned order/payment proof/profile/address/wishlist, reset security covered by test database fixtures. Actual customer browser login/order operations and SMTP delivery remain acceptance items; do not mark entire operational pack fully closed based only on preview screenshots.
 
 Final review: protected Admin draft drawer refresh retains selected unsaved theme. Printable order summary uses actual shop name and order number; no fabricated tax invoice identity. Final regression36 tests222assertions; frontend build25.51s after refresh change.
+
+## Beauty & Skincare integration — 2026-10-12
+
+`WebsiteDesignService::THEMES` now includes `beauty`. `view(surface, scope, theme)` centralizes the renderer map for listing/PDP/auth/reset/account, preserving Default and Home & Decor fallback. Cart shares its existing partial endpoint with a scoped Beauty renderer. Global theme owns auth/account/cart; category override supplies PLP/PDP, collection override supplies PLP only. Theme selection never changes catalog records, CMS homepage or Header/Footer settings.
+
+Beauty uses a compact split catalog banner, square studio cards, PDP thumbnail rail/detail images, centered auth forms with a short decorative banner, horizontal account navigation and asymmetric overview. Product photos/content/specifications/options/facets/availability/reviews remain producer-owned; unavailable fields are hidden. Auth decorative imagery is theme-owned and is not a product record. Order operations continue through the shared account orders partial and existing customer endpoints.
+
+GET preview forms must send `theme` and `scope` as hidden fields: query parameters in a GET form action alone are discarded by the browser. This applies to Filter and Sort in both supported industry themes. Protected cart refresh retains draft theme without saving it.
+
+Beauty local evidence: 30 tests/224 assertions plus successful storefront/Admin builds. Real catalog PLP/PDP, category filtering, Quick Buy unavailable state, auth pages, non-sensitive account preview and mobile Filter/Cart/PDP verified. Populated cart, quantity limits, order snapshots and wishlist overview covered by test database fixtures. Real customer order mutations and actual reset-email inbox delivery remain operational acceptance items; screenshots do not close those gates. Local setting applied as Beauty through Website Theme; no GitHub/Hostinger synchronization authorized for this phase.
+
+### Beauty fidelity repair and explicit local sample authorization
+
+User explicitly authorized creating cosmetic sample products for visual judgement. `BeautyThemeLocalSamplesSeeder` is a manually invoked, local-only, idempotent fixture; never include it in DatabaseSeeder or deploy sample records. Three sample products have three persisted media entries each and cross-linked related products. All use existing Product/Variant/Image/PDP/category ports, zero legacy stock and no inventory balance/provider mutations. Records and category identify themselves as fictional local design samples, not saleable formulations.
+
+Approved image design is the layout authority: Beauty PLP uses a continuous category/collection cover image with HTML title overlay, transparent outer background, unframed square media, serif titles and stacked title/price/text-arrow purchase action. The still-life backdrop may contain blush; this does not permit adding a separate blush frame or filling Buy now. Missing hero media falls back to a plain heading rather than invented photography.
+
+Protected PDP preview respects selected category/collection catalog context; category theme overrides may supply PDP appearance, collection appearance overrides remain PLP-only. Mobile PDP retains all photos through thumbnail navigation while omitting the duplicate desktop detail-photo strip so purchase information appears earlier.
+
+## Website Theme customization contract (2026-10-12)
+- `website_design.data.customization[theme]`: `style`, `pages[pageType]`, `media[slot]`. Missing settings preserve approved template defaults; missing page keys inherit theme defaults. Existing saves without customization preserve profiles.
+- Style: allowlisted font pairs default/editorial/modern/classic, small/medium/big text scaling, colorMode theme/brand/custom. Brand references existing CmsPaletteLibrary paletteId; Main/Sub custom hex only, readable button foreground computed. Theme retains base/background/content contrast. No arbitrary CSS or font injection.
+- Media slots: shared account brand image plus login/register/forgot/reset exceptions; desktop/mobile fallback, alt, nine-point crop (`focus`: left/center/right; `focusY`: top/middle/bottom, legacy default middle), visual desktop/mobile crop previews, hide/restore. My Account may use explicitly configured shared image; Default remains unchanged when no settings exist.
+- Protected preview accepts bounded validated draft customization JSON. No preview persistence. GET filters/sort and cart refresh preserve draft profiles. Real renderer resolves same saved contract. Public customer forms/actions, catalog fields and stock remain unchanged.
+- PageMedia reuses managed upload and latest 60 image assets. Website Theme references use existing CatalogMediaReferenceSynchronizer owner_type website_theme / StoreSetting id inside transaction. Removing a setting releases reference, never deletes asset; normal orphan retention policy remains responsible for unused files.
+- Page type overrides differ from Category/Collection theme selection; Header/Footer and homepage/CMS, full Cart/Checkout do not acquire these controls.
+
+### Media capabilities
+WebsiteThemeCustomization::mediaContracts is the server-owned per-theme/surface registry. Admin inventory publishes it; UI hides empty Page Media panels and restricts slot choices; validation allows only declared slots; unknown theme/surface resolves defaults. Current Default/HomeDeco/Beauty: account shared slot; login/register/forgot/reset shared plus own exception. PLP/PDP have no Page Media, retaining product/category media owners. Future themes declare only actual approved consumers.
+
+## Header and Footer ownership - 2026-10-12 consolidation
+The sole visible editor is Storefront CMS > Header & Footer (compatible route /admin/storefront/header-announcement). Header/Footer menu screens manage menu content only; Page Settings has no shell editor; Website Theme links to the sole editor. Global shell design and header presentation take precedence over retained legacy page copies; legacy copies remain fallback only when no global value exists. Global contentWidth supports standard (1280px), wide (1440px), full; shared gutter aligns navigation content, Footer and Food PLP hero/breadcrumb. Background and media remain full bleed. Draft preview injects proposed width/design/presentation without saving. Announcement content shares the same page, preserves current shell settings when saving.
+
+
+### Food approved consumers
+Food auth uses shared account media plus login/register/forgot/reset exceptions; decorative slogans belong to the image. Food My Account uses independent accountHero, defaults to theme hero asset, accepts uploaded replacement and explicit hidden fallback. Customer welcome remains real text. Product Story is the shared optional product content contract; no per-theme product control forks. Food Checkout has four visual steps using existing contact/address, shipping quote and payment configuration contracts. Step/title props on shared delivery renderer default to legacy values for other themes. Unknown stock is distinct from zero: options remain viewable while purchase stays guarded.

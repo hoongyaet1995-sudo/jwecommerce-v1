@@ -10,6 +10,13 @@
     $footerSections = $footerMenu?->rootItems?->where('is_active', true)->values() ?? collect();
     $footerGroups = $footerSections->isNotEmpty() ? $footerSections->chunk((int) ceil($footerSections->count() / 2)) : collect();
     $badgeStyle = fn (?string $color) => \App\Support\MenuBadgePalette::inlineStyle($color);
+    if(request()->attributes->has('websiteThemeDemoVariants')) {
+        $design=array_replace(\App\Domain\Cms\ShellDesign::defaults(),['tagline'=>'Good food. Brighter days.']);
+        $footerSections=collect(['Shop'=>['All products','Pantry staples'],'Collections'=>['Everyday essentials','Cooking ingredients'],'About'=>['Our story','Contact','FAQ']])->map(function($links,$label){
+            $section=new \App\Models\MenuItem(['label'=>$label]);
+            return $section->setRelation('children',collect($links)->map(fn($link)=>new \App\Models\MenuItem(['label'=>$link,'url'=>'#','is_active'=>true])));
+        });
+    }
 @endphp
 
 @if($design)

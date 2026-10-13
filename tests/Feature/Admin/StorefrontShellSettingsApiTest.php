@@ -35,6 +35,18 @@ final class StorefrontShellSettingsApiTest extends TestCase
             ->assertExactJson($this->defaultPayload());
     }
 
+    public function test_content_width_is_global_persisted_and_validated(): void
+    {
+        $payload = $this->defaultPayload();
+        $payload['contentWidth'] = 'standard';
+        $this->actingAs($this->admin())->putJson('/admin/api/storefront-shell-settings', $payload)
+            ->assertOk()->assertJsonPath('contentWidth', 'standard');
+        $this->getJson('/admin/api/storefront-shell-settings')->assertOk()->assertJsonPath('contentWidth', 'standard');
+        $payload['contentWidth'] = 'arbitrary';
+        $this->putJson('/admin/api/storefront-shell-settings', $payload)->assertUnprocessable()->assertJsonValidationErrors('contentWidth');
+        $this->assertSame('standard', app(StorefrontShellSettingsService::class)->live()['contentWidth']);
+    }
+
     public function test_admin_can_save_and_reload_structured_announcement_settings(): void
     {
         $payload = [

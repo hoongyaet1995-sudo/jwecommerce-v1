@@ -149,6 +149,7 @@ export const storefrontShellSettingsFromDraft = (
   formData: AnnouncementBarConfig,
   layout: StorefrontShellLayout,
 ): StorefrontShellSettings => ({
+  contentWidth: persisted.contentWidth,
   shellDesign: persisted.shellDesign?{...persisted.shellDesign,showAnnouncement:formData.enabled}:undefined,
   overlayLogos: persisted.overlayLogos,
   headerPresentation: persisted.headerPresentation,
@@ -307,11 +308,13 @@ const TEMPLATE_PREVIEWS: Record<
 };
 
 interface StorefrontHeaderAnnouncementEditorProps {
+  announcementOnly?: boolean;
   initialTab?: 'announcement' | 'header_layout' | 'preview';
   initialPreviewViewport?: 'desktop' | 'mobile';
 }
 
 export const StorefrontHeaderAnnouncementEditor: React.FC<StorefrontHeaderAnnouncementEditorProps> = ({
+  announcementOnly = false,
   initialTab = 'announcement',
   initialPreviewViewport = 'desktop',
 }) => {
@@ -458,7 +461,7 @@ export const StorefrontHeaderAnnouncementEditor: React.FC<StorefrontHeaderAnnoun
     if (!canSaveLive || isSaving) return;
 
     setIsSaving(true);
-    const saved = await persistStorefrontShellDraft(draftSettings, saveStorefrontShellSettings);
+    const saved = await persistStorefrontShellDraft(announcementOnly ? {...draftSettings,headerPresentation:storefrontShellSettings.headerPresentation,overlayLogos:storefrontShellSettings.overlayLogos,contentWidth:storefrontShellSettings.contentWidth} : draftSettings, saveStorefrontShellSettings);
     setIsSaving(false);
 
     if (saved) {
@@ -468,7 +471,7 @@ export const StorefrontHeaderAnnouncementEditor: React.FC<StorefrontHeaderAnnoun
   };
 
   const handleResetToDefaults = () => {
-    if (window.confirm('Reset Storefront Header & Announcement Bar to factory presets?')) {
+    if (window.confirm('Reset Storefront Announcement content to factory presets?')) {
       setFormData(announcementDraftFromSettings(DEFAULT_STOREFRONT_SHELL_SETTINGS));
       setHeaderSettings({
         template: 'modern_minimalist',
@@ -519,15 +522,15 @@ export const StorefrontHeaderAnnouncementEditor: React.FC<StorefrontHeaderAnnoun
             </button>
             <ChevronRight className="w-3.5 h-3.5" />
             <span className="text-neutral-900 dark:text-white font-bold">
-              Header & Announcement Bar
+              Announcement content
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 dark:text-white tracking-tight flex items-center gap-2.5">
             <Megaphone className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
-            Header & Announcement Bar
+            Announcement content
           </h1>
           <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 mt-1 max-w-2xl">
-            Configure the top storefront notice bar (slogans, promotional campaigns, logistics tracking & customer service hotline) and header navigation template layout.
+            Configure the top storefront notice bar (slogans, promotional campaigns, logistics tracking & customer service hotline).
           </p>
         </div>
 
@@ -579,6 +582,7 @@ export const StorefrontHeaderAnnouncementEditor: React.FC<StorefrontHeaderAnnoun
         </div>
       )}
 
+{!announcementOnly && <>
       {/* Tabs Switcher */}
       <div className="flex items-center gap-2 border-b border-neutral-200 dark:border-neutral-800 pb-2">
         <button
@@ -618,6 +622,7 @@ export const StorefrontHeaderAnnouncementEditor: React.FC<StorefrontHeaderAnnoun
         </button>
       </div>
 
+ </>}
       {/* ========================================================================= */}
       {/* TAB 1: ANNOUNCEMENT BAR CONTENT & THEME CONFIGURATION                     */}
       {/* ========================================================================= */}
@@ -1048,7 +1053,7 @@ export const StorefrontHeaderAnnouncementEditor: React.FC<StorefrontHeaderAnnoun
       {/* ========================================================================= */}
       {/* TAB 2: HEADER NAVIGATION TEMPLATES & COMPONENT TOGGLES                     */}
       {/* ========================================================================= */}
-      {activeTab === 'header_layout' && (
+      {!announcementOnly && activeTab === 'header_layout' && (
         <div className="space-y-6">
           <HeaderPresentationSettings value={headerPresentation} onChange={setHeaderPresentation}/><details><summary className="font-semibold cursor-pointer">Overlay logo variants</summary><p className="text-xs text-neutral-500 my-3">Optional image URLs. Leave empty to use your existing store logo.</p>{(['light','dark'] as const).map(tone=><label key={tone} className="block text-xs mb-3">{tone==='light'?'Logo for light text':'Logo for dark text'}<input aria-label={'Overlay logo '+tone} value={overlayLogos[tone]??''} onChange={e=>setOverlayLogos({...overlayLogos,[tone]:e.target.value||null})} className="block w-full border rounded-lg p-2 mt-2 bg-transparent" placeholder="/storage/cms/media/..."/></label>)}</details>{/* Header Layout Templates */}
           <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xs space-y-4">
@@ -1188,7 +1193,7 @@ export const StorefrontHeaderAnnouncementEditor: React.FC<StorefrontHeaderAnnoun
       {/* ========================================================================= */}
       {/* TAB 3: COMPLETE REAL-TIME STOREFRONT SIMULATOR                             */}
       {/* ========================================================================= */}
-      {activeTab === 'preview' && (
+      {!announcementOnly && activeTab === 'preview' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
             <div className="flex items-center gap-2">

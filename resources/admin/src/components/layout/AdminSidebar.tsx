@@ -227,7 +227,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
       badgeVariant: 'info',
       subItems: [
         { id: 'storefront' as NavSection, label: 'Overview Hub' },
-        { id: 'storefront-header-announcement' as NavSection, label: 'Header & Announcement' },
+        { id: 'storefront-header-announcement' as NavSection, label: 'Header & Footer' },
         { id: 'pages-builder' as NavSection, label: 'Page Builder' },
         { id: 'website-design' as NavSection, label: 'Website Theme' },
         { id: 'menu-header' as NavSection, label: 'Header Mega Menu' },

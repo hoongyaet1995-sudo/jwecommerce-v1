@@ -25,9 +25,9 @@ class WebsiteDesignTest extends TestCase
     public function test_unavailable_themes_and_invalid_scopes_are_rejected():void
     {
         $this->actingAs(User::factory()->create(['is_admin'=>true]));
-        $this->putJson('/admin/api/website-design',['theme'=>'beauty','overrides'=>[]])->assertUnprocessable();
+        $this->putJson('/admin/api/website-design',['theme'=>'technology','overrides'=>[]])->assertUnprocessable();
         $this->putJson('/admin/api/website-design',['theme'=>'home_deco','overrides'=>['category:999999'=>'home_deco']])->assertUnprocessable();
-        $this->get('/admin/website-design/preview?theme=beauty')->assertUnprocessable();
+        $this->get('/admin/website-design/preview?theme=technology')->assertUnprocessable();
     }
     public function test_collection_override_retains_the_original_renderer_and_can_follow_store(): void
     {

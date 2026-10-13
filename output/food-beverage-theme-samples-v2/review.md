@@ -1,0 +1,27 @@
+# Food & Beverage — revised samples
+
+Source-backed design samples. Read contract.md before implementation.
+
+- [account-addresses](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/account-addresses.png)
+- [account-orders](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/account-orders.png)
+- [account-profile](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/account-profile.png)
+- [account-saved-items](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/account-saved-items.png)
+- [account-vouchers](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/account-vouchers.png)
+- [cart-drawer](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/cart-drawer.png)
+- [checkout-success](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/checkout-success.png)
+- [checkout](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/checkout.png)
+- [filter](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/filter.png)
+- [forgot-password](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/forgot-password.png)
+- [login](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/login.png)
+- [my-account](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/my-account.png)
+- [order-tracking-verified](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/order-tracking-verified.png)
+- [order-tracking](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/order-tracking.png)
+- [payment-pending](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/payment-pending.png)
+- [pdp](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/pdp.png)
+- [plp](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/plp.png)
+- [quick-buy](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/quick-buy.png)
+- [register](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/register.png)
+- [reset-password](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/reset-password.png)
+- [return-dialog](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/return-dialog.png)
+- [review-dialog](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/review-dialog.png)
+- [shopping-cart](C:/xampp/htdocs/jwstudio-ecommerce/output/food-beverage-theme-samples-v2/shopping-cart.png)

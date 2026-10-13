@@ -19,7 +19,7 @@ final class ShellDesign
 
     public static function resolve(array $global, ?array $page = null): ?array
     {
-        $value = $page ?? ($global['shellDesign'] ?? null);
+        $value = $global['shellDesign'] ?? $page;
         if (! is_array($value)) return null;
         $resolved=array_replace(self::defaults($value['business'] ?? 'commerce'),$value);
         foreach (['ctaLabel','ctaUrl','tagline','contactEmail'] as $field) $resolved[$field]=(string)($resolved[$field]??'');

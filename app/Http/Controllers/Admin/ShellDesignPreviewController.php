@@ -14,6 +14,7 @@ final class ShellDesignPreviewController extends Controller
     {
         $input=$request->validate([
             ...ShellDesign::rules(),
+            'contentWidth'=>['sometimes',Rule::in(['standard','wide','full'])],
             'shellDesign'=>array_merge(['required'],ShellDesign::rules()['shellDesign']),
             'headerPresentation'=>['required','array:mode,tone'],
             'headerPresentation.mode'=>['required',Rule::in(['normal','transparent','translucent'])],
@@ -32,7 +33,7 @@ final class ShellDesignPreviewController extends Controller
         return response()->view('storefront.cms-page-react',[
             'entry'=>$entry,'payload'=>$payload,
             'quickAddProducts'=>app(\App\Domain\Cms\ProductListingPresentation::class)->prepare($payload),
-            'title'=>'Header & Footer preview','description'=>null,
+            'previewShellDesign'=>ShellDesign::resolve($input),'previewHeaderPresentation'=>$input['headerPresentation'],'shellContentWidth'=>$input['contentWidth']??'wide','title'=>'Header & Footer preview','description'=>null,
         ],$entry?200:503)->header('Cache-Control','no-store');
     }
 }

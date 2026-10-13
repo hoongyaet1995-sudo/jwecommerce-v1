@@ -1,0 +1,8 @@
+/* Single store-wide content frame. Backgrounds and media remain full bleed. */
+:root{--storefront-content-width:1440px;--storefront-content-gutter:clamp(20px,4vw,58px)}
+:root[data-storefront-width=standard]{--storefront-content-width:1280px}
+:root[data-storefront-width=full]{--storefront-content-width:100%}
+:root .jw-shell-main,:root [data-builder-shell] .jw-shell-main,:root [data-header-main],:root footer:not(.jw-shell-footer)>div.max-w-7xl{box-sizing:border-box;width:100%;max-width:var(--storefront-content-width);margin-inline:auto;padding-inline:var(--storefront-content-gutter)}
+:root .jw-shell-footer{padding-inline:0}
+:root .jw-shell-footer-grid,:root .jw-shell-legal{box-sizing:border-box;width:100%;max-width:var(--storefront-content-width);margin-inline:auto;padding-inline:var(--storefront-content-gutter)}
+@media(max-width:760px){:root{--storefront-content-gutter:20px}}

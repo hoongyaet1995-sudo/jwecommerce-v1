@@ -8,6 +8,9 @@ class WebsiteInventoryAvailability
 {
     public function quantity(ProductVariant $variant): ?int
     {
+        if (!$variant->exists && in_array($variant, request()->attributes->get('websiteThemeDemoVariants', []), true)) {
+            return (int) $variant->stock;
+        }
         if (app(\App\Services\Inventory\StoreManagement\RebaselineFreeze::class)->isPaused()) return 0;
         $configuration=DB::table('inventory_configuration')->where('id',1)->first();
         if (config('inventory.current_stock_only')) {

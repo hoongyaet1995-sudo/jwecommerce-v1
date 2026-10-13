@@ -13,23 +13,32 @@ final class WebsiteDesignController extends Controller
     {
         $validator=validator($request->all(),['theme'=>['required',Rule::in(WebsiteDesignService::THEMES)]]);
         abort_if($validator->fails(),422,'Invalid preview theme.');
+        app(\App\Services\WebsiteThemeCustomization::class)->preview($request);
         $request->attributes->set('websiteDesignPreview',$validator->validated()['theme']);
-        return $cart->drawer($request,app(\App\Services\CartViewData::class));
+        $demo=app(\App\Services\WebsiteThemeDemoData::class);
+        return view('storefront.partials.cart-drawer',$demo->cart($demo->catalog($request)));
     }
-    public function preview(Request $request,WebsiteDesignService $design,StorefrontController $storefront)
+    public function preview(Request $request,WebsiteDesignService $design)
     {
-        $validator=validator($request->all(),['theme'=>['required',Rule::in(WebsiteDesignService::THEMES)],'scope'=>['nullable','string','max:80'],'surface'=>['nullable',Rule::in(['plp','pdp','login','register','forgot','account'])],'handle'=>['nullable','string','max:255']]);
+        $validator=validator($request->all(),['theme'=>['required',Rule::in(WebsiteDesignService::THEMES)],'scope'=>['nullable','string','max:80'],'surface'=>['nullable',Rule::in(['plp','pdp','login','register','forgot','reset','account','tracking'])],'handle'=>['nullable','string','max:255']]);
         abort_if($validator->fails(),422,'Invalid preview theme or scope.');$data=$validator->validated();
-        $scope=$data['scope']??'shop';$request->attributes->set('websiteDesignPreview',$data['theme']);
+        $scope=$data['scope']??'shop';app(\App\Services\WebsiteThemeCustomization::class)->preview($request);
+        $request->attributes->set('websiteDesignPreview',$data['theme']);
         $surface=$data['surface']??'plp';
-        if ($surface==='pdp') {
-            $product=\App\Models\Product::where('status','active')->when($data['handle']??null,fn($q,$handle)=>$q->where('handle',$handle))->orderBy('id')->firstOrFail();
-            return $storefront->show($request,$product->handle)->with('websiteDesignPreview',true);
+        $fixture=app(\App\Services\WebsiteThemeDemoData::class)->catalog($request);
+        if (in_array($surface,['plp','pdp'],true)) {
+            if ($surface==='plp') return view($design->view('listing',null,$data['theme']),$fixture+['websiteDesignPreview'=>true]);
+            $product=$fixture['demoProducts']->first();
+            $product->images->first()->path=asset('images/themes/food/olive-oil-lifestyle.png');
+            return view($design->view('pdp',null,$data['theme']),[
+                'product'=>$product,'selectedVariant'=>$product->variants->first(),'selectedImage'=>$product->images->first(),
+                'images'=>$product->images,'pdpBrand'=>'JW STUDIO','pdpPaymentMethods'=>[],
+                'companions'=>$fixture['demoProducts']->slice(1,3),'websiteDesignPreview'=>true,
+            ]);
         }
-        if (in_array($surface,['login','register','forgot'],true)) return view($data['theme']==='home_deco'?'storefront.themes.home-deco-auth':'storefront.auth',['mode'=>$surface,'websiteDesignPreview'=>true]);
-        if ($surface==='account') return view($data['theme']==='home_deco'?'storefront.themes.home-deco-account':'storefront.account',['accountPayload'=>\App\Services\WebsiteThemeAccountPreview::empty(),'websiteDesignPreview'=>true]);
-        if($scope==='shop')$view=$storefront->index($request);
-        else{abort_unless($design->exists($scope),404);[$kind,$id]=explode(':',$scope);$view=$kind==='category'?$storefront->category($request,Category::findOrFail($id)):$storefront->collection($request,Collection::findOrFail($id));}
-        return $view->with(['listingRouteName'=>'admin.website-design.preview','listingRouteParameters'=>['theme'=>$data['theme'],'scope'=>$scope],'websiteDesignPreview'=>true]);
+        if (in_array($surface,['login','register','forgot','reset'],true)) return view(app(\App\Services\WebsiteDesignService::class)->view($surface==='reset'?'reset':'auth',null,$data['theme']),['mode'=>$surface,'token'=>'design-preview-only','email'=>'','websiteDesignPreview'=>true]);
+        if ($surface==='tracking') { abort_unless($data['theme']==='food',422); return view('storefront.themes.food-tracking',['step'=>'request','trackingPayload'=>null,'websiteDesignPreview'=>true]); }
+        if ($surface==='account') return view(app(\App\Services\WebsiteDesignService::class)->view('account',null,$data['theme']),['accountPayload'=>app(\App\Services\WebsiteThemeDemoData::class)->account(app(\App\Services\WebsiteThemeDemoData::class)->catalog($request)),'websiteDesignPreview'=>true]);
+        abort(422, 'Unsupported demo surface.');
     }
 }

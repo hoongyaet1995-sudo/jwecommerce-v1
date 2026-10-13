@@ -1,5 +1,5 @@
-@php($pageShellDesign = \App\Domain\Cms\ShellDesign::resolve(app(\App\Services\StorefrontShellSettingsService::class)->live(), $payload['page']['document']['shellDesign'] ?? null))
-<x-layouts.app :title="$title" :description="$description" :shell-design="$pageShellDesign">
+@php($pageShellDesign = $previewShellDesign ?? \App\Domain\Cms\ShellDesign::resolve(app(\App\Services\StorefrontShellSettingsService::class)->live(), $payload['page']['document']['shellDesign'] ?? null))
+<x-layouts.app :title="$title" :description="$description" :shell-design="$pageShellDesign" :shell-content-width="$shellContentWidth ?? null">
     @if($entry)
         <x-slot:head>
             <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -13,7 +13,7 @@
     @endif
 
     <div class="min-h-screen bg-neutral-950 text-neutral-100">
-        <x-storefront.nav :design="$pageShellDesign" active="landing" :presentation="\App\Domain\Cms\HeaderPresentation::resolve($payload['page']['document'], app(\App\Services\StorefrontShellSettingsService::class)->live())" />
+        <x-storefront.nav :design="$pageShellDesign" active="landing" :presentation="$previewHeaderPresentation ?? \App\Domain\Cms\HeaderPresentation::resolve($payload['page']['document'], app(\App\Services\StorefrontShellSettingsService::class)->live())" />
         <main>
             @if($entry)
                 <script id="cms-page-runtime" type="application/json">{!! json_encode($payload, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) !!}</script>

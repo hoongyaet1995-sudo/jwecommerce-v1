@@ -1,5 +1,7 @@
 import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React, { useState } from 'react';
+import { CatalogImageUploadField } from './CatalogImageUploadField';
+import { ThemeImageFocus } from '../cms/ThemeImageFocus';
 import { useAdmin } from '../../context/AdminContext';
 import {
   Product,
@@ -50,7 +52,7 @@ export const ProductExtraInfoEditor: React.FC<ProductExtraInfoEditorProps> = ({
 }) => {
   const { money, currencyCode } = useAdminCurrency();
   const { reviews: allModerationReviews = [], setReviewFilterProductId, setCurrentSection } = useAdmin();
-  const [subSection, setSubSection] = useState<'highlights' | 'specs' | 'shipping' | 'accordions' | 'cross_sell' | 'reviews'>('highlights');
+  const [subSection, setSubSection] = useState<'highlights' | 'specs' | 'shipping' | 'accordions' | 'cross_sell' | 'reviews' | 'story'>('highlights');
 
   // Temporary inputs
   const [newHighlightText, setNewHighlightText] = useState('');
@@ -318,6 +320,13 @@ export const ProductExtraInfoEditor: React.FC<ProductExtraInfoEditorProps> = ({
   return (
     <div className="space-y-6">
       {/* Sub-tab Navigation Header */}
+      <button type="button" onClick={() => setSubSection('story')} className="px-3 py-2 rounded-xl border text-xs font-semibold">Product Story</button>
+      {subSection === 'story' && <section className="space-y-4 rounded-xl border p-5">
+        <h3 className="font-semibold">Product Story</h3><p className="text-xs text-neutral-500">Shared product content. Each supported theme presents it in its own layout. Leave empty to hide.</p>
+        {(['label','heading','description','alt'] as const).map(key => <label key={key} className="block text-xs capitalize">{key === 'alt' ? 'Image description' : key}<textarea rows={key === 'description' ? 4 : 1} maxLength={key === 'description' ? 5000 : key === 'heading' ? 255 : key === 'alt' ? 200 : 100} value={persisted.story?.[key] ?? ''} onChange={e => onChange({...formData,pdpContent:{...persisted,story:{...persisted.story,[key]:e.target.value}}})} className="block w-full border rounded bg-transparent p-2 mt-2"/></label>)}
+        <CatalogImageUploadField label="Story image" value={persisted.story?.image} onChange={image => onChange({...formData,pdpContent:{...persisted,story:{...persisted.story,image}}})}/>
+        <ThemeImageFocus image={persisted.story?.image} focus={persisted.story?.focus} focusY={persisted.story?.focusY} onChange={(focus,focusY) => onChange({...formData,pdpContent:{...persisted,story:{...persisted.story,focus,focusY}}})}/>
+      </section>}
       <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-2xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
         <button
           type="button"

@@ -9,13 +9,14 @@ class ProductPdpContent extends Model
 {
     protected $fillable = [
         'highlights', 'specifications', 'use_store_default_shipping', 'shipping_policy',
-        'custom_accordions', 'rating_score', 'review_count', 'configurator_label',
+        'custom_accordions', 'rating_score', 'review_count', 'configurator_label', 'story',
     ];
 
     protected function casts(): array
     {
         return [
             'highlights' => 'array',
+            'story' => 'array',
             'specifications' => 'array',
             'use_store_default_shipping' => 'boolean',
             'shipping_policy' => 'array',

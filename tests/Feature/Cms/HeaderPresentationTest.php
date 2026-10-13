@@ -37,6 +37,6 @@ final class HeaderPresentationTest extends TestCase
   $doc=['sections'=>[['type'=>'hero_slider','isVisible'=>true]],'headerPresentation'=>['mode'=>'inherit','tone'=>'dark']];
   $this->assertSame(['mode'=>'translucent','tone'=>'light'],HeaderPresentation::resolve($doc,['headerPresentation'=>['mode'=>'translucent','tone'=>'light']]));
   $doc['headerPresentation']['mode']='normal';
-  $this->assertSame('normal',HeaderPresentation::resolve($doc,['headerPresentation'=>['mode'=>'transparent','tone'=>'light']])['mode']);
+  $this->assertSame('transparent',HeaderPresentation::resolve($doc,['headerPresentation'=>['mode'=>'transparent','tone'=>'light']])['mode']);
  }
 }

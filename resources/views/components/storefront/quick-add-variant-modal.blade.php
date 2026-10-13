@@ -49,6 +49,8 @@
 @endphp
 
 <div
+    @if($theme === 'beauty') data-beauty-quick-buy @endif
+    @if($theme === 'food') data-food-quick-buy @endif
     data-quick-add-modal
     data-quick-add-product-id="{{ $product->id }}"
     data-quick-add-variants='@json($payload)'
@@ -75,7 +77,7 @@
             <div class="group relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-inner dark:border-zinc-800/80 dark:bg-zinc-950">
                 <img data-quick-add-hero src="{{ $initialImage }}" alt="{{ $product->title }}" referrerpolicy="no-referrer" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                 <div data-quick-add-sold-out-overlay class="{{ (($initial['stock'] ?? 0) > 0 && ($initial['enabled'] ?? true)) ? 'hidden' : '' }} absolute inset-0 flex items-center justify-center bg-black/60 p-4 backdrop-blur-[2px]">
-                    <div class="rounded-xl border border-rose-500/40 bg-rose-950/90 px-4 py-2 text-center text-white shadow-lg"><span class="block font-mono text-xs font-bold uppercase tracking-wider text-rose-300">{{ $theme === 'home_deco' ? 'Availability' : 'Currently Sold Out' }}</span><span class="mt-0.5 block text-[10px] text-zinc-300">{{ $theme === 'home_deco' ? 'See availability for your selected option.' : 'Select another finish or join restock notification' }}</span></div>
+                    <div class="rounded-xl border border-rose-500/40 bg-rose-950/90 px-4 py-2 text-center text-white shadow-lg"><span class="block font-mono text-xs font-bold uppercase tracking-wider text-rose-300">{{ in_array($theme,['home_deco','beauty','food'],true) ? 'Availability' : 'Currently Sold Out' }}</span><span class="mt-0.5 block text-[10px] text-zinc-300">{{ in_array($theme,['home_deco','beauty','food'],true) ? 'See availability for your selected option.' : 'Select another finish or join restock notification' }}</span></div>
                 </div>
                 <div class="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/60 px-2.5 py-1 font-mono text-[10px] text-zinc-300 shadow-sm backdrop-blur-md"><span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span><span>SKU: <span data-quick-add-sku>{{ $initial['sku'] }}</span></span></div>
             </div>
@@ -140,7 +142,7 @@
                     </div>
                 </form>
                 <p data-quick-add-error role="alert" class="hidden rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-300"></p>
-                <div class="flex items-center justify-between pt-1"><a href="{{ route('storefront.products.show', ['handle' => $product->handle]) }}" data-quick-add-product-link class="group flex items-center gap-1.5 font-mono text-xs font-semibold text-zinc-600 transition-colors hover:text-amber-600 dark:text-zinc-400 dark:hover:text-amber-400"><span>{{ $theme === 'home_deco' ? 'Product details' : 'View Full Product Specifications & Lab Tests' }}</span><i data-lucide="arrow-right" class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"></i></a><span data-quick-add-stock-note class="font-mono text-[11px] text-zinc-400 dark:text-zinc-500"></span></div>
+                <div class="flex items-center justify-between pt-1"><a href="{{ route('storefront.products.show', ['handle' => $product->handle]) }}" data-quick-add-product-link class="group flex items-center gap-1.5 font-mono text-xs font-semibold text-zinc-600 transition-colors hover:text-amber-600 dark:text-zinc-400 dark:hover:text-amber-400"><span>{{ in_array($theme,['home_deco','beauty','food'],true) ? 'Product details' : 'View Full Product Specifications & Lab Tests' }}</span><i data-lucide="arrow-right" class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"></i></a><span data-quick-add-stock-note class="font-mono text-[11px] text-zinc-400 dark:text-zinc-500"></span></div>
             </div>
         </div>
     </div>
