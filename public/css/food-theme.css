@@ -106,3 +106,6 @@
 .fd-checkout>form>aside>section .fd-checkout-media{margin:24px -24px -24px;border:0}
 
 .fd-confirmation-scene picture{display:block;height:100%}.fd-confirmation:not(:has(.fd-confirmation-scene)){grid-template-columns:1fr}
+
+:root .food-theme .food-hero-frame{position:relative;z-index:1}:root .food-theme .food-hero-frame .food-hero-copy{padding-inline:0!important}
+:root .food-theme .food-hero:has(>.food-hero-frame){padding-inline:0!important}

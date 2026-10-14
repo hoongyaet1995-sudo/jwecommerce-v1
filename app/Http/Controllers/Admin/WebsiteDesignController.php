@@ -38,14 +38,14 @@ final class WebsiteDesignController extends Controller
             return view($design->view('pdp',null,$data['theme']),[
                 'product'=>$product,'selectedVariant'=>$product->variants->first(),'selectedImage'=>$product->images->first(),
                 'images'=>$product->images,'pdpBrand'=>'JW STUDIO','pdpPaymentMethods'=>[],
-                'companions'=>$fixture['demoProducts']->slice(1,3),'websiteDesignPreview'=>true,
+                'companions'=>$fixture['demoProducts']->slice(1,$data['theme']==='jewelry'?4:3),'websiteDesignPreview'=>true,
             ]);
         }
         if (in_array($surface,['login','register','forgot','reset'],true)) return view(app(\App\Services\WebsiteDesignService::class)->view($surface==='reset'?'reset':'auth',null,$data['theme']),['mode'=>$surface,'token'=>'design-preview-only','email'=>'','websiteDesignPreview'=>true]);
-        if ($surface==='cart') { abort_unless($data['theme']==='tech',422); return app(WebsiteThemeAcceptanceController::class)->sample($request,'shopping-cart'); }
-        if ($surface==='checkoutSuccess') { abort_unless(in_array($data['theme'],['food','home_deco','beauty','tech'],true),422); return app(WebsiteThemeAcceptanceController::class)->sample($request,'checkout-success'); }
-        if ($surface==='checkout') { abort_unless(in_array($data['theme'],['food','home_deco','beauty','tech'],true),422); return app(WebsiteThemeAcceptanceController::class)->sample($request,'checkout'); }
-        if ($surface==='tracking') { abort_unless(in_array($data['theme'],['food','home_deco','beauty','tech'],true),422); return view('storefront.themes.'.match($data['theme']){'home_deco'=>'home-deco','beauty'=>'beauty','tech'=>'tech',default=>'food'}.'-tracking',['step'=>'request','trackingPayload'=>null,'websiteDesignPreview'=>true]); }
+        if ($surface==='cart') { abort_unless(in_array($data['theme'],['tech','baby','jewelry'],true),422); return app(WebsiteThemeAcceptanceController::class)->sample($request,'shopping-cart'); }
+        if ($surface==='checkoutSuccess') { abort_unless(in_array($data['theme'],['food','home_deco','beauty','tech','baby','jewelry'],true),422); return app(WebsiteThemeAcceptanceController::class)->sample($request,'checkout-success'); }
+        if ($surface==='checkout') { abort_unless(in_array($data['theme'],['food','home_deco','beauty','tech','baby','jewelry'],true),422); return app(WebsiteThemeAcceptanceController::class)->sample($request,'checkout'); }
+        if ($surface==='tracking') { abort_unless(in_array($data['theme'],['food','home_deco','beauty','tech','baby','jewelry'],true),422); return view('storefront.themes.'.match($data['theme']){'home_deco'=>'home-deco','beauty'=>'beauty','jewelry'=>'jewelry','baby'=>'baby','tech'=>'tech',default=>'food'}.'-tracking',['step'=>'request','trackingPayload'=>null,'websiteDesignPreview'=>true]); }
         if ($surface==='account') return view(app(\App\Services\WebsiteDesignService::class)->view('account',null,$data['theme']),['accountPayload'=>app(\App\Services\WebsiteThemeDemoData::class)->account(app(\App\Services\WebsiteThemeDemoData::class)->catalog($request)),'websiteDesignPreview'=>true]);
         abort(422, 'Unsupported demo surface.');
     }

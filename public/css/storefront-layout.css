@@ -6,3 +6,6 @@
 :root .jw-shell-footer{padding-inline:0}
 :root .jw-shell-footer-grid,:root .jw-shell-legal{box-sizing:border-box;width:100%;max-width:var(--storefront-content-width);margin-inline:auto;padding-inline:var(--storefront-content-gutter)}
 @media(max-width:760px){:root{--storefront-content-gutter:20px}}
+
+/* Shared inset for copy over full-bleed media and media-free headings. */
+:root .storefront-content-frame{box-sizing:border-box;width:100%;max-width:var(--storefront-content-width);margin-inline:auto;padding-inline:var(--storefront-content-gutter)}

@@ -1,0 +1,19 @@
+# Shared cart drawer layout repair
+
+User authorized removal of Baby/Jewelry heading ornaments, repair of promo Apply UI, promo placement alongside bottom totals for all themes, and a smaller totals area.
+
+Root causes: Baby/Jewelry/Technology promo inside product scroll region, missing shared input/button/summary styling, native marker plus chevron, and large independent theme footer spacing. Scope: Default/Home/Beauty/Food/Technology/Baby/Jewelry drawer presentation only. Keep all quantity/remove/coupon/checkout contracts, errors, discounts and actual shipping/tax values. No catalog/inventory writes or release.
+
+Plan: shared promo partial and scoped drawer geometry CSS; coupon under fixed bottom footer; compact spacing and paired Checkout/View cart where both already exist; independently scrollable product list and short-screen footer fallback. Existing theme typography/colors remain. Tests run only SQLite :memory: with TestCase guard. Issue ledger: no unexpected application test failures in this repair yet; historical Jewelry failures remain in Jewelry integration log. Elapsed/token usage unavailable unless measured.
+
+## Local result
+
+All7 renderer families include shared cart-drawer-promo in footer, outside data-cart-drawer-lines. Baby/Jewelry heading SVG removed. Native details marker suppressed; one inline chevron remains. Input/Apply aligned40px, error expands form with role alert. Coupon apply/remove endpoints, CSRF and drawer refresh hooks preserved. Header/Footer store shell not redesigned. Product list flex/min-height0 scrolls independently. Footer compact gaps/padding and no legacy totals-row margins; Checkout/View cart paired only where those two actions already existed. Short-screen footer has bounded overflow to keep list accessible.
+
+8tests82assertions passed3.44s including canonical coupon apply/usage-limit checks; first drawer-only2tests48assertions also passed. Blade compilation and targeted diff whitespace check passed. No JS/TS/build change necessary. No unexpected application test failures; one screenshot capture timeout resolved with viewport capture. No cart/customer/catalog/inventory writes during browser inspection. Temporary theme values restored from a fresh phase-specific backup; no push/deploy.
+
+Desktop730px: Baby/Jewelry/Tech footer206px closed,254px open; product439.9px closed. Home footer reduced315.6 to253.6px; Beauty/Food299.6 to237.6px after measured legacy margin removal. All6 industry drawers verified with input/Apply40px. Default actual public drawer verified promo inside footer and shared stylesheet loaded. At390x560 all6 themed drawers have no horizontal overflow,40px promo input and product area at least216.5px even while promo expanded. Real public Jewelry screenshot: output/jewelry-gifts-theme-acceptance/cart-drawer-public-jewelry.png. Saved private snapshots and metrics alongside existing acceptance evidence.
+
+2026-10-14 verification run: php artisan test --filter=CartDrawerLayoutTest after shared promo/footer/CSS edits. Purpose7themes placement and error visibility, endpoints preserved. TestCase SQLite :memory: guard and phpunit configuration previously read. Unexpected failure count0 before run.
+
+First verification2tests48assertions passed3.57s. Browser all6 industry promo inside footer, one marker, input/Apply40px. Baby/Jewelry/Tech closedfooter206px and product439.9px at730viewport. Other theme totals retained12px row margins; scoped reset added after computed DOM inspection. Screenshot fullpage capture timed out once; viewport capture fallback succeeded (no repeated capture retries). CSRF hidden-input metric initially selected wrong first input; named code selector confirmed40px, not a hidden control bug. Next run CustomerCouponClosureTest plus drawer tests checks existing apply behavior.

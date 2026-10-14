@@ -5,6 +5,7 @@
 @php($isAdmin = request()->routeIs('admin.*') && ! $isCmsStorefrontPreview)
 @php($shellDesign = $isStorefront ? ($shellDesign ?? \App\Domain\Cms\ShellDesign::resolve(app(\App\Services\StorefrontShellSettingsService::class)->live())) : null)
 @php($shellContentWidth = $isStorefront ? ($shellContentWidth ?? app(\App\Services\StorefrontShellSettingsService::class)->live()['contentWidth'] ?? 'wide') : 'wide')
+@php($websiteStyleThemes = array_unique([app(\App\Services\WebsiteDesignService::class)->surface(), request()->attributes->get('websiteRenderedTheme')]))
 <html lang="en" @if($isStorefront) data-storefront-width="{{ $shellContentWidth }}" @endif @if($isStorefront) class="{{ ($shellDesign['appearance'] ?? 'dark') === 'dark' ? 'dark' : '' }}" data-atelier-theme-root data-atelier-theme="{{ $shellDesign['appearance'] ?? 'dark' }}" @if($shellDesign) data-shell-appearance="{{ $shellDesign['appearance'] }}" data-shell-theme-switch="{{ $shellDesign['showThemeSwitch'] ? 'true' : 'false' }}" @endif @elseif($isAdmin) data-admin-root @endif>
 <head>
     @if(request()->routeIs('admin.website-design.preview')) @include('admin.theme-demo-guard',['scenario'=>request('surface','plp')]) @endif
@@ -20,11 +21,14 @@
         <link rel="stylesheet" href="{{ asset('css/storefront-layout.css') }}?v={{ filemtime(public_path('css/storefront-layout.css')) }}">
         <link rel="stylesheet" href="{{ asset('css/storefront-scrollbars.css') }}?v={{ filemtime(public_path('css/storefront-scrollbars.css')) }}">
     @endif
-    @if($isStorefront && app(\App\Services\WebsiteDesignService::class)->surface() === 'home_deco')<link rel="stylesheet" href="{{ asset('css/home-deco-theme.css') }}?v={{ filemtime(public_path('css/home-deco-theme.css')) }}">@endif
-    @if($isStorefront && app(\App\Services\WebsiteDesignService::class)->surface() === 'beauty')<link rel="stylesheet" href="{{ asset('css/beauty-theme.css') }}?v={{ filemtime(public_path('css/beauty-theme.css')) }}">@endif
-    @if($isStorefront && app(\App\Services\WebsiteDesignService::class)->surface() === 'beauty')<link rel="stylesheet" href="{{ asset('css/beauty-complete.css') }}?v={{ filemtime(public_path('css/beauty-complete.css')) }}">@endif
-    @if($isStorefront && app(\App\Services\WebsiteDesignService::class)->surface()==='tech')<link rel="stylesheet" href="{{ asset('css/tech-theme.css') }}?v={{ filemtime(public_path('css/tech-theme.css')) }}">@endif
-    @if($isStorefront && app(\App\Services\WebsiteDesignService::class)->surface()==='food')<link rel="stylesheet" href="{{ asset('css/food-theme.css') }}?v={{ filemtime(public_path('css/food-theme.css')) }}">@endif
+    @if($isStorefront && in_array('home_deco',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/home-deco-theme.css') }}?v={{ filemtime(public_path('css/home-deco-theme.css')) }}">@endif
+    @if($isStorefront && in_array('beauty',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/beauty-theme.css') }}?v={{ filemtime(public_path('css/beauty-theme.css')) }}">@endif
+    @if($isStorefront && in_array('beauty',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/beauty-complete.css') }}?v={{ filemtime(public_path('css/beauty-complete.css')) }}">@endif
+    @if($isStorefront && in_array('tech',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/tech-theme.css') }}?v={{ filemtime(public_path('css/tech-theme.css')) }}">@endif
+    @if($isStorefront && in_array('food',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/food-theme.css') }}?v={{ filemtime(public_path('css/food-theme.css')) }}">@endif
+    @if($isStorefront && in_array('jewelry',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/jewelry-theme.css') }}?v={{ filemtime(public_path('css/jewelry-theme.css')) }}">@endif
+    @if($isStorefront && in_array('baby',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/baby-theme.css') }}?v={{ filemtime(public_path('css/baby-theme.css')) }}">@endif
+    @if($isStorefront)<link rel="stylesheet" href="{{ asset('css/cart-drawer-layout.css') }}?v={{ filemtime(public_path('css/cart-drawer-layout.css')) }}">@endif
     {{ $head ?? '' }}
 </head>
 <body>
@@ -42,7 +46,7 @@
             </aside>
         </div>
     @endif
-    @if(request()->routeIs('storefront.index','storefront.products.show','storefront.categories.show','storefront.collections.show','customer.*','admin.website-design.preview'))
+    @if(request()->routeIs('storefront.index','storefront.products.show','storefront.categories.show','storefront.collections.show','customer.*','cart.show','checkout.*','order-tracking.*','admin.website-design.preview','admin.website-design.acceptance.sample'))
         @include('storefront.partials.theme-customization')
     @endif
     <livewire:scripts />

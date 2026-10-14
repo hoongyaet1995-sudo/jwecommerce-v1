@@ -1,4 +1,4 @@
-import { AudioLines, Battery, Usb, Bluetooth, Wifi, Cpu, Monitor, Headphones, Zap, ShieldCheck, Package, Truck, Sparkles, Leaf, Droplets, Award, Check } from 'lucide-react';
+import { AudioLines, Battery, Usb, Bluetooth, Wifi, Cpu, Monitor, Headphones, Zap, ShieldCheck, Package, Truck, Sparkles, Leaf, Droplets, Award, Check, Gem, Gift } from 'lucide-react';
 
 const choices = [
   ['check', 'Check', Check], ['audio-lines', 'Audio', AudioLines], ['battery', 'Battery', Battery],
@@ -6,7 +6,7 @@ const choices = [
   ['cpu', 'Processor', Cpu], ['monitor', 'Display', Monitor], ['headphones', 'Headphones', Headphones],
   ['zap', 'Power', Zap], ['shield-check', 'Protection', ShieldCheck], ['package', 'Package', Package],
   ['truck', 'Delivery', Truck], ['sparkles', 'Sparkles', Sparkles], ['leaf', 'Leaf', Leaf],
-  ['droplets', 'Water', Droplets], ['award', 'Award', Award],
+  ['gem', 'Gem', Gem], ['gift', 'Gift', Gift], ['droplets', 'Water', Droplets], ['award', 'Award', Award],
 ] as const;
 
 export function HighlightIconPicker({ value, onChange }: { value?: string; onChange: (icon: string) => void }) {

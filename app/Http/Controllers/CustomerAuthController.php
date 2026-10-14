@@ -85,6 +85,7 @@ class CustomerAuthController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'terms' => ['accepted'],
+            'phone' => ['nullable', 'string', 'max:40'],
         ]);
         [$firstName, $lastName] = array_pad(explode(' ', $data['name'], 2), 2, null);
         $user = DB::transaction(function () use ($data, $firstName, $lastName): User {
@@ -106,11 +107,12 @@ class CustomerAuthController extends Controller
             }
 
             if ($customer) {
-                $customer->update(['user_id' => $user->id]);
+                $customer->update(['user_id' => $user->id, ...(filled($data['phone'] ?? null) ? ['phone' => $data['phone']] : [])]);
             } else {
                 $customer = Customer::query()->create([
                     'user_id' => $user->id,
                     'email' => $user->email,
+                    'phone' => $data['phone'] ?? null,
                     'first_name' => $firstName,
                     'last_name' => $lastName,
                 ]);

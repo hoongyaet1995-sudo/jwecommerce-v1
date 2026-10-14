@@ -19,11 +19,11 @@ final class WebsiteThemeDemoData
 
     public function order(array $catalog, bool $paid): array
     {
-        $home=in_array($catalog['demoTheme']??'food',['home_deco','beauty','tech'],true);
+        $home=in_array($catalog['demoTheme']??'food',['home_deco','beauty','tech','baby','jewelry'],true);
         $subtotal=$catalog['demoProducts']->take(2)->sum('base_price');
         $order=new \App\Models\Order(['number'=>'DEMO-JW100328','currency'=>'MYR','currency_exchange_rate'=>1,'status'=>$paid?'processing':'pending_payment','subtotal'=>$subtotal,'discount_amount'=>0,'shipping_amount'=>800,'payment_surcharge_amount'=>0,'tax_amount'=>0,'total'=>$subtotal+800]);
         $items=$catalog['demoProducts']->take(2)->map(fn($p)=>new \App\Models\OrderItem(['title'=>$p->title,'variant_title'=>$p->variants->first()->title,'quantity'=>1,'unit_price'=>$p->base_price,'line_total'=>$p->base_price,'image_url'=>$p->images->first()->path]));
-        $order->setRelation('items',$items)->setRelation('payments',collect([new \App\Models\OrderPayment(['gateway'=>($catalog['demoTheme']??'')==='tech'&&$paid?'online':'bank_transfer','status'=>$paid?'paid':'pending'])]))->setRelation('addresses',collect([new \App\Models\OrderAddress(['type'=>'shipping','first_name'=>$home?'Alex':'Sample','last_name'=>$home?'Tan':'Customer','line_1'=>$home?'12 Jalan Harmoni':'12 Sample Street','city'=>'Kuala Lumpur','postal_code'=>'50000','country'=>'MY'])]));
+        $order->setRelation('items',$items)->setRelation('payments',collect([new \App\Models\OrderPayment(['gateway'=>in_array($catalog['demoTheme']??'',['tech','baby','jewelry'],true)&&$paid?'online':'bank_transfer','status'=>$paid?'paid':'pending','configuration_snapshot'=>in_array($catalog['demoTheme']??'',['baby','jewelry'],true)&&!$paid?['bankAccount'=>['bankName'=>'Sample bank','accountNumber'=>'1234 5678 9012','accountHolder'=>'JW STUDIO DEMO']]:null])]))->setRelation('addresses',collect([new \App\Models\OrderAddress(['type'=>'shipping','first_name'=>$home?'Alex':'Sample','last_name'=>$home?'Tan':'Customer','line_1'=>$home?'12 Jalan Harmoni':'12 Sample Street','city'=>'Kuala Lumpur','postal_code'=>'50000','country'=>'MY'])]));
         return ['order'=>$order,'paymentProof'=>$home&&!$paid?['proofStatus'=>'missing','originalFileName'=>null,'rejectionReason'=>null,'canUpload'=>true,'orderId'=>-1,'paymentId'=>-1]:null,'taxLine'=>null,'recommendations'=>$catalog['demoProducts']->take(3)];
     }
 
@@ -41,13 +41,17 @@ final class WebsiteThemeDemoData
             ['id'=>-2,'code'=>'DELIVERY','description'=>'Free standard delivery on qualifying orders.','minSpendDisplay'=>'Minimum spend RM 50.00','status'=>'eligible','statusLabel'=>'Available','discountType'=>'free_shipping','title'=>'Standard delivery','value'=>0,'discountDisplay'=>'Free shipping','minSpend'=>5000,'categoryRestriction'=>null],
         ],'used'=>[],'expired'=>[],'counts'=>['eligible'=>2,'used'=>0,'expired'=>0]];
         if (($catalog['demoTheme']??'food')==='home_deco') $data=app(HomeThemeDemoData::class)->account($catalog,$data);
+        if (($catalog['demoTheme']??'food')==='baby') $data=app(BabyThemeDemoData::class)->account($catalog,$data);
         if (($catalog['demoTheme']??'food')==='tech') $data=app(TechThemeDemoData::class)->account($catalog,$data);
         if (($catalog['demoTheme']??'food')==='beauty') $data=app(BeautyThemeDemoData::class)->account($catalog,$data);
+        if (($catalog['demoTheme']??'')==='jewelry') $data=app(JewelryThemeDemoData::class)->account($catalog,$data);
         return $data;
     }
     public function catalog(Request $request): array
     {
         if ($request->input('theme')==='home_deco') return app(HomeThemeDemoData::class)->catalog($request);
+        if ($request->input('theme')==='jewelry') return app(JewelryThemeDemoData::class)->catalog($request);
+        if ($request->input('theme')==='baby') return app(BabyThemeDemoData::class)->catalog($request);
         if ($request->input('theme')==='tech') return app(TechThemeDemoData::class)->catalog($request);
         if ($request->input('theme')==='beauty') return app(BeautyThemeDemoData::class)->catalog($request);
         $category = new Category(['name'=>'Good things for your everyday table.','slug'=>'demo-pantry','description'=>'Thoughtfully selected pantry staples for simpler, happier meals at home.','image_url'=>asset('images/themes/food/hero.png')]);

@@ -16,7 +16,7 @@
         <x-storefront.nav active="plp" />
         <section data-all-products-hero @class(['food-hero'=>true,'food-hero--image'=>filled($heroImage),'all-products--compact'=>$isAllProducts&&!filled($heroImage)])>
             @if(filled($heroImage))@if($isAllProducts)<div class="all-products-picture" data-all-products-media>@include('storefront.partials.theme-media',['media'=>$allProductsMedia,'imageClass'=>''])</div>@include('storefront.partials.banner-readability',['media'=>$allProductsMedia])@else<img src="{{ $heroImage }}" alt="">@endif@endif
-            <div class="food-hero-copy"><h1>{{ $listingTitle }}</h1>@if(filled($description))<p>{{ strip_tags($description) }}</p>@endif</div>
+            <x-storefront.content-frame class="food-hero-frame"><div class="food-hero-copy"><h1>{{ $listingTitle }}</h1>@if(filled($description))<p>{{ strip_tags($description) }}</p>@endif</div></x-storefront.content-frame>
         </section>
         <div class="frame"><main class="container">
             <div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="{{ route('storefront.index') }}">Shop</a>@if($collection || $listingCategory)<span>/</span><span>{{ $listingTitle }}</span>@endif</div>

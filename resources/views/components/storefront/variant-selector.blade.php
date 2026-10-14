@@ -1,4 +1,4 @@
-@props(['product', 'variants', 'images', 'selectedVariant'])
+@props(['product', 'variants', 'images', 'selectedVariant', 'presentation' => null])
 
 @php
     $selectedAvailable = $selectedVariant ? app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($selectedVariant) : null;
@@ -80,15 +80,15 @@
     data-selected-variant-id="{{ $selectedVariant?->id }}"
     class="space-y-5 font-sans"
 >
-    <div class="flex items-center justify-between text-xs">
+    <div class="flex items-center justify-between text-xs {{ $presentation==='baby'?'bk-option-intro':'' }}">
         <div class="flex items-center gap-1.5">
-            <span class="font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">Finish / Option:</span>
+            <span class="font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">{{ $presentation==='baby'?($selectorOptions->first()['name']??'Option').':':'Finish / Option:' }}</span>
             <strong data-pdp-selected-label class="text-amber-600 dark:text-amber-400 font-sans font-bold">{{ $selectedVariant?->title }}</strong>
         </div>
-        <div data-pdp-availability class="flex items-center gap-1.5 font-mono text-[11px] font-medium {{ ($selectedAvailable ?? 0) < 1 ? 'text-rose-500' : (($selectedAvailable ?? 0) <= 5 ? 'text-amber-500' : 'text-emerald-600') }}">
+        @unless($presentation==='baby')<div data-pdp-availability class="flex items-center gap-1.5 font-mono text-[11px] font-medium {{ ($selectedAvailable ?? 0) < 1 ? 'text-rose-500' : (($selectedAvailable ?? 0) <= 5 ? 'text-amber-500' : 'text-emerald-600') }}">
             <span data-pdp-availability-dot class="w-2 h-2 rounded-full {{ ($selectedAvailable ?? 0) < 1 ? 'bg-rose-500' : (($selectedAvailable ?? 0) <= 5 ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400 animate-pulse') }}"></span>
             <span data-pdp-availability-text>{{ ($selectedAvailable ?? 0) < 1 ? ($selectedAvailable === null ? 'Awaiting stock verification' : 'Out of Stock') : (($selectedAvailable ?? 0) <= 5 ? 'Low Stock (Only '.($selectedAvailable ?? 0).' remaining)' : 'In Stock ('.($selectedAvailable ?? 0).' units)') }}</span>
-        </div>
+        </div>@endunless
     </div>
 
     @foreach($selectorOptions as $option)
@@ -141,6 +141,7 @@
                             <button type="button" role="radio" aria-checked="{{ $isSelected ? 'true' : 'false' }}" aria-disabled="{{ $isUnavailable ? 'true' : 'false' }}" aria-label="{{ $value }}{{ $isOutOfStock ? ' - Out of Stock' : '' }}" @disabled($isUnavailable) data-pdp-option-value="{{ $value }}" data-pdp-option-name="{{ $optionName }}" data-pdp-option-visual="color" data-pdp-option-stock="{{ $isOutOfStock ? 0 : 1 }}" class="group relative w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-amber-500 focus:outline-none {{ $isSelected ? 'ring-2 ring-amber-500 dark:ring-amber-400 ring-offset-2 ring-offset-zinc-50 dark:ring-offset-zinc-950 border-2 border-zinc-900 dark:border-white shadow-lg scale-105' : 'border-2 border-zinc-300 dark:border-zinc-700 hover:scale-105 hover:border-zinc-500 dark:hover:border-zinc-400 shadow-sm' }} {{ $isOutOfStock ? 'opacity-40 cursor-not-allowed' : '' }} {{ $isUnavailable ? 'opacity-25 cursor-not-allowed' : '' }}" style="background-color:{{ $visual['colorCode'] }}">
                                 <i data-pdp-option-check data-lucide="check" class="w-4 h-4 {{ $isSelected ? '' : 'hidden' }} {{ in_array(strtolower($visual['colorCode']), ['#ffffff', '#fff', '#f8fafc', '#e2e8f0']) ? 'text-zinc-950' : 'text-white' }} drop-shadow"></i>
                                 @if($isOutOfStock)<span class="absolute inset-0 m-auto w-full h-[1.5px] bg-rose-500 rotate-45 pointer-events-none"></span>@endif
+                                @if($presentation==='baby')<span class="bk-option-caption">{{ $value }}</span>@endif
                             </button>
                         @elseif($mode === 'image')
                             <button type="button" role="radio" aria-checked="{{ $isSelected ? 'true' : 'false' }}" aria-disabled="{{ $isUnavailable ? 'true' : 'false' }}" aria-label="{{ $value }}{{ $isOutOfStock ? ' - Out of Stock' : '' }}" @disabled($isUnavailable) data-pdp-option-value="{{ $value }}" data-pdp-option-name="{{ $optionName }}" data-pdp-option-visual="image" data-pdp-option-stock="{{ $isOutOfStock ? 0 : 1 }}" class="group relative w-16 h-16 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 border transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-amber-500 focus:outline-none {{ $isSelected ? 'border-amber-500 dark:border-amber-400 ring-2 ring-amber-500/40 dark:ring-amber-400/40 ring-offset-2 ring-offset-zinc-50 dark:ring-offset-zinc-950 shadow-md' : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600' }} {{ $isOutOfStock ? 'opacity-40 grayscale cursor-not-allowed' : '' }} {{ $isUnavailable ? 'opacity-25 cursor-not-allowed' : '' }}">
@@ -157,6 +158,7 @@
         </section>
     @endforeach
 
+    @if($presentation==='baby')<div class="bk-selector-quantity">{{ $slot }}<div data-pdp-availability class="flex items-center gap-1.5 text-xs"><span data-pdp-availability-dot class="w-2 h-2 rounded-full {{ ($selectedAvailable??0)>0?'bg-emerald-600':'bg-rose-500' }}"></span><span data-pdp-availability-text>{{ $selectedAvailable===null?'Awaiting stock verification':($selectedAvailable>0?'In stock':'Out of stock') }}</span></div></div>@endif
     <div data-pdp-specs class="pt-1 flex items-center gap-2 text-xs">
         <span class="text-zinc-500 dark:text-zinc-400 font-mono text-[11px] uppercase tracking-wider">Specs:</span>
         <div data-pdp-specs-value class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-mono text-zinc-800 dark:text-zinc-200">{{ collect($selectedValues)->filter()->implode(' • ') }}</div>

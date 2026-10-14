@@ -1,5 +1,5 @@
 @php
- $demoDialogItem=match($demoTheme??'food'){'home_deco'=>['id'=>-1,'title'=>'Oak Ridge Coffee Table','variantTitle'=>'Natural oak / 90 cm','imageUrl'=>'/images/themes/home-deco/table.png'],'tech'=>['id'=>-1,'title'=>'Orbit Pro Wireless Headphones','variantTitle'=>'Graphite','imageUrl'=>'/images/themes/tech/headphones.png'],'beauty'=>['id'=>-1,'title'=>'Daily Serum','variantTitle'=>'30ml','imageUrl'=>'/images/themes/beauty/serum-front.png'],default=>['id'=>-1,'title'=>'Extra Virgin Olive Oil','variantTitle'=>'500 ml','imageUrl'=>'/images/themes/food/olive-oil-lifestyle.png']};
+ $demoDialogItem=match($demoTheme??'food'){'home_deco'=>['id'=>-1,'title'=>'Oak Ridge Coffee Table','variantTitle'=>'Natural oak / 90 cm','imageUrl'=>'/images/themes/home-deco/table.png'],'jewelry'=>['id'=>-1,'title'=>'Luna Pearl Pendant','variantTitle'=>'Gold tone / 40 cm','imageUrl'=>'/images/themes/jewelry/pendant.png'],'tech'=>['id'=>-1,'title'=>'Orbit Pro Wireless Headphones','variantTitle'=>'Graphite','imageUrl'=>'/images/themes/tech/headphones.png'],'beauty'=>['id'=>-1,'title'=>'Daily Serum','variantTitle'=>'30ml','imageUrl'=>'/images/themes/beauty/serum-front.png'],default=>['id'=>-1,'title'=>'Extra Virgin Olive Oil','variantTitle'=>'500 ml','imageUrl'=>'/images/themes/food/olive-oil-lifestyle.png']};
 @endphp
 <script>
 (()=>{
@@ -22,16 +22,16 @@ const originalOpen=XMLHttpRequest.prototype.open;
 XMLHttpRequest.prototype.open=function(method,...args){if(method.toUpperCase()!=='GET')throw new Error('Demo only. No store changes were made.');return originalOpen.call(this,method,...args);};
 navigator.sendBeacon=()=>false;
 document.addEventListener('click',event=>{const link=event.target.closest('a');if(link&&!link.getAttribute('href')?.startsWith('#')){event.preventDefault();if(!link.hasAttribute('data-cart-drawer-open'))event.stopImmediatePropagation();}},true);
-window.addEventListener('load',()=>{if(demoScenario==='quick-buy')document.querySelector('[data-quick-add-trigger]')?.click();});
+window.addEventListener('load',()=>{if(demoScenario==='quick-buy')setTimeout(()=>document.querySelector('[data-quick-add-trigger]')?.click(),0);});
 document.addEventListener('alpine:initialized',()=>{
  const filter=document.querySelector('[aria-label="Open filters"]');
  if(demoScenario==='filter')filter?.click();
 
- const root=document.querySelector('[data-food-account],[data-home-deco-account],[data-beauty-account],[data-tech-account]');
+ const root=document.querySelector('[data-food-account],[data-home-deco-account],[data-beauty-account],[data-tech-account],[data-baby-account],[data-jewelry-account]');
  if(root&&['review-dialog','return-dialog'].includes(demoScenario)){
   const state=Alpine.$data(root),item=@js($demoDialogItem);
   if(demoScenario==='review-dialog')state.openReview({number:'DEMO-JW100328'},item);
-  else state.returnTarget={itemId:-1,orderNumber:'DEMO-JW100328',...item,sku:@js(($demoTheme??'')==='tech'?'DEMO-TECH-0':'DEMO-OIL'),quantity:1,amount:@js(($demoTheme??'')==='tech'?'899.00 MYR':'68.00 MYR')};
+  else state.returnTarget={itemId:-1,orderNumber:'DEMO-JW100328',...item,sku:@js(($demoTheme??'')==='jewelry'?'LUNA-GOLD':(($demoTheme??'')==='tech'?'DEMO-TECH-0':'DEMO-OIL')),quantity:1,amount:@js(($demoTheme??'')==='jewelry'?'189.00 MYR':(($demoTheme??'')==='tech'?'899.00 MYR':'68.00 MYR'))};
  }
 });
 })();

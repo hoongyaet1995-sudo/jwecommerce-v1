@@ -1,34 +1,34 @@
 {
-  "_index-CgACiWdb.css": {
-    "file": "assets/index-CgACiWdb.css",
-    "src": "_index-CgACiWdb.css"
-  },
-  "_index-_CccNOrT.js": {
-    "file": "assets/index-_CccNOrT.js",
+  "_index-Cfh9UDU3.js": {
+    "file": "assets/index-Cfh9UDU3.js",
     "name": "index",
     "css": [
       "assets/index-CgACiWdb.css"
     ]
   },
+  "_index-CgACiWdb.css": {
+    "file": "assets/index-CgACiWdb.css",
+    "src": "_index-CgACiWdb.css"
+  },
   "src/main.tsx": {
-    "file": "assets/main-geZE3rZo.js",
+    "file": "assets/main-CCEx7Tf9.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
     "imports": [
-      "_index-_CccNOrT.js"
+      "_index-Cfh9UDU3.js"
     ],
     "dynamicImports": [
       "src/previews/inventory48/Inventory48Runtime.tsx"
     ]
   },
   "src/previews/inventory48/Inventory48Runtime.tsx": {
-    "file": "assets/Inventory48Runtime-Cb-ySeqD.js",
+    "file": "assets/Inventory48Runtime-C743Uwhu.js",
     "name": "Inventory48Runtime",
     "src": "src/previews/inventory48/Inventory48Runtime.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_index-_CccNOrT.js",
+      "_index-Cfh9UDU3.js",
       "src/main.tsx"
     ],
     "css": [
@@ -36,12 +36,12 @@
     ]
   },
   "src/public-page.tsx": {
-    "file": "assets/public-page-RaZ0KumL.js",
+    "file": "assets/public-page-Dx3-TrvR.js",
     "name": "public-page",
     "src": "src/public-page.tsx",
     "isEntry": true,
     "imports": [
-      "_index-_CccNOrT.js"
+      "_index-Cfh9UDU3.js"
     ]
   }
 }

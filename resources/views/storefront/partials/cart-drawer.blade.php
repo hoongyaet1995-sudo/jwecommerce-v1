@@ -1,3 +1,8 @@
+@if(app(\App\Services\WebsiteDesignService::class)->surface()==='jewelry')
+@include('storefront.themes.jewelry-cart-drawer')
+@elseif(app(\App\Services\WebsiteDesignService::class)->surface()==='baby')
+@include('storefront.themes.baby-cart-drawer')
+@else
 @if(app(\App\Services\WebsiteDesignService::class)->surface()==='tech')
 @include('storefront.themes.tech-cart-drawer')
 @else
@@ -50,7 +55,7 @@
         @if($hasShippingProgress)<p class="text-[10px] text-zinc-500 dark:text-zinc-400">Free shipping applies to eligible delivery regions.</p>@endif
     </div>
 
-    <div class="flex-1 space-y-4 overflow-y-auto p-5">
+    <div class="flex-1 space-y-4 overflow-y-auto p-5" data-cart-drawer-lines>
         @forelse($items as $item)
             @php($variant = $item['variant'])
             @php($product = $variant->product)
@@ -114,11 +119,7 @@
 
     @if($items->isNotEmpty())
         <footer class="space-y-4 border-t border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-950/80">
-            <form method="POST" action="{{ route('cart.coupon.apply') }}" data-cart-drawer-form class="space-y-1.5">
-                @csrf
-                <div class="flex gap-2"><div class="relative min-w-0 flex-1"><i data-lucide="tag" class="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-500"></i><label class="sr-only" for="drawer-coupon">Coupon code</label><input id="drawer-coupon" name="code" required placeholder="Coupon (e.g. WELCOME10)" class="w-full rounded-lg border border-zinc-200 bg-white py-1.5 pl-8 pr-3 font-mono text-xs uppercase text-zinc-900 placeholder:text-zinc-400 focus:border-amber-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-amber-400" /></div><button type="submit" class="rounded-lg bg-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-800 transition hover:bg-zinc-300 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">Apply</button></div>
-                @if(session('coupon_error'))<p class="flex items-center gap-1 text-[11px] text-rose-600 dark:text-rose-400"><i data-lucide="circle-alert" class="h-3 w-3"></i>{{ session('coupon_error') }}</p>@endif
-            </form>
+@include('storefront.partials.cart-drawer-promo')
             @if($coupon)<div class="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-xs text-emerald-800 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300"><span class="flex items-center gap-1.5"><i data-lucide="check" class="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400"></i><b class="font-mono">{{ $coupon->code }}</b> applied</span><form method="POST" action="{{ route('cart.coupon.remove') }}" data-cart-drawer-form>@csrf @method('DELETE')<button type="submit" class="text-zinc-500 underline transition hover:text-rose-500 dark:text-zinc-400 dark:hover:text-rose-400">Remove</button></form></div>@endif
             @php($taxQuote = $summary['tax_quote'] ?? [])
             @php($taxRowVisible = ($taxQuote['status'] ?? 'not_configured') !== 'not_configured')
@@ -130,6 +131,8 @@
         </footer>
     @endif
 </section>
+
+@endif
 
 @endif
 
