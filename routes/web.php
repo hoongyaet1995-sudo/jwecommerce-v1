@@ -160,8 +160,10 @@ Route::middleware(['auth:customer', 'customer'])->prefix('account')->name('custo
     Route::get('/', [CustomerAccountController::class, 'show'])->name('account');
     Route::post('/coupons/apply', [CustomerCouponController::class, 'apply'])->name('coupons.apply');
     Route::patch('/profile', [CustomerAccountController::class, 'updateProfile'])->name('profile.update');
+    Route::patch('/password', [\App\Http\Controllers\CustomerPasswordController::class, 'update'])->middleware('throttle:5,1')->name('security.update');
     Route::post('/addresses', [CustomerAccountController::class, 'storeAddress'])->name('addresses.store');
     Route::patch('/addresses/{address}', [CustomerAccountController::class, 'updateAddress'])->whereNumber('address')->name('addresses.update');
+    Route::delete('/addresses/{address}', [CustomerAccountController::class, 'destroyAddress'])->whereNumber('address')->name('addresses.destroy');
     Route::post('/wishlist/{product}', [CustomerAccountController::class, 'storeWishlist'])->name('wishlist.store');
     Route::delete('/wishlist/{product}', [CustomerAccountController::class, 'destroyWishlist'])->name('wishlist.destroy');
     Route::get('/reviews/media/{media}', [ProductReviewMediaController::class, 'showForCustomer'])->name('reviews.media.show');

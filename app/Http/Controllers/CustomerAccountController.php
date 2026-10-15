@@ -67,6 +67,18 @@ class CustomerAccountController extends Controller
         return redirect()->route('customer.account')->with('status','Address updated.');
     }
 
+    public function destroyAddress(Request $request, int $address): RedirectResponse
+    {
+        $customer=$request->user('customer')->customer;
+        DB::transaction(function () use ($customer, $address): void {
+            $owned=$customer->addresses()->lockForUpdate()->findOrFail($address);
+            $wasDefault=$owned->is_default;
+            $owned->delete();
+            if ($wasDefault) $customer->addresses()->orderBy('id')->first()?->update(['is_default'=>true]);
+        });
+        return redirect()->to(route('customer.account').'#addresses')->with('status','Address removed.');
+    }
+
     private function addressData(Request $request): array
     {
         return $request->validate([

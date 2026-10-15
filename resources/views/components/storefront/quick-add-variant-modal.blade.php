@@ -48,7 +48,7 @@
     $initialSavings = max(0, (int) ($initial['compareAt'] ?? 0) - (int) ($initial['price'] ?? 0));
 @endphp
 
-@if($theme==='fashion') @include('storefront.themes.fashion-quick-buy') @elseif($theme==='jewelry') @include('storefront.themes.jewelry-quick-buy') @elseif($theme==='baby') @include('storefront.themes.baby-quick-buy') @elseif($theme==='tech') @include('storefront.themes.tech-quick-buy') @elseif($theme==='beauty')
+@if($theme==='universal') @include('storefront.themes.universal-quick-buy') @elseif($theme==='fashion') @include('storefront.themes.fashion-quick-buy') @elseif($theme==='jewelry') @include('storefront.themes.jewelry-quick-buy') @elseif($theme==='baby') @include('storefront.themes.baby-quick-buy') @elseif($theme==='tech') @include('storefront.themes.tech-quick-buy') @elseif($theme==='beauty')
 @include('storefront.themes.beauty-quick-buy')
 @else
 <div

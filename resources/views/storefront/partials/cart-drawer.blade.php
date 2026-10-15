@@ -1,4 +1,6 @@
-@if(app(\App\Services\WebsiteDesignService::class)->surface()==='fashion')
+@if(app(\App\Services\WebsiteDesignService::class)->surface()==='universal')
+@include('storefront.themes.universal-cart-drawer')
+@elseif(app(\App\Services\WebsiteDesignService::class)->surface()==='fashion')
 @include('storefront.themes.fashion-cart-drawer')
 @elseif(app(\App\Services\WebsiteDesignService::class)->surface()==='jewelry')
 @include('storefront.themes.jewelry-cart-drawer')
