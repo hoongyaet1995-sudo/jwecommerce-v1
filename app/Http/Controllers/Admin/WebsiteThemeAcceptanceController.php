@@ -7,13 +7,17 @@ use Illuminate\Http\Request;
 
 final class WebsiteThemeAcceptanceController extends Controller
 {
-    public function index(Request $request){$theme=$this->theme($request);return view('admin.theme-acceptance',['theme'=>$theme,'themeName'=>match($theme){'home_deco'=>'Home & Deco','jewelry'=>'Jewelry & Gifts','baby'=>'Baby & Kids','tech'=>'Technology & Electronics','beauty'=>'Beauty & Skincare',default=>'Food & Beverage'},'scenarios'=>array_merge(WebsiteThemeDemoData::SCENARIOS,in_array($theme,['home_deco','beauty','tech','baby','jewelry'],true)?['order-tracking-verify-code']:[])]);}
-    private function theme(Request $request):string { $theme=$request->input('theme','food'); abort_unless(in_array($theme,['food','home_deco','beauty','tech','baby','jewelry'],true),422); return $theme; }
+    public function index(Request $request){$theme=$this->theme($request);return view('admin.theme-acceptance',['theme'=>$theme,'themeName'=>match($theme){'home_deco'=>'Home & Deco','fashion'=>'Fashion & Design','jewelry'=>'Jewelry & Gifts','baby'=>'Baby & Kids','tech'=>'Technology & Electronics','beauty'=>'Beauty & Skincare',default=>'Food & Beverage'},'scenarios'=>array_merge(WebsiteThemeDemoData::SCENARIOS,in_array($theme,['home_deco','beauty','tech','baby','jewelry','fashion'],true)?['order-tracking-verify-code']:[])]);}
+    private function theme(Request $request):string { $theme=$request->input('theme','food'); abort_unless(in_array($theme,['food','home_deco','beauty','tech','baby','jewelry','fashion'],true),422); return $theme; }
     public function reference(Request $request,string $scenario)
     {
         abort_unless(in_array($scenario,array_merge(WebsiteThemeDemoData::SCENARIOS,['order-tracking-verify-code']),true),404);
         $theme=$this->theme($request);
-        if($theme==='jewelry'){
+        if($theme==='fashion'){
+ $file=match($scenario){'all-products','plp'=>'plp-v1','shopping-cart'=>'cart-v1','my-account'=>'account-overview-v1','account-saved-items'=>'account-saved-v1','order-tracking'=>'tracking-lookup-v1','order-tracking-verify-code'=>'tracking-verify-v1','order-tracking-verified'=>'tracking-result-v1','review-dialog'=>'review-v1','return-dialog'=>'return-v1','forgot-password'=>'forgot-v1','reset-password'=>'reset-v1','payment-pending'=>'checkout-pending-v1',default=>$scenario.'-v1'};
+ $path=base_path('output/fashion-design-theme-samples/'.$file.'.png');abort_unless(is_file($path),404);return response()->file($path);
+ }
+ if($theme==='jewelry'){
           $file=match($scenario){'all-products','plp'=>'plp-v1','my-account'=>'account-overview-v1','account-orders'=>'account-orders-v1','account-addresses'=>'account-addresses-v1','account-profile'=>'account-profile-v1','account-vouchers'=>'account-vouchers-v1','account-saved-items'=>'account-saved-v1','order-tracking'=>'tracking-lookup-v1','order-tracking-verify-code'=>'tracking-verify-v1','order-tracking-verified'=>'tracking-result-v1','review-dialog'=>'review-v1','return-dialog'=>'return-v1','checkout-success'=>'success-v2',default=>$scenario.'-v1'};
           $path=base_path('output/jewelry-gifts-theme-samples/'.$file.'.png');abort_unless(is_file($path),404);return response()->file($path);
         }
@@ -46,8 +50,10 @@ final class WebsiteThemeAcceptanceController extends Controller
     }
     public function sample(Request $request, string $scenario)
     {
-        $theme=$this->theme($request);$prefix=match($theme){'home_deco'=>'home-deco','beauty'=>'beauty','jewelry'=>'jewelry','baby'=>'baby','tech'=>'tech',default=>'food'};
-        abort_unless(in_array($scenario,array_merge(WebsiteThemeDemoData::SCENARIOS,in_array($theme,['home_deco','beauty','tech','baby','jewelry'],true)?['order-tracking-verify-code']:[]),true),404);
+        $width=$request->validate(['width'=>['sometimes',\Illuminate\Validation\Rule::in(['standard','wide','full'])]])['width']??null;
+        if($width)$request->attributes->set('websiteThemeShellWidth',$width);
+        $theme=$this->theme($request);$prefix=match($theme){'home_deco'=>'home-deco','beauty'=>'beauty','fashion'=>'fashion','jewelry'=>'jewelry','baby'=>'baby','tech'=>'tech',default=>'food'};
+        abort_unless(in_array($scenario,array_merge(WebsiteThemeDemoData::SCENARIOS,in_array($theme,['home_deco','beauty','tech','baby','jewelry','fashion'],true)?['order-tracking-verify-code']:[]),true),404);
         $request->merge(['theme'=>$theme]);
         $request->attributes->set('websiteDesignPreview',$theme);
         $request->attributes->set('websiteThemeSurface',match($scenario){'shopping-cart'=>'cart','shopping-cart'=>'cart','all-products'=>'allProducts','checkout'=>'checkout','checkout-success','payment-pending'=>'checkoutSuccess','order-tracking','order-tracking-verified','order-tracking-verify-code'=>'tracking','login'=>'login','register'=>'register','forgot-password'=>'forgot','reset-password'=>'reset','pdp'=>'pdp','plp','filter','quick-buy'=>'plp',default=>'account'});
@@ -66,6 +72,7 @@ final class WebsiteThemeAcceptanceController extends Controller
             if($theme==='jewelry')$payload=array_replace($payload,['number'=>'JW100328','statusLabel'=>'Processing','totals'=>['subtotal'=>31800,'shipping'=>800,'discount'=>0,'tax'=>0,'total'=>32600],'address'=>['line1'=>'12 Jalan Harmoni','city'=>'Kuala Lumpur','postalCode'=>'50000'],'tracking'=>['number'=>null,'carrier'=>null],'timeline'=>[['title'=>'Order created','description'=>'Your order has been received.','timestamp'=>'2026-10-14T10:24:00','location'=>null],['title'=>'Payment confirmed','description'=>'Your payment has been confirmed.','timestamp'=>'2026-10-14T10:25:00','location'=>null],['title'=>'Processing','description'=>'Your order is being prepared.','timestamp'=>'2026-10-14T10:45:00','location'=>null]]]);
             if($theme==='baby')$payload=array_replace($payload,['number'=>'JW100328','statusLabel'=>'Processing','totals'=>['subtotal'=>12800,'shipping'=>800,'discount'=>0,'tax'=>0,'total'=>13600],'address'=>['line1'=>'12 Jalan Harmoni','city'=>'Kuala Lumpur','postalCode'=>'50000'],'tracking'=>['number'=>null,'carrier'=>null],'timeline'=>[['title'=>'Order created','description'=>'Your order has been received.','timestamp'=>'2026-10-13T10:00:00','location'=>null],['title'=>'Payment confirmed','description'=>'Your payment has been received.','timestamp'=>'2026-10-13T10:01:00','location'=>null],['title'=>'Processing','description'=>'We are preparing your order.','timestamp'=>'2026-10-13T10:02:00','location'=>null]]]);
  if($theme==='beauty')$payload=array_replace($payload,['number'=>'JW100328','statusLabel'=>'Processing','totals'=>['subtotal'=>22600,'shipping'=>800,'discount'=>0,'tax'=>0,'total'=>23400],'address'=>['line1'=>'12 Jalan Harmoni','city'=>'Kuala Lumpur','postalCode'=>'50000'],'tracking'=>['number'=>null,'carrier'=>null],'timeline'=>[['title'=>'Order confirmed','description'=>'Your order has been received and is being processed.','timestamp'=>'2026-10-13T10:00:00','location'=>null]]]);
+            if($theme==='fashion')$payload=array_replace($payload,['number'=>'JW100328','statusLabel'=>'Processing','totals'=>['subtotal'=>33800,'shipping'=>800,'discount'=>0,'tax'=>0,'total'=>34600],'address'=>['line1'=>'12 Jalan Harmoni','city'=>'Kuala Lumpur','postalCode'=>'50000'],'tracking'=>['number'=>null,'carrier'=>null],'timeline'=>[['title'=>'Order created','description'=>'Your order has been received.','timestamp'=>'2026-10-15T10:00:00','location'=>null],['title'=>'Payment confirmed','description'=>'Payment received.','timestamp'=>'2026-10-15T10:01:00','location'=>null],['title'=>'Processing','description'=>'Your order is being prepared.','timestamp'=>'2026-10-15T10:02:00','location'=>null]]]);
             $view=view('storefront.themes.'.$prefix.'-tracking',$common+['step'=>$scenario==='order-tracking-verified'?'verified_result':($scenario==='order-tracking-verify-code'?'verify':'request'),'trackingPayload'=>$scenario==='order-tracking-verified'?$payload:null]);
         }
         elseif(in_array($scenario,['shopping-cart','cart-drawer','checkout','checkout-success','payment-pending'],true)) {
@@ -79,6 +86,7 @@ final class WebsiteThemeAcceptanceController extends Controller
         if($scenario==='cart-drawer')$html='<html lang="en"><head>'.app(\Illuminate\Foundation\Vite::class)(['resources/css/app.css','resources/js/app.js']).'<meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/css/'.$prefix.'-theme.css">'.($theme==='beauty'?'<link rel="stylesheet" href="/css/beauty-complete.css">':'').$guard.'</head><body style="margin:0;background:#ddd8cc"><aside class="'.match($theme){'home_deco'=>'hd-theme','beauty'=>'bs-theme','jewelry'=>'jg-theme','baby'=>'bk-theme','tech'=>'te-theme',default=>'fd-theme'}.'" style="max-width:460px;margin-left:auto;height:100vh;background:#faf6ec">'.$html.'</aside></body></html>';
         if($scenario==='cart-drawer')$html=str_replace('</head>','<link rel="stylesheet" href="/css/cart-drawer-layout.css">'.'</head>',$html);
         if($theme==='jewelry'&&$scenario==='cart-drawer')$html=str_replace('</head>',view('storefront.partials.theme-customization')->render().'</head>',$html);
+        if($theme==='fashion'&&$scenario==='cart-drawer')$html=str_replace('</head>','<link rel="stylesheet" href="/css/storefront-layout.css"><link rel="stylesheet" href="/css/fashion-layout.css"><style>body>aside{max-width:none!important;width:100%;height:min(660px,88dvh)!important;margin-top:max(12dvh,calc(100dvh - 660px));background:#fafafa!important}</style>'.view('storefront.partials.theme-customization')->render().'</head>',$html);
         return response($html)->header('Cache-Control','private, no-store')->header('X-Theme-Data','dummy');
     }
 }

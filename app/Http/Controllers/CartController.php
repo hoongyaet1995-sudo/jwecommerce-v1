@@ -15,7 +15,7 @@ class CartController extends Controller
 {
     public function show(Request $request, CartViewData $cartViewData): View
     {
-        return view(match(app(\App\Services\WebsiteDesignService::class)->surface()) { 'food'=>'storefront.themes.food-cart', 'home_deco'=>'storefront.themes.home-deco-cart', 'beauty'=>'storefront.themes.beauty-cart', 'jewelry'=>'storefront.themes.jewelry-cart', 'baby'=>'storefront.themes.baby-cart', 'tech'=>'storefront.themes.tech-cart', default=>'storefront.cart' }, $cartViewData->for($request));
+        return view(match(app(\App\Services\WebsiteDesignService::class)->surface()) { 'food'=>'storefront.themes.food-cart', 'home_deco'=>'storefront.themes.home-deco-cart', 'beauty'=>'storefront.themes.beauty-cart', 'fashion'=>'storefront.themes.fashion-cart', 'jewelry'=>'storefront.themes.jewelry-cart', 'baby'=>'storefront.themes.baby-cart', 'tech'=>'storefront.themes.tech-cart', default=>'storefront.cart' }, $cartViewData->for($request));
     }
 
     public function drawer(Request $request, CartViewData $cartViewData): View

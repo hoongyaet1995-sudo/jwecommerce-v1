@@ -31,7 +31,7 @@
         @if(in_array($hostedReturn['state'] ?? null, ['cancelled','failed'], true) && !empty($hostedReturn['payment']))
         <form id="food-payment-retry-form" method="POST" action="{{ route('checkout.payment-retry', $hostedReturn['payment']) }}" class="hidden">@csrf</form>
         @endif
-        <form method="POST" action="{{ route('checkout.store') }}" enctype="multipart/form-data" data-checkout-shipping-quojg-url="{{ route('checkout.shipping-quote') }}" data-checkout-initial-shipping-quote="{{ filled($checkoutAddress['country']) && filled($checkoutAddress['postalCode']) ? 'true' : 'false' }}" class="jco-grid">
+        <form method="POST" action="{{ route('checkout.store') }}" enctype="multipart/form-data" data-checkout-shipping-quote-url="{{ route('checkout.shipping-quote') }}" data-checkout-initial-shipping-quote="{{ filled($checkoutAddress['country']) && filled($checkoutAddress['postalCode']) ? 'true' : 'false' }}" class="jco-grid">
             @csrf
             <section class="jco-steps">
 
@@ -82,7 +82,7 @@
                     @if($errors->any())<p class="mt-4 text-xs text-red-400">Please review the highlighted delivery details.</p>@endif
                 </section></div>
 
-                <div class="jco-delivery"><x-storefront.delivery-options step="3" heading="Delivery Method" :summary="$summary" :options="$deliveryOptions" :selected="$selectedDelivery" :quojg-url="route('checkout.shipping-quote')" /></div>
+                <div class="jco-delivery"><x-storefront.delivery-options step="3" heading="Delivery Method" :summary="$summary" :options="$deliveryOptions" :selected="$selectedDelivery" :quote-url="route('checkout.shipping-quote')" /></div>
 
                 @php($selectedPayment = old('payment_method', request('payment_method', array_key_first($paymentMethods))))
                 @php($bankConfig = $paymentMethodModels['bank_transfer']['bankTransfer'] ?? null)

@@ -8,27 +8,61 @@ use Illuminate\Validation\ValidationException;
 final class WebsiteThemeCustomization
 {
     public const SURFACES=['allProducts','plp','pdp','login','register','forgot','reset','account','tracking','checkout','checkoutSuccess','cart'];
-    public const FONTS=['default','editorial','modern','classic'];
+    public const FONTS=['default','editorial','modern','classic','street'];
+
+    public function contentContracts(): array
+    {
+        return ['fashion'=>[
+            'cart'=>['main'=>'Main message','sub'=>'Small message'],
+            'checkout'=>['main'=>'Main message','sub'=>'Small message'],
+            'checkoutSuccess'=>['main'=>'Left message','sub'=>'Right message','extra'=>'Lower message'],
+            'tracking'=>['main'=>'Main message','sub'=>'Small message'],
+        ]];
+    }
+
+    /** Plain text only; renderers escape it. No unconfigured marketing defaults. */
+    public function content(string $theme, ?string $page=null): array
+    {
+        $page=$page??$this->page();
+        $values=$this->profiles()[$theme]['content'][$page]??[];
+        $result=[];
+        foreach ($this->contentContracts()[$theme][$page]??[] as $slot=>$label) {
+            $value=$values[$slot]??[];
+            if (!($value['hidden']??false) && filled($value['text']??null)) $result[$slot]=$value['text'];
+        }
+        return $result;
+    }
 
     /** Only declare slots backed by an approved renderer. Unknown themes expose nothing. */
     public function mediaContracts(): array
     {
         $account=['account'=>['account'],'login'=>['account','login'],'register'=>['account','register'],'forgot'=>['account','forgot'],'reset'=>['account','reset']];
-        return ['jewelry'=>array_replace($account,['allProducts'=>['allProducts'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking'],'cart'=>['cart']]),'baby'=>array_replace($account,['allProducts'=>['allProducts'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking'],'cart'=>['cart']]),'tech'=>array_replace($account,['allProducts'=>['allProducts'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking'],'cart'=>['cart']]),'default'=>$account,'home_deco'=>array_replace($account,['allProducts'=>['allProducts'],'account'=>[],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'beauty'=>array_replace($account,['allProducts'=>['allProducts'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'food'=>array_replace($account,['allProducts'=>['allProducts'],'account'=>['accountHero','accountOrders','accountVouchers','accountAddresses','accountProfile'],'accountOverview'=>['accountHero'],'accountOrders'=>['accountHero','accountOrders'],'accountVouchers'=>['accountHero','accountVouchers'],'accountAddresses'=>['accountHero','accountAddresses'],'accountProfile'=>['accountHero','accountProfile'],'tracking'=>['tracking'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess']])];
+        return ['fashion'=>array_replace($account,['allProducts'=>['allProducts'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'jewelry'=>array_replace($account,['allProducts'=>['allProducts'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking'],'cart'=>['cart']]),'baby'=>array_replace($account,['allProducts'=>['allProducts'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking'],'cart'=>['cart']]),'tech'=>array_replace($account,['allProducts'=>['allProducts'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking'],'cart'=>['cart']]),'default'=>$account,'home_deco'=>array_replace($account,['allProducts'=>['allProducts'],'account'=>[],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'beauty'=>array_replace($account,['allProducts'=>['allProducts'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'food'=>array_replace($account,['allProducts'=>['allProducts'],'account'=>['accountHero','accountOrders','accountVouchers','accountAddresses','accountProfile'],'accountOverview'=>['accountHero'],'accountOrders'=>['accountHero','accountOrders'],'accountVouchers'=>['accountHero','accountVouchers'],'accountAddresses'=>['accountHero','accountAddresses'],'accountProfile'=>['accountHero','accountProfile'],'tracking'=>['tracking'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess']])];
     }
 
     public function validate(mixed $input): array
     {
-        $rules=['profiles'=>['array:default,home_deco,beauty,food,tech,baby,jewelry']];
+        $rules=['profiles'=>['array:'.implode(',',WebsiteDesignService::THEMES)]];
         foreach (WebsiteDesignService::THEMES as $theme) {
             $base='profiles.'.$theme;
-            $rules[$base]=['sometimes','array:style,pages,media'];
+            $rules[$base]=['sometimes','array:style,pages,media,content'];
+            $content=$this->contentContracts()[$theme]??[];
+            $rules[$base.'.content']=['sometimes',$content?'array:'.implode(',',array_keys($content)):'prohibited'];
+            foreach ($content as $page=>$fields) {
+                $path=$base.'.content.'.$page;
+                $rules[$path]=['sometimes','array:'.implode(',',array_keys($fields))];
+                foreach ($fields as $field=>$label) {
+                    $rules[$path.'.'.$field]=['sometimes','array:text,hidden'];
+                    $rules[$path.'.'.$field.'.text']=['nullable','string','max:160'];
+                    $rules[$path.'.'.$field.'.hidden']=['sometimes','boolean'];
+                }
+            }
             $rules[$base.'.pages']=['sometimes','array:'.implode(',',self::SURFACES)];
             $slots=array_values(array_unique(array_merge([], ...array_values($this->mediaContracts()[$theme]??[]))));
             $rules[$base.'.media']=['sometimes', $slots ? 'array:'.implode(',',$slots) : 'prohibited'];
             foreach (array_merge([$base.'.style'],array_map(fn($s)=>$base.'.pages.'.$s,self::SURFACES)) as $path) {
                 $rules[$path]=['sometimes','array:font,size,colorMode,paletteId,main,sub'];
-                $rules[$path.'.font']=['sometimes',Rule::in(self::FONTS)];
+                $rules[$path.'.font']=['sometimes',Rule::in($theme==='fashion'?self::FONTS:array_diff(self::FONTS,['street']))];
                 $rules[$path.'.size']=['sometimes',Rule::in(['small','medium','big'])];
                 $rules[$path.'.colorMode']=['sometimes',Rule::in(['theme','brand','custom'])];
                 $rules[$path.'.paletteId']=['nullable','uuid'];
@@ -100,12 +134,12 @@ final class WebsiteThemeCustomization
 
     public function media(string $theme,string $page,string $fallback): array
     {
-        $defaults=['desktop'=>$fallback,'mobile'=>'','alt'=>'','focus'=>'center','focusY'=>'middle','hidden'=>false];
+        $defaults=['desktop'=>$fallback,'mobile'=>'','alt'=>'','focus'=>'center','focusY'=>$theme==='fashion'?'top':'middle','hidden'=>false];
         if (empty($this->mediaContracts()[$theme][$page])) return $defaults;
         $profile=$this->profiles()[$theme]??[];
         $media=[];
         foreach ($this->mediaContracts()[$theme][$page] as $slot) $media=array_replace($media,$profile['media'][$slot]??[]);
-        return array_replace(['desktop'=>$fallback,'mobile'=>'','alt'=>'','focus'=>'center','focusY'=>'middle','hidden'=>false],$media,['desktop'=>($media['desktop']??'')?:$fallback]);
+        return array_replace($defaults,$media,['desktop'=>($media['desktop']??'')?:$fallback]);
     }
 
     public function preview(\Illuminate\Http\Request $request): void

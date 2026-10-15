@@ -5,7 +5,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 final class WebsiteDesignService
 {
-    public const THEMES=['default','home_deco','beauty','food','tech','baby','jewelry'];
+    public const THEMES=['default','home_deco','beauty','food','tech','baby','jewelry','fashion'];
     public function live():array
     {
         $value=StoreSetting::where('key','website_design')->value('value');
@@ -42,8 +42,8 @@ final class WebsiteDesignService
         request()->attributes->set('websiteRenderedTheme',$theme);
         $default=['listing'=>'storefront.index','pdp'=>'storefront.show','auth'=>'storefront.auth','reset'=>'storefront.password-reset','account'=>'storefront.account'];
         if (!array_key_exists($surface,$default)) throw new \InvalidArgumentException('Unsupported theme surface.');
-        if (!in_array($theme,['home_deco','beauty','food','tech','baby','jewelry'],true)) return $default[$surface];
-        return 'storefront.themes.'.(['jewelry'=>'jewelry','baby'=>'baby','tech'=>'tech','beauty'=>'beauty','food'=>'food','home_deco'=>'home-deco'][$theme]).'-'.($surface==='reset'?'auth':$surface);
+        if (!in_array($theme,['home_deco','beauty','food','tech','baby','jewelry','fashion'],true)) return $default[$surface];
+        return 'storefront.themes.'.(['fashion'=>'fashion','jewelry'=>'jewelry','baby'=>'baby','tech'=>'tech','beauty'=>'beauty','food'=>'food','home_deco'=>'home-deco'][$theme]).'-'.($surface==='reset'?'auth':$surface);
     }
     public function exists(string $scope):bool
     {
@@ -52,7 +52,7 @@ final class WebsiteDesignService
     }
     public function inventory():array
     {
-        return ['mediaContracts'=>app(WebsiteThemeCustomization::class)->mediaContracts(),'settings'=>$this->live(),'palettes'=>app(CmsPaletteLibrary::class)->all(),'media'=>\App\Models\CmsMediaAsset::where('mime_type','like','image/%')->latest()->limit(60)->get(['id','url','original_name'])->toArray(),'pages'=>array_merge(
+        return ['contentContracts'=>app(WebsiteThemeCustomization::class)->contentContracts(),'mediaContracts'=>app(WebsiteThemeCustomization::class)->mediaContracts(),'settings'=>$this->live(),'palettes'=>app(CmsPaletteLibrary::class)->all(),'media'=>\App\Models\CmsMediaAsset::where('mime_type','like','image/%')->latest()->limit(60)->get(['id','url','original_name'])->toArray(),'pages'=>array_merge(
             [['scope'=>'shop','name'=>'All products','url'=>route('storefront.index')]],
             Category::where('is_active',true)->orderBy('name')->get()->map(fn($c)=>['scope'=>'category:'.$c->id,'name'=>'Category · '.$c->name,'url'=>route('storefront.categories.show',$c)])->all(),
             Collection::where('is_active',true)->orderBy('title')->get()->map(fn($c)=>['scope'=>'collection:'.$c->id,'name'=>'Collection · '.$c->title,'url'=>route('storefront.collections.show',$c)])->all()

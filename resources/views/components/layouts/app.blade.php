@@ -5,6 +5,7 @@
 @php($isAdmin = request()->routeIs('admin.*') && ! $isCmsStorefrontPreview)
 @php($shellDesign = $isStorefront ? ($shellDesign ?? \App\Domain\Cms\ShellDesign::resolve(app(\App\Services\StorefrontShellSettingsService::class)->live())) : null)
 @php($shellContentWidth = $isStorefront ? ($shellContentWidth ?? app(\App\Services\StorefrontShellSettingsService::class)->live()['contentWidth'] ?? 'wide') : 'wide')
+@php($shellContentWidth = $isCmsStorefrontPreview ? (request()->attributes->get('websiteThemeShellWidth') ?? $shellContentWidth) : $shellContentWidth)
 @php($websiteStyleThemes = array_unique([app(\App\Services\WebsiteDesignService::class)->surface(), request()->attributes->get('websiteRenderedTheme')]))
 <html lang="en" @if($isStorefront) data-storefront-width="{{ $shellContentWidth }}" @endif @if($isStorefront) class="{{ ($shellDesign['appearance'] ?? 'dark') === 'dark' ? 'dark' : '' }}" data-atelier-theme-root data-atelier-theme="{{ $shellDesign['appearance'] ?? 'dark' }}" @if($shellDesign) data-shell-appearance="{{ $shellDesign['appearance'] }}" data-shell-theme-switch="{{ $shellDesign['showThemeSwitch'] ? 'true' : 'false' }}" @endif @elseif($isAdmin) data-admin-root @endif>
 <head>
@@ -26,6 +27,7 @@
     @if($isStorefront && in_array('beauty',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/beauty-complete.css') }}?v={{ filemtime(public_path('css/beauty-complete.css')) }}">@endif
     @if($isStorefront && in_array('tech',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/tech-theme.css') }}?v={{ filemtime(public_path('css/tech-theme.css')) }}">@endif
     @if($isStorefront && in_array('food',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/food-theme.css') }}?v={{ filemtime(public_path('css/food-theme.css')) }}">@endif
+    @if($isStorefront && in_array('fashion',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/fashion-theme.css') }}?v={{ filemtime(public_path('css/fashion-theme.css')) }}"><link rel="stylesheet" href="{{ asset('css/fashion-layout.css') }}?v={{ filemtime(public_path('css/fashion-layout.css')) }}">@endif
     @if($isStorefront && in_array('jewelry',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/jewelry-theme.css') }}?v={{ filemtime(public_path('css/jewelry-theme.css')) }}">@endif
     @if($isStorefront && in_array('baby',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/baby-theme.css') }}?v={{ filemtime(public_path('css/baby-theme.css')) }}">@endif
     @if($isStorefront)<link rel="stylesheet" href="{{ asset('css/cart-drawer-layout.css') }}?v={{ filemtime(public_path('css/cart-drawer-layout.css')) }}">@endif
@@ -37,7 +39,7 @@
         @unless(request()->attributes->has('websiteThemeDemoVariants'))<x-storefront.support-chat />@endunless
         <div id="cart-drawer" data-cart-drawer-url="{{ request()->attributes->has('websiteThemeDemoVariants') ? route('admin.website-design.cart-drawer', ['theme'=>request('theme'),'customization'=>request('customization')]) : route('cart.drawer') }}" class="pointer-events-none fixed inset-0 z-[60] overflow-hidden" aria-hidden="true">
             <div data-cart-drawer-backdrop class="absolute inset-0 bg-black/70 opacity-0 backdrop-blur-sm transition-opacity duration-300"></div>
-            <aside data-cart-drawer-panel role="dialog" aria-modal="true" aria-labelledby="cart-drawer-title" class="absolute inset-y-0 right-0 flex w-full max-w-md translate-x-full flex-col border-l border-zinc-200 bg-white shadow-2xl transition-transform duration-300 dark:border-zinc-800 dark:bg-zinc-900">
+            <aside data-cart-drawer-panel data-theme-position="{{ app(\App\Services\WebsiteDesignService::class)->surface()==='fashion'?'bottom':'right' }}" role="dialog" aria-modal="true" aria-labelledby="cart-drawer-title" class="absolute inset-y-0 right-0 flex w-full max-w-md translate-x-full flex-col border-l border-zinc-200 bg-white shadow-2xl transition-transform duration-300 dark:border-zinc-800 dark:bg-zinc-900">
                 @if(request()->attributes->has('websiteThemeDemoVariants'))
                     @include('storefront.partials.cart-drawer', app(\App\Services\WebsiteThemeDemoData::class)->cart(app(\App\Services\WebsiteThemeDemoData::class)->catalog(request())))
                 @else
