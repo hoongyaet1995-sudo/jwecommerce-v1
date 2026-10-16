@@ -1,7 +1,7 @@
 <x-layouts.app title="{{ $product->title }}{{ filled($pdpBrand) ? ' | '.$pdpBrand : '' }}">
     @php
         $selectedAvailable = $selectedVariant ? app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($selectedVariant) : null;
-        $cartEnabled = app(\App\Services\StorefrontVariantData::class)->canAdd($selectedVariant);
+        $cartEnabled = app(\App\Services\StorefrontVariantData::class)->canAdd($selectedVariant, $product);
         $productUrl = route('storefront.products.show', ['handle' => $product->handle]);
         $fallbackImage = asset('images/image-not-found.png');
         $price = $selectedVariant?->price ?? $product->base_price;
@@ -43,7 +43,7 @@
                     <span>/</span>
                     <span class="max-w-xs truncate font-medium text-zinc-900 dark:text-zinc-200">{{ $product->title }}</span>
                 </div>
-                @if($selectedVariant)<span data-pdp-breadcrumb-availability class="hidden font-mono text-[11px] text-zinc-500 sm:block">{{ $selectedAvailable > 0 ? 'In Stock ('.$selectedAvailable.' units)' : ($selectedAvailable === null ? 'Awaiting stock verification' : 'Out of Stock') }}</span>@endif
+                @if($selectedVariant && $product->isBuyMode())<span data-pdp-breadcrumb-availability class="hidden font-mono text-[11px] text-zinc-500 sm:block">{{ $selectedAvailable > 0 ? 'In Stock ('.$selectedAvailable.' units)' : ($selectedAvailable === null ? 'Awaiting stock verification' : 'Out of Stock') }}</span>@endif
             </div>
         </div>
 
@@ -101,13 +101,13 @@
 
                     <div class="space-y-2 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/90">
                         <div class="flex items-baseline gap-3">
-                            <strong data-pdp-price class="font-serif text-3xl font-bold text-zinc-900 dark:text-white">@storefrontMoney($price)</strong>
-                            @if($hasSavings)<del data-pdp-compare-at class="text-sm text-zinc-400 dark:text-zinc-500">@storefrontMoney($compareAt)</del><span data-pdp-save class="rounded bg-amber-400 px-2 py-0.5 text-xs font-bold uppercase text-zinc-950">SAVE @storefrontMoney($compareAt - $price)</span>@else <del data-pdp-compare-at class="hidden text-sm text-zinc-400 dark:text-zinc-500"></del><span data-pdp-save class="hidden rounded bg-amber-400 px-2 py-0.5 text-xs font-bold uppercase text-zinc-950"></span>@endif
+                            @if($product->showsPrice())<strong data-pdp-price class="font-serif text-3xl font-bold text-zinc-900 dark:text-white">@productPrice($product, $price)</strong>@endif
+                            @if($product->isBuyMode() && $hasSavings)<del data-pdp-compare-at class="text-sm text-zinc-400 dark:text-zinc-500">@storefrontMoney($compareAt)</del><span data-pdp-save class="rounded bg-amber-400 px-2 py-0.5 text-xs font-bold uppercase text-zinc-950">SAVE @storefrontMoney($compareAt - $price)</span>@else <del data-pdp-compare-at class="hidden text-sm text-zinc-400 dark:text-zinc-500"></del><span data-pdp-save class="hidden rounded bg-amber-400 px-2 py-0.5 text-xs font-bold uppercase text-zinc-950"></span>@endif
                         </div>
-                        @if($pdpPaymentMethods !== [])<p class="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400"><i data-lucide="zap" class="h-3.5 w-3.5 text-amber-500 dark:text-amber-400"></i>Payment methods available at checkout: <strong>{{ implode(' · ', $pdpPaymentMethods) }}</strong>.</p>@endif
+                        @if($product->isBuyMode() && $pdpPaymentMethods !== [])<p class="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400"><i data-lucide="zap" class="h-3.5 w-3.5 text-amber-500 dark:text-amber-400"></i>Payment methods available at checkout: <strong>{{ implode(' · ', $pdpPaymentMethods) }}</strong>.</p>@endif
                     </div>
 
-                    <form method="POST" action="{{ route('cart.items.store') }}">
+                    @if($product->isBuyMode())<form method="POST" action="{{ route('cart.items.store') }}">
                         @csrf
                         <input data-pdp-variant-input type="hidden" name="variant_id" value="{{ $selectedVariant?->id }}" />
                         <x-storefront.variant-selector :product="$product" :variants="$product->variants" :images="$images" :selected-variant="$selectedVariant" />
@@ -115,14 +115,14 @@
                             <input name="quantity" type="number" value="1" min="1" max="{{ max(1, $selectedAvailable ?? 1) }}" class="w-28 rounded-xl border border-zinc-200 bg-white px-4 py-4 text-center font-mono text-zinc-900 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-white" />
                             <button data-pdp-add-to-cart @disabled(!$cartEnabled) class="flex-1 rounded-xl bg-zinc-900 px-5 py-4 text-base font-black text-white transition hover:bg-amber-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-amber-400">{{ $cartEnabled ? 'Add to Cart · '.app(\App\Support\StorefrontCurrencyContext::class)->format($price) : 'Sold out' }}</button>
                         </div>
-                    </form>
-                    <form method="POST" action="{{ route('cart.items.store') }}" class="mt-3">
+                    </form>@else @include('storefront.partials.product-enquiry-actions') @endif
+                    @if($product->isBuyMode())<form method="POST" action="{{ route('cart.items.store') }}" class="mt-3">
                         @csrf
                         <input data-pdp-variant-input type="hidden" name="variant_id" value="{{ $selectedVariant?->id }}" />
                         <input type="hidden" name="quantity" value="1" />
                         <input type="hidden" name="checkout" value="1" />
                         <button data-pdp-instant-buy @disabled(!$cartEnabled) class="w-full rounded-xl bg-amber-400 px-5 py-4 font-black text-zinc-950 disabled:opacity-40">Buy Now</button>
-                    </form>
+                    </form>@endif
                     @if($showShippingNotice)<div class="mt-6 rounded-xl border border-zinc-200 bg-white p-3.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
                         @if(filled($pdpShipping['shippingBadgeText'] ?? null))<p class="font-semibold text-emerald-600 dark:text-emerald-400">{{ $pdpShipping['shippingBadgeText'] }}</p>@endif
                         @if(filled($pdpShipping['leadTimeText'] ?? null))<p class="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">{{ $pdpShipping['leadTimeText'] }}</p>@endif
@@ -169,10 +169,11 @@
         </main>
         <x-storefront.footer />
     </div>
-    <div data-pdp-sticky-purchase class="fixed bottom-0 left-0 right-0 z-30 border-t border-zinc-200 bg-white/95 px-4 py-3 shadow-2xl backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/95 sm:px-6">
+    @if($product->isBuyMode())<div data-pdp-sticky-purchase class="fixed bottom-0 left-0 right-0 z-30 border-t border-zinc-200 bg-white/95 px-4 py-3 shadow-2xl backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/95 sm:px-6">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
             <div class="flex min-w-0 items-center gap-3"><img data-pdp-sticky-image src="{{ $selectedImage?->path ?: $fallbackImage }}" alt="" class="hidden h-10 w-10 shrink-0 rounded-lg object-cover sm:block"><div class="min-w-0"><p class="truncate text-xs font-bold text-zinc-900 dark:text-white">{{ $product->title }}</p><p class="truncate text-[11px] text-zinc-500 dark:text-zinc-400">Selected: <strong data-pdp-sticky-label class="text-amber-600 dark:text-amber-300">{{ $selectedVariant?->color_name ?: $selectedVariant?->title }}</strong> • SKU: <span data-pdp-sticky-sku>{{ $selectedVariant?->sku }}</span></p></div></div>
-            <div class="flex shrink-0 items-center gap-3"><div class="text-right"><p data-pdp-sticky-price class="text-sm font-bold text-zinc-900 dark:text-white">@storefrontMoney($price)</p></div><form method="POST" action="{{ route('cart.items.store') }}">@csrf<input data-pdp-variant-input type="hidden" name="variant_id" value="{{ $selectedVariant?->id }}"><input type="hidden" name="quantity" value="1"><button data-pdp-sticky-add @disabled(!$cartEnabled) class="flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white shadow-md transition-all hover:bg-amber-400 hover:text-zinc-950 disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-amber-400 sm:px-6 sm:text-sm"><i data-lucide="shopping-bag" class="h-4 w-4"></i>Add to Cart</button></form></div>
+            <div class="flex shrink-0 items-center gap-3"><div class="text-right"><p data-pdp-sticky-price class="text-sm font-bold text-zinc-900 dark:text-white">@productPrice($product, $price)</p></div>@if($product->isBuyMode())<form method="POST" action="{{ route('cart.items.store') }}">@csrf<input data-pdp-variant-input type="hidden" name="variant_id" value="{{ $selectedVariant?->id }}"><input type="hidden" name="quantity" value="1"><button data-pdp-sticky-add @disabled(!$cartEnabled) class="flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white shadow-md transition-all hover:bg-amber-400 hover:text-zinc-950 disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-amber-400 sm:px-6 sm:text-sm"><i data-lucide="shopping-bag" class="h-4 w-4"></i>Add to Cart</button></form>@endif</div>
         </div>
     </div>
+@endif
 </x-layouts.app>

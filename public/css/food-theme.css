@@ -109,3 +109,6 @@
 
 :root .food-theme .food-hero-frame{position:relative;z-index:1}:root .food-theme .food-hero-frame .food-hero-copy{padding-inline:0!important}
 :root .food-theme .food-hero:has(>.food-hero-frame){padding-inline:0!important}
+
+/* Shared cart/quotation checkout: let the editorial title and emblem wrap on narrow screens. */
+@media(max-width:760px){.fd-checkout .fd-page-heading{flex-wrap:wrap;gap:24px}.fd-checkout .fd-checkout-emblem{max-width:100%}}

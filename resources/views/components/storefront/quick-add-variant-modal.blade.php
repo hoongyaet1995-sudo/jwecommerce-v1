@@ -1,7 +1,8 @@
 @props(['product', 'variants', 'images', 'theme' => 'universal'])
+@if($product->isBuyMode())
 
 @php
-    $payload = app(\App\Services\StorefrontVariantData::class)->payload($variants, $images);
+    $payload = app(\App\Services\StorefrontVariantData::class)->payload($variants, $images, $product);
 
     $configuredOptions = collect($product->options ?? [])
         ->filter(fn ($option) => is_array($option) && filled($option['name'] ?? null) && is_array($option['values'] ?? null) && count($option['values']))
@@ -152,5 +153,7 @@
         </div>
     </div>
 </div>
+
+@endif
 
 @endif

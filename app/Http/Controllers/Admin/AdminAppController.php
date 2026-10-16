@@ -30,6 +30,7 @@ class AdminAppController extends Controller
                 ->all();
 
         $bootstrap = [
+            'productEnquiriesEnabled'=>(bool)config('product_enquiries.enabled'),
             'basicWmsUiEnabled' => (bool)config('marketplace.basic_wms_ui_enabled')
                 || (app()->environment('local') && $request->boolean('basic_wms_preview')),
             'basicWmsUiPreview' => app()->environment('local') && $request->boolean('basic_wms_preview'),

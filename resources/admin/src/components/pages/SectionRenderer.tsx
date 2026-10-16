@@ -1,3 +1,6 @@
+import {PhotoMarquee} from './PhotoMarquee';
+import {EditorialGradientHero,EditorialQuote} from './WeddingEditorial';
+import {purchasePriceLabel,isOnlinePurchase} from '../../cms/purchasePresentation';
 import {ArtisanStory} from './ArtisanStory';
 import {KidsDiscovery} from './KidsLayouts';
 import {TechFeature,DeviceComparison} from './TechLayouts';
@@ -340,6 +343,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
   // 1. Hero Banner
   const renderHeroBanner = () => {
+    if(section.heroBannerPreset==='editorial-gradient')return <EditorialGradientHero section={section} editing={isEditingMode} isPageHeading={runtime.page.document.sections.find(item=>item.isVisible!==false)?.id===section.id}/>;
     const overlay = section.overlayOpacity ?? 50;
     return (
       <div className="relative min-h-[480px] sm:min-h-[580px] flex items-center justify-center overflow-hidden">
@@ -1051,7 +1055,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                     Best Seller
                   </span>
                 )}
-                {prod.baseCompareAtPrice && (
+                {isOnlinePurchase(prod) && prod.baseCompareAtPrice && (
                   <span className="absolute top-3 right-3 px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500 text-white shadow-md">
                     Sale
                   </span>
@@ -1074,9 +1078,9 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                 <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
                   <div>
                     <span className="text-lg font-black text-white">
-                      {listingMoney(Number(prod.basePrice))}
+                      {purchasePriceLabel(prod, Number(prod.basePrice), listingMoney)}
                     </span>
-                    {prod.baseCompareAtPrice && (
+                    {isOnlinePurchase(prod) && prod.baseCompareAtPrice && (
                       <span className="text-xs text-neutral-500 line-through ml-2">
                         {listingMoney(Number(prod.baseCompareAtPrice))}
                       </span>
@@ -1326,14 +1330,14 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                         <div className={`pt-3 border-t flex items-center justify-between gap-2 ${lightCards ? 'border-zinc-200' : 'border-neutral-800/80'}`}>
                           <div className="flex items-baseline gap-2">
                             <span className={`text-base sm:text-lg font-black ${lightCards ? 'text-zinc-900' : 'text-white'}`}>
-                              {selected?.priceLabel ?? commerce?.priceLabel ?? listingMoney(price)}
+                              {selected?.priceLabel ?? commerce?.priceLabel ?? purchasePriceLabel(prod, price, listingMoney)}
                             </span>
                             {hasDiscount && <span className={`text-xs sm:text-sm line-through font-medium ${lightCards ? 'text-zinc-400' : 'text-neutral-500'}`}>
                               {selected?.compareAtLabel ?? commerce?.compareAtLabel ?? listingMoney(comparePrice!)}
                             </span>}
                           </div>
 
-                          <form method="POST" action="/cart/items" onSubmit={event => { if (!singleVariant || purchaseDisabled) { event.preventDefault(); event.stopPropagation(); } }}>
+                          {(!prod.purchaseMode || prod.purchaseMode === 'buy') ? <form method="POST" action="/cart/items" onSubmit={event => { if (!singleVariant || purchaseDisabled) { event.preventDefault(); event.stopPropagation(); } }}>
                           <input type="hidden" name="_token" value={typeof document === 'undefined' ? '' : document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? ''}/>
                           <input type="hidden" name="variant_id" value={selected?.id ?? commerce?.variantId ?? ''}/>
                           <input type="hidden" name="quantity" value="1"/>
@@ -1349,7 +1353,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                           >
                             <ShoppingBag className="w-4 h-4" />
                           </button>
-                          </form>
+                          </form> : <a href={`/products/${encodeURIComponent(prod.slug)}`} className="text-xs underline">View details</a>}
                         </div>
                       </div>
                     </div>
@@ -1488,7 +1492,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                   </span>
                   <h4 data-cms-text="itemTitle" style={{...(getTitleStyle()),...typographyStyle(section,'itemTitle')}} className="text-sm font-bold text-white truncate">{prod.title}</h4>
                   <p data-cms-text="content" style={{...(getContentStyle()),...typographyStyle(section,'content')}} className="text-xs text-neutral-400 line-clamp-1">{prod.summary}</p>
-                  <div data-cms-text="title" style={{...(getTitleStyle()),...typographyStyle(section,'title')}} className="mt-1 font-bold text-white text-sm">{listingMoney(Number(prod.basePrice))}</div>
+                  <div data-cms-text="title" style={{...(getTitleStyle()),...typographyStyle(section,'title')}} className="mt-1 font-bold text-white text-sm">{purchasePriceLabel(prod, Number(prod.basePrice), listingMoney)}</div>
                 </div>
               </a></MotionCard>
             ))
@@ -2370,6 +2374,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
   // 22. Testimonials Review Slider Carousel
   const renderTestimonials = () => {
+    if(section.testimonialPreset==='editorial-quote')return <EditorialQuote section={section}/>;
     const items = section.items || [];
     const itemsPerPage = viewport === 'mobile' ? 1 : viewport === 'tablet' ? 2 : 3;
     const maxIdx = Math.max(0, items.length - itemsPerPage);
@@ -2755,7 +2760,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       case 'pricing_table': return renderPricingTable();
       case 'promotion_highlights': return <PromotionHighlights section={section} offers={runtimeSection.promotions?.offers??[]} editing={isEditingMode}/>;
       case 'shop_navigation': return <ShopNavigation section={section} catalog={runtime.catalog} editing={isEditingMode}/>;
-      case 'media_gallery': return section.galleryPreset==='routine-steps'?<RoutineSteps section={section}/>:['editorial-montage','editorial-cards','editorial-triptych','portfolio-cards'].includes(section.galleryPreset??'')?<EditorialGallery section={section} editing={isEditingMode}/>:renderMediaGallery();
+      case 'media_gallery': return section.galleryPreset==='photo-marquee'?<PhotoMarquee section={section} editing={isEditingMode}/>:section.galleryPreset==='routine-steps'?<RoutineSteps section={section}/>:['editorial-montage','editorial-cards','editorial-triptych','portfolio-cards'].includes(section.galleryPreset??'')?<EditorialGallery section={section} editing={isEditingMode}/>:renderMediaGallery();
       case 'video_embed': return renderVideoEmbed();
       case 'before_after': return renderBeforeAfter();
       case 'instagram_feed': return renderInstagramFeed();
@@ -2781,7 +2786,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   return (
     <section data-cms-shared-style={runtime.page.document.style?'':undefined} data-cms-surface={rawSection.surface} data-cms-editor={isEditingMode?'':undefined}
       id={`section-${section.id}`}
-      style={{...sectionRootStyle,...(section.type==='chapter_block'?{scrollMarginTop:144}:{}),...sectionBorderStyle(section),'--cms-page-width':runtime.page.document.containerWidth==='wide'?'1440px':'1280px',...(runtime.page.document.style?{'--cms-button-radius':`${runtime.page.document.style.buttonRadius??0}px`,'--cms-button-height':`${{compact:36,normal:44,large:52}[runtime.page.document.style.buttonSize??'normal']}px`}: {})} as React.CSSProperties}
+      style={{...sectionRootStyle,...(section.type==='chapter_block'?{scrollMarginTop:144}:{}),...sectionBorderStyle(section),'--cms-page-width':runtime.page.document.containerWidth==='site'?'var(--storefront-content-width, 1280px)':runtime.page.document.containerWidth==='full'?'100%':runtime.page.document.containerWidth==='wide'?'1440px':'1280px',...(runtime.page.document.containerWidth==='site'?{'--cms-page-gutter':'var(--storefront-content-gutter, 24px)'}:{}),...(runtime.page.document.style?{'--cms-button-radius':`${runtime.page.document.style.buttonRadius??0}px`,'--cms-button-height':`${{compact:36,normal:44,large:52}[runtime.page.document.style.buttonSize??'normal']}px`}: {})} as React.CSSProperties}
       onClickCapture={isEditingMode?event=>{
         const element=event.target as HTMLElement;
         const target=element.closest<HTMLElement>('[data-image-slot]')?.dataset.imageSlot;

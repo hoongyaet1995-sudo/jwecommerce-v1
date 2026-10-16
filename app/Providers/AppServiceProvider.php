@@ -41,6 +41,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('ai-provider-check', fn (Request $request): Limit => Limit::perMinute(6)
             ->by('ai-check:'.$request->user()?->id.':'.$request->route('provider')));
         Gate::policy(\App\Models\ProductReview::class, \App\Policies\ProductReviewPolicy::class);
+        Blade::directive('productPrice', static fn (string $expression): string => "<?php echo e(app(\\App\\Services\\ProductPurchaseRules::class)->price({$expression})); ?>");
         Blade::directive('storefrontMoney', static fn (string $expression): string => "<?php echo app(\\App\\Support\\StorefrontCurrencyContext::class)->format({$expression}); ?>");
         RateLimiter::for('cms-contact', fn (Request $request): Limit => Limit::perMinute(3)
             ->by('cms-contact:'.$request->ip()));

@@ -25,6 +25,7 @@ export const inspectorGroups:Array<{name:string;tab:InspectorTab}>=[
  {name:'Layout & theme',tab:'design'},{name:'Motion',tab:'design'},{name:'Palette & colors',tab:'design'},
 ];
 export function textRoles(section:PageSection):TextRole[] {
+ if(section.galleryPreset==='photo-marquee')return section.showSectionHeading===false?['eyebrow']:['eyebrow','title','content'];
  if(section.type==='hero_slider'&&['editorial-overlay','fashion-editorial'].includes(section.sliderPreset??''))return ['eyebrow','title','content'];
  if(section.type==='shop_navigation'&&['market-hero','market-offers'].includes(section.shopNavigationPreset??''))return [...(section.showSectionHeading===false?[]:['title','content'] as TextRole[]),'eyebrow',...(section.shopNavigationPreset==='market-hero'?['lead'] as TextRole[]:[]),'itemTitle','itemContent'];
  if(section.type==='chapter_navigation')return ['eyebrow'];

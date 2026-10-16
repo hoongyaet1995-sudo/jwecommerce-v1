@@ -129,6 +129,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
 
   const isCommerceActive =
     currentSection === 'commerce' ||
+    currentSection === 'enquiries' ||
     currentSection === 'orders' ||
     currentSection === 'customers';
 
@@ -164,6 +165,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
       badgeVariant: 'warning',
       subItems: [
         { id: 'commerce' as NavSection, label: 'Overview Hub' },
+        { id: 'enquiries' as NavSection, label: 'Enquiries' },
         { id: 'orders' as NavSection, label: 'Orders & Fulfillment' },
         { id: 'customers' as NavSection, label: 'Customer Directory' },
       ],

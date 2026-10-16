@@ -6,6 +6,10 @@
 *.md diff=markdown
 *.php diff=php
 
+# Generated bundles can contain intentional whitespace inside library strings.
+public/build/** -whitespace
+public/build-admin/** -whitespace
+
 /.github export-ignore
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore

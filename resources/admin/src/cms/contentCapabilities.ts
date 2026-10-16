@@ -54,5 +54,6 @@ export function sectionContentFields(section:PageSection):readonly string[]{
   if(preset==='principles')result=['subtitle'];
  }
  if(section.showSectionHeading===false || (section.type==='values_list'||section.featureCardsPreset==='values-list')&&!section.valuesShowHeading)result=result.filter(key=>!copy.includes(key));
+ if(section.type==='media_gallery'&&section.galleryPreset==='photo-marquee'&&section.showSectionHeading===false)result.push('subtitle');
  return [...new Set(result)];
 }

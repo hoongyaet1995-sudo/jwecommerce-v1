@@ -12,6 +12,20 @@ class CatalogPdpContentApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_highlight_icon_round_trips_and_rejects_unknown_icons(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $payload = $this->productPayload((string) $this->category($admin)['id']);
+        $payload['pdpContent'] = ['highlights' => [['id' => 'battery', 'text' => '40 hours', 'icon' => 'battery']]];
+        $product = $this->actingAs($admin)->postJson('/admin/api/catalog/products', $payload)->assertCreated()
+            ->assertJsonPath('data.pdpContent.highlights.0.icon', 'battery')->json('data');
+        $this->assertSame('battery', Product::findOrFail($product['id'])->pdpContent->highlights[0]['icon']);
+        $payload['variants'][0]['id'] = $product['variants'][0]['id'];
+        $payload['pdpContent']['highlights'][0]['icon'] = '<script>alert(1)</script>';
+        $this->patchJson('/admin/api/catalog/products/'.$product['id'], $payload)->assertUnprocessable()
+            ->assertJsonValidationErrors('pdpContent.highlights.0.icon');
+    }
+
     public function test_admin_saves_and_refetches_complete_pdp_content(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
@@ -66,6 +80,33 @@ class CatalogPdpContentApiTest extends TestCase
         $this->actingAs($admin)->patchJson('/admin/api/catalog/products/'.$product['id'], $payload)
             ->assertUnprocessable()
             ->assertJsonValidationErrors('crossSellProductIds.0');
+    }
+
+    public function test_missing_specification_ids_are_generated_and_retained_without_relaxing_validation(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $payload = $this->productPayload((string) $this->category($admin)['id']);
+        $payload['pdpContent'] = ['specifications' => [
+            ['label' => 'Pack size', 'value' => '700 g'],
+            ['id' => 'existing-row', 'label' => 'Material', 'value' => 'Glass'],
+        ]];
+        $product = $this->actingAs($admin)->postJson('/admin/api/catalog/products', $payload)->assertCreated()->json('data');
+        $id = $product['pdpContent']['specifications'][0]['id'];
+        $this->assertNotEmpty($id);
+        $this->assertSame('existing-row', $product['pdpContent']['specifications'][1]['id']);
+        $payload['pdpContent'] = $product['pdpContent'];
+        $payload['variants'][0]['id'] = $product['variants'][0]['id'];
+        $this->patchJson('/admin/api/catalog/products/'.$product['id'], $payload)->assertOk()
+            ->assertJsonPath('data.pdpContent.specifications.0.id', $id);
+        $payload['pdpContent']['specifications'][0]['value'] = '';
+        $this->patchJson('/admin/api/catalog/products/'.$product['id'], $payload)->assertUnprocessable()
+            ->assertJsonValidationErrors('pdpContent.specifications.0.value');
+        $payload['pdpContent']['specifications'][0]['value'] = '700 g';
+        $payload['crossSellProductIds'] = collect(range(1, 5))->map(fn ($n) => Product::create([
+            'title' => 'Related '.$n, 'handle' => 'related-'.$n, 'base_price' => 1000, 'status' => 'active',
+        ])->id)->all();
+        $this->patchJson('/admin/api/catalog/products/'.$product['id'], $payload)->assertUnprocessable()
+            ->assertJsonValidationErrors('crossSellProductIds');
     }
 
     /** @return array<string, mixed> */

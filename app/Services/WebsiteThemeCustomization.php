@@ -8,11 +8,11 @@ use Illuminate\Validation\ValidationException;
 final class WebsiteThemeCustomization
 {
     public const SURFACES=['allProducts','plp','pdp','login','register','forgot','reset','account','tracking','checkout','checkoutSuccess','cart'];
-    public const FONTS=['default','editorial','modern','classic','street','universal'];
+    public const FONTS=['default','editorial','modern','classic','street','universal','wedding'];
 
     public function contentContracts(): array
     {
-        return ['fashion'=>[
+        return ['wedding'=>['plp'=>['main'=>'Closing heading','sub'=>'Closing text'],'allProducts'=>['main'=>'Closing heading','sub'=>'Closing text']],'fashion'=>[
             'cart'=>['main'=>'Main message','sub'=>'Small message'],
             'checkout'=>['main'=>'Main message','sub'=>'Small message'],
             'checkoutSuccess'=>['main'=>'Left message','sub'=>'Right message','extra'=>'Lower message'],
@@ -37,7 +37,7 @@ final class WebsiteThemeCustomization
     public function mediaContracts(): array
     {
         $account=['account'=>['account'],'login'=>['account','login'],'register'=>['account','register'],'forgot'=>['account','forgot'],'reset'=>['account','reset']];
-        return ['universal'=>array_replace($account,['allProducts'=>['allProducts'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'fashion'=>array_replace($account,['allProducts'=>['allProducts'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'jewelry'=>array_replace($account,['allProducts'=>['allProducts'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking'],'cart'=>['cart']]),'baby'=>array_replace($account,['allProducts'=>['allProducts'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking'],'cart'=>['cart']]),'tech'=>array_replace($account,['allProducts'=>['allProducts'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking'],'cart'=>['cart']]),'default'=>$account,'home_deco'=>array_replace($account,['allProducts'=>['allProducts'],'account'=>[],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'beauty'=>array_replace($account,['allProducts'=>['allProducts'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'food'=>array_replace($account,['allProducts'=>['allProducts'],'account'=>['accountHero','accountOrders','accountVouchers','accountAddresses','accountProfile'],'accountOverview'=>['accountHero'],'accountOrders'=>['accountHero','accountOrders'],'accountVouchers'=>['accountHero','accountVouchers'],'accountAddresses'=>['accountHero','accountAddresses'],'accountProfile'=>['accountHero','accountProfile'],'tracking'=>['tracking'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess']])];
+        return ['wedding'=>array_replace($account,['allProducts'=>['allProducts'],'cart'=>['cart'],'checkout'=>['checkout','checkoutSummary'],'checkoutSummary'=>['checkoutSummary'],'checkoutSuccess'=>['checkoutSuccess','enquiryReceipt'],'tracking'=>['tracking','trackingResult'],'trackingResult'=>['trackingResult'],'enquiryReceipt'=>['enquiryReceipt']]),'universal'=>array_replace($account,['allProducts'=>['allProducts'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'fashion'=>array_replace($account,['allProducts'=>['allProducts'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'jewelry'=>array_replace($account,['allProducts'=>['allProducts'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking'],'cart'=>['cart']]),'baby'=>array_replace($account,['allProducts'=>['allProducts'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking'],'cart'=>['cart']]),'tech'=>array_replace($account,['allProducts'=>['allProducts'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking'],'cart'=>['cart']]),'default'=>$account,'home_deco'=>array_replace($account,['allProducts'=>['allProducts'],'account'=>[],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'beauty'=>array_replace($account,['allProducts'=>['allProducts'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess'],'tracking'=>['tracking']]),'food'=>array_replace($account,['allProducts'=>['allProducts'],'account'=>['accountHero','accountOrders','accountVouchers','accountAddresses','accountProfile'],'accountOverview'=>['accountHero'],'accountOrders'=>['accountHero','accountOrders'],'accountVouchers'=>['accountHero','accountVouchers'],'accountAddresses'=>['accountHero','accountAddresses'],'accountProfile'=>['accountHero','accountProfile'],'tracking'=>['tracking'],'checkout'=>['checkout'],'checkoutSuccess'=>['checkoutSuccess']])];
     }
 
     public function validate(mixed $input): array
@@ -62,7 +62,7 @@ final class WebsiteThemeCustomization
             $rules[$base.'.media']=['sometimes', $slots ? 'array:'.implode(',',$slots) : 'prohibited'];
             foreach (array_merge([$base.'.style'],array_map(fn($s)=>$base.'.pages.'.$s,self::SURFACES)) as $path) {
                 $rules[$path]=['sometimes','array:font,size,colorMode,paletteId,main,sub'];
-                $rules[$path.'.font']=['sometimes',Rule::in($theme==='fashion'?array_diff(self::FONTS,['universal']):($theme==='universal'?array_diff(self::FONTS,['street']):array_diff(self::FONTS,['street','universal'])))];
+                $rules[$path.'.font']=['sometimes',Rule::in($theme==='wedding'?array_diff(self::FONTS,['street','universal']):($theme==='fashion'?array_diff(self::FONTS,['universal','wedding']):($theme==='universal'?array_diff(self::FONTS,['street','wedding']):array_diff(self::FONTS,['street','universal','wedding']))))];
                 $rules[$path.'.size']=['sometimes',Rule::in(['small','medium','big'])];
                 $rules[$path.'.colorMode']=['sometimes',Rule::in(['theme','brand','custom'])];
                 $rules[$path.'.paletteId']=['nullable','uuid'];
@@ -113,7 +113,7 @@ final class WebsiteThemeCustomization
             return 'account';
         }
         if (request()->routeIs('cart.show')) return 'cart';
-        if (request()->routeIs('checkout.create')) return 'checkout';
+        if (request()->routeIs('checkout.create', 'quotations.checkout')) return 'checkout';
         if (request()->routeIs('checkout.success')) return 'checkoutSuccess';
         if (request()->routeIs('order-tracking.*')) return 'tracking';
         if (request()->routeIs('storefront.index') && !request()->filled('category') && !request()->filled('collection')) return 'allProducts';
@@ -138,7 +138,7 @@ final class WebsiteThemeCustomization
         if (empty($this->mediaContracts()[$theme][$page])) return $defaults;
         $profile=$this->profiles()[$theme]??[];
         $media=[];
-        foreach ($this->mediaContracts()[$theme][$page] as $slot) $media=array_replace($media,$profile['media'][$slot]??[]);
+        foreach (($theme==='wedding'&&in_array($page,$this->mediaContracts()[$theme][$page],true)?[$page]:$this->mediaContracts()[$theme][$page]) as $slot) $media=array_replace($media,$profile['media'][$slot]??[]);
         return array_replace($defaults,$media,['desktop'=>($media['desktop']??'')?:$fallback]);
     }
 

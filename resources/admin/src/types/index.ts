@@ -20,6 +20,7 @@ export interface AdminUser {
 }
 
 export interface LaravelAdminBootstrap {
+  productEnquiriesEnabled?: boolean;
   basicWmsUiEnabled?: boolean;
   basicWmsUiPreview?: boolean;
   user: {
@@ -360,6 +361,8 @@ export interface Product {
   summary: string;
   images: Array<ProductMedia | string>;
   status: 'active' | 'draft' | 'archived';
+  purchaseMode?: 'buy' | 'quote' | 'display';
+  priceDisplay?: 'exact' | 'from' | 'hide';
   hasVariants: boolean;
   basePrice: number;
   baseCompareAtPrice?: number;
@@ -537,6 +540,7 @@ export interface Order {
   billingAddress: CustomerAddress;
   customerNote?: string;
   internalNote?: string;
+  quotation?: {url:string;manualFulfilment:boolean}|null;
   notificationContextFingerprint: string;
   notificationSummary: OrderNotificationSummary | null;
   returnRequest?: ReturnRequestView | null;
@@ -716,7 +720,12 @@ export interface PageSection {
   ctaBannerHeight?: 'compact' | 'normal' | 'spacious';
   richTextPreset?: 'default' | 'manifesto';
   featureCardsPreset?: 'default' | 'values-list' | 'editorial-columns' | 'numbered-process' | 'service-highlights';
-  galleryPreset?: 'default' | 'editorial-montage' | 'editorial-cards' | 'editorial-triptych' | 'portfolio-cards' | 'routine-steps';
+  heroBannerPreset?: 'default' | 'editorial-gradient';
+  testimonialPreset?: 'default' | 'editorial-quote';
+  marqueeSpeed?: number;
+  marqueeDirection?: 'left' | 'right';
+  marqueePauseOnHover?: boolean;
+  galleryPreset?: 'photo-marquee' | 'default' | 'editorial-montage' | 'editorial-cards' | 'editorial-triptych' | 'portfolio-cards' | 'routine-steps';
   showSectionHeading?: boolean;
   valuesShowHeading?: boolean;
   valuesNumberColor?: string;
@@ -807,7 +816,7 @@ export interface CmsPage {
   template: 'standard' | 'fullwidth' | 'landing';
   shellDesign?: import('../cms/shellDesign').ShellDesign;
   headerPresentation?: import('../cms/headerPresentation').HeaderPresentation;
-  containerWidth?: 'standard' | 'wide';
+  containerWidth?: 'standard' | 'wide' | 'full' | 'site';
   style?: PageStyle;
   heroImage?: string | null;
   seoTitle?: string;
@@ -1193,6 +1202,7 @@ export type NavSection =
   | 'catalog-products'
   | 'catalog-reviews'
   | 'commerce'
+  | 'enquiries'
   | 'customers'
   | 'orders'
   | 'settings'

@@ -5,7 +5,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 final class WebsiteDesignService
 {
-    public const THEMES=['default','home_deco','beauty','food','tech','baby','jewelry','fashion','universal'];
+    public const THEMES=['default','home_deco','beauty','food','tech','baby','jewelry','wedding','fashion','universal'];
     public function live():array
     {
         $value=StoreSetting::where('key','website_design')->value('value');
@@ -40,10 +40,10 @@ final class WebsiteDesignService
     {
         $theme=$theme ?? $this->surface($scope);
         request()->attributes->set('websiteRenderedTheme',$theme);
-        $default=['listing'=>'storefront.index','pdp'=>'storefront.show','auth'=>'storefront.auth','reset'=>'storefront.password-reset','account'=>'storefront.account'];
+        $default=['listing'=>'storefront.index','pdp'=>'storefront.show','auth'=>'storefront.auth','reset'=>'storefront.password-reset','account'=>'storefront.account','checkout'=>'storefront.checkout'];
         if (!array_key_exists($surface,$default)) throw new \InvalidArgumentException('Unsupported theme surface.');
-        if (!in_array($theme,['home_deco','beauty','food','tech','baby','jewelry','fashion','universal'],true)) return $default[$surface];
-        return 'storefront.themes.'.(['universal'=>'universal','fashion'=>'fashion','jewelry'=>'jewelry','baby'=>'baby','tech'=>'tech','beauty'=>'beauty','food'=>'food','home_deco'=>'home-deco'][$theme]).'-'.($surface==='reset'?'auth':$surface);
+        if (!in_array($theme,['home_deco','beauty','food','tech','baby','jewelry','wedding','fashion','universal'],true)) return $default[$surface];
+        return 'storefront.themes.'.(['universal'=>'universal','fashion'=>'fashion','wedding'=>'wedding','jewelry'=>'jewelry','baby'=>'baby','tech'=>'tech','beauty'=>'beauty','food'=>'food','home_deco'=>'home-deco'][$theme]).'-'.($surface==='reset'?'auth':$surface);
     }
     public function exists(string $scope):bool
     {

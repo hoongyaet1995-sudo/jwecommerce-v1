@@ -563,6 +563,7 @@ export const PageAdmin: React.FC = () => {
         status:'draft', template:'standard', createdAt:new Date().toISOString().split('T')[0], updatedAt:new Date().toISOString().split('T')[0],
         ...(['about-editorial','about-studio','about-chapters'].includes(templateId) ? {containerWidth:'standard' as const} : {}),
         style:createPageTemplateStyle(templateId),
+    ...(templateId==='wedding-photography'?{containerWidth:'site' as const}:{}),
         ...(templateId==='wedding-photography'?{shellDesign:{business:'service' as const,style:'editorial' as const,appearance:'light' as const,showAnnouncement:false,showAccount:false,showCurrency:false,showThemeSwitch:false,ctaLabel:'',ctaUrl:'',tagline:'',contactEmail:''}}:{}),
         ...(templateId==='beauty-skincare'?{headerPresentation:{mode:'translucent' as const,tone:'dark' as const}}:{}),
         ...(templateId==='everyday-market'?{containerWidth:'wide' as const}:{}),

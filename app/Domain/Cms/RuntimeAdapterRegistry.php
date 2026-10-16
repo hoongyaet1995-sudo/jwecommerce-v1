@@ -247,6 +247,8 @@ final class RuntimeAdapterRegistry
                 'products.title',
                 'products.subtitle',
                 'products.brand',
+                'products.purchase_mode',
+                'products.price_display',
                 'products.base_price',
                 'products.compare_at_price',
                 'products.tags',
@@ -397,17 +399,17 @@ final class RuntimeAdapterRegistry
             $item['commerce'] = [
                 'variantId' => $variant ? (string) $variant->id : null,
                 'sku' => (string) ($variant?->sku ?? ''),
-                'price' => ($variant?->price ?? $product->base_price) / 100,
-                'compareAtPrice' => $variant?->compare_at_price !== null ? $variant->compare_at_price / 100 : null,
+                'price' => $product->showsPrice() ? ($variant?->price ?? $product->base_price) / 100 : 0,
+                'compareAtPrice' => $product->isBuyMode() && $variant?->compare_at_price !== null ? $variant->compare_at_price / 100 : null,
                 'optionLabels' => array_values(array_map('strval', data_get($product->options, '0.values', []))),
-                'canChoose' => $variant !== null,
+                'canChoose' => $product->isBuyMode() && $variant !== null,
                 'variants' => $product->variants->map(fn ($v) => [
                     'id' => (string) $v->id,
                     'label' => (string) ($v->color_name ?: $v->title),
                     'color' => preg_match('/^#[0-9a-f]{6}$/i',(string)($v->color_code ?: $v->color_hex)) ? ($v->color_code ?: $v->color_hex) : null,
                     'sku' => (string) $v->sku,
-                    'price' => $v->price / 100,
-                    'compareAtPrice' => $v->compare_at_price === null ? null : $v->compare_at_price / 100,
+                    'price' => $product->showsPrice() ? $v->price / 100 : 0,
+                    'compareAtPrice' => !$product->isBuyMode() || $v->compare_at_price === null ? null : $v->compare_at_price / 100,
                     'stock' => (int) $v->stock,
                     'enabled' => $v->enabled !== false,
                     'image' => $v->option_image ?: $v->image_url ?: $product->images->firstWhere('product_variant_id', $v->id)?->path,
@@ -445,8 +447,10 @@ final class RuntimeAdapterRegistry
             'summary' => (string) ($product->subtitle ?? ''),
             'images' => $product->images->pluck('path')->values()->all(),
             'tags' => $product->tags ?? [],
-            'basePrice' => $product->base_price / 100,
-            'baseCompareAtPrice' => $product->compare_at_price !== null
+            'purchaseMode' => $product->purchase_mode,
+            'priceDisplay' => $product->price_display,
+            'basePrice' => $product->showsPrice() ? $product->base_price / 100 : 0,
+            'baseCompareAtPrice' => $product->isBuyMode() && $product->compare_at_price !== null
                 ? $product->compare_at_price / 100
                 : null,
         ];

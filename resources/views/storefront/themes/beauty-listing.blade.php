@@ -47,7 +47,7 @@
                 <article class="product" data-storefront-product-card>
                     <a class="photo" href="{{ route('storefront.products.show',$product->handle) }}"><img src="{{ $product->images->first()?->path ?: asset('images/image-not-found.png') }}" alt="{{ $product->images->first()?->alt ?: $product->title }}" loading="lazy"></a>
                     <h2><a href="{{ route('storefront.products.show',$product->handle) }}">{{ $product->title }}</a></h2>
-                    <div class="productbottom"><span class="price">@storefrontMoney($variant?->price ?? $product->base_price)</span>@if($variant)<button type="button" class="details" data-quick-add-trigger data-quick-add-product-id="{{ $product->id }}" data-quick-add-variant-id="{{ $variant->id }}">Buy now <span aria-hidden="true">&rarr;</span></button>@endif</div>
+                    <div class="productbottom"><span class="price">@productPrice($product, $variant?->price ?? $product->base_price)</span>@if($variant && $product->isBuyMode())<button type="button" class="details" data-quick-add-trigger data-quick-add-product-id="{{ $product->id }}" data-quick-add-variant-id="{{ $variant->id }}">Buy now <span aria-hidden="true">&rarr;</span></button>@elseif(!$product->isBuyMode())<a class="details" href="{{ route('storefront.products.show',$product->handle) }}">View details</a>@endif</div>
                 </article>
             @empty
                 <div class="empty">No products match your selection. <a href="{{ $resetUrl }}">Reset filters</a></div>

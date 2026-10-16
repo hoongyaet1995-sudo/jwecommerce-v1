@@ -30,7 +30,7 @@ class OrderTrackingController extends Controller
             }
         }
 
-        return view(match(app(\App\Services\WebsiteDesignService::class)->surface()) { 'food'=>'storefront.themes.food-tracking', 'home_deco'=>'storefront.themes.home-deco-tracking', 'beauty'=>'storefront.themes.beauty-tracking', 'universal'=>'storefront.themes.universal-tracking', 'fashion'=>'storefront.themes.fashion-tracking', 'jewelry'=>'storefront.themes.jewelry-tracking', 'baby'=>'storefront.themes.baby-tracking', 'tech'=>'storefront.themes.tech-tracking', default=>'storefront.order-tracking' }, [
+        return view(match(app(\App\Services\WebsiteDesignService::class)->surface()) { 'food'=>'storefront.themes.food-tracking', 'home_deco'=>'storefront.themes.home-deco-tracking', 'beauty'=>'storefront.themes.beauty-tracking', 'universal'=>'storefront.themes.universal-tracking', 'fashion'=>'storefront.themes.fashion-tracking', 'wedding'=>'storefront.themes.wedding-tracking', 'jewelry'=>'storefront.themes.jewelry-tracking', 'baby'=>'storefront.themes.baby-tracking', 'tech'=>'storefront.themes.tech-tracking', default=>'storefront.order-tracking' }, [
             'step' => $step,
             'submittedEmail' => $request->session()->get('order_tracking.email'),
             'trackingPayload' => $trackingPayload,

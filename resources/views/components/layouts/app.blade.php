@@ -1,7 +1,7 @@
 @props(['title' => null, 'description' => null, 'shellDesign' => null, 'shellContentWidth' => null])
 <!doctype html>
 @php($isCmsStorefrontPreview = request()->routeIs('admin.pages.preview', 'admin.cms-canary.pages.show', 'admin.shell-design.preview', 'admin.website-design.preview', 'admin.website-design.acceptance.sample'))
-@php($isStorefront = request()->routeIs('storefront.*', 'cart.*', 'checkout.*', 'customer.*', 'order-tracking.*') || $isCmsStorefrontPreview)
+@php($isStorefront = request()->routeIs('storefront.*', 'cart.*', 'checkout.*', 'customer.*', 'order-tracking.*', 'enquiries.*', 'quotations.*', 'admin.quotations.*') || $isCmsStorefrontPreview)
 @php($isAdmin = request()->routeIs('admin.*') && ! $isCmsStorefrontPreview)
 @php($shellDesign = $isStorefront ? ($shellDesign ?? \App\Domain\Cms\ShellDesign::resolve(app(\App\Services\StorefrontShellSettingsService::class)->live())) : null)
 @php($shellContentWidth = $isStorefront ? ($shellContentWidth ?? app(\App\Services\StorefrontShellSettingsService::class)->live()['contentWidth'] ?? 'wide') : 'wide')
@@ -29,15 +29,18 @@
     @if($isStorefront && in_array('food',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/food-theme.css') }}?v={{ filemtime(public_path('css/food-theme.css')) }}">@endif
     @if($isStorefront && in_array('universal',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/universal-theme.css') }}?v={{ filemtime(public_path('css/universal-theme.css')) }}"><link rel="stylesheet" href="{{ asset('css/universal-layout.css') }}?v={{ filemtime(public_path('css/universal-layout.css')) }}">@endif
     @if($isStorefront && in_array('fashion',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/fashion-theme.css') }}?v={{ filemtime(public_path('css/fashion-theme.css')) }}"><link rel="stylesheet" href="{{ asset('css/fashion-layout.css') }}?v={{ filemtime(public_path('css/fashion-layout.css')) }}">@endif
+    @if($isStorefront && in_array('wedding',$websiteStyleThemes,true))@foreach(['wedding-theme','wedding-account','wedding-commerce'] as $weddingCss)<link rel="stylesheet" href="{{ asset('css/'.$weddingCss.'.css') }}?v={{ is_file(public_path('css/'.$weddingCss.'.css'))?filemtime(public_path('css/'.$weddingCss.'.css')):1 }}">@endforeach @endif
     @if($isStorefront && in_array('jewelry',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/jewelry-theme.css') }}?v={{ filemtime(public_path('css/jewelry-theme.css')) }}">@endif
     @if($isStorefront && in_array('baby',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/baby-theme.css') }}?v={{ filemtime(public_path('css/baby-theme.css')) }}">@endif
     @if($isStorefront)<link rel="stylesheet" href="{{ asset('css/cart-drawer-layout.css') }}?v={{ filemtime(public_path('css/cart-drawer-layout.css')) }}">@endif
     {{ $head ?? '' }}
 </head>
 <body>
+    @if(session('cart_purchase_notice'))<div role="status" class="mx-auto max-w-7xl px-6 py-3 text-sm">{{ session('cart_purchase_notice') }}</div>@endif
     {{ $slot }}
     @if($isStorefront)
-        @unless(request()->attributes->has('websiteThemeDemoVariants'))<x-storefront.support-chat />@endunless
+        @unless(request()->attributes->has('websiteThemeDemoVariants') || request()->routeIs('admin.quotations.*'))<x-storefront.support-chat />@endunless
+        @unless(request()->routeIs('quotations.*','admin.quotations.*'))
         <div id="cart-drawer" data-cart-drawer-url="{{ request()->attributes->has('websiteThemeDemoVariants') ? route('admin.website-design.cart-drawer', ['theme'=>request('theme'),'customization'=>request('customization')]) : route('cart.drawer') }}" class="pointer-events-none fixed inset-0 z-[60] overflow-hidden" aria-hidden="true">
             <div data-cart-drawer-backdrop class="absolute inset-0 bg-black/70 opacity-0 backdrop-blur-sm transition-opacity duration-300"></div>
             <aside data-cart-drawer-panel data-theme-position="{{ app(\App\Services\WebsiteDesignService::class)->surface()==='fashion'?'bottom':'right' }}" role="dialog" aria-modal="true" aria-labelledby="cart-drawer-title" class="absolute inset-y-0 right-0 flex w-full max-w-md translate-x-full flex-col border-l border-zinc-200 bg-white shadow-2xl transition-transform duration-300 dark:border-zinc-800 dark:bg-zinc-900">
@@ -48,8 +51,9 @@
                 @endif
             </aside>
         </div>
+        @endunless
     @endif
-    @if(request()->routeIs('storefront.index','storefront.products.show','storefront.categories.show','storefront.collections.show','customer.*','cart.show','checkout.*','order-tracking.*','admin.website-design.preview','admin.website-design.acceptance.sample'))
+    @if(request()->routeIs('storefront.index','storefront.products.show','storefront.categories.show','storefront.collections.show','customer.*','cart.show','checkout.*','quotations.checkout','order-tracking.*','admin.website-design.preview','admin.website-design.acceptance.sample'))
         @include('storefront.partials.theme-customization')
     @endif
     <livewire:scripts />

@@ -20,10 +20,12 @@ final class ProductListingPresentation
             foreach ($facts['listing']['products'] as &$product) {
                 $commerce = &$product['commerce'];
                 $money = app(StorefrontCurrencyContext::class);
-                $commerce['priceLabel'] = $money->format($commerce['price'] * 100);
+                $visible = ($product['purchaseMode'] ?? 'buy') === 'buy' || (($product['purchaseMode'] ?? '') === 'quote' && ($product['priceDisplay'] ?? 'exact') !== 'hide');
+                $prefix = ($product['purchaseMode'] ?? '') === 'quote' && ($product['priceDisplay'] ?? '') === 'from' ? 'From ' : '';
+                $commerce['priceLabel'] = $visible ? $prefix.$money->format($commerce['price'] * 100) : '';
                 $commerce['compareAtLabel'] = $commerce['compareAtPrice'] === null ? '' : $money->format($commerce['compareAtPrice'] * 100);
                 foreach ($commerce['variants'] ?? [] as $index => $variant) {
-                    $commerce['variants'][$index]['priceLabel'] = $money->format($variant['price'] * 100);
+                    $commerce['variants'][$index]['priceLabel'] = $visible ? $prefix.$money->format($variant['price'] * 100) : '';
                     $commerce['variants'][$index]['compareAtLabel'] = $variant['compareAtPrice'] === null ? '' : $money->format($variant['compareAtPrice'] * 100);
                 }
                 $ids[] = $product['id'];
@@ -46,7 +48,7 @@ final class ProductListingPresentation
             return collect();
         }
 
-        return Product::query()->whereKey(array_unique($quickAddIds))->where('status', 'active')->whereHas('variants')
+        return Product::query()->whereKey(array_unique($quickAddIds))->where('status', 'active')->where('purchase_mode', 'buy')->whereHas('variants')
             ->with(['variants' => fn ($query) => $query->orderBy('id'), 'images' => fn ($query) => $query->orderBy('position')->orderBy('id')])->get();
     }
 }

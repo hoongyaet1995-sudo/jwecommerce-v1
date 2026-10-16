@@ -1,3 +1,4 @@
+import {EnquiryAdmin} from './components/orders/EnquiryAdmin';
 import {TikTokReviewPrototype} from './components/support/TikTokReviewPrototype';
 import {SupportImprovementCenter} from './components/ai-auto-reply/SupportImprovementCenter';
 import {TikTokAccountPage} from './components/support/TikTokAccountPage';
@@ -120,6 +121,8 @@ const AdminLayoutContent: React.FC = () => {
         return <CategoryAdmin />;
       case 'catalog-collections':
         return <CollectionAdmin />;
+      case 'enquiries':
+        return <EnquiryAdmin />;
       case 'commerce':
         return <CommerceHub />;
       case 'orders':

@@ -1,6 +1,10 @@
 @font-face{font-family:'Lora';font-style:normal;font-weight:400 700;font-display:swap;src:url('/fonts/sample/lora.ttf') format('truetype');}
-@font-face{font-family:'Inter';font-style:normal;font-weight:400 700;font-display:swap;src:url('/fonts/sample/inter.ttf') format('truetype');}
+@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url('/fonts/sample/wedding-inter-variable.ttf') format('truetype');}
 @font-face{font-family:'Playfair Display';font-style:normal;font-weight:400 700;font-display:swap;src:url('/fonts/sample/playfairdisplay.ttf') format('truetype');}
 @font-face{font-family:'DM Sans';font-style:normal;font-weight:400 700;font-display:swap;src:url('/fonts/sample/dmsans.ttf') format('truetype');}
 
 @font-face{font-family:'Noto Sans SC';font-style:normal;font-weight:400 700;font-display:swap;src:url('/fonts/sample/notosanssc.ttf') format('truetype');}
+
+@font-face{font-family:"Cormorant Garamond";src:url("/fonts/sample/cormorant-variable.ttf") format("truetype");font-style:normal;font-weight:300 700;font-display:swap}
+@font-face{font-family:"Cormorant Garamond";src:url("/fonts/sample/cormorant-italic-variable.ttf") format("truetype");font-style:italic;font-weight:300 700;font-display:swap}
+@font-face{font-family:"WeddingInter";src:url("/fonts/sample/wedding-inter-variable.ttf") format("truetype");font-style:normal;font-weight:100 900;font-display:swap}

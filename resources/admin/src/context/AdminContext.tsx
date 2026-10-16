@@ -1227,7 +1227,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const initial = products.find(item => item.id === prod.id) ?? null;
       const saved = await saveCatalogEntity(laravelBootstrap, 'products', catalogStockPayload(prod, initial));
       setProducts(prev => prev.some(item => item.id === saved.id) ? prev.map(item => item.id === saved.id ? saved : item) : [saved, ...prev]);
-      addToast({ type: 'success', title: 'Product Published', message: `Saved "${saved.title}" with ${saved.variants.length} variant SKUs.` });
+      addToast({ type: 'success', title: 'Product Saved', message: `Saved "${saved.title}" with ${saved.variants.length} variant SKUs.` });
       return saved;
     } catch (error) {
       addToast({ type: 'error', title: 'Product Save Failed', message: error instanceof Error ? error.message : 'Unable to save product.' });

@@ -24,7 +24,7 @@ class CheckoutController extends Controller
 {
     private function items(Request $request)
     {
-        $quantities = $request->session()->get('cart', []);
+        $quantities = app(\App\Services\ProductPurchaseRules::class)->cartQuantities($request);
 
         return ProductVariant::query()->with('product')->whereKey(array_keys($quantities))->get()->map(fn (ProductVariant $variant) => ['variant' => $variant, 'quantity' => (int) $quantities[$variant->id]]);
     }
@@ -66,6 +66,10 @@ class CheckoutController extends Controller
             }
         }
 
+        if ($payment->order?->shipping_method === 'quoted_manual') {
+            $accepted = \App\Models\QuotationAcceptance::where('order_id',$payment->order_id)->firstOrFail();
+            return redirect()->route('quotations.payment',['quotationVersion'=>$accepted->enquiry_quotation_version_id,'state'=>$state]);
+        }
         return $this->checkoutView($request, $pricing, $payments, $shipping, $currency, [
             'state' => $state,
             'provider' => $this->providerLabel($payment->gateway),
@@ -78,6 +82,7 @@ class CheckoutController extends Controller
     public function retryHostedPayment(Request $request, OrderPayment $payment, PaymentAttemptService $attempts, HostedPaymentGatewayManager $hostedPayments): RedirectResponse
     {
         abort_unless((int) $request->session()->get('pending_payment_id') === $payment->id, 403);
+        abort_if($payment->order?->shipping_method === 'quoted_manual',409,'Continue payment from the quotation order, or contact our team.');
 
         $retry = $attempts->retryHostedPayment($payment);
         $request->session()->put('pending_payment_id', $retry->id);
@@ -146,7 +151,7 @@ class CheckoutController extends Controller
             'address' => [],
         ]);
 
-        return view(match(app(\App\Services\WebsiteDesignService::class)->surface()) { 'food'=>'storefront.themes.food-checkout', 'home_deco'=>'storefront.themes.home-deco-checkout', 'beauty'=>'storefront.themes.beauty-checkout', 'universal'=>'storefront.themes.universal-checkout', 'fashion'=>'storefront.themes.fashion-checkout', 'jewelry'=>'storefront.themes.jewelry-checkout', 'baby'=>'storefront.themes.baby-checkout', 'tech'=>'storefront.themes.tech-checkout', default=>'storefront.checkout' }, [
+        return view(app(\App\Services\WebsiteDesignService::class)->view('checkout'), [
             'items' => $items,
             'coupon' => $coupon,
             'summary' => $summary,
@@ -251,7 +256,7 @@ class CheckoutController extends Controller
             return redirect()->route('storefront.index');
         }
 
-        return view(match(app(\App\Services\WebsiteDesignService::class)->surface()) { 'food'=>'storefront.themes.food-success', 'home_deco'=>'storefront.themes.home-deco-success', 'beauty'=>'storefront.themes.beauty-success', 'universal'=>'storefront.themes.universal-success', 'fashion'=>'storefront.themes.fashion-success', 'jewelry'=>'storefront.themes.jewelry-success', 'baby'=>'storefront.themes.baby-success', 'tech'=>'storefront.themes.tech-success', default=>'storefront.success' }, [
+        return view(match(app(\App\Services\WebsiteDesignService::class)->surface()) { 'food'=>'storefront.themes.food-success', 'home_deco'=>'storefront.themes.home-deco-success', 'beauty'=>'storefront.themes.beauty-success', 'universal'=>'storefront.themes.universal-success', 'fashion'=>'storefront.themes.fashion-success', 'wedding'=>'storefront.themes.wedding-success', 'jewelry'=>'storefront.themes.jewelry-success', 'baby'=>'storefront.themes.baby-success', 'tech'=>'storefront.themes.tech-success', default=>'storefront.success' }, [
             'order' => $order,
             'paymentProof' => $proofViewModels->for($order, $order->payments->where('gateway', 'bank_transfer')->sortByDesc('id')->first()),
             'taxLine' => $order->taxLines->sortBy('id')->first(),

@@ -20,7 +20,9 @@
         "type": "string",
         "enum": [
           "standard",
-          "wide"
+          "wide",
+          "full",
+          "site"
         ]
       },
       "heroImage": {
@@ -263,7 +265,8 @@
             "inter",
             "playfair",
             "dmsans",
-            "notosc"
+            "notosc",
+            "cormorant"
           ]
         },
         "fontSize": {
@@ -630,7 +633,8 @@
         "editorial-cards",
         "routine-steps",
         "editorial-triptych",
-        "portfolio-cards"
+        "portfolio-cards",
+        "photo-marquee"
       ]
     },
     "showSectionHeading": {
@@ -1547,6 +1551,35 @@
         "default",
         "device-table"
       ]
+    },
+    "heroBannerPreset": {
+      "type": "string",
+      "enum": [
+        "default",
+        "editorial-gradient"
+      ]
+    },
+    "testimonialPreset": {
+      "type": "string",
+      "enum": [
+        "default",
+        "editorial-quote"
+      ]
+    },
+    "marqueeSpeed": {
+      "type": "integer",
+      "minimum": 10,
+      "maximum": 120
+    },
+    "marqueeDirection": {
+      "type": "string",
+      "enum": [
+        "left",
+        "right"
+      ]
+    },
+    "marqueePauseOnHover": {
+      "type": "boolean"
     }
   },
   "section": {
@@ -1646,7 +1679,8 @@
           "customColors",
           "items",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "heroBannerPreset"
         ],
         "publishRequired": [
           "title"
@@ -2086,7 +2120,10 @@
           "surface",
           "brandPalette",
           "buttonText",
-          "buttonLink"
+          "buttonLink",
+          "marqueeSpeed",
+          "marqueeDirection",
+          "marqueePauseOnHover"
         ],
         "publishRequired": [
           "title"
@@ -2417,7 +2454,8 @@
           "items",
           "customColors",
           "surface",
-          "brandPalette"
+          "brandPalette",
+          "testimonialPreset"
         ],
         "publishRequired": [
           "title"

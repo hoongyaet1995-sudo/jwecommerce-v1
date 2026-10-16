@@ -61,6 +61,7 @@ class PaymentWebhookService
             ]);
 
             if ($payment && $event['type'] === 'checkout.session.completed' && data_get($event, 'data.object.payment_status') === 'paid') {
+                $this->assertQuotationSettlement($payment,data_get($event,'data.object.amount_total'),data_get($event,'data.object.currency'));
                 $this->confirmPayment($payment, $webhook, 'Verified Stripe webhook '.$webhook->provider_event_id);
             }
 
@@ -106,6 +107,7 @@ class PaymentWebhookService
             ]);
 
             if (($callback['status'] ?? null) === 'paid') {
+                $this->assertQuotationSettlement($payment,$callback['amount']??null,'MYR');
                 $this->confirmPayment($payment, $webhook, 'Verified Billplz callback '.$webhook->provider_event_id);
             }
 
@@ -149,6 +151,10 @@ class PaymentWebhookService
             ]);
 
             if (($event['event_type'] ?? null) === 'PAYMENT.CAPTURE.COMPLETED') {
+                $value=data_get($event,'resource.amount.value');
+                $minor=null;
+                if(is_string($value)&&preg_match('/^([0-9]{1,10})\.([0-9]{2})$/D',$value,$parts))$minor=(int)$parts[1]*100+(int)$parts[2];
+                $this->assertQuotationSettlement($payment,$minor,data_get($event,'resource.amount.currency_code'));
                 $this->confirmPayment($payment, $webhook, 'Verified PayPal webhook '.$webhook->provider_event_id);
             }
 
@@ -231,6 +237,15 @@ class PaymentWebhookService
         ]);
 
         return $verification->successful() && $verification->json('verification_status') === 'SUCCESS';
+    }
+
+    private function assertQuotationSettlement(OrderPayment $payment,mixed $amount,mixed $currency):void
+    {
+        $order=$payment->order;
+        if($order?->shipping_method!=='quoted_manual')return;
+        $version=\App\Models\EnquiryQuotationVersion::findOrFail(data_get($order->shipping_snapshot,'quotation_version_id'));
+        $expected=$version->document;
+        if(!is_scalar($amount)||!preg_match('/^[0-9]+$/D',(string)$amount)||(int)$amount!==(int)$payment->amount||(int)$amount!==$expected['totalMinor']||!is_string($currency)||strtoupper($currency)!==$expected['currency']['code']||$payment->currency!==$expected['currency']['code'])throw ValidationException::withMessages(['payment'=>'The verified payment amount or currency does not match this quotation.']);
     }
 
     private function confirmPayment(OrderPayment $payment, PaymentWebhookEvent $webhook, string $note): void

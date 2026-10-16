@@ -559,7 +559,7 @@ const installDeliveryMatrix = () => {
             if (taxDefinition) taxDefinition.textContent = money(tax);
             if (totalDefinition) totalDefinition.textContent = money(total);
             const checkoutSubmitLabel = form?.querySelector('[data-checkout-submit-label]');
-            if (checkoutSubmitLabel) checkoutSubmitLabel.textContent = form.closest('[data-home-deco-checkout],[data-beauty-checkout],[data-tech-checkout],[data-baby-checkout],[data-jewelry-checkout],[data-fashion-checkout],[data-universal-checkout]') ? `Place order · ${money(total)}` : `Authorize & Place Order (${money(total)})`;
+            if (checkoutSubmitLabel) checkoutSubmitLabel.textContent = form.closest('[data-home-deco-checkout],[data-beauty-checkout],[data-tech-checkout],[data-baby-checkout],[data-jewelry-checkout],[data-fashion-checkout],[data-universal-checkout],[data-wedding-checkout]') ? `Place order · ${money(total)}` : `Authorize & Place Order (${money(total)})`;
             matrix.querySelectorAll('[data-delivery-option]').forEach((element) => {
                 element.classList.toggle('border-amber-400', element === option);
                 element.classList.toggle('bg-amber-400/10', element === option);
@@ -1175,7 +1175,7 @@ const installStorefrontVariantSelectors = () => {
 
             document.querySelectorAll('[data-pdp-variant-input]').forEach((input) => { input.value = variant.id; });
             document.querySelectorAll('[data-pdp-sku], [data-pdp-sticky-sku]').forEach((target) => target.replaceChildren(variant.sku || ''));
-            document.querySelectorAll('[data-pdp-price], [data-pdp-sticky-price]').forEach((target) => target.replaceChildren(storefrontMoney(variant.price)));
+            document.querySelectorAll('[data-pdp-price], [data-pdp-sticky-price]').forEach((target) => target.replaceChildren((selector.dataset.purchaseMode === 'quote' && selector.dataset.priceDisplay === 'from' ? 'From ' : '') + storefrontMoney(variant.price)));
             document.querySelectorAll('[data-pdp-sticky-label]').forEach((target) => target.replaceChildren(label));
             const compareAt = document.querySelector('[data-pdp-compare-at]');
             const save = document.querySelector('[data-pdp-save]');
@@ -1203,7 +1203,7 @@ const installStorefrontVariantSelectors = () => {
 
             document.querySelectorAll('[data-pdp-add-to-cart], [data-pdp-instant-buy], [data-pdp-sticky-add]').forEach((button) => {
                 button.disabled = outOfStock || !enabled;
-                if (button.matches('[data-pdp-add-to-cart]')) button.textContent = outOfStock || !enabled ? (variant.stock === null ? 'Awaiting stock verification' : 'Sold out') : (button.closest('[data-tech-pdp],[data-baby-pdp],[data-jewelry-pdp],[data-fashion-pdp],[data-universal-pdp]') ? 'Add to cart' : button.closest('[data-home-deco-pdp], [data-beauty-pdp], [data-food-pdp]') ? 'Add to bag' : `Add to Cart · ${storefrontMoney(variant.price)}`);
+                if (button.matches('[data-pdp-add-to-cart]')) button.textContent = outOfStock || !enabled ? (variant.stock === null ? 'Awaiting stock verification' : 'Sold out') : (button.closest('[data-tech-pdp],[data-baby-pdp],[data-jewelry-pdp],[data-fashion-pdp],[data-universal-pdp],[data-wedding-pdp]') ? 'Add to cart' : button.closest('[data-home-deco-pdp], [data-beauty-pdp], [data-food-pdp]') ? 'Add to bag' : `Add to Cart · ${storefrontMoney(variant.price)}`);
             });
 
             const purchaseQuantity = selector.closest('form')?.querySelector('input[name="quantity"]');
@@ -1807,3 +1807,39 @@ const initHomeCountryChoices = () => {
     });
 };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded',initHomeCountryChoices); else initHomeCountryChoices();
+
+// Shared enquiry presentation: no theme-specific submission or business rules.
+document.addEventListener('click', (event) => {
+ const close = event.target.closest?.('[data-enquiry-close]');
+ if (close) { close.closest('dialog')?.close(); return; }
+ const button = event.target.closest?.('[data-product-enquiry]');
+ if (!button || button.disabled) return;
+ const context = button.closest('[data-enquiry-context]') || document;
+ const dialog = context.querySelector('[data-enquiry-dialog]');
+ if (!dialog) return;
+ const selector = context.querySelector('[data-storefront-variant-selector]');
+ const quickVariant = context.querySelector('[data-enquiry-quick-variant]');
+ const selected = quickVariant?.selectedOptions?.[0]?.textContent || quickVariant?.dataset.title || selector?.querySelector('[data-pdp-selected-label]')?.textContent;
+ const variantId = quickVariant ? quickVariant.value : (context.querySelector('[data-pdp-variant-input]')?.value || selector?.dataset.selectedVariantId || new URL(location.href).searchParams.get('variant'));
+ const input = dialog.querySelector('[data-enquiry-variant]');
+ if (input && (variantId || quickVariant)) input.value = variantId || '';
+ const label = dialog.querySelector('[data-enquiry-option-label]');
+ const variantData = JSON.parse(selector?.dataset.variants || '[]').find(v=>String(v.id)===String(variantId));
+ const sku = quickVariant?.selectedOptions?.[0]?.dataset.sku || quickVariant?.dataset.sku || variantData?.sku;
+ if (label && selected) label.textContent = selected.trim() + (sku ? ' · SKU: '+sku : '');
+ const purchase = button.closest('[data-commerce-product-zone="purchase"]') || context;
+ if (purchase !== document) dialog.style.setProperty('--eq-body-font',getComputedStyle(purchase).fontFamily);
+ if (!dialog.open) dialog.showModal();
+});
+document.addEventListener('click', event => {
+ const dialog = event.target;
+ if (!dialog.matches?.('dialog[data-enquiry-dialog]')) return;
+ const rect = dialog.getBoundingClientRect();
+ if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
+});
+document.querySelector('[data-enquiry-dialog][data-reopen]')?.showModal();
+document.addEventListener('submit',event=>{
+ if (!event.target.matches?.('[data-enquiry-form]')) return;
+ const button=event.target.querySelector('[type="submit"]');
+ if (button) {button.disabled=true;button.textContent='Sending…';}
+});

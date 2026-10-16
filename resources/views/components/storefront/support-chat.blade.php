@@ -1,4 +1,8 @@
-<div id="storefront-support-widget">
+@php
+ $supportReceipt=request()->attributes->get('supportEnquiryContext')??(request()->routeIs('enquiries.receipt')?request()->route('enquiry'):null);
+ $supportEnquiryContext=$supportReceipt?($supportReceipt->support_conversation_id && session('support_enquiry_id')===$supportReceipt->id?$supportReceipt->id:null):session('support_enquiry_id');
+@endphp
+<div id="storefront-support-widget" data-enquiry-context="{{ $supportEnquiryContext }}" data-support-generation="{{ session('support_generation','') }}">
 <style>
 #storefront-support-widget #sf-image-preview[hidden]{display:none!important}
 
@@ -78,6 +82,9 @@
 <div class="demo" role="status" aria-live="polite" hidden></div><div class="stream" id="sf-support-stream" role="log" aria-live="polite" hidden></div><div class="stream" id="sf-faq-stream" aria-live="polite"></div><footer class="composer"><div id="sf-image-status" role="status" hidden></div><div id="sf-image-preview" hidden></div><button id="sf-document-attach" type="button" class="icon" aria-label="Attach PDF" title="Attach PDF"><svg><use href="#sf-support-care"/></svg></button><input id="sf-document-file" type="file" accept="application/pdf,.pdf" hidden><input id="sf-image-file" type="file" accept="image/jpeg,image/png,image/webp" hidden><form id="sf-support-form"><button type="button" class="icon" id="sf-image-attach" aria-label="Attach image"><svg viewBox="0 0 24 24"><path d="m21 12-8 8a6 6 0 0 1-8-8l9-9a4 4 0 0 1 6 6l-9 9a2 2 0 0 1-3-3l8-8"/></svg></button><textarea id="sf-support-input" aria-label="Your message" placeholder="Write your message…" maxlength="2000"></textarea><button class="send" id="sf-support-send" aria-label="Send message" disabled><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13"/></svg></button></form><div class="foot">Chat with JW Studio Support</div></footer></section>
 <script>
 (()=>{const root=document.querySelector("#storefront-support-widget");
+let enquiryContext=root.dataset.enquiryContext||null;
+let generationContext=root.dataset.supportGeneration||'';
+const chatUrl=path=>{const url=new URL(path,location.origin);if(enquiryContext)url.searchParams.set("enquiry_id",enquiryContext);url.searchParams.set('support_generation',generationContext);return url.pathname+url.search;};
 
 const panel=root.querySelector('#sf-support-panel'),launcher=root.querySelector('#sf-support-launcher'),input=root.querySelector('#sf-support-input'),send=root.querySelector('#sf-support-send'),stream=root.querySelector('#sf-support-stream');
 let previousOverflow=null;
@@ -112,12 +119,12 @@ async function uploadImage(file){
  uploadingImage=true;failedFile=file;version++;updateSend();const xhr=new XMLHttpRequest();uploadXhr=xhr;
  const cancel=()=>xhr.abort();uploadState('Uploading attachment 0%',cancel,'Cancel upload');
  try{const a=await new Promise((resolve,reject)=>{
-  xhr.open('POST','/support/chat/attachments');xhr.timeout=120000;xhr.withCredentials=true;xhr.setRequestHeader('Accept','application/json');xhr.setRequestHeader('X-CSRF-TOKEN',document.querySelector('meta[name="csrf-token"]').content);
+  xhr.open('POST',chatUrl('/support/chat/attachments'));xhr.timeout=120000;xhr.withCredentials=true;xhr.setRequestHeader('Accept','application/json');xhr.setRequestHeader('X-CSRF-TOKEN',document.querySelector('meta[name="csrf-token"]').content);
   xhr.upload.onprogress=e=>{if(e.lengthComputable){const p=Math.min(100,Math.round(e.loaded/e.total*100));uploadState(p===100?'Processing attachment...':'Uploading attachment '+p+'%',cancel,'Cancel upload');}};
   xhr.onerror=()=>reject(new Error('Upload failed. Check your connection.'));xhr.ontimeout=()=>reject(new Error('Upload timed out.'));xhr.onabort=()=>reject(new Error('Upload cancelled.'));
   xhr.onload=()=>{try{const d=JSON.parse(xhr.responseText);if(xhr.status<200||xhr.status>=300)throw new Error(d.message||'Upload failed.');if(!d.attachment?.id)throw new Error('Invalid upload response.');resolve(d.attachment);}catch(e){reject(e);}};
   const form=new FormData();form.append(pdf?'document':'image',file);xhr.send(form);
- });imageDraft=a;failedFile=null;showImagePreview();mediaStatus.hidden=true;}
+ });imageDraft={...a,url:chatUrl(a.url)};failedFile=null;showImagePreview();mediaStatus.hidden=true;}
  catch(e){uploadState(e.message,()=>{if(failedFile)void uploadImage(failedFile);},'Retry upload');}
  finally{if(uploadXhr===xhr)uploadXhr=null;uploadingImage=false;version++;updateSend();}
 }
@@ -126,14 +133,14 @@ window.addEventListener('pagehide',()=>uploadXhr?.abort());
 imageAttach.onclick=()=>imageFile.click();imageFile.onchange=()=>{const file=imageFile.files[0];if(file)void uploadImage(file);imageFile.value='';};
 input.addEventListener('paste',e=>{const file=Array.from(e.clipboardData.items).find(i=>['image/jpeg','image/png','image/webp'].includes(i.type))?.getAsFile();if(file){e.preventDefault();void uploadImage(file);}});
 async function request(method='GET',data){
- const response=await fetch(method==='GET'?'/support/chat':'/support/chat/messages',{method,credentials:'same-origin',headers:{Accept:'application/json',...(data?{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content}:{})},body:data?JSON.stringify({...data,language:languageSelect.value}):undefined});
+ const response=await fetch(chatUrl(method==='GET'?'/support/chat':'/support/chat/messages'),{method,credentials:'same-origin',headers:{Accept:'application/json',...(data?{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content}:{})},body:data?JSON.stringify({...data,language:languageSelect.value}):undefined});
  const payload=await response.json().catch(()=>null);
  if(!response.ok||!payload)throw new Error(payload?.message||'Unable to connect. Please try again.');
  return payload.conversation;
 }
 async function resolvedAction(action){
  if(sending)return;sending=true;version++;
- try{const response=await fetch('/support/chat/resolved',{method:'POST',credentials:'same-origin',headers:{Accept:'application/json','Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content},body:JSON.stringify({action})});const data=await response.json();if(!response.ok)throw new Error(data.message||'Unable to update conversation.');retry=null;input.value='';render(data.conversation);latest();}catch(error){status.textContent=error.message;status.hidden=false;}finally{sending=false;version++;}
+ try{const response=await fetch(chatUrl('/support/chat/resolved'),{method:'POST',credentials:'same-origin',headers:{Accept:'application/json','Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content},body:JSON.stringify({action})});const data=await response.json();if(!response.ok)throw new Error(data.message||'Unable to update conversation.');if(action==='new'){enquiryContext=null;generationContext=data.generation||'';}retry=null;input.value='';render(data.conversation);latest();}catch(error){status.textContent=error.message;status.hidden=false;}finally{sending=false;version++;}
 }
 function render(conversation){
  if(stream.querySelector('[data-contact-form]')&&!sending)return;
@@ -144,9 +151,9 @@ function render(conversation){
  stream.querySelectorAll('.message,.meta,.product-cards,.conversation-status').forEach(node=>node.remove());
  for(const message of conversation?.messages||[]){
   const user=message.role==='customer',msg=document.createElement('div'),meta=document.createElement('div');
-  msg.className='message'+(user?' user':'');msg.dataset.id=message.id;msg.textContent=message.content;for(const a of message.attachments||[]){const box=document.createElement('div');if(a.type==='document'&&a.status==='ready'&&a.url){const link=document.createElement('a');link.href=a.url+'?download=1';link.className='message-action';link.setAttribute('aria-label','Download document '+a.name);link.textContent=a.name+' - '+fileSize(a.sizeBytes||0)+' - Download';box.append(link);}else if(a.status==='pending'){box.textContent='Downloading attachment…';}else if(!a.url||a.status==='failed'){box.textContent=a.error||'Image unavailable.';}else{const link=document.createElement('a');link.href=a.url;link.target='_blank';link.rel='noopener';link.setAttribute('aria-label','Open image '+a.name);const img=document.createElement('img');img.src=a.url;img.alt=a.name;img.loading='lazy';img.style.cssText='max-width:100%;max-height:220px;border-radius:8px;object-fit:contain';img.onerror=()=>{box.textContent='Image unavailable.';};link.append(img);box.append(link);}msg.prepend(box);}if(loaded&& !seenMessages.has(message.id))msg.classList.add('enter');seenMessages.add(message.id);
+  msg.className='message'+(user?' user':'');msg.dataset.id=message.id;msg.textContent=message.content;for(const a of message.attachments||[]){const box=document.createElement('div');if(a.type==='document'&&a.status==='ready'&&a.url){const link=document.createElement('a');link.href=chatUrl(a.url+'?download=1');link.className='message-action';link.setAttribute('aria-label','Download document '+a.name);link.textContent=a.name+' - '+fileSize(a.sizeBytes||0)+' - Download';box.append(link);}else if(a.status==='pending'){box.textContent='Downloading attachment…';}else if(!a.url||a.status==='failed'){box.textContent=a.error||'Image unavailable.';}else{const link=document.createElement('a');link.href=chatUrl(a.url);link.target='_blank';link.rel='noopener';link.setAttribute('aria-label','Open image '+a.name);const img=document.createElement('img');img.src=chatUrl(a.url);img.alt=a.name;img.loading='lazy';img.style.cssText='max-width:100%;max-height:220px;border-radius:8px;object-fit:contain';img.onerror=()=>{box.textContent='Image unavailable.';};link.append(img);box.append(link);}msg.prepend(box);}if(loaded&& !seenMessages.has(message.id))msg.classList.add('enter');seenMessages.add(message.id);
   const cards=document.createElement('div');cards.className='product-cards';
-  if(!user&&message.actions?.length){for(const action of message.actions){if(action.type==='request_human'&&conversation?.status==='open'&&message.id===conversation.messages.filter(m=>m.role==='ai').at(-1)?.id){const button=document.createElement('button');button.type='button';button.className='message-action';button.dataset.requestHuman='true';button.textContent={en:'Talk to human →',ms:'Bercakap dengan ejen →',zh:'转人工客服 →'}[languageSelect.value]||'Talk to human →';button.disabled=sending;button.onclick=()=>{if(!sending)void submit({en:'I would like to talk to a human agent.',ms:'Saya ingin bercakap dengan ejen manusia.',zh:'我想转人工客服。'}[languageSelect.value],true)};const row=document.createElement('div');row.className='message-actions';row.append(button);msg.append(row);continue;}if(action.type==='view_order_tracking'&&action.url==='/order-tracking'){const link=document.createElement('a');link.className='message-action';link.href=action.url;link.textContent='Order Tracking →';cards.append(link);continue;}if(['view_category','view_collection'].includes(action.type)&&typeof action.url==='string'&&/^\/(categories|collections)\/[^/]+$/.test(action.url)){const link=document.createElement('a');link.className='message-action';link.href=action.url;link.textContent=action.label+': '+action.title+' →';cards.append(link);continue;}if(action.type!=='view_product'||typeof action.url!=='string'||!action.url.startsWith('/products/')||action.url.startsWith('//'))continue;
+  if(!user&&message.actions?.length){for(const action of message.actions){if(action.type==='request_human'&&conversation?.status==='open'&&message.id===conversation.messages.filter(m=>m.role==='ai').at(-1)?.id){const button=document.createElement('button');button.type='button';button.className='message-action';button.dataset.requestHuman='true';button.textContent={en:'Talk to human →',ms:'Bercakap dengan ejen →',zh:'转人工客服 →'}[languageSelect.value]||'Talk to human →';button.disabled=sending;button.onclick=()=>{if(!sending)void submit({en:'I would like to talk to a human agent.',ms:'Saya ingin bercakap dengan ejen manusia.',zh:'我想转人工客服。'}[languageSelect.value],true)};const row=document.createElement('div');row.className='message-actions';row.append(button);msg.append(row);continue;}if(action.type==='view_quotation'&&typeof action.url==='string'&&/^\/quotations\/[0-9a-f-]{36}$/.test(action.url)){const link=document.createElement('a');link.className='message-action';link.href=action.url;link.textContent='View quotation →';cards.append(link);continue;}if(action.type==='view_order_tracking'&&action.url==='/order-tracking'){const link=document.createElement('a');link.className='message-action';link.href=action.url;link.textContent='Order Tracking →';cards.append(link);continue;}if(['view_category','view_collection'].includes(action.type)&&typeof action.url==='string'&&/^\/(categories|collections)\/[^/]+$/.test(action.url)){const link=document.createElement('a');link.className='message-action';link.href=action.url;link.textContent=action.label+': '+action.title+' →';cards.append(link);continue;}if(action.type!=='view_product'||typeof action.url!=='string'||!action.url.startsWith('/products/')||action.url.startsWith('//'))continue;
    const card=document.createElement('article');card.className='product-card';
    const imageBox=document.createElement('div');imageBox.className='product-card-image';
    const fallback=document.createElement('span');fallback.className='product-image-placeholder';fallback.textContent='◇';fallback.setAttribute('aria-label','Product image unavailable');imageBox.append(fallback);
@@ -224,6 +231,7 @@ async function loadFAQs(){
 }
 setInterval(()=>{if(!panel.hidden&&activeTab==='faq')void loadFAQs()},5000);
 renderCategories();tab('chat');void loadFAQs();launcher.addEventListener('click',loadFAQs);root.querySelector('#sample-faq-tab').addEventListener('click',loadFAQs);
+if(document.querySelector('[data-enquiry-support-open]'))launcher.click();
 
 })();
 </script>

@@ -1,3 +1,4 @@
+import { ProductPurchaseSettingsFields } from './ProductPurchaseSettingsFields';
 import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
@@ -91,6 +92,8 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   useEffect(() => {
     if (product) {
       const hydrated = JSON.parse(JSON.stringify(product)) as Product;
+      hydrated.purchaseMode ??= 'buy';
+      hydrated.priceDisplay ??= 'exact';
       // Older catalog rows predate the persisted option-dimension document.
       // Reconstruct only the editor projection from their existing variant facts;
       // saving remains the point at which it becomes durable.
@@ -126,6 +129,8 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
           position: 0,
         }],
         status: 'active',
+        purchaseMode: 'buy',
+        priceDisplay: 'exact',
         hasVariants: true,
         basePrice: 199,
         baseCompareAtPrice: 249,
@@ -349,6 +354,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if ((formData.purchaseMode ?? 'buy') !== 'buy' && !window.__JW_ADMIN__?.productEnquiriesEnabled && formData.status !== 'draft') return;
     const saved = await saveProduct(formData);
     if (saved) onClose();
   };
@@ -549,16 +555,19 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                     Status
                   </label>
                   <select
+                    aria-label="Publication status"
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as Product['status'] })}
                     className="w-full px-3 py-2 text-xs rounded-xl border bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
                   >
-                    <option value="active">Active (Published)</option>
+                    <option value="active" disabled={(formData.purchaseMode ?? 'buy') !== 'buy' && !window.__JW_ADMIN__?.productEnquiriesEnabled}>Active (Published)</option>
                     <option value="draft">Draft (Unpublished)</option>
-                    <option value="archived">Archived</option>
+                    <option value="archived" disabled={(formData.purchaseMode ?? 'buy') !== 'buy' && !window.__JW_ADMIN__?.productEnquiriesEnabled}>Archived</option>
                   </select>
                 </div>
               </div>
+
+              <ProductPurchaseSettingsFields product={formData} onChange={setFormData} />
 
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
@@ -963,7 +972,8 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
             <button
               type="button"
               onClick={handleSubmit}
-              className="px-5 py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20"
+              disabled={(formData.purchaseMode ?? 'buy') !== 'buy' && !window.__JW_ADMIN__?.productEnquiriesEnabled && formData.status !== 'draft'}
+              className="px-5 py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save Product & SKUs
             </button>

@@ -28,7 +28,7 @@
             @foreach($selected as $product)
                 <a href="{{ route('storefront.products.show', ['handle' => $product->handle]) }}" class="rounded-2xl border border-white/10 bg-zinc-900 p-4 transition hover:border-amber-300/60">
                     @if($product->images->first())<img src="{{ $product->images->first()->path }}" alt="{{ $product->title }}" class="aspect-square w-full rounded-xl object-cover">@endif
-                    <h3 class="mt-4 text-sm font-bold text-white">{{ $product->title }}</h3><p class="mt-2 font-mono text-sm text-amber-300">@storefrontMoney($product->variants->first()?->price ?? $product->base_price)</p>
+                    <h3 class="mt-4 text-sm font-bold text-white">{{ $product->title }}</h3><p class="mt-2 font-mono text-sm text-amber-300">@productPrice($product, $product->variants->first()?->price ?? $product->base_price)</p>
                 </a>
             @endforeach
         </div>

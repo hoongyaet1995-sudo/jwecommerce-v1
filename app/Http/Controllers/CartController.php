@@ -15,7 +15,7 @@ class CartController extends Controller
 {
     public function show(Request $request, CartViewData $cartViewData): View
     {
-        return view(match(app(\App\Services\WebsiteDesignService::class)->surface()) { 'food'=>'storefront.themes.food-cart', 'home_deco'=>'storefront.themes.home-deco-cart', 'beauty'=>'storefront.themes.beauty-cart', 'universal'=>'storefront.themes.universal-cart', 'fashion'=>'storefront.themes.fashion-cart', 'jewelry'=>'storefront.themes.jewelry-cart', 'baby'=>'storefront.themes.baby-cart', 'tech'=>'storefront.themes.tech-cart', default=>'storefront.cart' }, $cartViewData->for($request));
+        return view(match(app(\App\Services\WebsiteDesignService::class)->surface()) { 'food'=>'storefront.themes.food-cart', 'home_deco'=>'storefront.themes.home-deco-cart', 'beauty'=>'storefront.themes.beauty-cart', 'universal'=>'storefront.themes.universal-cart', 'fashion'=>'storefront.themes.fashion-cart', 'wedding'=>'storefront.themes.wedding-cart', 'jewelry'=>'storefront.themes.jewelry-cart', 'baby'=>'storefront.themes.baby-cart', 'tech'=>'storefront.themes.tech-cart', default=>'storefront.cart' }, $cartViewData->for($request));
     }
 
     public function drawer(Request $request, CartViewData $cartViewData): View
@@ -28,6 +28,7 @@ class CartController extends Controller
         $data = $request->validate(['variant_id' => ['required', 'exists:product_variants,id'], 'quantity' => ['required', 'integer', 'min:1'], 'checkout' => ['nullable', 'boolean']]);
         $variant = ProductVariant::query()->findOrFail($data['variant_id']);
 
+        app(\App\Services\ProductPurchaseRules::class)->assertPurchasable($variant);
         $available = app(WebsiteInventoryAvailability::class)->quantity($variant);
         if (! $variant->enabled || $available === null || $available < 1) {
             throw ValidationException::withMessages(['variant_id' => 'This SKU is currently out of stock.']);
@@ -49,6 +50,7 @@ class CartController extends Controller
     public function update(Request $request, ProductVariant $variant): RedirectResponse
     {
         $request->validate(['quantity' => ['required', 'integer', 'min:1']]);
+        app(\App\Services\ProductPurchaseRules::class)->assertPurchasable($variant);
         $available = app(WebsiteInventoryAvailability::class)->quantity($variant);
         if (! $variant->enabled || $available === null || $request->integer('quantity') > $available) {
             throw ValidationException::withMessages(['quantity' => 'Requested quantity exceeds available stock.']);

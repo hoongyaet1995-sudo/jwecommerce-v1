@@ -49,6 +49,19 @@ class WebsiteThemeDemoTest extends TestCase
             $this->get('/admin/website-design/cart-drawer?theme='.$theme)->assertOk();
         }
     }
+    public function test_quote_checkout_demos_use_theme_renderers_and_never_create_commerce_records(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin'=>true]));
+        foreach (['food','home_deco','beauty','tech','baby','jewelry','fashion','universal'] as $theme) {
+            $this->get('/admin/website-design/acceptance/sample/quotation-checkout?theme='.$theme)
+                ->assertOk()->assertHeader('X-Theme-Data','dummy')->assertSee('data-quotation-checkout',false)
+                ->assertSee('__JW_THEME_DEMO__',false)->assertDontSee('data-checkout-shipping-quote-url',false);
+        }
+        foreach (['products','orders','order_payments','enquiry_quotations','enquiry_quotation_versions','quotation_acceptances'] as $table) {
+            $this->assertDatabaseCount($table,0);
+        }
+    }
+
     public function test_acceptance_workspace_is_admin_protected(): void
     {
         $this->get('/admin/website-design/acceptance')->assertRedirect();

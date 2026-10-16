@@ -1,3 +1,4 @@
+import {enquiryRequest,type EnquiryList} from './EnquiryAdmin';
 import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React from 'react';
 import { useAdmin } from '../../context/AdminContext';
@@ -15,6 +16,9 @@ import {
 } from 'lucide-react';
 
 export const CommerceHub: React.FC = () => {
+  const [enquiryUnavailable,setEnquiryUnavailable]=React.useState(false);
+  const [enquiryCounts,setEnquiryCounts]=React.useState<EnquiryList['counts']|null>(null);
+  React.useEffect(()=>{let active=true;enquiryRequest<EnquiryList>('/admin/api/enquiries').then(data=>{if(active)setEnquiryCounts(data.counts);}).catch(()=>{if(active)setEnquiryUnavailable(true);});return()=>{active=false;};},[]);
   const { money, currencyCode } = useAdminCurrency();
   const { setCurrentSection, orders = [], customers = [] } = useAdmin();
 
@@ -62,6 +66,15 @@ export const CommerceHub: React.FC = () => {
       ],
       actionLabel: 'Manage Customers',
     },
+    {
+      id: 'enquiries' as const, title: 'Customer Enquiries', shortName: 'Enquiries & Follow-up',
+      description: 'Review product and service requests, assign a teammate and follow up.',
+      icon: ShoppingBag, iconBg: 'from-amber-500 to-orange-600',
+      badge: enquiryCounts ? `${enquiryCounts.new} New` : enquiryUnavailable ? 'Temporarily unavailable' : 'Loading enquiries',
+      badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20',
+      highlights: ['Customer requirements & selected options', 'Owner, status & internal notes', enquiryCounts ? `${enquiryCounts.all} Total Enquiries` : 'Enquiry records'], actionLabel: 'Manage Enquiries',
+    },
+
   ];
 
   return (
@@ -111,7 +124,7 @@ export const CommerceHub: React.FC = () => {
           <span className="text-xs text-neutral-500">Select a section to manage</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {cards.map((card) => {
             const Icon = card.icon;
             return (

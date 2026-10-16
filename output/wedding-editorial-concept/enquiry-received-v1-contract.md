@@ -1,0 +1,3 @@
+# Wedding enquiry receipt concept v1
+
+Visual sample only, 2026-10-16. Actual producer ProductEnquiry -> existing receipt route and owner check; data: reference, product snapshot, requirements, contact email. Continue support uses existing protected enquiry conversation flow; continue browsing uses existing destination. No quotation displayed before actual sent version exists. No booking availability, payment/order confirmation or response-time promise. Hero decor should reuse a declared theme media slot or approved derived product image; do not invent a second uneditable image owner during integration. Header/footer outside sample; content canonical Page Width.

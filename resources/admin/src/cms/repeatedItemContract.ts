@@ -16,6 +16,8 @@ const fields:Partial<Record<PageSection['type'],readonly string[]>>={
  delivery_table:['title','deliveryEstimate','deliveryFee'],chapter_navigation:['title','linkUrl'],
 };
 export function repeatedItemFields(section:PageSection):readonly string[]{
+ if(section.type==='media_gallery'&&section.galleryPreset==='photo-marquee')return ['imageUrl'];
+ if(section.type==='testimonials_slider'&&section.testimonialPreset==='editorial-quote')return ['title','description'];
  if(section.type==='shop_navigation'&&['catalog-captions','recipe-cards'].includes(section.shopNavigationPreset??''))return ['title','description','imageUrl','buttonText','linkUrl','sourceType','sourceId',...(section.shopNavigationPreset==='recipe-cards'?['badge']:[])];
  if(section.type==='shop_navigation'&&section.shopNavigationPreset==='age-cards')return ['title','description','imageUrl','linkUrl','sourceType','sourceId'];
  if(section.type==='media_text_split'&&section.layoutPreset==='artisan-story')return ['title','imageUrl'];
@@ -49,5 +51,5 @@ export function repeatedItemFields(section:PageSection):readonly string[]{
 }
 export function itemSupports(section:PageSection,key:string){return repeatedItemFields(section).includes(key);}
 export function supportedNewItem(section:PageSection,item:SectionItem):SectionItem{
- return Object.fromEntries(Object.entries(item).filter(([key])=>key==='id'||itemSupports(section,key))) as unknown as SectionItem;
+ return Object.fromEntries(Object.entries({...item,...(!itemSupports(section,'title')?{title:''}:{})}).filter(([key])=>key==='id'||key==='title'||itemSupports(section,key))) as unknown as SectionItem;
 }

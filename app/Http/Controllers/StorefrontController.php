@@ -99,7 +99,7 @@ class StorefrontController extends Controller
             'pdpRelatedProducts.relatedProduct.images',
             'pdpRelatedProducts.relatedProduct.variants',
         ]);
-        $selectedVariant = app(\App\Services\StorefrontVariantData::class)->select($product->variants, $request->integer('variant'));
+        $selectedVariant = app(\App\Services\StorefrontVariantData::class)->select($product->variants, $request->integer('variant'), $product);
         $images = $product->images->sortBy('position')->values();
         $selectedImage = $images->get($request->integer('image'))
             ?? $images->firstWhere('product_variant_id', $selectedVariant?->id)

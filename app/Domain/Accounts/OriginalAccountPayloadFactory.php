@@ -188,7 +188,9 @@ class OriginalAccountPayloadFactory
             'handle' => $product->handle,
             'title' => $product->title,
             'brand' => $product->brand,
-            'basePrice' => $product->base_price,
+            'basePrice' => $product->showsPrice() ? $product->base_price : null,
+            'purchaseMode' => $product->purchase_mode,
+            'priceLabel' => app(\App\Services\ProductPurchaseRules::class)->price($product, $product->variants->first()?->price),
             'images' => $product->images->sortBy('position')->map(fn ($image) => [
                 'path' => $image->path,
                 'alt' => $image->alt,
@@ -198,8 +200,8 @@ class OriginalAccountPayloadFactory
                 'id' => $variant->id,
                 'title' => $variant->title,
                 'sku' => $variant->sku,
-                'price' => $variant->price,
-                'compareAtPrice' => $variant->compare_at_price,
+                'price' => $product->showsPrice() ? $variant->price : null,
+                'compareAtPrice' => $product->isBuyMode() ? $variant->compare_at_price : null,
                 'imageUrl' => $variant->image_url,
             ])->values()->all(),
         ];

@@ -78,6 +78,8 @@ class CheckoutService
             }
             $lines = $items->map(function (array $item): array {
                 $variant = ProductVariant::query()->lockForUpdate()->findOrFail($item['variant']->id);
+                $variant->setRelation('product', \App\Models\Product::query()->lockForUpdate()->findOrFail($variant->product_id));
+                app(ProductPurchaseRules::class)->assertPurchasable($variant);
                 $available = app(WebsiteInventoryAvailability::class)->quantity($variant);
                 if ($item['quantity'] < 1 || $available === null || $available < $item['quantity']) {
                     throw new RuntimeException('Requested quantity is unavailable.');

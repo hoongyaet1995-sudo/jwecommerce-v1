@@ -116,6 +116,7 @@ class OrderDataService
             'billingAddress' => $this->address($billing, 'billing'),
             'customerNote' => $order->customer_note,
             'internalNote' => $order->internal_note,
+            'quotation' => $order->shipping_method==='quoted_manual' ? ['url'=>route('admin.quotations.version-preview',['quotationVersion'=>data_get($order->shipping_snapshot,'quotation_version_id')],false),'manualFulfilment'=>true] : null,
             'notificationContextFingerprint' => $this->notificationContexts->fingerprintForOrder($order),
             'notificationSummary' => $notificationDispatch === null ? null : [
                 'publicId' => $notificationDispatch->public_id,

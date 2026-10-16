@@ -4,11 +4,11 @@
 
  $available=$selectedVariant ? app(\App\Services\Inventory\WebsiteInventoryAvailability::class)->quantity($selectedVariant) : null;
 
- $canAdd=app(\App\Services\StorefrontVariantData::class)->canAdd($selectedVariant);
+ $canAdd=app(\App\Services\StorefrontVariantData::class)->canAdd($selectedVariant, $product);
 
  $price=$selectedVariant?->price ?? $product->base_price;
 
- $compare=$selectedVariant ? $selectedVariant->compare_at_price : $product->compare_at_price;
+ $compare=$product->isBuyMode() ? ($selectedVariant ? $selectedVariant->compare_at_price : $product->compare_at_price) : 0;
 
  $description=app(\App\Services\ProductDescriptionHtml::class)->clean($product->description);
 
@@ -61,13 +61,13 @@
 
 @if(filled($product->subtitle))<p class="bs-muted bs-subtitle">{{ $product->subtitle }}</p>@endif
 
-<div class="bs-price"><strong data-pdp-price>@storefrontMoney($price)</strong><del data-pdp-compare-at @class(['hidden'=>$compare<=$price])>@if($compare>$price)@storefrontMoney($compare)@endif</del><span data-pdp-save @class(['hidden'=>$compare<=$price])>@if($compare>$price)Save @storefrontMoney($compare-$price)@endif</span></div>
+@if($product->showsPrice())<div class="bs-price"><strong data-pdp-price>@productPrice($product, $price)</strong><del data-pdp-compare-at @class(['hidden'=>$compare<=$price])>@if($compare>$price)@storefrontMoney($compare)@endif</del><span data-pdp-save @class(['hidden'=>$compare<=$price])>@if($compare>$price)Save @storefrontMoney($compare-$price)@endif</span></div>@endif
 
 @if(filled($pdpBrand))<p class="bs-fine">{{ $pdpBrand }}</p>@endif
 
 @if($reviews->isNotEmpty())<a class="bs-rating" href="#bs-reviews">{{ number_format($reviews->avg('rating'),1) }} / 5 · {{ $reviews->count() }} reviews</a>@endif
 
-<form method="POST" action="{{ route('cart.items.store') }}">@csrf<input data-pdp-variant-input type="hidden" name="variant_id" value="{{ $selectedVariant?->id }}">
+@if($product->isBuyMode())<form method="POST" action="{{ route('cart.items.store') }}">@csrf<input data-pdp-variant-input type="hidden" name="variant_id" value="{{ $selectedVariant?->id }}">
 
 <x-storefront.variant-selector :product="$product" :variants="$product->variants" :images="$images" :selected-variant="$selectedVariant" />
 
@@ -77,7 +77,7 @@
 
 <button data-pdp-instant-buy class="bs-outline bs-buy" name="checkout" value="1" @disabled(!$canAdd)>Buy now</button>
 
-</form>
+</form>@else @include('storefront.partials.product-enquiry-actions', ['actionClass'=>'bs-primary']) @endif
 
 <p class="bs-fine">SKU <span data-pdp-sku>{{ $selectedVariant?->sku }}</span></p>
 
@@ -93,13 +93,13 @@
 @if(filled($shipping['leadTimeText']??null))<p class="bs-fine">{{ $shipping['leadTimeText'] }}</p>@endif
 @if(filled($shipping['policyTitle']??null))<details class="bs-detail"><summary>{{ $shipping['policyTitle'] }}</summary><div class="bs-description">{!! app(\App\Services\ProductDescriptionHtml::class)->clean($shipping['policyContentHtml'] ?? '') !!}</div></details>@endif
 
-@if($pdpPaymentMethods)<p class="bs-fine">Payment at checkout · {{ implode(' / ',$pdpPaymentMethods) }}</p>@endif
+@if($product->isBuyMode() && $pdpPaymentMethods)<p class="bs-fine">Payment at checkout · {{ implode(' / ',$pdpPaymentMethods) }}</p>@endif
 
 </section></div>
 
 @if(filled($description))<section class="bs-product-story" data-commerce-product-zone="details"><div><h2>{{ $product->title }}</h2><div class="bs-description">{!! $description !!}</div></div>@if($specs->isNotEmpty())<div><h2>Specifications</h2><dl>@foreach($specs as $spec)<div><dt>{{ $spec['label'] ?? $spec['name'] ?? '' }}</dt><dd>{{ $spec['value'] }}</dd></div>@endforeach</dl></div>@endif</section>@endif
 
-@if($companions->isNotEmpty())<section class="bs-related" data-commerce-product-zone="related"><h2>Explore more</h2><div>@foreach($companions as $item)<a href="{{ route('storefront.products.show',$item->handle) }}"><img src="{{ $item->images->first()?->path ?: asset('images/image-not-found.png') }}" alt="{{ $item->title }}" loading="lazy"><h3>{{ $item->title }}</h3><p>@storefrontMoney($item->variants->first()?->price ?? $item->base_price)</p></a>@endforeach</div></section>@endif
+@if($companions->isNotEmpty())<section class="bs-related" data-commerce-product-zone="related"><h2>Explore more</h2><div>@foreach($companions as $item)<a href="{{ route('storefront.products.show',$item->handle) }}"><img src="{{ $item->images->first()?->path ?: asset('images/image-not-found.png') }}" alt="{{ $item->title }}" loading="lazy"><h3>{{ $item->title }}</h3><p>@productPrice($item, $item->variants->first()?->price ?? $item->base_price)</p></a>@endforeach</div></section>@endif
 
 @if($reviews->isNotEmpty())<section id="bs-reviews" class="bs-reviews"><h2>Customer reviews</h2>@foreach($reviews as $review)<article><p>{{ $review->rating }} / 5</p><h3>{{ $review->title }}</h3><p>{{ $review->comment }}</p></article>@endforeach</section>@endif
 

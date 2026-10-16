@@ -28,8 +28,18 @@ class SupportChatService
     }
     public function owner(Request $request): array
     {
+        if($request->filled('enquiry_id')){
+            $id=$request->input('enquiry_id');
+            abort_unless(is_string($id)&&Str::isUuid($id),404);
+            $enquiry=\App\Models\ProductEnquiry::find($id);
+            abort_unless($enquiry&&app(\App\Services\ProductEnquiryService::class)->canView($request,$enquiry),404);
+            $conversation=$enquiry->supportConversation;
+            abort_unless($conversation,404);
+            return [$conversation->owner_hash,$conversation->customer_user_id];
+        }
         $user = auth('customer')->user();
-        $generation = $request->session()->get('support_generation', '');
+        $generation = $request->query->has('support_generation')?($request->query('support_generation')??''):$request->session()->get('support_generation', '');
+        abort_unless(is_string($generation)&&($generation===''||(str_starts_with($generation,':')&&Str::isUuid(substr($generation,1)))),404);
         if ($user && ! $user->is_admin) {
             return [hash('sha256', 'customer:'.$user->id.$generation), $user->id];
         }
@@ -49,6 +59,7 @@ class SupportChatService
             if ($action === 'reopen' && $locked->status === 'waiting_human') return $locked;
             abort_unless($locked->status === 'resolved', 409, 'This conversation is not resolved.');
             if ($action === 'new') {
+                $request->session()->forget('support_enquiry_id');
                 $request->session()->put('support_generation', ':'.Str::uuid());
                 return null;
             }
@@ -123,7 +134,16 @@ class SupportChatService
                 }
             }
             $locked->update(['status' => $status, 'last_message_at' => now()]);
-            if ($role === 'customer') app(\App\Services\Customers\CustomerContactResolver::class)->associate($locked, ['platform'=>'storefront','merchant_key'=>config('services.facebook.merchant_key','jw-ecommerce'),'app_id'=>'storefront','account_id'=>'storefront','sender_id'=>$locked->customer_user_id ? 'user:'.$locked->customer_user_id : $locked->owner_hash], $data['contact'] ?? ['name'=>'Guest']);
+            if ($role === 'customer') {
+                $profile=$data['contact']??null;
+                if(!$profile){
+                    $contactNote=$locked->notes()->where('content','like','[Contact] %')->latest('id')->value('content');
+                    $stored=$contactNote?json_decode(substr($contactNote,10),true):null;
+                    // Retain supplied contact details, without ever treating them as verified identity.
+                    if(is_array($stored))$profile=array_filter(array_intersect_key($stored,array_flip(['name','email','phone'])),fn($value)=>is_string($value));
+                }
+                app(\App\Services\Customers\CustomerContactResolver::class)->associate($locked, ['platform'=>'storefront','merchant_key'=>config('services.facebook.merchant_key','jw-ecommerce'),'app_id'=>'storefront','account_id'=>'storefront','sender_id'=>$locked->customer_user_id ? 'user:'.$locked->customer_user_id : $locked->owner_hash], $profile?:['name'=>'Guest']);
+            }
             app(SupportCustomerMemoryService::class)->schedule($locked,$message);
             app(SupportMessageAlertService::class)->received($locked,$message);
 
@@ -152,7 +172,7 @@ class SupportChatService
                 'id' => (string) $message->id, 'clientMessageId' => $message->client_message_id,
                 'attachments'=>app(SupportAttachmentService::class)->view($message),
                 'role' => $message->sender_role === 'customer' ? 'customer' : ($message->sender_role === 'ai' ? 'ai' : 'staff'),
-                ...($message->sender_role === 'ai' ? app(SupportActionResolver::class)->resolve(array_values(array_filter($message->actions ?? [], fn($a)=>app(SupportEscalationPolicy::class)->enabledAction($a,$conversation,$settings))), $message->content, empty($message->actions)) : ['content'=>$message->content,'actions'=>[]]), 'createdAt' => $message->created_at->toIso8601String(),
+                ...($message->sender_role === 'ai' ? app(SupportActionResolver::class)->resolve(array_values(array_filter($message->actions ?? [], fn($a)=>app(SupportEscalationPolicy::class)->enabledAction($a,$conversation,$settings))), $message->content, empty($message->actions)) : ['content'=>$message->content,'actions'=>$message->sender_role==='human_agent'?array_values(array_filter($message->actions??[],fn($a)=>is_array($a)&&($a['type']??'')==='view_quotation'&&preg_match('#^/quotations/[0-9a-f-]{36}$#D',$a['url']??''))):[]]), 'createdAt' => $message->created_at->toIso8601String(),
             ])->all()];
     }
 

@@ -11,6 +11,8 @@ import { SectionRenderer } from '../components/pages/SectionRenderer';
 import { imageTargets, imageSlotFamilies } from './imageTargets';
 
 export interface PageRuntimeProduct {
+  purchaseMode?: 'buy' | 'quote' | 'display';
+  priceDisplay?: 'exact' | 'from' | 'hide';
   id: string;
   title: string;
   slug: string;
@@ -208,7 +210,7 @@ const isRuntimeForms = (value: unknown, page: PageRuntimePayload['page']): value
 };
 
 const runtimeProductFields = [
-  'id', 'title', 'slug', 'brand', 'summary', 'images', 'tags', 'basePrice', 'baseCompareAtPrice', 'commerce',
+  'id', 'title', 'slug', 'brand', 'summary', 'images', 'tags', 'basePrice', 'baseCompareAtPrice', 'commerce', 'purchaseMode', 'priceDisplay',
 ];
 const runtimeSourceFields = ['id', 'type', 'slug', 'label', 'image'];
 
@@ -307,7 +309,12 @@ export const PAGE_SECTION_BOOTSTRAP_FIELD_RULES = {
   ctaBannerHeight: {kind: 'optional-enum', values: ['compact','normal','spacious']},
   richTextPreset: {kind: 'optional-enum', values: ['default', 'manifesto']},
   featureCardsPreset: {kind: 'optional-enum', values: ['default', 'values-list', 'editorial-columns','numbered-process','service-highlights']},
-  galleryPreset: {kind: 'optional-enum', values: ['default', 'editorial-montage', 'editorial-cards','editorial-triptych','portfolio-cards','routine-steps']},
+  heroBannerPreset:{kind:'optional-enum',values:['default','editorial-gradient']},
+  testimonialPreset:{kind:'optional-enum',values:['default','editorial-quote']},
+  marqueeSpeed:{kind:'optional-number'},
+  marqueeDirection:{kind:'optional-enum',values:['left','right']},
+  marqueePauseOnHover:{kind:'optional-boolean'},
+  galleryPreset: {kind: 'optional-enum', values: ['photo-marquee','default', 'editorial-montage', 'editorial-cards','editorial-triptych','portfolio-cards','routine-steps']},
   showSectionHeading: {kind: 'optional-boolean'},
   valuesShowHeading: {kind: 'optional-boolean'},
   valuesNumberColor: {kind: 'optional-string'},
@@ -402,6 +409,8 @@ const isRuntimeProduct = (value: unknown): value is PageRuntimeProduct => isReco
   && typeof value.summary === 'string'
   && isStringArray(value.images)
   && isStringArray(value.tags)
+  && (!('purchaseMode' in value) || ['buy','quote','display'].includes(value.purchaseMode as string))
+  && (!('priceDisplay' in value) || ['exact','from','hide'].includes(value.priceDisplay as string))
   && isFiniteNumber(value.basePrice)
   && (value.baseCompareAtPrice === null || isFiniteNumber(value.baseCompareAtPrice))
   && (!('commerce' in value) || (isRecord(value.commerce)
@@ -430,6 +439,10 @@ const isRuntimeSource = (value: unknown, type: PageRuntimeSource['type']): value
 );
 
 const isPageSection = (value: unknown): value is PageSection => {
+  if(isRecord(value)&&'heroBannerPreset' in value&&value.type!=='hero_banner')return false;
+  if(isRecord(value)&&'testimonialPreset' in value&&value.type!=='testimonials_slider')return false;
+  if(isRecord(value)&&['marqueeSpeed','marqueeDirection','marqueePauseOnHover'].some(key=>key in value)&&value.type!=='media_gallery')return false;
+  if(isRecord(value)&&'marqueeSpeed' in value&&(!Number.isInteger(value.marqueeSpeed)||Number(value.marqueeSpeed)<10||Number(value.marqueeSpeed)>120))return false;
   if(isRecord(value)&&value.type==='promotion_highlights'&&Array.isArray(value.items)&&value.items.length>6)return false;
   if(isRecord(value)&&['promotionSource','promotionLayout','showOfferBadges'].some(k=>k in value)&&value.type!=='promotion_highlights')return false;
   if(isRecord(value)&&['shopNavigationPreset','bannerProportions','bannerHeight'].some(key=>key in value)&&value.type!=='shop_navigation')return false;
@@ -605,7 +618,7 @@ const isRuntimePayload = (value: unknown): value is PageRuntimePayload => {
     || typeof value.page.document.title !== 'string'
     || typeof value.page.document.slug !== 'string'
     || !['standard', 'fullwidth', 'landing'].includes(String(value.page.document.template))
-    || ('containerWidth' in value.page.document && !['standard','wide'].includes(String(value.page.document.containerWidth)))
+    || ('containerWidth' in value.page.document && !['standard','wide','full','site'].includes(String(value.page.document.containerWidth)))
     || ('shellDesign' in value.page.document && !isShellDesign(value.page.document.shellDesign))
     || ('headerPresentation' in value.page.document && !isHeaderPresentation(value.page.document.headerPresentation))
     || ('style' in value.page.document && !isPageStyle(value.page.document.style))
@@ -656,6 +669,8 @@ const projectProduct = (product: Product): PageRuntimeProduct => ({
   summary: product.summary ?? '',
   images: (product.images ?? []).map((image) => typeof image === 'string' ? image : image.path),
   tags: [...(product.tags ?? [])],
+  purchaseMode: product.purchaseMode ?? 'buy',
+  priceDisplay: product.priceDisplay ?? 'exact',
   basePrice: product.basePrice,
   baseCompareAtPrice: product.baseCompareAtPrice ?? null,
 });
@@ -705,7 +720,7 @@ export const createAdminPageRuntimePayload = (
         const variant = product.variants?.[0];
         return {...projectProduct(product), commerce: {
           variantId: variant?.id ?? null, sku: variant?.sku ?? '', price: variant?.price ?? product.basePrice,
-          compareAtPrice: variant?.compareAtPrice ?? null, optionLabels: product.options?.[0]?.values ?? [], canChoose: Boolean(variant),
+          compareAtPrice: variant?.compareAtPrice ?? null, optionLabels: product.options?.[0]?.values ?? [], canChoose: (!product.purchaseMode || product.purchaseMode === 'buy') && Boolean(variant),
         }};
       });
       return {listing:{sourceId:{valid:type === 'all' ? true : type === 'manual' ? manual.length > 0 && manual.length === new Set(feed.productIds ?? []).size : Boolean(source)}, source: source ? {

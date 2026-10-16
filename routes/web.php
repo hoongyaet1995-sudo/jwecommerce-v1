@@ -77,12 +77,12 @@ Route::post('/api/marketplace/hub/events', \App\Http\Controllers\MarketplaceHubE
 
 Route::get('/', [StorefrontController::class, 'home'])->name('storefront.home');
 Route::get('/support/provider-image/{attachment}', [\App\Http\Controllers\SupportAttachmentController::class, 'provider'])->whereUuid('attachment')->middleware(['signed','throttle:120,1'])->name('support.provider-image');
-Route::post('/support/chat/attachments', [\App\Http\Controllers\SupportAttachmentController::class, 'upload'])->middleware('throttle:20,1');
-Route::get('/support/chat/attachments/{attachment}', [\App\Http\Controllers\SupportAttachmentController::class, 'show'])->whereUuid('attachment')->middleware('throttle:60,1');
-Route::get('/support/chat', [\App\Http\Controllers\Storefront\SupportChatController::class, 'show'])->middleware('throttle:60,1');
+Route::post('/support/chat/attachments', [\App\Http\Controllers\SupportAttachmentController::class, 'upload'])->middleware('throttle:20,1,support-upload:');
+Route::get('/support/chat/attachments/{attachment}', [\App\Http\Controllers\SupportAttachmentController::class, 'show'])->whereUuid('attachment')->middleware('throttle:60,1,support-attachment-view:');
+Route::get('/support/chat', [\App\Http\Controllers\Storefront\SupportChatController::class, 'show'])->middleware('throttle:60,1,support-poll:');
 Route::get('/support/faq', [\App\Http\Controllers\SupportFaqController::class, 'show'])->middleware('throttle:60,1');
-Route::post('/support/chat/messages', [\App\Http\Controllers\Storefront\SupportChatController::class, 'send'])->middleware('throttle:20,1');
-Route::post('/support/chat/resolved', [\App\Http\Controllers\Storefront\SupportChatController::class, 'resolved'])->middleware('throttle:20,1');
+Route::post('/support/chat/messages', [\App\Http\Controllers\Storefront\SupportChatController::class, 'send'])->middleware('throttle:20,1,support-send:');
+Route::post('/support/chat/resolved', [\App\Http\Controllers\Storefront\SupportChatController::class, 'resolved'])->middleware('throttle:20,1,support-resolved:');
 Route::get('/page-template-sample/home-deco-catalog-preview', function () {
     abort_unless(app()->environment('local'), 404);
     $products = \App\Models\Category::where('slug', 'tables')->firstOrFail()->products()->where('status', 'active')->with(['variants', 'images'])->get();
@@ -173,6 +173,19 @@ Route::middleware(['auth:customer', 'customer'])->prefix('account')->name('custo
     Route::post('/logout', [CustomerAuthController::class, 'destroy'])->name('logout');
 });
 
+Route::get('/products/{handle}/enquire', [\App\Http\Controllers\ProductEnquiryController::class,'create'])->name('enquiries.create');
+Route::post('/enquiries', [\App\Http\Controllers\ProductEnquiryController::class,'store'])->middleware('throttle:10,1,enquiry-submit:')->name('enquiries.store');
+Route::get('/enquiries/{enquiry}', [\App\Http\Controllers\ProductEnquiryController::class,'receipt'])->whereUuid('enquiry')->middleware('throttle:30,1,enquiry-receipt:')->name('enquiries.receipt');
+Route::post('/enquiries/{enquiry}/support', [\App\Http\Controllers\ProductEnquiryController::class,'support'])->whereUuid('enquiry')->middleware('throttle:10,1,enquiry-support:')->name('enquiries.support');
+Route::post('/quotations/{quotationVersion}/accept',[\App\Http\Controllers\QuotationCheckoutController::class,'accept'])->whereUuid('quotationVersion')->middleware('throttle:10,1,quotation-accept:')->name('quotations.accept');
+Route::get('/quotations/{quotationVersion}/checkout',[\App\Http\Controllers\QuotationCheckoutController::class,'checkout'])->whereUuid('quotationVersion')->name('quotations.checkout');
+Route::post('/quotations/{quotationVersion}/checkout',[\App\Http\Controllers\QuotationCheckoutController::class,'store'])->whereUuid('quotationVersion')->middleware('throttle:10,1,quotation-checkout:')->name('quotations.checkout.store');
+Route::get('/quotations/{quotationVersion}/payment',[\App\Http\Controllers\QuotationCheckoutController::class,'payment'])->whereUuid('quotationVersion')->name('quotations.payment');
+Route::post('/quotations/{quotationVersion}/payment',[\App\Http\Controllers\QuotationCheckoutController::class,'pay'])->whereUuid('quotationVersion')->middleware('throttle:10,1,quotation-pay:')->name('quotations.pay');
+Route::post('/quotations/{quotationVersion}/proof',[\App\Http\Controllers\QuotationCheckoutController::class,'proof'])->whereUuid('quotationVersion')->middleware('throttle:10,1,quotation-proof:')->name('quotations.proof');
+Route::get('/quotations/{quotationVersion}', [\App\Http\Controllers\EnquiryQuotationController::class,'show'])->whereUuid('quotationVersion')->middleware('throttle:60,1,quotation-view:')->name('quotations.show');
+Route::post('/quotations/{quotationVersion}/support', [\App\Http\Controllers\EnquiryQuotationController::class,'support'])->whereUuid('quotationVersion')->middleware('throttle:10,1,quotation-support:')->name('quotations.support');
+
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthController::class, 'create'])->name('login');
     Route::post('/login', [AuthController::class, 'store'])->name('login.store');
@@ -188,6 +201,11 @@ Route::get('/admin/shipping/easyparcel/callback/denied', [ShippingProviderApiCon
     ->name('admin.shipping.easyparcel.callback.denied');
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function (): void {
+    Route::get('/api/enquiries', [\App\Http\Controllers\Admin\ProductEnquiryController::class,'index']);
+    Route::get('/api/enquiries/{enquiry}', [\App\Http\Controllers\Admin\ProductEnquiryController::class,'show'])->whereUuid('enquiry');
+    Route::patch('/api/enquiries/{enquiry}', [\App\Http\Controllers\Admin\ProductEnquiryController::class,'update'])->whereUuid('enquiry')->middleware('throttle:60,1');
+    Route::post('/api/enquiries/{enquiry}/notes', [\App\Http\Controllers\Admin\ProductEnquiryController::class,'note'])->whereUuid('enquiry')->middleware('throttle:30,1');
+
     Route::get('/social/facebook/authorize', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'authorize'])->middleware('throttle:10,1');
     Route::get('/social/facebook/callback', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'callback'])->middleware('throttle:20,1');
     Route::get('/social/facebook/hub-return', [\App\Http\Controllers\Admin\FacebookAccountController::class, 'hubReturn'])->middleware('throttle:20,1');
@@ -217,6 +235,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/support/conversations/{conversation}/memories', [\App\Http\Controllers\Admin\SupportCustomerMemoryController::class,'index'])->whereUuid('conversation');
     Route::patch('/api/support/conversations/{conversation}/memories/{memory}', [\App\Http\Controllers\Admin\SupportCustomerMemoryController::class,'update'])->whereUuid('conversation')->middleware('throttle:20,1');
     Route::delete('/api/support/conversations/{conversation}/memories/{memory}', [\App\Http\Controllers\Admin\SupportCustomerMemoryController::class,'destroy'])->whereUuid('conversation')->middleware('throttle:20,1');
+    Route::get('/api/enquiries/{enquiry}/quotation',[\App\Http\Controllers\Admin\EnquiryQuotationController::class,'show'])->whereUuid('enquiry');
+    Route::put('/api/enquiries/{enquiry}/quotation',[\App\Http\Controllers\Admin\EnquiryQuotationController::class,'save'])->whereUuid('enquiry')->middleware('throttle:30,1,quotation-save:');
+    Route::post('/api/enquiries/{enquiry}/quotation/send',[\App\Http\Controllers\Admin\EnquiryQuotationController::class,'send'])->whereUuid('enquiry')->middleware('throttle:10,1,quotation-send:');
+    Route::post('/api/enquiries/{enquiry}/quotation/revise',[\App\Http\Controllers\Admin\EnquiryQuotationController::class,'revise'])->whereUuid('enquiry')->middleware('throttle:10,1,quotation-revise:');
+    Route::get('/enquiries/{enquiry}/quotation-preview',[\App\Http\Controllers\EnquiryQuotationController::class,'preview'])->whereUuid('enquiry')->name('quotations.preview');
+    Route::get('/quotations/{quotationVersion}/preview',[\App\Http\Controllers\EnquiryQuotationController::class,'previewVersion'])->whereUuid('quotationVersion')->name('quotations.version-preview');
+    Route::post('/enquiries/{enquiry}/quotation/send',[\App\Http\Controllers\EnquiryQuotationController::class,'send'])->whereUuid('enquiry')->middleware('throttle:10,1,quotation-send:')->name('quotations.send');
     Route::get('/api/support/conversations', [\App\Http\Controllers\Admin\SupportChatController::class, 'index']);
     Route::post('/api/support/conversations/{conversation}/messages', [\App\Http\Controllers\Admin\SupportChatController::class, 'send'])->whereUuid('conversation')->middleware('throttle:60,1');
     Route::patch('/api/support/conversations/{conversation}/status', [\App\Http\Controllers\Admin\SupportChatController::class, 'status'])->whereUuid('conversation');
@@ -362,6 +387,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/api/tax-settings/rules/{taxRule}', [TaxSettingsApiController::class, 'retired'])->name('api.tax-settings.rules.update');
     Route::delete('/api/tax-settings/rules/{taxRule}', [TaxSettingsApiController::class, 'retired'])->name('api.tax-settings.rules.destroy');
     Route::get('/', AdminAppController::class)->name('dashboard');
+    Route::get('/enquiries', AdminAppController::class)->name('enquiries');
     Route::get('/commerce', AdminAppController::class)->name('commerce');
     Route::get('/orders', AdminAppController::class)->name('orders.index');
     Route::get('/customers', AdminAppController::class)->name('customers.index');

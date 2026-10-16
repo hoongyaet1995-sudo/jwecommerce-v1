@@ -12,7 +12,7 @@ class SupportChatController extends Controller
     public function resolved(Request $request, SupportChatService $chat)
     {
         $data = $request->validate(['action'=>['required','in:reopen,new']]);
-        return response()->json(['conversation'=>$chat->publicView($chat->resolvedAction($request,$data['action']))])->header('Cache-Control','no-store');
+        return response()->json(['conversation'=>$chat->publicView($chat->resolvedAction($request,$data['action'])),'generation'=>$request->session()->get('support_generation','')])->header('Cache-Control','no-store');
     }
     public function show(Request $request, SupportChatService $chat)
     {

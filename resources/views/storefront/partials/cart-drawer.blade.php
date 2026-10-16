@@ -1,7 +1,10 @@
+@if(session('cart_purchase_notice'))<p role="status" class="px-6 py-3 text-sm">{{ session('cart_purchase_notice') }}</p>@endif
 @if(app(\App\Services\WebsiteDesignService::class)->surface()==='universal')
 @include('storefront.themes.universal-cart-drawer')
 @elseif(app(\App\Services\WebsiteDesignService::class)->surface()==='fashion')
 @include('storefront.themes.fashion-cart-drawer')
+@elseif(app(\App\Services\WebsiteDesignService::class)->surface()==='wedding')
+@include('storefront.themes.wedding-cart-drawer')
 @elseif(app(\App\Services\WebsiteDesignService::class)->surface()==='jewelry')
 @include('storefront.themes.jewelry-cart-drawer')
 @elseif(app(\App\Services\WebsiteDesignService::class)->surface()==='baby')

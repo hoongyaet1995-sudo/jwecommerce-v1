@@ -42,6 +42,9 @@ class PaymentAttemptService
         }
 
         $order = $previous->order()->firstOrFail();
+        if ($order->shipping_method === 'quoted_manual') {
+            throw ValidationException::withMessages(['payment_method'=>'Quotation payments must be resumed from their original order. Contact our team if a payment link has expired.']);
+        }
         if ($order->status !== 'pending_payment') {
             throw ValidationException::withMessages(['payment_method' => 'This order is no longer awaiting payment.']);
         }

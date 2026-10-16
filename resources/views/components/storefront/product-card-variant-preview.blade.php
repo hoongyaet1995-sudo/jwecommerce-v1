@@ -1,4 +1,5 @@
 @props(['product', 'variants', 'images'])
+@if($product->isBuyMode())
 
 @php
     $payload = $variants->values()->map(function ($variant) use ($images) {
@@ -35,4 +36,6 @@
         @endforeach
         @if($payload->count() > 4)<span class="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono ml-0.5 whitespace-nowrap">+{{ $payload->count() - 4 }}</span>@endif
     </div>
+@endif
+
 @endif

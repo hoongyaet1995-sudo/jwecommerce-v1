@@ -470,6 +470,7 @@ export const OrderAdmin: React.FC = () => {
                   {renderStatusBadge(selectedOrder.fulfillmentStatus)}
                 </div>
                 <p className="text-xs text-neutral-400 mt-0.5">Placed on {selectedOrder.createdAt}</p>
+                {selectedOrder.quotation&&<p className="text-xs text-neutral-500 mt-2"><a className="text-amber-600 underline" href={selectedOrder.quotation.url} target="_blank" rel="noopener noreferrer">View accepted quotation ↗</a> · Manual fulfilment · No automatic stock deduction</p>}
               </div>
 
               <button onClick={handleCloseDetail} className="text-neutral-400 hover:text-neutral-600">

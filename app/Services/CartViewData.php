@@ -21,7 +21,7 @@ class CartViewData
      */
     public function for(Request $request): array
     {
-        $quantities = $request->session()->get('cart', []);
+        $quantities = app(\App\Services\ProductPurchaseRules::class)->cartQuantities($request);
         $variants = ProductVariant::query()
             ->with(['product.images'])
             ->whereKey(array_keys($quantities))
@@ -48,7 +48,7 @@ class CartViewData
             'shippingOption' => $shippingOption,
             'shippingProgressThreshold' => $this->shipping->cartFreeShippingThreshold(),
             'addons' => Product::query()
-                ->where('status', 'active')
+                ->where('status', 'active')->where('purchase_mode', 'buy')
                 ->whereNotIn('id', $variants->pluck('product_id'))
                 ->with(['images', 'variants'])
                 ->orderBy('title')

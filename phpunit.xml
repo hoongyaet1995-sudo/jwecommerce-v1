@@ -19,6 +19,7 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <env name="PRODUCT_ENQUIRIES_ENABLED" value="false" force="true"/>
         <env name="APP_CONFIG_CACHE" value="bootstrap/cache/testing-config-disabled.php" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

@@ -136,6 +136,10 @@ describe('PageRuntimeContext', () => {
     expect(renderRuntimeOrFallback(readBootstrapValue(value))).toContain('data-collection-banners');
     (value.page.document.sections[0] as any).bannerProportions='90:10';expect(readBootstrapValue(value)).toBeNull();
   });
+  it('accepts explicit Follow Website and Full widths without overriding legacy widths',()=>{
+    const value=payload();value.page.document.sections=[{id:'hero',type:'hero_banner',title:'Wedding copy',isVisible:true,heroBannerPreset:'editorial-gradient',containerMode:'full-bleed'},{id:'body',type:'rich_text',title:'Body',isVisible:true,containerMode:'page'}];
+    for(const width of ['site','full'] as const){value.page.document.containerWidth=width;expect(readBootstrapValue(value)).not.toBeNull();const html=renderRuntimeOrFallback(readBootstrapValue(value));expect(html).toContain(`data-container-width="${width}"`);if(width==='site'){expect(html).toContain('--cms-page-width:var(--storefront-content-width, 1280px)');expect(html).toContain('--cms-page-gutter:var(--storefront-content-gutter, 24px)');expect(html).toContain('padding-inline:var(--cms-page-gutter');expect(html).not.toContain('px-6 @min-[640px]:px-10');}}
+  });
   it('shares saved page width with every renderer and rejects invalid widths',()=>{
     const value=payload();value.page.document.containerWidth='wide';value.page.document.sections=SECTION_TEMPLATES.map((template,index)=>({...template.defaultData,id:'container-'+index,isVisible:true}));
     value.page.document.sections.forEach((section,index)=>{if(section.type==='promotion_highlights')value.runtime.sections[index]={promotions:{offers:[{id:'1',name:'Offer',description:'',code:'SAVE',benefit:'20% off',minimumSpend:null,endsAt:null,status:'active'}]}};});
@@ -632,7 +636,7 @@ describe('PageRuntimeContext', () => {
     });
     expect(adapted.runtime.sections[0].productIds?.products.map(product => product.id)).toEqual(['2', '1']);
     expect(Object.keys(adapted.catalog.products[0])).toEqual([
-      'id', 'title', 'slug', 'brand', 'summary', 'images', 'tags', 'basePrice', 'baseCompareAtPrice',
+      'id', 'title', 'slug', 'brand', 'summary', 'images', 'tags', 'purchaseMode', 'priceDisplay', 'basePrice', 'baseCompareAtPrice',
     ]);
     expect(JSON.stringify(adapted)).not.toContain('descriptionHtml');
     expect(JSON.stringify(adapted)).not.toContain('totalInventory');
