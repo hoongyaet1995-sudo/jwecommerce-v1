@@ -1568,8 +1568,8 @@
     },
     "marqueeSpeed": {
       "type": "integer",
-      "minimum": 10,
-      "maximum": 120
+      "minimum": 0,
+      "maximum": 100
     },
     "marqueeDirection": {
       "type": "string",

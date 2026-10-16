@@ -62,6 +62,21 @@ final class PageDocumentContract
 
             $sectionPath = "sections.{$index}";
             $sectionDefinition = $sectionTypes[$section['type']];
+            $editorialQuote = $section['type'] === 'testimonials_slider'
+                && ($section['testimonialPreset'] ?? null) === 'editorial-quote';
+
+            // This layout renders the section heading only when authored. Its
+            // actual content is the quote entries, which must not be empty.
+            if ($editorialQuote) {
+                if (empty($section['items'])) {
+                    $this->addError($errors, "{$sectionPath}.items", 'Add at least one testimonial quote to publish.');
+                }
+                foreach ($section['items'] ?? [] as $itemIndex => $item) {
+                    if (trim($item['description'] ?? '') === '') {
+                        $this->addError($errors, "{$sectionPath}.items.{$itemIndex}.description", 'Enter this testimonial quote to publish.');
+                    }
+                }
+            }
 
             if (($sectionDefinition['renderer']['capable'] ?? false) !== true) {
                 $this->addError($errors, "{$sectionPath}.type", 'This visible section type cannot be rendered.');
@@ -72,6 +87,7 @@ final class PageDocumentContract
                 foreach ($section['productTabs'] ?? [] as $tabIndex => $tab) if (trim($tab['label'] ?? '') === '') $this->addError($errors,"{$sectionPath}.productTabs.{$tabIndex}.label",'Name this product tab.');
             }
             foreach ($sectionDefinition['publishRequired'] as $field) {
+                if ($editorialQuote && $field === 'title') continue;
                 // Catalog readiness is reviewed by employees, not a publication gate.
                 if ($section['type'] === 'product_listing' && in_array($field, ['sourceType', 'sourceId', 'productIds'], true)) continue;
                 if (in_array($section['listingPreset'] ?? null, ['editorial-tabs','pantry-tabs','tech-tabs','kids-tabs'], true) && $section['type'] === 'product_listing' && in_array($field,['sourceType','sourceId'],true)) continue;

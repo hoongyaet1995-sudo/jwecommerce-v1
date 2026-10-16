@@ -51,6 +51,6 @@ final class WeddingListingTest extends TestCase
  }
  public function test_public_wedding_lists_real_mode_actions_and_hides_quote_price_controls():void {
   $this->item('real-quote','quote',987654321);StoreSetting::create(['key'=>'website_design','value'=>['data'=>['theme'=>'wedding']]]);
-  $this->get('/shop')->assertOk()->assertSee('data-wedding-listing',false)->assertSee('Price on request')->assertSee(route('enquiries.create','real-quote'),false)->assertDontSee('987654321')->assertDontSee('Minimum price amount')->assertDontSee('In-stock products only')->assertSee('wedding-listing.js');
+  $this->get('/shop')->assertOk()->assertSee('data-wedding-listing',false)->assertSee('data-enquiry-context',false)->assertSee('data-product-enquiry',false)->assertSee('Price on request')->assertSee(route('enquiries.create','real-quote'),false)->assertDontSee('987654321')->assertDontSee('Minimum price amount')->assertDontSee('In-stock products only')->assertSee('wedding-listing.js');
  }
 }

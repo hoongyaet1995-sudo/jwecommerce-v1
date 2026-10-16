@@ -1817,6 +1817,7 @@ document.addEventListener('click', (event) => {
  const context = button.closest('[data-enquiry-context]') || document;
  const dialog = context.querySelector('[data-enquiry-dialog]');
  if (!dialog) return;
+ event.preventDefault();
  const selector = context.querySelector('[data-storefront-variant-selector]');
  const quickVariant = context.querySelector('[data-enquiry-quick-variant]');
  const selected = quickVariant?.selectedOptions?.[0]?.textContent || quickVariant?.dataset.title || selector?.querySelector('[data-pdp-selected-label]')?.textContent;

@@ -1,3 +1,4 @@
+import {PhotoMarqueeSettings} from '../components/pages/PhotoMarqueeSettings';
 import {pageContainerStyle} from '../components/pages/PageSectionContainer';
 import React from 'react';
 import {describe,it,expect,vi} from 'vitest';
@@ -12,6 +13,12 @@ import {EditorialGradientHero,EditorialQuote} from '../components/pages/WeddingE
 import {SECTION_TEMPLATES} from '../components/pages/AddSectionModal';
 vi.mock('../components/pages/motion/CmsMotionWrapper',()=>({MotionItem:({children,...p}:any)=><div {...p}>{children}</div>,MotionButton:({children}:any)=><div>{children}</div>}));
 describe('Wedding editorial integration',()=>{
+ it('exposes duration bounds and directional diagrams, and pauses a zero-duration loop',()=>{
+  const section={id:'zero',type:'media_gallery',title:'Photos',galleryPreset:'photo-marquee',marqueeSpeed:0,items:[]} as any;
+  const controls=renderToStaticMarkup(<PhotoMarqueeSettings section={section} onChange={()=>{}}/>);
+  expect(controls).toContain('type="range"');expect(controls).toContain('min="0"');expect(controls).toContain('max="100"');expect(controls).toContain('Move left');expect(controls).toContain('Move right');
+  expect(renderToStaticMarkup(<PhotoMarquee section={section}/>)).toContain('data-paused="true"');
+ });
  it('follows canonical storefront width and gutter once while preserving authored widths',()=>{
   expect(pageContainerStyle('site')).toEqual({maxWidth:'var(--storefront-content-width, 1280px)',paddingInline:'var(--storefront-content-gutter, 24px)',boxSizing:'border-box'});
   expect(pageContainerStyle('site',true)).toEqual({maxWidth:'none'});

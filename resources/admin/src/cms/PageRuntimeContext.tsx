@@ -442,7 +442,7 @@ const isPageSection = (value: unknown): value is PageSection => {
   if(isRecord(value)&&'heroBannerPreset' in value&&value.type!=='hero_banner')return false;
   if(isRecord(value)&&'testimonialPreset' in value&&value.type!=='testimonials_slider')return false;
   if(isRecord(value)&&['marqueeSpeed','marqueeDirection','marqueePauseOnHover'].some(key=>key in value)&&value.type!=='media_gallery')return false;
-  if(isRecord(value)&&'marqueeSpeed' in value&&(!Number.isInteger(value.marqueeSpeed)||Number(value.marqueeSpeed)<10||Number(value.marqueeSpeed)>120))return false;
+  if(isRecord(value)&&'marqueeSpeed' in value&&(!Number.isInteger(value.marqueeSpeed)||Number(value.marqueeSpeed)<0||Number(value.marqueeSpeed)>100))return false;
   if(isRecord(value)&&value.type==='promotion_highlights'&&Array.isArray(value.items)&&value.items.length>6)return false;
   if(isRecord(value)&&['promotionSource','promotionLayout','showOfferBadges'].some(k=>k in value)&&value.type!=='promotion_highlights')return false;
   if(isRecord(value)&&['shopNavigationPreset','bannerProportions','bannerHeight'].some(key=>key in value)&&value.type!=='shop_navigation')return false;
