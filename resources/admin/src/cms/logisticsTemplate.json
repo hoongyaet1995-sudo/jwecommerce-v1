@@ -1,0 +1,385 @@
+{
+  "style": {
+    "palette": {
+      "paper": "#ffffff",
+      "ink": "#173247",
+      "muted": "#354654",
+      "accent": "#173247",
+      "light": "#ffffff",
+      "secondary": "#EF7B32",
+      "secondaryInk": "#173247",
+      "hover": "#102534"
+    },
+    "typography": {
+      "title": {
+        "fontFamily": "barlow",
+        "fontSize": 36,
+        "fontWeight": 700
+      },
+      "itemTitle": {
+        "fontFamily": "barlow",
+        "fontSize": 22,
+        "fontWeight": 700
+      },
+      "eyebrow": {
+        "fontFamily": "barlow",
+        "fontSize": 12,
+        "fontWeight": 600
+      },
+      "content": {
+        "fontFamily": "inter",
+        "fontSize": 14,
+        "fontWeight": 400
+      },
+      "itemContent": {
+        "fontFamily": "inter",
+        "fontSize": 14,
+        "fontWeight": 400
+      }
+    },
+    "spacing": "compact",
+    "buttonRadius": 6,
+    "buttonSize": "compact"
+  },
+  "sections": [
+    {
+      "isVisible": true,
+      "containerMode": "full-bleed",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#EF7B32",
+        "titleColor": "#ffffff",
+        "contentColor": "#ffffff",
+        "primaryBtnBg": "#EF7B32",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": "#173247"
+      },
+      "id": "logistics-hero",
+      "type": "hero_banner",
+      "heroBannerPreset": "industrial-overlay",
+      "title": "The right container.\nThe right solution.",
+      "subtitle": "CONTAINER SALES • RENTAL • LOGISTICS",
+      "content": "Containers and transport solutions shaped around your needs.\nIllustrative scene — replace with your business photography.",
+      "mediaUrl": "/images/themes/logistics/hero.png",
+      "buttonText": "Explore Containers",
+      "buttonLink": "/shop",
+      "secondaryButtonText": "Request a Quote",
+      "secondaryButtonLink": "#storefront-support-widget",
+      "typography": {
+        "title": {
+          "fontFamily": "barlow",
+          "fontSize": 56,
+          "fontWeight": 700,
+          "lineHeight": 1.05
+        }
+      },
+      "imageSlots": [
+        {
+          "target": "mediaUrl",
+          "mediaAlt": "Illustrative container yard and transport scene"
+        }
+      ]
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#EF7B32",
+        "titleColor": "#173247",
+        "contentColor": "#354654",
+        "primaryBtnBg": "#173247",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#173247",
+        "customBgColor": "#ffffff"
+      },
+      "id": "logistics-services",
+      "type": "feature_cards",
+      "featureCardsPreset": "industrial-cards",
+      "title": "Built around your needs.",
+      "subtitle": "WHAT WE DO",
+      "columnsCount": 3,
+      "items": [
+        {
+          "id": "sales",
+          "icon": "Package",
+          "title": "Container Sales",
+          "description": "Containers for a wide range of industrial and commercial uses.",
+          "buttonText": "Learn more",
+          "linkUrl": "/shop"
+        },
+        {
+          "id": "rental",
+          "icon": "Box",
+          "title": "Container Rental",
+          "description": "Discuss rental options for your short or long term requirements.",
+          "buttonText": "Learn more",
+          "linkUrl": "#storefront-support-widget"
+        },
+        {
+          "id": "transport",
+          "icon": "Truck",
+          "title": "Delivery & Relocation",
+          "description": "Discuss transport and relocation requirements for your container.",
+          "buttonText": "Learn more",
+          "linkUrl": "#storefront-support-widget"
+        }
+      ]
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#EF7B32",
+        "titleColor": "#173247",
+        "contentColor": "#354654",
+        "primaryBtnBg": "#173247",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#173247",
+        "customBgColor": "#ECF1F4"
+      },
+      "id": "logistics-range",
+      "type": "product_listing",
+      "listingPreset": "editorial-grid",
+      "title": "Find your container.",
+      "subtitle": "CONTAINER RANGE",
+      "content": "Explore available container products and services. Get in touch for availability and advice.",
+      "sourceType": "manual",
+      "sourceId": "",
+      "productIds": [],
+      "columnsCount": 3,
+      "buttonText": "View All Containers",
+      "buttonLink": "/shop"
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#EF7B32",
+        "titleColor": "#173247",
+        "contentColor": "#354654",
+        "primaryBtnBg": "#173247",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#173247",
+        "customBgColor": "#ffffff"
+      },
+      "id": "logistics-delivery",
+      "type": "media_text_split",
+      "title": "From your enquiry\nto your site.",
+      "subtitle": "DELIVERY & RELOCATION",
+      "content": "Share your container size, destination and access requirements, and our team will prepare a quotation based on your needs.\n\nSample image — replace with an approved project photo.",
+      "mediaUrl": "/images/themes/logistics/delivery.png",
+      "mediaAlt": "Illustrative container delivery; not a merchant project photo",
+      "mediaPosition": "left",
+      "buttonText": "Discuss Your Requirements",
+      "buttonLink": "#storefront-support-widget",
+      "layoutPreset": "editorial-story",
+      "mediaAspectRatio": "16:9",
+      "imageShape": "rectangle"
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#EF7B32",
+        "titleColor": "#173247",
+        "contentColor": "#354654",
+        "primaryBtnBg": "#173247",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#173247",
+        "customBgColor": "#ffffff"
+      },
+      "id": "logistics-projects",
+      "type": "media_gallery",
+      "galleryPreset": "portfolio-cards",
+      "title": "Work you can see.",
+      "subtitle": "PROJECT SPOTLIGHTS",
+      "columnsCount": 2,
+      "items": [
+        {
+          "id": "project-delivery",
+          "title": "Container delivery — sample",
+          "description": "PROJECT PHOTO PLACEHOLDER\nAdd an approved project story and photograph here.",
+          "imageUrl": "/images/themes/logistics/delivery.png"
+        },
+        {
+          "id": "project-relocation",
+          "title": "Site relocation — sample",
+          "description": "PROJECT PHOTO PLACEHOLDER\nAdd an approved project story and photograph here.",
+          "imageUrl": "/images/themes/logistics/containers.png"
+        }
+      ]
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#EF7B32",
+        "titleColor": "#ffffff",
+        "contentColor": "#ffffff",
+        "primaryBtnBg": "#173247",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#173247",
+        "customBgColor": "#173247"
+      },
+      "id": "logistics-process",
+      "type": "feature_cards",
+      "featureCardsPreset": "industrial-process",
+      "title": "A clear path forward.",
+      "columnsCount": 4,
+      "items": [
+        {
+          "id": "one",
+          "title": "Tell us what you need",
+          "description": "Share your container or transport requirements."
+        },
+        {
+          "id": "two",
+          "title": "Confirm the details",
+          "description": "Our team will get in touch to discuss your needs."
+        },
+        {
+          "id": "three",
+          "title": "Review your quotation",
+          "description": "Review a quotation based on the confirmed details."
+        },
+        {
+          "id": "four",
+          "title": "Arrange delivery",
+          "description": "Once confirmed, plan the next steps with our team."
+        }
+      ],
+      "typography": {
+        "eyebrow": {
+          "fontFamily": "barlow",
+          "fontSize": 30,
+          "fontWeight": 600,
+          "color": "#EF7B32"
+        }
+      }
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#EF7B32",
+        "titleColor": "#173247",
+        "contentColor": "#354654",
+        "primaryBtnBg": "#173247",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#173247",
+        "customBgColor": "#ffffff"
+      },
+      "id": "logistics-faq",
+      "type": "faq_accordion",
+      "faqPreset": "industrial-split",
+      "faqInitiallyOpen": true,
+      "title": "A few things,\nanswered.",
+      "subtitle": "FAQ",
+      "content": "Quick answers to common questions. Still have a question? Get in touch and we’ll be happy to help.",
+      "items": [
+        {
+          "id": "quote",
+          "title": "How do I request a quotation?",
+          "description": "Choose a container or service and send your requirements. Our team will follow up to confirm the details."
+        },
+        {
+          "id": "prepare",
+          "title": "What information should I prepare?",
+          "description": "Share the container type and size, intended use, destination, timing and any site access or lifting requirements."
+        },
+        {
+          "id": "relocation",
+          "title": "Can I enquire about relocation only?",
+          "description": "Yes. Share the pickup and delivery locations, container details and access requirements so the team can review your request."
+        }
+      ]
+    },
+    {
+      "isVisible": true,
+      "containerMode": "full-bleed",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#EF7B32",
+        "titleColor": "#173247",
+        "contentColor": "#354654",
+        "primaryBtnBg": "#173247",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#173247",
+        "customBgColor": "#ffffff"
+      },
+      "id": "logistics-closing",
+      "type": "cta_strip",
+      "ctaPreset": "image-banner",
+      "ctaBannerHeight": "compact",
+      "title": "Let’s find the right solution.",
+      "content": "Tell us about your container or transport requirements.",
+      "mediaUrl": "/images/themes/logistics/account.png",
+      "buttonText": "Request a Quote",
+      "buttonLink": "#storefront-support-widget",
+      "imageSlots": [
+        {
+          "target": "mediaUrl",
+          "mediaAlt": "Illustrative shipping containers",
+          "imageForeground": true,
+          "imageForegroundColor": "#ffffff",
+          "imageForegroundOpacity": 80
+        }
+      ]
+    }
+  ]
+}

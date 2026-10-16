@@ -3,6 +3,8 @@
 @include('storefront.themes.universal-cart-drawer')
 @elseif(app(\App\Services\WebsiteDesignService::class)->surface()==='fashion')
 @include('storefront.themes.fashion-cart-drawer')
+@elseif(app(\App\Services\WebsiteDesignService::class)->surface()==='logistics')
+@include('storefront.themes.logistics-cart-drawer')
 @elseif(app(\App\Services\WebsiteDesignService::class)->surface()==='wedding')
 @include('storefront.themes.wedding-cart-drawer')
 @elseif(app(\App\Services\WebsiteDesignService::class)->surface()==='jewelry')

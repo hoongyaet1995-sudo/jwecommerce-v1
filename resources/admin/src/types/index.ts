@@ -379,6 +379,7 @@ export interface Product {
     useStoreDefaultShipping: boolean;
     shippingPolicy?: Omit<ProductShippingPolicy, 'useStoreDefault'> | null;
     customAccordions: ProductCustomAccordion[];
+    faqs?: { id: string; question: string; answer: string }[];
     ratingScore?: number | null;
     reviewCount: number;
     configuratorLabel?: string | null;
@@ -702,7 +703,7 @@ export interface PageSection {
   deliveryDestinationLabel?: string;
   deliveryEstimateLabel?: string;
   deliveryFeeLabel?: string;
-  faqPreset?: 'default' | 'minimal';
+  faqPreset?: 'default' | 'minimal' | 'industrial-split';
   faqInitiallyOpen?: boolean;
   leadText?: string;
   policyPreset?: 'guidelines' | 'choices' | 'steps' | 'document' | 'directory' | 'process-flow' | 'timeline' | 'tabs' | 'columns';
@@ -719,8 +720,8 @@ export interface PageSection {
   ctaPreset?: 'default' | 'image-banner' | 'editorial-band' | 'help-panel';
   ctaBannerHeight?: 'compact' | 'normal' | 'spacious';
   richTextPreset?: 'default' | 'manifesto';
-  featureCardsPreset?: 'default' | 'values-list' | 'editorial-columns' | 'numbered-process' | 'service-highlights';
-  heroBannerPreset?: 'default' | 'editorial-gradient';
+  featureCardsPreset?: 'default' | 'values-list' | 'editorial-columns' | 'numbered-process' | 'service-highlights' | 'industrial-cards' | 'industrial-process';
+  heroBannerPreset?: 'default' | 'editorial-gradient' | 'industrial-overlay';
   testimonialPreset?: 'default' | 'editorial-quote';
   marqueeSpeed?: number;
   marqueeDirection?: 'left' | 'right';

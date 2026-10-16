@@ -1,6 +1,6 @@
 @props(['title' => null, 'description' => null, 'shellDesign' => null, 'shellContentWidth' => null])
 <!doctype html>
-@php($isCmsStorefrontPreview = request()->routeIs('admin.pages.preview', 'admin.cms-canary.pages.show', 'admin.shell-design.preview', 'admin.website-design.preview', 'admin.website-design.acceptance.sample'))
+@php($isCmsStorefrontPreview = request()->routeIs('admin.pages.preview', 'admin.cms-canary.pages.show', 'admin.shell-design.preview', 'admin.website-design.preview', 'admin.website-design.acceptance.sample', 'admin.website-design.logistics-homepage-sample'))
 @php($isStorefront = request()->routeIs('storefront.*', 'cart.*', 'checkout.*', 'customer.*', 'order-tracking.*', 'enquiries.*', 'quotations.*', 'admin.quotations.*') || $isCmsStorefrontPreview)
 @php($isAdmin = request()->routeIs('admin.*') && ! $isCmsStorefrontPreview)
 @php($shellDesign = $isStorefront ? ($shellDesign ?? \App\Domain\Cms\ShellDesign::resolve(app(\App\Services\StorefrontShellSettingsService::class)->live())) : null)
@@ -10,6 +10,7 @@
 <html lang="en" @if($isStorefront) data-storefront-width="{{ $shellContentWidth }}" @endif @if($isStorefront) class="{{ ($shellDesign['appearance'] ?? 'dark') === 'dark' ? 'dark' : '' }}" data-atelier-theme-root data-atelier-theme="{{ $shellDesign['appearance'] ?? 'dark' }}" @if($shellDesign) data-shell-appearance="{{ $shellDesign['appearance'] }}" data-shell-theme-switch="{{ $shellDesign['showThemeSwitch'] ? 'true' : 'false' }}" @endif @elseif($isAdmin) data-admin-root @endif>
 <head>
     @if(request()->routeIs('admin.website-design.preview')) @include('admin.theme-demo-guard',['scenario'=>request('surface','plp')]) @endif
+    @if(request()->routeIs('admin.website-design.logistics-homepage-sample')) @include('admin.theme-demo-guard',['scenario'=>'homepage','demoTheme'=>'logistics']) @endif
     <x-brand-favicon />
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -29,6 +30,7 @@
     @if($isStorefront && in_array('food',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/food-theme.css') }}?v={{ filemtime(public_path('css/food-theme.css')) }}">@endif
     @if($isStorefront && in_array('universal',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/universal-theme.css') }}?v={{ filemtime(public_path('css/universal-theme.css')) }}"><link rel="stylesheet" href="{{ asset('css/universal-layout.css') }}?v={{ filemtime(public_path('css/universal-layout.css')) }}">@endif
     @if($isStorefront && in_array('fashion',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/fashion-theme.css') }}?v={{ filemtime(public_path('css/fashion-theme.css')) }}"><link rel="stylesheet" href="{{ asset('css/fashion-layout.css') }}?v={{ filemtime(public_path('css/fashion-layout.css')) }}">@endif
+    @if($isStorefront && in_array('logistics',$websiteStyleThemes,true))@foreach(['logistics-theme','logistics-account','logistics-commerce'] as $logisticsCss)<link rel="stylesheet" href="{{ asset('css/'.$logisticsCss.'.css') }}?v={{ is_file(public_path('css/'.$logisticsCss.'.css'))?filemtime(public_path('css/'.$logisticsCss.'.css')):1 }}">@endforeach<link rel="stylesheet" href="{{ asset('fonts/sample/fonts.css') }}">@endif
     @if($isStorefront && in_array('wedding',$websiteStyleThemes,true))@foreach(['wedding-theme','wedding-account','wedding-commerce'] as $weddingCss)<link rel="stylesheet" href="{{ asset('css/'.$weddingCss.'.css') }}?v={{ is_file(public_path('css/'.$weddingCss.'.css'))?filemtime(public_path('css/'.$weddingCss.'.css')):1 }}">@endforeach @endif
     @if($isStorefront && in_array('jewelry',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/jewelry-theme.css') }}?v={{ filemtime(public_path('css/jewelry-theme.css')) }}">@endif
     @if($isStorefront && in_array('baby',$websiteStyleThemes,true))<link rel="stylesheet" href="{{ asset('css/baby-theme.css') }}?v={{ filemtime(public_path('css/baby-theme.css')) }}">@endif
@@ -53,7 +55,7 @@
         </div>
         @endunless
     @endif
-    @if(request()->routeIs('storefront.index','storefront.products.show','storefront.categories.show','storefront.collections.show','customer.*','cart.show','checkout.*','quotations.checkout','order-tracking.*','admin.website-design.preview','admin.website-design.acceptance.sample'))
+    @if(request()->routeIs('storefront.index','storefront.products.show','storefront.categories.show','storefront.collections.show','customer.*','cart.show','checkout.*','quotations.checkout','enquiries.receipt','order-tracking.*','admin.website-design.preview','admin.website-design.acceptance.sample'))
         @include('storefront.partials.theme-customization')
     @endif
     <livewire:scripts />

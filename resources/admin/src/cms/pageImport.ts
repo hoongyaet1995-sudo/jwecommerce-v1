@@ -232,6 +232,7 @@ const isSafeMediaUrl = (value: string): boolean => {
   if (value === '') return true;
   if (MANAGED_MEDIA_PATTERN.test(value)) return true;
   if (/^\/images\/themes\/wedding\/(?:hero|account|album|prints)\.png$/.test(value)) return true;
+  if (/^\/images\/themes\/logistics\/(?:hero|account|containers|delivery)\.png$/.test(value)) return true;
   if (value.startsWith('//') || /[\u0000-\u0020\u007f\\]/.test(value) || containsEncodedControlOrBackslash(value)) return false;
   if (!hasPhpCompatibleRawHost(value)) return false;
 

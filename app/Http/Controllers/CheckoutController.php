@@ -256,7 +256,7 @@ class CheckoutController extends Controller
             return redirect()->route('storefront.index');
         }
 
-        return view(match(app(\App\Services\WebsiteDesignService::class)->surface()) { 'food'=>'storefront.themes.food-success', 'home_deco'=>'storefront.themes.home-deco-success', 'beauty'=>'storefront.themes.beauty-success', 'universal'=>'storefront.themes.universal-success', 'fashion'=>'storefront.themes.fashion-success', 'wedding'=>'storefront.themes.wedding-success', 'jewelry'=>'storefront.themes.jewelry-success', 'baby'=>'storefront.themes.baby-success', 'tech'=>'storefront.themes.tech-success', default=>'storefront.success' }, [
+        return view(match(app(\App\Services\WebsiteDesignService::class)->surface()) { 'logistics'=>'storefront.themes.logistics-success', 'food'=>'storefront.themes.food-success', 'home_deco'=>'storefront.themes.home-deco-success', 'beauty'=>'storefront.themes.beauty-success', 'universal'=>'storefront.themes.universal-success', 'fashion'=>'storefront.themes.fashion-success', 'wedding'=>'storefront.themes.wedding-success', 'jewelry'=>'storefront.themes.jewelry-success', 'baby'=>'storefront.themes.baby-success', 'tech'=>'storefront.themes.tech-success', default=>'storefront.success' }, [
             'order' => $order,
             'paymentProof' => $proofViewModels->for($order, $order->payments->where('gateway', 'bank_transfer')->sortByDesc('id')->first()),
             'taxLine' => $order->taxLines->sortBy('id')->first(),

@@ -7,11 +7,18 @@ use Illuminate\Http\Request;
 
 final class WebsiteThemeAcceptanceController extends Controller
 {
-    public function index(Request $request){$theme=$this->theme($request);return view('admin.theme-acceptance',['theme'=>$theme,'themeName'=>match($theme){'home_deco'=>'Home & Deco','universal'=>'Universal','fashion'=>'Fashion & Design','wedding'=>'Wedding Photography','jewelry'=>'Jewelry & Gifts','baby'=>'Baby & Kids','tech'=>'Technology & Electronics','beauty'=>'Beauty & Skincare',default=>'Food & Beverage'},'scenarios'=>array_merge(WebsiteThemeDemoData::SCENARIOS,in_array($theme,['home_deco','beauty','tech','baby','jewelry','wedding','fashion','universal'],true)?['order-tracking-verify-code']:[])]);}
-    private function theme(Request $request):string { $theme=$request->input('theme','food'); abort_unless(in_array($theme,['food','home_deco','beauty','tech','baby','jewelry','wedding','fashion','universal'],true),422); return $theme; }
+    public function index(Request $request){$theme=$this->theme($request);return view('admin.theme-acceptance',['theme'=>$theme,'themeName'=>match($theme){'home_deco'=>'Home & Deco','universal'=>'Universal','fashion'=>'Fashion & Design','logistics'=>'Container & Logistics','wedding'=>'Wedding Photography','jewelry'=>'Jewelry & Gifts','baby'=>'Baby & Kids','tech'=>'Technology & Electronics','beauty'=>'Beauty & Skincare',default=>'Food & Beverage'},'scenarios'=>array_merge(WebsiteThemeDemoData::SCENARIOS,in_array($theme,['home_deco','beauty','tech','baby','jewelry','wedding','fashion','universal','logistics'],true)?($theme==='logistics'?['order-tracking-verify-code','enquiry-modal','enquiry-receipt','quotation-document']:['order-tracking-verify-code']):[])]);}
+    private function theme(Request $request):string { $theme=$request->input('theme','food'); abort_unless(in_array($theme,['food','home_deco','beauty','tech','baby','jewelry','wedding','fashion','universal','logistics'],true),422); return $theme; }
     public function reference(Request $request,string $scenario)
     {
         if ($scenario === 'quotation-checkout') $scenario = 'checkout';
+        if($request->input('theme')==='logistics'){
+            $scenario=match($scenario){'all-products'=>'plp','order-tracking-verify-code'=>'order-tracking',default=>$scenario};
+            abort_unless(in_array($scenario,array_merge(WebsiteThemeDemoData::SCENARIOS,['quotation-document','enquiry-modal','enquiry-receipt']),true),404);
+            $path=base_path('output/logistics-theme-samples/'.$scenario.'.png');
+            abort_unless(is_file($path),404);
+            return response()->file($path);
+        }
         abort_unless(in_array($scenario,array_merge(WebsiteThemeDemoData::SCENARIOS,['order-tracking-verify-code']),true),404);
         $theme=$this->theme($request);
         if($theme==='wedding'){
@@ -61,20 +68,38 @@ final class WebsiteThemeAcceptanceController extends Controller
     {
         $width=$request->validate(['width'=>['sometimes',\Illuminate\Validation\Rule::in(['standard','wide','full'])]])['width']??null;
         if($width)$request->attributes->set('websiteThemeShellWidth',$width);
-        $theme=$this->theme($request);$prefix=match($theme){'home_deco'=>'home-deco','beauty'=>'beauty','universal'=>'universal','fashion'=>'fashion','wedding'=>'wedding','jewelry'=>'jewelry','baby'=>'baby','tech'=>'tech',default=>'food'};
-        abort_unless(in_array($scenario,array_merge(WebsiteThemeDemoData::SCENARIOS,in_array($theme,['home_deco','beauty','tech','baby','jewelry','wedding','fashion','universal'],true)?['order-tracking-verify-code']:[]),true),404);
+        $theme=$this->theme($request);$prefix=match($theme){'home_deco'=>'home-deco','beauty'=>'beauty','universal'=>'universal','fashion'=>'fashion','logistics'=>'logistics','wedding'=>'wedding','jewelry'=>'jewelry','baby'=>'baby','tech'=>'tech',default=>'food'};
+        abort_unless(in_array($scenario,array_merge(WebsiteThemeDemoData::SCENARIOS,in_array($theme,['home_deco','beauty','tech','baby','jewelry','wedding','fashion','universal','logistics'],true)?($theme==='logistics'?['order-tracking-verify-code','enquiry-modal','enquiry-receipt','quotation-document']:['order-tracking-verify-code']):[]),true),404);
         $request->merge(['theme'=>$theme]);
         $request->attributes->set('websiteDesignPreview',$theme);
-        $request->attributes->set('websiteThemeSurface',match($scenario){'shopping-cart'=>'cart','shopping-cart'=>'cart','all-products'=>'allProducts','checkout','quotation-checkout'=>'checkout','checkout-success','payment-pending'=>'checkoutSuccess','order-tracking','order-tracking-verified','order-tracking-verify-code'=>'tracking','login'=>'login','register'=>'register','forgot-password'=>'forgot','reset-password'=>'reset','pdp'=>'pdp','plp','filter','quick-buy'=>'plp',default=>'account'});
+        $request->attributes->set('websiteThemeSurface',match($scenario){'shopping-cart'=>'cart','shopping-cart'=>'cart','all-products'=>'allProducts','checkout','quotation-checkout'=>'checkout','checkout-success','payment-pending'=>'checkoutSuccess','order-tracking','order-tracking-verified','order-tracking-verify-code'=>'tracking','login'=>'login','register'=>'register','forgot-password'=>'forgot','reset-password'=>'reset','pdp','enquiry-modal'=>'pdp','enquiry-receipt'=>'enquiry','plp','filter','quick-buy'=>'plp',default=>'account'});
         app(WebsiteThemeCustomization::class)->preview($request);
         $demo=app(WebsiteThemeDemoData::class); $catalog=$demo->catalog($request);
         $common=['websiteDesignPreview'=>true,'websiteThemeDemo'=>true];
-        if(in_array($scenario,['all-products','plp','filter','quick-buy','pdp','login','register','forgot-password','reset-password'],true)) {
-            $request->merge(['surface'=>['all-products'=>'allProducts','filter'=>'plp','quick-buy'=>'plp','forgot-password'=>'forgot','reset-password'=>'reset'][$scenario]??$scenario]);
+        if($theme==='logistics'&&$scenario==='quotation-document') {
+            $request->attributes->set('websiteRenderedTheme','logistics');
+            $request->attributes->set('websiteThemeSurface','pdp');
+            $enquiry=new \App\Models\ProductEnquiry(['id'=>'00000000-0000-4000-8000-000000000002','reference'=>'DEMO-ENQUIRY-002','product_title'=>$catalog['demoProducts']->first()->title,'support_conversation_id'=>null]);
+            $document=['merchant'=>'JTG Containers & Logistics','number'=>'DEMO-QT-002','title'=>'Container supply quotation · Demonstration only','enquiryRef'=>$enquiry->reference,'validUntil'=>'2099-01-01','customer'=>['name'=>'Alex Customer','email'=>'sample@example.test'],'currency'=>['code'=>'MYR','left'=>'RM ','right'=>'','decimals'=>2],'items'=>[['name'=>$catalog['demoProducts']->first()->title,'description'=>'Sample scope. Specification, condition and delivery subject to confirmation.','qty'=>'1','price'=>'8500.00','amountMinor'=>850000]],'totalMinor'=>850000,'notes'=>'Demonstration only. This sample is not a binding quotation or payment request.'];
+            $version=new \App\Models\EnquiryQuotationVersion(['id'=>'00000000-0000-4000-8000-000000000003','revision'=>1,'document'=>$document,'sent_at'=>now(),'expires_at'=>now()->addDays(14)]);
+            // A sent preview state renders the shared document without acceptance/support actions or DB lookups.
+            $view=view('storefront.quotations.document',$common+['enquiry'=>$enquiry,'document'=>$document,'version'=>$version,'state'=>['number'=>$document['number'],'revision'=>1]]);
+        }
+        elseif($theme==='logistics'&&$scenario==='enquiry-receipt') {
+            $request->attributes->set('websiteRenderedTheme','logistics');
+            $enquiry=new \App\Models\ProductEnquiry(['id'=>'00000000-0000-4000-8000-000000000001','reference'=>'DEMO-ENQUIRY-001','name'=>'Sample Customer','product_title'=>$catalog['demoProducts']->first()->title,'product_snapshot'=>['image'=>$catalog['demoProducts']->first()->images->first()?->path,'variant'=>$catalog['demoProducts']->first()->variants->first()?->title],'requirements'=>'Sample container requirements for theme acceptance only.','email'=>'sample@example.test','support_conversation_id'=>null]);
+            $view=view('storefront.enquiries.receipt',$common+['enquiry'=>$enquiry,'quotationVersions'=>collect()]);
+        }
+        elseif(in_array($scenario,['all-products','plp','filter','quick-buy','pdp','enquiry-modal','login','register','forgot-password','reset-password'],true)) {
+            $request->merge(['surface'=>['all-products'=>'allProducts','filter'=>'plp','quick-buy'=>'plp','enquiry-modal'=>'pdp','forgot-password'=>'forgot','reset-password'=>'reset'][$scenario]??$scenario]);
             $view=app(WebsiteDesignController::class)->preview($request,app(WebsiteDesignService::class));
         }
         elseif(in_array($scenario,['order-tracking','order-tracking-verified','order-tracking-verify-code'],true)) {
             $payload=['number'=>'DEMO-JW100328','currency'=>'MYR','currencyExchangeRate'=>1,'totals'=>['subtotal'=>6800,'shipping'=>800,'discount'=>0,'tax'=>0,'total'=>7600],'address'=>null,'statusLabel'=>'Delivered','tracking'=>['number'=>'DEMO-12345','carrier'=>'Sample courier'],'timeline'=>[['title'=>'Order confirmed','description'=>'Your pantry favourites are being prepared.','timestamp'=>'2026-10-01T10:00:00','location'=>null],['title'=>'Delivered','description'=>'Your parcel has arrived.','timestamp'=>'2026-10-03T14:00:00','location'=>'Kuala Lumpur']],'items'=>$demo->account($catalog)['orders'][0]['items']];
+            if($theme==='logistics') {
+                $demoOrder=$demo->account($catalog)['orders'][0];
+                $payload=array_replace($payload,['number'=>$demoOrder['number'],'statusLabel'=>'Payment confirmed','items'=>$demoOrder['items'],'totals'=>['subtotal'=>$demoOrder['subtotal'],'shipping'=>$demoOrder['shippingAmount'],'discount'=>0,'tax'=>0,'total'=>$demoOrder['total']],'address'=>['line1'=>'12 Jalan Harmoni','city'=>'Kuala Lumpur','postalCode'=>'50000'],'tracking'=>['number'=>null,'carrier'=>null],'timeline'=>[['title'=>'Order received','description'=>'Your demonstration accessory order has been received.','timestamp'=>'2026-10-16T09:15:00','location'=>null],['title'=>'Payment confirmed','description'=>'Payment confirmation shown for this demonstration order.','timestamp'=>'2026-10-16T10:24:00','location'=>null]]]);
+            }
             if($theme==='home_deco')$payload=array_replace($payload,['statusLabel'=>'Processing','totals'=>['subtotal'=>164800,'shipping'=>800,'discount'=>0,'tax'=>0,'total'=>165600],'address'=>['line1'=>'12 Jalan Harmoni','city'=>'Kuala Lumpur','postalCode'=>'50000'],'tracking'=>['number'=>null,'carrier'=>null],'timeline'=>[['title'=>'Order confirmed','description'=>'Your order has been received and is being processed.','timestamp'=>'2026-10-13T10:00:00','location'=>null]]]);
             if($theme==='tech')$payload=array_replace($payload,['number'=>'JW100328','statusLabel'=>'Processing','totals'=>['subtotal'=>139800,'shipping'=>800,'discount'=>0,'tax'=>0,'total'=>140600],'address'=>['line1'=>'12 Jalan Harmoni','city'=>'Kuala Lumpur','postalCode'=>'50000'],'tracking'=>['number'=>null,'carrier'=>null],'timeline'=>[['title'=>'Order created','description'=>'Your order has been received.','timestamp'=>'2026-10-13T10:00:00','location'=>null],['title'=>'Payment confirmed','description'=>'Payment received.','timestamp'=>'2026-10-13T10:01:00','location'=>null],['title'=>'Processing','description'=>'Your order is being processed.','timestamp'=>'2026-10-13T10:02:00','location'=>null]]]);
  if($theme==='tech')$payload=array_replace($payload,['number'=>'JW100328','statusLabel'=>'Processing','totals'=>['subtotal'=>139800,'shipping'=>800,'discount'=>0,'tax'=>0,'total'=>140600],'address'=>['line1'=>'12 Jalan Harmoni','city'=>'Kuala Lumpur','postalCode'=>'50000'],'tracking'=>['number'=>null,'carrier'=>null],'timeline'=>[['title'=>'Order created','description'=>'Your order has been received.','timestamp'=>'2026-10-13T10:00:00','location'=>null],['title'=>'Payment confirmed','description'=>'Payment received.','timestamp'=>'2026-10-13T10:01:00','location'=>null]]]);
@@ -97,8 +122,9 @@ final class WebsiteThemeAcceptanceController extends Controller
         $html=$view->render();
         $guard=view('admin.theme-demo-guard',['scenario'=>$scenario,'demoTheme'=>$theme])->render();
         $html=str_replace('</head>',$guard.'</head>',$html);
-        if($scenario==='cart-drawer')$html='<html lang="en"><head>'.app(\Illuminate\Foundation\Vite::class)(['resources/css/app.css','resources/js/app.js']).'<meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/css/'.$prefix.'-theme.css">'.($theme==='beauty'?'<link rel="stylesheet" href="/css/beauty-complete.css">':'').$guard.'</head><body style="margin:0;background:#ddd8cc"><aside class="'.match($theme){'home_deco'=>'hd-theme','beauty'=>'bs-theme','wedding'=>'wd-theme','jewelry'=>'jg-theme','baby'=>'bk-theme','tech'=>'te-theme',default=>'fd-theme'}.'" style="max-width:460px;margin-left:auto;height:100vh;background:#faf6ec">'.$html.'</aside></body></html>';
+        if($scenario==='cart-drawer')$html='<html lang="en"><head>'.app(\Illuminate\Foundation\Vite::class)(['resources/css/app.css','resources/js/app.js']).'<meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/css/'.$prefix.'-theme.css">'.($theme==='beauty'?'<link rel="stylesheet" href="/css/beauty-complete.css">':'').$guard.'</head><body style="margin:0;background:#ddd8cc"><aside class="'.match($theme){'home_deco'=>'hd-theme','beauty'=>'bs-theme','logistics'=>'lg-theme','wedding'=>'wd-theme','jewelry'=>'jg-theme','baby'=>'bk-theme','tech'=>'te-theme',default=>'fd-theme'}.'" style="max-width:460px;margin-left:auto;height:100vh;background:#faf6ec">'.$html.'</aside></body></html>';
         if($scenario==='cart-drawer')$html=str_replace('</head>','<link rel="stylesheet" href="/css/cart-drawer-layout.css">'.'</head>',$html);
+        if($theme==='logistics'&&$scenario==='cart-drawer')$html=str_replace('</head>','<link rel="stylesheet" href="/css/logistics-commerce.css">'.view('storefront.partials.theme-customization')->render().'</head>',$html);
         if($theme==='wedding'&&$scenario==='cart-drawer')$html=str_replace('</head>','<link rel="stylesheet" href="/css/wedding-account.css"><link rel="stylesheet" href="/css/wedding-commerce.css">'.view('storefront.partials.theme-customization')->render().'</head>',$html);
         if($theme==='jewelry'&&$scenario==='cart-drawer')$html=str_replace('</head>',view('storefront.partials.theme-customization')->render().'</head>',$html);
         if($theme==='universal'&&$scenario==='cart-drawer')$html=str_replace('</head>','<link rel="stylesheet" href="/css/storefront-layout.css"><link rel="stylesheet" href="/css/universal-layout.css">'.view('storefront.partials.theme-customization')->render().'</head>',$html);

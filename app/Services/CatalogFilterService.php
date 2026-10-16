@@ -14,8 +14,9 @@ final class CatalogFilterService
 {
     public function for(Request $request, Builder|Relation $base, ?string $forcedCategory = null): CatalogFilterResult
     {
-        $wedding = $this->isWedding($request, $base, $forcedCategory);
-        $filters = $this->normalize($request, $base, $forcedCategory, $wedding);
+        $theme = $this->resolvedTheme($request, $base, $forcedCategory);
+        $wedding = $theme === 'wedding';
+        $filters = $this->normalize($request, $base, $forcedCategory, in_array($theme, ['wedding', 'logistics'], true));
         $products = $this->applyFilters(clone $base, $filters)
             ->with([
                 'category', 'images',
@@ -30,11 +31,11 @@ final class CatalogFilterService
     }
 
     /** @return array{search:string,category:?string,sort:string,layout:string,minPrice:int,maxPrice:int,boundsMinPrice:int,boundsMaxPrice:int,inStock:bool,colors:list<string>,materials:list<string>,minRating:float,variantFiltered:bool} */
-    private function normalize(Request $request, Builder|Relation $base, ?string $forcedCategory, bool $wedding = false): array
+    private function normalize(Request $request, Builder|Relation $base, ?string $forcedCategory, bool $buyOnlyPrices = false): array
     {
         $boundsQuery = $this->variantQuery($base)->where('enabled', true);
-        if ($wedding) $boundsQuery->whereHas('product', fn (Builder $p) => $p->where('purchase_mode', 'buy'));
-        $hasPricedProducts = $wedding ? (clone $boundsQuery)->exists() : true;
+        if ($buyOnlyPrices) $boundsQuery->whereHas('product', fn (Builder $p) => $p->where('purchase_mode', 'buy'));
+        $hasPricedProducts = $buyOnlyPrices ? (clone $boundsQuery)->exists() : true;
         $bounds = $boundsQuery
             ->selectRaw('COALESCE(MIN(price), 0) as minimum_price, COALESCE(MAX(price), 0) as maximum_price')->first();
         $minimum = max(0, (int) ($bounds?->minimum_price ?? 0));
@@ -46,7 +47,7 @@ final class CatalogFilterService
         }
 
         $filters = [
-            'weddingPublic' => $wedding, 'hasPricedProducts' => $hasPricedProducts,
+            'buyOnlyPriceFilters' => $buyOnlyPrices, 'hasPricedProducts' => $hasPricedProducts,
             'search' => $request->string('search')->trim()->value(),
             'category' => $forcedCategory ?? $this->activeCategory($request->string('category')->trim()->value(), $base),
             'sort' => in_array($request->string('sort')->value(), ['price_asc', 'price_desc', 'rating', 'newest'], true) ? $request->string('sort')->value() : '',
@@ -57,11 +58,21 @@ final class CatalogFilterService
             // separate so catalog bounds do not become a fake active chip.
             'priceRequested' => $hasPricedProducts && ($request->boolean('price_filter') || $minPrice !== $minimum || $maxPrice !== $maximum),
             'inStock' => $hasPricedProducts && $request->boolean('in_stock'),
-            'colors' => $this->availableVariantValues($request, 'color', 'color_name', $base, $wedding),
-            'materials' => $this->availableVariantValues($request, 'material', 'material', $base, $wedding),
+            'colors' => $this->availableVariantValues($request, 'color', 'color_name', $base, $buyOnlyPrices),
+            'materials' => $this->availableVariantValues($request, 'material', 'material', $base, $buyOnlyPrices),
             'minRating' => $this->normalizedRating($request),
         ];
         $filters['variantFiltered'] = $this->hasVariantConstraint($filters);
+        $requestedTags = $request->input('tag', []);
+        $requestedTags = is_array($requestedTags) ? $requestedTags : [$requestedTags];
+        $requestedTags = array_slice(array_values(array_unique(array_filter($requestedTags, fn ($value) => is_string($value) && $value !== '' && mb_strlen($value) <= 100))), 0, 20);
+        // Validate against eligible scope, not transient search/facets: a known
+        // selection must remain selected when another filter yields no matches.
+        $tagValidationFilters = $this->without($filters, ['price', 'rating', 'stock', 'colors', 'materials']);
+        $tagValidationFilters['search'] = '';
+        $tagValidationFilters['tags'] = [];
+        $knownTags = array_column($this->tagFacet($base, $tagValidationFilters), 'value');
+        $filters['tags'] = array_values(array_intersect($requestedTags, $knownTags));
 
         return $filters;
     }
@@ -69,13 +80,16 @@ final class CatalogFilterService
     private function applyFilters(Builder|Relation $query, array $filters): Builder|Relation
     {
         $query
+            ->when(($filters['tags'] ?? []) !== [], fn (Builder $products) => $products->where(function (Builder $tags) use ($filters) {
+                foreach ($filters['tags'] as $tag) $tags->orWhereJsonContains('products.tags', $tag);
+            }))
             ->when($filters['search'] !== '', fn (Builder $products) => $products->where(fn (Builder $search) => $search
                 ->where('title', 'like', "%{$filters['search']}%")->orWhere('brand', 'like', "%{$filters['search']}%")))
             ->when($filters['category'], fn (Builder $products, string $category) => $products->whereHas('category', fn (Builder $categories) => $categories->where('slug', $category)))
             ->when($filters['minRating'] > 0, fn (Builder|Relation $products) => $products->whereIn('products.id', $this->ratedProductIds($filters['minRating'])))
             ->when($filters['variantFiltered'], fn (Builder|Relation $products) => $products->whereHas('variants', fn (Builder $variants) => $this->applyVariantConstraints($variants, $filters)));
 
-        if (($filters['weddingPublic'] ?? false) && in_array($filters['sort'], ['price_asc', 'price_desc'], true)) {
+        if (($filters['buyOnlyPriceFilters'] ?? false) && in_array($filters['sort'], ['price_asc', 'price_desc'], true)) {
             return $query->orderByRaw("CASE WHEN products.purchase_mode = 'buy' THEN 0 ELSE 1 END")->orderByRaw("CASE WHEN products.purchase_mode = 'buy' THEN products.base_price ELSE NULL END ".($filters['sort'] === 'price_desc' ? 'DESC' : 'ASC'));
         }
         return match ($filters['sort']) {
@@ -89,7 +103,7 @@ final class CatalogFilterService
 
     private function applyVariantConstraints(Builder|HasMany $variants, array $filters): Builder|HasMany
     {
-        return $variants->when($filters['weddingPublic'] ?? false, fn (Builder $v) => $v->whereHas('product', fn (Builder $p) => $p->where('purchase_mode', 'buy')))->where('enabled', true)->whereBetween('price', [$filters['minPrice'], $filters['maxPrice']])
+        return $variants->when($filters['buyOnlyPriceFilters'] ?? false, fn (Builder $v) => $v->whereHas('product', fn (Builder $p) => $p->where('purchase_mode', 'buy')))->where('enabled', true)->whereBetween('price', [$filters['minPrice'], $filters['maxPrice']])
             ->when($filters['inStock'], fn (Builder $query) => $query->where('stock', '>', 0))
             ->when($filters['colors'] !== [], fn (Builder $query) => $query->whereIn('color_name', $filters['colors']))
             ->when($filters['materials'] !== [], fn (Builder $query) => $query->whereIn('material', $filters['materials']));
@@ -116,6 +130,7 @@ final class CatalogFilterService
             'total' => $all,
             'hasPricedProducts' => $filters['hasPricedProducts'] ?? true,
             'categoryCounts' => $categoryCounts,
+            'tags' => $this->tagFacet($base, $this->without($filters, ['tags'])),
             'priceBounds' => ['min' => $filters['boundsMinPrice'], 'max' => $filters['boundsMaxPrice']],
             'colors' => $this->variantFacet($base, $this->without($filters, ['colors']), 'color_name'),
             'materials' => $this->variantFacet($base, $this->without($filters, ['materials']), 'material'),
@@ -146,6 +161,7 @@ final class CatalogFilterService
     /** @param list<string> $without */
     private function without(array $filters, array $without): array
     {
+        if (in_array('tags', $without, true)) $filters['tags'] = [];
         if (in_array('colors', $without, true)) $filters['colors'] = [];
         if (in_array('materials', $without, true)) $filters['materials'] = [];
         if (in_array('price', $without, true)) { $filters['minPrice'] = $filters['boundsMinPrice']; $filters['maxPrice'] = $filters['boundsMaxPrice']; $filters['priceRequested'] = false; }
@@ -153,6 +169,23 @@ final class CatalogFilterService
         if (in_array('stock', $without, true)) $filters['inStock'] = false;
         $filters['variantFiltered'] = $this->hasVariantConstraint($filters);
         return $filters;
+    }
+
+    /** Tags inherit the caller's visibility/scope and all other active constraints. */
+    private function tagFacet(Builder|Relation $base, array $filters): array
+    {
+        $counts = [];
+        $this->applyFilters(clone $base, $filters)->reorder()->select('products.id', 'products.tags')->chunkById(250, function ($products) use (&$counts) {
+            foreach ($products as $product) {
+                foreach (array_unique(array_filter($product->tags ?? [], fn ($tag) => is_string($tag) && $tag !== '' && mb_strlen($tag) <= 100)) as $tag) {
+                    $counts[$tag] = ($counts[$tag] ?? 0) + 1;
+                }
+            }
+        }, 'products.id', 'id');
+        ksort($counts, SORT_NATURAL | SORT_FLAG_CASE);
+        $facets = [];
+        foreach ($counts as $tag => $count) $facets[] = ['value' => (string) $tag, 'label' => (string) $tag, 'count' => $count];
+        return $facets;
     }
 
     private function hasVariantConstraint(array $filters): bool
@@ -183,7 +216,7 @@ final class CatalogFilterService
         return ProductVariant::query()->whereIn('product_id', (clone $base)->select('products.id'));
     }
 
-    private function isWedding(Request $request, Builder|Relation $base, ?string $forcedCategory): bool
+    private function resolvedTheme(Request $request, Builder|Relation $base, ?string $forcedCategory): string
     {
         $scope = null;
         if ($base instanceof Relation && $base->getParent() instanceof \App\Models\Collection) $scope = 'collection:'.$base->getParent()->getKey();
@@ -192,7 +225,7 @@ final class CatalogFilterService
             $category = \App\Models\Category::query()->where('slug', $slug)->where('is_active', true)->first();
             if ($category) $scope = 'category:'.$category->getKey();
         }
-        return ($request->attributes->get('websiteDesignPreview') ?? app(WebsiteDesignService::class)->resolve($scope)) === 'wedding';
+        return (string) ($request->attributes->get('websiteDesignPreview') ?? app(WebsiteDesignService::class)->resolve($scope));
     }
 
     private function activeCategory(string $category, Builder|Relation $base): ?string
@@ -202,13 +235,13 @@ final class CatalogFilterService
     }
 
     /** @return list<string> */
-    private function availableVariantValues(Request $request, string $parameter, string $column, Builder|Relation $base, bool $wedding = false): array
+    private function availableVariantValues(Request $request, string $parameter, string $column, Builder|Relation $base, bool $buyOnlyPrices = false): array
     {
         $requested = $request->input($parameter, []);
         $requested = is_array($requested) ? $requested : [$requested];
         $requested = array_values(array_unique(array_filter($requested, fn (mixed $value) => is_string($value) && $value !== '')));
         if ($requested === []) return [];
-        return $this->variantQuery($base)->when($wedding, fn (Builder $v) => $v->whereHas('product', fn (Builder $p) => $p->where('purchase_mode', 'buy')))->where('enabled', true)->whereNotNull($column)->whereIn($column, $requested)
+        return $this->variantQuery($base)->when($buyOnlyPrices, fn (Builder $v) => $v->whereHas('product', fn (Builder $p) => $p->where('purchase_mode', 'buy')))->where('enabled', true)->whereNotNull($column)->whereIn($column, $requested)
             ->pluck($column)->unique()->values()->all();
     }
 }

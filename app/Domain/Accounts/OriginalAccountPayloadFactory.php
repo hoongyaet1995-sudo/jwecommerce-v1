@@ -38,7 +38,7 @@ class OriginalAccountPayloadFactory
             'orders.items.reviews', 'orders.items.returnRequests.evidence', 'orders.items.returnRequests.events', 'orders.items.returnRequests.replacementOrder', 'orders.items.returnRequests.resolvedRefund',
             'orders.items.productVariant.product',
             'orders.addresses',
-            'orders.payments',
+            'orders.payments', 'orders.refunds',
             'addresses',
             'wishlistItems.product.images',
             'wishlistItems.product.variants',
@@ -46,6 +46,7 @@ class OriginalAccountPayloadFactory
 
         return [
             'user' => $this->userPayload($customer),
+            'quotations' => app(CustomerQuotationPayloadFactory::class)->for($customer),
             'orders' => $this->orderPayloads($customer),
             'addresses' => $this->addressPayloads($customer),
             'wishlist' => $this->wishlistPayloads($customer),
@@ -215,6 +216,16 @@ class OriginalAccountPayloadFactory
 
         return [
             'orderCount' => $orders->count(),
+            // Preserve order currency snapshots; never add unlike currencies together.
+            'paidSpend' => $orders->reject(fn (Order $order) => in_array($order->status, ['cancelled', 'refunded'], true))
+                ->groupBy(fn (Order $order) => $order->currency.'|'.($order->currency_exchange_rate ?? 1))
+                ->map(fn ($group) => [
+                    'currency' => $group->first()->currency,
+                    'currencyExchangeRate' => (float) ($group->first()->currency_exchange_rate ?? 1),
+                    'amount' => $group->sum(fn (Order $order) => max(0,
+                        min((int) $order->total, (int) $order->payments->whereIn('status', ['paid', 'partially_refunded', 'captured', 'succeeded', 'settled', 'completed'])->sum('amount'))
+                        - (int) $order->refunds->where('status', 'completed')->sum('amount'))),
+                ])->values()->all(),
             'activeLogisticsCount' => $activeOrders->count(),
             'latestOrder' => $orders->isEmpty() ? null : $this->orderPayloadsForDashboard($orders->first()),
         ];

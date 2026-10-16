@@ -109,6 +109,7 @@ export const AdminHeader: React.FC<{ onToggleMobileSidebar: () => void }> = ({
       case 'support-whatsapp': return { category: 'Customer Care & AI', title: 'WhatsApp Account Management' };
       case 'support-instagram': return { category: 'Customer Care & AI', title: 'Instagram Account Management' };
       case 'support-facebook': return { category: 'Customer Care & AI', title: 'Facebook Account Management' };
+      case 'enquiries': return { category: 'Orders & Customers', title: 'Customer Enquiries' };
       case 'commerce': return { category: 'Orders & Customers', title: 'Commerce Overview Hub' };
       case 'customers': return { category: 'Orders & Customers', title: 'Customer Directory' };
       case 'orders': return { category: 'Orders & Customers', title: 'Store Orders & Fulfillment' };

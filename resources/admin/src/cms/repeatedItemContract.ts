@@ -30,6 +30,8 @@ export function repeatedItemFields(section:PageSection):readonly string[]{
  if(section.type==='product_listing'&&section.listingPreset==='fashion-lookbook')return ['title','description','imageUrl','buttonText','linkUrl'];
  if(section.type==='hero_slider'&&['editorial-overlay','fashion-editorial'].includes(section.sliderPreset??''))return ['title','subtitle','description','imageUrl','videoUrl','linkUrl','buttonText','secondaryButtonText','secondaryButtonLink','caption',...(section.sliderPreset==='fashion-editorial'?['thirdButtonText','thirdButtonLink']:[])];
  if(section.type==='store_locator'&&section.contactPreset==='location')return ['title','description','icon'];
+ if(section.type==='feature_cards'&&section.featureCardsPreset==='industrial-cards')return ['title','description','icon','buttonText','linkUrl'];
+ if(section.type==='feature_cards'&&section.featureCardsPreset==='industrial-process')return ['title','description'];
  if(section.type==='feature_cards'&&section.featureCardsPreset==='service-highlights')return ['title','description','icon'];
  if(section.type==='feature_cards'&&section.featureCardsPreset==='editorial-columns')return ['title','description'];
  if(section.type==='media_gallery'&&section.galleryPreset==='portfolio-cards')return ['title','description','imageUrl','buttonText','linkUrl'];

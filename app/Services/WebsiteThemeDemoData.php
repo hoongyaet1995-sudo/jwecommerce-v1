@@ -8,7 +8,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 /** Unsaved presentation models. No catalogue, stock or customer records are created. */
 final class WebsiteThemeDemoData
 {
-    public const SCENARIOS = ['all-products','plp','filter','quick-buy','pdp','cart-drawer','login','register','forgot-password','reset-password','my-account','account-orders','account-vouchers','account-addresses','account-profile','account-saved-items','shopping-cart','checkout','quotation-checkout','checkout-success','payment-pending','order-tracking','order-tracking-verified','review-dialog','return-dialog'];
+    public const SCENARIOS = ['all-products','plp','filter','quick-buy','pdp','cart-drawer','login','register','forgot-password','reset-password','my-account','account-orders','account-quotations','account-vouchers','account-addresses','account-profile','account-saved-items','shopping-cart','checkout','quotation-checkout','checkout-success','payment-pending','order-tracking','order-tracking-verified','review-dialog','return-dialog'];
 
     /** Unsaved quotation checkout fixture; only consumed by the protected demo renderer. */
     public function quotationCheckout(array $catalog): array
@@ -44,11 +44,11 @@ final class WebsiteThemeDemoData
 
     public function order(array $catalog, bool $paid): array
     {
-        $home=in_array($catalog['demoTheme']??'food',['home_deco','beauty','tech','baby','jewelry','wedding','fashion','universal'],true);
-        $subtotal=$catalog['demoProducts']->take(2)->sum('base_price');
+        $home=in_array($catalog['demoTheme']??'food',['home_deco','beauty','tech','baby','jewelry','wedding','fashion','universal','logistics'],true);
+        $subtotal=$catalog['demoProducts']->filter(fn($p)=>$p->isBuyMode())->take(2)->sum('base_price');
         $order=new \App\Models\Order(['number'=>'DEMO-JW100328','currency'=>'MYR','currency_exchange_rate'=>1,'status'=>$paid?'processing':'pending_payment','subtotal'=>$subtotal,'discount_amount'=>0,'shipping_amount'=>800,'payment_surcharge_amount'=>0,'tax_amount'=>0,'total'=>$subtotal+800]);
         $items=$catalog['demoProducts']->filter(fn($p)=>$p->isBuyMode())->take(2)->map(fn($p)=>new \App\Models\OrderItem(['title'=>$p->title,'variant_title'=>$p->variants->first()->title,'quantity'=>1,'unit_price'=>$p->base_price,'line_total'=>$p->base_price,'image_url'=>$p->images->first()->path]));
-        $order->setRelation('items',$items)->setRelation('payments',collect([new \App\Models\OrderPayment(['gateway'=>in_array($catalog['demoTheme']??'',['tech','baby','jewelry','wedding','fashion','universal'],true)&&$paid?'online':'bank_transfer','status'=>$paid?'paid':'pending','configuration_snapshot'=>in_array($catalog['demoTheme']??'',['baby','jewelry','wedding','fashion','universal'],true)&&!$paid?['bankAccount'=>['bankName'=>'Sample bank','accountNumber'=>'1234 5678 9012','accountHolder'=>'JW STUDIO DEMO']]:null])]))->setRelation('addresses',collect([new \App\Models\OrderAddress(['type'=>'shipping','first_name'=>$home?'Alex':'Sample','last_name'=>$home?'Tan':'Customer','line_1'=>$home?'12 Jalan Harmoni':'12 Sample Street','city'=>'Kuala Lumpur','postal_code'=>'50000','country'=>'MY'])]));
+        $order->setRelation('items',$items)->setRelation('payments',collect([new \App\Models\OrderPayment(['gateway'=>in_array($catalog['demoTheme']??'',['tech','baby','jewelry','wedding','fashion','universal','logistics'],true)&&$paid?'online':'bank_transfer','status'=>$paid?'paid':'pending','configuration_snapshot'=>in_array($catalog['demoTheme']??'',['baby','jewelry','wedding','fashion','universal','logistics'],true)&&!$paid?['bankAccount'=>['bankName'=>'Sample bank','accountNumber'=>'1234 5678 9012','accountHolder'=>'JW STUDIO DEMO']]:null])]))->setRelation('addresses',collect([new \App\Models\OrderAddress(['type'=>'shipping','first_name'=>$home?'Alex':'Sample','last_name'=>$home?'Tan':'Customer','line_1'=>$home?'12 Jalan Harmoni':'12 Sample Street','city'=>'Kuala Lumpur','postal_code'=>'50000','country'=>'MY'])]));
         if(($catalog['demoTheme']??'')==='wedding'&&!$paid){$order->payments->first()->configuration_snapshot=['bankAccount'=>['bankName'=>'DEMO-ONLY BANK','accountNumber'=>'DEMO-0000','accountHolderName'=>'Sample studio'],'verificationInstructions'=>['Demonstration only. Do not transfer money.'],'quietDisclosure'=>'A receipt upload does not confirm payment.'];}
         return ['order'=>$order,'paymentProof'=>$home&&!$paid?['proofStatus'=>'missing','originalFileName'=>null,'rejectionReason'=>null,'canUpload'=>true,'orderId'=>-1,'paymentId'=>-1]:null,'taxLine'=>null,'recommendations'=>$catalog['demoProducts']->take(3)];
     }
@@ -73,6 +73,7 @@ final class WebsiteThemeDemoData
         if (($catalog['demoTheme']??'')==='universal') $data=app(UniversalThemeDemoData::class)->account($catalog,$data);
         if (($catalog['demoTheme']??'')==='fashion') $data=app(FashionThemeDemoData::class)->account($catalog,$data);
         if (($catalog['demoTheme']??'')==='jewelry') $data=app(JewelryThemeDemoData::class)->account($catalog,$data);
+        if (($catalog['demoTheme']??'')==='logistics') $data=app(LogisticsThemeDemoData::class)->account($catalog,$data);
         if (($catalog['demoTheme']??'')==='wedding') $data=app(WeddingThemeDemoData::class)->account($catalog,$data);
         return $data;
     }
@@ -84,8 +85,8 @@ final class WebsiteThemeDemoData
         abort_unless(in_array($mode, ProductPurchaseSettings::MODES, true) && in_array($display, ProductPurchaseSettings::PRICE_DISPLAYS, true), 422);
         foreach ($catalog['demoProducts'] as $product) {
             if ($product->exists) throw new \LogicException('Purchase previews require unsaved products.');
-            if(($catalog['demoTheme']??'')!=='wedding'||$request->has('purchaseMode')) $product->purchase_mode = $mode;
-            if(($catalog['demoTheme']??'')!=='wedding'||$request->has('priceDisplay')) $product->price_display = $display;
+            if(!in_array($catalog['demoTheme']??'',['wedding','logistics'],true)||$request->has('purchaseMode')) $product->purchase_mode = $mode;
+            if(!in_array($catalog['demoTheme']??'',['wedding','logistics'],true)||$request->has('priceDisplay')) $product->price_display = $display;
             foreach ($product->variants as $variant) $variant->setRelation('product', $product);
         }
         return $catalog;
@@ -93,6 +94,7 @@ final class WebsiteThemeDemoData
 
     private function catalogData(Request $request): array
     {
+        if ($request->input('theme')==='logistics') return app(LogisticsThemeDemoData::class)->catalog($request);
         if ($request->input('theme')==='wedding') return app(WeddingThemeDemoData::class)->catalog($request);
         if ($request->input('theme')==='home_deco') return app(HomeThemeDemoData::class)->catalog($request);
         if ($request->input('theme')==='universal') return app(UniversalThemeDemoData::class)->catalog($request);

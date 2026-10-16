@@ -260,6 +260,11 @@ class CatalogApiController extends Controller
             'pdpContent.customAccordions' => ['nullable', 'array', 'max:10'], 'pdpContent.customAccordions.*.id' => ['required', 'string', 'max:100'],
             'pdpContent.customAccordions.*.title' => ['required', 'string', 'max:255'], 'pdpContent.customAccordions.*.icon' => ['nullable', 'string', 'max:100'],
             'pdpContent.customAccordions.*.content' => ['required', 'string', 'max:50000'], 'pdpContent.customAccordions.*.defaultOpen' => ['nullable', 'boolean'],
+            'pdpContent.faqs' => ['nullable', 'array', 'max:30'],
+            'pdpContent.faqs.*' => ['array:id,question,answer'],
+            'pdpContent.faqs.*.id' => ['required', 'string', 'max:100', 'distinct'],
+            'pdpContent.faqs.*.question' => ['required', 'string', 'max:500'],
+            'pdpContent.faqs.*.answer' => ['required', 'string', 'max:10000'],
             'pdpContent.configuratorLabel' => ['nullable', 'string', 'max:100'],
             'pdpContent.story' => ['nullable', 'array:label,heading,description,image,alt,focus,focusY'],
             'pdpContent.story.label' => ['nullable', 'string', 'max:100'],
@@ -433,7 +438,7 @@ class CatalogApiController extends Controller
         ]);
 
         return ['id' => (string) $product->id, 'title' => $product->title, 'slug' => $product->handle, 'brand' => $product->brand ?? '', 'categoryId' => $product->category_id ? (string) $product->category_id : '', 'collectionIds' => $product->collections->pluck('id')->map(fn ($id) => (string) $id)->all(), 'descriptionHtml' => $product->description ?? '', 'summary' => $product->subtitle ?? '', 'images' => $product->images->sortBy('position')->values()->map(fn ($image) => ['id' => (string) $image->id, 'path' => $image->path, 'alt' => $image->alt ?? '', 'position' => $image->position])->all(), 'status' => $product->status, 'purchaseMode' => $product->purchase_mode, 'priceDisplay' => $product->price_display, 'hasVariants' => $product->has_variants, 'basePrice' => $product->base_price / 100, 'baseCompareAtPrice' => $product->compare_at_price !== null ? $product->compare_at_price / 100 : null, 'options' => $product->options ?? [], 'variants' => $product->variants->map(function (ProductVariant $v) use ($inventoryStates): array { $state = $inventoryStates[(int) $v->id]; return ['id' => (string) $v->id, 'sku' => $v->sku, 'title' => $v->title, 'options' => $v->options ?? [], 'price' => $v->price / 100, 'compareAtPrice' => $v->compare_at_price !== null ? $v->compare_at_price / 100 : null, 'costPrice' => $v->cost_price !== null ? $v->cost_price / 100 : null, 'inventoryQuantity' => $state['physical'] ?? (int) $v->stock, 'stockVersion' => (int)$v->stock_version, 'inventoryInitialized' => $state['initialized'], 'inventoryVerified' => $state['verified'], 'inventoryEditable' => $state['editable'], 'inventoryRevision' => $state['revision'], 'inventoryAdjustmentUrl' => $state['adjustment_url'], 'inventoryRepairRequired' => $state['repair_required'], 'weightGrams' => $v->weight_grams, 'packageLengthCm' => $v->package_length_cm, 'packageWidthCm' => $v->package_width_cm, 'packageHeightCm' => $v->package_height_cm, 'barcode' => $v->barcode, 'image' => $v->image_url, 'visualType' => $v->visual_type, 'colorCode' => $v->color_code, 'optionImage' => $v->option_image, 'enabled' => $v->enabled]; })->values(), 'tags' => $product->tags ?? [], 'totalInventory' => $inventoryStates->sum(fn (array $state) => (int) ($state['physical'] ?? 0)), 'featured' => $product->is_featured, 'seoTitle' => $product->seo_title, 'seoDescription' => $product->seo_description,
-            'pdpContent' => ['highlights' => $pdpContent?->highlights ?? [], 'specifications' => $pdpContent?->specifications ?? [], 'useStoreDefaultShipping' => $pdpContent?->use_store_default_shipping ?? true, 'shippingPolicy' => $pdpContent?->shipping_policy, 'customAccordions' => $pdpContent?->custom_accordions ?? [], 'configuratorLabel' => $pdpContent?->configurator_label, 'story' => $pdpContent?->story],
+            'pdpContent' => ['highlights' => $pdpContent?->highlights ?? [], 'specifications' => $pdpContent?->specifications ?? [], 'useStoreDefaultShipping' => $pdpContent?->use_store_default_shipping ?? true, 'shippingPolicy' => $pdpContent?->shipping_policy, 'customAccordions' => $pdpContent?->custom_accordions ?? [], 'faqs' => $pdpContent?->faqs ?? [], 'configuratorLabel' => $pdpContent?->configurator_label, 'story' => $pdpContent?->story],
             'crossSellProductIds' => $product->pdpRelatedProducts->pluck('related_product_id')->map(fn ($id) => (string) $id)->values()->all(),
             'createdAt' => $product->created_at?->toDateString(), 'updatedAt' => $product->updated_at?->toDateString()];
     }
@@ -468,6 +473,7 @@ class CatalogApiController extends Controller
                 'use_store_default_shipping' => $content['useStoreDefaultShipping'] ?? true,
                 'shipping_policy' => ($content['useStoreDefaultShipping'] ?? true) ? null : ($content['shippingPolicy'] ?? null),
                 'custom_accordions' => $content['customAccordions'] ?? [],
+                'faqs' => array_key_exists('faqs', $content) ? array_values(array_map(fn ($faq) => ['id' => trim($faq['id']), 'question' => trim($faq['question']), 'answer' => trim($faq['answer'])], $content['faqs'] ?? [])) : ($product->pdpContent?->faqs ?? []),
                 'configurator_label' => $content['configuratorLabel'] ?? null,
                 'story' => array_key_exists('story', $content) ? $content['story'] : $product->pdpContent?->story,
             ]);

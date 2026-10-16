@@ -1,3 +1,4 @@
+import {logisticsSections} from '../../cms/logisticsTemplates';
 import weddingTemplate from '../../cms/weddingTemplate.json';
 import jewelryTemplate from '../../cms/jewelryTemplate.json';
 import kidsTemplate from '../../cms/kidsTemplate.json';
@@ -65,6 +66,7 @@ export interface SectionTemplateOption {
 }
 
 const SOURCE_SECTION_TEMPLATES: SectionTemplateOption[] = [
+ ...([0,1,5,6] as const).map((index):SectionTemplateOption=>{const section=logisticsSections({},'industrial-starter')[index];const {id,...defaultData}=section;return {type:section.type,title:index===0?'Industrial Container Hero':index===1?'Industrial Service Cards':index===5?'Industrial Workflow':'Industrial FAQ',category:index===0?'Header & Intro':index===6?'Support & Contact':'Benefits & Trust',description:'Editable industrial layout with shared content, typography, links and motion controls.',icon:Layers,badge:'Industrial',defaultData};}),
   {type:'promotion_highlights',title:'Promotion Highlights',category:'Commerce & Shop',description:'Live promotion offers in photographic cards. Automatic or selected active vouchers with shared content, image and design controls.',icon:Tag,badge:'Editorial',defaultData:promotionHighlightDefaults()},
   {type:'shop_navigation',title:'Collection Banners',category:'Commerce & Shop',description:'Image-overlay collection banners with editable copy, links and visual proportions. One banner per row on mobile.',icon:Image,badge:'Editorial',defaultData:collectionBannerDefaults()},
   {type:'shop_navigation',title:'Shop Navigation',category:'Commerce & Shop',description:'Linked photograph cards for categories, collections or custom destinations. Shared image and typography controls.',icon:Grid,badge:'Editorial',defaultData:{type:'shop_navigation',title:'Shop by room',subtitle:'',content:'',buttonText:'Explore all rooms',buttonLink:'/shop',isVisible:true,containerMode:'page',sectionBorder:'none',motionPreset:'subtle-lift',paddingY:'normal',columnsCount:5,textAlignment:'left',backgroundColor:'custom',textColor:'dark',customColors:{...createSectionColorDefaults(),customBgColor:'#f7f6f2',titleColor:'#292b24',contentColor:'#66685d',primaryBtnBg:'#454e37'},typography:{title:{fontFamily:'serif',fontSize:32,fontWeight:400},itemTitle:{fontFamily:'serif',fontSize:18,fontWeight:400}},items:[{"id": "shop-living", "title": "Living Room", "sourceType": "custom", "linkUrl": "/shop", "imageUrl": "/storage/cms/media/e6774f4c-4d03-4ff8-98b3-152174211cae.png"}, {"id": "shop-dining", "title": "Dining Room", "sourceType": "custom", "linkUrl": "/shop", "imageUrl": "/storage/cms/media/712c6f25-32db-459b-96cb-39e4a6fad163.png"}, {"id": "shop-lighting", "title": "Lighting", "sourceType": "custom", "linkUrl": "/shop", "imageUrl": "/storage/cms/media/28ab0cb3-b015-4596-bd2e-9f0028bf94e9.png"}, {"id": "shop-decor", "title": "Decor", "sourceType": "custom", "linkUrl": "/shop", "imageUrl": "/storage/cms/media/524de4a8-d5ae-4fd8-8502-f05e9d6ecfbc.png"}, {"id": "shop-bedroom", "title": "Bedroom", "sourceType": "custom", "linkUrl": "/shop", "imageUrl": "/storage/cms/media/cccfed70-efe4-4185-be48-8a0165212c71.png"}]}},
@@ -1205,7 +1207,7 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({
       } : {}),
       id: 'sec-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7)
     };
-    if (newSection.comparisonPreset==='device-table'||newSection.layoutPreset==='tech-feature'||newSection.type==='promotion_highlights'||newSection.type==='chapter_block'||newSection.galleryPreset?.startsWith('editorial-')||newSection.featureCardsPreset==='editorial-columns') {
+    if (newSection.featureCardsPreset?.startsWith('industrial-')||newSection.faqPreset==='industrial-split'||newSection.comparisonPreset==='device-table'||newSection.layoutPreset==='tech-feature'||newSection.type==='promotion_highlights'||newSection.type==='chapter_block'||newSection.galleryPreset?.startsWith('editorial-')||newSection.featureCardsPreset==='editorial-columns') {
       newSection.items=newSection.items?.map((item,index)=>({...item,id:`${newSection.id}-item-${index}`}));
     }
     newSection.productTabs=newSection.productTabs?.map((tab,index)=>({...tab,id:`${newSection.id}-tab-${index}`}));

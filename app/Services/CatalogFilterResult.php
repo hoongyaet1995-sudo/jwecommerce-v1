@@ -33,6 +33,7 @@ final readonly class CatalogFilterResult
             // Kept for the current component during its source-faithful replacement.
             'colors' => collect($this->facets['colors'] ?? [])->pluck('value'),
             'materials' => $this->filters['materials'],
+            'tags' => $this->filters['tags'] ?? [],
             'minRating' => $this->filters['minRating'],
             'facets' => $this->facets,
             // Compatibility values remain until the source-faithful Filter Matrix replacement.

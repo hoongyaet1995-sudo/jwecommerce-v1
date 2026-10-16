@@ -31,6 +31,7 @@ import {ChapterNavigation,ChapterBlock,EditorialCover,EditorialCtaBand} from './
 import {EditorialGallery,EditorialColumns} from './EditorialCollections';
 import {ValuesList} from './ValuesList';
 import {Manifesto} from './Manifesto';
+import {IndustrialCards,IndustrialFaq} from './IndustrialSections';
 import React, { useState, useEffect, useRef } from 'react';
 import {ScopedImage,imageSlotFrameStyle} from './ScopedImage';
 import {ImageSelectionContext} from './ImageSelectionContext';
@@ -343,7 +344,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
   // 1. Hero Banner
   const renderHeroBanner = () => {
-    if(section.heroBannerPreset==='editorial-gradient')return <EditorialGradientHero section={section} editing={isEditingMode} isPageHeading={runtime.page.document.sections.find(item=>item.isVisible!==false)?.id===section.id}/>;
+    if(['editorial-gradient','industrial-overlay'].includes(section.heroBannerPreset??''))return <EditorialGradientHero section={section} editing={isEditingMode} isPageHeading={runtime.page.document.sections.find(item=>item.isVisible!==false)?.id===section.id}/>;
     const overlay = section.overlayOpacity ?? 50;
     return (
       <div className="relative min-h-[480px] sm:min-h-[580px] flex items-center justify-center overflow-hidden">
@@ -2767,11 +2768,11 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       case 'policy_content': return <PolicyContent section={section} isEditingMode={isEditingMode}/>;
       case 'payment_methods': return <PaymentMethods section={section}/>;
       case 'delivery_table': return <DeliveryTable section={section}/>;
-      case 'feature_cards': return section.featureCardsPreset==='service-highlights'?<ServiceHighlights section={section} renderIcon={renderIcon}/>:['editorial-columns','numbered-process'].includes(section.featureCardsPreset??'')?<EditorialColumns section={section}/>:section.featureCardsPreset==='values-list'?<ValuesList section={section}/>:renderFeatureCards();
+      case 'feature_cards': return ['industrial-cards','industrial-process'].includes(section.featureCardsPreset??'')?<IndustrialCards section={section} editing={isEditingMode}/>: section.featureCardsPreset==='service-highlights'?<ServiceHighlights section={section} renderIcon={renderIcon}/>:['editorial-columns','numbered-process'].includes(section.featureCardsPreset??'')?<EditorialColumns section={section}/>:section.featureCardsPreset==='values-list'?<ValuesList section={section}/>:renderFeatureCards();
       case 'values_list': return <ValuesList section={section}/>;
       case 'icon_list': return renderIconList();
       case 'comparison_matrix': return section.comparisonPreset==='device-table'?<DeviceComparison section={section} editing={isEditingMode}/>:renderComparisonMatrix();
-      case 'faq_accordion': return section.faqPreset==='minimal'?<MinimalFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>:renderFaqAccordion();
+      case 'faq_accordion': return section.faqPreset==='industrial-split'?<IndustrialFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>: section.faqPreset==='minimal'?<MinimalFaq key={`${section.id}-${section.faqInitiallyOpen}`} section={section}/>:renderFaqAccordion();
       case 'contact_form': return section.contactPreset==='enquiry'?<EnquiryForm section={section} isEditingMode={isEditingMode}/>:renderContactForm();
       case 'store_locator': return section.contactPreset==='location'?<ContactLocation section={section}/>:renderStoreLocator();
       case 'testimonials_slider': return renderTestimonials();

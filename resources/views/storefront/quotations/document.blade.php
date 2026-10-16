@@ -5,12 +5,14 @@
  $isPreview=$state!==null;$isSent=$version!==null;$expired=$version?->expires_at->isPast()??false;
  $theme=request()->attributes->get('websiteRenderedTheme');$style=app(\App\Services\WebsiteThemeCustomization::class)->style($theme,'pdp');
  $defaults=['universal'=>'#2457ed','fashion'=>'#b4ff21','jewelry'=>'#98774c','baby'=>'#b45f40','tech'=>'#2457eb','food'=>'#657052','beauty'=>'#48283e','home_deco'=>'#6b705a'];
+ $defaults['logistics']='#173247';
  $main=($style['colorMode']??'theme')!=='theme'?($style['main']??$defaults[$theme]??'#2457ed'):($defaults[$theme]??'#2457ed');
  $fontPairs=['editorial'=>['Lora,Georgia,serif','Inter,Arial,sans-serif'],'modern'=>['"DM Sans",Arial,sans-serif','Inter,Arial,sans-serif'],'classic'=>['Georgia,serif','Arial,sans-serif'],'street'=>['FashionAnton,Impact,sans-serif','FashionInter,Arial,sans-serif'],'universal'=>['QuoteHeading,Arial,sans-serif','QuoteBody,Arial,sans-serif']];
  $fonts=$fontPairs[$style['font']??'default']??$fontPairs['universal'];
 @endphp
 <style>.quotation-live,.quotation-live :is(p,a,button,input,label,small,span,strong){font-family:{!! $fonts[1] !!}}.quotation-live :is(h1,h2,h3,.document-brand,.document-grand-total strong){font-family:{!! $fonts[0] !!}}</style>
 <style>#customer-view.quotation-live{--main:{{ $main }}}#customer-view.quotation-live .document-eyebrow,#customer-view.quotation-live .document-grand-total strong,#customer-view.quotation-live .document-status{color:var(--main)}#customer-view.quotation-live .document-status{background:color-mix(in srgb,var(--main) 8%,white);border-color:color-mix(in srgb,var(--main) 20%,white)}.quotation-live button:disabled{opacity:.5;cursor:default}.quotation-live .quote-error{padding:14px;border:1px solid #fda4af;background:#fff1f2;color:#9f1239;border-radius:8px;margin-bottom:18px}</style>
+@if($theme==='logistics')@include('storefront.themes.logistics-quotation-style')@endif
 <div id="customer-view" class="quotation-live" @if(request()->boolean('support')&&session('support_enquiry_id')===$enquiry->id) data-enquiry-support-open @endif>
 <div class="customer-toolbar">
 @if($isPreview)<a href="{{ url('/admin/enquiries?enquiry='.$enquiry->id.'&quotation=1') }}">← Back to merchant workspace</a><span>{{ $isSent?'Sent quotation':'Preview · Not sent' }}</span>@if(!$isSent)<button class="primary" type="button" onclick="document.getElementById('send-dialog').showModal()">Send quotation</button>@endif

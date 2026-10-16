@@ -16,6 +16,13 @@
             $section=new \App\Models\MenuItem(['label'=>$label]);
             return $section->setRelation('children',collect($links)->map(fn($link)=>new \App\Models\MenuItem(['label'=>$link,'url'=>'#','is_active'=>true])));
         });
+        if(request()->attributes->get('websiteDesignPreview')==='logistics') {
+            $design=array_replace($design,['tagline'=>'Containers. Logistics. A more connected tomorrow.']);
+            $footerSections=collect(['Quick links'=>['Containers','Services','Our Projects'],'Company'=>['About Us','Contact']])->map(function($links,$label){
+                $section=new \App\Models\MenuItem(['label'=>$label]);
+                return $section->setRelation('children',collect($links)->map(fn($link)=>new \App\Models\MenuItem(['label'=>$link,'url'=>'#','is_active'=>true])));
+            });
+        }
     }
 @endphp
 

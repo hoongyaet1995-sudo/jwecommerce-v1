@@ -6,16 +6,17 @@ import {EditorialSectionAction} from './EditorialSectionAction';
 import {MotionItem} from './motion/CmsMotionWrapper';
 export function EditorialGradientHero({section,editing=false,isPageHeading=true}:{section:PageSection;editing?:boolean;isPageHeading?:boolean}){
  const Heading=isPageHeading?'h1':'h2';
+ const industrial=section.heroBannerPreset==='industrial-overlay';
  const alignment=section.textAlignment??'left';
  const spacing=section.paddingY==='compact'?'py-12':section.paddingY==='spacious'?'py-24':'py-16';
- return <div data-editorial-gradient-hero className="@container relative min-h-[420px] @min-[1024px]:min-h-[600px] flex items-center overflow-hidden">
+ return <div data-editorial-gradient-hero className={`@container relative ${industrial?'min-h-[420px]':'min-h-[420px] @min-[1024px]:min-h-[600px]'} flex items-center overflow-hidden`}>
   {section.mediaUrl&&<ScopedImage section={section} targetId="mediaUrl" src={section.mediaUrl} alt={section.title} className="absolute inset-0 w-full h-full object-cover"/>}
   <div className="absolute inset-0 pointer-events-none" style={{background:`linear-gradient(90deg, ${section.customColors?.customBgColor??'#F7F4EE'} 0%, ${section.customColors?.customBgColor??'#F7F4EE'}CC 30%, transparent 75%)`}}/>
   <div data-cms-hero-safe className={`relative w-full ${spacing} ${section.containerMode==='full-bleed'?'max-w-[var(--cms-page-width)] mx-auto':''}`} style={{textAlign:alignment,...(section.containerMode==='full-bleed'?{paddingInline:'var(--cms-page-gutter, clamp(24px, 4vw, 64px))',boxSizing:'border-box' as const}:{})}}>
    {section.subtitle&&<MotionItem><p data-cms-text="eyebrow" className="text-xs tracking-widest uppercase mb-6" style={{color:section.customColors?.eyebrowColor,...typographyStyle(section,'eyebrow')}}>{section.subtitle}</p></MotionItem>}
    <MotionItem><Heading data-cms-text="title" className={`text-5xl @min-[1024px]:text-7xl leading-none max-w-2xl whitespace-pre-line ${alignment==='center'?'mx-auto':alignment==='right'?'ml-auto':''}`} style={{color:section.customColors?.titleColor,...typographyStyle(section,'title')}}>{section.title}</Heading></MotionItem>
    {section.content&&<MotionItem><p data-cms-text="content" className={`mt-6 max-w-lg whitespace-pre-line ${alignment==='center'?'mx-auto':alignment==='right'?'ml-auto':''}`} style={{color:section.customColors?.contentColor,...typographyStyle(section,'content')}}>{section.content}</p></MotionItem>}
-   <div className={`flex flex-wrap gap-6 items-center mt-8 ${alignment==='center'?'justify-center':alignment==='right'?'justify-end':''}`}><EditorialSectionAction section={section} isEditingMode={editing}/>{section.secondaryButtonText&&section.secondaryButtonLink&&<EditorialSectionAction section={{...section,buttonText:section.secondaryButtonText,buttonLink:section.secondaryButtonLink,buttonStyle:'text-link'}} isEditingMode={editing}/>}</div>
+   <div className={`flex flex-wrap gap-6 items-center mt-8 ${alignment==='center'?'justify-center':alignment==='right'?'justify-end':''}`}><EditorialSectionAction section={section} isEditingMode={editing}/>{section.secondaryButtonText&&section.secondaryButtonLink&&<span className={industrial?'[&_a]:border [&_a]:border-white/80 [&_a]:rounded':''}><EditorialSectionAction section={{...section,buttonText:section.secondaryButtonText,buttonLink:section.secondaryButtonLink,buttonStyle:industrial?'button':'text-link',customColors:industrial?{...section.customColors,primaryBtnBg:'transparent',primaryBtnText:section.customColors?.secondaryBtnText??'#ffffff'}:section.customColors}} isEditingMode={editing}/></span>}</div>
   </div>
  </div>;
 }

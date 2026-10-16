@@ -103,6 +103,10 @@
         $design=array_replace(\App\Domain\Cms\ShellDesign::defaults(),['showAccount'=>true,'tagline'=>'Good food. Brighter days.']);
         $announcementVisible=false; $cartCount=2; $memberUser=null;
         $menuItems=collect(['Shop','Collections'])->map(fn($label)=>['id'=>'demo-'.$label,'label'=>$label,'url'=>'#','direct'=>true,'columns'=>collect(),'promo'=>null]);
+        if(request()->attributes->get('websiteDesignPreview')==='logistics') {
+            $design=array_replace($design,['tagline'=>'Containers. Logistics. A more connected tomorrow.','ctaLabel'=>'Request a Quote','ctaUrl'=>'#']);
+            $menuItems=collect(['Containers','Services','Our Projects','About Us','Contact'])->map(fn($label)=>['id'=>'demo-logistics-'.str($label)->slug(),'label'=>$label,'url'=>'#','direct'=>true,'columns'=>collect(),'promo'=>null]);
+        }
     }
 @endphp
 

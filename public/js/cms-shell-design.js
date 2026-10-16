@@ -12,6 +12,8 @@
  const place=()=>menus.filter(d=>d.open).forEach(d=>{const p=d.querySelector('.jw-shell-submenu');p.style.translate='';const r=p.getBoundingClientRect();const shift=r.left<16?16-r.left:r.right>window.innerWidth-16?window.innerWidth-16-r.right:0;if(shift)p.style.translate=shift+'px 0'});
  menus.forEach(d=>d.addEventListener('toggle',()=>{if(d.open){menus.forEach(other=>{if(other!==d)other.open=false});place()}}));
  document.addEventListener('click',e=>{if(!e.target.closest('.jw-shell-dropdown'))menus.forEach(d=>d.open=false)});
- header.addEventListener('focusout',()=>{queueMicrotask(()=>menus.forEach(d=>{if(!d.contains(document.activeElement))d.open=false}))});
+ // relatedTarget is the intended destination; activeElement can briefly be body
+ // while a mouse press transfers focus from summary to a submenu link.
+ header.addEventListener('focusout',event=>{const next=event.relatedTarget;menus.forEach(d=>{if(!(next instanceof Node)||!d.contains(next))d.open=false})});
  window.addEventListener('scroll',scrollState,{passive:true});window.addEventListener('resize',place,{passive:true});scrollState();
 })();

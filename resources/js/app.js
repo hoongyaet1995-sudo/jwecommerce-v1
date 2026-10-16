@@ -12,6 +12,9 @@ import {
     ChevronDown,
     Copy,
     Compass,
+    Container,
+    Settings,
+    UsersRound,
     CreditCard,
     FileText,
     HelpCircle,
@@ -72,6 +75,7 @@ import {
 const renderIcons = () => {
     createIcons({
         icons: {
+            Container, Settings, UsersRound,
             AudioLines, Battery, Usb, Bluetooth, Wifi, Cpu, Monitor, Leaf, Droplets, Gem, Gift,
             House, Ticket, TicketPercent,
             ArrowLeft,
@@ -1843,4 +1847,26 @@ document.addEventListener('submit',event=>{
  if (!event.target.matches?.('[data-enquiry-form]')) return;
  const button=event.target.querySelector('[type="submit"]');
  if (button) {button.disabled=true;button.textContent='Sending…';}
+});
+// Industry presentation entry; the existing support widget remains the owner.
+document.addEventListener('click', (event) => {
+    if (event.target.closest('[data-logistics-support]')) {
+        document.getElementById('sf-support-launcher')?.click();
+    }
+    const supportLink = event.target.closest('a[href]');
+    if (!supportLink) return;
+    const destination = new URL(supportLink.href, window.location.href);
+    if (destination.origin === window.location.origin && destination.hash === '#storefront-support-widget') {
+        const launcher = document.getElementById('sf-support-launcher');
+        if (launcher) {
+            event.preventDefault();
+            launcher.click();
+        }
+    }
+});
+
+window.addEventListener('load', () => {
+    if (window.location.hash === '#storefront-support-widget') {
+        document.getElementById('sf-support-launcher')?.click();
+    }
 });

@@ -284,6 +284,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/website-design', [\App\Http\Controllers\Admin\WebsiteDesignController::class, 'show']);
     Route::put('/api/website-design', [\App\Http\Controllers\Admin\WebsiteDesignController::class, 'update']);
     Route::get('/website-design/cart-drawer', [\App\Http\Controllers\Admin\WebsiteDesignController::class, 'drawer'])->name('website-design.cart-drawer');
+    Route::get('/website-design/logistics-homepage-sample', \App\Http\Controllers\Admin\LogisticsHomepageSampleController::class)->name('website-design.logistics-homepage-sample');
     Route::get('/website-design/preview', [\App\Http\Controllers\Admin\WebsiteDesignController::class, 'preview'])->name('website-design.preview');
     Route::get('/website-design/acceptance', [\App\Http\Controllers\Admin\WebsiteThemeAcceptanceController::class, 'index']);
     Route::get('/website-design/acceptance/sample/{scenario}', [\App\Http\Controllers\Admin\WebsiteThemeAcceptanceController::class, 'sample'])->name('website-design.acceptance.sample');

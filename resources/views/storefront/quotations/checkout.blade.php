@@ -2,7 +2,7 @@
 <x-slot:head><link rel="stylesheet" href="{{ asset('fonts/sample/fonts.css') }}"><link rel="stylesheet" href="{{ asset('css/quotation.css') }}?v={{ filemtime(public_path('css/quotation.css')) }}"><link rel="stylesheet" href="{{ asset('css/universal-theme.css') }}"><link rel="stylesheet" href="{{ asset('css/universal-layout.css') }}"></x-slot:head>
 @php
  $document=$version->document;$currency=$document['currency'];$money=fn($minor)=>$currency['left'].number_format($minor/100,2).$currency['right'];
- $theme=request()->attributes->get('websiteRenderedTheme');$style=app(\App\Services\WebsiteThemeCustomization::class)->style($theme,'checkout');$defaults=['universal'=>'#2457ed','fashion'=>'#b4ff21','jewelry'=>'#98774c','baby'=>'#b45f40','tech'=>'#2457eb','food'=>'#657052','beauty'=>'#48283e','home_deco'=>'#6b705a'];$main=($style['colorMode']??'theme')!=='theme'?($style['main']??$defaults[$theme]??'#2457ed'):($defaults[$theme]??'#2457ed');
+ $theme=request()->attributes->get('websiteRenderedTheme');$style=app(\App\Services\WebsiteThemeCustomization::class)->style($theme,'checkout');$defaults=['universal'=>'#2457ed','fashion'=>'#b4ff21','jewelry'=>'#98774c','baby'=>'#b45f40','tech'=>'#2457eb','food'=>'#657052','beauty'=>'#48283e','home_deco'=>'#6b705a'];$defaults['logistics']='#173247';$main=($style['colorMode']??'theme')!=='theme'?($style['main']??$defaults[$theme]??'#2457ed'):($defaults[$theme]??'#2457ed');
  $payment=$order?->payments->sortByDesc('id')->first();$bank=$payment?->configuration_snapshot['bankAccount']??null;
  $bankConfig=$methods['bank_transfer']['bankTransfer']??null;$bankAccounts=$bankConfig['bankAccounts']??[];$selected=old('payment_method',array_key_first($methods)??'');
 @endphp

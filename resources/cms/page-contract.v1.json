@@ -266,7 +266,8 @@
             "playfair",
             "dmsans",
             "notosc",
-            "cormorant"
+            "cormorant",
+            "barlow"
           ]
         },
         "fontSize": {
@@ -647,7 +648,9 @@
         "values-list",
         "editorial-columns",
         "service-highlights",
-        "numbered-process"
+        "numbered-process",
+        "industrial-cards",
+        "industrial-process"
       ]
     },
     "valuesShowHeading": {
@@ -1269,7 +1272,8 @@
       "type": "string",
       "enum": [
         "default",
-        "minimal"
+        "minimal",
+        "industrial-split"
       ]
     },
     "faqInitiallyOpen": {
@@ -1556,7 +1560,8 @@
       "type": "string",
       "enum": [
         "default",
-        "editorial-gradient"
+        "editorial-gradient",
+        "industrial-overlay"
       ]
     },
     "testimonialPreset": {

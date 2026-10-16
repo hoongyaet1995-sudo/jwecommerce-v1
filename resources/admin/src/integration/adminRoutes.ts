@@ -9,6 +9,7 @@ export const ADMIN_PATH_BY_SECTION = {
   'support-instagram': '/admin/social/instagram',
   'support-facebook': '/admin/social/facebook',
   commerce: '/admin/commerce',
+  enquiries: '/admin/enquiries',
   orders: '/admin/orders',
   customers: '/admin/customers',
   'shipping-malaysia': '/admin/shipping',
