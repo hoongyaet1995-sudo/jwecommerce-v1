@@ -15,6 +15,37 @@ use Tests\TestCase;
 
 class SupportChatApiTest extends TestCase
 {
+    public function test_zero_facts_is_missing_knowledge_not_invalid_generation():void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $knowledge=$this->mock(\App\Services\Support\UnifiedKnowledgeService::class);
+        $knowledge->shouldReceive('retrieve')->times(4)->andReturn([
+            ['id'=>'support:understanding','question'=>'Internal','answer'=>json_encode(['questions'=>['Where do you dispatch from?'],'conversation'=>'none','needs_business_answer'=>true])],
+            ['id'=>'support:outcomes','question'=>'Internal','answer'=>json_encode([['tool'=>'faq.search','status'=>'no_match','sourceIds'=>[]]])]
+        ]);
+        $knowledge->shouldReceive('redact')->andReturnUsing(fn($q)=>$q);$knowledge->shouldReceive('tools')->andReturn([]);
+        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
+        Schema::table('support_messages',function(Blueprint $t){$t->unsignedInteger('ai_settings_version')->nullable();$t->unsignedBigInteger('ai_control_version')->nullable();});
+        foreach(['storefront','facebook','instagram','whatsapp'] as $channel){
+            $c=SupportConversation::create(['id'=>(string)Str::uuid(),'owner_hash'=>Str::random(64),'status'=>'open','channel'=>$channel]);
+            $source=$c->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'customer','content'=>'Where do you dispatch from?']);
+            app(\App\Services\Support\FaqAutoReplyService::class)->reply($c,['client_message_id'=>$source->client_message_id,'content'=>$source->content,'language'=>'en']);
+            $reply=$c->messages()->where('sender_role','ai')->first();$this->assertNotNull($reply,$channel);$this->assertSame('no_match',$reply->ai_trace['decision'],$channel);
+        }
+    }
+    public function test_full_source_coverage_does_not_become_partial_because_optional_faq_search_missed():void
+    {
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $knowledge=$this->mock(\App\Services\Support\UnifiedKnowledgeService::class);
+        $knowledge->shouldReceive('retrieve')->once()->andReturn([
+            ['id'=>'offerings','question'=>'Offerings','answer'=>'Container storage'],
+            ['id'=>'support:understanding','question'=>'Internal','answer'=>json_encode(['questions'=>['What services?'],'conversation'=>'none','needs_business_answer'=>true])],
+            ['id'=>'support:outcomes','question'=>'Internal','answer'=>json_encode([['tool'=>'product.search','status'=>'success','sourceIds'=>['offerings']],['tool'=>'faq.search','status'=>'no_match','sourceIds'=>[]]])]
+        ]);
+        $knowledge->shouldReceive('redact')->andReturnUsing(fn($q)=>$q);$knowledge->shouldReceive('tools')->andReturn([]);
+        $this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"answer":"Container storage.","faq_ids":["offerings"],"coverage":[{"index":0,"status":"answered","source_ids":["offerings"]}]}');
+        $this->postJson('/support/chat/messages',$this->payload('What services?'))->assertOk();$reply=\App\Models\SupportMessage::where('sender_role','ai')->first();$this->assertSame('grounded',$reply->ai_trace['decision']);
+    }
     public function test_truncated_structured_answer_is_unavailable_not_missing_faq():void
     {
         StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);

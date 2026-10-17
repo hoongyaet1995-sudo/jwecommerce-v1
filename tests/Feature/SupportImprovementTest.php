@@ -61,6 +61,28 @@ class SupportImprovementTest extends TestCase
         SupportMessage::create(['conversation_id' => $source->conversation_id, 'client_message_id' => (string) Str::uuid(), 'sender_role' => 'human_agent', 'staff_user_id' => auth()->id(), 'content' => $answer]);
     }
 
+    public function test_open_missing_question_can_be_manually_drafted_without_resolving_or_publishing():void
+    {
+        $source=$this->example(state:'open');$this->getJson('/admin/api/support/improvement')->assertOk()->assertJsonPath('questions.0.canCreateDraft',true);
+        $this->postJson('/admin/api/support/improvement/drafts',['sourceMessageId'=>$source->id])->assertCreated()->assertJsonPath('draft.answer','');
+        $this->assertSame('open',$source->conversation->fresh()->status);$this->assertSame([],app(SupportFaqService::class)->read()['faq']['items']);
+    }
+    public function test_legacy_zero_fact_coverage_fallback_is_recovered_but_real_coverage_errors_stay_failures():void
+    {
+        $source=$this->example('coverage_incomplete','whatsapp',state:'open');$reply=$source->conversation->messages()->where('sender_role','ai')->first();
+        $reply->update(['ai_trace'=>['sourceMessageId'=>$source->id,'decision'=>'coverage_incomplete','retrievedSourceIds'=>[],'tools'=>[['tool'=>'faq.search','status'=>'no_match','sourceIds'=>[]]]]]);
+        $this->getJson('/admin/api/support/improvement')->assertOk()->assertJsonPath('counts.improve',1)->assertJsonPath('counts.failures',0);
+        $this->postJson('/admin/api/support/improvement/drafts',['sourceMessageId'=>$source->id])->assertCreated();
+        $real=$this->example('coverage_incomplete','instagram',state:'open');
+        $this->getJson('/admin/api/support/improvement?channel=instagram')->assertOk()->assertJsonPath('counts.failures',1)->assertJsonPath('failures.0.canCreateDraft',true);
+        $this->postJson('/admin/api/support/improvement/drafts',['sourceMessageId'=>$real->id])->assertCreated();
+    }
+    public function test_overview_does_not_repeat_activation_setting_query_for_each_question():void
+    {
+        for($i=0;$i<8;$i++)$this->example(question:'Question number '.$i,state:'open');
+        DB::flushQueryLog();DB::enableQueryLog();app(\App\Services\Support\SupportImprovementService::class)->overview(7,'all');
+        $queries=collect(DB::getQueryLog())->filter(fn($q)=>in_array('support_improvement',$q['bindings'],true));DB::disableQueryLog();$this->assertCount(1,$queries);
+    }
     public function test_observed_counts_filters_and_missing_knowledge_are_separate_from_failures(): void
     {
         $s = $this->example();
@@ -107,7 +129,7 @@ class SupportImprovementTest extends TestCase
         $this->postJson('/admin/api/support/improvement/drafts/'.$d['id'].'/dismiss', ['version' => 1])->assertOk()->assertJsonPath('draft.status', 'Dismissed');
         $this->postJson('/admin/api/support/improvement/drafts/'.$d['id'].'/publish', ['version' => 2, 'policyConfirmed' => true])->assertConflict();
         $open = $this->example(state: 'open');
-        $this->postJson('/admin/api/support/improvement/drafts', ['sourceMessageId' => $open->id])->assertUnprocessable();
+        $this->postJson('/admin/api/support/improvement/drafts', ['sourceMessageId' => $open->id])->assertCreated();
         $bad = $this->example('generation_unavailable');
         $this->postJson('/admin/api/support/improvement/drafts', ['sourceMessageId' => $bad->id])->assertUnprocessable();
     }

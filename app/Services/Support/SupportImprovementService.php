@@ -47,17 +47,17 @@ class SupportImprovementService
     private function eligibleSource(SupportMessage $source): SupportConversation
     {
         $c = SupportConversation::findOrFail($source->conversation_id);
-        abort_unless($source->sender_role === 'customer' && $source->created_at->gte($this->activatedAt()) && trim($source->content) !== '' && $c->status === 'resolved', 422, 'Choose a new unanswered question from a resolved conversation.');
         $evidence = $c->messages()->where('sender_role', 'ai')->where('ai_trace->sourceMessageId', $source->id)->latest('id')->first();
-        abort_unless($evidence && $this->missing($evidence) && ! in_array($evidence->delivery_status, ['failed', 'unknown', 'pending'], true), 422, 'This question is not a missing-knowledge case.');
-        abort_if($source->attachments()->exists() || mb_strlen(trim($source->content)) < 3, 422, 'Choose a customer text question without attachments.');
+        $reason=$this->draftBlockReason($source,$evidence);
+        abort_if($reason!==null,422,$reason ?? 'This question cannot be reviewed.');
 
         return $c;
     }
 
     public function overview(int $days, string $channel): array
     {
-        $from = now()->subDays($days)->max($this->activatedAt());
+        $activated=$this->activatedAt();
+        $from = now()->subDays($days)->max($activated);
         $rows = SupportMessage::where('sender_role', 'ai')->whereNotNull('ai_trace')->where('created_at', '>=', $from)
             ->whereIn('conversation_id', SupportConversation::select('id')->when($channel !== 'all', fn ($q) => $q->where('channel', $channel)))
             ->latest('id')->limit(5001)->get();
@@ -81,6 +81,7 @@ class SupportImprovementService
             $decision = $m->ai_trace['decision'] ?? '';
             $text = $this->sanitize($source->content, $c);
             $base = ['sourceMessageId' => $source->id, 'conversationId' => $c->id, 'question' => mb_substr($text, 0, 1000), 'channel' => $c->channel, 'resolved' => $c->status === 'resolved', 'createdAt' => $source->created_at->toIso8601String()];
+            $blocked=$this->draftBlockReason($source,$m,$activated);$base+=['canCreateDraft'=>$blocked===null,'draftBlockedReason'=>$blocked];
             if ($this->failed($m) || in_array($m->delivery_status, ['failed', 'unknown', 'pending'], true)) {
                 $counts['failures']++;
                 $failures[] = $base + ['reason' => match ($decision) {
@@ -102,7 +103,7 @@ class SupportImprovementService
         }
         usort($questions, fn ($a, $b) => $b['count'] <=> $a['count']);
 
-        return ['counts' => $counts, 'questions' => array_slice(array_values($questions), 0, 50), 'failures' => array_slice($failures, 0, 50), 'limited' => $limited, 'activatedAt' => $this->activatedAt()->toIso8601String(), 'from' => $from->toIso8601String()];
+        return ['counts' => $counts, 'questions' => array_slice(array_values($questions), 0, 50), 'failures' => array_slice($failures, 0, 50), 'limited' => $limited, 'activatedAt' => $activated->toIso8601String(), 'from' => $from->toIso8601String()];
     }
 
     public function create(int $sourceId, User $actor): array
@@ -180,14 +181,34 @@ class SupportImprovementService
         return ['id' => $d->id, 'question' => $d->question, 'originalQuestion' => $this->sanitize($source?->content ?? '', $c), 'answer' => $d->answer, 'category' => $d->category, 'channel' => $d->channel, 'status' => $d->status, 'version' => $d->version, 'conversationId' => $c?->id, 'sourceMessageId' => $d->source_message_id, 'staffAnswer' => $this->sanitize($staff?->content ?? '', $c), 'publishedFaqId' => $d->published_faq_id, 'reviewedAt' => $d->reviewed_at?->toIso8601String(), 'createdAt' => $d->created_at->toIso8601String()];
     }
 
+    private function draftBlockReason(SupportMessage $source, ?SupportMessage $evidence, ?Carbon $activated=null): ?string
+    {
+        if($source->sender_role!=='customer'||$source->created_at->lt($activated??$this->activatedAt()))return 'Choose a customer question recorded after improvement tracking began.';
+        if(mb_strlen(trim($source->content))<3)return 'Choose a meaningful customer text question.';
+        if($source->relationLoaded('attachments')?$source->attachments->isNotEmpty():$source->attachments()->exists())return 'Attachment questions require a separate text question before FAQ review.';
+        if(!$evidence)return 'No recorded AI reply is linked to this question.';
+        if(in_array($evidence->delivery_status,['failed','unknown','pending'],true))return 'Check reply delivery before using this question for FAQ review.';
+        if(!$this->missing($evidence)&&($evidence->ai_trace['decision']??'')!=='coverage_incomplete')return 'This is a service or delivery issue, not a confirmed knowledge gap. Check its settings first.';
+        return null;
+    }
+
+    /** Recover only the proven historical zero-fact fallback; retain original trace for diagnosis. */
+    private function legacyMissing(SupportMessage $m):bool
+    {
+        $t=$m->ai_trace??[];$tools=$t['tools']??[];
+        return ($t['decision']??'')==='coverage_incomplete'&&array_key_exists('retrievedSourceIds',$t)&&$t['retrievedSourceIds']===[]&&empty($t['clarification'])&&count($tools)>0
+            &&collect($tools)->every(fn($tool)=>($tool['status']??'')==='no_match'&&empty($tool['sourceIds']));
+    }
+
     private function failed(SupportMessage $m): bool
     {
+        if($this->legacyMissing($m))return false;
         return in_array($m->ai_trace['decision'] ?? '', array_merge(self::FAILURES,['rate_limited']), true)
             || collect($m->ai_trace['tools'] ?? [])->contains(fn ($t) => ($t['status'] ?? '') === 'unavailable');
     }
 
     private function missing(SupportMessage $m): bool
     {
-        return ! $this->failed($m) && in_array($m->ai_trace['decision'] ?? '',self::MISSING,true);
+        return $this->legacyMissing($m)||(! $this->failed($m) && in_array($m->ai_trace['decision'] ?? '',self::MISSING,true));
     }
 }

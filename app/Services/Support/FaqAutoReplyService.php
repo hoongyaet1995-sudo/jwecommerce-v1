@@ -183,7 +183,7 @@ class FaqAutoReplyService
                     $result = json_decode($output, true);
                     // Truncated/invalid generation is a service failure, not missing knowledge.
                     if(json_last_error()!==JSON_ERROR_NONE||!is_array($result))throw new \RuntimeException('Invalid structured answer');
-                    if($questions&&!$socialOnly&&!$orderReplies&&!$partialBlocked){
+                    if($facts&&$questions&&!$socialOnly&&!$orderReplies&&!$partialBlocked){
                         $checker=app(SupportAnswerCoverage::class);
                         $check=$checker->inspect(is_array($result)?$result:[],$questions,array_column($facts,'id'),app(UnifiedKnowledgeService::class)->tools($settings));
                         $trace['followUpCount']=0;
@@ -213,6 +213,7 @@ class FaqAutoReplyService
                         if(!$check['valid']){$result=null;$trace['decision']='coverage_incomplete';}
                         else{
                             $trace['coverage']=$check['coverage'];
+                            if(!$queryFailed&&!$clarification)$trace['decision']='grounded';
                             $missing=collect($check['coverage'])->where('status','missing')->pluck('index')->all();
                             if($missing){
                                 $trace['decision']='partial';
