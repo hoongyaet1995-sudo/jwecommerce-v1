@@ -1229,6 +1229,7 @@ const TabDataMappingPanel: React.FC<TabDataMappingPanelProps> = ({ tabs, categor
 
 interface SectionInspectorProps {
   pagePalette?:BrandPalette;
+  followTheme?:boolean;
   pageTypography?:PageStyle['typography'];
   promotionOffers?:PromotionOffer[];
   selectedElement?:{target:string;role?:string;revision:number};
@@ -1252,6 +1253,7 @@ interface SectionInspectorProps {
 export const SectionInspector: React.FC<SectionInspectorProps> = ({
   promotionOffers=[],
   pagePalette,
+  followTheme,
   pageTypography,
   pageId,
   section,
@@ -3032,7 +3034,7 @@ export const SectionInspector: React.FC<SectionInspectorProps> = ({
         </div></div></details></div>
 
         {/* 10. Brand Palette & Color Customization (Secondary Color Tuner) */}
-        <div hidden={inspectorTab!=='design'} data-inspector-group={26}><details className="cms-settings-group"><summary>Palette defaults & colors</summary><div className="cms-settings-group-content"><SectionStyleSettings section={section} onChange={onChange} pagePalette={pagePalette}/>{sectionColors !== null && (
+        <div hidden={inspectorTab!=='design'} data-inspector-group={26}><details className="cms-settings-group"><summary>Palette defaults & colors</summary><div className="cms-settings-group-content"><SectionStyleSettings section={section} onChange={onChange} pagePalette={pagePalette} followTheme={followTheme}/>{sectionColors !== null && (
         <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

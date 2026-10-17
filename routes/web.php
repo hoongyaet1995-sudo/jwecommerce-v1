@@ -264,6 +264,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/cms/payment-methods', \App\Http\Controllers\Admin\CmsPaymentInformationController::class);
     Route::get('/api/cms/palettes', [\App\Http\Controllers\Admin\CmsPaletteLibraryController::class, 'index']);
     Route::post('/api/cms/palettes', [\App\Http\Controllers\Admin\CmsPaletteLibraryController::class, 'save'])->middleware('throttle:30,1');
+    Route::get('/api/cms/brand-context', fn(\App\Services\CmsThemePalette $brand)=>response()->json(['data'=>$brand->current()]));
+    Route::get('/api/cms/ai-workspaces/{page}', [\App\Http\Controllers\Admin\CmsAiWorkspaceController::class,'show']);
+    Route::put('/api/cms/ai-workspaces/{page}', [\App\Http\Controllers\Admin\CmsAiWorkspaceController::class,'save']);
+    Route::delete('/api/cms/ai-workspaces/{page}', [\App\Http\Controllers\Admin\CmsAiWorkspaceController::class,'discard']);
+    Route::get('/api/cms/ai-tasks/{id}', [\App\Http\Controllers\Admin\CmsAiWorkspaceController::class,'task']);
+    Route::get('/api/cms/ai-generator', [\App\Http\Controllers\Admin\CmsAiGeneratorController::class,'metadata']);
+    Route::post('/api/cms/ai-generator', \App\Http\Controllers\Admin\CmsAiGeneratorController::class)->middleware(['throttle:12,1',\App\Http\Middleware\CmsAiTask::class]);
     Route::get('/api/pages', [PageApiController::class, 'index'])->name('api.pages.index');
     Route::post('/api/media-assets', [CmsMediaAssetController::class, 'store'])->name('api.media-assets.store');
     Route::post('/api/pages', [PageApiController::class, 'store'])->name('api.pages.store');

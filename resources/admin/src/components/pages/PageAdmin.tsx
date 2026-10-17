@@ -1,3 +1,5 @@
+import {AiPageGenerator} from './AiPageGenerator';
+import {pageSourceSignature} from '../../cms/cmsAiGenerator';
 import {BuilderShellHeader} from '../menus/BuilderShellHeader';
 import {ShellDesignPreview} from '../menus/ShellDesignEditor';
 import {resolveHeaderPresentation} from '../../cms/headerPresentation';
@@ -81,6 +83,7 @@ type PageAutosaveTakeover = {
 };
 
 export const PageAdmin: React.FC = () => {
+  const [aiGeneratorOpen,setAiGeneratorOpen]=useState(false);
   const [templateOpen,setTemplateOpen]=useState(false),[templateBusy,setTemplateBusy]=useState(false);
   const [deliveryRates,setDeliveryRates]=useState<PageTemplateContext['shippingRates']>(undefined);
   const [templateContext,setTemplateContext]=useState<PageTemplateContext>({});
@@ -1155,7 +1158,14 @@ export const PageAdmin: React.FC = () => {
   };
 
   return (
-    <div id="page-visual-builder" className={'w-full h-full flex flex-col bg-neutral-100 dark:bg-neutral-950 overflow-hidden animate-in fade-in'}>
+    <div id="page-visual-builder" inert={aiGeneratorOpen||undefined} className={'w-full h-full flex flex-col bg-neutral-100 dark:bg-neutral-950 overflow-hidden animate-in fade-in'}>
+      {aiGeneratorOpen&&createPortal(<AiPageGenerator page={currentPage} selected={activeSectionId} onClose={()=>setAiGeneratorOpen(false)} onApply={async(document,create,signature)=>{
+        if(!create&&pageSourceSignature(currentPage)!==signature)throw new Error('The source page changed while AI was open. Reopen the generator from the latest draft.');
+        if(!await flushCurrentPage())throw new Error('Save the current page before applying AI changes.');
+        if(create){const saved=await savePage({...currentPage,...document,id:crypto.randomUUID(),status:'draft',isHomepage:false,lockVersion:undefined});if(!saved)throw new Error('The new draft could not be saved.');setEditingPageId(saved.id);setSelectedPageId(saved.id);}
+        else{const updated=updatePageLocal(currentPage.id,latest=>({...latest,...document}));if(!updated)throw new Error('Page is unavailable.');schedulePage(updated);if(!await flushCurrentPage())throw new Error('The draft could not be saved.');}
+        setAiGeneratorOpen(false);addToast({type:'success',title:'AI Draft Ready',message:'Editable content saved to draft. The published page is unchanged.'});
+      }}/>,document.body)}
       {/* Builder toolbar: page, canvas and publishing actions */}
       <div data-cms-builder-toolbar className="min-h-16 px-4 py-2 border-b border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md flex flex-wrap items-center gap-3 z-20 shrink-0 shadow-2xs">
         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -1174,6 +1184,7 @@ export const PageAdmin: React.FC = () => {
           <details open={toolbarMoreOpen} className="relative" onKeyDown={e=>{if(e.key==='Escape')setToolbarMoreOpen(false);}}>
             <summary aria-label="More actions" aria-expanded={toolbarMoreOpen} onClick={e=>{e.preventDefault();setToolbarMoreOpen(open=>!open);}} title="More actions" className="list-none w-9 h-9 grid place-items-center rounded-xl cursor-pointer text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 [&::-webkit-details-marker]:hidden"><MoreVertical className="w-4 h-4"/></summary>
             <div className="absolute right-0 top-full mt-2 w-52 p-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl text-neutral-700 dark:text-neutral-200" onClick={e=>{if((e.target as HTMLElement).closest('button'))setToolbarMoreOpen(false);}}>
+              <button type="button" onClick={()=>setAiGeneratorOpen(true)} className="w-full flex items-center gap-2 p-2.5 rounded-lg text-xs text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950"><Sparkles className="w-4 h-4"/>AI Page Generator</button>
               <button type="button" onClick={handleReplayMotion} className="w-full flex items-center gap-2 p-2.5 rounded-lg text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800"><Play className="w-4 h-4"/>Replay Motion</button>
               <button type="button" onClick={toggleTheme} className="w-full flex items-center gap-2 p-2.5 rounded-lg text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800">{theme==='dark'?<Sun className="w-4 h-4"/>:<Moon className="w-4 h-4"/>}{theme==='dark'?'Switch to Light Mode':'Switch to Dark Mode'}</button>
               <button type="button" disabled={currentPage.isHomepage} onClick={()=>setPageAsHomepage(currentPage.id)} className="w-full flex items-center gap-2 p-2.5 rounded-lg text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50"><Home className="w-4 h-4"/>{currentPage.isHomepage?'Active Home':'Set as Home'}</button>
@@ -1423,7 +1434,7 @@ export const PageAdmin: React.FC = () => {
         {/* Right Panel: Section Inspector (Collapsible) */}
         {!isInspectorCollapsed ? (
           <div className="w-84 lg:w-96 flex-shrink-0 flex flex-col transition-all duration-300">
-            <SectionInspector pageTypography={currentPage.style?.typography} pagePalette={currentPage.style?.palette} promotionOffers={promotionOffers}
+            <SectionInspector pageTypography={currentPage.style?.typography} pagePalette={currentPage.style?.palette} followTheme={currentPage.style?.colorSource==='theme'} promotionOffers={promotionOffers}
                 selectedElement={selectedElement?.sectionId===activeSection?.id?selectedElement:undefined}
               key={currentPage.id}
               pageId={currentPage.id}

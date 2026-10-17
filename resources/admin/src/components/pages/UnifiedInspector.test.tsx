@@ -162,9 +162,9 @@ it.each(repeatableTemplates)('can add, edit, reorder and delete entries in mount
  expect(new Set(saved.items!.map(item=>item.id)).size,template.title).toBe(2);
  const firstId=saved.items![0].id;
  const container=node.querySelector(`[data-inspector-item="${firstId}"]`)!;
- const editor=(container.matches('input,textarea')?container:container.querySelector('input:not([type="file"]),textarea')) as HTMLInputElement|HTMLTextAreaElement;
+ const editor=(container.matches('input,textarea')?container:container.querySelector('input:not([type="file"]),textarea')??(template.defaultData.galleryPreset==='photo-marquee'?node.querySelector('[data-image-target-inspector] input:not([type="file"])'):null)) as HTMLInputElement|HTMLTextAreaElement;
  expect(editor,template.title+' entry editor').not.toBeNull();
- const value=editor instanceof HTMLInputElement&&editor.type==='number'?'37':'EDITED ENTRY';
+ const value=template.defaultData.galleryPreset==='photo-marquee'?'/images/edited-marquee.png':editor instanceof HTMLInputElement&&editor.type==='number'?'37':'EDITED ENTRY';
  await act(async()=>{Object.getOwnPropertyDescriptor(editor instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value')!.set!.call(editor,value);editor.dispatchEvent(new Event('input',{bubbles:true}));});
  expect(Object.values(saved.items![0]).flat().map(String),template.title+' edit result').toContain(value);
  const move=[...node.querySelectorAll<HTMLButtonElement>('button')].find(button=>[button.getAttribute('aria-label'),button.title,button.textContent?.trim()].some(name=>/^(Up|Down|Move (?:item|value) [0-9]+ (?:up|down)|Move device up|Move device down|Move row up|Move row down)$/.test(name??''))&&!button.disabled&&!button.closest('[hidden]'));

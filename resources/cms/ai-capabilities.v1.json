@@ -1,0 +1,1349 @@
+{
+  "version": 1,
+  "sources": {
+    "fields": "page-contract.v1.json",
+    "text": "inspectorCapabilities.textRoles",
+    "items": "repeatedItemContract",
+    "media": "imageTargets"
+  },
+  "sections": {
+    "chapter_navigation": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "customColors",
+        "items",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "chapter_block": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset",
+        "chapterPreset",
+        "policyPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "customColors",
+        "chapterPreset",
+        "subtitle",
+        "content",
+        "mediaUrl",
+        "mediaAlt",
+        "imageSlots",
+        "items",
+        "mediaContainerMode",
+        "deliverySource",
+        "deliveryNote",
+        "deliveryDestinationLabel",
+        "deliveryEstimateLabel",
+        "deliveryFeeLabel",
+        "buttonText",
+        "buttonLink",
+        "secondaryButtonText",
+        "secondaryButtonLink",
+        "policyPreset",
+        "policyNote",
+        "showSectionHeading",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "hero_banner": {
+      "newComposition": true,
+      "surfaces": [
+        "default"
+      ],
+      "layoutFields": [
+        "motionPreset",
+        "heroBannerPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "imageSlots",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "mediaUrl",
+        "mediaType",
+        "buttonText",
+        "buttonLink",
+        "secondaryButtonText",
+        "secondaryButtonLink",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "overlayOpacity",
+        "customColors",
+        "items",
+        "surface",
+        "brandPalette",
+        "heroBannerPreset"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion",
+      "aiLayouts": {
+        "field": "heroBannerPreset",
+        "values": [
+          "editorial-gradient",
+          "industrial-overlay"
+        ]
+      }
+    },
+    "hero_slider": {
+      "newComposition": false,
+      "surfaces": [
+        "default"
+      ],
+      "layoutFields": [
+        "motionPreset",
+        "sliderPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "imageSlots",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "buttonText",
+        "buttonLink",
+        "secondaryButtonText",
+        "secondaryButtonLink",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "overlayOpacity",
+        "sliderInterval",
+        "sliderAutoplay",
+        "sliderHeight",
+        "items",
+        "customColors",
+        "sliderPreset",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "split_hero": {
+      "newComposition": false,
+      "surfaces": [
+        "default"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "imageSlots",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "mediaUrl",
+        "mediaType",
+        "buttonText",
+        "buttonLink",
+        "secondaryButtonText",
+        "secondaryButtonLink",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "dealBadge",
+        "cardBadge",
+        "cardTitle",
+        "cardSubtitle",
+        "cardPrice",
+        "cardExtra",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "announcement_bar": {
+      "newComposition": false,
+      "surfaces": [
+        "default"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "tickerSpeed",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "items",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "media_text_split": {
+      "newComposition": true,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset",
+        "layoutPreset"
+      ],
+      "fields": [
+        "typography",
+        "leadText",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "imageSlots",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "mediaUrl",
+        "mediaType",
+        "mediaPosition",
+        "mediaAspectRatio",
+        "layoutPreset",
+        "imageRatio",
+        "imagePosition",
+        "imageFit",
+        "imageWidth",
+        "imageShape",
+        "imageOverlay",
+        "imageOverlayOpacity",
+        "imageForeground",
+        "imageForegroundColor",
+        "imageForegroundOpacity",
+        "mediaAlt",
+        "mediaFocalPoint",
+        "buttonText",
+        "buttonLink",
+        "buttonStyle",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "customColors",
+        "secondaryButtonText",
+        "secondaryButtonLink",
+        "items",
+        "mediaContainerMode",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion",
+      "aiLayouts": {
+        "field": "layoutPreset",
+        "values": [
+          "default",
+          "editorial-story",
+          "editorial-cover",
+          "flush-split"
+        ]
+      }
+    },
+    "rich_text": {
+      "newComposition": true,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "richTextPreset",
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "richTextPreset",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "quote",
+        "authorName",
+        "authorRole",
+        "authorAvatar",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion",
+      "aiLayouts": {
+        "field": "richTextPreset",
+        "values": [
+          "default"
+        ]
+      }
+    },
+    "timeline_story": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "items",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "stats_counter": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "columnsCount",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "items",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "product_grid": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "productIds",
+        "columnsCount",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [
+        {
+          "field": "productIds",
+          "fact": "productIds.valid"
+        }
+      ],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "product_listing": {
+      "newComposition": true,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset",
+        "listingPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "sourceType",
+        "sourceId",
+        "productLimit",
+        "autoSlide",
+        "autoSlideInterval",
+        "showNavArrows",
+        "columnsCount",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "customColors",
+        "listingPreset",
+        "productIds",
+        "imageRatio",
+        "buttonText",
+        "buttonLink",
+        "surface",
+        "brandPalette",
+        "productTabs",
+        "items",
+        "imageSlots"
+      ],
+      "runtime": [
+        {
+          "field": "sourceId",
+          "fact": "listing.sourceId.valid"
+        }
+      ],
+      "evidence": "code-audited; per-preset acceptance required for expansion",
+      "aiLayouts": {
+        "field": "listingPreset",
+        "values": [
+          "default",
+          "editorial-grid",
+          "industrial-related"
+        ]
+      }
+    },
+    "collection_tabs": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "tabCategories",
+        "tabs",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [
+        {
+          "field": "tabs.*.sourceId",
+          "fact": "tabs.*.sourceId.valid"
+        }
+      ],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "featured_deal": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "imageSlots",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "mediaUrl",
+        "mediaType",
+        "dealEndDate",
+        "discountPercent",
+        "dealBadge",
+        "buttonText",
+        "buttonLink",
+        "secondaryButtonText",
+        "secondaryButtonLink",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "pricing_table": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "columnsCount",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "items",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "media_gallery": {
+      "newComposition": true,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "galleryPreset",
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "galleryPreset",
+        "showSectionHeading",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "imageSlots",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "columnsCount",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "items",
+        "customColors",
+        "mediaContainerMode",
+        "surface",
+        "brandPalette",
+        "buttonText",
+        "buttonLink",
+        "marqueeSpeed",
+        "marqueeDirection",
+        "marqueePauseOnHover",
+        "galleryFilters",
+        "galleryLightbox",
+        "galleryInitialCount",
+        "galleryLoadCount"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion",
+      "aiLayouts": {
+        "field": "galleryPreset",
+        "values": [
+          "default",
+          "editorial-triptych",
+          "industrial-mosaic"
+        ]
+      }
+    },
+    "video_embed": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "videoEmbedUrl",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "before_after": {
+      "newComposition": false,
+      "surfaces": [
+        "default"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "imageSlots",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "beforeImageUrl",
+        "afterImageUrl",
+        "beforeLabel",
+        "afterLabel",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "instagram_feed": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "imageSlots",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "columnsCount",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "items",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "feature_cards": {
+      "newComposition": true,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "featureCardsPreset",
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "showSectionHeading",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "featureCardsPreset",
+        "valuesShowHeading",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "columnsCount",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "items",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion",
+      "aiLayouts": {
+        "field": "featureCardsPreset",
+        "values": [
+          "default",
+          "editorial-columns",
+          "industrial-cards"
+        ]
+      }
+    },
+    "values_list": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "valuesShowHeading",
+        "valuesNumberColor",
+        "valuesDividerColor",
+        "valuesShowDividers",
+        "valuesRowSpacing",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "items",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "icon_list": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "columnsCount",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "items",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "comparison_matrix": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset",
+        "comparisonPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "comparisonDimensionName",
+        "comparisonOurBrandName",
+        "comparisonCompetitorName",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "items",
+        "customColors",
+        "surface",
+        "brandPalette",
+        "comparisonPreset",
+        "imageSlots",
+        "buttonText",
+        "buttonLink"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "faq_accordion": {
+      "newComposition": true,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset",
+        "faqPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "items",
+        "customColors",
+        "faqPreset",
+        "faqInitiallyOpen",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion",
+      "aiLayouts": {
+        "field": "faqPreset",
+        "values": [
+          "default",
+          "minimal",
+          "industrial-split"
+        ]
+      }
+    },
+    "contact_form": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset",
+        "contactPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "formEmail",
+        "contactPhone",
+        "contactAddress",
+        "contactButtonText",
+        "formSuccessMessage",
+        "subjectPlaceholder",
+        "categoryPlaceholder",
+        "messagePlaceholder",
+        "inquiryCategories",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "customColors",
+        "contactPreset",
+        "buttonText",
+        "buttonLink",
+        "secondaryButtonText",
+        "secondaryButtonLink",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "store_locator": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset",
+        "contactPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "columnsCount",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "items",
+        "customColors",
+        "contactPreset",
+        "contactAddress",
+        "mapEmbedUrl",
+        "mapVisible",
+        "contactAddressIcon",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "testimonials_slider": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset",
+        "testimonialPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "imageSlots",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "columnsCount",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "items",
+        "customColors",
+        "surface",
+        "brandPalette",
+        "testimonialPreset"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "logo_cloud": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "imageSlots",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "columnsCount",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "items",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "cta_strip": {
+      "newComposition": true,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "ctaPreset",
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "ctaPreset",
+        "ctaBannerHeight",
+        "mediaUrl",
+        "imageSlots",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "buttonText",
+        "buttonLink",
+        "secondaryButtonText",
+        "secondaryButtonLink",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "customColors",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion",
+      "aiLayouts": {
+        "field": "ctaPreset",
+        "values": [
+          "default",
+          "editorial-band",
+          "industrial-outline"
+        ]
+      }
+    },
+    "newsletter_signup": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset",
+        "newsletterPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "buttonText",
+        "formSuccessMessage",
+        "newsletterCouponId",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "customColors",
+        "surface",
+        "brandPalette",
+        "newsletterPreset"
+      ],
+      "runtime": [
+        {
+          "field": "newsletterCouponId",
+          "fact": "newsletterCouponId.valid"
+        }
+      ],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "delivery_table": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "customColors",
+        "deliverySource",
+        "deliveryNote",
+        "deliveryDestinationLabel",
+        "deliveryEstimateLabel",
+        "deliveryFeeLabel",
+        "items",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "policy_content": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset",
+        "policyPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "customColors",
+        "textAlignment",
+        "subtitle",
+        "content",
+        "items",
+        "policyPreset",
+        "policyNote",
+        "showSectionHeading",
+        "imageSlots",
+        "mediaContainerMode",
+        "buttonText",
+        "buttonLink",
+        "buttonStyle",
+        "columnsCount",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "payment_methods": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "customColors",
+        "paymentLayout",
+        "paymentNote",
+        "textAlignment",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "shop_navigation": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset",
+        "shopNavigationPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "imageSlots",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "columnsCount",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "items",
+        "customColors",
+        "buttonText",
+        "buttonLink",
+        "shopNavigationPreset",
+        "bannerProportions",
+        "bannerHeight",
+        "showSectionHeading",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    },
+    "promotion_highlights": {
+      "newComposition": false,
+      "surfaces": [
+        "default",
+        "light",
+        "contrast"
+      ],
+      "layoutFields": [
+        "motionPreset"
+      ],
+      "fields": [
+        "typography",
+        "containerMode",
+        "sectionBorder",
+        "sectionBorderColor",
+        "imageSlots",
+        "motionPreset",
+        "subtitle",
+        "content",
+        "textAlignment",
+        "backgroundColor",
+        "textColor",
+        "paddingY",
+        "items",
+        "customColors",
+        "promotionSource",
+        "promotionLayout",
+        "showOfferBadges",
+        "surface",
+        "brandPalette"
+      ],
+      "runtime": [],
+      "evidence": "code-audited; per-preset acceptance required for expansion"
+    }
+  }
+}

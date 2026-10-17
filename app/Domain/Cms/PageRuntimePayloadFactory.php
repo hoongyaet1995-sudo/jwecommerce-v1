@@ -68,6 +68,7 @@ final class PageRuntimePayloadFactory
                 'errors' => $this->contract->runtimeErrors($document, $facts),
             ],
             'context' => [
+                'themePalette' => app(\App\Services\CmsThemePalette::class)->current()['palette'],
                 'mode' => $mode,
                 'currency' => (string) app(\App\Support\CurrencySettings::class)->default()['code'],
             ],

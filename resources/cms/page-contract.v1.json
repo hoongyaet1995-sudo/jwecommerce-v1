@@ -1459,6 +1459,7 @@
       "type": "object",
       "allowUnknownFields": false,
       "fields": {
+        "colorSource": {"type": "string", "enum": ["theme", "custom"]},
         "palette": {
           "$ref": "brandPalette",
           "required": true

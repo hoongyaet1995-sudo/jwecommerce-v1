@@ -11,7 +11,7 @@ import {RoutineSteps} from './BeautyLayouts';
 import {FlushSplit} from './FlushSplit';
 import {EditorialProductTabs} from './EditorialProductTabs';
 import {EditorialStoryCards} from './EditorialStoryCards';
-import {resolveStyledSection} from '../../cms/pageStyle';
+import {resolveStyledSection,resolvePageStyle} from '../../cms/pageStyle';
 import {loadCmsFonts} from '../../cms/fontCatalog';
 import {PromotionHighlights} from './PromotionHighlights';
 import {resolvePromotionCards} from '../../cms/promotionHighlights';
@@ -101,7 +101,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   viewport = 'desktop'
 }) => {
   const runtime = usePageRuntime();
-  const section=resolveStyledSection(rawSection,runtime.page.document.style);
+  const section=resolveStyledSection(rawSection,resolvePageStyle(runtime.page.document.style,runtime.context.themePalette));
   useEffect(()=>loadCmsFonts(),[]);
   const runtimeSection = usePageSectionRuntime(section.id);
   const [productListingIdx, setProductListingIdx] = useState(0);

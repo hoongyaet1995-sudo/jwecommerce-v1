@@ -1,3 +1,4 @@
+import {useCmsBrand} from './useCmsBrand';
 import {isShellDesign} from './shellDesign';
 import {isHeaderPresentation} from './headerPresentation';
 import {isPalette,isPageStyle} from './pageStyle';
@@ -99,6 +100,7 @@ export interface PageRuntimePayload {
   context: {
     mode: 'editing' | 'preview' | 'public';
     currency: string;
+    themePalette?: import('./pageStyle').BrandPalette;
     wishlist?: {authenticated:boolean;csrfToken:string;savedProductIds:string[];loginUrl:string};
   };
 }
@@ -114,9 +116,11 @@ const PageRuntimeContext = createContext<PageRuntimePayload | null>(null);
 export const PageRuntimeProvider: React.FC<{
   payload: PageRuntimePayload;
   children: React.ReactNode;
-}> = ({ payload, children }) => (
-  <PageRuntimeContext.Provider value={payload}>{children}</PageRuntimeContext.Provider>
-);
+}> = ({ payload, children }) => {
+  const brand=useCmsBrand(payload.context.mode==='editing')?.palette;
+  const value=brand?{...payload,context:{...payload.context,themePalette:brand}}:payload;
+  return <PageRuntimeContext.Provider value={value}>{children}</PageRuntimeContext.Provider>;
+};
 
 export const usePageRuntime = (): PageRuntimePayload => {
   const payload = useContext(PageRuntimeContext);
@@ -643,6 +647,7 @@ const isRuntimePayload = (value: unknown): value is PageRuntimePayload => {
     || !isRecord(value.context)
     || !['preview', 'public'].includes(String(value.context.mode))
     || typeof value.context.currency !== 'string'
+    || (value.context.themePalette!==undefined&&!isPalette(value.context.themePalette))
     || (value.context.wishlist !== undefined && (!isRecord(value.context.wishlist) || typeof value.context.wishlist.authenticated !== 'boolean' || typeof value.context.wishlist.csrfToken !== 'string' || !isStringArray(value.context.wishlist.savedProductIds) || value.context.wishlist.loginUrl !== '/account/login'))) {
     return false;
   }

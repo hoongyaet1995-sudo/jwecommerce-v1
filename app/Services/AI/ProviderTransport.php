@@ -49,6 +49,12 @@ class ProviderTransport
             if (isset($json['usage']) && is_array($json['usage'])) {
                 $usage = array_intersect_key($json['usage'], array_flip(['input_tokens', 'output_tokens', 'total_tokens', 'prompt_tokens', 'completion_tokens']));
                 Log::info('ai_provider_usage', ['model' => $data['model'] ?? null, 'usage' => $usage]);
+                // Request-local only: never persist credentials or provider response bodies.
+                request()->attributes->set('ai_provider_usage', array_filter([
+                    'input_tokens' => $usage['input_tokens'] ?? $usage['prompt_tokens'] ?? null,
+                    'output_tokens' => $usage['output_tokens'] ?? $usage['completion_tokens'] ?? null,
+                    'total_tokens' => $usage['total_tokens'] ?? null,
+                ], fn ($value) => is_int($value) && $value >= 0));
             }
 
             return $json;
