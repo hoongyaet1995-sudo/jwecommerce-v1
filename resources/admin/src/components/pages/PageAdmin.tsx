@@ -769,6 +769,29 @@ export const PageAdmin: React.FC = () => {
   if (!editingPageId || !currentPage) {
     return (
       <div id="page-admin-directory" className="space-y-6 animate-in fade-in">
+      {/* Delete CMS Page Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={!!pageToDelete}
+        itemType="CMS Page"
+        itemName={pageToDelete?.title}
+        itemDetails={`Path: /pages/${pageToDelete?.slug} • Template: ${pageToDelete?.template} • Sections: ${pageToDelete?.sections.length || 0} blocks`}
+        warningMessage={`Deleting "${pageToDelete?.title}" removes its editable document and published snapshot.`}
+        impactItems={[
+          'The page document and all of its configured sections will be removed.',
+          'Any links pointing to this storefront path may become unavailable.',
+          'This operation cannot be automatically reversed.',
+        ]}
+        confirmButtonText="Delete CMS Page"
+        onConfirm={() => {
+          if (pageToDelete) {
+            deletePage(pageToDelete.id);
+            setPageToDelete(null);
+          }
+        }}
+        onClose={() => setPageToDelete(null)}
+      />
+
+
         {templateOpen && <PageTemplateModal context={{...templateContext,products,categories,collections,promotionOffers}} settingsState={templateSettingsState} busy={templateBusy} onClose={handleCloseTemplates} onCreate={handleCreateNewPage}/>}
         {/* Header Title & Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1484,28 +1507,6 @@ export const PageAdmin: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Delete CMS Page Confirmation Modal */}
-      <DeleteConfirmationModal
-        isOpen={!!pageToDelete}
-        itemType="CMS Page"
-        itemName={pageToDelete?.title}
-        itemDetails={`Path: /pages/${pageToDelete?.slug} • Template: ${pageToDelete?.template} • Sections: ${pageToDelete?.sections.length || 0} blocks`}
-        warningMessage={`Deleting "${pageToDelete?.title}" removes its editable document and published snapshot.`}
-        impactItems={[
-          'The page document and all of its configured sections will be removed.',
-          'Any links pointing to this storefront path may become unavailable.',
-          'This operation cannot be automatically reversed.',
-        ]}
-        confirmButtonText="Delete CMS Page"
-        onConfirm={() => {
-          if (pageToDelete) {
-            deletePage(pageToDelete.id);
-            setPageToDelete(null);
-          }
-        }}
-        onClose={() => setPageToDelete(null)}
-      />
 
       {/* Delete CMS Page Section Confirmation Modal */}
       <DeleteConfirmationModal
