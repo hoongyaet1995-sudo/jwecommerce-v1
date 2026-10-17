@@ -49,6 +49,7 @@ export interface MessageAttachment {
 }
 
 export interface ChatMessage {
+  enquiryProduct?:import('../components/support/SupportEnquiryCard').EnquiryProductCard|null;
   id: string;
   conversationId: string;
   senderRole: SenderRole;
@@ -133,6 +134,7 @@ export interface InternalStaffNote {
 
 export interface SupportConversation {
   replyCadence?: {id:string;status:string;publishedSegments:number;totalSegments:number;stopReason:string|null}|null;
+  enquiryIntake?:import('../components/support/SupportEnquiryCard').EnquiryIntake|null;
   handoffBrief?: {customerRequests:string[];checks:{tool:string;status:string}[];reason:string;missingContext:string|null;unresolvedTopics:number[];handoffStatus:string}|null;
   mediaCapabilities?: {images:boolean;documents:boolean;audio:boolean};
   canReply?: boolean;

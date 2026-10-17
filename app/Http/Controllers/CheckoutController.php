@@ -151,6 +151,7 @@ class CheckoutController extends Controller
             'address' => [],
         ]);
 
+        app(\App\Services\Support\SupportCheckoutSnapshot::class)->capture($request,$items,$summary,'checkout',$selectedDelivery,$deliveryOptions!==[]);
         return view(app(\App\Services\WebsiteDesignService::class)->view('checkout'), [
             'items' => $items,
             'coupon' => $coupon,
@@ -193,6 +194,7 @@ class CheckoutController extends Controller
             ? $pricing->summarize($items, $coupon, $selected, $address)
             : null;
 
+        app(\App\Services\Support\SupportCheckoutSnapshot::class)->capture($request,$items,$summary,'checkout',$selected,$options!==[]);
         return response()->json(['data' => [
             'options' => array_values($options),
             'summary' => $summary,

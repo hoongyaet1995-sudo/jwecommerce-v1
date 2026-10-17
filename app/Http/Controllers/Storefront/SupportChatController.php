@@ -21,11 +21,18 @@ class SupportChatController extends Controller
 
     public function send(Request $request, SupportChatService $chat)
     {
-        $data = $request->validate(['contact'=>['sometimes','array:name,email,phone'],'contact.name'=>['required_with:contact','string','max:100'],'contact.email'=>['required_with:contact','email','max:255'],'contact.phone'=>['nullable','string','max:30'],'request_human'=>['sometimes','boolean'], 'language' => ['sometimes', 'in:en,ms,zh'], 'attachment_id'=>['nullable','uuid'], 'content' => ['nullable', 'string', 'max:2000'], 'client_message_id' => ['required', 'uuid']]);
+        $data = $request->validate(['page_context'=>['sometimes','nullable','array:path,variant,tab,order'],'page_context.path'=>['required_with:page_context','string','max:1000'],'page_context.variant'=>['nullable','integer','min:1'],'page_context.tab'=>['nullable','string','max:40'],'page_context.order'=>['nullable','integer','min:1'],'contact'=>['sometimes','array:name,email,phone'],'contact.name'=>['required_with:contact','string','max:100'],'contact.email'=>['required_with:contact','email','max:255'],'contact.phone'=>['nullable','string','max:30'],'request_human'=>['sometimes','boolean'], 'language' => ['sometimes', 'in:en,ms,zh'], 'attachment_id'=>['nullable','uuid'], 'content' => ['nullable', 'string', 'max:2000'], 'client_message_id' => ['required', 'uuid']]);
         $data['content'] = trim($data['content'] ?? '');
         abort_if($data['content'] === '' && empty($data['attachment_id']), 422, 'Message cannot be empty.');
         $conversation = $chat->sendCustomer($request, $data);
         $source=$conversation->messages()->where('client_message_id',$data['client_message_id'])->firstOrFail();
+        // Enquiry access governs the whole enquiry turn, including attachment analysis.
+        // Uploaded files remain available to staff; this intake answers text/FAQ questions.
+        if(app(\App\Services\Support\EnquiryReception::class)->enquiry($conversation)||(app(\App\Services\Support\SupportCommerceContext::class)->isPath(explode('?', $source->ai_trace['pageContext']['path']??'',2)[0])&&!$source->attachments()->exists())){
+            if(!app(\App\Services\Support\SupportAttachmentAnalysisService::class)->schedule($source))
+            app(FaqAutoReplyService::class)->reply($conversation,$data);
+            return response()->json(['conversation'=>$chat->publicView($conversation->fresh())])->header('Cache-Control','no-store');
+        }
         if(!app(\App\Services\Support\SupportAttachmentAnalysisService::class)->schedule($source) && !$source->attachments()->where('kind','document')->exists()
             && !app(\App\Services\Support\SupportReplyCadenceService::class)->enqueue($source,$data['language']??null)) app(FaqAutoReplyService::class)->reply($conversation, $data);
 

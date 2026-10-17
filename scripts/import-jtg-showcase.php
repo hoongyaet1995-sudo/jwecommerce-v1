@@ -14,6 +14,8 @@ if(count($d['products'])!==17||count($d['categories'])!==8||count($d['collection
 foreach(['products'=>'handle','categories'=>'slug','collections'=>'slug'] as $t=>$key)foreach($d[$t] as $row)if(!str_starts_with($row[$key],'jtg-'))throw new RuntimeException('Non-JTG row refused');
 if(!Illuminate\Support\Facades\Schema::hasColumn('product_pdp_contents','faqs'))throw new RuntimeException('Apply FAQ migration first');
 app(PageDocumentContract::class)->validate($d['document']);
+foreach($d['detailDocuments']??[] as $doc){if(!in_array($doc['slug']??'',['jtg-site-storage','jtg-delivery-planning','jtg-media-gallery'],true))throw new RuntimeException('Unexpected detail page');app(PageDocumentContract::class)->validate($doc);}
+if(isset($d['support'])&&(count($d['support']['faq']['items']??[])!==18))throw new RuntimeException('Expected18 JTG FAQs');
 $tables=['products','categories','collections','product_variants','product_images','product_pdp_contents','collection_product','store_settings','storefront_shell_settings','menus','menu_items','pages','page_documents','page_sections'];
 echo json_encode(['mode'=>$mode,'products'=>17,'categories'=>8,'collections'=>6,'sections'=>count($d['document']['sections']),'existingJtg'=>DB::table('products')->where('handle','like','jtg-%')->count()]).PHP_EOL;
 if($mode==='--check')exit;
@@ -43,6 +45,13 @@ $result=DB::transaction(function()use($d,$safety,$stockBefore){
  DB::table('menu_items')->whereIn('menu_id',array_values($menus))->update(['is_active'=>false]);$mi=[];
  $headerSourceId=collect($d['menus'])->firstWhere('key','header')['id'];
  foreach($d['menu_items'] as $r){if(!$r['is_active'])continue;if($r['menu_id']===$headerSourceId&&!$r['parent_id']&&!in_array($r['label'],['Containers','Services','Our Projects','Contact'],true))continue;if($r['parent_id']&&!isset($mi[$r['parent_id']]))continue;$old=$r['id'];unset($r['id'],$r['created_at'],$r['updated_at']);$r['menu_id']=$menus[$r['menu_id']];$r['parent_id']=$r['parent_id']?($mi[$r['parent_id']]??null):null;if($r['target_id']){$t=['category'=>'categories','collection'=>'collections','product'=>'products'][$r['link_type']]??null;if($t)$r['target_id']=$map[$t][$r['target_id']]??null;else $r['target_id']=null;}$existing=DB::table('menu_items')->where('menu_id',$r['menu_id'])->where('url',$r['url'])->where('label',$r['label'])->where('parent_id',$r['parent_id'])->value('id');if($existing){DB::table('menu_items')->where('id',$existing)->update($r);$mi[$old]=$existing;}else $mi[$old]=DB::table('menu_items')->insertGetId($r);}
+ foreach($d['detailDocuments']??[] as $doc){
+  foreach($doc['sections'] as &$s){if(isset($s['productIds']))$s['productIds']=array_map(fn($id)=>(string)$map['products'][$id],$s['productIds']);}unset($s);
+  $detail=Page::whereHas('draftDocument',fn($q)=>$q->where('slug',$doc['slug']))->first();
+  if(!$detail)$detail=app(PageCrudService::class)->create($doc);else{if($detail->status==='published'&&$detail->draftDocument->content_hash!==$detail->publishedDocument->content_hash)throw new RuntimeException('Unpublished detail edits: '.$doc['slug']);app(PageDraftService::class)->save($detail,$doc,$detail->draftDocument->lock_version);}
+  $detail->refresh();app(PagePublicationService::class)->publish($detail,$detail->draftDocument->lock_version);
+ }
+ if(isset($d['support'])){ $current=app(App\Services\SupportFaqService::class)->read();app(App\Services\SupportFaqService::class)->save(['version'=>$current['version']]+array_intersect_key($d['support'],array_flip(['faq','identity','greetingMessage','enquiryAccess','pageContext']))); }
  foreach($safety as $t=>$hash)if(hash('sha256',DB::table($t)->orderBy('id')->get()->toJson())!==$hash)throw new RuntimeException('Operational data changed: '.$t);
  $oldIds=array_column(json_decode($stockBefore,true),'id');if(DB::table('product_variants')->whereIn('id',$oldIds)->orderBy('id')->get(['id','stock','stock_version'])->toJson()!==$stockBefore)throw new RuntimeException('Existing stock changed');
  return ['pageId'=>$page->id,'products'=>count($map['products']),'categories'=>count($map['categories']),'collections'=>count($map['collections']),'operationalDataPreserved'=>true];

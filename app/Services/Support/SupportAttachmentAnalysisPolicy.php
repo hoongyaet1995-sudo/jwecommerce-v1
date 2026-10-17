@@ -17,11 +17,17 @@ class SupportAttachmentAnalysisPolicy
         return $value;
     }
 
+    public function conversationEligible(\App\Models\SupportConversation $conversation, array $settings): bool
+    {
+        if(app(EnquiryReception::class)->enquiry($conversation))return app(EnquiryReception::class)->eligible($conversation,$settings);
+        return $conversation->status==='open' && app(SupportAiPolicy::class)->enabled($settings,$conversation->channel)
+            && $conversation->notes()->where('content','like','[Archive] %')->latest('id')->value('content')!=='[Archive] true';
+    }
+
     public function eligible(SupportAttachment $attachment, array $settings): bool
     {
         $conversation = $attachment->conversation;
-        return $conversation && $conversation->status === 'open'
-            && app(SupportAiPolicy::class)->enabled($settings, $conversation->channel)
+        return $conversation && $this->conversationEligible($conversation,$settings)
             && ($this->settings($settings)[$attachment->kind] ?? false)
             && ($attachment->kind !== 'audio' || $conversation->channel === 'whatsapp')
             && $attachment->status === 'ready' && $attachment->message_id !== null

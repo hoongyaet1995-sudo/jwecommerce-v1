@@ -1,3 +1,4 @@
+export interface EnquiryAccessConfig {isEnabled:boolean;websiteFaq:boolean;productFaq:boolean;collectDetails:boolean;summarize:boolean;autoHandoff:boolean;fields:Record<'product'|'quantity'|'purpose'|'location'|'timing'|'requirements','required'|'optional'|'off'>}
 export type AIToneOfVoice =
   | 'luxury_professional'
   | 'friendly_helpful'
@@ -91,6 +92,8 @@ export interface AIKnowledgeScopeConfig {
     retrievalDepth: 'strict' | 'semantic' | 'deep';
     items: FAQKnowledgeItem[];
   };
+  pageContext?: {enabled:boolean;cart?:boolean;enquiries?:boolean;quotations?:boolean;account?:boolean};
+  enquiryAccess?: EnquiryAccessConfig;
   orderLookup: {
     isEnabled: boolean;
     provideTrackingEntry?: boolean;

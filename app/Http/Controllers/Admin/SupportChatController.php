@@ -63,6 +63,7 @@ class SupportChatController extends Controller
             if ($locked->status !== $data['status']) {
                 $locked->notes()->create(['staff_user_id' => $request->user()->id, 'content' => '[Control] '.$locked->status.' → '.$data['status']]);
                 $locked->update($data);
+                if($data['status']==='open'&&\Illuminate\Support\Facades\Schema::hasTable('support_enquiry_intakes'))\App\Models\SupportEnquiryIntake::where('conversation_id',$locked->id)->update(['ai_suspended'=>false]);
                 if($data['status']==='resolved')app(\App\Services\Support\SupportCustomerMemoryService::class)->closeIssues($locked);
             }
         });

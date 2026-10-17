@@ -40,10 +40,12 @@ class CartViewData
         $shippingOption = count($deliveryOptions) === 1 ? reset($deliveryOptions) : null;
         $selectedDelivery = $shippingOption['id'] ?? 'standard';
 
+        $summary=$this->pricing->summarize($items,$coupon,$selectedDelivery);
+        app(\App\Services\Support\SupportCheckoutSnapshot::class)->capture($request,$items,$summary,'cart',$selectedDelivery,$shippingOption!==null);
         return [
             'items' => $items,
             'coupon' => $coupon,
-            'summary' => $this->pricing->summarize($items, $coupon, $selectedDelivery),
+            'summary' => $summary,
             'shippingEstimateAvailable' => $shippingOption !== null,
             'shippingOption' => $shippingOption,
             'shippingProgressThreshold' => $this->shipping->cartFreeShippingThreshold(),

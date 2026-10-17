@@ -16,6 +16,8 @@ const fields:Partial<Record<PageSection['type'],readonly string[]>>={
  delivery_table:['title','deliveryEstimate','deliveryFee'],chapter_navigation:['title','linkUrl'],
 };
 export function repeatedItemFields(section:PageSection):readonly string[]{
+ if(section.type==='media_gallery'&&section.galleryPreset==='album-browser')return ['title','description','imageUrl','category'];
+ if(section.type==='media_gallery'&&section.galleryPreset==='industrial-mosaic')return ['title','description','imageUrl'];
  if(section.type==='media_gallery'&&section.galleryPreset==='photo-marquee')return ['imageUrl'];
  if(section.type==='testimonials_slider'&&section.testimonialPreset==='editorial-quote')return ['title','description'];
  if(section.type==='shop_navigation'&&['catalog-captions','recipe-cards'].includes(section.shopNavigationPreset??''))return ['title','description','imageUrl','buttonText','linkUrl','sourceType','sourceId',...(section.shopNavigationPreset==='recipe-cards'?['badge']:[])];
@@ -31,7 +33,7 @@ export function repeatedItemFields(section:PageSection):readonly string[]{
  if(section.type==='hero_slider'&&['editorial-overlay','fashion-editorial'].includes(section.sliderPreset??''))return ['title','subtitle','description','imageUrl','videoUrl','linkUrl','buttonText','secondaryButtonText','secondaryButtonLink','caption',...(section.sliderPreset==='fashion-editorial'?['thirdButtonText','thirdButtonLink']:[])];
  if(section.type==='store_locator'&&section.contactPreset==='location')return ['title','description','icon'];
  if(section.type==='feature_cards'&&section.featureCardsPreset==='industrial-cards')return ['title','description','icon','buttonText','linkUrl'];
- if(section.type==='feature_cards'&&section.featureCardsPreset==='industrial-process')return ['title','description'];
+ if(section.type==='feature_cards'&&['industrial-process','industrial-process-split'].includes(section.featureCardsPreset??''))return ['title','description'];
  if(section.type==='feature_cards'&&section.featureCardsPreset==='service-highlights')return ['title','description','icon'];
  if(section.type==='feature_cards'&&section.featureCardsPreset==='editorial-columns')return ['title','description'];
  if(section.type==='media_gallery'&&section.galleryPreset==='portfolio-cards')return ['title','description','imageUrl','buttonText','linkUrl'];

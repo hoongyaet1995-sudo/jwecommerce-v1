@@ -1,3 +1,5 @@
+import {AIPageContextControls} from './AIPageContextControls';
+import {EnquiryAccessCard} from './EnquiryAccessCard';
 import {Route} from 'lucide-react';
 import {AISectionHeader} from './AISectionHeader';
 import {AICustomerMemoryControls} from './AICustomerMemoryControls';
@@ -411,6 +413,8 @@ export const AIKnowledgeScopeTab: React.FC = () => {
       </section>
 
       <div className="space-y-6"><p className="text-xs text-neutral-500">Order access requires customer login or verified order email code. Private replies stay on the server.</p>
+      <AIPageContextControls/>
+      <EnquiryAccessCard/>
       {/* 2. Order Lookup & OMS Scope Access Boundaries */}
       <section id="order-lookup-scope-card" className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-100 dark:border-neutral-800">

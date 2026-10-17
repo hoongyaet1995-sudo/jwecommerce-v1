@@ -13,6 +13,7 @@ class SupportReplyCadenceService
     private const ACTIVE=['collecting','generating','ready'];
     public function enqueue(SupportMessage $source,?string $language=null):bool
     {
+        if(Schema::hasTable('product_enquiries')&&\App\Models\ProductEnquiry::where('support_conversation_id',$source->conversation_id)->exists())return false;
         $settings=app(SupportFaqService::class)->read();$policy=app(SupportReplyCadencePolicy::class)->settings($settings);
         // Attachment analysis/confirmation retains its established source lifecycle.
         if(!$policy['enabled']||!Schema::hasTable('support_reply_batches')||$source->attachments()->exists())return false;
@@ -64,6 +65,10 @@ class SupportReplyCadenceService
     private function eligible(SupportReplyBatch $batch,SupportConversation $c,array $settings):bool
     {
         $ack=($batch->trace['escalation']??null)==='explicit_request';
+        if(isset($batch->trace['privateContextFingerprint'])){
+            $source=\App\Models\SupportMessage::find($batch->latest_source_id);
+            if(!$source||!app(SupportPrivateContextLease::class)->publicationAllowed($source,$settings,$batch->trace['privateContextFingerprint']))return false;
+        }
         return app(SupportReplyCadencePolicy::class)->settings($settings)['enabled']&&app(SupportAiPolicy::class)->enabled($settings,$c->channel)
             &&($c->status==='open'||($ack&&$c->status==='waiting_human'))&&!$this->archived($c)
             &&$batch->settings_version===(int)($settings['version']??0)&&$batch->control_version===(int)$c->notes()->max('id')

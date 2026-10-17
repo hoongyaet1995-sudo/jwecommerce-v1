@@ -37,7 +37,7 @@ export function textRoles(section:PageSection):TextRole[] {
  if(!hidden&&contentFields.includes('title'))roles.push('title');
  if(contentFields.includes('leadText'))roles.push('lead');
  if(!hidden&&contentFields.includes('content'))roles.push('content');
- if(section.type==='product_listing'&&['editorial-grid','editorial-tabs','fashion-lookbook','beauty-grid','pantry-grid','pantry-tabs','tech-grid','tech-tabs','kids-grid','kids-tabs'].includes(section.listingPreset??''))roles.push('itemTitle');
+ if(section.type==='product_listing'&&['industrial-related','editorial-grid','editorial-tabs','fashion-lookbook','beauty-grid','pantry-grid','pantry-tabs','tech-grid','tech-tabs','kids-grid','kids-tabs'].includes(section.listingPreset??''))roles.push('itemTitle');
  if(section.type==='product_listing'&&section.listingPreset==='fashion-lookbook')roles.push('itemContent','lead');
  if(['payment_methods','promotion_highlights'].includes(section.type))roles.push('itemTitle','itemContent');
  if(itemFields.includes('title'))roles.push('itemTitle');

@@ -18,8 +18,7 @@ class SupportAttachmentAnalysisService
     private function active(SupportMessage $source,array $settings): bool
     {
         $c=SupportConversation::find($source->conversation_id);
-        return $source->sender_role==='customer' && $c && $c->status==='open'
-            && app(SupportAiPolicy::class)->enabled($settings,$c->channel)
+        return $source->sender_role==='customer' && $c && app(SupportAttachmentAnalysisPolicy::class)->conversationEligible($c,$settings)
             && (int)$c->messages()->where('sender_role','customer')->max('id')===$source->id
             && (int)$c->messages()->where('sender_role','human_agent')->max('id')<$source->id;
     }

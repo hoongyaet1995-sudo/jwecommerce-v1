@@ -1,0 +1,361 @@
+{
+  "style": {
+    "palette": {
+      "paper": "#ffffff",
+      "ink": "#173247",
+      "muted": "#354654",
+      "accent": "#173247",
+      "light": "#ffffff",
+      "secondary": "#EF7B32",
+      "secondaryInk": "#173247",
+      "hover": "#102534"
+    },
+    "typography": {
+      "title": {
+        "fontFamily": "barlow",
+        "fontSize": 36,
+        "fontWeight": 700
+      },
+      "itemTitle": {
+        "fontFamily": "barlow",
+        "fontSize": 22,
+        "fontWeight": 700
+      },
+      "eyebrow": {
+        "fontFamily": "barlow",
+        "fontSize": 12,
+        "fontWeight": 600
+      },
+      "content": {
+        "fontFamily": "inter",
+        "fontSize": 14,
+        "fontWeight": 400
+      },
+      "itemContent": {
+        "fontFamily": "inter",
+        "fontSize": 14,
+        "fontWeight": 400
+      }
+    },
+    "spacing": "compact",
+    "buttonRadius": 6,
+    "buttonSize": "compact"
+  },
+  "sections": [
+    {
+      "isVisible": true,
+      "containerMode": "full-bleed",
+      "paddingY": "compact",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#EF7B32",
+        "titleColor": "#ffffff",
+        "contentColor": "#ffffff",
+        "primaryBtnBg": "#EF7B32",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#ffffff",
+        "customBgColor": "#173247"
+      },
+      "id": "solution-hero",
+      "type": "hero_banner",
+      "heroBannerPreset": "industrial-overlay",
+      "title": "Space that works\nfor your site.",
+      "subtitle": "SITE STORAGE",
+      "content": "Explore practical container storage options, shaped around your requirements.\nSolution concept — illustrative imagery.",
+      "mediaUrl": "/images/themes/logistics/hero.png",
+      "buttonText": "",
+      "buttonLink": "",
+      "secondaryButtonText": "",
+      "secondaryButtonLink": "",
+      "typography": {
+        "title": {
+          "fontFamily": "barlow",
+          "fontSize": 56,
+          "fontWeight": 700,
+          "lineHeight": 1.05
+        }
+      },
+      "imageSlots": [
+        {
+          "target": "mediaUrl",
+          "mediaAlt": "Illustrative container yard and transport scene"
+        }
+      ]
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "normal",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#EF7B32",
+        "titleColor": "#173247",
+        "contentColor": "#354654",
+        "primaryBtnBg": "#EF7B32",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#173247",
+        "customBgColor": "#ffffff"
+      },
+      "id": "intro",
+      "type": "rich_text",
+      "richTextPreset": "industrial-split",
+      "title": "A practical\nstarting point.",
+      "content": "The right storage container depends on a few key factors, including the size you need, how it will be accessed on site, and its intended use. Share your requirements with our team so suitable options can be reviewed.",
+      "typography": {
+        "title": {
+          "fontFamily": "barlow",
+          "fontSize": 48,
+          "fontWeight": 700,
+          "lineHeight": 1.05
+        }
+      }
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "normal",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#EF7B32",
+        "titleColor": "#173247",
+        "contentColor": "#354654",
+        "primaryBtnBg": "#EF7B32",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#173247",
+        "customBgColor": "#ffffff"
+      },
+      "id": "considerations",
+      "type": "feature_cards",
+      "featureCardsPreset": "service-highlights",
+      "title": "Key considerations",
+      "showSectionHeading": false,
+      "columnsCount": 3,
+      "items": [
+        {
+          "id": "size",
+          "title": "Container size",
+          "description": "Share your space and storage needs.",
+          "icon": "Box"
+        },
+        {
+          "id": "access",
+          "title": "Site access",
+          "description": "Describe the route and placement area.",
+          "icon": "Truck"
+        },
+        {
+          "id": "use",
+          "title": "Intended use",
+          "description": "Tell us what you plan to store.",
+          "icon": "Package"
+        }
+      ],
+      "typography": {
+        "title": {
+          "fontFamily": "barlow",
+          "fontSize": 48,
+          "fontWeight": 700,
+          "lineHeight": 1.05
+        }
+      }
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "normal",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#EF7B32",
+        "titleColor": "#173247",
+        "contentColor": "#354654",
+        "primaryBtnBg": "#EF7B32",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#173247",
+        "customBgColor": "#ffffff"
+      },
+      "id": "gallery",
+      "type": "media_gallery",
+      "galleryPreset": "industrial-mosaic",
+      "title": "A closer look.",
+      "subtitle": "MEDIA GALLERY",
+      "items": [
+        {
+          "id": "exterior",
+          "title": "General purpose — exterior",
+          "description": "Illustrative container image.",
+          "imageUrl": "/images/themes/logistics/containers.png",
+          "category": "Container exteriors"
+        },
+        {
+          "id": "yard",
+          "title": "Container yard and transport",
+          "description": "Illustrative planning scene.",
+          "imageUrl": "/images/themes/logistics/hero.png",
+          "category": "Delivery planning"
+        },
+        {
+          "id": "delivery",
+          "title": "Delivery planning",
+          "description": "Discuss access and placement with our team.",
+          "imageUrl": "/images/themes/logistics/delivery.png",
+          "category": "Delivery planning"
+        }
+      ],
+      "buttonText": "View Media Gallery",
+      "buttonLink": "/pages/jtg-media-gallery",
+      "typography": {
+        "title": {
+          "fontFamily": "barlow",
+          "fontSize": 48,
+          "fontWeight": 700,
+          "lineHeight": 1.05
+        }
+      }
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "normal",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "light",
+      "customColors": {
+        "eyebrowColor": "#7E95A5",
+        "titleColor": "#ffffff",
+        "contentColor": "#ECF1F4",
+        "primaryBtnBg": "#EF7B32",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#173247",
+        "customBgColor": "#173247"
+      },
+      "id": "planning",
+      "type": "feature_cards",
+      "featureCardsPreset": "industrial-process-split",
+      "title": "Plan the details\nbefore delivery.",
+      "items": [
+        {
+          "id": "location",
+          "title": "Location and access",
+          "description": "Share the site location and any known access restrictions."
+        },
+        {
+          "id": "placement",
+          "title": "Space and placement",
+          "description": "Describe the available placement area for review."
+        },
+        {
+          "id": "timing",
+          "title": "Timing and requirements",
+          "description": "Tell us your preferred timing and any special requirements."
+        }
+      ],
+      "typography": {
+        "title": {
+          "fontFamily": "barlow",
+          "fontSize": 48,
+          "fontWeight": 700,
+          "lineHeight": 1.05
+        }
+      }
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "normal",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#EF7B32",
+        "titleColor": "#173247",
+        "contentColor": "#354654",
+        "primaryBtnBg": "#EF7B32",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#173247",
+        "customBgColor": "#ffffff"
+      },
+      "id": "products",
+      "type": "product_listing",
+      "listingPreset": "industrial-related",
+      "title": "Explore suitable options.",
+      "subtitle": "CONTAINER OPTIONS",
+      "content": "View the listed options and discuss the exact unit, availability and requirements with our team.",
+      "sourceType": "manual",
+      "sourceId": "",
+      "productIds": [],
+      "productLimit": 2,
+      "columnsCount": 2,
+      "typography": {
+        "title": {
+          "fontFamily": "barlow",
+          "fontSize": 48,
+          "fontWeight": 700,
+          "lineHeight": 1.05
+        }
+      }
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "normal",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#EF7B32",
+        "titleColor": "#173247",
+        "contentColor": "#354654",
+        "primaryBtnBg": "#EF7B32",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#173247",
+        "customBgColor": "#ffffff"
+      },
+      "id": "cta",
+      "type": "cta_strip",
+      "ctaPreset": "industrial-outline",
+      "title": "Tell us what your site needs.",
+      "content": "Specifications, availability and delivery arrangements are subject to confirmation.",
+      "buttonText": "Request a quote",
+      "buttonLink": "#storefront-support-widget",
+      "secondaryButtonText": "Discuss with our team",
+      "secondaryButtonLink": "#storefront-support-widget",
+      "typography": {
+        "title": {
+          "fontFamily": "barlow",
+          "fontSize": 36,
+          "fontWeight": 700,
+          "lineHeight": 1.05
+        }
+      }
+    }
+  ]
+}

@@ -10,6 +10,8 @@ class SupportFaqService
     public function read(): array
     {
         $settings = StoreSetting::where('key', 'support_faq')->value('value') ?? ['version' => 0, 'faq' => null];
+        $settings['pageContext'] = app(\App\Services\Support\SupportPageContext::class)->settings($settings);
+        $settings['enquiryAccess'] = app(\App\Services\Support\EnquiryReception::class)->settings($settings);
         $settings['responsePolicy'] = array_replace(['partialAnswers'=>true,'clarificationEnabled'=>true],$settings['responsePolicy']??[]);
         $settings['customerMemory'] = app(\App\Services\Support\SupportCustomerMemoryPolicy::class)->settings($settings);
         $settings['replyCadence'] = app(\App\Services\Support\SupportReplyCadencePolicy::class)->settings($settings);
@@ -65,6 +67,11 @@ class SupportFaqService
             'productCatalog.includeStorePolicies'=>'sometimes|boolean',
             'productCatalog.browseAliases'=>'sometimes|array|max:30',
             'productCatalog.browseAliases.*'=>'string|max:160|distinct',
+            'pageContext'=>'sometimes|array:enabled,cart,enquiries,quotations,account','pageContext.enabled'=>'required_with:pageContext|boolean','pageContext.cart'=>'sometimes|boolean','pageContext.enquiries'=>'sometimes|boolean','pageContext.quotations'=>'sometimes|boolean','pageContext.account'=>'sometimes|boolean',
+            'enquiryAccess'=>'sometimes|array:isEnabled,websiteFaq,productFaq,collectDetails,summarize,autoHandoff,fields',
+            'enquiryAccess.isEnabled'=>'required_with:enquiryAccess|boolean',
+            'enquiryAccess.websiteFaq'=>'sometimes|boolean','enquiryAccess.productFaq'=>'sometimes|boolean','enquiryAccess.collectDetails'=>'sometimes|boolean','enquiryAccess.summarize'=>'sometimes|boolean','enquiryAccess.autoHandoff'=>'sometimes|boolean',
+            'enquiryAccess.fields'=>'sometimes|array:product,quantity,purpose,location,timing,requirements','enquiryAccess.fields.*'=>'in:required,optional,off',
             'orderLookup.provideTrackingEntry'=>'sometimes|boolean',
             'orderLookup'=>'sometimes|array:isEnabled,allowedFields,provideTrackingEntry',
             'orderLookup.isEnabled'=>'required_with:orderLookup|boolean',
@@ -154,6 +161,8 @@ class SupportFaqService
             $row = StoreSetting::where('key', 'support_faq')->lockForUpdate()->firstOrFail();
             abort_if(($row->value['version'] ?? 0) !== $data['version'], 409, 'FAQs changed in another session. Reload before saving.');
             $result = ['guardrails'=>$data['guardrails'] ?? ($row->value['guardrails'] ?? $this->defaultGuardrails()),'aiChannels'=>array_replace(app(\App\Services\Support\SupportAiPolicy::class)->channels(array_replace($row->value, array_intersect_key($data, ['autoReplyEnabled'=>true]))),$data['aiChannels'] ?? []),'orderLookup'=>$data['orderLookup'] ?? ($row->value['orderLookup'] ?? ['isEnabled'=>false,'allowedFields'=>[]]), 'discountKnowledge'=>$data['discountKnowledge'] ?? ($row->value['discountKnowledge'] ?? ['isEnabled'=>false,'activeIds'=>[]]), 'productCatalog' => $data['productCatalog'] ?? ($row->value['productCatalog'] ?? ['isEnabled'=>true,'canCheckLiveStock'=>true,'canExplainSizingAndMaterials'=>true,'canRecommendUpsells'=>true,'maxRecommendations'=>3]), 'greetingMessage' => $data['greetingMessage'] ?? ($row->value['greetingMessage'] ?? $this->defaultGreeting()), 'version' => $data['version'] + 1, 'faq' => $faq, 'personality' => array_replace($this->defaultPersonality(), $row->value['personality'] ?? [], $data['personality'] ?? []), 'primaryLanguage' => $data['primaryLanguage'] ?? ($row->value['primaryLanguage'] ?? 'auto_detect'), 'autoReplyEnabled' => $data['autoReplyEnabled'] ?? ($row->value['autoReplyEnabled'] ?? false), 'identity' => $data['identity'] ?? ($row->value['identity'] ?? null)];
+            $result['pageContext']=app(\App\Services\Support\SupportPageContext::class)->settings(['pageContext'=>array_replace($row->value['pageContext']??[],$data['pageContext']??[])]);
+            $result['enquiryAccess']=app(\App\Services\Support\EnquiryReception::class)->settings(['enquiryAccess'=>array_replace_recursive($row->value['enquiryAccess']??[],$data['enquiryAccess']??[])]);
             $result['autoReplyEnabled']=in_array(true,$result['aiChannels'],true);
             $result['responsePolicy']=array_replace(['partialAnswers'=>true,'clarificationEnabled'=>true],$row->value['responsePolicy']??[],$data['responsePolicy']??[]);
             $result['customerMemory']=app(\App\Services\Support\SupportCustomerMemoryPolicy::class)->settings(['customerMemory'=>array_replace($row->value['customerMemory']??[],$data['customerMemory']??[])]);

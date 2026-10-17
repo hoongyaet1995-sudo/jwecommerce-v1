@@ -111,6 +111,19 @@ class AiConnectionApiTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_owner_can_replace_an_undecryptable_key_and_must_reverify(): void
+    {
+        $this->owner();
+        $this->fakeOpenai();
+        $this->ready();
+        DB::table('ai_connections')->where('provider', 'openai')->update(['api_key' => 'invalid-old-ciphertext']);
+        $this->save(overrides: ['version' => 3, 'enabled' => false])->assertOk()
+            ->assertJsonPath('connection.verified_at', null)
+            ->assertJsonPath('connection.models', []);
+        $this->assertSame(self::KEY, AiConnection::first()->api_key);
+        Http::assertSentCount(1); // Only the initial fixture verification, no request on replacement.
+    }
+
     public function test_verification_generation_and_feature_gates_are_distinct(): void
     {
         $this->owner();

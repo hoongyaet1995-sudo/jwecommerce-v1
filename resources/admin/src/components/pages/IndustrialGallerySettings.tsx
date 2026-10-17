@@ -1,0 +1,8 @@
+import React from 'react';
+import type {PageSection} from '../../types';
+import {InspectorToggle} from './InspectorToggle';
+export function IndustrialGallerySettings({section:s,onChange}:{section:PageSection;onChange:(s:PageSection)=>void}) {
+ if(s.type!=='media_gallery'||!['industrial-mosaic','album-browser'].includes(s.galleryPreset??''))return null;
+ const patch=(value:Partial<PageSection>)=>onChange({...s,...value});
+ return <div className="space-y-3 pb-4"><InspectorToggle label="Show section heading" checked={s.showSectionHeading!==false} onChange={value=>patch({showSectionHeading:value})}/><InspectorToggle label="Open images in lightbox" checked={s.galleryLightbox!==false} onChange={value=>patch({galleryLightbox:value})}/>{s.galleryPreset==='album-browser'&&<><InspectorToggle label="Show image group filters" checked={s.galleryFilters!==false} onChange={value=>patch({galleryFilters:value})}/>{(['galleryInitialCount','galleryLoadCount'] as const).map((key,index)=><label key={key} className="block text-xs text-neutral-500">{index?'Load more count':'Initial image count'}<input aria-label={index?'Load more count':'Initial image count'} type="number" min={1} max={100} value={s[key]??(index?6:9)} onChange={event=>patch({[key]:Math.max(1,Math.min(100,Number(event.target.value)||1))})} className="w-full mt-2 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800"/></label>)}<p className="text-xs text-neutral-500">Image group names come from entries in Content. All images share this section's caption and image settings.</p></>}</div>;
+}

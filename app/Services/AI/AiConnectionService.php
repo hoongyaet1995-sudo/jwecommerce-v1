@@ -52,7 +52,15 @@ class AiConnectionService
                     throw ValidationException::withMessages(['base_url' => 'Select an HTTPS endpoint configured in the server allowlist.']);
                 }
             }
-            $changed = ($newKey !== null && $newKey !== $record->api_key) || $base !== $record->base_url;
+            $keyChanged = false;
+            if ($newKey !== null) {
+                try {
+                    $keyChanged = $newKey !== $record->api_key;
+                } catch (\Illuminate\Contracts\Encryption\DecryptException) {
+                    $keyChanged = true;
+                }
+            }
+            $changed = $keyChanged || $base !== $record->base_url;
             if ($changed) {
                 $record->verified_at = null;
                 $record->models = [];

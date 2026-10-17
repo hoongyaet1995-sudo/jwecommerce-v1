@@ -46,7 +46,7 @@ final class MediaUrlPolicy
             return true;
         }
 
-        if (preg_match('#\A/images/themes/logistics/(?:hero|account|containers|delivery)\.png\z#D', $url) === 1) {
+        if (preg_match('#\A/images/themes/logistics/(?:hero|account|containers|delivery|enquiry)\.png\z#D', $url) === 1) {
             return true;
         }
 

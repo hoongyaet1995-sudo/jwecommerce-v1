@@ -30,7 +30,7 @@ class SupportActionResolver
    }
    if(($ref['type']??null)!=='view_product'||!ctype_digit((string)($ref['resource_id']??'')))continue;
    $product=Product::where('status','active')->with(['images'=>fn($q)=>$q->orderBy('position')->orderBy('id')])->find($ref['resource_id']);if(!$product)continue;
-   $actions['product:'.$product->id]=['type'=>'view_product','resource_id'=>$product->id,'label'=>'View Product','title'=>$product->title,'image'=>$product->images->first()?->path,'price'=>(app(\App\Services\SupportFaqService::class)->read()['productCatalog']['canCheckLiveStock']??false)?app(\App\Support\StorefrontCurrencyContext::class)->format($product->base_price):null,'url'=>route('storefront.products.show',['handle'=>$product->handle],false)];
+   $actions['product:'.$product->id]=['type'=>'view_product','resource_id'=>$product->id,'label'=>'View Product','title'=>$product->title,'image'=>$product->images->first()?->path,'price'=>((app(\App\Services\SupportFaqService::class)->read()['productCatalog']['canCheckLiveStock']??false)&&$product->showsPrice())?app(\App\Services\ProductPurchaseRules::class)->price($product,$product->base_price):null,'url'=>route('storefront.products.show',['handle'=>$product->handle],false)];
   }
   if($trusted)$content=str_replace($trusted,'',$content);
   if($actions)$content=preg_replace('/(?:产品链接|商品链接|Product link|Link)\s*[:：]\s*(?=\n|$)/iu','',$content);

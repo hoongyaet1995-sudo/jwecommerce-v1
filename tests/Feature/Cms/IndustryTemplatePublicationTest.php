@@ -17,7 +17,7 @@ final class IndustryTemplatePublicationTest extends TestCase
   $process->setTimeout(60);
   $process->mustRun();
   $fixtures=json_decode($process->getOutput(),true,512,JSON_THROW_ON_ERROR);
-  $this->assertCount(10,$fixtures);
+  $this->assertCount(12,$fixtures);
   // Production uploads already have managed-media records. Reproduce that
   // prerequisite in this isolated database without changing template URLs.
   $register=function($value) use (&$register):void {

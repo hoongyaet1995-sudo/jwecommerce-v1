@@ -22,7 +22,7 @@ const fields:Record<PageSection['type'],readonly string[]>={
 export const contentFieldKeys=new Set(Object.values(fields).flat().concat(['leadText','mapEmbedUrl','contactAddressIcon','buttonText','buttonLink']));
 export function sectionContentFields(section:PageSection):readonly string[]{
  let result=[...fields[section.type]];
- if(section.type==='media_gallery'&&section.galleryPreset==='portfolio-cards')result.push(...primary);
+ if(section.type==='media_gallery'&&['portfolio-cards','industrial-mosaic','album-browser'].includes(section.galleryPreset??''))result.push(...primary);
  if(section.type==='comparison_matrix'&&section.comparisonPreset==='device-table')return [...copy,'comparisonDimensionName','buttonText','buttonLink'];
  if(section.type==='media_text_split'){
   const preset=section.layoutPreset??'default';
@@ -33,12 +33,13 @@ export function sectionContentFields(section:PageSection):readonly string[]{
   if(preset==='editorial-hero')result=[...copy,...media,'leadText',...actions];
  }
  if(section.type==='feature_cards'&&section.featureCardsPreset==='service-highlights')result=section.showSectionHeading===true?[...copy]:[];
- if(section.type==='rich_text'&&section.richTextPreset==='manifesto')result=[...copy];
+ if(section.type==='rich_text'&&['manifesto','industrial-split'].includes(section.richTextPreset??''))result=[...copy];
  if(section.type==='hero_slider'&&['editorial-overlay','fashion-editorial'].includes(section.sliderPreset??''))result=['title']; // Slide copy/actions belong to entries.
- if(section.type==='product_listing'&&['editorial-grid','editorial-tabs','fashion-lookbook','beauty-grid','pantry-grid','pantry-tabs','tech-grid','tech-tabs','kids-grid','kids-tabs'].includes(section.listingPreset??''))result.push(...primary);
+ if(section.type==='product_listing'&&['industrial-related','editorial-grid','editorial-tabs','fashion-lookbook','beauty-grid','pantry-grid','pantry-tabs','tech-grid','tech-tabs','kids-grid','kids-tabs'].includes(section.listingPreset??''))result.push(...primary);
  if(section.type==='shop_navigation'&&['collection-banners','kids-banners','fashion-banners'].includes(section.shopNavigationPreset??''))result=result.filter(field=>!primary.includes(field));
  if(section.type==='shop_navigation'&&['market-hero','market-offers'].includes(section.shopNavigationPreset??'')&&section.showSectionHeading===false)result=result.filter(field=>!primary.includes(field));
  if(section.type==='cta_strip'){
+  if(section.ctaPreset==='industrial-outline')result=['title','content',...actions];
   if(section.ctaPreset==='image-banner')result.push(...media);
   if(section.ctaPreset==='editorial-band')result=['title','content',...primary];
   if(section.ctaPreset==='help-panel')result=[...copy,...primary];

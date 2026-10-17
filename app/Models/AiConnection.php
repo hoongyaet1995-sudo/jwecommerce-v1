@@ -16,6 +16,20 @@ class AiConnection extends Model
 
     protected $hidden = ['api_key'];
 
+    public function originalIsEquivalent($key)
+    {
+        try {
+            return parent::originalIsEquivalent($key);
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $error) {
+            if ($key !== 'api_key') {
+                throw $error;
+            }
+
+            // A replacement ciphertext must be saved even if the old key is unreadable.
+            return false;
+        }
+    }
+
     protected function casts(): array
     {
         return [

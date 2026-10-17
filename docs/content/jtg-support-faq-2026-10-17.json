@@ -1,0 +1,312 @@
+{
+  "isEnabled": true,
+  "retrievalDepth": "strict",
+  "categories": [
+    {
+      "id": "containers",
+      "label": "Containers & Requirements"
+    },
+    {
+      "id": "delivery",
+      "label": "Delivery & Site Planning"
+    },
+    {
+      "id": "quotes",
+      "label": "Enquiries & Quotations"
+    },
+    {
+      "id": "media",
+      "label": "Images & Specifications"
+    },
+    {
+      "id": "support",
+      "label": "Contact & Support"
+    }
+  ],
+  "items": [
+    {
+      "id": "jtg-request-quote",
+      "category": "quotes",
+      "question": "How do I request a quotation?",
+      "answer": "Open a container or service and select Request a quote. Share your requirements and contact details. Your enquiry receives a reference so our team can review and follow up.",
+      "keywords": [
+        "quotation",
+        "quote",
+        "price",
+        "报价",
+        "询价",
+        "sebut harga"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-prepare",
+      "category": "quotes",
+      "question": "What information should I prepare?",
+      "answer": "Share the product or service, quantity, intended use, service or delivery location, expected timing and additional requirements. For delivery or relocation, include any known access or lifting constraints. You can say if a detail is not decided yet.",
+      "keywords": [
+        "requirements",
+        "details",
+        "资料",
+        "准备",
+        "maklumat"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-choose-size",
+      "category": "containers",
+      "question": "How do I choose a container size?",
+      "answer": "Start with the sizes and specifications shown on the relevant product page, then describe what you need to store or transport and the space available. Our team can review suitability. Do not assume the external size equals usable internal space.",
+      "keywords": [
+        "20ft",
+        "40ft",
+        "size",
+        "尺寸",
+        "saiz"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-specific-type",
+      "category": "containers",
+      "question": "Can I enquire about a specific container type or condition?",
+      "answer": "Yes. Tell us the type, size, intended use and condition you are looking for, and refer to a product page if available. The listed range is a starting point for enquiry; the team must confirm the exact unit, condition and availability.",
+      "keywords": [
+        "type",
+        "condition",
+        "new",
+        "used",
+        "类型",
+        "新旧",
+        "keadaan"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-stock",
+      "category": "containers",
+      "question": "Does a product listing mean a unit is available now?",
+      "answer": "A listing lets you discuss that option; it does not reserve a unit or confirm immediate availability. Ask our team to confirm the exact size, condition and quantity before committing to a schedule.",
+      "keywords": [
+        "stock",
+        "available",
+        "reserve",
+        "库存",
+        "现货",
+        "stok"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-dimensions",
+      "category": "containers",
+      "question": "Where can I find dimensions and specifications?",
+      "answer": "Check the specifications on the relevant container product page. If an exact dimension, capacity or feature is missing, request confirmation for the specific unit. Specifications can vary by container type and unit.",
+      "keywords": [
+        "dimensions",
+        "specifications",
+        "capacity",
+        "规格",
+        "容量",
+        "spesifikasi"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-storage",
+      "category": "containers",
+      "question": "Can I discuss a container for site storage?",
+      "answer": "Yes. Share what you plan to store, the required size or capacity, the site location and any placement or access restrictions. Our team will review the requirements and suitable options; suitability is subject to confirmation.",
+      "keywords": [
+        "storage",
+        "site",
+        "仓储",
+        "工地",
+        "simpanan"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-modifications",
+      "category": "containers",
+      "question": "Can I enquire about modifications or special requirements?",
+      "answer": "Include the changes or features you need in your enquiry, with a sketch or supporting image if helpful. Our team must confirm whether the requested work can be offered, the specification, lead time and price.",
+      "keywords": [
+        "modification",
+        "custom",
+        "改装",
+        "定制",
+        "ubah suai"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-relocation",
+      "category": "delivery",
+      "question": "Can I enquire about relocation only?",
+      "answer": "Yes. Share the pickup and delivery locations, container type and size, timing and access requirements so the team can review your request. Service availability and arrangements need confirmation.",
+      "keywords": [
+        "relocation",
+        "move",
+        "搬迁",
+        "移柜",
+        "pemindahan"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-coverage",
+      "category": "delivery",
+      "question": "Can you confirm delivery to my location?",
+      "answer": "Send the delivery location and relevant site details. Our team must confirm coverage, route access, charges and arrangements for that specific destination. The website does not confirm nationwide or overseas coverage automatically.",
+      "keywords": [
+        "Singapore",
+        "overseas",
+        "delivery area",
+        "新加坡",
+        "海外",
+        "coverage",
+        "penghantaran"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-access",
+      "category": "delivery",
+      "question": "Which site access details are useful for delivery planning?",
+      "answer": "Share known access restrictions, the approach road, entrance and placement area, plus any lifting or unloading requirements. Photos or a simple site plan can help the discussion. Our team must assess the actual arrangements; an image alone is not a site approval.",
+      "keywords": [
+        "access",
+        "entrance",
+        "site plan",
+        "现场",
+        "入口",
+        "akses"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-lifting",
+      "category": "delivery",
+      "question": "Is a crane or unloading included?",
+      "answer": "Do not assume lifting, a crane, unloading or positioning is included. Describe the site and ask the team to confirm the proposed equipment, responsibilities and any charges in the quotation.",
+      "keywords": [
+        "crane",
+        "lifting",
+        "unloading",
+        "吊车",
+        "吊装",
+        "kren"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-timing",
+      "category": "delivery",
+      "question": "Can I request a delivery date?",
+      "answer": "Include your preferred date or timing in the enquiry. A requested date is not a booking or confirmed delivery slot. The team will confirm availability and the agreed schedule.",
+      "keywords": [
+        "date",
+        "urgent",
+        "timing",
+        "日期",
+        "加急",
+        "tarikh"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-price",
+      "category": "quotes",
+      "question": "Why do some products show Price on request?",
+      "answer": "Container and service requirements may need review before a formal quote. Request a quotation for the size, quantity, location and scope you need. Only the agreed quotation confirms the offered charges and inclusions.",
+      "keywords": [
+        "price on request",
+        "cost",
+        "费用",
+        "价格",
+        "harga"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-received",
+      "category": "quotes",
+      "question": "What happens after I submit an enquiry?",
+      "answer": "Your requirements are saved with an enquiry reference. You can continue discussing them in support. AI can explain available information and collect missing details; staff reviews matters that require confirmation and prepares a quotation when appropriate.",
+      "keywords": [
+        "enquiry received",
+        "next",
+        "submitted",
+        "提交后",
+        "后续",
+        "pertanyaan"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-payment",
+      "category": "quotes",
+      "question": "How do I review and pay for a quotation?",
+      "answer": "When a quotation is sent, open its link and review the items, total, validity and scope. If eligible, use the quotation acceptance and checkout flow. Payment methods and payment status come from the actual checkout and order records; AI does not accept a quote or make payment for you.",
+      "keywords": [
+        "payment",
+        "checkout",
+        "accept",
+        "付款",
+        "接受报价",
+        "bayaran"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-images",
+      "category": "media",
+      "question": "Are the images of the exact container I will receive?",
+      "answer": "Images marked illustrative are for presentation and are not evidence of the exact unit or a completed customer project. Ask the team for the relevant unit details and available photos before confirming your requirements.",
+      "keywords": [
+        "photo",
+        "image",
+        "actual",
+        "照片",
+        "实物",
+        "gambar"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    },
+    {
+      "id": "jtg-human",
+      "category": "support",
+      "question": "How can I speak to the team?",
+      "answer": "Ask for a human agent in support, or continue from your enquiry confirmation page. Before an agent takes over, AI may still answer supported questions. Our team must confirm business arrangements; no response time or opening hours are promised here.",
+      "keywords": [
+        "human",
+        "agent",
+        "contact",
+        "人工",
+        "客服",
+        "ejen"
+      ],
+      "isActive": true,
+      "lastUpdatedAt": "2026-10-17"
+    }
+  ]
+}

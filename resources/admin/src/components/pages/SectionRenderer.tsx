@@ -1,3 +1,5 @@
+import {IndustrialRelatedProducts} from './IndustrialRelatedProducts';
+import {IndustrialGallery,IndustrialSplit,IndustrialProcessSplit,IndustrialOutlineCta} from './IndustrialDetailSections';
 import {PhotoMarquee} from './PhotoMarquee';
 import {EditorialGradientHero,EditorialQuote} from './WeddingEditorial';
 import {purchasePriceLabel,isOnlinePurchase} from '../../cms/purchasePresentation';
@@ -115,7 +117,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   };
   useEffect(() => { setProductListingIdx(0); }, [section.sourceType, section.sourceId, section.productLimit, viewport, section.columnsCount]);
   useEffect(() => {
-    if (section.type !== 'product_listing' || section.listingPreset === 'editorial-grid' || section.listingPreset === 'editorial-tabs' || section.listingPreset === 'fashion-lookbook' || ['beauty-grid','pantry-grid','pantry-tabs','tech-grid','tech-tabs','kids-grid','kids-tabs'].includes(section.listingPreset??'') || section.autoSlide === false || isListingHovered || listingMaxIdx <= 0) return;
+    if (section.type !== 'product_listing' || section.listingPreset === 'industrial-related' || section.listingPreset === 'editorial-grid' || section.listingPreset === 'editorial-tabs' || section.listingPreset === 'fashion-lookbook' || ['beauty-grid','pantry-grid','pantry-tabs','tech-grid','tech-tabs','kids-grid','kids-tabs'].includes(section.listingPreset??'') || section.autoSlide === false || isListingHovered || listingMaxIdx <= 0) return;
     const timer = setInterval(() => {
       if (document.querySelector('[data-quick-add-modal][aria-hidden="false"]')) return;
       setProductListingIdx(prev => prev >= listingMaxIdx ? 0 : prev + 1);
@@ -2748,27 +2750,27 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       case 'split_hero': return renderSplitHero();
       case 'hero_slider': return renderHeroSlider();
       case 'announcement_bar': return renderAnnouncementBar();
-      case 'rich_text': return section.richTextPreset==='manifesto'?<Manifesto section={section}/>:renderRichText();
+      case 'rich_text': return section.richTextPreset==='industrial-split'?<IndustrialSplit section={section}/>:section.richTextPreset==='manifesto'?<Manifesto section={section}/>:renderRichText();
       case 'media_text_split': return renderMediaTextSplit();
       case 'chapter_navigation': return <ChapterNavigation section={section} isEditingMode={isEditingMode}/>;
       case 'chapter_block': return <ChapterBlock section={section} isEditingMode={isEditingMode}/>;
       case 'timeline_story': return renderTimelineStory();
       case 'stats_counter': return renderStatsCounter();
       case 'product_grid': return renderProductGrid();
-      case 'product_listing': return section.listingPreset==='fashion-lookbook'?<ProductLookbook section={section} products={listingItems} context={runtime.context} editing={isEditingMode}/>:['editorial-tabs','pantry-tabs','tech-tabs','kids-tabs'].includes(section.listingPreset??'')?<EditorialProductTabs section={section} facts={runtimeSection} context={runtime.context} editing={isEditingMode}/>:['editorial-grid','beauty-grid','pantry-grid','tech-grid','kids-grid'].includes(section.listingPreset??'')?<EditorialProductGrid section={section} products={listingItems} context={runtime.context} editing={isEditingMode}/>:renderProductListing();
+      case 'product_listing': return section.listingPreset==='industrial-related'?<IndustrialRelatedProducts section={section} products={listingItems} editing={isEditingMode}/>:section.listingPreset==='fashion-lookbook'?<ProductLookbook section={section} products={listingItems} context={runtime.context} editing={isEditingMode}/>:['editorial-tabs','pantry-tabs','tech-tabs','kids-tabs'].includes(section.listingPreset??'')?<EditorialProductTabs section={section} facts={runtimeSection} context={runtime.context} editing={isEditingMode}/>:['industrial-related','editorial-grid','beauty-grid','pantry-grid','tech-grid','kids-grid'].includes(section.listingPreset??'')?<EditorialProductGrid section={section} products={listingItems} context={runtime.context} editing={isEditingMode}/>:renderProductListing();
       case 'collection_tabs': return renderCollectionTabs();
       case 'featured_deal': return renderFeaturedDeal();
       case 'pricing_table': return renderPricingTable();
       case 'promotion_highlights': return <PromotionHighlights section={section} offers={runtimeSection.promotions?.offers??[]} editing={isEditingMode}/>;
       case 'shop_navigation': return <ShopNavigation section={section} catalog={runtime.catalog} editing={isEditingMode}/>;
-      case 'media_gallery': return section.galleryPreset==='photo-marquee'?<PhotoMarquee section={section} editing={isEditingMode}/>:section.galleryPreset==='routine-steps'?<RoutineSteps section={section}/>:['editorial-montage','editorial-cards','editorial-triptych','portfolio-cards'].includes(section.galleryPreset??'')?<EditorialGallery section={section} editing={isEditingMode}/>:renderMediaGallery();
+      case 'media_gallery': return ['industrial-mosaic','album-browser'].includes(section.galleryPreset??'')?<IndustrialGallery section={section} editing={isEditingMode}/>:section.galleryPreset==='photo-marquee'?<PhotoMarquee section={section} editing={isEditingMode}/>:section.galleryPreset==='routine-steps'?<RoutineSteps section={section}/>:['editorial-montage','editorial-cards','editorial-triptych','portfolio-cards'].includes(section.galleryPreset??'')?<EditorialGallery section={section} editing={isEditingMode}/>:renderMediaGallery();
       case 'video_embed': return renderVideoEmbed();
       case 'before_after': return renderBeforeAfter();
       case 'instagram_feed': return renderInstagramFeed();
       case 'policy_content': return <PolicyContent section={section} isEditingMode={isEditingMode}/>;
       case 'payment_methods': return <PaymentMethods section={section}/>;
       case 'delivery_table': return <DeliveryTable section={section}/>;
-      case 'feature_cards': return ['industrial-cards','industrial-process'].includes(section.featureCardsPreset??'')?<IndustrialCards section={section} editing={isEditingMode}/>: section.featureCardsPreset==='service-highlights'?<ServiceHighlights section={section} renderIcon={renderIcon}/>:['editorial-columns','numbered-process'].includes(section.featureCardsPreset??'')?<EditorialColumns section={section}/>:section.featureCardsPreset==='values-list'?<ValuesList section={section}/>:renderFeatureCards();
+      case 'feature_cards': return section.featureCardsPreset==='industrial-process-split'?<IndustrialProcessSplit section={section}/>:['industrial-cards','industrial-process'].includes(section.featureCardsPreset??'')?<IndustrialCards section={section} editing={isEditingMode}/>: section.featureCardsPreset==='service-highlights'?<ServiceHighlights section={section} renderIcon={renderIcon}/>:['editorial-columns','numbered-process'].includes(section.featureCardsPreset??'')?<EditorialColumns section={section}/>:section.featureCardsPreset==='values-list'?<ValuesList section={section}/>:renderFeatureCards();
       case 'values_list': return <ValuesList section={section}/>;
       case 'icon_list': return renderIconList();
       case 'comparison_matrix': return section.comparisonPreset==='device-table'?<DeviceComparison section={section} editing={isEditingMode}/>:renderComparisonMatrix();
@@ -2777,7 +2779,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
       case 'store_locator': return section.contactPreset==='location'?<ContactLocation section={section}/>:renderStoreLocator();
       case 'testimonials_slider': return renderTestimonials();
       case 'logo_cloud': return renderLogoCloud();
-      case 'cta_strip': return section.ctaPreset==='help-panel'?<HelpPanel section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='editorial-band'?<EditorialCtaBand section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='image-banner'?<ImageBanner section={section} isEditingMode={isEditingMode}/>:renderCtaStrip();
+      case 'cta_strip': return section.ctaPreset==='industrial-outline'?<IndustrialOutlineCta section={section} editing={isEditingMode}/>:section.ctaPreset==='help-panel'?<HelpPanel section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='editorial-band'?<EditorialCtaBand section={section} isEditingMode={isEditingMode}/>:section.ctaPreset==='image-banner'?<ImageBanner section={section} isEditingMode={isEditingMode}/>:renderCtaStrip();
       case 'newsletter_signup': return renderNewsletterSignup();
       default: return renderRichText();
     }

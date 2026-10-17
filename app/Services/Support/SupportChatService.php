@@ -37,7 +37,7 @@ class SupportChatService
             abort_unless($conversation,404);
             return [$conversation->owner_hash,$conversation->customer_user_id];
         }
-        $user = auth('customer')->user();
+        $user = $request->user('customer');
         $generation = $request->query->has('support_generation')?($request->query('support_generation')??''):$request->session()->get('support_generation', '');
         abort_unless(is_string($generation)&&($generation===''||(str_starts_with($generation,':')&&Str::isUuid(substr($generation,1)))),404);
         if ($user && ! $user->is_admin) {
@@ -86,7 +86,10 @@ class SupportChatService
             'id' => (string) Str::uuid(), 'customer_user_id' => $userId,
         ]);
 
-        return $this->append($conversation, $data, 'customer');
+        $result = $this->append($conversation, $data, 'customer');
+        $source = $result->messages()->where('client_message_id', $data['client_message_id'])->first();
+        if ($source) app(SupportPrivateContextLease::class)->issue($request, $source);
+        return $result;
     }
 
     public function append(SupportConversation $conversation, array $data, string $role, ?int $staffId = null): SupportConversation
@@ -117,6 +120,7 @@ class SupportChatService
             $message=$locked->messages()->create([
                 'client_message_id' => $data['client_message_id'], 'sender_role' => $role,
                 'staff_user_id' => $staffId, 'content' => $data['content'],
+                'ai_trace' => $role === 'customer' && $locked->channel === 'web_guest' ? ['pageContext'=>app(SupportPageContext::class)->hint($data['page_context']??null,app(\App\Services\SupportFaqService::class)->read())] : null,
             ]);
             app(SupportAttachmentService::class)->bind($locked,$message,$data['attachment_id'] ?? null,$staffId);
             $status = $locked->status === 'resolved' ? 'open' : $locked->status;
@@ -167,10 +171,11 @@ class SupportChatService
         }
 
         $settings = app(\App\Services\SupportFaqService::class)->read();
-        return ['requiresContact'=>!auth('customer')->check(), 'id' => $conversation->id, 'status' => $conversation->status, 'waitingNotice'=>$conversation->status === 'waiting_human' ? $settings['personality']['fallbackHandoffMessage'] : null,
+        return ['requiresContact'=>!auth('customer')->check(), 'id' => $conversation->id, 'status' => $conversation->status, 'waitingNotice'=>$conversation->status === 'waiting_human' && !app(EnquiryReception::class)->eligible($conversation,$settings) ? $settings['personality']['fallbackHandoffMessage'] : null,
             'messages' => $conversation->messages()->with('attachments')->orderBy('id')->get()->map(fn ($message) => [
                 'id' => (string) $message->id, 'clientMessageId' => $message->client_message_id,
                 'attachments'=>app(SupportAttachmentService::class)->view($message),
+                'enquiryProduct'=>$message->sender_role==='customer'&&$message->id===(int)$conversation->messages()->where('sender_role','customer')->min('id')?app(EnquiryReception::class)->card($conversation):null,
                 'role' => $message->sender_role === 'customer' ? 'customer' : ($message->sender_role === 'ai' ? 'ai' : 'staff'),
                 ...($message->sender_role === 'ai' ? app(SupportActionResolver::class)->resolve(array_values(array_filter($message->actions ?? [], fn($a)=>app(SupportEscalationPolicy::class)->enabledAction($a,$conversation,$settings))), $message->content, empty($message->actions)) : ['content'=>$message->content,'actions'=>$message->sender_role==='human_agent'?array_values(array_filter($message->actions??[],fn($a)=>is_array($a)&&($a['type']??'')==='view_quotation'&&preg_match('#^/quotations/[0-9a-f-]{36}$#D',$a['url']??''))):[]]), 'createdAt' => $message->created_at->toIso8601String(),
             ])->all()];
@@ -220,6 +225,7 @@ class SupportChatService
             'unreadCount' => $messages->filter(fn ($m) => $m->sender_role === 'customer' && $m->id > $conversation->staff_read_message_id)->count(),
             'isPinned' => $conversation->notes->filter(fn($n)=>str_starts_with($n->content,'[Pin] '))->sortBy('id')->last()?->content==='[Pin] true', 'priority' => 'normal', 'activeAiDraft' => null,
             'handoffBrief'=>app(SupportHandoffBrief::class)->build($conversation),
+            'enquiryIntake'=>\Illuminate\Support\Facades\Schema::hasTable('support_enquiry_intakes')&&app(EnquiryReception::class)->settings(app(\App\Services\SupportFaqService::class)->read())['summarize']?\App\Models\SupportEnquiryIntake::where('conversation_id',$conversation->id)->first()?->only(['fields','unresolved','answered','ai_suspended']):null,
             'replyCadence'=>$this->cadenceSummary($conversation),
             'aiSummary' => ['intent' => '', 'sentiment' => 'neutral', 'keyIssue' => '', 'suggestedAction' => '', 'summaryMarkdown' => ''],
             'lastMessageAt' => $conversation->last_message_at?->diffForHumans() ?? '',
@@ -230,6 +236,7 @@ class SupportChatService
                 'aiTrace'=>$m->sender_role==='ai'?$m->ai_trace:null,
                 'senderName' => $m->sender_role === 'customer' ? $name : ($m->sender_role === 'ai' ? 'AI Support' : ($m->staff?->name ?? 'Support')),
                 'senderAvatar' => $m->sender_role === 'customer' ? $avatar : '/images/support-person.svg', 'timestamp' => $m->created_at->format('d M H:i'),
+                'enquiryProduct'=>$m->sender_role==='customer'&&$m->id===(int)$messages->where('sender_role','customer')->min('id')?app(EnquiryReception::class)->card($conversation):null,
                 'attachments'=>app(SupportAttachmentService::class)->view($m,true), 'content' => $m->content, 'type' => $m->attachments->isNotEmpty() ? ($m->attachments->first()->kind ?? 'image') : 'text', 'deliveryStatus' => $m->delivery_status ?? 'sent', 'sendError' => $m->send_error, 'clientMessageId' => $m->client_message_id,
             ])->values()->all(),
             'internalNotes' => $conversation->notes->map(fn ($n) => [

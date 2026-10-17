@@ -1,0 +1,148 @@
+{
+  "style": {
+    "palette": {
+      "paper": "#ffffff",
+      "ink": "#173247",
+      "muted": "#354654",
+      "accent": "#173247",
+      "light": "#ffffff",
+      "secondary": "#EF7B32",
+      "secondaryInk": "#173247",
+      "hover": "#102534"
+    },
+    "typography": {
+      "title": {
+        "fontFamily": "barlow",
+        "fontSize": 36,
+        "fontWeight": 700
+      },
+      "itemTitle": {
+        "fontFamily": "barlow",
+        "fontSize": 22,
+        "fontWeight": 700
+      },
+      "eyebrow": {
+        "fontFamily": "barlow",
+        "fontSize": 12,
+        "fontWeight": 600
+      },
+      "content": {
+        "fontFamily": "inter",
+        "fontSize": 14,
+        "fontWeight": 400
+      },
+      "itemContent": {
+        "fontFamily": "inter",
+        "fontSize": 14,
+        "fontWeight": 400
+      }
+    },
+    "spacing": "compact",
+    "buttonRadius": 6,
+    "buttonSize": "compact"
+  },
+  "sections": [
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "normal",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#EF7B32",
+        "titleColor": "#173247",
+        "contentColor": "#354654",
+        "primaryBtnBg": "#EF7B32",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#173247",
+        "customBgColor": "#ffffff"
+      },
+      "id": "album",
+      "type": "media_gallery",
+      "galleryPreset": "album-browser",
+      "title": "Containers. Details. Possibilities.",
+      "subtitle": "MEDIA GALLERY",
+      "content": "Explore our container imagery and solution concepts.\nIllustrative images; exact units and arrangements are confirmed during enquiry.",
+      "galleryFilters": true,
+      "galleryLightbox": true,
+      "galleryInitialCount": 3,
+      "galleryLoadCount": 3,
+      "items": [
+        {
+          "id": "exterior",
+          "title": "General purpose — exterior",
+          "description": "Illustrative container image.",
+          "imageUrl": "/images/themes/logistics/containers.png",
+          "category": "Container exteriors"
+        },
+        {
+          "id": "yard",
+          "title": "Container yard and transport",
+          "description": "Illustrative planning scene.",
+          "imageUrl": "/images/themes/logistics/hero.png",
+          "category": "Delivery planning"
+        },
+        {
+          "id": "delivery",
+          "title": "Delivery planning",
+          "description": "Discuss access and placement with our team.",
+          "imageUrl": "/images/themes/logistics/delivery.png",
+          "category": "Delivery planning"
+        },
+        {
+          "id": "profile",
+          "title": "Container profile detail",
+          "description": "Illustrative imagery; exact unit details require confirmation.",
+          "imageUrl": "/images/themes/logistics/enquiry.png",
+          "category": "Details"
+        }
+      ],
+      "typography": {
+        "title": {
+          "fontFamily": "barlow",
+          "fontSize": 56,
+          "fontWeight": 700,
+          "lineHeight": 1.05
+        }
+      }
+    },
+    {
+      "isVisible": true,
+      "containerMode": "page",
+      "paddingY": "normal",
+      "motionPreset": "subtle-lift",
+      "sectionBorder": "none",
+      "textAlignment": "left",
+      "backgroundColor": "custom",
+      "textColor": "dark",
+      "customColors": {
+        "eyebrowColor": "#EF7B32",
+        "titleColor": "#173247",
+        "contentColor": "#354654",
+        "primaryBtnBg": "#EF7B32",
+        "primaryBtnText": "#ffffff",
+        "secondaryBtnBg": "#ECF1F4",
+        "secondaryBtnText": "#173247",
+        "customBgColor": "#ffffff"
+      },
+      "id": "gallery-cta",
+      "type": "cta_strip",
+      "ctaPreset": "industrial-outline",
+      "title": "Have a particular requirement?",
+      "buttonText": "Discuss with our team",
+      "buttonLink": "#storefront-support-widget",
+      "typography": {
+        "title": {
+          "fontFamily": "barlow",
+          "fontSize": 36,
+          "fontWeight": 700,
+          "lineHeight": 1.05
+        }
+      }
+    }
+  ]
+}

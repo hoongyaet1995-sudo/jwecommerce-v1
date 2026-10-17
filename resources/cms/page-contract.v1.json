@@ -635,7 +635,9 @@
         "routine-steps",
         "editorial-triptych",
         "portfolio-cards",
-        "photo-marquee"
+        "photo-marquee",
+        "industrial-mosaic",
+        "album-browser"
       ]
     },
     "showSectionHeading": {
@@ -650,7 +652,8 @@
         "service-highlights",
         "numbered-process",
         "industrial-cards",
-        "industrial-process"
+        "industrial-process",
+        "industrial-process-split"
       ]
     },
     "valuesShowHeading": {
@@ -699,7 +702,8 @@
         "default",
         "image-banner",
         "editorial-band",
-        "help-panel"
+        "help-panel",
+        "industrial-outline"
       ]
     },
     "ctaBannerHeight": {
@@ -714,7 +718,8 @@
       "type": "string",
       "enum": [
         "default",
-        "manifesto"
+        "manifesto",
+        "industrial-split"
       ]
     },
     "leadText": {
@@ -814,6 +819,7 @@
     "productLimit": {
       "type": "integer",
       "enum": [
+        2,
         3,
         4,
         6,
@@ -1350,7 +1356,8 @@
         "tech-grid",
         "tech-tabs",
         "kids-grid",
-        "kids-tabs"
+        "kids-tabs",
+        "industrial-related"
       ]
     },
     "shopNavigationPreset": {
@@ -1585,6 +1592,22 @@
     },
     "marqueePauseOnHover": {
       "type": "boolean"
+    },
+    "galleryFilters": {
+      "type": "boolean"
+    },
+    "galleryLightbox": {
+      "type": "boolean"
+    },
+    "galleryInitialCount": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "galleryLoadCount": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 100
     }
   },
   "section": {
@@ -2128,7 +2151,11 @@
           "buttonLink",
           "marqueeSpeed",
           "marqueeDirection",
-          "marqueePauseOnHover"
+          "marqueePauseOnHover",
+          "galleryFilters",
+          "galleryLightbox",
+          "galleryInitialCount",
+          "galleryLoadCount"
         ],
         "publishRequired": [
           "title"
