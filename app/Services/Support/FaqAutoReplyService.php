@@ -56,6 +56,7 @@ class FaqAutoReplyService
             }
             if(!in_array($language,['en','ms','zh'],true))$language='en';
             $languageName = ['en' => 'English', 'ms' => 'Malay', 'zh' => 'Chinese'][$language];
+            $boundary=app(SupportConversationBoundary::class);if(!$explicitRequest&&($incoming['content']??'')===$source->content&&$source->attachments()->doesntExist()&&($topic=$boundary->cachedTopic($conversation->id,$source->content,$settings))){$boundary->publish($conversation,$source,$topic,$language,$settings,$replyId,$controlVersion,$incoming['_cadence_batch']??null);return true;}
             $defaults = app(SupportFaqService::class)->defaultPersonality();
             $unknown = array_replace($defaults['unknownAnswerMessage'], $settings['personality']['unknownAnswerMessage'] ?? []);
             $unavailable = array_replace($defaults['serviceUnavailableMessage'], $settings['personality']['serviceUnavailableMessage'] ?? []);
@@ -94,6 +95,7 @@ class FaqAutoReplyService
                 $history = app(SupportDialogueContext::class)->recent($conversation);
                 try {
                     $facts = app(UnifiedKnowledgeService::class)->retrieve($incoming['content'], $settings+['_replyLanguagePreference'=>$incoming['language']??$settings['primaryLanguage']??'auto_detect','_combinedInput'=>!empty($incoming['_combinedInput'])], $history, $conversation, $language, true);
+                    if($topic=collect($facts)->firstWhere('id','support:boundary')['answer']??null){$boundary->publish($conversation,$source,$topic,$language,$settings,$replyId,$controlVersion,$incoming['_cadence_batch']??null);return true;}
                     if($attachmentContext) {
                         $budget=6000;
                         foreach($attachmentContext['items'] as $item) {

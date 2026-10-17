@@ -12,7 +12,8 @@ class FaqKnowledgeSearch
     {
         $items=$this->items($scope);if(!$items)return [];
         $mode=$scope['retrievalDepth']??'strict';
-        $queries=[$query];if(in_array($mode,['semantic','deep'],true))$queries=array_merge($queries,app(FaqQueryExpansion::class)->queries($query));
+        $crossScript=!$this->exact($query,$scope)&&collect($items)->contains(fn($i)=>(bool)preg_match('/\p{Han}/u',$i['question'])!==(bool)preg_match('/\p{Han}/u',$query));
+        $queries=[$query];if(in_array($mode,['semantic','deep'],true)&&!$crossScript)$queries=array_merge($queries,app(FaqQueryExpansion::class)->queries($query));
         $stop=['the','how','what','can','you','for','and','is','to','do','i','my','a'];
         $terms=[];
         foreach(array_unique($queries) as $search){$tokens=preg_split('/[^\p{L}\p{N}]+/u',mb_strtolower($search),-1,PREG_SPLIT_NO_EMPTY);$tokens=array_filter($tokens,fn($t)=>mb_strlen($t)>=2&&!in_array($t,$stop,true));$terms=array_merge($terms,array_slice(array_unique($tokens),0,12));}
@@ -29,6 +30,7 @@ class FaqKnowledgeSearch
         usort($rank,fn($a,$b)=>$b['score']<=>$a['score']);
         $candidates=array_slice(array_column($rank,'item'),0,10);
         $selected=array_slice($candidates,0,3);
+        if($crossScript||(!$selected&&preg_match('/\p{Han}/u',$query))){$ids=app(FaqQueryExpansion::class)->match($query,$items);$byId=array_column($items,null,'id');$selected=array_map(fn($id)=>$byId[$id],array_values(array_intersect($ids,array_keys($byId))));$candidates=$selected;}
         $rankingFacts=array_map(fn($i)=>array_intersect_key($i,array_flip(['id','question','answer'])),$candidates);
         if($mode==='deep'&&$candidates&&strlen(json_encode($rankingFacts,JSON_UNESCAPED_UNICODE))<=12000){$ids=app(FaqQueryExpansion::class)->rank($query,$rankingFacts);$byId=array_column($candidates,null,'id');$selected=array_map(fn($id)=>$byId[$id],$ids);}
         // Include complete policy siblings: exclusions may override a matching general policy.

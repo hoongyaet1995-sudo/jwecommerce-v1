@@ -15,6 +15,15 @@ use Tests\TestCase;
 
 class SupportChatApiTest extends TestCase
 {
+    public function test_off_topic_redirect_and_repeated_suppression_never_call_answer_generation():void{
+        config(['cache.default'=>'array']);\Illuminate\Support\Facades\Cache::flush();
+        StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'guardrails'=>['conversation'=>['enabled'=>true,'strength'=>'balanced','repeatLimit'=>1,'cooldownMinutes'=>1]],'faq'=>['isEnabled'=>true,'items'=>[]]]]);
+        $knowledge=$this->mock(\App\Services\Support\UnifiedKnowledgeService::class);$knowledge->shouldReceive('redact')->andReturnUsing(fn($q)=>$q);$knowledge->shouldReceive('retrieve')->once()->andReturn([['id'=>'support:boundary','question'=>'Internal','answer'=>'off_topic']]);
+        $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
+        $first=$this->postJson('/support/chat/messages',$this->payload('Is the moon rounder overseas?'))->assertOk();$c=SupportConversation::first();$reply=$c->messages()->where('sender_role','ai')->first();$this->assertSame('off_topic',$reply->ai_trace['decision']);
+        $source=$c->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'customer','content'=>'Is the moon rounder overseas?']);app(\App\Services\Support\FaqAutoReplyService::class)->reply($c,['client_message_id'=>$source->client_message_id,'content'=>$source->content]);
+        $this->assertSame(1,$c->messages()->where('sender_role','ai')->count());$this->assertTrue($source->fresh()->ai_trace['suppressed']);
+    }
     public function test_zero_facts_is_missing_knowledge_not_invalid_generation():void
     {
         StoreSetting::create(['key'=>'support_faq','value'=>['autoReplyEnabled'=>true,'faq'=>['isEnabled'=>true,'items'=>[]]]]);
@@ -25,7 +34,7 @@ class SupportChatApiTest extends TestCase
         ]);
         $knowledge->shouldReceive('redact')->andReturnUsing(fn($q)=>$q);$knowledge->shouldReceive('tools')->andReturn([]);
         $this->mock(AiConnectionService::class)->shouldNotReceive('generateText');
-        Schema::table('support_messages',function(Blueprint $t){$t->unsignedInteger('ai_settings_version')->nullable();$t->unsignedBigInteger('ai_control_version')->nullable();});
+        if(!Schema::hasColumn('support_messages','ai_settings_version'))Schema::table('support_messages',function(Blueprint $t){$t->unsignedInteger('ai_settings_version')->nullable();$t->unsignedBigInteger('ai_control_version')->nullable();});
         foreach(['storefront','facebook','instagram','whatsapp'] as $channel){
             $c=SupportConversation::create(['id'=>(string)Str::uuid(),'owner_hash'=>Str::random(64),'status'=>'open','channel'=>$channel]);
             $source=$c->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'customer','content'=>'Where do you dispatch from?']);

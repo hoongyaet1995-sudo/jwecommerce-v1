@@ -19,6 +19,12 @@ class SupportReplyCadenceTest extends SupportChatApiTest
         return SupportConversation::create(['id'=>(string)Str::uuid(),'owner_hash'=>hash('sha256',Str::uuid()),'channel'=>'web_guest','status'=>'open']);
     }
     private function message(SupportConversation $c,string $text) {return $c->messages()->create(['client_message_id'=>(string)Str::uuid(),'sender_role'=>'customer','content'=>$text]);}
+    public function test_boundary_redirect_uses_normal_cadence_publication_once():void{
+        $c=$this->cadenceConversation();$service=app(SupportReplyCadenceService::class);$source=$this->message($c,'Is the moon rounder overseas?');$service->enqueue($source);$batch=SupportReplyBatch::first();
+        $knowledge=$this->mock(\App\Services\Support\UnifiedKnowledgeService::class);$knowledge->shouldReceive('redact')->andReturnUsing(fn($q)=>$q);$knowledge->shouldReceive('retrieve')->once()->andReturn([['id'=>'support:boundary','answer'=>'off_topic']]);
+        $this->mock(\App\Services\AI\AiConnectionService::class)->shouldNotReceive('generateText');$this->travel(3)->seconds();$service->process($batch->id);
+        $this->assertSame('ready',$batch->fresh()->status);$this->assertSame(0,$c->messages()->where('sender_role','ai')->count());$service->publish($batch->id);$service->publish($batch->id);$this->assertSame(1,$c->messages()->where('sender_role','ai')->count());$this->assertSame('off_topic',$c->messages()->where('sender_role','ai')->first()->ai_trace['decision']);
+    }
     public function test_collection_deadline_is_bounded_and_stale_or_duplicate_jobs_do_not_reset_it():void {
         $c=$this->cadenceConversation();$s=app(SupportReplyCadenceService::class);
         $first=$this->message($c,'Deliver to Penang');$this->assertTrue($s->enqueue($first));

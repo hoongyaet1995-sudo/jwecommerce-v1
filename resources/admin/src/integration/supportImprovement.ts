@@ -1,7 +1,7 @@
 export type ReviewStatus = 'Needs review'|'Published'|'Dismissed';
 export type ImprovementDraft={id:number;question:string;originalQuestion:string;answer:string;category:string;channel:string;status:ReviewStatus;version:number;conversationId:string|null;sourceMessageId:number|null;staffAnswer:string;publishedFaqId:string|null;createdAt:string;reviewedAt:string|null};
 export type ImprovementQuestion={sourceMessageId:number;conversationId:string;question:string;channel:string;resolved:boolean;reason:string;count?:number;createdAt:string;failure?:boolean;canCreateDraft?:boolean;draftBlockedReason?:string|null};
-export type ImprovementOverview={counts:{received:number;answered:number;improve:number;handoff:number;failures:number};questions:ImprovementQuestion[];failures:ImprovementQuestion[];limited:boolean;activatedAt:string;from:string};
+export type ImprovementOverview={counts:{received:number;answered:number;improve:number;handoff:number;failures:number;filtered?:number};questions:ImprovementQuestion[];failures:ImprovementQuestion[];limited:boolean;activatedAt:string;from:string};
 export type DraftList={drafts:ImprovementDraft[];categories:{id:string;label:string}[];pending:number;limited:boolean;nextCursor?:number|null};
 async function request<T>(path:string,method='GET',body?:unknown):Promise<T>{
  const response=await fetch('/admin/api/support/improvement'+path,{method,credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json',...(body?{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content||''}:{})},body:body?JSON.stringify(body):undefined});

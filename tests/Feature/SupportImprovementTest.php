@@ -83,6 +83,10 @@ class SupportImprovementTest extends TestCase
         DB::flushQueryLog();DB::enableQueryLog();app(\App\Services\Support\SupportImprovementService::class)->overview(7,'all');
         $queries=collect(DB::getQueryLog())->filter(fn($q)=>in_array('support_improvement',$q['bindings'],true));DB::disableQueryLog();$this->assertCount(1,$queries);
     }
+    public function test_off_topic_and_harassment_never_create_answer_review_candidates():void{
+        foreach(['off_topic','harassment'] as $decision){$source=$this->example($decision,state:'open');$this->postJson('/admin/api/support/improvement/drafts',['sourceMessageId'=>$source->id])->assertUnprocessable();}
+        $this->getJson('/admin/api/support/improvement')->assertOk()->assertJsonPath('counts.filtered',2)->assertJsonPath('counts.improve',0)->assertJsonCount(0,'questions')->assertJsonCount(0,'failures');
+    }
     public function test_observed_counts_filters_and_missing_knowledge_are_separate_from_failures(): void
     {
         $s = $this->example();

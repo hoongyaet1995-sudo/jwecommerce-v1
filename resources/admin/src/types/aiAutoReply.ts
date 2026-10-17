@@ -133,6 +133,7 @@ export interface AIKnowledgeScopeConfig {
 }
 
 export interface AIGuardrailsConfig {
+  conversation?: {enabled:boolean;strength:'relaxed'|'balanced'|'strict';repeatLimit:number;cooldownMinutes:number};
   competitorMentions: {
     blockOrNeutralize: boolean;
     blacklistedCompetitors: string[];

@@ -55,13 +55,18 @@ class SupportFaqService
             'responsePolicy'=>'sometimes|array:partialAnswers,clarificationEnabled',
             'responsePolicy.partialAnswers'=>'required_with:responsePolicy|boolean',
             'responsePolicy.clarificationEnabled'=>'required_with:responsePolicy|boolean',
-            'guardrails'=>'sometimes|array:priceBargaining',
-            'guardrails.priceBargaining'=>'required_with:guardrails|array:blockUnauthorizedDiscounts,suggestOfficialVouchersOnly,refusalTemplate,refusalMessages',
+            'guardrails'=>'sometimes|array:priceBargaining,conversation',
+            'guardrails.conversation'=>'sometimes|array:enabled,strength,repeatLimit,cooldownMinutes',
+            'guardrails.conversation.enabled'=>'required_with:guardrails.conversation|boolean',
+            'guardrails.conversation.strength'=>'required_with:guardrails.conversation|in:relaxed,balanced,strict',
+            'guardrails.conversation.repeatLimit'=>'required_with:guardrails.conversation|integer|min:1|max:10',
+            'guardrails.conversation.cooldownMinutes'=>'required_with:guardrails.conversation|integer|min:1|max:60',
+            'guardrails.priceBargaining'=>'sometimes|array:blockUnauthorizedDiscounts,suggestOfficialVouchersOnly,refusalTemplate,refusalMessages',
             'guardrails.priceBargaining.refusalMessages'=>'sometimes|array:ms,zh',
             'guardrails.priceBargaining.refusalMessages.*'=>'string|max:2000',
             'guardrails.priceBargaining.blockUnauthorizedDiscounts'=>'sometimes|accepted',
-            'guardrails.priceBargaining.suggestOfficialVouchersOnly'=>'required_with:guardrails|boolean',
-            'guardrails.priceBargaining.refusalTemplate'=>'required_with:guardrails|string|max:2000',
+            'guardrails.priceBargaining.suggestOfficialVouchersOnly'=>'required_with:guardrails.priceBargaining|boolean',
+            'guardrails.priceBargaining.refusalTemplate'=>'required_with:guardrails.priceBargaining|string|max:2000',
             'personality.greetingAliases'=>'sometimes|array|max:30',
             'personality.greetingAliases.*'=>'string|max:80|distinct',
             'productCatalog.includeStorePolicies'=>'sometimes|boolean',
@@ -195,7 +200,7 @@ class SupportFaqService
 
     public function defaultGuardrails():array
     {
-        return ['priceBargaining'=>['blockUnauthorizedDiscounts'=>true,'suggestOfficialVouchersOnly'=>true,'refusalTemplate'=>'I can share listed prices, but cannot negotiate prices or promise an unauthorized discount.','refusalMessages'=>['ms'=>'Saya boleh berkongsi harga yang disenaraikan, tetapi tidak boleh merundingkan harga atau menjanjikan diskaun tanpa kebenaran.','zh'=>'我可以提供商品标价，但不能议价或承诺未经授权的折扣。']]];
+        return ['conversation'=>['enabled'=>true,'strength'=>'balanced','repeatLimit'=>3,'cooldownMinutes'=>10],'priceBargaining'=>['blockUnauthorizedDiscounts'=>true,'suggestOfficialVouchersOnly'=>true,'refusalTemplate'=>'I can share listed prices, but cannot negotiate prices or promise an unauthorized discount.','refusalMessages'=>['ms'=>'Saya boleh berkongsi harga yang disenaraikan, tetapi tidak boleh merundingkan harga atau menjanjikan diskaun tanpa kebenaran.','zh'=>'我可以提供商品标价，但不能议价或承诺未经授权的折扣。']]];
     }
 
     public function defaultGreeting(): array

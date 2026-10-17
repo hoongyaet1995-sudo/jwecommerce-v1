@@ -10,6 +10,12 @@ use Tests\TestCase;
 
 class SupportFaqTest extends TestCase
 {
+    public function test_conversation_boundary_settings_roundtrip_and_reject_invalid_limits():void{
+        $this->owner();$p=$this->payload();$p['guardrails']=['conversation'=>['enabled'=>true,'strength'=>'strict','repeatLimit'=>2,'cooldownMinutes'=>4]];
+        $this->putJson('/admin/api/support/faq',$p)->assertOk()->assertJsonPath('guardrails.conversation',$p['guardrails']['conversation']);
+        $this->getJson('/admin/api/support/faq')->assertOk()->assertJsonPath('guardrails.conversation.strength','strict');$this->getJson('/support/faq')->assertJsonMissingPath('guardrails');
+        $p['version']=1;$p['guardrails']['conversation']['repeatLimit']=0;$this->putJson('/admin/api/support/faq',$p)->assertUnprocessable();
+    }
     public function test_reply_cadence_settings_roundtrip_and_bounds():void {
         $this->owner();$p=$this->payload();$p['replyCadence']=['enabled'=>true,'collectionSeconds'=>3,'intervalSeconds'=>2,'maxSegments'=>2];
         $this->putJson('/admin/api/support/faq',$p)->assertOk()->assertJsonPath('replyCadence',$p['replyCadence']);

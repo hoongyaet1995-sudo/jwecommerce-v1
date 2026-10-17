@@ -65,7 +65,7 @@ class SupportImprovementService
         $rows = $rows->take(5000);
         $sources = SupportMessage::with('attachments')->whereIn('id', $rows->map(fn ($m) => $m->ai_trace['sourceMessageId'] ?? null)->filter()->unique())->get()->keyBy('id');
         $conversations = SupportConversation::with(['customerUser', 'customer'])->whereIn('id', $sources->pluck('conversation_id'))->get()->keyBy('id');
-        $counts = ['received' => 0, 'answered' => 0, 'improve' => 0, 'handoff' => 0, 'failures' => 0];
+        $counts = ['received' => 0, 'answered' => 0, 'improve' => 0, 'handoff' => 0, 'failures' => 0, 'filtered'=>0];
         $questions = [];
         $failures = [];
         $seen = [];
@@ -79,6 +79,7 @@ class SupportImprovementService
             $seen[$id] = true;
             $counts['received']++;
             $decision = $m->ai_trace['decision'] ?? '';
+            if(in_array($decision,['off_topic','harassment'],true)){$counts['filtered']++;continue;}
             $text = $this->sanitize($source->content, $c);
             $base = ['sourceMessageId' => $source->id, 'conversationId' => $c->id, 'question' => mb_substr($text, 0, 1000), 'channel' => $c->channel, 'resolved' => $c->status === 'resolved', 'createdAt' => $source->created_at->toIso8601String()];
             $blocked=$this->draftBlockReason($source,$m,$activated);$base+=['canCreateDraft'=>$blocked===null,'draftBlockedReason'=>$blocked];

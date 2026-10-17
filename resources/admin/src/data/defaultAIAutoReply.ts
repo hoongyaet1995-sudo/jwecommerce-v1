@@ -135,6 +135,7 @@ export const DEFAULT_AI_AUTO_REPLY_CONFIG: AIAutoReplyMasterConfig = {
     customKnowledgeDocs: []
   },
   guardrails: {
+    conversation:{enabled:true,strength:'balanced',repeatLimit:3,cooldownMinutes:10},
     competitorMentions: {
       blockOrNeutralize: true,
       blacklistedCompetitors: [

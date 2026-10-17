@@ -109,7 +109,7 @@ class SupportReplyCadenceService
             $batch->refresh();
             if($batch->status==='ready')$this->publishLater($batch);
             elseif($batch->status==='generating'){
-                $batch->update(['status'=>$completed?'cancelled':'collecting','stop_reason'=>$completed?'generation_superseded':null,'due_at'=>now()->addSeconds(5)]);
+                $batch->update(['status'=>$completed?'cancelled':'collecting','stop_reason'=>$completed?(($source->fresh()->ai_trace['suppressed']??false)?'conversation_boundary':'generation_superseded'):null,'due_at'=>now()->addSeconds(5)]);
                 if(!$completed)$this->collectLater($batch);
             }
         }catch(\Throwable $error){
@@ -122,7 +122,7 @@ class SupportReplyCadenceService
         $batch=SupportReplyBatch::whereKey($batchId)->where('conversation_id',$c->id)->where('latest_source_id',$source->id)->lockForUpdate()->first();
         if(!$batch||$batch->status!=='generating')return;
         $policy=app(SupportReplyCadencePolicy::class)->settings($settings);
-        $single=($trace['escalation']??null)!==null||in_array($trace['decision']??'', ['handoff_requested','escalation_offered','server_order','verification_required','needs_reference','rate_limited','attachment_confirmation','generation_unavailable'],true)
+        $single=($trace['escalation']??null)!==null||in_array($trace['decision']??'', ['handoff_requested','escalation_offered','server_order','verification_required','needs_reference','rate_limited','attachment_confirmation','generation_unavailable','off_topic','harassment'],true)
             ||collect($trace['tools']??[])->contains(fn($t)=>($t['tool']??'')==='order.lookup');
         try{$segments=app(SupportReplySegmenter::class)->segments($answer,$single?[]:($trace['candidateSegments']??[]),$single?1:$policy['maxSegments'],in_array($c->channel,['facebook','instagram','whatsapp'],true)?2000:10000);}
         catch(\LengthException $e){$batch->update(['status'=>'failed','stop_reason'=>'answer_exceeds_channel_limit']);return;}

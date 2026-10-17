@@ -44,6 +44,11 @@ class EnquiryReceptionReplyTest extends TestCase
         return $c->messages()->create(['client_message_id' => (string) Str::uuid(), 'sender_role' => 'customer', 'content' => $text]);
     }
 
+    public function test_enquiry_off_topic_is_redirected_without_collecting_or_handing_off():void{
+        $c=$this->thread();$this->mock(AiConnectionService::class)->shouldReceive('generateText')->once()->andReturn('{"topic":"off_topic","needs_business_answer":false,"answer":"","source_ids":[],"fields":{},"has_unanswered_question":false}');
+        app(EnquiryReceptionReply::class)->reply($c,$this->source($c,'Is the moon rounder overseas?'));
+        $reply=$c->messages()->where('sender_role','ai')->first();$this->assertSame('off_topic',$reply->ai_trace['decision']);$this->assertSame('waiting_human',$c->fresh()->status);$this->assertEmpty($reply->actions);$this->assertSame([],\App\Models\SupportEnquiryIntake::first()->unresolved);
+    }
     public function test_waiting_unknown_then_known_faq_collects_evidence_and_preserves_unresolved(): void
     {
         $c = $this->thread();
