@@ -69,6 +69,17 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Native Admin forms need the same expired-session recovery as Admin fetch requests.
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $exception, Request $request) {
+            if ($response->getStatusCode() === 419
+                && $request->is('admin', 'admin/*')
+                && ! $request->expectsJson()) {
+                return redirect()->route('admin.login', [], 303)
+                    ->withErrors(['email' => 'Your session has expired. Please sign in again.']);
+            }
+
+            return $response;
+        });
         $exceptions->dontFlash([
             'api_key',
             'secret',
