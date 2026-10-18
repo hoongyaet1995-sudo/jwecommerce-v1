@@ -21,6 +21,9 @@ class SearchRefreshService
             $task = SearchTask::where('refresh_id', $id)->where('status', 'queued')->oldest('id')->first();
             if ($task) {
                 app(SearchOptimization::class)->run($task);
+                if (! SearchTask::where('refresh_id', $id)->whereIn('status', ['queued', 'running'])->exists()) {
+                    app(SearchPilotAudit::class)->capture();
+                }
             }
         });
 
@@ -75,6 +78,7 @@ class SearchRefreshService
                     });
                 }
                 $refresh->update(['total' => $total, 'skipped' => $skipped]);
+                app(SearchPilotAudit::class)->capture();
                 Cache::forget('search:sitemap');
 
                 return $this->summary($refresh);

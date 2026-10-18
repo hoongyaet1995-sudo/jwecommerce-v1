@@ -20,6 +20,7 @@
     @if($searchHead['description'])<meta name="description" content="{{ $searchHead['description'] }}">@endif
     @if($searchHead['canonical'])<link rel="canonical" href="{{ $searchHead['canonical'] }}">@endif
     @if($searchHead['noindex'])<meta name="robots" content="noindex,nofollow">@endif
+    @if($searchHead['structuredData'])<script type="application/ld+json" data-search-graph>{!! json_encode($searchHead['structuredData'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) !!}</script>@endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <livewire:styles />
     @if($isStorefront)

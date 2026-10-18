@@ -25,12 +25,6 @@ class ShopBrand
             return $this->resolvedName;
         }
 
-        $configuredName = trim((string) data_get(
-            StoreSetting::query()->where('key', 'shop_name')->value('value'),
-            'data',
-            ''
-        ));
-
-        return $this->resolvedName = $configuredName !== '' ? $configuredName : 'JW Studio';
+        return $this->resolvedName = app(\App\Services\Search\BusinessIdentity::class)->read()['name'];
     }
 }

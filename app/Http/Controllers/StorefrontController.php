@@ -104,7 +104,7 @@ class StorefrontController extends Controller
         $selectedImage = $images->get($request->integer('image'))
             ?? $images->firstWhere('product_variant_id', $selectedVariant?->id)
             ?? $images->first();
-        $shopName = trim((string) data_get(StoreSetting::query()->where('key', 'shop_name')->value('value'), 'data'));
+        $shopName = app(\App\Support\ShopBrand::class)->name();
 
         return view(app(\App\Services\WebsiteDesignService::class)->view('pdp',$product->category_id ? 'category:'.$product->category_id : null), [
             'product' => $product,

@@ -49,6 +49,8 @@ class SearchHead
         }
         $r->attributes->set('searchNoindex', $noindex);
 
-        return ['title' => $data['title'], 'description' => $data['description'] ?? null, 'canonical' => $canonical, 'noindex' => $noindex];
+        $head = ['title' => $data['title'], 'description' => $data['description'] ?? null, 'canonical' => $canonical, 'noindex' => $noindex];
+        $head['structuredData'] = app(SearchStructuredData::class)->graph($head, $kind, $id ? (int) $id : null);
+        return $head;
     }
 }

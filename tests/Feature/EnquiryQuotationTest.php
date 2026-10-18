@@ -161,7 +161,10 @@ class EnquiryQuotationTest extends TestCase
         $this->app->instance('env', 'local');
         $this->withSession(['_token' => 'quotation-csrf']);
         $form = '/admin/enquiries/'.$e->id.'/quotation/send';
-        $this->post($form, ['lockVersion' => 1])->assertStatus(419);
+        $this->post($form, ['lockVersion' => 1])->assertStatus(303)->assertRedirect('/admin/login')->assertSessionHasErrors('email');
+        $this->assertDatabaseCount('enquiry_quotation_versions', 0);
+        $this->postJson($form, ['lockVersion' => 1])->assertStatus(419);
+        $this->assertDatabaseCount('enquiry_quotation_versions', 0);
         $this->post($form, ['_token' => 'quotation-csrf', 'lockVersion' => 1])->assertRedirect('/admin/enquiries/'.$e->id.'/quotation-preview');
         $this->post($form, ['_token' => 'quotation-csrf', 'lockVersion' => 1])->assertRedirect();
         $this->assertDatabaseCount('enquiry_quotation_versions', 1);
