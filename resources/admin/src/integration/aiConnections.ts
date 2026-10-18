@@ -4,7 +4,7 @@ export type AIProvider = 'openai' | 'gemini' | 'anthropic' | 'compatible';
 export const providerLabels: Record<AIProvider, string> = { openai: 'OpenAI', gemini: 'Google Gemini', anthropic: 'Anthropic', compatible: 'OpenAI-compatible' };
 export interface AIConnection {
   provider: AIProvider; label: string; has_key: boolean; base_url: string | null;
-  enabled: boolean; support_enabled: boolean; builder_enabled: boolean;
+  enabled: boolean; support_enabled: boolean; builder_enabled: boolean; search_enabled?: boolean;
   text_model: string | null; image_model: string | null;
   models: { id: string; text: boolean; image: boolean }[];
   verified_at: string | null; last_error: string | null; version: number;

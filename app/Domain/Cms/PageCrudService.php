@@ -49,6 +49,7 @@ final class PageCrudService
                     'document' => $document,
                 ]);
                 app(PageRevisionService::class)->capture($draft, $source);
+                app(\App\Services\Search\SearchProducer::class)->pageSaved((int)$page->id,'created');
                 $this->media->sync($draft);
 
                 return $page->load(['draftDocument', 'publishedDocument']);

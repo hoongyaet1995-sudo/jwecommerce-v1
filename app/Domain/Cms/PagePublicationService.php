@@ -58,6 +58,7 @@ final class PagePublicationService
 
                 $this->assertPublishedSlugAvailable($lockedPage, $draft->slug);
 
+                $previousSlug=PageDocument::where('page_id',$lockedPage->id)->where('stage','published')->value('slug');
                 $published = PageDocument::query()->updateOrCreate(
                     [
                         'page_id' => $lockedPage->getKey(),
@@ -72,6 +73,7 @@ final class PagePublicationService
                     ],
                 );
                 app(PageRevisionService::class)->capture($published, 'published');
+                app(\App\Services\Search\SearchProducer::class)->pagePublished((int)$lockedPage->id,$previousSlug,$draft->slug);
                 $this->media->sync($published);
 
                 $lockedPage->forceFill([

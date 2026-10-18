@@ -20,7 +20,7 @@ export function reorderSections<T>(sections:T[],from:number,to:number):T[]{
 }
 export function pageToAiDocument(page:CmsPage):PageDocument {
  return {title:page.title,slug:page.slug,template:page.template,sections:structuredClone(page.sections),
- ...Object.fromEntries(['description','heroImage','seoTitle','seoDescription','style','containerWidth','headerPresentation','shellDesign'].filter(k=>page[k as keyof CmsPage]!==undefined).map(k=>[k,structuredClone(page[k as keyof CmsPage])]))};
+ ...Object.fromEntries(['description','heroImage','seoSettings','seoTitle','seoDescription','style','containerWidth','headerPresentation','shellDesign'].filter(k=>page[k as keyof CmsPage]!==undefined).map(k=>[k,structuredClone(page[k as keyof CmsPage])]))};
 }
 export const pageSourceSignature=(page:CmsPage)=>JSON.stringify(pageToAiDocument(page));
 export function documentChanges(before:PageDocument,after:PageDocument){

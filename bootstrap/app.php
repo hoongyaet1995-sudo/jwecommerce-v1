@@ -35,11 +35,13 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->web(append: [
             ClearLegacyCustomerWebSession::class,
+            \App\Http\Middleware\SearchVisibility::class,
         ]);
         $middleware->appendToPriorityList(
             StartSession::class,
             ClearLegacyCustomerWebSession::class,
         );
+        $middleware->prependToPriorityList(\Illuminate\Routing\Middleware\SubstituteBindings::class, \App\Http\Middleware\SearchVisibility::class);
         $middleware->redirectGuestsTo(
             static fn (Request $request): string => $request->is('account', 'account/*')
                 ? route('customer.login')

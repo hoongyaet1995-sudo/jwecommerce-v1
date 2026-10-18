@@ -8,6 +8,7 @@
 @php($shellContentWidth = $isCmsStorefrontPreview ? (request()->attributes->get('websiteThemeShellWidth') ?? $shellContentWidth) : $shellContentWidth)
 @php($websiteStyleThemes = array_unique([app(\App\Services\WebsiteDesignService::class)->surface(), request()->attributes->get('websiteRenderedTheme')]))
 <html lang="en" @if($isStorefront) data-storefront-width="{{ $shellContentWidth }}" @endif @if($isStorefront) class="{{ ($shellDesign['appearance'] ?? 'dark') === 'dark' ? 'dark' : '' }}" data-atelier-theme-root data-atelier-theme="{{ $shellDesign['appearance'] ?? 'dark' }}" @if($shellDesign) data-shell-appearance="{{ $shellDesign['appearance'] }}" data-shell-theme-switch="{{ $shellDesign['showThemeSwitch'] ? 'true' : 'false' }}" @endif @elseif($isAdmin) data-admin-root @endif>
+@php($searchHead = app(\App\Services\Search\SearchHead::class)->resolve($title, $description))
 <head>
     @if(request()->routeIs('admin.website-design.preview')) @include('admin.theme-demo-guard',['scenario'=>request('surface','plp')]) @endif
     @if(request()->routeIs('admin.website-design.logistics-homepage-sample')) @include('admin.theme-demo-guard',['scenario'=>'homepage','demoTheme'=>'logistics']) @endif
@@ -15,8 +16,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ?: $shopBrandName }}</title>
-    @if($description)<meta name="description" content="{{ $description }}">@endif
+    <title>{{ $searchHead['title'] }}</title>
+    @if($searchHead['description'])<meta name="description" content="{{ $searchHead['description'] }}">@endif
+    @if($searchHead['canonical'])<link rel="canonical" href="{{ $searchHead['canonical'] }}">@endif
+    @if($searchHead['noindex'])<meta name="robots" content="noindex,nofollow">@endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <livewire:styles />
     @if($isStorefront)

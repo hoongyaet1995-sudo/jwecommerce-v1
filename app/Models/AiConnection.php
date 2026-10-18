@@ -34,7 +34,7 @@ class AiConnection extends Model
     {
         return [
             'api_key' => 'encrypted', 'models' => 'array',
-            'enabled' => 'boolean', 'support_enabled' => 'boolean', 'builder_enabled' => 'boolean',
+            'search_enabled'=>'boolean', 'enabled' => 'boolean', 'support_enabled' => 'boolean', 'builder_enabled' => 'boolean',
             'verified_at' => 'datetime', 'text_tested_at' => 'datetime', 'version' => 'integer',
         ];
     }

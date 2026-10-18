@@ -13,6 +13,8 @@ use Tests\TestCase;
 class PageApiTest extends TestCase
 {
     use RefreshDatabase;
+    protected function setUp():void {parent::setUp();config(['search.require_review'=>false]);} // Isolate legacy publication contract; new review proof covered in SearchFoundationTest.
+
 
     public function test_admin_can_create_publish_and_unpublish_a_canonical_page_without_public_route_cutover(): void
     {

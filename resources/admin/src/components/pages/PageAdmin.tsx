@@ -1,3 +1,5 @@
+import {usePublicationReview} from '../search/PublicationReview';
+import {savePublicationToken} from '../../integration/searchVisibility';
 import {PageHistoryPanel} from './PageHistoryPanel';
 import {History as PageHistoryIcon} from 'lucide-react';
 import {AiPageGenerator} from './AiPageGenerator';
@@ -85,6 +87,7 @@ type PageAutosaveTakeover = {
 };
 
 export const PageAdmin: React.FC = () => {
+  const publicationReview=usePublicationReview();
   const [aiGeneratorOpen,setAiGeneratorOpen]=useState(false);
   const [templateOpen,setTemplateOpen]=useState(false),[templateBusy,setTemplateBusy]=useState(false);
   const [deliveryRates,setDeliveryRates]=useState<PageTemplateContext['shippingRates']>(undefined);
@@ -193,6 +196,7 @@ export const PageAdmin: React.FC = () => {
         ? autosaveRef.current.getState().acknowledgedVersion
         : pages.find(page => page.id === id)?.lockVersion;
       if (version === undefined) throw new Error('Reload this page before selecting its homepage.');
+      if(pages.find(page=>page.id===id)?.status!=='published'){const token=await publicationReview.review(id);if(!token)return;savePublicationToken(id,token)}
       const saved = await selectHomepage(laravelBootstrap, id, version);
       pages.forEach(page => updatePageLocal(page.id, latest => ({ ...latest, isHomepage: page.id === saved.id })));
       updatePageLocal(id, latest => ({ ...latest, status: saved.status, hasPublishedSnapshot: saved.hasPublishedSnapshot }));
@@ -223,6 +227,7 @@ export const PageAdmin: React.FC = () => {
     sections: page.sections,
     ...(hasOwnContractField(page, 'description') ? { description: page.description } : {}),
     ...(hasOwnContractField(page, 'heroImage') ? { heroImage: page.heroImage } : {}),
+    ...(hasOwnContractField(page, 'seoSettings') ? { seoSettings: page.seoSettings } : {}),
     ...(hasOwnContractField(page, 'seoTitle') ? { seoTitle: page.seoTitle } : {}),
     ...(hasOwnContractField(page, 'seoDescription') ? { seoDescription: page.seoDescription } : {}),
   });
@@ -242,6 +247,7 @@ export const PageAdmin: React.FC = () => {
       containerWidth: _containerWidth,
       style: _style,
       heroImage: _heroImage,
+      seoSettings: _seoSettings,
       seoTitle: _seoTitle,
       seoDescription: _seoDescription,
       sections: _sections,
@@ -717,6 +723,9 @@ export const PageAdmin: React.FC = () => {
     if (!controller) return false;
 
     try {
+      const reviewToken=await publicationReview.review(currentPage.id);
+      if(!reviewToken)return false;
+      savePublicationToken(currentPage.id,reviewToken);
       const saved = await publishPage(
         laravelBootstrap,
         currentPage.id,
@@ -775,6 +784,7 @@ export const PageAdmin: React.FC = () => {
   if (!editingPageId || !currentPage) {
     return (
       <div id="page-admin-directory" className="space-y-6 animate-in fade-in">
+      {createPortal(publicationReview.dialog,document.body)}
       {/* Delete CMS Page Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={!!pageToDelete}
@@ -1209,10 +1219,10 @@ export const PageAdmin: React.FC = () => {
           <span className="w-px h-4 bg-neutral-200 dark:bg-neutral-700 mx-1"/>
           <button type="button" aria-label="Full Canvas" title={isOutlineCollapsed&&isInspectorCollapsed?'Restore panels':'Full Canvas'} aria-pressed={isOutlineCollapsed&&isInspectorCollapsed} onClick={()=>{const collapse=!(isOutlineCollapsed&&isInspectorCollapsed);setIsOutlineCollapsed(collapse);setIsInspectorCollapsed(collapse);}} className={`w-8 h-8 grid place-items-center rounded-lg ${isOutlineCollapsed&&isInspectorCollapsed?'bg-indigo-600 text-white':'text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-700'}`}>{isOutlineCollapsed&&isInspectorCollapsed?<Minimize2 className="w-4 h-4"/>:<Maximize2 className="w-4 h-4"/>}</button>
         </div>
-        <div className="flex items-center gap-2 shrink-0 ml-auto">
+        <div className="flex flex-wrap items-center justify-end gap-2 min-w-0 max-w-full ml-auto">
           <details open={toolbarMoreOpen} className="relative" onKeyDown={e=>{if(e.key==='Escape')setToolbarMoreOpen(false);}}>
             <summary aria-label="More actions" aria-expanded={toolbarMoreOpen} onClick={e=>{e.preventDefault();setToolbarMoreOpen(open=>!open);}} title="More actions" className="list-none w-9 h-9 grid place-items-center rounded-xl cursor-pointer text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 [&::-webkit-details-marker]:hidden"><MoreVertical className="w-4 h-4"/></summary>
-            <div className="absolute right-0 top-full mt-2 w-52 p-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl text-neutral-700 dark:text-neutral-200" onClick={e=>{if((e.target as HTMLElement).closest('button'))setToolbarMoreOpen(false);}}>
+            <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-52 p-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl text-neutral-700 dark:text-neutral-200" onClick={e=>{if((e.target as HTMLElement).closest('button'))setToolbarMoreOpen(false);}}>
               <button type="button" onClick={()=>setAiGeneratorOpen(true)} className="w-full flex items-center gap-2 p-2.5 rounded-lg text-xs text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950"><Sparkles className="w-4 h-4"/>AI Page Generator</button>
               <button type="button" onClick={handleReplayMotion} className="w-full flex items-center gap-2 p-2.5 rounded-lg text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800"><Play className="w-4 h-4"/>Replay Motion</button>
               <button type="button" onClick={toggleTheme} className="w-full flex items-center gap-2 p-2.5 rounded-lg text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800">{theme==='dark'?<Sun className="w-4 h-4"/>:<Moon className="w-4 h-4"/>}{theme==='dark'?'Switch to Light Mode':'Switch to Dark Mode'}</button>
@@ -1546,6 +1556,7 @@ export const PageAdmin: React.FC = () => {
         collections={collections}
       />
 
+      {createPortal(publicationReview.dialog,document.body)}
       {/* Full Live Preview Modal */}
       <PagePreviewModal
         isOpen={isPreviewModalOpen}

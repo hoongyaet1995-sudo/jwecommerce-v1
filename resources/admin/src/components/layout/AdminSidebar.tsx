@@ -312,6 +312,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
   const settingSubItems: { id: NavSection; label: string }[] = [
     { id: 'settings-ai-agent', label: 'AI Auto Reply & Bot' },
     { id: 'settings-users', label: 'User Login & Staff' },
+    { id: 'settings-search', label: 'Search Visibility' },
     { id: 'settings-shop', label: 'Shop Profile & SEO' },
     { id: 'settings-points', label: 'Points & Rewards' },
     { id: 'settings-invoice', label: 'Invoice & Taxes' },

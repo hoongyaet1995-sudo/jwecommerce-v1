@@ -48,6 +48,7 @@ class AiConnectionApiTest extends TestCase
             $table->timestamps();
         });
         (require database_path('migrations/2026_10_02_180000_create_ai_connections.php'))->up();
+        Schema::table('ai_connections', fn (Blueprint $table) => $table->boolean('search_enabled')->default(false));
         Http::preventStrayRequests();
     }
 

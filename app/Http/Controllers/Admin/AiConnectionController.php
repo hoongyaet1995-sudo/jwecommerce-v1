@@ -30,7 +30,7 @@ class AiConnectionController extends Controller
         $this->authorizeOwner($request, $provider);
         $data = $request->validate([
             'version' => ['required', 'integer', 'min:0'], 'enabled' => ['required', 'boolean'],
-            'support_enabled' => ['required', 'boolean'], 'builder_enabled' => ['required', 'boolean'],
+            'search_enabled' => ['sometimes', 'boolean'], 'support_enabled' => ['required', 'boolean'], 'builder_enabled' => ['required', 'boolean'],
             'api_key' => ['nullable', 'string', 'max:4096', 'regex:/^\S+$/'],
             'base_url' => ['nullable', 'string', 'max:255'],
             'text_model' => ['nullable', 'string', 'max:150'], 'image_model' => ['nullable', 'string', 'max:150'],

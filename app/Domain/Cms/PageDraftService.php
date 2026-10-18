@@ -68,6 +68,7 @@ final class PageDraftService
                 app(PageRevisionService::class)->capture($saved, $source, null, $restoredFrom);
                 $this->media->sync($saved);
 
+                app(\App\Services\Search\SearchProducer::class)->pageSaved((int)$page->id, $source);
                 return $saved;
             });
         } catch (QueryException $exception) {

@@ -35,6 +35,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        \App\Models\Page::saved(function (): void { \Illuminate\Support\Facades\Cache::forget('search:sitemap'); });
+        \App\Models\Page::deleted(function (): void { \Illuminate\Support\Facades\Cache::forget('search:sitemap'); });
+        \App\Models\StoreSetting::saved(function (): void { \Illuminate\Support\Facades\Cache::forget('search:sitemap'); });
+        \App\Models\ProductPdpContent::saved(fn ($content) => app(\App\Services\Search\SearchProducer::class)->productContentSaved((int)$content->product_id));
+        \App\Models\SearchEntry::saved(function (): void { \Illuminate\Support\Facades\Cache::forget('search:sitemap'); });
+        foreach (['product'=>\App\Models\Product::class,'category'=>\App\Models\Category::class,'collection'=>\App\Models\Collection::class] as $kind=>$class) {
+            $class::deleted(function (): void { \Illuminate\Support\Facades\Cache::forget('search:sitemap'); });
+            $class::saved(fn ($model) => app(\App\Services\Search\SearchProducer::class)->saved($kind,$model));
+        }
         \Illuminate\Auth\Notifications\ResetPassword::createUrlUsing(fn ($user, $token) => route('customer.password.reset', ['token'=>$token,'email'=>$user->email]));
         RateLimiter::for('ai-provider-save', fn (Request $request): Limit => Limit::perMinute(20)
             ->by('ai-save:'.$request->user()?->id.':'.$request->route('provider')));

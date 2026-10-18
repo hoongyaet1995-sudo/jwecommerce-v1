@@ -48,6 +48,7 @@ export const ADMIN_PATH_BY_SECTION = {
   'reports-tax': '/admin/reports/tax',
   settings: '/admin/settings',
   'settings-users': '/admin/settings/users',
+  'settings-search': '/admin/settings/search',
   'settings-shop': '/admin/settings/shop',
   'settings-payment': '/admin/settings/payment',
   'settings-points': '/admin/settings/points',

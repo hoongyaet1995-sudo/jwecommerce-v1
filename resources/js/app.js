@@ -2,6 +2,7 @@ import './bootstrap';
 import {
     ArrowLeft,
     ArrowRight,
+    ArrowUpRight,
     Award,
     Briefcase,
     Building2,
@@ -80,6 +81,7 @@ const renderIcons = () => {
             House, Ticket, TicketPercent,
             ArrowLeft,
             ArrowRight,
+            ArrowUpRight,
             Award,
             Briefcase,
             Building2,

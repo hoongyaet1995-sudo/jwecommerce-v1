@@ -127,6 +127,21 @@
             "type": "string"
           }
         }
+      },
+      "seoSettings": {
+        "type": "object",
+        "allowUnknownFields": false,
+        "fields": {
+          "titleLocked": {
+            "type": "boolean"
+          },
+          "descriptionLocked": {
+            "type": "boolean"
+          },
+          "excluded": {
+            "type": "boolean"
+          }
+        }
       }
     }
   },
@@ -1459,7 +1474,13 @@
       "type": "object",
       "allowUnknownFields": false,
       "fields": {
-        "colorSource": {"type": "string", "enum": ["theme", "custom"]},
+        "colorSource": {
+          "type": "string",
+          "enum": [
+            "theme",
+            "custom"
+          ]
+        },
         "palette": {
           "$ref": "brandPalette",
           "required": true

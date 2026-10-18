@@ -17,8 +17,8 @@
         <main>
             @if($entry)
                 <script id="cms-page-runtime" type="application/json">{!! json_encode($payload, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) !!}</script>
-                <div id="cms-page-root" data-cms-page-header-overlay="{{ \App\Domain\Cms\HeaderPresentation::resolve($payload['page']['document'], app(\App\Services\StorefrontShellSettingsService::class)->live())['mode'] !== 'normal' ? 'true' : 'false' }}"><p data-cms-page-unavailable role="alert">Page content is unavailable.</p></div>
-                <noscript><p role="alert">JavaScript is required to display this page.</p></noscript>
+                <div id="cms-page-root" data-cms-page-header-overlay="{{ \App\Domain\Cms\HeaderPresentation::resolve($payload['page']['document'], app(\App\Services\StorefrontShellSettingsService::class)->live())['mode'] !== 'normal' ? 'true' : 'false' }}">{!! $serverHtml ?? '' !!}</div>
+                <noscript><style>[data-motion-enabled]{opacity:1!important;transform:none!important}</style></noscript>
             @else
                 <p data-cms-page-assets-unavailable role="alert">Storefront page assets are unavailable.</p>
             @endif

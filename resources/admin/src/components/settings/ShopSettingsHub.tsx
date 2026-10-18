@@ -1,3 +1,4 @@
+import {SearchVisibilitySettings} from '../search/SearchVisibilitySettings';
 import React, { useState, useEffect, useRef } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { NavSection } from '../../types';
@@ -48,6 +49,7 @@ import {
 
 export const SETTING_TABS: { id: NavSection; label: string; icon: React.ElementType }[] = [
   { id: 'settings-users', label: 'User Login Setting', icon: Users },
+  { id: 'settings-search', label: 'Search Visibility', icon: Globe },
   { id: 'settings-shop', label: 'My Shop Setting', icon: Store },
   { id: 'settings-points', label: 'Points/Rewards', icon: Award },
   { id: 'settings-invoice', label: 'Invoice Information Setting', icon: FileText },
@@ -159,6 +161,8 @@ export const ShopSettingsHub: React.FC = () => {
   };
 
   // Dedicated Setting Sub-Views
+  if (currentSection === 'settings-search') return <div className="space-y-6"><SettingNavBar currentSection={currentSection} setCurrentSection={setCurrentSection}/><SearchVisibilitySettings/></div>;
+
   if (currentSection === 'settings-users') {
     return (
       <UserLoginSettingAdmin

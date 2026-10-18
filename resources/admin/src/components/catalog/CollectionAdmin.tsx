@@ -1,3 +1,5 @@
+
+import {EntitySearchPanel} from '../search/EntitySearchPanel';
 import { useAdminCurrency } from '../../context/useAdminCurrency';
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
@@ -430,6 +432,7 @@ export const CollectionAdmin: React.FC = () => {
                 )}
               </div>
 
+              <EntitySearchPanel kind="collection" id={editingCollection.id}/>
               <div className="flex justify-end gap-2 pt-3 border-t border-neutral-100 dark:border-neutral-800">
                 <button
                   type="button"

@@ -114,6 +114,7 @@ class PageApiController extends Controller
         }
 
         try {
+            if(config('search.require_review')&&(!$request->routeIs('admin.api.pages.homepage')||$page->status!=='published'))app(\App\Services\Search\SearchPublicationReview::class)->assertToken($page,$input['lockVersion'],$request->header('X-Search-Review'),$request->user()->id);
             $page = $request->routeIs('admin.api.pages.homepage')
                 ? app(\App\Domain\Cms\HomepageSelection::class)->select($page, $input['lockVersion'])
                 : $this->publication->publish($page, $input['lockVersion']);

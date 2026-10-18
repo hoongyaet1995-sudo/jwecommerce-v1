@@ -15,6 +15,7 @@ use Tests\TestCase;
 class PageHistoryTest extends TestCase
 {
     use RefreshDatabase;
+    protected function setUp(): void {parent::setUp();config(['search.require_review'=>false]);} // History regression isolates publication review; SearchFoundationTest covers the new gate.
 
     private function page(string $slug = 'history-page')
     {

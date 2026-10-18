@@ -1,3 +1,4 @@
+import {publicationToken} from './searchVisibility';
 import type { CmsPage, LaravelAdminBootstrap, PageDocument, PageDraftPayload } from '../types';
 
 type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -61,6 +62,7 @@ const request = async <T>(
     credentials: 'same-origin',
     headers: {
       Accept: 'application/json',
+      ...(publicationToken(path)?{'X-Search-Review':publicationToken(path)!}:{}),
       ...(source ? {'X-CMS-Change-Source': source} : {}),
       ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
       ...(method === 'GET' ? {} : { 'X-CSRF-TOKEN': bootstrap.csrfToken }),
@@ -197,6 +199,7 @@ export const createPage = async (bootstrap: LaravelAdminBootstrap, page: CmsPage
         ...(page.containerWidth?{containerWidth:page.containerWidth}:{}),
     ...(page.style?{style:page.style}:{}),
     heroImage: page.heroImage,
+    ...(page.seoSettings?{seoSettings:page.seoSettings}:{}),
     seoTitle: page.seoTitle,
     seoDescription: page.seoDescription,
     sections: page.sections,

@@ -823,6 +823,7 @@ export const createAdminPageRuntimePayload = (
         sections: page.sections,
         ...(Object.prototype.hasOwnProperty.call(page, 'description') ? {description: page.description} : {}),
         ...(Object.prototype.hasOwnProperty.call(page, 'heroImage') ? {heroImage: page.heroImage} : {}),
+        ...(Object.prototype.hasOwnProperty.call(page, 'seoSettings') ? {seoSettings: page.seoSettings} : {}),
         ...(Object.prototype.hasOwnProperty.call(page, 'seoTitle') ? {seoTitle: page.seoTitle} : {}),
         ...(Object.prototype.hasOwnProperty.call(page, 'seoDescription') ? {seoDescription: page.seoDescription} : {}),
       },

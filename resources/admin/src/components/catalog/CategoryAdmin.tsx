@@ -1,3 +1,5 @@
+
+import {EntitySearchPanel} from '../search/EntitySearchPanel';
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { CatalogImageUploadField } from './CatalogImageUploadField';
@@ -73,7 +75,7 @@ export const CategoryAdmin: React.FC = () => {
     setEditingCategory({
       ...editingCategory,
       name,
-      seoTitle: editingCategory.seoTitle ? editingCategory.seoTitle : `${name} | Shop Online at Aurora`
+      seoTitle: editingCategory.seoTitle ? editingCategory.seoTitle : name
     });
   };
 
@@ -339,55 +341,7 @@ export const CategoryAdmin: React.FC = () => {
                 />
               </div>
 
-              {/* SERP SEO Preview Card */}
-              <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-700 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-900 dark:text-white">
-                    <Globe className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Search Engine Listing Preview (Google SERP)</span>
-                  </div>
-                  <span className="text-[10px] text-neutral-400">SEO & Metadata</span>
-                </div>
-
-                <div className="p-3 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-inner">
-                  <div className="text-[11px] text-neutral-500 flex items-center gap-1">
-                    <span>https://auroracommerce.io</span>
-                    <span>›</span>
-                    <span className="text-neutral-600 dark:text-neutral-400">categories</span>
-                    <span>›</span>
-                    <span className="text-neutral-800 dark:text-neutral-200 font-semibold">{editingCategory.slug || 'slug'}</span>
-                  </div>
-                  <h4 className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer mt-0.5">
-                    {editingCategory.seoTitle || `${editingCategory.name || 'Category'} | Aurora Commerce`}
-                  </h4>
-                  <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 leading-relaxed">
-                    {editingCategory.seoDescription || editingCategory.description || 'Shop high quality curated items in this category with fast global delivery and 2-year warranty.'}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                  <div>
-                    <label className="block text-[11px] font-medium text-neutral-500 mb-1">SEO Title Tag</label>
-                    <input
-                      type="text"
-                      placeholder="Page Title (<title>)"
-                      value={editingCategory.seoTitle || ''}
-                      onChange={(e) => setEditingCategory({ ...editingCategory, seoTitle: e.target.value })}
-                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-neutral-500 mb-1">SEO Meta Description</label>
-                    <input
-                      type="text"
-                      placeholder="Meta Description (<meta>)"
-                      value={editingCategory.seoDescription || ''}
-                      onChange={(e) => setEditingCategory({ ...editingCategory, seoDescription: e.target.value })}
-                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-              </div>
+              <EntitySearchPanel kind="category" id={editingCategory.id} onChanged={(seoTitle,seoDescription)=>setEditingCategory(previous=>previous?({...previous,seoTitle,seoDescription}):previous)}/>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-neutral-100 dark:border-neutral-800">
                 <button

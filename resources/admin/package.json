@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 8510",
-    "build": "vite build",
+    "build": "vite build && node scripts/build-ssr.mjs",
+    "build:ssr": "node scripts/build-ssr.mjs",
     "lint": "tsc --noEmit",
     "inventory:components": "node scripts/generate-component-manifest.mjs",
     "test": "vitest",

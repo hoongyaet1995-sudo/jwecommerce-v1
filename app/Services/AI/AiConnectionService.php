@@ -16,7 +16,7 @@ class AiConnectionService
             'provider' => $provider, 'label' => ProviderRegistry::LABELS[$provider],
             'has_key' => $record !== null && $record->getRawOriginal('api_key') !== null,
             'base_url' => $record?->base_url, 'enabled' => $record?->enabled ?? false,
-            'support_enabled' => $record?->support_enabled ?? false, 'builder_enabled' => $record?->builder_enabled ?? false,
+            'support_enabled' => $record?->support_enabled ?? false, 'builder_enabled' => $record?->builder_enabled ?? false, 'search_enabled' => $record?->search_enabled ?? false,
             'text_model' => $record?->text_model, 'image_model' => $record?->image_model,
             'models' => $record?->models ?? [], 'verified_at' => $record?->verified_at?->toIso8601String(),
             
@@ -86,7 +86,7 @@ class AiConnectionService
             }
             $record->fill([
                 'text_model' => $textModel, 'image_model' => $imageModel, 'enabled' => $data['enabled'],
-                'support_enabled' => $data['support_enabled'], 'builder_enabled' => $data['builder_enabled'],
+                'support_enabled' => $data['support_enabled'], 'builder_enabled' => $data['builder_enabled'], 'search_enabled' => $data['search_enabled'] ?? $record->search_enabled ?? false,
                 'version' => ($record->version ?? 0) + 1,
             ])->save();
             if ($record->enabled) {
@@ -129,7 +129,7 @@ class AiConnectionService
     /** Internal consumer boundary. Public chat/CMS endpoints do not invoke it yet. */
     public function generateText(string $feature, string $prompt, int $maxTokens = 1024, ?float $temperature = null): string
     {
-        if (! in_array($feature, ['support', 'builder'], true) || trim($prompt) === '' || strlen($prompt) > 32000 || $maxTokens < 1 || $maxTokens > 4096 || ($temperature !== null && (!is_finite($temperature) || $temperature < 0 || $temperature > 1))) {
+        if (! in_array($feature, ['support', 'builder', 'search'], true) || trim($prompt) === '' || strlen($prompt) > 32000 || $maxTokens < 1 || $maxTokens > 4096 || ($temperature !== null && (!is_finite($temperature) || $temperature < 0 || $temperature > 1))) {
             throw ValidationException::withMessages(['feature' => 'Invalid AI generation request.']);
         }
         $record = AiConnection::where('enabled', true)->where($feature.'_enabled', true)->first();

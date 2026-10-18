@@ -24,6 +24,8 @@ use Tests\TestCase;
 final class PagePublicationApiTest extends TestCase
 {
     use RefreshDatabase;
+    protected function setUp():void {parent::setUp();config(['search.require_review'=>false]);} // Isolate legacy publication contract; new review proof covered in SearchFoundationTest.
+
 
     public function test_editing_published_page_does_not_change_public_snapshot(): void
     {

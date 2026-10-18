@@ -201,6 +201,19 @@ Route::get('/admin/shipping/easyparcel/callback/denied', [ShippingProviderApiCon
     ->name('admin.shipping.easyparcel.callback.denied');
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function (): void {
+    Route::get('/api/search/settings', [\App\Http\Controllers\Admin\SearchVisibilityController::class,'settings']);
+    Route::put('/api/search/settings', [\App\Http\Controllers\Admin\SearchVisibilityController::class,'saveSettings']);
+    Route::get('/api/search/refresh', [\App\Http\Controllers\Admin\SearchVisibilityController::class, 'refreshSeo'])->middleware('throttle:60,1,search-refresh-status:');
+    Route::post('/api/search/refresh', [\App\Http\Controllers\Admin\SearchVisibilityController::class, 'refreshSeo'])->middleware('throttle:20,1,search-refresh-start:');
+    Route::post('/api/search/refresh/{id}/advance', [\App\Http\Controllers\Admin\SearchVisibilityController::class, 'advanceRefresh'])->whereNumber('id')->middleware('throttle:120,1,search-refresh-advance:');
+    Route::match(['GET','POST'],'/api/search/pages/{id}/review',[\App\Http\Controllers\Admin\SearchVisibilityController::class,'review'])->whereNumber('id');
+    Route::get('/api/search/catalog', [\App\Http\Controllers\Admin\SearchVisibilityController::class,'catalog']);
+    Route::get('/api/search/tasks', [\App\Http\Controllers\Admin\SearchVisibilityController::class,'tasks']);
+    Route::post('/api/search/tasks/{task}/apply', [\App\Http\Controllers\Admin\SearchVisibilityController::class,'apply']);
+    Route::post('/api/search/batch/{kind}', [\App\Http\Controllers\Admin\SearchVisibilityController::class,'batch'])->middleware('throttle:10,1');
+    Route::get('/api/search/{kind}/{id}', [\App\Http\Controllers\Admin\SearchVisibilityController::class,'entity'])->whereNumber('id');
+    Route::put('/api/search/{kind}/{id}', [\App\Http\Controllers\Admin\SearchVisibilityController::class,'update'])->whereNumber('id');
+    Route::post('/api/search/{kind}/{id}/optimize', [\App\Http\Controllers\Admin\SearchVisibilityController::class,'optimize'])->whereNumber('id')->middleware('throttle:20,1');
     Route::get('/api/enquiries', [\App\Http\Controllers\Admin\ProductEnquiryController::class,'index']);
     Route::get('/api/enquiries/{enquiry}', [\App\Http\Controllers\Admin\ProductEnquiryController::class,'show'])->whereUuid('enquiry');
     Route::patch('/api/enquiries/{enquiry}', [\App\Http\Controllers\Admin\ProductEnquiryController::class,'update'])->whereUuid('enquiry')->middleware('throttle:60,1');
@@ -654,6 +667,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/reports/tax', AdminAppController::class)->name('reports.tax');
     Route::get('/settings', AdminAppController::class)->name('settings.index');
     Route::get('/settings/users', AdminAppController::class)->name('account.edit');
+    Route::get('/settings/search', AdminAppController::class)->name('settings.search');
     Route::get('/settings/shop', AdminAppController::class)->name('settings.shop');
     Route::get('/settings/payment', AdminAppController::class)->name('settings.payment');
     Route::get('/settings/points', AdminAppController::class)->name('settings.points');
@@ -726,3 +740,6 @@ Route::middleware(["auth","admin"])->prefix("admin")->group(function(){
     Route::post('/api/social/whatsapp/{id}/{action}',[\App\Http\Controllers\Admin\WhatsAppAccountController::class,'manage'])->middleware('throttle:30,1');
     Route::delete('/api/social/whatsapp/{id}',[\App\Http\Controllers\Admin\WhatsAppAccountController::class,'destroy'])->middleware('throttle:10,1');
 });
+
+Route::get('/sitemap.xml', [\App\Http\Controllers\SearchDiscoveryController::class,'sitemap']);
+Route::get('/robots.txt', [\App\Http\Controllers\SearchDiscoveryController::class,'robots']);

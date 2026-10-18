@@ -812,6 +812,7 @@ export interface PageSection {
 }
 
 export interface CmsPage {
+  seoSettings?: {titleLocked:boolean;descriptionLocked:boolean;excluded:boolean};
   isHomepage?: boolean;
   id: string;
   title: string;
@@ -944,6 +945,7 @@ export type PageDocument = Pick<
   | 'containerWidth'
   | 'style'
   | 'heroImage'
+  | 'seoSettings'
   | 'seoTitle'
   | 'seoDescription'
   | 'sections'
@@ -1212,6 +1214,7 @@ export type NavSection =
   | 'orders'
   | 'settings'
   | 'settings-users'
+  | 'settings-search'
   | 'settings-shop'
   | 'settings-payment'
   | 'settings-points'

@@ -36,6 +36,7 @@ final class PagePreviewController extends Controller
         $quickAddProducts = app(\App\Domain\Cms\ProductListingPresentation::class)->prepare($payload);
 
         return response()->view('storefront.cms-page-react', [
+            'serverHtml'=>app(\App\Services\Search\CmsServerRenderer::class)->render($payload),
             'entry' => $entry,
             'payload' => $payload,
             'quickAddProducts' => $quickAddProducts,
