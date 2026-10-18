@@ -23,14 +23,14 @@ final class PageCrudService
      *
      * @throws ValidationException
      */
-    public function create(array $document): Page
+    public function create(array $document, string $source = 'created'): Page
     {
         $validated = $this->documents->canonicalizeDocument(
             $this->contract->validate($document),
         );
 
         try {
-            return DB::transaction(function () use ($validated): Page {
+            return DB::transaction(function () use ($validated, $source): Page {
                 $document = $validated;
                 $document['slug'] = $this->uniqueDraftSlug($validated['slug']);
 
@@ -48,6 +48,7 @@ final class PageCrudService
                     'content_hash' => PageDocumentHasher::hash($document),
                     'document' => $document,
                 ]);
+                app(PageRevisionService::class)->capture($draft, $source);
                 $this->media->sync($draft);
 
                 return $page->load(['draftDocument', 'publishedDocument']);
@@ -91,6 +92,7 @@ final class PageCrudService
                     'content_hash' => PageDocumentHasher::hash($document),
                     'document' => $document,
                 ]);
+                app(PageRevisionService::class)->capture($copyDraft, 'created');
                 $this->media->sync($copyDraft);
 
                 return $copy->load(['draftDocument', 'publishedDocument']);
@@ -109,8 +111,10 @@ final class PageCrudService
             $lockedPage = Page::query()
                 ->lockForUpdate()
                 ->findOrFail($page->getKey());
+            $historyAssets = DB::table('page_revision_media')->whereIn('revision_id', DB::table('page_revisions')->where('page_id', $lockedPage->id)->select('id'))->pluck('asset_id');
             $this->media->removeReferencesForPage($lockedPage);
             $lockedPage->delete();
+            app(\App\Domain\Media\ManagedMediaOrphanState::class)->refresh(\App\Models\CmsMediaAsset::query()->whereIn('id', $historyAssets)->get());
         });
     }
 

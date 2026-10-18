@@ -274,6 +274,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/api/pages', [PageApiController::class, 'index'])->name('api.pages.index');
     Route::post('/api/media-assets', [CmsMediaAssetController::class, 'store'])->name('api.media-assets.store');
     Route::post('/api/pages', [PageApiController::class, 'store'])->name('api.pages.store');
+    Route::get('/api/pages/{page}/history', [\App\Http\Controllers\Admin\PageHistoryController::class, 'index']);
+    Route::get('/api/pages/{page}/history/{revision}', [\App\Http\Controllers\Admin\PageHistoryController::class, 'show'])->whereNumber('revision');
+    Route::post('/api/pages/{page}/history', [\App\Http\Controllers\Admin\PageHistoryController::class, 'checkpoint']);
+    Route::post('/api/pages/{page}/history/{revision}/restore', [\App\Http\Controllers\Admin\PageHistoryController::class, 'restore'])->whereNumber('revision');
     Route::get('/api/pages/{page}/draft', [PageApiController::class, 'showDraft'])->name('api.pages.draft.show');
     Route::get('/api/pages/{page}/form-contracts', CmsFormContractsController::class)->name('api.pages.form-contracts');
     Route::patch('/api/pages/{page}/draft', [PageApiController::class, 'updateDraft'])->name('api.pages.draft.update');

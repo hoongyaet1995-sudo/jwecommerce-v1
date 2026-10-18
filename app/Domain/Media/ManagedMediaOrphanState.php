@@ -25,7 +25,9 @@ final class ManagedMediaOrphanState
             ->whereIn('asset_id', $assetIds)
             ->distinct()
             ->pluck('asset_id');
+        $revisionIds = \Illuminate\Support\Facades\DB::table('page_revision_media')->whereIn('asset_id', $assetIds)->distinct()->pluck('asset_id');
         $referencedIds = $cmsReferenceIds
+            ->merge($revisionIds)
             ->merge($catalogReferenceIds)
             ->mapWithKeys(static fn (string $id): array => [$id => true]);
 

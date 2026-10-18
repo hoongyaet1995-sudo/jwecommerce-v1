@@ -265,7 +265,7 @@ interface AdminContextType {
   pages: CmsPage[];
   selectedPageId: string | null;
   setSelectedPageId: (id: string | null) => void;
-  savePage: (page: CmsPage) => Promise<CmsPage | null>;
+  savePage: (page: CmsPage, source?: 'ai_apply') => Promise<CmsPage | null>;
   updatePageLocal: (pageId: string, updater: (page: CmsPage) => CmsPage) => CmsPage | null;
   replacePageLocal: (page: CmsPage) => void;
   updatePageSection: (
@@ -1351,7 +1351,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     sections: page.sections,
   });
 
-  const savePage = async (page: CmsPage): Promise<CmsPage | null> => {
+  const savePage = async (page: CmsPage, source?: 'ai_apply'): Promise<CmsPage | null> => {
     const exists = pagesRef.current.some(existingPage => existingPage.id === page.id);
 
     if (exists) {
@@ -1364,6 +1364,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           page.id,
           pageDocument(page),
           current.lockVersion ?? page.lockVersion ?? 1,
+          undefined, source,
         );
         const latest = pagesRef.current.find(candidate => candidate.id === page.id) ?? page;
         const saved: CmsPage = {
@@ -1386,7 +1387,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     try {
-      const saved = await createPage(laravelBootstrap, page);
+      const saved = await createPage(laravelBootstrap, page, source);
 
       replacePageLocal(saved);
       addToast({ type: 'success', title: 'Page Saved', message: `Page "${saved.title}" (${saved.sections.length} sections) updated.` });

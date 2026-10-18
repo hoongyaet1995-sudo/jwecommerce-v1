@@ -43,7 +43,7 @@ class PageApiController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
-            $page = $this->pages->create($this->documents->decodeDocument($request->getContent()));
+            $page = $this->pages->create($this->documents->decodeDocument($request->getContent()), $request->header('X-CMS-Change-Source') === 'ai_apply' ? 'ai_apply' : 'created');
         } catch (ValidationException $exception) {
             return $this->validationError($exception);
         }
@@ -89,6 +89,7 @@ class PageApiController extends Controller
                 $page,
                 $document,
                 $input['lockVersion'],
+                $request->header('X-CMS-Change-Source') === 'ai_apply' ? 'ai_apply' : 'autosave',
             );
         } catch (CmsVersionConflict $exception) {
             return $this->versionConflict($exception);

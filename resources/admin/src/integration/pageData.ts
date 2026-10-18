@@ -52,6 +52,7 @@ const request = async <T>(
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   body?: unknown,
   fetcher: Fetcher = window.fetch.bind(window),
+  source?: 'ai_apply',
 ): Promise<T | null> => {
   if (!bootstrap.pagesUrl) throw new Error('CMS API is unavailable.');
 
@@ -60,6 +61,7 @@ const request = async <T>(
     credentials: 'same-origin',
     headers: {
       Accept: 'application/json',
+      ...(source ? {'X-CMS-Change-Source': source} : {}),
       ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
       ...(method === 'GET' ? {} : { 'X-CSRF-TOKEN': bootstrap.csrfToken }),
     },
@@ -118,6 +120,7 @@ export const savePageDraft = async (
   document: PageDocument,
   lockVersion: number,
   fetcher?: Fetcher,
+  source?: 'ai_apply',
 ): Promise<PageDraftPayload> => {
   const response = await request<PageDraftResponse>(
     bootstrap,
@@ -125,6 +128,7 @@ export const savePageDraft = async (
     'PATCH',
     { lockVersion, document },
     fetcher,
+    source,
   );
   if (!response) throw new Error('CMS save response was invalid.');
   return response.data;
@@ -183,7 +187,7 @@ export const fetchPagePreview = async (
   return response.data;
 };
 
-export const createPage = async (bootstrap: LaravelAdminBootstrap, page: CmsPage): Promise<CmsPage> => {
+export const createPage = async (bootstrap: LaravelAdminBootstrap, page: CmsPage, source?: 'ai_apply'): Promise<CmsPage> => {
   const document: PageDocument = {
     title: page.title,
     slug: page.slug,
@@ -197,7 +201,7 @@ export const createPage = async (bootstrap: LaravelAdminBootstrap, page: CmsPage
     seoDescription: page.seoDescription,
     sections: page.sections,
   };
-  const response = await request<PageResponse>(bootstrap, bootstrap.pagesUrl ?? '', 'POST', document);
+  const response = await request<PageResponse>(bootstrap, bootstrap.pagesUrl ?? '', 'POST', document, undefined, source);
   if (!response || Array.isArray(response.data)) throw new Error('CMS create response was invalid.');
   return response.data;
 };

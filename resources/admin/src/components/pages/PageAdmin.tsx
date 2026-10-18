@@ -1,3 +1,5 @@
+import {PageHistoryPanel} from './PageHistoryPanel';
+import {History as PageHistoryIcon} from 'lucide-react';
 import {AiPageGenerator} from './AiPageGenerator';
 import {pageSourceSignature} from '../../cms/cmsAiGenerator';
 import {BuilderShellHeader} from '../menus/BuilderShellHeader';
@@ -125,6 +127,8 @@ export const PageAdmin: React.FC = () => {
   };
 
   // Mode state: null = Page Directory, non-null = Editing that Page ID
+  const [historyOpen,setHistoryOpen]=useState(false);
+  const aiHistorySource=useRef(false);
   const [editingPageId, setEditingPageId] = useState<string | null>(selectedPageId || null);
   const [selectedElement,setSelectedElement]=useState<{sectionId:string;target:string;role?:string;revision:number}|null>(null);
   const selectElement=(sectionId:string,target:string,role?:string)=>{setActiveSectionId(sectionId);setIsInspectorCollapsed(false);setSelectedElement(previous=>({sectionId,target,role,revision:(previous?.revision??0)+1}));};
@@ -298,7 +302,9 @@ export const PageAdmin: React.FC = () => {
             pageId,
             document,
             acknowledgedVersion,
+            undefined, aiHistorySource.current ? 'ai_apply' : undefined,
           );
+          aiHistorySource.current=false;
           mergeDraftMetadata(pageId, saved);
           return { lockVersion: saved.lockVersion };
         } catch (error) {
@@ -1185,12 +1191,12 @@ export const PageAdmin: React.FC = () => {
       {aiGeneratorOpen&&createPortal(<AiPageGenerator page={currentPage} selected={activeSectionId} onClose={()=>setAiGeneratorOpen(false)} onApply={async(document,create,signature)=>{
         if(!create&&pageSourceSignature(currentPage)!==signature)throw new Error('The source page changed while AI was open. Reopen the generator from the latest draft.');
         if(!await flushCurrentPage())throw new Error('Save the current page before applying AI changes.');
-        if(create){const saved=await savePage({...currentPage,...document,id:crypto.randomUUID(),status:'draft',isHomepage:false,lockVersion:undefined});if(!saved)throw new Error('The new draft could not be saved.');setEditingPageId(saved.id);setSelectedPageId(saved.id);}
-        else{const updated=updatePageLocal(currentPage.id,latest=>({...latest,...document}));if(!updated)throw new Error('Page is unavailable.');schedulePage(updated);if(!await flushCurrentPage())throw new Error('The draft could not be saved.');}
+        if(create){const saved=await savePage({...currentPage,...document,id:crypto.randomUUID(),status:'draft',isHomepage:false,lockVersion:undefined},'ai_apply');if(!saved)throw new Error('The new draft could not be saved.');setEditingPageId(saved.id);setSelectedPageId(saved.id);}
+        else{aiHistorySource.current=true;const updated=updatePageLocal(currentPage.id,latest=>({...latest,...document}));if(!updated)throw new Error('Page is unavailable.');schedulePage(updated);if(!await flushCurrentPage())throw new Error('The draft could not be saved.');}
         setAiGeneratorOpen(false);addToast({type:'success',title:'AI Draft Ready',message:'Editable content saved to draft. The published page is unchanged.'});
       }}/>,document.body)}
       {/* Builder toolbar: page, canvas and publishing actions */}
-      <div data-cms-builder-toolbar className="min-h-16 px-4 py-2 border-b border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md flex flex-wrap items-center gap-3 z-20 shrink-0 shadow-2xs">
+      <div inert={historyOpen||undefined} data-cms-builder-toolbar className="min-h-16 px-4 py-2 border-b border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md flex flex-wrap items-center gap-3 z-20 shrink-0 shadow-2xs">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <button type="button" aria-label="Exit to Pages" title="Back to Pages" onClick={()=>{void handleBackToDirectory();}} className="w-9 h-9 shrink-0 grid place-items-center rounded-xl text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"><ChevronLeft className="w-5 h-5"/></button>
           <input aria-label="Page title" value={currentPage.title} onChange={e=>handleTitleChange(e.target.value)} className="min-w-0 w-full max-w-64 font-bold text-sm text-neutral-900 dark:text-white bg-transparent border-b border-transparent focus:border-indigo-500 focus:outline-hidden py-1 truncate"/>
@@ -1213,6 +1219,7 @@ export const PageAdmin: React.FC = () => {
               <button type="button" disabled={currentPage.isHomepage} onClick={()=>setPageAsHomepage(currentPage.id)} className="w-full flex items-center gap-2 p-2.5 rounded-lg text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50"><Home className="w-4 h-4"/>{currentPage.isHomepage?'Active Home':'Set as Home'}</button>
             </div>
           </details>
+          <button type="button" aria-label="Page history" onClick={()=>{void flushCurrentPage().then(ok=>{if(ok)setHistoryOpen(true);});}} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"><PageHistoryIcon className="w-4 h-4"/><span>History</span></button>
           <button type="button" aria-label="Preview" onClick={()=>{void handlePreview();}} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"><Eye className="w-4 h-4"/><span className="hidden sm:inline">Preview</span></button>
           {/* Status selector */}
           <select
@@ -1246,8 +1253,9 @@ export const PageAdmin: React.FC = () => {
         </div>
       </div>
 
+      {historyOpen&&<PageHistoryPanel page={currentPage} onClose={()=>setHistoryOpen(false)} onRestored={draft=>{replacePageLocal(pageFromDraft(currentPage,draft));adoptAutosave(currentPage.id,makeAutosave(currentPage.id,draft.lockVersion));setActiveSectionId(draft.document.sections[0]?.id??null);}} onReload={async()=>{await hydrateEditor(currentPage);}}/>}
       {/* 2. Main 3-Column Studio Workspace */}
-      <div className="relative isolate flex-1 flex min-h-0 overflow-hidden">
+      <div style={{display:historyOpen?'none':undefined}} className="relative isolate flex-1 flex min-h-0 overflow-hidden">
         {/* Left Panel: Section Outline Tree (Collapsible) */}
         {!isOutlineCollapsed ? (
           <div className="w-72 flex-shrink-0 flex flex-col border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 transition-all duration-300">

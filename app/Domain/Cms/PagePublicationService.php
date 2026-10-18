@@ -71,6 +71,7 @@ final class PagePublicationService
                         'document' => $document,
                     ],
                 );
+                app(PageRevisionService::class)->capture($published, 'published');
                 $this->media->sync($published);
 
                 $lockedPage->forceFill([

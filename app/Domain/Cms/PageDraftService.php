@@ -23,10 +23,10 @@ final class PageDraftService
      * @throws CmsVersionConflict
      * @throws ValidationException
      */
-    public function save(Page $page, array $document, int $expectedVersion): PageDocument
+    public function save(Page $page, array $document, int $expectedVersion, string $source = 'autosave', ?int $restoredFrom = null): PageDocument
     {
         try {
-            return DB::transaction(function () use ($page, $document, $expectedVersion): PageDocument {
+            return DB::transaction(function () use ($page, $document, $expectedVersion, $source, $restoredFrom): PageDocument {
                 $draft = PageDocument::query()
                     ->where('page_id', $page->getKey())
                     ->where('stage', PageDocument::STAGE_DRAFT)
@@ -36,6 +36,8 @@ final class PageDraftService
                 if ($draft->lock_version !== $expectedVersion) {
                     throw CmsVersionConflict::for($draft->lock_version);
                 }
+
+                app(PageRevisionService::class)->baseline($page);
 
                 $validated = $this->documents->canonicalizeDocument(
                     $this->contract->validate($document),
@@ -63,6 +65,7 @@ final class PageDraftService
                 }
 
                 $saved = PageDocument::query()->findOrFail($draft->getKey());
+                app(PageRevisionService::class)->capture($saved, $source, null, $restoredFrom);
                 $this->media->sync($saved);
 
                 return $saved;
