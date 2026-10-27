@@ -11,6 +11,6 @@
 <main class="crm-page-content"><p class="studio-boundary"><i class="bi bi-info-circle" aria-hidden="true"></i> Private creative workspace · Production requires separate budget confirmation. Publishing is not authorized.</p>
 @if(session('message'))<div class="alert alert-success" role="status">{{ session('message') }}</div>@endif
 @if($errors->any())<div class="alert alert-danger" role="alert"><strong>Your saved work is preserved.</strong><ul class="mb-0">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
-@if(!config('marketing.execution_enabled'))<div class="alert alert-warning" role="status">制作执行暂未开放：当前共享主机未配置渲染工具与任务执行器。可浏览及整理资料；迁移 VPS 并完成环境验收后再开放制作。</div>@endif
+@if(!config('marketing.execution_enabled'))<div class="alert alert-warning" role="status">Production is unavailable on this shared host. You can browse and prepare content. Rendering will open after VPS migration and runtime verification.</div>@endif
 @yield('content')</main><footer class="footer-custom"><div class="footer-left"><span class="footer-logo">JW Marketing Studio &copy; {{ date('Y') }}</span><span class="footer-separator">|</span><span class="footer-copy">Creative preparation</span></div></footer></div>
 <script src="{{ asset('marketing-studio/bootstrap.bundle.min.js') }}" defer></script><script src="{{ asset('marketing-studio/studio.js') }}" defer></script></body></html>
