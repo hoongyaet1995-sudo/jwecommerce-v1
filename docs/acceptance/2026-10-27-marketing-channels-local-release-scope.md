@@ -34,3 +34,7 @@ No Social Hub source/deployment/settings changes; no Meta callback edits, app mo
 4. Explicit identity GET checks may verify selected accounts. Do not click legacy CRM select/check flows that activate messaging. Read-only identity is not proof of publication/analytics rights.
 5. Verify production projects/navigation remain accessible, unrelated CRM connections unchanged, and shared-host generation remains blocked. Stop and report any auth/scope/config blocker without rewriting Hub/callbacks.
 6. Record exact live outcomes. Until these steps pass, real authorization remains pending. Preserve connection records if rolling back application code; do not drop the new table after live tokens have been saved.
+
+## Live authorization follow-up
+
+Facebook JW Studio Page and Instagram account both returned through the existing Hub, were saved through normal Channels UI and passed explicit read-only Meta identity checks on 2026-10-27. Publication/analytics stay disabled and no messaging subscription was activated. Live return exposed Meta fragment #_=_ overriding the server Channels route; a one-line local fix ignores only that fragment. Actual navigation script regression: 3 Node tests pass; Channels/navigation PHP regression: 15 tests / 155 assertions pass. This fix is part of the same authorized release acceptance; no Hub or callback change. Final post-deploy verification is recorded in the phase ledger.

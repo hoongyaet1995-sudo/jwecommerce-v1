@@ -61,7 +61,7 @@
   },
   {
     "path": "public/marketing-studio/navigation-preview.js",
-    "sha256": "682647ddca2ec3cee5813d72f38133a282332ce08d04489d62258ddd8efe9b21"
+    "sha256": "dd8342192e64285787036a5fad23ddce1f6922c2cdd3028c1dcdc9c33d23ae7e"
   },
   {
     "path": "public/marketing-studio/navigation-preview.css",
@@ -82,5 +82,9 @@
   {
     "path": "tests/Feature/MarketingNavigationTest.php",
     "sha256": "a03b562e6dd8c9488b37762206167fa15a2bf10f759d5e9793abaafea5f83701"
+  },
+  {
+    "path": "tests/js/marketing-navigation-oauth.test.cjs",
+    "sha256": "6488fdadcdce17316cf2744298b927d0774a1ec59312e29d3dec702f547fa5c7"
   }
 ]
