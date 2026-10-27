@@ -1,0 +1,13 @@
+{
+  "name": "jw-marketing-renderer",
+  "private": true,
+  "type": "module",
+  "scripts": {"test": "node --test timeline.test.mjs"},
+  "dependencies": {
+    "remotion": "4.0.536",
+    "@remotion/bundler": "4.0.536",
+    "@remotion/renderer": "4.0.536",
+    "react": "19.0.1",
+    "react-dom": "19.0.1"
+  }
+}

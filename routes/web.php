@@ -264,6 +264,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api/support/conversations/{conversation}/notes', [\App\Http\Controllers\Admin\SupportChatController::class, 'note'])->whereUuid('conversation')->middleware('throttle:30,1');
     Route::get('/api/dashboard', DashboardDataController::class)->name('api.dashboard');
     Route::get('/api/customers', [CustomerDirectoryDataController::class, 'index'])->name('api.customers');
+    Route::get('/api/staff/marketing-permissions', [\App\Http\Controllers\Admin\StaffMarketingPermissionController::class, 'index'])->name('api.staff.marketing-permissions.index');
+    Route::put('/api/staff/{staff}/marketing-permissions', [\App\Http\Controllers\Admin\StaffMarketingPermissionController::class, 'update'])->middleware('throttle:30,1');
     Route::get('/api/staff/review-permissions', [StaffReviewPermissionController::class, 'index'])->name('api.staff.review-permissions.index');
     Route::put('/api/staff/{staff}/review-permissions', [StaffReviewPermissionController::class, 'update'])->name('api.staff.review-permissions.update');
     Route::get('/api/reviews', [ProductReviewApiController::class, 'index'])->name('api.reviews.index');
@@ -743,3 +745,5 @@ Route::middleware(["auth","admin"])->prefix("admin")->group(function(){
 
 Route::get('/sitemap.xml', [\App\Http\Controllers\SearchDiscoveryController::class,'sitemap']);
 Route::get('/robots.txt', [\App\Http\Controllers\SearchDiscoveryController::class,'robots']);
+
+require __DIR__.'/marketing.php';

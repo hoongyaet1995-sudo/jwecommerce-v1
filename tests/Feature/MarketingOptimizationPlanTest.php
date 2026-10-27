@@ -1,0 +1,13 @@
+<?php
+namespace Tests\Feature;
+use Tests\TestCase;use App\Services\Marketing\MarketingOptimizationPlan;
+class MarketingOptimizationPlanTest extends TestCase {
+ private function state():array{return ['settings'=>['volume'=>36,'enabled'=>true],'subtitles'=>['mode'=>'highlight','size'=>'medium','position'=>'lower','color'=>'#d2f36b','scope'=>'all','scene'=>1],'information_cards'=>[],'overlays'=>[['id'=>'one','scene_number'=>2,'width'=>28],['id'=>'two','scene_number'=>2,'width'=>28]],'emphasis'=>[['scene_number'=>2,'kind'=>'arrow']],'framing'=>[],'speed'=>null];}
+ private function rec(string $id,string $cap,string $target,string $action='remove',array $patch=[]):array{return ['id'=>$id,'capability'=>$cap,'action'=>$action,'target_id'=>$target,'scene_number'=>2,'patch'=>$patch,'title'=>'精简重复效果','reason'=>'实际采样中重复。','evidence_ids'=>['S1'],'confidence'=>'high','user_check'=>'检查效果。'];}
+ public function test_only_selected_targets_change_and_settings_preserved():void{$s=app(MarketingOptimizationPlan::class);$r=[$this->rec('r1','overlays','two'),$this->rec('r2','emphasis','2')];$out=$s->apply($this->state(),$r,['r1']);$this->assertSame(['one'],array_column($out['overlays'],'id'));$this->assertSame($this->state()['emphasis'],$out['emphasis']);$this->assertSame($this->state()['settings'],$out['settings']);}
+ public function test_unknown_target_rejected():void{$this->expectException(\Illuminate\Validation\ValidationException::class);app(MarketingOptimizationPlan::class)->apply($this->state(),[$this->rec('r','overlays','foreign')],['r']);}
+ public function test_unimplemented_patch_and_copy_changes_rejected():void{$this->expectException(\Illuminate\Validation\ValidationException::class);app(MarketingOptimizationPlan::class)->apply($this->state(),[$this->rec('r','overlays','one','adjust',['command'=>'rm'])],['r']);}
+ public function test_unknown_selection_is_not_silently_ignored():void{$this->expectException(\Illuminate\Validation\ValidationException::class);app(MarketingOptimizationPlan::class)->apply($this->state(),[],['r']);}
+ public function test_conflicting_edits_on_same_target_are_rejected():void{$this->expectException(\Illuminate\Validation\ValidationException::class);app(MarketingOptimizationPlan::class)->apply($this->state(),[$this->rec('r1','overlays','two'),$this->rec('r2','overlays','two')],['r1','r2']);}
+ public function test_music_cannot_change_track_or_brand_name():void{$r=$this->rec('r','music','music','adjust',['company'=>'fake']);$this->expectException(\Illuminate\Validation\ValidationException::class);app(MarketingOptimizationPlan::class)->apply($this->state(),[$r],['r']);}
+}

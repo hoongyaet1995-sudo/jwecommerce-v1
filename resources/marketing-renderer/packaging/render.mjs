@@ -1,0 +1,13 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {bundle} from '@remotion/bundler';
+import {selectComposition,renderMedia,renderStill} from '@remotion/renderer';
+const [directory,browserExecutable]=process.argv.slice(2);
+if(!directory||!path.isAbsolute(directory)||!browserExecutable)throw Error('runtime_missing');
+const input=JSON.parse(await fs.readFile(path.join(directory,'outro.json'),'utf8'));
+if(!['minimal','cta','product'].includes(input.settings.template)||!Number.isInteger(input.settings.duration)||input.settings.duration<2||input.settings.duration>5||!/^brand\.(png|jpg|webp|svg)$/.test(input.brandFile)||input.settings.company.length>140||input.settings.cta.length>90||(input.settings.template==='product'&&!/^product\.(png|jpg|webp|svg)$/.test(input.productFile)))throw Error('invalid_outro');
+const serveUrl=await bundle({entryPoint:path.join(path.dirname(fileURLToPath(import.meta.url)),'entry.tsx'),publicDir:path.join(directory,'public')});
+const composition=await selectComposition({serveUrl,id:'BrandOutro',inputProps:input,browserExecutable});
+await renderMedia({serveUrl,composition,inputProps:input,browserExecutable,codec:'h264',muted:true,pixelFormat:'yuv420p',outputLocation:path.join(directory,'outro.mp4'),concurrency:2,crf:18,logLevel:'warn'});
+await renderStill({serveUrl,composition,inputProps:input,browserExecutable,frame:24,output:path.join(directory,'outro.png'),logLevel:'warn'});

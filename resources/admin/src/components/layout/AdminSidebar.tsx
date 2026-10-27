@@ -1,3 +1,5 @@
+import { readAdminBootstrap } from '../../integration/adminBootstrap';
+import { marketingEntry } from '../../integration/marketingAccess';
 import React, { useEffect, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { NavSection } from '../../types';
@@ -51,6 +53,7 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
     shopSettings
   } = useAdmin();
 
+  const studioUrl = marketingEntry(readAdminBootstrap());
   const safeConns = connections || [];
   const safeMpOrders = marketplaceOrders || [];
   const safeOrders = orders || [];
@@ -374,6 +377,8 @@ export const AdminSidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => voi
 
       {/* Navigation Group Items */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-800">
+
+        {studioUrl && <a id="nav-marketing-studio" href={studioUrl} onClick={onCloseMobile} className="group relative flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 text-left text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/60 border border-transparent"><Sparkles className="w-4 h-4 flex-shrink-0 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-200"/><span className="truncate">Marketing Studio</span></a>}
         {/* Dynamic Operational Groups */}
         {navGroups.map((group) => (
           <div key={group.title} className="space-y-1">

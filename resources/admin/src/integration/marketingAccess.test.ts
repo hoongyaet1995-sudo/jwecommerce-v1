@@ -1,0 +1,9 @@
+import {describe,it,expect,vi,afterEach} from 'vitest';
+import {marketingEntry,normalizeMarketingPermissions,loadMarketingStaff,saveMarketingStaff} from './marketingAccess';
+const boot:any={user:{isSuperAdmin:true},staffMarketingPermissionsUrl:'/admin/api/staff/marketing-permissions',csrfToken:'csrf',marketingStudioUrl:'/admin/marketing',marketingPermissions:['marketing.view']};
+afterEach(()=>vi.unstubAllGlobals());
+describe('marketing permissions',()=>{
+ it('entry requires effective view grant and local studio target',()=>{expect(marketingEntry(boot)).toBe('/admin/marketing');expect(marketingEntry({...boot,marketingPermissions:[]})).toBeNull();expect(marketingEntry({...boot,marketingStudioUrl:'https://bad.test'})).toBeNull();});
+ it('dependent permissions include viewing and removing view clears all',()=>{expect(normalizeMarketingPermissions([], 'marketing.approve_cost',true)).toEqual(['marketing.view','marketing.edit','marketing.approve_cost']);expect(normalizeMarketingPermissions(['marketing.view','marketing.edit'],'marketing.view',false)).toEqual([]);});
+ it('loads real accounts and writes exact marketing scope with CSRF',async()=>{const f=vi.fn().mockResolvedValueOnce({ok:true,json:async()=>({data:[{id:3,name:'Staff',permissions:[]}]})}).mockResolvedValueOnce({ok:true,json:async()=>({data:{id:3,permissions:['marketing.view']}})});vi.stubGlobal('fetch',f);expect((await loadMarketingStaff(boot))[0].id).toBe(3);await saveMarketingStaff(boot,3,['marketing.view']);expect(f.mock.calls[1][0]).toBe('/admin/api/staff/3/marketing-permissions');expect(JSON.parse(f.mock.calls[1][1].body)).toEqual({permissions:['marketing.view']});expect(f.mock.calls[1][1].headers['X-CSRF-TOKEN']).toBe('csrf');});
+});

@@ -1,0 +1,2 @@
+import React from 'react';
+export function OverlayLayer({layers=[],frame}){return <>{layers.filter(l=>l.enabled&&l.url&&frame>=l.start_frame&&frame<l.end_frame).map(l=><div key={l.id} style={{position:'absolute',left:`${l.x}%`,top:`${l.y}%`,width:`${l.width}%`,transform:'translate(-50%,-50%)',borderRadius:l.radius,border:`${l.border}px solid ${l.color}`,background:'#fff',boxShadow:'0 3px 12px #001a1833',boxSizing:'border-box',overflow:'hidden'}}><img src={l.url} style={{width:'100%',height:'auto',display:'block'}}/></div>)}</>;}

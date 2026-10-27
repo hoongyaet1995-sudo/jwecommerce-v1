@@ -20,6 +20,9 @@ export interface AdminUser {
 }
 
 export interface LaravelAdminBootstrap {
+  marketingPermissions?: string[];
+  marketingStudioUrl?: string | null;
+  staffMarketingPermissionsUrl?: string | null;
   productEnquiriesEnabled?: boolean;
   basicWmsUiEnabled?: boolean;
   basicWmsUiPreview?: boolean;

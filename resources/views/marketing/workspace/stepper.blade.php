@@ -1,0 +1,3 @@
+@php($barStep=($live??false)?$progressCurrent:$step)
+@php($barCompleted=($live??false)?$completedThrough:($step-1))
+<nav class="ws-stepper" aria-label="视频制作进度">@foreach(['资料与目标','创意方向','分镜与素材','制作确认','成片'] as $label)<div class="ws-step {{ $barCompleted>=$loop->iteration?'is-reviewed':($barStep===$loop->iteration?'is-current':'') }}" @if($barStep===$loop->iteration) aria-current="step" @endif><span class="ws-node">@if($barCompleted>=$loop->iteration)<i class="bi bi-check-lg"></i>@else{{ $loop->iteration }}@endif</span><span>{{ $label }}</span></div>@endforeach</nav>

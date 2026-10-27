@@ -1,0 +1,336 @@
+/* Real storyboard UI. All saved state comes from the owner-authorized server snapshot. */
+'use strict';
+(function(){
+const position=(scenes,index)=>index===0&&scenes.length?{before_id:scenes[0].scene_id}:index>0?{after_id:scenes[index-1].scene_id}:{};
+const content=v=>({seconds:Number(v.seconds||5),message:v.message||'',visual:v.visual||'',voiceover:v.voiceover||'',subtitle:v.subtitle||''});
+const editIntent=(mode,text)=>mode==='upload'?(text.trim()||'理解这份已授权素材，结合本段已保存导演稿和前后故事补充分镜资料；保留已确认商品事实。'):text;
+const speechSeconds=text=>{const words=text.match(/[a-zA-Z]+(?:[’'][a-zA-Z]+)*/g)||[];const rest=text.replace(/[a-zA-Z]+(?:[’'][a-zA-Z]+)*|\s+/g,'');return Math.ceil([...rest].length/4+words.length/2.5);};
+const saveScopeState=({images,director,frames,seconds,originalSeconds,rewrite,upload,manualChanged})=>{let error='';if(!images&&!director)error='至少选择一项要更新的内容。';else if(rewrite&&seconds!==null&&seconds!==undefined)error='指定单段时长时请关闭允许拆分；拆分请使用 AI 安排时长。';else if(images&&frames&&frames.length===0)error='请至少选择一张图片，或使用 AI 判断。';else if(!director&&(rewrite||upload||manualChanged||(seconds!==null&&seconds!==originalSeconds)))error='修改时长、分镜内容、上传素材或整段重写，需要同步更新导演稿。';return {error,label:!images&&!director?'请选择更新内容':images&&director?'更新导演稿与图片':director?'仅更新导演稿':'仅更新图片'};};
+const canContinue=s=>Boolean(s.readiness&&!s.timing.requires_attention);
+const step3State=s=>{
+ const frames=(s.scenes||[]).flatMap(scene=>Object.entries(scene.frames||{}).filter(([,f])=>f.required).map(([role,f])=>({scene,role,f}))),p=s.preparation_progress||{};
+ const completed=frames.filter(x=>x.f.asset&&['qa_passed','employee_declared_local_validated'].includes(x.f.readiness)).length,total=frames.length;
+ const out=(phase,title,label,action,locked=false,disabled=false)=>({phase,title,label,action,locked,disabled,completed,total});
+ if(!s.story_id)return out('empty','先选定故事，再安排分镜。','准备导演稿与分镜','prepare');
+ if(p.unknown)return out('unknown','生成结果或费用待核对，已暂停。','结果待核对','none',true,true);
+ if(p.active)return out('generating','画面生成中','正在生成 '+completed+'/'+total,'none',true,true);
+ if(s.source_fresh===false)return out('blocked','故事资料已有变化，请核对。','核对项目资料','source');
+ if(frames.some(x=>x.f.candidate_asset||x.f.accepted_framing_needs_sync||x.f.existing_asset_review_required))return out('review','查看本次受影响画面。','确认本次画面','candidate');
+ if((s.scenes||[]).some(x=>x.director_needs_detail))return out('blocked','有分镜需要补齐导演设计。','补齐导演稿','director');
+ if((s.blockers||[]).some(b=>b.code==='presenter_required'))return out('blocked','请选定需要出镜的人物。','设置全片人物','presenter');
+ if(frames.some(x=>x.f.readiness==='invalid'))return out('blocked','有参考或画面需要更新。','核对失效参考','reference');
+ if((p.tasks||[]).some(t=>['blocked','failed'].includes(t.status)))return out('failed','部分画面未完成，已完成的画面保留。','处理未完成项','quote');
+ if(s.timing?.requires_attention)return out('timing','口播与镜头时长需要安排。','安排口播时长','timing');
+ if(s.readiness)return out('ready','画面已就绪。','进入制作确认 →','handoff');
+ return out('draft','导演稿已就绪，画面尚未生成。','查看画面方案与费用 →','quote');
+};
+const reviewBatchItems=s=>(s.scenes||[]).flatMap(scene=>Object.entries(scene.frames||{}).filter(([,f])=>f.required&&(f.candidate_asset||f.existing_asset_review_required||f.accepted_framing_needs_sync)).map(([role,f])=>({scene_id:scene.scene_id,revision_id:scene.revision_id,role,sha256:(f.candidate_asset||f.asset)?.sha256,blocked:Boolean(f.adoption_technical_issue)})));
+const imageQuoteState=({billing,preview,quote,failed=false,stale=false,locked=false})=>{
+ const reprice=failed||stale,canGenerate=Boolean(preview?.frames?.length&&!preview.blockers.length&&(!billing||quote?.id)&&!reprice&&!locked);
+ return {action:reprice?'reprice':canGenerate?'confirm':'wait',canGenerate,disabled:locked||(!reprice&&!canGenerate)};
+};
+const presenterChoice=(profile,items,id)=>{if(id==='none')return {available:true,item:null};const item=items.find(x=>x.id===id);return {available:!!item,item:item||(profile?.id===id?{...profile,preview_url:profile.reference?.local_preview}:null)};};
+const framePresentation=(s,snapshot)=>{const task=snapshot?.preparation_progress?.tasks?.find(t=>t.revision_id===s.revision_id);const candidate=s.frames?.start_frame?.candidate_asset;const asset=s.asset||candidate||s.previous_asset;let badge=s.asset?(s.readiness==='qa_passed'?'AI生成首帧':'直接使用的原素材'):candidate?'新首帧 · 待核对':'上一版参考 · 当前首帧待准备';let status=s.asset?'图片已更新':'图片待准备';if(candidate)status='导演稿与分镜已更新；新图待核对，尚未通过检查。';if(['queued','requesting'].includes(task?.status))status='导演稿与分镜已更新；正在生成并检查图片…';if(task?.status==='partial')status='本次所选图片已更新；其余图片待准备或同步。';if(task?.status==='unknown')status='导演稿与分镜已更新；图片结果或费用待核对，已暂停。';if(task?.status==='blocked')status='导演稿与分镜已更新；图片检查未通过，已暂停。';if(s.frames?.start_frame?.employee_acceptance&&!candidate){badge='你已确认的画面';status='已采用当前画面；AI 建议与确认记录已保留。';}if(s.frames?.start_frame?.readiness==='pending_sync'){badge='上一版图片 · 待同步';status='导演稿已更新；保留旧图，图片待同步。';}if(s.image_adjustment){status=status.replace('导演稿与分镜已更新；','导演稿保持原样；');}if(s.director_needs_detail)status='导演稿文字已保存；详细导演设计待补齐。';return {asset,badge,status};};
+const candidateReviewState=(frame={}, {stale=false,locked=false,acknowledged=false,acceptAiFindings=false}={})=>{
+ const needsReview=Boolean(frame.qa_override_required&&!frame.accepted_framing_needs_sync);
+ const issue=stale?'分镜已变化，请关闭后重新打开候选。':frame.accepted_framing_needs_sync?null:frame.adoption_technical_issue||(needsReview?null:frame.adoption_issue);
+ const labels={no_overlays:'画面文字或叠加内容',subject_identity:'人物一致性',product_fidelity:'商品一致性',pose_action:'动作',anatomy:'人物形体',scene_continuity:'故事连续性',pair_transition:'首尾帧衔接'};
+ const failed=Object.entries(frame.qa?.evidence?.checks||{}).filter(([key,value])=>labels[key]&&value!=='pass'&&!(key==='scene_continuity'&&frame.continuity_ack_required)).map(([key])=>labels[key]);
+ const blocked=Boolean(issue),reason=blocked?(stale||frame.adoption_technical_issue?issue:failed.length?failed.join('、')+'未通过检查。请先告诉 AI 怎么改；提交生成前会确认费用。':issue):needsReview?'AI 对'+(failed.join('、')||'当前画面')+'有检查建议。你可以调整，也可以确认后采用当前画面；不会重新生成或产生费用。':'';
+ return {blocked,reason,needsReview,nextAction:blocked?'edit':'adopt',canAdopt:!locked&&!blocked&&(!needsReview||acceptAiFindings)&&Boolean(frame.candidate_asset||frame.accepted_framing_needs_sync||frame.existing_asset_review_required)&&(!frame.continuity_ack_required||acknowledged||acceptAiFindings)};
+};
+const scopeFailure=(validationError,operationError)=>validationError||operationError||'';
+const saveFeedback=saved=>{const p=saved.preparation||{},warnings=(p.blockers||[]).map(x=>x.message).join('；');return p.tasks?.length?{phase:'generating',message:'修改已提交，图片生成中；新画面会自动更新，无需重复点击。'+(warnings?' '+warnings:'')}:warnings?{phase:'paused',message:'本次图片准备已暂停：'+warnings+' 原图保留，未自动重试。'}:{phase:'saved',message:saved.snapshot?.readiness&&saved.update_scope?.images===false?'文案与节奏已保存，未受影响的图片已自动沿用。可继续制作确认。':'修改已保存。受影响画面可集中确认；未自动重新生成。'};};
+const scriptPreview=(scene,field,value)=>{const text=scene[field==='voice'?'voiceover':'subtitle']||'',off=field==='voice'?value==='none':value==='off';return {text:text||'尚未填写本段文案。',status:off?'本段不使用，原文保留。':text?'当前本段使用的文案。':'本段尚未填写文案。'};};
+if(typeof module!=='undefined')module.exports={position,content,canContinue,presenterChoice,framePresentation,editIntent,speechSeconds,saveScopeState,step3State,imageQuoteState,candidateReviewState,scopeFailure,saveFeedback,scriptPreview,reviewBatchItems};
+if(typeof document==='undefined')return;
+const root=document.querySelector('#storyboard-workspace');if(!root)return;const $=s=>root.querySelector(s),all=s=>[...root.querySelectorAll(s)];const pendingRequests=new Map();let pollTimer=null,pollUntil=0,lastSave=null;let addMode='describe',addReference=null;let billingEnabled=false;const billingQuotes=new Map();let generationEnabled=false;let snapshot=null,options={},editing=null,index=0,mode='ai',busy=false,removed=null,trigger=null,uploadedReference=null;
+let saveStage='editor',timingResolution=null,editorFailure='';
+let materialPreview=null,candidateSelection=null,closurePreview=null,shorteningPreview=null,closureMode=null;
+const node=(tag,value,cls)=>{const e=document.createElement(tag);if(value!==undefined)e.textContent=value;if(cls)e.className=cls;return e;};
+const icon=name=>{const e=node('i');e.className='bi bi-'+name;e.setAttribute('aria-hidden','true');return e;};
+const insertion=(label,fn)=>{const b=button('',fn,'sb-insert');b.append(icon('plus-lg'));b.setAttribute('aria-label',label);b.title=label;return b;};
+const button=(label,fn,cls='sb-secondary')=>{const b=node('button',label,cls);b.type='button';b.addEventListener('click',fn);return b;};
+async function transport(action,payload={}){const key=JSON.stringify([action,snapshot?.story_version??0,payload]);if(action&&!pendingRequests.has(key))pendingRequests.set(key,crypto.randomUUID());const r=await fetch(root.dataset.api+(action?'/'+action:''),{method:action?'POST':'GET',credentials:'same-origin',headers:{Accept:'application/json','Content-Type':'application/json','X-CSRF-TOKEN':root.dataset.csrf},...(action?{body:JSON.stringify({request_id:pendingRequests.get(key),version:snapshot?.story_version??0,...payload})}:{})});const data=await r.json();if(!r.ok){const error=new Error(Object.values(data.errors||{}).flat().join('；')||data.message||'保存失败，请刷新核对。');error.status=r.status;throw error;}if(action)pendingRequests.delete(key);return data;}
+async function request(action,payload={}){let data;const c=payload.command||{};const freeManual=action==='changes'&&(c.mode||'manual')==='manual'&&!c.refine_manual&&(c.update_scope?.images===false||['move','remove','restore'].includes(c.type));if(billingEnabled&&['changes','missing-images-prepare','material-plan-preview','timing-shorten-preview'].includes(action)&&!freeManual){const key=JSON.stringify([action,snapshot?.story_version,payload]);let quote=billingQuotes.get(key);if(!quote){quote=(await transport('billing-quote',{operation:action,payload})).quote;if(!quote.included&&!await window.MarketingGenerationBilling.confirm(quote))throw new Error('已取消，本次没有开始生成。');billingQuotes.set(key,quote);}try{data=await transport('billing-confirm',{quote_id:quote.id,consent:true});billingQuotes.delete(key);}catch(error){if([409,422,423].includes(error.status))billingQuotes.delete(key);throw error;}}else data=await transport(action,payload);if(typeof data.billing_enabled==='boolean')billingEnabled=data.billing_enabled;if(typeof data.generation_enabled==='boolean')generationEnabled=data.generation_enabled||billingEnabled;if(data.billing_receipt){const b=$('#sb-billing-status'),r=data.billing_receipt;b.hidden=false;b.dataset.state=r.status.includes('暂停')?'paused':'normal';b.textContent=r.status+' · 已确认上限 USD '+r.upper_limit+(r.actual!==null?' · 已核算 USD '+r.actual:'');}if(data.snapshot)snapshot=data.snapshot;if(data.options)options=data.options;schedulePoll(Boolean(data.preparation?.tasks?.length));return data;}
+
+function schedulePoll(start=false){const active=Number(snapshot?.preparation_progress?.active||0)>0;if(!active&&!start){if(pollTimer)clearTimeout(pollTimer);pollTimer=null;pollUntil=0;return;}if(!pollUntil)pollUntil=Date.now()+30*60*1000;if(pollTimer||Date.now()>pollUntil)return;pollTimer=setTimeout(async()=>{pollTimer=null;if(busy){schedulePoll(true);return;}try{await request('');render();}catch(e){$('#sb-status').textContent='进度读取暂未完成，请刷新核对；不会重复生成。';}},2500);}
+async function run(fn){if(busy)return;busy=true;lastSave=null;editorFailure='';if(snapshot)lockStep3Saves();try{await fn();render();}catch(e){$('#sb-status').textContent=e.message;editorFailure='本次未完成：'+e.message+' 原图保留，未自动重试。';$('#sb-form-error').textContent=editorFailure;if($('#sb-editor').open)$('#sb-form-error').scrollIntoView({block:'nearest'});if($('#sb-add-dialog').open){$('#sb-add-error').textContent=e.message;$('#sb-add-error').hidden=false;}}finally{busy=false;if($('#sb-submit-label'))$('#sb-submit-label').textContent='保存这次调整';render();if($('#sb-editor').open&&saveStage==='scope')refreshScope();if($('#sb-editor').open&&saveStage==='timing')$('#sb-submit-label').textContent='采用这个安排并保存';}}
+function render(){if(!snapshot)return;if(lastSave){const savedScene=snapshot.scenes.find(s=>s.scene_id===lastSave.sceneId);if(savedScene)$('#sb-status').textContent=lastSave.warning||(snapshot.preparation_progress?.active?'修改已提交，图片生成中；新画面会自动更新，无需重复点击。':'已保存这次调整。'+framePresentation(savedScene,snapshot).status);}$('#sb-editor .sb-generation-note').textContent=generationEnabled?'未受影响的图片自动沿用；画面变化集中确认，需要新增费用时再确认生成。':'AI 整理与图片生成等待本次范围和预算批准。创意场景不自动成为商品事实。';$('#sb-count').textContent=snapshot.scenes.length;$('#sb-duration').textContent=snapshot.timing?.content_seconds||0;$('#sb-prepare-story').hidden=Boolean(snapshot.story_id);$('#sb-add').hidden=!snapshot.story_id;$('#sb-nav').replaceChildren();$('#sb-scenes').replaceChildren();$('#sb-before-first')?.remove();$('#sb-profile-summary').textContent=(snapshot.profile?.presenter?.status==='needs_configuration'?'人物待设置':snapshot.profile?.presenter?.mode==='preset'?(snapshot.profile.presenter.name||'已选人物')+' · v'+(snapshot.profile.presenter.avatar_binding?.avatar_version||snapshot.profile.presenter.version||1):'无人物')+' · '+(snapshot.profile?.voice?.mode==='preset'?'已选声线':snapshot.profile?.voice?.mode==='none'&&snapshot.profile?.voice?.status!=='needs_configuration'?'无口播声音':'声音由 AI 在制作时安排');
+ $('#sb-tier-label').textContent=({ordinary:'普通',advanced:'高级',professional:'专业级'})[snapshot.profile?.production_tier||'ordinary']; const scenes=snapshot.scenes;scenes.forEach((s,i)=>{const slot=node('article',undefined,'sb-slot');slot.id='story-scene-'+s.scene_id;slot.dataset.sceneId=s.scene_id;const card=node('div',undefined,'sb-card scene'),head=node('div',undefined,'sb-card-head card-head');const ordinal=node('span',undefined,'sb-ordinal');ordinal.append(node('b',String(i+1),'sb-number number'),node('span',`第${i+1}段`));head.append(ordinal,node('small',`${s.seconds}秒`));const menu=node('details',undefined,'sb-menu'),summary=node('summary');summary.append(icon('three-dots'));summary.setAttribute('aria-label',`第${i+1}段更多操作`);const items=node('div');for(const [label,cmd] of [['前移',{type:'move',index:i-1}],['后移',{type:'move',index:i+1}],['移除',{type:'remove'}]]){const b=button(label,()=>run(async()=>{await request('changes',{command:{...cmd,scene_id:s.scene_id,mode:'manual'}});if(cmd.type==='remove'){removed={scene_id:s.scene_id,index:i};$('#sb-undo').hidden=false;}}));b.dataset.phaseSave='1';b.disabled=cmd.type==='move'&&(cmd.index<0||cmd.index>=scenes.length)||cmd.type==='remove'&&scenes.length===1;items.append(b);}menu.append(summary,items);head.append(menu);card.append(head,node('h4',s.message));const image=node('div',undefined,'sb-image frame'),presentation=framePresentation(s,snapshot),asset=presentation.asset;if(asset?.local_preview){const media=node(asset.kind==='video'?'video':'img');media.src=asset.local_preview;if(asset.kind==='video'){media.controls=true;media.preload='metadata';}else media.alt=s.message;image.append(media,node('small',presentation.badge));if(s.frames?.start_frame?.candidate_asset||s.frames?.start_frame?.existing_asset_review_required)image.append(button(s.frames?.start_frame?.existing_asset_review_required?'核对并复用原图':'核对候选画面',()=>openCandidate(s,'start_frame'),'sb-candidate-entry'));}else image.append(icon('image'),node('span',step3State(snapshot).locked?'等待生成':'尚未生成'));const body=node('div',undefined,'sb-card-body');body.append(node('p',s.visual),node('p',s.readiness==='invalid'?'原素材已改变，请重新准备':presentation.status));const actions=node('div',undefined,'sb-actions');actions.append(button('告诉 AI 怎么改',()=>openEdit(s)));const chips=videoSettingTags(s);chips.classList.add('scene-tags');body.append(chips);const settingsNote=node('p',Object.keys(snapshot.video_settings?.scenes?.[s.scene_id]?.overrides||{}).length?'绿色圆点 · 本段单独设定':'沿用全片设定','scene-footnote');body.append(settingsNote,actions);card.append(image,body);slot.append(card);if(i===0){const before=insertion('在第一段之前添加分镜',()=>openAdd(0));before.id='sb-before-first';before.classList.add('sb-insert-before');slot.append(before);}slot.append(insertion(i===scenes.length-1?'在最后一段之后添加分镜':`在第${i+1}、${i+2}段之间添加分镜`,()=>openAdd(i+1)));$('#sb-scenes').append(slot);$('#sb-nav').append(button(`第${i+1}段`,()=>slot.scrollIntoView({behavior:'smooth',block:'center'})));});
+ const progress=snapshot.preparation_progress||{};const note=$('#sb-readiness');const messages=(snapshot.blockers||[]).filter(b=>b.code!=='frame_pending').map(b=>b.message);note.textContent=progress.active?`AI 正在准备分镜图片（${progress.active}个任务），完成后会自动显示。`:messages.length?[...new Set(messages)].join(' '):snapshot.readiness?'导演稿与所需图片已就绪；正式配音和视频将在制作确认后执行。':snapshot.story_id?'首帧待准备；未获本次范围与预算批准前不会调用真实 API。':'';note.hidden=!note.textContent;$('#sb-profile-open').disabled=!snapshot.story_id;const portrait=$('#sb-profile-portrait');portrait.hidden=!snapshot.profile?.presenter?.reference?.local_preview;if(!portrait.hidden)portrait.src=snapshot.profile.presenter.reference.local_preview;$('#sb-confirm').disabled=!canContinue(snapshot);refreshCandidateControls();renderClosureActions();renderStep3State();
+}
+const tierDialog=$('#sb-tier-dialog'),planDialog=$('#sb-plan-dialog');
+let imagePreview=null,imageQuote=null,imageQuoteVersion=null,imageQuoteFailed=false;
+const imageQuoteDialog=$('#sb-image-quote-dialog');
+const saveSelector='#sb-submit,#sb-add-submit,#sb-tier-save,#sb-profile-form .sb-primary,#sb-presenter-register,#sb-plan-action,#sb-candidate-adopt,#sb-review-all-confirm,#sb-undo,#sb-closure-action,#sb-closure-alternative,#sb-image-quote-confirm,#vs-setting-save,#vs-inherit,[data-phase-save]';
+function lockStep3Saves(){
+ const locked=step3State(snapshot).locked||busy;
+ all(saveSelector).forEach(b=>{if(locked){b.dataset.phaseLocked='1';b.disabled=true;b.title=step3State(snapshot).locked?'画面生成中，完成后可保存修改。':'正在处理，请稍候。';}else if(b.dataset.phaseLocked){delete b.dataset.phaseLocked;b.disabled=false;b.removeAttribute('title');}});
+ for(const dialog of all('dialog')){let note=dialog.querySelector('.sb-save-lock');if(!note){note=node('p','画面生成中，可继续查看；完成后可保存修改。','sb-save-lock');note.setAttribute('role','status');(dialog.querySelector('.dialog-body,.sb-dialog-body,.pt-dialog-body')||dialog).append(note);}note.hidden=!step3State(snapshot).locked;}
+}
+function renderStep3State(){
+ const state=step3State(snapshot);$('#sb-phase-title').textContent=state.title;$('#sb-phase-count').textContent=state.total?state.completed+' / '+state.total+' 已完成':'';
+ $('#sb-phase-icon').className='bi '+(state.phase==='generating'?'bi-arrow-repeat':['unknown','failed','blocked'].includes(state.phase)?'bi-exclamation-circle':'bi-check-circle');
+ $('#sb-phase-title').closest('.status').classList.toggle('failure',['unknown','failed','blocked'].includes(state.phase));
+ $('#sb-phase-progress').hidden=state.phase!=='generating';const percentage=state.total?Math.round(state.completed/state.total*100):0;$('#sb-phase-fill').style.width=percentage+'%';$('#sb-phase-progress').setAttribute('aria-valuenow',String(percentage));
+ $('#sb-confirm').textContent=state.label;$('#sb-confirm').disabled=state.disabled||busy;$('#sb-next-title').textContent=state.phase==='generating'?'正在生成画面':state.phase==='ready'?'画面准备完成':state.phase==='failed'?'还有画面需要处理':'查看故事，继续下一步';
+ $('#sb-next-note').textContent=state.locked?'可以继续查看，完成后可保存修改。':state.phase==='ready'?'视频制作前，再确认方案与费用。':'先看方案与费用，确认后才开始生成。';
+ $('.next-bar').classList.toggle('generating',state.phase==='generating');
+ const shell=root.closest('main');if(shell)root.style.setProperty('--sb-shell-left',Math.round(shell.getBoundingClientRect().left)+'px');
+ lockStep3Saves();
+ if(!state.locked){refreshCandidateControls();refreshClosureControls();if($('#sb-editor').open&&saveStage==='scope')refreshScope();}
+ if(imageQuoteDialog.open)refreshImageQuote();
+}
+async function nextStep3(){
+ if(!snapshot)return;const state=step3State(snapshot);if(state.disabled||busy)return;
+ if(state.action==='quote')return openImageQuote();
+ if(state.action==='handoff')return run(async()=>{await request('confirm');const prepared=await request('production-entry');window.location.assign(prepared.preview_url);});
+ if(state.action==='timing')return openClosure('timing');
+ if(state.action==='presenter')return $('#sb-profile-open').click();
+ if(state.action==='source')return window.location.assign(root.dataset.briefUrl);
+ if(state.action==='prepare')return $('#sb-prepare-story').requestSubmit();
+ if(state.action==='director')return openEdit(snapshot.scenes.find(s=>s.director_needs_detail));
+ if(state.action==='reference')return openEdit(snapshot.scenes.find(s=>Object.values(s.frames).some(f=>f.readiness==='invalid')));
+ if(state.action==='candidate')return openReviewAll();
+}
+function refreshImageQuote(){
+ const locked=step3State(snapshot).locked||busy,stale=imageQuoteVersion!==snapshot.story_version;
+ const gate=imageQuoteState({billing:billingEnabled,preview:imagePreview,quote:imageQuote,failed:imageQuoteFailed,stale,locked});
+ const button=$('#sb-image-quote-confirm');button.disabled=gate.disabled;
+ button.textContent=gate.action==='reprice'?'重新核价':gate.canGenerate?'确认 USD '+(imageQuote?.amount||(imagePreview.cap_microusd/1e6).toFixed(2))+'，生成画面':imagePreview?.blockers?.length?'请先处理所需资料':'正在核价…';
+ if(stale&&imagePreview)$('#sb-image-quote-error').textContent='故事已更新，请重新核价。';
+}
+async function openImageQuote(){
+ if(step3State(snapshot).locked||busy)return;
+ all('dialog[open]').forEach(d=>d.close());imagePreview=null;imageQuote=null;imageQuoteFailed=false;imageQuoteVersion=snapshot.story_version;
+ $('#sb-image-quote-error').textContent='';$('#sb-image-quote-summary').textContent='正在读取当前画面方案…';$('#sb-image-quote-list').replaceChildren();$('#sb-image-quote-total').textContent='核价中…';imageQuoteDialog.showModal();refreshImageQuote();
+ await run(async()=>{try{
+  imagePreview=(await request('missing-images-preview')).missing_preview;
+  if(billingEnabled&&imagePreview.frames.length&&!imagePreview.blockers.length)imageQuote=(await request('billing-quote',{operation:'missing-images-prepare',payload:{preview_key:imagePreview.key,consent:true}})).quote;
+  $('#sb-image-quote-summary').textContent='准备 '+imagePreview.frames.length+' 张所需画面，已有素材与已完成画面保留。';
+  for(const frame of imagePreview.frames){const row=node('div',undefined,'quote-item');row.append(node('span','第'+frame.ordinal+'段'),node('span',roleNames[frame.role]),node('small','1张画面'));row.title=frame.instruction;$('#sb-image-quote-list').append(row);}
+  $('#sb-image-quote-total').textContent=imageQuote?'USD '+imageQuote.amount:imagePreview.blockers.length?'待核定':'USD '+(imagePreview.cap_microusd/1e6).toFixed(2);
+  $('#sb-image-quote-models').textContent=Object.entries(imagePreview.pricing).map(([role,p])=>(role==='image'?'图片：':'检查：')+p.model).join('；');
+  $('#sb-image-quote-error').textContent=imagePreview.blockers.join(' ');
+ }catch(error){imageQuoteFailed=true;$('#sb-image-quote-error').textContent=error.message;throw error;}});
+}
+$('#sb-image-quote-confirm').addEventListener('click',()=>{if(busy||step3State(snapshot).locked)return;if(imageQuoteFailed||imageQuoteVersion!==snapshot.story_version)return openImageQuote();if(!imageQuoteState({billing:billingEnabled,preview:imagePreview,quote:imageQuote}).canGenerate)return;run(async()=>{try{
+ if(imageQuote)await request('billing-confirm',{quote_id:imageQuote.id,consent:true});else await request('missing-images-prepare',{preview_key:imagePreview.key,consent:true});
+ imageQuoteDialog.close();$('#sb-status').textContent='画面已开始准备，完成后自动显示。';
+ }catch(error){$('#sb-image-quote-error').textContent=error.message;if([409,422,423].includes(error.status)){imageQuoteVersion=null;imageQuote=null;}throw error;}});});
+window.addEventListener('resize',()=>{if(snapshot)renderStep3State();});
+$('#sb-tier-open').addEventListener('click',()=>{const choice=tierDialog.querySelector('input[value="'+(snapshot?.profile?.production_tier||'ordinary')+'"]');if(choice)choice.checked=true;open(tierDialog);});
+$('#sb-tier-save').addEventListener('click',()=>run(async()=>{await request('tier',{profile:{production_tier:tierDialog.querySelector('input:checked').value}});tierDialog.close();$('#sb-status').textContent='制作档位已保存；分镜与图片保留，旧制作确认已失效。未开始生成。';}));
+const planNames={single_image:'单图 + 导演稿',first_last_frames:'首尾帧 + 导演稿',reference_images:'参考图 + 导演稿'};
+const roleNames={start_frame:'首帧',end_frame:'尾帧',extra_image:'补充帧'};
+function renderMaterialPlan(){
+ const rows=$('#sb-plan-rows');rows.replaceChildren();const pricing=snapshot.material_planning||{};$('#sb-plan-pricing').textContent=billingEnabled?'AI 整理已包含在策划服务中，点击后安排本次素材；不会生成图片或视频。':pricing.model?'重新安排：'+pricing.model+' · 单次上限 USD '+(pricing.cap_microusd/1000000).toFixed(2)+(pricing.allowed?'。点击后按现有授权分析，已完成的结果会复用。':'。本次文字分析尚未授权，不会调用。'):(pricing.message||'文字分析模型与费用待核验，不会调用。');
+ const scenes=snapshot?.scenes||[],old=!(scenes.every(s=>s.material_plan));
+ $('#sb-plan-source').textContent=materialPreview?'安排结果预览 · 尚未应用':old?'旧版要求 · 尚未重新安排':'已应用的素材安排';
+ $('#sb-plan-total').textContent=scenes.length+' 个分镜 · '+snapshot.timing.content_seconds+' 秒';
+ $('#sb-plan-eyebrow').textContent='全片素材 · '+$('#sb-tier-label').textContent;
+ $('#sb-plan-diff').hidden=!materialPreview;
+ if(materialPreview){const before=materialPreview.plans.reduce((n,p)=>n+p.before.roles.length,0),after=materialPreview.plans.reduce((n,p)=>n+p.after.roles.length,0);$('#sb-plan-diff').replaceChildren(node('strong','需要的画面：'+before+' 张 → '+after+' 张'),node('p','本次不需要的图片仅退出必需清单，原图与历史全部保留。'));}
+ scenes.forEach((scene,i)=>{const advice=materialPreview?.plans[i]?.after||scene.material_plan||snapshot.production_advice[i];const row=node('div',undefined,'plan-row');const ref=scene.asset||scene.frames.start_frame.candidate_asset;if(ref?.local_preview){const img=node('img',undefined,'plan-thumb');img.src=ref.local_preview;img.alt='第'+(i+1)+'段现有图片';row.append(img);}const body=node('div',undefined,'plan-row-content');body.append(node('strong','第'+(i+1)+'段 · '+planNames[advice.mode],'plan-row-title'),node('p',scene.message),node('small',!materialPreview&&scene.material_reason_readout?scene.material_reason_readout:advice.reason));for(const role of advice.roles||advice.image_roles||[]){const f=scene.frames[role];body.append(node('small',roleNames[role]+'：'+(f.asset&&['qa_passed','employee_declared_local_validated'].includes(f.readiness)?'已有画面可复用':f.candidate_asset?'候选待你确认':f.asset?'已有画面待同步':'待准备')));}row.append(body);rows.append(row);});
+ $('#sb-plan-action span').textContent=materialPreview?'应用这个安排':'重新安排所需素材';$('#sb-plan-back').textContent=materialPreview?'返回旧要求':'先不调整';
+}
+$('#sb-plan-open').addEventListener('click',()=>{materialPreview=null;$('#sb-plan-error').textContent='';renderMaterialPlan();open(planDialog);});
+$('#sb-plan-back').addEventListener('click',()=>{if(materialPreview){materialPreview=null;renderMaterialPlan();}else close();});
+$('#sb-plan-action').addEventListener('click',()=>run(async()=>{try{if(materialPreview){await request('material-plan-apply',{preview_key:materialPreview.key});materialPreview=null;planDialog.close();$('#sb-status').textContent='已应用素材安排，原图片全部保留；未开始图片或视频生成。';}else{const data=await request('material-plan-preview');materialPreview=data.material_preview;renderMaterialPlan();}}catch(e){$('#sb-plan-error').textContent=e.message;throw e;}}));
+function renderClosureActions(){
+ const actions=$('#sb-blocker-actions');actions.replaceChildren();if(!snapshot.story_id)return;
+ const progress=snapshot.preparation_progress||{},locked=busy||progress.active>0||progress.unknown>0;
+ const add=(label,fn)=>{const b=button(label,fn);b.disabled=locked;actions.append(b);};
+ for(const scene of snapshot.scenes){
+  for(const [role,f] of Object.entries(scene.frames))if(f.required&&f.candidate_asset)add('核对第'+scene.ordinal+'段'+roleNames[role],()=>openCandidate(scene,role));
+  for(const [role,f] of Object.entries(scene.frames))if(f.accepted_framing_needs_sync)add('同步第'+scene.ordinal+'段已采用构图',()=>openCandidate(scene,role));
+  if(scene.director_needs_detail)add('补齐第'+scene.ordinal+'段导演稿',()=>openEdit(scene));
+  if(Object.values(scene.frames).some(f=>f.required&&f.readiness==='invalid'))add('处理第'+scene.ordinal+'段参考',()=>openEdit(scene));
+ }
+ if(snapshot.scenes.some(s=>Object.values(s.frames).some(f=>f.required&&!f.candidate_asset&&(!f.asset||!['qa_passed','employee_declared_local_validated'].includes(f.readiness)))))add('准备缺失图片',()=>openImageQuote());
+ if(snapshot.timing.requires_attention)add('安排口播时长',()=>openClosure('timing'));
+ if((snapshot.blockers||[]).some(b=>b.code==='presenter_required'))add('设置全片人物',()=>$('#sb-profile-open').click());
+ refreshClosureControls();
+}
+async function openClosure(mode){
+ all('dialog[open]').forEach(d=>d.close());closureMode=mode;closurePreview=null;shorteningPreview=null;
+ $('#sb-closure-error').textContent='';$('#sb-closure-consent').checked=false;
+ open($('#sb-closure-dialog'));renderClosure();
+ await run(async()=>{try{const data=await request(mode==='missing'?'missing-images-preview':'timing-preview');closurePreview=mode==='missing'?data.missing_preview:data.timing_preview;renderClosure();}catch(e){$('#sb-closure-error').textContent=e.message;throw e;}});
+}
+function renderClosure(){
+ const missing=closureMode==='missing',q=closurePreview,rows=$('#sb-closure-rows');rows.replaceChildren();
+ $('#sb-closure-title').textContent=missing?'准备缺失的分镜图片':'让口播与镜头时长配合';
+ $('#sb-closure-intro').textContent=missing?'只准备当前方案必需且尚未就绪的图片；已有候选先由你核对。':'系统按口播估算建议时长。保留完整口播可延长；保持原时长可请 AI 提出精简建议。';
+ $('#sb-closure-consent-label').hidden=!missing;$('#sb-closure-alternative').hidden=missing||Boolean(shorteningPreview);
+ if(!q){$('#sb-closure-note').textContent='正在读取当前分镜与安排…';refreshClosureControls();return;}
+ for(const item of missing?q.frames:(shorteningPreview?.scenes||q.scenes)){
+  const row=node('div',undefined,'plan-row'),body=node('div',undefined,'plan-row-content');
+  body.append(node('strong','第'+item.ordinal+'段 · '+(missing?roleNames[item.role]:item.seconds+'秒 → '+(shorteningPreview?item.seconds:item.suggested_seconds)+'秒'),'plan-row-title'));
+  if(missing)body.append(node('p',item.instruction),node('small',item.replaces_stale_image?'更新待同步旧图；原图保留在历史。':'尚未生成'));
+  else {body.append(node('p','原口播：'+item.voiceover));if(shorteningPreview)body.append(node('p','建议口播：'+item.after_voiceover),node('small','字幕：'+item.after_subtitle),node('small',item.reason));else if(!item.can_extend)body.append(node('p','超过单段15秒，请精简或拆分。'));const edit=button('调整这一段',()=>{close();openEdit(snapshot.scenes.find(s=>s.scene_id===item.scene_id));});body.append(edit);}
+  row.append(body);rows.append(row);
+ }
+ if(missing){
+  for(const role of ['image','qa']){const p=q.pricing[role];if(p)rows.append(node('p',(role==='image'?'图片':'检查')+'：'+p.model+' · 每次上限 USD '+(p.cap_microusd/1e6).toFixed(2)));}
+  $('#sb-closure-note').textContent=q.frames.length+' 张图片 · '+(billingEnabled?'本次费用上限 USD ':'最多 '+q.max_posts+' 次 POST · 本次上限 USD ')+(q.cap_microusd/1e6).toFixed(2)+'。不自动重试，结果或费用未知即暂停。'+q.blockers.join(' ');
+  $('#sb-closure-action').textContent='确认范围，准备图片';
+ }else{
+  const a=q.analysis;$('#sb-closure-note').textContent=shorteningPreview?'建议尚未写入；采用后只更新口播和字幕，导演动作、图片、时长保留。':`保留口播：全片 ${q.before_seconds} → ${q.after_seconds}秒，不调用生成 API。`+(a.model?' AI 精简：'+a.model+'，一次文字分析上限 USD '+(a.cap_microusd/1e6).toFixed(2)+'，结果缓存复用。':a.message||'');
+  $('#sb-closure-action').textContent=shorteningPreview?'采用精简口播与字幕':'保留口播，采用建议时长';$('#sb-closure-alternative').textContent='AI 精简口播（付费预览）';
+  if(!q.scenes.length)rows.append(node('p','口播时长无冲突。其他时长或分镜数量问题请在对应分镜中调整。'));
+ }
+ refreshClosureControls();
+}
+function refreshClosureControls(){
+ if(!$('#sb-closure-dialog').open)return;const q=closurePreview,missing=closureMode==='missing';
+ $('#sb-closure-action').disabled=busy||step3State(snapshot).locked||!q||(missing?(!q.frames.length||q.blockers.length>0||!$('#sb-closure-consent').checked):(!q.scenes.length||(!shorteningPreview&&q.scenes.some(s=>!s.can_extend))));
+ $('#sb-closure-alternative').disabled=busy||step3State(snapshot).locked||!q||!q.scenes?.length||!q.analysis?.allowed;
+}
+$('#sb-plan-missing').addEventListener('click',()=>{planDialog.close();openImageQuote();});
+$('#sb-closure-consent').addEventListener('change',refreshClosureControls);
+$('#sb-closure-alternative').addEventListener('click',()=>run(async()=>{try{const d=await request('timing-shorten-preview',{preview_key:closurePreview.key});shorteningPreview=d.shortening_preview;renderClosure();}catch(e){$('#sb-closure-error').textContent=e.message;throw e;}}));
+$('#sb-closure-action').addEventListener('click',()=>run(async()=>{try{
+ if(closureMode==='missing')await request('missing-images-prepare',{preview_key:closurePreview.key,consent:$('#sb-closure-consent').checked});
+ else await request(shorteningPreview?'timing-shorten-apply':'timing-extend',{preview_key:shorteningPreview?.key||closurePreview.key});
+ close();$('#sb-status').textContent=closureMode==='missing'?'已按确认范围排队准备缺失图片；原图保留，不自动重试。':'已采用时长安排；图片和历史版本保留。';
+ }catch(e){$('#sb-closure-error').textContent=e.message;throw e;}}));
+function refreshCandidateControls(){
+ if(!candidateSelection||!$('#sb-candidate-dialog').open)return;
+ const scene=snapshot.scenes.find(s=>s.scene_id===candidateSelection.scene_id);const f=scene?.frames?.[candidateSelection.role];
+ const stale=!scene||scene.revision_id!==candidateSelection.revision_id;
+ const review=candidateReviewState(f,{stale,locked:busy||step3State(snapshot).locked,acknowledged:$('#sb-candidate-ack').checked,acceptAiFindings:$('#sb-candidate-ai-ack').checked});
+ $('#sb-candidate-adopt').disabled=!review.canAdopt;
+ const sync=$('#sb-candidate-sync').checked;
+ $('#sb-candidate-adopt span').textContent=review.blocked?'需先处理图片问题':f?.existing_asset_review_required?'确认复用原图':review.needsReview?'确认并采用当前画面':sync?'采用当前画面':'仅采用图片';
+ $('#sb-candidate-title').textContent=review.blocked?'这张图片暂时不可采用':f?.existing_asset_review_required?'原图适用于当前导演稿吗？':'这张画面，符合你的想法吗？';
+ $('#sb-candidate-guidance').textContent=review.reason||'AI 的构图建议供你参考，你可以明确采用当前画面。';
+ $('#sb-candidate-ai-ack-label').hidden=!review.needsReview||review.blocked;$('#sb-candidate-ai-ack-label strong').textContent=f?.existing_asset_review_required?'我已核对原图适用于当前导演稿，确认复用':'我已核对 AI 建议，仍选择采用当前画面';
+ $('#sb-candidate-ack-label').hidden=!f?.continuity_ack_required||review.needsReview;
+ $('#sb-candidate-edit').classList.toggle('primary',review.blocked);$('#sb-candidate-edit').classList.toggle('secondary',!review.blocked);
+ $('#sb-candidate-adopt').classList.toggle('primary',!review.blocked);$('#sb-candidate-adopt').classList.toggle('secondary',review.blocked);
+ $('#sb-candidate-state').textContent=review.blocked?'图片不可用 · 请处理':review.needsReview?'AI 建议 · 由你确认':f?.continuity_ack_required?'连续性未评估 · 请你核对':'构图建议 · 等你确认';
+ $('#sb-candidate-note p').textContent=f?.existing_asset_review_required?'核对原图适用于当前导演稿后即可免费复用；导演稿和原图保留，不重新生成。':review.reason||(sync?'这次会采用当前图片，并同步构图说明；不会重新生成图片。':'只采用图片，导演稿要求保持原样。构图差异仍需处理，不会直接标成可制作。');
+}
+let reviewAllSelection=[];
+function openReviewAll(){
+ all('dialog[open]').forEach(d=>d.close());reviewAllSelection=[];const items=$('#sb-review-all-items');items.replaceChildren();
+ for(const scene of snapshot.scenes)for(const [role,f] of Object.entries(scene.frames)){
+  if(!f.required||!(f.candidate_asset||f.existing_asset_review_required||f.accepted_framing_needs_sync))continue;
+  const asset=f.candidate_asset||f.asset;if(!asset)continue;
+  reviewAllSelection.push({scene_id:scene.scene_id,revision_id:scene.revision_id,role,sha256:asset.sha256});
+  const card=node('div',undefined,'candidate-layout'),image=node('div',undefined,'candidate-image'),img=node('img');img.src=asset.local_preview;img.alt='第'+scene.ordinal+'段'+roleNames[role];image.append(img);
+  const copy=node('div',undefined,'candidate-copy');copy.append(node('h3','第'+scene.ordinal+'段 · '+roleNames[role]),node('p',scene.visual),node('p',f.qa?.evidence?.summary||'导演设计已有变化，确认当前画面是否继续适用。'),button('查看或修改这一段',()=>openEdit(scene),'secondary'));
+  card.append(image,copy);items.append(card);
+ }
+ const issue=reviewBatchItems(snapshot).some(item=>item.blocked);
+ $('#sb-review-all-error').textContent=issue?'部分文件或参考失效，请先处理对应分镜。':'';$('#sb-review-all-confirm').disabled=issue||!reviewAllSelection.length||step3State(snapshot).locked;
+ open($('#sb-review-all'));
+}
+$('#sb-review-all-confirm').addEventListener('click',()=>run(async()=>{
+ try{for(const item of reviewAllSelection){const scene=snapshot.scenes.find(s=>s.scene_id===item.scene_id);if(!scene||scene.revision_id!==item.revision_id)throw new Error('分镜已变化，请重新查看本次画面。');const f=scene.frames[item.role];
+ await request(f.accepted_framing_needs_sync?'sync-accepted-framing':'adopt-candidate',{command:{...item,sync_framing:!f.existing_asset_review_required,accept_ai_findings:true,accept_unassessed_continuity:true}});
+ }close();$('#sb-status').textContent='本次画面已一次确认；原图和 AI 建议保留，未重新生成、未增加费用。';}
+ catch(e){$('#sb-review-all-error').textContent=e.message+' 已完成项保留，不会自动重试。';throw e;}
+}));
+function openCandidate(scene,role){
+ all('dialog[open]').forEach(d=>d.close());
+ candidateSelection={scene_id:scene.scene_id,revision_id:scene.revision_id,role};const f=scene.frames[role];
+ $('#sb-candidate-position').textContent='第'+scene.ordinal+'段 · '+scene.seconds+'秒 · '+roleNames[role]+'候选';
+ $('#sb-candidate-image').src=(f.candidate_asset||f.asset).local_preview;
+ $('#sb-candidate-summary').textContent=f.qa?.evidence?.summary||(f.existing_asset_review_required?'这张原图尚未按当前导演稿重新检查，请核对主体、商品和构图是否仍适用。':'请对照导演稿核对这张候选画面。');
+ $('#sb-candidate-person').textContent=snapshot.profile?.presenter?.name||'沿用已保存人物与场景要求';
+ $('#sb-candidate-framing').textContent=scene.director.framing;$('#vs-candidate-tags').replaceChildren(...videoSettingTags(scene,true).childNodes);$('#vs-framing-label').textContent='导演稿构图 · '+((scene.director.framing||'').match(/(大特写|特写|中近景|近景|中景|全景|远景)/)?.[1]||'查看说明');
+ $('#sb-candidate-ack').checked=false;$('#sb-candidate-ack-label').hidden=!f.continuity_ack_required;
+ $('#sb-candidate-ai-ack').checked=false;
+ const diff=$('#sb-candidate-diff-content');diff.replaceChildren();const p=f.framing_sync_preview;
+ if(p)for(const [label,before,after] of [['导演稿',p.before.visual,p.after.visual],['构图',p.before.director.framing,p.after.director.framing],['人物摆位',p.before.placement,p.after.placement],['本帧指令',p.before.instruction,p.after.instruction]])if(before!==after)diff.append(node('p',label+'：'+before+' → '+after));
+ $('#sb-candidate-diff').open=false;
+ $('#sb-candidate-sync').checked=!f.existing_asset_review_required;$('#sb-candidate-sync').disabled=Boolean(f.accepted_framing_needs_sync||f.existing_asset_review_required);$('#sb-candidate-error').textContent='';
+ open($('#sb-candidate-dialog'));refreshCandidateControls();
+}
+$('#sb-candidate-sync').addEventListener('change',refreshCandidateControls);
+$('#sb-candidate-ack').addEventListener('change',refreshCandidateControls);
+$('#sb-candidate-ai-ack').addEventListener('change',refreshCandidateControls);
+$('#sb-candidate-edit').addEventListener('click',()=>{const scene=snapshot.scenes.find(s=>s.scene_id===candidateSelection.scene_id),role=candidateSelection.role;$('#sb-candidate-dialog').close();openEdit(scene);$('#sb-intent').value=scene.frames[role].qa?.correction||'';$('#sb-scope-auto').checked=false;$('#sb-scope-frames').open=true;all('#sb-scope-frame-options input').forEach(x=>{x.checked=x.value===role;if(x.checked)x.disabled=false;});});
+$('#sb-candidate-adopt').addEventListener('click',()=>run(async()=>{try{const scene=snapshot.scenes.find(s=>s.scene_id===candidateSelection.scene_id),f=scene.frames[candidateSelection.role];await request(f.accepted_framing_needs_sync?'sync-accepted-framing':'adopt-candidate',{command:{...candidateSelection,sha256:(f.candidate_asset||f.asset).sha256,sync_framing:$('#sb-candidate-sync').checked,accept_ai_findings:$('#sb-candidate-ai-ack').checked,accept_unassessed_continuity:$('#sb-candidate-ack').checked||$('#sb-candidate-ai-ack').checked}});close();$('#sb-status').textContent='已记录你的画面确认；原 AI 建议和历史图片保留，未重新生成图片。';}catch(e){$('#sb-candidate-error').textContent=e.message;throw e;}}));
+all('[data-pt-close]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
+function open(dialog){trigger=document.activeElement;dialog.showModal();const body=dialog.querySelector('.dialog-body,.sb-dialog-body');if(body)body.scrollTop=0;dialog.scrollTop=0;dialog.querySelector('textarea,button,input,select')?.focus();}
+function close(){all('dialog[open]').forEach(d=>d.close());trigger?.focus();}
+function setMode(value){mode=value;$('#sb-manual-refine').parentElement.hidden=value!=='manual';all('[data-mode]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.mode===value)));$('#sb-upload').hidden=value!=='upload';$('#sb-ai').hidden=value!=='ai';$('#sb-manual').hidden=!(value==='manual'||value==='upload'&&$('#sb-upload-mode').value==='manual');}
+function fill(s={}){const details=$('#sb-handoff-details'),box=$('#sb-handoff-content');details.hidden=!s.scene_id;details.open=false;box.replaceChildren();const displayDirector=s.director_readout||s.director;if(displayDirector){for(const [key,label] of [['subject','主体'],['framing','构图'],['motion','运镜与动作'],['lighting','光线'],['continuity','连续性'],['start_state','起始状态'],['end_state','结束状态']])box.append(node('p',label+'：'+(displayDirector[key]||'见镜头说明')));for(const beat of displayDirector.beats||[])box.append(node('p',`${beat.start}–${beat.end}秒：${beat.action||beat.description||'按导演稿执行'}`));}if(s.scene_design){for(const [key,label] of [['environment','场景'],['background','背景'],['props','道具'],['product','商品外观'],['product_placement','商品摆位'],['person_placement','人物摆位'],['fact_boundary','事实边界']])box.append(node('p',label+'：'+(s.scene_design[key]||'待补齐')));}for(const [role,label] of [['start_frame','首帧'],['end_frame','尾帧'],['extra_image','补充帧']]){const frame=s.frames?.[role];if(!frame)continue;box.append(node('p',label+'：'+(frame.required?(frame.asset?'已准备':frame.candidate_asset?'检查未通过，待核对':'待准备'):'本镜头不需要')+' · '+frame.instruction));const preview=frame.asset||frame.candidate_asset;if(frame.candidate_asset){box.append(node('p','待核对原因：'+(frame.qa?.evidence?.summary||frame.qa?.status||'图片检查未通过')),button('核对'+label+'候选',()=>openCandidate(s,role)));}if(preview?.local_preview){const img=node('img');img.src=preview.local_preview;img.alt=label;img.style.maxWidth='100%';img.style.maxHeight='200px';box.append(img);}}uploadedReference=null;for(const k of ['message','visual','voiceover','subtitle'])$('#sb-'+k).value=s[k]||'';$('#sb-seconds').value=s.seconds||5;$('#sb-intent').value='';$('#sb-rewrite').checked=false;$('#sb-form-error').textContent='';$('#sb-file').value='';$('#sb-permission').checked=false;}
+function openEdit(s){editing=s;fill(s);$('#sb-manual-refine').checked=false;$('#sb-editor-title').textContent='这一段，你想怎么改？';$('#sb-position').textContent=`第${s.ordinal}段 · ${s.seconds}秒`;setMode('ai');resetSaveScope();open($('#sb-editor'));}
+function updateAdd(){$('#sb-new-refine').parentElement.hidden=addMode!=='manual';const manual=addMode==='manual'||addMode==='upload'&&root.querySelector('[name="sb-upload-mode"]:checked').value==='manual';$('#sb-manual-fields').hidden=!manual;$('#sb-new-duration').options[0].textContent=manual?'5秒':'AI 建议 · 约5秒';$('#sb-add-submit').replaceChildren(icon('plus-lg'),document.createTextNode(manual?(addMode==='manual'?($('#sb-new-refine').checked?' 添加并准备首帧':' 添加分镜'):' 保存这个分镜'):' 添加并准备首帧'));$('#sb-new-total').textContent=`添加后预计 ${snapshot.timing.content_seconds+Number($('#sb-new-duration').value)}秒`;}
+function setAddMode(value){addMode=value;all('[data-add-mode]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.addMode===value)));$('#sb-describe-pane').hidden=value!=='describe';$('#sb-upload-pane').hidden=value!=='upload';updateAdd();}
+function openAdd(at){if(snapshot.scenes.length>=12){$('#sb-status').textContent='当前最多12段，请先调整故事范围。';return;}index=at;addReference=null;$('#sb-add-form').reset();$('#sb-add-error').hidden=true;$('#sb-file-name').textContent='点击选择图片或视频';$('#sb-insert-position').textContent=at===0?'放在第一段之前':at===snapshot.scenes.length?'放在最后一段之后':`放在第${at}、${at+1}段之间`;setAddMode('describe');open($('#sb-add-dialog'));}
+all('[data-add-mode]').forEach(b=>b.addEventListener('click',()=>setAddMode(b.dataset.addMode)));all('[name="sb-upload-mode"]').forEach(b=>b.addEventListener('change',updateAdd));$('#sb-new-duration').addEventListener('change',updateAdd);$('#sb-new-refine').addEventListener('change',updateAdd);$('#sb-sample-upload').addEventListener('change',()=>{addReference=null;$('#sb-file-name').textContent=$('#sb-sample-upload').files[0]?.name||'点击选择图片或视频';});
+$('#sb-add-form').addEventListener('submit',e=>{e.preventDefault();run(async()=>{const manual=addMode==='manual'||addMode==='upload'&&root.querySelector('[name="sb-upload-mode"]:checked').value==='manual';const seconds=Number($('#sb-new-duration').value);const command={type:'insert',mode:manual?'manual':'ai',...position(snapshot.scenes,index),requested_seconds:seconds};
+if(manual){command.content=content({seconds,message:$('#sb-manual-message').value.trim(),visual:$('#sb-manual-visual').value.trim(),voiceover:$('#sb-manual-speech').value,subtitle:$('#sb-add-subtitle').value});if(!command.content.message||!command.content.visual)throw new Error('请填写主要信息和画面演出说明。');}else{command.intent=addMode==='describe'?$('#sb-new-description').value.trim():'理解这份已授权素材，结合前后故事补充分镜资料；不推断未确认商品事实。';if(!command.intent)throw new Error('先简单描述这一段想怎么演。');}
+if(addMode==='manual')command.refine_manual=$('#sb-new-refine').checked;
+if(addMode==='upload'){const file=$('#sb-sample-upload').files[0];if(!file||!$('#sb-add-permission').checked)throw new Error('请选择图片或视频，并确认有权使用。');if(file.size>30*1024*1024)throw new Error('素材上限为30MB。');if(!manual&&!generationEnabled)throw new Error('AI 素材理解尚未获得范围与预算批准，未上传或调用真实 API。');if(!addReference){const fd=new FormData();fd.append('file',file);fd.append('authorized','1');const r=await fetch(root.dataset.api+'/upload',{method:'POST',credentials:'same-origin',headers:{Accept:'application/json','X-CSRF-TOKEN':root.dataset.csrf},body:fd});const d=await r.json();if(!r.ok)throw new Error(d.message||'上传失败');addReference=d.asset;}command.asset_id=addReference.asset_id;}
+const before=snapshot.scenes.length,old=snapshot.timing.content_seconds;const result=await request('changes',{command});$('#sb-status').textContent=`已添加：${before} → ${snapshot.scenes.length}段，${old} → ${snapshot.timing.content_seconds}秒。其他分镜与原素材保留。`+(result.preparation?.tasks?.length?'正在准备首帧。':result.preparation?.blockers?.length?result.preparation.blockers.map(x=>x.message).join('；'):manual?(addMode==='upload'?'已使用上传素材。':'首帧待准备，尚未生成图片。'):'首帧尚未生成。');close();});});
+all('[data-close]').forEach(b=>b.addEventListener('click',close));all('[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));all('[data-intent]').forEach(b=>b.addEventListener('click',()=>{$('#sb-intent').value=b.dataset.intent;$('#sb-rewrite').checked=b.dataset.intent.startsWith('完整重写');}));$('#sb-file').addEventListener('change',()=>uploadedReference=null);$('#sb-upload-mode').addEventListener('change',()=>setMode('upload'));$('#sb-add').addEventListener('click',()=>openAdd(snapshot.scenes.length));
+$('#sb-prepare-story').addEventListener('submit',()=>{const button=$('#sb-prepare-story button');button.disabled=true;button.textContent='AI 正在编排导演稿与分镜…';$('#sb-status').textContent='正在按已选方向安排故事，请勿重复提交。';});
+function isManualSave(){return mode==='manual'||mode==='upload'&&$('#sb-upload-mode').value==='manual';}
+function targetSeconds(){if(isManualSave())return Number($('#sb-seconds').value);return $('#sb-target-duration').value==='auto'?null:Number($('#sb-target-duration').value);}
+function selectedScope(){const frames=$('#sb-scope-auto').checked?null:all('#sb-scope-frame-options input:checked').map(x=>x.value);return {images:$('#sb-scope-images').checked,director:$('#sb-scope-director').checked,...(frames?{frames}: {})};}
+function showSaveStage(stage){editorFailure='';saveStage=stage;$('#sb-edit-fields').hidden=stage!=='editor';$('#sb-save-scope').hidden=stage!=='scope';$('#sb-timing-choice').hidden=stage!=='timing';$('#sb-editor-title').textContent=stage==='editor'?'这一段，你想怎么改？':stage==='scope'?'这次要更新什么？':'怎样在目标时长里讲清楚？';$('#sb-save-back').textContent=stage==='editor'?'取消':'返回修改';$('#sb-submit-label').textContent=stage==='editor'?'保存这次调整':stage==='timing'?'采用这个安排并保存':'更新导演稿与图片';$('#sb-form-error').textContent='';$('#sb-submit').disabled=false;if(stage==='scope')refreshScope();$('#sb-editor .dialog-body').scrollTop=0;}
+function resetSaveScope(){timingResolution=null;$('#sb-target-duration').value='auto';$('#sb-target-duration option').textContent=`AI 安排 · 当前${editing.seconds}秒`;$('#sb-scope-images').checked=false;$('#sb-scope-director').checked=true;$('#sb-scope-auto').checked=true;$('#sb-scope-frames').open=false;$('#sb-short-speech').value='';all('[name="sb-timing-resolution"]')[0].checked=true;all('#sb-scope-frame-options input').forEach(x=>{x.checked=editing.frames?.[x.value]?.required!==false;x.disabled=editing.frames?.[x.value]?.required===false;});const ref=framePresentation(editing,snapshot).asset;$('#sb-scope-image').hidden=!ref?.local_preview;if(ref?.local_preview)$('#sb-scope-image').src=ref.local_preview;else $('#sb-scope-image').removeAttribute('src');$('#sb-scope-image-placeholder').hidden=!!ref?.local_preview;$('#sb-save-scope .sb-scope-paper').firstChild.textContent=`第${editing.ordinal}段 · 导演设计`;durationSummary();showSaveStage('editor');}
+function durationSummary(){if(!editing)return;const n=targetSeconds()??editing.seconds;$('#sb-target-total').textContent=`全片预计 ${snapshot.timing.content_seconds} → ${snapshot.timing.content_seconds-editing.seconds+n}秒`;}
+function refreshScope(){const scope=selectedScope();const manualChanged=isManualSave()&&['message','visual','voiceover','subtitle','seconds'].some(k=>String($('#sb-'+k).value)!==String(editing[k]??''));const state=saveScopeState({...scope,seconds:targetSeconds(),originalSeconds:editing.seconds,rewrite:$('#sb-rewrite').checked,upload:mode==='upload',manualChanged});$('#sb-submit-label').textContent=state.label;$('#sb-submit').disabled=!!state.error||step3State(snapshot).locked||busy;$('#sb-form-error').textContent=scopeFailure(state.error,editorFailure);$('#sb-scope-frames').hidden=!scope.images;$('#sb-scope-frame-options').hidden=$('#sb-scope-auto').checked;$('#sb-scope-note').textContent=scope.images&&scope.director?'系统先保存导演设计，再生成与检查受影响图片；全部符合后才标记完成。':scope.director?'保留现有图片；若设计改变，图片标记「待同步」，不会冒充完成。':'导演稿保持原样；只调整画面表现。与人物、商品事实或导演稿冲突的修改不能通过图片检查。';return !state.error;}
+function advanceSave(){if(!editing)return true;if(saveStage==='editor'){if(isManualSave()&&!$('#sb-manual-refine').checked&&$('#sb-visual').value===editing.visual){$('#sb-scope-images').checked=false;$('#sb-scope-director').checked=true;return true;}if(!isManualSave()&&mode!=='upload'&&!$('#sb-intent').value.trim()){$('#sb-form-error').textContent='请描述修改想法。';return false;}showSaveStage('scope');return false;}if(saveStage==='scope'){if(!refreshScope())return false;const target=targetSeconds();const speech=isManualSave()?$('#sb-voiceover').value:editing.voiceover;if(isManualSave()&&target!==null&&speechSeconds(speech)>target){$('#sb-timing-original').textContent='当前口播：'+speech;$('#sb-timing-suggestion').textContent=`建议至少${Math.max(target,speechSeconds(speech))}秒；保留完整口播。`;showSaveStage('timing');return false;}return true;}const resolution=root.querySelector('[name="sb-timing-resolution"]:checked').value;timingResolution=resolution;if(resolution==='keep'){const n=Math.max(targetSeconds()||editing.seconds,speechSeconds(isManualSave()?$('#sb-voiceover').value:editing.voiceover));if(n>15){$('#sb-form-error').textContent='完整口播超过单段15秒，请返回允许拆分或修改口播。';return false;}$('#sb-target-duration').value=String(n);$('#sb-seconds').value=n;}else{const speech=$('#sb-short-speech').value.trim();if(!speech||speechSeconds(speech)>(targetSeconds()||editing.seconds)){$('#sb-form-error').textContent='请确认足以在目标时长讲完的精简口播。';return false;}}return true;}
+$('#sb-save-back').onclick=()=>saveStage==='editor'?close():showSaveStage('editor');
+['sb-scope-images','sb-scope-director','sb-scope-auto'].forEach(id=>$('#'+id).addEventListener('change',refreshScope));all('#sb-scope-frame-options input').forEach(x=>x.addEventListener('change',refreshScope));$('#sb-target-duration').addEventListener('change',()=>{timingResolution=null;durationSummary();});
+$('#sb-form').addEventListener('submit',e=>{e.preventDefault();if(!advanceSave())return;run(async()=>{const manual=mode==='manual'||mode==='upload'&&$('#sb-upload-mode').value==='manual';const command={type:editing?'edit':'insert',mode:manual?'manual':'ai',...(editing?{scene_id:editing.scene_id}:position(snapshot.scenes,index))};if(manual)command.content=content(Object.fromEntries(['message','visual','voiceover','subtitle','seconds'].map(k=>[k,$('#sb-'+k).value])));else{command.intent=editIntent(mode,$('#sb-intent').value);command.rewrite=$('#sb-rewrite').checked;}
+ if(mode==='manual')command.refine_manual=$('#sb-manual-refine').checked;
+ if(editing){command.update_scope=selectedScope();const target=targetSeconds();if(target!==null){command.requested_seconds=target;if(manual)command.content.seconds=target;}if(timingResolution==='shorten'){command.timing_resolution='shorten';command.confirmed_voiceover=$('#sb-short-speech').value.trim();if(manual){command.content.voiceover=command.confirmed_voiceover;command.content.subtitle=command.confirmed_voiceover;}}}
+ if(mode==='upload'){if(!manual&&!generationEnabled)throw new Error('真实AI素材理解未授权；请选择自己填写或稍后继续。');if(!$('#sb-file').files[0]||!$('#sb-permission').checked)throw new Error('请选择素材并确认有权使用。');if(!uploadedReference){const fd=new FormData();fd.append('file',$('#sb-file').files[0]);fd.append('authorized','1');const response=await fetch(root.dataset.api+'/upload',{method:'POST',credentials:'same-origin',headers:{'Accept':'application/json','X-CSRF-TOKEN':root.dataset.csrf},body:fd});const result=await response.json();if(!response.ok)throw new Error(result.message||'上传失败。');uploadedReference=result.asset;}command.asset_id=uploadedReference.asset_id;}
+ const before=snapshot.scenes.length,oldTime=snapshot.timing.content_seconds;$('#sb-submit-label').textContent=command.update_scope?.director===false?'正在提交图片更新…':'正在提交这次调整…';const saved=await request('changes',{command});const feedback=saveFeedback(saved);if(feedback.phase==='generating'){snapshot.preparation_progress={...(snapshot.preparation_progress||{}),active:saved.preparation.tasks.length};}lastSave={sceneId:editing?.scene_id,warning:feedback.phase==='generating'?'':feedback.message};$('#sb-status').textContent=feedback.message;close();$('#sb-phase-title').closest('.status').scrollIntoView({block:'center',behavior:'smooth'});});});
+$('#sb-undo').addEventListener('click',()=>run(async()=>{if(!removed)return;await request('changes',{command:{type:'restore',mode:'manual',...removed}});removed=null;$('#sb-undo').hidden=true;}));
+$('#sb-confirm').addEventListener('click',nextStep3);
+function refreshProfile(){for(const [key,items] of [['presenter',options.presenters||[]],['voice',options.voices||[]]]){const select=$('#sb-'+key);select.replaceChildren();const none=node('option',key==='presenter'?'不安排人物':'无口播声音');none.value='none';select.append(none);if(key==='voice'){const auto=node('option','声音由 AI 在制作时安排');auto.value='auto';select.prepend(auto);}items.forEach(item=>{const o=node('option',item.name||item.id);o.value=item.id;select.append(o);});if(key==='presenter'&&snapshot.profile.presenter?.mode==='preset'&&!items.some(x=>x.id===snapshot.profile.presenter.id)){const stale=node('option',snapshot.profile.presenter.name||'已选人物不可用');stale.value=snapshot.profile.presenter.id;stale.disabled=true;select.append(stale);}select.value=snapshot.profile[key]?.id||(key==='voice'?(snapshot.profile.voice?.status==='needs_configuration'?'auto':snapshot.profile.voice?.mode||'auto'):'none');}previewPresenter();}
+function previewPresenter(){const choice=presenterChoice(snapshot.profile.presenter,options.presenters||[],$('#sb-presenter').value);const item=choice.item;const img=$('#sb-presenter-preview');img.hidden=!item?.preview_url;if(item?.preview_url)img.src=item.preview_url;else img.removeAttribute('src');$('#sb-selected-name').textContent=item?.name||'选择全片主人物';$('#sb-selected-meta').textContent=!choice.available?'人物参考已失效，请重新选择；当前选择未被替换':item?((item.source==='avatar_library'?'v'+(item.avatar_binding?.avatar_version||item.version)+' · '+(item.avatar_binding?.look||item.look||'固定参考'):'项目内人物参考')+' · 项目固定版本'):'从 Asset → Avatar 选择可用人物参考';$('#sb-person-preset').checked=!!item;$('#sb-person-none').checked=!item;$('#sb-project-person-fields').hidden=true;}
+let pickerId=null;
+function returnProfile(){ $('#sb-avatar-picker').close();open($('#sb-profiles')); }
+$('#sb-change-avatar').addEventListener('click',e=>{e.preventDefault();pickerId=$('#sb-presenter').value;const box=$('#sb-avatar-options');box.replaceChildren();for(const item of options.presenters||[]){const label=node('label'),r=node('input');r.type='radio';r.name='sb-avatar-choice';r.value=item.id;r.checked=item.id===pickerId;r.addEventListener('change',()=>{pickerId=item.id;$('#sb-picker-use').disabled=false;});const img=node('img');if(item.preview_url)img.src=item.preview_url;img.alt=item.name||'人物参考';const span=node('span');span.append(node('b',item.name),node('small',item.source==='avatar_library'?'v'+(item.avatar_binding?.avatar_version||item.version)+' · '+(item.avatar_binding?.look||item.look||'固定参考'):'项目内授权参考'));label.append(r,img,span);box.append(label);}$('#sb-avatar-empty').hidden=!!(options.presenters||[]).length;$('#sb-picker-use').disabled=!(options.presenters||[]).some(x=>x.id===pickerId);$('#sb-profiles').close();open($('#sb-avatar-picker'));});
+$('#sb-picker-back').addEventListener('click',returnProfile);
+$('#sb-picker-use').addEventListener('click',()=>{if(!pickerId)return;$('#sb-presenter').value=pickerId;previewPresenter();returnProfile();});
+all('[name="sb-person-mode"]').forEach(r=>r.addEventListener('change',()=>{if(r.value==='none'){$('#sb-presenter').value='none';$('#sb-project-person-fields').hidden=true;}else if(r.value==='real')$('#sb-project-person-fields').hidden=false;else if($('#sb-presenter').value==='none')$('#sb-change-avatar').click();}));
+$('#sb-presenter').addEventListener('change',previewPresenter);
+$('#sb-profile-open').addEventListener('click',()=>{refreshProfile();open($('#sb-profiles'));});
+$('#sb-presenter-register').addEventListener('click',()=>run(async()=>{const file=$('#sb-presenter-file').files[0],name=$('#sb-presenter-name').value.trim();if(!file||!name||!$('#sb-presenter-consent').checked)throw new Error('请填写模板名称、选择参考照片，并确认形象授权。');const fd=new FormData();fd.append('file',file);fd.append('authorized','1');const r=await fetch(root.dataset.api+'/upload',{method:'POST',credentials:'same-origin',headers:{Accept:'application/json','X-CSRF-TOKEN':root.dataset.csrf},body:fd});const d=await r.json();if(!r.ok)throw new Error(d.message||'上传失败');const result=await request('presenters',{name,kind:$('#sb-presenter-kind').value,asset_id:d.asset.asset_id,consent:true});refreshProfile();$('#sb-presenter').value=result.presenter.id;previewPresenter();$('#sb-presenter-file').value='';$('#sb-status').textContent='人物模板已保存，请保存全片设置以应用。';}));
+$('#sb-profile-form').addEventListener('submit',e=>{e.preventDefault();run(async()=>{if(root.querySelector('[name="sb-person-mode"]:checked')?.value==='real')throw new Error('请先上传并保存有权使用的项目人物参考。');if($('#sb-presenter').value!=='none'&&!(options.presenters||[]).some(x=>x.id===$('#sb-presenter').value))throw new Error('已选人物不可用，请更换模板或明确选择不安排人物。');const profile={};for(const [key,items] of [['presenter',options.presenters||[]],['voice',options.voices||[]]]){const id=$('#sb-'+key).value;const item=items.find(x=>x.id===id);profile[key]=item?{mode:'preset',id:item.id,version:item.version}:{mode:key==='voice'&&id==='auto'?'auto':'none'};}await request('profile',{profile});close();});});
+let videoSettingSelection=null;
+function videoSettingTags(scene,visualOnly=false){
+ const box=node('div',undefined,'video-setting-tags'),info=snapshot.video_settings?.scenes?.[scene.scene_id];
+ const fallback={aspect:{label:'竖屏 9:16',icon:'phone'},voice:{label:scene.voiceover?.trim()?(scene.presenter_required?'人物口播':'旁白'):'无口播',icon:scene.voiceover?.trim()?'mic':'mic-mute'},subtitles:{label:scene.subtitle?.trim()?'有字幕':'无字幕',icon:'badge-cc'},person:{label:scene.presenter_required?'人物出镜':'无人物',icon:scene.presenter_required?'person':'person-dash'}};
+ for(const field of visualOnly?['aspect','person']:['aspect','voice','subtitles','person']){const f=(info?.tags||fallback)[field],b=button('',()=>openVideoSetting(field,scene),'setting-tag');b.append(icon(f.icon),node('span',f.label));const custom=Object.hasOwn(info?.overrides||{},field);if(custom){b.classList.add('custom');b.append(node('span',undefined,'custom-dot'));}b.title=custom?'本段单独设定，点击修改':'沿用全片设定，点击修改';b.setAttribute('aria-label','第'+scene.ordinal+'段'+({aspect:'画幅',voice:'口播',subtitles:'字幕',person:'人物'})[field]+'：'+f.label);box.append(b);}return box;
+}
+function openVideoSetting(field,scene){
+ const back=$('#sb-candidate-dialog').open;all('dialog[open]').forEach(d=>d.close());videoSettingSelection={field,scene_id:scene.scene_id,back,role:back?candidateSelection?.role:null};
+ const names={aspect:'画幅',voice:'口播',subtitles:'字幕',person:'人物'},select=$('#vs-setting-value');$('#vs-setting-title').textContent='调整'+names[field];$('#vs-setting-eyebrow').textContent='第'+scene.ordinal+'段 · '+scene.seconds+'秒';$('#vs-field-label').textContent=names[field];select.replaceChildren();
+ const choices=field==='voice'?[['auto','沿用导演稿口播'],['none','无口播']]:field==='subtitles'?[['on','显示本段字幕'],['off','无字幕']]:field==='aspect'?[['9:16','竖屏 9:16'],['16:9','横屏 16:9 · 当前路线未支持'],['1:1','方形 1:1 · 当前路线未支持']]:[[scene.presenter_required?'yes':'none',scene.presenter_required?'人物出镜':'无人物']];
+ for(const [v,label] of choices){const option=node('option',label);option.value=v;option.disabled=field==='aspect'&&v!=='9:16';select.append(option);}
+ const defaults=snapshot.video_settings?.defaults||{},overrides=snapshot.video_settings?.scenes?.[scene.scene_id]?.overrides||{};select.value=field==='voice'||field==='subtitles'?(overrides[field]??defaults[field]??(field==='voice'?'auto':'on')):field==='aspect'?'9:16':scene.presenter_required?'yes':'none';
+ const editable=['voice','subtitles'].includes(field);select.disabled=!editable;$('#vs-scope').hidden=!editable;$('#vs-person-actions').hidden=field!=='person';$('#vs-inherit').hidden=!editable||!Object.hasOwn(overrides,field);$('#vs-setting-save').hidden=!editable;$('#vs-setting-error').textContent='';$('#vs-setting-form [name="vs-scope"][value="scene"]').checked=true;
+ $('#vs-field-help').textContent=field==='aspect'?'当前图片与视频制作链使用 9:16；其他画幅尚未接通，不能保存为可制作。':field==='person'?'人物出镜由本段导演稿决定；身份参考沿用全片人物设置。改变人物后需核对导演稿与画面。':field==='voice'?'关闭只影响制作口播，原导演稿文案保留；恢复沿用可重新使用原文案。':'控制后期叠加字幕，不会去除图片本身已有的文字。';
+ refreshScriptPreview();$('#vs-settings-dialog').showModal();lockStep3Saves();
+}
+function refreshScriptPreview(){
+ const selected=videoSettingSelection,field=selected?.field,visible=['voice','subtitles'].includes(field);$('#vs-script-preview').hidden=!visible;if(!visible)return;
+ const scene=snapshot.scenes.find(s=>s.scene_id===selected.scene_id);if(!scene)return;
+ const preview=scriptPreview(scene,field,$('#vs-setting-value').value);$('#vs-script-title').textContent=field==='voice'?'本段口播全文':'本段字幕全文';$('#vs-script-text').textContent=preview.text;const timing=snapshot.timing?.speech_rhythm?.find(x=>x.scene_id===scene.scene_id);const plan=scene.rhythm;const advice=timing?(timing.warnings.includes('silence_unplanned')?' 留白用途尚未编排，可告诉 AI 优化。':timing.warnings.includes('speech_window_short')?' 口播可能超出安排的说话时间。':timing.warnings.includes('rhythm_needs_review')?' 节奏安排待核对。':''):'';$('#vs-script-status').textContent=preview.status+(field==='voice'&&timing?' 本段'+scene.seconds+'秒，口播粗估约'+timing.estimated_speech_seconds+'秒（非实测）。'+advice+(plan?.silent_beats?.length?' 留白用途：'+plan.silent_beats.map(x=>x.start+'–'+x.end+'秒 '+x.purpose).join('；'):''):'');
+}
+$('#vs-setting-value').addEventListener('change',refreshScriptPreview);
+$('#vs-script-edit').addEventListener('click',()=>{const selected=videoSettingSelection,scene=snapshot.scenes.find(s=>s.scene_id===selected?.scene_id);if(!scene)return;$('#vs-settings-dialog').close();openEdit(scene);setMode('manual');const target=$(selected.field==='voice'?'#sb-voiceover':'#sb-subtitle');const details=target.closest('details');if(details)details.open=true;target.focus();target.scrollIntoView({block:'center'});});
+function closeVideoSetting(){const selected=videoSettingSelection;$('#vs-settings-dialog').close();if(selected?.back){const scene=snapshot.scenes.find(s=>s.scene_id===selected.scene_id);if(scene)openCandidate(scene,selected.role||'start_frame');}}
+all('[data-vs-close]').forEach(b=>b.addEventListener('click',closeVideoSetting));
+async function saveVideoSetting(inherit=false){if(busy||step3State(snapshot).locked)return;const selected=videoSettingSelection;await run(async()=>{try{await request('video-settings',{command:{field:selected.field,value:inherit?'inherit':$('#vs-setting-value').value,scope:inherit?'scene':$('#vs-setting-form [name="vs-scope"]:checked').value,scene_id:selected.scene_id}});closeVideoSetting();$('#sb-status').textContent='设定已保存，原文案、图片与历史版本保留；未开始生成。';}catch(e){$('#vs-setting-error').textContent=e.message;throw e;}});}
+$('#vs-setting-form').addEventListener('submit',e=>{e.preventDefault();saveVideoSetting();});$('#vs-inherit').addEventListener('click',()=>saveVideoSetting(true));
+$('#vs-person-edit').addEventListener('click',()=>{const scene=snapshot.scenes.find(s=>s.scene_id===videoSettingSelection.scene_id);$('#vs-settings-dialog').close();openEdit(scene);$('#sb-intent').value='';});
+$('#vs-person-profile').addEventListener('click',()=>{$('#vs-settings-dialog').close();$('#sb-profile-open').click();});
+
+root.addEventListener('submit',event=>{if(snapshot&&step3State(snapshot).locked){event.preventDefault();event.stopImmediatePropagation();$('#sb-status').textContent='画面生成中，可继续查看；完成后可保存修改。';}},true);
+run(async()=>{await request('');const q=new URLSearchParams(location.search),target=snapshot?.scenes?.find(s=>s.scene_id===q.get('setting_scene'));if(target&&['aspect','voice','subtitles','person'].includes(q.get('setting')))openVideoSetting(q.get('setting'),target);});
+})();

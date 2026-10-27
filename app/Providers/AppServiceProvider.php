@@ -24,10 +24,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(\App\Services\Marketing\Research\ResearchProvider::class, \App\Services\Marketing\Research\TavilyResearchProvider::class);
         $this->app->bind(PaymentGateway::class, SimulatedPaymentGateway::class);
         $this->app->bind(StoreInventoryPublisher::class, MarketplaceStoreInventoryPublisher::class);
         $this->app->scoped(StorefrontCurrencyContext::class);
         $this->app->scoped(ShopBrand::class);
+        $this->app->scoped(\App\Services\Marketing\MarketingClipSource::class);
+        $this->app->scoped(\App\Services\Marketing\MarketingMaterialRepair::class);
     }
 
     /**

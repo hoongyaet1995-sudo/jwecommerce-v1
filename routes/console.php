@@ -166,3 +166,7 @@ Artisan::command('support:prune-uploads', function () {
 Schedule::command('support:prune-uploads')->hourly()->withoutOverlapping();
 
 \Illuminate\Support\Facades\Schedule::command('support:prune-customer-memories')->daily()->withoutOverlapping();
+
+
+Artisan::command('marketing:recover-template-local', function () { if (!config('marketing.execution_enabled')) { $this->info('Marketing execution disabled.'); return; } $this->info('Queued local recoveries: '.app(\App\Services\Marketing\MarketingTemplateRecovery::class)->sweep()); });
+Schedule::command('marketing:recover-template-local')->everyMinute()->withoutOverlapping();

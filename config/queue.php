@@ -30,6 +30,19 @@ return [
     */
 
     'connections' => [
+        'marketing-research' => [
+            'driver' => 'database', 'connection' => null, 'table' => 'jobs',
+            'queue' => 'marketing-research', 'retry_after' => 900, 'after_commit' => true,
+        ],
+
+        'marketing-production' => [
+            'driver' => 'database',
+            'connection' => null,
+            'table' => 'jobs',
+            'queue' => 'marketing-production',
+            'retry_after' => 1200,
+            'after_commit' => false,
+        ],
 
         // Same database as support ingress: receipt, message and queued work commit atomically.
         'support' => [

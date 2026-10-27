@@ -1,0 +1,7 @@
+.music-browser-controls{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 12px}
+.music-browser-controls .preview-shortcuts{gap:6px;margin:0;flex-wrap:wrap}
+.music-browser-controls .none-button{padding:8px 10px;font-size:11px;white-space:nowrap}
+.music-mood{min-width:112px;margin:0;font-size:10px}
+.music-mood select{padding:7px 9px;font-size:11px}
+.music-current{font-size:10px;color:#78866b;line-height:1.7;margin:0 0 14px;overflow-wrap:anywhere}
+@media(max-width:600px){.music-browser-controls{align-items:flex-start;flex-direction:column;gap:10px}.music-mood{width:100%}.music-browser-controls .none-button{padding:8px 10px}.track-select b{overflow-wrap:anywhere}}

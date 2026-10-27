@@ -29,7 +29,11 @@ class AdminAppController extends Controller
                 ->values()
                 ->all();
 
+        $marketingPermissions = collect(\App\Domain\Marketing\MarketingPermission::ALL)->filter(fn ($permission) => \App\Domain\Marketing\MarketingPermission::allows($user, $permission))->values()->all();
         $bootstrap = [
+            'marketingPermissions' => $marketingPermissions,
+            'marketingStudioUrl' => in_array('marketing.view', $marketingPermissions, true) ? '/admin/marketing' : null,
+            'staffMarketingPermissionsUrl' => $user->is_super_admin ? route('admin.api.staff.marketing-permissions.index') : null,
             'productEnquiriesEnabled'=>(bool)config('product_enquiries.enabled'),
             'basicWmsUiEnabled' => (bool)config('marketplace.basic_wms_ui_enabled')
                 || (app()->environment('local') && $request->boolean('basic_wms_preview')),

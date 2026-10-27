@@ -1,0 +1,21 @@
+{
+  "version": "product-template-pricing-gpt6luna-20261027",
+  "verified_at": "2026-10-27T07:16:35Z",
+  "model": "gpt-6-luna",
+  "input_per_million": 0.1,
+  "cached_per_million": 0.01,
+  "output_per_million": 0.5,
+  "max_input_tokens": 12000,
+  "max_output_tokens": 5000,
+  "voice_model": "eleven_multilingual_v2",
+  "tts_per_character_microusd": 80,
+  "max_tts_characters": 300,
+  "voices": {
+    "zh": "ByhETIclHirOlWnWKhHc",
+    "en": "hpp4J3VqNfWAUOO0d1Us"
+  },
+  "sources": [
+    "https://developers.openai.com/api/docs/models/gpt-6-luna",
+    "https://elevenlabs.io/pricing/api"
+  ]
+}

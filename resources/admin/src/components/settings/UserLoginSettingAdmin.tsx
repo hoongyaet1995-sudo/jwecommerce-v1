@@ -1,3 +1,4 @@
+import { MarketingStaffPermissions } from './MarketingStaffPermissions';
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { StaffUser, StaffPermissionKey } from '../../types';
@@ -199,6 +200,7 @@ export const UserLoginSettingAdmin: React.FC<{ settingsNavigation?: React.ReactN
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
       {settingsNavigation}
+      {viewMode === 'list' && <MarketingStaffPermissions />}
 
       {/* ---------------------------------------------------- */}
       {/* VIEW MODE: EDIT / CREATE STAFF (Screenshot 2 Match) */}

@@ -1,0 +1,4 @@
+@once<link rel="stylesheet" href="{{ asset('marketing-studio/video-settings.css') }}?v={{ filemtime(public_path('marketing-studio/video-settings.css')) }}">@endonce
+<div class="video-setting-tags vs-setting-context" aria-label="分镜视频设定">@foreach(($settingTags??app(\App\Services\Marketing\MarketingVideoSettings::class)->tags($settingScene)) as $settingKey=>$settingTag)
+@if($settingsClickable??false)<a class="setting-tag" href="{{ route('marketing.workspace.show',['project'=>$project->id,'screen'=>'materials','setting'=>$settingKey,'setting_scene'=>$settingScene['scene_id']]) }}" aria-label="修改本段{{ ['aspect'=>'画幅','voice'=>'口播','subtitles'=>'字幕','person'=>'人物'][$settingKey] }}"><i class="bi bi-{{ $settingTag['icon'] }}" aria-hidden="true"></i><span>{{ $settingTag['label'] }}</span></a>@else<span class="setting-tag"><i class="bi bi-{{ $settingTag['icon'] }}" aria-hidden="true"></i><span>{{ $settingTag['label'] }}</span></span>@endif
+@endforeach</div>

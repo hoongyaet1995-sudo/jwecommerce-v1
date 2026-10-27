@@ -1,0 +1,22 @@
+[data-assistant-sample]{font-size:13px}
+.ws-sample-banner{border:1px solid #dce5d8;background:#f3f8ed;border-radius:10px;padding:12px 16px;margin-bottom:18px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.ws-sample-layout{grid-template-columns:1.08fr 1fr}
+.ws-sample-chat-card{display:flex;min-height:670px}
+.ws-sample-assistant{display:flex;flex-direction:column;width:100%;min-width:0}
+.ws-sample-assistant h2{font-size:22px;font-weight:750}
+.ws-sample-task{padding:10px 12px;background:#f4f7f4;color:#48634e;border-radius:9px;margin-bottom:12px}
+[data-sample-log]{flex:1;min-height:260px;max-height:410px;overflow:auto;padding:0 3px 10px;overscroll-behavior:contain}
+.ws-sample-message{width:fit-content;max-width:90%;border-radius:14px;background:#f0f3f5;color:#18232d;padding:13px 15px;margin:10px auto 10px 0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.75}
+.ws-sample-message.is-user{margin-left:auto;margin-right:0;background:#174b35;color:white}
+.ws-sample-message>small{display:block;font-size:10px;color:#728277;margin-bottom:4px}
+.ws-sample-message.is-user>small{color:#d4e7da}
+.ws-sample-proposal{background:#fff;border:1px solid #dce7d2;border-radius:10px;margin-top:10px;padding:12px;white-space:normal}
+.ws-sample-proposal dl{margin:10px 0}.ws-sample-proposal dt{font-size:11px;color:#718073;font-weight:400}.ws-sample-proposal dd{margin:2px 0 8px}
+.ws-sample-proposal .btn{margin-right:8px;padding:8px 12px}
+.ws-sample-cover{position:relative;height:185px;border-radius:10px;background:#f1f4f1;display:grid;place-items:center;overflow:hidden}
+.ws-sample-cover img{width:100%;height:100%;object-fit:contain}.ws-sample-cover>i{font-size:42px;color:#6d8d5b}
+.ws-sample-cover>small{position:absolute;bottom:7px;right:8px;background:#ffffffdf;border-radius:5px;padding:3px 7px;font-size:10px;color:#60705f}
+.ws-sample-launch{display:flex;align-items:center;gap:14px;margin-top:16px;padding:16px 20px}
+.ws-sample-drawer{--bs-offcanvas-width:480px}.ws-sample-drawer [data-sample-log]{max-height:none;min-height:120px}.ws-sample-drawer .ws-sample-assistant{height:100%}
+@media(max-width:900px){.ws-sample-layout{grid-template-columns:1fr}.ws-sample-banner{flex-wrap:wrap}.ws-sample-launch{flex-wrap:wrap}}
+@media(max-width:575px){.ws-sample-chat-card{min-height:620px}.ws-sample-drawer{--bs-offcanvas-width:100vw}.ws-sample-banner nav{font-size:11px}.ws-sample-message{max-width:94%}.ws-sample-assistant h2{font-size:19px}.ws-sample-cover{height:165px}}

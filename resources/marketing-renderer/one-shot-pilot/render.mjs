@@ -1,0 +1,14 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {bundle} from '@remotion/bundler';
+import {renderMedia,renderStill,selectComposition} from '@remotion/renderer';
+const [directory,browserExecutable,subtitleFile]=process.argv.slice(2);
+if(!directory||!path.isAbsolute(directory)||!browserExecutable||!subtitleFile)throw Error('missing_pilot_inputs');
+const lines=(await fs.readFile(subtitleFile,'utf8')).trim().split('\n');
+if(lines.join('\n')!=='20ft General Purpose Container\n设备｜材料｜一般货物\n封闭式货柜格式')throw Error('unreviewed_pilot_copy');
+const serveUrl=await bundle({entryPoint:path.join(path.dirname(fileURLToPath(import.meta.url)),'entry.tsx'),publicDir:directory});
+const inputProps={lines};const composition=await selectComposition({serveUrl,id:'JtgOneShot',inputProps,browserExecutable});
+await renderMedia({serveUrl,composition,inputProps,browserExecutable,codec:'h264',audioCodec:'aac',pixelFormat:'yuv420p',outputLocation:path.join(directory,'subtitled.mp4'),concurrency:2,crf:20,logLevel:'warn'});
+await renderStill({serveUrl,composition,inputProps,browserExecutable,frame:48,output:path.join(directory,'poster.png'),logLevel:'warn'});
+console.log(JSON.stringify({rendered:true,frames:120,fps:24,subtitle_lines:lines,has_native_audio:true}));

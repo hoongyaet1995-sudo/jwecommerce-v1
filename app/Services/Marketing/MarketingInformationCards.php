@@ -1,0 +1,13 @@
+<?php
+namespace App\Services\Marketing;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+class MarketingInformationCards {
+ public function normalize(array $cards,array $rows):array{
+  $v=Validator::make(['cards'=>$cards],['cards'=>'present|array|max:6','cards.*'=>'array:id,type,scene_number,start_frame,end_frame,title,body,step,channel,contact,position,replace_product_info,source,source_refs,semantic','cards.*.id'=>'required|string|max:64|distinct','cards.*.type'=>'required|in:feature,step,contact','cards.*.scene_number'=>'required|integer|min:1|max:12','cards.*.start_frame'=>'required|integer|min:0','cards.*.end_frame'=>'required|integer|min:36','cards.*.title'=>'required|string|max:18','cards.*.body'=>'present|nullable|string|max:40','cards.*.step'=>'required|integer|min:1|max:9','cards.*.channel'=>'required|in:none,whatsapp,phone','cards.*.contact'=>'present|nullable|string|max:40','cards.*.position'=>'required|in:top-left,top-center,top-right','cards.*.replace_product_info'=>'required|boolean','cards.*.source'=>'sometimes|string|max:100','cards.*.source_refs'=>'sometimes|array|max:4','cards.*.source_refs.*'=>'string|max:32']);$v->validate();$out=[];
+  foreach($cards as $c){$c['source_refs']=$c['source_refs']??['user'];$allowed=['user',...array_map(fn($r)=>'scene:'.$r['number'],$rows)];if(array_diff($c['source_refs'],$allowed))throw ValidationException::withMessages(['information_cards'=>'信息卡来源引用无效。']);$row=collect($rows)->firstWhere('number',(int)$c['scene_number']);if(!$row||$c['end_frame']>$row['frames']||$c['end_frame']-$c['start_frame']<36)throw ValidationException::withMessages(['information_cards'=>'信息卡区间必须在真实片段内，且至少1.50秒。']);
+   foreach($out as $p)if($p['scene_number']==$c['scene_number']&&max($p['start_frame'],$c['start_frame'])<min($p['end_frame'],$c['end_frame']))throw ValidationException::withMessages(['information_cards'=>'同一片段的信息卡时间不能重叠。']);
+   foreach(['scene_number','start_frame','end_frame','step'] as $k)$c[$k]=(int)$c[$k];foreach(['title','body','contact'] as $k)$c[$k]=trim(preg_replace('/\s+/u',' ',$c[$k]??''));if($c['title']==='')throw ValidationException::withMessages(['information_cards'=>'请填写信息卡标题。']);$c['replace_product_info']=$c['type']==='feature'&&(bool)$c['replace_product_info'];if(isset($c['semantic'])){$proof=$c['semantic'];if((!is_array($proof)||!MarketingSemanticProof::valid($proof))||($proof['scene_number']??null)!==$c['scene_number']||($proof['source_sha256']??null)!==($row['raw_sha256']??null)||($proof['title']??null)!==$c['title']||($proof['body']??null)!==$c['body'])throw ValidationException::withMessages(['information_cards'=>'自动文案的事实凭据已变化。']);$c['source']='已确认资料 · AI 自动整理';}else $c['source']='用户采用的文案';$out[]=$c;
+  }return $out;
+ }
+}

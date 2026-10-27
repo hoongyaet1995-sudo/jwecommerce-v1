@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 
 class ProviderTransport
 {
-    public function json(string $method, string $url, array $headers, array $data = [], bool $custom = false): array
+    public function json(string $method, string $url, array $headers, array $data = [], bool $custom = false, int $timeoutSeconds = 30): array
     {
         $options = ['allow_redirects' => false];
         if ($custom) {
@@ -34,9 +34,17 @@ class ProviderTransport
             $options['curl'] = [CURLOPT_RESOLVE => ["$host:443:".$addresses[0]]];
         }
         try {
-            $response = Http::acceptJson()->withHeaders($headers)->connectTimeout(5)->timeout(30)
+            $response = Http::acceptJson()->withHeaders($headers)->connectTimeout(5)->timeout(max(1, min(120, $timeoutSeconds)))
                 ->withOptions($options)->send($method, $url, $method === 'GET' ? ['query' => $data] : ['json' => $data]);
             if (! $response->successful()) {
+                Log::warning('AI provider rejection', ['status'=>$response->status(),'code'=>$response->json('error.code'),'parameter'=>$response->json('error.param')]);
+                if ($response->status() === 400 && str_contains((string)$response->json('error.message'), 'schema')) {
+                    Log::warning('Marketing structured schema rejected', ['schema_error'=>mb_substr((string)$response->json('error.message'),0,1200)]);
+                    throw new ProviderFailure('schema');
+                }
+                if (($response->status() === 402 || ($response->status() === 429 && in_array($response->json('error.code'), ['insufficient_quota', 'billing_hard_limit_reached', 'billing_not_active'], true)))) {
+                    throw new ProviderFailure('balance');
+                }
                 throw new ProviderFailure(match ($response->status()) {
                     401, 403 => 'authentication', 402, 429 => 'quota', 404 => 'endpoint', default => 'unavailable',
                 });
@@ -60,6 +68,12 @@ class ProviderTransport
             return $json;
         } catch (ProviderFailure $failure) {
             throw $failure;
+        } catch (\Illuminate\Http\Client\ConnectionException $failure) {
+            // Inspect only the transport error code; never retain raw headers, URL or body.
+            $previous = $failure->getPrevious();
+            $context = $previous && method_exists($previous, 'getHandlerContext') ? $previous->getHandlerContext() : [];
+            $timeout = ($context['errno'] ?? null) === 28 || str_contains($failure->getMessage(), 'cURL error 28:');
+            throw new ProviderFailure($timeout ? 'timeout' : 'connection');
         } catch (\Throwable) {
             // Do not chain exceptions containing request headers or raw response data.
             throw new ProviderFailure('unavailable');

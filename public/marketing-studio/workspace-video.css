@@ -1,0 +1,3 @@
+.ws-clip-workbench .ws-confirm-thumb img{height:110px;object-fit:contain}
+.ws-clip-workbench .ws-finished-player{height:480px;max-width:270px}
+@media(max-width:575px){.ws-clip-workbench .ws-confirm-thumb img{height:80px}.ws-clip-workbench .ws-finished-player{height:auto;aspect-ratio:9/16}}

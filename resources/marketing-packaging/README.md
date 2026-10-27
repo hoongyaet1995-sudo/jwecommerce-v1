@@ -1,0 +1,15 @@
+# Workbench music and brand outro
+
+Approved source: the music/outro sample accepted on 2026-10-21. `source.css` is preserved; `prepare-css.mjs` isolates it beneath `.ws-packaging`. Business data and real rendering replace the sample behavior without changing the dialog anatomy.
+
+Build with `npm install` and `npm run build` in this directory. Output is only `public/marketing-studio/packaging/`; do not rebuild unrelated Admin assets for this feature. Bootstrap Icons are supplied by the existing workbench.
+
+Local rendering uses the existing Remotion renderer dependencies, installed Chromium, FFmpeg/FFprobe and `marketing.editing.python_binary` with NumPy. The reduced Remotion FFmpeg build lacks sidechaincompress/afade/alimiter: `resources/marketing-renderer/packaging/mix.py` performs deterministic PCM mixing locally instead. No external media generation occurs during packaging.
+
+The dialog auditions a draft; the completed derivative is the authoritative mixed preview. The server binds adoption to a film digest, owned authorized audio and logo snapshot. Changing packaging starts from its original content version, preventing repeated outros or music layers. Discussion only creates a proposal; adoption explicitly queues local rendering.
+
+The customer catalogue is `resources/marketing-audio/library/catalogue.json`: 12 locally stored tracks with individual author-page CC0 evidence and immutable recording digests. The original three synthesized tracks remain internal acceptance assets and are only returned when opening an existing local acceptance recipe.
+
+Merchant upload shows only a file chooser and optional music name (defaults to filename); source/note inputs are removed. Existing optional API metadata remains backward compatible. Upload is recorded as `merchant_supplied` with `platform_verified=false`, not as copyright verification. The existing `authorized` flag controls asset availability; it is not a staff approval workflow. The request checks size/extension; the service checks the actual container, rejects video tracks except attached cover art, and fully decodes to PCM rather than trusting MIME guesses. Owned/private access and digest checks remain in place. A selected owned upload is retained beyond catalogue pagination. POST returns its complete track entry, allowing immediate selection without a fragile second config GET and without resetting draft settings.
+
+Configuration reads and workbench builds share request-scoped ClipSource/MaterialRepair instances. Explicit `readSnapshot` scopes reuse identical candidate/package/repair evidence and clear it in `finally`, including on failure. Adoption, workers, approval and other independent operations run outside these scopes and revalidate. The mounted packaging entry caches configuration for 30 seconds, deduplicates concurrent reads, clones settings before AI suggestions, and merges successful private uploads into the cache. No persistent browser storage or cross-project cache is used; expiry or a page reload fetches fresh configuration.
