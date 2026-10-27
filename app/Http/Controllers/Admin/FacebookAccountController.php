@@ -15,10 +15,18 @@ class FacebookAccountController extends Controller
     protected string $platform='facebook';
     public function __construct(private FacebookAccountService $facebook) {}
     private function requireManager(Request $request): void {abort_unless($request->user()?->is_super_admin,403);}
-    private function result(string $status){return redirect('/admin/social/'.$this->platform.'?'.$this->platform.'='.$status)->header('Referrer-Policy','no-referrer');}
+    private function result(string $status){
+        $r=request();$intent=$r->session()->get($this->platform.'_marketing_oauth');
+        if(is_array($intent)&&($intent['actor']??null)===$r->user()?->id&&($intent['platform']??null)===$this->platform&&($intent['expires']??0)>=now()->timestamp){
+            if($status!=='select')$r->session()->forget($this->platform.'_marketing_oauth');
+            return redirect('/admin/marketing/channels?'.http_build_query(['platform'=>$this->platform,'result'=>$status]))->header('Referrer-Policy','no-referrer')->header('Cache-Control','no-store');
+        }
+        return redirect('/admin/social/'.$this->platform.'?'.$this->platform.'='.$status)->header('Referrer-Policy','no-referrer');
+    }
     public function authorize(Request $request)
     {
         $this->requireManager($request);
+        if(!$request->routeIs('marketing.channels.authorize'))$request->session()->forget($this->platform.'_marketing_oauth');
         $request->session()->forget([$this->platform.'_oauth',$this->platform.'_pending']);
         if(!$this->facebook->configured())return $this->result('not_configured');
         $state=Str::random(64);
@@ -39,6 +47,7 @@ class FacebookAccountController extends Controller
     public function hubReturn(Request $request)
     {
         $this->requireManager($request);$state=$request->session()->pull($this->platform.'_oauth');
+        if($request->session()->has($this->platform.'_marketing_oauth')&&!app(\App\Services\Marketing\MarketingChannels::class)->ready($request)['ready'])return $this->result('invalid_state');
         try{$fingerprint=app(SocialHubOAuth::class)->fingerprint();}catch(\RuntimeException){return $this->result('invalid_state');}
         if(!is_array($state)||!is_string($request->query('state'))||!hash_equals($state['state'],$request->query('state'))
             ||$state['actor']!==$request->user()->id||$state['merchant']!==$this->facebook->merchant()

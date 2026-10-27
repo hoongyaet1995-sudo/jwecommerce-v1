@@ -1,0 +1,5 @@
+# Approved Marketing navigation integration
+
+Implement the approved standalone sample faithfully, local only. No commit/push/deployment, paid calls, OAuth or publication. Existing video routes, records, controllers and assets stay operational. New seven-entry navigation shares one Blade partial with native styling variants for existing shells. New GET-only preview pages use sample CSS/JS and persistent visible preview labels; no business persistence or provider calls. Existing projects/assets links point to actual existing routes. Templates page links to existing template workflow. New preview interactions remain in-memory and clearly simulated.
+
+Sequence: isolated route/permission/preservation tests RED; new controller/routes and sample shell; common navigation across existing main/workspace/template/assets shells; fake regression; normal local browser checks against approved sample and preserved Orbit project, no production requests. Record evidence and unresolved gates in phase ledger.

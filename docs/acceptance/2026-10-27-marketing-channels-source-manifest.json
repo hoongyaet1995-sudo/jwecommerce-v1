@@ -1,0 +1,86 @@
+[
+  {
+    "path": "app/Http/Controllers/Admin/MarketingNavigationController.php",
+    "sha256": "706cf8d1194242d1ce87af978d036ccfca02ea3a4e3d2cfb73f5dec7be1cdbf6"
+  },
+  {
+    "path": "app/Http/Controllers/Admin/MarketingChannelsController.php",
+    "sha256": "d5a4df0fb257bfcb1b1b2d001968c8b495371b00e01dba50dc4205552ab1657c"
+  },
+  {
+    "path": "app/Http/Controllers/Admin/FacebookAccountController.php",
+    "sha256": "3bfef4954fa2fdd42fa77c08d49c530c3d1ced832b97a8d6db94d5f366e05de8"
+  },
+  {
+    "path": "app/Http/Middleware/MarketingExecutionAvailability.php",
+    "sha256": "81593fdd129c5df75a7e6fc7da5e81b5feb2e7e11e86f73dbba432e4e4bf3354"
+  },
+  {
+    "path": "app/Models/MarketingChannelConnection.php",
+    "sha256": "89d9c4d25c307eebcc2f184ab19db0c87fa1aa5575b0f15e699af99d1ca25002"
+  },
+  {
+    "path": "app/Services/Marketing/MarketingChannels.php",
+    "sha256": "4489aab7859e963f1043f97b2c488200990bbeb156410114d4ada30ea6dcb4f6"
+  },
+  {
+    "path": "database/migrations/2026_10_27_200000_create_marketing_channel_connections.php",
+    "sha256": "0b75d16006b58a470926d6f7cebe67734c051ad1f87098f94a1898d9cd4d5cde"
+  },
+  {
+    "path": "routes/marketing.php",
+    "sha256": "822482293a8fbf4917a422ea3b4bd3271c121242ac1a331c54cc8198089ec32b"
+  },
+  {
+    "path": "resources/views/marketing/navigation/items.blade.php",
+    "sha256": "383b165eeac4e6e40baf81b4bbd43f19dd6c038966dc0c33230e5e91b15c0518"
+  },
+  {
+    "path": "resources/views/marketing/navigation/preview.blade.php",
+    "sha256": "52180016bf8dc57547d0abf64bbe59f81525923af939fa38ce53debe3824bb69"
+  },
+  {
+    "path": "resources/views/marketing/layout.blade.php",
+    "sha256": "12bd35a24b07ec6aae6882f80a343b5fda2805491ab52532d0f61d4bc85709b9"
+  },
+  {
+    "path": "resources/views/marketing/assets/shell.blade.php",
+    "sha256": "8ff7496bf7c78cb43997bfe91f7aceb27babce38cf48eaef1825fb34b58ec886"
+  },
+  {
+    "path": "resources/views/marketing/workspace/preview.blade.php",
+    "sha256": "9580d89a01f11615d6c93458471f497ce33061e87882dd8a18cca08e415887eb"
+  },
+  {
+    "path": "resources/views/marketing/workspace/template.blade.php",
+    "sha256": "086b5f01d241a2d752d2aae94b49db918087232b3b8c0734dec3a5ded3c914d6"
+  },
+  {
+    "path": "public/marketing-studio/channels.js",
+    "sha256": "68c35aeb15de7555ecc9f744551cabb3c779cf91473054cfa282bd8087764006"
+  },
+  {
+    "path": "public/marketing-studio/navigation-preview.js",
+    "sha256": "682647ddca2ec3cee5813d72f38133a282332ce08d04489d62258ddd8efe9b21"
+  },
+  {
+    "path": "public/marketing-studio/navigation-preview.css",
+    "sha256": "ee4308e1eb324c630c9d664355b93f1b72566f20dcf1da0399fa6305fa7d3b64"
+  },
+  {
+    "path": "public/marketing-studio/navigation.css",
+    "sha256": "ff6db08dee5c913b9f5a4b1b7ed6d99c2cbd5737dbf91448348851b554b383e6"
+  },
+  {
+    "path": "tests/Feature/MarketingChannelsTest.php",
+    "sha256": "c68320056ad7fe94bd57a9ed4055f5471c85165d49935b339b0ff09ff345c440"
+  },
+  {
+    "path": "tests/Feature/MarketingDevelopmentHubTest.php",
+    "sha256": "b8441aa1b663e2c38ac05ef607dbdfd6539e916624281afd2286d90a8d39af6c"
+  },
+  {
+    "path": "tests/Feature/MarketingNavigationTest.php",
+    "sha256": "a03b562e6dd8c9488b37762206167fa15a2bf10f759d5e9793abaafea5f83701"
+  }
+]
