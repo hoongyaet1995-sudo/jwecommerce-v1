@@ -61,9 +61,9 @@ class SocialHubOAuth
         if(isset($data['transaction_id'])&&($d['transaction_id']??null)!==$data['transaction_id'])throw new RuntimeException('hub_unavailable');
         return $d;
     }
-    public function start(string $state,string $platform="facebook"): array
+    public function start(string $state,string $platform="facebook",string $purpose="identity"): array
     {
-        $d=$this->call('start',['client_state'=>$state],$platform);$base=$this->installation()->hub_url;
+        $d=$this->call('start',['client_state'=>$state]+($purpose==='publish'?['purpose'=>'publish']:[]),$platform);$base=$this->installation()->hub_url;
         $url=$d['launch_url']??null;$id=$d['transaction_id']??null;
         if(!is_string($url)||!is_string($id)||!\Illuminate\Support\Str::isUuid($id)
             ||!preg_match('~^'.preg_quote($base,'~').'/oauth/'.preg_quote($platform,'~').'/launch\?ticket=[a-f0-9]{64}$~D',$url))throw new RuntimeException('hub_unavailable');

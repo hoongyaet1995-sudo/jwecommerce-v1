@@ -5,3 +5,5 @@
 .empty-box>i{font-size:32px;color:#8ca36b;display:block;margin-bottom:18px}
 .empty-box .btn-crm-primary i,.empty-box .btn-crm-secondary i{font-size:14px;color:inherit;display:inline-block;margin:0}
 .empty-box .btn-crm-primary,.empty-box .btn-crm-secondary{min-height:40px;padding:9px 16px;line-height:20px}
+
+.media-strip video{width:72px;height:64px;object-fit:cover;border-radius:8px}.asset-option video{width:100%;height:140px;object-fit:cover;border-radius:8px}.review-target video{width:120px;max-height:160px;border-radius:8px}.video-options{border-top:1px solid #edf0ef;padding-top:18px}.video-options h3{font-weight:700;margin-bottom:14px}

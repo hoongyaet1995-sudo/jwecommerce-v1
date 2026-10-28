@@ -53,4 +53,8 @@ class MarketingExternalChannelsTest extends TestCase {
   $this->setupOwner();$u=User::factory()->create(['is_admin'=>true,'is_super_admin'=>false]);$u->permissions()->create(['permission'=>'marketing.view']);$this->actingAs($u);app(SocialHubOAuth::class)->shouldNotReceive('call');app(SocialHubOAuth::class)->shouldNotReceive('start');
   foreach(['tiktok','youtube'] as $p){$this->get('/admin/marketing/channels/'.$p)->assertOk();$this->postJson('/admin/marketing/channels/'.$p.'/authorize')->assertForbidden();$this->postJson('/admin/marketing/channels/'.$p.'/'.\Illuminate\Support\Str::uuid().'/check')->assertForbidden();}Http::assertNothingSent();
  }
+
+ public function test_publishing_authorization_is_explicit_and_preserves_existing_identity_connect():void {
+  $this->setupOwner();$h=app(SocialHubOAuth::class);$h->shouldReceive('start')->once()->with(\Mockery::type('string'),'youtube','publish')->andReturn(['transaction_id'=>(string)\Illuminate\Support\Str::uuid(),'launch_url'=>'https://social.jwaistudio.online/oauth/youtube/launch?ticket='.str_repeat('a',64)]);$this->post('/admin/marketing/channels/youtube/authorize',['purpose'=>'publish'])->assertRedirect();$this->assertSame('publish',session('youtube_marketing_oauth')['purpose']);Http::assertNothingSent();
+ }
 }

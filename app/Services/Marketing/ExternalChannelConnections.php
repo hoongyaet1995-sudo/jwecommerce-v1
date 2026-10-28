@@ -18,8 +18,8 @@ final class ExternalChannelConnections
     {
         $r->session()->forget([$p.'_pending',$p.'_oauth']);
         try {
-            $hub=app(SocialHubOAuth::class);$state=Str::random(64);$grant=$hub->start($state,$p);
-            $r->session()->put($p.'_oauth',['state'=>$state,'actor'=>$r->user()->id,'merchant'=>$this->merchant(),'app'=>$this->appId($p),'installation'=>$hub->fingerprint(),'transaction'=>$grant['transaction_id'],'expires'=>now()->addMinutes(10)->timestamp]);
+            $hub=app(SocialHubOAuth::class);$state=Str::random(64);$purpose=$r->input('purpose','identity');$grant=$purpose==='publish'?$hub->start($state,$p,'publish'):$hub->start($state,$p);
+            $r->session()->put($p.'_oauth',['state'=>$state,'actor'=>$r->user()->id,'merchant'=>$this->merchant(),'app'=>$this->appId($p),'installation'=>$hub->fingerprint(),'transaction'=>$grant['transaction_id'],'purpose'=>$purpose,'expires'=>now()->addMinutes(10)->timestamp]);
             return redirect()->away($grant['launch_url'])->header('Cache-Control','no-store')->header('Referrer-Policy','no-referrer');
         } catch (\Throwable) { $r->session()->forget($p.'_marketing_oauth');return $this->result($p,'hub_unavailable'); }
     }
@@ -57,6 +57,7 @@ final class ExternalChannelConnections
         $r->session()->forget([$p.'_pending',$p.'_marketing_oauth']);
         $pages=$receipt['pages']??[];$a=count($pages)===1?$pages[0]:null;$scopes=$receipt['permissions']??[];
         abort_unless(is_array($a) && ($a['id']??null)===$id && is_string($a['name']??null) && is_string($a['access_token']??null) && $a['access_token']!=='' && is_array($scopes) && in_array($this->scope($p),$scopes,true) && count(array_filter($scopes,'is_string'))===count($scopes) && $this->validDate($a['expires_at']??null),502,'The authorization receipt is incomplete. Reconnect to continue.');
+        if(($s['purpose']??'identity')==='publish')abort_unless(in_array($p==='tiktok'?'video.publish':'https://www.googleapis.com/auth/youtube.upload',$scopes,true),422,'Publishing permission was not granted. Existing accounts are retained.');
         DB::transaction(function() use($a,$scopes,$p,$id,$r) {
             $keys=['merchant_key'=>$this->merchant(),'platform'=>$p,'provider_account_id'=>$id];
             $row=MarketingChannelConnection::where($keys)->lockForUpdate()->first()??new MarketingChannelConnection($keys);
