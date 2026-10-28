@@ -18,7 +18,7 @@ class MarketingPosts {
   })->all();
  }
  public function listing(int $user):array{return MarketingPost::where('user_id',$user)->where('merchant_key',$this->merchant())->orderByDesc('updated_at')->get()->map(fn($p)=>$this->view($p))->all();}
- public function view(MarketingPost $p):array{return array_merge($p->document,($p->status==='Scheduled'&&empty($p->document['delivery_phase'])?['delivery_phase'=>'saved']:[]),['id'=>$p->id,'version'=>$p->version,'status'=>$p->status,'due'=>$p->scheduled_at?->toIso8601String(),'tz'=>$p->timezone]);}
+ public function view(MarketingPost $p):array{$doc=$p->document;$connections=MarketingChannelConnection::where('merchant_key',$p->merchant_key)->whereIn('id',array_keys($doc['outcomes']??[]))->get()->keyBy('id');foreach($doc['outcomes']??[] as $id=>$result){$doc['outcomes'][$id]['url']=app(MarketingPostLink::class)->url($connections[$id]->platform??'', $result,($doc['type']??'')==='Post'?'image':'video');}return array_merge($doc,($p->status==='Scheduled'&&empty($p->document['delivery_phase'])?['delivery_phase'=>'saved']:[]),['id'=>$p->id,'version'=>$p->version,'status'=>$p->status,'due'=>$p->scheduled_at?->toIso8601String(),'tz'=>$p->timezone]);}
  private function invalid(string $message):never{throw ValidationException::withMessages(['post'=>$message]);}
  public function write(int $user,string $action,array $d,bool $executing=false):array {
   return DB::transaction(function()use($user,$action,$d,$executing){

@@ -93,7 +93,7 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::post('/posts/creator/{connection}',[\App\Http\Controllers\Admin\MarketingPostsController::class,'creator'])->whereUuid('connection')->middleware('throttle:30,1')->name('posts.creator');
     Route::get('/posts/library',[\App\Http\Controllers\Admin\MarketingPostsController::class,'library'])->name('posts.library');
     Route::get('/posts/media/{asset}',[\App\Http\Controllers\Admin\MarketingPostsController::class,'media'])->name('posts.media');
-    Route::post('/posts/data/{action}',[\App\Http\Controllers\Admin\MarketingPostsController::class,'write'])->whereIn('action',['draft','schedule','cancel','publish','refresh'])->middleware('throttle:60,1')->name('posts.write');
+    Route::post('/posts/data/{action}',[\App\Http\Controllers\Admin\MarketingPostsController::class,'write'])->whereIn('action',['draft','schedule','cancel','publish','refresh','link'])->middleware('throttle:60,1')->name('posts.write');
 
     Route::get('/calendar', [\App\Http\Controllers\Admin\MarketingPostsController::class, 'index'])->name('preview.calendar');
     Route::get('/analytics', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','analytics')->name('preview.analytics');

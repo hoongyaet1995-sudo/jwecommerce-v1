@@ -28,6 +28,12 @@ class MarketingImagePublisher {
   foreach(DB::table('marketing_post_attempts')->where('post_id',$id)->whereIn('state',['waiting','unknown'])->get()->filter(fn($a)=>$a->state==='waiting'||!empty(json_decode($a->receipt,true)['publish_id']))->pluck('id') as $attempt)$this->advance($attempt,false);
   return app(MarketingPosts::class)->view($p->fresh());
  }
+ public function findLinks(int $user,string $id):array {
+  $s=app(MarketingPosts::class);$p=MarketingPost::where('user_id',$user)->where('merchant_key',$s->merchant())->findOrFail($id);$updates=[];
+  foreach($p->document['outcomes']??[] as $target=>$outcome){if(($outcome['status']??'')!=='Published'||!empty($outcome['url'])||!preg_match('/^\d+$/D',(string)($outcome['ref']??'')))continue;$c=MarketingChannelConnection::where('merchant_key',$p->merchant_key)->where('platform','instagram')->find($target);if(!$c||$c->state!=='connected')continue;$data=$this->request($c,'get',$outcome['ref'],['fields'=>'permalink']);$url=app(MarketingPostLink::class)->url('instagram',['status'=>'Published','url'=>$data['permalink']??null]);if($url)$updates[$target]=['ref'=>$outcome['ref'],'url'=>$url];}
+  if($updates)DB::transaction(function()use($p,$updates){$row=MarketingPost::lockForUpdate()->findOrFail($p->id);$doc=$row->document;foreach($updates as $target=>$link)if(($doc['outcomes'][$target]['status']??'')==='Published'&&($doc['outcomes'][$target]['ref']??null)===$link['ref'])$doc['outcomes'][$target]['url']=$link['url'];$row->update(['document'=>$doc]);});
+  return $s->view($p->fresh());
+ }
  private function http($c){return Http::asForm()->acceptJson()->withToken($c->access_token)->connectTimeout(8)->timeout(25)->withoutRedirecting();}
  private function endpoint(string $path):string{$v=(string)config('services.facebook.graph_version','v25.0');abort_unless(preg_match('/^v\d+\.\d+$/D',$v),500);return 'https://graph.facebook.com/'.$v.'/'.$path;}
  private function request($c,string $method,string $path,array $data):array {
@@ -59,8 +65,10 @@ class MarketingImagePublisher {
    }else{$reason='permission';$state='failed';}
   }catch(\Throwable){$reason='unknown';$state='unknown';}
   if(!in_array($state,['published','waiting','failed'],true)){$state='unknown';$reason='unknown';}
+  // Link lookup is read-only and cannot change a confirmed publishing result.
+  if($state==='published'&&$c?->platform==='instagram'&&is_string($ref)&&preg_match('/^\d+$/D',$ref)){try{$link=$this->request($c,'get',$ref,['fields'=>'permalink']);$receipt['url']=app(MarketingPostLink::class)->url('instagram',['status'=>'Published','url'=>$link['permalink']??null]);}catch(\Throwable){/* Keep successful result even when link is unavailable. */}}
   $receipt['post_id']=$ref;$receipt['reason']=$reason;$receipt['stage']=$state==='published'?'completed':($state==='waiting'?'container_known':$state);$this->saveReceipt($id,$receipt,$state);
-  DB::transaction(function()use($a,$state,$reason,$ref,$receipt){$p=MarketingPost::lockForUpdate()->findOrFail($a->post_id);$doc=$p->document;$doc['outcomes'][$a->connection_id]=array_filter(['status'=>$state==='published'?'Published':($state==='waiting'?'Publishing':'Needs attention'),'reason'=>$reason,'ref'=>$ref?:'Delivery '.$a->id,'visibility'=>$receipt['options']['privacy']??null,'code'=>$receipt['provider_code']??null],fn($v)=>$v!==null);
+  DB::transaction(function()use($a,$state,$reason,$ref,$receipt){$p=MarketingPost::lockForUpdate()->findOrFail($a->post_id);$doc=$p->document;$doc['outcomes'][$a->connection_id]=array_filter(['status'=>$state==='published'?'Published':($state==='waiting'?'Publishing':'Needs attention'),'reason'=>$reason,'ref'=>$ref?:'Delivery '.$a->id,'url'=>$receipt['url']??null,'visibility'=>$receipt['options']['privacy']??null,'code'=>$receipt['provider_code']??null],fn($v)=>$v!==null);
    $values=array_column($doc['outcomes'],'status');$status=in_array('Publishing',$values,true)?'Publishing':(in_array('Needs attention',$values,true)?'Needs attention':'Published');$doc['history'][]=['title'=>'Destination '.strtolower($doc['outcomes'][$a->connection_id]['status']),'text'=>now()->toIso8601String().' · No automatic resend.'];$p->update(['document'=>$doc,'status'=>$status,'version'=>$p->version+1]);});
  }
  private function photoOptions(string $target,array $d):void {

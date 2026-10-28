@@ -1,0 +1,3 @@
+# Post detail preview and destination links
+Approved scope: enlarge full uncropped preview; platform-specific View on links per successful destination, private-access note, retain reference details. No publishing/deployment.
+Implementation: safe shared result URL resolver; preserve Instagram permalink from read-only post-publish lookup (failure cannot downgrade success); resolve existing YouTube/Facebook IDs; TikTok only numeric public post IDs, never publish/task IDs. UI uses escaped validated URL, noopener; responsive preview. Tests cover four platforms and hostile URLs, fake provider regression; normal localhost UI check.
