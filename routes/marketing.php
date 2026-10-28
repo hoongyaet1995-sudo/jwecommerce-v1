@@ -91,11 +91,12 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::get('/analytics', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','analytics')->name('preview.analytics');
     Route::get('/content', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','content')->name('preview.content');
     Route::get('/channels', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'index'])->name('preview.channels');
-    Route::post('/channels/{platform}/authorize', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'authorize'])->whereIn('platform',['facebook','instagram'])->middleware('throttle:10,1')->name('channels.authorize');
-    Route::post('/channels/{platform}/select', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'select'])->whereIn('platform',['facebook','instagram'])->middleware('throttle:10,1')->name('channels.select');
-    Route::post('/channels/{platform}/cancel', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'cancel'])->whereIn('platform',['facebook','instagram'])->middleware('throttle:10,1')->name('channels.cancel');
-    Route::post('/channels/{platform}/{connection}/check', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'check'])->whereIn('platform',['facebook','instagram'])->whereUuid('connection')->middleware('throttle:10,1')->name('channels.check');
-    Route::post('/channels/{platform}/{connection}/disconnect', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'disconnect'])->whereIn('platform',['facebook','instagram'])->whereUuid('connection')->middleware('throttle:10,1')->name('channels.disconnect');
+    Route::get('/channels/{platform}', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'index'])->whereIn('platform',['facebook','instagram','tiktok','youtube'])->name('channels.platform');
+    Route::post('/channels/{platform}/authorize', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'authorize'])->whereIn('platform',['facebook','instagram','tiktok','youtube'])->middleware('throttle:10,1')->name('channels.authorize');
+    Route::post('/channels/{platform}/select', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'select'])->whereIn('platform',['facebook','instagram','tiktok','youtube'])->middleware('throttle:10,1')->name('channels.select');
+    Route::post('/channels/{platform}/cancel', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'cancel'])->whereIn('platform',['facebook','instagram','tiktok','youtube'])->middleware('throttle:10,1')->name('channels.cancel');
+    Route::post('/channels/{platform}/{connection}/check', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'check'])->whereIn('platform',['facebook','instagram','tiktok','youtube'])->whereUuid('connection')->middleware('throttle:10,1')->name('channels.check');
+    Route::post('/channels/{platform}/{connection}/disconnect', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'disconnect'])->whereIn('platform',['facebook','instagram','tiktok','youtube'])->whereUuid('connection')->middleware('throttle:10,1')->name('channels.disconnect');
     Route::get('/content/templates', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','templates')->name('preview.templates');
     Route::get('/projects', [Studio::class, 'index'])->name('index');
     Route::get('/projects/create', [Studio::class, 'create'])->name('create');
@@ -119,3 +120,6 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::post('/projects/{project}/assets', [Studio::class, 'upload'])->middleware('throttle:20,1')->name('upload');
     Route::get('/projects/{project}/assets/{asset}', [Studio::class, 'asset'])->name('asset');
 });
+
+// Signed Hub returns require the same authenticated Marketing Studio manager.
+Route::get('/admin/social/{platform}/hub-return',[\App\Http\Controllers\Admin\MarketingChannelsController::class,'hubReturn'])->whereIn('platform',['tiktok','youtube'])->middleware(['web','auth','throttle:20,1']);

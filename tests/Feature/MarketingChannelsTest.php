@@ -34,6 +34,18 @@ class MarketingChannelsTest extends TestCase {
   $this->assertNull(session('facebook_pending'));Http::assertNothingSent();
  }
  private function connection(array $values=[]):\App\Models\MarketingChannelConnection{return \App\Models\MarketingChannelConnection::create(array_replace(['merchant_key'=>'jw-ecommerce','platform'=>'facebook','provider_account_id'=>'123','app_id'=>'test-app','name'=>'Saved page','access_token'=>'PRIVATE-TEST-TOKEN','permissions'=>['pages_show_list','pages_read_engagement'],'authorized_by'=>auth()->id(),'state'=>'unverified'],$values));}
+ public function test_platform_details_are_read_only_and_keep_all_existing_connections():void{
+  $this->owner();$this->hub();$this->connection();$this->connection(['provider_account_id'=>'456','name'=>'Second page']);
+  foreach(['facebook','instagram','tiktok','youtube'] as $platform)$this->get('/admin/marketing/channels/'.$platform)->assertOk()->assertSee('channels.css')->assertSee('channelsPlatform');
+  $this->get('/admin/marketing/channels/unknown')->assertNotFound();$this->assertDatabaseCount('marketing_channel_connections',2);Http::assertNothingSent();Queue::assertNothingPushed();
+ }
+ public function test_adding_and_reconnecting_one_account_preserves_the_other_accounts():void{
+  $u=$this->owner();$other=$this->connection(['provider_account_id'=>'789','name'=>'Existing page']);$old=$other->getRawOriginal('access_token');$h=$this->hub();
+  $h->shouldReceive('call')->twice()->with('select',\Mockery::any(),'facebook')->andReturn(['permissions'=>['pages_show_list','pages_read_engagement'],'page'=>['id'=>'123','name'=>'New page','access_token'=>'NEW-PRIVATE-TOKEN']]);
+  $this->withSession($this->pending($u))->postJson('/admin/marketing/channels/facebook/select',['account_id'=>'123'])->assertOk();$id=\App\Models\MarketingChannelConnection::where('provider_account_id','123')->value('id');
+  $this->withSession($this->pending($u))->postJson('/admin/marketing/channels/facebook/select',['account_id'=>'123'])->assertOk();
+  $this->assertDatabaseCount('marketing_channel_connections',2);$this->assertSame($id,\App\Models\MarketingChannelConnection::where('provider_account_id','123')->value('id'));$this->assertSame($old,$other->fresh()->getRawOriginal('access_token'));Http::assertNothingSent();Queue::assertNothingPushed();
+ }
  public function test_expired_or_wrong_actor_pending_is_rejected_before_hub_call():void{
   $u=$this->owner();$h=$this->hub();$h->shouldNotReceive('call');$session=$this->pending($u);$session['facebook_marketing_oauth']['expires']=now()->subMinute()->timestamp;$this->withSession($session)->postJson('/admin/marketing/channels/facebook/select',['account_id'=>'123'])->assertStatus(409);$session=$this->pending($u);$session['facebook_marketing_oauth']['actor']=$u->id+1;$this->withSession($session)->postJson('/admin/marketing/channels/facebook/select',['account_id'=>'123'])->assertStatus(409);$this->assertDatabaseCount('marketing_channel_connections',0);
  }

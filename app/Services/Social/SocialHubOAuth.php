@@ -20,7 +20,7 @@ class SocialHubOAuth
             $expected=SocialProtocol::responseSignature($h,$secret,'client-to-hub',$r->status(),$r->body());
             if(!hash_equals($expected,(string)$r->header('X-Social-Response-Signature'))||$r->json('client_id')!==$s->client_id)throw new RuntimeException('invalid_receipt');
             $ok=in_array($platform,$r->json('enabled_channels',[]),true);
-            $label=match($platform){'whatsapp'=>'WhatsApp','facebook'=>'Facebook','tiktok'=>'TikTok',default=>'Instagram'};
+            $label=match($platform){'whatsapp'=>'WhatsApp','facebook'=>'Facebook','tiktok'=>'TikTok','youtube'=>'YouTube',default=>'Instagram'};
             return ['oauthPermitted'=>$ok,'oauthReason'=>$ok?null:'Social Hub has not permitted '.$label.' OAuth for this website.'];
         }catch(\Throwable){return ['oauthPermitted'=>false,'oauthReason'=>'Social Hub is unavailable or this website installation is not configured.'];}
     }
@@ -39,14 +39,16 @@ class SocialHubOAuth
     }
     public function call(string $action,array $data,string $platform="facebook"): array
     {
-        if(!in_array($action,['start','redeem','select'],true)&&!($platform==='whatsapp'&&$action==='import'))throw new RuntimeException('hub_unavailable');
-        if(!in_array($platform,['facebook','instagram','whatsapp'],true))throw new RuntimeException('hub_unavailable');
+        if(!in_array($action,['start','redeem','select'],true)&&!($platform==='whatsapp'&&$action==='import')&&! (in_array($platform,['tiktok','youtube'],true)&&$action==='check'))throw new RuntimeException('hub_unavailable');
+        if(!in_array($platform,['facebook','instagram','whatsapp','tiktok','youtube'],true))throw new RuntimeException('hub_unavailable');
         $s=$this->installation();$path='/api/v1/oauth/'.$platform.'/'.$action;
         try{
             $secret=Crypt::decryptString($s->encrypted_secret);
-            $body=json_encode(['registered_domain'=>$s->registered_domain]+$data,JSON_THROW_ON_ERROR);
+            $external=in_array($platform,['tiktok','youtube'],true);
+            $expectedApp=$external?['expected_app_id'=>(string)config('services.'.$platform.'.client_id')]:[];
+            $body=json_encode(['registered_domain'=>$s->registered_domain]+$expectedApp+$data,JSON_THROW_ON_ERROR);
             $h=SocialProtocol::headers($s->client_id,$s->key_id,$secret,'client-to-hub','POST',$path,$body);
-            $r=Http::connectTimeout(5)->timeout(15)->withoutRedirecting()->withHeaders($h+['Accept'=>'application/json'])
+            $r=Http::connectTimeout(5)->timeout($external?($action==='check'?35:20):15)->withoutRedirecting()->withHeaders($h+['Accept'=>'application/json'])
                 ->withBody($body,'application/json')->post($s->hub_url.$path);
         }catch(\Throwable){throw new RuntimeException('hub_unavailable');}
         if(!$r->successful())throw new RuntimeException(match($r->status()){
@@ -55,7 +57,7 @@ class SocialHubOAuth
         $expected=SocialProtocol::responseSignature($h,$secret,'client-to-hub',$r->status(),$r->body());
         if(!hash_equals($expected,(string)$r->header('X-Social-Response-Signature'))||!is_array($r->json()))throw new RuntimeException('hub_unavailable');
         $d=$r->json();
-        if(($d['app_id']??null)!==(string)config($platform==='whatsapp'?'services.whatsapp.app_id':'services.facebook.client_id'))throw new RuntimeException('not_configured');
+        if(($d['app_id']??null)!==(string)config(match($platform){'whatsapp'=>'services.whatsapp.app_id','tiktok'=>'services.tiktok.client_id','youtube'=>'services.youtube.client_id',default=>'services.facebook.client_id'}))throw new RuntimeException('not_configured');
         if(isset($data['transaction_id'])&&($d['transaction_id']??null)!==$data['transaction_id'])throw new RuntimeException('hub_unavailable');
         return $d;
     }

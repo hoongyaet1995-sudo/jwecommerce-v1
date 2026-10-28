@@ -155,4 +155,15 @@ class SocialHubOAuthTest extends TestCase
       $this->assertSame($this->transaction,session('instagram_oauth.transaction'));
       $this->assertNull(session('facebook_oauth'));Http::assertSent(fn($r)=>str_ends_with($r->url(),'/api/v1/oauth/instagram/start'));
     }
+
+    public function test_external_check_binds_app_and_allows_bounded_refresh_plus_probe_time():void
+    {
+        config(['services.youtube.client_id'=>'yt-app']);
+        Http::fake(function($r,$options){
+            $this->assertSame(35,$options['timeout']);$this->assertSame('yt-app',$r['expected_app_id']);
+            $body=json_encode(['app_id'=>'yt-app','result'=>'connected']);$h=collect($r->headers())->map(fn($x)=>$x[0])->all();
+            return Http::response($body,200,['X-Social-Response-Signature'=>SocialProtocol::responseSignature($h,'installation-secret','client-to-hub',200,$body)]);
+        });
+        $this->assertSame('connected',app(\App\Services\Social\SocialHubOAuth::class)->call('check',['account_id'=>'UC-one'],'youtube')['result']);Http::assertSentCount(1);
+    }
 }

@@ -1,6 +1,9 @@
 <?php
 
 return [
+    // Client identifiers only; provider secrets belong exclusively to Social Hub.
+    'tiktok'=>['client_id'=>env('TIKTOK_CLIENT_ID')],
+    'youtube'=>['client_id'=>env('YOUTUBE_CLIENT_ID')],
     'whatsapp' => [
         'oauth_routing_ready' => env('WHATSAPP_OAUTH_ROUTING_READY', false),
         'inbound_routing_ready' => env('WHATSAPP_INBOUND_ROUTING_READY', false),
