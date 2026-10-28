@@ -86,8 +86,14 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::get('/workspace-preview', [\App\Http\Controllers\Admin\MarketingWorkspacePreviewController::class, 'show'])->name('workspace.preview');
     Route::get('/', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','overview')->name('home');
     Route::get('/campaigns', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','campaigns')->name('preview.campaigns');
-    Route::get('/posts', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','posts')->name('preview.posts');
-    Route::get('/calendar', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','calendar')->name('preview.calendar');
+    Route::get('/posts', [\App\Http\Controllers\Admin\MarketingPostsController::class, 'index'])->name('preview.posts');
+
+    Route::get('/posts/data',[\App\Http\Controllers\Admin\MarketingPostsController::class,'data'])->name('posts.data');
+    Route::get('/posts/library',[\App\Http\Controllers\Admin\MarketingPostsController::class,'library'])->name('posts.library');
+    Route::get('/posts/media/{asset}',[\App\Http\Controllers\Admin\MarketingPostsController::class,'media'])->name('posts.media');
+    Route::post('/posts/data/{action}',[\App\Http\Controllers\Admin\MarketingPostsController::class,'write'])->whereIn('action',['draft','schedule','cancel','publish','refresh'])->middleware('throttle:60,1')->name('posts.write');
+
+    Route::get('/calendar', [\App\Http\Controllers\Admin\MarketingPostsController::class, 'index'])->name('preview.calendar');
     Route::get('/analytics', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','analytics')->name('preview.analytics');
     Route::get('/content', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','content')->name('preview.content');
     Route::get('/channels', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'index'])->name('preview.channels');
@@ -123,3 +129,5 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
 
 // Signed Hub returns require the same authenticated Marketing Studio manager.
 Route::get('/admin/social/{platform}/hub-return',[\App\Http\Controllers\Admin\MarketingChannelsController::class,'hubReturn'])->whereIn('platform',['tiktok','youtube'])->middleware(['web','auth','throttle:20,1']);
+
+Route::get('/marketing/post-delivery/{attempt}', [\App\Http\Controllers\Admin\MarketingPostsController::class, 'delivery'])->whereNumber('attempt')->middleware('signed')->name('marketing.posts.delivery');

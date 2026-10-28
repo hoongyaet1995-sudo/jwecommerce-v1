@@ -1,0 +1,21 @@
+/* Marketing Studio binary controls: preserve native checked/form semantics. */
+input[type="checkbox"] {
+ appearance:none!important;-webkit-appearance:none!important;
+ box-sizing:border-box!important;position:relative!important;
+ width:38px!important;min-width:38px!important;height:22px!important;min-height:22px!important;
+ flex:0 0 38px!important;padding:0!important;border:1px solid #a4b4aa!important;
+ border-radius:999px!important;vertical-align:middle!important;margin-inline-end:8px!important;cursor:pointer;
+ background:radial-gradient(circle at 10px 50%,#fff 0 7px,transparent 7.5px),#a4b4aa!important;
+ box-shadow:none!important;transition:background-color .15s ease;
+}
+input[type="checkbox"]:checked {
+ border-color:#0b4932!important;
+ background:radial-gradient(circle at 26px 50%,#fff 0 7px,transparent 7.5px),#0b4932!important;
+}
+input[type="checkbox"]:focus-visible {outline:3px solid #a9c975!important;outline-offset:3px!important}
+input[type="checkbox"]:disabled {opacity:.45!important;cursor:not-allowed!important}
+@media(forced-colors:active){input[type="checkbox"]{appearance:auto!important;background:initial!important;forced-color-adjust:auto}}
+
+/* Do not inherit empty-state artwork sizing inside action buttons. */
+.empty-box .btn-crm-primary i,.empty-box .btn-crm-secondary i{font-size:14px;color:inherit;display:inline-block;margin:0}
+.empty-box .btn-crm-primary,.empty-box .btn-crm-secondary{min-height:40px;padding:9px 16px;line-height:20px}
