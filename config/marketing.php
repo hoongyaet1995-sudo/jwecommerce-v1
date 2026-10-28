@@ -3,6 +3,7 @@
 $conversationPilot=json_decode((string)env('MARKETING_CONVERSATION_PILOT_GRANT','{}'),true);
 $conversationPilot=is_array($conversationPilot)?$conversationPilot:[];
 return [
+    'tiktok_photo_verified_prefix' => env('MARKETING_TIKTOK_PHOTO_VERIFIED_PREFIX', ''),
     'external_video_publishing_enabled'=>(bool)env('MARKETING_EXTERNAL_VIDEO_PUBLISHING_ENABLED',false),
     'social_publishing_enabled'=>(bool)env('MARKETING_SOCIAL_PUBLISHING_ENABLED',false),
     'execution_enabled'=>(bool)env('MARKETING_EXECUTION_ENABLED',in_array(env('APP_ENV'),['local','testing'],true)),
