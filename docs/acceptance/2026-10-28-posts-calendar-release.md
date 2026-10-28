@@ -8,3 +8,12 @@ Source: canonical C:/xampp/htdocs/jwstudio-ecommerce, clean scoped release mirro
 Planned normal-page test caption: JW Marketing Studio publishing test. This is a test post; no offer or product claim. Use existing catalog image, clearly test-only. Final real receipts and same-SHA/live evidence recorded in work/video-quality-review/merchant-readiness-20261027/ledger.md. No claim of success before actual provider receipts and online checks.
 
 References: Meta Instagram API official Postman collection https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api ; Meta Page Photos API https://developers.facebook.com/docs/graph-api/reference/page/photos/ . Official docs direct fetch rate-limited during research; no third-party implementation copied.
+
+
+## Real publishing acceptance
+Normal production page, one approval of post349477b4-4159-4ffd-a6b2-02f995503d12, image from existing20ft General Purpose Container catalog item (Jasmine is local-only, not found in online media). Test-only caption exactly as above. Facebook Page JW Studio receipt1045679445296291_122132392268949900; Instagram hoongyaet95 receipt18124757123474289 and known container18381905326228607. Both completed, exactly two destination attempts, no retry. Read-only Graph verification returned200 for each and matching caption.
+Facebook: https://www.facebook.com/122103733838949900/posts/122132392268949900
+Instagram: https://www.instagram.com/p/DfB8xjME4-P/
+Originals retained and test posts kept as authorized. Future scheduled dispatch and video publishing remain unavailable. Follow-up corrects stale disabled copy in preview/delivery UI and records actual immediate approval timestamp instead of the internal future-time preparation placeholder; no repost.
+
+Release environment test setup: isolated checkout has no real .env; ephemeral test-only APP_KEY and APP_URL127.0.0.1:8500 supplied to the process, SQLite memory only. Corrected environment then passed29tests174assertions with release-local autoload. No production secrets copied. SSH reached via key profile; actual root /home/u762348670/apps/jwecommerce verified, short /apps path absent. No unrelated dirty source or server files overwritten.
