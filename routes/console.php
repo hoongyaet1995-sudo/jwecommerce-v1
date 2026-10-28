@@ -170,3 +170,15 @@ Schedule::command('support:prune-uploads')->hourly()->withoutOverlapping();
 
 Artisan::command('marketing:recover-template-local', function () { if (!config('marketing.execution_enabled')) { $this->info('Marketing execution disabled.'); return; } $this->info('Queued local recoveries: '.app(\App\Services\Marketing\MarketingTemplateRecovery::class)->sweep()); });
 Schedule::command('marketing:recover-template-local')->everyMinute()->withoutOverlapping();
+
+
+// Dedicated one-attempt publishing worker; never drains rendering or other business queues.
+Artisan::command('marketing:publish-due', function () {
+ $this->info('Queued publishing tasks: '.app(\App\Services\Marketing\MarketingPostQueue::class)->sweep());
+})->purpose('Dispatch explicitly approved due posts and query known publishing results');
+Artisan::command('marketing:process-posts', function () {
+ if(!config('marketing.post_queue_enabled')||!config('marketing.social_publishing_enabled'))return 0;
+ return $this->call('queue:work',['connection'=>'marketing-posts','--queue'=>'marketing-posts','--stop-when-empty'=>true,'--max-jobs'=>5,'--max-time'=>50,'--tries'=>1,'--timeout'=>600,'--no-interaction'=>true]);
+})->purpose('Process only approved social publishing tasks without automatic resubmission');
+Schedule::command('marketing:publish-due')->everyMinute()->withoutOverlapping(5)->when(fn()=>config('marketing.post_queue_enabled')&&config('marketing.social_publishing_enabled'));
+Schedule::command('marketing:process-posts')->everyMinute()->withoutOverlapping(15)->when(fn()=>config('marketing.post_queue_enabled')&&config('marketing.social_publishing_enabled'));

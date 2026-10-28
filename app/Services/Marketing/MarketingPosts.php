@@ -18,15 +18,15 @@ class MarketingPosts {
   })->all();
  }
  public function listing(int $user):array{return MarketingPost::where('user_id',$user)->where('merchant_key',$this->merchant())->orderByDesc('updated_at')->get()->map(fn($p)=>$this->view($p))->all();}
- public function view(MarketingPost $p):array{return array_merge($p->document,['id'=>$p->id,'version'=>$p->version,'status'=>$p->status,'due'=>$p->scheduled_at?->toIso8601String(),'tz'=>$p->timezone]);}
+ public function view(MarketingPost $p):array{return array_merge($p->document,($p->status==='Scheduled'&&empty($p->document['delivery_phase'])?['delivery_phase'=>'saved']:[]),['id'=>$p->id,'version'=>$p->version,'status'=>$p->status,'due'=>$p->scheduled_at?->toIso8601String(),'tz'=>$p->timezone]);}
  private function invalid(string $message):never{throw ValidationException::withMessages(['post'=>$message]);}
- public function write(int $user,string $action,array $d):array {
-  return DB::transaction(function()use($user,$action,$d){
+ public function write(int $user,string $action,array $d,bool $executing=false):array {
+  return DB::transaction(function()use($user,$action,$d,$executing){
    $p=MarketingPost::whereKey($d['id'])->lockForUpdate()->first();
    if($p)abort_unless($p->user_id===$user&&$p->merchant_key===$this->merchant(),404);
    else {abort_unless(in_array($action,['draft','schedule']),404);abort_unless($d['version']===0,409,'The draft changed. Reload before saving.');$p=new MarketingPost(['id'=>$d['id'],'user_id'=>$user,'merchant_key'=>$this->merchant(),'version'=>0,'document'=>[]]);}
    abort_unless($p->version===$d['version'],409,'This post changed in another request. Your edits are retained; reload the saved version before continuing.');
-   $old=$p->document;$outcomes=$old['outcomes']??[];
+   $old=$p->document;if(!$executing)abort_if(!empty($old['delivery_lock'])||$p->status==='Queued',409,'Publishing has started. You can still view its progress.');$outcomes=$old['outcomes']??[];
    foreach($outcomes as $o)abort_if(in_array($o['status']??'', ['Publishing'],true)||($o['reason']??'')==='unknown',409,'Submission is still being checked. Editing or resending is blocked to avoid duplicates.');
    if($action==='cancel'){
     abort_unless($p->status==='Scheduled',409,'Only a scheduled post can be cancelled.');
@@ -40,7 +40,7 @@ class MarketingPosts {
     foreach($outcomes as $t=>$o)if(($o['status']??'')==='Published')$copies[$t]=$old['copies'][$t]??$old['copy'];
     $asset=$d['asset']??null;if($asset&&!$this->asset($user,$asset))$this->invalid('The selected media is unavailable. Choose an existing file again.');
     $doc=['title'=>trim($d['title']??'')?:mb_substr(trim($d['copy']??''),0,45),'copy'=>$d['copy']??'','targets'=>$targets,'copies'=>$copies,'asset'=>$asset,'type'=>$d['type'],'options'=>array_intersect_key($d['options']??[],array_flip($targets)),'history'=>$old['history']??[],'approvals'=>$old['approvals']??[]];
-    $doc['title']=$doc['title']?:'Untitled post';$tz=$d['tz'];$due=isset($d['due'])?CarbonImmutable::parse($d['due'])->utc():null;
+    if($executing&&!empty($old['delivery_lock']))$doc['delivery_lock']=$old['delivery_lock'];$doc['title']=$doc['title']?:'Untitled post';$tz=$d['tz'];$due=isset($d['due'])?CarbonImmutable::parse($d['due'])->utc():null;
     if($action==='schedule'){
      if(!$due||$due->isPast())$this->invalid('Choose a time in the future.');$pending=0;
      foreach($targets as $t){if(($outcomes[$t]['status']??'')==='Published')continue;$pending++;$a=$known[$t];if(($asset||$a['platform']!=='facebook')&&!MarketingPostFormats::supports($a['platform'],$d['type'],$this->asset($user,$asset??'')['kind']??null))$this->invalid(ucfirst($a['platform']).': this content format is not supported in this release. Choose a supported image Post or video.');if($a['platform']==='youtube'&&(!$asset||($this->asset($user,$asset)['kind']??'')!=='video'))$this->invalid('YouTube requires a video. Image Posts are not supported for this destination.');if($a['platform']==='tiktok'&&(!$asset||!in_array($this->asset($user,$asset)['kind']??'',['image','video'],true)))$this->invalid('TikTok requires an image or video.');if(!$a['canSchedule'])$this->invalid($a['name'].': publishing access is required. Save a draft or review Channels.');if(!trim($copies[$t]??$doc['copy']))$this->invalid('Add post text for every destination.');if($a['platform']==='instagram'&&!$asset)$this->invalid('Instagram requires an image or video.');}

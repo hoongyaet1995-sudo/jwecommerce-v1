@@ -3,6 +3,8 @@
 $conversationPilot=json_decode((string)env('MARKETING_CONVERSATION_PILOT_GRANT','{}'),true);
 $conversationPilot=is_array($conversationPilot)?$conversationPilot:[];
 return [
+    'post_queue_enabled' => env('MARKETING_POST_QUEUE_ENABLED', false),
+    'post_scheduling_enabled' => env('MARKETING_POST_SCHEDULING_ENABLED', false),
     'tiktok_photo_verified_prefix' => env('MARKETING_TIKTOK_PHOTO_VERIFIED_PREFIX', ''),
     'external_video_publishing_enabled'=>(bool)env('MARKETING_EXTERNAL_VIDEO_PUBLISHING_ENABLED',false),
     'social_publishing_enabled'=>(bool)env('MARKETING_SOCIAL_PUBLISHING_ENABLED',false),
