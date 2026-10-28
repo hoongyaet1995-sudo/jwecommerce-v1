@@ -6,11 +6,16 @@ use App\Models\AiConnection;
 class MarketingGenerationPricing
 {
     public function enabled():bool {return (bool)config('marketing.billing.enabled',false);}
+    public function textConfiguration():array {
+        $date=config('marketing.billing.pricing_verified_at','2026-10-23');
+        abort_unless(now()->lt(config('marketing.billing.pricing_valid_until','2026-10-30')),423,'Current writing rates require review. No generation has started.');
+        return ['model'=>'gpt-5.6-luna','version'=>'customer-rates-v1:'.$date,'cap_microusd'=>50000,'input_usd_per_million'=>0.2,'output_usd_per_million'=>1.2,'cached_usd_per_million'=>0.02,'cache_write_usd_per_million'=>0.25,'cache_write_12h_usd_per_million'=>0.5,'pricing_verified_at'=>$date];
+    }
     public function configuration():array {
         $date=config('marketing.billing.pricing_verified_at','2026-10-23');
         abort_unless($this->enabled()&&now()->lt(config('marketing.billing.pricing_valid_until','2026-10-30')),423,'当前制作费率待更新，未开始生成。');
         $version='customer-rates-v1:'.$date;
-        $text=['model'=>'gpt-5.6-luna','version'=>$version,'cap_microusd'=>50000,'input_usd_per_million'=>0.2,'output_usd_per_million'=>1.2,'cached_usd_per_million'=>0.02,'cache_write_usd_per_million'=>0.25,'cache_write_12h_usd_per_million'=>0.5,'pricing_verified_at'=>$date];
+        $text=$this->textConfiguration();
         $video=['model'=>MarketingEconomyVideoPolicy::PRO,'version'=>$version,'cap_microusd'=>660000,'credit_usd'=>10/650,'pricing_verified_at'=>$date,'access_verified_at'=>$date,'pricing_valid_until'=>config('marketing.billing.pricing_valid_until','2026-10-30'),'customer_billing'=>true,'adapt_prompt'=>true,'tiers'=>['ordinary']];
         foreach(range(4,12) as $seconds)$video['duration_caps'][$seconds]=(int)ceil($seconds*3.5568*(10/650)*1000000);
         $fast=array_replace($video,['model'=>MarketingEconomyVideoPolicy::FAST,'cap_microusd'=>167000,'source_has_audio'=>false,'source_audio_verified_at'=>$date]);$fast['duration_caps']=[];
