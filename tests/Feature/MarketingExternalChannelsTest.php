@@ -7,6 +7,7 @@ use App\Models\{User,MarketingChannelConnection};
 use App\Services\Social\SocialHubOAuth;
 class MarketingExternalChannelsTest extends TestCase {
  use RefreshDatabase;
+ public function test_equivalent_credential_refresh_keeps_approved_connection_version(){ $this->setupOwner();Http::preventStrayRequests();$a=MarketingChannelConnection::create(['merchant_key'=>app(\App\Services\Marketing\MarketingChannels::class)->merchant(),'platform'=>'youtube','provider_account_id'=>'UC-test','app_id'=>'yt-app','name'=>'Creator','access_token'=>'old','refresh_token'=>'refresh','permissions'=>['https://www.googleapis.com/auth/youtube.readonly','https://www.googleapis.com/auth/youtube.upload'],'authorized_by'=>auth()->id(),'state'=>'connected','version'=>7,'expires_at'=>now()->subMinute()]);$this->mock(SocialHubOAuth::class,fn($m)=>$m->shouldReceive('call')->once()->andReturn(['result'=>'connected','account'=>['id'=>'UC-test','name'=>'Creator'],'grant'=>['access_token'=>'new','expires_at'=>now()->addHour()->toIso8601String(),'permissions'=>$a->permissions]]));app(\App\Services\Marketing\ExternalChannelConnections::class)->refreshForPublishing($a);$this->assertSame(7,$a->fresh()->version);$this->assertTrue($a->fresh()->expires_at->isFuture());Http::assertNothingSent(); }
  private function setupOwner():void {
   $this->actingAs(User::factory()->create(['is_admin'=>true,'is_super_admin'=>true]));
   config(['services.tiktok.client_id'=>'tk-app','services.youtube.client_id'=>'yt-app']);

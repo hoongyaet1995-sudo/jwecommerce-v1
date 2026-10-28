@@ -67,12 +67,16 @@ final class ExternalChannelConnections
         });
     }
     private function validDate(mixed $date): bool { try { return is_string($date)&&\Carbon\Carbon::parse($date)->year>=2020; } catch (\Throwable) {return false;} }
-    public function check(MarketingChannelConnection $account): void
+    public function refreshForPublishing(MarketingChannelConnection $account):void {
+        abort_unless($account->state==='connected'&&$account->refresh_token&&(!$account->refresh_expires_at||$account->refresh_expires_at->isFuture()),422,'Reconnect this account to continue.');
+        $version=$account->version;$this->check($account,true);$account->refresh();abort_unless($account->state==='connected'&&$account->version===$version&&(!$account->expires_at||$account->expires_at->isFuture()),422,'Account authorization changed. Review the connection before publishing.');
+    }
+    public function check(MarketingChannelConnection $account,bool $credentialOnly=false): void
     {
-        DB::transaction(function() use($account) {
+        DB::transaction(function() use($account,$credentialOnly) {
             $a=MarketingChannelConnection::whereKey($account->id)->lockForUpdate()->firstOrFail();
             if ($a->state==='disconnected') return;
-            $code='provider_unavailable';
+            $before=[$a->state,$a->app_id,$a->provider_account_id,$a->permissions];$code='provider_unavailable';
             try {
                 if ($a->app_id!==$this->appId($a->platform)) throw new \RuntimeException('authorization_expired');
                 $d=app(SocialHubOAuth::class)->call('check',['account_id'=>$a->provider_account_id,'access_token'=>$a->access_token,'refresh_token'=>$a->refresh_token,'permissions'=>$a->permissions??[],'expires_at'=>$a->expires_at?->toIso8601String(),'refresh_expires_at'=>$a->refresh_expires_at?->toIso8601String()],$a->platform);
@@ -91,7 +95,7 @@ final class ExternalChannelConnections
             } catch (\Throwable $e) { $code=$e->getMessage()==='authorization_expired'?'authorization_expired':($e->getMessage()==='identity_mismatch'?'identity_mismatch':'provider_unavailable'); }
             if ($code!==null && !in_array($code,['authorization_expired','permission_required','identity_mismatch'],true)) $code='provider_unavailable';
             $a->state=$code===null?'connected':(in_array($code,['authorization_expired','permission_required'],true)?$code:'unknown');
-            $a->check_code=$code;$a->checked_at=now();$a->version++;$a->save();
+            $a->check_code=$code;$a->checked_at=now();if(!$credentialOnly||$code!==null||$before!==[$a->state,$a->app_id,$a->provider_account_id,$a->permissions])$a->version++;$a->save();
         },1);
     }
 }

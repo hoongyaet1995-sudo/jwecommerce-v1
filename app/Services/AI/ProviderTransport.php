@@ -62,6 +62,7 @@ class ProviderTransport
                     'input_tokens' => $usage['input_tokens'] ?? $usage['prompt_tokens'] ?? null,
                     'output_tokens' => $usage['output_tokens'] ?? $usage['completion_tokens'] ?? null,
                     'total_tokens' => $usage['total_tokens'] ?? null,
+                    'cached_input_tokens' => $json['usage']['input_tokens_details']['cached_tokens'] ?? 0,
                 ], fn ($value) => is_int($value) && $value >= 0));
             }
 

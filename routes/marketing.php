@@ -89,6 +89,8 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::get('/posts', [\App\Http\Controllers\Admin\MarketingPostsController::class, 'index'])->name('preview.posts');
 
     Route::get('/posts/data',[\App\Http\Controllers\Admin\MarketingPostsController::class,'data'])->name('posts.data');
+    Route::get('/posts/context-products',[\App\Http\Controllers\Admin\MarketingPostsController::class,'contextProducts'])->name('posts.context-products');
+    Route::post('/posts/ai/{action}',[\App\Http\Controllers\Admin\MarketingPostsController::class,'ai'])->whereIn('action',['quote','generate'])->middleware('throttle:10,1')->name('posts.ai');
     Route::post('/posts/upload',[\App\Http\Controllers\Admin\MarketingPostsController::class,'upload'])->middleware('throttle:10,1')->name('posts.upload');
     Route::post('/posts/creator/{connection}',[\App\Http\Controllers\Admin\MarketingPostsController::class,'creator'])->whereUuid('connection')->middleware('throttle:30,1')->name('posts.creator');
     Route::get('/posts/library',[\App\Http\Controllers\Admin\MarketingPostsController::class,'library'])->name('posts.library');
