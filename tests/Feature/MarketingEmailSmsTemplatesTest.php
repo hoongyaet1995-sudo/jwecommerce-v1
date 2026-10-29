@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Http;
 use App\Models\User;
 class MarketingEmailSmsTemplatesTest extends TestCase {
  use RefreshDatabase;
- private function actor(){Http::preventStrayRequests();$this->actingAs(User::factory()->create(['is_admin'=>true,'is_super_admin'=>true]));}
+ private function actor(){config(['marketing.execution_enabled'=>false]);Http::preventStrayRequests();$this->actingAs(User::factory()->create(['is_admin'=>true,'is_super_admin'=>true]));}
  public function test_catalog_and_editor_are_private_and_contain_source_builder(){
   $this->actor();$this->get('/admin/marketing/campaigns/templates/email')->assertOk()->assertSee('JW Studio Template Library')->assertSee('Seasonal Promotion');
   $this->get('/admin/marketing/campaigns/templates/email/editor')->assertOk()->assertSee('JW Studio Email Builder')->assertSee('xenibox-email-builder');Http::assertNothingSent();

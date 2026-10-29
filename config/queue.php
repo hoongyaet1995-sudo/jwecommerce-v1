@@ -30,6 +30,8 @@ return [
     */
 
     'connections' => [
+        'marketing-email' => ['driver'=>'database','connection'=>null,'table'=>'jobs','queue'=>'marketing-email','retry_after'=>180,'after_commit'=>false],
+
         'marketing-posts' => ['driver'=>'database','connection'=>null,'table'=>'jobs','queue'=>'marketing-posts','retry_after'=>900,'after_commit'=>false],
         'marketing-research' => [
             'driver' => 'database', 'connection' => null, 'table' => 'jobs',

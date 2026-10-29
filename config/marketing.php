@@ -3,6 +3,8 @@
 $conversationPilot=json_decode((string)env('MARKETING_CONVERSATION_PILOT_GRANT','{}'),true);
 $conversationPilot=is_array($conversationPilot)?$conversationPilot:[];
 return [
+    'email_test_enabled' => env('MARKETING_EMAIL_TEST_ENABLED',false),
+
     // Open only after the merchant OAuth and Meta template boundary are verified.
     'whatsapp_template_submission_enabled' => env('MARKETING_WHATSAPP_TEMPLATE_SUBMISSION_ENABLED', false),
     'privacy'=>['choice_days'=>180,'event_days'=>90,'request_days'=>7],

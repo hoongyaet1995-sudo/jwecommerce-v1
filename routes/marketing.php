@@ -7,9 +7,11 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvailability::class])->prefix('admin/marketing')->name('marketing.')->group(function () {
     Route::get('/campaigns/templates/email', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'catalog']);
     Route::get('/campaigns/templates/email/editor/{id?}', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'editor'])->whereUuid('id');
-    Route::match(['get','post'],'/campaigns/templates/email/media', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'media'])->middleware('throttle:40,1');
+    Route::match(['get','post'],'/campaigns/templates/email/media', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'media'])->name('email-templates.media')->middleware('throttle:40,1');
     Route::get('/campaigns/templates/sms/{id?}', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'sms'])->whereUuid('id');
-    Route::post('/campaigns/templates/{channel}/save/{id?}', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'save'])->whereIn('channel',['email','sms'])->whereUuid('id')->middleware('throttle:30,1');
+    Route::post('/campaigns/templates/{channel}/save/{id?}', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'save'])->name('email-sms-templates.save')->whereIn('channel',['email','sms'])->whereUuid('id')->middleware('throttle:30,1');
+    Route::get('/campaigns/{id}/email-test',[\App\Http\Controllers\Admin\MarketingEmailDeliveryController::class,'status'])->whereUuid('id');
+    Route::post('/campaigns/{id}/email-test',[\App\Http\Controllers\Admin\MarketingEmailDeliveryController::class,'send'])->name('email-test.send')->whereUuid('id')->middleware('throttle:5,1');
     Route::post('/templates/messages', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'messageDraft'])->name('content-messages.create')->middleware('throttle:30,1');
     Route::post('/templates/messages/{id}', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'messageDraft'])->name('content-messages.update')->whereUuid('id')->middleware('throttle:30,1');
     Route::get('/templates/messages/{id}/review', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'messageReview'])->whereUuid('id');

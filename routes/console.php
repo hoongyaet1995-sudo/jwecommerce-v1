@@ -191,3 +191,9 @@ Artisan::command('marketing:prune-tracking {--dry-run : Preview expired visitor 
  $this->info(json_encode($result,JSON_THROW_ON_ERROR));
 })->purpose('Expire optional visitor events and retire visitor correlation; preserve financial and enquiry facts');
 Schedule::command('marketing:prune-tracking')->daily()->withoutOverlapping();
+
+Artisan::command('marketing:process-email-tests', function () {
+ if(!config('marketing.email_test_enabled'))return 0;
+ return $this->call('queue:work',['connection'=>'marketing-email','--queue'=>'marketing-email','--stop-when-empty'=>true,'--max-jobs'=>3,'--max-time'=>45,'--tries'=>1,'--timeout'=>120,'--no-interaction'=>true]);
+})->purpose('Send explicitly confirmed single-recipient test emails without retries');
+Schedule::command('marketing:process-email-tests')->everyMinute()->withoutOverlapping(5)->when(fn()=>config('marketing.email_test_enabled'));
