@@ -3,6 +3,7 @@
 $conversationPilot=json_decode((string)env('MARKETING_CONVERSATION_PILOT_GRANT','{}'),true);
 $conversationPilot=is_array($conversationPilot)?$conversationPilot:[];
 return [
+    'privacy'=>['choice_days'=>180,'event_days'=>90,'request_days'=>7],
     'attribution_enabled'=>(bool)env('MARKETING_ATTRIBUTION_ENABLED',false),
     'post_queue_enabled' => env('MARKETING_POST_QUEUE_ENABLED', false),
     'post_scheduling_enabled' => env('MARKETING_POST_SCHEDULING_ENABLED', false),

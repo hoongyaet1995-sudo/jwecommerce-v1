@@ -103,6 +103,8 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
 
     Route::get('/calendar', [\App\Http\Controllers\Admin\MarketingPostsController::class, 'index'])->name('preview.calendar');
     Route::get('/analytics/export',[\App\Http\Controllers\Admin\MarketingAnalyticsController::class,'export']);
+    Route::get('/analytics/details',[\App\Http\Controllers\Admin\MarketingAnalyticsController::class,'details']);
+    Route::get('/analytics/record',[\App\Http\Controllers\Admin\MarketingAnalyticsController::class,'record']);
     Route::get('/analytics/data',[\App\Http\Controllers\Admin\MarketingAnalyticsController::class,'data']);
     Route::post('/campaigns/links',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'link'])->name('campaigns.link');
     Route::get('/analytics', [\App\Http\Controllers\Admin\MarketingAnalyticsController::class, 'index'])->name('preview.analytics');

@@ -185,3 +185,9 @@ Schedule::command('marketing:process-posts')->everyMinute()->withoutOverlapping(
 
 Artisan::command('marketing:reconcile-attribution',function(){$this->info('Reconciled order sources: '.app(\App\Services\Marketing\MarketingOrderEvidence::class)->sweep());});
 Schedule::command('marketing:reconcile-attribution')->everyMinute()->withoutOverlapping();
+
+Artisan::command('marketing:prune-tracking {--dry-run : Preview expired visitor data without changing records}', function () {
+ $result=app(\App\Services\Marketing\MarketingTrackingPrivacy::class)->prune((bool)$this->option('dry-run'));
+ $this->info(json_encode($result,JSON_THROW_ON_ERROR));
+})->purpose('Expire optional visitor events and retire visitor correlation; preserve financial and enquiry facts');
+Schedule::command('marketing:prune-tracking')->daily()->withoutOverlapping();

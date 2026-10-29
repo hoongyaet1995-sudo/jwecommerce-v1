@@ -1,3 +1,26 @@
+## Current milestone status — 2026-10-29
+
+This summary supersedes historical checkbox snapshots below; historical test/release records are retained.
+
+| Deliverable | Current state | Evidence / remaining boundary |
+| --- | --- | --- |
+| Campaign, Posts association and immutable tracked links | Verified implementation; prior release online | Real Facebook test post -> website -> enquiry -> quotation acceptance -> unpaid order |
+| Purchase/payment/refund attribution and boundary safeguards | Isolated acceptance passed; released | 85 tests / 564 assertions; no real financial transfer required or performed |
+| Three-tab conversion reports, unified icon events and record drilldown | Local accepted implementation; NOT deployed | 36 tests / 281 assertions, real local enquiry read and isolated paid/refund UI |
+| Tracking preference and visitor retention | Local implementation and tests; normal PDP preference entry verified | Choice expiry 180d (session-scoped); events 90d, raw redirects 7d; local prune dry-run only (0 events / 0 retirements) |
+| Financial and enquiry evidence | Preserved | Retention removes expired visitor events and retires correlation keys; does not delete orders, enquiries, payment/refund/source facts |
+| Next release | Requires separate explicit sync approval | Local reports + privacy changes have no new commit/push/deployment |
+
+Current operational boundaries: collection stays disabled locally. Consent rejection stops new optional visitor attribution and clears current context; existing commerce facts stay available. The Privacy choices dialog opens only on user request; first-time enabled collection uses a nonblocking banner, not a forced modal. No global default-consent change has been approved. Eligibility of a default-on analytics mode depends on deployment purpose/jurisdiction and is not declared here.
+
+Deferred, not blockers to Email/WhatsApp design: cohort conversion rates, cross-device matching, external-site tracking, shared-bio post-level inference, platform engagement metrics and advanced ROI. Future channel adapter/recipient/template/send acceptance belongs to the next phase; it is not marked complete.
+
+Outstanding environment observation: actual local homepage returns 503 / Storefront page assets unavailable; normal product page is 200 and privacy controls are present. Do not equate this unrelated homepage asset issue with privacy functionality passing there. It remains a separate storefront acceptance gap; no unrelated build/source changes made.
+
+Next phase after this scoped closeout: audit crm.zip for reusable Email/WhatsApp campaign, audience/consent, templates, worker/delivery and reporting boundaries. No recipients, credentials or sending are imported automatically.
+
+---
+
 # Campaign Integration Readiness Audit
 
 Date: 2026-10-29 (Asia/Kuala_Lumpur)
@@ -135,3 +158,22 @@ Verification: 85 tests / 564 assertions passed in 9.320s (focused Campaign, trac
 Owner-report next milestone: clearly show website visits -> quote requests / checkout -> paid orders, attributed gross revenue, confirmed refunds and net revenue; breakdown by Campaign/post/account and date/currency, with source drill-down and permission checks. Current report is activity-based, not a cohort conversion-rate claim. Revenue CSV, all-platform engagement metrics and owner-friendly funnel presentation are not declared complete here. Refunds shown are confirmed refunds to date on orders paid in the selected period. No currencies may be summed together without an explicit conversion policy.
 
 Production remains at the prior accepted release; the real RM1 quote order stays pending with zero paid revenue. Production direct-buy acceptance remains prerequisite-blocked by the absence of buy-mode active products; no catalog mode was changed. Next step is this local phase's explicit sync approval, followed by online read-only checks and the owner-report milestone.
+
+
+## Approved conversion report UI binding — local, 2026-10-29
+
+- [x] Three existing Analytics tabs use approved report sample; icon above each metric, unified Conversion Events, English customer-facing labels. Dedicated static CSS/JS; no Admin build or migration required. Campaign editor remains on existing logic; report CSS loaded only for Analytics.
+- [x] Existing summary, payment evidence and per-currency amount rows drive real cards. No fabricated conversion rate, ROI or cross-currency sum. Exports append separate currency/minor-unit gross/refund/net section with date/timezone/policy.
+- [x] Read-only paginated details and record routes enforce Analytics permission plus owner/merchant Campaign scope. Anonymous activity grouped by link, no customer email, phone, session key or access token returned. Enquiry and order source reference real link/post/account, unavailable accounts explicitly labelled. Quotation-stage records can open the linked enquiry.
+- [x] Normal authenticated localhost: preserved existing 1 enquiry, 0 paid orders; enquiry ENQ-20261029-WPRTKUP7ME opened with actual product, original source and permitted existing Admin enquiry link. Performance opened source post list, enquiry and zero-paid results. Revenue correctly has no paid orders. Local collection remains disabled; no runtime mutation.
+- [x] Isolated fake transport uses unchanged formal assets and explicit sample label: paid/refund amounts and fully refunded record net zero verified in normal browser. Error fixture renders clear message and Try again CTA. Fixture font asset cross-origin limitation is not formal-font evidence; formal page icons inspected separately.
+- [x] Final focused integration regression: 36 tests / 281 assertions PASS in 5.206s (report details/privacy/pagination/staff, analytics, campaigns, tracking preparation, attribution/payment boundaries, purchase/quote). PHP/JS syntax and scoped whitespace checks passed. Later frontend-only stale record filter and empty-refund wording fixed; syntax rechecked.
+
+Not claimed: real local/online paid transaction, all-platform engagement analytics, cohort conversion rates, production deployment. Real paid/refunded values were isolated tests/fixtures, not changes to live orders. No paid API, publication, Sol, commit, push or deploy. Unrelated dirty work retained. Existing online release remains f01c7756. Phase ready for user local review and separate sync approval.
+
+
+## Local closeout acceptance — completed 2026-10-29, pending sync approval
+Normal PDP browser verified: Save ON -> refresh -> ON; change OFF -> Cancel -> remains ON; Save OFF -> refresh -> OFF. Dialog now centered and opens only from Privacy choices, not on page load. Saved choice is session-scoped (180-day maximum validity does not override normal session expiry). Local global collection remains paused, so enabled-collection stopping/expiry is isolated route-test evidence, not a live collected visit claim. Product variant query remains intact after saving; clean() removes only jw_ref from the current URL. Existing trade records preserved.
+Final focused privacy + report contracts: 9 tests / 83 assertions passed in 2.845s; broader privacy/attribution/payment/report regression previously 34 / 281 passed in 5.045s. JS/PHP syntax and scoped whitespace passed. Retention command on existing local DB used --dry-run only: events 0, retired 0; no actual cleanup performed on existing data. No default-on consent change, provider request, publication, financial transfer, commit, push or deployment.
+Pending release scope: three-tab reports, protected drilldown, CSV currency breakdown, optional tracking preference/expiry and bounded daily visitor retention. No schema migration, new runtime tool or frontend build required. Exclude .env, generated sample/fixture pages, homepage/storefront build changes and all unrelated dirty work. See 2026-10-29-marketing-reports-privacy-release-scope.md.
+Next milestone after separately approved sync/HTTPS checks: Email/WhatsApp CRM audit and functional spec/sample; no send activation or credential/recipient import implied. Homepage asset 503 remains a separate storefront issue, not marked fixed.
