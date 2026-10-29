@@ -116,3 +116,22 @@ User explicitly approved synchronization, live test-account publication, and con
 Evidence: output/campaign-release/live-facebook-post.png, live-enquiry-receipt.png, live-conversion-stages.png, live-quote-readback.json, live-order-readback.json. Screenshots inspected; original test records remain. Core local suite 60 tests/416 assertions; scoped release build 13.29s with known asset/chunk advisories. No paid generation API or Sol. UI issue observed outside attribution scope: account tab label includes [object Object]; it did not change recipient/content or block the test and remains a follow-up.
 
 Current verdict: real-account link preparation, Facebook publication/click, consent-qualified request_quote and enquiry-to-unpaid-order source inheritance are verified. Full Campaign/Analytics phase remains partial for other acceptance gates, direct-buy production prerequisites and live paid-payment evidence. Do not represent pending test order as revenue.
+
+
+## Local closure of priority 1 and 2 — 2026-10-29 (not released)
+
+Scope approved: direct-buy/payment/refund correctness and attribution boundaries. Existing UI, original products, connected accounts, callback configuration and live pending quote order are preserved.
+
+- [x] Generic normal checkout creates pending attribution. Private fake proof upload alone remains unpaid; unauthorized staff review is denied; authorized normal review creates auditable verified evidence and one paid conversion after reconciliation.
+- [x] Isolated Stripe signed delayed webhook works after browser session removal and ten days delay; replay and repeated reconciliation do not duplicate purchase. Stripe/PayPal/Billplz normalized evidence shapes are checked. Wrong provider/environment, invalid amount/currency, unverified evidence and sandbox payments are excluded. Bank evidence requires recorded verification time.
+- [x] Completed partial/full refunds adjust refunded amount once; pending refunds do not reduce revenue. Original paid-order count and gross amount remain historical facts; net equals gross less confirmed refunds. A cancelled fully refunded order has zero net, not a second negative purchase.
+- [x] Same-second A -> B and reverse arrival/replayed old tabs select by signed server click sequence. First and last touch remain ordered. Tracking POST session writes are serialized. Direct returns preserve eligible source; checkout freezes source and existing order cannot be reassigned by later clicks.
+- [x] Exactly seven days is eligible; beyond seven days remains unattributed without blocking checkout. Staff/admin activity cannot convert prior guest context. Late payment uses frozen order source and matching receipt time, not an unrelated receipt.
+
+Code changed: MarketingTrackingController, MarketingAttribution, MarketingOrderEvidence and three optional tracking routes. No payment-gateway charge/refund operations, inventory logic or UI redesign added.
+
+Verification: 85 tests / 564 assertions passed in 9.320s (focused Campaign, tracking, Posts, Channels, purchase/quote, Analytics and payment-proof routes). Earlier initial TDD reds are recorded in the durable ledger; no unexpected failures in this checkpoint. All payment proof/provider evidence is isolated test data. No real payment, new publication, paid API, commit, push or deployment. This checkpoint is automated local integration evidence, not a fresh normal-browser or live paid-payment acceptance claim.
+
+Owner-report next milestone: clearly show website visits -> quote requests / checkout -> paid orders, attributed gross revenue, confirmed refunds and net revenue; breakdown by Campaign/post/account and date/currency, with source drill-down and permission checks. Current report is activity-based, not a cohort conversion-rate claim. Revenue CSV, all-platform engagement metrics and owner-friendly funnel presentation are not declared complete here. Refunds shown are confirmed refunds to date on orders paid in the selected period. No currencies may be summed together without an explicit conversion policy.
+
+Production remains at the prior accepted release; the real RM1 quote order stays pending with zero paid revenue. Production direct-buy acceptance remains prerequisite-blocked by the absence of buy-mode active products; no catalog mode was changed. Next step is this local phase's explicit sync approval, followed by online read-only checks and the owner-report milestone.

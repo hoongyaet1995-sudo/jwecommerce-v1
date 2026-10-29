@@ -750,7 +750,7 @@ require __DIR__.'/marketing.php';
 
 // Optional first-party campaign attribution, independent of social OAuth.
 Route::get('/m/r/{link}',[\App\Http\Controllers\MarketingTrackingController::class,'redirect'])->whereUuid('link')->middleware('throttle:120,1');
-Route::post('/marketing/tracking/consent',[\App\Http\Controllers\MarketingTrackingController::class,'consent'])->middleware('throttle:30,1');
-Route::post('/marketing/tracking/arrival',[\App\Http\Controllers\MarketingTrackingController::class,'arrival'])->middleware('throttle:30,1');
+Route::post('/marketing/tracking/consent',[\App\Http\Controllers\MarketingTrackingController::class,'consent'])->middleware('throttle:30,1')->block(10,10);
+Route::post('/marketing/tracking/arrival',[\App\Http\Controllers\MarketingTrackingController::class,'arrival'])->middleware('throttle:30,1')->block(10,10);
 
-Route::post('/marketing/tracking/page',[\App\Http\Controllers\MarketingTrackingController::class,'page'])->middleware('throttle:120,1');
+Route::post('/marketing/tracking/page',[\App\Http\Controllers\MarketingTrackingController::class,'page'])->middleware('throttle:120,1')->block(10,10);

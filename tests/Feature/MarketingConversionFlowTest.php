@@ -4,7 +4,8 @@ namespace Tests\Feature;
 use App\Models\{MarketingCampaign,Order,Product,StoreSetting,User};
 use App\Services\Marketing\MarketingOrderEvidence;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\{DB,Http,Mail};
+use Illuminate\Support\Facades\{DB,Http,Mail,Storage};
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -41,8 +42,19 @@ class MarketingConversionFlowTest extends TestCase
         $this->assertDatabaseHas('marketing_order_attributions',['order_id'=>$order->id,'state'=>'pending']);
         app(MarketingOrderEvidence::class)->reconcile($order->id);
         $this->actingAs($owner)->getJson('/admin/marketing/analytics/data')->assertOk()->assertJsonPath('paid_orders',0);
-        // Isolated fake evidence only: no transfer, provider request or runtime order mutation.
-        $payment->update(['status'=>'paid','proof_status'=>'verified','proof_reviewed_at'=>now()]);
+        // Exercise the normal upload/review routes with an isolated fake file; no transfer.
+        Storage::fake('local');
+        $this->app['auth']->forgetGuards();
+        $this->withSession(['last_order_id'=>$order->id])->postJson(route('customer.payment-proofs.store',[$order,$payment]),[
+            'payment_proof'=>UploadedFile::fake()->create('TEST-NOT-A-RECEIPT.pdf',20,'application/pdf'),
+        ])->assertOk()->assertJsonPath('data.proofStatus','uploaded');
+        app(MarketingOrderEvidence::class)->reconcile($order->id);
+        $this->actingAs($owner)->getJson('/admin/marketing/analytics/data')->assertJsonPath('paid_orders',0);
+        $staff=User::factory()->create(['is_admin'=>true,'is_super_admin'=>false]);
+        $review='/admin/api/orders/'.$order->id.'/payments/'.$payment->id.'/proof/review';
+        $this->actingAs($staff)->postJson($review,['decision'=>'verified','reason'=>'Isolated test'])->assertForbidden();
+        $this->actingAs($owner)->postJson($review,['decision'=>'verified','reason'=>'Isolated acceptance only. No funds transferred.'])->assertOk();
+        $this->assertDatabaseHas('order_payment_proof_events',['order_payment_id'=>$payment->id,'user_id'=>$owner->id,'event_type'=>'verified']);
         app(MarketingOrderEvidence::class)->reconcile($order->id);
         app(MarketingOrderEvidence::class)->reconcile($order->id);
         $this->getJson('/admin/marketing/analytics/data')->assertJsonPath('paid_orders',1);
