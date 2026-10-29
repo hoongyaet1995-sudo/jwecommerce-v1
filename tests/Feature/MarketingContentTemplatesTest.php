@@ -65,4 +65,12 @@ class MarketingContentTemplatesTest extends TestCase {
   $copy=$this->postJson('/admin/marketing/templates/'.$id.'/duplicate',['version'=>2])->assertOk()->assertJsonPath('template.archived',false)->assertJsonPath('template.state','Draft')->json('template.id');$this->assertNotSame($id,$copy);
   $this->actingAs(User::factory()->create(['is_admin'=>true,'is_super_admin'=>true]));$this->postJson('/admin/marketing/templates/'.$id.'/restore',['version'=>2])->assertNotFound();Http::assertNothingSent();Queue::assertNothingPushed();
  }
-}
+ public function test_removed_header_variable_discards_stale_example_before_submission():void {
+  $this->owner();$d=$this->wa();config(['marketing.whatsapp_template_submission_enabled'=>true]);
+  $d=array_replace($d,['header_type'=>'TEXT','header_text'=>'A birthday voucher for you','header_examples'=>['']]);
+  $id=$this->postJson('/admin/marketing/templates/data',$d)->assertCreated()->json('template.id');
+  Http::fake(['*'=>Http::response(['id'=>'987'])]);
+  $this->postJson('/admin/marketing/templates/'.$id.'/submit',['version'=>1])->assertOk()->assertJsonPath('template.state','Pending approval');
+  Http::assertSent(fn($r)=>!isset($r['components'][0]['example'])&&$r['components'][1]['example']['body_text'][0]===['our collection']);
+  Http::assertSentCount(1);Queue::assertNothingPushed();
+ }}

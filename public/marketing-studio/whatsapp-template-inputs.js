@@ -408,5 +408,5 @@ window.JWInitWhatsAppInputs = function(initial,storeName) {
     renderExamples(bodyExamples, bodyText, 'body');
     renderButtons();
     updatePreview();
-    return function(){collectExampleValues(headerExamples,'header');collectExampleValues(bodyExamples,'body');syncButtonsFromInputs();return {header_examples:exampleValues.header.slice(),body_examples:exampleValues.body.slice(),buttons:buttons.slice()};};
+    return function(){collectExampleValues(headerExamples,'header');collectExampleValues(bodyExamples,'body');syncButtonsFromInputs();return {header_examples:headerType.value === 'TEXT' ? extractVariables(headerText.value).map(function(n){return exampleValues.header[n-1] || '';}) : [],body_examples:extractVariables(bodyText.value).map(function(n){return exampleValues.body[n-1] || '';}),buttons:buttons.slice()};};
 };

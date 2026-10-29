@@ -146,3 +146,22 @@ Template list actions acceptance:
 - Isolated fixture diagnostic: runtime APP_URL must be present before application bootstrap. Explicit testing APP_URL fixed signed handoff (1 test / 14 assertions). Two failed runs for fixture-domain environment, resolved; no app security change. Final matrix runs with test-only APP_KEY and matching APP_URL.
 
 - Final exact-release matrix: 50 tests / 284 assertions passed, no risky tests; scoped PHP/JS syntax and diff whitespace checks passed. No real provider generation, message sending or template submission.
+
+## Live release checkpoint
+- Deployed approved commit 42d6a0f2b8c0da91a888a9bc9f9b451cbafb7b2e; canonical HEAD, GitHub main and Hostinger HEAD match.
+- Five explicitly scoped migrations completed; optimize:clear completed. Existing environment and Hub callback unchanged.
+- Live public template JavaScript assets return HTTPS 200. Protected WhatsApp page in normal Chrome redirects to Admin Portal Login; session expired.
+- Real OAuth acceptance pending user login, not claimed passed. No message sent and no Meta template submitted. No permission or provider configuration changed.
+
+
+## Template submission activation
+- User explicitly approved enabling template approval submission. Production MARKETING_WHATSAPP_TEMPLATE_SUBMISSION_ENABLED=true; cache cleared and effective boolean verified true.
+- Normal production Chrome editor verified Submit to Meta enabled for selected connected number. No template submitted and no messages sent by this activation check.
+- Default .env.example stays false for new installations; activation is per-environment after account verification. Existing Hub callback and accounts unchanged.
+
+
+## Removed Header variable regression
+- Root cause: exampleValues cache retained removed Header variable; serialized stale example caused local pre-submit count mismatch. Live draft remains Draft / Not submitted.
+- Intentional TDD red: new fake-provider regression expects stale Header examples to be discarded without removing valid body examples; no live submission.
+
+- Result: intentional red reproduced 422; frontend now serializes only active Header/Body examples; server normalizes stale examples at save and before provider submission (including existing drafts). 18 template tests / 93 assertions passed; PHP lint and JS syntax passed. Local only, not yet synchronized; no real Meta request.
