@@ -5,6 +5,11 @@ use App\Http\Controllers\Admin\MarketingProductionController as Production;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvailability::class])->prefix('admin/marketing')->name('marketing.')->group(function () {
+    Route::get('/campaigns/templates/email', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'catalog']);
+    Route::get('/campaigns/templates/email/editor/{id?}', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'editor'])->whereUuid('id');
+    Route::match(['get','post'],'/campaigns/templates/email/media', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'media'])->middleware('throttle:40,1');
+    Route::get('/campaigns/templates/sms/{id?}', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'sms'])->whereUuid('id');
+    Route::post('/campaigns/templates/{channel}/save/{id?}', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'save'])->whereIn('channel',['email','sms'])->whereUuid('id')->middleware('throttle:30,1');
     Route::post('/templates/messages', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'messageDraft'])->name('content-messages.create')->middleware('throttle:30,1');
     Route::post('/templates/messages/{id}', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'messageDraft'])->name('content-messages.update')->whereUuid('id')->middleware('throttle:30,1');
     Route::get('/templates/messages/{id}/review', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'messageReview'])->whereUuid('id');
@@ -157,3 +162,5 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
 Route::get('/admin/social/{platform}/hub-return',[\App\Http\Controllers\Admin\MarketingChannelsController::class,'hubReturn'])->whereIn('platform',['tiktok','youtube'])->middleware(['web','auth','throttle:20,1']);
 
 Route::get('/marketing/post-delivery/{attempt}', [\App\Http\Controllers\Admin\MarketingPostsController::class, 'delivery'])->whereNumber('attempt')->middleware('signed')->name('marketing.posts.delivery');
+
+Route::get('/marketing/email-social-icon/{platform}/{color}.png',[\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'icon'])->where('platform','[a-z]+')->where('color','[A-Fa-f0-9]{6}')->middleware('throttle:120,1');

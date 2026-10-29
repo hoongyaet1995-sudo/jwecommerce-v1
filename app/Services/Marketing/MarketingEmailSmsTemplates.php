@@ -1,0 +1,12 @@
+<?php
+namespace App\Services\Marketing;
+use App\Models\MarketingContentTemplate;
+use App\Services\Marketing\Email\TemplateService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+final class MarketingEmailSmsTemplates {
+ public function save(int $u,string $channel,array $input,?string $id=null):MarketingContentTemplate {
+$service=new TemplateService();if($channel==='email'){ $design=json_decode($input['editor_json']??'',true);if(!is_array($design))throw ValidationException::withMessages(['editor_json'=>'Choose a valid email design.']);app(\App\Services\Marketing\Email\EmailDocumentContract::class)->validate($design);}$v=$channel==='email'?$service->validate($input):$service->validateSms($input);if($v['errors'])throw ValidationException::withMessages(['template'=>$v['errors']]);$d=$v['data'];preg_match_all('/\{\{([^}]+)\}\}/',$d['content_text'].' '.$d['subject'].' '.$d['preheader'],$tokens);foreach($tokens[1] as $token)if(!in_array($token,['first_name','last_name','email','store_name','unsubscribe_url'],true))throw ValidationException::withMessages(['template'=>'Unknown personalization field: '.$token]);
+  return DB::transaction(function()use($u,$id,$channel,$input,$d){$t=$id?app(MarketingContentTemplates::class)->query($u)->lockForUpdate()->findOrFail($id):new MarketingContentTemplate(['user_id'=>$u,'merchant_key'=>app(\App\Services\Marketing\MarketingPosts::class)->merchant(),'version'=>0]);abort_unless($t->version===(int)$input['version'],409,'This template changed. Reload before saving. Your edits are retained.');abort_if($t->archived_at,409,'Restore this template first.');abort_if($t->exists&&$t->channel!==$channel,422);$document=['body'=>$d['content_text'],'subject'=>$d['subject'],'preheader'=>$d['preheader'],'content_text'=>$d['content_text'],'content_html'=>$d['content_html'],'editor_document'=>$channel==='email'?json_decode($d['editor_json'],true):null,'assets'=>[]];if($channel==='sms')$document['sms_analysis']=$d['sms_analysis'];$previous=$t->document??[];$history=$previous['previous_versions']??[];unset($previous['previous_versions']);if($t->exists)$history[]=['version'=>$t->version,'name'=>$t->name,'state'=>$t->state,'document'=>$previous];$document['previous_versions']=array_slice($history,-20);$t->fill(['channel'=>$channel,'name'=>$d['name'],'language'=>'en','state'=>$d['status']==='active'?'Active':'Draft','document'=>$document,'version'=>$t->version+1]);$t->save();return $t;});
+ }
+}

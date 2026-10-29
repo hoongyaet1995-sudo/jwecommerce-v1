@@ -1,0 +1,31 @@
+#xenibox-email-builder,
+#xenibox-email-builder > div {
+  width: 100%;
+  height: 100%;
+}
+
+.xenibox-builder-inspector {
+  flex: 0 0 320px;
+  height: 100%;
+  overflow: hidden;
+  border-left: 1px solid #e9efef;
+  background: #fff;
+}
+
+#xenibox-email-builder .MuiTabs-indicator {
+  background: #315f4b;
+}
+
+#xenibox-email-builder .MuiToggleButton-root.Mui-selected {
+  background: rgba(180, 241, 5, 0.18);
+  color: #193229;
+}
+
+#xenibox-email-builder .MuiToggleButton-root.Mui-selected:hover {
+  background: rgba(180, 241, 5, 0.28);
+}
+
+#xenibox-email-builder button:focus-visible {
+  outline: 2px solid #315f4b;
+  outline-offset: 2px;
+}

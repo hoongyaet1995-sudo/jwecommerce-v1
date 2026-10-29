@@ -21,4 +21,15 @@ class MarketingCampaignTest extends TestCase {
   $this->postJson('/admin/marketing/campaigns/data/'.$id.'/posts',['version'=>2,'post_ids'=>$ids])->assertUnprocessable();
   $this->assertDatabaseHas('marketing_posts',['id'=>$ids[0],'campaign_id'=>$id]);$this->assertDatabaseHas('marketing_posts',['id'=>$ids[1],'campaign_id'=>null]);Http::assertNothingSent();
  }
+ public function test_campaign_post_can_be_saved_without_schedule_and_retains_assignment(){
+  $this->actor();$campaign=$this->postJson('/admin/marketing/campaigns/data',$this->data())->json('campaign.id');
+  $post=['id'=>(string)Str::uuid(),'version'=>0,'title'=>'Keep for campaign','copy'=>'Draft only','targets'=>[],'copies'=>[],'asset'=>null,'type'=>'Post','tz'=>'UTC'];
+  $this->postJson('/admin/marketing/posts/data/draft',$post)->assertOk();
+  $this->postJson('/admin/marketing/campaigns/data/'.$campaign.'/posts',['version'=>1,'post_ids'=>[$post['id']]])->assertOk();
+  $post['version']=2;$post['copy']='Updated before confirming any schedule';
+  $this->postJson('/admin/marketing/posts/data/draft',$post)->assertOk()->assertJsonPath('post.campaign_id',$campaign)->assertJsonPath('post.status','Draft')->assertJsonPath('post.due',null)->assertJsonPath('post.version',3);
+  $this->postJson('/admin/marketing/posts/data/draft',$post)->assertStatus(409);
+  $this->assertDatabaseHas('marketing_posts',['id'=>$post['id'],'campaign_id'=>$campaign,'status'=>'Draft','version'=>3,'scheduled_at'=>null]);
+  Http::assertNothingSent();
+ }
 }
