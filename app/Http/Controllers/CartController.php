@@ -43,6 +43,8 @@ class CartController extends Controller
 
         $cart[$data['variant_id']] = $currentQuantity + $data['quantity'];
         $request->session()->put('cart', $cart);
+        try { app(\App\Services\Marketing\MarketingAttribution::class)->websiteEvent($request,'add_to_cart',(string)\Illuminate\Support\Str::uuid(),['product_id'=>$variant->product_id,'variant_id'=>$variant->id,'quantity'=>$data['quantity']]); } catch (\Throwable) { \Illuminate\Support\Facades\Log::warning('Optional cart analytics unavailable'); }
+
 
         return redirect()->route($request->boolean('checkout') ? 'checkout.create' : 'cart.show');
     }

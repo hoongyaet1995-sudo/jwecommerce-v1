@@ -1,0 +1,11 @@
+<?php
+use Illuminate\Database\Migrations\Migration;use Illuminate\Database\Schema\Blueprint;use Illuminate\Support\Facades\Schema;
+return new class extends Migration {
+ public function up():void{
+ if(!Schema::hasTable('marketing_tracking_links'))Schema::create('marketing_tracking_links',function(Blueprint $t){$t->uuid('id')->primary();$t->uuid('campaign_id');$t->uuid('post_id');$t->string('destination_id',100);$t->string('merchant_key',100);$t->foreignId('user_id');$t->unsignedInteger('post_version');$t->text('destination_url');$t->timestamps();$t->index(['merchant_key','campaign_id']);});
+ if(!Schema::hasTable('marketing_analytics_events'))Schema::create('marketing_analytics_events',function(Blueprint $t){$t->bigIncrements('id');$t->string('merchant_key',100);$t->uuid('campaign_id');$t->uuid('link_id');$t->string('kind',30);$t->string('dedupe_key',180)->unique();$t->string('session_key',64)->nullable();$t->dateTime('occurred_at');$t->index(['merchant_key','campaign_id','occurred_at'],'mkt_events_campaign_time');});
+ if(!Schema::hasTable('marketing_order_attributions'))Schema::create('marketing_order_attributions',function(Blueprint $t){$t->id();$t->foreignId('order_id')->unique();$t->string('merchant_key',100);$t->uuid('campaign_id');$t->uuid('link_id');$t->uuid('first_link_id')->nullable();$t->foreignId('owner_id');$t->string('session_key',64);$t->dateTime('clicked_at');$t->dateTime('placed_at');$t->string('policy',40)->default('last-click-7d-v1');$t->string('base_currency',3)->nullable();$t->unsignedBigInteger('base_minor')->nullable();$t->string('state',30)->default('pending');$t->dateTime('paid_at')->nullable();$t->unsignedBigInteger('refunded_minor')->default(0);$t->timestamps();$t->index(['merchant_key','owner_id','paid_at'],'mkt_order_owner_time');});
+ if(!Schema::hasIndex('marketing_analytics_events','mkt_events_campaign_time'))Schema::table('marketing_analytics_events',function(Blueprint $t){$t->index(['merchant_key','campaign_id','occurred_at'],'mkt_events_campaign_time');});
+ }
+ public function down():void{Schema::dropIfExists('marketing_order_attributions');Schema::dropIfExists('marketing_analytics_events');Schema::dropIfExists('marketing_tracking_links');}
+};

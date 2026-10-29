@@ -182,3 +182,6 @@ Artisan::command('marketing:process-posts', function () {
 })->purpose('Process only approved social publishing tasks without automatic resubmission');
 Schedule::command('marketing:publish-due')->everyMinute()->withoutOverlapping(5)->when(fn()=>config('marketing.post_queue_enabled')&&config('marketing.social_publishing_enabled'));
 Schedule::command('marketing:process-posts')->everyMinute()->withoutOverlapping(15)->when(fn()=>config('marketing.post_queue_enabled')&&config('marketing.social_publishing_enabled'));
+
+Artisan::command('marketing:reconcile-attribution',function(){$this->info('Reconciled order sources: '.app(\App\Services\Marketing\MarketingOrderEvidence::class)->sweep());});
+Schedule::command('marketing:reconcile-attribution')->everyMinute()->withoutOverlapping();

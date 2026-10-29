@@ -1,0 +1,7 @@
+<?php
+namespace App\Http\Middleware;
+use Closure;use Illuminate\Http\Request;use App\Services\Marketing\MarketingAttribution;
+/** Optional analytics must never block commerce or change admin responses. */
+class MarketingStorefrontTracking {
+ public function handle(Request $r,Closure $next){$response=$next($r);if(!config('marketing.attribution_enabled',false)||$r->is('admin*','marketing/tracking/*','m/r/*','payments/*')||!$r->hasSession())return $response;try{if($r->routeIs('checkout.create')&&$r->session()->get('marketing.consent')===true)app(MarketingAttribution::class)->checkout($r);if($r->isMethod('GET')&&$response->getStatusCode()===200&&$r->routeIs('storefront.*','cart.show','checkout.create')&&str_contains($response->headers->get('Content-Type',''),'text/html')&&method_exists($response,'getContent')&&str_contains($response->getContent(),'</body>')){$item=$r->routeIs('storefront.products.show')?\App\Models\Product::where('handle',$r->route('handle'))->where('status','active')->value('id'):null;$html=view('marketing.tracking-consent',['consent'=>$r->session()->get('marketing.consent'),'itemId'=>$item])->render();$response->setContent(str_replace('</body>',$html.'</body>',$response->getContent()));}}catch(\Throwable){\Illuminate\Support\Facades\Log::warning('Optional marketing tracking unavailable');}return $response;}
+}

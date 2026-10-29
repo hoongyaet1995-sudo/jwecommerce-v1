@@ -38,6 +38,7 @@ class ProductEnquiryService
                 'product_snapshot'=>['title'=>$product->title,'handle'=>$product->handle,'variant'=>$variant?->title,'sku'=>$variant?->sku,'options'=>$variant?->options??[], 'image'=>$variant?->image_url?:$product->images()->orderBy('position')->value('path'),'source'=>route('storefront.products.show',$product->handle,false)],
                 'name'=>trim($data['name']),'email'=>strtolower(trim($data['email'])),'phone'=>filled($data['phone']??null)?trim($data['phone']):null,'requirements'=>trim($data['requirements']),
             ]);
+            try { app(\App\Services\Marketing\MarketingAttribution::class)->attachEnquiry($enquiry,$request); } catch (\Throwable) { \Illuminate\Support\Facades\Log::warning('Marketing enquiry attribution unavailable; enquiry retained.'); }
             $enquiry->events()->create(['type'=>'created']);
             return $enquiry;
         },3);

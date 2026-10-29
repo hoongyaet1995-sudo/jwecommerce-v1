@@ -85,7 +85,11 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::post('/workspace/{project}/suggest',[\App\Http\Controllers\Admin\MarketingWorkspaceController::class,'suggest'])->whereUuid('project')->middleware('throttle:10,1')->name('workspace.suggest');
     Route::get('/workspace-preview', [\App\Http\Controllers\Admin\MarketingWorkspacePreviewController::class, 'show'])->name('workspace.preview');
     Route::get('/', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','overview')->name('home');
-    Route::get('/campaigns', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','campaigns')->name('preview.campaigns');
+    Route::get('/campaigns/data',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'data']);
+    Route::post('/campaigns/data',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'write'])->name('campaigns.write');
+    Route::patch('/campaigns/data/{campaign}',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'write'])->whereUuid('campaign')->name('campaigns.update');
+    Route::post('/campaigns/data/{campaign}/posts',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'assign'])->whereUuid('campaign')->name('campaigns.assign');
+    Route::get('/campaigns', [\App\Http\Controllers\Admin\MarketingCampaignController::class, 'index'])->name('preview.campaigns');
     Route::get('/posts', [\App\Http\Controllers\Admin\MarketingPostsController::class, 'index'])->name('preview.posts');
 
     Route::get('/posts/data',[\App\Http\Controllers\Admin\MarketingPostsController::class,'data'])->name('posts.data');
@@ -98,7 +102,10 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::post('/posts/data/{action}',[\App\Http\Controllers\Admin\MarketingPostsController::class,'write'])->whereIn('action',['draft','schedule','cancel','publish','refresh','link'])->middleware('throttle:60,1')->name('posts.write');
 
     Route::get('/calendar', [\App\Http\Controllers\Admin\MarketingPostsController::class, 'index'])->name('preview.calendar');
-    Route::get('/analytics', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','analytics')->name('preview.analytics');
+    Route::get('/analytics/export',[\App\Http\Controllers\Admin\MarketingAnalyticsController::class,'export']);
+    Route::get('/analytics/data',[\App\Http\Controllers\Admin\MarketingAnalyticsController::class,'data']);
+    Route::post('/campaigns/links',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'link'])->name('campaigns.link');
+    Route::get('/analytics', [\App\Http\Controllers\Admin\MarketingAnalyticsController::class, 'index'])->name('preview.analytics');
     Route::get('/content', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','content')->name('preview.content');
     Route::get('/channels', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'index'])->name('preview.channels');
     Route::get('/channels/{platform}', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'index'])->whereIn('platform',['facebook','instagram','tiktok','youtube'])->name('channels.platform');

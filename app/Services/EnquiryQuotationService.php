@@ -112,6 +112,8 @@ class EnquiryQuotationService
             $q->lock_version++;
             $q->save();
             $row->events()->create(['actor_id' => $actor, 'type' => 'quotation_sent', 'content' => 'Quotation '.$q->number.' v'.$q->revision.' published to the customer enquiry.']);
+            try { $versionId=\App\Models\EnquiryQuotationVersion::where('enquiry_quotation_id',$q->id)->where('revision',$q->revision)->value('id');if($versionId)app(\App\Services\Marketing\MarketingAttribution::class)->enquiryStage($row->id,'quotation_sent',$versionId); } catch (\Throwable) { \Illuminate\Support\Facades\Log::warning('Optional quotation analytics unavailable'); }
+
             if ($row->support_conversation_id) {
                 $this->deliver($v, SupportConversation::findOrFail($row->support_conversation_id));
             }

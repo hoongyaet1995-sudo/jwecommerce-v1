@@ -67,6 +67,8 @@ class QuotationCheckoutService
                 throw ValidationException::withMessages(['quotation' => 'No payment method is currently available for this quotation. Please contact our team.']);
             }
             $a = QuotationAcceptance::create(['enquiry_quotation_id' => $q->id, 'enquiry_quotation_version_id' => $v->id, 'accepted_by' => $actor, 'accepted_at' => now()]);
+            try { app(\App\Services\Marketing\MarketingAttribution::class)->enquiryStage($q->product_enquiry_id,'quotation_accepted',(string)$a->id); } catch (\Throwable) { \Illuminate\Support\Facades\Log::warning('Optional acceptance analytics unavailable'); }
+
             $q->enquiry->events()->create(['actor_id' => null, 'type' => 'quotation_accepted', 'content' => 'Customer accepted '.$q->number.' v'.$v->revision.'. Manual fulfilment; no stock reserved.']);
 
             return $a;
@@ -93,6 +95,7 @@ class QuotationCheckoutService
             $o->addresses()->create(['type' => 'shipping', 'first_name' => $data['name'], 'last_name' => '', 'phone' => $data['phone'] ?? null, 'line_1' => $data['line_1'] ?? 'As agreed in quotation', 'line_2' => $data['line_2'] ?? null, 'city' => $data['city'] ?? '', 'state' => $data['state'] ?? null, 'postal_code' => $data['postal_code'] ?? '', 'country' => $data['country'] ?? 'MY']);
             app(PaymentAttemptService::class)->createPendingPayment($o, $method, $o->currency, $data['bank_account_id'] ?? null);
             OrderStatusHistory::create(['order_id' => $o->id, 'to_status' => 'pending_payment', 'note' => 'Accepted quotation; awaiting verified payment. Manual fulfilment, no stock movement.']);
+            try { app(\App\Services\Marketing\MarketingAttribution::class)->inheritEnquiry($o,$e->id); } catch (\Throwable) { \Illuminate\Support\Facades\Log::warning('Marketing enquiry source could not be inherited; order retained.'); }
             $a->order_id = $o->id;
             $a->save();
             $e->events()->create(['type' => 'quotation_order_created', 'content' => 'Quotation converted to order '.$o->number.' (pending payment).']);

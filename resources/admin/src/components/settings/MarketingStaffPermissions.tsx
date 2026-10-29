@@ -2,7 +2,7 @@ import React,{useEffect,useState} from 'react';
 import {ShieldCheck} from 'lucide-react';
 import {readAdminBootstrap} from '../../integration/adminBootstrap';
 import {loadMarketingStaff,saveMarketingStaff,normalizeMarketingPermissions,MARKETING_PERMISSIONS,type MarketingStaff} from '../../integration/marketingAccess';
-const labels={'marketing.view':'View projects','marketing.edit':'Create & edit','marketing.approve_cost':'Approve production costs'};
+const labels={'marketing.view':'View projects','marketing.edit':'Create & edit','marketing.approve_cost':'Approve production costs','marketing.manage_campaigns':'Manage campaigns','marketing.view_analytics':'View analytics'};
 export function MarketingStaffPermissions(){
  const [boot]=useState(readAdminBootstrap);const [rows,setRows]=useState<MarketingStaff[]>([]),[drafts,setDrafts]=useState<Record<number,string[]>>({}),[loading,setLoading]=useState(true),[saving,setSaving]=useState<number|null>(null),[message,setMessage]=useState(''),[error,setError]=useState('');
  useEffect(()=>{let active=true;if(!boot.user.isSuperAdmin){setLoading(false);return;}loadMarketingStaff(boot).then(data=>{if(active)setRows(data);}).catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[boot]);

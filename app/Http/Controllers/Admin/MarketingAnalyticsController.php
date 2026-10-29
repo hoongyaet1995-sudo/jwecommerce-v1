@@ -1,0 +1,8 @@
+<?php
+namespace App\Http\Controllers\Admin;
+use App\Http\Controllers\Controller;use App\Domain\Marketing\MarketingPermission as P;use Illuminate\Http\Request;use Illuminate\Support\Facades\DB;use App\Services\Marketing\{MarketingPosts,MarketingAttribution};
+class MarketingAnalyticsController extends Controller {
+ public function data(Request $r){abort_unless(P::allows($r->user(),P::VIEW_ANALYTICS),403);return response()->json(app(\App\Services\Marketing\MarketingAnalytics::class)->report($r))->header('Cache-Control','private, no-store');}
+ public function export(Request $r){abort_unless(P::allows($r->user(),P::VIEW_ANALYTICS),403);$report=app(\App\Services\Marketing\MarketingAnalytics::class)->report($r);return response()->streamDownload(function()use($report){$out=fopen('php://output','w');fputcsv($out,['Campaign','Page views','Item views','Add to cart','Checkout starts','Quote requests','Quotation versions sent','Acceptances','Paid orders']);foreach($report['campaigns'] as $c){$name=preg_match('/^[=+@\-\t\r]/',$c['name'])?"'".$c['name']:$c['name'];fputcsv($out,[$name,$c['page_view'],$c['view_item'],$c['add_to_cart'],$c['begin_checkout'],$c['request_quote'],$c['quotation_sent'],$c['quotation_accepted'],$c['purchase']]);}fclose($out);},'campaign-performance.csv',['Content-Type'=>'text/csv; charset=UTF-8','Cache-Control'=>'private, no-store']);}
+ public function index(Request $r){abort_unless(P::allows($r->user(),P::VIEW_ANALYTICS),403);$boot=app(MarketingCampaignController::class)->boot($r,app(\App\Services\Marketing\MarketingCampaigns::class));$boot['page']='analytics';return response()->view('marketing.campaigns.index',['boot'=>$boot])->header('Cache-Control','private, no-store');}
+}

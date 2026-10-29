@@ -36,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             ClearLegacyCustomerWebSession::class,
             \App\Http\Middleware\SearchVisibility::class,
+            \App\Http\Middleware\MarketingStorefrontTracking::class,
         ]);
         $middleware->appendToPriorityList(
             StartSession::class,

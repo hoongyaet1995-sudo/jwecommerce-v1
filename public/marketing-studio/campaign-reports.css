@@ -1,0 +1,736 @@
+.crm-report-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.crm-report-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.crm-report-toolbar-actions .crm-filter-toggle {
+    min-height: 42px;
+}
+
+.crm-report-export-button {
+    min-height: 36px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.76rem;
+    white-space: nowrap;
+}
+
+.crm-report-filter-grid {
+    grid-template-columns: minmax(260px, 1fr) 180px 150px auto auto;
+}
+
+.crm-report-revenue-filter-grid {
+    grid-template-columns: minmax(260px, 1fr) minmax(190px, 250px) 150px auto auto;
+}
+
+.crm-report-audience-filter-grid {
+    grid-template-columns: minmax(240px, 1fr) auto auto;
+}
+
+.crm-report-attribution-note {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    color: #6c7e75;
+}
+
+.crm-report-attribution-note > i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    background: #eaf2ee;
+    color: #315f4b;
+    font-size: 1rem;
+}
+
+.crm-report-attribution-note span,
+.crm-report-attribution-note strong {
+    display: block;
+}
+
+.crm-report-attribution-note span {
+    font-size: 0.66rem;
+    font-weight: 700;
+}
+
+.crm-report-attribution-note strong {
+    margin-top: 0.12rem;
+    color: #193229;
+    font-size: 0.78rem;
+}
+
+.crm-report-kpis {
+    margin-bottom: 1rem;
+}
+
+.crm-report-kpi-sent,
+.crm-report-kpi-orders {
+    background: #eaf2ee;
+    color: #315f4b;
+}
+
+.crm-report-kpi-click,
+.crm-report-kpi-revenue {
+    background: #f0f7d8;
+    color: #5b7215;
+}
+
+.crm-report-kpi-context {
+    border-radius: 999px;
+    background: #f0f3f1;
+    padding: 0.25rem 0.48rem;
+    color: #315f4b;
+    font-size: 0.72rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.crm-report-primary-grid,
+.crm-report-secondary-grid {
+    align-items: start;
+}
+
+.crm-report-activity-chart {
+    min-height: 340px;
+}
+
+.crm-report-campaign-chart-panel {
+    margin-bottom: 1rem;
+}
+
+.crm-report-campaign-chart {
+    min-height: 360px;
+}
+
+.crm-report-performance-table-card {
+    margin-bottom: 1rem;
+}
+
+.crm-report-performance-table td:not(:first-child) {
+    white-space: nowrap;
+}
+
+.crm-report-performance-table td:last-child > strong {
+    color: #193229;
+}
+
+.crm-report-campaign-identity {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    min-width: 280px;
+}
+
+.crm-report-campaign-identity > span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: #eaf2ee;
+    color: #315f4b;
+}
+
+.crm-report-campaign-identity > div {
+    display: grid;
+    min-width: 0;
+}
+
+.crm-report-campaign-identity a {
+    overflow: hidden;
+    max-width: 330px;
+    color: #193229;
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.crm-report-campaign-identity a:hover {
+    color: #5b7215;
+}
+
+.crm-report-campaign-identity small {
+    overflow: hidden;
+    max-width: 330px;
+    color: #7b8a82;
+    font-size: 0.68rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.crm-report-order-metric {
+    display: grid;
+    gap: 0.05rem;
+}
+
+.crm-report-order-metric small {
+    color: #89978f;
+    font-size: 0.65rem;
+}
+
+.crm-report-revenue-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(330px, 1fr);
+    align-items: stretch;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.crm-report-revenue-chart {
+    min-height: 360px;
+}
+
+.crm-report-contribution-list {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.crm-report-contribution-item > div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.35rem;
+}
+
+.crm-report-contribution-item a {
+    overflow: hidden;
+    color: #26342d;
+    font-size: 0.84rem;
+    font-weight: 750;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.crm-report-contribution-item a:hover {
+    color: #5b7215;
+}
+
+.crm-report-contribution-item strong {
+    flex: 0 0 auto;
+    color: #193229;
+    font-size: 0.95rem;
+}
+
+.crm-report-contribution-bar {
+    overflow: hidden;
+    height: 7px;
+    border-radius: 999px;
+    background: #edf1ef;
+}
+
+.crm-report-contribution-bar span {
+    display: block;
+    min-width: 3px;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #315f4b, #8daf35);
+}
+
+.crm-report-contribution-item small {
+    display: block;
+    margin-top: 0.3rem;
+    color: #89978f;
+    font-size: 0.76rem;
+}
+
+.crm-report-compact-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 280px;
+    flex-direction: column;
+    color: #89978f;
+    text-align: center;
+}
+
+.crm-report-compact-empty i {
+    margin-bottom: 0.65rem;
+    color: #315f4b;
+    font-size: 1.5rem;
+}
+
+.crm-report-compact-empty strong,
+.crm-report-compact-empty span {
+    display: block;
+}
+
+.crm-report-compact-empty strong {
+    color: #26342d;
+    font-size: 0.78rem;
+}
+
+.crm-report-compact-empty span {
+    margin-top: 0.25rem;
+    font-size: 0.68rem;
+}
+
+.crm-report-conversion-table-card {
+    margin-bottom: 1rem;
+}
+
+.crm-report-conversion-table td:not(:nth-child(2)) {
+    white-space: nowrap;
+}
+
+.crm-report-order-reference,
+.crm-report-customer,
+.crm-report-attribution-value {
+    display: grid;
+    gap: 0.08rem;
+}
+
+.crm-report-order-reference strong,
+.crm-report-customer strong,
+.crm-report-attribution-value strong {
+    color: #26342d;
+    font-size: 0.78rem;
+}
+
+.crm-report-order-reference small,
+.crm-report-customer small,
+.crm-report-attribution-value small {
+    color: #89978f;
+    font-size: 0.66rem;
+}
+
+.crm-report-customer {
+    min-width: 190px;
+}
+
+.crm-report-customer small {
+    overflow: hidden;
+    max-width: 230px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.crm-report-campaign-link {
+    display: block;
+    overflow: hidden;
+    max-width: 220px;
+    color: #315f4b;
+    font-size: 0.76rem;
+    font-weight: 750;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.crm-report-campaign-link:hover {
+    color: #5b7215;
+}
+
+.crm-report-conversion-table td:last-child > strong {
+    color: #193229;
+}
+
+.crm-report-conversion-empty {
+    white-space: normal !important;
+}
+
+.crm-report-conversion-empty-content {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    max-width: 640px;
+    text-align: left;
+}
+
+.crm-report-conversion-empty-content .crm-empty-icon {
+    flex: 0 0 52px;
+    margin: 0;
+}
+
+.crm-report-conversion-empty-content strong,
+.crm-report-conversion-empty-content span {
+    display: block;
+}
+
+.crm-report-conversion-empty-content strong {
+    margin-bottom: 0.25rem;
+    color: #26342d;
+    font-size: 0.95rem;
+}
+
+.crm-report-conversion-empty-content span {
+    color: #7b8a82;
+    font-size: 0.76rem;
+    line-height: 1.55;
+}
+
+.crm-report-audience-primary-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(330px, 1fr);
+    align-items: stretch;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.crm-report-audience-chart {
+    min-height: 360px;
+}
+
+.crm-report-source-list {
+    display: grid;
+    gap: 1.05rem;
+    margin-top: 1rem;
+}
+
+.crm-report-source-item > div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.4rem;
+}
+
+.crm-report-source-item > div:first-child span {
+    color: #526159;
+    font-size: 0.84rem;
+    font-weight: 750;
+}
+
+.crm-report-source-item > div:first-child strong {
+    color: #193229;
+    font-size: 0.95rem;
+}
+
+.crm-report-source-item > div:nth-child(2) {
+    overflow: hidden;
+    height: 7px;
+    border-radius: 999px;
+    background: #edf1ef;
+}
+
+.crm-report-source-item > div:nth-child(2) span {
+    display: block;
+    min-width: 3px;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #315f4b, #8daf35);
+}
+
+.crm-report-source-item small {
+    display: block;
+    margin-top: 0.3rem;
+    color: #89978f;
+    font-size: 0.76rem;
+}
+
+.crm-report-audience-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.crm-report-metric-list,
+.crm-report-channel-list {
+    display: grid;
+    gap: 0.6rem;
+    margin-top: 1rem;
+}
+
+.crm-report-metric-list > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 46px;
+    align-items: center;
+    gap: 0.6rem;
+    border: 1px solid #edf1ef;
+    border-radius: 9px;
+    padding: 0.7rem;
+}
+
+.crm-report-metric-list > div > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #526159;
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.crm-report-metric-list > div > span i {
+    color: #315f4b;
+}
+
+.crm-report-metric-list > div > strong {
+    color: #193229;
+    font-size: 0.95rem;
+}
+
+.crm-report-metric-list > div > small {
+    color: #89978f;
+    font-size: 0.76rem;
+    text-align: right;
+}
+
+.crm-report-channel-list > div {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.65rem;
+    border: 1px solid #edf1ef;
+    border-radius: 9px;
+    padding: 0.7rem;
+}
+
+.crm-report-channel-list > div > i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: #eaf2ee;
+    color: #315f4b;
+}
+
+.crm-report-channel-list span,
+.crm-report-channel-list span strong,
+.crm-report-channel-list span small {
+    display: block;
+}
+
+.crm-report-channel-list span strong {
+    color: #526159;
+    font-size: 0.84rem;
+}
+
+.crm-report-channel-list span small {
+    margin-top: 0.12rem;
+    color: #89978f;
+    font-size: 0.76rem;
+}
+
+.crm-report-channel-list b {
+    color: #193229;
+    font-size: 0.95rem;
+}
+
+.crm-report-activity-empty {
+    min-height: 250px;
+}
+
+.crm-report-funnel {
+    display: grid;
+    gap: 1.2rem;
+    margin-top: 1.25rem;
+}
+
+.crm-report-funnel-step > div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.45rem;
+}
+
+.crm-report-funnel-step > div:first-child span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #526159;
+    font-size: 0.84rem;
+    font-weight: 750;
+}
+
+.crm-report-funnel-step > div:first-child i {
+    color: #315f4b;
+}
+
+.crm-report-funnel-step > div:first-child strong {
+    color: #17221c;
+    font-size: 0.95rem;
+}
+
+.crm-report-funnel-step > div:nth-child(2) {
+    overflow: hidden;
+    height: 8px;
+    border-radius: 999px;
+    background: #edf1ef;
+}
+
+.crm-report-funnel-step > div:nth-child(2) span {
+    display: block;
+    min-width: 3px;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #315f4b, #6f8f69);
+}
+
+.crm-report-funnel-step small {
+    display: block;
+    margin-top: 0.35rem;
+    color: #89978f;
+    font-size: 0.76rem;
+}
+
+.crm-report-unsubscribe-note {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-top: 1.35rem;
+    border-radius: 9px;
+    background: #f5f7f6;
+    padding: 0.7rem;
+    color: #6c7e75;
+    font-size: 0.78rem;
+}
+
+.crm-report-unsubscribe-note i {
+    color: #7a8981;
+}
+
+.crm-report-unsubscribe-note strong {
+    color: #26342d;
+}
+
+.crm-report-campaign-table-panel {
+    min-height: 360px;
+}
+
+.crm-report-campaign-table th {
+    font-size: 0.7rem;
+}
+
+.crm-report-campaign-table td {
+    font-size: 0.82rem;
+}
+
+.crm-report-campaign-table td:first-child a {
+    font-size: 0.84rem;
+}
+
+.crm-report-campaign-table td:first-child span {
+    font-size: 0.72rem;
+}
+
+.crm-report-campaign-table td:not(:first-child) {
+    white-space: nowrap;
+}
+
+.crm-report-campaign-table td:last-child strong {
+    color: #193229;
+    font-size: 0.88rem;
+}
+
+.crm-report-audience-list {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 1rem;
+}
+
+.crm-report-audience-list > div {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.65rem;
+    border: 1px solid #edf1ef;
+    border-radius: 9px;
+    padding: 0.7rem;
+}
+
+.crm-report-audience-list i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: #eaf2ee;
+    color: #315f4b;
+}
+
+.crm-report-audience-list span {
+    color: #6c7e75;
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.crm-report-audience-list strong {
+    color: #17221c;
+    font-size: 0.98rem;
+}
+
+@media (max-width: 767.98px) {
+    .crm-report-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .crm-report-period-form {
+        width: 100%;
+    }
+
+    .crm-report-toolbar-actions {
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .crm-report-toolbar-actions .crm-filter-toggle {
+        flex: 0 0 42px;
+        width: 42px;
+        padding: 0;
+    }
+
+    .crm-report-toolbar-actions .crm-report-period-form {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .crm-report-campaign-table-panel {
+        min-height: 0;
+    }
+
+    .crm-table-heading {
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+}
+
+@media (max-width: 1199.98px) {
+    .crm-report-revenue-grid,
+    .crm-report-audience-primary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .crm-report-audience-detail-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .crm-report-filter-grid,
+    .crm-report-revenue-filter-grid,
+    .crm-report-audience-filter-grid {
+        grid-template-columns: minmax(220px, 1fr) 1fr 1fr;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .crm-report-filter-grid,
+    .crm-report-revenue-filter-grid,
+    .crm-report-audience-filter-grid,
+    .crm-report-audience-detail-grid {
+        grid-template-columns: 1fr;
+    }
+}

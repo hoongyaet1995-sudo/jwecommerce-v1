@@ -151,6 +151,7 @@ class CheckoutService
             if ($shippingAddress) {
                 $order->addresses()->create($shippingAddress + ['type' => 'shipping']);
             }
+            try { app(\App\Services\Marketing\MarketingAttribution::class)->attach($order,request()); } catch (\Throwable) { \Illuminate\Support\Facades\Log::warning('Marketing source unavailable; checkout retained.'); }
             OrderStatusHistory::query()->create(['order_id' => $order->id, 'to_status' => 'pending_payment']);
             $this->recordNotification($order, 'order_created', 'order', $order->id);
 

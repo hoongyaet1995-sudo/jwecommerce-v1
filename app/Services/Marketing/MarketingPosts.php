@@ -14,11 +14,11 @@ class MarketingPosts {
    $can=$c->state==='connected'&&($s['capabilities']['identity_granted']??false)&&($s['capabilities']['publishing_granted']??false)&&(!$c->expires_at||$c->expires_at->isFuture()||(ExternalChannelConnections::supports($c->platform)&&$c->refresh_token&&(!$c->refresh_expires_at||$c->refresh_expires_at->isFuture())));
    if(in_array($c->platform,['youtube','tiktok'],true)&&!config('marketing.external_video_publishing_enabled',false))$can=false;
    if($c->platform==='facebook')$can=$can&&in_array('CREATE_CONTENT',$c->tasks??[],true);
-   return ['id'=>$c->id,'platform'=>$c->platform,'name'=>$c->name,'kind'=>ucfirst($c->platform).' account','state'=>$s['state'],'canSchedule'=>$can,'publishingEnabled'=>false];
+   return ['id'=>$c->id,'platform'=>$c->platform,'name'=>$c->name,'kind'=>ucfirst($c->platform).' account','state'=>$s['state'],'canSchedule'=>$can,'publishingEnabled'=>false,'trackingPreparation'=>app(MarketingTrackingPreparation::class)->capability($c)];
   })->all();
  }
  public function listing(int $user):array{return MarketingPost::where('user_id',$user)->where('merchant_key',$this->merchant())->orderByDesc('updated_at')->get()->map(fn($p)=>$this->view($p))->all();}
- public function view(MarketingPost $p):array{$doc=$p->document;$connections=MarketingChannelConnection::where('merchant_key',$p->merchant_key)->whereIn('id',array_keys($doc['outcomes']??[]))->get()->keyBy('id');foreach($doc['outcomes']??[] as $id=>$result){$doc['outcomes'][$id]['url']=app(MarketingPostLink::class)->url($connections[$id]->platform??'', $result,($doc['type']??'')==='Post'?'image':'video');}return array_merge($doc,($p->status==='Scheduled'&&empty($p->document['delivery_phase'])?['delivery_phase'=>'saved']:[]),['id'=>$p->id,'version'=>$p->version,'status'=>$p->status,'due'=>$p->scheduled_at?->toIso8601String(),'tz'=>$p->timezone]);}
+ public function view(MarketingPost $p):array{$doc=$p->document;$connections=MarketingChannelConnection::where('merchant_key',$p->merchant_key)->whereIn('id',array_keys($doc['outcomes']??[]))->get()->keyBy('id');foreach($doc['outcomes']??[] as $id=>$result){$doc['outcomes'][$id]['url']=app(MarketingPostLink::class)->url($connections[$id]->platform??'', $result,($doc['type']??'')==='Post'?'image':'video');}return array_merge($doc,($p->status==='Scheduled'&&empty($p->document['delivery_phase'])?['delivery_phase'=>'saved']:[]),['campaign_id'=>$p->campaign_id,'id'=>$p->id,'version'=>$p->version,'status'=>$p->status,'due'=>$p->scheduled_at?->toIso8601String(),'tz'=>$p->timezone]);}
  private function invalid(string $message):never{throw ValidationException::withMessages(['post'=>$message]);}
  public function write(int $user,string $action,array $d,bool $executing=false):array {
   return DB::transaction(function()use($user,$action,$d,$executing){
@@ -41,7 +41,7 @@ class MarketingPosts {
     $content=app(MarketingPostContent::class)->normalize($user,$d,$old);$d=array_replace($d,$content);
     $asset=$d['asset']??null;if($asset&&!$this->asset($user,$asset))$this->invalid('The selected media is unavailable. Choose an existing file again.');
     $doc=['title'=>trim($d['title']??'')?:mb_substr(trim($d['copy']??''),0,45),'copy'=>$d['copy']??'','targets'=>$targets,'copies'=>$copies,'asset'=>$asset,'type'=>$d['type'],'options'=>array_intersect_key($d['options']??[],array_flip($targets)),'history'=>$old['history']??[],'approvals'=>$old['approvals']??[]];
-    $doc=array_replace($doc,$content);$doc['ai_context']=$d['ai_context']??$old['ai_context']??[];$doc['copy_history']=$d['copy_history']??$old['copy_history']??[];
+    $doc=array_replace($doc,$content);$doc['campaign_links']=$old['campaign_links']??[];$doc['campaign_link_context']=$old['campaign_link_context']??[];$doc['ai_context']=$d['ai_context']??$old['ai_context']??[];$doc['copy_history']=$d['copy_history']??$old['copy_history']??[];
     if($executing&&!empty($old['delivery_lock']))$doc['delivery_lock']=$old['delivery_lock'];$doc['title']=$doc['title']?:'Untitled post';$tz=$d['tz'];$due=isset($d['due'])?CarbonImmutable::parse($d['due'])->utc():null;
     if($action==='schedule'){
      if(!$due||$due->isPast())$this->invalid('Choose a time in the future.');$pending=0;

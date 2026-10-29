@@ -1,5 +1,5 @@
 import type {LaravelAdminBootstrap} from '../types';
-export const MARKETING_PERMISSIONS=['marketing.view','marketing.edit','marketing.approve_cost'] as const;
+export const MARKETING_PERMISSIONS=['marketing.view','marketing.edit','marketing.approve_cost','marketing.manage_campaigns','marketing.view_analytics'] as const;
 export type MarketingStaff={id:number;name:string;email:string;permissions:string[];isSuperAdmin:boolean};
 export function marketingEntry(b:LaravelAdminBootstrap):string|null{return b.marketingPermissions?.includes('marketing.view')&&b.marketingStudioUrl==='/admin/marketing'?b.marketingStudioUrl:null;}
 export function normalizeMarketingPermissions(current:string[],key:string,on:boolean):string[]{const s=new Set(current);if(on){s.add('marketing.view');s.add(key);if(key==='marketing.approve_cost')s.add('marketing.edit');}else{ s.delete(key);if(key==='marketing.view')s.clear();if(key==='marketing.edit')s.delete('marketing.approve_cost');}return MARKETING_PERMISSIONS.filter(p=>s.has(p));}

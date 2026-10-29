@@ -1,0 +1,3 @@
+<?php
+use Illuminate\Database\Migrations\Migration;use Illuminate\Database\Schema\Blueprint;use Illuminate\Support\Facades\Schema;
+return new class extends Migration{public function up():void{Schema::create('marketing_enquiry_attributions',function(Blueprint $t){$t->id();$t->uuid('enquiry_id')->unique();$t->string('merchant_key',100);$t->uuid('campaign_id');$t->uuid('link_id');$t->uuid('first_link_id')->nullable();$t->foreignId('owner_id');$t->string('session_key',64);$t->dateTime('clicked_at');$t->dateTime('submitted_at');$t->string('policy',40)->default('last-click-7d-v1');$t->timestamps();$t->index(['merchant_key','owner_id','submitted_at'],'mkt_enquiry_owner_time');});}public function down():void{Schema::dropIfExists('marketing_enquiry_attributions');}};

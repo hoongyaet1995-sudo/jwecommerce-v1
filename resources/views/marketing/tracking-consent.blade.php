@@ -1,0 +1,1 @@
+<script id="jw-marketing-consent" type="application/json">@json(['accepted'=>$consent,'csrf'=>csrf_token(),'item_id'=>$itemId??null])</script><script defer src="{{ asset('marketing-studio/tracking.js') }}"></script>
