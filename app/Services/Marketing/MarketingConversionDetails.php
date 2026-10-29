@@ -69,6 +69,10 @@ class MarketingConversionDetails
     {
         $l=$this->scoped('marketing_tracking_links',$ids)->where('id',$id)->first();if(!$l)return ['campaign_name'=>'Source unavailable','post_name'=>'Post unavailable','account_name'=>'Account unavailable','platform'=>null];
         $c=app(MarketingCampaigns::class)->query((int)$l->user_id)->find($l->campaign_id);
+        if(($l->channel??'post')==='email'){
+            $delivery=$this->scoped('marketing_email_deliveries',$ids)->where('id',$l->destination_id)->first(['snapshot']);$snapshot=$delivery?json_decode($delivery->snapshot,true):[];
+            return ['campaign_name'=>$c?->name??'Campaign unavailable','post_name'=>$snapshot['subject']??'Test email','account_name'=>$snapshot['from_name']??'Store email sender','platform'=>'Email','post_url'=>null,'link_id'=>$l->id];
+        }
         $p=DB::table('marketing_posts')->where('id',$l->post_id)->where('merchant_key',$l->merchant_key)->where('user_id',$l->user_id)->first(['document']);
         $account=DB::table('marketing_channel_connections')->where('id',$l->destination_id)->where('merchant_key',$l->merchant_key)->first(['name','platform']);
         $doc=$p?json_decode($p->document,true):[];
