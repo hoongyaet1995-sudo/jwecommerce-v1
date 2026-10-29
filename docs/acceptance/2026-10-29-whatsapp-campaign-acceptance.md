@@ -165,3 +165,24 @@ Template list actions acceptance:
 - Intentional TDD red: new fake-provider regression expects stale Header examples to be discarded without removing valid body examples; no live submission.
 
 - Result: intentional red reproduced 422; frontend now serializes only active Header/Body examples; server normalizes stale examples at save and before provider submission (including existing drafts). 18 template tests / 93 assertions passed; PHP lint and JS syntax passed. Local only, not yet synchronized; no real Meta request.
+
+## CRM campaign workspace phase
+- Scope approved: CRM list/filter/type chooser and source-faithful Email/SMS/WhatsApp creation UI; preserve Post #new. Local only, no send/provider/customer import.
+- Intentional TDD red: private versioned channel drafts endpoint does not exist yet. No provider calls allowed.
+
+- Initial red run exposed one migration import typo (unexpected issue count 1, corrected Schema facade). Repeat now verifies intended absent endpoint.
+- CRM workspace result: 25 tests / 129 assertions passed (Campaign, ChannelCampaignDraft, ContentTemplates); JS syntax passed. Diff check found generated CRCRLF whitespace, normalized to LF; no logic change.
+- Browser: default-collapsed filter, toggle open, four-type chooser, CRM Email form and DB draft save verified. Local draft 01a18749-63d8-72b2-b80c-b57afc752c1f. SMS and WhatsApp source layouts verified; no audience/provider fake data imported.
+
+
+## Single-channel campaign correction
+- User requires exactly one of Email/SMS/WhatsApp/Post per campaign. Remove WhatsApp entry and mixed-content display from Post campaigns; preserve existing historical records.
+- Intentional TDD red: mixed-channel attachment test should fail until server guards are applied.
+
+- Single-channel result: 26 tests / 136 assertions passed. Post attachment rejected for Email/SMS/WhatsApp campaigns; WhatsApp preparation rejected for Post/Email/SMS campaigns; channel type changes rejected. Post Content page normal browser shows Add posts only. No existing records removed; no provider requests or release.
+
+## Post workflow reuse and single-card selector
+- Approved: Post template entry opens existing Posts list first; no second editor UI. Campaign uses one existing Post draft through platform-labelled cards. Hide unsupported formats in existing editor.
+- Intentional TDD red: multiple-post assignment must be rejected without changing saved selection. No real publish.
+
+- Post reuse verification: 38 tests / 203 assertions passed. Normal browser new/post entry opened existing Posts list (not editor); Campaign card dialog loaded actual saved drafts, existing selection and real media. Local records lack selected accounts and correctly show Platform not chosen. No account data invented or OAuth performed. JS syntax and scoped diff check passed. No publish/release.

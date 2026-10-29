@@ -88,6 +88,7 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::post('/workspace/{project}/suggest',[\App\Http\Controllers\Admin\MarketingWorkspaceController::class,'suggest'])->whereUuid('project')->middleware('throttle:10,1')->name('workspace.suggest');
     Route::get('/workspace-preview', [\App\Http\Controllers\Admin\MarketingWorkspacePreviewController::class, 'show'])->name('workspace.preview');
     Route::get('/', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','overview')->name('home');
+    Route::post('/campaigns/channel-drafts/{campaign?}',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'channelDraft'])->whereUuid('campaign');
     Route::get('/campaigns/data',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'data']);
     Route::post('/campaigns/data',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'write'])->name('campaigns.write');
     Route::patch('/campaigns/data/{campaign}',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'write'])->whereUuid('campaign')->name('campaigns.update');

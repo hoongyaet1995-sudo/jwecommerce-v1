@@ -14,4 +14,11 @@ class MarketingCampaignTest extends TestCase {
  public function test_bad_dates_and_unsafe_url_are_rejected(){ $this->actor();$this->postJson('/admin/marketing/campaigns/data',array_replace($this->data(),['end'=>'2026-10-01']))->assertUnprocessable();$this->postJson('/admin/marketing/campaigns/data',array_replace($this->data(),['destination_url'=>'javascript:alert(1)']))->assertUnprocessable(); }
  public function test_view_permission_does_not_grant_campaign_edit_or_reports(){ Http::preventStrayRequests();$u=User::factory()->create(['is_admin'=>true,'is_super_admin'=>false]);$u->permissions()->create(['permission'=>'marketing.view']);$this->actingAs($u);$this->postJson('/admin/marketing/campaigns/data',$this->data())->assertForbidden();$this->getJson('/admin/marketing/analytics/data')->assertForbidden(); }
  public function test_formal_pages_render_without_sample_data(){ $this->actor();$this->get('/admin/marketing/campaigns')->assertOk()->assertSee('campaigns-boot')->assertDontSee('Everyday essentials launch');$this->get('/admin/marketing/analytics')->assertOk()->assertSee('campaigns-boot');Http::assertNothingSent(); }
+ public function test_post_campaign_rejects_multiple_posts_without_changing_existing_choice(){
+  $this->actor();$id=$this->postJson('/admin/marketing/campaigns/data',$this->data())->json('campaign.id');$ids=[];
+  foreach(['First','Second'] as $title){$p=MarketingPost::create(['id'=>(string)Str::uuid(),'merchant_key'=>app(\App\Services\Marketing\MarketingPosts::class)->merchant(),'user_id'=>auth()->id(),'version'=>1,'status'=>'Draft','timezone'=>'UTC','document'=>['title'=>$title,'targets'=>[]]]);$ids[]=$p->id;}
+  $this->postJson('/admin/marketing/campaigns/data/'.$id.'/posts',['version'=>1,'post_ids'=>[$ids[0]]])->assertOk();
+  $this->postJson('/admin/marketing/campaigns/data/'.$id.'/posts',['version'=>2,'post_ids'=>$ids])->assertUnprocessable();
+  $this->assertDatabaseHas('marketing_posts',['id'=>$ids[0],'campaign_id'=>$id]);$this->assertDatabaseHas('marketing_posts',['id'=>$ids[1],'campaign_id'=>null]);Http::assertNothingSent();
+ }
 }

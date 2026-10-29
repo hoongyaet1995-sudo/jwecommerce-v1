@@ -1,0 +1,93 @@
+.crm-sms-campaign-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.crm-sms-campaign-phone {
+    min-height: 350px;
+}
+
+.crm-sms-campaign-phone .crm-sms-conversation {
+    min-height: 245px;
+}
+
+.crm-sms-campaign-summary {
+    display: grid;
+    gap: 0.7rem;
+    padding: 0 1.25rem 1rem;
+}
+
+.crm-sms-campaign-summary > div {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 0.65rem;
+}
+
+.crm-sms-campaign-summary span {
+    color: var(--text-muted-green);
+    font-size: 0.72rem;
+}
+
+.crm-sms-campaign-summary strong {
+    max-width: 62%;
+    overflow-wrap: anywhere;
+    color: var(--text-main);
+    font-size: 0.76rem;
+    text-align: right;
+}
+
+.crm-sms-review-layout {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 1.5rem;
+}
+
+.crm-sms-review-actions {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.crm-sms-test-name-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
+}
+
+.crm-sms-review-action-button {
+    width: 50%;
+    margin-left: auto;
+}
+
+.crm-sms-credit-estimate {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.8rem;
+    border-radius: var(--radius-lg);
+    background: #f0f7d8;
+    padding: 0.8rem;
+    color: #536d39;
+    font-size: 0.74rem;
+}
+
+@media (max-width: 991.98px) {
+    .crm-sms-review-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .crm-sms-campaign-grid,
+    .crm-sms-test-name-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .crm-sms-review-action-button {
+        width: 100%;
+    }
+}
