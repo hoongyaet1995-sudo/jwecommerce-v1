@@ -146,4 +146,3 @@ Template list actions acceptance:
 - Isolated fixture diagnostic: runtime APP_URL must be present before application bootstrap. Explicit testing APP_URL fixed signed handoff (1 test / 14 assertions). Two failed runs for fixture-domain environment, resolved; no app security change. Final matrix runs with test-only APP_KEY and matching APP_URL.
 
 - Final exact-release matrix: 50 tests / 284 assertions passed, no risky tests; scoped PHP/JS syntax and diff whitespace checks passed. No real provider generation, message sending or template submission.
-
