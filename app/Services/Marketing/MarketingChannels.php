@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\{Crypt,DB,Http};
 class MarketingChannels {
  public function merchant():string{return app(FacebookAccountService::class)->merchant();}
  public function ready(Request $r,string $platform="facebook"):array{
-  if(ExternalChannelConnections::supports($platform)?app(ExternalChannelConnections::class)->appId($platform)==='':!app(FacebookAccountService::class)->configured())return ['ready'=>false,'reason'=>'The platform app configuration is incomplete.'];
+  if($platform==='whatsapp'?!app(\App\Services\Social\WhatsAppAccountService::class)->configured(): (ExternalChannelConnections::supports($platform)?app(ExternalChannelConnections::class)->appId($platform)==='':!app(FacebookAccountService::class)->configured()))return ['ready'=>false,'reason'=>'The platform app configuration is incomplete.'];
   if(!$r->isSecure()&&!(app()->environment('local','testing')&&in_array($r->getHost(),['127.0.0.1','localhost','::1'],true)))return ['ready'=>false,'reason'=>'Public client websites must use HTTPS for authorization.'];
   try{$hub=app(SocialHubOAuth::class);$hub->fingerprint();$domain=$hub->installation()->registered_domain;$host=parse_url(str_contains($domain,'://')?$domain:'https://'.$domain,PHP_URL_HOST);if(strtolower((string)$host)!==strtolower($r->getHost()))return ['ready'=>false,'reason'=>'The registered Social Hub domain does not match this website. Review the installation settings; no alternative callback will be used.'];return ['ready'=>true,'reason'=>null];}catch(\Throwable){return ['ready'=>false,'reason'=>'Social Hub installation or website access is not ready. Contact your administrator.'];}
  }

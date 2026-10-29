@@ -48,21 +48,21 @@ class WhatsAppAccountService
         throw new RuntimeException('account_identity_mismatch');
     }
 
-    public function importLegacy(array $values,User $actor): ManagedSocialAccount
+    public function importLegacy(array $values,User $actor,bool $preserveInbound=false): ManagedSocialAccount
     {
         if(!$actor->is_super_admin)throw new RuntimeException('manager_required');
         $phone=$this->verify($values);
-        return DB::transaction(function()use($values,$actor,$phone){
+        return DB::transaction(function()use($values,$actor,$phone,$preserveInbound){
             $accounts=ManagedSocialAccount::where('platform','whatsapp')->where('provider_account_id',$values['phone_number_id'])->lockForUpdate()->get();
             if($accounts->contains(fn($a)=>$a->merchant_key!==$this->merchant()||$a->app_id!==$values['app_id']||$a->waba_id!==$values['waba_id']))throw new RuntimeException('account_owner_conflict');
-            $account=$accounts->first()??new ManagedSocialAccount;
+            $account=$accounts->first()??new ManagedSocialAccount;$inbound=$preserveInbound&&$account->exists?['inbound_enabled'=>$account->inbound_enabled,'inbound_verified_at'=>$account->inbound_verified_at,'messaging_error'=>$account->messaging_error]:[];
             // Explicit server-owned whitelist; never mass-assign request data.
             $account->forceFill(['merchant_key'=>$this->merchant(),'platform'=>'whatsapp','app_id'=>$values['app_id'],
                 'provider_account_id'=>$values['phone_number_id'],'waba_id'=>$values['waba_id'],
                 'name'=>$phone['verified_name']??$values['phone_number_id'],'display_phone_number'=>$phone['display_phone_number']??null,
                 'access_token'=>$values['access_token'],'permissions'=>$phone['permissions'],'tasks'=>[],
                 'state'=>'connected','inbound_enabled'=>false,'inbound_verified_at'=>null,'messaging_error'=>null,'authorized_by'=>$actor->id,'checked_at'=>now(),'connection_method'=>'migrated_sender']);
-            $account->save();return $account;
+            $account->forceFill($inbound);$account->save();return $account;
         });
     }
 

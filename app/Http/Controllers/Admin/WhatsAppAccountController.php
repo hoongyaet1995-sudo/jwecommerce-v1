@@ -14,7 +14,7 @@ class WhatsAppAccountController extends Controller
 {
  protected string $platform='whatsapp';
     private function requireManager(Request $request): void {abort_unless($request->user()?->is_super_admin,403);}
-    private function result(string $status){return redirect('/admin/social/'.$this->platform.'?'.$this->platform.'='.$status)->header('Referrer-Policy','no-referrer');}
+    private function result(string $status){$r=request();$intent=$r->session()->get('whatsapp_marketing_oauth');if(is_array($intent)&&($intent['actor']??null)===$r->user()?->id&&($intent['platform']??null)==='whatsapp'&&($intent['expires']??0)>=now()->timestamp)return redirect('/admin/marketing/channels/whatsapp?result='.urlencode($status))->header('Referrer-Policy','no-referrer');return redirect('/admin/social/'.$this->platform.'?'.$this->platform.'='.$status)->header('Referrer-Policy','no-referrer');}
     public function authorize(Request $request)
     {
         $this->requireManager($request);
@@ -58,7 +58,7 @@ class WhatsAppAccountController extends Controller
         } catch(\RuntimeException $e){return $this->result($e->getMessage());}
         catch(\Throwable){return $this->result('hub_unavailable');}
     }
-    private function pending(Request $request): ?array
+    protected function pending(Request $request): ?array
     {
         try {$raw=$request->session()->get($this->platform.'_pending');$p=$raw?json_decode(Crypt::decryptString($raw),true,512,JSON_THROW_ON_ERROR):null;
             if(is_array($p)&&$p['actor']===$request->user()->id&&$p['merchant']===app(WhatsAppAccountService::class)->merchant()

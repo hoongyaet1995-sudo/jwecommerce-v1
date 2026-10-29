@@ -5,6 +5,9 @@ use App\Http\Controllers\Admin\MarketingProductionController as Production;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvailability::class])->prefix('admin/marketing')->name('marketing.')->group(function () {
+    Route::post('/templates/messages', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'messageDraft'])->name('content-messages.create')->middleware('throttle:30,1');
+    Route::post('/templates/messages/{id}', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'messageDraft'])->name('content-messages.update')->whereUuid('id')->middleware('throttle:30,1');
+    Route::get('/templates/messages/{id}/review', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'messageReview'])->whereUuid('id');
     Route::get('/templates',[\App\Http\Controllers\Admin\MarketingTemplateController::class,'entry'])->name('templates.entry');
     Route::get('/templates/products',[\App\Http\Controllers\Admin\MarketingTemplateController::class,'products'])->name('templates.products');
     Route::post('/templates/projects',[\App\Http\Controllers\Admin\MarketingTemplateController::class,'create'])->name('templates.create');
@@ -109,7 +112,16 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::post('/campaigns/links',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'link'])->name('campaigns.link');
     Route::get('/analytics', [\App\Http\Controllers\Admin\MarketingAnalyticsController::class, 'index'])->name('preview.analytics');
     Route::get('/content', [\App\Http\Controllers\Admin\MarketingNavigationController::class, 'show'])->defaults('page','content')->name('preview.content');
+    Route::get('/campaigns/templates', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'index'])->name('campaign.templates');
+    Route::get('/templates/data', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'data']);
+    Route::post('/templates/data', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'save'])->name('content-templates.create')->middleware('throttle:30,1');
+    Route::post('/templates/data/{id}', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'save'])->name('content-templates.update')->whereUuid('id')->middleware('throttle:30,1');
+    Route::post('/templates/{id}/{action}', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'action'])->name('content-templates.action')->whereUuid('id')->whereIn('action',['submit','sync','duplicate','use-post','archive','restore'])->middleware('throttle:10,1');
     Route::get('/channels', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'index'])->name('preview.channels');
+    Route::get('/channels/whatsapp', [\App\Http\Controllers\Admin\MarketingWhatsAppChannelsController::class, 'page'])->name('channels.whatsapp');
+    Route::post('/channels/whatsapp/cancel', [\App\Http\Controllers\Admin\MarketingWhatsAppChannelsController::class, 'cancelSelection'])->name('channels.whatsapp.cancel')->middleware('throttle:10,1');
+    Route::post('/channels/whatsapp/select', [\App\Http\Controllers\Admin\MarketingWhatsAppChannelsController::class, 'save'])->name('channels.whatsapp.select')->middleware('throttle:10,1');
+    Route::post('/channels/whatsapp/authorize', [\App\Http\Controllers\Admin\MarketingWhatsAppChannelsController::class, 'start'])->name('channels.whatsapp.authorize')->middleware('throttle:10,1');
     Route::get('/channels/{platform}', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'index'])->whereIn('platform',['facebook','instagram','tiktok','youtube'])->name('channels.platform');
     Route::post('/channels/{platform}/authorize', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'authorize'])->whereIn('platform',['facebook','instagram','tiktok','youtube'])->middleware('throttle:10,1')->name('channels.authorize');
     Route::post('/channels/{platform}/select', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'select'])->whereIn('platform',['facebook','instagram','tiktok','youtube'])->middleware('throttle:10,1')->name('channels.select');

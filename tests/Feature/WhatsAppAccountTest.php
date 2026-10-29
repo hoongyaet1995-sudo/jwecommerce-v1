@@ -28,6 +28,13 @@ class WhatsAppAccountTest extends TestCase
         });
     }
 
+    public function test_marketing_reconnect_preserves_existing_support_subscription(): void
+    {
+        $service=app(WhatsAppAccountService::class);$a=$service->importLegacy($this->values(),$this->actor());$a->update(['inbound_enabled'=>true,'inbound_verified_at'=>now()]);
+        $saved=$service->importLegacy($this->values(),$this->actor(),true);
+        $this->assertSame($a->id,$saved->id);$this->assertTrue($saved->inbound_enabled);$this->assertNotNull($saved->inbound_verified_at);$this->assertSame(1,ManagedSocialAccount::count());
+    }
+
     private function values(): array {return ['app_id'=>'123','waba_id'=>'789','phone_number_id'=>'456','access_token'=>'private-token'];}
     private function actor(): User {return (new User)->forceFill(['id'=>1,'is_super_admin'=>true]);}
 
