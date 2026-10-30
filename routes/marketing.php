@@ -26,6 +26,14 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::match(['get','post'],'/campaigns/templates/email/media', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'media'])->name('email-templates.media')->middleware('throttle:40,1');
     Route::get('/campaigns/templates/sms/{id?}', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'sms'])->whereUuid('id');
     Route::post('/campaigns/templates/{channel}/save/{id?}', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'save'])->name('email-sms-templates.save')->whereIn('channel',['email','sms'])->whereUuid('id')->middleware('throttle:30,1');
+    Route::get('/settings/email',[\App\Http\Controllers\Admin\MarketingEmailSettingsController::class,'index'])->name('settings.email');
+    Route::get('/settings/email/data',[\App\Http\Controllers\Admin\MarketingEmailSettingsController::class,'data']);
+    Route::post('/settings/email/data',[\App\Http\Controllers\Admin\MarketingEmailSettingsController::class,'save'])->name('settings.email.save')->middleware('throttle:10,1');
+    Route::post('/settings/email/bounces',[\App\Http\Controllers\Admin\MarketingEmailSettingsController::class,'bounces'])->name('settings.email.bounces')->middleware('throttle:6,1');
+    Route::post('/settings/email/check',[\App\Http\Controllers\Admin\MarketingEmailSettingsController::class,'check'])->name('settings.email.check')->middleware('throttle:3,1');
+    Route::get('/campaigns/{id}/email-batches',[\App\Http\Controllers\Admin\MarketingEmailBatchesController::class,'index'])->whereUuid('id');
+    Route::post('/campaigns/{id}/email-batches/review',[\App\Http\Controllers\Admin\MarketingEmailBatchesController::class,'review'])->whereUuid('id')->name('email-batches.review')->middleware('throttle:10,1');
+    Route::post('/campaigns/{id}/email-batches/{batch}/confirm',[\App\Http\Controllers\Admin\MarketingEmailBatchesController::class,'confirm'])->whereUuid('id')->whereUuid('batch')->name('email-batches.confirm')->middleware('throttle:5,1');
     Route::get('/campaigns/{id}/email-test',[\App\Http\Controllers\Admin\MarketingEmailDeliveryController::class,'status'])->whereUuid('id');
     Route::post('/campaigns/{id}/email-test',[\App\Http\Controllers\Admin\MarketingEmailDeliveryController::class,'send'])->name('email-test.send')->whereUuid('id')->middleware('throttle:5,1');
     Route::post('/templates/messages', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'messageDraft'])->name('content-messages.create')->middleware('throttle:30,1');

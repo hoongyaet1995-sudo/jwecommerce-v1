@@ -3,6 +3,12 @@
 $conversationPilot=json_decode((string)env('MARKETING_CONVERSATION_PILOT_GRANT','{}'),true);
 $conversationPilot=is_array($conversationPilot)?$conversationPilot:[];
 return [
+    'email_bounce_enabled' => env('MARKETING_EMAIL_BOUNCE_ENABLED',false),
+    'email_connection_test_enabled' => env('MARKETING_EMAIL_CONNECTION_TEST_ENABLED',false),
+    'email_smtp_hosts' => array_values(array_filter(array_map('trim',explode(',',(string)env('MARKETING_EMAIL_SMTP_HOSTS',''))))),
+    'email_bulk_enabled' => env('MARKETING_EMAIL_BULK_ENABLED',false),
+    'email_bulk_unit_minor' => ctype_digit((string) env('MARKETING_EMAIL_BULK_UNIT_MINOR','')) ? (int) env('MARKETING_EMAIL_BULK_UNIT_MINOR') : null,
+    'email_bulk_currency' => env('MARKETING_EMAIL_BULK_CURRENCY','USD'),
     'email_test_enabled' => env('MARKETING_EMAIL_TEST_ENABLED',false),
 
     // Open only after the merchant OAuth and Meta template boundary are verified.

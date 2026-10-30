@@ -1,0 +1,11 @@
+<?php
+namespace App\Http\Controllers\Admin;
+use App\Http\Controllers\Controller;use App\Services\Marketing\MarketingEmailSettings;use App\Domain\Marketing\MarketingPermission as P;use Illuminate\Http\Request;
+class MarketingEmailSettingsController extends Controller {
+ private function access(Request $r,bool $edit=false):void {abort_unless(P::allows($r->user(),P::VIEW)&&(!$edit||$r->user()->is_super_admin),403);}
+ public function index(Request $r,MarketingEmailSettings $s){$this->access($r);return response()->view('marketing.settings.email',['settings'=>$s->summary((bool)$r->user()->is_super_admin),'canEdit'=>(bool)$r->user()->is_super_admin])->header('Cache-Control','private,no-store');}
+ public function data(Request $r,MarketingEmailSettings $s){$this->access($r);return response()->json(['settings'=>$s->summary((bool)$r->user()->is_super_admin)])->header('Cache-Control','private,no-store');}
+ public function save(Request $r,MarketingEmailSettings $s){$this->access($r,true);$d=$r->validate(['version'=>'required|integer|min:0','host'=>'required|string|max:191','port'=>'required|integer|in:465,587','encryption'=>'required|in:tls,ssl','username'=>'required|string|max:191','password'=>'nullable|string|max:1000','from_name'=>'required|string|max:150','from_address'=>'required|email:rfc|max:191','reply_to'=>'nullable|email:rfc|max:191','minute_limit'=>'required|integer|min:1|max:1000','hour_limit'=>'required|integer|min:1|max:100000','day_limit'=>'required|integer|min:1|max:1000','unit_minor'=>'nullable|integer|min:0|max:100000','currency'=>'required|string|regex:/^[A-Z]{3}$/D']);return response()->json(['settings'=>$s->save($d)])->header('Cache-Control','private,no-store');}
+ public function bounces(Request $r,\App\Services\Marketing\MarketingEmailBounce $b){$this->access($r,true);$d=$r->validate(['version'=>'required|integer|min:1']);return response()->json(['bounces'=>$b->check($d['version'])])->header('Cache-Control','private,no-store');}
+ public function check(Request $r,MarketingEmailSettings $s){$this->access($r,true);$d=$r->validate(['version'=>'required|integer|min:1']);return response()->json(['settings'=>$s->check($d['version'])])->header('Cache-Control','private,no-store');}
+}

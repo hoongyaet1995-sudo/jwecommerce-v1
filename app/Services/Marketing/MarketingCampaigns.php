@@ -25,6 +25,7 @@ class MarketingCampaigns {
 
   abort_if($c->exists&&($c->channel!==$d['channel']||$c->status!=='Draft'),409,'Only a draft of the same channel can be edited here.');
 
+  if($c->exists&&$c->channel==='email')abort_if(DB::table('marketing_email_batches')->where('campaign_id',$c->id)->whereIn('state',['queued','processing'])->exists(),409,'This email campaign is sending. Wait for its result before saving changes.');
   $doc=$d['document'];$template=null;
 
   if(!empty($doc['template_id'])){$template=app(MarketingContentTemplates::class)->query($u)->where('channel',$d['channel'])->whereNull('archived_at')->find($doc['template_id']);abort_unless($template,422,'Choose an available template for this channel.');}

@@ -12,6 +12,7 @@ $studioChildren=[['videos','Video projects',route('marketing.index')],['assets',
 @if($navId==='content' && $studioNavActive==='content')<div class="studio-nav-sub">@foreach($studioChildren as [$childId,$childLabel,$childUrl])<a class="{{ request()->url()===$childUrl?'active':'' }}" href="{{ $childUrl }}">{{ $childLabel }}</a>@endforeach</div>@endif
 @if($navigationStyle==='items')</li>@endif
 @endforeach
+@if($navigationStyle==='items')<li class="sidebar-menu-item" data-settings-group="1"><a class="sidebar-menu-link {{ $studioNavActive==='settings'?'active':'' }}" href="{{ route('marketing.settings.email') }}"><i class="bi bi-gear"></i><span>Settings</span></a></li>@else<a href="{{ route('marketing.settings.email') }}"><i class="bi bi-gear"></i><span>Settings</span></a>@endif
 @if($navigationStyle==='items')<li class="sidebar-menu-item mt-4">@else<hr>@endif
 <a class="{{ $navigationStyle==='items'?'sidebar-menu-link':'' }}" href="{{ url('/admin') }}"><i class="bi bi-arrow-left" aria-hidden="true"></i><span>Return to JW Ecom</span></a>
 @if($navigationStyle==='items')</li>@endif

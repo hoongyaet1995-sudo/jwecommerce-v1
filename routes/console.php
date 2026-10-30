@@ -193,10 +193,10 @@ Artisan::command('marketing:prune-tracking {--dry-run : Preview expired visitor 
 Schedule::command('marketing:prune-tracking')->daily()->withoutOverlapping();
 
 Artisan::command('marketing:process-email-tests', function () {
- if(!config('marketing.email_test_enabled'))return 0;
+ if(!config('marketing.email_test_enabled')&&!config('marketing.email_bulk_enabled'))return 0;
  return $this->call('queue:work',['connection'=>'marketing-email','--queue'=>'marketing-email','--stop-when-empty'=>true,'--max-jobs'=>3,'--max-time'=>45,'--tries'=>1,'--timeout'=>120,'--no-interaction'=>true]);
-})->purpose('Send explicitly confirmed single-recipient test emails without retries');
-Schedule::command('marketing:process-email-tests')->everyMinute()->withoutOverlapping(5)->when(fn()=>config('marketing.email_test_enabled'));
+})->purpose('Process explicitly confirmed Email test and segment batches without retries');
+Schedule::command('marketing:process-email-tests')->everyMinute()->withoutOverlapping(5)->when(fn()=>config('marketing.email_test_enabled')||config('marketing.email_bulk_enabled'));
 
 Artisan::command('marketing:process-audience',function(){return $this->call('queue:work',['connection'=>'marketing-audience','--queue'=>'marketing-audience','--stop-when-empty'=>true,'--max-jobs'=>20,'--max-time'=>45,'--tries'=>1,'--timeout'=>120,'--no-interaction'=>true]);})->purpose('Drain legacy Audience queue entries without advancing page-driven tasks');
 // Audience sync/import/export advance only through authorized page checkpoints; no worker schedule.
