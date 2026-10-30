@@ -14,3 +14,11 @@ Preflight: source copy and dependency install completed. Diagnostic lockfile rea
 
 Pre-commit gates: isolated exact release source passed99 tests/675 assertions (13.360s); JS syntax and scoped whitespace checks passed. TokenGuard critical-advisory applicability reviewed: configured web/customer guards are session-based, no auth:api/TokenGuard/token-driver references found in app/routes/config. This is bounded applicability evidence, not a clean security audit; remaining baseline upgrades stay open.
 Release excludes .env, acceptance output/synthetic data, local test key/vendor overrides and unrelated Inventory/Storefront/Admin changes. Production bulk false; connection check configuration only after release.
+
+Online config gate: server-owned existing Hostinger credentials encrypted into new settings; bulk/bounce remain false, cost unknown. Normal UI connection check returned connection_failed (issue1). Before further attempt verified password equals existing server config, public DNS2records, OpenSSL and requireTLS available. Next diagnostic classifies one connection exception without outputting its raw message or sending mail; not a blind repeat.
+
+Root cause established: release manifest omitted existing local untracked MarketingSmtpProbe.php (name did not match Email-only discovery). No SMTP authentication was attempted by failed route. Classified issue1 release dependency omission; diagnostic failure confirms root cause. Add real-service file/DI assertion; intentional isolated red expected before copying missing service, then green.
+
+Expected isolated red confirms missing file. Copied canonical SMTP probe unchanged into release; next fresh Settings/Email/Bounce suite checks restored service and existing behavior.
+
+Restored-service gate:41 tests/240 assertions passed5.761s in isolated release source, including actual SMTP probe file/DI resolution. No provider request in tests. Follow-up release adds missing probe, regression assertion and evidence only; no credential changes.
