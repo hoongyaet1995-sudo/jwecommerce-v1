@@ -198,7 +198,7 @@ Artisan::command('marketing:process-email-tests', function () {
 })->purpose('Send explicitly confirmed single-recipient test emails without retries');
 Schedule::command('marketing:process-email-tests')->everyMinute()->withoutOverlapping(5)->when(fn()=>config('marketing.email_test_enabled'));
 
-Artisan::command('marketing:process-audience',function(){return $this->call('queue:work',['connection'=>'marketing-audience','--queue'=>'marketing-audience','--stop-when-empty'=>true,'--max-jobs'=>20,'--max-time'=>45,'--tries'=>1,'--timeout'=>120,'--no-interaction'=>true]);})->purpose('Process Audience sync, import previews and private exports; never send messages');
-Schedule::command('marketing:process-audience')->everyMinute()->withoutOverlapping(5);
+Artisan::command('marketing:process-audience',function(){return $this->call('queue:work',['connection'=>'marketing-audience','--queue'=>'marketing-audience','--stop-when-empty'=>true,'--max-jobs'=>20,'--max-time'=>45,'--tries'=>1,'--timeout'=>120,'--no-interaction'=>true]);})->purpose('Drain legacy Audience queue entries without advancing page-driven tasks');
+// Audience sync/import/export advance only through authorized page checkpoints; no worker schedule.
 Artisan::command('marketing:prune-audience',function(){$this->info('Expired files: '.app(\App\Services\Marketing\Audience\AudienceTasks::class)->prune());});
 Schedule::command('marketing:prune-audience')->daily()->withoutOverlapping();

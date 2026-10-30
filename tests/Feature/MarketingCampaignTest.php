@@ -32,4 +32,5 @@ class MarketingCampaignTest extends TestCase {
   $this->assertDatabaseHas('marketing_posts',['id'=>$post['id'],'campaign_id'=>$campaign,'status'=>'Draft','version'=>3,'scheduled_at'=>null]);
   Http::assertNothingSent();
  }
+ public function test_duplicate_creates_only_a_draft_and_preserves_original():void {$this->actor();$id=$this->postJson('/admin/marketing/campaigns/data',$this->data())->json('campaign.id');$this->postJson('/admin/marketing/campaigns/data/'.$id.'/duplicate',['version'=>99])->assertStatus(409);$v=$this->postJson('/admin/marketing/campaigns/data/'.$id.'/duplicate',['version'=>1])->assertCreated()->assertJsonPath('campaign.status','Draft')->assertJsonPath('campaign.posts',0);$this->assertNotSame($id,$v->json('campaign.id'));$this->assertDatabaseHas('marketing_campaigns',['id'=>$id,'version'=>1]);Http::assertNothingSent();}
 }

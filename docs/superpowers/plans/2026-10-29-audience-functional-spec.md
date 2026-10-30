@@ -21,8 +21,8 @@ A direct CRM database transplant would duplicate identities and bypass JW permis
 Audience expandable sidebar: Contacts / Segments / Import / Export. Existing Campaigns, Templates, Posts and Channels remain available.
 Contacts: CRM KPI cards, paginated table, search and source/subscription/order filters, last successful sync and Sync Audience. Contact detail shows linked sources, channel eligibility, verified order totals and enquiry history with authorized links.
 Segments: name, rule builder, preview count and eligible counts by channel; save dynamic rules, edit, duplicate and archive. Unsupported rules must fail validation rather than silently broaden the audience.
-Import: upload CSV, map columns, preview validation and duplicate decisions, confirm, then background progress and downloadable row errors.
-Export: choose current filters or segment, select permitted columns, prepare in background, then authenticated download.
+Import: upload CSV, map columns, preview validation and duplicate decisions, confirm, then page-driven progress and downloadable row errors.
+Export: choose current filters or segment, select permitted columns, prepare in page-driven batches, then authenticated download.
 Saving or synchronizing an audience never sends a message.
 
 ## Identity and data integrity
@@ -54,7 +54,7 @@ Only verified paid transactions count toward paid value. Refunds reduce net valu
 
 ## Permissions and execution
 Separate view audience, manage contacts/segments/import, export personal data, and existing campaign send permissions. Enforce server-side scope on lists, detail, jobs, previews and downloads. A direct ID URL cannot bypass access.
-Imports and exports use dedicated bounded jobs and shared-host scheduler-compatible processing. Sync Audience starts only on explicit user action and advances through page-driven bounded requests, without requiring Cron or a queue worker. Each request validates a locked checkpoint; repeated requests cannot advance the same checkpoint twice. Leaving or hiding the page pauses new requests after any in-flight batch; returning or refreshing discovers and resumes the same task. Network interruptions retain progress and offer Continue sync. Existing contacts remain visible. Sync workers cannot independently advance these tasks. User UI shows progress and actionable errors; provider/SQL details remain in protected logs.
+Sync, Import and Export start only on explicit user action and advance through page-driven bounded requests, without requiring Cron or a queue worker. Import pauses at its preview and requires explicit confirmation before applying rows. Export retains frozen membership, authenticated private download and expiration. All three operations share checkpoint continuation and leave/return recovery. Each request validates a locked checkpoint; repeated requests cannot advance the same checkpoint twice. Leaving or hiding the page pauses new requests after any in-flight batch; returning or refreshing discovers and resumes the same task. Network interruptions retain progress and offer the corresponding Continue action. Existing contacts remain visible. Legacy workers cannot independently advance any Audience processing task. User UI shows progress and actionable errors; provider/SQL details remain in protected logs.
 
 ## Delivery order and exclusions
 A: source manifest + producer audit + schema/permission mapping. B: Contacts and channel states. C: Segments and preview. D: CSV import/export. E: fake acceptance and normal localhost UI acceptance; update ledger and request explicit sync approval.

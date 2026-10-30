@@ -73,4 +73,5 @@ class MarketingContentTemplatesTest extends TestCase {
   $this->postJson('/admin/marketing/templates/'.$id.'/submit',['version'=>1])->assertOk()->assertJsonPath('template.state','Pending approval');
   Http::assertSent(fn($r)=>!isset($r['components'][0]['example'])&&$r['components'][1]['example']['body_text'][0]===['our collection']);
   Http::assertSentCount(1);Queue::assertNothingPushed();
- }}
+ } public function test_delete_is_versioned_scoped_and_retains_the_record_without_provider_calls():void {$this->owner();$id=$this->postJson('/admin/marketing/templates/data',$this->draft())->json('template.id');$this->postJson('/admin/marketing/templates/'.$id.'/delete',['version'=>9])->assertStatus(409);$this->postJson('/admin/marketing/templates/'.$id.'/delete',['version'=>1])->assertOk()->assertJsonPath('template.deleted',true);$this->getJson('/admin/marketing/templates/data')->assertJsonCount(0,'templates');$this->assertDatabaseHas('marketing_content_templates',['id'=>$id]);$this->postJson('/admin/marketing/templates/'.$id.'/restore',['version'=>2])->assertNotFound();Http::assertNothingSent();Queue::assertNothingPushed();}
+}

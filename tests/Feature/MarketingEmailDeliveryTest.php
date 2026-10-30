@@ -14,4 +14,30 @@ class MarketingEmailDeliveryTest extends TestCase {
  public function test_email_link_records_consent_aware_visitor_activity_without_post(){ $c=$this->fixture();config(['marketing.attribution_enabled'=>true]);$id=$this->postJson('/admin/marketing/campaigns/'.$c['id'].'/email-test',['version'=>$c['version'],'recipient'=>'owner@example.test','landing_url'=>url('/'),'confirmed'=>true])->json('delivery.id');$link=DB::table('marketing_email_deliveries')->where('id',$id)->value('link_id');auth()->logout();$r=$this->get('/m/r/'.$link)->assertRedirect();parse_str(parse_url($r->headers->get('Location'),PHP_URL_QUERY),$query);$this->assertArrayHasKey('jw_ref',$query,'Tracking redirect: '.$r->headers->get('Location'));$this->postJson('/marketing/tracking/consent',['accepted'=>true,'token'=>$query['jw_ref']])->assertOk()->assertJsonPath('accepted',true);$this->postJson('/marketing/tracking/page',['navigation_id'=>(string)\Illuminate\Support\Str::uuid()])->assertJsonPath('tracked',true);$this->assertDatabaseHas('marketing_analytics_events',['campaign_id'=>$c['id'],'kind'=>'arrival']);Http::assertNothingSent(); }
  public function test_campaign_draft_creation_works_without_video_execution(){ $this->fixture();$this->postJson('/admin/marketing/campaigns/channel-drafts',['version'=>0,'channel'=>'email','name'=>'Draft on shared host','document'=>[]])->assertCreated();Http::assertNothingSent();Mail::assertNothingSent(); }
  public function test_report_identifies_email_source_instead_of_missing_social_account(){ $c=$this->fixture();$this->postJson('/admin/marketing/campaigns/'.$c['id'].'/email-test',['version'=>$c['version'],'recipient'=>'owner@example.test','landing_url'=>url('/'),'confirmed'=>true])->assertCreated();$r=$this->getJson('/admin/marketing/analytics/details?kind=sources&campaign='.$c['id'])->assertOk();$this->assertStringContainsString('Email',$r->getContent());$this->assertStringNotContainsString('Account unavailable',$r->getContent()); }
+ private function preparedOptOut():array{$c=$this->fixture();$id=$this->postJson('/admin/marketing/campaigns/'.$c['id'].'/email-test',['version'=>$c['version'],'recipient'=>'owner@example.test','landing_url'=>url('/'),'confirmed'=>true])->assertCreated()->json('delivery.id');$snapshot=json_decode(DB::table('marketing_email_deliveries')->find($id)->snapshot,true);$this->assertArrayHasKey('unsubscribe_url',$snapshot);return [$id,$snapshot];}
+ public function test_crm_derived_unsubscribe_is_real_readonly_on_get_and_repeat_safe_on_post(){
+  [$id,$snapshot]=$this->preparedOptOut();$this->assertStringContainsString(e($snapshot['unsubscribe_url']),$snapshot['html']);auth()->logout();
+  $this->get($snapshot['unsubscribe_url'])->assertOk()->assertSee('Unsubscribe from marketing emails?');$this->assertDatabaseCount('marketing_audience_subscriptions',0);
+  $this->post($snapshot['unsubscribe_url'])->assertOk()->assertSee('Email preferences updated');$this->post($snapshot['unsubscribe_url'])->assertOk();
+  $this->assertDatabaseHas('marketing_audience_subscriptions',['channel'=>'email','destination_hash'=>hash('sha256','owner@example.test'),'status'=>'unsubscribed']);
+  $this->assertSame(1,DB::table('marketing_audience_audits')->where('action','email_unsubscribed')->count());$this->assertDatabaseHas('marketing_email_deliveries',['id'=>$id,'state'=>'blocked','error_code'=>'recipient_unsubscribed']);
+  app(\App\Services\Marketing\MarketingEmailDelivery::class)->run($id);Mail::assertNothingSent();Http::assertNothingSent();
+ }
+ public function test_unsubscribe_rejects_tampered_expired_and_foreign_store_links(){
+  [$id,$snapshot]=$this->preparedOptOut();auth()->logout();$this->post($snapshot['unsubscribe_url'].'x')->assertForbidden();
+  DB::table('marketing_email_deliveries')->where('id',$id)->update(['merchant_key'=>'another-store']);$this->post($snapshot['unsubscribe_url'])->assertNotFound();
+  $this->travel(181)->days();$this->post($snapshot['unsubscribe_url'])->assertForbidden();$this->assertDatabaseCount('marketing_audience_subscriptions',0);Mail::assertNothingSent();
+ }
+ public function test_unsubscribe_keeps_accepted_receipt_and_supplied_headers(){
+  [$id,$snapshot]=$this->preparedOptOut();DB::table('marketing_email_deliveries')->where('id',$id)->update(['state'=>'accepted','accepted_at'=>now()]);
+  $mail=new \App\Mail\MarketingCampaignTestMail($snapshot);$this->assertSame('<'.$snapshot['unsubscribe_url'].'>',$mail->headers()->text['List-Unsubscribe']);
+  $this->assertSame('List-Unsubscribe=One-Click',$mail->headers()->text['List-Unsubscribe-Post']);auth()->logout();$this->post($snapshot['unsubscribe_url'])->assertOk();$this->assertDatabaseHas('marketing_email_deliveries',['id'=>$id,'state'=>'accepted']);Mail::assertNothingSent();
+ }
+
+ public function test_existing_suppression_blocks_queued_send_and_future_preparation(){
+  [$id]=$this->preparedOptOut();$row=DB::table('marketing_email_deliveries')->find($id);app(\App\Services\Marketing\Audience\AudienceDirectory::class)->subscribe('global','owner@example.test','suppressed','local_fake_test',now());
+  app(\App\Services\Marketing\MarketingEmailDelivery::class)->run($id);$this->assertDatabaseHas('marketing_email_deliveries',['id'=>$id,'state'=>'blocked','error_code'=>'recipient_unsubscribed']);
+  $this->postJson('/admin/marketing/campaigns/'.$row->campaign_id.'/email-test',['version'=>$row->campaign_version,'recipient'=>'owner@example.test','landing_url'=>url('/'),'confirmed'=>true])->assertUnprocessable();Mail::assertNothingSent();Http::assertNothingSent();
+ }
+
 }

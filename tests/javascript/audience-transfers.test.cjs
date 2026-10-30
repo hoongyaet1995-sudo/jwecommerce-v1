@@ -1,0 +1,17 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
+function harness(kind='import',state='queued',canContinue=true){
+ const events={},we={},timers=[],calls=[],states=[],busy=[];let offline=false,t={id:'saved',kind,state,phase:'preview',processed:100,checkpoint:'a'.repeat(64)};
+ const document={hidden:false,querySelector:()=>({content:'csrf'}),addEventListener:(k,f)=>events[k]=f};const window={addEventListener:(k,f)=>we[k]=f};
+ const context={window,document,AbortController,fetch:async(url,o)=>{calls.push({url,method:o.method,body:o.body});if(offline)throw Error('offline');if(o.method==='POST'){assert.equal(JSON.parse(o.body).checkpoint,t.checkpoint);t={...t,state:kind==='import'?'preview':'completed',processed:101,checkpoint:'b'.repeat(64)};}return {ok:true,status:200,json:async()=>t};},setTimeout:f=>{timers.push(f);return f},clearTimeout:f=>{const i=timers.indexOf(f);if(i>=0)timers.splice(i,1)}};
+ vm.runInNewContext(fs.readFileSync('public/marketing-studio/audience-transfers.js','utf8'),context);
+ const runner=window.JWAudienceTransfer.create({base:'/audience',canContinue,onState:(v,mode)=>states.push({v,mode}),onBusy:v=>busy.push(v)});
+ return {runner,events,we,timers,calls,states,busy,document,setOffline:v=>offline=v};
+}
+const flush=()=>new Promise(r=>setImmediate(r));
+test('import resumes saved task and stops at preview without confirmation',async()=>{const h=harness();await h.runner.watch('saved');await h.timers.shift()();await flush();assert.equal(h.states.at(-1).v.state,'preview');assert.equal(h.timers.length,0);assert.equal(h.calls.filter(c=>c.method==='POST').length,1);assert.ok(h.calls.every(c=>!c.url.includes('/confirm')));});
+test('network interruption preserves task and manual continue never creates a task',async()=>{const h=harness('export');await h.runner.watch('saved');h.setOffline(true);await h.timers.shift()();await flush();assert.equal(h.states.at(-1).mode,'interrupted');assert.equal(h.busy.at(-1),true);assert.equal(h.timers.length,0);h.setOffline(false);await h.runner.resume();await h.timers.shift()();await flush();assert.equal(h.states.at(-1).v.state,'completed');assert.equal(h.busy.at(-1),false);assert.ok(h.calls.every(c=>c.url.includes('/tasks/saved')));});
+test('hidden page stops advancing and visible page resumes saved checkpoint',async()=>{const h=harness();await h.runner.watch('saved');h.document.hidden=true;h.events.visibilitychange();assert.equal(h.timers.length,0);h.document.hidden=false;h.events.visibilitychange();await flush();assert.equal(h.states.at(-1).mode,'resuming');assert.equal(h.timers.length,1);});
+test('ready preview reopened does not apply rows or post automatically',async()=>{const h=harness('import','preview');await h.runner.watch('saved');assert.equal(h.timers.length,0);assert.equal(h.calls.filter(c=>c.method==='POST').length,0);assert.equal(h.states.at(-1).v.state,'preview');});
+test('switching viewed tasks cancels previous scheduled continuation',async()=>{const h=harness('export');await h.runner.watch('saved');await h.runner.watch('saved');assert.equal(h.timers.length,1);assert.equal(h.calls.filter(c=>c.method==='POST').length,0);});
+
+test('read-only page shows access notice without advancing queued transfer',async()=>{const h=harness('export','queued',false);await h.runner.watch('saved');assert.equal(h.states.at(-1).mode,'access');assert.equal(h.timers.length,0);assert.equal(h.calls.filter(c=>c.method==='POST').length,0);});

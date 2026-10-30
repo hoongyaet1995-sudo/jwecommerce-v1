@@ -17,7 +17,8 @@ class MarketingPosts {
    return ['id'=>$c->id,'platform'=>$c->platform,'name'=>$c->name,'kind'=>ucfirst($c->platform).' account','state'=>$s['state'],'canSchedule'=>$can,'publishingEnabled'=>false,'trackingPreparation'=>app(MarketingTrackingPreparation::class)->capability($c)];
   })->all();
  }
- public function listing(int $user):array{return MarketingPost::where('user_id',$user)->where('merchant_key',$this->merchant())->orderByDesc('updated_at')->get()->map(fn($p)=>$this->view($p))->all();}
+ public function listing(int $user):array{return MarketingPost::where('user_id',$user)->where('merchant_key',$this->merchant())->whereNull('document->deleted_at')->orderByDesc('updated_at')->get()->map(fn($p)=>$this->view($p))->all();}
+ public function delete(int $u,array $d):array{return DB::transaction(function()use($u,$d){$p=MarketingPost::where('user_id',$u)->where('merchant_key',$this->merchant())->whereNull('document->deleted_at')->lockForUpdate()->findOrFail($d['id']);abort_unless($p->version===$d['version'],409,'This post changed. Reload before deleting.');$doc=$p->document;abort_unless(in_array($p->status,['Draft','Cancelled'],true)&&empty($doc['delivery_lock'])&&empty($doc['outcomes'])&&!DB::table('marketing_post_attempts')->where('post_id',$p->id)->exists(),409,'This post has a schedule or delivery history. Keep it to review its results.');$doc['deleted_at']=now()->toIso8601String();$p->update(['document'=>$doc,'campaign_id'=>null,'version'=>$p->version+1]);return ['id'=>$p->id,'deleted'=>true];});}
  public function view(MarketingPost $p):array{$doc=$p->document;$connections=MarketingChannelConnection::where('merchant_key',$p->merchant_key)->whereIn('id',array_keys($doc['outcomes']??[]))->get()->keyBy('id');foreach($doc['outcomes']??[] as $id=>$result){$doc['outcomes'][$id]['url']=app(MarketingPostLink::class)->url($connections[$id]->platform??'', $result,($doc['type']??'')==='Post'?'image':'video');}return array_merge($doc,($p->status==='Scheduled'&&empty($p->document['delivery_phase'])?['delivery_phase'=>'saved']:[]),['campaign_id'=>$p->campaign_id,'id'=>$p->id,'version'=>$p->version,'status'=>$p->status,'due'=>$p->scheduled_at?->toIso8601String(),'tz'=>$p->timezone]);}
  private function invalid(string $message):never{throw ValidationException::withMessages(['post'=>$message]);}
  public function write(int $user,string $action,array $d,bool $executing=false):array {
@@ -26,7 +27,7 @@ class MarketingPosts {
    if($p)abort_unless($p->user_id===$user&&$p->merchant_key===$this->merchant(),404);
    else {abort_unless(in_array($action,['draft','schedule']),404);abort_unless($d['version']===0,409,'The draft changed. Reload before saving.');$p=new MarketingPost(['id'=>$d['id'],'user_id'=>$user,'merchant_key'=>$this->merchant(),'version'=>0,'document'=>[]]);}
    abort_unless($p->version===$d['version'],409,'This post changed in another request. Your edits are retained; reload the saved version before continuing.');
-   $old=$p->document;if(!$executing)abort_if(!empty($old['delivery_lock'])||$p->status==='Queued',409,'Publishing has started. You can still view its progress.');$outcomes=$old['outcomes']??[];
+   $old=$p->document;abort_if(!empty($old['deleted_at']),404);if(!$executing)abort_if(!empty($old['delivery_lock'])||$p->status==='Queued',409,'Publishing has started. You can still view its progress.');$outcomes=$old['outcomes']??[];
    foreach($outcomes as $o)abort_if(in_array($o['status']??'', ['Publishing'],true)||($o['reason']??'')==='unknown',409,'Submission is still being checked. Editing or resending is blocked to avoid duplicates.');
    if($action==='cancel'){
     abort_unless($p->status==='Scheduled',409,'Only a scheduled post can be cancelled.');

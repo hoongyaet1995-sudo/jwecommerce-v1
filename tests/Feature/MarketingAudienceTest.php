@@ -139,4 +139,38 @@ class MarketingAudienceTest extends TestCase {
   $staff=User::factory()->create(['is_admin'=>true,'is_super_admin'=>false]);foreach(['marketing.view','marketing.view_audience'] as $p)$staff->permissions()->create(['permission'=>$p]);$this->actingAs($staff)->postJson('/admin/marketing/audience/tasks/'.$id.'/continue',['checkpoint'=>str_repeat('a',64)])->assertForbidden();
   $this->actingAs($owner)->postJson('/admin/marketing/audience/tasks/'.$id.'/continue',[])->assertUnprocessable();Http::assertNothingSent();
  }
+ public function test_import_and_export_are_page_driven_and_checkpoint_safe(){
+  $this->actor();$csv="Name,Email\nPage Import,page-import@example.test\n";
+  $id=$this->post('/admin/marketing/audience/imports',['file'=>UploadedFile::fake()->createWithContent('contacts.csv',$csv),'mapping'=>['name'=>'Name','email'=>'Email']],['Accept'=>'application/json'])->assertAccepted()->json('id');
+  Queue::assertNothingPushed();(new \App\Jobs\ProcessMarketingAudience($id))->handle();$this->assertSame(0,DB::table('marketing_audience_tasks')->find($id)->processed);
+  $url='/admin/marketing/audience/tasks/'.$id;$t=$this->getJson($url)->assertOk()->json();$this->assertNotEmpty($t['checkpoint']);
+  $preview=$this->postJson($url.'/continue',['checkpoint'=>$t['checkpoint']])->assertOk()->json();$this->assertSame('preview',$preview['state']);$this->assertDatabaseCount('marketing_audience_contacts',0);
+  $this->postJson($url.'/continue',['checkpoint'=>$preview['checkpoint']])->assertOk();$this->assertDatabaseCount('marketing_audience_contacts',0);
+  $this->postJson($url.'/confirm',[])->assertAccepted();Queue::assertNothingPushed();$apply=$this->getJson($url)->json();
+  $this->postJson($url.'/continue',['checkpoint'=>$preview['checkpoint']])->assertOk();$this->assertDatabaseCount('marketing_audience_contacts',0);
+  $this->postJson($url.'/continue',['checkpoint'=>$apply['checkpoint']])->assertOk();$this->assertDatabaseCount('marketing_audience_contacts',1);
+  $this->postJson($url.'/continue',['checkpoint'=>$apply['checkpoint']])->assertOk();$this->assertSame(1,DB::table('marketing_audience_tasks')->find($id)->processed);
+  $this->drain($id);$export=$this->postJson('/admin/marketing/audience/exports',['filters'=>[]])->assertAccepted()->json('id');Queue::assertNothingPushed();
+  (new \App\Jobs\ProcessMarketingAudience($export))->handle();$this->assertSame(0,DB::table('marketing_audience_tasks')->find($export)->processed);
+  $url='/admin/marketing/audience/tasks/'.$export;$t=$this->getJson($url)->json();$this->postJson($url.'/continue',['checkpoint'=>$t['checkpoint']])->assertOk();$payload=DB::table('marketing_audience_tasks')->find($export)->payload;
+  $this->postJson($url.'/continue',['checkpoint'=>$t['checkpoint']])->assertOk();$this->assertSame($payload,DB::table('marketing_audience_tasks')->find($export)->payload);
+  $this->drain($export);$this->get($url.'/download')->assertOk();Queue::assertNothingPushed();Http::assertNothingSent();
+ }
+ public function test_transfer_continuation_requires_kind_permission_owner_and_unexpired_task(){
+  $owner=$this->actor();$id=$this->postJson('/admin/marketing/audience/exports',['filters'=>[]])->json('id');$url='/admin/marketing/audience/tasks/'.$id;
+  $staff=User::factory()->create(['is_admin'=>true,'is_super_admin'=>false]);foreach(['marketing.view','marketing.view_audience','marketing.manage_audience'] as $p)$staff->permissions()->create(['permission'=>$p]);
+  $this->actingAs($staff)->postJson($url.'/continue',['checkpoint'=>str_repeat('a',64)])->assertForbidden();
+  $this->actingAs($owner);DB::table('marketing_audience_tasks')->where('id',$id)->update(['expires_at'=>now()->subMinute()]);
+  $this->getJson($url)->assertOk()->assertJsonPath('state','expired');$this->postJson($url.'/continue',['checkpoint'=>str_repeat('a',64)])->assertStatus(410);Http::assertNothingSent();
+ }
+
+ public function test_transfer_batches_resume_over_one_hundred_rows_without_duplicate_parts(){
+  $this->actor();$csv="Name,Email\n";for($i=0;$i<105;$i++)$csv.="Batch $i,batch$i@example.test\n";
+  $id=$this->post('/admin/marketing/audience/imports',['file'=>UploadedFile::fake()->createWithContent('contacts.csv',$csv),'mapping'=>['name'=>'Name','email'=>'Email']],['Accept'=>'application/json'])->json('id');$url='/admin/marketing/audience/tasks/'.$id;
+  $cp=$this->getJson($url)->json('checkpoint');$this->postJson($url.'/continue',['checkpoint'=>$cp])->assertOk()->assertJsonPath('processed',100)->assertJsonPath('state','queued');
+  $this->postJson($url.'/continue',['checkpoint'=>$cp])->assertOk()->assertJsonPath('processed',100);$this->assertDatabaseCount('marketing_audience_import_rows',100);
+  $this->assertSame('preview',$this->drain($id)->state);$this->assertDatabaseCount('marketing_audience_contacts',0);$this->postJson($url.'/confirm')->assertAccepted();$this->drain($id);$this->assertDatabaseCount('marketing_audience_contacts',105);
+  $e=$this->postJson('/admin/marketing/audience/exports',['filters'=>[]])->json('id');$this->drain($e);$out=$this->get('/admin/marketing/audience/tasks/'.$e.'/download')->assertOk()->streamedContent();$this->assertSame(106,count(array_filter(explode("\n",trim($out)))));Queue::assertNothingPushed();Http::assertNothingSent();
+ }
+
 }

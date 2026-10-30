@@ -115,6 +115,7 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::get('/campaigns/data',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'data']);
     Route::post('/campaigns/data',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'write'])->name('campaigns.write');
     Route::patch('/campaigns/data/{campaign}',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'write'])->whereUuid('campaign')->name('campaigns.update');
+    Route::post('/campaigns/data/{campaign}/duplicate',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'duplicate'])->whereUuid('campaign')->name('campaigns.duplicate');
     Route::post('/campaigns/data/{campaign}/posts',[\App\Http\Controllers\Admin\MarketingCampaignController::class,'assign'])->whereUuid('campaign')->name('campaigns.assign');
     Route::get('/campaigns', [\App\Http\Controllers\Admin\MarketingCampaignController::class, 'index'])->name('preview.campaigns');
     Route::get('/posts', [\App\Http\Controllers\Admin\MarketingPostsController::class, 'index'])->name('preview.posts');
@@ -126,7 +127,7 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::post('/posts/creator/{connection}',[\App\Http\Controllers\Admin\MarketingPostsController::class,'creator'])->whereUuid('connection')->middleware('throttle:30,1')->name('posts.creator');
     Route::get('/posts/library',[\App\Http\Controllers\Admin\MarketingPostsController::class,'library'])->name('posts.library');
     Route::get('/posts/media/{asset}',[\App\Http\Controllers\Admin\MarketingPostsController::class,'media'])->name('posts.media');
-    Route::post('/posts/data/{action}',[\App\Http\Controllers\Admin\MarketingPostsController::class,'write'])->whereIn('action',['draft','schedule','cancel','publish','refresh','link'])->middleware('throttle:60,1')->name('posts.write');
+    Route::post('/posts/data/{action}',[\App\Http\Controllers\Admin\MarketingPostsController::class,'write'])->whereIn('action',['draft','schedule','cancel','publish','refresh','link','delete'])->middleware('throttle:60,1')->name('posts.write');
 
     Route::get('/calendar', [\App\Http\Controllers\Admin\MarketingPostsController::class, 'index'])->name('preview.calendar');
     Route::get('/analytics/export',[\App\Http\Controllers\Admin\MarketingAnalyticsController::class,'export']);
@@ -140,7 +141,7 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::get('/templates/data', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'data']);
     Route::post('/templates/data', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'save'])->name('content-templates.create')->middleware('throttle:30,1');
     Route::post('/templates/data/{id}', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'save'])->name('content-templates.update')->whereUuid('id')->middleware('throttle:30,1');
-    Route::post('/templates/{id}/{action}', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'action'])->name('content-templates.action')->whereUuid('id')->whereIn('action',['submit','sync','duplicate','use-post','archive','restore'])->middleware('throttle:10,1');
+    Route::post('/templates/{id}/{action}', [\App\Http\Controllers\Admin\MarketingContentTemplatesController::class,'action'])->name('content-templates.action')->whereUuid('id')->whereIn('action',['submit','sync','duplicate','use-post','archive','restore','delete'])->middleware('throttle:10,1');
     Route::get('/channels', [\App\Http\Controllers\Admin\MarketingChannelsController::class, 'index'])->name('preview.channels');
     Route::get('/channels/whatsapp', [\App\Http\Controllers\Admin\MarketingWhatsAppChannelsController::class, 'page'])->name('channels.whatsapp');
     Route::post('/channels/whatsapp/cancel', [\App\Http\Controllers\Admin\MarketingWhatsAppChannelsController::class, 'cancelSelection'])->name('channels.whatsapp.cancel')->middleware('throttle:10,1');

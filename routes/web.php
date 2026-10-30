@@ -754,3 +754,7 @@ Route::post('/marketing/tracking/consent',[\App\Http\Controllers\MarketingTracki
 Route::post('/marketing/tracking/arrival',[\App\Http\Controllers\MarketingTrackingController::class,'arrival'])->middleware('throttle:30,1')->block(10,10);
 
 Route::post('/marketing/tracking/page',[\App\Http\Controllers\MarketingTrackingController::class,'page'])->middleware('throttle:120,1')->block(10,10);
+
+// Signed recipient capability only; GET is read-only, POST also supports mailbox one-click opt-out.
+Route::get('/m/email/preferences/{delivery}',[\App\Http\Controllers\MarketingEmailPreferencesController::class,'show'])->whereUuid('delivery')->middleware(['signed','throttle:30,1'])->name('marketing.email.preferences');
+Route::post('/m/email/preferences/{delivery}',[\App\Http\Controllers\MarketingEmailPreferencesController::class,'update'])->whereUuid('delivery')->middleware(['signed','throttle:30,1'])->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class]);
