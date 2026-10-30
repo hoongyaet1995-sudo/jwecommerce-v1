@@ -30,6 +30,11 @@ class MarketingCampaigns {
 
   // Preparing a draft never subscribes contacts, queues delivery, or infers consent.
 
+  if(!empty($doc['segment_id'])){
+   abort_unless(\App\Domain\Marketing\MarketingPermission::allows(\App\Models\User::find($u),\App\Domain\Marketing\MarketingPermission::VIEW_AUDIENCE),403);
+   $segment=DB::table('marketing_audience_segments')->where('merchant_key',app(MarketingPosts::class)->merchant())->whereNull('archived_at')->where('status','active')->where('id',$doc['segment_id'])->first();
+   abort_unless($segment,422,'Choose an available audience segment.');$doc['segment_version']=$segment->version;
+  }
   $doc['template_version']=$template?->version;
 
   $c->fill(['name'=>$d['name'],'channel'=>$d['channel'],'channel_document'=>$doc,'status'=>'Draft','version'=>$c->version+1]);

@@ -1,0 +1,18 @@
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+return new class extends Migration {
+ public function up():void {
+  Schema::create('marketing_audience_contacts',function(Blueprint $t){$t->uuid('id')->primary();$t->string('merchant_key',100)->index();$t->unsignedBigInteger('customer_id')->nullable()->index();$t->string('name')->default('');$t->string('email',254)->nullable()->index();$t->string('phone',40)->nullable()->index();$t->char('email_hash',64)->nullable()->index();$t->char('phone_hash',64)->nullable()->index();$t->json('tags')->nullable();$t->boolean('conflict')->default(false);$t->boolean('active')->default(true);$t->unsignedInteger('paid_orders')->default(0);$t->timestamp('last_paid_at')->nullable();$t->unsignedInteger('enquiries')->default(0);$t->timestamp('last_enquiry_at')->nullable();$t->timestamps();});
+  Schema::create('marketing_audience_sources',function(Blueprint $t){$t->id();$t->string('merchant_key',100);$t->uuid('contact_id')->index();$t->string('kind',25);$t->string('source_id',100);$t->uuid('run_id')->nullable();$t->string('status',30)->nullable();$t->string('currency',3)->nullable();$t->unsignedBigInteger('paid_minor')->default(0);$t->unsignedBigInteger('refunded_minor')->default(0);$t->timestamp('occurred_at')->nullable();$t->boolean('active')->default(true);$t->timestamps();$t->unique(['merchant_key','kind','source_id'],'audience_source_unique');});
+  Schema::create('marketing_audience_values',function(Blueprint $t){$t->id();$t->uuid('contact_id');$t->string('currency',3);$t->unsignedBigInteger('net_minor');$t->unique(['contact_id','currency']);});
+  Schema::create('marketing_audience_subscriptions',function(Blueprint $t){$t->id();$t->string('merchant_key',100);$t->string('channel',12);$t->char('destination_hash',64);$t->string('status',20);$t->string('source',120);$t->timestamp('effective_at');$t->timestamps();$t->unique(['merchant_key','channel','destination_hash'],'audience_subscription_unique');});
+  Schema::create('marketing_audience_segments',function(Blueprint $t){$t->uuid('id')->primary();$t->string('merchant_key',100)->index();$t->unsignedBigInteger('user_id');$t->string('name',120);$t->json('rules');$t->unsignedInteger('version');$t->timestamp('archived_at')->nullable();$t->timestamps();});
+  Schema::create('marketing_audience_tasks',function(Blueprint $t){$t->uuid('id')->primary();$t->string('merchant_key',100)->index();$t->unsignedBigInteger('user_id');$t->string('kind',15);$t->string('state',20);$t->json('payload');$t->unsignedBigInteger('cursor')->default(0);$t->unsignedInteger('processed')->default(0);$t->unsignedInteger('valid')->default(0);$t->unsignedInteger('invalid')->default(0);$t->string('error_code')->nullable();$t->timestamp('expires_at')->nullable();$t->timestamps();});
+  Schema::create('marketing_audience_import_rows',function(Blueprint $t){$t->id();$t->uuid('task_id')->index();$t->unsignedInteger('row_number');$t->json('data')->nullable();$t->string('status',20);$t->string('error',180)->nullable();$t->unique(['task_id','row_number']);});
+  Schema::create('marketing_audience_locks',function(Blueprint $t){$t->string('merchant_key',100)->primary();});
+  Schema::create('marketing_audience_audits',function(Blueprint $t){$t->id();$t->string('merchant_key',100)->index();$t->unsignedBigInteger('user_id');$t->string('action',50);$t->string('record_id',100)->nullable();$t->json('metadata')->nullable();$t->timestamp('created_at');});
+ }
+ public function down():void{foreach(['audits','locks','import_rows','tasks','segments','subscriptions','values','sources','contacts'] as $n)Schema::dropIfExists('marketing_audience_'.$n);}
+};

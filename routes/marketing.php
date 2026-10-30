@@ -5,6 +5,21 @@ use App\Http\Controllers\Admin\MarketingProductionController as Production;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvailability::class])->prefix('admin/marketing')->name('marketing.')->group(function () {
+    Route::prefix('audience')->name('audience.')->controller(\App\Http\Controllers\Admin\MarketingAudienceController::class)->group(function(){
+        Route::get('/contacts','page')->defaults('page','contacts')->name('contacts');
+        Route::get('/segments/create','segmentPage')->name('segment-create');
+        Route::get('/segments/{id}/edit','segmentPage')->whereUuid('id')->name('segment-edit');
+        Route::get('/segments','page')->defaults('page','segments')->name('segments');
+        Route::get('/import','page')->defaults('page','import')->name('import-page');
+        Route::get('/export','page')->defaults('page','export')->name('export-page');
+        Route::get('/data/tasks','recent');Route::get('/data/contacts','contacts');Route::get('/data/contacts/{id}','detail')->whereUuid('id');Route::get('/data/segments','segments');
+        Route::post('/sync','sync')->name('sync');Route::post('/imports','upload')->name('import');Route::post('/exports','export')->name('export');
+        Route::post('/segments/preview','preview')->name('preview');Route::post('/segments/{id?}','saveSegment')->whereUuid('id')->name('segment-save');
+        Route::post('/segments/{id}/{action}','segmentAction')->whereUuid('id')->whereIn('action',['archive','restore','duplicate'])->name('segment-action');
+        Route::get('/segments/{id}/recipients','recipients')->whereUuid('id');Route::post('/contacts/{id}/subscription','subscription')->whereUuid('id')->name('subscription');
+        Route::get('/tasks/{id}','status')->whereUuid('id');Route::post('/tasks/{id}/confirm','confirm')->whereUuid('id')->name('confirm');
+        Route::get('/tasks/{id}/download','download')->whereUuid('id');Route::get('/tasks/{id}/errors','errors')->whereUuid('id');
+    });
     Route::get('/campaigns/templates/email', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'catalog']);
     Route::get('/campaigns/templates/email/editor/{id?}', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'editor'])->whereUuid('id');
     Route::match(['get','post'],'/campaigns/templates/email/media', [\App\Http\Controllers\Admin\MarketingEmailSmsController::class,'media'])->name('email-templates.media')->middleware('throttle:40,1');

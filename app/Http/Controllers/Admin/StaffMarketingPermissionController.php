@@ -39,6 +39,8 @@ class StaffMarketingPermissionController extends Controller
         abort_if(count($permissions) > 0 && !in_array(MarketingPermission::VIEW, $permissions, true), 422, 'Viewing access is required.');
         abort_if(in_array(MarketingPermission::APPROVE_COST, $permissions, true) && !in_array(MarketingPermission::EDIT, $permissions, true), 422, 'Editing access is required to approve production costs.');
 
+        abort_if((in_array(MarketingPermission::MANAGE_AUDIENCE, $permissions, true) || in_array(MarketingPermission::EXPORT_AUDIENCE, $permissions, true)) && !in_array(MarketingPermission::VIEW_AUDIENCE, $permissions, true), 422, 'Viewing audience access is required.');
+
         DB::transaction(function () use ($staff, $permissions): void {
             User::whereKey($staff->id)->lockForUpdate()->firstOrFail();
             $staff->permissions()->whereIn('permission', MarketingPermission::ALL)->delete();

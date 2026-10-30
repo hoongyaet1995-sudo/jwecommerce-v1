@@ -263,4 +263,4 @@
 
 </form>
 
-</main><footer class="footer-custom">Saving a template does not send messages.</footer></div><script src="{{ asset('marketing-studio/crm-email/js/sms-template.js') }}"></script><script src="{{ asset('marketing-studio/crm-email/js/sms-save.js') }}"></script></body></html>
+</main><footer class="footer-custom">Saving a template does not send messages.</footer></div><script src="{{ asset('marketing-studio/crm-email/js/sms-template.js') }}"></script><script src="{{ asset('marketing-studio/crm-email/js/sms-save.js') }}"></script><script src="{{ asset('marketing-studio/audience-navigation.js') }}?v={{ filemtime(public_path('marketing-studio/audience-navigation.js')) }}" data-audience-visible="{{ \App\Domain\Marketing\MarketingPermission::allows(auth()->user(),\App\Domain\Marketing\MarketingPermission::VIEW_AUDIENCE)?'1':'0' }}" defer></script></body></html>
