@@ -17,6 +17,7 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
         Route::post('/segments/preview','preview')->name('preview');Route::post('/segments/{id?}','saveSegment')->whereUuid('id')->name('segment-save');
         Route::post('/segments/{id}/{action}','segmentAction')->whereUuid('id')->whereIn('action',['archive','restore','duplicate'])->name('segment-action');
         Route::get('/segments/{id}/recipients','recipients')->whereUuid('id');Route::post('/contacts/{id}/subscription','subscription')->whereUuid('id')->name('subscription');
+        Route::post('/tasks/{id}/continue','continueSync')->whereUuid('id')->name('continue-sync')->middleware('throttle:180,1');
         Route::get('/tasks/{id}','status')->whereUuid('id');Route::post('/tasks/{id}/confirm','confirm')->whereUuid('id')->name('confirm');
         Route::get('/tasks/{id}/download','download')->whereUuid('id');Route::get('/tasks/{id}/errors','errors')->whereUuid('id');
     });

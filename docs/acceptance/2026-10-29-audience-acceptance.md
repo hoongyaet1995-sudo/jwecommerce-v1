@@ -67,3 +67,32 @@ Root cause: CRM source styles were present but generic classes were used for tab
 - Run: php artisan test --compact --filter=MarketingAudienceTest; purpose: date projection, update/clear, eligibility and preset regression. Result pending.
 
 - Birthday regression result: 27 tests passed / 208 assertions, 19.42s. Migration applied locally. JS syntax and scoped diff checks passed. Normal authenticated page shows enabled Birthday Month with January-December selector; empty source birthdays produce no matches. No original customer dates filled or marketing consent changed. My Account UI remains deferred.
+
+## 2026-10-30 production Audience worker readiness
+- User-reported loading at 0 rows. Read-only DB at 04:15:39 UTC: sync ff77b7bd-b54a-4531-828e-2993542525b7 queued since 04:10:59, queue job attempts 0/unreserved, no failed Audience jobs; 21 Ecommerce customers, 0 Audience contacts.
+- Executed existing marketing:process-audience once, reusing original task. Completed 50 source rows, 27 deduplicated contacts, 2 with paid orders; no messages or providers called.
+- Hostinger hPanel showed direct Posts cron but no dedicated Audience worker. Added one isolated minute cron with flock; existing cron entries retained:
+  /usr/bin/flock -n /home/u762348670/apps/jwecommerce/storage/framework/marketing-audience-worker.lock /usr/bin/php /home/u762348670/apps/jwecommerce/artisan marketing:process-audience --no-interaction
+- Deployment readiness previously checked migration/assets but did not verify worker consumption; that missing production gate caused the queued state.
+- Created one new normal-page sync after original completion to verify natural cron consumption. Result pending. Source code SHA remains 9019bee0532ddea753d12ace0ae121335912a12a; this is hosting configuration plus local documentation, not a code patch.
+
+## Page-driven sync integration (local, 2026-10-30)
+- Approved UI preview: public/audience-sync-preview. Sync only becomes page driven; import/export and unrelated workers remain unchanged.
+- Intentional TDD red: run tests matching sync_is_page_driven or worker_cannot_advance before implementation, expected missing continue endpoint/checkpoint and existing worker dispatch.
+
+- Intentional red confirmed 2 missing page-driven guarantees. Implemented continue endpoint with checkpoint hash checked under task lock, manage/store permission, and sync worker exclusion. Focused green: 2 tests / 34 assertions, 4.02s. Next runs: full Audience PHP regression; node tests/javascript/audience-page-sync.test.cjs covering ready/no auto-start, checkpoint resume, network interruption and visibility pause.
+
+- Full PHP regression passed 29 tests / 242 assertions, 14.04s. Frontend fake-response tests passed 4/4. Initial browser gate found missing new script include (integration issue count 1): asset version query prevented string replacement from matching. Added explicit script include and route-view asset assertion; no task was created during that first click. Next: focused view check plus normal browser sync.
+
+- Focused route-view check after asset correction passed: 1 test / 7 assertions, 3.85s. Scoped diff check passed. Whole-worktree diff check reports pre-existing trailing blank lines in unrelated TikTok/WhatsApp acceptance files; those files were not changed.
+- Normal localhost browser: clicked Sync Audience, immediately left for Segments; task 05b906a3-eb77-4067-88e6-9daa20b09d08 remained queued with processed=0 from 04:45:49 UTC until returning to Contacts. Returning automatically continued it; saved contacts stayed visible during processing (60 source records checked, 85% stage estimate). Reload then showed the same task completed, with 31 deduplicated contacts and 2 contacts with paid orders. No new sync task was created by return/reload.
+- Screenshot: output/audience-page-sync-complete.png. The record count is source rows checked; percentage is stage progress, not a claimed total-contact percentage.
+- Local acceptance complete for approved page-driven Sync scope. No provider calls, messages, commits, pushes or deployment. Production remains on the prior release with its existing Audience cron until a separately approved synchronization; this local change does not alter production configuration.
+- Final frontend fake response evidence: 4/4 passed (explicit start, same-checkpoint continuation, interruption/manual continue, hidden-page pause). Backend suite: 29/29 passed. Browser asset integration issue count 1 resolved; no blind reruns. Total elapsed time/token usage unavailable.
+
+## Approved page-sync release gate (2026-10-30)
+- User approved synchronization after local acceptance. Baseline local/release-worktree/GitHub/Hostinger HEAD 9019bee0532ddea753d12ace0ae121335912a12a. Hostinger origin remains SSH Deploy Key URL; tracked source clean, unrelated untracked configuration backups/assets retained.
+- Explicit 13-file allowlist includes Sync service/controller/route/middleware, approved UI assets/view, tests and three Audience documents. No migrations, .env, provider credentials, other modules or generated Admin build included.
+- Release verification command: isolated PHP Audience regression plus node frontend fake-response tests; purpose is verify exact allowlisted source independently of dirty canonical workspace. Result pending.
+- Isolated release harness issue count 1: PHP suite lacked APP_KEY (26 errors share MissingAppKeyException; not application regressions). Frontend 4/4 passed. Supply an ephemeral test-only key through process environment, never copied from production or committed, then rerun the same release gate once.
+- Corrected isolated release harness passed 29 tests / 244 assertions, 10.083s; ephemeral APP_KEY was process-only. Frontend 4/4 passed. No application fix needed for harness issue.

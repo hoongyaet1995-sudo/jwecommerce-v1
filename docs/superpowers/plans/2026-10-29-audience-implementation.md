@@ -22,3 +22,9 @@ Status2026-10-30:steps1–5 locally implemented and verified; user review pendin
 ## Birthday storage connection (2026-10-30)
 - Added nullable customers.date_of_birth and indexed Audience birthday_month projection. Enabled Birthday Month preset. Sync handles month update/clear without consent changes.
 - 27 tests / 208 assertions passed. My Account collection UI deferred by user; no birth dates invented or backfilled. Local only.
+
+## Approved page-driven Sync (2026-10-30)
+- Implemented locally: explicit Sync start, bounded 100-row continuation endpoint, locked checkpoint token, same-task discovery/resume and worker exclusion for sync tasks.
+- Approved inline progress, interruption and completion states are connected to real task state. Existing contacts remain usable. Hidden/left pages stop requesting batches; return/reload resumes the saved task.
+- Imports/exports retain their prior execution route; Posts/Email workers and production cron configuration are unchanged.
+- Verified 29 backend tests, 4 frontend fake-response tests and authenticated normal-page start/leave/return/reload/completion. Evidence in acceptance record. Local-only phase ready for user review; synchronization not performed.

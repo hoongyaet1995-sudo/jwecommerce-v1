@@ -54,7 +54,7 @@ Only verified paid transactions count toward paid value. Refunds reduce net valu
 
 ## Permissions and execution
 Separate view audience, manage contacts/segments/import, export personal data, and existing campaign send permissions. Enforce server-side scope on lists, detail, jobs, previews and downloads. A direct ID URL cannot bypass access.
-Queued imports/exports/syncs use dedicated bounded jobs and shared-host scheduler-compatible processing. User UI shows progress and actionable errors; provider/SQL details remain in protected logs.
+Imports and exports use dedicated bounded jobs and shared-host scheduler-compatible processing. Sync Audience starts only on explicit user action and advances through page-driven bounded requests, without requiring Cron or a queue worker. Each request validates a locked checkpoint; repeated requests cannot advance the same checkpoint twice. Leaving or hiding the page pauses new requests after any in-flight batch; returning or refreshing discovers and resumes the same task. Network interruptions retain progress and offer Continue sync. Existing contacts remain visible. Sync workers cannot independently advance these tasks. User UI shows progress and actionable errors; provider/SQL details remain in protected logs.
 
 ## Delivery order and exclusions
 A: source manifest + producer audit + schema/permission mapping. B: Contacts and channel states. C: Segments and preview. D: CSV import/export. E: fake acceptance and normal localhost UI acceptance; update ledger and request explicit sync approval.

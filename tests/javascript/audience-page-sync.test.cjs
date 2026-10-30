@@ -1,0 +1,20 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const vm=require('node:vm');const fs=require('node:fs');
+const source=fs.readFileSync('public/marketing-studio/audience-sync.js','utf8');
+function harness({queued=false,offline=false}={}){
+ const elements=new Map(),events={},windowEvents={},timers=[],calls=[],storage=new Map();let offlineNow=offline;
+ function element(id){if(!elements.has(id))elements.set(id,{id,hidden:false,className:'',dataset:{},style:{},disabled:false,textContent:'',innerHTML:'',setAttribute(k,v){this[k]=v},querySelector(){return element(id+'-span')}});return elements.get(id);}
+ element('audience-boot').textContent=JSON.stringify({page:'contacts',manage:true,base:'/admin/marketing/audience'});
+ let task={id:'existing-task',kind:'sync',state:'queued',checkpoint:'a'.repeat(64),processed:100,progress_percent:14};
+ const document={hidden:false,getElementById:element,querySelector:()=>({content:'csrf'}),addEventListener:(k,fn)=>events[k]=fn,dispatchEvent:e=>{calls.push({event:e.type})}};
+ const context={document,window:{addEventListener:(k,fn)=>windowEvents[k]=fn},sessionStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},location:{href:''},AbortController,CustomEvent:class{constructor(type){this.type=type}},alert:m=>calls.push({alert:m}),setTimeout:fn=>{timers.push(fn);return fn},clearTimeout:fn=>{const i=timers.indexOf(fn);if(i>=0)timers.splice(i,1)},fetch:async(url,opts)=>{
+  calls.push({url,method:opts.method,body:opts.body});if(offlineNow)throw new TypeError('offline');
+  let data=url.endsWith('?kind=sync')?{data:queued?[task]:[]}:url.endsWith('/sync')?{id:task.id}:task;
+  if(url.endsWith('/continue')){assert.equal(JSON.parse(opts.body).checkpoint,task.checkpoint);task={...task,state:'completed',processed:250,progress_percent:100,checkpoint:'b'.repeat(64)};data=task;}
+  return {ok:true,status:200,json:async()=>data};
+ }};vm.runInNewContext(source,context);return {element,document,events,windowEvents,timers,calls,storage,setOffline:v=>offlineNow=v};
+}
+const flush=()=>new Promise(resolve=>setImmediate(resolve));
+test('ready page never starts a task until the user clicks',async()=>{const h=harness();await flush();assert.equal(h.calls.filter(c=>c.method==='POST').length,0);await h.element('sync').onclick();await flush();assert.equal(h.calls.filter(c=>c.url?.endsWith('/sync')).length,1);assert.equal(h.element('sync').disabled,true);assert.ok(h.storage.get('jw-audience-page-sync'));});
+test('return finds existing queued task and continues with its checkpoint',async()=>{const h=harness({queued:true});await flush();assert.equal(h.calls.filter(c=>c.url?.endsWith('/sync')).length,0);assert.equal(h.element('audience-sync-panel').dataset.state,'resuming');await h.timers.shift()();await flush();assert.equal(h.element('audience-sync-panel').dataset.state,'complete');assert.equal(h.element('sync').disabled,false);assert.ok(h.calls.some(c=>c.event==='audience:sync-completed'));});
+test('network interruption retains task and only continues after click',async()=>{const h=harness({queued:true});await flush();h.setOffline(true);await h.timers.shift()();await flush();assert.equal(h.element('audience-sync-panel').dataset.state,'interrupted');assert.equal(h.timers.length,0);assert.equal(h.storage.get('jw-audience-page-sync'),'existing-task');h.setOffline(false);await h.element('sync').onclick();await flush();assert.equal(h.calls.filter(c=>c.url?.endsWith('/sync')).length,0);await h.timers.shift()();await flush();assert.equal(h.element('audience-sync-panel').dataset.state,'complete');});
+test('hidden page stops advancing and visible page checks saved task again',async()=>{const h=harness({queued:true});await flush();h.document.hidden=true;h.events.visibilitychange();assert.equal(h.timers.length,0);assert.equal(h.calls.filter(c=>c.url?.endsWith('/continue')).length,0);h.document.hidden=false;h.events.visibilitychange();await flush();assert.equal(h.element('audience-sync-panel').dataset.state,'resuming');assert.equal(h.timers.length,1);});
