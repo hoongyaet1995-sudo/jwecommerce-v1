@@ -19,7 +19,7 @@ class CmsAiImageService
         $itemIndex=null;
         if($target==='mediaUrl'){
             if(!in_array($section['type'],['hero_banner','media_text_split','split_hero'],true)||($section['mediaType']??'image')==='video')$this->invalid('This media slot is not an editable photograph.');
-        }elseif(preg_match('/^item:([^:]+):imageUrl$/',$target,$m)&&in_array($section['type'],['media_gallery','hero_slider'],true)){
+        }elseif(preg_match('/^item:([^:]+):imageUrl$/',$target,$m)&&in_array($section['type'],['media_gallery','hero_slider','shop_navigation'],true)){
             $itemIndex=array_search($m[1],array_column($section['items']??[],'id'),true);
             if($itemIndex===false||!empty($section['items'][$itemIndex]['videoUrl']))$this->invalid('Select an existing photograph slot.');
         }else $this->invalid('Image generation is unavailable for this field.');
@@ -42,9 +42,6 @@ class CmsAiImageService
             try{
                 $saved=Cache::get($key);
                 if(!$saved){
-                    $counter='cms-ai-image-count:'.$actor.':'.$input['token'];
-                    if((int)Cache::get($counter,0)>=6)$this->invalid('This Brief has reached its six-image generation limit.');
-                    Cache::put($counter,(int)Cache::get($counter,0)+1,now()->addHours(2));
                     @set_time_limit(210);
                     $result=$this->client->generate($c->api_key,$input['imageModel'],$input['imagePrompt'],$input['quality'],$input['ratio'],$reference);
                     $temporary=tempnam(sys_get_temp_dir(),'cms-ai-');

@@ -48,3 +48,11 @@ export function pruneImageSlots(section:PageSection):PageSection {
   if(['product_listing','media_text_split','chapter_block','hero_slider'].includes(section.type))for(const item of section.items??[])if(item.imageUrl!==undefined)ids.add(`item:${item.id}:imageUrl`);
   return {...section,imageSlots:section.imageSlots.filter(slot=>ids.has(slot.target))};
 }
+
+/** Mirrors CmsAiImageService editorial-only slots; editable does not mean generatable. */
+export function canGenerateImageTarget(section:PageSection,targetId:string):boolean {
+ const target=imageTargets(section).find(target=>target.id===targetId);
+ if(!target)return false;
+ if(targetId==='mediaUrl')return ['hero_banner','media_text_split','split_hero'].includes(section.type)&&section.mediaType!=='video';
+ return ['media_gallery','hero_slider','shop_navigation'].includes(section.type)&&target.field==='imageUrl'&&!!target.itemId;
+}

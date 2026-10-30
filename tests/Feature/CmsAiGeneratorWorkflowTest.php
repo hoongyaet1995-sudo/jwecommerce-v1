@@ -16,6 +16,7 @@ class CmsAiGeneratorWorkflowTest extends TestCase
         Schema::create('products',function(Blueprint $t){$t->id();$t->string('title');$t->string('handle');$t->string('subtitle')->nullable();$t->string('status');});
         Schema::create('categories',function(Blueprint $t){$t->id();$t->string('name');$t->string('slug');$t->boolean('is_active');});
         (require database_path('migrations/2026_10_02_180000_create_ai_connections.php'))->up();
+        (require database_path('migrations/2026_10_17_160000_create_cms_ai_workspaces.php'))->up();
         AiConnection::create(['provider'=>'openai','api_key'=>'fixture-secret','enabled'=>true,'builder_enabled'=>true,'support_enabled'=>false,'text_model'=>'gpt-fixture','verified_at'=>now(),'models'=>[['id'=>'gpt-fixture','text'=>true,'image'=>false]],'version'=>1]);
         $this->actingAs(User::factory()->create(['is_admin'=>true,'is_super_admin'=>true]));Http::preventStrayRequests();Cache::flush();
     }
@@ -31,7 +32,7 @@ class CmsAiGeneratorWorkflowTest extends TestCase
     {
         Http::fake(['api.openai.com/v1/responses'=>function($request)use($questions){
             $prompt=$request['input'];$sections=json_decode(substr($prompt,strrpos($prompt,'Sections: ')+10),true);
-            if(str_contains($prompt,'Write editable CMS copy')){$sections=json_decode(substr($prompt,strrpos($prompt,'Source: ')+8),true);$out=['sections'=>array_map(fn($s)=>['id'=>$s['id'],'title'=>'Ready '.$s['title'],'content'=>'Confirmed copy.'],$sections)];}
+            if(str_contains($prompt,'Write editable CMS copy')){$sections=json_decode(substr($prompt,strrpos($prompt,'Source: ')+8),true);$out=['sections'=>array_map(fn($s)=>['id'=>$s['id'],'title'=>'Ready '.($s['current']['title']??''),'content'=>'Confirmed copy.'],$sections)];}
             else{$out=['summary'=>'A considered business page','questions'=>($questions&&!str_contains($prompt,'Confirmed merchant answers:'))?[['id'=>'audience','type'=>'multiple_select','question'=>'Who is this for?','required'=>true,'options'=>['Business','Consumer']]]:[],'warnings'=>[],'sections'=>array_map(fn($s)=>['id'=>$s['id'],'purpose'=>'Explain this offering.'],array_slice($sections,0,2))];}
             return Http::response(['output'=>[['content'=>[['type'=>'output_text','text'=>json_encode($out)]]]]]);
         }]);
@@ -65,6 +66,11 @@ class CmsAiGeneratorWorkflowTest extends TestCase
         $this->mock(\App\Services\AI\CmsAiImageClient::class)->shouldReceive('generate')->once()->andReturn(['bytes'=>$png,'usage'=>['total_tokens'=>10]]);
         $this->fake();$r=$this->postJson('/admin/api/cms/ai-generator',['action'=>'brief','document'=>$this->doc(),'direction'=>'Plan','mode'=>'create'])->assertOk()->json('data');
         $request=['action'=>'image','document'=>$r['document'],'direction'=>$r['direction'],'token'=>$r['token'],'sectionId'=>$r['document']['sections'][0]['id'],'imageTarget'=>'mediaUrl','imagePrompt'=>'Illustrative scene','imageModel'=>'gpt-image-2','quality'=>'medium','ratio'=>'16:9','requestId'=>(string)\Illuminate\Support\Str::uuid()];
+        // Expired cache recovers only the authenticated actor's completed server Brief.
+        \Illuminate\Support\Facades\DB::table('cms_ai_tasks')->insert(['id'=>(string)\Illuminate\Support\Str::uuid(),'user_id'=>auth()->id(),'action'=>'brief','request_hash'=>str_repeat('a',64),'status'=>'completed','response'=>json_encode(['data'=>$r]),'response_status'=>200,'created_at'=>now(),'updated_at'=>now()]);
+        \Illuminate\Support\Facades\Cache::forget('cms-ai:'.auth()->id().':'.$r['token']);
+        // A legacy saved counter must not block an explicitly confirmed image.
+        \Illuminate\Support\Facades\Cache::put('cms-ai-image-count:'.auth()->id().':'.$r['token'],6,now()->addHours(2));
         $first=$this->postJson('/admin/api/cms/ai-generator',$request)->assertOk()->json('data');
         $second=$this->postJson('/admin/api/cms/ai-generator',$request)->assertOk()->json('data');
         $this->assertSame($first['url'],$second['url']);$this->assertSame($first['url'],$first['document']['sections'][0]['mediaUrl']);$this->assertDatabaseCount('cms_media_assets',1);

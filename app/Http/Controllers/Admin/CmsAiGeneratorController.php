@@ -26,7 +26,23 @@ class CmsAiGeneratorController extends Controller
             if($input['action']==='quality')return response()->json(['data'=>['issues'=>app(\App\Services\AI\CmsAiQuality::class)->review($document)]]);
             if($input['action']==='image'){
                 $confirmed=Cache::get($key.($input['token']??''));
-                abort_unless($confirmed&&empty($confirmed['brief']['questions']),422,'Confirm a complete Brief before generating images.');
+                // Recover only a server-recorded successful Brief belonging to this actor.
+                // Workspace flags alone are not proof of confirmation.
+                if(!$confirmed&&!empty($input['token'])){
+                    $task=\Illuminate\Support\Facades\DB::table('cms_ai_tasks')
+                        ->where('user_id',$request->user()->getAuthIdentifier())
+                        ->whereIn('action',['brief','answer'])->where('status','completed')
+                        ->where('response->data->token',$input['token'])->first();
+                    $saved=$task?json_decode($task->response,true)['data']??null:null;
+                    if($saved&&($saved['direction']??null)===$input['direction']&&empty($saved['brief']['questions'])){
+                        $ids=array_column($saved['brief']['sections']??[],'id');
+                        $savedDocument=$saved['document'];
+                        $savedDocument['sections']=array_values(array_filter($savedDocument['sections'],fn($section)=>in_array($section['id'],$ids,true)));
+                        $confirmed=['document'=>$savedDocument,'direction'=>$saved['direction'],'target'=>null,'brief'=>$saved['brief']];
+                        Cache::put($key.$input['token'],$confirmed,now()->addMinutes(30));
+                    }
+                }
+                abort_unless($confirmed&&empty($confirmed['brief']['questions']),422,'Your saved Brief could not be verified. Return to Structure to review it. Your copy and completed images are retained.');
                 $result=app(\App\Services\AI\CmsAiImageService::class)->generate($document,$input,(int)$request->user()->getAuthIdentifier(),$confirmed);
                 $contract->validate($result['document']);
                 return response()->json(['data'=>$result]);
