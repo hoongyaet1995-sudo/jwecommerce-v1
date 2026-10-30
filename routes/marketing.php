@@ -33,6 +33,7 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::post('/settings/email/check',[\App\Http\Controllers\Admin\MarketingEmailSettingsController::class,'check'])->name('settings.email.check')->middleware('throttle:3,1');
     Route::get('/campaigns/{id}/email-batches',[\App\Http\Controllers\Admin\MarketingEmailBatchesController::class,'index'])->whereUuid('id');
     Route::post('/campaigns/{id}/email-batches/review',[\App\Http\Controllers\Admin\MarketingEmailBatchesController::class,'review'])->whereUuid('id')->name('email-batches.review')->middleware('throttle:10,1');
+    Route::post('/campaigns/{id}/email-batches/{batch}/continue',[\App\Http\Controllers\Admin\MarketingEmailBatchesController::class,'advance'])->whereUuid('id')->whereUuid('batch')->name('email-batches.continue')->middleware('throttle:30,1');
     Route::post('/campaigns/{id}/email-batches/{batch}/confirm',[\App\Http\Controllers\Admin\MarketingEmailBatchesController::class,'confirm'])->whereUuid('id')->whereUuid('batch')->name('email-batches.confirm')->middleware('throttle:5,1');
     Route::get('/campaigns/{id}/email-test',[\App\Http\Controllers\Admin\MarketingEmailDeliveryController::class,'status'])->whereUuid('id');
     Route::post('/campaigns/{id}/email-test',[\App\Http\Controllers\Admin\MarketingEmailDeliveryController::class,'send'])->name('email-test.send')->whereUuid('id')->middleware('throttle:5,1');

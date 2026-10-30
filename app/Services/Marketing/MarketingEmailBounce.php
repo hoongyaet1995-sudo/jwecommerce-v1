@@ -66,7 +66,7 @@ final class MarketingEmailBounce
             $matched=0;
             foreach($result['messages'] as $raw)$matched+=$this->ingest($raw);
             unset($result['messages']);$result['matched']=$matched;
-        } catch (\Throwable) { $error='connection_failed';$result=null; }
+        } catch (\Throwable $e) { $error=in_array($e->getMessage(),['mailbox_connection_failed','mailbox_read_failed'],true)?$e->getMessage():'connection_failed';$result=null; }
         return DB::transaction(function()use($key,$lease,$result,$error){
             $row=StoreSetting::where('key',$key)->lockForUpdate()->first();$v=$row->value??[];
             abort_unless(($v['lease']??null)===$lease,409,'The bounce check changed. Check again.');

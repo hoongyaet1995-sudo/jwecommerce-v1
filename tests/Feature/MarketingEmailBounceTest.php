@@ -98,9 +98,9 @@ class MarketingEmailBounceTest extends TestCase
         $p=\Mockery::mock();
         $p->shouldReceive('examineFolder')->once()->with('INBOX')->andReturn($reply(['uidvalidity'=>9,'uidnext'=>101]));
         $p->shouldReceive('fetch')->once()->with(['UID','RFC822.SIZE'],1,50)->andReturn($reply([3=>['UID'=>3,'RFC822.SIZE'=>strlen($raw)],4=>['UID'=>4,'RFC822.SIZE'=>99],5=>['UID'=>5,'RFC822.SIZE'=>2000000]]));
-        $p->shouldReceive('fetch')->once()->with(['UID','BODY.PEEK[HEADER]<0.65536>'],3)->andReturn($reply(['UID'=>3,'BODY[HEADER]<0>'=>"Content-Type: multipart/report; report-type=delivery-status\r\n"]));
-        $p->shouldReceive('fetch')->once()->with(['UID','BODY.PEEK[]<0.1048577>'],3)->andReturn($reply(['UID'=>3,'BODY[]<0>'=>$raw]));
-        $p->shouldReceive('fetch')->once()->with(['UID','BODY.PEEK[HEADER]<0.65536>'],4)->andReturn($reply(['UID'=>4,'BODY[HEADER]<0>'=>"Content-Type: text/plain\r\n"]));
+        $p->shouldReceive('fetch')->once()->with(['UID','BODY.PEEK[HEADER]<0.65536>'],3,3)->andReturn($reply([3=>['UID'=>3,'BODY[HEADER]<0>'=>"Content-Type: multipart/report; report-type=delivery-status\r\n"]]));
+        $p->shouldReceive('fetch')->once()->with(['UID','BODY.PEEK[]<0.1048577>'],3,3)->andReturn($reply([3=>['UID'=>3,'BODY[]<0>'=>$raw]]));
+        $p->shouldReceive('fetch')->once()->with(['UID','BODY.PEEK[HEADER]<0.65536>'],4,4)->andReturn($reply([4=>['UID'=>4,'BODY[HEADER]<0>'=>"Content-Type: text/plain\r\n"]]));
         $out=app(MarketingEmailImap::class)->readWindow($p,8,500);
         $this->assertSame(50,$out['cursor']);$this->assertTrue($out['has_more']);$this->assertSame(1,$out['skipped_large']);$this->assertSame([$raw],$out['messages']);
     }

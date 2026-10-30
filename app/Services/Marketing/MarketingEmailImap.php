@@ -17,11 +17,15 @@ class MarketingEmailImap
             'username'=>$credentials['username'],'password'=>$credentials['password'],
             'protocol'=>'imap','timeout'=>5,'authentication'=>null,
         ]);
+        $stage='mailbox_connection_failed';
         try {
             $client->connect();
+            $stage='mailbox_read_failed';
             $connection=$client->getConnection();
             return $this->readWindow($connection,$validity,$cursor);
-        } finally { $client->disconnect(); }
+        } catch (\Throwable $e) {
+            throw new \RuntimeException($stage,0,$e);
+        } finally { try { $client->disconnect(); } catch (\Throwable) {} }
     }
 
     /** Public for a protocol fake: all network I/O remains in scan(). */
@@ -43,12 +47,12 @@ class MarketingEmailImap
             if(microtime(true)-$started>12)break;
             $scanned++; $size=(int)($attributes['RFC822.SIZE']??0);
             if($size<=0||$size>1048576){$large++;$last=$uid;continue;}
-            $head=$connection->fetch(['UID','BODY.PEEK[HEADER]<0.65536>'],$uid)->validatedData();
-            $header=$head['BODY[HEADER]<0>']??$head['BODY[HEADER]']??'';
+            $head=$connection->fetch(['UID','BODY.PEEK[HEADER]<0.65536>'],$uid,$uid)->validatedData();
+            $header=$head[$uid]['BODY[HEADER]<0>']??$head[$uid]['BODY[HEADER]']??null;
             if (!is_string($header))throw new \RuntimeException('Mailbox header unavailable');
             if(preg_match('/^Content-Type:\s*multipart\/report\b/im',$header)) {
-                $body=$connection->fetch(['UID','BODY.PEEK[]<0.1048577>'],$uid)->validatedData();
-                $raw=$body['BODY[]<0>']??$body['BODY[]']??null;
+                $body=$connection->fetch(['UID','BODY.PEEK[]<0.1048577>'],$uid,$uid)->validatedData();
+                $raw=$body[$uid]['BODY[]<0>']??$body[$uid]['BODY[]']??null;
                 if(!is_string($raw))throw new \RuntimeException('Mailbox body unavailable');
                 if(strlen($raw)<=1048576)$messages[]=$raw; else $large++;
             }
