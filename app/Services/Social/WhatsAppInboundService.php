@@ -31,6 +31,7 @@ class WhatsAppInboundService
       if(!is_string($text)||(trim($text)===''&&!$image&&!$audio&&!$document)||mb_strlen($text)>16000)continue;
       $key=hash('sha256',json_encode(['whatsapp',$account->merchant_key,$account->app_id,$phone,$event['id']]));
       if(DB::table('messenger_inbound_receipts')->where('event_key',$key)->exists())continue;
+      $optOut=app(\App\Services\Marketing\MarketingWhatsAppOptOut::class)->receive($account,$event);
       $owner=hash('sha256',json_encode(['whatsapp',$account->merchant_key,$account->app_id,$phone,$event['from']]));
       $conversation=SupportConversation::firstOrCreate(['owner_hash'=>$owner],['id'=>(string)Str::uuid(),'channel'=>'whatsapp','merchant_key'=>$account->merchant_key,'provider_page_id'=>$phone,'provider_sender_id'=>$event['from'],'provider_page_name'=>$account->name,'status'=>'open']);
       $conversation=SupportConversation::whereKey($conversation->id)->lockForUpdate()->firstOrFail();
@@ -47,7 +48,7 @@ class WhatsAppInboundService
       app(\App\Services\Customers\CustomerContactResolver::class)->associate($conversation,['platform'=>'whatsapp','merchant_key'=>$account->merchant_key,'app_id'=>$account->app_id,'account_id'=>$phone,'sender_id'=>$event['from']],['name'=>data_get($profile,'profile.name','WhatsApp customer'),'phone'=>'+'.$event['from'],'phone_trusted'=>true]);
       DB::table('messenger_inbound_receipts')->insert(['event_key'=>$key,'conversation_id'=>$conversation->id,'page_id'=>$phone,'message_id'=>$event['id'],'created_at'=>now(),'updated_at'=>now()]);
       $account->update(['last_inbound_at'=>now()]);app(\App\Services\Support\SupportCustomerMemoryService::class)->schedule($conversation,$message); app(\App\Services\Support\SupportMessageAlertService::class)->received($conversation,$message);
-      if(!app(\App\Services\Support\SupportAttachmentAnalysisService::class)->schedule($message) && !$document && (($event['type']??null)==='text' || $image) && trim($text)!==''
+      if(!$optOut && !app(\App\Services\Support\SupportAttachmentAnalysisService::class)->schedule($message) && !$document && (($event['type']??null)==='text' || $image) && trim($text)!==''
           && !app(\App\Services\Support\SupportReplyCadenceService::class)->enqueue($message))\App\Jobs\ProcessWhatsAppSupportReply::dispatch($message->id)->onConnection('support')->onQueue('support-ai')->afterCommit();
       $count++;
      }

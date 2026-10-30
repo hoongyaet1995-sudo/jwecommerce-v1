@@ -3,6 +3,10 @@
 $conversationPilot=json_decode((string)env('MARKETING_CONVERSATION_PILOT_GRANT','{}'),true);
 $conversationPilot=is_array($conversationPilot)?$conversationPilot:[];
 return [
+    'whatsapp_campaign_enabled'=>(bool)env('MARKETING_WHATSAPP_CAMPAIGN_ENABLED',false),
+    // Operator-verified upper-bound rates only. No default/free inference.
+    'whatsapp_campaign_rates'=>json_decode(env('MARKETING_WHATSAPP_CAMPAIGN_RATES','{}'),true) ?: [],
+
     'email_bounce_enabled' => env('MARKETING_EMAIL_BOUNCE_ENABLED',false),
     'email_connection_test_enabled' => env('MARKETING_EMAIL_CONNECTION_TEST_ENABLED',false),
     'email_smtp_hosts' => array_values(array_filter(array_map('trim',explode(',',(string)env('MARKETING_EMAIL_SMTP_HOSTS',''))))),

@@ -186,3 +186,26 @@ Template list actions acceptance:
 - Intentional TDD red: multiple-post assignment must be rejected without changing saved selection. No real publish.
 
 - Post reuse verification: 38 tests / 203 assertions passed. Normal browser new/post entry opened existing Posts list (not editor); Campaign card dialog loaded actual saved drafts, existing selection and real media. Local records lack selected accounts and correctly show Platform not chosen. No account data invented or OAuth performed. JS syntax and scoped diff check passed. No publish/release.
+
+## Campaign workspace release verification
+- Approved release 1759ce3ec1d6b89fcfb371cb4944a553812efc3e: canonical HEAD, GitHub main and Hostinger HEAD match. One scoped migration completed; caches cleared.
+- Isolated release matrix: 38 tests / 203 assertions passed; scoped PHP/JS/diff checks passed.
+- Normal live Chrome verified new/post redirect to Posts list; four Campaign types; Post selector showing actual Facebook/TikTok badges and protected published result (selection/apply disabled).
+- Unsaved new-post editor with existing YouTube account showed only Video/Reel; selecting it updated preview and media guidance. Unsaved test changes discarded; posts list retained original five records.
+- Observed existing account tab displays object text in account-specific label; not changed in this release.
+- No provider submission, publishing, message sends, account or callback changes. Live receipt recorded locally after release.
+
+
+## 2026-10-30 WhatsApp blast local implementation
+- [x] Local additive batch/delivery tables and unique provider-message guard. No production migration.
+- [x] Existing editor retains Save Draft and adds Save & Review; separate Review with message preview, sender, eligible/excluded totals, cost ceiling and explicit confirmation. Source CRM workflow adapted to current Bootstrap patterns.
+- [x] Freeze campaign/template revision, account identity, consent-qualified audience, resolved variables and operator-verified account-specific rate envelope. Missing price never defaults free. No customer-derived pricing override.
+- [x] One-recipient page-driven continuation, no per-domain cron; confirmed campaign Active, processed campaign Completed. Existing customer/Email/support functionality retained. Every submission rechecks authority/account/template/cost/consent; expired/unknown submissions pause without auto retry.
+- [x] Exact-account/provider-ID/recipient status reconciliation, including receipt-before-response race; read status does not regress. Verified inbound STOP updates store WhatsApp opt-out and does not queue an AI reply.
+- [x] Local fake regression:57tests307assertions passed15.25s. Final additional race/STOP coverage:10WhatsAppBatchtests60assertions passed5.51s (overlaps broader run; do not sum). JS syntax checks passed. No provider call or real message.
+- [~] Normal local UI: marked LOCAL UI ACCEPTANCE empty-audience review fixture only (no recipients/subscriptions added, no fabricated approved template). Review blockers and disabled send verified; editor SaveDraft/Save&Review verified. Screenshot output/whatsapp-review-local.png. This is presentation acceptance plus fake backend verification, NOT real campaign/provider acceptance.
+- [ ] Real sender/routing/template final status, recipient test number and verified current rates/currency/cap still require confirmation. Sending flagfalse and rateconfigempty locally.
+- [ ] Production sync and controlled real send/delivered/read/STOP acceptance not performed; no commit/push/deploy in this phase.
+- [ ] Unattended scheduled sending requires a separately approved runner; not offered in this immediate page-driven phase. Dynamic header/button variables deliberately fail closed until mapped. Static approved CTA unchanged; recipient-level website conversion tracking not claimed for fixed URL buttons.
+
+Issue ledger: initial missing-route4tests404 declared initialred. MySQL expires_at invalid timestamp default1unexpected failure, changed to dateTime then additive migration succeeded; unique-index follow-up migration succeeded. Other focused tests green. No blind reruns, no automatic retries. No credentials copied from CRM, no Hub callback/OAuth changes. Measured token usage unavailable.
