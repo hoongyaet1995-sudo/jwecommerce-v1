@@ -17,7 +17,7 @@ Date: 2026-10-30. User approved page-driven Sync release. This is a bounded Audi
 ## Remaining checklist
 | ID | Status | Smallest next acceptance |
 | --- | --- | --- |
-| AUD-R1 | Pending live gate | Deployed Contacts: explicit start, leave/return, completion; verify same task and no duplicate contact growth. |
+| AUD-R1 | Verified live | Explicit start, leave/return and refresh completed same task 1a033cce-17ed-44a3-82aa-f4ee331be267; 50 source records checked, 27 contacts before/after, no queued sync job. |
 | AUD-R2 | Partial | Import/export retain queue worker execution. Local CSV preview/confirm and private export passed; normal production CSV/import/download not verified in this release. Decide page-driven preparation before removing dedicated Audience worker. Sync itself no longer requires that worker. |
 | AUD-R3 | Deferred by user | My Account birthday input/update with validation and explicit customer action. Column and segment projection already connected. |
 | AUD-R4 | Not load-tested | Large-directory MySQL scale test, per-batch timings, interruption across multiple batches and concurrent staff. Do not infer thousands-of-rows throughput from small local/live datasets. |
@@ -34,3 +34,11 @@ Date: 2026-10-30. User approved page-driven Sync release. This is a bounded Audi
 3. Implement Email segment sending with real unsubscribe/suppression and small approved test recipients; then WhatsApp price/template/receipt gates. SMS provider later.
 
 No broadcasts, paid API calls, purchases, permission changes or customer-list imports are authorized by this release request. Prior historical unchecked WA items should be reconciled individually against evidence, not marked all complete from this milestone.
+
+## Live release receipt
+- Code release c2eaad934aab53e3b720c24bed75619140a8253c matched canonical localhost, GitHub main and Hostinger HEAD. Hostinger ff-only pull and optimize:clear completed.
+- Live authenticated Contacts start -> Segments paused at processed=21 / updated_at 05:10:39 UTC across two read-only DB observations; returning showed Continuing your audience update. Refresh continued same ID, completed at 05:11:51 UTC, 50 source records checked. Contacts remain 27, paid-order contacts 2; sync job count 0.
+- New JS and existing Audience JS/CSS HTTPS return 200 and match committed LF Git blobs exactly. Local working copies use CRLF; raw-byte comparison initially differed solely from line endings, then committed-source comparison passed.
+- Evidence output/audience-page-sync-live-complete.png. Initial whole-page Chrome screenshot timed out once; bounded 974x668 capture succeeded after final AX state verified. No further sync task or automatic retry was created.
+- Production Cron entries preserved because Audience worker still serves import/export; Sync is page-driven and unaffected by worker. Posts/Email schedules, credentials, Hub callback and existing records unchanged.
+- This evidence-only update follows code release; final exact SHA checked after documentation deployment. No migration, paid provider request, broadcast or financial transaction.

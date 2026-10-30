@@ -1,6 +1,6 @@
 # Audience integration acceptance
 
-Status: local acceptance only. No synchronization, deployment or delivery authorized in this phase.
+Status: Audience foundation and page-driven Sync released with user approval on 2026-10-30. Historical local-only checkpoints below are superseded by the final release receipt. No broadcast sending enabled.
 
 ## Record recovery note
 On 2026-10-30 a documentation append used the Windows default text encoding and failed while writing a Unicode arrow. The acceptance file was truncated. This record is reconstructed from measured command outputs, browser evidence and the current phase handoff; it does not claim to reproduce the prior wording verbatim. Application data and code were unaffected. Historical accounting not present below is unavailable.
@@ -96,3 +96,9 @@ Root cause: CRM source styles were present but generic classes were used for tab
 - Release verification command: isolated PHP Audience regression plus node frontend fake-response tests; purpose is verify exact allowlisted source independently of dirty canonical workspace. Result pending.
 - Isolated release harness issue count 1: PHP suite lacked APP_KEY (26 errors share MissingAppKeyException; not application regressions). Frontend 4/4 passed. Supply an ephemeral test-only key through process environment, never copied from production or committed, then rerun the same release gate once.
 - Corrected isolated release harness passed 29 tests / 244 assertions, 10.083s; ephemeral APP_KEY was process-only. Frontend 4/4 passed. No application fix needed for harness issue.
+
+## Page-driven Sync release completed (2026-10-30)
+- Approved 14-file code release c2eaad934aab53e3b720c24bed75619140a8253c synchronized. Canonical local content hashes verified before non-destructive fast-forward; unrelated dirty source retained. Isolated release 29 tests / 244 assertions passed; frontend 4/4 passed.
+- Normal production Contacts verified start/leave/return/refresh/completion of same task 1a033cce-17ed-44a3-82aa-f4ee331be267. 50 records checked; contacts 27 -> 27; paid-order contacts 2; no sync queue job. Worker no longer advances Sync tasks.
+- Production JS/CSS return HTTPS 200 and match committed Git blobs; normal UI shows Your audience is up to date. Existing accounts, Hub callbacks and unrelated schedules preserved. Dedicated Audience Cron retained only because import/export still need it; no new per-domain task added.
+- Remaining gates consolidated in docs/acceptance/2026-10-30-marketing-audience-closeout.md: Import/Export production and portable execution, My Account birthday collection, scale/employee UI tests, Email bulk and unsubscribe, WhatsApp price/approval/receipts, SMS transport. No overall Marketing completion claim.
