@@ -22,3 +22,9 @@ Root cause established: release manifest omitted existing local untracked Market
 Expected isolated red confirms missing file. Copied canonical SMTP probe unchanged into release; next fresh Settings/Email/Bounce suite checks restored service and existing behavior.
 
 Restored-service gate:41 tests/240 assertions passed5.761s in isolated release source, including actual SMTP probe file/DI resolution. No provider request in tests. Follow-up release adds missing probe, regression assertion and evidence only; no credential changes.
+
+Probe file omission fixed in6db96809. Next UI check still failed before authentication. Sanitized source/line established distinct issue2: settings transport emits scheme but real probe reads missing encryption. No credential rejection evidence. Add intentional red for actual saved SMTP transport -> real probe TLS construction (no network), then adapt boundary. First observed UI failure of this issue1; classified diagnostic calls do not resend mail or guess credentials.
+
+Actual transport-construction red observed. Implemented strict scheme/port factory shared by real check, accepting saved runtime scheme plus prior encryption shape, always requireTLS. Next isolated regression validates the real transport boundary without any SMTP network access.
+
+Runtime-contract repair green:42 tests/244 assertions passed5.784s. Real SSL465 and STARTTLS587 transports constructed from saved settings without network. Release repair only, SMTP credentials unchanged.
