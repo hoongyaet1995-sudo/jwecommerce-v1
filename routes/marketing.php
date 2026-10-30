@@ -31,6 +31,10 @@ Route::middleware(['auth', 'admin', \App\Http\Middleware\MarketingExecutionAvail
     Route::post('/settings/email/data',[\App\Http\Controllers\Admin\MarketingEmailSettingsController::class,'save'])->name('settings.email.save')->middleware('throttle:10,1');
     Route::post('/settings/email/bounces',[\App\Http\Controllers\Admin\MarketingEmailSettingsController::class,'bounces'])->name('settings.email.bounces')->middleware('throttle:6,1');
     Route::post('/settings/email/check',[\App\Http\Controllers\Admin\MarketingEmailSettingsController::class,'check'])->name('settings.email.check')->middleware('throttle:3,1');
+    Route::get('/campaigns/{id}/whatsapp-batches',[\App\Http\Controllers\Admin\MarketingWhatsAppBatchesController::class,'index'])->whereUuid('id');
+    Route::post('/campaigns/{id}/whatsapp-batches/review',[\App\Http\Controllers\Admin\MarketingWhatsAppBatchesController::class,'review'])->whereUuid('id')->name('whatsapp-batches.review')->middleware('throttle:10,1');
+    Route::post('/campaigns/{id}/whatsapp-batches/{batch}/confirm',[\App\Http\Controllers\Admin\MarketingWhatsAppBatchesController::class,'confirm'])->whereUuid('id')->whereUuid('batch')->name('whatsapp-batches.confirm')->middleware('throttle:5,1');
+    Route::post('/campaigns/{id}/whatsapp-batches/{batch}/continue',[\App\Http\Controllers\Admin\MarketingWhatsAppBatchesController::class,'advance'])->whereUuid('id')->whereUuid('batch')->name('whatsapp-batches.continue')->middleware('throttle:30,1');
     Route::get('/campaigns/{id}/email-batches',[\App\Http\Controllers\Admin\MarketingEmailBatchesController::class,'index'])->whereUuid('id');
     Route::post('/campaigns/{id}/email-batches/review',[\App\Http\Controllers\Admin\MarketingEmailBatchesController::class,'review'])->whereUuid('id')->name('email-batches.review')->middleware('throttle:10,1');
     Route::post('/campaigns/{id}/email-batches/{batch}/continue',[\App\Http\Controllers\Admin\MarketingEmailBatchesController::class,'advance'])->whereUuid('id')->whereUuid('batch')->name('email-batches.continue')->middleware('throttle:30,1');
